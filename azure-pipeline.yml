@@ -1,0 +1,46 @@
+trigger:
+ tags:
+    include:
+    - release*
+
+pool:
+  vmImage: ubuntu-latest
+  
+variables:
+- group: pipeline
+
+steps:
+
+ - checkout: self
+   submodules: true
+   persistCredentials: true
+
+ - script: dotnet build --configuration release
+   displayName: 'Build All Projects'
+
+ - script: dotnet pack ADP.Models/Models --configuration Release --output $(Build.ArtifactStagingDirectory)/ADP
+   condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-adp')) 
+   displayName: 'pack ShiftSoftwareLocalization'
+
+ - script: dotnet pack ADP.LookupServices/Lookup.Services --configuration Release --output $(Build.ArtifactStagingDirectory)/ADP
+   condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-adp')) 
+   displayName: 'pack ShiftFrameworkTestingTools'
+
+ # - script: dotnet test ../TypeAuth/TypeAuth.Core.Tests
+ #   condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-typeauth'))
+ #   displayName: 'Test TypeAuth.Core'
+
+ # - script: dotnet test ../TypeAuth/TypeAuth.AspNetCore.Tests
+ #   condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-typeauth')) 
+ #   displayName: 'Test TypeAuth.AspNetCore'
+
+ - task: NuGetToolInstaller@1
+   inputs:
+    versionSpec: '6.9.1'
+
+ - task: NuGetCommand@2
+   displayName: 'Push ADP Packages'
+   condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-adp'))
+   inputs:
+    command: 'custom'
+    arguments: 'push "$(Build.ArtifactStagingDirectory)/Framework/**/*.nupkg" -Source https://api.nuget.org/v3/index.json -ApiKey $(ShiftSoftwareNugetApiKey) -SkipDuplicate'

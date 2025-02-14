@@ -1,0 +1,43 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<Import Project="..\..\GlobalSettings.props" />
+
+	<PropertyGroup>
+		<TargetFramework>netstandard2.0</TargetFramework>
+		<LangVersion>latest</LangVersion>
+		<Authors>Shift Software</Authors>
+		<Version>$(ADPVersion)</Version>
+		<IsPackable>True</IsPackable>
+		<PackageIcon>icon.png</PackageIcon>
+		<PackageId>ShiftSoftware.ADP.Lookup.Services</PackageId>
+		<AssemblyName>ShiftSoftware.ADP.Lookup.Services</AssemblyName>
+		<RootNamespace>ShiftSoftware.ADP.Lookup.Services</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<Compile Remove="Models\**" />
+		<EmbeddedResource Remove="Models\**" />
+		<None Remove="Models\**" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Azure.Cosmos" Version="3.43.1" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.1" />
+		<PackageReference Include="ShiftSoftware.ADP.Models" Version="$(ADPVersion)" Condition="!Exists('..\..\ADP.Models\Models\Models.csproj')" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.Model" Version="2024.12.28.1" />
+		<PackageReference Include="System.Text.Json" Version="8.0.5" />
+		<PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<InternalsVisibleTo Include="Lookup.Services.Tests" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="Images\icon.png" Pack="true" PackagePath="\" />
+		<Folder Include="Images\" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\ADP.Models\Models\Models.csproj" Condition="Exists('..\..\ADP.Models\Models\Models.csproj')" />
+	</ItemGroup>
+</Project>

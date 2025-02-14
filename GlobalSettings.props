@@ -1,0 +1,7 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+	<PropertyGroup>
+		<DefineConstants>adpDevelopmentMode;anotherSampleVariable</DefineConstants>
+		<ImportADPPackagesViaProjectReference>true</ImportADPPackagesViaProjectReference>
+		<ADPVersion>0.0.27</ADPVersion>
+	</PropertyGroup>
+</Project>

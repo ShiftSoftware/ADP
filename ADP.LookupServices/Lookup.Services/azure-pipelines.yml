@@ -1,0 +1,29 @@
+trigger:
+ tags:
+    include:
+    - release*
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+- group: pipeline
+
+steps:
+
+- task: NuGetToolInstaller@1
+  inputs:
+   versionSpec: '6.9.1'
+
+- script: dotnet build Lookup.Services --configuration release
+  displayName: 'dotnet build Lookup.Services'
+
+- script: dotnet pack Lookup.Services --configuration release --output $(Build.ArtifactStagingDirectory)
+  condition: contains(variables['Build.SourceBranch'], 'refs/tags/release')
+  displayName: 'dotnet pack'
+
+- task: NuGetCommand@2
+  condition: contains(variables['Build.SourceBranch'], 'refs/tags/release')
+  inputs:
+    command: 'custom'
+    arguments: 'push "$(Build.ArtifactStagingDirectory)/**/*.nupkg" -Source https://api.nuget.org/v3/index.json -ApiKey $(ShiftSoftwareNugetApiKey)'

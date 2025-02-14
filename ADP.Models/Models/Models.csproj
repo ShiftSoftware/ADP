@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>netstandard2.0</TargetFramework>
+		<LangVersion>latest</LangVersion>
+		<RootNamespace>ShiftSoftware.ADP.Models</RootNamespace>
+		<Authors>Shift Software</Authors>
+		<AssemblyName>ShiftSoftware.ADP.Models</AssemblyName>
+		<PackageId>ShiftSoftware.ADP.Models</PackageId>
+		<Version>$(ADPVersion)</Version>
+		<IsPackable>True</IsPackable>
+		<PackageIcon>icon.png</PackageIcon>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<Compile Remove="CommunicationPlatform\**" />
+		<EmbeddedResource Remove="CommunicationPlatform\**" />
+		<None Remove="CommunicationPlatform\**" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="FileHelpers" Version="3.5.2" />
+		<PackageReference Include="libphonenumber-csharp" Version="8.13.26" />
+		<PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.Model" Version="2023.12.9.1" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Folder Include="TBP\DTOs\" />
+		<None Include="Images\icon.png" Pack="true" PackagePath="\" />
+		<Folder Include="Images\" />
+	</ItemGroup>
+
+</Project>

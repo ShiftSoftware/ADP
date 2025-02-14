@@ -1,0 +1,14 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+using ShiftSoftware.ADP.Models.Enums;
+
+namespace ShiftSoftware.ADP.Models.FranchiseData.CosmosModels;
+
+public class VTModelRecordsCosmosModel : VTModelRecordsCSV
+{
+    public new string id { get; set; }
+    public Franchises Brand { get; set; }
+    public string BrandIntegrationID { get; set; }
+    public string BasicModelCode { get; set; }
+}
