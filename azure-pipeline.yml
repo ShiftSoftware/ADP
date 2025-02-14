@@ -43,4 +43,4 @@ steps:
    condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-adp'))
    inputs:
     command: 'custom'
-    arguments: 'push "$(Build.ArtifactStagingDirectory)/Framework/**/*.nupkg" -Source https://api.nuget.org/v3/index.json -ApiKey $(ShiftSoftwareNugetApiKey) -SkipDuplicate'
+    arguments: 'push "$(Build.ArtifactStagingDirectory)/ADP/**/*.nupkg" -Source https://api.nuget.org/v3/index.json -ApiKey $(ShiftSoftwareNugetApiKey) -SkipDuplicate'
