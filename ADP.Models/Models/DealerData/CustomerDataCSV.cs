@@ -54,7 +54,7 @@ namespace ShiftSoftware.ADP.Models.DealerData
         public string Gender { get; set; }
 
         [FileHelpers.FieldQuoted(FileHelpers.QuoteMode.OptionalForBoth)]
-        [FileHelpers.FieldConverter(typeof(QlikDateConverter))]
+        [FileHelpers.FieldConverter(typeof(CSVDateConverter))]
         public DateTime? DateOfBirth { get; set; }
 
         [FileHelpers.FieldQuoted(FileHelpers.QuoteMode.OptionalForBoth)]

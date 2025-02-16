@@ -14,7 +14,7 @@ namespace ShiftSoftware.ADP.Models.DealerData
 
         [FileHelpers.FieldQuoted(FileHelpers.QuoteMode.OptionalForBoth)]
         //[FileHelpers.FieldConverter(FileHelpers.ConverterKind.Date, "yyyy-MM-dd")]
-        [FileHelpers.FieldConverter(typeof(QlikDateConverter))]
+        [FileHelpers.FieldConverter(typeof(CSVDateConverter))]
         public DateTime? InvoiceDate { get; set; }
 
         [FileHelpers.FieldQuoted(FileHelpers.QuoteMode.OptionalForBoth)]

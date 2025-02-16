@@ -20,6 +20,6 @@ public class TIQOfficalVINCSV : CacheableCSV
     [FieldQuoted(QuoteMode.OptionalForBoth)]
     public string Model { get; set; } = default!;
 
-    [FieldConverter(typeof(QlikDateConverter))]
+    [FieldConverter(typeof(CSVDateConverter))]
     public DateTime Date { get; set; }
 }

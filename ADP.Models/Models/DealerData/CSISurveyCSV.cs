@@ -29,7 +29,7 @@ namespace ShiftSoftware.ADP.Models.DealerData
 
 
         [FieldQuoted(QuoteMode.OptionalForBoth)]
-        [FieldConverter(typeof(QlikDateConverter))]
+        [FieldConverter(typeof(CSVDateConverter))]
         public DateTime? Date { get; set; }
 
 

@@ -8,7 +8,7 @@ namespace ShiftSoftware.ADP.Models.DealerData
         public int? DealerId { get; set; }
         public string VIN { get; set; }
 
-        [FileHelpers.FieldConverter(typeof(QlikDateConverter))]
+        [FileHelpers.FieldConverter(typeof(CSVDateConverter))]
         public DateTime? InvoiceDate { get; set; }
         [FileHelpers.FieldQuoted(FileHelpers.QuoteMode.OptionalForBoth)]
         public string ServiceDetails { get; set; }
@@ -19,7 +19,7 @@ namespace ShiftSoftware.ADP.Models.DealerData
         public int? Invoice { get; set; }
         public int? Branch { get; set; }
 
-        [FileHelpers.FieldConverter(typeof(QlikDateConverter))]
+        [FileHelpers.FieldConverter(typeof(CSVDateConverter))]
         public DateTime? next_service { get; set; }
 
         [FileHelpers.FieldHidden]

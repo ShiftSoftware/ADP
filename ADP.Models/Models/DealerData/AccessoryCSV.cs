@@ -19,7 +19,7 @@ public class AccessoryCSV : CacheableCSV
 
     public int InvoiceNumber { get; set; }
 
-    [FileHelpers.FieldConverter(typeof(QlikDateConverter))]
+    [FileHelpers.FieldConverter(typeof(CSVDateConverter))]
     public DateTime DateEdited { get; set; }
 
     [FileHelpers.FieldQuoted(FileHelpers.QuoteMode.OptionalForBoth)]

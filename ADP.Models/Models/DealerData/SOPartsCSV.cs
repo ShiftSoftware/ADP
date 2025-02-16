@@ -48,12 +48,12 @@ namespace ShiftSoftware.ADP.Models.DealerData
         public string VIN { get; set; }
 
         [FileHelpers.FieldQuoted(FileHelpers.QuoteMode.OptionalForBoth)]
-        [FileHelpers.FieldConverter(typeof(QlikDateConverter))]
+        [FileHelpers.FieldConverter(typeof(CSVDateConverter))]
         public DateTime? DateCreated { get; set; }
 
 
         [FileHelpers.FieldQuoted(FileHelpers.QuoteMode.OptionalForBoth)]
-        [FileHelpers.FieldConverter(typeof(QlikDateConverter))]
+        [FileHelpers.FieldConverter(typeof(CSVDateConverter))]
         public DateTime? DateInserted { get; set; }
 
 
