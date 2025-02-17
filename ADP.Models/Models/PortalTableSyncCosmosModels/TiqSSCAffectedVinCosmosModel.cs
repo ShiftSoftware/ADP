@@ -18,6 +18,8 @@ public class TiqSSCAffectedVinCosmosModel : IDealerDataCSV
     public string Status { get; set; }
 
     public string OpCode { get; set; }
+    public string OpCode2 { get; set; }
+    public string OpCode3 { get; set; }
     public DateTime? RepairDate { get; set; }
 
     public string OriginalFormatPartNumber1 { get; set; }
