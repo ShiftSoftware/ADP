@@ -200,18 +200,18 @@ public class VehicleLookupServiceTests
 
         Assert.True(result.SSC?.Count() > 0);
 
-        Assert.True(result.SSC?.Any(x => x.OpCode == opCode && x.SSCCode == sscCode &&
+        Assert.True(result.SSC?.Any(x => x.Labors.Any(y => y.LaborCode == opCode) && x.SSCCode == sscCode &&
             x.Parts.Any(p => p.PartNumber == partNumber1) && x.Parts.Any(x => x.PartNumber == partNumber2)));
 
-        var part1 = result.SSC?.FirstOrDefault(x => x.OpCode == opCode)?.Parts.FirstOrDefault(x => x.PartNumber == partNumber1);
+        var part1 = result.SSC?.FirstOrDefault(x => x.Labors.Any(y => y.LaborCode == opCode))?.Parts.FirstOrDefault(x => x.PartNumber == partNumber1);
         Assert.True(part1?.IsAvailable);
         Assert.Equal(part1Description, part1?.PartDescription);
 
-        var part2 = result.SSC?.FirstOrDefault(x => x.OpCode == opCode)?.Parts.FirstOrDefault(x => x.PartNumber == partNumber2);
+        var part2 = result.SSC?.FirstOrDefault(x => x.Labors.Any(y => y.LaborCode == opCode))?.Parts.FirstOrDefault(x => x.PartNumber == partNumber2);
         Assert.False(part2?.IsAvailable);
         Assert.Equal(part2Description, part2?.PartDescription);
 
-        var sscRecall = result.SSC?.FirstOrDefault(x => x.OpCode == opCode);
+        var sscRecall = result.SSC?.FirstOrDefault(x => x.Labors.Any(y => y.LaborCode == opCode));
         Assert.False(sscRecall?.Repaired);
         Assert.Null(sscRecall?.RepairDate);
     }
@@ -269,7 +269,7 @@ public class VehicleLookupServiceTests
 
         Assert.True(result.SSC?.Count() > 0);
 
-        var sscRecall = result.SSC?.FirstOrDefault(x => x.OpCode == opCode);
+        var sscRecall = result.SSC?.FirstOrDefault(x => x.Labors.Any(y => y.LaborCode == opCode));
         Assert.True(sscRecall?.Repaired);
         Assert.Equal(repairDate, sscRecall?.RepairDate);
     }
@@ -327,7 +327,7 @@ public class VehicleLookupServiceTests
 
         Assert.True(result.SSC?.Count() > 0);
 
-        var sscRecall = result.SSC?.FirstOrDefault(x => x.OpCode == opCode);
+        var sscRecall = result.SSC?.FirstOrDefault(x => x.Labors.Any(y => y.LaborCode == opCode));
         Assert.True(sscRecall?.Repaired);
         Assert.Equal(repairDate, sscRecall?.RepairDate);
     }
@@ -385,7 +385,7 @@ public class VehicleLookupServiceTests
 
         Assert.True(result.SSC?.Count() > 0);
 
-        var sscRecall = result.SSC?.FirstOrDefault(x => x.OpCode == opCode);
+        var sscRecall = result.SSC?.FirstOrDefault(x => x.Labors.Any(y => y.LaborCode == opCode));
         Assert.False(sscRecall?.Repaired);
         Assert.Null(sscRecall?.RepairDate);
     }
@@ -432,7 +432,7 @@ public class VehicleLookupServiceTests
 
         Assert.True(result.SSC?.Count() > 0);
 
-        var sscRecall = result.SSC?.FirstOrDefault(x => x.OpCode == opCode);
+        var sscRecall = result.SSC?.FirstOrDefault(x => x.Labors.Any(y => y.LaborCode == opCode));
         Assert.True(sscRecall?.Repaired);
         Assert.Equal(repairDate, sscRecall?.RepairDate);
     }
@@ -487,7 +487,7 @@ public class VehicleLookupServiceTests
 
         Assert.True(result.SSC?.Count() > 0);
 
-        var sscRecall = result.SSC?.FirstOrDefault(x => x.OpCode == opCode);
+        var sscRecall = result.SSC?.FirstOrDefault(x => x.Labors.Any(y => y.LaborCode == opCode));
         Assert.True(sscRecall?.Repaired);
         Assert.Equal(repairDate, sscRecall?.RepairDate);
     }

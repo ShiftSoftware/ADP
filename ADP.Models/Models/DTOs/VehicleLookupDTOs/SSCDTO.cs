@@ -11,7 +11,7 @@ public class SSCDTO
 {
     public string SSCCode { get; set; } = default!;
     public string Description { get; set; } = default!;
-    public string OpCode { get; set; } = default!;
+    public IEnumerable<SSCLaborDTO> Labors { get; set; } = default!;
     public bool Repaired { get; set; }
 
     [JsonCustomDateTime("yyyy-MM-dd")]

@@ -542,6 +542,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             data = ssc?.Select(x =>
             {
                 var parts = new List<SSCPartDTO>();
+                var sscLabors = new List<SSCLaborDTO>();
 
                 var isRepared = false;
                 DateTime? repairDate = null;
@@ -571,11 +572,28 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
                 var sscData = new SSCDTO
                 {
                     Description = x.SscDescription,
-                    OpCode = x.OpCode,
                     SSCCode = x.CampaignCode,
                     Repaired = isRepared,
                     RepairDate = repairDate
                 };
+
+                if (!string.IsNullOrWhiteSpace(x.OpCode))
+                    sscLabors.Add(new SSCLaborDTO
+                    {
+                        LaborCode = x.OpCode,
+                    });
+
+                if (!string.IsNullOrWhiteSpace(x.OpCode2))
+                    sscLabors.Add(new SSCLaborDTO
+                    {
+                        LaborCode = x.OpCode2,
+                    });
+
+                if (!string.IsNullOrWhiteSpace(x.OpCode3))
+                    sscLabors.Add(new SSCLaborDTO
+                    {
+                        LaborCode = x.OpCode3,
+                    });
 
                 if (!string.IsNullOrWhiteSpace(x.PartNumber1))
                     parts.Add(new SSCPartDTO
@@ -595,6 +613,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
                         PartNumber = x.PartNumber3,
                     });
 
+                sscData.Labors = sscLabors;
                 sscData.Parts = parts;
 
                 return sscData;
