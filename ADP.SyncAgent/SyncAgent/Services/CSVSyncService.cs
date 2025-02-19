@@ -23,13 +23,17 @@ public class CSVSyncServiceFactory
         CosmosClient cosmosClient,
         IMapper mapper,
         IStorageService storageService, 
-        SyncAgentOptions options)
+        SyncAgentOptions options,
+        IServiceProvider services)
     {
         this.cosmosClient = cosmosClient;
         this.mapper = mapper;
         this.storageService = storageService;
         this.options = options;
+        Services = services;
     }
+
+    public IServiceProvider Services { get; }
 
     public CSVSyncService<TCSV, TCosmos> Create<TCSV, TCosmos>()
         where TCSV : CacheableCSV
