@@ -4,6 +4,7 @@ using AutoMapper;
 using LibGit2Sharp;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Polly;
 using Polly.Retry;
 using ShiftSoftware.ADP.Models;
@@ -36,11 +37,11 @@ public class CSVSyncServiceFactory
 
     public IServiceProvider Services { get; }
 
-    public CSVSyncService<TCSV, TCosmos> Create<TCSV, TCosmos>()
+    public CSVSyncService<TCSV, TCosmos> Create<TCSV, TCosmos>(ILogger logger)
         where TCSV : CacheableCSV
         where TCosmos : class
     {
-        return new CSVSyncService<TCSV, TCosmos>(storageService, options, cosmosClient, mapper);
+        return new CSVSyncService<TCSV, TCosmos>(storageService, options, cosmosClient,logger, mapper);
     }
 }
 
@@ -60,13 +61,20 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
     private readonly IStorageService storageService;
     private readonly SyncAgentOptions options;
     private readonly CosmosClient cosmosClient;
+    private readonly ILogger logger;
     private readonly IMapper mapper;
 
-    public CSVSyncService(IStorageService storageService, SyncAgentOptions options, CosmosClient cosmosClient, IMapper mapper)
+    public CSVSyncService(
+        IStorageService storageService,
+        SyncAgentOptions options, 
+        CosmosClient cosmosClient, 
+        ILogger logger,
+        IMapper mapper)
     {
         this.storageService = storageService;
         this.options = options;
         this.cosmosClient = cosmosClient;
+        this.logger = logger;
         this.mapper = mapper;
         var tempFolder = Guid.NewGuid().ToString();
 
@@ -286,14 +294,16 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
     }
 
     public async Task ProcessCosmosAsync(
-        string destinationRelativePath, 
+        string destinationRelativePath,
         string? destinationContainerOrShareName,
         string databaseId, string containerId,
         Func<IEnumerable<TCSV>, CosmosActionType, ValueTask<IEnumerable<TCosmos>>>? mapping,
         Expression<Func<TCosmos, object>> partitionKeyLevel1Expression,
         Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression = null,
         Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression = null,
-        Func<SyncCosmosAction<TCosmos>, ValueTask<SyncCosmosAction<TCosmos>?>>? cosmosAction = null)
+        Func<SyncCosmosAction<TCosmos>, ValueTask<SyncCosmosAction<TCosmos>?>>? cosmosAction = null,
+        int? batchSize = null,
+        int? retryCount = 0)
     {
         var stopWatch = new Stopwatch();
 
@@ -350,24 +360,26 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
                 cosmosActions = cosmosActions.Concat([await cosmosAction(new(item, CosmosActionType.Delete))]);
         }
 
-        var deletedCount = await DeleteFromCosmosAsync(
+        var deletedCount = await DeleteBatchFromCosmosAsync(
                 databaseId,
                 containerId,
                 cosmosActions.Where(x => x.ActionType == CosmosActionType.Delete),
                 partitionKeyLevel1Expression,
                 partitionKeyLevel2Expression,
                 partitionKeyLevel3Expression,
-                null
+                batchSize,
+                retryCount
             );
 
-        var insertedCount = await UpsertToCosmosAsync(
+        var insertedCount = await UpsertBtachToCosmosAsync(
                 databaseId,
                 containerId,
                 cosmosActions.Where(x => x.ActionType == CosmosActionType.Upsert),
                 partitionKeyLevel1Expression,
                 partitionKeyLevel2Expression,
                 partitionKeyLevel3Expression,
-                null
+                batchSize,
+                retryCount
             );
 
         stopWatch.Stop();
@@ -402,14 +414,75 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         CleanUp();
     }
 
-    private async Task<int> UpsertToCosmosAsync(
+    private async Task<int> UpsertBtachToCosmosAsync(
             string databaseId, 
             string containerId,
             IEnumerable<SyncCosmosAction<TCosmos>?> items,
             Expression<Func<TCosmos, object>> partitionKeyLevel1Expression,
             Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression,
             Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression,
-            long? batchSize
+            int? batchSize,
+            int? retryCount
+        )
+    {
+        var successCount = 0;
+
+        var totalCount = items.Count();
+        batchSize ??= totalCount;
+        var totalSteps = totalCount == 0 ? 0 : (int)Math.Ceiling((double)totalCount / (double)batchSize);
+        var currentStep = 0;
+        int retry = 0;
+
+        this.logger.LogInformation("Upserting started.");
+        this.logger.LogInformation($"Total count {totalCount}");
+        this.logger.LogInformation($"Total steps {totalSteps}");
+
+        while (currentStep < totalSteps)
+        {
+            this.logger.LogInformation($"Step {(currentStep + 1)} start proccessing.");
+
+            var skip = currentStep * batchSize.GetValueOrDefault();
+            var batchItems = items.Skip(skip).Take(batchSize.GetValueOrDefault()).ToList();
+
+            try
+            {
+                var successCountForBatch = await UpsertToCosmosAsync(
+                    databaseId,
+                    containerId, 
+                    batchItems, 
+                    partitionKeyLevel1Expression,
+                    partitionKeyLevel2Expression, 
+                    partitionKeyLevel3Expression);
+
+                successCount += successCountForBatch;
+
+                this.logger.LogInformation($"Step {(currentStep + 1)} proccessed.");
+
+                currentStep++;
+            }
+            catch (Exception)
+            {
+                retry++;
+
+                if (retry > (retryCount ?? 0))
+                    break;
+
+                this.logger.LogWarning($"Step {(currentStep + 1)} proccess failed, we do retry {retry} time.");
+
+                
+            }
+        }
+
+        return successCount;
+    }
+
+    private async Task<int> UpsertToCosmosAsync(
+            string databaseId,
+            string containerId,
+            IEnumerable<SyncCosmosAction<TCosmos>?> items,
+            Expression<Func<TCosmos, object>> partitionKeyLevel1Expression,
+            Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression,
+            Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression
         )
     {
         var successCount = 0;
@@ -421,32 +494,88 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         {
             tasks = tasks.Concat([Task.Run(async () =>
             {
-                try
-                {
-                    if (item?.Mapping is not null)
-                        item.Item = await item.Mapping(item.Item);
+                if (item?.Mapping is not null)
+                    item.Item = await item.Mapping(item.Item);
 
-                    if (item?.Item is not null)
-                    {
-                        var partitionKey = Utility.GetPartitionKey(item.Item, partitionKeyLevel1Expression, partitionKeyLevel2Expression, partitionKeyLevel3Expression);
-                        await ResiliencePipeline.ExecuteAsync(async token =>
-                        {
-                            await container.UpsertItemAsync(item.Item, partitionKey, new ItemRequestOptions { EnableContentResponseOnWrite = false });
-                            Interlocked.Increment(ref successCount);
-                        });
-                    }
-                    else
-                    {
-                        Interlocked.Increment(ref successCount);
-                    }
-                }
-                catch
+                if (item?.Item is not null)
                 {
+                    var partitionKey = Utility.GetPartitionKey(item.Item, partitionKeyLevel1Expression, partitionKeyLevel2Expression, partitionKeyLevel3Expression);
+                    await ResiliencePipeline.ExecuteAsync(async token =>
+                    {
+                        await container.UpsertItemAsync(item.Item, partitionKey, new ItemRequestOptions { EnableContentResponseOnWrite = false });
+                        Interlocked.Increment(ref successCount);
+                    });
+                }
+                else
+                {
+                    Interlocked.Increment(ref successCount);
                 }
             })]);
         }
 
         await Task.WhenAll(tasks);
+
+        return successCount;
+    }
+
+    private async Task<int> DeleteBatchFromCosmosAsync(
+            string databaseId,
+            string containerId,
+            IEnumerable<SyncCosmosAction<TCosmos>?> items,
+            Expression<Func<TCosmos, object>> partitionKeyLevel1Expression,
+            Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression,
+            Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression,
+            int? batchSize,
+            int? retryCount
+        )
+    {
+        var successCount = 0;
+
+        var totalCount = items.Count();
+        batchSize ??= totalCount;
+        var totalSteps = totalCount == 0 ? 0 : (int)Math.Ceiling((double)totalCount / (double)batchSize);
+        var currentStep = 0;
+        int retry = 0;
+
+        this.logger.LogInformation("Deleting started.");
+        this.logger.LogInformation($"Total count {totalCount}");
+        this.logger.LogInformation($"Total steps {totalSteps}");
+
+        while (currentStep < totalSteps)
+        {
+            this.logger.LogInformation($"Step {(currentStep + 1)} start proccessing.");
+
+            var skip = currentStep * batchSize.GetValueOrDefault();
+            var batchItems = items.Skip(skip).Take(batchSize.GetValueOrDefault()).ToList();
+
+            try
+            {
+                var successCountForBatch = await DeleteFromCosmosAsync(
+                    databaseId,
+                    containerId,
+                    batchItems,
+                    partitionKeyLevel1Expression,
+                    partitionKeyLevel2Expression,
+                    partitionKeyLevel3Expression);
+
+                successCount += successCountForBatch;
+
+                this.logger.LogInformation($"Step {(currentStep + 1)} proccessed.");
+
+                currentStep++;
+            }
+            catch (Exception)
+            {
+                retry++;
+
+                if (retry > (retryCount ?? 0))
+                    break;
+
+                this.logger.LogWarning($"Step {(currentStep + 1)} proccess failed, we do retry {retry} time.");
+
+
+            }
+        }
 
         return successCount;
     }
@@ -457,8 +586,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
             IEnumerable<SyncCosmosAction<TCosmos>?> items,
             Expression<Func<TCosmos, object>> partitionKeyLevel1Expression,
             Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression,
-            Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression,
-            long? batchSize
+            Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression
         )
     {
         var successCount = 0;
@@ -470,36 +598,30 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         {
             tasks = tasks.Concat([Task.Run(async () =>
             {
-                try
-                {
-                    if (item?.Mapping is not null)
-                        item.Item = await item.Mapping(item.Item);
+                if (item?.Mapping is not null)
+                    item.Item = await item.Mapping(item.Item);
 
-                    if (item?.Item is not null)
-                    {
-                        var partitionKey = Utility.GetPartitionKey(item.Item, partitionKeyLevel1Expression, partitionKeyLevel2Expression, partitionKeyLevel3Expression);
-                        await ResiliencePipeline.ExecuteAsync(async token =>
-                        {
-                            try
-                            {
-                                var type = item.Item.GetType();
-                                var id = (string?)type.GetProperty("id")?.GetValue(item.Item);
-                                await container.DeleteItemAsync<TCosmos>(id, partitionKey);
-                                Interlocked.Increment(ref successCount);
-                            }
-                            catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
-                            {
-                                Interlocked.Increment(ref successCount);
-                            }
-                        });
-                    }
-                    else
-                    {
-                        Interlocked.Increment(ref successCount);
-                    }
-                }
-                catch
+                if (item?.Item is not null)
                 {
+                    var partitionKey = Utility.GetPartitionKey(item.Item, partitionKeyLevel1Expression, partitionKeyLevel2Expression, partitionKeyLevel3Expression);
+                    await ResiliencePipeline.ExecuteAsync(async token =>
+                    {
+                        try
+                        {
+                            var type = item.Item.GetType();
+                            var id = (string?)type.GetProperty("id")?.GetValue(item.Item);
+                            await container.DeleteItemAsync<TCosmos>(id, partitionKey);
+                            Interlocked.Increment(ref successCount);
+                        }
+                        catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+                        {
+                            Interlocked.Increment(ref successCount);
+                        }
+                    });
+                }
+                else
+                {
+                    Interlocked.Increment(ref successCount);
                 }
             })]);
         }
@@ -523,8 +645,8 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
 public class CSVSyncService<TCSV> : CSVSyncService<TCSV, TCSV>, IDisposable
     where TCSV : CacheableCSV
 {
-    public CSVSyncService(IStorageService storageService, SyncAgentOptions options, CosmosClient cosmosClient, IMapper mapper) : 
-        base(storageService, options, cosmosClient, mapper)
+    public CSVSyncService(IStorageService storageService, SyncAgentOptions options, CosmosClient cosmosClient,ILogger logger, IMapper mapper) : 
+        base(storageService, options, cosmosClient,logger, mapper)
     {
     }
 }

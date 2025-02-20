@@ -65,7 +65,7 @@ public class TableSyncService<TEntity, TCosmos>
 
         //var items = await GetItemsAsync(dbSet, query);
 
-        //var successIds = await UpsertToCosmosAsync(items, successKeys, databaseId, containerId, mapping,
+        //var successIds = await UpsertBtachToCosmosAsync(items, successKeys, databaseId, containerId, mapping,
         //    partitionKeyLevel1Expression, partitionKeyLevel2Expression, partitionKeyLevel3Expression, logger);
 
         //string keyName = Utility.GetPropertyName(successKeys);

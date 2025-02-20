@@ -14,7 +14,7 @@ public class SyncFunctionBase<TFunction, TCSV, TCosmos>
     public SyncFunctionBase(ILoggerFactory loggerFactory, CSVSyncServiceFactory repositoryServiceFactory)
     {
         _logger = loggerFactory.CreateLogger<TFunction>();
-        syncAgentService = repositoryServiceFactory.Create<TCSV, TCosmos>();
+        syncAgentService = repositoryServiceFactory.Create<TCSV, TCosmos>(_logger);
     }
 
     public async Task RunAsync(
@@ -26,7 +26,9 @@ public class SyncFunctionBase<TFunction, TCSV, TCosmos>
         Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression = null,
         Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression = null,
         Func<IEnumerable<TCSV>, CosmosActionType, ValueTask<IEnumerable<TCosmos>>>? mapping = null,
-        Func<SyncCosmosAction<TCosmos>, ValueTask<SyncCosmosAction<TCosmos>?>>? cosmosAction = null)
+        Func<SyncCosmosAction<TCosmos>, ValueTask<SyncCosmosAction<TCosmos>?>>? cosmosAction = null,
+        int? batchSize = null,
+        int? retryCount = 0)
     {
         await RunAsync(
             csvFileName,
@@ -39,7 +41,9 @@ public class SyncFunctionBase<TFunction, TCSV, TCosmos>
             partitionKeyLevel2Expression,
             partitionKeyLevel3Expression,
             mapping,
-            cosmosAction
+            cosmosAction,
+            batchSize,
+            retryCount
         );
     }
 
@@ -53,7 +57,9 @@ public class SyncFunctionBase<TFunction, TCSV, TCosmos>
         Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression = null,
         Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression = null,
         Func<IEnumerable<TCSV>, CosmosActionType, ValueTask<IEnumerable<TCosmos>>>? mapping = null,
-        Func<SyncCosmosAction<TCosmos>, ValueTask<SyncCosmosAction<TCosmos>?>>? cosmosAction = null)
+        Func<SyncCosmosAction<TCosmos>, ValueTask<SyncCosmosAction<TCosmos>?>>? cosmosAction = null,
+        int? batchSize = null,
+        int? retryCount = 0)
     {
         return await RunAsync(
             csvFileName,
@@ -66,7 +72,9 @@ public class SyncFunctionBase<TFunction, TCSV, TCosmos>
             partitionKeyLevel2Expression,
             partitionKeyLevel3Expression,
             mapping,
-            cosmosAction
+            cosmosAction,
+            batchSize,
+            retryCount
         );
     }
 
@@ -82,7 +90,9 @@ public class SyncFunctionBase<TFunction, TCSV, TCosmos>
         Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression = null,
         Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression = null,
         Func<IEnumerable<TCSV>, CosmosActionType, ValueTask<IEnumerable<TCosmos>>>? mapping = null,
-        Func<SyncCosmosAction<TCosmos>, ValueTask<SyncCosmosAction<TCosmos>?>>? cosmosAction = null)
+        Func<SyncCosmosAction<TCosmos>, ValueTask<SyncCosmosAction<TCosmos>?>>? cosmosAction = null,
+        int? batchSize = null,
+        int? retryCount = 0)
     {
         using (_logger.BeginScope("Syncing {csvFileName}", csvFileName))
         {
@@ -101,7 +111,9 @@ public class SyncFunctionBase<TFunction, TCSV, TCosmos>
                 partitionKeyLevel1Expression: partitionKeyLevel1Expression,
                 partitionKeyLevel2Expression: partitionKeyLevel2Expression,
                 partitionKeyLevel3Expression: partitionKeyLevel3Expression,
-                cosmosAction: cosmosAction
+                cosmosAction: cosmosAction,
+                batchSize: batchSize,
+                retryCount: retryCount
             );
 
             var syncResult = syncAgentService.GetSyncResult();
