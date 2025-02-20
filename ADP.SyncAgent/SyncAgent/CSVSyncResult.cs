@@ -14,8 +14,8 @@ public class CSVSyncResult<T> where T : CacheableCSV
     public double TimeToInitializeCosmosClient { get; internal set; }
     public double TimeToSyncToCosmos { get; internal set; }
     public DirectoryInfo WorkingDirectory { get; internal set; }
-    public List<T> ToInsert { get; internal set; } = new List<T>();
-    public List<T> ToDelete { get; internal set; } = new List<T>();
+    public IEnumerable<T> ToInsert { get; internal set; } = [];
+    public IEnumerable<T> ToDelete { get; internal set; } = [];
     public int ToInsertCount { get; internal set; }
     public int ToDeleteCount { get; internal set; }
     public int CosmosDBInsertedCount { get; internal set; }

@@ -16,9 +16,9 @@ public class BrokerStockCosmosModel
     public string BrokerName { get; set; }
 
     public TBPBrokerCosmosModel? Broker { get; set; }
-    public List<VSDataCosmosModel>? VSDatas { get; set; }
-    public List<BrokerInvoiceCosmosModel>? Invoices { get; set; }
-    public List<BrokerVehicleTransferCosmosModel>? Transfers { get; set; }
+    public IEnumerable<VSDataCosmosModel>? VSDatas { get; set; }
+    public IEnumerable<BrokerInvoiceCosmosModel>? Invoices { get; set; }
+    public IEnumerable<BrokerVehicleTransferCosmosModel>? Transfers { get; set; }
 
     public BrokerVehicleStockDTO Info { get; private set; }
 

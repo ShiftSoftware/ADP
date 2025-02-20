@@ -25,7 +25,7 @@ public class SyncFunctionBase<TFunction, TCSV, TCosmos>
         Expression<Func<TCosmos, object>> partitionKeyLevel1Expression,
         Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression = null,
         Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression = null,
-        Func<List<TCSV>, CosmosActionType, ValueTask<List<TCosmos>>>? mapping = null,
+        Func<IEnumerable<TCSV>, CosmosActionType, ValueTask<IEnumerable<TCosmos>>>? mapping = null,
         Func<SyncCosmosAction<TCosmos>, ValueTask<SyncCosmosAction<TCosmos>?>>? cosmosAction = null)
     {
         await RunAsync(
@@ -52,7 +52,7 @@ public class SyncFunctionBase<TFunction, TCSV, TCosmos>
         Expression<Func<TCosmos, object>> partitionKeyLevel1Expression,
         Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression = null,
         Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression = null,
-        Func<List<TCSV>, CosmosActionType, ValueTask<List<TCosmos>>>? mapping = null,
+        Func<IEnumerable<TCSV>, CosmosActionType, ValueTask<IEnumerable<TCosmos>>>? mapping = null,
         Func<SyncCosmosAction<TCosmos>, ValueTask<SyncCosmosAction<TCosmos>?>>? cosmosAction = null)
     {
         return await RunAsync(
@@ -81,7 +81,7 @@ public class SyncFunctionBase<TFunction, TCSV, TCosmos>
         Expression<Func<TCosmos, object>> partitionKeyLevel1Expression,
         Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression = null,
         Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression = null,
-        Func<List<TCSV>, CosmosActionType, ValueTask<List<TCosmos>>>? mapping = null,
+        Func<IEnumerable<TCSV>, CosmosActionType, ValueTask<IEnumerable<TCosmos>>>? mapping = null,
         Func<SyncCosmosAction<TCosmos>, ValueTask<SyncCosmosAction<TCosmos>?>>? cosmosAction = null)
     {
         using (_logger.BeginScope("Syncing {csvFileName}", csvFileName))

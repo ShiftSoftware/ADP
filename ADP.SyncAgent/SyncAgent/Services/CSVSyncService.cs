@@ -96,8 +96,8 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
 
     private (IEnumerable<string> Added, IEnumerable<string> Deleted) CompareVersionsAndGetDiff()
     {
-        IEnumerable<string> added = new List<string>();
-        IEnumerable<string> deleted = new List<string>();
+        IEnumerable<string> added = [];
+        IEnumerable<string> deleted = [];
 
         using (var repo = new Repository(WorkingDirectory.FullName))
         {
@@ -105,7 +105,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
             {
                 if (item.State == FileStatus.ModifiedInWorkdir)
                 {
-                    var patch = repo.Diff.Compare<Patch>(new List<string>() { item.FilePath }).First();
+                    var patch = repo.Diff.Compare<Patch>([item.FilePath]).First();
 
                     added = patch.AddedLines.Select(x => x.Content);
                     deleted = patch.DeletedLines.Select(x => x.Content);
@@ -129,9 +129,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
             SetAttributesNormal(subDir);
 
         foreach (var file in dir.GetFiles())
-        {
             file.Attributes = FileAttributes.Normal;
-        }
     }
 
     private async Task MutateFileRandomlyAsync()
@@ -217,11 +215,11 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         var comparision = CompareVersionsAndGetDiff();
 
         // Find duplicates in Added and Deleted
-        var duplicates = comparision.Added.Intersect(comparision.Deleted).ToList();
+        var duplicates = comparision.Added.Intersect(comparision.Deleted);
 
         // Remove duplicates from both lists
-        comparision.Added = comparision.Added.Except(duplicates).ToList();
-        comparision.Deleted = comparision.Deleted.Except(duplicates).ToList();
+        comparision.Added = comparision.Added.Except(duplicates);
+        comparision.Deleted = comparision.Deleted.Except(duplicates);
 
         if (comparision.Added.Count() == 0 && comparision.Deleted.Count() == 0)
             return;
@@ -291,7 +289,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         string destinationRelativePath, 
         string? destinationContainerOrShareName,
         string databaseId, string containerId,
-        Func<List<TCSV>, CosmosActionType, ValueTask<List<TCosmos>>>? mapping,
+        Func<IEnumerable<TCSV>, CosmosActionType, ValueTask<IEnumerable<TCosmos>>>? mapping,
         Expression<Func<TCosmos, object>> partitionKeyLevel1Expression,
         Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression = null,
         Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression = null,
@@ -309,16 +307,13 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
 
         stopWatch.Restart();
 
-        var addTasks = new List<Task>();
-        var deleteTasks = new List<Task>();
-
-        List<TCosmos> toInsert;
-        List<TCosmos> toDelete;
+        IEnumerable<TCosmos> toInsert;
+        IEnumerable<TCosmos> toDelete;
 
         if (mapping is null)
         {
-            toInsert = mapper.Map<List<TCosmos>>(CSVSyncResult.ToInsert);
-            toDelete = mapper.Map<List<TCosmos>>(CSVSyncResult.ToDelete);
+            toInsert = mapper.Map<IEnumerable<TCosmos>>(CSVSyncResult.ToInsert);
+            toDelete = mapper.Map<IEnumerable<TCosmos>>(CSVSyncResult.ToDelete);
         }
         else
         {
@@ -339,20 +334,20 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
             return;
         }
 
-        List<SyncCosmosAction<TCosmos>?> cosmosActions = new();
+        IEnumerable<SyncCosmosAction<TCosmos>?> cosmosActions = [];
         
         if(cosmosAction is null)
         {
-            cosmosActions.AddRange(toInsert.Select(x => new SyncCosmosAction<TCosmos>(x, CosmosActionType.Upsert)));
-            cosmosActions.AddRange(toDelete.Select(x => new SyncCosmosAction<TCosmos>(x, CosmosActionType.Delete)));
+            cosmosActions = cosmosActions.Concat(toInsert.Select(x => new SyncCosmosAction<TCosmos>(x, CosmosActionType.Upsert)));
+            cosmosActions = cosmosActions.Concat(toDelete.Select(x => new SyncCosmosAction<TCosmos>(x, CosmosActionType.Delete)));
         }
         else
         {
             foreach (var item in toInsert)
-                cosmosActions.Add(await cosmosAction(new(item, CosmosActionType.Upsert)));
+                cosmosActions = cosmosActions.Concat([await cosmosAction(new(item, CosmosActionType.Upsert))]);
 
             foreach (var item in toDelete)
-                cosmosActions.Add(await cosmosAction(new(item, CosmosActionType.Delete)));
+                cosmosActions = cosmosActions.Concat([await cosmosAction(new(item, CosmosActionType.Delete))]);
         }
 
         var deletedCount = await DeleteFromCosmosAsync(
@@ -389,7 +384,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
                 await ResiliencePipeline.ExecuteAsync(async token =>
                 {
                     await this.storageService.StoreNewVersionAsync(Path.Combine(WorkingDirectory.FullName, "file.csv"),
-                        destinationRelativePath, destinationContainerOrShareName);
+                        destinationRelativePath, destinationContainerOrShareName, this.CacheableCSVEngine.Options.IgnoreFirstLines);
 
                     CSVSyncResult.Status = CSVSyncStatus.SuccessSync;
                 });
