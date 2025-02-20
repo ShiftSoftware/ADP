@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Polly;
 using Polly.Retry;
 using ShiftSoftware.ADP.Models;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq.Expressions;
 
@@ -311,9 +312,6 @@ public class CSVSyncService<TCSV, TCosmos>
         var addTasks = new List<Task>();
         var deleteTasks = new List<Task>();
 
-        var insertedCount = 0;
-        var deletedCount = 0;
-
         List<TCosmos> toInsert;
         List<TCosmos> toDelete;
 
@@ -341,86 +339,41 @@ public class CSVSyncService<TCSV, TCosmos>
             return;
         }
 
-        List<SyncCosmosAction<TCosmos>> cosmosActions = new();
-        cosmosActions.AddRange(toInsert.Select(x => new SyncCosmosAction<TCosmos>(x, CosmosActionType.Upsert)));
-        cosmosActions.AddRange(toDelete.Select(x => new SyncCosmosAction<TCosmos>(x, CosmosActionType.Delete)));
-
-        foreach (var action in cosmosActions)
+        List<SyncCosmosAction<TCosmos>?> cosmosActions = new();
+        
+        if(cosmosAction is null)
         {
-            var newAction = action;
+            cosmosActions.AddRange(toInsert.Select(x => new SyncCosmosAction<TCosmos>(x, CosmosActionType.Upsert)));
+            cosmosActions.AddRange(toDelete.Select(x => new SyncCosmosAction<TCosmos>(x, CosmosActionType.Delete)));
+        }
+        else
+        {
+            foreach (var item in toInsert)
+                cosmosActions.Add(await cosmosAction(new(item, CosmosActionType.Upsert)));
 
-            if (cosmosAction != null)
-                newAction = await cosmosAction(newAction);
-
-            if (newAction?.ActionType == CosmosActionType.Upsert)
-            {
-                addTasks.Add(Task.Run(async () =>
-                {
-                    try
-                    {
-                        if (newAction?.Mapping is not null)
-                            newAction.Item = await newAction.Mapping(newAction.Item);
-
-                        if (newAction?.Item is not null)
-                        {
-                            var partitionKey = Utility.GetPartitionKey(newAction.Item, partitionKeyLevel1Expression, partitionKeyLevel2Expression, partitionKeyLevel3Expression);
-                            await ResiliencePipeline.ExecuteAsync(async token =>
-                            {
-                                await container.UpsertItemAsync(newAction.Item, partitionKey, new ItemRequestOptions { EnableContentResponseOnWrite = false });
-                                Interlocked.Increment(ref insertedCount);
-                            });
-                        }
-                        else
-                        {
-                            Interlocked.Increment(ref insertedCount);
-                        }
-                    }
-                    catch
-                    {
-                    }
-                }));
-            }
-            else
-            {
-                deleteTasks.Add(Task.Run(async () =>
-                {
-                    try
-                    {
-                        if (newAction?.Mapping is not null)
-                            newAction.Item = await newAction.Mapping(newAction.Item);
-
-                        if (newAction?.Item is not null)
-                        {
-                            var partitionKey = Utility.GetPartitionKey(newAction.Item, partitionKeyLevel1Expression, partitionKeyLevel2Expression, partitionKeyLevel3Expression);
-                            await ResiliencePipeline.ExecuteAsync(async token =>
-                            {
-                                try
-                                {
-                                    var type = newAction.Item.GetType();
-                                    var id = (string?)type.GetProperty("id")?.GetValue(newAction.Item);
-                                    await container.DeleteItemAsync<TCosmos>(id, partitionKey);
-                                    Interlocked.Increment(ref deletedCount);
-                                }
-                                catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
-                                {
-                                    Interlocked.Increment(ref deletedCount);
-                                }
-                            });
-                        }
-                        else
-                        {
-                            Interlocked.Increment(ref deletedCount);
-                        }
-                    }
-                    catch
-                    {
-                    }
-                }));
-            }
+            foreach (var item in toDelete)
+                cosmosActions.Add(await cosmosAction(new(item, CosmosActionType.Delete)));
         }
 
-        await Task.WhenAll(deleteTasks);
-        await Task.WhenAll(addTasks);
+        var deletedCount = await DeleteFromCosmosAsync(
+                databaseId,
+                containerId,
+                cosmosActions.Where(x => x.ActionType == CosmosActionType.Delete),
+                partitionKeyLevel1Expression,
+                partitionKeyLevel2Expression,
+                partitionKeyLevel3Expression,
+                null
+            );
+
+        var insertedCount = await UpsertToCosmosAsync(
+                databaseId,
+                containerId,
+                cosmosActions.Where(x => x.ActionType == CosmosActionType.Upsert),
+                partitionKeyLevel1Expression,
+                partitionKeyLevel2Expression,
+                partitionKeyLevel3Expression,
+                null
+            );
 
         stopWatch.Stop();
 
@@ -452,6 +405,113 @@ public class CSVSyncService<TCSV, TCosmos>
         }
 
         CleanUp();
+    }
+
+    private async Task<int> UpsertToCosmosAsync(
+            string databaseId, 
+            string containerId,
+            IEnumerable<SyncCosmosAction<TCosmos>?> items,
+            Expression<Func<TCosmos, object>> partitionKeyLevel1Expression,
+            Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression,
+            Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression,
+            long? batchSize
+        )
+    {
+        var successCount = 0;
+        IEnumerable<Task> tasks = [];
+
+        var container = cosmosClient.GetContainer(databaseId, containerId);
+
+        foreach (var item in items)
+        {
+            tasks = tasks.Concat([Task.Run(async () =>
+            {
+                try
+                {
+                    if (item?.Mapping is not null)
+                        item.Item = await item.Mapping(item.Item);
+
+                    if (item?.Item is not null)
+                    {
+                        var partitionKey = Utility.GetPartitionKey(item.Item, partitionKeyLevel1Expression, partitionKeyLevel2Expression, partitionKeyLevel3Expression);
+                        await ResiliencePipeline.ExecuteAsync(async token =>
+                        {
+                            await container.UpsertItemAsync(item.Item, partitionKey, new ItemRequestOptions { EnableContentResponseOnWrite = false });
+                            Interlocked.Increment(ref successCount);
+                        });
+                    }
+                    else
+                    {
+                        Interlocked.Increment(ref successCount);
+                    }
+                }
+                catch
+                {
+                }
+            })]);
+        }
+
+        await Task.WhenAll(tasks);
+
+        return successCount;
+    }
+
+    private async Task<int> DeleteFromCosmosAsync(
+            string databaseId,
+            string containerId,
+            IEnumerable<SyncCosmosAction<TCosmos>?> items,
+            Expression<Func<TCosmos, object>> partitionKeyLevel1Expression,
+            Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression,
+            Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression,
+            long? batchSize
+        )
+    {
+        var successCount = 0;
+        IEnumerable<Task> tasks = [];
+
+        var container = cosmosClient.GetContainer(databaseId, containerId);
+
+        foreach (var item in items)
+        {
+            tasks = tasks.Concat([Task.Run(async () =>
+            {
+                try
+                {
+                    if (item?.Mapping is not null)
+                        item.Item = await item.Mapping(item.Item);
+
+                    if (item?.Item is not null)
+                    {
+                        var partitionKey = Utility.GetPartitionKey(item.Item, partitionKeyLevel1Expression, partitionKeyLevel2Expression, partitionKeyLevel3Expression);
+                        await ResiliencePipeline.ExecuteAsync(async token =>
+                        {
+                            try
+                            {
+                                var type = item.Item.GetType();
+                                var id = (string?)type.GetProperty("id")?.GetValue(item.Item);
+                                await container.DeleteItemAsync<TCosmos>(id, partitionKey);
+                                Interlocked.Increment(ref successCount);
+                            }
+                            catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+                            {
+                                Interlocked.Increment(ref successCount);
+                            }
+                        });
+                    }
+                    else
+                    {
+                        Interlocked.Increment(ref successCount);
+                    }
+                }
+                catch
+                {
+                }
+            })]);
+        }
+
+        await Task.WhenAll(tasks);
+
+        return successCount;
     }
 
     public CSVSyncResult<TCSV> GetSyncResult()
