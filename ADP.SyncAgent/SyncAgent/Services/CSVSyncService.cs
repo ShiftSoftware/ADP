@@ -44,7 +44,7 @@ public class CSVSyncServiceFactory
     }
 }
 
-public class CSVSyncService<TCSV, TCosmos>
+public class CSVSyncService<TCSV, TCosmos> : IDisposable
     where TCSV : CacheableCSV
     where TCosmos : class
 {
@@ -518,9 +518,14 @@ public class CSVSyncService<TCSV, TCosmos>
     {
         return CSVSyncResult;
     }
+
+    public void Dispose()
+    {
+        CleanUp();
+    }
 }
 
-public class CSVSyncService<TCSV> : CSVSyncService<TCSV, TCSV>
+public class CSVSyncService<TCSV> : CSVSyncService<TCSV, TCSV>, IDisposable
     where TCSV : CacheableCSV
 {
     public CSVSyncService(IStorageService storageService, SyncAgentOptions options, CosmosClient cosmosClient, IMapper mapper) : 
