@@ -18,6 +18,6 @@ public class TMCPartCSV : CacheableCSV
     public decimal FOBAndDealerWarrantyPrice { get; set; }
     public decimal TIQWarrantyPrice { get; set; }
 
-    [FieldConverter(typeof(TMCPartDecimalConverter))]
+    //[FieldConverter(typeof(TMCPartDecimalConverter))]
     public decimal? DealerSellingPrice { get; set; }
 }

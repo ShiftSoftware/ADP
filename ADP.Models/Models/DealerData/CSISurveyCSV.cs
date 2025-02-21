@@ -10,7 +10,7 @@ namespace ShiftSoftware.ADP.Models.DealerData
     public class CSISurveyCSV
     {
         [FieldQuoted(QuoteMode.OptionalForBoth)]
-        [FieldConverter(typeof(AutolinePhoneConverter))]
+        //[FieldConverter(typeof(AutolinePhoneConverter))]
         public List<string> Phones { get; set; }
 
         public int? LanguageCode { get; set; }
@@ -29,7 +29,7 @@ namespace ShiftSoftware.ADP.Models.DealerData
 
 
         [FieldQuoted(QuoteMode.OptionalForBoth)]
-        [FieldConverter(typeof(CSVDateConverter))]
+        //[FieldConverter(typeof(CSVDateConverter))]
         public DateTime? Date { get; set; }
 
 

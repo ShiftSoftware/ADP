@@ -63,12 +63,12 @@ namespace ShiftSoftware.ADP.Models.DealerData
         public string ServiceCode { get; set; }
 
         [FileHelpers.FieldQuoted(FileHelpers.QuoteMode.OptionalForBoth)]
-        [FileHelpers.FieldConverter(typeof(CSVDateConverter))]
+        //[FileHelpers.FieldConverter(typeof(CSVDateConverter))]
         public DateTime? DateCreated { get; set; }
 
 
         [FileHelpers.FieldQuoted(FileHelpers.QuoteMode.OptionalForBoth)]
-        [FileHelpers.FieldConverter(typeof(CSVDateConverter))]
+        //[FileHelpers.FieldConverter(typeof(CSVDateConverter))]
         public DateTime? DateInserted { get; set; }
 
 

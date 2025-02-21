@@ -21,7 +21,7 @@ namespace ShiftSoftware.ADP.Models.DealerData
 
         [FileHelpers.FieldCaption("Phone_No")]
         [FileHelpers.FieldQuoted(FileHelpers.QuoteMode.OptionalForBoth)]
-        [FieldConverter(typeof(AutolinePhoneConverter))]
+        //[FieldConverter(typeof(AutolinePhoneConverter))]
         public List<string> Phones { get; set; }
 
         [FileHelpers.FieldCaption("Address001")]
@@ -54,7 +54,7 @@ namespace ShiftSoftware.ADP.Models.DealerData
         public string Gender { get; set; }
 
         [FileHelpers.FieldQuoted(FileHelpers.QuoteMode.OptionalForBoth)]
-        [FileHelpers.FieldConverter(typeof(CSVDateConverter))]
+        //[FileHelpers.FieldConverter(typeof(CSVDateConverter))]
         public DateTime? DateOfBirth { get; set; }
 
         [FileHelpers.FieldQuoted(FileHelpers.QuoteMode.OptionalForBoth)]

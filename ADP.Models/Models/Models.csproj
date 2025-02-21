@@ -20,6 +20,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Compile Remove="DealerData\AccessoryCSV.cs" />
+	  <Compile Remove="DealerData\CPUCSV.cs" />
+	  <Compile Remove="DealerData\VSDataCSV.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="FileHelpers" Version="3.5.2" />
 		<PackageReference Include="libphonenumber-csharp" Version="8.13.26" />
 		<PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
