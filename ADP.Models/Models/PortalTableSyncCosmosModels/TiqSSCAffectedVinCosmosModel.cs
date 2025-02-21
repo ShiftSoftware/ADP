@@ -3,7 +3,7 @@ using System;
 
 namespace ShiftSoftware.ADP.Models.PortalTableSyncCosmosModels;
 
-public class TiqSSCAffectedVinCosmosModel : IDealerDataCSV
+public class TiqSSCAffectedVinCosmosModel
 {
     public string id { get; set; } = default!;
 

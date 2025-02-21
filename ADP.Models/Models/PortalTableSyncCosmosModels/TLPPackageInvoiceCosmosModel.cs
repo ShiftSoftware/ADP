@@ -5,7 +5,7 @@ using ShiftSoftware.ADP.Models.Enums;
 
 namespace ShiftSoftware.ADP.Models.PortalTableSyncCosmosModels;
 
-public class TLPPackageInvoiceCosmosModel : IDealerDataCSV
+public class TLPPackageInvoiceCosmosModel
 {
     public string id { get; set; } = default!;
 

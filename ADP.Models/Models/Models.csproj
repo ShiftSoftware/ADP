@@ -22,6 +22,12 @@
 	<ItemGroup>
 	  <Compile Remove="DealerData\AccessoryCSV.cs" />
 	  <Compile Remove="DealerData\CPUCSV.cs" />
+	  <Compile Remove="DealerData\CSISurveyCSV.cs" />
+	  <Compile Remove="DealerData\CustomerDataCSV.cs" />
+	  <Compile Remove="DealerData\SOLaborCSV.cs" />
+	  <Compile Remove="DealerData\SOPartsCSV.cs" />
+	  <Compile Remove="DealerData\TIQOfficalVINCSV.cs" />
+	  <Compile Remove="DealerData\TMCPartCSV.cs" />
 	  <Compile Remove="DealerData\VSDataCSV.cs" />
 	</ItemGroup>
 

@@ -4,7 +4,7 @@ using ShiftSoftware.ADP.Models.Enums;
 
 namespace ShiftSoftware.ADP.Models.PortalTableSyncCosmosModels;
 
-public class ToyotaLoyaltyProgramTransactionLineCosmosModel : IDealerDataCSV
+public class ToyotaLoyaltyProgramTransactionLineCosmosModel
 {
     public string id { get; set; } = default!;
 

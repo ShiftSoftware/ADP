@@ -3,7 +3,7 @@ using ShiftSoftware.ADP.Models.DealerData;
 
 namespace ShiftSoftware.ADP.Models.PortalTableSyncCosmosModels;
 
-public class BrokerInitialVehicleCosmosModel : IDealerDataCSV
+public class BrokerInitialVehicleCosmosModel
 {
     public string id { get; set; } = default!;
 

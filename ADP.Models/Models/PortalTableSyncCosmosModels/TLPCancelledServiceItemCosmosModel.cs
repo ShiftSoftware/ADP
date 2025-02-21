@@ -6,7 +6,7 @@ using ShiftSoftware.ADP.Models.Enums;
 
 namespace ShiftSoftware.ADP.Models.PortalTableSyncCosmosModels;
 
-public class TLPCancelledServiceItemCosmosModel : IDealerDataCSV
+public class TLPCancelledServiceItemCosmosModel
 {
     public string id { get; set; }
     public string VIN { get; set; }

@@ -1,9 +1,8 @@
 ﻿using System;
-using ShiftSoftware.ADP.Models.DealerData;
 
 namespace ShiftSoftware.ADP.Models.PortalTableSyncCosmosModels;
 
-public class BrokerInvoiceCosmosModel : IDealerDataCSV
+public class BrokerInvoiceCosmosModel
 {
     public string id { get; set; } = default!;
 

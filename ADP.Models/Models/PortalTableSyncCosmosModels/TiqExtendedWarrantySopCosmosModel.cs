@@ -3,7 +3,7 @@ using ShiftSoftware.ADP.Models.DealerData;
 
 namespace ShiftSoftware.ADP.Models.PortalTableSyncCosmosModels;
 
-public class TiqExtendedWarrantySopCosmosModel : IDealerDataCSV
+public class TiqExtendedWarrantySopCosmosModel
 {
     public string id { get; set; } = default!;
 

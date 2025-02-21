@@ -63,7 +63,7 @@ namespace ShiftSoftware.ADP.Models.DealerData.CosmosModels
         [FileHelpers.FieldQuoted(FileHelpers.QuoteMode.OptionalForBoth)]
         public string WorkName { get; set; }
 
-        public IEnumerable<string> Phones { get; set; }
+        //public IEnumerable<string> Phones { get; set; }
 
         public static Genders GetGender(string gender)
         {

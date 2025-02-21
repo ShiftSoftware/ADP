@@ -4,7 +4,7 @@ using ShiftSoftware.ADP.Models.Enums;
 
 namespace ShiftSoftware.ADP.Models.PortalTableSyncCosmosModels;
 
-public class ToyotaWarrantyClaimCosmosModel : IDealerDataCSV
+public class ToyotaWarrantyClaimCosmosModel
 {
     public string id { get; set; } = default!;
 
