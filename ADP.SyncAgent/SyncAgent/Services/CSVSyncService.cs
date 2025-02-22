@@ -478,16 +478,16 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         
         if(cosmosAction is null)
         {
-            cosmosActions = cosmosActions.Concat(toInsert.Select(x => new SyncCosmosAction<TCosmos>(x, CosmosActionType.Upsert)));
-            cosmosActions = cosmosActions.Concat(toDelete.Select(x => new SyncCosmosAction<TCosmos>(x, CosmosActionType.Delete)));
+            cosmosActions = cosmosActions.Concat(toInsert.Select(x => new SyncCosmosAction<TCosmos>(x, CosmosActionType.Upsert, GetCancellationToken())));
+            cosmosActions = cosmosActions.Concat(toDelete.Select(x => new SyncCosmosAction<TCosmos>(x, CosmosActionType.Delete, GetCancellationToken())));
         }
         else
         {
             foreach (var item in toInsert)
-                cosmosActions = cosmosActions.Concat([await cosmosAction(new(item, CosmosActionType.Upsert))]);
+                cosmosActions = cosmosActions.Concat([await cosmosAction(new(item, CosmosActionType.Upsert, GetCancellationToken()))]);
 
             foreach (var item in toDelete)
-                cosmosActions = cosmosActions.Concat([await cosmosAction(new(item, CosmosActionType.Delete))]);
+                cosmosActions = cosmosActions.Concat([await cosmosAction(new(item, CosmosActionType.Delete, GetCancellationToken()))]);
         }
 
         var deletedCount = await DeleteBatchFromCosmosAsync(
@@ -630,7 +630,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
             tasks = tasks.Concat([Task.Run(async () =>
             {
                 if (item?.Mapping is not null)
-                    item.Item = await item.Mapping(item.Item);
+                    item.Item = await item.Mapping(new(item.Item, GetCancellationToken()));
 
                 if (item?.Item is not null)
                 {
@@ -738,7 +738,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
             tasks = tasks.Concat([Task.Run(async () =>
             {
                 if (item?.Mapping is not null)
-                    item.Item = await item.Mapping(item.Item);
+                    item.Item = await item.Mapping(new(item.Item, GetCancellationToken()));
 
                 if (item?.Item is not null)
                 {
