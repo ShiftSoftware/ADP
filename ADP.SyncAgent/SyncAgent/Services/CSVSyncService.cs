@@ -459,6 +459,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
                 this.logger.LogInformation($"Step {(currentStep + 1)} proccessed.");
 
                 currentStep++;
+                retry = 0;
             }
             catch (Exception)
             {
@@ -468,8 +469,6 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
                     break;
 
                 this.logger.LogWarning($"Step {(currentStep + 1)} proccess failed, we do retry {retry} time.");
-
-                
             }
         }
 
@@ -563,6 +562,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
                 this.logger.LogInformation($"Step {(currentStep + 1)} proccessed.");
 
                 currentStep++;
+                retry = 0;
             }
             catch (Exception)
             {
@@ -572,8 +572,6 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
                     break;
 
                 this.logger.LogWarning($"Step {(currentStep + 1)} proccess failed, we do retry {retry} time.");
-
-
             }
         }
 
