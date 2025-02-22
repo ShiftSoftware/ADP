@@ -28,7 +28,8 @@ public class SyncFunctionBase<TFunction, TCSV, TCosmos>
         Func<IEnumerable<TCSV>, CosmosActionType, ValueTask<IEnumerable<TCosmos>>>? mapping = null,
         Func<SyncCosmosAction<TCosmos>, ValueTask<SyncCosmosAction<TCosmos>?>>? cosmosAction = null,
         int? batchSize = null,
-        int? retryCount = 0)
+        int? retryCount = 0,
+        int operationTimeoutInSecond = 300)
     {
         await RunAsync(
             csvFileName,
@@ -43,7 +44,8 @@ public class SyncFunctionBase<TFunction, TCSV, TCosmos>
             mapping,
             cosmosAction,
             batchSize,
-            retryCount
+            retryCount,
+            operationTimeoutInSecond
         );
     }
 
@@ -59,7 +61,8 @@ public class SyncFunctionBase<TFunction, TCSV, TCosmos>
         Func<IEnumerable<TCSV>, CosmosActionType, ValueTask<IEnumerable<TCosmos>>>? mapping = null,
         Func<SyncCosmosAction<TCosmos>, ValueTask<SyncCosmosAction<TCosmos>?>>? cosmosAction = null,
         int? batchSize = null,
-        int? retryCount = 0)
+        int? retryCount = 0,
+        int operationTimeoutInSecond = 300)
     {
         return await RunAsync(
             csvFileName,
@@ -74,7 +77,8 @@ public class SyncFunctionBase<TFunction, TCSV, TCosmos>
             mapping,
             cosmosAction,
             batchSize,
-            retryCount
+            retryCount,
+            operationTimeoutInSecond
         );
     }
 
@@ -92,97 +96,26 @@ public class SyncFunctionBase<TFunction, TCSV, TCosmos>
         Func<IEnumerable<TCSV>, CosmosActionType, ValueTask<IEnumerable<TCosmos>>>? mapping = null,
         Func<SyncCosmosAction<TCosmos>, ValueTask<SyncCosmosAction<TCosmos>?>>? cosmosAction = null,
         int? batchSize = null,
-        int? retryCount = 0)
+        int? retryCount = 0,
+        int operationTimeoutInSecond = 300)
     {
-        using (_logger.BeginScope("Syncing {csvFileName}", csvFileName))
-        {
-            _logger.LogInformation("Processing Files");
-
-            await syncAgentService.ProcessFilesAsync(csvFileName, sourceContainerOrShareName, sourceDirectory, destinationContainerOrShareName, destinationDirectory);
-
-            _logger.LogInformation("Processing Cosmos DB");
-
-            await syncAgentService.ProcessCosmosAsync(
-                destinationRelativePath: Path.Combine(destinationDirectory??"", csvFileName),
-                destinationContainerOrShareName: destinationContainerOrShareName,
-                databaseId: databaseId,
-                containerId: containerId,
-                mapping: mapping,
-                partitionKeyLevel1Expression: partitionKeyLevel1Expression,
-                partitionKeyLevel2Expression: partitionKeyLevel2Expression,
-                partitionKeyLevel3Expression: partitionKeyLevel3Expression,
-                cosmosAction: cosmosAction,
-                batchSize: batchSize,
-                retryCount: retryCount
-            );
-
-            var syncResult = syncAgentService.GetSyncResult();
-
-            _logger.LogInformation(
-                """
-                
-                -----------------------------------------------------------------------------------------
-                Selected File:                          {file}
-                Number of Added Lines:                  {ToInsert}
-                Number of Deleted Lines:                {ToDelete}
-                Original (Synced) File Download Time:   {TimeToDownloadOriginalFile}
-                New File Download Time:                 {TimeToDownloadNewFile}
-                Git Diff Process Time:                  {TimeToCompareWithGit}
-                Write To Insert File Time:              {TimeToWriteToInsertFile}
-                Write To Delete File Time:              {TimeToWriteToDeleteFile}
-                Parse (To Insert File) Time:            {TimeToParseToInsertFile}
-                Parse (To Delete File) Time:            {TimeToParseToDeleteFile}
-                Initialize Cosmos Client Time:          {TimeToInitializeCosmosClient}
-                Sync To Cosmos Time:                    {TimeToSyncToCosmos}
-                Cosmos DB Inserted Count:               {CosmosDBInsertedCount}
-                Cosmos DB Deleted Count:                {CosmosDBDeletedCount}
-                Status:                                 {Status}
-                Success:                                {Success}
-                -----------------------------------------------------------------------------------------
-
-                """
-                ,
-                csvFileName,
-                syncResult.ToInsertCount,
-                syncResult.ToDeleteCount,
-                syncResult.TimeToDownloadOriginalFile,
-                syncResult.TimeToDownloadNewFile,
-                syncResult.TimeToCompareWithGit,
-                syncResult.TimeToWriteToInsertFile,
-                syncResult.TimeToWriteToDeleteFile,
-                syncResult.TimeToParseToInsertFile,
-                syncResult.TimeToParseToDeleteFile,
-                syncResult.TimeToInitializeCosmosClient,
-                syncResult.TimeToSyncToCosmos,
-                syncResult.CosmosDBInsertedCount,
-                syncResult.CosmosDBDeletedCount,
-                syncResult.Status,
-                syncResult.Success
-            );
-
-            return $"""
-                
-                -----------------------------------------------------------------------------------------
-                Selected File:                          {csvFileName}
-                Number of Added Lines:                  {syncResult.ToInsertCount}
-                Number of Deleted Lines:                {syncResult.ToDeleteCount}
-                Original (Synced) File Download Time:   {syncResult.TimeToDownloadOriginalFile}
-                New File Download Time:                 {syncResult.TimeToDownloadNewFile}
-                Git Diff Process Time:                  {syncResult.TimeToCompareWithGit}
-                Write To Insert File Time:              {syncResult.TimeToWriteToInsertFile}
-                Write To Delete File Time:              {syncResult.TimeToWriteToDeleteFile}
-                Parse (To Insert File) Time:            {syncResult.TimeToParseToInsertFile}
-                Parse (To Delete File) Time:            {syncResult.TimeToParseToDeleteFile}
-                Initialize Cosmos Client Time:          {syncResult.TimeToInitializeCosmosClient}
-                Sync To Cosmos Time:                    {syncResult.TimeToSyncToCosmos}
-                Cosmos DB Inserted Count:               {syncResult.CosmosDBInsertedCount}
-                Cosmos DB Deleted Count:                {syncResult.CosmosDBDeletedCount}
-                Status:                                 {syncResult.Status}
-                Success:                                {syncResult.Success}
-                -----------------------------------------------------------------------------------------
-
-                """;
-        }
+        return await syncAgentService.StartSyncAsync(
+            csvFileName,
+            sourceContainerOrShareName,
+            sourceDirectory,
+            destinationContainerOrShareName,
+            destinationDirectory,
+            databaseId,
+            containerId,
+            partitionKeyLevel1Expression,
+            partitionKeyLevel2Expression,
+            partitionKeyLevel3Expression,
+            mapping,
+            cosmosAction,
+            batchSize,
+            retryCount,
+            operationTimeoutInSecond
+        );
     }
 }
 

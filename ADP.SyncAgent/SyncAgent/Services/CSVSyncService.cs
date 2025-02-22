@@ -1,16 +1,14 @@
-﻿using ADP.SyncAgent.Services;
-using ADP.SyncAgent.Services.Interfaces;
+﻿using ADP.SyncAgent.Services.Interfaces;
 using AutoMapper;
 using LibGit2Sharp;
 using Microsoft.Azure.Cosmos;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Polly;
 using Polly.Retry;
 using ShiftSoftware.ADP.Models;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq.Expressions;
+using System.Text;
 
 namespace ADP.SyncAgent.Services;
 
@@ -49,6 +47,10 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
     where TCSV : CacheableCSV
     where TCosmos : class
 {
+    private CancellationTokenSource cancellationTokenSource = new();
+    private int operationTimeoutInSeconds = 300;
+    private DateTime operationStart = new();
+
     private DirectoryInfo WorkingDirectory;
 
     private readonly CacheableCSVEngine<TCSV> CacheableCSVEngine = new();
@@ -192,11 +194,122 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         File.Move(file2Path, filePath);
     }
 
+    public async Task<string> StartSyncAsync(
+        string csvFileName,
+        string? sourceContainerOrShareName,
+        string? sourceDirectory,
+        string? destinationContainerOrShareName,
+        string? destinationDirectory,
+        string databaseId,
+        string containerId,
+        Expression<Func<TCosmos, object>> partitionKeyLevel1Expression,
+        Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression = null,
+        Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression = null,
+        Func<IEnumerable<TCSV>, CosmosActionType, ValueTask<IEnumerable<TCosmos>>>? mapping = null,
+        Func<SyncCosmosAction<TCosmos>, ValueTask<SyncCosmosAction<TCosmos>?>>? cosmosAction = null,
+        int? batchSize = null,
+        int? retryCount = 0,
+        int operationTimeoutInSecond = 300)
+    {
+        operationStart = DateTime.UtcNow;
+        this.operationTimeoutInSeconds = operationTimeoutInSecond;
+        this.cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(operationTimeoutInSeconds));
+        CSVSyncResult.WorkingDirectory = WorkingDirectory;
+
+        using (logger.BeginScope("Syncing {csvFileName}", csvFileName))
+        {
+            logger.LogInformation("Processing Files");
+
+            await ProcessFilesAsync(csvFileName, sourceContainerOrShareName, sourceDirectory, destinationContainerOrShareName, destinationDirectory);
+
+            logger.LogInformation("Processing Cosmos DB");
+
+            await ProcessCosmosAsync(
+                destinationRelativePath: Path.Combine(destinationDirectory ?? "", csvFileName),
+                destinationContainerOrShareName: destinationContainerOrShareName,
+                databaseId: databaseId,
+                containerId: containerId,
+                mapping: mapping,
+                partitionKeyLevel1Expression: partitionKeyLevel1Expression,
+                partitionKeyLevel2Expression: partitionKeyLevel2Expression,
+                partitionKeyLevel3Expression: partitionKeyLevel3Expression,
+                cosmosAction: cosmosAction,
+                batchSize: batchSize,
+                retryCount: retryCount
+            );
+
+            var syncResult = GetSyncResult();
+
+            logger.LogInformation(
+                """
+                
+                -----------------------------------------------------------------------------------------
+                Selected File:                          {file}
+                Number of Added Lines:                  {ToInsert}
+                Number of Deleted Lines:                {ToDelete}
+                Original (Synced) File Download Time:   {TimeToDownloadOriginalFile}
+                New File Download Time:                 {TimeToDownloadNewFile}
+                Git Diff Process Time:                  {TimeToCompareWithGit}
+                Write To Insert File Time:              {TimeToWriteToInsertFile}
+                Write To Delete File Time:              {TimeToWriteToDeleteFile}
+                Parse (To Insert File) Time:            {TimeToParseToInsertFile}
+                Parse (To Delete File) Time:            {TimeToParseToDeleteFile}
+                Initialize Cosmos Client Time:          {TimeToInitializeCosmosClient}
+                Sync To Cosmos Time:                    {TimeToSyncToCosmos}
+                Cosmos DB Inserted Count:               {CosmosDBInsertedCount}
+                Cosmos DB Deleted Count:                {CosmosDBDeletedCount}
+                Status:                                 {Status}
+                Success:                                {Success}
+                -----------------------------------------------------------------------------------------
+
+                """
+                ,
+                csvFileName,
+                syncResult.ToInsertCount,
+                syncResult.ToDeleteCount,
+                syncResult.TimeToDownloadOriginalFile,
+                syncResult.TimeToDownloadNewFile,
+                syncResult.TimeToCompareWithGit,
+                syncResult.TimeToWriteToInsertFile,
+                syncResult.TimeToWriteToDeleteFile,
+                syncResult.TimeToParseToInsertFile,
+                syncResult.TimeToParseToDeleteFile,
+                syncResult.TimeToInitializeCosmosClient,
+                syncResult.TimeToSyncToCosmos,
+                syncResult.CosmosDBInsertedCount,
+                syncResult.CosmosDBDeletedCount,
+                syncResult.Status,
+                syncResult.Success
+            );
+
+            return $"""
+                
+                -----------------------------------------------------------------------------------------
+                Selected File:                          {csvFileName}
+                Number of Added Lines:                  {syncResult.ToInsertCount}
+                Number of Deleted Lines:                {syncResult.ToDeleteCount}
+                Original (Synced) File Download Time:   {syncResult.TimeToDownloadOriginalFile}
+                New File Download Time:                 {syncResult.TimeToDownloadNewFile}
+                Git Diff Process Time:                  {syncResult.TimeToCompareWithGit}
+                Write To Insert File Time:              {syncResult.TimeToWriteToInsertFile}
+                Write To Delete File Time:              {syncResult.TimeToWriteToDeleteFile}
+                Parse (To Insert File) Time:            {syncResult.TimeToParseToInsertFile}
+                Parse (To Delete File) Time:            {syncResult.TimeToParseToDeleteFile}
+                Initialize Cosmos Client Time:          {syncResult.TimeToInitializeCosmosClient}
+                Sync To Cosmos Time:                    {syncResult.TimeToSyncToCosmos}
+                Cosmos DB Inserted Count:               {syncResult.CosmosDBInsertedCount}
+                Cosmos DB Deleted Count:                {syncResult.CosmosDBDeletedCount}
+                Status:                                 {syncResult.Status}
+                Success:                                {syncResult.Success}
+                -----------------------------------------------------------------------------------------
+
+                """;
+        }
+    }
+
     public async Task ProcessFilesAsync(string csvFileName, string? sourceContainerOrShareName, string? sourceDirectory, 
         string? destinationContainerOrShareName, string? destinationDirectory)
     {
-        CSVSyncResult.WorkingDirectory = WorkingDirectory;
-
         var stopWatch = new Stopwatch();
 
         stopWatch.Start();
@@ -246,10 +359,10 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         using (TextWriter textWriter = new StreamWriter(toInsertFilePath, true, System.Text.Encoding.UTF8))
         {
             for (int i = 0; i < engine.Options.IgnoreFirstLines; i++)
-                await textWriter.WriteLineAsync(engine.GetFileHeader());
+                await textWriter.WriteLineAsync(new StringBuilder(engine.GetFileHeader()), GetCancellationToken());
 
             foreach (var line in comparision.Added)
-                await textWriter.WriteAsync(line);
+                await textWriter.WriteAsync(new StringBuilder(line), GetCancellationToken());
         }
 
         stopWatch.Stop();
@@ -261,10 +374,10 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         using (TextWriter textWriter = new StreamWriter(toDeleteFilePath, true, System.Text.Encoding.UTF8))
         {
             for (int i = 0; i < engine.Options.IgnoreFirstLines; i++)
-                await textWriter.WriteLineAsync(engine.GetFileHeader());
+                await textWriter.WriteLineAsync(new StringBuilder(engine.GetFileHeader()), GetCancellationToken());
 
             foreach (var line in comparision.Deleted)
-                await textWriter.WriteAsync(line);
+                await textWriter.WriteAsync(new StringBuilder(line), GetCancellationToken());
         }
 
         stopWatch.Stop();
@@ -293,6 +406,21 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         engine.Dispose();
     }
 
+    private CancellationToken GetCancellationToken()
+    {
+        var timeout = operationTimeoutInSeconds - (DateTime.UtcNow - operationStart).Seconds;
+        return new CancellationTokenSource(TimeSpan.FromSeconds(timeout)).Token;
+    }
+
+    private void CheckForCancellation()
+    {
+        if (cancellationTokenSource.Token.IsCancellationRequested)
+        {
+            CleanUp();
+            throw new OperationCanceledException();
+        }
+    }
+
     public async Task ProcessCosmosAsync(
         string destinationRelativePath,
         string? destinationContainerOrShareName,
@@ -316,6 +444,8 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         CSVSyncResult.TimeToInitializeCosmosClient = stopWatch.Elapsed.TotalSeconds;
 
         stopWatch.Restart();
+
+        CheckForCancellation();
 
         IEnumerable<TCosmos> toInsert;
         IEnumerable<TCosmos> toDelete;
@@ -399,7 +529,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
                         destinationRelativePath, destinationContainerOrShareName, this.CacheableCSVEngine.Options.IgnoreFirstLines);
 
                     CSVSyncResult.Status = CSVSyncStatus.SuccessSync;
-                });
+                }, GetCancellationToken());
             }
             catch
             {
@@ -426,6 +556,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         )
     {
         var successCount = 0;
+        CheckForCancellation();
 
         var totalCount = items.Count();
         batchSize ??= totalCount;
@@ -439,6 +570,8 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
 
         while (currentStep < totalSteps)
         {
+            CheckForCancellation();
+
             this.logger.LogInformation($"Step {(currentStep + 1)} start proccessing.");
 
             var skip = currentStep * batchSize.GetValueOrDefault();
@@ -491,6 +624,8 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
 
         foreach (var item in items)
         {
+            CheckForCancellation();
+
             tasks = tasks.Concat([Task.Run(async () =>
             {
                 if (item?.Mapping is not null)
@@ -501,15 +636,16 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
                     var partitionKey = Utility.GetPartitionKey(item.Item, partitionKeyLevel1Expression, partitionKeyLevel2Expression, partitionKeyLevel3Expression);
                     await ResiliencePipeline.ExecuteAsync(async token =>
                     {
-                        await container.UpsertItemAsync(item.Item, partitionKey, new ItemRequestOptions { EnableContentResponseOnWrite = false });
+                        await container.UpsertItemAsync(item.Item, partitionKey,
+                            new ItemRequestOptions { EnableContentResponseOnWrite = false }, GetCancellationToken());
                         Interlocked.Increment(ref successCount);
-                    });
+                    }, GetCancellationToken());
                 }
                 else
                 {
                     Interlocked.Increment(ref successCount);
                 }
-            })]);
+            }, GetCancellationToken())]);
         }
 
         await Task.WhenAll(tasks);
@@ -529,6 +665,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         )
     {
         var successCount = 0;
+        CheckForCancellation();
 
         var totalCount = items.Count();
         batchSize ??= totalCount;
@@ -542,6 +679,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
 
         while (currentStep < totalSteps)
         {
+            CheckForCancellation();
             this.logger.LogInformation($"Step {(currentStep + 1)} start proccessing.");
 
             var skip = currentStep * batchSize.GetValueOrDefault();
@@ -594,6 +732,8 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
 
         foreach (var item in items)
         {
+            CheckForCancellation();
+
             tasks = tasks.Concat([Task.Run(async () =>
             {
                 if (item?.Mapping is not null)
