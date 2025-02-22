@@ -315,7 +315,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         stopWatch.Start();
 
         await storageService.LoadOriginalFileAsync(Path.Combine(destinationDirectory ?? "", csvFileName), Path.Combine(WorkingDirectory.FullName, "file.csv"),
-            this.CacheableCSVEngine.Options.IgnoreFirstLines, destinationContainerOrShareName);
+            this.CacheableCSVEngine.Options.IgnoreFirstLines, destinationContainerOrShareName, GetCancellationToken());
         StageAndCommit();
 
         stopWatch.Stop();
@@ -325,7 +325,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         stopWatch.Restart();
 
         await this.storageService.LoadNewVersionAsync(Path.Combine(sourceDirectory ?? "", csvFileName), Path.Combine(WorkingDirectory.FullName, "file.csv"),
-            this.CacheableCSVEngine.Options.IgnoreFirstLines, sourceContainerOrShareName);
+            this.CacheableCSVEngine.Options.IgnoreFirstLines, sourceContainerOrShareName, GetCancellationToken());
 
         stopWatch.Stop();
 
@@ -526,7 +526,8 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
                 await ResiliencePipeline.ExecuteAsync(async token =>
                 {
                     await this.storageService.StoreNewVersionAsync(Path.Combine(WorkingDirectory.FullName, "file.csv"),
-                        destinationRelativePath, destinationContainerOrShareName, this.CacheableCSVEngine.Options.IgnoreFirstLines);
+                        destinationRelativePath, destinationContainerOrShareName, this.CacheableCSVEngine.Options.IgnoreFirstLines,
+                        GetCancellationToken());
 
                     CSVSyncResult.Status = CSVSyncStatus.SuccessSync;
                 }, GetCancellationToken());
