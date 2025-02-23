@@ -1,5 +1,4 @@
 ﻿using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Service;
-using ShiftSoftware.ADP.Models.Service.CosmosModels;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;

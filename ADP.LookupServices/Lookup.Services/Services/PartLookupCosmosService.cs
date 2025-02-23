@@ -4,7 +4,7 @@ using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Part;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using ShiftSoftware.ADP.Models.DealerData.CosmosModels;
+using ShiftSoftware.ADP.Models.Part;
 
 namespace ShiftSoftware.ADP.Lookup.Services.Services;
 
@@ -45,10 +45,10 @@ public class PartLookupCosmosService
 
         var result = new PartAggregateCosmosModel
         {
-            StockParts = items.Where(x => x.ItemType.ToString() == new PartStockCosmosModel().ItemType)
-                .Select(x => ((JObject)x).ToObject<PartStockCosmosModel>()).ToList(),
-            PartCatalog = items.Where(x => x.ItemType.ToString() == new CatalogPartCosmosModel().ItemType)
-                .Select(x => ((JObject)x).ToObject<CatalogPartCosmosModel>()).ToList()
+            StockParts = items.Where(x => x.ItemType.ToString() == new PartStockModel().ItemType)
+                .Select(x => ((JObject)x).ToObject<PartStockModel>()).ToList(),
+            PartCatalog = items.Where(x => x.ItemType.ToString() == new CatalogPartModel().ItemType)
+                .Select(x => ((JObject)x).ToObject<CatalogPartModel>()).ToList()
         };
 
         return result;

@@ -1,16 +1,18 @@
 ﻿using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Cosmos.Linq;
 using Newtonsoft.Json.Linq;
+using ShiftSoftware.ADP.Models.Aggregate;
+using ShiftSoftware.ADP.Models.Enums;
+using ShiftSoftware.ADP.Models.LookupCosmosModels;
+using ShiftSoftware.ADP.Models.Part;
+using ShiftSoftware.ADP.Models.PortalTableSyncCosmosModels;
+using ShiftSoftware.ADP.Models.Service;
+using ShiftSoftware.ADP.Models.TBP;
+using ShiftSoftware.ADP.Models.Vehicle;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using ShiftSoftware.ADP.Models.DealerData.CosmosModels;
-using ShiftSoftware.ADP.Models.Enums;
-using ShiftSoftware.ADP.Models.FranchiseData.CosmosModels;
-using ShiftSoftware.ADP.Models.LookupCosmosModels;
-using ShiftSoftware.ADP.Models.PortalTableSyncCosmosModels;
-using ShiftSoftware.ADP.Models.Stock.CosmosModels;
 
 namespace ShiftSoftware.ADP.Lookup.Services.Services
 {
@@ -92,45 +94,38 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
                 .Select(x => ((JObject)x).ToObject<VSDataCosmosModel>()).ToList();
 
             dealerData.TIQOfficialVIN = items.Where(x => x.ItemType.ToString().ToLower() == "TIQOfficialVIN".ToLower())
-                .Select(x => ((JObject)x).ToObject<TIQOfficialVINCosmosModel>()).ToList();
+                .Select(x => ((JObject)x).ToObject<InitialOfficialVINModel>()).ToList();
 
             dealerData.CPU = items.Where(x => x.ItemType.ToString().ToLower() == "CPU".ToLower())
-                .Select(x => ((JObject)x).ToObject<CPUCosmosModel>()).ToList();
+                .Select(x => ((JObject)x).ToObject<InvoiceModel>()).ToList();
 
             dealerData.SOLabor = items.Where(x => x.ItemType.ToString().ToLower() == "Labor".ToLower())
-                .Select(x => ((JObject)x).ToObject<SOLaborCosmosModel>()).ToList();
+                .Select(x => ((JObject)x).ToObject<InvoiceLaborLineModel>()).ToList();
 
             dealerData.SOPart = items.Where(x => x.ItemType.ToString().ToLower() == "Part".ToLower())
-                .Select(x => ((JObject)x).ToObject<SOPartsCosmosModel>()).ToList();
+                .Select(x => ((JObject)x).ToObject<InvoicePartLineModel>()).ToList();
 
             dealerData.TiqSSCAffectedVin = items.Where(x => x.ItemType.ToString().ToLower() == "SSCAffectedVin".ToLower())
-                .Select(x => ((JObject)x).ToObject<TiqSSCAffectedVinCosmosModel>()).ToList();
+                .Select(x => ((JObject)x).ToObject<SSCAffectedVINModel>()).ToList();
 
             dealerData.ToyotaWarrantyClaim = items.Where(x => x.ItemType.ToString().ToLower() == "ToyotaWarrantyClaim".ToLower())
-                .Select(x => ((JObject)x).ToObject<ToyotaWarrantyClaimCosmosModel>())
-                .Where(x => !(x?.Deleted ?? false) && !(x.ArchivedVersion ?? false)).ToList();
+                .Select(x => ((JObject)x).ToObject<WarrantyClaimModel>())
+                .Where(x => !(x?.IsDeleted ?? false)).ToList();
 
             dealerData.BrokerInitialVehicle = items.Where(x => x.ItemType.ToString().ToLower() == "BrokerInitialVehicle".ToLower())
-                .Select(x => ((JObject)x).ToObject<BrokerInitialVehicleCosmosModel>())
+                .Select(x => ((JObject)x).ToObject<BrokerInitialVehicleModel>())
                 .Where(x => !(x?.Deleted ?? false)).ToList();
 
             dealerData.BrokerInvoice = items.Where(x => x.ItemType.ToString().ToLower() == "BrokerInvoice".ToLower())
-                .Select(x => ((JObject)x).ToObject<BrokerInvoiceCosmosModel>())
-                .Where(x => !(x?.Deleted ?? false) && !x.Archived).ToList();
-
-            dealerData.TiqExtendedWarrantySop = items.Where(x => x.ItemType.ToString().ToLower() == "TiqExtendedWarrantySop".ToLower())
-                .Select(x => ((JObject)x).ToObject<TiqExtendedWarrantySopCosmosModel>())
-                .Where(x => !(x?.Deleted ?? false)).ToList();
+                .Select(x => ((JObject)x).ToObject<BrokerInvoiceModel>())
+                .Where(x => !(x?.IsDeleted ?? false)).ToList();
 
             dealerData.TLPPackageInvoice = items.Where(x => x.ItemType.ToString().ToLower() == "TLPPackageInvoice".ToLower())
-                .Select(x => ((JObject)x).ToObject<TLPPackageInvoiceCosmosModel>())
-                .Where(x => !(x?.Deleted ?? false)).ToList();
+                .Select(x => ((JObject)x).ToObject<PaidServiceInvoiceModel>())
+                .Where(x => !(x?.IsDeleted ?? false)).ToList();
 
             dealerData.ToyotaLoyaltyProgramTransactionLine = items.Where(x => x.ItemType.ToString().ToLower() == "ToyotaLoyaltyProgramTransactionLine".ToLower())
                 .Select(x => ((JObject)x).ToObject<ToyotaLoyaltyProgramTransactionLineCosmosModel>()).ToList();
-
-            dealerData.TLPCancelledServiceItem = items.Where(x => x.ItemType.ToString().ToLower() == "TLPCancelledServiceItem".ToLower())
-                .Select(x => ((JObject)x).ToObject<TLPCancelledServiceItemCosmosModel>()).ToList();
 
             dealerData.VehicleFreeServiceExcludedVIN = items.Where(x => x.ItemType.ToString().ToLower() == "VehicleFreeServiceExcludedVINs".ToLower())
                 .Select(x => ((JObject)x).ToObject<VehicleFreeServiceExcludedVINsCosmosModel>()).ToList();
@@ -138,19 +133,19 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             dealerData.VehicleFreeServiceInvoiceDateShiftVIN = items.Where(x => x.ItemType.ToString().ToLower() == "VehicleFreeServiceInvoiceDateShiftVINs".ToLower())
                 .Select(x => ((JObject)x).ToObject<VehicleFreeServiceInvoiceDateShiftVINsCosmosModel>()).ToList();
 
-            dealerData.PaintThicknessVehicle = items.Where(x => x.ItemType.ToString().ToLower() == new PaintThicknessVehicleCosmosModel().ItemType.ToLower())
-                .Select(x => ((JObject)x).ToObject<PaintThicknessVehicleCosmosModel>()).FirstOrDefault();
+            dealerData.PaintThicknessVehicle = items.Where(x => x.ItemType.ToString().ToLower() == new PaintThicknessVehicleModel().ItemType.ToLower())
+                .Select(x => ((JObject)x).ToObject<PaintThicknessVehicleModel>()).FirstOrDefault();
 
             dealerData.WarrantyShiftDate = items.Where(x => x.ItemType.ToString().ToLower() == new WarrantyDateShiftCosmosModel().ItemType.ToLower())
                 .Select(x => ((JObject)x).ToObject<WarrantyDateShiftCosmosModel>()).ToList();
 
-            dealerData.Accessories = items.Where(x => x.ItemType.ToString().ToLower() == new AccessoryCosmosModel().ItemType.ToLower())
-                .Select(x => ((JObject)x).ToObject<AccessoryCosmosModel>()).ToList();
+            dealerData.Accessories = items.Where(x => x.ItemType.ToString().ToLower() == new AccessoryModel().ItemType.ToLower())
+                .Select(x => ((JObject)x).ToObject<AccessoryModel>()).ToList();
 
             return dealerData;
         }
 
-        public async Task<VTModelRecordsCosmosModel> GetVTModelAsync(string variant, Franchises? brand)
+        public async Task<VTModelRecordsCosmosModel> GetVTModelAsync(string variant, Brands? brand)
         {
             var container = client.GetContainer("DealerData", "VTModels");
 
@@ -170,7 +165,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             return items.FirstOrDefault();
         }
 
-        public async Task<VTColorCosmosModel> GetVTColorAsync(string colorCode, Franchises? brand)
+        public async Task<VTColorCosmosModel> GetVTColorAsync(string colorCode, Brands? brand)
         {
             var container = client.GetContainer("DealerData", "VTColors");
 
@@ -190,7 +185,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             return items.FirstOrDefault();
         }
 
-        public async Task<VTTrimCosmosModel> GetVTTrimAsync(string trimCode, Franchises? brand)
+        public async Task<VTTrimCosmosModel> GetVTTrimAsync(string trimCode, Brands? brand)
         {
             var container = client.GetContainer("DealerData", "VTTrims");
 
@@ -210,18 +205,18 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             return items.FirstOrDefault();
         }
 
-        public async Task<IEnumerable<TIQStockCosmosModel>> GetStockItemsAsync(IEnumerable<string> partNumbers)
+        public async Task<IEnumerable<PartStockModel>> GetStockItemsAsync(IEnumerable<string> partNumbers)
         {
             if (partNumbers is null || !partNumbers.Any())
                 return null;
 
             var container = client.GetContainer("DealerData", "Stock");
 
-            var queryable = container.GetItemLinqQueryable<TIQStockCosmosModel>(true)
+            var queryable = container.GetItemLinqQueryable<PartStockModel>(true)
                 .Where(x => partNumbers.Contains(x.PartNumber));
 
             var iterator = queryable.ToFeedIterator();
-            var items = new List<TIQStockCosmosModel>();
+            var items = new List<PartStockModel>();
 
             while (iterator.HasMoreResults)
             {
@@ -232,15 +227,15 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             return items;
         }
 
-        public async Task<BrokerCosmosModel> GetBrokerAsync(string accountNumber, string dealerId)
+        public async Task<BrokerModel> GetBrokerAsync(string accountNumber, string companyIntegrationID)
         {
             var container = client.GetContainer("DealerData", "Broker");
 
-            var queryable = container.GetItemLinqQueryable<BrokerCosmosModel>(true)
-                .Where(x => !x.Deleted && x.AccountNumbers.Contains(accountNumber) && x.DealerIntegrationID == dealerId);
+            var queryable = container.GetItemLinqQueryable<BrokerModel>(true)
+                .Where(x => !x.IsDeleted && x.AccountNumbers.Contains(accountNumber) && x.CompanyIntegrationID == companyIntegrationID);
 
             var iterator = queryable.ToFeedIterator();
-            var items = new List<BrokerCosmosModel>();
+            var items = new List<BrokerModel>();
 
             while (iterator.HasMoreResults)
             {
@@ -251,15 +246,15 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             return items.FirstOrDefault();
         }
 
-        public async Task<BrokerCosmosModel> GetBrokerAsync(long id)
+        public async Task<BrokerModel> GetBrokerAsync(long id)
         {
             var container = client.GetContainer("DealerData", "Broker");
 
-            var queryable = container.GetItemLinqQueryable<BrokerCosmosModel>(true)
-                .Where(x => !x.Deleted && x.id == id.ToString());
+            var queryable = container.GetItemLinqQueryable<BrokerModel>(true)
+                .Where(x => !x.IsDeleted && x.id == id.ToString());
 
             var iterator = queryable.ToFeedIterator();
-            var items = new List<BrokerCosmosModel>();
+            var items = new List<BrokerModel>();
 
             while (iterator.HasMoreResults)
             {
@@ -323,25 +318,25 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             await Task.WhenAll(tasks);
         }
 
-        public async Task<IEnumerable<ToyotaLoyaltyProgramRedeemableItemCosmosModel>> GetRedeemableItemsAsync(Franchises brand)
+        public async Task<IEnumerable<ServiceItemModel>> GetRedeemableItemsAsync(Brands brand)
         {
             //if (invoiceDate is null)
             //    return null;
 
             var container = client.GetContainer("DealerData", "ToyotaLoyaltyProgramRedeemableItem");
 
-            var queryable = container.GetItemLinqQueryable<ToyotaLoyaltyProgramRedeemableItemCosmosModel>(true)
+            var queryable = container.GetItemLinqQueryable<ServiceItemModel>(true)
                 //.Where(x => !x.Deleted.HasValue || x.Deleted == false)
                 //.Where(x => invoiceDate >= x.PublishDate && invoiceDate <= x.ExpireDate)
                 //.Where(x => x.ModelCosts.Count() == 0
                 //    || x.ModelCosts.Any(a =>
                 //    (katashiki.StartsWith(a.Katashiki) && a.Katashiki.Trim() != string.Empty)
                 //    || (variant.StartsWith(a.Variant) && a.Variant.Trim() != string.Empty)))
-                .Where(x => !x.ArchivedVersion.HasValue || x.ArchivedVersion == false || x.ArchivedVersion == null)
+                //.Where(x => !x.ArchivedVersion.HasValue || x.ArchivedVersion == false || x.ArchivedVersion == null)
                 .Where(x => x.Brands.Any(a => a == brand));
 
             var iterator = queryable.ToFeedIterator();
-            var items = new List<ToyotaLoyaltyProgramRedeemableItemCosmosModel>();
+            var items = new List<ServiceItemModel>();
 
             while (iterator.HasMoreResults)
                 items.AddRange(await iterator.ReadNextAsync());

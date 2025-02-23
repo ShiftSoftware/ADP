@@ -125,7 +125,7 @@ public class PartLookupService
             Origin = cosmosPartCatalog?.Origin,
             PNC = cosmosPartCatalog?.PNC,
             PNCLocalName = cosmosPartCatalog?.PNCLocalDescription,
-            UZHSCode = cosmosPartCatalog?.UZHSCode,            
+            UZHSCode = cosmosPartCatalog?.LocalHSCode,            
             StockParts = stockParts,
             Prices = resolvedPrices,
             SupersededTo = cosmosPartCatalog?.SupersededTo?.Select(x=> x.PartNumber)

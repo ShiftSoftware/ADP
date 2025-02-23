@@ -15,20 +15,31 @@
 
 	<ItemGroup>
 		<Compile Remove="CommunicationPlatform\**" />
+		<Compile Remove="JsonConverters\**" />
+		<Compile Remove="PortalTableSyncCosmosModels\**" />
+		<Compile Remove="TBP\DTOs\**" />
 		<EmbeddedResource Remove="CommunicationPlatform\**" />
+		<EmbeddedResource Remove="JsonConverters\**" />
+		<EmbeddedResource Remove="PortalTableSyncCosmosModels\**" />
+		<EmbeddedResource Remove="TBP\DTOs\**" />
 		<None Remove="CommunicationPlatform\**" />
+		<None Remove="JsonConverters\**" />
+		<None Remove="PortalTableSyncCosmosModels\**" />
+		<None Remove="TBP\DTOs\**" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Compile Remove="DealerData\AccessoryCSV.cs" />
-	  <Compile Remove="DealerData\CPUCSV.cs" />
-	  <Compile Remove="DealerData\CSISurveyCSV.cs" />
-	  <Compile Remove="DealerData\CustomerDataCSV.cs" />
-	  <Compile Remove="DealerData\SOLaborCSV.cs" />
-	  <Compile Remove="DealerData\SOPartsCSV.cs" />
-	  <Compile Remove="DealerData\TIQOfficalVINCSV.cs" />
-	  <Compile Remove="DealerData\TMCPartCSV.cs" />
-	  <Compile Remove="DealerData\VSDataCSV.cs" />
+	  <Compile Remove="CacheableCSV.cs" />
+	  <Compile Remove="Enums\Genders.cs" />
+	  <Compile Remove="IDealerDataModel.cs" />
+	  <Compile Remove="PhoneConverter.cs" />
+	  <Compile Remove="TBP\BrokerVehicleStockDTO.cs" />
+	  <Compile Remove="TBP\BrokerVehicleTransferCosmosModel.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Compile Include="JsonConverters\CustomDateTimeConverter.cs" />
+	  <Compile Include="JsonConverters\JsonCustomDateTimeAttribute.cs" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -39,7 +50,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Folder Include="TBP\DTOs\" />
 		<None Include="Images\icon.png" Pack="true" PackagePath="\" />
 		<Folder Include="Images\" />
 	</ItemGroup>

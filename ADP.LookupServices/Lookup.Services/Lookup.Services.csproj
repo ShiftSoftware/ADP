@@ -14,9 +14,16 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<Compile Remove="DTOsAndModels\VehicleLookupDTOs\**" />
 		<Compile Remove="Models\**" />
+		<EmbeddedResource Remove="DTOsAndModels\VehicleLookupDTOs\**" />
 		<EmbeddedResource Remove="Models\**" />
+		<None Remove="DTOsAndModels\VehicleLookupDTOs\**" />
 		<None Remove="Models\**" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Compile Remove="Services\TBPCosmosService.cs" />
 	</ItemGroup>
 
 	<ItemGroup>

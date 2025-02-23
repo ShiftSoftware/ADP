@@ -1,6 +1,6 @@
 ﻿using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Cosmos.Linq;
-using ShiftSoftware.ADP.Models.Service.CosmosModels;
+using ShiftSoftware.ADP.Models.Service;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,10 +17,10 @@ public class ServiceCosmosService
         this.client = client;
     }
 
-    internal async Task<IEnumerable<FlatRateCosmosModel>> GetFlatRatesAsycn(string vds, string? wmi)
+    internal async Task<IEnumerable<FlatRateModel>> GetFlatRatesAsycn(string vds, string? wmi)
     {
         var container = client.GetContainer("Services", "FlatRate");
-        var query = container.GetItemLinqQueryable<FlatRateCosmosModel>(true)
+        var query = container.GetItemLinqQueryable<FlatRateModel>(true)
             .Where(x => x.VDS == vds.ToUpper());
 
         if(!string.IsNullOrWhiteSpace(wmi))
@@ -28,7 +28,7 @@ public class ServiceCosmosService
 
         var iterator = query.ToFeedIterator();
 
-        List<FlatRateCosmosModel> items = new();
+        List<FlatRateModel> items = new();
 
         while (iterator.HasMoreResults)
             items.AddRange(await iterator.ReadNextAsync());
@@ -36,7 +36,7 @@ public class ServiceCosmosService
         return items;
     }
 
-    internal async Task<FlatRateCosmosModel?> GetFlatRateAsync(string laborCode, string vds, string? wmi)
+    internal async Task<FlatRateModel?> GetFlatRateAsync(string laborCode, string vds, string? wmi)
     {
         var container = client.GetContainer("Services", "FlatRate");
 
@@ -45,7 +45,7 @@ public class ServiceCosmosService
             var pb = new PartitionKeyBuilder();
             pb.Add(vds.ToUpper()).Add(wmi?.ToUpper());
 
-            var response = await container.ReadItemAsync<FlatRateCosmosModel?>(laborCode, pb.Build());
+            var response = await container.ReadItemAsync<FlatRateModel?>(laborCode, pb.Build());
 
             if ((int?)response?.StatusCode >= 200 && (int?)response?.StatusCode < 300)
                 return response.Resource;

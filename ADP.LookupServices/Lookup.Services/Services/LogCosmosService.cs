@@ -59,7 +59,7 @@ public class LogCosmosService : ILogCosmosService
         string vin,
         bool isAuthorized, 
         bool hasActiveWarranty,
-        Franchises? brand)
+        Brands? brand)
     {
         var container = client.GetContainer("Logs", "SSC");
 
@@ -107,7 +107,7 @@ public class LogCosmosService : ILogCosmosService
         string vin,
         bool isAuthorized,
         bool hasActiveWarranty,
-        Franchises? brand)
+        Brands? brand)
     {
         var container = client.GetContainer("Logs", "CustomerVehicleLookup");
 

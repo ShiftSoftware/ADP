@@ -18,12 +18,12 @@ public interface ILogCosmosService
         string vin,
         bool isAuthorized,
         bool hasActiveWarranty,
-        Franchises? brand);
+        Brands? brand);
 
     Task<Guid> LogCustomerVehicleLookupAsync(
         CustomerVehicleLookupLogInfo? logInfo,
         string vin,
         bool isAuthorized,
         bool hasActiveWarranty,
-        Franchises? brand);
+        Brands? brand);
 }

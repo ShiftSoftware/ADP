@@ -1,10 +1,10 @@
 ﻿using System.Collections.Generic;
-using ShiftSoftware.ADP.Models.DealerData.CosmosModels;
+using ShiftSoftware.ADP.Models.Part;
 
 namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Part;
 
 public class PartAggregateCosmosModel
 {
-    public IEnumerable<PartStockCosmosModel> StockParts { get; set; }
-    public IEnumerable<CatalogPartCosmosModel> PartCatalog { get; set; }
+    public IEnumerable<PartStockModel> StockParts { get; set; }
+    public IEnumerable<CatalogPartModel> PartCatalog { get; set; }
 }

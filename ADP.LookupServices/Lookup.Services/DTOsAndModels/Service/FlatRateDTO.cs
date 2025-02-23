@@ -15,5 +15,5 @@ public class FlatRateDTO
 
     public string? WMI { get; set; }
 
-    public Franchises? Brand { get; set; }
+    public Brands? Brand { get; set; }
 }

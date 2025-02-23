@@ -8,6 +8,9 @@
     <UserSecretsId>fb69e3ea-37d3-46dc-9e10-a752393b882a</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="BrokerStock.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="1.23.0" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http" Version="3.2.0" />

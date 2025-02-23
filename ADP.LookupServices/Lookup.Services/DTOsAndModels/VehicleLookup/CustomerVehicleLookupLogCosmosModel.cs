@@ -21,12 +21,12 @@ namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup
         /// <summary>
         /// The Brand that the user made the lookup for
         /// </summary>
-        public Franchises? LookupBrand { get; set; }
+        public Brands? LookupBrand { get; set; }
 
         /// <summary>
         /// The Actual Vehicle Brand if it was found in the lookup service
         /// </summary>
-        public Franchises? OfficialVehicleBrand { get; set; }
+        public Brands? OfficialVehicleBrand { get; set; }
         public long? CityId { get; set; }
     }
 }
