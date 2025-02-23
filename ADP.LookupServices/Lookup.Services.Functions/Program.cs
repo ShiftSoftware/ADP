@@ -42,8 +42,8 @@ var host = new HostBuilder()
             services.AddSingleton<CosmosClient>(new CosmosClient(cosmosConnectionString,
                 new CosmosClientOptions { AllowBulkExecution = true }));
 
-        var redeemableItemImageUrl = hostBuilder.Configuration.GetValue<string>("RedeemableItemImageStorage:Url")!;
-        var redeemableItemImageContainer = hostBuilder.Configuration.GetValue<string>("RedeemableItemImageStorage:Container")!;
+        var redeemableItemImageUrl = hostBuilder.Configuration.GetValue<string>("ServiceItemImageStorage:Url")!;
+        var redeemableItemImageContainer = hostBuilder.Configuration.GetValue<string>("ServiceItemImageStorage:Container")!;
         var paintThicknessContainerUrl = hostBuilder.Configuration.GetValue<string>("PaintThickness:ContianerURL");
         var accessoryContainerUrl = hostBuilder.Configuration.GetValue<string>("Accessory:ContianerURL");
 

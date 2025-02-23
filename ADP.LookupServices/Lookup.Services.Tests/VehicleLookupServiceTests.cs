@@ -55,8 +55,8 @@ public class VehicleLookupServiceTests
         Assert.True(result.IsAuthorized);
     }
 
-    [Fact(DisplayName = "Authorized: the VIN should exists in tiq official VINs")]
-    public async Task Authorized_ExistsInTiqOfficialVINs()
+    [Fact(DisplayName = "Authorized: the VIN should exists in official VINs")]
+    public async Task Authorized_ExistsInOfficialVINs()
     {
         string vin = "1";
 
@@ -64,7 +64,7 @@ public class VehicleLookupServiceTests
 
         JObject vsData = new JObject();
         vsData.Add(nameof(VSDataCSV.VIN), vin);
-        vsData.Add(nameof(VSDataCSV.ItemType), "TIQOfficialVIN");
+        vsData.Add(nameof(VSDataCSV.ItemType), "OfficialVIN");
 
         mock.Setup(x => x.GetAggregatedDealerData(vin))
             .ReturnsAsync(VehicleLoockupCosmosService.ConvertDynamicListItemsToDealerData(new List<dynamic> { vsData }));
@@ -76,8 +76,8 @@ public class VehicleLookupServiceTests
         Assert.True(result.IsAuthorized);
     }
 
-    [Fact(DisplayName = "Unauthorized: the VIN is not exists in VSData, tiq official VINs and SSC affected VINs")]
-    public async Task UnAuthorized_VINDoesNotExistsInVSDataAndTiqOfficialVinsAndSSCAffecttedVINs()
+    [Fact(DisplayName = "Unauthorized: the VIN is not exists in VSData, official VINs and SSC affected VINs")]
+    public async Task UnAuthorized_VINDoesNotExistsInVSDataAndOfficialVinsAndSSCAffecttedVINs()
     {
         string vin = "1";
 

@@ -37,8 +37,6 @@ public class VehicleServiceItemDTO
     public string MenuCode { get; set; }
     public DateTime? RedeemDate { get; set; }
     public long? ModelCostID { get; set; }
-    public long ToyotaLoyaltyProgramRedeemableItemID { get; set; }
-    public long? TLPPackageInvoiceTLPItemID { get; set; }
     public string DealerIntegrationID { get; set; }
 
     [JsonConverter(typeof(LocalizedTextJsonConverter))]

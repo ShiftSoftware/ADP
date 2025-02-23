@@ -10,15 +10,15 @@
   "Host": {
     "CORS": "*"
   },
-  "RedeemableItemImageStorage": {
-    "Url": "https://tiq.azureedge.net/",
+  "ServiceItemImageStorage": {
+    "Url": "https:///",
     "Container": "app"
   },
   "PaintThickness": {
-    "ContianerURL": "https://tiqappstorage.blob.core.windows.net/paint-app"
+    "ContianerURL": "https://"
   },
   "Accessory": {
-    "ContianerURL": "https://tiqappstorage.blob.core.windows.net/portal"
+    "ContianerURL": "https://"
   },
   "AzureStorageAccounts": [
     {

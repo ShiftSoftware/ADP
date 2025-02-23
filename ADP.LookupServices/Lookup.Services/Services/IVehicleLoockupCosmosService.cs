@@ -22,7 +22,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
         Task SaveChangesAsync();
         void UpdateVSDataColor(VehicleEntryModel item, ExteriorColorModel color);
         void UpdateVSDataTrim(VehicleEntryModel item, InteriorColorModel trim);
-        Task<IEnumerable<ServiceItemModel>> GetRedeemableItemsAsync(Brands brand);
+        Task<IEnumerable<ServiceItemModel>> GetServiceItemsAsync(Brands brand);
         void UpdateVSDataModel(VehicleEntryModel item, VehicleModelModel model);
         Task<IEnumerable<VehicleModelModel>> GetAllVTModelsAsync();
         Task<IEnumerable<VehicleModelModel>> GetVTModelsByKatashikiAsync(string katashiki);

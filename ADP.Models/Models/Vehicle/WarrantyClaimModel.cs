@@ -7,7 +7,7 @@ public class WarrantyClaimModel
     public string id { get; set; } = default!;
     public long Id { get; set; }
     public string VIN { get; set; } = default!;
-    public string ItemType => "ToyotaWarrantyClaim";
+    public string ItemType => "WarrantyClaim";
     public bool IsDeleted { get; set; }
     public DateTime? RepairDate { get; set; }
     public int? ClaimStatus { get; set; }

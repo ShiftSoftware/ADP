@@ -11,6 +11,6 @@ public class ServiceItemClaimLineModel: ICompanyProps, IBranchProps
     public DateTime? ClaimDate { get; set; }
     public string ServiceItemID { get; set; }
     public int? RedeemType { get; set; }
-    public string ItemType => "ToyotaLoyaltyProgramTransactionLine";
-    public virtual ServiceItemClaimModel ToyotaLoyaltyProgramTransaction { get; set; }
+    public string ItemType => "ServiceItemClaimLine";
+    public virtual ServiceItemClaimModel ServiceItemClaim { get; set; }
 }

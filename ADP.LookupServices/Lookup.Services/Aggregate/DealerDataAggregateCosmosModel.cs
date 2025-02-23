@@ -9,20 +9,20 @@ namespace ShiftSoftware.ADP.Models.Aggregate;
 
 public class DealerDataAggregateCosmosModel
 {
-    public List<VehicleEntryModel> VSData { get; set; }
-    public List<InitialOfficialVINModel> TIQOfficialVIN { get; set; }
-    public List<InvoiceModel> CPU { get; set; }
-    public List<InvoiceLaborLineModel> SOLabor { get; set; }
-    public List<InvoicePartLineModel> SOPart { get; set; }
-    public List<SSCAffectedVINModel> TiqSSCAffectedVin { get; set; }
-    public List<WarrantyClaimModel> ToyotaWarrantyClaim { get; set; }
-    public List<BrokerInitialVehicleModel> BrokerInitialVehicle { get; set; }
-    public List<BrokerInvoiceModel> BrokerInvoice { get; set; }
-    public List<PaidServiceInvoiceModel> TLPPackageInvoice { get; set; }
-    public List<ServiceItemClaimLineModel> ToyotaLoyaltyProgramTransactionLine { get; set; }
-    public List<VehicleFreeServiceExcludedVINsCosmosModel> VehicleFreeServiceExcludedVIN { get; set; }
-    public List<VehicleFreeServiceInvoiceDateShiftVINsCosmosModel> VehicleFreeServiceInvoiceDateShiftVIN { get; set; }
-    public List<WarrantyDateShiftCosmosModel> WarrantyShiftDate { get; set; }
-    public PaintThicknessVehicleModel PaintThicknessVehicle { get; set; }
+    public List<VehicleEntryModel> VehicleEntries { get; set; }
+    public List<InitialOfficialVINModel> InitialOfficialVINs { get; set; }
+    public List<InvoiceModel> Invoices { get; set; }
+    public List<InvoiceLaborLineModel> LaborLines { get; set; }
+    public List<InvoicePartLineModel> PartLines { get; set; }
+    public List<SSCAffectedVINModel> SSCAffectedVINs { get; set; }
+    public List<WarrantyClaimModel> WarrantyClaims { get; set; }
+    public List<BrokerInitialVehicleModel> BrokerInitialVehicles { get; set; }
+    public List<BrokerInvoiceModel> BrokerInvoices { get; set; }
+    public List<PaidServiceInvoiceModel> PaidServiceInvoices { get; set; }
+    public List<ServiceItemClaimLineModel> ServiceItemClaimLines { get; set; }
+    public List<FreeServiceItemExcludedVINModel> ServiceItemExcludedVINs { get; set; }
+    public List<FreeServiceItemDateShiftModel> FreeServiceItemDateShifts { get; set; }
+    public List<WarrantyDateShiftCosmosModel> WarrantyDateShifts { get; set; }
+    public PaintThicknessRecordModel PaintThicknessRecords { get; set; }
     public List<AccessoryModel> Accessories { get; set; }
 }

@@ -69,11 +69,11 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             // Get the latest VSData
             VehicleEntryModel vsData = null;
 
-            if (dealerDataAggregate.VSData?.Count() > 0)
-                if (dealerDataAggregate.VSData.Any(x => x.InvoiceDate is null))
-                    vsData = dealerDataAggregate.VSData.FirstOrDefault(x => x.InvoiceDate is null);
+            if (dealerDataAggregate.VehicleEntries?.Count() > 0)
+                if (dealerDataAggregate.VehicleEntries.Any(x => x.InvoiceDate is null))
+                    vsData = dealerDataAggregate.VehicleEntries.FirstOrDefault(x => x.InvoiceDate is null);
                 else
-                    vsData = dealerDataAggregate.VSData.OrderByDescending(x => x.InvoiceDate).FirstOrDefault();
+                    vsData = dealerDataAggregate.VehicleEntries.OrderByDescending(x => x.InvoiceDate).FirstOrDefault();
 
             // Set identifiers
             data.VIN = vin;
@@ -89,16 +89,16 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             }
 
             // Set IsAuthorized
-            data.IsAuthorized = dealerDataAggregate.TIQOfficialVIN?.Count() > 0 || dealerDataAggregate.VSData?.Count() > 0 || dealerDataAggregate.TiqSSCAffectedVin.Count() > 0;
+            data.IsAuthorized = dealerDataAggregate.InitialOfficialVINs?.Count() > 0 || dealerDataAggregate.VehicleEntries?.Count() > 0 || dealerDataAggregate.SSCAffectedVINs.Count() > 0;
 
             // Set NextServiceDate
-            data.NextServiceDate = dealerDataAggregate.CPU?.OrderByDescending(x => x.InvoiceDate).FirstOrDefault()?.NextServiceDate;
+            data.NextServiceDate = dealerDataAggregate.Invoices?.OrderByDescending(x => x.InvoiceDate).FirstOrDefault()?.NextServiceDate;
 
             // Set ServiceHistories
-            data.ServiceHistory = await GetServiceHistory(dealerDataAggregate.CPU, dealerDataAggregate.SOLabor, dealerDataAggregate.SOPart);
+            data.ServiceHistory = await GetServiceHistory(dealerDataAggregate.Invoices, dealerDataAggregate.LaborLines, dealerDataAggregate.PartLines);
 
             // Set SSC
-            data.SSC = await GetSSCAsync(dealerDataAggregate.TiqSSCAffectedVin, dealerDataAggregate.ToyotaWarrantyClaim, dealerDataAggregate.SOLabor, regionIntegrationId);
+            data.SSC = await GetSSCAsync(dealerDataAggregate.SSCAffectedVINs, dealerDataAggregate.WarrantyClaims, dealerDataAggregate.LaborLines, regionIntegrationId);
 
             DateTime? warrantyStartDate = null;
             DateTime? freeServiceStartDate = null;
@@ -137,7 +137,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
                 data.Warranty = await GetWarrantyAsync(warrantyStartDate, vsData.Brand);
             }
 
-            data.ServiceItems = await GetServiceItems(freeServiceStartDate, vsData, dealerDataAggregate.TLPPackageInvoice, dealerDataAggregate.ToyotaLoyaltyProgramTransactionLine);
+            data.ServiceItems = await GetServiceItems(freeServiceStartDate, vsData, dealerDataAggregate.PaidServiceInvoices, dealerDataAggregate.ServiceItemClaimLines);
 
             // Set accessories
             data.Accessories = await GetAccessories();
@@ -185,10 +185,10 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
 
         private async Task<PaintThicknessDTO> GetPaintThickness()
         {
-            if (dealerDataAggregate.PaintThicknessVehicle is null)
+            if (dealerDataAggregate.PaintThicknessRecords is null)
                 return null;
 
-            var groups = dealerDataAggregate.PaintThicknessVehicle.Images?.GroupBy(x => x.ToLower().Replace("left", string.Empty).Replace("right", string.Empty));
+            var groups = dealerDataAggregate.PaintThicknessRecords.Images?.GroupBy(x => x.ToLower().Replace("left", string.Empty).Replace("right", string.Empty));
             var nonPairGroups = groups?.Where(x => x.Count() == 1).SelectMany(x => x)
                 .GroupBy(x => x.Substring(0, x.LastIndexOf('_')));
 
@@ -247,7 +247,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
 
             return new PaintThicknessDTO
             {
-                Parts = dealerDataAggregate.PaintThicknessVehicle.Parts?.Select(x => new PaintThicknessPartDTO
+                Parts = dealerDataAggregate.PaintThicknessRecords.Parts?.Select(x => new PaintThicknessPartDTO
                 {
                     Part = x.Part,
                     Left = x.Left,
@@ -412,11 +412,11 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
         private async Task<VehicleSaleInformation> GetSaleInformationAsync()
         {
             VehicleSaleInformation result = new();
-            var i = dealerDataAggregate.VSData.ToList();
-            if (!(dealerDataAggregate.VSData?.Any() ?? false))
+            var i = dealerDataAggregate.VehicleEntries.ToList();
+            if (!(dealerDataAggregate.VehicleEntries?.Any() ?? false))
                 return null;
 
-            var vsData = dealerDataAggregate.VSData
+            var vsData = dealerDataAggregate.VehicleEntries
                 .OrderByDescending(x => x.InvoiceDate == null)
                 .ThenByDescending(x => x.InvoiceDate)
                 .FirstOrDefault();
@@ -456,9 +456,9 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
                 }
                 catch (Exception){}
 
-            if (dealerDataAggregate.BrokerInvoice?.Any() ?? false)
+            if (dealerDataAggregate.BrokerInvoices?.Any() ?? false)
             {
-                var brokerInvoice = dealerDataAggregate.BrokerInvoice.FirstOrDefault();
+                var brokerInvoice = dealerDataAggregate.BrokerInvoices.FirstOrDefault();
                 var broker = await lookupCosmosService.GetBrokerAsync(brokerInvoice.Id);
 
                 result.Broker = new VehicleBrokerSaleInformation
@@ -478,7 +478,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
                 // If vehicle sold to broker before start date and it is not exists in broker intial vehicles,
                 // then make vsdata as start date.
                 if (broker is not null)
-                    if (!broker.TerminationDate.HasValue && (broker.AccountStartDate <= vsData?.InvoiceDate || dealerDataAggregate.BrokerInitialVehicle?.Count(x => x?.BrokerID == broker.Id) > 0))
+                    if (!broker.TerminationDate.HasValue && (broker.AccountStartDate <= vsData?.InvoiceDate || dealerDataAggregate.BrokerInitialVehicles?.Count(x => x?.BrokerID == broker.Id) > 0))
                         result.Broker = new VehicleBrokerSaleInformation
                         {
                             BrokerId = broker.Id,
@@ -501,7 +501,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
         {
             VehicleWarrantyDTO result = new();
 
-            var shiftDate = dealerDataAggregate.WarrantyShiftDate?.FirstOrDefault();
+            var shiftDate = dealerDataAggregate.WarrantyDateShifts?.FirstOrDefault();
             if (shiftDate is not null)
                 invoiceDate = shiftDate.NewInvoiceDate;
 
@@ -648,14 +648,14 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             IEnumerable<ServiceItemModel> redeeambleItems = new List<ServiceItemModel>();
 
             if (vsData is not null)
-                redeeambleItems = await lookupCosmosService.GetRedeemableItemsAsync(vsData.Brand);
+                redeeambleItems = await lookupCosmosService.GetServiceItemsAsync(vsData.Brand);
 
-            var shiftDay = dealerDataAggregate.VehicleFreeServiceInvoiceDateShiftVIN?.FirstOrDefault(x => x.VIN == vsData.VIN);
+            var shiftDay = dealerDataAggregate.FreeServiceItemDateShifts?.FirstOrDefault(x => x.VIN == vsData.VIN);
             if (shiftDay is not null)
                 invoiceDate = shiftDay.NewInvoiceDate;
 
             // Free services
-            if (!dealerDataAggregate.VehicleFreeServiceExcludedVIN.Any())
+            if (!dealerDataAggregate.ServiceItemExcludedVINs.Any())
             {
                 var eligableRedeemableItems = redeeambleItems?
                     .Where(x => !(x.IsDeleted))
@@ -680,7 +680,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
 
                         var serviceItem = new VehicleServiceItemDTO
                         {
-                            ToyotaLoyaltyProgramRedeemableItemID = item.Id,
+                            ServiceItemID = item.Id,
                             Name = Utility.GetLocalizedText(item.Name, languageCode),
                             Description = Utility.GetLocalizedText(item.PrintoutDescription, languageCode),
                             Title = Utility.GetLocalizedText(item.PrintoutTitle, languageCode),
@@ -710,7 +710,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
                         {
                             var itemResult = new VehicleServiceItemDTO
                             {
-                                ToyotaLoyaltyProgramRedeemableItemID = item.ServiceItemID,
+                                ServiceItemID = item.ServiceItemID,
                                 TLPPackageInvoiceTLPItemID = item.Id,
                                 ActivatedAt = paidService.ActivationDate,
                                 CampaignCode = null,
@@ -798,8 +798,8 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             if (transactionLine is not null)
                 return ("processed", VehcileServiceItemStatuses.Processed,
                     transactionLine.ClaimDate.HasValue ? transactionLine.ClaimDate.Value : null,
-                    transactionLine.ToyotaLoyaltyProgramTransaction?.JobNumber,
-                    transactionLine.ToyotaLoyaltyProgramTransaction?.InvoiceNumber, transactionLine.CompanyIntegrationID);
+                    transactionLine.ServiceItemClaim?.JobNumber,
+                    transactionLine.ServiceItemClaim?.InvoiceNumber, transactionLine.CompanyIntegrationID);
             else if (expiresAt is not null && expiresAt < DateTime.Now)
                 return ("expired", VehcileServiceItemStatuses.Expired, null, null, null, null);
             else
@@ -815,9 +815,9 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             var result = new List<VehicleServiceItemDTO>();
             serviceItems = serviceItems?.Where(x => x.TypeEnum == VehcileServiceItemTypes.Free);
 
-            var redeemedItems = dealerDataAggregate.ToyotaLoyaltyProgramTransactionLine?.Where(x => x?.RedeemType == 4)
+            var redeemedItems = dealerDataAggregate.ServiceItemClaimLines?.Where(x => x?.RedeemType == 4)
                 .Select(x => x?.ServiceItemID)
-                .Where(x => !(serviceItems?.Any(s => s.ToyotaLoyaltyProgramRedeemableItemID.ToString() == x) ?? false));
+                .Where(x => !(serviceItems?.Any(s => s.ServiceItemID.ToString() == x) ?? false));
 
             if (redeemableItems != null)
             {
@@ -825,12 +825,12 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
                 {
                     var modelCost = GetModelCost(item.ModelCosts, katashiki, variant);
 
-                    var transactionLine = dealerDataAggregate.ToyotaLoyaltyProgramTransactionLine?
+                    var transactionLine = dealerDataAggregate.ServiceItemClaimLines?
                             .FirstOrDefault(t => t.ServiceItemID == item.Id.ToString() && t.RedeemType == 4);
 
                     var serviceItem = new VehicleServiceItemDTO
                     {
-                        ToyotaLoyaltyProgramRedeemableItemID = item.Id,
+                        ServiceItemID = item.Id,
                         Name = Utility.GetLocalizedText(item.Name, languageCode),
                         Description = Utility.GetLocalizedText(item.PrintoutDescription, languageCode),
                         Title = Utility.GetLocalizedText(item.PrintoutTitle, languageCode),
@@ -842,8 +842,8 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
                         ModelCostID = modelCost?.Id,
                         MenuCode = modelCost?.MenuCode ?? item.MenuCode,
                         RedeemDate = transactionLine?.ClaimDate,
-                        InvoiceNumber = transactionLine?.ToyotaLoyaltyProgramTransaction?.InvoiceNumber,
-                        WIP = transactionLine?.ToyotaLoyaltyProgramTransaction?.JobNumber,
+                        InvoiceNumber = transactionLine?.ServiceItemClaim?.InvoiceNumber,
+                        WIP = transactionLine?.ServiceItemClaim?.JobNumber,
                         SkipZeroTrust = item.SkipZeroTrust,
                         DealerIntegrationID = transactionLine?.CompanyIntegrationID,
                         MaximumMileage = item.MaximumMileage
@@ -911,10 +911,10 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
         {
             foreach (var item in serviceItems)
             {
-                var statusResult = ProcessServiceItemStatus(item.ToyotaLoyaltyProgramRedeemableItemID,
+                var statusResult = ProcessServiceItemStatus(item.ServiceItemID,
                     item.ActivatedAt,
                     item.ExpiresAt,
-                    dealerDataAggregate.ToyotaLoyaltyProgramTransactionLine, item.TypeEnum == VehcileServiceItemTypes.Free ? 4 : 7);
+                    dealerDataAggregate.ServiceItemClaimLines, item.TypeEnum == VehcileServiceItemTypes.Free ? 4 : 7);
 
                 item.Status = statusResult.statusText;
                 item.StatusEnum = statusResult.status;

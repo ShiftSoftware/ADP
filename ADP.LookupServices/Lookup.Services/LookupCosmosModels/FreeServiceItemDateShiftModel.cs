@@ -4,7 +4,7 @@ using System.Text;
 
 namespace ShiftSoftware.ADP.Models.LookupCosmosModels;
 
-public class VehicleFreeServiceInvoiceDateShiftVINsCosmosModel
+public class FreeServiceItemDateShiftModel
 {
     public string id { get; set; }
     public string VIN { get; set; }

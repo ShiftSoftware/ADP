@@ -51,9 +51,9 @@ public class VehicleLookup
 
         return new OkObjectResult(new
         {
-            data.SOLabor,
-            data.SOPart,
-            data.VSData
+            data.LaborLines,
+            data.PartLines,
+            data.VehicleEntries
         });
     }
 

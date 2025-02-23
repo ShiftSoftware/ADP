@@ -2,7 +2,7 @@
 
 namespace ShiftSoftware.ADP.Models.PortalTableSyncCosmosModels;
 
-public class PaintThicknessVehicleModel
+public class PaintThicknessRecordModel
 {
     public string id { get; set; } = default!;
     public long Id { get; set; }

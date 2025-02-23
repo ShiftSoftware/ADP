@@ -13,8 +13,8 @@ public enum SSCLookupStatuses
     [Description("TMC Error")]
     TmcErrorResponse = 3,
 
-    [Description("No Response from TIQ Server")]
-    TiqNoResponse = 4,
+    [Description("No Response from Relay Server")]
+    RelayServerNoResponse = 4,
 
     /// <summary>
     /// After the first lookup of an unauthorized vin
