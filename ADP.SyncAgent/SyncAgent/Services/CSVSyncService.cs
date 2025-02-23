@@ -523,14 +523,11 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         {
             try
             {
-                await ResiliencePipeline.ExecuteAsync(async token =>
-                {
-                    await this.storageService.StoreNewVersionAsync(Path.Combine(WorkingDirectory.FullName, "file.csv"),
-                        destinationRelativePath, destinationContainerOrShareName, this.CacheableCSVEngine.Options.IgnoreFirstLines,
-                        GetCancellationToken());
+                await this.storageService.StoreNewVersionAsync(Path.Combine(WorkingDirectory.FullName, "file.csv"),
+                    destinationRelativePath, destinationContainerOrShareName, this.CacheableCSVEngine.Options.IgnoreFirstLines,
+                    GetCancellationToken());
 
-                    CSVSyncResult.Status = CSVSyncStatus.SuccessSync;
-                }, GetCancellationToken());
+                CSVSyncResult.Status = CSVSyncStatus.SuccessSync;
             }
             catch
             {
