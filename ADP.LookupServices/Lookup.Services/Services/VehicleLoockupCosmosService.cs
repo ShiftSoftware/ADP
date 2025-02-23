@@ -125,7 +125,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
                 .Where(x => !(x?.IsDeleted ?? false)).ToList();
 
             dealerData.ToyotaLoyaltyProgramTransactionLine = items.Where(x => x.ItemType.ToString().ToLower() == "ToyotaLoyaltyProgramTransactionLine".ToLower())
-                .Select(x => ((JObject)x).ToObject<ToyotaLoyaltyProgramTransactionLineCosmosModel>()).ToList();
+                .Select(x => ((JObject)x).ToObject<ServiceItemClaimLineModel>()).ToList();
 
             dealerData.VehicleFreeServiceExcludedVIN = items.Where(x => x.ItemType.ToString().ToLower() == "VehicleFreeServiceExcludedVINs".ToLower())
                 .Select(x => ((JObject)x).ToObject<VehicleFreeServiceExcludedVINsCosmosModel>()).ToList();

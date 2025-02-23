@@ -641,7 +641,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             DateTime? invoiceDate,
             VehicleEntryModel vsData,
             IEnumerable<PaidServiceInvoiceModel> paidServices,
-            IEnumerable<ToyotaLoyaltyProgramTransactionLineCosmosModel> tlpTransactionLines
+            IEnumerable<ServiceItemClaimLineModel> tlpTransactionLines
         )
         {
             var result = new List<VehicleServiceItemDTO>();
@@ -790,16 +790,16 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             long id,
             DateTime activatedAt,
             DateTime? expiresAt,
-            IEnumerable<ToyotaLoyaltyProgramTransactionLineCosmosModel> tlpTransactionLines,
+            IEnumerable<ServiceItemClaimLineModel> tlpTransactionLines,
             int redeemType)
         {
-            var transactionLine = tlpTransactionLines?.FirstOrDefault(x => x?.RedeemableItemIdRef == id.ToString() && x.RedeemType == redeemType);
+            var transactionLine = tlpTransactionLines?.FirstOrDefault(x => x?.ServiceItemID == id.ToString() && x.RedeemType == redeemType);
 
             if (transactionLine is not null)
                 return ("processed", VehcileServiceItemStatuses.Processed,
-                    transactionLine.EntryDate.HasValue ? transactionLine.EntryDate.Value : null,
-                    transactionLine.ToyotaLoyaltyProgramTransaction?.WIP,
-                    transactionLine.ToyotaLoyaltyProgramTransaction?.Invoice, transactionLine.DealerIntegrationID);
+                    transactionLine.ClaimDate.HasValue ? transactionLine.ClaimDate.Value : null,
+                    transactionLine.ToyotaLoyaltyProgramTransaction?.JobNumber,
+                    transactionLine.ToyotaLoyaltyProgramTransaction?.InvoiceNumber, transactionLine.CompanyIntegrationID);
             else if (expiresAt is not null && expiresAt < DateTime.Now)
                 return ("expired", VehcileServiceItemStatuses.Expired, null, null, null, null);
             else
@@ -816,7 +816,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             serviceItems = serviceItems?.Where(x => x.TypeEnum == VehcileServiceItemTypes.Free);
 
             var redeemedItems = dealerDataAggregate.ToyotaLoyaltyProgramTransactionLine?.Where(x => x?.RedeemType == 4)
-                .Select(x => x?.RedeemableItemIdRef)
+                .Select(x => x?.ServiceItemID)
                 .Where(x => !(serviceItems?.Any(s => s.ToyotaLoyaltyProgramRedeemableItemID.ToString() == x) ?? false));
 
             if (redeemableItems != null)
@@ -826,7 +826,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
                     var modelCost = GetModelCost(item.ModelCosts, katashiki, variant);
 
                     var transactionLine = dealerDataAggregate.ToyotaLoyaltyProgramTransactionLine?
-                            .FirstOrDefault(t => t.RedeemableItemIdRef == item.Id.ToString() && t.RedeemType == 4);
+                            .FirstOrDefault(t => t.ServiceItemID == item.Id.ToString() && t.RedeemType == 4);
 
                     var serviceItem = new VehicleServiceItemDTO
                     {
@@ -841,16 +841,16 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
                         Status = "processed",
                         ModelCostID = modelCost?.Id,
                         MenuCode = modelCost?.MenuCode ?? item.MenuCode,
-                        RedeemDate = transactionLine?.EntryDate,
-                        InvoiceNumber = transactionLine?.ToyotaLoyaltyProgramTransaction?.Invoice,
-                        WIP = transactionLine?.ToyotaLoyaltyProgramTransaction?.WIP,
+                        RedeemDate = transactionLine?.ClaimDate,
+                        InvoiceNumber = transactionLine?.ToyotaLoyaltyProgramTransaction?.InvoiceNumber,
+                        WIP = transactionLine?.ToyotaLoyaltyProgramTransaction?.JobNumber,
                         SkipZeroTrust = item.SkipZeroTrust,
-                        DealerIntegrationID = transactionLine?.DealerCode,
+                        DealerIntegrationID = transactionLine?.CompanyIntegrationID,
                         MaximumMileage = item.MaximumMileage
                     };
 
-                    if (!string.IsNullOrWhiteSpace(transactionLine?.DealerCode) && options.CompanyNameResolver is not null)
-                        serviceItem.DealerName = await options.CompanyNameResolver(new(transactionLine?.DealerCode, languageCode, services));
+                    if (!string.IsNullOrWhiteSpace(transactionLine?.CompanyIntegrationID) && options.CompanyNameResolver is not null)
+                        serviceItem.DealerName = await options.CompanyNameResolver(new(transactionLine?.CompanyIntegrationID, languageCode, services));
 
                     result.Add(serviceItem);
                 }

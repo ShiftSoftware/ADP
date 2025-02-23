@@ -19,7 +19,7 @@ public class DealerDataAggregateCosmosModel
     public List<BrokerInitialVehicleModel> BrokerInitialVehicle { get; set; }
     public List<BrokerInvoiceModel> BrokerInvoice { get; set; }
     public List<PaidServiceInvoiceModel> TLPPackageInvoice { get; set; }
-    public List<ToyotaLoyaltyProgramTransactionLineCosmosModel> ToyotaLoyaltyProgramTransactionLine { get; set; }
+    public List<ServiceItemClaimLineModel> ToyotaLoyaltyProgramTransactionLine { get; set; }
     public List<VehicleFreeServiceExcludedVINsCosmosModel> VehicleFreeServiceExcludedVIN { get; set; }
     public List<VehicleFreeServiceInvoiceDateShiftVINsCosmosModel> VehicleFreeServiceInvoiceDateShiftVIN { get; set; }
     public List<WarrantyDateShiftCosmosModel> WarrantyShiftDate { get; set; }
