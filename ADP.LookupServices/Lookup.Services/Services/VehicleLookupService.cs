@@ -67,7 +67,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             this.languageCode = languageCode;
 
             // Get the latest VSData
-            VSDataCosmosModel vsData = null;
+            VehicleEntryModel vsData = null;
 
             if (dealerDataAggregate.VSData?.Count() > 0)
                 if (dealerDataAggregate.VSData.Any(x => x.InvoiceDate is null))
@@ -303,7 +303,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
                             l.CompanyIntegrationID == x.CompanyIntegrationID)
                                 .Select(l => new VehicleLaborDTO
                                 {
-                                    Description = l.Description,
+                                    Description = l.ServiceDescription,
                                     MenuCode = l.MenuCode,
                                     RTSCode = l.LaborCode,
                                     ServiceCode = l.ServiceCode
@@ -314,7 +314,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
                                 {
                                     MenuCode = p.MenuCode,
                                     PartNumber = p.PartNumber,
-                                    QTY = p.OrderQuantity,
+                                    QTY = p.Quantity,
                                     PartDescription = partData?.FirstOrDefault(pd => pd.Key == p.PartNumber).Value?.PartDescription
                                 })
                     };
@@ -333,11 +333,11 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             return serviceHistory;
         }
 
-        private async Task<VehicleSpecificationDTO> GetSpecificationAsync(VSDataCosmosModel vsData)
+        private async Task<VehicleSpecificationDTO> GetSpecificationAsync(VehicleEntryModel vsData)
         {
             VehicleSpecificationDTO result = new();
 
-            var vtModel = vsData?.VTModel;
+            var vtModel = vsData?.VehicleModel;
 
             if (vtModel is null)
             {
@@ -351,42 +351,41 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             {
                 result = new VehicleSpecificationDTO
                 {
-                    BodyType = vtModel.Body_Type,
+                    BodyType = vtModel.BodyType,
                     Class = vtModel.Class,
                     Cylinders = vtModel.Cylinders,
                     Doors = vtModel.Doors,
                     Engine = vtModel.Engine,
-                    EngineType = vtModel.Engine_Type,
+                    EngineType = vtModel.EngineType,
                     Fuel = vtModel.Fuel,
-                    FuelLiter = vtModel.Fuelliter,
-                    LightHeavy = vtModel.Light_Heavy,
-                    ModelDesc = vtModel.Model_Desc,
+                    LightHeavy = vtModel.LightHeavyType,
+                    ModelDesc = vtModel.ModelDescription,
                     Side = vtModel.Side,
                     Style = vtModel.Style,
-                    TankCap = vtModel.Tank_Cap,
+                    TankCap = vtModel.TankCap,
                     Transmission = vtModel.Transmission,
-                    VariantDesc = vtModel.Variant_Desc,
-                    Color = vsData?.VTColor?.Color_Desc,
-                    Trim = vsData?.VTTrim?.Trim_Desc
+                    VariantDesc = vtModel.VariantDescription,
+                    Color = vsData?.ExteriorColor?.Description,
+                    Trim = vsData?.InteriorColor?.Description
                 };
             }
 
-            if (vsData?.VTColor is null)
+            if (vsData?.ExteriorColorCode is null)
             {
-                var color = await lookupCosmosService.GetVTColorAsync(vsData?.Color, vsData?.Brand);
+                var color = await lookupCosmosService.GetVTColorAsync(vsData?.ExteriorColorCode, vsData?.Brand);
                 if (color is not null)
                 {
-                    result.Color = color?.Color_Desc;
+                    result.Color = color?.Description;
                     lookupCosmosService.UpdateVSDataColor(vsData, color);
                 }
             }
 
-            if (vsData?.VTTrim is null)
+            if (vsData?.InteriorColorCode is null)
             {
-                var trim = await lookupCosmosService.GetVTTrimAsync(vsData?.Trim, vsData?.Brand);
+                var trim = await lookupCosmosService.GetVTTrimAsync(vsData?.InteriorColorCode, vsData?.Brand);
                 if (trim is not null)
                 {
-                    result.Trim = trim?.Trim_Desc;
+                    result.Trim = trim?.Description;
                     lookupCosmosService.UpdateVSDataTrim(vsData, trim);
                 }
             }
@@ -396,15 +395,15 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             return result;
         }
 
-        private VehicleIdentifiersDTO GetIdentifiers(VSDataCosmosModel vsData, string vin)
+        private VehicleIdentifiersDTO GetIdentifiers(VehicleEntryModel vsData, string vin)
         {
             return new VehicleIdentifiersDTO
             {
                 VIN = vin,
                 Variant = vsData.VariantCode,
                 Katashiki = vsData.Katashiki,
-                Color = vsData.Color,
-                Trim = vsData.Trim,
+                Color = vsData.ExteriorColorCode,
+                Trim = vsData.InteriorColorCode,
                 Brand = vsData.Brand,
                 BrandIntegrationID = vsData.BrandIntegrationID
             };
@@ -423,32 +422,32 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
                 .FirstOrDefault();
 
             result.InvoiceDate = vsData?.InvoiceDate;
-            result.ProgressCode = vsData.ProgressCode;
+            result.ProgressCode = vsData.LineStatus;
             result.LocationCode = vsData.LocationCode;
-            result.ACSStatus = vsData.ACSStatus;
+            result.ACSStatus = vsData.Status;
             result.SaleType = vsData.SaleType;
-            result.InvoiceAccount = vsData.InvoiceAccount;
+            result.InvoiceAccount = vsData.AccountNumber;
             result.RegionIntegrationId = vsData.RegionIntegrationId;
 
-            result.InvoiceNumber = vsData?.SalesInvoiceNumber ?? 0;
+            result.InvoiceNumber = vsData?.InvoiceNumber ?? 0;
             result.InvoiceTotal = vsData?.InvoiceTotal ?? 0;
-            result.DealerIntegrationID = vsData?.DealerIntegrationID;
+            result.DealerIntegrationID = vsData?.CompanyIntegrationID;
             result.BranchIntegrationID= vsData?.BranchIntegrationID;
 
-            result.CustomerID = vsData?.CustomerMagic;
-            result.CustomerAccount = vsData?.CustomerAccount;
+            result.CustomerID = vsData?.CustomerID;
+            result.CustomerAccount = vsData?.CustomerAccountNumber;
 
             if (options.CompanyNameResolver is not null)
-                result.DealerName = await options.CompanyNameResolver(new(vsData.DealerIntegrationID, languageCode, services));
+                result.DealerName = await options.CompanyNameResolver(new(vsData.CompanyIntegrationID, languageCode, services));
 
             if (options.CompanyBranchNameResolver is not null)
                 result.BranchName = await options.CompanyBranchNameResolver(
-                    new(new(vsData.DealerIntegrationID, vsData.BranchIntegrationID, DepartmentType.Sales), languageCode, services));
+                    new(new(vsData.CompanyIntegrationID, vsData.BranchIntegrationID, DepartmentType.Sales), languageCode, services));
 
             string? dealerLogo = null;
 
             if(options.CompanyLogoResolver is not null)
-                dealerLogo = await options.CompanyLogoResolver(new(vsData.DealerIntegrationID, languageCode, services));   
+                dealerLogo = await options.CompanyLogoResolver(new(vsData.CompanyIntegrationID, languageCode, services));   
 
             if(!string.IsNullOrWhiteSpace(dealerLogo))
                 try
@@ -473,7 +472,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             }
             else
             {
-                var broker = await lookupCosmosService.GetBrokerAsync(vsData?.CustomerAccount, vsData?.DealerIntegrationID);
+                var broker = await lookupCosmosService.GetBrokerAsync(vsData?.CustomerAccountNumber, vsData?.CompanyIntegrationID);
 
                 // If vehicle sold to broker and the broker is terminated, then make vsdata as start date.
                 // If vehicle sold to broker before start date and it is not exists in broker intial vehicles,
@@ -558,13 +557,13 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
                 }
                 else
                 {
-                    var labor = labors?.OrderByDescending(s => s.DateLastEditted)
-                        .FirstOrDefault(s => s.LaborCode.Equals(x.OpCode) && (s.InvoiceStatus.Equals("X") || s.LoadStatus.Equals("C")));
+                    var labor = labors?.OrderByDescending(s => s.InvoiceDate)
+                        .FirstOrDefault(s => s.LaborCode.Equals(x.OpCode) && (s.Status.Equals("X") || s.LineStatus.Equals("C")));
 
                     if (labor is not null)
                     {
                         isRepared = true;
-                        repairDate = labor.DateLastEditted;
+                        repairDate = labor.InvoiceDate;
                     }
                 }
 
@@ -640,7 +639,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
 
         private async Task<IEnumerable<VehicleServiceItemDTO>> GetServiceItems(
             DateTime? invoiceDate,
-            VSDataCosmosModel vsData,
+            VehicleEntryModel vsData,
             IEnumerable<PaidServiceInvoiceModel> paidServices,
             IEnumerable<ToyotaLoyaltyProgramTransactionLineCosmosModel> tlpTransactionLines
         )
@@ -929,22 +928,22 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             }
         }
 
-        public async Task<IEnumerable<VTModelRecordsCosmosModel>> GetAllVTModelsAsync()
+        public async Task<IEnumerable<VehicleModelModel>> GetAllVTModelsAsync()
         {
             return await lookupCosmosService.GetAllVTModelsAsync();
         }
 
-        public async Task<IEnumerable<VTModelRecordsCosmosModel>> GetVTModelsByKatashikiAsync(string katashiki)
+        public async Task<IEnumerable<VehicleModelModel>> GetVTModelsByKatashikiAsync(string katashiki)
         {
             return await lookupCosmosService.GetVTModelsByKatashikiAsync(katashiki);
         }
 
-        public async Task<IEnumerable<VTModelRecordsCosmosModel>> GetVTModelsByVariantAsync(string variant)
+        public async Task<IEnumerable<VehicleModelModel>> GetVTModelsByVariantAsync(string variant)
         {
             return await lookupCosmosService.GetVTModelsByVariantAsync(variant);
         }
 
-        public async Task<IEnumerable<VTModelRecordsCosmosModel>> GetVTModelsByVinAsync(string vin)
+        public async Task<IEnumerable<VehicleModelModel>> GetVTModelsByVinAsync(string vin)
         {
             return await lookupCosmosService.GetVTModelsByVinAsync(vin);
         }

@@ -16,17 +16,17 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
         Task<DealerDataAggregateCosmosModel> GetAggregatedDealerData(string vin);
         Task<DealerDataAggregateCosmosModel> GetAggregatedDealerData(IEnumerable<string> vins, IEnumerable<string> itemTypes);
         Task<IEnumerable<PartStockModel>> GetStockItemsAsync(IEnumerable<string> partNumbers);
-        Task<VTColorCosmosModel> GetVTColorAsync(string colorCode, Brands? brand);
-        Task<VTModelRecordsCosmosModel> GetVTModelAsync(string variant, Brands? brand);
-        Task<VTTrimCosmosModel> GetVTTrimAsync(string trimCode, Brands? brand);
+        Task<ExteriorColorModel> GetVTColorAsync(string colorCode, Brands? brand);
+        Task<VehicleModelModel> GetVTModelAsync(string variant, Brands? brand);
+        Task<InteriorColorModel> GetVTTrimAsync(string trimCode, Brands? brand);
         Task SaveChangesAsync();
-        void UpdateVSDataColor(VSDataCosmosModel item, VTColorCosmosModel color);
-        void UpdateVSDataTrim(VSDataCosmosModel item, VTTrimCosmosModel trim);
+        void UpdateVSDataColor(VehicleEntryModel item, ExteriorColorModel color);
+        void UpdateVSDataTrim(VehicleEntryModel item, InteriorColorModel trim);
         Task<IEnumerable<ServiceItemModel>> GetRedeemableItemsAsync(Brands brand);
-        void UpdateVSDataModel(VSDataCosmosModel item, VTModelRecordsCosmosModel model);
-        Task<IEnumerable<VTModelRecordsCosmosModel>> GetAllVTModelsAsync();
-        Task<IEnumerable<VTModelRecordsCosmosModel>> GetVTModelsByKatashikiAsync(string katashiki);
-        Task<IEnumerable<VTModelRecordsCosmosModel>> GetVTModelsByVariantAsync(string variant);
-        Task<IEnumerable<VTModelRecordsCosmosModel>> GetVTModelsByVinAsync(string vin);
+        void UpdateVSDataModel(VehicleEntryModel item, VehicleModelModel model);
+        Task<IEnumerable<VehicleModelModel>> GetAllVTModelsAsync();
+        Task<IEnumerable<VehicleModelModel>> GetVTModelsByKatashikiAsync(string katashiki);
+        Task<IEnumerable<VehicleModelModel>> GetVTModelsByVariantAsync(string variant);
+        Task<IEnumerable<VehicleModelModel>> GetVTModelsByVinAsync(string vin);
     }
 }

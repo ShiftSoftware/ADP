@@ -1,6 +1,6 @@
-﻿using System;
+﻿using ShiftSoftware.ADP.Models.Enums;
+using System;
 using System.Collections.Generic;
-using ShiftSoftware.ADP.Models.Enums;
 
 namespace ShiftSoftware.ADP.Models.PortalTableSyncCosmosModels;
 

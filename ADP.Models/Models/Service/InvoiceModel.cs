@@ -2,7 +2,7 @@
 
 namespace ShiftSoftware.ADP.Models.Service;
 
-public class InvoiceModel
+public class InvoiceModel: ICompanyProps, IBranchProps, IInvoiceProps
 {
     public string id { get; set; } = default!;
     public string CompanyIntegrationID { get; set; }
@@ -13,6 +13,9 @@ public class InvoiceModel
     public int? Mileage { get; set; }
     public int? JobNumber { get; set; }
     public string AccountNumber { get; set; }
+    public string CustomerAccountNumber { get; set; }
+    public string CustomerID { get; set; }
+    public string SaleType { get; set; }
     public int? InvoiceNumber { get; set; }
     public DateTime? NextServiceDate { get; set; }
 }

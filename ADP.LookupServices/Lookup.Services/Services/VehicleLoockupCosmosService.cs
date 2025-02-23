@@ -91,7 +91,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             var dealerData = new DealerDataAggregateCosmosModel();
 
             dealerData.VSData = items.Where(x => x.ItemType.ToString().ToLower() == "VS".ToLower())
-                .Select(x => ((JObject)x).ToObject<VSDataCosmosModel>()).ToList();
+                .Select(x => ((JObject)x).ToObject<VehicleEntryModel>()).ToList();
 
             dealerData.TIQOfficialVIN = items.Where(x => x.ItemType.ToString().ToLower() == "TIQOfficialVIN".ToLower())
                 .Select(x => ((JObject)x).ToObject<InitialOfficialVINModel>()).ToList();
@@ -145,7 +145,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             return dealerData;
         }
 
-        public async Task<VTModelRecordsCosmosModel> GetVTModelAsync(string variant, Brands? brand)
+        public async Task<VehicleModelModel> GetVTModelAsync(string variant, Brands? brand)
         {
             var container = client.GetContainer("DealerData", "VTModels");
 
@@ -153,8 +153,8 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             query.WithParameter("@variant", variant);
             query.WithParameter("@brand", brand);
 
-            var iterator = container.GetItemQueryIterator<VTModelRecordsCosmosModel>(query);
-            var items = new List<VTModelRecordsCosmosModel>();
+            var iterator = container.GetItemQueryIterator<VehicleModelModel>(query);
+            var items = new List<VehicleModelModel>();
 
             while (iterator.HasMoreResults)
             {
@@ -165,7 +165,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             return items.FirstOrDefault();
         }
 
-        public async Task<VTColorCosmosModel> GetVTColorAsync(string colorCode, Brands? brand)
+        public async Task<ExteriorColorModel> GetVTColorAsync(string colorCode, Brands? brand)
         {
             var container = client.GetContainer("DealerData", "VTColors");
 
@@ -173,8 +173,8 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             query.WithParameter("@colorCode", colorCode);
             query.WithParameter("@brand", brand);
 
-            var iterator = container.GetItemQueryIterator<VTColorCosmosModel>(query);
-            var items = new List<VTColorCosmosModel>();
+            var iterator = container.GetItemQueryIterator<ExteriorColorModel>(query);
+            var items = new List<ExteriorColorModel>();
 
             while (iterator.HasMoreResults)
             {
@@ -185,7 +185,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             return items.FirstOrDefault();
         }
 
-        public async Task<VTTrimCosmosModel> GetVTTrimAsync(string trimCode, Brands? brand)
+        public async Task<InteriorColorModel> GetVTTrimAsync(string trimCode, Brands? brand)
         {
             var container = client.GetContainer("DealerData", "VTTrims");
 
@@ -193,8 +193,8 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             query.WithParameter("@trimCode", trimCode);
             query.WithParameter("@brand", brand);
 
-            var iterator = container.GetItemQueryIterator<VTTrimCosmosModel>(query);
-            var items = new List<VTTrimCosmosModel>();
+            var iterator = container.GetItemQueryIterator<InteriorColorModel>(query);
+            var items = new List<InteriorColorModel>();
 
             while (iterator.HasMoreResults)
             {
@@ -265,7 +265,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             return items.FirstOrDefault();
         }
 
-        public void UpdateVSDataColor(VSDataCosmosModel item, VTColorCosmosModel color)
+        public void UpdateVSDataColor(VehicleEntryModel item, ExteriorColorModel color)
         {
             var contaner = client.GetContainer("DealerData", "DealerData");
 
@@ -273,7 +273,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             pb.Add(item.VIN).Add("VS");
 
             tasks.Add(
-                contaner.PatchItemAsync<VTColorCosmosModel>(item.id, pb.Build(),
+                contaner.PatchItemAsync<ExteriorColorModel>(item.id, pb.Build(),
                     new List<PatchOperation>
                     {
                     PatchOperation.Set("/VTColor", color)
@@ -281,7 +281,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             );
         }
 
-        public void UpdateVSDataTrim(VSDataCosmosModel item, VTTrimCosmosModel trim)
+        public void UpdateVSDataTrim(VehicleEntryModel item, InteriorColorModel trim)
         {
             var contaner = client.GetContainer("DealerData", "DealerData");
 
@@ -289,7 +289,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             pb.Add(item.VIN).Add("VS");
 
             tasks.Add(
-                contaner.PatchItemAsync<VTTrimCosmosModel>(item.id, pb.Build(),
+                contaner.PatchItemAsync<InteriorColorModel>(item.id, pb.Build(),
                     new List<PatchOperation>
                     {
                         PatchOperation.Set("/VTTrim", trim)
@@ -297,7 +297,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             );
         }
 
-        public void UpdateVSDataModel(VSDataCosmosModel item, VTModelRecordsCosmosModel model)
+        public void UpdateVSDataModel(VehicleEntryModel item, VehicleModelModel model)
         {
             var contaner = client.GetContainer("DealerData", "DealerData");
 
@@ -305,7 +305,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             pb.Add(item.VIN).Add("VS");
 
             tasks.Add(
-                contaner.PatchItemAsync<VTModelRecordsCosmosModel>(item.id, pb.Build(),
+                contaner.PatchItemAsync<VehicleModelModel>(item.id, pb.Build(),
                     new List<PatchOperation>
                     {
                     PatchOperation.Set("/VTModel", model)
@@ -344,15 +344,15 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             return items;
         }
 
-        public async Task<IEnumerable<VTModelRecordsCosmosModel>> GetAllVTModelsAsync()
+        public async Task<IEnumerable<VehicleModelModel>> GetAllVTModelsAsync()
         {
             var container = client.GetContainer("DealerData", "VTModels");
 
-            var queryable = container.GetItemLinqQueryable<VTModelRecordsCosmosModel>(true);
+            var queryable = container.GetItemLinqQueryable<VehicleModelModel>(true);
 
             var iterator = queryable.ToFeedIterator();
 
-            var items = new List<VTModelRecordsCosmosModel>();
+            var items = new List<VehicleModelModel>();
 
             while (iterator.HasMoreResults)
                 items.AddRange(await iterator.ReadNextAsync());
@@ -360,16 +360,16 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             return items;
         }
 
-        public async Task<IEnumerable<VTModelRecordsCosmosModel>> GetVTModelsByKatashikiAsync(string katashiki)
+        public async Task<IEnumerable<VehicleModelModel>> GetVTModelsByKatashikiAsync(string katashiki)
         {
             var container = client.GetContainer("DealerData", "VTModels");
 
-            var queryable = container.GetItemLinqQueryable<VTModelRecordsCosmosModel>(true)
+            var queryable = container.GetItemLinqQueryable<VehicleModelModel>(true)
                 .Where(x => x.Katashiki == katashiki);
 
             var iterator = queryable.ToFeedIterator();
 
-            var items = new List<VTModelRecordsCosmosModel>();
+            var items = new List<VehicleModelModel>();
 
             while (iterator.HasMoreResults)
                 items.AddRange(await iterator.ReadNextAsync());
@@ -377,16 +377,16 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             return items;
         }
 
-        public async Task<IEnumerable<VTModelRecordsCosmosModel>> GetVTModelsByVariantAsync(string variant)
+        public async Task<IEnumerable<VehicleModelModel>> GetVTModelsByVariantAsync(string variant)
         {
             var container = client.GetContainer("DealerData", "VTModels");
 
-            var queryable = container.GetItemLinqQueryable<VTModelRecordsCosmosModel>(true)
-                .Where(x => x.Variant_Code == variant);
+            var queryable = container.GetItemLinqQueryable<VehicleModelModel>(true)
+                .Where(x => x.VariantCode == variant);
 
             var iterator = queryable.ToFeedIterator();
 
-            var items = new List<VTModelRecordsCosmosModel>();
+            var items = new List<VehicleModelModel>();
 
             while (iterator.HasMoreResults)
                 items.AddRange(await iterator.ReadNextAsync());
@@ -394,22 +394,22 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             return items;
         }
 
-        public async Task<IEnumerable<VTModelRecordsCosmosModel>> GetVTModelsByVinAsync(string vin)
+        public async Task<IEnumerable<VehicleModelModel>> GetVTModelsByVinAsync(string vin)
         {
             var dealerDataContainer = client.GetContainer("DealerData", "DealerData");
 
-            var vsQuery = dealerDataContainer.GetItemLinqQueryable<VSDataCosmosModel>(true)
-                .Where(x => x.ItemType == new VSDataCosmosModel().ItemType)
+            var vsQuery = dealerDataContainer.GetItemLinqQueryable<VehicleEntryModel>(true)
+                .Where(x => x.ItemType == new VehicleEntryModel().ItemType)
                 .Where(x => x.VIN == vin);
 
             var vsIterator = vsQuery.ToFeedIterator();
-            var vs = new VSDataCosmosModel();
+            var vs = new VehicleEntryModel();
 
             if (vsIterator.HasMoreResults)
                 vs = (await vsIterator.ReadNextAsync()).FirstOrDefault();
 
-            if (vs.VTModel is not null)
-                return new List<VTModelRecordsCosmosModel> { vs.VTModel };
+            if (vs.VehicleModel is not null)
+                return new List<VehicleModelModel> { vs.VehicleModel };
 
             return await GetVTModelsByVariantAsync(vs.VariantCode);
         }

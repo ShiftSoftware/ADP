@@ -9,7 +9,7 @@ namespace ShiftSoftware.ADP.Models.Aggregate;
 
 public class DealerDataAggregateCosmosModel
 {
-    public List<VSDataCosmosModel> VSData { get; set; }
+    public List<VehicleEntryModel> VSData { get; set; }
     public List<InitialOfficialVINModel> TIQOfficialVIN { get; set; }
     public List<InvoiceModel> CPU { get; set; }
     public List<InvoiceLaborLineModel> SOLabor { get; set; }

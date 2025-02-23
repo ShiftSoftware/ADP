@@ -35,7 +35,31 @@ public class VehicleLookupDTO
 
     public IEnumerable<SSCDTO> SSC { get; set; }
 
-    public VehicleVariantInfoDTO VehicleVariantInfo=> Utility.ParseVariantInfo(Identifiers.Variant);
+    public VehicleVariantInfoDTO VehicleVariantInfo
+    {
+        get
+        {
+            try
+            {
+                var variant = Identifiers.Variant;
+
+                var modelCode = variant.Substring(0, variant.Length - 8);
+                var sfx = variant.Substring(variant.Length - 8, 2);
+                var yearModel = variant.Substring(variant.Length - 6, 4);
+
+                return new VehicleVariantInfoDTO
+                {
+                    ModelCode = modelCode,
+                    SFX = sfx,
+                    ModelYear = int.Parse(yearModel)
+                };
+            }
+            catch
+            {
+                return null;
+            }
+        }
+    }
 
     public VehicleSpecificationDTO VehicleSpecification { get; set; }
 
