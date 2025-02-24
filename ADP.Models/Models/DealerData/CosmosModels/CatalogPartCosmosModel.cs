@@ -24,7 +24,7 @@ public class CatalogPartCosmosModel : CacheableCSV
     public string? Origin { get; set; }
     public IEnumerable<PartSupersession>? SupersededTo { get; set; }
     public string? PNCLocalDescription { get; set; }
-    public string? ProductGroupFull { get; set; }
+    public string? ProductGroupDescription { get; set; }
     public string? LocalDescription { get; set; }
     public string? HSCode { get; set; }
     public string? UZHSCode { get; set; }
