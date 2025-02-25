@@ -1,8 +1,8 @@
 ﻿using System;
 
-namespace ShiftSoftware.ADP.Models.PortalTableSyncCosmosModels;
+namespace ShiftSoftware.ADP.Models.Vehicle;
 
-public class WarrantyClaimModel: IPartitionedItem
+public class WarrantyClaimModel : IPartitionedItem
 {
     public string id { get; set; } = default!;
     public long Id { get; set; }

@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 
-namespace ShiftSoftware.ADP.Models.PortalTableSyncCosmosModels;
+namespace ShiftSoftware.ADP.Models.Vehicle;
 
-public class PaintThicknessInspectionModel: IPartitionedItem
+public class PaintThicknessInspectionModel : IPartitionedItem
 {
     public string id { get; set; } = default!;
     public long Id { get; set; }

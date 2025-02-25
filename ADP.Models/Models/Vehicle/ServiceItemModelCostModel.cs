@@ -1,4 +1,4 @@
-﻿namespace ShiftSoftware.ADP.Models.PortalTableSyncCosmosModels;
+﻿namespace ShiftSoftware.ADP.Models.Vehicle;
 
 public class ServiceItemModelCostModel
 {

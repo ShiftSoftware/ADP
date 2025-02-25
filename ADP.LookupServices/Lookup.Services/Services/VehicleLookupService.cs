@@ -5,7 +5,6 @@ using ShiftSoftware.ADP.Models.Aggregate;
 using ShiftSoftware.ADP.Models.DTOs.VehicleLookupDTOs;
 using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ADP.Models.Part;
-using ShiftSoftware.ADP.Models.PortalTableSyncCosmosModels;
 using ShiftSoftware.ADP.Models.Service;
 using ShiftSoftware.ADP.Models.Vehicle;
 using ShiftSoftware.ShiftEntity.Model.Dtos;

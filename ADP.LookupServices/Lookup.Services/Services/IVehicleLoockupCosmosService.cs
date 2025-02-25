@@ -1,7 +1,6 @@
 ﻿using ShiftSoftware.ADP.Models.Aggregate;
 using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ADP.Models.Part;
-using ShiftSoftware.ADP.Models.PortalTableSyncCosmosModels;
 using ShiftSoftware.ADP.Models.TBP;
 using ShiftSoftware.ADP.Models.Vehicle;
 using System.Collections.Generic;

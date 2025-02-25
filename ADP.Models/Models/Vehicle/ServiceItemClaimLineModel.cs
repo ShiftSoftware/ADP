@@ -1,8 +1,8 @@
 ﻿using System;
 
-namespace ShiftSoftware.ADP.Models.PortalTableSyncCosmosModels;
+namespace ShiftSoftware.ADP.Models.Vehicle;
 
-public class ServiceItemClaimLineModel: IPartitionedItem, ICompanyProps, IBranchProps
+public class ServiceItemClaimLineModel : IPartitionedItem, ICompanyProps, IBranchProps
 {
     public string id { get; set; }
     public long Id { get; set; }

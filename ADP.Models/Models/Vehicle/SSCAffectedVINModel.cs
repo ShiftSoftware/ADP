@@ -1,8 +1,8 @@
 ﻿using System;
 
-namespace ShiftSoftware.ADP.Models.PortalTableSyncCosmosModels;
+namespace ShiftSoftware.ADP.Models.Vehicle;
 
-public class SSCAffectedVINModel: IPartitionedItem
+public class SSCAffectedVINModel : IPartitionedItem
 {
     public string id { get; set; } = default!;
     public string VIN { get; set; } = default!;

@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace ShiftSoftware.ADP.Models.PortalTableSyncCosmosModels;
+namespace ShiftSoftware.ADP.Models.Vehicle;
 
 public class ServiceItemModel
 {

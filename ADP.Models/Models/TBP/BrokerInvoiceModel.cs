@@ -1,8 +1,8 @@
 ﻿using System;
 
-namespace ShiftSoftware.ADP.Models.PortalTableSyncCosmosModels;
+namespace ShiftSoftware.ADP.Models.TBP;
 
-public class BrokerInvoiceModel: IPartitionedItem
+public class BrokerInvoiceModel : IPartitionedItem
 {
     public string id { get; set; } = default!;
     public string VIN { get; set; } = default!;

@@ -1,6 +1,6 @@
-﻿namespace ShiftSoftware.ADP.Models.LookupCosmosModels;
+﻿namespace ShiftSoftware.ADP.Models.Vehicle;
 
-public class FreeServiceItemExcludedVINModel: IPartitionedItem
+public class FreeServiceItemExcludedVINModel : IPartitionedItem
 {
     public string id { get; set; }
     public string VIN { get; set; }

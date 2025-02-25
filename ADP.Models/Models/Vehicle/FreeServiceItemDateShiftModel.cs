@@ -1,8 +1,8 @@
 ﻿using System;
 
-namespace ShiftSoftware.ADP.Models.LookupCosmosModels;
+namespace ShiftSoftware.ADP.Models.Vehicle;
 
-public class FreeServiceItemDateShiftModel: IPartitionedItem
+public class FreeServiceItemDateShiftModel : IPartitionedItem
 {
     public string id { get; set; }
     public string VIN { get; set; }
