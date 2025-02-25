@@ -23,6 +23,6 @@ public class DealerDataAggregateCosmosModel
     public List<FreeServiceItemExcludedVINModel> ServiceItemExcludedVINs { get; set; }
     public List<FreeServiceItemDateShiftModel> FreeServiceItemDateShifts { get; set; }
     public List<WarrantyDateShiftCosmosModel> WarrantyDateShifts { get; set; }
-    public PaintThicknessRecordModel PaintThicknessRecords { get; set; }
-    public List<AccessoryModel> Accessories { get; set; }
+    public PaintThicknessInspectionModel PaintThicknessInspections { get; set; }
+    public List<VehicleAccessoryModel> Accessories { get; set; }
 }

@@ -1,6 +1,6 @@
 ﻿namespace ShiftSoftware.ADP.Models.Vehicle;
 
-public class AccessoryModel
+public class VehicleAccessoryModel: IPartitionedItem
 {
     public string id { get; set; } = default!;
     public string VIN { get; set; } = default!;
@@ -9,5 +9,5 @@ public class AccessoryModel
     public int JobNumber { get; set; } = default!;
     public int InvoiceNumber { get; set; }
     public string Image { get; set; }
-    public string ItemType => "Accessory";
+    public PartitionedItemType ItemType => ModelTypes.VehicleAccessory;
 }

@@ -1,6 +1,7 @@
 ﻿using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Cosmos.Linq;
 using Newtonsoft.Json.Linq;
+using ShiftSoftware.ADP.Models;
 using ShiftSoftware.ADP.Models.Aggregate;
 using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ADP.Models.LookupCosmosModels;
@@ -90,57 +91,57 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
         {
             var dealerData = new DealerDataAggregateCosmosModel();
 
-            dealerData.VehicleEntries = items.Where(x => x.ItemType.ToString().ToLower() == "VS".ToLower())
+            dealerData.VehicleEntries = items.Where(x => x.ItemType.ToString() == ModelTypes.VehicleEntry)
                 .Select(x => ((JObject)x).ToObject<VehicleEntryModel>()).ToList();
 
-            dealerData.InitialOfficialVINs = items.Where(x => x.ItemType.ToString().ToLower() == "OfficialVIN".ToLower())
+            dealerData.InitialOfficialVINs = items.Where(x => x.ItemType.ToString() == ModelTypes.InitialOfficialVIN)
                 .Select(x => ((JObject)x).ToObject<InitialOfficialVINModel>()).ToList();
 
-            dealerData.Invoices = items.Where(x => x.ItemType.ToString().ToLower() == "CPU".ToLower())
+            dealerData.Invoices = items.Where(x => x.ItemType.ToString() == ModelTypes.Invoice)
                 .Select(x => ((JObject)x).ToObject<InvoiceModel>()).ToList();
 
-            dealerData.LaborLines = items.Where(x => x.ItemType.ToString().ToLower() == "Labor".ToLower())
+            dealerData.LaborLines = items.Where(x => x.ItemType.ToString() == ModelTypes.InvoiceLaborLine)
                 .Select(x => ((JObject)x).ToObject<InvoiceLaborLineModel>()).ToList();
 
-            dealerData.PartLines = items.Where(x => x.ItemType.ToString().ToLower() == "Part".ToLower())
+            dealerData.PartLines = items.Where(x => x.ItemType.ToString() == ModelTypes.InvoicePartLine)
                 .Select(x => ((JObject)x).ToObject<InvoicePartLineModel>()).ToList();
 
-            dealerData.SSCAffectedVINs = items.Where(x => x.ItemType.ToString().ToLower() == "SSCAffectedVin".ToLower())
+            dealerData.SSCAffectedVINs = items.Where(x => x.ItemType.ToString() == ModelTypes.SSCAffectedVIN)
                 .Select(x => ((JObject)x).ToObject<SSCAffectedVINModel>()).ToList();
 
-            dealerData.WarrantyClaims = items.Where(x => x.ItemType.ToString().ToLower() == "WarrantyClaim".ToLower())
+            dealerData.WarrantyClaims = items.Where(x => x.ItemType.ToString() == ModelTypes.WarrantyClaim)
                 .Select(x => ((JObject)x).ToObject<WarrantyClaimModel>())
                 .Where(x => !(x?.IsDeleted ?? false)).ToList();
 
-            dealerData.BrokerInitialVehicles = items.Where(x => x.ItemType.ToString().ToLower() == "BrokerInitialVehicle".ToLower())
+            dealerData.BrokerInitialVehicles = items.Where(x => x.ItemType.ToString() == ModelTypes.BrokerInitialVehicle)
                 .Select(x => ((JObject)x).ToObject<BrokerInitialVehicleModel>())
                 .Where(x => !(x?.Deleted ?? false)).ToList();
 
-            dealerData.BrokerInvoices = items.Where(x => x.ItemType.ToString().ToLower() == "BrokerInvoice".ToLower())
+            dealerData.BrokerInvoices = items.Where(x => x.ItemType.ToString() == ModelTypes.BrokerInvoice)
                 .Select(x => ((JObject)x).ToObject<BrokerInvoiceModel>())
                 .Where(x => !(x?.IsDeleted ?? false)).ToList();
 
-            dealerData.PaidServiceInvoices = items.Where(x => x.ItemType.ToString().ToLower() == "TLPPackageInvoice".ToLower())
+            dealerData.PaidServiceInvoices = items.Where(x => x.ItemType.ToString() == ModelTypes.PaidServiceInvoice)
                 .Select(x => ((JObject)x).ToObject<PaidServiceInvoiceModel>())
                 .Where(x => !(x?.IsDeleted ?? false)).ToList();
 
-            dealerData.ServiceItemClaimLines = items.Where(x => x.ItemType.ToString().ToLower() == "ServiceItemClaimLine".ToLower())
+            dealerData.ServiceItemClaimLines = items.Where(x => x.ItemType.ToString() == ModelTypes.ServiceItemClaimLine)
                 .Select(x => ((JObject)x).ToObject<ServiceItemClaimLineModel>()).ToList();
 
-            dealerData.ServiceItemExcludedVINs = items.Where(x => x.ItemType.ToString().ToLower() == "VehicleFreeServiceExcludedVINs".ToLower())
+            dealerData.ServiceItemExcludedVINs = items.Where(x => x.ItemType.ToString() == ModelTypes.FreeServiceItemExcludedVIN)
                 .Select(x => ((JObject)x).ToObject<FreeServiceItemExcludedVINModel>()).ToList();
 
-            dealerData.FreeServiceItemDateShifts = items.Where(x => x.ItemType.ToString().ToLower() == "VehicleFreeServiceInvoiceDateShiftVINs".ToLower())
+            dealerData.FreeServiceItemDateShifts = items.Where(x => x.ItemType.ToString() == ModelTypes.FreeServiceItemDateShift)
                 .Select(x => ((JObject)x).ToObject<FreeServiceItemDateShiftModel>()).ToList();
 
-            dealerData.PaintThicknessRecords = items.Where(x => x.ItemType.ToString().ToLower() == new PaintThicknessRecordModel().ItemType.ToLower())
-                .Select(x => ((JObject)x).ToObject<PaintThicknessRecordModel>()).FirstOrDefault();
+            dealerData.PaintThicknessInspections = items.Where(x => x.ItemType.ToString() == ModelTypes.PaintThicknessInspection)
+                .Select(x => ((JObject)x).ToObject<PaintThicknessInspectionModel>()).FirstOrDefault();
 
-            dealerData.WarrantyDateShifts = items.Where(x => x.ItemType.ToString().ToLower() == new WarrantyDateShiftCosmosModel().ItemType.ToLower())
+            dealerData.WarrantyDateShifts = items.Where(x => x.ItemType.ToString() == ModelTypes.WarrantyDateShift)
                 .Select(x => ((JObject)x).ToObject<WarrantyDateShiftCosmosModel>()).ToList();
 
-            dealerData.Accessories = items.Where(x => x.ItemType.ToString().ToLower() == new AccessoryModel().ItemType.ToLower())
-                .Select(x => ((JObject)x).ToObject<AccessoryModel>()).ToList();
+            dealerData.Accessories = items.Where(x => x.ItemType.ToString() == ModelTypes.VehicleAccessory)
+                .Select(x => ((JObject)x).ToObject<VehicleAccessoryModel>()).ToList();
 
             return dealerData;
         }
@@ -205,18 +206,18 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             return items.FirstOrDefault();
         }
 
-        public async Task<IEnumerable<PartStockModel>> GetStockItemsAsync(IEnumerable<string> partNumbers)
+        public async Task<IEnumerable<StockPartModel>> GetStockItemsAsync(IEnumerable<string> partNumbers)
         {
             if (partNumbers is null || !partNumbers.Any())
                 return null;
 
             var container = client.GetContainer("DealerData", "Stock");
 
-            var queryable = container.GetItemLinqQueryable<PartStockModel>(true)
+            var queryable = container.GetItemLinqQueryable<StockPartModel>(true)
                 .Where(x => partNumbers.Contains(x.PartNumber));
 
             var iterator = queryable.ToFeedIterator();
-            var items = new List<PartStockModel>();
+            var items = new List<StockPartModel>();
 
             while (iterator.HasMoreResults)
             {

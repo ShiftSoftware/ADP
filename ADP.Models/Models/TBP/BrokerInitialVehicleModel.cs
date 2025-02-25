@@ -2,7 +2,7 @@
 
 namespace ShiftSoftware.ADP.Models.PortalTableSyncCosmosModels;
 
-public class BrokerInitialVehicleModel
+public class BrokerInitialVehicleModel: IPartitionedItem
 {
     public string id { get; set; } = default!;
     public long Id { get; set; }
@@ -10,5 +10,5 @@ public class BrokerInitialVehicleModel
     public string VIN { get; set; } = default!;
     public bool Deleted { get; set; }
     public DateTime SaveDate { get; set; }
-    public string ItemType => "BrokerInitialVehicle";
+    public PartitionedItemType ItemType => ModelTypes.BrokerInitialVehicle;
 }

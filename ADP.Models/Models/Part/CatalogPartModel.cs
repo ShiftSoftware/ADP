@@ -2,10 +2,9 @@
 
 namespace ShiftSoftware.ADP.Models.Part;
 
-public class CatalogPartModel
+public class CatalogPartModel : IPartitionedItem
 {
     public string id { get; set; } = default!;
-    public string ItemType => "Catalog";
     public string Location { get; set; } = default!;
     public string PartNumber { get; set; } = default!;
     public string PartName { get; set; } = default!;
@@ -29,8 +28,8 @@ public class CatalogPartModel
     public string HSCode { get; set; }
     public string LocalHSCode { get; set; }
     public decimal? GrossWeight { get; set; }
-
     public IEnumerable<CountryPriceModel> CountryPrices { get; set; }
+    public PartitionedItemType ItemType => ModelTypes.CatalogPart;
 }
 
 

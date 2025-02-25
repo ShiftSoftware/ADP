@@ -3,7 +3,7 @@ using System;
 
 namespace ShiftSoftware.ADP.Models.Vehicle;
 
-public class VehicleEntryModel : IBrandProps, ICompanyProps, IBranchProps, IInvoiceLineProps
+public class VehicleEntryModel : IPartitionedItem, IBrandProps, ICompanyProps, IBranchProps, IInvoiceLineProps
 {
     public Brands Brand { get; set; }
     public string BrandIntegrationID { get; set; }
@@ -30,8 +30,8 @@ public class VehicleEntryModel : IBrandProps, ICompanyProps, IBranchProps, IInvo
     public string LocationCode { get; set; }
     public string ExteriorColorCode { get; set; }
     public string InteriorColorCode { get; set; }
-    public string ItemType => "VS";
     public int LineNumber { get; set; }
     public DateTime? DateCreated { get; set; }
     public DateTime? DateInserted { get; set; }
+    public PartitionedItemType ItemType => ModelTypes.VehicleEntry;
 }

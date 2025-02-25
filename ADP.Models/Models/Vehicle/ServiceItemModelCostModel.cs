@@ -7,4 +7,5 @@ public class ServiceItemModelCostModel
     public string Variant { get; set; }
     public string Katashiki { get; set; }
     public string MenuCode { get; set; }
+    public decimal Cost { get; set; }
 }

@@ -2,7 +2,7 @@
 
 namespace ShiftSoftware.ADP.Models.Part;
 
-public class InvoicePartLineModel: IBranchProps, ICompanyProps, IInvoiceProps, IInvoiceLineProps
+public class InvoicePartLineModel: IPartitionedItem, IBranchProps, ICompanyProps, IInvoiceProps, IInvoiceLineProps
 {
     public string id { get; set; } = default!;
     public string Status { get; set; }
@@ -25,5 +25,5 @@ public class InvoicePartLineModel: IBranchProps, ICompanyProps, IInvoiceProps, I
     public DateTime? DateInserted { get; set; }
     public string CompanyIntegrationID { get; set; }
     public string BranchIntegrationID { get; set; }
-    public string ItemType => "Part";
+    public PartitionedItemType ItemType => ModelTypes.InvoicePartLine;
 }

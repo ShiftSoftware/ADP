@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace ShiftSoftware.ADP.Models.PortalTableSyncCosmosModels;
 
-public class PaidServiceInvoiceModel
+public class PaidServiceInvoiceModel: IPartitionedItem
 {
     public string id { get; set; } = default!;
     public long Id { get; set; }
@@ -12,8 +12,8 @@ public class PaidServiceInvoiceModel
     public long InvoiceNumber { get; set; }
     public bool IsDeleted { get; set; }
     public string VIN { get; set; } = default!;
-    public string ItemType => "TLPPackageInvoice";
     public virtual IEnumerable<PaidServiceInvoiceLineModel> Items { get; set; }
     public Brands Brand { get; set; }
     public string BrandIntegrationID { get; set; }
+    public PartitionedItemType ItemType => ModelTypes.PaidServiceInvoice;
 }

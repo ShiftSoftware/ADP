@@ -2,7 +2,7 @@
 
 namespace ShiftSoftware.ADP.Models.Service;
 
-public class InvoiceLaborLineModel : IBranchProps, ICompanyProps, IInvoiceProps, IInvoiceLineProps
+public class InvoiceLaborLineModel : IPartitionedItem, IBranchProps, ICompanyProps, IInvoiceProps, IInvoiceLineProps
 {
     public string id { get; set; } = default!;
     public string VIN { get; set; }
@@ -26,5 +26,5 @@ public class InvoiceLaborLineModel : IBranchProps, ICompanyProps, IInvoiceProps,
     public DateTime? DateInserted { get; set; }
     public string CompanyIntegrationID { get; set; }
     public string BranchIntegrationID { get; set; }
-    public string ItemType => "Labor";
+    public PartitionedItemType ItemType => ModelTypes.InvoiceLaborLine;
 }

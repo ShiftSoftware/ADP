@@ -2,7 +2,7 @@
 
 namespace ShiftSoftware.ADP.Models.PortalTableSyncCosmosModels;
 
-public class SSCAffectedVINModel
+public class SSCAffectedVINModel: IPartitionedItem
 {
     public string id { get; set; } = default!;
     public string VIN { get; set; } = default!;
@@ -18,5 +18,5 @@ public class SSCAffectedVINModel
     public string OriginalFormatPartNumber1 { get; set; }
     public string OriginalFormatPartNumber2 { get; set; }
     public string OriginalFormatPartNumber3 { get; set; }
-    public string ItemType => "SSCAffectedVin";
+    public PartitionedItemType ItemType => ModelTypes.SSCAffectedVIN;
 }

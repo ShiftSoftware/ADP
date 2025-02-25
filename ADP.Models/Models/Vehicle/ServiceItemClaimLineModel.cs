@@ -2,7 +2,7 @@
 
 namespace ShiftSoftware.ADP.Models.PortalTableSyncCosmosModels;
 
-public class ServiceItemClaimLineModel: ICompanyProps, IBranchProps
+public class ServiceItemClaimLineModel: IPartitionedItem, ICompanyProps, IBranchProps
 {
     public string id { get; set; }
     public long Id { get; set; }
@@ -10,7 +10,7 @@ public class ServiceItemClaimLineModel: ICompanyProps, IBranchProps
     public string BranchIntegrationID { get; set; }
     public DateTime? ClaimDate { get; set; }
     public string ServiceItemID { get; set; }
-    public int? RedeemType { get; set; }
-    public string ItemType => "ServiceItemClaimLine";
+    public decimal Cost { get; set; }
     public virtual ServiceItemClaimModel ServiceItemClaim { get; set; }
+    public PartitionedItemType ItemType => ModelTypes.ServiceItemClaimLine;
 }

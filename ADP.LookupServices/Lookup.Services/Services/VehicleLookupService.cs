@@ -185,10 +185,10 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
 
         private async Task<PaintThicknessDTO> GetPaintThickness()
         {
-            if (dealerDataAggregate.PaintThicknessRecords is null)
+            if (dealerDataAggregate.PaintThicknessInspections is null)
                 return null;
 
-            var groups = dealerDataAggregate.PaintThicknessRecords.Images?.GroupBy(x => x.ToLower().Replace("left", string.Empty).Replace("right", string.Empty));
+            var groups = dealerDataAggregate.PaintThicknessInspections.Images?.GroupBy(x => x.ToLower().Replace("left", string.Empty).Replace("right", string.Empty));
             var nonPairGroups = groups?.Where(x => x.Count() == 1).SelectMany(x => x)
                 .GroupBy(x => x.Substring(0, x.LastIndexOf('_')));
 
@@ -247,7 +247,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
 
             return new PaintThicknessDTO
             {
-                Parts = dealerDataAggregate.PaintThicknessRecords.Parts?.Select(x => new PaintThicknessPartDTO
+                Parts = dealerDataAggregate.PaintThicknessInspections.Parts?.Select(x => new PaintThicknessPartDTO
                 {
                     Part = x.Part,
                     Left = x.Left,
@@ -793,7 +793,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             IEnumerable<ServiceItemClaimLineModel> tlpTransactionLines,
             int redeemType)
         {
-            var transactionLine = tlpTransactionLines?.FirstOrDefault(x => x?.ServiceItemID == id.ToString() && x.RedeemType == redeemType);
+            var transactionLine = tlpTransactionLines?.FirstOrDefault(x => x?.ServiceItemID == id.ToString());
 
             if (transactionLine is not null)
                 return ("processed", VehcileServiceItemStatuses.Processed,
@@ -815,7 +815,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             var result = new List<VehicleServiceItemDTO>();
             serviceItems = serviceItems?.Where(x => x.TypeEnum == VehcileServiceItemTypes.Free);
 
-            var redeemedItems = dealerDataAggregate.ServiceItemClaimLines?.Where(x => x?.RedeemType == 4)
+            var redeemedItems = dealerDataAggregate.ServiceItemClaimLines?
                 .Select(x => x?.ServiceItemID)
                 .Where(x => !(serviceItems?.Any(s => s.ServiceItemID.ToString() == x) ?? false));
 
@@ -826,7 +826,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
                     var modelCost = GetModelCost(item.ModelCosts, katashiki, variant);
 
                     var transactionLine = dealerDataAggregate.ServiceItemClaimLines?
-                            .FirstOrDefault(t => t.ServiceItemID == item.Id.ToString() && t.RedeemType == 4);
+                            .FirstOrDefault(t => t.ServiceItemID == item.Id.ToString());
 
                     var serviceItem = new VehicleServiceItemDTO
                     {

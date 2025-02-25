@@ -2,7 +2,7 @@
 
 namespace ShiftSoftware.ADP.Models.PortalTableSyncCosmosModels;
 
-public class PaintThicknessRecordModel
+public class PaintThicknessInspectionModel: IPartitionedItem
 {
     public string id { get; set; } = default!;
     public long Id { get; set; }
@@ -13,5 +13,5 @@ public class PaintThicknessRecordModel
     public IEnumerable<string> Images { get; set; }
     public string VIN { get; set; } = default!;
     public IEnumerable<PaintThicknessPartModel> Parts { get; set; }
-    public string ItemType => "PaintThickness";
+    public PartitionedItemType ItemType => ModelTypes.PaintThicknessInspection;
 }
