@@ -97,7 +97,7 @@ public class PartLookupService
                     CountryName = countryName,
                     RegionIntegrationID = price.RegionIntegrationID,
                     RegionName = regionName,
-                    FOB = new(price.FOB),
+                    FOB = new(price.PurchasePrice),
                     Price = new(price.Price),
                     WarrantyPrice = new(price.WarrantyPrice)
                 });
@@ -111,7 +111,7 @@ public class PartLookupService
         var result = new PartLookupDTO
         {
             PartNumber = partNumber,
-            PartDescription = data.StockParts.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x.PartDescription))?.PartDescription ?? cosmosPartCatalog?.PartName,
+            PartDescription = data.StockParts.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x.PartName))?.PartNumber ?? cosmosPartCatalog?.PartName,
             LocalDescription = cosmosPartCatalog?.LocalDescription,
             Group = cosmosPartCatalog?.ProductGroup,
             BinCode = null,

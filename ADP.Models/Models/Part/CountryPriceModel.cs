@@ -2,7 +2,7 @@
 
 namespace ShiftSoftware.ADP.Models.Part;
 
-public class CountryPriceModel
+public class CountryPriceModel : ICountryProps
 {
     public string CountryIntegrationID { get; set; }
     public IEnumerable<RegionPriceModel> RegionPrices { get; set; }

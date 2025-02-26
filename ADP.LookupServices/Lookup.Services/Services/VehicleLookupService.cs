@@ -314,7 +314,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
                                     MenuCode = p.MenuCode,
                                     PartNumber = p.PartNumber,
                                     QTY = p.Quantity,
-                                    PartDescription = partData?.FirstOrDefault(pd => pd.Key == p.PartNumber).Value?.PartDescription
+                                    PartDescription = partData?.FirstOrDefault(pd => pd.Key == p.PartNumber).Value?.PartName
                                 })
                     };
 
@@ -627,7 +627,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
                     var partItems = partData?.Where(x => x.PartNumber == part.PartNumber).ToList();
                     if (partItems?.Count > 0)
                     {
-                        part.PartDescription = partItems.FirstOrDefault()?.PartDescription;
+                        part.PartDescription = partItems.FirstOrDefault()?.PartName;
                         part.IsAvailable = partItems.FirstOrDefault(x => x.Location == regionIntegrationId)?.Quantity > 0;
                     }
                 }
