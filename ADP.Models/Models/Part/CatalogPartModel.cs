@@ -20,14 +20,14 @@ public class CatalogPartModel : IPartitionedItem
     public decimal? Dimension3 { get; set; }
     public decimal? NetWeight { get; set; }
     public decimal? CubicMeasure { get; set; }
+    public decimal? GrossWeight { get; set; }
     public string Origin { get; set; }
     public IEnumerable<PartSupersession> SupersededTo { get; set; }
     public string PNCLocalDescription { get; set; }
     public string ProductGroupFull { get; set; }
     public string LocalDescription { get; set; }
     public string HSCode { get; set; }
-    public string LocalHSCode { get; set; }
-    public decimal? GrossWeight { get; set; }
+    public IEnumerable<CountryHSCodeModel> CountryHSCodes { get; set; }
     public IEnumerable<CountryPriceModel> CountryPrices { get; set; }
     public PartitionedItemType ItemType => ModelTypes.CatalogPart;
 }

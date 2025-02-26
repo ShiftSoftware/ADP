@@ -21,7 +21,7 @@ public class PartLookupDTO
     public decimal? GrossWeight { get; set; }
     public decimal? CubicMeasure { get; set; }
     public string? HSCode { get; set; }
-    public string? UZHSCode { get; set; }
+    //public string? UZHSCode { get; set; }
     public string? Origin { get; set; }
     public IEnumerable<string>? SupersededTo { get; set; }
 
