@@ -10,7 +10,7 @@ public class WarrantyClaimModel : IPartitionedItem
     public bool IsDeleted { get; set; }
     public DateTime? RepairDate { get; set; }
     public int? ClaimStatus { get; set; }
-    public string DistComment1 { get; set; }
+    public string DistributorComment { get; set; }
     public string LaborOperationNoMain { get; set; }
     public PartitionedItemType ItemType => ModelTypes.WarrantyClaim;
 }

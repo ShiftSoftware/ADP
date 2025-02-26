@@ -2,7 +2,7 @@
 
 namespace ShiftSoftware.ADP.Models.Vehicle;
 
-public class ExteriorColorModel
+public class ExteriorColorModel: IBrandProps
 {
     public string id { get; set; }
     public Brands Brand { get; set; }

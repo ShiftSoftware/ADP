@@ -422,11 +422,11 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
 
             result.InvoiceDate = vsData?.InvoiceDate;
             result.ProgressCode = vsData.LineStatus;
-            result.LocationCode = vsData.LocationCode;
+            result.LocationCode = vsData.Location;
             result.ACSStatus = vsData.Status;
             result.SaleType = vsData.SaleType;
             result.InvoiceAccount = vsData.AccountNumber;
-            result.RegionIntegrationId = vsData.RegionIntegrationId;
+            result.RegionIntegrationId = vsData.RegionIntegrationID;
 
             result.InvoiceNumber = vsData?.InvoiceNumber ?? 0;
             result.InvoiceTotal = vsData?.InvoiceTotal ?? 0;
@@ -502,7 +502,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
 
             var shiftDate = dealerDataAggregate.WarrantyDateShifts?.FirstOrDefault();
             if (shiftDate is not null)
-                invoiceDate = shiftDate.NewInvoiceDate;
+                invoiceDate = shiftDate.NewDate;
 
             result.WarrantyStartDate = invoiceDate;
 
@@ -547,7 +547,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
                 var warrantyClaim = warrantyClaims?
                     .Where(w => new List<int> { 1, 2, 5, 6 }.Contains(w?.ClaimStatus ?? 0))
                     .OrderByDescending(w => w.RepairDate)
-                    .FirstOrDefault(w => (w.DistComment1?.Contains(x.CampaignCode) ?? false) || w.LaborOperationNoMain == x.OpCode);
+                    .FirstOrDefault(w => (w.DistributorComment?.Contains(x.CampaignCode) ?? false) || w.LaborOperationNoMain == x.OpCode);
 
                 if (warrantyClaim is not null)
                 {
@@ -651,7 +651,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
 
             var shiftDay = dealerDataAggregate.FreeServiceItemDateShifts?.FirstOrDefault(x => x.VIN == vsData.VIN);
             if (shiftDay is not null)
-                invoiceDate = shiftDay.NewInvoiceDate;
+                invoiceDate = shiftDay.NewDate;
 
             // Free services
             if (!dealerDataAggregate.ServiceItemExcludedVINs.Any())
@@ -711,7 +711,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
                             {
                                 ServiceItemID = item.ServiceItemID,
                                 TLPPackageInvoiceTLPItemID = item.Id,
-                                ActivatedAt = paidService.ActivationDate,
+                                ActivatedAt = paidService.InvoiceDate,
                                 CampaignCode = null,
                                 Description = Utility.GetLocalizedText(item.ServiceItem?.PrintoutDescription, languageCode),
                                 Image = await GetFirstImageFullUrl(item.ServiceItem?.Photo),

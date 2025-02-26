@@ -9,6 +9,5 @@ public class BrokerInitialVehicleModel : IPartitionedItem
     public long BrokerID { get; set; }
     public string VIN { get; set; } = default!;
     public bool Deleted { get; set; }
-    public DateTime SaveDate { get; set; }
     public PartitionedItemType ItemType => ModelTypes.BrokerInitialVehicle;
 }

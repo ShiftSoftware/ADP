@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace ShiftSoftware.ADP.Models.TBP;
 
-public class BrokerModel
+public class BrokerModel: ICompanyProps
 {
     public string id { get; set; }
     public long Id { get; set; }

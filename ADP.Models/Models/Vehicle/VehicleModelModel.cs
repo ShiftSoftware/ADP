@@ -2,7 +2,7 @@
 
 namespace ShiftSoftware.ADP.Models.Vehicle;
 
-public class VehicleModelModel
+public class VehicleModelModel: IBrandProps
 {
     public string id { get; set; }
     public Brands Brand { get; set; }

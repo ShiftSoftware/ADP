@@ -11,12 +11,12 @@ public class SSCAffectedVINModel : IPartitionedItem
     public string OpCode { get; set; }
     public string OpCode2 { get; set; }
     public string OpCode3 { get; set; }
-    public DateTime? RepairDate { get; set; }
     public string PartNumber1 { get; set; }
     public string PartNumber2 { get; set; }
     public string PartNumber3 { get; set; }
     public string OriginalFormatPartNumber1 { get; set; }
     public string OriginalFormatPartNumber2 { get; set; }
     public string OriginalFormatPartNumber3 { get; set; }
+    public DateTime? RepairDate { get; set; }
     public PartitionedItemType ItemType => ModelTypes.SSCAffectedVIN;
 }

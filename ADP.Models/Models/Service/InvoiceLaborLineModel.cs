@@ -22,8 +22,8 @@ public class InvoiceLaborLineModel : IPartitionedItem, IBranchProps, ICompanyPro
     public string ServiceDescription { get; set; }
     public string Department { get; set; }
     public int LineNumber { get; set; }
-    public DateTime? DateCreated { get; set; }
-    public DateTime? DateInserted { get; set; }
+    public DateTime? LoadDate { get; set; }
+    public DateTime? PostDate { get; set; }
     public string CompanyIntegrationID { get; set; }
     public string BranchIntegrationID { get; set; }
     public PartitionedItemType ItemType => ModelTypes.InvoiceLaborLine;

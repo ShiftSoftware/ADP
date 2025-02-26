@@ -6,5 +6,4 @@ public class PaintThicknessPartModel
     public string Part { get; set; }
     public string Left { get; set; }
     public string Right { get; set; }
-    public int Cost { get; set; }
 }
