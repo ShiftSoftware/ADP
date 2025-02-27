@@ -541,8 +541,8 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
                 var parts = new List<SSCPartDTO>();
                 var sscLabors = new List<SSCLaborDTO>();
 
-                var isRepared = false;
-                DateTime? repairDate = null;
+                var isRepared = x.RepairDate is not null;
+                DateTime? repairDate = x.RepairDate;
 
                 var warrantyClaim = warrantyClaims?
                     .Where(w => new List<int> { 1, 2, 5, 6 }.Contains(w?.ClaimStatus ?? 0))
