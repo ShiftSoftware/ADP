@@ -108,4 +108,49 @@ public class Utility
         else if (type == PartitionKeyTypes.Boolean)
             builder.Add(bool.Parse(value));
     }
+
+    public static async Task CreateDatabasesAndContainersIfNotExistsAsync(CosmosClient client)
+    {
+        var databaseResponse = await client.CreateDatabaseIfNotExistsAsync(
+            Models.Constants.NoSQLConstants.Databases.Database,
+            ThroughputProperties.CreateManualThroughput(100_000)
+        );
+
+        var database = databaseResponse.Database;
+
+        await database.CreateContainerIfNotExistsAsync(new ContainerProperties(
+            Models.Constants.NoSQLConstants.Containers.Brokers,
+            "/id"
+        ));
+
+        await database.CreateContainerIfNotExistsAsync(new ContainerProperties(
+            Models.Constants.NoSQLConstants.Containers.Vehicles,
+            [Models.Constants.NoSQLConstants.PartitionKeys.Vehicles.Level1, Models.Constants.NoSQLConstants.PartitionKeys.Vehicles.Level2]
+        ));
+
+        await database.CreateContainerIfNotExistsAsync(new ContainerProperties(
+            Models.Constants.NoSQLConstants.Containers.Parts,
+            [Models.Constants.NoSQLConstants.PartitionKeys.Parts.Level1, Models.Constants.NoSQLConstants.PartitionKeys.Parts.Level2, Models.Constants.NoSQLConstants.PartitionKeys.Parts.Level3]
+        ));
+
+        await database.CreateContainerIfNotExistsAsync(new ContainerProperties(
+            Models.Constants.NoSQLConstants.Containers.ServiceItems,
+            "/id"
+        ));
+
+        await database.CreateContainerIfNotExistsAsync(new ContainerProperties(
+            Models.Constants.NoSQLConstants.Containers.ExteriorColors,
+            [Models.Constants.NoSQLConstants.PartitionKeys.ExteriorColors.Level1, Models.Constants.NoSQLConstants.PartitionKeys.ExteriorColors.Level2]
+        ));
+
+        await database.CreateContainerIfNotExistsAsync(new ContainerProperties(
+            Models.Constants.NoSQLConstants.Containers.InteriorColors,
+            [Models.Constants.NoSQLConstants.PartitionKeys.InteriorColors.Level1, Models.Constants.NoSQLConstants.PartitionKeys.InteriorColors.Level2]
+        ));
+
+        await database.CreateContainerIfNotExistsAsync(new ContainerProperties(
+            Models.Constants.NoSQLConstants.Containers.VehicleModels,
+            [Models.Constants.NoSQLConstants.PartitionKeys.VehicleModels.Level1, Models.Constants.NoSQLConstants.PartitionKeys.VehicleModels.Level2]
+        ));
+    }
 }

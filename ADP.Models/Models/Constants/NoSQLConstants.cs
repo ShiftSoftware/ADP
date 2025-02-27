@@ -26,33 +26,33 @@ public class NoSQLConstants
     {
         public class Vehicles
         {
-            public const string Level1 = nameof(VehicleEntryModel.VIN);
-            public const string Level2 = nameof(VehicleEntryModel.ItemType);
+            public const string Level1 = "/" + nameof(VehicleEntryModel.VIN);
+            public const string Level2 = "/" + nameof(VehicleEntryModel.ItemType);
         }
 
         public class Parts
         {
-            public const string Level1 = nameof(CatalogPartModel.PartNumber);
-            public const string Level2 = nameof(CatalogPartModel.ItemType);
-            public const string Level3 = nameof(CatalogPartModel.Location);
+            public const string Level1 = "/" + nameof(CatalogPartModel.PartNumber);
+            public const string Level2 = "/" + nameof(CatalogPartModel.ItemType);
+            public const string Level3 = "/" + nameof(CatalogPartModel.Location);
         }
 
         public class ExteriorColors
         {
-            public const string Level1 = nameof(ColorModel.Code);
-            public const string Level2 = nameof(ColorModel.Brand);
+            public const string Level1 = "/" + nameof(ColorModel.Code);
+            public const string Level2 = "/" + nameof(ColorModel.Brand);
         }
 
         public class InteriorColors
         {
-            public const string Level1 = nameof(ColorModel.Code);
-            public const string Level2 = nameof(ColorModel.Brand);
+            public const string Level1 = "/" + nameof(ColorModel.Code);
+            public const string Level2 = "/" + nameof(ColorModel.Brand);
         }
 
         public class VehicleModels
         {
-            public const string Level1 = nameof(VehicleModelModel.VariantCode);
-            public const string Level2 = nameof(VehicleModelModel.Brand);
+            public const string Level1 = "/" + nameof(VehicleModelModel.VariantCode);
+            public const string Level2 = "/" + nameof(VehicleModelModel.Brand);
         }
     }
 }
