@@ -47,7 +47,7 @@ public class PartLookupCosmosService
         {
             StockParts = items.Where(x => x.ItemType.ToString() == new StockPartModel().ItemType)
                 .Select(x => ((JObject)x).ToObject<StockPartModel>()).ToList(),
-            PartCatalog = items.Where(x => x.ItemType.ToString() == new CatalogPartModel().ItemType)
+            CatalogParts = items.Where(x => x.ItemType.ToString() == new CatalogPartModel().ItemType)
                 .Select(x => ((JObject)x).ToObject<CatalogPartModel>()).ToList()
         };
 

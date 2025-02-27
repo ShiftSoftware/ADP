@@ -23,6 +23,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Compile Remove="DTOsAndModels\Part\CatalogPartDTO.cs" />
 	  <Compile Remove="Services\TBPCosmosService.cs" />
 	</ItemGroup>
 

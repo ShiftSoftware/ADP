@@ -37,7 +37,7 @@ public class PartLookupService
         if (data == null)
             return null;
 
-        var cosmosPartCatalog = data.PartCatalog.FirstOrDefault();
+        var cosmosPartCatalog = data.CatalogParts.FirstOrDefault();
 
         List<StockPartDTO> stockParts = new();
 
@@ -97,8 +97,8 @@ public class PartLookupService
                     CountryName = countryName,
                     RegionIntegrationID = price.RegionIntegrationID,
                     RegionName = regionName,
-                    FOB = new(price.PurchasePrice),
-                    Price = new(price.RetailPrice),
+                    PurchasePrice = new(price.PurchasePrice),
+                    RetailPrice = new(price.RetailPrice),
                     WarrantyPrice = new(price.WarrantyPrice)
                 });
             }
@@ -113,12 +113,12 @@ public class PartLookupService
             PartNumber = partNumber,
             PartDescription = cosmosPartCatalog?.PartName,
             LocalDescription = cosmosPartCatalog?.LocalDescription,
-            Group = cosmosPartCatalog?.ProductGroup,
-            BinCode = null,
+            ProductGroup = cosmosPartCatalog?.ProductGroup,
+            BinType = cosmosPartCatalog?.BinType,
             CubicMeasure = cosmosPartCatalog?.CubicMeasure,
-            dimension1 = cosmosPartCatalog?.Dimension1,
-            dimension2 = cosmosPartCatalog?.Dimension2,
-            dimension3 = cosmosPartCatalog?.Dimension3,
+            Dimension1 = cosmosPartCatalog?.Dimension1,
+            Dimension2 = cosmosPartCatalog?.Dimension2,
+            Dimension3 = cosmosPartCatalog?.Dimension3,
             GrossWeight = cosmosPartCatalog?.GrossWeight,
             HSCode = cosmosPartCatalog?.HSCode,
             NetWeight = cosmosPartCatalog?.NetWeight,

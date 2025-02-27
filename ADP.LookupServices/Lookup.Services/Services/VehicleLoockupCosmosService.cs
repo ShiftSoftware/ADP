@@ -126,7 +126,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             dealerData.ServiceItemClaimLines = items.Where(x => x.ItemType.ToString() == ModelTypes.ServiceItemClaimLine)
                 .Select(x => ((JObject)x).ToObject<ServiceItemClaimLineModel>()).ToList();
 
-            dealerData.ServiceItemExcludedVINs = items.Where(x => x.ItemType.ToString() == ModelTypes.FreeServiceItemExcludedVIN)
+            dealerData.FreeServiceItemExcludedVINs = items.Where(x => x.ItemType.ToString() == ModelTypes.FreeServiceItemExcludedVIN)
                 .Select(x => ((JObject)x).ToObject<FreeServiceItemExcludedVINModel>()).ToList();
 
             dealerData.FreeServiceItemDateShifts = items.Where(x => x.ItemType.ToString() == ModelTypes.FreeServiceItemDateShift)

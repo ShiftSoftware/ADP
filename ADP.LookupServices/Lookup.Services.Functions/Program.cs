@@ -183,13 +183,13 @@ var host = new HostBuilder()
                             CultureName = "en-US",
                             Culture = usCulture
                         },
-                        FOB = new PriceDTO(price.FOB?.Value)
+                        PurchasePrice = new PriceDTO(price.PurchasePrice?.Value)
                         {
                             CurrecntySymbol = price.CountryIntegrationID == "UZ" ? "лв" : "$",
                             CultureName = price.CountryIntegrationID == "UZ" ? "uz-UZ" : "en-US",
                             Culture = price.CountryIntegrationID == "UZ" ? new CultureInfo("uz-UZ") : usCulture
                         },
-                        Price = new PriceDTO(price.Price?.Value)
+                        RetailPrice = new PriceDTO(price.RetailPrice?.Value)
                         {
                             CurrecntySymbol = price.CountryIntegrationID == "UZ" ? "лв" : "$",
                             CultureName = price.CountryIntegrationID == "UZ" ? "uz-UZ" : "en-US",

@@ -7,7 +7,6 @@ public class StockPartDTO
 {
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public QuantityLookUpResults QuantityLookUpResult { get; set; }
-
     public string LocationID { get; set; }
     public string LocationName { get; set; }
 }

@@ -1,9 +1,8 @@
-﻿using Microsoft.Azure.Cosmos;
+﻿using ADP.SyncAgent.Entities;
+using ADP.SyncAgent.Extensions;
+using Microsoft.Azure.Cosmos;
 using ShiftSoftware.ShiftEntity.Model.Enums;
 using System.Linq.Expressions;
-using ShiftSoftware.ADP.Models.Enums;
-using ADP.SyncAgent.Entities;
-using ADP.SyncAgent.Extensions;
 
 namespace ADP.SyncAgent;
 

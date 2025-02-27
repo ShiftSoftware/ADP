@@ -654,7 +654,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
                 invoiceDate = shiftDay.NewDate;
 
             // Free services
-            if (!dealerDataAggregate.ServiceItemExcludedVINs.Any())
+            if (!dealerDataAggregate.FreeServiceItemExcludedVINs.Any())
             {
                 var eligableRedeemableItems = redeeambleItems?
                     .Where(x => !(x.IsDeleted))

@@ -6,5 +6,5 @@ namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Part;
 public class PartAggregateCosmosModel
 {
     public IEnumerable<StockPartModel> StockParts { get; set; }
-    public IEnumerable<CatalogPartModel> PartCatalog { get; set; }
+    public IEnumerable<CatalogPartModel> CatalogParts { get; set; }
 }
