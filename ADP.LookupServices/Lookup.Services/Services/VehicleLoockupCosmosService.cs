@@ -164,7 +164,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             return items.FirstOrDefault();
         }
 
-        public async Task<ExteriorColorModel> GetVTColorAsync(string colorCode, Brands? brand)
+        public async Task<ColorModel> GetVTColorAsync(string colorCode, Brands? brand)
         {
             var container = client.GetContainer("DealerData", "VTColors");
 
@@ -172,8 +172,8 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             query.WithParameter("@colorCode", colorCode);
             query.WithParameter("@brand", brand);
 
-            var iterator = container.GetItemQueryIterator<ExteriorColorModel>(query);
-            var items = new List<ExteriorColorModel>();
+            var iterator = container.GetItemQueryIterator<ColorModel>(query);
+            var items = new List<ColorModel>();
 
             while (iterator.HasMoreResults)
             {
@@ -184,7 +184,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             return items.FirstOrDefault();
         }
 
-        public async Task<InteriorColorModel> GetVTTrimAsync(string trimCode, Brands? brand)
+        public async Task<ColorModel> GetVTTrimAsync(string trimCode, Brands? brand)
         {
             var container = client.GetContainer("DealerData", "VTTrims");
 
@@ -192,8 +192,8 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             query.WithParameter("@trimCode", trimCode);
             query.WithParameter("@brand", brand);
 
-            var iterator = container.GetItemQueryIterator<InteriorColorModel>(query);
-            var items = new List<InteriorColorModel>();
+            var iterator = container.GetItemQueryIterator<ColorModel>(query);
+            var items = new List<ColorModel>();
 
             while (iterator.HasMoreResults)
             {
@@ -264,7 +264,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             return items.FirstOrDefault();
         }
 
-        public void UpdateVSDataColor(VehicleEntryModel item, ExteriorColorModel color)
+        public void UpdateVSDataColor(VehicleEntryModel item, ColorModel color)
         {
             var contaner = client.GetContainer("DealerData", "DealerData");
 
@@ -272,7 +272,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             pb.Add(item.VIN).Add("VS");
 
             tasks.Add(
-                contaner.PatchItemAsync<ExteriorColorModel>(item.id, pb.Build(),
+                contaner.PatchItemAsync<ColorModel>(item.id, pb.Build(),
                     new List<PatchOperation>
                     {
                     PatchOperation.Set("/VTColor", color)
@@ -280,7 +280,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             );
         }
 
-        public void UpdateVSDataTrim(VehicleEntryModel item, InteriorColorModel trim)
+        public void UpdateVSDataTrim(VehicleEntryModel item, ColorModel trim)
         {
             var contaner = client.GetContainer("DealerData", "DealerData");
 
@@ -288,7 +288,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             pb.Add(item.VIN).Add("VS");
 
             tasks.Add(
-                contaner.PatchItemAsync<InteriorColorModel>(item.id, pb.Build(),
+                contaner.PatchItemAsync<ColorModel>(item.id, pb.Build(),
                     new List<PatchOperation>
                     {
                         PatchOperation.Set("/VTTrim", trim)

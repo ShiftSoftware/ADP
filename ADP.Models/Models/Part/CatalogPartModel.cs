@@ -5,6 +5,7 @@ namespace ShiftSoftware.ADP.Models.Part;
 public class CatalogPartModel : IPartitionedItem
 {
     public string id { get; set; } = default!;
+    public string Location { get; set; } = default!;
     public string PartNumber { get; set; } = default!;
     public string PartName { get; set; } = default!;
     public string ProductGroup { get; set; } = default!;

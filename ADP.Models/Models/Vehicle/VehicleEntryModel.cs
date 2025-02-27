@@ -16,8 +16,8 @@ public class VehicleEntryModel : IPartitionedItem, IBrandProps, ICompanyProps, I
     public string CustomerID { get; set; }
     public string id { get; set; }
     public VehicleModelModel VehicleModel { get; set; }
-    public ExteriorColorModel ExteriorColor { get; set; }
-    public InteriorColorModel InteriorColor { get; set; }
+    public ColorModel ExteriorColor { get; set; }
+    public ColorModel InteriorColor { get; set; }
     public string RegionIntegrationID { get; set; }
     public string VIN { get; set; }
     public string SaleType { get; set; }
