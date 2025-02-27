@@ -112,7 +112,7 @@ public class Utility
     public static async Task CreateDatabasesAndContainersIfNotExistsAsync(CosmosClient client)
     {
         var databaseResponse = await client.CreateDatabaseIfNotExistsAsync(
-            Models.Constants.NoSQLConstants.Databases.Database,
+            Models.Constants.NoSQLConstants.Databases.CompanyData,
             ThroughputProperties.CreateManualThroughput(100_000)
         );
 

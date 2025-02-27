@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using ShiftSoftware.ADP.SyncAgent;
 using System.Linq.Expressions;
 
 namespace ShiftSoftware.ADP.SyncAgent.Services;
