@@ -13,7 +13,7 @@ public class FlatRateDTO
 
     public Dictionary<string, decimal?> Times { get; set; }
 
-    public string? WMI { get; set; }
+    public string WMI { get; set; }
 
     public Brands? Brand { get; set; }
 }

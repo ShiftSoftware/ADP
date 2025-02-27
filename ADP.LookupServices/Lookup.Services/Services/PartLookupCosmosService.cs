@@ -1,10 +1,10 @@
 ﻿using Microsoft.Azure.Cosmos;
 using Newtonsoft.Json.Linq;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Part;
+using ShiftSoftware.ADP.Models.Part;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using ShiftSoftware.ADP.Models.Part;
 
 namespace ShiftSoftware.ADP.Lookup.Services.Services;
 

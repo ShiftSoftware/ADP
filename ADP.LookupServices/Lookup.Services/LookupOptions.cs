@@ -11,7 +11,7 @@ public class LookupOptions
     public Func<LookupOptionResolverModel<Dictionary<string,string>>, ValueTask<string?>>? RedeemableItemImageUrlResolver { get; set; }
     public Func<LookupOptionResolverModel<string>,ValueTask<string?>>? PaintThickneesImageUrlResolver { get; set; }
     public Func<LookupOptionResolverModel<string>, ValueTask<string?>>? AccessoryImageUrlResolver { get; set; }
-    public Func<LookupOptionResolverModel<List<ShiftFileDTO>?>, ValueTask<List<ShiftFileDTO>?>>? DealerLogImageResolver { get; set; }
+    public Func<LookupOptionResolverModel<List<ShiftFileDTO>?>, ValueTask<List<ShiftFileDTO>?>>? CompanyLogoImageResolver { get; set; }
     public Func<LookupOptionResolverModel<PartLocationNameResolverModel>, ValueTask<string?>>? PartLocationNameResolver { get; set; }
     public Func<LookupOptionResolverModel<string>, ValueTask<string?>>? CountryNameResolver { get; set; }
     public Func<LookupOptionResolverModel<string>, ValueTask<string?>>? RegionNameResolver { get; set; }

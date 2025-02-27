@@ -13,404 +13,403 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace ShiftSoftware.ADP.Lookup.Services.Services
+namespace ShiftSoftware.ADP.Lookup.Services.Services;
+
+public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
 {
-    public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
+    private readonly CosmosClient client;
+    private readonly List<Task> tasks = new List<Task>();
+
+    public VehicleLoockupCosmosService(CosmosClient client)
     {
-        private readonly CosmosClient client;
-        private readonly List<Task> tasks = new List<Task>();
+        this.client = client;
+    }
 
-        public VehicleLoockupCosmosService(CosmosClient client)
+    private async Task<List<dynamic>> GetLookupItems(string vin)
+    {
+        if (string.IsNullOrWhiteSpace(vin))
+            return new();
+
+        var container = client.GetContainer("DealerData", "DealerData");
+        var query = new QueryDefinition("SELECT * FROM c WHERE c.VIN = @vin");
+        query.WithParameter("@vin", vin?.Trim().ToUpper());
+
+        var iterator = container.GetItemQueryIterator<dynamic>(query);
+
+        var items = new List<dynamic>();
+
+        while (iterator.HasMoreResults)
         {
-            this.client = client;
+            var response = await iterator.ReadNextAsync();
+            items.AddRange(response);
         }
 
-        private async Task<List<dynamic>> GetLookupItems(string vin)
+        return items;
+    }
+
+    private async Task<List<dynamic>> GetLookupItems(IEnumerable<string> vins, IEnumerable<string> itemTypes)
+    {
+        if (vins == null || !vins.Any())
+            return new List<dynamic>();
+
+        if (vins.Count() > 100)
+            throw new Exception("Can't lookup more than 100 VINs at a time.");
+
+        var container = client.GetContainer("DealerData", "DealerData");
+
+        var query = new QueryDefinition($"SELECT * FROM c WHERE ARRAY_CONTAINS(@vins, c.VIN) AND ARRAY_CONTAINS(@itemTypes, c.ItemType)")
+            .WithParameter("@vins", vins)
+            .WithParameter("@itemTypes", itemTypes);
+
+        var iterator = container.GetItemQueryIterator<dynamic>(query);
+
+        var items = new List<dynamic>();
+
+        while (iterator.HasMoreResults)
+            items.AddRange(await iterator.ReadNextAsync());
+
+        return items;
+    }
+
+    public async Task<CompanyDataAggregateCosmosModel> GetAggregatedCompanyData(string vin)
+    {
+        var items = await GetLookupItems(vin);
+
+        return ConvertDynamicListItemsToCompanyData(items);
+    }
+
+    public async Task<CompanyDataAggregateCosmosModel> GetAggregatedCompanyData(IEnumerable<string> vins, IEnumerable<string> itemTypes)
+    {
+        var items = await GetLookupItems(vins, itemTypes);
+
+        return ConvertDynamicListItemsToCompanyData(items);
+    }
+
+    internal static CompanyDataAggregateCosmosModel ConvertDynamicListItemsToCompanyData(List<dynamic> items)
+    {
+        var companyData = new CompanyDataAggregateCosmosModel();
+
+        companyData.VehicleEntries = items.Where(x => x.ItemType.ToString() == ModelTypes.VehicleEntry)
+            .Select(x => ((JObject)x).ToObject<VehicleEntryModel>()).ToList();
+
+        companyData.InitialOfficialVINs = items.Where(x => x.ItemType.ToString() == ModelTypes.InitialOfficialVIN)
+            .Select(x => ((JObject)x).ToObject<InitialOfficialVINModel>()).ToList();
+
+        companyData.Invoices = items.Where(x => x.ItemType.ToString() == ModelTypes.Invoice)
+            .Select(x => ((JObject)x).ToObject<InvoiceModel>()).ToList();
+
+        companyData.LaborLines = items.Where(x => x.ItemType.ToString() == ModelTypes.InvoiceLaborLine)
+            .Select(x => ((JObject)x).ToObject<InvoiceLaborLineModel>()).ToList();
+
+        companyData.PartLines = items.Where(x => x.ItemType.ToString() == ModelTypes.InvoicePartLine)
+            .Select(x => ((JObject)x).ToObject<InvoicePartLineModel>()).ToList();
+
+        companyData.SSCAffectedVINs = items.Where(x => x.ItemType.ToString() == ModelTypes.SSCAffectedVIN)
+            .Select(x => ((JObject)x).ToObject<SSCAffectedVINModel>()).ToList();
+
+        companyData.WarrantyClaims = items.Where(x => x.ItemType.ToString() == ModelTypes.WarrantyClaim)
+            .Select(x => ((JObject)x).ToObject<WarrantyClaimModel>())
+            .Where(x => !(x?.IsDeleted ?? false)).ToList();
+
+        companyData.BrokerInitialVehicles = items.Where(x => x.ItemType.ToString() == ModelTypes.BrokerInitialVehicle)
+            .Select(x => ((JObject)x).ToObject<BrokerInitialVehicleModel>())
+            .Where(x => !(x?.Deleted ?? false)).ToList();
+
+        companyData.BrokerInvoices = items.Where(x => x.ItemType.ToString() == ModelTypes.BrokerInvoice)
+            .Select(x => ((JObject)x).ToObject<BrokerInvoiceModel>())
+            .Where(x => !(x?.IsDeleted ?? false)).ToList();
+
+        companyData.PaidServiceInvoices = items.Where(x => x.ItemType.ToString() == ModelTypes.PaidServiceInvoice)
+            .Select(x => ((JObject)x).ToObject<PaidServiceInvoiceModel>())
+            .Where(x => !(x?.IsDeleted ?? false)).ToList();
+
+        companyData.ServiceItemClaimLines = items.Where(x => x.ItemType.ToString() == ModelTypes.ServiceItemClaimLine)
+            .Select(x => ((JObject)x).ToObject<ServiceItemClaimLineModel>()).ToList();
+
+        companyData.FreeServiceItemExcludedVINs = items.Where(x => x.ItemType.ToString() == ModelTypes.FreeServiceItemExcludedVIN)
+            .Select(x => ((JObject)x).ToObject<FreeServiceItemExcludedVINModel>()).ToList();
+
+        companyData.FreeServiceItemDateShifts = items.Where(x => x.ItemType.ToString() == ModelTypes.FreeServiceItemDateShift)
+            .Select(x => ((JObject)x).ToObject<FreeServiceItemDateShiftModel>()).ToList();
+
+        companyData.PaintThicknessInspections = items.Where(x => x.ItemType.ToString() == ModelTypes.PaintThicknessInspection)
+            .Select(x => ((JObject)x).ToObject<PaintThicknessInspectionModel>()).FirstOrDefault();
+
+        companyData.WarrantyDateShifts = items.Where(x => x.ItemType.ToString() == ModelTypes.WarrantyDateShift)
+            .Select(x => ((JObject)x).ToObject<WarrantyDateShiftCosmosModel>()).ToList();
+
+        companyData.Accessories = items.Where(x => x.ItemType.ToString() == ModelTypes.VehicleAccessory)
+            .Select(x => ((JObject)x).ToObject<VehicleAccessoryModel>()).ToList();
+
+        return companyData;
+    }
+
+    public async Task<VehicleModelModel> GetVTModelAsync(string variant, Brands? brand)
+    {
+        var container = client.GetContainer("DealerData", "VTModels");
+
+        var query = new QueryDefinition("SELECT top 1 * FROM c WHERE c.Variant_Code = @variant AND c.Brand = @brand");
+        query.WithParameter("@variant", variant);
+        query.WithParameter("@brand", brand);
+
+        var iterator = container.GetItemQueryIterator<VehicleModelModel>(query);
+        var items = new List<VehicleModelModel>();
+
+        while (iterator.HasMoreResults)
         {
-            if (string.IsNullOrWhiteSpace(vin))
-                return new();
-
-            var container = client.GetContainer("DealerData", "DealerData");
-            var query = new QueryDefinition("SELECT * FROM c WHERE c.VIN = @vin");
-            query.WithParameter("@vin", vin?.Trim().ToUpper());
-
-            var iterator = container.GetItemQueryIterator<dynamic>(query);
-
-            var items = new List<dynamic>();
-
-            while (iterator.HasMoreResults)
-            {
-                var response = await iterator.ReadNextAsync();
-                items.AddRange(response);
-            }
-
-            return items;
+            var response = await iterator.ReadNextAsync();
+            items.AddRange(response);
         }
 
-        private async Task<List<dynamic>> GetLookupItems(IEnumerable<string> vins, IEnumerable<string> itemTypes)
+        return items.FirstOrDefault();
+    }
+
+    public async Task<ColorModel> GetVTColorAsync(string colorCode, Brands? brand)
+    {
+        var container = client.GetContainer("DealerData", "VTColors");
+
+        var query = new QueryDefinition("SELECT top 1 * FROM c WHERE c.Color_Code = @colorCode AND c.Brand = @brand");
+        query.WithParameter("@colorCode", colorCode);
+        query.WithParameter("@brand", brand);
+
+        var iterator = container.GetItemQueryIterator<ColorModel>(query);
+        var items = new List<ColorModel>();
+
+        while (iterator.HasMoreResults)
         {
-            if (vins == null || !vins.Any())
-                return new List<dynamic>();
-
-            if (vins.Count() > 100)
-                throw new Exception("Can't lookup more than 100 VINs at a time.");
-
-            var container = client.GetContainer("DealerData", "DealerData");
-
-            var query = new QueryDefinition($"SELECT * FROM c WHERE ARRAY_CONTAINS(@vins, c.VIN) AND ARRAY_CONTAINS(@itemTypes, c.ItemType)")
-                .WithParameter("@vins", vins)
-                .WithParameter("@itemTypes", itemTypes);
-
-            var iterator = container.GetItemQueryIterator<dynamic>(query);
-
-            var items = new List<dynamic>();
-
-            while (iterator.HasMoreResults)
-                items.AddRange(await iterator.ReadNextAsync());
-
-            return items;
+            var response = await iterator.ReadNextAsync();
+            items.AddRange(response);
         }
 
-        public async Task<DealerDataAggregateCosmosModel> GetAggregatedDealerData(string vin)
-        {
-            var items = await GetLookupItems(vin);
+        return items.FirstOrDefault();
+    }
 
-            return ConvertDynamicListItemsToDealerData(items);
+    public async Task<ColorModel> GetVTTrimAsync(string trimCode, Brands? brand)
+    {
+        var container = client.GetContainer("DealerData", "VTTrims");
+
+        var query = new QueryDefinition("SELECT top 1 * FROM c WHERE c.Trim_Code = @trimCode AND c.Brand = @brand");
+        query.WithParameter("@trimCode", trimCode);
+        query.WithParameter("@brand", brand);
+
+        var iterator = container.GetItemQueryIterator<ColorModel>(query);
+        var items = new List<ColorModel>();
+
+        while (iterator.HasMoreResults)
+        {
+            var response = await iterator.ReadNextAsync();
+            items.AddRange(response);
         }
 
-        public async Task<DealerDataAggregateCosmosModel> GetAggregatedDealerData(IEnumerable<string> vins, IEnumerable<string> itemTypes)
-        {
-            var items = await GetLookupItems(vins, itemTypes);
+        return items.FirstOrDefault();
+    }
 
-            return ConvertDynamicListItemsToDealerData(items);
+    public async Task<IEnumerable<StockPartModel>> GetStockItemsAsync(IEnumerable<string> partNumbers)
+    {
+        if (partNumbers is null || !partNumbers.Any())
+            return null;
+
+        var container = client.GetContainer("DealerData", "Stock");
+
+        var queryable = container.GetItemLinqQueryable<StockPartModel>(true)
+            .Where(x => partNumbers.Contains(x.PartNumber));
+
+        var iterator = queryable.ToFeedIterator();
+        var items = new List<StockPartModel>();
+
+        while (iterator.HasMoreResults)
+        {
+            var response = await iterator.ReadNextAsync();
+            items.AddRange(response);
         }
 
-        internal static DealerDataAggregateCosmosModel ConvertDynamicListItemsToDealerData(List<dynamic> items)
+        return items;
+    }
+
+    public async Task<BrokerModel> GetBrokerAsync(string accountNumber, string companyIntegrationID)
+    {
+        var container = client.GetContainer("DealerData", "Broker");
+
+        var queryable = container.GetItemLinqQueryable<BrokerModel>(true)
+            .Where(x => !x.IsDeleted && x.AccountNumbers.Contains(accountNumber) && x.CompanyIntegrationID == companyIntegrationID);
+
+        var iterator = queryable.ToFeedIterator();
+        var items = new List<BrokerModel>();
+
+        while (iterator.HasMoreResults)
         {
-            var dealerData = new DealerDataAggregateCosmosModel();
-
-            dealerData.VehicleEntries = items.Where(x => x.ItemType.ToString() == ModelTypes.VehicleEntry)
-                .Select(x => ((JObject)x).ToObject<VehicleEntryModel>()).ToList();
-
-            dealerData.InitialOfficialVINs = items.Where(x => x.ItemType.ToString() == ModelTypes.InitialOfficialVIN)
-                .Select(x => ((JObject)x).ToObject<InitialOfficialVINModel>()).ToList();
-
-            dealerData.Invoices = items.Where(x => x.ItemType.ToString() == ModelTypes.Invoice)
-                .Select(x => ((JObject)x).ToObject<InvoiceModel>()).ToList();
-
-            dealerData.LaborLines = items.Where(x => x.ItemType.ToString() == ModelTypes.InvoiceLaborLine)
-                .Select(x => ((JObject)x).ToObject<InvoiceLaborLineModel>()).ToList();
-
-            dealerData.PartLines = items.Where(x => x.ItemType.ToString() == ModelTypes.InvoicePartLine)
-                .Select(x => ((JObject)x).ToObject<InvoicePartLineModel>()).ToList();
-
-            dealerData.SSCAffectedVINs = items.Where(x => x.ItemType.ToString() == ModelTypes.SSCAffectedVIN)
-                .Select(x => ((JObject)x).ToObject<SSCAffectedVINModel>()).ToList();
-
-            dealerData.WarrantyClaims = items.Where(x => x.ItemType.ToString() == ModelTypes.WarrantyClaim)
-                .Select(x => ((JObject)x).ToObject<WarrantyClaimModel>())
-                .Where(x => !(x?.IsDeleted ?? false)).ToList();
-
-            dealerData.BrokerInitialVehicles = items.Where(x => x.ItemType.ToString() == ModelTypes.BrokerInitialVehicle)
-                .Select(x => ((JObject)x).ToObject<BrokerInitialVehicleModel>())
-                .Where(x => !(x?.Deleted ?? false)).ToList();
-
-            dealerData.BrokerInvoices = items.Where(x => x.ItemType.ToString() == ModelTypes.BrokerInvoice)
-                .Select(x => ((JObject)x).ToObject<BrokerInvoiceModel>())
-                .Where(x => !(x?.IsDeleted ?? false)).ToList();
-
-            dealerData.PaidServiceInvoices = items.Where(x => x.ItemType.ToString() == ModelTypes.PaidServiceInvoice)
-                .Select(x => ((JObject)x).ToObject<PaidServiceInvoiceModel>())
-                .Where(x => !(x?.IsDeleted ?? false)).ToList();
-
-            dealerData.ServiceItemClaimLines = items.Where(x => x.ItemType.ToString() == ModelTypes.ServiceItemClaimLine)
-                .Select(x => ((JObject)x).ToObject<ServiceItemClaimLineModel>()).ToList();
-
-            dealerData.FreeServiceItemExcludedVINs = items.Where(x => x.ItemType.ToString() == ModelTypes.FreeServiceItemExcludedVIN)
-                .Select(x => ((JObject)x).ToObject<FreeServiceItemExcludedVINModel>()).ToList();
-
-            dealerData.FreeServiceItemDateShifts = items.Where(x => x.ItemType.ToString() == ModelTypes.FreeServiceItemDateShift)
-                .Select(x => ((JObject)x).ToObject<FreeServiceItemDateShiftModel>()).ToList();
-
-            dealerData.PaintThicknessInspections = items.Where(x => x.ItemType.ToString() == ModelTypes.PaintThicknessInspection)
-                .Select(x => ((JObject)x).ToObject<PaintThicknessInspectionModel>()).FirstOrDefault();
-
-            dealerData.WarrantyDateShifts = items.Where(x => x.ItemType.ToString() == ModelTypes.WarrantyDateShift)
-                .Select(x => ((JObject)x).ToObject<WarrantyDateShiftCosmosModel>()).ToList();
-
-            dealerData.Accessories = items.Where(x => x.ItemType.ToString() == ModelTypes.VehicleAccessory)
-                .Select(x => ((JObject)x).ToObject<VehicleAccessoryModel>()).ToList();
-
-            return dealerData;
+            var response = await iterator.ReadNextAsync();
+            items.AddRange(response);
         }
 
-        public async Task<VehicleModelModel> GetVTModelAsync(string variant, Brands? brand)
+        return items.FirstOrDefault();
+    }
+
+    public async Task<BrokerModel> GetBrokerAsync(long id)
+    {
+        var container = client.GetContainer("DealerData", "Broker");
+
+        var queryable = container.GetItemLinqQueryable<BrokerModel>(true)
+            .Where(x => !x.IsDeleted && x.id == id.ToString());
+
+        var iterator = queryable.ToFeedIterator();
+        var items = new List<BrokerModel>();
+
+        while (iterator.HasMoreResults)
         {
-            var container = client.GetContainer("DealerData", "VTModels");
-
-            var query = new QueryDefinition("SELECT top 1 * FROM c WHERE c.Variant_Code = @variant AND c.Brand = @brand");
-            query.WithParameter("@variant", variant);
-            query.WithParameter("@brand", brand);
-
-            var iterator = container.GetItemQueryIterator<VehicleModelModel>(query);
-            var items = new List<VehicleModelModel>();
-
-            while (iterator.HasMoreResults)
-            {
-                var response = await iterator.ReadNextAsync();
-                items.AddRange(response);
-            }
-
-            return items.FirstOrDefault();
+            var response = await iterator.ReadNextAsync();
+            items.AddRange(response);
         }
 
-        public async Task<ColorModel> GetVTColorAsync(string colorCode, Brands? brand)
-        {
-            var container = client.GetContainer("DealerData", "VTColors");
+        return items.FirstOrDefault();
+    }
+
+    public void UpdateVSDataColor(VehicleEntryModel item, ColorModel color)
+    {
+        var contaner = client.GetContainer("DealerData", "DealerData");
+
+        var pb = new PartitionKeyBuilder();
+        pb.Add(item.VIN).Add("VS");
+
+        tasks.Add(
+            contaner.PatchItemAsync<ColorModel>(item.id, pb.Build(),
+                new List<PatchOperation>
+                {
+                PatchOperation.Set("/VTColor", color)
+                })
+        );
+    }
+
+    public void UpdateVSDataTrim(VehicleEntryModel item, ColorModel trim)
+    {
+        var contaner = client.GetContainer("DealerData", "DealerData");
 
-            var query = new QueryDefinition("SELECT top 1 * FROM c WHERE c.Color_Code = @colorCode AND c.Brand = @brand");
-            query.WithParameter("@colorCode", colorCode);
-            query.WithParameter("@brand", brand);
+        var pb = new PartitionKeyBuilder();
+        pb.Add(item.VIN).Add("VS");
 
-            var iterator = container.GetItemQueryIterator<ColorModel>(query);
-            var items = new List<ColorModel>();
+        tasks.Add(
+            contaner.PatchItemAsync<ColorModel>(item.id, pb.Build(),
+                new List<PatchOperation>
+                {
+                    PatchOperation.Set("/VTTrim", trim)
+                })
+        );
+    }
 
-            while (iterator.HasMoreResults)
-            {
-                var response = await iterator.ReadNextAsync();
-                items.AddRange(response);
-            }
+    public void UpdateVSDataModel(VehicleEntryModel item, VehicleModelModel model)
+    {
+        var contaner = client.GetContainer("DealerData", "DealerData");
 
-            return items.FirstOrDefault();
-        }
-
-        public async Task<ColorModel> GetVTTrimAsync(string trimCode, Brands? brand)
-        {
-            var container = client.GetContainer("DealerData", "VTTrims");
+        var pb = new PartitionKeyBuilder();
+        pb.Add(item.VIN).Add("VS");
 
-            var query = new QueryDefinition("SELECT top 1 * FROM c WHERE c.Trim_Code = @trimCode AND c.Brand = @brand");
-            query.WithParameter("@trimCode", trimCode);
-            query.WithParameter("@brand", brand);
-
-            var iterator = container.GetItemQueryIterator<ColorModel>(query);
-            var items = new List<ColorModel>();
-
-            while (iterator.HasMoreResults)
-            {
-                var response = await iterator.ReadNextAsync();
-                items.AddRange(response);
-            }
-
-            return items.FirstOrDefault();
-        }
-
-        public async Task<IEnumerable<StockPartModel>> GetStockItemsAsync(IEnumerable<string> partNumbers)
-        {
-            if (partNumbers is null || !partNumbers.Any())
-                return null;
-
-            var container = client.GetContainer("DealerData", "Stock");
-
-            var queryable = container.GetItemLinqQueryable<StockPartModel>(true)
-                .Where(x => partNumbers.Contains(x.PartNumber));
-
-            var iterator = queryable.ToFeedIterator();
-            var items = new List<StockPartModel>();
-
-            while (iterator.HasMoreResults)
-            {
-                var response = await iterator.ReadNextAsync();
-                items.AddRange(response);
-            }
-
-            return items;
-        }
-
-        public async Task<BrokerModel> GetBrokerAsync(string accountNumber, string companyIntegrationID)
-        {
-            var container = client.GetContainer("DealerData", "Broker");
-
-            var queryable = container.GetItemLinqQueryable<BrokerModel>(true)
-                .Where(x => !x.IsDeleted && x.AccountNumbers.Contains(accountNumber) && x.CompanyIntegrationID == companyIntegrationID);
-
-            var iterator = queryable.ToFeedIterator();
-            var items = new List<BrokerModel>();
-
-            while (iterator.HasMoreResults)
-            {
-                var response = await iterator.ReadNextAsync();
-                items.AddRange(response);
-            }
-
-            return items.FirstOrDefault();
-        }
-
-        public async Task<BrokerModel> GetBrokerAsync(long id)
-        {
-            var container = client.GetContainer("DealerData", "Broker");
-
-            var queryable = container.GetItemLinqQueryable<BrokerModel>(true)
-                .Where(x => !x.IsDeleted && x.id == id.ToString());
-
-            var iterator = queryable.ToFeedIterator();
-            var items = new List<BrokerModel>();
-
-            while (iterator.HasMoreResults)
-            {
-                var response = await iterator.ReadNextAsync();
-                items.AddRange(response);
-            }
-
-            return items.FirstOrDefault();
-        }
-
-        public void UpdateVSDataColor(VehicleEntryModel item, ColorModel color)
-        {
-            var contaner = client.GetContainer("DealerData", "DealerData");
-
-            var pb = new PartitionKeyBuilder();
-            pb.Add(item.VIN).Add("VS");
-
-            tasks.Add(
-                contaner.PatchItemAsync<ColorModel>(item.id, pb.Build(),
-                    new List<PatchOperation>
-                    {
-                    PatchOperation.Set("/VTColor", color)
-                    })
-            );
-        }
-
-        public void UpdateVSDataTrim(VehicleEntryModel item, ColorModel trim)
-        {
-            var contaner = client.GetContainer("DealerData", "DealerData");
+        tasks.Add(
+            contaner.PatchItemAsync<VehicleModelModel>(item.id, pb.Build(),
+                new List<PatchOperation>
+                {
+                PatchOperation.Set("/VTModel", model)
+                })
+        );
+    }
 
-            var pb = new PartitionKeyBuilder();
-            pb.Add(item.VIN).Add("VS");
+    public async Task SaveChangesAsync()
+    {
+        await Task.WhenAll(tasks);
+    }
 
-            tasks.Add(
-                contaner.PatchItemAsync<ColorModel>(item.id, pb.Build(),
-                    new List<PatchOperation>
-                    {
-                        PatchOperation.Set("/VTTrim", trim)
-                    })
-            );
-        }
+    public async Task<IEnumerable<ServiceItemModel>> GetServiceItemsAsync(Brands brand)
+    {
+        //if (invoiceDate is null)
+        //    return null;
 
-        public void UpdateVSDataModel(VehicleEntryModel item, VehicleModelModel model)
-        {
-            var contaner = client.GetContainer("DealerData", "DealerData");
+        var container = client.GetContainer("DealerData", "ServiceItems");
 
-            var pb = new PartitionKeyBuilder();
-            pb.Add(item.VIN).Add("VS");
+        var queryable = container.GetItemLinqQueryable<ServiceItemModel>(true)
+            //.Where(x => !x.Deleted.HasValue || x.Deleted == false)
+            //.Where(x => invoiceDate >= x.PublishDate && invoiceDate <= x.ExpireDate)
+            //.Where(x => x.ModelCosts.Count() == 0
+            //    || x.ModelCosts.Any(a =>
+            //    (katashiki.StartsWith(a.Katashiki) && a.Katashiki.Trim() != string.Empty)
+            //    || (variant.StartsWith(a.Variant) && a.Variant.Trim() != string.Empty)))
+            //.Where(x => !x.ArchivedVersion.HasValue || x.ArchivedVersion == false || x.ArchivedVersion == null)
+            .Where(x => x.Brands.Any(a => a == brand));
 
-            tasks.Add(
-                contaner.PatchItemAsync<VehicleModelModel>(item.id, pb.Build(),
-                    new List<PatchOperation>
-                    {
-                    PatchOperation.Set("/VTModel", model)
-                    })
-            );
-        }
+        var iterator = queryable.ToFeedIterator();
+        var items = new List<ServiceItemModel>();
 
-        public async Task SaveChangesAsync()
-        {
-            await Task.WhenAll(tasks);
-        }
+        while (iterator.HasMoreResults)
+            items.AddRange(await iterator.ReadNextAsync());
 
-        public async Task<IEnumerable<ServiceItemModel>> GetServiceItemsAsync(Brands brand)
-        {
-            //if (invoiceDate is null)
-            //    return null;
+        return items;
+    }
 
-            var container = client.GetContainer("DealerData", "ServiceItems");
+    public async Task<IEnumerable<VehicleModelModel>> GetAllVTModelsAsync()
+    {
+        var container = client.GetContainer("DealerData", "VTModels");
 
-            var queryable = container.GetItemLinqQueryable<ServiceItemModel>(true)
-                //.Where(x => !x.Deleted.HasValue || x.Deleted == false)
-                //.Where(x => invoiceDate >= x.PublishDate && invoiceDate <= x.ExpireDate)
-                //.Where(x => x.ModelCosts.Count() == 0
-                //    || x.ModelCosts.Any(a =>
-                //    (katashiki.StartsWith(a.Katashiki) && a.Katashiki.Trim() != string.Empty)
-                //    || (variant.StartsWith(a.Variant) && a.Variant.Trim() != string.Empty)))
-                //.Where(x => !x.ArchivedVersion.HasValue || x.ArchivedVersion == false || x.ArchivedVersion == null)
-                .Where(x => x.Brands.Any(a => a == brand));
+        var queryable = container.GetItemLinqQueryable<VehicleModelModel>(true);
 
-            var iterator = queryable.ToFeedIterator();
-            var items = new List<ServiceItemModel>();
+        var iterator = queryable.ToFeedIterator();
 
-            while (iterator.HasMoreResults)
-                items.AddRange(await iterator.ReadNextAsync());
+        var items = new List<VehicleModelModel>();
 
-            return items;
-        }
+        while (iterator.HasMoreResults)
+            items.AddRange(await iterator.ReadNextAsync());
 
-        public async Task<IEnumerable<VehicleModelModel>> GetAllVTModelsAsync()
-        {
-            var container = client.GetContainer("DealerData", "VTModels");
+        return items;
+    }
 
-            var queryable = container.GetItemLinqQueryable<VehicleModelModel>(true);
+    public async Task<IEnumerable<VehicleModelModel>> GetVTModelsByKatashikiAsync(string katashiki)
+    {
+        var container = client.GetContainer("DealerData", "VTModels");
 
-            var iterator = queryable.ToFeedIterator();
+        var queryable = container.GetItemLinqQueryable<VehicleModelModel>(true)
+            .Where(x => x.Katashiki == katashiki);
 
-            var items = new List<VehicleModelModel>();
+        var iterator = queryable.ToFeedIterator();
 
-            while (iterator.HasMoreResults)
-                items.AddRange(await iterator.ReadNextAsync());
+        var items = new List<VehicleModelModel>();
 
-            return items;
-        }
+        while (iterator.HasMoreResults)
+            items.AddRange(await iterator.ReadNextAsync());
 
-        public async Task<IEnumerable<VehicleModelModel>> GetVTModelsByKatashikiAsync(string katashiki)
-        {
-            var container = client.GetContainer("DealerData", "VTModels");
+        return items;
+    }
 
-            var queryable = container.GetItemLinqQueryable<VehicleModelModel>(true)
-                .Where(x => x.Katashiki == katashiki);
+    public async Task<IEnumerable<VehicleModelModel>> GetVTModelsByVariantAsync(string variant)
+    {
+        var container = client.GetContainer("DealerData", "VTModels");
 
-            var iterator = queryable.ToFeedIterator();
+        var queryable = container.GetItemLinqQueryable<VehicleModelModel>(true)
+            .Where(x => x.VariantCode == variant);
 
-            var items = new List<VehicleModelModel>();
+        var iterator = queryable.ToFeedIterator();
 
-            while (iterator.HasMoreResults)
-                items.AddRange(await iterator.ReadNextAsync());
+        var items = new List<VehicleModelModel>();
 
-            return items;
-        }
+        while (iterator.HasMoreResults)
+            items.AddRange(await iterator.ReadNextAsync());
 
-        public async Task<IEnumerable<VehicleModelModel>> GetVTModelsByVariantAsync(string variant)
-        {
-            var container = client.GetContainer("DealerData", "VTModels");
+        return items;
+    }
 
-            var queryable = container.GetItemLinqQueryable<VehicleModelModel>(true)
-                .Where(x => x.VariantCode == variant);
+    public async Task<IEnumerable<VehicleModelModel>> GetVTModelsByVinAsync(string vin)
+    {
+        var companyDataContainer = client.GetContainer("DealerData", "DealerData");
 
-            var iterator = queryable.ToFeedIterator();
+        var vsQuery = companyDataContainer.GetItemLinqQueryable<VehicleEntryModel>(true)
+            .Where(x => x.ItemType == new VehicleEntryModel().ItemType)
+            .Where(x => x.VIN == vin);
 
-            var items = new List<VehicleModelModel>();
+        var vsIterator = vsQuery.ToFeedIterator();
+        var vs = new VehicleEntryModel();
 
-            while (iterator.HasMoreResults)
-                items.AddRange(await iterator.ReadNextAsync());
+        if (vsIterator.HasMoreResults)
+            vs = (await vsIterator.ReadNextAsync()).FirstOrDefault();
 
-            return items;
-        }
+        if (vs.VehicleModel is not null)
+            return new List<VehicleModelModel> { vs.VehicleModel };
 
-        public async Task<IEnumerable<VehicleModelModel>> GetVTModelsByVinAsync(string vin)
-        {
-            var dealerDataContainer = client.GetContainer("DealerData", "DealerData");
-
-            var vsQuery = dealerDataContainer.GetItemLinqQueryable<VehicleEntryModel>(true)
-                .Where(x => x.ItemType == new VehicleEntryModel().ItemType)
-                .Where(x => x.VIN == vin);
-
-            var vsIterator = vsQuery.ToFeedIterator();
-            var vs = new VehicleEntryModel();
-
-            if (vsIterator.HasMoreResults)
-                vs = (await vsIterator.ReadNextAsync()).FirstOrDefault();
-
-            if (vs.VehicleModel is not null)
-                return new List<VehicleModelModel> { vs.VehicleModel };
-
-            return await GetVTModelsByVariantAsync(vs.VariantCode);
-        }
+        return await GetVTModelsByVariantAsync(vs.VariantCode);
     }
 }

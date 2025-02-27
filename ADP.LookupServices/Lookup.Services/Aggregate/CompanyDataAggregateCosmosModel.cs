@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace ShiftSoftware.ADP.Models.Aggregate;
 
-public class DealerDataAggregateCosmosModel
+public class CompanyDataAggregateCosmosModel
 {
     public List<VehicleEntryModel> VehicleEntries { get; set; }
     public List<InitialOfficialVINModel> InitialOfficialVINs { get; set; }

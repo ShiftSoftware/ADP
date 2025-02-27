@@ -34,20 +34,20 @@ public class VehicleLookup
         return await ProcessRequest(req, vin);
     }
 
-    [Function("Secure" + nameof(AggregatedDealerData))]
-    public async Task<IActionResult> AggregatedDealerData(
-        [HttpTrigger(AuthorizationLevel.Function, "get", Route = "dealer-data/{vin}")] HttpRequest req, string vin)
+    [Function("Secure" + nameof(AggregatedCompanyData))]
+    public async Task<IActionResult> AggregatedCompanyData(
+        [HttpTrigger(AuthorizationLevel.Function, "get", Route = "company-data/{vin}")] HttpRequest req, string vin)
     {
-        var data = await lookupService.lookupCosmosService.GetAggregatedDealerData(vin);
+        var data = await lookupService.lookupCosmosService.GetAggregatedCompanyData(vin);
 
         return new OkObjectResult(data);
     }
 
-    [Function("Secure_Multiple" + nameof(AggregatedDealerData))]
-    public async Task<IActionResult> MultipleAggregatedDealerData(
-        [HttpTrigger(AuthorizationLevel.Function, "get", Route = "dealer-data-multiple/{vins}")] HttpRequest req, string vins)
+    [Function("Secure_Multiple" + nameof(AggregatedCompanyData))]
+    public async Task<IActionResult> MultipleAggregatedCompanyData(
+        [HttpTrigger(AuthorizationLevel.Function, "get", Route = "company-data-multiple/{vins}")] HttpRequest req, string vins)
     {
-        var data = await lookupService.lookupCosmosService.GetAggregatedDealerData(vins.Split(',').ToList(), new List<string> { "VS", "Labor", "Part" });
+        var data = await lookupService.lookupCosmosService.GetAggregatedCompanyData(vins.Split(',').ToList(), new List<string> { "VS", "Labor", "Part" });
 
         return new OkObjectResult(new
         {

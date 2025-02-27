@@ -41,7 +41,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Folder Include="LookupCosmosModels\" />
 		<None Include="Images\icon.png" Pack="true" PackagePath="\" />
 		<Folder Include="Images\" />
 	</ItemGroup>

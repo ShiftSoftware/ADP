@@ -21,7 +21,7 @@ public interface ILogCosmosService
         Brands? brand);
 
     Task<Guid> LogCustomerVehicleLookupAsync(
-        CustomerVehicleLookupLogInfo? logInfo,
+        CustomerVehicleLookupLogInfo logInfo,
         string vin,
         bool isAuthorized,
         bool hasActiveWarranty,

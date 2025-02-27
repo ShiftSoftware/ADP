@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using ShiftSoftware.ADP.Models.Enums;
+﻿using ShiftSoftware.ADP.Models.Enums;
 
 namespace ShiftSoftware.ADP.Models.DTOs.VehicleLookupDTOs;
 

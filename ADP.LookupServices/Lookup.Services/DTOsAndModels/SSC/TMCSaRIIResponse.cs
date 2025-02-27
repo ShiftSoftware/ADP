@@ -4,5 +4,5 @@ public class TMCSaRIIResponse
 {
     public SSCLookupStatuses SSCLookupStatus { get; set; }
     public int TMCErrorCode { get; set; }
-    public string? ExceptionMessage { get; set; }
+    public string ExceptionMessage { get; set; }
 }

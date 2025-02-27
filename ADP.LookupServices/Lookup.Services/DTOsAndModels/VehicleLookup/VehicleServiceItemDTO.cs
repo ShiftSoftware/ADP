@@ -1,12 +1,8 @@
-﻿using ShiftSoftware.ShiftEntity.Model;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
-using ShiftSoftware.ADP.Models.Enums;
+﻿using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ADP.Models.JsonConverters;
+using ShiftSoftware.ShiftEntity.Model;
+using System;
+using System.Text.Json.Serialization;
 
 namespace ShiftSoftware.ADP.Models.DTOs.VehicleLookupDTOs;
 
@@ -38,18 +34,15 @@ public class VehicleServiceItemDTO
     public DateTime? RedeemDate { get; set; }
     public long? ModelCostID { get; set; }
     public long ServiceItemID { get; set; }
-    public long? TLPPackageInvoiceTLPItemID { get; set; }
-    public string DealerIntegrationID { get; set; }
+    public long? PaidServiceInvoiceLineID { get; set; }
+    public string CompanyIntegrationID { get; set; }
 
     [JsonConverter(typeof(LocalizedTextJsonConverter))]
-    public string DealerName { get; set; }
+    public string CompanyName { get; set; }
     public string InvoiceNumber { get; set; }
-    public string WIP { get; set; }
+    public string JobNumber { get; set; }
     public long? MaximumMileage { get; set; }
-
     public bool SkipZeroTrust { get; set; }
-
     public int? ActiveFor { get; set; }
-
-    public string? ActiveForInterval { get; set; } = default!;
+    public string ActiveForInterval { get; set; } = default!;
 }
