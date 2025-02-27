@@ -16,7 +16,7 @@ public class InvoicePartLineModel: IPartitionedItem, IBranchProps, ICompanyProps
     public string MenuCode { get; set; }
     public decimal? ExtendedPrice { get; set; }
     public string PartNumber { get; set; }
-    public int LineNumber { get; set; }
+    public string LineID { get; set; }
     public string CustomerAccountNumber { get; set; }
     public string CustomerID { get; set; }
     public string Department { get; set; }

@@ -314,7 +314,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
                                     MenuCode = p.MenuCode,
                                     PartNumber = p.PartNumber,
                                     QTY = p.Quantity,
-                                    PartDescription = partData?.FirstOrDefault(pd => pd.Key == p.PartNumber).Value?.PartName
+                                    //PartDescription = partData?.FirstOrDefault(pd => pd.Key == p.PartNumber).Value?.PartName
                                 })
                     };
 
@@ -627,7 +627,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
                     var partItems = partData?.Where(x => x.PartNumber == part.PartNumber).ToList();
                     if (partItems?.Count > 0)
                     {
-                        part.PartDescription = partItems.FirstOrDefault()?.PartName;
+                        //part.PartDescription = partItems.FirstOrDefault()?.PartName;
                         part.IsAvailable = partItems.FirstOrDefault(x => x.Location == regionIntegrationId)?.Quantity > 0;
                     }
                 }
@@ -703,9 +703,9 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             {
                 foreach (var paidService in paidServices)
                 {
-                    if (paidService?.Items?.Count() > 0)
+                    if (paidService?.Lines?.Count() > 0)
                     {
-                        foreach (var item in paidService.Items)
+                        foreach (var item in paidService.Lines)
                         {
                             var itemResult = new VehicleServiceItemDTO
                             {

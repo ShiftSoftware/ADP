@@ -21,7 +21,7 @@ public class InvoiceLaborLineModel : IPartitionedItem, IBranchProps, ICompanyPro
     public string ServiceCode { get; set; }
     public string ServiceDescription { get; set; }
     public string Department { get; set; }
-    public int LineNumber { get; set; }
+    public string LineID { get; set; }
     public DateTime? LoadDate { get; set; }
     public DateTime? PostDate { get; set; }
     public string CompanyIntegrationID { get; set; }

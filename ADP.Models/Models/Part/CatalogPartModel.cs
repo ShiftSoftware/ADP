@@ -21,14 +21,11 @@ public class CatalogPartModel : IPartitionedItem
     public decimal? GrossWeight { get; set; }
     public string Origin { get; set; }
     public IEnumerable<PartSupersession> SupersededTo { get; set; }
-    public string PNCLocalDescription { get; set; }
     public string LocalDescription { get; set; }
     public string HSCode { get; set; }
-    public IEnumerable<CountryHSCodeModel> CountryHSCodes { get; set; }
-    public IEnumerable<CountryPriceModel> CountryPrices { get; set; }
+    public IEnumerable<CountryDataModel> CountryData { get; set; }
     public PartitionedItemType ItemType => ModelTypes.CatalogPart;
 }
-
 
 public class PartSupersession
 {

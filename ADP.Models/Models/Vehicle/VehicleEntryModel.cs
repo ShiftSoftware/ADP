@@ -31,7 +31,7 @@ public class VehicleEntryModel : IPartitionedItem, IBrandProps, ICompanyProps, I
     public string Location { get; set; }
     public string ExteriorColorCode { get; set; }
     public string InteriorColorCode { get; set; }
-    public int LineNumber { get; set; }
+    public string LineID { get; set; }
     public DateTime? LoadDate { get; set; }
     public DateTime? PostDate { get; set; }
     public PartitionedItemType ItemType => ModelTypes.VehicleEntry;

@@ -12,7 +12,7 @@ public class PaidServiceInvoiceModel : IPartitionedItem, IBrandProps
     public long InvoiceNumber { get; set; }
     public bool IsDeleted { get; set; }
     public string VIN { get; set; } = default!;
-    public virtual IEnumerable<PaidServiceInvoiceLineModel> Items { get; set; }
+    public virtual IEnumerable<PaidServiceInvoiceLineModel> Lines { get; set; }
     public Brands Brand { get; set; }
     public string BrandIntegrationID { get; set; }
     public PartitionedItemType ItemType => ModelTypes.PaidServiceInvoice;

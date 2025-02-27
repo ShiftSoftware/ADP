@@ -65,7 +65,7 @@ public class PartLookupService
             stockParts = (await options.PartLookupStocksResolver(new(stockParts, language, services))).ToList();
 
         List<PartPriceDTO> prices = new();
-        foreach(var countryPrice in cosmosPartCatalog?.CountryPrices)
+        foreach(var countryPrice in cosmosPartCatalog?.CountryData)
         {
             string? countryName = null;
             if(options?.CountryNameResolver is not null)
@@ -98,7 +98,7 @@ public class PartLookupService
                     RegionIntegrationID = price.RegionIntegrationID,
                     RegionName = regionName,
                     FOB = new(price.PurchasePrice),
-                    Price = new(price.Price),
+                    Price = new(price.RetailPrice),
                     WarrantyPrice = new(price.WarrantyPrice)
                 });
             }
@@ -111,7 +111,7 @@ public class PartLookupService
         var result = new PartLookupDTO
         {
             PartNumber = partNumber,
-            PartDescription = data.StockParts.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x.PartName))?.PartNumber ?? cosmosPartCatalog?.PartName,
+            PartDescription = cosmosPartCatalog?.PartName,
             LocalDescription = cosmosPartCatalog?.LocalDescription,
             Group = cosmosPartCatalog?.ProductGroup,
             BinCode = null,
@@ -124,7 +124,7 @@ public class PartLookupService
             NetWeight = cosmosPartCatalog?.NetWeight,
             Origin = cosmosPartCatalog?.Origin,
             PNC = cosmosPartCatalog?.PNC,
-            PNCLocalName = cosmosPartCatalog?.PNCLocalDescription,
+            //PNCLocalName = cosmosPartCatalog?.PNCLocalDescription,
             //UZHSCode = cosmosPartCatalog?.CountryHSCodes,            
             StockParts = stockParts,
             Prices = resolvedPrices,
