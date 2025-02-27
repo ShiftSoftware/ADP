@@ -4,7 +4,6 @@ using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Logging;
 using Polly;
 using Polly.Retry;
-using ShiftSoftware.ADP.SyncAgent;
 using ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
 using System.Diagnostics;
 using System.Linq.Expressions;
