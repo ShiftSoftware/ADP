@@ -30,7 +30,11 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         if (string.IsNullOrWhiteSpace(vin))
             return new();
 
-        var container = client.GetContainer("DealerData", "DealerData");
+        var container = client.GetContainer(
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.Vehicles
+        );
+
         var query = new QueryDefinition("SELECT * FROM c WHERE c.VIN = @vin");
         query.WithParameter("@vin", vin?.Trim().ToUpper());
 
@@ -55,7 +59,10 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         if (vins.Count() > 100)
             throw new Exception("Can't lookup more than 100 VINs at a time.");
 
-        var container = client.GetContainer("DealerData", "DealerData");
+        var container = client.GetContainer(
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.Vehicles
+        );
 
         var query = new QueryDefinition($"SELECT * FROM c WHERE ARRAY_CONTAINS(@vins, c.VIN) AND ARRAY_CONTAINS(@itemTypes, c.ItemType)")
             .WithParameter("@vins", vins)
@@ -144,9 +151,12 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         return companyData;
     }
 
-    public async Task<VehicleModelModel> GetVTModelAsync(string variant, Brands? brand)
+    public async Task<VehicleModelModel> GetVehicleModelsAsync(string variant, Brands? brand)
     {
-        var container = client.GetContainer("DealerData", "VTModels");
+        var container = client.GetContainer(
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.VehicleModels
+        );
 
         var query = new QueryDefinition("SELECT top 1 * FROM c WHERE c.Variant_Code = @variant AND c.Brand = @brand");
         query.WithParameter("@variant", variant);
@@ -164,9 +174,12 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         return items.FirstOrDefault();
     }
 
-    public async Task<ColorModel> GetVTColorAsync(string colorCode, Brands? brand)
+    public async Task<ColorModel> GetExteriorColorsAsync(string colorCode, Brands? brand)
     {
-        var container = client.GetContainer("DealerData", "VTColors");
+        var container = client.GetContainer(
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.ExteriorColors
+        );
 
         var query = new QueryDefinition("SELECT top 1 * FROM c WHERE c.Color_Code = @colorCode AND c.Brand = @brand");
         query.WithParameter("@colorCode", colorCode);
@@ -184,9 +197,12 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         return items.FirstOrDefault();
     }
 
-    public async Task<ColorModel> GetVTTrimAsync(string trimCode, Brands? brand)
+    public async Task<ColorModel> GetInteriorColorsAsync(string trimCode, Brands? brand)
     {
-        var container = client.GetContainer("DealerData", "VTTrims");
+        var container = client.GetContainer(
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.InteriorColors
+        );
 
         var query = new QueryDefinition("SELECT top 1 * FROM c WHERE c.Trim_Code = @trimCode AND c.Brand = @brand");
         query.WithParameter("@trimCode", trimCode);
@@ -228,7 +244,10 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
 
     public async Task<BrokerModel> GetBrokerAsync(string accountNumber, string companyIntegrationID)
     {
-        var container = client.GetContainer("DealerData", "Broker");
+        var container = client.GetContainer(
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.Brokers
+        );
 
         var queryable = container.GetItemLinqQueryable<BrokerModel>(true)
             .Where(x => !x.IsDeleted && x.AccountNumbers.Contains(accountNumber) && x.CompanyIntegrationID == companyIntegrationID);
@@ -247,7 +266,10 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
 
     public async Task<BrokerModel> GetBrokerAsync(long id)
     {
-        var container = client.GetContainer("DealerData", "Broker");
+        var container = client.GetContainer(
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.Brokers
+        );
 
         var queryable = container.GetItemLinqQueryable<BrokerModel>(true)
             .Where(x => !x.IsDeleted && x.id == id.ToString());
@@ -266,13 +288,16 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
 
     public void UpdateVSDataColor(VehicleEntryModel item, ColorModel color)
     {
-        var contaner = client.GetContainer("DealerData", "DealerData");
+        var container = client.GetContainer(
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.Vehicles
+        );
 
         var pb = new PartitionKeyBuilder();
         pb.Add(item.VIN).Add("VS");
 
         tasks.Add(
-            contaner.PatchItemAsync<ColorModel>(item.id, pb.Build(),
+            container.PatchItemAsync<ColorModel>(item.id, pb.Build(),
                 new List<PatchOperation>
                 {
                 PatchOperation.Set("/VTColor", color)
@@ -282,13 +307,16 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
 
     public void UpdateVSDataTrim(VehicleEntryModel item, ColorModel trim)
     {
-        var contaner = client.GetContainer("DealerData", "DealerData");
+        var container = client.GetContainer(
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.Vehicles
+        );
 
         var pb = new PartitionKeyBuilder();
         pb.Add(item.VIN).Add("VS");
 
         tasks.Add(
-            contaner.PatchItemAsync<ColorModel>(item.id, pb.Build(),
+            container.PatchItemAsync<ColorModel>(item.id, pb.Build(),
                 new List<PatchOperation>
                 {
                     PatchOperation.Set("/VTTrim", trim)
@@ -298,13 +326,16 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
 
     public void UpdateVSDataModel(VehicleEntryModel item, VehicleModelModel model)
     {
-        var contaner = client.GetContainer("DealerData", "DealerData");
+        var container = client.GetContainer(
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.Vehicles
+        );
 
         var pb = new PartitionKeyBuilder();
         pb.Add(item.VIN).Add("VS");
 
         tasks.Add(
-            contaner.PatchItemAsync<VehicleModelModel>(item.id, pb.Build(),
+            container.PatchItemAsync<VehicleModelModel>(item.id, pb.Build(),
                 new List<PatchOperation>
                 {
                 PatchOperation.Set("/VTModel", model)
@@ -322,7 +353,11 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         //if (invoiceDate is null)
         //    return null;
 
-        var container = client.GetContainer("DealerData", "ServiceItems");
+
+        var container = client.GetContainer(
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.ServiceItems
+        );
 
         var queryable = container.GetItemLinqQueryable<ServiceItemModel>(true)
             //.Where(x => !x.Deleted.HasValue || x.Deleted == false)
@@ -345,7 +380,10 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
 
     public async Task<IEnumerable<VehicleModelModel>> GetAllVTModelsAsync()
     {
-        var container = client.GetContainer("DealerData", "VTModels");
+        var container = client.GetContainer(
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.VehicleModels
+        );
 
         var queryable = container.GetItemLinqQueryable<VehicleModelModel>(true);
 
@@ -361,7 +399,10 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
 
     public async Task<IEnumerable<VehicleModelModel>> GetVTModelsByKatashikiAsync(string katashiki)
     {
-        var container = client.GetContainer("DealerData", "VTModels");
+        var container = client.GetContainer(
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.VehicleModels
+        );
 
         var queryable = container.GetItemLinqQueryable<VehicleModelModel>(true)
             .Where(x => x.Katashiki == katashiki);
@@ -378,7 +419,10 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
 
     public async Task<IEnumerable<VehicleModelModel>> GetVTModelsByVariantAsync(string variant)
     {
-        var container = client.GetContainer("DealerData", "VTModels");
+        var container = client.GetContainer(
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.VehicleModels
+        );
 
         var queryable = container.GetItemLinqQueryable<VehicleModelModel>(true)
             .Where(x => x.VariantCode == variant);
@@ -395,7 +439,10 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
 
     public async Task<IEnumerable<VehicleModelModel>> GetVTModelsByVinAsync(string vin)
     {
-        var companyDataContainer = client.GetContainer("DealerData", "DealerData");
+        var companyDataContainer = client.GetContainer(
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.Vehicles
+        );
 
         var vsQuery = companyDataContainer.GetItemLinqQueryable<VehicleEntryModel>(true)
             .Where(x => x.ItemType == new VehicleEntryModel().ItemType)

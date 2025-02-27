@@ -340,7 +340,7 @@ public class VehicleLookupService
 
         if (vtModel is null)
         {
-            vtModel = await lookupCosmosService.GetVTModelAsync(vsData?.VariantCode, vsData?.Brand);
+            vtModel = await lookupCosmosService.GetVehicleModelsAsync(vsData?.VariantCode, vsData?.Brand);
 
             if (vtModel is not null)
                 lookupCosmosService.UpdateVSDataModel(vsData, vtModel);
@@ -371,7 +371,7 @@ public class VehicleLookupService
 
         if (vsData?.ExteriorColorCode is null)
         {
-            var color = await lookupCosmosService.GetVTColorAsync(vsData?.ExteriorColorCode, vsData?.Brand);
+            var color = await lookupCosmosService.GetExteriorColorsAsync(vsData?.ExteriorColorCode, vsData?.Brand);
             if (color is not null)
             {
                 result.ExteriorColor = color?.Description;
@@ -381,7 +381,7 @@ public class VehicleLookupService
 
         if (vsData?.InteriorColorCode is null)
         {
-            var trim = await lookupCosmosService.GetVTTrimAsync(vsData?.InteriorColorCode, vsData?.Brand);
+            var trim = await lookupCosmosService.GetInteriorColorsAsync(vsData?.InteriorColorCode, vsData?.Brand);
             if (trim is not null)
             {
                 result.InteriorColor = trim?.Description;

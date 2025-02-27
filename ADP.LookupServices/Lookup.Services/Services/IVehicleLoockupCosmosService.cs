@@ -15,9 +15,9 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
         Task<CompanyDataAggregateCosmosModel> GetAggregatedCompanyData(string vin);
         Task<CompanyDataAggregateCosmosModel> GetAggregatedCompanyData(IEnumerable<string> vins, IEnumerable<string> itemTypes);
         Task<IEnumerable<StockPartModel>> GetStockItemsAsync(IEnumerable<string> partNumbers);
-        Task<ColorModel> GetVTColorAsync(string colorCode, Brands? brand);
-        Task<VehicleModelModel> GetVTModelAsync(string variant, Brands? brand);
-        Task<ColorModel> GetVTTrimAsync(string trimCode, Brands? brand);
+        Task<ColorModel> GetExteriorColorsAsync(string colorCode, Brands? brand);
+        Task<VehicleModelModel> GetVehicleModelsAsync(string variant, Brands? brand);
+        Task<ColorModel> GetInteriorColorsAsync(string trimCode, Brands? brand);
         Task SaveChangesAsync();
         void UpdateVSDataColor(VehicleEntryModel item, ColorModel color);
         void UpdateVSDataTrim(VehicleEntryModel item, ColorModel trim);

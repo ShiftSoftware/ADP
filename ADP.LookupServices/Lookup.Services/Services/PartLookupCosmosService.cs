@@ -22,7 +22,11 @@ public class PartLookupCosmosService
         if (string.IsNullOrWhiteSpace(partNumber))
             return new();
 
-        var container = client.GetContainer("DealerData", "Parts");
+        var container = client.GetContainer(
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.Parts
+        );
+
         var query = new QueryDefinition("SELECT * FROM c WHERE c.PartNumber = @partNumber");
         query.WithParameter("@partNumber", partNumber.ToUpper());
 
