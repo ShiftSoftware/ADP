@@ -1,6 +1,4 @@
-﻿using ShiftSoftware.ADP.Models;
-
-namespace ADP.SyncAgent;
+﻿namespace ShiftSoftware.ADP.SyncAgent;
 
 public class CSVSyncResult<T> where T : CacheableCSV
 {

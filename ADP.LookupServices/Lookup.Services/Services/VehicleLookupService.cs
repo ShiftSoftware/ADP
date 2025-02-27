@@ -1,8 +1,8 @@
-﻿using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.SSC;
+﻿using ShiftSoftware.ADP.Lookup.Services.Aggregate;
+using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.SSC;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
+using ShiftSoftware.ADP.Lookup.Services.Enums;
 using ShiftSoftware.ADP.Lookup.Services.Extensions;
-using ShiftSoftware.ADP.Models.Aggregate;
-using ShiftSoftware.ADP.Models.DTOs.VehicleLookupDTOs;
 using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ADP.Models.Part;
 using ShiftSoftware.ADP.Models.Service;

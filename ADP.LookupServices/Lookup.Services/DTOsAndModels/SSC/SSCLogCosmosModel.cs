@@ -1,5 +1,5 @@
 ﻿using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Shared;
-using ShiftSoftware.ADP.Models.DTOs.VehicleLookupDTOs;
+using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using ShiftSoftware.ADP.Models.Enums;
 using System;
 using System.Collections.Generic;

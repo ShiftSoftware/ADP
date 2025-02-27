@@ -1,16 +1,17 @@
-﻿using ADP.SyncAgent.Entities;
-using AutoMapper;
+﻿using AutoMapper;
 using Microsoft.Azure.Cosmos;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Polly;
 using Polly.Retry;
+using ShiftSoftware.ADP.SyncAgent;
+using ShiftSoftware.ADP.SyncAgent.Entities;
 using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using System.Net;
 
-namespace ADP.SyncAgent.Services;
+namespace ShiftSoftware.ADP.SyncAgent.Services;
 
 public class TableSyncService<TEntity, TCosmos>
     where TEntity : class

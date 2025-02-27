@@ -1,4 +1,4 @@
-﻿namespace ADP.SyncAgent;
+﻿namespace ShiftSoftware.ADP.SyncAgent;
 
 public class SyncCosmosAction<T> where T : class
 {
@@ -18,23 +18,23 @@ public class SyncCosmosAction<T> where T : class
     {
         Item = item;
         ActionType = actionType;
-        this.CancellationToken = cancellationToken;
+        CancellationToken = cancellationToken;
     }
 }
 
-public class SyncCosmosActionMappingInput<T> where T: class
+public class SyncCosmosActionMappingInput<T> where T : class
 {
     public T? Item { get; private set; }
     public CancellationToken CancellationToken { get; private set; }
 
     public SyncCosmosActionMappingInput()
     {
-        
+
     }
 
     public SyncCosmosActionMappingInput(T? item, CancellationToken cancellationToken)
     {
-        this.Item = item;
-        this.CancellationToken = cancellationToken;
+        Item = item;
+        CancellationToken = cancellationToken;
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace ShiftSoftware.ADP.Models
+﻿namespace ShiftSoftware.ADP.SyncAgent
 {
     public class CacheableCSV
     {

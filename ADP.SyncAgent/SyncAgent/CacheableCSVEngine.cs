@@ -1,7 +1,7 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
 
-namespace ShiftSoftware.ADP.Models
+namespace ShiftSoftware.ADP.SyncAgent
 {
     public class CacheableCSVEngine<T> : FileHelpers.FileHelperEngine<T>, IDisposable
         where T : CacheableCSV
@@ -12,10 +12,10 @@ namespace ShiftSoftware.ADP.Models
 
         public CacheableCSVEngine() : this(Encoding.UTF8) { }
 
-        public CacheableCSVEngine(System.Text.Encoding encoding) : base(encoding)
+        public CacheableCSVEngine(Encoding encoding) : base(encoding)
         {
             _algorithm = SHA512.Create();
-            this.AfterReadRecord += CacheableCSVEngine_AfterReadRecord;
+            AfterReadRecord += CacheableCSVEngine_AfterReadRecord;
         }
 
         private void CacheableCSVEngine_AfterReadRecord(FileHelpers.EngineBase engine, FileHelpers.Events.AfterReadEventArgs<T> e)

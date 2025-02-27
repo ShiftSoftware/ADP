@@ -1,16 +1,16 @@
-﻿using ADP.SyncAgent.Services.Interfaces;
-using AutoMapper;
+﻿using AutoMapper;
 using LibGit2Sharp;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Logging;
 using Polly;
 using Polly.Retry;
-using ShiftSoftware.ADP.Models;
+using ShiftSoftware.ADP.SyncAgent;
+using ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
 using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Text;
 
-namespace ADP.SyncAgent.Services;
+namespace ShiftSoftware.ADP.SyncAgent.Services;
 
 public class CSVSyncServiceFactory
 {
@@ -22,7 +22,7 @@ public class CSVSyncServiceFactory
     public CSVSyncServiceFactory(
         CosmosClient cosmosClient,
         IMapper mapper,
-        IStorageService storageService, 
+        IStorageService storageService,
         SyncAgentOptions options,
         IServiceProvider services)
     {
@@ -39,7 +39,7 @@ public class CSVSyncServiceFactory
         where TCSV : CacheableCSV
         where TCosmos : class
     {
-        return new CSVSyncService<TCSV, TCosmos>(storageService, options, cosmosClient,logger, mapper);
+        return new CSVSyncService<TCSV, TCosmos>(storageService, options, cosmosClient, logger, mapper);
     }
 }
 
@@ -68,8 +68,8 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
 
     public CSVSyncService(
         IStorageService storageService,
-        SyncAgentOptions options, 
-        CosmosClient cosmosClient, 
+        SyncAgentOptions options,
+        CosmosClient cosmosClient,
         ILogger logger,
         IMapper mapper)
     {
@@ -80,7 +80,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         this.mapper = mapper;
         var tempFolder = Guid.NewGuid().ToString();
 
-        WorkingDirectory = new DirectoryInfo(Path.Combine(options.CSVCompareWorkingDirectory , tempFolder));
+        WorkingDirectory = new DirectoryInfo(Path.Combine(options.CSVCompareWorkingDirectory, tempFolder));
 
         WorkingDirectory.Create();
 
@@ -212,8 +212,8 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         int operationTimeoutInSecond = 300)
     {
         operationStart = DateTime.UtcNow;
-        this.operationTimeoutInSeconds = operationTimeoutInSecond;
-        this.cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(operationTimeoutInSeconds));
+        operationTimeoutInSeconds = operationTimeoutInSecond;
+        cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(operationTimeoutInSeconds));
         CSVSyncResult.WorkingDirectory = WorkingDirectory;
 
         using (logger.BeginScope("Syncing {csvFileName}", csvFileName))
@@ -307,7 +307,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         }
     }
 
-    public async Task ProcessFilesAsync(string csvFileName, string? sourceContainerOrShareName, string? sourceDirectory, 
+    public async Task ProcessFilesAsync(string csvFileName, string? sourceContainerOrShareName, string? sourceDirectory,
         string? destinationContainerOrShareName, string? destinationDirectory)
     {
         var stopWatch = new Stopwatch();
@@ -315,7 +315,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         stopWatch.Start();
 
         await storageService.LoadOriginalFileAsync(Path.Combine(destinationDirectory ?? "", csvFileName), Path.Combine(WorkingDirectory.FullName, "file.csv"),
-            this.CacheableCSVEngine.Options.IgnoreFirstLines, destinationContainerOrShareName, GetCancellationToken());
+            CacheableCSVEngine.Options.IgnoreFirstLines, destinationContainerOrShareName, GetCancellationToken());
         StageAndCommit();
 
         stopWatch.Stop();
@@ -324,8 +324,8 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
 
         stopWatch.Restart();
 
-        await this.storageService.LoadNewVersionAsync(Path.Combine(sourceDirectory ?? "", csvFileName), Path.Combine(WorkingDirectory.FullName, "file.csv"),
-            this.CacheableCSVEngine.Options.IgnoreFirstLines, sourceContainerOrShareName, GetCancellationToken());
+        await storageService.LoadNewVersionAsync(Path.Combine(sourceDirectory ?? "", csvFileName), Path.Combine(WorkingDirectory.FullName, "file.csv"),
+            CacheableCSVEngine.Options.IgnoreFirstLines, sourceContainerOrShareName, GetCancellationToken());
 
         stopWatch.Stop();
 
@@ -356,7 +356,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
 
         var engine = new CacheableCSVEngine<TCSV>();
 
-        using (TextWriter textWriter = new StreamWriter(toInsertFilePath, true, System.Text.Encoding.UTF8))
+        using (TextWriter textWriter = new StreamWriter(toInsertFilePath, true, Encoding.UTF8))
         {
             for (int i = 0; i < engine.Options.IgnoreFirstLines; i++)
                 await textWriter.WriteLineAsync(new StringBuilder(engine.GetFileHeader()), GetCancellationToken());
@@ -371,7 +371,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
 
         stopWatch.Restart();
 
-        using (TextWriter textWriter = new StreamWriter(toDeleteFilePath, true, System.Text.Encoding.UTF8))
+        using (TextWriter textWriter = new StreamWriter(toDeleteFilePath, true, Encoding.UTF8))
         {
             for (int i = 0; i < engine.Options.IgnoreFirstLines; i++)
                 await textWriter.WriteLineAsync(new StringBuilder(engine.GetFileHeader()), GetCancellationToken());
@@ -475,8 +475,8 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         }
 
         IEnumerable<SyncCosmosAction<TCosmos>?> cosmosActions = [];
-        
-        if(cosmosAction is null)
+
+        if (cosmosAction is null)
         {
             cosmosActions = cosmosActions.Concat(toInsert.Select(x => new SyncCosmosAction<TCosmos>(x, CosmosActionType.Upsert, GetCancellationToken())));
             cosmosActions = cosmosActions.Concat(toDelete.Select(x => new SyncCosmosAction<TCosmos>(x, CosmosActionType.Delete, GetCancellationToken())));
@@ -523,8 +523,8 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         {
             try
             {
-                await this.storageService.StoreNewVersionAsync(Path.Combine(WorkingDirectory.FullName, "file.csv"),
-                    destinationRelativePath, destinationContainerOrShareName, this.CacheableCSVEngine.Options.IgnoreFirstLines,
+                await storageService.StoreNewVersionAsync(Path.Combine(WorkingDirectory.FullName, "file.csv"),
+                    destinationRelativePath, destinationContainerOrShareName, CacheableCSVEngine.Options.IgnoreFirstLines,
                     GetCancellationToken());
 
                 CSVSyncResult.Status = CSVSyncStatus.SuccessSync;
@@ -543,7 +543,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
     }
 
     private async Task<int> UpsertBtachToCosmosAsync(
-            string databaseId, 
+            string databaseId,
             string containerId,
             IEnumerable<SyncCosmosAction<TCosmos>?> items,
             Expression<Func<TCosmos, object>> partitionKeyLevel1Expression,
@@ -558,19 +558,19 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
 
         var totalCount = items.Count();
         batchSize ??= totalCount;
-        var totalSteps = totalCount == 0 ? 0 : (int)Math.Ceiling((double)totalCount / (double)batchSize);
+        var totalSteps = totalCount == 0 ? 0 : (int)Math.Ceiling(totalCount / (double)batchSize);
         var currentStep = 0;
         int retry = 0;
 
-        this.logger.LogInformation("Upserting started.");
-        this.logger.LogInformation($"Total count {totalCount}");
-        this.logger.LogInformation($"Total steps {totalSteps}");
+        logger.LogInformation("Upserting started.");
+        logger.LogInformation($"Total count {totalCount}");
+        logger.LogInformation($"Total steps {totalSteps}");
 
         while (currentStep < totalSteps)
         {
             CheckForCancellation();
 
-            this.logger.LogInformation($"Step {(currentStep + 1)} start proccessing.");
+            logger.LogInformation($"Step {currentStep + 1} start proccessing.");
 
             var skip = currentStep * batchSize.GetValueOrDefault();
             var batchItems = items.Skip(skip).Take(batchSize.GetValueOrDefault()).ToList();
@@ -579,15 +579,15 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
             {
                 var successCountForBatch = await UpsertToCosmosAsync(
                     databaseId,
-                    containerId, 
-                    batchItems, 
+                    containerId,
+                    batchItems,
                     partitionKeyLevel1Expression,
-                    partitionKeyLevel2Expression, 
+                    partitionKeyLevel2Expression,
                     partitionKeyLevel3Expression);
 
                 successCount += successCountForBatch;
 
-                this.logger.LogInformation($"Step {(currentStep + 1)} proccessed.");
+                logger.LogInformation($"Step {currentStep + 1} proccessed.");
 
                 currentStep++;
                 retry = 0;
@@ -599,7 +599,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
                 if (retry > (retryCount ?? 0))
                     break;
 
-                this.logger.LogWarning($"Step {(currentStep + 1)} proccess failed, we do retry {retry} time.");
+                logger.LogWarning($"Step {currentStep + 1} proccess failed, we do retry {retry} time.");
             }
         }
 
@@ -667,18 +667,18 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
 
         var totalCount = items.Count();
         batchSize ??= totalCount;
-        var totalSteps = totalCount == 0 ? 0 : (int)Math.Ceiling((double)totalCount / (double)batchSize);
+        var totalSteps = totalCount == 0 ? 0 : (int)Math.Ceiling(totalCount / (double)batchSize);
         var currentStep = 0;
         int retry = 0;
 
-        this.logger.LogInformation("Deleting started.");
-        this.logger.LogInformation($"Total count {totalCount}");
-        this.logger.LogInformation($"Total steps {totalSteps}");
+        logger.LogInformation("Deleting started.");
+        logger.LogInformation($"Total count {totalCount}");
+        logger.LogInformation($"Total steps {totalSteps}");
 
         while (currentStep < totalSteps)
         {
             CheckForCancellation();
-            this.logger.LogInformation($"Step {(currentStep + 1)} start proccessing.");
+            logger.LogInformation($"Step {currentStep + 1} start proccessing.");
 
             var skip = currentStep * batchSize.GetValueOrDefault();
             var batchItems = items.Skip(skip).Take(batchSize.GetValueOrDefault()).ToList();
@@ -695,7 +695,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
 
                 successCount += successCountForBatch;
 
-                this.logger.LogInformation($"Step {(currentStep + 1)} proccessed.");
+                logger.LogInformation($"Step {currentStep + 1} proccessed.");
 
                 currentStep++;
                 retry = 0;
@@ -707,7 +707,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
                 if (retry > (retryCount ?? 0))
                     break;
 
-                this.logger.LogWarning($"Step {(currentStep + 1)} proccess failed, we do retry {retry} time.");
+                logger.LogWarning($"Step {currentStep + 1} proccess failed, we do retry {retry} time.");
             }
         }
 
@@ -781,8 +781,8 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
 public class CSVSyncService<TCSV> : CSVSyncService<TCSV, TCSV>, IDisposable
     where TCSV : CacheableCSV
 {
-    public CSVSyncService(IStorageService storageService, SyncAgentOptions options, CosmosClient cosmosClient,ILogger logger, IMapper mapper) : 
-        base(storageService, options, cosmosClient,logger, mapper)
+    public CSVSyncService(IStorageService storageService, SyncAgentOptions options, CosmosClient cosmosClient, ILogger logger, IMapper mapper) :
+        base(storageService, options, cosmosClient, logger, mapper)
     {
     }
 }

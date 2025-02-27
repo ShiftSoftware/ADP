@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace ShiftSoftware.ADP.Models.DTOs.VehicleLookupDTOs;
+namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 
 public class VehicleServiceHistoryDTO
 {

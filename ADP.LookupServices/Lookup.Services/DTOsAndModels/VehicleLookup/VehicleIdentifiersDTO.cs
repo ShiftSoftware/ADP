@@ -1,6 +1,6 @@
 ﻿using ShiftSoftware.ADP.Models.Enums;
 
-namespace ShiftSoftware.ADP.Models.DTOs.VehicleLookupDTOs;
+namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 
 public class VehicleIdentifiersDTO
 {

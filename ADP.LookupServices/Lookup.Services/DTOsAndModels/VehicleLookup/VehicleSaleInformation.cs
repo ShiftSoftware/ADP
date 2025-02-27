@@ -3,7 +3,7 @@ using ShiftSoftware.ShiftEntity.Model.Dtos;
 using System;
 using System.Collections.Generic;
 
-namespace ShiftSoftware.ADP.Models.DTOs.VehicleLookupDTOs;
+namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 
 public class VehicleSaleInformation
 {

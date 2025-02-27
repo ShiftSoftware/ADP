@@ -1,13 +1,14 @@
-﻿using ADP.SyncAgent.Services;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
+using ShiftSoftware.ADP.SyncAgent;
+using ShiftSoftware.ADP.SyncAgent.Services;
 
-namespace ADP.SyncAgent.Extensions;
+namespace ShiftSoftware.ADP.SyncAgent.Extensions;
 
 public static class IServiceCollectionExtensions
 {
     public static IServiceCollection AddSyncAgent(this IServiceCollection services, SyncAgentOptions options)
     {
-        services.AddScoped(x=> options);
+        services.AddScoped(x => options);
         services.AddScoped<CSVSyncServiceFactory>();
         return services;
     }

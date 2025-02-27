@@ -4,7 +4,7 @@ using ShiftSoftware.ADP.Models.TBP;
 using ShiftSoftware.ADP.Models.Vehicle;
 using System.Collections.Generic;
 
-namespace ShiftSoftware.ADP.Models.Aggregate;
+namespace ShiftSoftware.ADP.Lookup.Services.Aggregate;
 
 public class CompanyDataAggregateCosmosModel
 {

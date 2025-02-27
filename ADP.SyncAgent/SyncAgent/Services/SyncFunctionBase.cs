@@ -1,8 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
-using ShiftSoftware.ADP.Models;
+using ShiftSoftware.ADP.SyncAgent;
 using System.Linq.Expressions;
 
-namespace ADP.SyncAgent.Services;
+namespace ShiftSoftware.ADP.SyncAgent.Services;
 
 public class SyncFunctionBase<TFunction, TCSV, TCosmos>
     where TCSV : CacheableCSV
@@ -50,10 +50,10 @@ public class SyncFunctionBase<TFunction, TCSV, TCosmos>
     }
 
     public async Task<string> RunAsync(
-        string csvFileName, 
+        string csvFileName,
         string? sourceDirectory,
         string? destinationDirectory,
-        string databaseId, 
+        string databaseId,
         string containerId,
         Expression<Func<TCosmos, object>> partitionKeyLevel1Expression,
         Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression = null,
@@ -84,7 +84,7 @@ public class SyncFunctionBase<TFunction, TCSV, TCosmos>
 
     public async Task<string> RunAsync(
         string csvFileName,
-        string? sourceContainerOrShareName, 
+        string? sourceContainerOrShareName,
         string? sourceDirectory,
         string? destinationContainerOrShareName,
         string? destinationDirectory,

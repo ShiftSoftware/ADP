@@ -1,4 +1,4 @@
-﻿using ShiftSoftware.ADP.Models.Aggregate;
+﻿using ShiftSoftware.ADP.Lookup.Services.Aggregate;
 using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ADP.Models.Part;
 using ShiftSoftware.ADP.Models.TBP;

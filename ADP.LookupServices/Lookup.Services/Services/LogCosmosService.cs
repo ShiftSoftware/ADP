@@ -2,7 +2,6 @@
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Part;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.SSC;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
-using ShiftSoftware.ADP.Models.DTOs.VehicleLookupDTOs;
 using ShiftSoftware.ADP.Models.Enums;
 using System;
 using System.Collections.Generic;

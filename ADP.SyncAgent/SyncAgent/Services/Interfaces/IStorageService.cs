@@ -1,4 +1,4 @@
-﻿namespace ADP.SyncAgent.Services.Interfaces;
+﻿namespace ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
 
 public interface IStorageService
 {

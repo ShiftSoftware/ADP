@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace ShiftSoftware.ADP.Models.DTOs.VehicleLookupDTOs;
+namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 
 public class PaintThicknessImageDTO
 {

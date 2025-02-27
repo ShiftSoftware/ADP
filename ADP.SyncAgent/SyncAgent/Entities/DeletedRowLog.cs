@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ShiftSoftware.ShiftEntity.Model.Enums;
 
-namespace ADP.SyncAgent.Entities;
+namespace ShiftSoftware.ADP.SyncAgent.Entities;
 
 [Index(nameof(ContainerName), nameof(LastReplicationDate))]
 public class DeletedRowLog

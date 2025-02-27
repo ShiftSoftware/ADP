@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace ShiftSoftware.ADP.Models.Enums;
+namespace ShiftSoftware.ADP.Lookup.Services.Enums;
 
 public enum VehcileServiceItemTypes
 {

@@ -1,4 +1,4 @@
-﻿namespace ADP.SyncAgent;
+﻿namespace ShiftSoftware.ADP.SyncAgent;
 
 public enum CosmosActionType
 {

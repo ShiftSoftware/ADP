@@ -1,10 +1,10 @@
-﻿using ShiftSoftware.ADP.Models.Enums;
+﻿using ShiftSoftware.ADP.Lookup.Services.Enums;
 using ShiftSoftware.ADP.Models.JsonConverters;
 using ShiftSoftware.ShiftEntity.Model;
 using System;
 using System.Text.Json.Serialization;
 
-namespace ShiftSoftware.ADP.Models.DTOs.VehicleLookupDTOs;
+namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 
 public class VehicleServiceItemDTO
 {

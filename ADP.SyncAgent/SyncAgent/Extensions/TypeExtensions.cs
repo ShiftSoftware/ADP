@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ADP.SyncAgent.Extensions;
+namespace ShiftSoftware.ADP.SyncAgent.Extensions;
 
 public static class TypeExtensions
 {
