@@ -7,7 +7,7 @@ public class NoSQLConstants
 {
     public class Databases
     {
-        public const string Database = "CompanyData";
+        public const string CompanyData = "CompanyData";
     }
 
     public class Containers

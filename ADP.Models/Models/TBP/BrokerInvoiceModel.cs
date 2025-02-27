@@ -12,5 +12,5 @@ public class BrokerInvoiceModel : IPartitionedItem
     public long Id { get; set; }
     public long InvoiceNumber { get; set; }
     public long? NonOfficialBrokerCustomerID { get; set; }
-    public PartitionedItemType ItemType => ModelTypes.BrokerInvoice;
+    public string ItemType => ModelTypes.BrokerInvoice;
 }

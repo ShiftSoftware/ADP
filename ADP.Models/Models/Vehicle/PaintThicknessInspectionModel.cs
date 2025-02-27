@@ -13,5 +13,5 @@ public class PaintThicknessInspectionModel : IPartitionedItem
     public IEnumerable<string> Images { get; set; }
     public string VIN { get; set; } = default!;
     public IEnumerable<PaintThicknessPartModel> Parts { get; set; }
-    public PartitionedItemType ItemType => ModelTypes.PaintThicknessInspection;
+    public string ItemType => ModelTypes.PaintThicknessInspection;
 }

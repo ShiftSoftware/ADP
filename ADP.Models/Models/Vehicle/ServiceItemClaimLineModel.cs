@@ -12,5 +12,5 @@ public class ServiceItemClaimLineModel : IPartitionedItem, ICompanyProps, IBranc
     public string ServiceItemID { get; set; }
     public decimal Cost { get; set; }
     public virtual ServiceItemClaimModel ServiceItemClaim { get; set; }
-    public PartitionedItemType ItemType => ModelTypes.ServiceItemClaimLine;
+    public string ItemType => ModelTypes.ServiceItemClaimLine;
 }

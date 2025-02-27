@@ -12,5 +12,5 @@ public class WarrantyClaimModel : IPartitionedItem
     public int? ClaimStatus { get; set; }
     public string DistributorComment { get; set; }
     public string LaborOperationNoMain { get; set; }
-    public PartitionedItemType ItemType => ModelTypes.WarrantyClaim;
+    public string ItemType => ModelTypes.WarrantyClaim;
 }

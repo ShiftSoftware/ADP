@@ -8,5 +8,5 @@ public class InitialOfficialVINModel: IPartitionedItem
     public string VIN { get; set; } = default!;
     public string Model { get; set; } = default!;
     public DateTime Date { get; set; }
-    public PartitionedItemType ItemType => ModelTypes.InitialOfficialVIN;
+    public string ItemType => ModelTypes.InitialOfficialVIN;
 }

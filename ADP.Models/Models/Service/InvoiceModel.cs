@@ -20,5 +20,5 @@ public class InvoiceModel: IPartitionedItem, ICompanyProps, IBranchProps, IInvoi
     public int? LaborLineCount { get; set; }
     public int? PartLineCount { get; set; }
     public DateTime? NextServiceDate { get; set; }
-    public PartitionedItemType ItemType => ModelTypes.Invoice;
+    public string ItemType => ModelTypes.Invoice;
 }

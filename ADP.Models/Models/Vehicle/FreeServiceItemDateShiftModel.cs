@@ -7,5 +7,5 @@ public class FreeServiceItemDateShiftModel : IPartitionedItem
     public string id { get; set; }
     public string VIN { get; set; }
     public DateTime NewDate { get; set; }
-    public PartitionedItemType ItemType => ModelTypes.FreeServiceItemDateShift;
+    public string ItemType => ModelTypes.FreeServiceItemDateShift;
 }

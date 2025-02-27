@@ -2,5 +2,5 @@
 
 public interface IPartitionedItem
 {
-    public PartitionedItemType ItemType { get; }
+    public string ItemType { get; }
 }

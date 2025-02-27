@@ -9,5 +9,5 @@ public class VehicleAccessoryModel: IPartitionedItem
     public int JobNumber { get; set; } = default!;
     public int InvoiceNumber { get; set; }
     public string Image { get; set; }
-    public PartitionedItemType ItemType => ModelTypes.VehicleAccessory;
+    public string ItemType => ModelTypes.VehicleAccessory;
 }

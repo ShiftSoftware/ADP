@@ -15,5 +15,5 @@ public class PaidServiceInvoiceModel : IPartitionedItem, IBrandProps
     public virtual IEnumerable<PaidServiceInvoiceLineModel> Lines { get; set; }
     public Brands Brand { get; set; }
     public string BrandIntegrationID { get; set; }
-    public PartitionedItemType ItemType => ModelTypes.PaidServiceInvoice;
+    public string ItemType => ModelTypes.PaidServiceInvoice;
 }
