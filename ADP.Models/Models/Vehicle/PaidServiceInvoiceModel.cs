@@ -9,6 +9,7 @@ public class PaidServiceInvoiceModel : IPartitionedItem, IBrandProps
     public string id { get; set; } = default!;
     public long Id { get; set; }
     public DateTime InvoiceDate { get; set; }
+    public DateTime StartDate { get; set; }
     public long InvoiceNumber { get; set; }
     public bool IsDeleted { get; set; }
     public string VIN { get; set; } = default!;

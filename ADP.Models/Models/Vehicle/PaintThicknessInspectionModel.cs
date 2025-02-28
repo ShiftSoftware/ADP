@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace ShiftSoftware.ADP.Models.Vehicle;
 
@@ -10,6 +11,7 @@ public class PaintThicknessInspectionModel : IPartitionedItem
     public string ModelYear { get; set; }
     public string ModelDescription { get; set; }
     public string ColorCode { get; set; }
+    public DateTime? CreateDate { get; set; }
     public IEnumerable<string> Images { get; set; }
     public string VIN { get; set; } = default!;
     public IEnumerable<PaintThicknessPartModel> Parts { get; set; }

@@ -6,6 +6,7 @@ public class ServiceItemClaimLineModel : IPartitionedItem, ICompanyProps, IBranc
 {
     public string id { get; set; }
     public long Id { get; set; }
+    public string VIN { get; set; } = default!;
     public string CompanyIntegrationID { get; set; }
     public string BranchIntegrationID { get; set; }
     public DateTime? ClaimDate { get; set; }

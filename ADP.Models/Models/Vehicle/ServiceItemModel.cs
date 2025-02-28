@@ -22,5 +22,5 @@ public class ServiceItemModel
     public string ActiveForInterval { get; set; }
     public long? MaximumMileage { get; set; }
     public string MenuCode { get; set; }
-    public IEnumerable<ServiceItemModelCostModel> ModelCosts { get; set; }
+    public IEnumerable<ServiceItemCostModel> ModelCosts { get; set; }
 }
