@@ -10,6 +10,7 @@ public class VehicleEntryModel : IPartitionedItem, IBrandProps, ICompanyProps, I
     public string CompanyIntegrationID { get; set; }
     public string BranchIntegrationID { get; set; }
     public DateTime? InvoiceDate { get; set; }
+    public DateTime? WarrantyActivationDate { get; set; }
     public int? InvoiceNumber { get; set; }
     public string AccountNumber { get; set; }
     public string CustomerAccountNumber { get; set; }

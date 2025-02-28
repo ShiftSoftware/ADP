@@ -110,8 +110,8 @@ public class VehicleLookupService
             //Normal company Sale
             if (data.SaleInformation?.Broker is null)
             {
-                warrantyStartDate = data.SaleInformation?.InvoiceDate;
-                freeServiceStartDate = data.SaleInformation?.InvoiceDate;
+                warrantyStartDate = data.SaleInformation?.WarrantyActivationDate ?? data.SaleInformation?.InvoiceDate;
+                freeServiceStartDate = warrantyStartDate;
             }
             else
             {
@@ -121,7 +121,7 @@ public class VehicleLookupService
                     if (ignoreBrokerStock)
                     {
                         warrantyStartDate = null;
-                        freeServiceStartDate = data.SaleInformation?.InvoiceDate;
+                        freeServiceStartDate = data.SaleInformation?.WarrantyActivationDate ?? data.SaleInformation?.InvoiceDate;
                     }
                 }
                 //Normal Broker Sale
@@ -421,6 +421,7 @@ public class VehicleLookupService
             .FirstOrDefault();
 
         result.InvoiceDate = vsData?.InvoiceDate;
+        result.WarrantyActivationDate = vsData?.WarrantyActivationDate;
         result.Status = vsData.Status;
         result.Location = vsData.Location;
         result.SaleType = vsData.SaleType;
@@ -546,7 +547,9 @@ public class VehicleLookupService
             var warrantyClaim = warrantyClaims?
                 .Where(w => new List<int> { 1, 2, 5, 6 }.Contains(w?.ClaimStatus ?? 0))
                 .OrderByDescending(w => w.RepairDate)
-                .FirstOrDefault(w => (w.DistributorComment?.Contains(x.CampaignCode) ?? false) || w.LaborOperationNoMain == x.OpCode1);
+                .FirstOrDefault(w => (w.DistributorComment?.Contains(x.CampaignCode) ?? false) || 
+                    (w.LaborOperationNoMain == x.LaborCode1 || w.LaborOperationNoMain == x.LaborCode2 || w.LaborOperationNoMain == x.LaborCode3)
+                );
 
             if (warrantyClaim is not null)
             {
@@ -556,7 +559,10 @@ public class VehicleLookupService
             else
             {
                 var labor = labors?.OrderByDescending(s => s.InvoiceDate)
-                    .FirstOrDefault(s => s.LaborCode.Equals(x.OpCode1) && (s.Status.Equals("X") || s.LineStatus.Equals("C")));
+                    .FirstOrDefault(s =>
+                    (s.LaborCode.Equals(x.LaborCode1) || s.LaborCode.Equals(x.LaborCode2) || s.LaborCode.Equals(x.LaborCode3)) &&
+                    (s.Status.Equals("X") || s.LineStatus.Equals("C"))
+                );
 
                 if (labor is not null)
                 {
@@ -573,22 +579,22 @@ public class VehicleLookupService
                 RepairDate = repairDate
             };
 
-            if (!string.IsNullOrWhiteSpace(x.OpCode1))
+            if (!string.IsNullOrWhiteSpace(x.LaborCode1))
                 sscLabors.Add(new SSCLaborDTO
                 {
-                    LaborCode = x.OpCode1,
+                    LaborCode = x.LaborCode1,
                 });
 
-            if (!string.IsNullOrWhiteSpace(x.OpCode2))
+            if (!string.IsNullOrWhiteSpace(x.LaborCode2))
                 sscLabors.Add(new SSCLaborDTO
                 {
-                    LaborCode = x.OpCode2,
+                    LaborCode = x.LaborCode2,
                 });
 
-            if (!string.IsNullOrWhiteSpace(x.OpCode3))
+            if (!string.IsNullOrWhiteSpace(x.LaborCode3))
                 sscLabors.Add(new SSCLaborDTO
                 {
-                    LaborCode = x.OpCode3,
+                    LaborCode = x.LaborCode3,
                 });
 
             if (!string.IsNullOrWhiteSpace(x.PartNumber1))
@@ -858,8 +864,8 @@ public class VehicleLookupService
         return result;
     }
 
-    private ServiceItemModelCostModel GetModelCost(
-        IEnumerable<ServiceItemModelCostModel> modelCosts,
+    private ServiceItemCostModel GetModelCost(
+        IEnumerable<ServiceItemCostModel> modelCosts,
         string katashiki,
         string variant)
     {

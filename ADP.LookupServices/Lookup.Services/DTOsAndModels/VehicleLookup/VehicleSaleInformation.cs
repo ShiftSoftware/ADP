@@ -17,6 +17,10 @@ public class VehicleSaleInformation
 
     [JsonCustomDateTime("yyyy-MM-dd")]
     public DateTime? InvoiceDate { get; set; }
+
+    [JsonCustomDateTime("yyyy-MM-dd")]
+    public DateTime? WarrantyActivationDate { get; set; }
+
     public int InvoiceNumber { get; set; }
 
     [System.Text.Json.Serialization.JsonIgnore]
