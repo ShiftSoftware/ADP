@@ -39,18 +39,30 @@ public class VehicleLookupDTO
         {
             try
             {
-                var variant = Identifiers.Variant;
+                var variant = Identifiers?.Variant;
 
-                var modelCode = variant.Substring(0, variant.Length - 8);
-                var sfx = variant.Substring(variant.Length - 8, 2);
-                var yearModel = variant.Substring(variant.Length - 6, 4);
-
-                return new VehicleVariantInfoDTO
+                if (!string.IsNullOrWhiteSpace(variant))
                 {
-                    ModelCode = modelCode,
-                    SFX = sfx,
-                    ModelYear = int.Parse(yearModel)
-                };
+                    var modelCode = variant.Substring(0, variant.Length - 8);
+                    var sfx = variant.Substring(variant.Length - 8, 2);
+                    var yearModel = variant.Substring(variant.Length - 6, 4);
+
+                    return new VehicleVariantInfoDTO
+                    {
+                        ModelCode = modelCode,
+                        SFX = sfx,
+                        ModelYear = int.Parse(yearModel)
+                    };
+                }
+                else
+                {
+                    return new VehicleVariantInfoDTO
+                    {
+                        ModelCode = this.VehicleSpecification?.ModelCode,
+                        ModelYear = this.VehicleSpecification?.ModelYear,
+                        SFX = null,
+                    };
+                }
             }
             catch
             {

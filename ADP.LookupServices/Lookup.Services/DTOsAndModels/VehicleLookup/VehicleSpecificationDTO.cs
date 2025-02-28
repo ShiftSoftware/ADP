@@ -1,7 +1,12 @@
-﻿namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
+﻿using System;
+
+namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 
 public class VehicleSpecificationDTO
 {
+    public string ModelCode { get; set; }
+    public int? ModelYear { get; set; }
+    public DateTime? ProductionDate { get; set; }
     public string ModelDescription { get; set; }
     public string VariantDescription { get; set; }
     public string Class { get; set; }
