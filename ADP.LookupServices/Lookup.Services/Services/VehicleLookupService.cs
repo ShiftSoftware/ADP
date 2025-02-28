@@ -546,7 +546,7 @@ public class VehicleLookupService
             var warrantyClaim = warrantyClaims?
                 .Where(w => new List<int> { 1, 2, 5, 6 }.Contains(w?.ClaimStatus ?? 0))
                 .OrderByDescending(w => w.RepairDate)
-                .FirstOrDefault(w => (w.DistributorComment?.Contains(x.CampaignCode) ?? false) || w.LaborOperationNoMain == x.OpCode);
+                .FirstOrDefault(w => (w.DistributorComment?.Contains(x.CampaignCode) ?? false) || w.LaborOperationNoMain == x.OpCode1);
 
             if (warrantyClaim is not null)
             {
@@ -556,7 +556,7 @@ public class VehicleLookupService
             else
             {
                 var labor = labors?.OrderByDescending(s => s.InvoiceDate)
-                    .FirstOrDefault(s => s.LaborCode.Equals(x.OpCode) && (s.Status.Equals("X") || s.LineStatus.Equals("C")));
+                    .FirstOrDefault(s => s.LaborCode.Equals(x.OpCode1) && (s.Status.Equals("X") || s.LineStatus.Equals("C")));
 
                 if (labor is not null)
                 {
@@ -573,10 +573,10 @@ public class VehicleLookupService
                 RepairDate = repairDate
             };
 
-            if (!string.IsNullOrWhiteSpace(x.OpCode))
+            if (!string.IsNullOrWhiteSpace(x.OpCode1))
                 sscLabors.Add(new SSCLaborDTO
                 {
-                    LaborCode = x.OpCode,
+                    LaborCode = x.OpCode1,
                 });
 
             if (!string.IsNullOrWhiteSpace(x.OpCode2))
@@ -610,6 +610,7 @@ public class VehicleLookupService
                 });
 
             sscData.Parts = parts;
+            sscData.Labors = sscLabors;
 
             return sscData;
         }).ToList();
