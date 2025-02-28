@@ -9,7 +9,7 @@ public class BrokerInvoiceModel : IPartitionedItem
     public DateTime InvoiceDate { get; set; }
     public long? BrokerCustomerID { get; set; }
     public bool IsDeleted { get; set; }
-    public long Id { get; set; }
+    public long ID { get; set; }
     public long InvoiceNumber { get; set; }
     public long? NonOfficialBrokerCustomerID { get; set; }
     public string ItemType => ModelTypes.BrokerInvoice;

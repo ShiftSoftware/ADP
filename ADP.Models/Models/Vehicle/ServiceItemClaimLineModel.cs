@@ -5,7 +5,7 @@ namespace ShiftSoftware.ADP.Models.Vehicle;
 public class ServiceItemClaimLineModel : IPartitionedItem, ICompanyProps, IBranchProps
 {
     public string id { get; set; }
-    public long Id { get; set; }
+    public long ID { get; set; }
     public string VIN { get; set; } = default!;
     public string CompanyIntegrationID { get; set; }
     public string BranchIntegrationID { get; set; }

@@ -5,7 +5,7 @@ namespace ShiftSoftware.ADP.Models.TBP;
 public class BrokerVehicleTransferModel
 {
     public string id { get; set; } = default!;
-    public long Id { get; set; }
+    public long ID { get; set; }
     public string VIN { get; set; } = default!;
     public DateTime TransferDate { get; set; }
     public long TransferNumber { get; set; }

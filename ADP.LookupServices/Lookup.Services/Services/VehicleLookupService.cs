@@ -458,11 +458,11 @@ public class VehicleLookupService
         if (companyDataAggregate.BrokerInvoices?.Any() ?? false)
         {
             var brokerInvoice = companyDataAggregate.BrokerInvoices.FirstOrDefault();
-            var broker = await lookupCosmosService.GetBrokerAsync(brokerInvoice.Id);
+            var broker = await lookupCosmosService.GetBrokerAsync(brokerInvoice.ID);
 
             result.Broker = new VehicleBrokerSaleInformation
             {
-                BrokerID = brokerInvoice.Id,
+                BrokerID = brokerInvoice.ID,
                 BrokerName = broker?.Name,
                 CustomerID = (brokerInvoice.BrokerCustomerID ?? brokerInvoice.NonOfficialBrokerCustomerID) ?? 0,
                 InvoiceDate = brokerInvoice.InvoiceDate,
@@ -477,10 +477,10 @@ public class VehicleLookupService
             // If vehicle sold to broker before start date and it is not exists in broker intial vehicles,
             // then make vsdata as start date.
             if (broker is not null)
-                if (!broker.TerminationDate.HasValue && (broker.AccountStartDate <= vsData?.InvoiceDate || companyDataAggregate.BrokerInitialVehicles?.Count(x => x?.BrokerID == broker.Id) > 0))
+                if (!broker.TerminationDate.HasValue && (broker.AccountStartDate <= vsData?.InvoiceDate || companyDataAggregate.BrokerInitialVehicles?.Count(x => x?.BrokerID == broker.ID) > 0))
                     result.Broker = new VehicleBrokerSaleInformation
                     {
-                        BrokerID = broker.Id,
+                        BrokerID = broker.ID,
                         BrokerName = broker.Name
                     };
         }
@@ -685,14 +685,14 @@ public class VehicleLookupService
 
                     var serviceItem = new VehicleServiceItemDTO
                     {
-                        ServiceItemID = item.Id,
+                        ServiceItemID = item.ID,
                         Name = Utility.GetLocalizedText(item.Name, languageCode),
                         Description = Utility.GetLocalizedText(item.PrintoutDescription, languageCode),
                         Title = Utility.GetLocalizedText(item.PrintoutTitle, languageCode),
                         Image = await GetFirstImageFullUrl(item.Photo),
                         Type = "free",
                         TypeEnum = VehcileServiceItemTypes.Free,
-                        ModelCostID = modelCost?.Id,
+                        ModelCostID = modelCost?.ID,
                         MenuCode = modelCost?.MenuCode ?? item.MenuCode,
                         SkipZeroTrust = item.SkipZeroTrust,
                         MaximumMileage = item.MaximumMileage,
@@ -826,16 +826,16 @@ public class VehicleLookupService
 
         if (redeemableItems != null)
         {
-            foreach (var item in redeemableItems.Where(x => redeemedItems?.Any(a => a == x.Id.ToString()) ?? false))
+            foreach (var item in redeemableItems.Where(x => redeemedItems?.Any(a => a == x.ID.ToString()) ?? false))
             {
                 var modelCost = GetModelCost(item.ModelCosts, katashiki, variant);
 
                 var transactionLine = companyDataAggregate.ServiceItemClaimLines?
-                        .FirstOrDefault(t => t.ServiceItemID == item.Id.ToString());
+                        .FirstOrDefault(t => t.ServiceItemID == item.ID.ToString());
 
                 var serviceItem = new VehicleServiceItemDTO
                 {
-                    ServiceItemID = item.Id,
+                    ServiceItemID = item.ID,
                     Name = Utility.GetLocalizedText(item.Name, languageCode),
                     Description = Utility.GetLocalizedText(item.PrintoutDescription, languageCode),
                     Title = Utility.GetLocalizedText(item.PrintoutTitle, languageCode),
@@ -844,7 +844,7 @@ public class VehicleLookupService
                     TypeEnum = VehcileServiceItemTypes.Free,
                     StatusEnum = VehcileServiceItemStatuses.Processed,
                     Status = "processed",
-                    ModelCostID = modelCost?.Id,
+                    ModelCostID = modelCost?.ID,
                     MenuCode = modelCost?.MenuCode ?? item.MenuCode,
                     RedeemDate = transactionLine?.ClaimDate,
                     InvoiceNumber = transactionLine?.ServiceItemClaim?.InvoiceNumber,

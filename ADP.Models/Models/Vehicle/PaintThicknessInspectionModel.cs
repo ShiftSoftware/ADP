@@ -6,7 +6,7 @@ namespace ShiftSoftware.ADP.Models.Vehicle;
 public class PaintThicknessInspectionModel : IPartitionedItem
 {
     public string id { get; set; } = default!;
-    public long Id { get; set; }
+    public long ID { get; set; }
     public string Katashiki { get; set; }
     public string ModelYear { get; set; }
     public string ModelDescription { get; set; }

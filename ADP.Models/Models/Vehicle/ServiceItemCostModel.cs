@@ -2,7 +2,7 @@
 
 public class ServiceItemCostModel
 {
-    public long Id { get; set; }
+    public long ID { get; set; }
     public long? ServiceItemID { get; set; }
     public string Variant { get; set; }
     public string Katashiki { get; set; }

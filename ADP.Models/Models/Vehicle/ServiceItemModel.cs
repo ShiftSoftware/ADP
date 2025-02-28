@@ -7,7 +7,7 @@ namespace ShiftSoftware.ADP.Models.Vehicle;
 public class ServiceItemModel
 {
     public string id { get; set; } = default!;
-    public long Id { get; set; }
+    public long ID { get; set; }
     public Dictionary<string, string> Name { get; set; }
     public Dictionary<string, string> Photo { get; set; }
     public bool IsDeleted { get; set; }
