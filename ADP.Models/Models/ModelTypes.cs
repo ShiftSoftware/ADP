@@ -9,6 +9,7 @@ public static class ModelTypes
     public static readonly PartitionedItemType Invoice = new("Invoice");
     public static readonly PartitionedItemType BrokerInitialVehicle = new("BrokerInitialVehicle");
     public static readonly PartitionedItemType BrokerInvoice = new("BrokerInvoice");
+    public static readonly PartitionedItemType BrokerVehicleTransfer = new("BrokerVehicleTransfer");
     public static readonly PartitionedItemType VehicleAccessory = new("VehicleAccessory");
     public static readonly PartitionedItemType InitialOfficialVIN = new("InitialOfficialVIN");
     public static readonly PartitionedItemType PaidServiceInvoice = new("PaidServiceInvoice");
