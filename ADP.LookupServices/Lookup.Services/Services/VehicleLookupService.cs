@@ -720,7 +720,7 @@ public class VehicleLookupService
                         var itemResult = new VehicleServiceItemDTO
                         {
                             ServiceItemID = item.ServiceItemID,
-                            PaidServiceInvoiceLineID = item.Id,
+                            PaidServiceInvoiceLineID = item.ID,
                             ActivatedAt = paidService.InvoiceDate,
                             CampaignCode = null,
                             Description = Utility.GetLocalizedText(item.ServiceItem?.PrintoutDescription, languageCode),
