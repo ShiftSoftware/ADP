@@ -4,7 +4,7 @@ namespace ShiftSoftware.ADP.Models.Vehicle;
 
 public class PaidServiceInvoiceLineModel
 {
-    public long Id { get; set; }
+    public long ID { get; set; }
     public long PaidServiceInvoiceID { get; set; }
     public long ServiceItemID { get; set; }
     public decimal Cost { get; set; }
