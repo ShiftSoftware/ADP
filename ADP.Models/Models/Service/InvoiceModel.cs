@@ -17,6 +17,7 @@ public class InvoiceModel: IPartitionedItem, ICompanyProps, IBranchProps, IInvoi
     public string CustomerID { get; set; }
     public string SaleType { get; set; }
     public int? InvoiceNumber { get; set; }
+    public string InvoiceCurrency { get; set; }
     public int? LaborLineCount { get; set; }
     public int? PartLineCount { get; set; }
     public DateTime? NextServiceDate { get; set; }

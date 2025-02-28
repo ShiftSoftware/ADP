@@ -10,6 +10,7 @@ public class InvoicePartLineModel: IPartitionedItem, IBranchProps, ICompanyProps
     public DateTime? InvoiceDate { get; set; }
     public int JobNumber { get; set; }
     public int? InvoiceNumber { get; set; }
+    public string InvoiceCurrency { get; set; }
     public decimal? Quantity { get; set; }
     public string SaleType { get; set; }
     public string AccountNumber { get; set; }
