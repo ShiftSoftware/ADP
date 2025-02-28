@@ -887,7 +887,7 @@ public class VehicleLookupService
         if (images is null)
             return null;
         else
-            return await options.RedeemableItemImageUrlResolver(new(images, languageCode, services));
+            return await options.ServiceItemImageUrlResolver(new(images, languageCode, services));
     }
 
     private void CalculateRollingExpireDateForFreeServiceItems(IEnumerable<VehicleServiceItemDTO> serviceItems, DateTime? invoiceDate)

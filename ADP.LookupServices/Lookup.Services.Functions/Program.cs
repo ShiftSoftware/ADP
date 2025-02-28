@@ -49,7 +49,7 @@ var host = new HostBuilder()
 
         services.AddLookupService<CosmosClient>(x =>
         {
-            x.RedeemableItemImageUrlResolver = (x) =>
+            x.ServiceItemImageUrlResolver = (x) =>
             {
                 string result = null;
 
