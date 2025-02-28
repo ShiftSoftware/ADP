@@ -27,6 +27,8 @@ public class VehicleEntryModel : IPartitionedItem, IBrandProps, ICompanyProps, I
     public string Katashiki { get; set; }
     public string VariantCode { get; set; }
     public decimal? InvoiceTotal { get; set; }
+    public DateTime? ProductionDate { get; set; }
+    public int? ModelYear { get; set; }
     public string LineStatus { get; set; }
     public string Status { get; set; }
     public string Location { get; set; }
