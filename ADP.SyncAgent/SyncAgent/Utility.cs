@@ -167,12 +167,17 @@ public class Utility
 
         await logsDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
             Models.Constants.NoSQLConstants.Containers.PartLookupLogs,
-            "/id"
+            [Models.Constants.NoSQLConstants.PartitionKeys.PartLookupLogs.Level1]
         ));
 
         await logsDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
             Models.Constants.NoSQLConstants.Containers.CSVUpload,
             "/id"
+        ));
+
+        await logsDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
+            Models.Constants.NoSQLConstants.Containers.SSCLogs,
+            [Models.Constants.NoSQLConstants.PartitionKeys.SSCLogs.Level1]
         ));
     }
 }

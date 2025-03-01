@@ -24,6 +24,7 @@ public class NoSQLConstants
         public const string VehicleModels = "VehicleModels";
 
         public const string PartLookupLogs = "PartLookup";
+        public const string SSCLogs = "SSC";
         public const string CSVUpload = "CSVUpload";
     }
 
@@ -65,5 +66,15 @@ public class NoSQLConstants
         //    public const string Level1 = "/" + nameof(StockPartModel.PartNumber);
         //    public const string Level2 = "/" + nameof(StockPartModel.Location);
         //}
+
+        public class PartLookupLogs
+        {
+            public const string Level1 = "/" + nameof(CatalogPartModel.PartNumber);
+        }
+
+        public class SSCLogs
+        {
+            public const string Level1 = "/" + nameof(VehicleEntryModel.VIN);
+        }
     }
 }
