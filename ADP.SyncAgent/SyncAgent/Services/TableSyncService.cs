@@ -187,15 +187,15 @@ public class TableSyncService<TEntity, TCosmos>
 
                 await ResiliencePipeline.ExecuteAsync(async token =>
                 {
-                    var mappedItem = mapping is null ? mapper.Map<TCosmos>(items) : await mapping(x);
+                    var mappedItem = mapping is null ? mapper.Map<TCosmos>(x) : await mapping(x);
 
-                    if (mappedItem is not null)
-                    {
-                        var partitionKey = Utility.GetPartitionKey(mappedItem, partitionKeyLevel1Expression, partitionKeyLevel2Expression, partitionKeyLevel3Expression);
+                    if (mappedItem is null)
+                        return;
 
-                        await container.UpsertItemAsync(mappedItem, partitionKey,
-                                new ItemRequestOptions { EnableContentResponseOnWrite = false });
-                    }
+                    var partitionKey = Utility.GetPartitionKey(mappedItem, partitionKeyLevel1Expression, partitionKeyLevel2Expression, partitionKeyLevel3Expression);
+
+                    await container.UpsertItemAsync(mappedItem, partitionKey,
+                            new ItemRequestOptions { EnableContentResponseOnWrite = false });
 
                     var keys = successKeys(x);
                     foreach (var key in keys)
