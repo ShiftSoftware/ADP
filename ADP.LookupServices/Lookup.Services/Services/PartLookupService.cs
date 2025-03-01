@@ -65,42 +65,46 @@ public class PartLookupService
             stockParts = (await options.PartLookupStocksResolver(new(stockParts, language, services))).ToList();
 
         List<PartPriceDTO> prices = new();
-        foreach(var countryPrice in cosmosPartCatalog?.CountryData)
+        
+        if (cosmosPartCatalog?.CountryData is not null)
         {
-            string? countryName = null;
-            if(options?.CountryNameResolver is not null)
+            foreach (var countryPrice in cosmosPartCatalog?.CountryData)
             {
-                countryName = await options.CountryNameResolver(new LookupOptionResolverModel<string>
+                string? countryName = null;
+                if (options?.CountryNameResolver is not null)
                 {
-                    Services = services,
-                    Value = countryPrice.CountryIntegrationID,
-                    Language = language,
-                });
-            }
-
-            foreach (var price in countryPrice.RegionPrices)
-            {
-                string regionName = null;
-                if(options?.RegionNameResolver is not null)
-                {
-                    regionName = await options.RegionNameResolver(new LookupOptionResolverModel<string>
+                    countryName = await options.CountryNameResolver(new LookupOptionResolverModel<string>
                     {
                         Services = services,
-                        Value = price.RegionIntegrationID,
+                        Value = countryPrice.CountryIntegrationID,
                         Language = language,
                     });
                 }
 
-                prices.Add(new PartPriceDTO
+                foreach (var price in countryPrice.RegionPrices)
                 {
-                    CountryIntegrationID = countryPrice.CountryIntegrationID,
-                    CountryName = countryName,
-                    RegionIntegrationID = price.RegionIntegrationID,
-                    RegionName = regionName,
-                    PurchasePrice = new(price.PurchasePrice),
-                    RetailPrice = new(price.RetailPrice),
-                    WarrantyPrice = new(price.WarrantyPrice)
-                });
+                    string regionName = null;
+                    if (options?.RegionNameResolver is not null)
+                    {
+                        regionName = await options.RegionNameResolver(new LookupOptionResolverModel<string>
+                        {
+                            Services = services,
+                            Value = price.RegionIntegrationID,
+                            Language = language,
+                        });
+                    }
+
+                    prices.Add(new PartPriceDTO
+                    {
+                        CountryIntegrationID = countryPrice.CountryIntegrationID,
+                        CountryName = countryName,
+                        RegionIntegrationID = price.RegionIntegrationID,
+                        RegionName = regionName,
+                        PurchasePrice = new(price.PurchasePrice),
+                        RetailPrice = new(price.RetailPrice),
+                        WarrantyPrice = new(price.WarrantyPrice)
+                    });
+                }
             }
         }
 

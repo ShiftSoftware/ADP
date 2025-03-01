@@ -220,27 +220,30 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         return items.FirstOrDefault();
     }
 
-    public async Task<IEnumerable<StockPartModel>> GetStockItemsAsync(IEnumerable<string> partNumbers)
-    {
-        if (partNumbers is null || !partNumbers.Any())
-            return null;
+    //public async Task<IEnumerable<StockPartModel>> GetStockItemsAsync(IEnumerable<string> partNumbers)
+    //{
+    //    if (partNumbers is null || !partNumbers.Any())
+    //        return null;
 
-        var container = client.GetContainer("DealerData", "Stock");
+    //    var container = client.GetContainer(
+    //        ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
+    //        ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.Parts
+    //    );
 
-        var queryable = container.GetItemLinqQueryable<StockPartModel>(true)
-            .Where(x => partNumbers.Contains(x.PartNumber));
+    //    var queryable = container.GetItemLinqQueryable<StockPartModel>(true)
+    //        .Where(x => partNumbers.Contains(x.PartNumber));
 
-        var iterator = queryable.ToFeedIterator();
-        var items = new List<StockPartModel>();
+    //    var iterator = queryable.ToFeedIterator();
+    //    var items = new List<StockPartModel>();
 
-        while (iterator.HasMoreResults)
-        {
-            var response = await iterator.ReadNextAsync();
-            items.AddRange(response);
-        }
+    //    while (iterator.HasMoreResults)
+    //    {
+    //        var response = await iterator.ReadNextAsync();
+    //        items.AddRange(response);
+    //    }
 
-        return items;
-    }
+    //    return items;
+    //}
 
     public async Task<BrokerModel> GetBrokerAsync(string accountNumber, string companyIntegrationID)
     {
