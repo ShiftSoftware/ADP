@@ -169,5 +169,10 @@ public class Utility
             Models.Constants.NoSQLConstants.Containers.PartLookupLogs,
             "/id"
         ));
+
+        await logsDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
+            Models.Constants.NoSQLConstants.Containers.CSVUpload,
+            "/id"
+        ));
     }
 }

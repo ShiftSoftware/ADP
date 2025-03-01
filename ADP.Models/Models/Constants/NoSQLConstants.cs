@@ -24,6 +24,7 @@ public class NoSQLConstants
         public const string VehicleModels = "VehicleModels";
 
         public const string PartLookupLogs = "PartLookup";
+        public const string CSVUpload = "CSVUpload";
     }
 
     public class PartitionKeys
