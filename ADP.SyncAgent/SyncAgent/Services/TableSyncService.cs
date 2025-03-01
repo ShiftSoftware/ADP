@@ -189,13 +189,13 @@ public class TableSyncService<TEntity, TCosmos>
                 {
                     var mappedItem = mapping is null ? mapper.Map<TCosmos>(items) : await mapping(x);
 
-                    if (mappedItem is null)
-                        return;
+                    if (mappedItem is not null)
+                    {
+                        var partitionKey = Utility.GetPartitionKey(mappedItem, partitionKeyLevel1Expression, partitionKeyLevel2Expression, partitionKeyLevel3Expression);
 
-                    var partitionKey = Utility.GetPartitionKey(mappedItem, partitionKeyLevel1Expression, partitionKeyLevel2Expression, partitionKeyLevel3Expression);
-
-                    await container.UpsertItemAsync(mappedItem, partitionKey,
-                            new ItemRequestOptions { EnableContentResponseOnWrite = false });
+                        await container.UpsertItemAsync(mappedItem, partitionKey,
+                                new ItemRequestOptions { EnableContentResponseOnWrite = false });
+                    }
 
                     var keys = successKeys(x);
                     foreach (var key in keys)
