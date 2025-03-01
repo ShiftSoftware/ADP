@@ -111,46 +111,73 @@ public class Utility
 
     public static async Task CreateDatabasesAndContainersIfNotExistsAsync(CosmosClient client)
     {
-        var databaseResponse = await client.CreateDatabaseIfNotExistsAsync(
+        var companyDatabaseResponse = await client.CreateDatabaseIfNotExistsAsync(
             Models.Constants.NoSQLConstants.Databases.CompanyData,
             ThroughputProperties.CreateManualThroughput(100_000)
         );
 
-        var database = databaseResponse.Database;
+        var logsDatabaseResponse = await client.CreateDatabaseIfNotExistsAsync(
+            Models.Constants.NoSQLConstants.Databases.Logs,
+            ThroughputProperties.CreateManualThroughput(100_000)
+        );
 
-        await database.CreateContainerIfNotExistsAsync(new ContainerProperties(
+        var companyDatabase = companyDatabaseResponse.Database;
+        
+        var logsDatabase = logsDatabaseResponse.Database;
+
+        await companyDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
             Models.Constants.NoSQLConstants.Containers.Brokers,
             "/id"
         ));
 
-        await database.CreateContainerIfNotExistsAsync(new ContainerProperties(
+        await companyDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
             Models.Constants.NoSQLConstants.Containers.Vehicles,
             [Models.Constants.NoSQLConstants.PartitionKeys.Vehicles.Level1, Models.Constants.NoSQLConstants.PartitionKeys.Vehicles.Level2]
         ));
 
-        await database.CreateContainerIfNotExistsAsync(new ContainerProperties(
+        await companyDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
             Models.Constants.NoSQLConstants.Containers.Parts,
             [Models.Constants.NoSQLConstants.PartitionKeys.Parts.Level1, Models.Constants.NoSQLConstants.PartitionKeys.Parts.Level2, Models.Constants.NoSQLConstants.PartitionKeys.Parts.Level3]
         ));
 
-        await database.CreateContainerIfNotExistsAsync(new ContainerProperties(
+        //await companyDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
+        //    Models.Constants.NoSQLConstants.Containers.Stock,
+        //    [Models.Constants.NoSQLConstants.PartitionKeys.Stock.Level1, Models.Constants.NoSQLConstants.PartitionKeys.Stock.Level2]
+        //));
+
+        await companyDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
             Models.Constants.NoSQLConstants.Containers.ServiceItems,
             "/id"
         ));
 
-        await database.CreateContainerIfNotExistsAsync(new ContainerProperties(
+        await companyDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
             Models.Constants.NoSQLConstants.Containers.ExteriorColors,
             [Models.Constants.NoSQLConstants.PartitionKeys.ExteriorColors.Level1, Models.Constants.NoSQLConstants.PartitionKeys.ExteriorColors.Level2]
         ));
 
-        await database.CreateContainerIfNotExistsAsync(new ContainerProperties(
+        await companyDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
             Models.Constants.NoSQLConstants.Containers.InteriorColors,
             [Models.Constants.NoSQLConstants.PartitionKeys.InteriorColors.Level1, Models.Constants.NoSQLConstants.PartitionKeys.InteriorColors.Level2]
         ));
 
-        await database.CreateContainerIfNotExistsAsync(new ContainerProperties(
+        await companyDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
             Models.Constants.NoSQLConstants.Containers.VehicleModels,
             [Models.Constants.NoSQLConstants.PartitionKeys.VehicleModels.Level1, Models.Constants.NoSQLConstants.PartitionKeys.VehicleModels.Level2]
+        ));
+
+        await logsDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
+            Models.Constants.NoSQLConstants.Containers.PartLookupLogs,
+            [Models.Constants.NoSQLConstants.PartitionKeys.PartLookupLogs.Level1]
+        ));
+
+        await logsDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
+            Models.Constants.NoSQLConstants.Containers.CSVUpload,
+            "/id"
+        ));
+
+        await logsDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
+            Models.Constants.NoSQLConstants.Containers.SSCLogs,
+            [Models.Constants.NoSQLConstants.PartitionKeys.SSCLogs.Level1]
         ));
     }
 }

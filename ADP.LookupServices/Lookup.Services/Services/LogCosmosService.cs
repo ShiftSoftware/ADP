@@ -22,7 +22,10 @@ public class LogCosmosService : ILogCosmosService
     public async Task<Guid> LogPartLookupAsync(PartLookupLogInfo? logInfo, PartLookupDTO lookupResult, int? distributorStockLookupQuantity)
     {
         //Add the log to cosmos
-        var container = client.GetContainer("Logs", "PartLookup");
+        var container = client.GetContainer(
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.Logs,
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.PartLookupLogs
+        );
 
         var log = new PartLookupLogCosmosModel
         {
