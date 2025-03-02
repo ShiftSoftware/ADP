@@ -386,7 +386,19 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         comparision.Deleted = comparision.Deleted.Except(duplicates);
 
         if (comparision.Added.Count() == 0 && comparision.Deleted.Count() == 0)
+        {
+            logger.LogInformation("Nothing to do. Skipping");
+
+            syncTask.Completed = true;
+            syncTask.CurrentStep = syncTask.TotalStep - 1;
+
+            UpdateProgress(syncTask);
+
+            if (syncProgressIndicator is not null)
+                await syncProgressIndicator.LogInformationAsync(syncTask, "Nothing to do. Skipping.");
+
             return;
+        }
 
         stopWatch.Stop();
 
@@ -499,7 +511,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         var syncTask = new SyncTask
         {
             SyncID = syncId,
-            TotalStep = 3,
+            TotalStep = 2,
             CurrentStep = -1,
             TaskDescription = "Preparing Cosmos DB",
         };
