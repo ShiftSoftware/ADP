@@ -937,23 +937,23 @@ public class VehicleLookupService
         }
     }
 
-    public async Task<IEnumerable<VehicleModelModel>> GetAllVTModelsAsync()
+    public async Task<IEnumerable<VehicleModelModel>> GetAllVehicleModelsAsync()
     {
-        return await lookupCosmosService.GetAllVTModelsAsync();
+        return await lookupCosmosService.GetAllVehicleModelsAsync();
     }
 
-    public async Task<IEnumerable<VehicleModelModel>> GetVTModelsByKatashikiAsync(string katashiki)
+    public async Task<IEnumerable<VehicleModelModel>> GetVehicleModelsByKatashikiAsync(string katashiki)
     {
-        return await lookupCosmosService.GetVTModelsByKatashikiAsync(katashiki);
+        return await lookupCosmosService.GetVehicleModelsByKatashikiAsync(katashiki);
     }
 
-    public async Task<IEnumerable<VehicleModelModel>> GetVTModelsByVariantAsync(string variant)
+    public async Task<IEnumerable<VehicleModelModel>> GetVehicleModelsByVariantAsync(string variant)
     {
-        return await lookupCosmosService.GetVTModelsByVariantAsync(variant);
+        return await lookupCosmosService.GetVehicleModelsByVariantAsync(variant);
     }
 
-    public async Task<IEnumerable<VehicleModelModel>> GetVTModelsByVinAsync(string vin)
+    public async Task<IEnumerable<VehicleModelModel>> GetVehicleModelsByVinAsync(string vin)
     {
-        return await lookupCosmosService.GetVTModelsByVinAsync(vin);
+        return await lookupCosmosService.GetVehicleModelsByVinAsync(vin);
     }
 }

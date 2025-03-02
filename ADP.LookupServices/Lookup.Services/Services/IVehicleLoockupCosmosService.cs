@@ -23,9 +23,9 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
         void UpdateVSDataTrim(VehicleEntryModel item, ColorModel trim);
         Task<IEnumerable<ServiceItemModel>> GetServiceItemsAsync(Brands brand);
         void UpdateVSDataModel(VehicleEntryModel item, VehicleModelModel model);
-        Task<IEnumerable<VehicleModelModel>> GetAllVTModelsAsync();
-        Task<IEnumerable<VehicleModelModel>> GetVTModelsByKatashikiAsync(string katashiki);
-        Task<IEnumerable<VehicleModelModel>> GetVTModelsByVariantAsync(string variant);
-        Task<IEnumerable<VehicleModelModel>> GetVTModelsByVinAsync(string vin);
+        Task<IEnumerable<VehicleModelModel>> GetAllVehicleModelsAsync();
+        Task<IEnumerable<VehicleModelModel>> GetVehicleModelsByKatashikiAsync(string katashiki);
+        Task<IEnumerable<VehicleModelModel>> GetVehicleModelsByVariantAsync(string variant);
+        Task<IEnumerable<VehicleModelModel>> GetVehicleModelsByVinAsync(string vin);
     }
 }

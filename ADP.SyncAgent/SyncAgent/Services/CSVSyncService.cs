@@ -34,7 +34,7 @@ public class CSVSyncServiceFactory
 
     public IServiceProvider Services { get; }
 
-    public CSVSyncService<TCSV, TCosmos> Create<TCSV, TCosmos>(ILogger logger, ISyncProgressIndicator syncProgressIndicator)
+    public CSVSyncService<TCSV, TCosmos> Create<TCSV, TCosmos>(ILogger logger, ISyncProgressIndicator? syncProgressIndicator)
         where TCSV : CacheableCSV
         where TCosmos : class
     {
@@ -63,7 +63,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
     private readonly SyncAgentOptions options;
     private readonly CosmosClient cosmosClient;
     private readonly ILogger logger;
-    private readonly ISyncProgressIndicator syncProgressIndicator;
+    private readonly ISyncProgressIndicator? syncProgressIndicator;
     private readonly IMapper mapper;
 
     public CSVSyncService(
@@ -71,7 +71,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         SyncAgentOptions options,
         CosmosClient cosmosClient,
         ILogger logger,
-        ISyncProgressIndicator syncProgressIndicator,
+        ISyncProgressIndicator? syncProgressIndicator,
         IMapper mapper)
     {
         this.storageService = storageService;
@@ -314,9 +314,10 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
 
                 """;
 
-            //await syncProgressIndicator.LogInformationAsync(syncTask, message);
+            //if (syncProgressIndicator is not null)
+                //await syncProgressIndicator.LogInformationAsync(syncTask, message);
 
-            return message;
+                return message;
         }
     }
 
@@ -714,13 +715,15 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
 
                 logger.LogWarning($"Step {currentStep + 1} proccess failed, we do retry {retry} time.");
 
-                await syncProgressIndicator.LogWarningAsync(syncTask, $"Step {currentStep + 1} proccess failed, we do retry {retry} time.");
+                if (syncProgressIndicator is not null)
+                    await syncProgressIndicator.LogWarningAsync(syncTask, $"Step {currentStep + 1} proccess failed, we do retry {retry} time.");
             }
         }
 
         syncTask.Completed = true;
 
-        await syncProgressIndicator.LogInformationAsync(syncTask, $"Cosmo DB Upsert Finished.");
+        if (syncProgressIndicator is not null)
+            await syncProgressIndicator.LogInformationAsync(syncTask, $"Cosmo DB Upsert Finished.");
 
         return successCount;
     }

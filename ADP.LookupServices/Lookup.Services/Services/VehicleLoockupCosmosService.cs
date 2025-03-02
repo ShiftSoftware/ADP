@@ -381,7 +381,7 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         return items;
     }
 
-    public async Task<IEnumerable<VehicleModelModel>> GetAllVTModelsAsync()
+    public async Task<IEnumerable<VehicleModelModel>> GetAllVehicleModelsAsync()
     {
         var container = client.GetContainer(
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
@@ -400,7 +400,7 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         return items;
     }
 
-    public async Task<IEnumerable<VehicleModelModel>> GetVTModelsByKatashikiAsync(string katashiki)
+    public async Task<IEnumerable<VehicleModelModel>> GetVehicleModelsByKatashikiAsync(string katashiki)
     {
         var container = client.GetContainer(
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
@@ -420,7 +420,7 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         return items;
     }
 
-    public async Task<IEnumerable<VehicleModelModel>> GetVTModelsByVariantAsync(string variant)
+    public async Task<IEnumerable<VehicleModelModel>> GetVehicleModelsByVariantAsync(string variant)
     {
         var container = client.GetContainer(
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
@@ -440,7 +440,7 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         return items;
     }
 
-    public async Task<IEnumerable<VehicleModelModel>> GetVTModelsByVinAsync(string vin)
+    public async Task<IEnumerable<VehicleModelModel>> GetVehicleModelsByVinAsync(string vin)
     {
         var companyDataContainer = client.GetContainer(
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
@@ -460,6 +460,6 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         if (vs.VehicleModel is not null)
             return new List<VehicleModelModel> { vs.VehicleModel };
 
-        return await GetVTModelsByVariantAsync(vs.VariantCode);
+        return await GetVehicleModelsByVariantAsync(vs.VariantCode);
     }
 }
