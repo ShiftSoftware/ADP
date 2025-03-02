@@ -34,7 +34,7 @@ public class CSVSyncServiceFactory
 
     public IServiceProvider Services { get; }
 
-    public CSVSyncService<TCSV, TCosmos> Create<TCSV, TCosmos>(ILogger logger, ISyncProgressIndicator syncProgressIndicator)
+    public CSVSyncService<TCSV, TCosmos> Create<TCSV, TCosmos>(ILogger logger, ISyncProgressIndicator? syncProgressIndicator)
         where TCSV : CacheableCSV
         where TCosmos : class
     {
@@ -63,7 +63,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
     private readonly SyncAgentOptions options;
     private readonly CosmosClient cosmosClient;
     private readonly ILogger logger;
-    private readonly ISyncProgressIndicator syncProgressIndicator;
+    private readonly ISyncProgressIndicator? syncProgressIndicator;
     private readonly IMapper mapper;
 
     public CSVSyncService(
@@ -71,7 +71,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         SyncAgentOptions options,
         CosmosClient cosmosClient,
         ILogger logger,
-        ISyncProgressIndicator syncProgressIndicator,
+        ISyncProgressIndicator? syncProgressIndicator,
         IMapper mapper)
     {
         this.storageService = storageService;
@@ -225,7 +225,8 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
 
             var compareTask = new SyncTask { SyncID = syncId, TaskDescription = "Comparing New File with the Current Data" };
 
-            await syncProgressIndicator.LogInformationAsync(compareTask, "Processing Files");
+            if(syncProgressIndicator is not null)
+                await syncProgressIndicator.LogInformationAsync(compareTask, "Processing Files");
 
             await ProcessFilesAsync(csvFileName, sourceContainerOrShareName, sourceDirectory, destinationContainerOrShareName, destinationDirectory);
 
@@ -233,7 +234,8 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
 
             compareTask.Progress = 1;
 
-            await syncProgressIndicator.LogInformationAsync(compareTask, "Completed Processing Files");
+            if (syncProgressIndicator is not null)
+                await syncProgressIndicator.LogInformationAsync(compareTask, "Completed Processing Files");
 
             logger.LogInformation("Processing Cosmos DB");
 
@@ -319,9 +321,10 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
 
                 """;
 
-            //await syncProgressIndicator.LogInformationAsync(syncTask, message);
+            //if (syncProgressIndicator is not null)
+                //await syncProgressIndicator.LogInformationAsync(syncTask, message);
 
-            return message;
+                return message;
         }
     }
 
@@ -600,9 +603,12 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
             RemainingTimeToShutdown = shutDownTime - DateTime.UtcNow
         };
 
-        await syncProgressIndicator.LogInformationAsync(syncTask, "Upserting started.");
-        await syncProgressIndicator.LogInformationAsync(syncTask, $"Total Count is: {totalCount:#,0}");
-        await syncProgressIndicator.LogInformationAsync(syncTask, $"Total Steps is: {totalSteps:#,0}");
+        if (syncProgressIndicator is not null)
+        {
+            await syncProgressIndicator.LogInformationAsync(syncTask, "Upserting started.");
+            await syncProgressIndicator.LogInformationAsync(syncTask, $"Total Count is: {totalCount:#,0}");
+            await syncProgressIndicator.LogInformationAsync(syncTask, $"Total Steps is: {totalSteps:#,0}");
+        }
 
         while (currentStep < totalSteps)
         {
@@ -630,15 +636,16 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
             syncTask.Progress = totalSteps == 0 ? 0 : (double)(currentStep + 1) / totalSteps;
             syncTask.RemainingTimeToShutdown = shutDownTime - DateTime.UtcNow;
 
-            await syncProgressIndicator.LogInformationAsync(syncTask, 
-               string.Format(
-                    "{0:P2}: Processing Step {1} of {2}. Elapsed: {3:c}. Remaining Allowed Time: {4:c}",
-                    totalSteps == 0 ? 0 : (double)(currentStep + 1) / totalSteps,
-                    currentStep + 1,
-                    totalSteps,
-                    elapsed,
-                    remainingTimeToShutdown
-            ));
+            if (syncProgressIndicator is not null)
+                await syncProgressIndicator.LogInformationAsync(syncTask, 
+                   string.Format(
+                        "{0:P2}: Processing Step {1} of {2}. Elapsed: {3:c}. Remaining Allowed Time: {4:c}",
+                        totalSteps == 0 ? 0 : (double)(currentStep + 1) / totalSteps,
+                        currentStep + 1,
+                        totalSteps,
+                        elapsed,
+                        remainingTimeToShutdown
+                ));
 
             var skip = currentStep * batchSize.GetValueOrDefault();
 
@@ -658,7 +665,8 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
 
                 logger.LogInformation($"Step {currentStep + 1} proccessed.");
 
-                await syncProgressIndicator.LogInformationAsync(syncTask, $"Step {currentStep + 1} proccessed.");
+                if (syncProgressIndicator is not null)
+                    await syncProgressIndicator.LogInformationAsync(syncTask, $"Step {currentStep + 1} proccessed.");
 
                 currentStep++;
                 retry = 0;
@@ -672,13 +680,15 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
 
                 logger.LogWarning($"Step {currentStep + 1} proccess failed, we do retry {retry} time.");
 
-                await syncProgressIndicator.LogWarningAsync(syncTask, $"Step {currentStep + 1} proccess failed, we do retry {retry} time.");
+                if (syncProgressIndicator is not null)
+                    await syncProgressIndicator.LogWarningAsync(syncTask, $"Step {currentStep + 1} proccess failed, we do retry {retry} time.");
             }
         }
 
         syncTask.Completed = true;
 
-        await syncProgressIndicator.LogInformationAsync(syncTask, $"Cosmo DB Upsert Finished.");
+        if (syncProgressIndicator is not null)
+            await syncProgressIndicator.LogInformationAsync(syncTask, $"Cosmo DB Upsert Finished.");
 
         return successCount;
     }

@@ -10,7 +10,7 @@ public class SyncFunctionBase<TFunction, TCSV, TCosmos>
     private readonly ILogger<TFunction> _logger;
     private readonly CSVSyncService<TCSV, TCosmos> syncAgentService;
 
-    public SyncFunctionBase(ILoggerFactory loggerFactory, ISyncProgressIndicator syncProgressIndicator, CSVSyncServiceFactory repositoryServiceFactory)
+    public SyncFunctionBase(ILoggerFactory loggerFactory, ISyncProgressIndicator? syncProgressIndicator, CSVSyncServiceFactory repositoryServiceFactory)
     {
         _logger = loggerFactory.CreateLogger<TFunction>();
         syncAgentService = repositoryServiceFactory.Create<TCSV, TCosmos>(_logger, syncProgressIndicator);
