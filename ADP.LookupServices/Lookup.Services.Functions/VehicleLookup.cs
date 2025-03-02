@@ -76,18 +76,18 @@ public class VehicleLookup
     [Function(nameof(GetVTModelsByKatashiki))]
     public async Task<IActionResult> GetVTModelsByKatashiki([HttpTrigger(AuthorizationLevel.Function, "get", Route = "vtmodels-by-katashiki/{katashiki}")] HttpRequest req, string katashiki)
     {
-        return new OkObjectResult(await lookupService.GetVTModelsByKatashikiAsync(katashiki));
+        return new OkObjectResult(await lookupService.GetVehicleModelsByKatashikiAsync(katashiki));
     }
 
     [Function(nameof(GetVTModelsByVariant))]
     public async Task<IActionResult> GetVTModelsByVariant([HttpTrigger(AuthorizationLevel.Function, "get", Route = "vtmodels-by-variant/{variant}")] HttpRequest req, string variant)
     {
-        return new OkObjectResult(await lookupService.GetVTModelsByVariantAsync(variant));
+        return new OkObjectResult(await lookupService.GetVehicleModelsByVariantAsync(variant));
     }
 
     [Function(nameof(GetVTModelsByVin))]
     public async Task<IActionResult> GetVTModelsByVin([HttpTrigger(AuthorizationLevel.Function, "get", Route = "vtmodels-by-vin/{vin}")] HttpRequest req, string vin)
     {
-        return new OkObjectResult(await lookupService.GetVTModelsByVinAsync(vin));
+        return new OkObjectResult(await lookupService.GetVehicleModelsByVinAsync(vin));
     }
 }
