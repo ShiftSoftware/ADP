@@ -10,10 +10,10 @@ public class SyncFunctionBase<TFunction, TCSV, TCosmos>
     private readonly ILogger<TFunction> _logger;
     private readonly CSVSyncService<TCSV, TCosmos> syncAgentService;
 
-    public SyncFunctionBase(ILoggerFactory loggerFactory, CSVSyncServiceFactory repositoryServiceFactory)
+    public SyncFunctionBase(ILoggerFactory loggerFactory, ISyncProgressIndicator syncProgressIndicator, CSVSyncServiceFactory repositoryServiceFactory)
     {
         _logger = loggerFactory.CreateLogger<TFunction>();
-        syncAgentService = repositoryServiceFactory.Create<TCSV, TCosmos>(_logger);
+        syncAgentService = repositoryServiceFactory.Create<TCSV, TCosmos>(_logger, syncProgressIndicator);
     }
 
     public async Task RunAsync(
@@ -28,7 +28,8 @@ public class SyncFunctionBase<TFunction, TCSV, TCosmos>
         Func<SyncCosmosAction<TCosmos>, ValueTask<SyncCosmosAction<TCosmos>?>>? cosmosAction = null,
         int? batchSize = null,
         int? retryCount = 0,
-        int operationTimeoutInSecond = 300)
+        int operationTimeoutInSecond = 300,
+        string? syncId = null)
     {
         await RunAsync(
             csvFileName,
@@ -44,7 +45,8 @@ public class SyncFunctionBase<TFunction, TCSV, TCosmos>
             cosmosAction,
             batchSize,
             retryCount,
-            operationTimeoutInSecond
+            operationTimeoutInSecond,
+            syncId
         );
     }
 
@@ -61,7 +63,8 @@ public class SyncFunctionBase<TFunction, TCSV, TCosmos>
         Func<SyncCosmosAction<TCosmos>, ValueTask<SyncCosmosAction<TCosmos>?>>? cosmosAction = null,
         int? batchSize = null,
         int? retryCount = 0,
-        int operationTimeoutInSecond = 300)
+        int operationTimeoutInSecond = 300,
+        string? syncId = null)
     {
         return await RunAsync(
             csvFileName,
@@ -77,7 +80,8 @@ public class SyncFunctionBase<TFunction, TCSV, TCosmos>
             cosmosAction,
             batchSize,
             retryCount,
-            operationTimeoutInSecond
+            operationTimeoutInSecond,
+            syncId
         );
     }
 
@@ -96,7 +100,8 @@ public class SyncFunctionBase<TFunction, TCSV, TCosmos>
         Func<SyncCosmosAction<TCosmos>, ValueTask<SyncCosmosAction<TCosmos>?>>? cosmosAction = null,
         int? batchSize = null,
         int? retryCount = 0,
-        int operationTimeoutInSecond = 300)
+        int operationTimeoutInSecond = 300,
+        string? syncId = null)
     {
         return await syncAgentService.StartSyncAsync(
             csvFileName,
@@ -113,7 +118,8 @@ public class SyncFunctionBase<TFunction, TCSV, TCosmos>
             cosmosAction,
             batchSize,
             retryCount,
-            operationTimeoutInSecond
+            operationTimeoutInSecond,
+            syncId
         );
     }
 }
@@ -121,8 +127,8 @@ public class SyncFunctionBase<TFunction, TCSV, TCosmos>
 public class SyncFunctionBase<TFunction, T> : SyncFunctionBase<TFunction, T, T>
     where T : CacheableCSV
 {
-    public SyncFunctionBase(ILoggerFactory loggerFactory, CSVSyncServiceFactory repositoryServiceFactory)
-        : base(loggerFactory, repositoryServiceFactory)
+    public SyncFunctionBase(ILoggerFactory loggerFactory, ISyncProgressIndicator syncProgressIndicator, CSVSyncServiceFactory repositoryServiceFactory)
+        : base(loggerFactory, syncProgressIndicator, repositoryServiceFactory)
     {
     }
 }
