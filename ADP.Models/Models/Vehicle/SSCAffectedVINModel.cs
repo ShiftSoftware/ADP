@@ -9,8 +9,11 @@ public class SSCAffectedVINModel : IPartitionedItem
     public string CampaignCode { get; set; }
     public string Description { get; set; }
     public string LaborCode1 { get; set; }
+    public double? LaborHour1 { get; set; }
     public string LaborCode2 { get; set; }
+    public double? LaborHour2 { get; set; }
     public string LaborCode3 { get; set; }
+    public double? LaborHour3 { get; set; }
     public string PartNumber1 { get; set; }
     public string PartNumber2 { get; set; }
     public string PartNumber3 { get; set; }
