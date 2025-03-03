@@ -53,11 +53,9 @@ var host = new HostBuilder()
             {
                 string result = null;
 
-                var images = Utility.GetLocalizedText(x.Value, x.Language);
-
                 try
                 {
-                    var image = JsonSerializer.Deserialize<List<string>>(images)?.FirstOrDefault();
+                    var image = Utility.GetLocalizedText(x.Value, x.Language);
 
                     if (!string.IsNullOrWhiteSpace(image))
                         result = Utility.GenerateBlobStorageFullUrl(redeemableItemImageUrl, redeemableItemImageContainer, image);

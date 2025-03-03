@@ -11,11 +11,11 @@
     "CORS": "*"
   },
   "ServiceItemImageStorage": {
-    "Url": "https:///",
+    "Url": "https://tiq.azureedge.net/",
     "Container": "app"
   },
   "PaintThickness": {
-    "ContianerURL": "https://"
+    "ContianerURL": "https://tiqappstorage.blob.core.windows.net/paint-app"
   },
   "Accessory": {
     "ContianerURL": "https://"
