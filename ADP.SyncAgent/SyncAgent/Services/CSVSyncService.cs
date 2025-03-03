@@ -223,7 +223,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         {
             logger.LogInformation("Processing Files");
 
-            var compareTask = new SyncTask { SyncID = syncId, TaskDescription = "Comparing the new File with the Existing Data", TotalStep = 7, CurrentStep = -1 };
+            var compareTask = new SyncTask { SyncID = syncId, TaskDescription = "Comparing the new File with the Existing Data", TotalStep = 9, CurrentStep = -1 };
 
             this.UpdateProgress(compareTask);
             if (syncProgressIndicator is not null)
@@ -451,6 +451,11 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
 
         stopWatch.Restart();
 
+        logger.LogInformation("Loading Records to Insert.");
+        UpdateProgress(syncTask);
+        if (syncProgressIndicator is not null)
+            await syncProgressIndicator.LogInformationAsync(syncTask, "Loading Records to Insert.");
+
         var toInsert = engine.ReadFileAsList(toInsertFilePath);
 
         stopWatch.Stop();
@@ -458,6 +463,11 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         CSVSyncResult.TimeToParseToInsertFile = stopWatch.Elapsed.TotalSeconds;
 
         stopWatch.Restart();
+
+        logger.LogInformation("Loading Records to Delete.");
+        UpdateProgress(syncTask);
+        if (syncProgressIndicator is not null)
+            await syncProgressIndicator.LogInformationAsync(syncTask, "Loading Records to Delete.");
 
         var toDelete = engine.ReadFileAsList(toDeleteFilePath);
 
