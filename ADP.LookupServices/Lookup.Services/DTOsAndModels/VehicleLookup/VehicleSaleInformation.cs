@@ -7,6 +7,8 @@ namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 
 public class VehicleSaleInformation
 {
+    public string CountryIntegrationID { get; set; }
+    public string CountryName { get; set; }
     public string CompanyIntegrationID { get; set; }
     public string CompanyName { get; set; }
     public List<ShiftFileDTO> CompanyLogo { get; set; }

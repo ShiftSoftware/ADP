@@ -440,6 +440,17 @@ public class VehicleLookupService
         result.CustomerID = vsData?.CustomerID;
         result.CustomerAccountNumber = vsData?.CustomerAccountNumber;
 
+        if (options.CountryFromBranchIDResolver is not null)
+        {
+            var countryResult = await options.CountryFromBranchIDResolver(new((vsData.CompanyIntegrationID, vsData.BranchIntegrationID), languageCode, services));
+
+            if (countryResult is not null)
+            {
+                result.CountryIntegrationID = countryResult.Value.countryIntegrationID;
+                result.CountryName = countryResult.Value.countryName;
+            }
+        }
+
         if (options.CompanyNameResolver is not null)
             result.CompanyName = await options.CompanyNameResolver(new(vsData.CompanyIntegrationID, languageCode, services));
 
