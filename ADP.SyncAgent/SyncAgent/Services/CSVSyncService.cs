@@ -722,7 +722,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
 
             var skip = currentStep * batchSize.GetValueOrDefault();
 
-            var batchItems = items.Skip(skip).Take(batchSize.GetValueOrDefault()).ToList();
+            var batchItems = items.Skip(skip).Take(batchSize.GetValueOrDefault());
 
             try
             {
@@ -865,7 +865,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
                 await syncProgressIndicator.LogInformationAsync(syncTask, string.Format("Processing Step {0} of {1}.", syncTask.CurrentStep, syncTask.TotalStep));
 
             var skip = currentStep * batchSize.GetValueOrDefault();
-            var batchItems = items.Skip(skip).Take(batchSize.GetValueOrDefault()).ToList();
+            var batchItems = items.Skip(skip).Take(batchSize.GetValueOrDefault());
 
             try
             {
