@@ -112,7 +112,7 @@ public class Utility
     public static async Task CreateDatabasesAndContainersIfNotExistsAsync(CosmosClient client)
     {
         var companyDatabaseResponse = await client.CreateDatabaseIfNotExistsAsync(
-            Models.Constants.NoSQLConstants.Databases.CompanyData,
+        Models.Constants.NoSQLConstants.Databases.CompanyData,
             ThroughputProperties.CreateManualThroughput(100_000)
         );
 
@@ -121,9 +121,16 @@ public class Utility
             ThroughputProperties.CreateManualThroughput(100_000)
         );
 
+        var serviceDatabaseResponse = await client.CreateDatabaseIfNotExistsAsync(
+            Models.Constants.NoSQLConstants.Databases.Services,
+            ThroughputProperties.CreateManualThroughput(100_000)
+        );
+
         var companyDatabase = companyDatabaseResponse.Database;
-        
+
         var logsDatabase = logsDatabaseResponse.Database;
+
+        var serviceDatabase = serviceDatabaseResponse.Database;
 
         await companyDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
             Models.Constants.NoSQLConstants.Containers.Brokers,
@@ -178,6 +185,11 @@ public class Utility
         await logsDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
             Models.Constants.NoSQLConstants.Containers.SSCLogs,
             [Models.Constants.NoSQLConstants.PartitionKeys.SSCLogs.Level1]
+        ));
+
+        await serviceDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
+            Models.Constants.NoSQLConstants.Containers.FlatRate,
+            [Models.Constants.NoSQLConstants.PartitionKeys.FlatRate.Level1, Models.Constants.NoSQLConstants.PartitionKeys.FlatRate.Level2]
         ));
     }
 }

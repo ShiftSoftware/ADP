@@ -1,4 +1,5 @@
 ﻿using ShiftSoftware.ADP.Models.Part;
+using ShiftSoftware.ADP.Models.Service;
 using ShiftSoftware.ADP.Models.Vehicle;
 
 namespace ShiftSoftware.ADP.Models.Constants;
@@ -9,6 +10,7 @@ public class NoSQLConstants
     {
         public const string CompanyData = "CompanyData";
         public const string Logs = "Logs";
+        public const string Services = "Services";
     }
 
     public class Containers
@@ -26,6 +28,8 @@ public class NoSQLConstants
         public const string PartLookupLogs = "PartLookup";
         public const string SSCLogs = "SSC";
         public const string CSVUpload = "CSVUpload";
+
+        public const string FlatRate = "FlatRate";
     }
 
     public class PartitionKeys
@@ -75,6 +79,12 @@ public class NoSQLConstants
         public class SSCLogs
         {
             public const string Level1 = "/" + nameof(VehicleEntryModel.VIN);
+        }
+
+        public class FlatRate
+        {
+            public const string Level1 = "/" + nameof(FlatRateModel.VDS);
+            public const string Level2 = "/" + nameof(FlatRateModel.WMI);
         }
     }
 }
