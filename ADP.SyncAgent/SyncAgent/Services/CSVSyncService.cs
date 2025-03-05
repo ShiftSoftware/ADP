@@ -133,6 +133,15 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         SetAttributesNormal(WorkingDirectory);
 
         WorkingDirectory.Delete(true);
+
+        GarbageCollection();
+    }
+
+    private void GarbageCollection()
+    {
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
     }
 
     private void SetAttributesNormal(DirectoryInfo dir)
@@ -444,6 +453,11 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
             foreach (var line in comparision.Deleted)
                 await textWriter.WriteAsync(new StringBuilder(line), GetCancellationToken());
         }
+
+        //Cleanup some memory usage
+        comparision.Added = null;
+        comparision.Deleted = null;
+        GarbageCollection();
 
         stopWatch.Stop();
 
