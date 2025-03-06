@@ -560,16 +560,17 @@ public class VehicleLookupService
             DateTime? repairDate = x.RepairDate;
 
             var warrantyClaim = warrantyClaims?
-                .Where(w => new List<int> { 1, 2, 5, 6 }.Contains(w?.ClaimStatus ?? 0))
-                .OrderByDescending(w => w.RepairDate)
-                .FirstOrDefault(w => (w.DistributorComment?.Contains(x.CampaignCode) ?? false) || 
-                    (w.LaborOperationNoMain == x.LaborCode1 || w.LaborOperationNoMain == x.LaborCode2 || w.LaborOperationNoMain == x.LaborCode3)
+                .Where(w => new List<WarrantyClaimStatus> { WarrantyClaimStatus.Accepted, WarrantyClaimStatus.Certified, WarrantyClaimStatus.Invoiced }.Contains(w?.ClaimStatus ?? 0))
+                .OrderByDescending(w => w.RepairCompletionDate)
+                .FirstOrDefault(w => (
+                    w.DistributorComment?.Contains(x.CampaignCode) ?? false) ||
+                    (w.LaborLines.Any(y => new[] { x.LaborCode1, x.LaborCode2, x.LaborCode3 }.Contains(y.LaborCode)))
                 );
 
             if (warrantyClaim is not null)
             {
                 isRepared = true;
-                repairDate = warrantyClaim.RepairDate;
+                repairDate = warrantyClaim.RepairCompletionDate;
             }
             else
             {
