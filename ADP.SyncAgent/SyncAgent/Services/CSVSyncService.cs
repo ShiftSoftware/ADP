@@ -2,9 +2,11 @@
 using LibGit2Sharp;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Logging;
+using Org.BouncyCastle.Utilities;
 using Polly;
 using Polly.Retry;
 using ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Text;
@@ -52,9 +54,9 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
 
     private DirectoryInfo WorkingDirectory;
 
-    private readonly CacheableCSVEngine<TCSV> CacheableCSVEngine = new();
-
     private readonly CSVSyncResult<TCSV> CSVSyncResult = new();
+    string toInsertFilePath = "";
+    string toDeleteFilePath = "";
 
     // Create an instance of builder that exposes various extensions for adding resilience strategies
     ResiliencePipeline ResiliencePipeline;
@@ -83,8 +85,10 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         var tempFolder = Guid.NewGuid().ToString();
 
         WorkingDirectory = new DirectoryInfo(Path.Combine(options.CSVCompareWorkingDirectory, tempFolder));
-
         WorkingDirectory.Create();
+
+        toInsertFilePath = Path.Combine(WorkingDirectory.FullName, "to-insert.csv");
+        toDeleteFilePath = Path.Combine(WorkingDirectory.FullName, "to-delete.csv");
 
         ResiliencePipeline = new ResiliencePipelineBuilder()
         .AddRetry(new RetryStrategyOptions()) // Add retry using the default options
@@ -153,58 +157,6 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
             file.Attributes = FileAttributes.Normal;
     }
 
-    private async Task MutateFileRandomlyAsync()
-    {
-        var filePath = Path.Combine(WorkingDirectory.FullName, "file");
-        var file2Path = Path.Combine(WorkingDirectory.FullName, "file2");
-
-        var lineCount = File.ReadLines(filePath).Count();
-
-        var random = new Random();
-
-        var maxLineChange = lineCount > 1000 ? 700 : lineCount / 2;
-
-        var numberOfLinesToChange = random.Next(1, maxLineChange);
-
-        var linesToChange = new HashSet<int>();
-
-        for (var i = 0; i < numberOfLinesToChange; i++)
-        {
-            var lineToChange = random.Next(1, lineCount);
-
-            if (!linesToChange.Contains(lineToChange))
-                linesToChange.Add(lineToChange);
-        }
-
-        using (FileStream sourceFileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.None))
-        using (FileStream destFileStream = new FileStream(file2Path, FileMode.Create, FileAccess.Write, FileShare.None))
-        using (StreamReader streamReader = new StreamReader(sourceFileStream))
-        using (StreamWriter streamWriter = new StreamWriter(destFileStream))
-        {
-            var line = streamReader.ReadLine();
-            var lineIndex = 0;
-
-            while (line != null)
-            {
-                if (linesToChange.Contains(lineIndex))
-                {
-                    char[] charArray = line.ToCharArray();
-                    Array.Reverse(charArray);
-                    line = new string(charArray);
-                }
-
-                await streamWriter.WriteLineAsync(line);
-
-                line = await streamReader.ReadLineAsync();
-
-                lineIndex++;
-            }
-        }
-
-        File.Delete(filePath);
-        File.Move(file2Path, filePath);
-    }
-
     public async Task<string> StartSyncAsync(
         string csvFileName,
         string? sourceContainerOrShareName,
@@ -238,24 +190,33 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
             if (syncProgressIndicator is not null)
                 await syncProgressIndicator.LogInformationAsync(compareTask, "Processing Files");
 
-            await ProcessFilesAsync(csvFileName, sourceContainerOrShareName, sourceDirectory, destinationContainerOrShareName, destinationDirectory, compareTask);
+            var fileProccessSuccess = await ProcessFilesAsync(
+                csvFileName,
+                sourceContainerOrShareName,
+                sourceDirectory,
+                destinationContainerOrShareName,
+                destinationDirectory,
+                compareTask);
 
             logger.LogInformation("Processing Cosmos DB");
             
-            await ProcessCosmosAsync(
-                destinationRelativePath: Path.Combine(destinationDirectory ?? "", csvFileName),
-                destinationContainerOrShareName: destinationContainerOrShareName,
-                databaseId: databaseId,
-                containerId: containerId,
-                mapping: mapping,
-                partitionKeyLevel1Expression: partitionKeyLevel1Expression,
-                partitionKeyLevel2Expression: partitionKeyLevel2Expression,
-                partitionKeyLevel3Expression: partitionKeyLevel3Expression,
-                cosmosAction: cosmosAction,
-                batchSize: batchSize,
-                retryCount: retryCount,
-                syncId: syncId
-            );
+            if(fileProccessSuccess)
+                await ProcessCosmosAsync(
+                    destinationRelativePath: Path.Combine(destinationDirectory ?? "", csvFileName),
+                    destinationContainerOrShareName: destinationContainerOrShareName,
+                    databaseId: databaseId,
+                    containerId: containerId,
+                    mapping: mapping,
+                    partitionKeyLevel1Expression: partitionKeyLevel1Expression,
+                    partitionKeyLevel2Expression: partitionKeyLevel2Expression,
+                    partitionKeyLevel3Expression: partitionKeyLevel3Expression,
+                    cosmosAction: cosmosAction,
+                    batchSize: batchSize,
+                    retryCount: retryCount,
+                    syncId: syncId
+                );
+            else
+                CleanUp();
 
             var syncResult = GetSyncResult();
 
@@ -339,8 +300,10 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         syncTask.RemainingTimeToShutdown = operationStart.AddSeconds(operationTimeoutInSeconds) - DateTime.UtcNow;
     }
 
-    public async Task ProcessFilesAsync(string csvFileName, string? sourceContainerOrShareName, string? sourceDirectory, string? destinationContainerOrShareName, string? destinationDirectory, SyncTask syncTask)
+    public async Task<bool> ProcessFilesAsync(string csvFileName, string? sourceContainerOrShareName, string? sourceDirectory, string? destinationContainerOrShareName, string? destinationDirectory, SyncTask syncTask)
     {
+        using CacheableCSVAsyncEngine<TCSV> engine = new();
+
         var stopWatch = new Stopwatch();
 
         stopWatch.Start();
@@ -351,7 +314,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
             await syncProgressIndicator.LogInformationAsync(syncTask, "Loding the existing file.");
 
         await storageService.LoadOriginalFileAsync(Path.Combine(destinationDirectory ?? "", csvFileName), Path.Combine(WorkingDirectory.FullName, "file.csv"),
-            CacheableCSVEngine.Options.IgnoreFirstLines, destinationContainerOrShareName, GetCancellationToken());
+            engine.Options.IgnoreFirstLines, destinationContainerOrShareName, GetCancellationToken());
         
         logger.LogInformation("Initializing a git repo.");
         UpdateProgress(syncTask);
@@ -372,7 +335,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
             await syncProgressIndicator.LogInformationAsync(syncTask, "Loding the new file.");
 
         await storageService.LoadNewVersionAsync(Path.Combine(sourceDirectory ?? "", csvFileName), Path.Combine(WorkingDirectory.FullName, "file.csv"),
-            CacheableCSVEngine.Options.IgnoreFirstLines, sourceContainerOrShareName, GetCancellationToken());
+            engine.Options.IgnoreFirstLines, sourceContainerOrShareName, GetCancellationToken());
 
         stopWatch.Stop();
 
@@ -406,19 +369,14 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
             if (syncProgressIndicator is not null)
                 await syncProgressIndicator.LogInformationAsync(syncTask, "Nothing to do. Skipping.");
 
-            return;
+            return false;
         }
 
         stopWatch.Stop();
 
         CSVSyncResult.TimeToCompareWithGit = stopWatch.Elapsed.TotalSeconds;
 
-        string toInsertFilePath = Path.Combine(WorkingDirectory.FullName, "to-insert.csv");
-        string toDeleteFilePath = Path.Combine(WorkingDirectory.FullName, "to-delete.csv");
-
         stopWatch.Restart();
-
-        var engine = new CacheableCSVEngine<TCSV>();
 
         logger.LogInformation("Generating a file for added records.");
         UpdateProgress(syncTask);
@@ -461,47 +419,11 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
 
         stopWatch.Stop();
 
-        CSVSyncResult.TimeToWriteToDeleteFile = stopWatch.Elapsed.TotalSeconds;
-
-        stopWatch.Restart();
-
-        logger.LogInformation("Loading Records to Insert.");
-        UpdateProgress(syncTask);
-        if (syncProgressIndicator is not null)
-            await syncProgressIndicator.LogInformationAsync(syncTask, "Loading Records to Insert.");
-
-        var toInsert = engine.ReadFileAsList(toInsertFilePath);
-
-        stopWatch.Stop();
-
-        CSVSyncResult.TimeToParseToInsertFile = stopWatch.Elapsed.TotalSeconds;
-
-        stopWatch.Restart();
-
-        logger.LogInformation("Loading Records to Delete.");
-        UpdateProgress(syncTask);
-        if (syncProgressIndicator is not null)
-            await syncProgressIndicator.LogInformationAsync(syncTask, "Loading Records to Delete.");
-
-        var toDelete = engine.ReadFileAsList(toDeleteFilePath);
-
-        stopWatch.Stop();
-
-        CSVSyncResult.TimeToParseToDeleteFile = stopWatch.Elapsed.TotalSeconds;
-
-        CSVSyncResult.ToInsert = toInsert;
-        CSVSyncResult.ToDelete = toDelete;
-
         syncTask.Completed = true;
 
         syncTask.Progress = 1;
 
-        logger.LogInformation("File processing completed. Found ({0}) records to add and ({1}) to delete.", toInsert.Count, toDelete.Count);
-        UpdateProgress(syncTask);
-        if (syncProgressIndicator is not null)
-            await syncProgressIndicator.LogInformationAsync(syncTask, $"File processing completed. Found ({toInsert.Count}) records to add and ({toDelete.Count}) to delete.");
-        
-        engine.Dispose();
+        return true;
     }
 
     private CancellationToken GetCancellationToken()
@@ -532,130 +454,47 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         int? retryCount = 0,
         string? syncId = null)
     {
-        var syncTask = new SyncTask
-        {
-            SyncID = syncId,
-            TotalStep = 2,
-            CurrentStep = -1,
-            TaskDescription = "Preparing Cosmos DB",
-        };
-
-        logger.LogInformation("Connecting to ({0}) container", containerId);
-        this.UpdateProgress(syncTask);
-        if (syncProgressIndicator is not null)
-            await syncProgressIndicator.LogInformationAsync(syncTask, $"Connect to ({containerId}) container");
-
-        var stopWatch = new Stopwatch();
-
-        stopWatch.Start();
-
-        var container = cosmosClient.GetContainer(databaseId, containerId);
-
-        stopWatch.Stop();
-
-        CSVSyncResult.TimeToInitializeCosmosClient = stopWatch.Elapsed.TotalSeconds;
-
-        stopWatch.Restart();
-
-        CheckForCancellation();
-
-        IEnumerable<TCosmos> toInsert;
-        IEnumerable<TCosmos> toDelete;
-
-        logger.LogInformation("Map CSV records to Cosmos Data Model");
-        this.UpdateProgress(syncTask);
-        if (syncProgressIndicator is not null)
-            await syncProgressIndicator.LogInformationAsync(syncTask, $"Map CSV records to Cosmos Data Model");
-
-        if (mapping is null)
-        {
-            toInsert = mapper.Map<IEnumerable<TCosmos>>(CSVSyncResult.ToInsert);
-            toDelete = mapper.Map<IEnumerable<TCosmos>>(CSVSyncResult.ToDelete);
-        }
-        else
-        {
-            toInsert = await mapping(CSVSyncResult.ToInsert, CosmosActionType.Upsert);
-            toDelete = await mapping(CSVSyncResult.ToDelete, CosmosActionType.Delete);
-        }
-
-        var toInsertCount = toInsert.Count();
-        var toDeleteCount = toDelete.Count();
-
-        CSVSyncResult.ToInsertCount = toInsertCount;
-        CSVSyncResult.ToDeleteCount = toDeleteCount;
-
-        if (toInsertCount == 0 && toDeleteCount == 0)
-        {
-            CSVSyncResult.Status = CSVSyncStatus.Skipped;
-
-            logger.LogInformation("Nothing to do, skipping.");
-
-            syncTask.Completed = true;
-            this.UpdateProgress(syncTask);
-            if (syncProgressIndicator is not null)
-                await syncProgressIndicator.LogInformationAsync(syncTask, $"Nothing to do, skipping.");
-
-            return;
-        }
-
-        IEnumerable<SyncCosmosAction<TCosmos>?> cosmosActions = [];
-
-        if (cosmosAction is null)
-        {
-            cosmosActions = cosmosActions.Concat(toInsert.Select(x => new SyncCosmosAction<TCosmos>(x, CosmosActionType.Upsert, GetCancellationToken())));
-            cosmosActions = cosmosActions.Concat(toDelete.Select(x => new SyncCosmosAction<TCosmos>(x, CosmosActionType.Delete, GetCancellationToken())));
-        }
-        else
-        {
-            foreach (var item in toInsert)
-                cosmosActions = cosmosActions.Concat([await cosmosAction(new(item, CosmosActionType.Upsert, GetCancellationToken()))]);
-
-            foreach (var item in toDelete)
-                cosmosActions = cosmosActions.Concat([await cosmosAction(new(item, CosmosActionType.Delete, GetCancellationToken()))]);
-        }
-
-        syncTask.Completed = true;
-        this.UpdateProgress(syncTask);
-        if (syncProgressIndicator is not null)
-            await syncProgressIndicator.LogInformationAsync(syncTask, $"Done Preparing for Upsert/Delete.");
-
-        var deletedCount = await DeleteBatchFromCosmosAsync(
+        logger.LogInformation("Upserting started.");
+        var deleteSucceeded = await SyncBtachToCosmosAsync(
+                toDeleteFilePath,
+                CosmosActionType.Delete,
                 databaseId,
                 containerId,
-                cosmosActions.Where(x => x.ActionType == CosmosActionType.Delete),
+                mapping,
                 partitionKeyLevel1Expression,
                 partitionKeyLevel2Expression,
                 partitionKeyLevel3Expression,
+                cosmosAction,
                 batchSize,
                 retryCount,
                 syncId
             );
 
-        var insertedCount = await UpsertBtachToCosmosAsync(
+        logger.LogInformation("Deleting started.");
+        var upsertSucceeded = await SyncBtachToCosmosAsync(
+                toInsertFilePath,
+                CosmosActionType.Upsert,
                 databaseId,
                 containerId,
-                cosmosActions.Where(x => x.ActionType == CosmosActionType.Upsert),
+                mapping,
                 partitionKeyLevel1Expression,
                 partitionKeyLevel2Expression,
                 partitionKeyLevel3Expression,
+                cosmosAction,
                 batchSize,
                 retryCount,
                 syncId
             );
 
-        stopWatch.Stop();
 
-        CSVSyncResult.TimeToSyncToCosmos = stopWatch.Elapsed.TotalSeconds;
-
-        CSVSyncResult.CosmosDBInsertedCount = insertedCount;
-        CSVSyncResult.CosmosDBDeletedCount = deletedCount;
-
-        if (insertedCount + deletedCount == toInsertCount + toDeleteCount)
+        if (upsertSucceeded && deleteSucceeded)
         {
             try
             {
+                using CacheableCSVAsyncEngine<TCSV> engine = new();
+
                 await storageService.StoreNewVersionAsync(Path.Combine(WorkingDirectory.FullName, "file.csv"),
-                    destinationRelativePath, destinationContainerOrShareName, CacheableCSVEngine.Options.IgnoreFirstLines,
+                    destinationRelativePath, destinationContainerOrShareName, engine.Options.IgnoreFirstLines,
                     GetCancellationToken());
 
                 CSVSyncResult.Status = CSVSyncStatus.SuccessSync;
@@ -673,86 +512,97 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         CleanUp();
     }
 
-    private async Task<int> UpsertBtachToCosmosAsync(
+    private async Task<bool> SyncBtachToCosmosAsync(
+            string csvFilePath,
+            CosmosActionType actionType,
             string databaseId,
             string containerId,
-            IEnumerable<SyncCosmosAction<TCosmos>?> items,
+            Func<IEnumerable<TCSV>, CosmosActionType, ValueTask<IEnumerable<TCosmos>>>? mapping,
             Expression<Func<TCosmos, object>> partitionKeyLevel1Expression,
             Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression,
             Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression,
+            Func<SyncCosmosAction<TCosmos>, ValueTask<SyncCosmosAction<TCosmos>?>>? cosmosAction,
             int? batchSize,
             int? retryCount,
             string? syncId
         )
     {
-        var successCount = 0;
         CheckForCancellation();
 
-        var totalCount = items.Count();
+        using CacheableCSVAsyncEngine<TCSV> engine = new();
+        engine.BeginReadFile(csvFilePath);
+
+        var totalCount = GetCSVTotalRecords(csvFilePath, engine.Options.IgnoreFirstLines);
         batchSize ??= totalCount;
         var totalSteps = totalCount == 0 ? 0 : (int)Math.Ceiling(totalCount / (double)batchSize);
         var currentStep = 0;
         int retry = 0;
 
-        logger.LogInformation("Upserting started.");
         logger.LogInformation("Total Count is: {0:#,0}", totalCount);
         logger.LogInformation("Total Steps is: {0:#,0}", totalSteps);
 
-        var syncTask = new SyncTask
-        {
-            SyncID = syncId,
-            TotalStep = totalSteps,
-            CurrentStep = -1,
-            TaskDescription = "Upserting to Cosmos DB",
-        };
+        IEnumerable<SyncCosmosAction<TCosmos>?>? items = null;
 
-        this.UpdateProgress(syncTask);
-        if (syncProgressIndicator is not null)
-            await syncProgressIndicator.LogInformationAsync(syncTask, string.Format("Upserting started. Item Count is: {0:#,0}, Step Count is: {1:#,0}", totalCount, totalSteps));
-        
-        while (currentStep < totalSteps)
+        while (true)
         {
             CheckForCancellation();
 
             logger.LogInformation(
-                "{0:P2}: Processing Step {1} of {2}. Elapsed: {3:c}. Remaining Allowed Time: {4:c}",
-                totalSteps == 0 ? 0 : (double)(currentStep + 1) / totalSteps,
-                currentStep + 1,
-                totalSteps,
-                DateTime.UtcNow - operationStart,
-                operationStart.AddSeconds(operationTimeoutInSeconds) - DateTime.UtcNow
-            );
+                    "{0:P2}: Processing Step {1} of {2}. Elapsed: {3:c}. Remaining Allowed Time: {4:c}",
+                    totalSteps == 0 ? 0 : (double)(currentStep + 1) / totalSteps,
+                    currentStep + 1,
+                    totalSteps,
+                    DateTime.UtcNow - operationStart,
+                    operationStart.AddSeconds(operationTimeoutInSeconds) - DateTime.UtcNow
+                );
 
-            //syncTask.TotalStep = totalSteps;
-            //syncTask.CurrentStep = currentStep;
-            //syncTask.TaskDescription = "Upserting started.";
-            //syncTask.Elapsed = DateTime.UtcNow - operationStart;
-            //syncTask.Progress = totalSteps == 0 ? 0 : (double)(currentStep + 1) / totalSteps;
-            //syncTask.RemainingTimeToShutdown = shutDownTime - DateTime.UtcNow;
+            if (items is null)
+            {
+                logger.LogInformation("Reading from CSV started");
+                var records = engine.ReadNexts(batchSize.GetValueOrDefault());
+                logger.LogInformation("Reading from CSV finished");
 
-            this.UpdateProgress(syncTask);
-            if (syncProgressIndicator is not null)
-                await syncProgressIndicator.LogInformationAsync(syncTask, string.Format("Processing Step {0} of {1}.", syncTask.CurrentStep, syncTask.TotalStep));
+                if(records?.Any() != true)
+                    break;
 
-            var skip = currentStep * batchSize.GetValueOrDefault();
+                IEnumerable<TCosmos> mappedRecords;
 
-            var batchItems = items.Skip(skip).Take(batchSize.GetValueOrDefault());
+                logger.LogInformation("Map CSV records to cosmos data model started");
+                if (mapping is null)
+                    mappedRecords = mapper.Map<IEnumerable<TCosmos>>(records);
+                else
+                    mappedRecords = await mapping(records, actionType);
+
+                if (cosmosAction is null)
+                    items = mappedRecords.Select(x => new SyncCosmosAction<TCosmos>(x, CosmosActionType.Upsert, GetCancellationToken()));
+                else
+                    foreach (var item in mappedRecords)
+                        items = (items ?? []).Concat([await cosmosAction(new(item, CosmosActionType.Upsert, GetCancellationToken()))]);
+
+                logger.LogInformation("Map CSV records to cosmos data model finished");
+            }
 
             try
             {
-                var successCountForBatch = await UpsertToCosmosAsync(
+                logger.LogInformation("Sync to cosmos started");
+
+                await DeleteFromCosmosAsync(
                     databaseId,
                     containerId,
-                    batchItems,
+                    items?.Where(x => x.ActionType == CosmosActionType.Delete) ?? [],
                     partitionKeyLevel1Expression,
                     partitionKeyLevel2Expression,
                     partitionKeyLevel3Expression);
 
-                successCount += successCountForBatch;
+                await UpsertToCosmosAsync(
+                    databaseId,
+                    containerId,
+                    items?.Where(x=> x.ActionType == CosmosActionType.Upsert) ?? [],
+                    partitionKeyLevel1Expression,
+                    partitionKeyLevel2Expression,
+                    partitionKeyLevel3Expression);
 
                 logger.LogInformation($"Step {currentStep + 1} proccessed.");
-                if (syncProgressIndicator is not null)
-                    await syncProgressIndicator.LogWarningAsync(syncTask, string.Format("Step {0} completed. Upserted {1:#,0} out of {2:#,0}.\r\n" + Environment.NewLine, syncTask.CurrentStep, successCount, totalCount));
 
                 currentStep++;
                 retry = 0;
@@ -762,24 +612,33 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
                 retry++;
 
                 if (retry > (retryCount ?? 0))
-                    break;
+                {
+                    return false;
+                }
 
                 logger.LogWarning($"Step {currentStep + 1} proccess failed, we do retry {retry} time.");
-
-                if (syncProgressIndicator is not null)
-                    await syncProgressIndicator.LogWarningAsync(syncTask, $"Step {currentStep + 1} proccess failed, we do retry {retry} time.");
             }
+
+            items = null;
+            GarbageCollection();
         }
 
-        syncTask.Completed = true;
-
-        if (syncProgressIndicator is not null)
-            await syncProgressIndicator.LogInformationAsync(syncTask, $"Cosmo DB Upsert Finished.");
-
-        return successCount;
+        return true;
     }
 
-    private async Task<int> UpsertToCosmosAsync(
+    private int GetCSVTotalRecords(string filePath, int numberOfIgnoredLines = 0)
+    {
+        using (var reader = new StreamReader(filePath))
+        {
+            int count = 0;
+            while (reader.ReadLine() != null)
+                count++;
+
+            return Math.Max(0, count - numberOfIgnoredLines);
+        }
+    }
+
+    private async Task UpsertToCosmosAsync(
             string databaseId,
             string containerId,
             IEnumerable<SyncCosmosAction<TCosmos>?> items,
@@ -788,7 +647,6 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
             Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression
         )
     {
-        var successCount = 0;
         IEnumerable<Task> tasks = [];
 
         var container = cosmosClient.GetContainer(databaseId, containerId);
@@ -809,119 +667,18 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
                     {
                         await container.UpsertItemAsync(item.Item, partitionKey,
                             new ItemRequestOptions { EnableContentResponseOnWrite = false }, GetCancellationToken());
-                        Interlocked.Increment(ref successCount);
                     }, GetCancellationToken());
-                }
-                else
-                {
-                    Interlocked.Increment(ref successCount);
                 }
             }, GetCancellationToken())]);
         }
 
         await Task.WhenAll(tasks);
 
-        return successCount;
+        tasks = null;
+        items = null;
     }
 
-    private async Task<int> DeleteBatchFromCosmosAsync(
-            string databaseId,
-            string containerId,
-            IEnumerable<SyncCosmosAction<TCosmos>?> items,
-            Expression<Func<TCosmos, object>> partitionKeyLevel1Expression,
-            Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression,
-            Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression,
-            int? batchSize,
-            int? retryCount,
-            string? syncId
-        )
-    {
-        var successCount = 0;
-        CheckForCancellation();
-
-        var totalCount = items.Count();
-        batchSize ??= totalCount;
-        var totalSteps = totalCount == 0 ? 0 : (int)Math.Ceiling(totalCount / (double)batchSize);
-        var currentStep = 0;
-        int retry = 0;
-
-        logger.LogInformation("Deleting started.");
-        logger.LogInformation("Total Count is: {0:#,0}", totalCount);
-        logger.LogInformation("Total Steps is: {0:#,0}", totalSteps);
-
-        var syncTask = new SyncTask
-        {
-            SyncID = syncId,
-            TotalStep = totalSteps,
-            CurrentStep = -1,
-            TaskDescription = "Deleting from Cosmos DB",
-        };
-
-        this.UpdateProgress(syncTask);
-        if (syncProgressIndicator is not null)
-            await syncProgressIndicator.LogInformationAsync(syncTask, string.Format("Deleting started. Item Count is: {0:#,0}, Step Count is: {1:#,0}", totalCount, totalSteps));
-
-        while (currentStep < totalSteps)
-        {
-            CheckForCancellation();
-            
-            logger.LogInformation(
-                "{0:P2}: Processing Step {1} of {2}. Elapsed: {3:c}. Remaining Allowed Time: {4:c}",
-                totalSteps == 0 ? 0 : (double)(currentStep + 1) / totalSteps,
-                currentStep + 1,
-                totalSteps,
-                DateTime.UtcNow - operationStart,
-                operationStart.AddSeconds(operationTimeoutInSeconds) - DateTime.UtcNow
-            );
-
-            this.UpdateProgress(syncTask);
-            if (syncProgressIndicator is not null)
-                await syncProgressIndicator.LogInformationAsync(syncTask, string.Format("Processing Step {0} of {1}.", syncTask.CurrentStep, syncTask.TotalStep));
-
-            var skip = currentStep * batchSize.GetValueOrDefault();
-            var batchItems = items.Skip(skip).Take(batchSize.GetValueOrDefault());
-
-            try
-            {
-                var successCountForBatch = await DeleteFromCosmosAsync(
-                    databaseId,
-                    containerId,
-                    batchItems,
-                    partitionKeyLevel1Expression,
-                    partitionKeyLevel2Expression,
-                    partitionKeyLevel3Expression);
-
-                successCount += successCountForBatch;
-
-                logger.LogInformation($"Step {currentStep + 1} proccessed.");
-                if (syncProgressIndicator is not null)
-                    await syncProgressIndicator.LogWarningAsync(syncTask, string.Format("Step {0} completed. Deleted {1:#,0} out of {2:#,0}.\r\n" + Environment.NewLine, syncTask.CurrentStep, successCount, totalCount));
-
-                currentStep++;
-                retry = 0;
-            }
-            catch (Exception)
-            {
-                retry++;
-
-                if (retry > (retryCount ?? 0))
-                    break;
-
-                logger.LogWarning($"Step {currentStep + 1} proccess failed, we do retry {retry} time.");
-                if (syncProgressIndicator is not null)
-                    await syncProgressIndicator.LogWarningAsync(syncTask, $"Step {currentStep + 1} proccess failed, we do retry {retry} time.");
-            }
-        }
-
-        syncTask.Completed = true;
-
-        if (syncProgressIndicator is not null)
-            await syncProgressIndicator.LogInformationAsync(syncTask, $"Cosmo DB Delete Operations Finished.");
-
-        return successCount;
-    }
-
-    private async Task<int> DeleteFromCosmosAsync(
+    private async Task DeleteFromCosmosAsync(
             string databaseId,
             string containerId,
             IEnumerable<SyncCosmosAction<TCosmos>?> items,
@@ -930,7 +687,6 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
             Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression
         )
     {
-        var successCount = 0;
         IEnumerable<Task> tasks = [];
 
         var container = cosmosClient.GetContainer(databaseId, containerId);
@@ -954,24 +710,19 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
                             var type = item.Item.GetType();
                             var id = (string?)type.GetProperty("id")?.GetValue(item.Item);
                             await container.DeleteItemAsync<TCosmos>(id, partitionKey);
-                            Interlocked.Increment(ref successCount);
                         }
                         catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
                         {
-                            Interlocked.Increment(ref successCount);
                         }
                     });
-                }
-                else
-                {
-                    Interlocked.Increment(ref successCount);
                 }
             })]);
         }
 
         await Task.WhenAll(tasks);
 
-        return successCount;
+        tasks = null;
+        items = null;
     }
 
     public CSVSyncResult<TCSV> GetSyncResult()
