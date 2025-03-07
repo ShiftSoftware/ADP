@@ -532,7 +532,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         using CacheableCSVAsyncEngine<TCSV> engine = new();
         engine.BeginReadFile(csvFilePath);
 
-        var totalCount = GetCSVTotalRecords(csvFilePath, engine.Options.IgnoreFirstLines);
+        var totalCount = await CalculateCSVRecordCountAsync(csvFilePath, engine.Options.IgnoreFirstLines);
         batchSize ??= totalCount;
         var totalSteps = totalCount == 0 ? 0 : (int)Math.Ceiling(totalCount / (double)batchSize);
         var currentStep = 0;
@@ -626,16 +626,14 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         return true;
     }
 
-    private int GetCSVTotalRecords(string filePath, int numberOfIgnoredLines = 0)
+    private async Task<int> CalculateCSVRecordCountAsync(string filePath, int numberOfIgnoredLines = 0)
     {
-        using (var reader = new StreamReader(filePath))
-        {
-            int count = 0;
-            while (reader.ReadLine() != null)
-                count++;
+        using var reader = new StreamReader(filePath);
+        int count = 0;
+        while (await reader.ReadLineAsync() != null)
+            count++;
 
-            return Math.Max(0, count - numberOfIgnoredLines);
-        }
+        return Math.Max(0, count - numberOfIgnoredLines);
     }
 
     private async Task UpsertToCosmosAsync(
