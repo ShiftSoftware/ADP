@@ -454,7 +454,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         int? retryCount = 0,
         string? syncId = null)
     {
-        logger.LogInformation("Upserting started.");
+        logger.LogInformation("Deleting started.");
         var deleteSucceeded = await SyncBtachToCosmosAsync(
                 toDeleteFilePath,
                 CosmosActionType.Delete,
@@ -469,8 +469,8 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
                 retryCount,
                 syncId
             );
-
-        logger.LogInformation("Deleting started.");
+                
+        logger.LogInformation("Upserting started.");
         var upsertSucceeded = await SyncBtachToCosmosAsync(
                 toInsertFilePath,
                 CosmosActionType.Upsert,
