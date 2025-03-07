@@ -10,6 +10,9 @@ public enum WarrantyManufacturerClaimStatus
     [Description("Exported")]
     Exported = 1,
 
+    [Description("Downloaded")]
+    Downloaded = 2,
+
     [Description("Paid")]
     Paid = 3,
 

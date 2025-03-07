@@ -12,5 +12,7 @@ namespace ShiftSoftware.ADP.Models.Enums
         Hino = 2,
         [Description("Other")]
         Other = 3,
+        [Description("N/A")]
+        NA = 4,
     }
 }
