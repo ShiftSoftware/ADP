@@ -143,7 +143,7 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
             .Select(x => ((JObject)x).ToObject<PaintThicknessInspectionModel>()).FirstOrDefault();
 
         companyData.WarrantyDateShifts = items.Where(x => x.ItemType.ToString() == ModelTypes.WarrantyDateShift)
-            .Select(x => ((JObject)x).ToObject<WarrantyDateShiftCosmosModel>()).ToList();
+            .Select(x => ((JObject)x).ToObject<WarrantyDateShiftModel>()).ToList();
 
         companyData.Accessories = items.Where(x => x.ItemType.ToString() == ModelTypes.VehicleAccessory)
             .Select(x => ((JObject)x).ToObject<VehicleAccessoryModel>()).ToList();
