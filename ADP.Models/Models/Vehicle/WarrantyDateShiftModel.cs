@@ -2,7 +2,7 @@
 
 namespace ShiftSoftware.ADP.Models.Vehicle;
 
-public class WarrantyDateShiftCosmosModel : IPartitionedItem
+public class WarrantyDateShiftModel : IPartitionedItem
 {
     public string id { get; set; }
     public string VIN { get; set; }
