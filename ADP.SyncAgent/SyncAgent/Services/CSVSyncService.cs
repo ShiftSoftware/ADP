@@ -54,9 +54,8 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
 
     private DirectoryInfo WorkingDirectory;
 
-    private readonly CSVSyncResult<TCSV> CSVSyncResult = new();
-    string toInsertFilePath = "";
-    string toDeleteFilePath = "";
+    private readonly string toInsertFilePath = "";
+    private readonly string toDeleteFilePath = "";
 
     // Create an instance of builder that exposes various extensions for adding resilience strategies
     ResiliencePipeline ResiliencePipeline;
@@ -157,7 +156,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
             file.Attributes = FileAttributes.Normal;
     }
 
-    public async Task<string> StartSyncAsync(
+    public async Task StartSyncAsync(
         string csvFileName,
         string? sourceContainerOrShareName,
         string? sourceDirectory,
@@ -175,120 +174,56 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         int operationTimeoutInSecond = 300,
         string? syncId = null)
     {
-        operationStart = DateTime.UtcNow;
-        operationTimeoutInSeconds = operationTimeoutInSecond;
-        cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(operationTimeoutInSeconds));
-        CSVSyncResult.WorkingDirectory = WorkingDirectory;
-
-        using (logger.BeginScope("Syncing {csvFileName}", csvFileName))
+        try
         {
-            logger.LogInformation("Processing Files");
+            operationStart = DateTime.UtcNow;
+            operationTimeoutInSeconds = operationTimeoutInSecond;
+            cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(operationTimeoutInSeconds));
 
-            var compareTask = new SyncTask { SyncID = syncId, TaskDescription = "Comparing the new File with the Existing Data", TotalStep = 9, CurrentStep = -1 };
+            using (logger.BeginScope("Syncing {csvFileName}", csvFileName))
+            {
+                logger.LogInformation("Processing Files");
 
-            this.UpdateProgress(compareTask);
-            if (syncProgressIndicator is not null)
-                await syncProgressIndicator.LogInformationAsync(compareTask, "Processing Files");
+                var compareTask = new SyncTask { SyncID = syncId, TaskDescription = "Comparing the new File with the Existing Data", TotalStep = 9, CurrentStep = -1 };
 
-            var fileProccessSuccess = await ProcessFilesAsync(
-                csvFileName,
-                sourceContainerOrShareName,
-                sourceDirectory,
-                destinationContainerOrShareName,
-                destinationDirectory,
-                compareTask);
+                this.UpdateProgress(compareTask);
+                if (syncProgressIndicator is not null)
+                    await syncProgressIndicator.LogInformationAsync(compareTask, "Processing Files");
 
-            logger.LogInformation("Processing Cosmos DB");
-            
-            if(fileProccessSuccess)
-                await ProcessCosmosAsync(
-                    destinationRelativePath: Path.Combine(destinationDirectory ?? "", csvFileName),
-                    destinationContainerOrShareName: destinationContainerOrShareName,
-                    databaseId: databaseId,
-                    containerId: containerId,
-                    mapping: mapping,
-                    partitionKeyLevel1Expression: partitionKeyLevel1Expression,
-                    partitionKeyLevel2Expression: partitionKeyLevel2Expression,
-                    partitionKeyLevel3Expression: partitionKeyLevel3Expression,
-                    cosmosAction: cosmosAction,
-                    batchSize: batchSize,
-                    retryCount: retryCount,
-                    syncId: syncId
-                );
-            else
-                CleanUp();
+                var fileProccessSuccess = await ProcessFilesAsync(
+                    csvFileName,
+                    sourceContainerOrShareName,
+                    sourceDirectory,
+                    destinationContainerOrShareName,
+                    destinationDirectory,
+                    compareTask);
 
-            var syncResult = GetSyncResult();
+                logger.LogInformation("Processing Cosmos DB");
 
-            logger.LogInformation(
-                """
-                
-                -----------------------------------------------------------------------------------------
-                Selected File:                          {file}
-                Number of Added Lines:                  {ToInsert}
-                Number of Deleted Lines:                {ToDelete}
-                Original (Synced) File Download Time:   {TimeToDownloadOriginalFile}
-                New File Download Time:                 {TimeToDownloadNewFile}
-                Git Diff Process Time:                  {TimeToCompareWithGit}
-                Write To Insert File Time:              {TimeToWriteToInsertFile}
-                Write To Delete File Time:              {TimeToWriteToDeleteFile}
-                Parse (To Insert File) Time:            {TimeToParseToInsertFile}
-                Parse (To Delete File) Time:            {TimeToParseToDeleteFile}
-                Initialize Cosmos Client Time:          {TimeToInitializeCosmosClient}
-                Sync To Cosmos Time:                    {TimeToSyncToCosmos}
-                Cosmos DB Inserted Count:               {CosmosDBInsertedCount}
-                Cosmos DB Deleted Count:                {CosmosDBDeletedCount}
-                Status:                                 {Status}
-                Success:                                {Success}
-                -----------------------------------------------------------------------------------------
-
-                """
-                ,
-                csvFileName,
-                syncResult.ToInsertCount,
-                syncResult.ToDeleteCount,
-                syncResult.TimeToDownloadOriginalFile,
-                syncResult.TimeToDownloadNewFile,
-                syncResult.TimeToCompareWithGit,
-                syncResult.TimeToWriteToInsertFile,
-                syncResult.TimeToWriteToDeleteFile,
-                syncResult.TimeToParseToInsertFile,
-                syncResult.TimeToParseToDeleteFile,
-                syncResult.TimeToInitializeCosmosClient,
-                syncResult.TimeToSyncToCosmos,
-                syncResult.CosmosDBInsertedCount,
-                syncResult.CosmosDBDeletedCount,
-                syncResult.Status,
-                syncResult.Success
-            );
-
-            var message = $"""
-                
-                -----------------------------------------------------------------------------------------
-                Selected File:                          {csvFileName}
-                Number of Added Lines:                  {syncResult.ToInsertCount}
-                Number of Deleted Lines:                {syncResult.ToDeleteCount}
-                Original (Synced) File Download Time:   {syncResult.TimeToDownloadOriginalFile}
-                New File Download Time:                 {syncResult.TimeToDownloadNewFile}
-                Git Diff Process Time:                  {syncResult.TimeToCompareWithGit}
-                Write To Insert File Time:              {syncResult.TimeToWriteToInsertFile}
-                Write To Delete File Time:              {syncResult.TimeToWriteToDeleteFile}
-                Parse (To Insert File) Time:            {syncResult.TimeToParseToInsertFile}
-                Parse (To Delete File) Time:            {syncResult.TimeToParseToDeleteFile}
-                Initialize Cosmos Client Time:          {syncResult.TimeToInitializeCosmosClient}
-                Sync To Cosmos Time:                    {syncResult.TimeToSyncToCosmos}
-                Cosmos DB Inserted Count:               {syncResult.CosmosDBInsertedCount}
-                Cosmos DB Deleted Count:                {syncResult.CosmosDBDeletedCount}
-                Status:                                 {syncResult.Status}
-                Success:                                {syncResult.Success}
-                -----------------------------------------------------------------------------------------
-
-                """;
-
-            //if (syncProgressIndicator is not null)
-                //await syncProgressIndicator.LogInformationAsync(syncTask, message);
-
-                return message;
+                if (fileProccessSuccess)
+                    await ProcessCosmosAsync(
+                        destinationRelativePath: Path.Combine(destinationDirectory ?? "", csvFileName),
+                        destinationContainerOrShareName: destinationContainerOrShareName,
+                        databaseId: databaseId,
+                        containerId: containerId,
+                        mapping: mapping,
+                        partitionKeyLevel1Expression: partitionKeyLevel1Expression,
+                        partitionKeyLevel2Expression: partitionKeyLevel2Expression,
+                        partitionKeyLevel3Expression: partitionKeyLevel3Expression,
+                        cosmosAction: cosmosAction,
+                        batchSize: batchSize,
+                        retryCount: retryCount,
+                        syncId: syncId
+                    );
+                else
+                    CleanUp();
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, ex.Message);
+            CleanUp();
+            throw;
         }
     }
 
@@ -303,10 +238,6 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
     public async Task<bool> ProcessFilesAsync(string csvFileName, string? sourceContainerOrShareName, string? sourceDirectory, string? destinationContainerOrShareName, string? destinationDirectory, SyncTask syncTask)
     {
         using CacheableCSVAsyncEngine<TCSV> engine = new();
-
-        var stopWatch = new Stopwatch();
-
-        stopWatch.Start();
 
         logger.LogInformation("Loding the existing file.");
         UpdateProgress(syncTask);
@@ -323,12 +254,6 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
 
         StageAndCommit();
 
-        stopWatch.Stop();
-
-        CSVSyncResult.TimeToDownloadOriginalFile = stopWatch.Elapsed.TotalSeconds;
-
-        stopWatch.Restart();
-
         logger.LogInformation("Loding the new file.");
         UpdateProgress(syncTask);
         if (syncProgressIndicator is not null)
@@ -336,12 +261,6 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
 
         await storageService.LoadNewVersionAsync(Path.Combine(sourceDirectory ?? "", csvFileName), Path.Combine(WorkingDirectory.FullName, "file.csv"),
             engine.Options.IgnoreFirstLines, sourceContainerOrShareName, GetCancellationToken());
-
-        stopWatch.Stop();
-
-        CSVSyncResult.TimeToDownloadNewFile = stopWatch.Elapsed.TotalSeconds;
-
-        stopWatch.Restart();
 
         logger.LogInformation("Execute 'git diff' on the files.");
         UpdateProgress(syncTask);
@@ -372,12 +291,6 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
             return false;
         }
 
-        stopWatch.Stop();
-
-        CSVSyncResult.TimeToCompareWithGit = stopWatch.Elapsed.TotalSeconds;
-
-        stopWatch.Restart();
-
         logger.LogInformation("Generating a file for added records.");
         UpdateProgress(syncTask);
         if (syncProgressIndicator is not null)
@@ -391,12 +304,6 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
             foreach (var line in comparision.Added)
                 await textWriter.WriteAsync(new StringBuilder(line), GetCancellationToken());
         }
-
-        stopWatch.Stop();
-
-        CSVSyncResult.TimeToWriteToInsertFile = stopWatch.Elapsed.TotalSeconds;
-
-        stopWatch.Restart();
 
         logger.LogInformation("Generating a file for deleted records.");
         UpdateProgress(syncTask);
@@ -416,8 +323,6 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         comparision.Added = null;
         comparision.Deleted = null;
         GarbageCollection();
-
-        stopWatch.Stop();
 
         syncTask.Completed = true;
 
@@ -496,17 +401,15 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
                 await storageService.StoreNewVersionAsync(Path.Combine(WorkingDirectory.FullName, "file.csv"),
                     destinationRelativePath, destinationContainerOrShareName, engine.Options.IgnoreFirstLines,
                     GetCancellationToken());
-
-                CSVSyncResult.Status = CSVSyncStatus.SuccessSync;
             }
             catch
             {
-                CSVSyncResult.Status = CSVSyncStatus.FailedBlobUpload;
+               logger.LogError("Failed to store the new version of the file.");
             }
         }
         else
         {
-            CSVSyncResult.Status = CSVSyncStatus.FailedCosmosDBSync;
+            logger.LogError("Failed to sync to cosmos.");
         }
 
         CleanUp();
@@ -547,7 +450,8 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         {
             CheckForCancellation();
 
-            logger.LogInformation(
+            if(currentStep < totalSteps)
+                logger.LogInformation(
                     "{0:P2}: Processing Step {1} of {2}. Elapsed: {3:c}. Remaining Allowed Time: {4:c}",
                     totalSteps == 0 ? 0 : (double)(currentStep + 1) / totalSteps,
                     currentStep + 1,
@@ -721,11 +625,6 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
 
         tasks = null;
         items = null;
-    }
-
-    public CSVSyncResult<TCSV> GetSyncResult()
-    {
-        return CSVSyncResult;
     }
 
     public void Dispose()

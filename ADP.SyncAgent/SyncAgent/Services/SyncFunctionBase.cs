@@ -50,7 +50,7 @@ public class SyncFunctionBase<TFunction, TCSV, TCosmos>
         );
     }
 
-    public async Task<string> RunAsync(
+    public async Task RunAsync(
         string csvFileName,
         string? sourceDirectory,
         string? destinationDirectory,
@@ -66,7 +66,7 @@ public class SyncFunctionBase<TFunction, TCSV, TCosmos>
         int operationTimeoutInSecond = 300,
         string? syncId = null)
     {
-        return await RunAsync(
+        await RunAsync(
             csvFileName,
             null,
             sourceDirectory,
@@ -85,7 +85,7 @@ public class SyncFunctionBase<TFunction, TCSV, TCosmos>
         );
     }
 
-    public async Task<string> RunAsync(
+    public async Task RunAsync(
         string csvFileName,
         string? sourceContainerOrShareName,
         string? sourceDirectory,
@@ -103,7 +103,7 @@ public class SyncFunctionBase<TFunction, TCSV, TCosmos>
         int operationTimeoutInSecond = 300,
         string? syncId = null)
     {
-        return await syncAgentService.StartSyncAsync(
+        await syncAgentService.StartSyncAsync(
             csvFileName,
             sourceContainerOrShareName,
             sourceDirectory,
