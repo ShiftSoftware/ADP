@@ -405,6 +405,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
             catch
             {
                logger.LogError("Failed to store the new version of the file.");
+                throw;
             }
         }
         else
@@ -510,6 +511,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
 
                 currentStep++;
                 retry = 0;
+                items = null;
             }
             catch (Exception)
             {
@@ -517,14 +519,12 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
 
                 if (retry > (retryCount ?? 0))
                 {
-                    return false;
+                    items = null;
+                    throw;
                 }
 
                 logger.LogWarning($"Step {currentStep + 1} proccess failed, we do retry {retry} time.");
             }
-
-            items = null;
-            GarbageCollection();
         }
 
         return true;
