@@ -513,13 +513,14 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
                 retry = 0;
                 items = null;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 retry++;
 
                 if (retry > (retryCount ?? 0))
                 {
                     items = null;
+                    logger.LogError(ex, ex.Message);
                     throw;
                 }
 
