@@ -13,6 +13,7 @@ public class PartLookupDTO
     public string ProductGroup { get; set; }
     public string PNC { get; set; }
     public string BinType { get; set; }
+    public decimal? DistributorPurchasePrice { get; set; }
     public decimal? Dimension1 { get; set; }
     public decimal? Dimension2 { get; set; }
     public decimal? Dimension3 { get; set; }

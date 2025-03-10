@@ -19,7 +19,7 @@ public class LookupOptions
     public Func<LookupOptionResolverModel<string>, ValueTask<string?>>? CompanyNameResolver { get; set; }
     public Func<LookupOptionResolverModel<CompanyBranchNameResolverModel>, ValueTask<string?>>? CompanyBranchNameResolver { get; set; }
     public Func<LookupOptionResolverModel<string>, ValueTask<string?>>? CompanyLogoResolver { get; set; }
-    public Func<LookupOptionResolverModel<PartLookupPriceResoulverModel>, ValueTask<IEnumerable<PartPriceDTO>>>? PartLookupPriceResolver { get; set; }
+    public Func<LookupOptionResolverModel<PartLookupPriceResoulverModel>, ValueTask<(decimal? distributorPurchasePrice, IEnumerable<PartPriceDTO> prices)>>? PartLookupPriceResolver { get; set; }
     public Func<LookupOptionResolverModel<IEnumerable<StockPartDTO>>, ValueTask<IEnumerable<StockPartDTO>>>? PartLookupStocksResolver { get; set; }
 }
 
@@ -53,16 +53,18 @@ public class PartLocationNameResolverModel
 
 public class PartLookupPriceResoulverModel
 {
+    public decimal? DistributorPurchasePrice { get; set; }
     public IEnumerable<PartPriceDTO> Prices { get; set; }
     public PartLookupSource? Source { get; set; }
 
     public PartLookupPriceResoulverModel()
     {
-        
+
     }
 
-    public PartLookupPriceResoulverModel(IEnumerable<PartPriceDTO> prices, PartLookupSource? source)
+    public PartLookupPriceResoulverModel(decimal? distributorPurchasePrice, IEnumerable<PartPriceDTO> prices, PartLookupSource? source)
     {
+        this.DistributorPurchasePrice = distributorPurchasePrice;
         this.Prices = prices;
         this.Source = source;
     }
@@ -83,7 +85,7 @@ public class LookupOptionResolverModel<T>
 
     public LookupOptionResolverModel()
     {
-        
+
     }
 }
 

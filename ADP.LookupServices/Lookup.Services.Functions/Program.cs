@@ -196,7 +196,7 @@ var host = new HostBuilder()
                     });
                 }
 
-                return new(prices);
+                return new ValueTask<(decimal? distributorPurchasePrice, IEnumerable<PartPriceDTO> prices)>((h?.Value?.DistributorPurchasePrice, prices));
             };
 
             x.PartLookupStocksResolver = h =>
