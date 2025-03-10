@@ -61,11 +61,11 @@ public class PartLookupService
             stockParts.Add(stock);
         }
 
-        if(options?.PartLookupStocksResolver is not null)
+        if (options?.PartLookupStocksResolver is not null)
             stockParts = (await options.PartLookupStocksResolver(new(stockParts, language, services))).ToList();
 
         List<PartPriceDTO> prices = new();
-        
+
         if (cosmosPartCatalog?.CountryData is not null)
         {
             foreach (var countryPrice in cosmosPartCatalog?.CountryData)
@@ -109,8 +109,16 @@ public class PartLookupService
         }
 
         IEnumerable<PartPriceDTO> resolvedPrices = new List<PartPriceDTO>();
+        decimal? distributorPurchasePrice = null;
+
+
         if (options.PartLookupPriceResolver is not null)
-            resolvedPrices = await options.PartLookupPriceResolver(new(new(prices, source), language, services));
+        {
+            var resolvedResult = await options.PartLookupPriceResolver(new(new(cosmosPartCatalog.DistributorPurchasePrice, prices, source), language, services));
+
+            distributorPurchasePrice = resolvedResult.distributorPurchasePrice;
+            resolvedPrices = resolvedResult.prices;
+        }
 
         var result = new PartLookupDTO
         {
@@ -128,11 +136,13 @@ public class PartLookupService
             NetWeight = cosmosPartCatalog?.NetWeight,
             Origin = cosmosPartCatalog?.Origin,
             PNC = cosmosPartCatalog?.PNC,
-            //PNCLocalName = cosmosPartCatalog?.PNCLocalDescription,
-            //UZHSCode = cosmosPartCatalog?.CountryHSCodes,            
             StockParts = stockParts,
             Prices = resolvedPrices,
-            SupersededTo = cosmosPartCatalog?.SupersededTo?.Select(x=> x.PartNumber)
+            SupersededTo = cosmosPartCatalog?.SupersededTo?.Select(x => x.PartNumber),
+            DistributorPurchasePrice = distributorPurchasePrice,
+            HSCodes = null,
+            DeadStock = null,
+            LogId = null
         };
 
         var logId = await logCosmosService.LogPartLookupAsync(logInfo, result, distributorStockLookupQuantity);
