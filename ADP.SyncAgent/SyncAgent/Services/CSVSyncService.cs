@@ -221,7 +221,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, ex.Message);
+            logger.LogError(ex.Message);
             CleanUp();
             throw;
         }
@@ -520,7 +520,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
                 if (retry > (retryCount ?? 0))
                 {
                     items = null;
-                    logger.LogError(ex, ex.Message);
+                    logger.LogError(ex.Message);
                     throw;
                 }
 
