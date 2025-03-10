@@ -269,9 +269,6 @@ public class VehicleLookupService
         IEnumerable<InvoiceLaborLineModel> labors,
         IEnumerable<InvoicePartLineModel> parts)
     {
-        //var partData = (await lookupCosmosService.GetStockItemsAsync(parts?.Select(x => x.PartNumber)))?
-        //    .DistinctBy(x => x.PartNumber)?.ToDictionary(x => x.PartNumber);
-
         var serviceHistory = new List<VehicleServiceHistoryDTO>();
 
         if (cpus != null)
@@ -314,7 +311,6 @@ public class VehicleLookupService
                                 MenuCode = p.MenuCode,
                                 PartNumber = p.PartNumber,
                                 QTY = p.Quantity,
-                                //PartDescription = partData?.FirstOrDefault(pd => pd.Key == p.PartNumber).Value?.PartName
                             })
                 };
 
@@ -639,21 +635,6 @@ public class VehicleLookupService
 
         // Get partnumbers and format it to match the stock item
         var partNumbers = data?.SelectMany(x => x.Parts.Select(p => p.PartNumber)).Distinct();
-
-        //var partData = await lookupCosmosService.GetStockItemsAsync(partNumbers);
-
-        foreach (var sscData in data)
-        {
-            foreach (var part in sscData.Parts)
-            {
-                //var partItems = partData?.Where(x => x.PartNumber == part.PartNumber).ToList();
-                //if (partItems?.Count > 0)
-                //{
-                //    //part.PartDescription = partItems.FirstOrDefault()?.PartName;
-                //    part.IsAvailable = partItems.FirstOrDefault(x => x.Location == regionIntegrationId)?.Quantity > 0;
-                //}
-            }
-        }
 
         return data;
     }
