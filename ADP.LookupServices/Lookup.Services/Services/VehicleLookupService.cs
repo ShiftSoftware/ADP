@@ -787,7 +787,7 @@ public class VehicleLookupService
             return date;
     }
 
-    private (string statusText, VehcileServiceItemStatuses status, DateTime? redeemDate, string wip, string invoice, string companyIntegrationId)
+    private (string statusText, VehcileServiceItemStatuses status, DateTime? redeemDate, string wip, string invoice, string companyID)
         ProcessServiceItemStatus(
         long id,
         DateTime activatedAt,
@@ -923,10 +923,10 @@ public class VehicleLookupService
             item.RedeemDate = statusResult.redeemDate;
             item.JobNumber = statusResult.wip;
             item.InvoiceNumber = statusResult.invoice;
-            item.CompanyID = statusResult.companyIntegrationId;
+            item.CompanyID = statusResult.companyID;
 
-            if(!string.IsNullOrWhiteSpace(statusResult.companyIntegrationId) && options.CompanyNameResolver is not null)
-                item.CompanyName = await options.CompanyNameResolver(new(statusResult.companyIntegrationId, languageCode, services));
+            if(!string.IsNullOrWhiteSpace(statusResult.companyID) && options.CompanyNameResolver is not null)
+                item.CompanyName = await options.CompanyNameResolver(new(statusResult.companyID, languageCode, services));
         }
     }
 
