@@ -35,7 +35,7 @@ public class VehicleServiceItemDTO
     public long? ModelCostID { get; set; }
     public long ServiceItemID { get; set; }
     public long? PaidServiceInvoiceLineID { get; set; }
-    public string CompanyIntegrationID { get; set; }
+    public string CompanyID { get; set; }
 
     [JsonConverter(typeof(LocalizedTextJsonConverter))]
     public string CompanyName { get; set; }

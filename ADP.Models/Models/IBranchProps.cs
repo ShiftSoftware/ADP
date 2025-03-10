@@ -2,5 +2,5 @@
 
 internal interface IBranchProps: ICompanyProps
 {
-    public string BranchIntegrationID { get; set; }
+    public string BranchID { get; set; }
 }

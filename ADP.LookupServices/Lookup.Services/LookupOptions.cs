@@ -13,7 +13,7 @@ public class LookupOptions
     public Func<LookupOptionResolverModel<string>, ValueTask<string?>>? AccessoryImageUrlResolver { get; set; }
     public Func<LookupOptionResolverModel<List<ShiftFileDTO>?>, ValueTask<List<ShiftFileDTO>?>>? CompanyLogoImageResolver { get; set; }
     public Func<LookupOptionResolverModel<PartLocationNameResolverModel>, ValueTask<string?>>? PartLocationNameResolver { get; set; }
-    public Func<LookupOptionResolverModel<(string companyIntegrationID, string companyBranchIntegrationID)>, ValueTask<(string countryIntegrationID, string countryName)?>>? CountryFromBranchIDResolver { get; set; }
+    public Func<LookupOptionResolverModel<(string companyID, string companyBranchID)>, ValueTask<(string countryID, string countryName)?>>? CountryFromBranchIDResolver { get; set; }
     public Func<LookupOptionResolverModel<string>, ValueTask<string?>>? CountryNameResolver { get; set; }
     public Func<LookupOptionResolverModel<string>, ValueTask<string?>>? RegionNameResolver { get; set; }
     public Func<LookupOptionResolverModel<string>, ValueTask<string?>>? CompanyNameResolver { get; set; }
@@ -25,14 +25,14 @@ public class LookupOptions
 
 public class CompanyBranchNameResolverModel
 {
-    public string CompanyIntegrationID { get; set; }
-    public string BranchIntegrationID { get; set; }
+    public string CompanyID { get; set; }
+    public string BranchID { get; set; }
     public DepartmentType? DepartmentType { get; set; }
 
-    public CompanyBranchNameResolverModel(string companyIntegrationID, string branchIntegrationID, DepartmentType? departmentType)
+    public CompanyBranchNameResolverModel(string companyID, string branchID, DepartmentType? departmentType)
     {
-        this.CompanyIntegrationID = companyIntegrationID;
-        this.BranchIntegrationID = branchIntegrationID;
+        this.CompanyID = companyID;
+        this.BranchID = branchID;
         this.DepartmentType = departmentType;
     }
 }

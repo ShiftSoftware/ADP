@@ -2,5 +2,5 @@
 
 internal interface ICompanyProps
 {
-    public string CompanyIntegrationID { get; set; }
+    public string CompanyID { get; set; }
 }

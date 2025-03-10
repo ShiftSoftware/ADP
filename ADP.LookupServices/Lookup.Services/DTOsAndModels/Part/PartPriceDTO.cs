@@ -5,9 +5,9 @@ namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Part;
 
 public class PartPriceDTO
 {
-    public string CountryIntegrationID { get; set; }
+    public string CountryID { get; set; }
     public string CountryName { get; set; }
-    public string RegionIntegrationID { get; set; }
+    public string RegionID { get; set; }
     public string RegionName { get; set; }
     public PriceDTO RetailPrice { get; set; }
     public PriceDTO PurchasePrice { get; set; }

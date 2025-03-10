@@ -5,8 +5,8 @@ namespace ShiftSoftware.ADP.Models.Service;
 public class InvoiceModel: IPartitionedItem, ICompanyProps, IBranchProps, IInvoiceProps
 {
     public string id { get; set; } = default!;
-    public string CompanyIntegrationID { get; set; }
-    public string BranchIntegrationID { get; set; }
+    public string CompanyID { get; set; }
+    public string BranchID { get; set; }
     public string VIN { get; set; }
     public DateTime? InvoiceDate { get; set; }
     public string ServiceDetails { get; set; }

@@ -2,5 +2,5 @@
 
 public interface ICountryProps
 {
-    public string CountryIntegrationID { get; set; }
+    public string CountryID { get; set; }
 }

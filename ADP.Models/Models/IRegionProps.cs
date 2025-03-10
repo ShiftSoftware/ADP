@@ -2,5 +2,5 @@
 
 public interface IRegionProps
 {
-    public string RegionIntegrationID { get; set; }
+    public string RegionID { get; set; }
 }

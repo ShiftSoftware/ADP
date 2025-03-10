@@ -10,5 +10,5 @@ public class VehicleIdentifiersDTO
     public string Color { get; set; } = default!;
     public string Trim { get; set; } = default!;
     public Brands? Brand { get; set; } = default!;
-    public string BrandIntegrationID { get; set; } = default!;
+    public string BrandID { get; set; } = default!;
 }

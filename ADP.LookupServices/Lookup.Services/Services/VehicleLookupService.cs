@@ -290,13 +290,13 @@ public class VehicleLookupService
                     ServiceType = serviceType,
                     ServiceDate = x.InvoiceDate,
                     Mileage = x.Mileage,
-                    CompanyIntegrationID = x.CompanyIntegrationID,
-                    BranchIntegrationID = x.BranchIntegrationID,
+                    CompanyID = x.CompanyID,
+                    BranchID = x.BranchID,
                     AccountNumber = x.AccountNumber,
                     InvoiceNumber = x.InvoiceNumber,
                     JobNumber = x.JobNumber,
                     LaborLines = labors?.Where(l => l.JobNumber == x.JobNumber && l.InvoiceNumber == x.InvoiceNumber &&
-                        l.CompanyIntegrationID == x.CompanyIntegrationID)
+                        l.CompanyID == x.CompanyID)
                             .Select(l => new VehicleLaborDTO
                             {
                                 Description = l.ServiceDescription,
@@ -305,7 +305,7 @@ public class VehicleLookupService
                                 ServiceCode = l.ServiceCode
                             }),
                     PartLines = parts?.Where(p => p.JobNumber == x.JobNumber && p.InvoiceNumber == x.InvoiceNumber &&
-                        p.CompanyIntegrationID == x.CompanyIntegrationID)
+                        p.CompanyID == x.CompanyID)
                             .Select(p => new VehiclePartDTO
                             {
                                 MenuCode = p.MenuCode,
@@ -315,11 +315,11 @@ public class VehicleLookupService
                 };
 
                 if (options.CompanyNameResolver is not null)
-                    result.CompanyName = await options.CompanyNameResolver(new(x.CompanyIntegrationID, languageCode, services));
+                    result.CompanyName = await options.CompanyNameResolver(new(x.CompanyID, languageCode, services));
 
                 if (options.CompanyBranchNameResolver is not null)
                     result.BranchName = await options.CompanyBranchNameResolver(
-                        new(new(x.CompanyIntegrationID, x.BranchIntegrationID, DepartmentType.Service), languageCode, services));
+                        new(new(x.CompanyID, x.BranchID, DepartmentType.Service), languageCode, services));
 
                 serviceHistory.Add(result);
             }
@@ -404,7 +404,7 @@ public class VehicleLookupService
             Color = vsData.ExteriorColorCode,
             Trim = vsData.InteriorColorCode,
             Brand = vsData.Brand,
-            BrandIntegrationID = vsData.BrandIntegrationID
+            BrandID = vsData.BrandID
         };
     }
 
@@ -426,38 +426,38 @@ public class VehicleLookupService
         result.Location = vsData.Location;
         result.SaleType = vsData.SaleType;
         result.AccountNumber = vsData.AccountNumber;
-        result.RegionIntegrationID = vsData.RegionIntegrationID;
+        result.RegionID = vsData.RegionID;
 
         result.InvoiceNumber = vsData?.InvoiceNumber ?? 0;
         result.InvoiceTotal = vsData?.InvoiceTotal ?? 0;
-        result.CompanyIntegrationID = vsData?.CompanyIntegrationID;
-        result.BranchIntegrationID = vsData?.BranchIntegrationID;
+        result.CompanyID = vsData?.CompanyID;
+        result.BranchID = vsData?.BranchID;
 
         result.CustomerID = vsData?.CustomerID;
         result.CustomerAccountNumber = vsData?.CustomerAccountNumber;
 
         if (options.CountryFromBranchIDResolver is not null)
         {
-            var countryResult = await options.CountryFromBranchIDResolver(new((vsData.CompanyIntegrationID, vsData.BranchIntegrationID), languageCode, services));
+            var countryResult = await options.CountryFromBranchIDResolver(new((vsData.CompanyID, vsData.BranchID), languageCode, services));
 
             if (countryResult is not null)
             {
-                result.CountryIntegrationID = countryResult.Value.countryIntegrationID;
+                result.CountryID = countryResult.Value.countryID;
                 result.CountryName = countryResult.Value.countryName;
             }
         }
 
         if (options.CompanyNameResolver is not null)
-            result.CompanyName = await options.CompanyNameResolver(new(vsData.CompanyIntegrationID, languageCode, services));
+            result.CompanyName = await options.CompanyNameResolver(new(vsData.CompanyID, languageCode, services));
 
         if (options.CompanyBranchNameResolver is not null)
             result.BranchName = await options.CompanyBranchNameResolver(
-                new(new(vsData.CompanyIntegrationID, vsData.BranchIntegrationID, DepartmentType.Sales), languageCode, services));
+                new(new(vsData.CompanyID, vsData.BranchID, DepartmentType.Sales), languageCode, services));
 
         string? companyLogo = null;
 
         if(options.CompanyLogoResolver is not null)
-            companyLogo = await options.CompanyLogoResolver(new(vsData.CompanyIntegrationID, languageCode, services));   
+            companyLogo = await options.CompanyLogoResolver(new(vsData.CompanyID, languageCode, services));   
 
         if(!string.IsNullOrWhiteSpace(companyLogo))
             try
@@ -482,7 +482,7 @@ public class VehicleLookupService
         }
         else
         {
-            var broker = await lookupCosmosService.GetBrokerAsync(vsData?.CustomerAccountNumber, vsData?.CompanyIntegrationID);
+            var broker = await lookupCosmosService.GetBrokerAsync(vsData?.CustomerAccountNumber, vsData?.CompanyID);
 
             // If vehicle sold to broker and the broker is terminated, then make vsdata as start date.
             // If vehicle sold to broker before start date and it is not exists in broker intial vehicles,
@@ -801,7 +801,7 @@ public class VehicleLookupService
             return ("processed", VehcileServiceItemStatuses.Processed,
                 transactionLine.ClaimDate.HasValue ? transactionLine.ClaimDate.Value : null,
                 transactionLine.ServiceItemClaim?.JobNumber,
-                transactionLine.ServiceItemClaim?.InvoiceNumber, transactionLine.CompanyIntegrationID);
+                transactionLine.ServiceItemClaim?.InvoiceNumber, transactionLine.CompanyID);
         else if (expiresAt is not null && expiresAt < DateTime.Now)
             return ("expired", VehcileServiceItemStatuses.Expired, null, null, null, null);
         else
@@ -847,12 +847,12 @@ public class VehicleLookupService
                     InvoiceNumber = transactionLine?.ServiceItemClaim?.InvoiceNumber,
                     JobNumber = transactionLine?.ServiceItemClaim?.JobNumber,
                     SkipZeroTrust = item.SkipZeroTrust,
-                    CompanyIntegrationID = transactionLine?.CompanyIntegrationID,
+                    CompanyID = transactionLine?.CompanyID,
                     MaximumMileage = item.MaximumMileage
                 };
 
-                if (!string.IsNullOrWhiteSpace(transactionLine?.CompanyIntegrationID) && options.CompanyNameResolver is not null)
-                    serviceItem.CompanyName = await options.CompanyNameResolver(new(transactionLine?.CompanyIntegrationID, languageCode, services));
+                if (!string.IsNullOrWhiteSpace(transactionLine?.CompanyID) && options.CompanyNameResolver is not null)
+                    serviceItem.CompanyName = await options.CompanyNameResolver(new(transactionLine?.CompanyID, languageCode, services));
 
                 result.Add(serviceItem);
             }
@@ -923,7 +923,7 @@ public class VehicleLookupService
             item.RedeemDate = statusResult.redeemDate;
             item.JobNumber = statusResult.wip;
             item.InvoiceNumber = statusResult.invoice;
-            item.CompanyIntegrationID = statusResult.companyIntegrationId;
+            item.CompanyID = statusResult.companyIntegrationId;
 
             if(!string.IsNullOrWhiteSpace(statusResult.companyIntegrationId) && options.CompanyNameResolver is not null)
                 item.CompanyName = await options.CompanyNameResolver(new(statusResult.companyIntegrationId, languageCode, services));

@@ -10,7 +10,7 @@ public class BrokerModel: ICompanyProps
     public string Name { get; set; }
     public DateTime? AccountStartDate { get; set; }
     public DateTime? TerminationDate { get; set; }
-    public string CompanyIntegrationID { get; set; }
+    public string CompanyID { get; set; }
     public IEnumerable<string> AccountNumbers { get; set; }
     public bool IsDeleted { get; set; }
 }

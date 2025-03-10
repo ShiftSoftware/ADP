@@ -76,7 +76,7 @@ public class PartLookupService
                     countryName = await options.CountryNameResolver(new LookupOptionResolverModel<string>
                     {
                         Services = services,
-                        Value = countryPrice.CountryIntegrationID,
+                        Value = countryPrice.CountryID,
                         Language = language,
                     });
                 }
@@ -89,16 +89,16 @@ public class PartLookupService
                         regionName = await options.RegionNameResolver(new LookupOptionResolverModel<string>
                         {
                             Services = services,
-                            Value = price.RegionIntegrationID,
+                            Value = price.RegionID,
                             Language = language,
                         });
                     }
 
                     prices.Add(new PartPriceDTO
                     {
-                        CountryIntegrationID = countryPrice.CountryIntegrationID,
+                        CountryID = countryPrice.CountryID,
                         CountryName = countryName,
-                        RegionIntegrationID = price.RegionIntegrationID,
+                        RegionID = price.RegionID,
                         RegionName = regionName,
                         PurchasePrice = new(price.PurchasePrice),
                         RetailPrice = new(price.RetailPrice),

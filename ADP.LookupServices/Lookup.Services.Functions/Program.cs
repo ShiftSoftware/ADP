@@ -141,12 +141,12 @@ var host = new HostBuilder()
 
             x.CompanyBranchNameResolver = async (h) =>
             {
-                if (string.IsNullOrWhiteSpace(h.Value?.CompanyIntegrationID) || string.IsNullOrWhiteSpace(h.Value?.BranchIntegrationID))
+                if (string.IsNullOrWhiteSpace(h.Value?.CompanyID) || string.IsNullOrWhiteSpace(h.Value?.BranchID))
                     return null;
 
                 var identityComsosService = h.Services.GetRequiredService<IdentityCosmosService>();
-                long.TryParse(h.Value.BranchIntegrationID, out long branchId);
-                var branch = await identityComsosService.GetCompanyBranchAsync(h.Value.CompanyIntegrationID, branchId.ToString());
+                long.TryParse(h.Value.BranchID, out long branchId);
+                var branch = await identityComsosService.GetCompanyBranchAsync(h.Value.CompanyID, branchId.ToString());
 
                 if (branch is null)
                     return null;
@@ -171,9 +171,9 @@ var host = new HostBuilder()
                 {
                     prices.Add(new PartPriceDTO
                     {
-                        CountryIntegrationID = price.CountryIntegrationID,
+                        CountryID = price.CountryID,
                         CountryName = price.CountryName,
-                        RegionIntegrationID = price.RegionIntegrationID,
+                        RegionID = price.RegionID,
                         RegionName = price.RegionName,
                         WarrantyPrice = new PriceDTO(price.WarrantyPrice?.Value)
                         {
@@ -183,15 +183,15 @@ var host = new HostBuilder()
                         },
                         PurchasePrice = new PriceDTO(price.PurchasePrice?.Value)
                         {
-                            CurrecntySymbol = price.CountryIntegrationID == "UZ" ? "лв" : "$",
-                            CultureName = price.CountryIntegrationID == "UZ" ? "uz-UZ" : "en-US",
-                            Culture = price.CountryIntegrationID == "UZ" ? new CultureInfo("uz-UZ") : usCulture
+                            CurrecntySymbol = price.CountryID == "UZ" ? "лв" : "$",
+                            CultureName = price.CountryID == "UZ" ? "uz-UZ" : "en-US",
+                            Culture = price.CountryID == "UZ" ? new CultureInfo("uz-UZ") : usCulture
                         },
                         RetailPrice = new PriceDTO(price.RetailPrice?.Value)
                         {
-                            CurrecntySymbol = price.CountryIntegrationID == "UZ" ? "лв" : "$",
-                            CultureName = price.CountryIntegrationID == "UZ" ? "uz-UZ" : "en-US",
-                            Culture = price.CountryIntegrationID == "UZ" ? new CultureInfo("uz-UZ") : usCulture
+                            CurrecntySymbol = price.CountryID == "UZ" ? "лв" : "$",
+                            CultureName = price.CountryID == "UZ" ? "uz-UZ" : "en-US",
+                            Culture = price.CountryID == "UZ" ? new CultureInfo("uz-UZ") : usCulture
                         }
                     });
                 }

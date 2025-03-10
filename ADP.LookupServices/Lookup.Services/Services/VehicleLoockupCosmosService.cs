@@ -158,20 +158,14 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.VehicleModels
         );
 
-        var query = new QueryDefinition("SELECT top 1 * FROM c WHERE c.Variant_Code = @variant AND c.Brand = @brand");
-        query.WithParameter("@variant", variant);
-        query.WithParameter("@brand", brand);
+        var pb = new PartitionKeyBuilder();
+        pb.Add(variant).Add((int)brand);
+        var response = await container.ReadItemAsync<VehicleModelModel>(variant, pb.Build());
 
-        var iterator = container.GetItemQueryIterator<VehicleModelModel>(query);
-        var items = new List<VehicleModelModel>();
+        if(response.StatusCode == System.Net.HttpStatusCode.OK)
+            return response.Resource;
 
-        while (iterator.HasMoreResults)
-        {
-            var response = await iterator.ReadNextAsync();
-            items.AddRange(response);
-        }
-
-        return items.FirstOrDefault();
+        return null;
     }
 
     public async Task<ColorModel> GetExteriorColorsAsync(string colorCode, Brands? brand)
@@ -181,20 +175,14 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.ExteriorColors
         );
 
-        var query = new QueryDefinition("SELECT top 1 * FROM c WHERE c.Color_Code = @colorCode AND c.Brand = @brand");
-        query.WithParameter("@colorCode", colorCode);
-        query.WithParameter("@brand", brand);
+        var pb = new PartitionKeyBuilder();
+        pb.Add(colorCode).Add((int)brand);
+        var response = await container.ReadItemAsync<ColorModel>(colorCode, pb.Build());
 
-        var iterator = container.GetItemQueryIterator<ColorModel>(query);
-        var items = new List<ColorModel>();
+        if (response.StatusCode == System.Net.HttpStatusCode.OK)
+            return response.Resource;
 
-        while (iterator.HasMoreResults)
-        {
-            var response = await iterator.ReadNextAsync();
-            items.AddRange(response);
-        }
-
-        return items.FirstOrDefault();
+        return null;
     }
 
     public async Task<ColorModel> GetInteriorColorsAsync(string trimCode, Brands? brand)
@@ -204,48 +192,17 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.InteriorColors
         );
 
-        var query = new QueryDefinition("SELECT top 1 * FROM c WHERE c.Trim_Code = @trimCode AND c.Brand = @brand");
-        query.WithParameter("@trimCode", trimCode);
-        query.WithParameter("@brand", brand);
+        var pb = new PartitionKeyBuilder();
+        pb.Add(trimCode).Add((int)brand);
+        var response = await container.ReadItemAsync<ColorModel>(trimCode, pb.Build());
 
-        var iterator = container.GetItemQueryIterator<ColorModel>(query);
-        var items = new List<ColorModel>();
+        if (response.StatusCode == System.Net.HttpStatusCode.OK)
+            return response.Resource;
 
-        while (iterator.HasMoreResults)
-        {
-            var response = await iterator.ReadNextAsync();
-            items.AddRange(response);
-        }
-
-        return items.FirstOrDefault();
+        return null;
     }
 
-    //public async Task<IEnumerable<StockPartModel>> GetStockItemsAsync(IEnumerable<string> partNumbers)
-    //{
-    //    if (partNumbers is null || !partNumbers.Any())
-    //        return null;
-
-    //    var container = client.GetContainer(
-    //        ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
-    //        ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.Parts
-    //    );
-
-    //    var queryable = container.GetItemLinqQueryable<StockPartModel>(true)
-    //        .Where(x => partNumbers.Contains(x.PartNumber));
-
-    //    var iterator = queryable.ToFeedIterator();
-    //    var items = new List<StockPartModel>();
-
-    //    while (iterator.HasMoreResults)
-    //    {
-    //        var response = await iterator.ReadNextAsync();
-    //        items.AddRange(response);
-    //    }
-
-    //    return items;
-    //}
-
-    public async Task<BrokerModel> GetBrokerAsync(string accountNumber, string companyIntegrationID)
+    public async Task<BrokerModel> GetBrokerAsync(string accountNumber, string companyID)
     {
         var container = client.GetContainer(
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
@@ -253,7 +210,7 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         );
 
         var queryable = container.GetItemLinqQueryable<BrokerModel>(true)
-            .Where(x => !x.IsDeleted && x.AccountNumbers.Contains(accountNumber) && x.CompanyIntegrationID == companyIntegrationID);
+            .Where(x => !x.IsDeleted && x.AccountNumbers.Contains(accountNumber) && x.id == companyID);
 
         var iterator = queryable.ToFeedIterator();
         var items = new List<BrokerModel>();

@@ -4,6 +4,6 @@ namespace ShiftSoftware.ADP.Models;
 
 internal interface IBrandProps
 {
-    public string BrandIntegrationID { get; set; }
+    public string BrandID { get; set; }
     public Brands Brand { get; set; }
 }

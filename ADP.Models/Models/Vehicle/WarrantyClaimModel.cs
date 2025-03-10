@@ -21,7 +21,7 @@ public class WarrantyClaimModel : IPartitionedItem, IBrandProps, ICompanyProps
     public string DealerClaimNumber { get; set; }
     public DateTime? DateOfReceipt { get; set; }
     public string WarrantyType { get; set; }
-    public string BrandIntegrationID { get; set; }
+    public string BrandID { get; set; }
     public Brands Brand { get; set; }
     public DateTime? DeliveryDate { get; set; }
     public DateTime? RepairCompletionDate { get; set; }
@@ -29,7 +29,6 @@ public class WarrantyClaimModel : IPartitionedItem, IBrandProps, ICompanyProps
     public string RepairOrderNo { get; set; } = default!;
     public DateTime? ProcessDate { get; set; }
     public DateTime? DistributorProcessDate { get; set; }
-    public long? CompanyID { get; set; }
-    public string CompanyIntegrationID { get; set; }
+    public string CompanyID { get; set; }
     public IEnumerable<WarrantyClaimLaborLineModel> LaborLines { get; set; }
 }

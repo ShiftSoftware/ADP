@@ -6,9 +6,9 @@ namespace ShiftSoftware.ADP.Models.Vehicle;
 public class VehicleEntryModel : IPartitionedItem, IBrandProps, ICompanyProps, IRegionProps, IBranchProps, IInvoiceLineProps, IInvoiceProps
 {
     public Brands Brand { get; set; }
-    public string BrandIntegrationID { get; set; }
-    public string CompanyIntegrationID { get; set; }
-    public string BranchIntegrationID { get; set; }
+    public string BrandID { get; set; }
+    public string CompanyID { get; set; }
+    public string BranchID { get; set; }
     public DateTime? InvoiceDate { get; set; }
     public DateTime? WarrantyActivationDate { get; set; }
     public int? InvoiceNumber { get; set; }
@@ -19,7 +19,7 @@ public class VehicleEntryModel : IPartitionedItem, IBrandProps, ICompanyProps, I
     public VehicleModelModel VehicleModel { get; set; }
     public ColorModel ExteriorColor { get; set; }
     public ColorModel InteriorColor { get; set; }
-    public string RegionIntegrationID { get; set; }
+    public string RegionID { get; set; }
     public string VIN { get; set; }
     public string SaleType { get; set; }
     public string ModelCode { get; set; }
