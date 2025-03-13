@@ -184,7 +184,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
             {
                 logger.LogInformation("Processing Files");
 
-                var compareTask = new SyncTask { SyncID = syncId, TaskDescription = "Comparing the new File with the Existing Data", TotalStep = 9, CurrentStep = -1 };
+                var compareTask = new SyncTask { SyncID = syncId, TaskDescription = "Comparing the new File with the Existing Data", TotalStep = 6, CurrentStep = -1 };
 
                 this.UpdateProgress(compareTask);
                 if (syncProgressIndicator is not null)
@@ -244,8 +244,12 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         if (syncProgressIndicator is not null)
             await syncProgressIndicator.LogInformationAsync(syncTask, "Loding the existing file.");
 
-        await storageService.LoadOriginalFileAsync(Path.Combine(destinationDirectory ?? "", csvFileName), Path.Combine(WorkingDirectory.FullName, "file.csv"),
-            engine.Options.IgnoreFirstLines, destinationContainerOrShareName, GetCancellationToken());
+        await storageService
+            .LoadOriginalFileAsync(
+                Path.Combine(destinationDirectory ?? "", csvFileName),
+                Path.Combine(WorkingDirectory.FullName, "file.csv"),
+                engine.Options.IgnoreFirstLines, destinationContainerOrShareName,
+                GetCancellationToken());
         
         logger.LogInformation("Initializing a git repo.");
         UpdateProgress(syncTask);
@@ -259,8 +263,12 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         if (syncProgressIndicator is not null)
             await syncProgressIndicator.LogInformationAsync(syncTask, "Loding the new file.");
 
-        await storageService.LoadNewVersionAsync(Path.Combine(sourceDirectory ?? "", csvFileName), Path.Combine(WorkingDirectory.FullName, "file.csv"),
-            engine.Options.IgnoreFirstLines, sourceContainerOrShareName, GetCancellationToken());
+        await storageService
+            .LoadNewVersionAsync(
+            Path.Combine(sourceDirectory ?? "", csvFileName), 
+            Path.Combine(WorkingDirectory.FullName, "file.csv"),
+            engine.Options.IgnoreFirstLines, 
+            sourceContainerOrShareName, GetCancellationToken());
 
         logger.LogInformation("Execute 'git diff' on the files.");
         UpdateProgress(syncTask);
@@ -327,6 +335,10 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         syncTask.Completed = true;
 
         syncTask.Progress = 1;
+
+        logger.LogInformation("File Processing Task has finished successfully.");
+        if (syncProgressIndicator is not null)
+            await syncProgressIndicator.LogInformationAsync(syncTask, "File Processing Task has finished successfully.");
 
         return true;
     }
