@@ -13,28 +13,14 @@ public class LookupOptions
     public Func<LookupOptionResolverModel<string>, ValueTask<string?>>? AccessoryImageUrlResolver { get; set; }
     public Func<LookupOptionResolverModel<List<ShiftFileDTO>?>, ValueTask<List<ShiftFileDTO>?>>? CompanyLogoImageResolver { get; set; }
     public Func<LookupOptionResolverModel<PartLocationNameResolverModel>, ValueTask<string?>>? PartLocationNameResolver { get; set; }
-    public Func<LookupOptionResolverModel<(string companyID, string companyBranchID)>, ValueTask<(string countryID, string countryName)?>>? CountryFromBranchIDResolver { get; set; }
+    public Func<LookupOptionResolverModel<string>, ValueTask<(string countryID, string countryName)?>>? CountryFromBranchIDResolver { get; set; }
     public Func<LookupOptionResolverModel<string>, ValueTask<string?>>? CountryNameResolver { get; set; }
     public Func<LookupOptionResolverModel<string>, ValueTask<string?>>? RegionNameResolver { get; set; }
     public Func<LookupOptionResolverModel<string>, ValueTask<string?>>? CompanyNameResolver { get; set; }
-    public Func<LookupOptionResolverModel<CompanyBranchNameResolverModel>, ValueTask<string?>>? CompanyBranchNameResolver { get; set; }
+    public Func<LookupOptionResolverModel<string>, ValueTask<string?>>? CompanyBranchNameResolver { get; set; }
     public Func<LookupOptionResolverModel<string>, ValueTask<string?>>? CompanyLogoResolver { get; set; }
     public Func<LookupOptionResolverModel<PartLookupPriceResoulverModel>, ValueTask<(decimal? distributorPurchasePrice, IEnumerable<PartPriceDTO> prices)>>? PartLookupPriceResolver { get; set; }
     public Func<LookupOptionResolverModel<IEnumerable<StockPartDTO>>, ValueTask<IEnumerable<StockPartDTO>>>? PartLookupStocksResolver { get; set; }
-}
-
-public class CompanyBranchNameResolverModel
-{
-    public string CompanyID { get; set; }
-    public string BranchID { get; set; }
-    public DepartmentType? DepartmentType { get; set; }
-
-    public CompanyBranchNameResolverModel(string companyID, string branchID, DepartmentType? departmentType)
-    {
-        this.CompanyID = companyID;
-        this.BranchID = branchID;
-        this.DepartmentType = departmentType;
-    }
 }
 
 public class PartLocationNameResolverModel

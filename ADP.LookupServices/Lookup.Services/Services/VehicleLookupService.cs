@@ -319,7 +319,7 @@ public class VehicleLookupService
 
                 if (options.CompanyBranchNameResolver is not null)
                     result.BranchName = await options.CompanyBranchNameResolver(
-                        new(new(x.CompanyID, x.BranchID, DepartmentType.Service), languageCode, services));
+                        new(x.BranchID, languageCode, services));
 
                 serviceHistory.Add(result);
             }
@@ -438,7 +438,7 @@ public class VehicleLookupService
 
         if (options.CountryFromBranchIDResolver is not null)
         {
-            var countryResult = await options.CountryFromBranchIDResolver(new((vsData.CompanyID, vsData.BranchID), languageCode, services));
+            var countryResult = await options.CountryFromBranchIDResolver(new(vsData.BranchID, languageCode, services));
 
             if (countryResult is not null)
             {
@@ -452,7 +452,7 @@ public class VehicleLookupService
 
         if (options.CompanyBranchNameResolver is not null)
             result.BranchName = await options.CompanyBranchNameResolver(
-                new(new(vsData.CompanyID, vsData.BranchID, DepartmentType.Sales), languageCode, services));
+                new(vsData.BranchID, languageCode, services));
 
         string? companyLogo = null;
 
