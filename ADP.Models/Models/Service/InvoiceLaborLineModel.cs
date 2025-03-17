@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ShiftSoftware.ADP.Models.Enums;
+using System;
 
 namespace ShiftSoftware.ADP.Models.Service;
 
@@ -11,8 +12,8 @@ public class InvoiceLaborLineModel : IPartitionedItem, IBranchProps, ICompanyPro
     public string LineStatus { get; set; }
     public DateTime? InvoiceDate { get; set; }
     public int JobNumber { get; set; }
-    public int? InvoiceNumber { get; set; }
-    public string InvoiceCurrency { get; set; }
+    public string InvoiceNumber { get; set; }
+    public Currencies InvoiceCurrency { get; set; }
     public string SaleType { get; set; }
     public string AccountNumber { get; set; }
     public string MenuCode { get; set; }

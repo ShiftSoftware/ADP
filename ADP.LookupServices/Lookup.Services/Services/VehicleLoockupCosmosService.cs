@@ -96,6 +96,11 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
     {
         var companyData = new CompanyDataAggregateCosmosModel();
 
+        companyData.VehicleServiceActivations = items.Where(x => x.ItemType.ToString() == ModelTypes.VehicleServiceActivation)
+            .Select(x => ((JObject)x).ToObject<VehicleServiceActivation>())
+            .Where(x => !(x?.IsDeleted ?? false))
+            .ToList();
+
         companyData.VehicleEntries = items.Where(x => x.ItemType.ToString() == ModelTypes.VehicleEntry)
             .Select(x => ((JObject)x).ToObject<VehicleEntryModel>()).ToList();
 
@@ -153,6 +158,9 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
 
     public async Task<VehicleModelModel> GetVehicleModelsAsync(string variant, Brands? brand)
     {
+        if (string.IsNullOrWhiteSpace(variant))
+            return null;
+
         var container = client.GetContainer(
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.VehicleModels
@@ -246,7 +254,7 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         return items.FirstOrDefault();
     }
 
-    public void UpdateVSDataColor(VehicleEntryModel item, ColorModel color)
+    public void UpdateVSDataColor(VehicleBase item, ColorModel color)
     {
         var container = client.GetContainer(
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
@@ -265,7 +273,7 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         );
     }
 
-    public void UpdateVSDataTrim(VehicleEntryModel item, ColorModel trim)
+    public void UpdateVSDataTrim(VehicleBase item, ColorModel trim)
     {
         var container = client.GetContainer(
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
@@ -284,7 +292,7 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         );
     }
 
-    public void UpdateVSDataModel(VehicleEntryModel item, VehicleModelModel model)
+    public void UpdateVSDataModel(VehicleBase item, VehicleModelModel model)
     {
         var container = client.GetContainer(
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,

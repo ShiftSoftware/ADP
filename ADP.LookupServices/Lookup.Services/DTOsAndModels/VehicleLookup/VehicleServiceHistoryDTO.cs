@@ -22,7 +22,7 @@ public class VehicleServiceHistoryDTO
     public string CompanyID { get; set; }
     public string BranchID { get; set; }
     public string AccountNumber { get; set; } = default!;
-    public int? InvoiceNumber { get; set; }
+    public string InvoiceNumber { get; set; }
     public int? JobNumber { get; set; }
     public IEnumerable<VehicleLaborDTO> LaborLines { get; set; }
     public IEnumerable<VehiclePartDTO> PartLines { get; set; }

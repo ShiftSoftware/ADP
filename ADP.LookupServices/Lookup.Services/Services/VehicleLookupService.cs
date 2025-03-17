@@ -2,7 +2,6 @@
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.SSC;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using ShiftSoftware.ADP.Lookup.Services.Enums;
-using ShiftSoftware.ADP.Lookup.Services.Extensions;
 using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ADP.Models.Part;
 using ShiftSoftware.ADP.Models.Service;
@@ -65,30 +64,39 @@ public class VehicleLookupService
 
         this.languageCode = languageCode;
 
-        // Get the latest VSData
-        VehicleEntryModel vsData = null;
+        // Get the latest Vehicle
+        VehicleBase vehicle = null;
 
-        if (companyDataAggregate.VehicleEntries?.Count() > 0)
-            if (companyDataAggregate.VehicleEntries.Any(x => x.InvoiceDate is null))
-                vsData = companyDataAggregate.VehicleEntries.FirstOrDefault(x => x.InvoiceDate is null);
+        var vehicles = companyDataAggregate
+            .VehicleEntries
+            .Select(x => (VehicleBase)x)
+            .Concat(companyDataAggregate.VehicleServiceActivations.Select(x => (VehicleBase)x))
+            .ToList();
+
+        if (vehicles?.Count() > 0)
+            if (vehicles.Any(x => x.InvoiceDate is null))
+                vehicle = vehicles.FirstOrDefault(x => x.InvoiceDate is null);
             else
-                vsData = companyDataAggregate.VehicleEntries.OrderByDescending(x => x.InvoiceDate).FirstOrDefault();
+                vehicle = vehicles.OrderByDescending(x => x.InvoiceDate).FirstOrDefault();
 
         // Set identifiers
         data.VIN = vin;
         data.Identifiers = new VehicleIdentifiersDTO { VIN = vin };
 
-        if (vsData is not null)
+        if (vehicle is not null)
         {
             // Set identifiers
-            data.Identifiers = GetIdentifiers(vsData, vin);
+            data.Identifiers = GetIdentifiers(vehicle, vin);
 
             // Set Specification
-            data.VehicleSpecification = await GetSpecificationAsync(vsData);
+            data.VehicleSpecification = await GetSpecificationAsync(vehicle);
         }
 
         // Set IsAuthorized
-        data.IsAuthorized = companyDataAggregate.InitialOfficialVINs?.Count() > 0 || companyDataAggregate.VehicleEntries?.Count() > 0 || companyDataAggregate.SSCAffectedVINs.Count() > 0;
+        data.IsAuthorized = companyDataAggregate.InitialOfficialVINs?.Count() > 0 || 
+            companyDataAggregate.VehicleEntries?.Count() > 0 || 
+            companyDataAggregate.SSCAffectedVINs.Count() > 0 ||
+            companyDataAggregate.VehicleServiceActivations.Count() > 0;
 
         // Set NextServiceDate
         data.NextServiceDate = companyDataAggregate.Invoices?.OrderByDescending(x => x.InvoiceDate).FirstOrDefault()?.NextServiceDate;
@@ -102,10 +110,10 @@ public class VehicleLookupService
         DateTime? warrantyStartDate = null;
         DateTime? freeServiceStartDate = null;
 
-        if (vsData is not null)
+        if (vehicle is not null)
         {
             // Set SaleInformation
-            data.SaleInformation = await GetSaleInformationAsync();
+            data.SaleInformation = await GetSaleInformationAsync(vehicles);
 
             //Normal company Sale
             if (data.SaleInformation?.Broker is null)
@@ -133,10 +141,10 @@ public class VehicleLookupService
             }
 
             // Set Warranty
-            data.Warranty = await GetWarrantyAsync(warrantyStartDate, vsData.Brand);
+            data.Warranty = await GetWarrantyAsync(warrantyStartDate, vehicle.Brand);
         }
 
-        data.ServiceItems = await GetServiceItems(freeServiceStartDate, vsData, companyDataAggregate.PaidServiceInvoices, companyDataAggregate.ServiceItemClaimLines);
+        data.ServiceItems = await GetServiceItems(freeServiceStartDate, vehicle, companyDataAggregate.PaidServiceInvoices, companyDataAggregate.ServiceItemClaimLines);
 
         // Set accessories
         data.Accessories = await GetAccessories();
@@ -328,64 +336,64 @@ public class VehicleLookupService
         return serviceHistory;
     }
 
-    private async Task<VehicleSpecificationDTO> GetSpecificationAsync(VehicleEntryModel vsData)
+    private async Task<VehicleSpecificationDTO> GetSpecificationAsync(VehicleBase vehicle)
     {
         VehicleSpecificationDTO result = new();
 
-        var vtModel = vsData?.VehicleModel;
+        var vehicleModel = vehicle?.VehicleModel;
 
-        if (vtModel is null)
+        if (vehicleModel is null)
         {
-            vtModel = await lookupCosmosService.GetVehicleModelsAsync(vsData?.VariantCode, vsData?.Brand);
+            vehicleModel = await lookupCosmosService.GetVehicleModelsAsync(vehicle?.VariantCode, vehicle?.Brand);
 
-            if (vtModel is not null)
-                lookupCosmosService.UpdateVSDataModel(vsData, vtModel);
+            if (vehicleModel is not null)
+                lookupCosmosService.UpdateVSDataModel(vehicle, vehicleModel);
         }
 
-        if (vtModel is not null)
+        //if (vtModel is not null)
         {
             result = new VehicleSpecificationDTO
             {
-                BodyType = vtModel.BodyType,
-                Class = vtModel.Class,
-                Cylinders = vtModel.Cylinders,
-                Doors = vtModel.Doors,
-                Engine = vtModel.Engine,
-                EngineType = vtModel.EngineType,
-                Fuel = vtModel.Fuel,
-                LightHeavyType = vtModel.LightHeavyType,
-                ModelCode = vtModel.ModelCode,
-                ProductionDate = vsData?.ProductionDate,
-                ModelYear = vsData?.ModelYear,
+                BodyType = vehicleModel?.BodyType,
+                Class = vehicleModel?.Class,
+                Cylinders = vehicleModel?.Cylinders,
+                Doors = vehicleModel?.Doors,
+                Engine = vehicleModel?.Engine,
+                EngineType = vehicleModel?.EngineType,
+                Fuel = vehicleModel?.Fuel,
+                LightHeavyType = vehicleModel?.LightHeavyType,
+                ModelCode = vehicleModel?.ModelCode,
+                ProductionDate = vehicle?.ProductionDate,
+                ModelYear = vehicle?.ModelYear,
                 FuelLiter = null,
-                ModelDescription = vtModel.ModelDescription,
-                Side = vtModel.Side,
-                Style = vtModel.Style,
-                TankCap = vtModel.TankCap,
-                Transmission = vtModel.Transmission,
-                VariantDescription = vtModel.VariantDescription,
-                ExteriorColor = vsData?.ExteriorColor?.Description,
-                InteriorColor = vsData?.InteriorColor?.Description
+                ModelDescription = vehicleModel?.ModelDescription,
+                Side = vehicleModel?.Side,
+                Style = vehicleModel?.Style,
+                TankCap = vehicleModel?.TankCap,
+                Transmission = vehicleModel?.Transmission,
+                VariantDescription = vehicleModel?.VariantDescription,
+                ExteriorColor = vehicle?.ExteriorColor?.Description,
+                InteriorColor = vehicle?.InteriorColor?.Description
             };
         }
 
-        if (vsData?.ExteriorColorCode is null)
+        if (vehicle?.ExteriorColorCode is null)
         {
-            var color = await lookupCosmosService.GetExteriorColorsAsync(vsData?.ExteriorColorCode, vsData?.Brand);
+            var color = await lookupCosmosService.GetExteriorColorsAsync(vehicle?.ExteriorColorCode, vehicle?.Brand);
             if (color is not null)
             {
                 result.ExteriorColor = color?.Description;
-                lookupCosmosService.UpdateVSDataColor(vsData, color);
+                lookupCosmosService.UpdateVSDataColor(vehicle, color);
             }
         }
 
-        if (vsData?.InteriorColorCode is null)
+        if (vehicle?.InteriorColorCode is null)
         {
-            var trim = await lookupCosmosService.GetInteriorColorsAsync(vsData?.InteriorColorCode, vsData?.Brand);
+            var trim = await lookupCosmosService.GetInteriorColorsAsync(vehicle?.InteriorColorCode, vehicle?.Brand);
             if (trim is not null)
             {
                 result.InteriorColor = trim?.Description;
-                lookupCosmosService.UpdateVSDataTrim(vsData, trim);
+                lookupCosmosService.UpdateVSDataTrim(vehicle, trim);
             }
         }
 
@@ -394,28 +402,28 @@ public class VehicleLookupService
         return result;
     }
 
-    private VehicleIdentifiersDTO GetIdentifiers(VehicleEntryModel vsData, string vin)
+    private VehicleIdentifiersDTO GetIdentifiers(VehicleBase vehicle, string vin)
     {
         return new VehicleIdentifiersDTO
         {
             VIN = vin,
-            Variant = vsData.VariantCode,
-            Katashiki = vsData.Katashiki,
-            Color = vsData.ExteriorColorCode,
-            Trim = vsData.InteriorColorCode,
-            Brand = vsData.Brand,
-            BrandID = vsData.BrandID
+            Variant = vehicle.VariantCode,
+            Katashiki = vehicle.Katashiki,
+            Color = vehicle.ExteriorColorCode,
+            Trim = vehicle.InteriorColorCode,
+            Brand = vehicle.Brand,
+            BrandID = vehicle.BrandID
         };
     }
 
-    private async Task<VehicleSaleInformation> GetSaleInformationAsync()
+    private async Task<VehicleSaleInformation> GetSaleInformationAsync(List<VehicleBase> vehicles)
     {
         VehicleSaleInformation result = new();
-        var i = companyDataAggregate.VehicleEntries.ToList();
-        if (!(companyDataAggregate.VehicleEntries?.Any() ?? false))
+
+        if (!(vehicles?.Any() ?? false))
             return null;
 
-        var vsData = companyDataAggregate.VehicleEntries
+        var vsData = vehicles
             .OrderByDescending(x => x.InvoiceDate == null)
             .ThenByDescending(x => x.InvoiceDate)
             .FirstOrDefault();
@@ -428,7 +436,7 @@ public class VehicleLookupService
         result.AccountNumber = vsData.AccountNumber;
         result.RegionID = vsData.RegionID;
 
-        result.InvoiceNumber = vsData?.InvoiceNumber ?? 0;
+        result.InvoiceNumber = vsData?.InvoiceNumber;
         result.InvoiceTotal = vsData?.InvoiceTotal ?? 0;
         result.CompanyID = vsData?.CompanyID;
         result.BranchID = vsData?.BranchID;
@@ -641,7 +649,7 @@ public class VehicleLookupService
 
     private async Task<IEnumerable<VehicleServiceItemDTO>> GetServiceItems(
         DateTime? invoiceDate,
-        VehicleEntryModel vsData,
+        VehicleBase vehicle,
         IEnumerable<PaidServiceInvoiceModel> paidServices,
         IEnumerable<ServiceItemClaimLineModel> tlpTransactionLines
     )
@@ -649,10 +657,10 @@ public class VehicleLookupService
         var result = new List<VehicleServiceItemDTO>();
         IEnumerable<ServiceItemModel> redeeambleItems = new List<ServiceItemModel>();
 
-        if (vsData is not null)
-            redeeambleItems = await lookupCosmosService.GetServiceItemsAsync(vsData.Brand);
+        if (vehicle is not null)
+            redeeambleItems = await lookupCosmosService.GetServiceItemsAsync(vehicle.Brand);
 
-        var shiftDay = companyDataAggregate.FreeServiceItemDateShifts?.FirstOrDefault(x => x.VIN == vsData.VIN);
+        var shiftDay = companyDataAggregate.FreeServiceItemDateShifts?.FirstOrDefault(x => x.VIN == vehicle.VIN);
         if (shiftDay is not null)
             invoiceDate = shiftDay.NewDate;
 
@@ -664,8 +672,8 @@ public class VehicleLookupService
                 .Where(x => invoiceDate >= x.PublishDate && invoiceDate <= x.ExpireDate)
                 .Where(x => (x.ModelCosts?.Count() ?? 0) == 0
                     ||
-                    (x.ModelCosts?.Any(a => vsData.Katashiki.StartsWith(a?.Katashiki ?? "") && !string.IsNullOrWhiteSpace(a?.Katashiki)
-                        || vsData.VariantCode.StartsWith(a?.Variant ?? "") && !string.IsNullOrWhiteSpace(a?.Variant)) ?? false));
+                    (x.ModelCosts?.Any(a => vehicle.Katashiki.StartsWith(a?.Katashiki ?? "") && !string.IsNullOrWhiteSpace(a?.Katashiki)
+                        || vehicle.VariantCode.StartsWith(a?.Variant ?? "") && !string.IsNullOrWhiteSpace(a?.Variant)) ?? false));
 
             if (eligableRedeemableItems?.Count() > 0)
             {
@@ -678,7 +686,7 @@ public class VehicleLookupService
 
                 foreach (var item in eligableRedeemableItems)
                 {
-                    var modelCost = GetModelCost(item.ModelCosts, vsData.Katashiki, vsData.VariantCode);
+                    var modelCost = GetModelCost(item.ModelCosts, vehicle.Katashiki, vehicle.VariantCode);
 
                     var serviceItem = new VehicleServiceItemDTO
                     {
@@ -739,8 +747,8 @@ public class VehicleLookupService
         result.AddRange(await GetRedeemedItemsThatNotEligable(
             result,
             redeeambleItems,
-            vsData?.Katashiki,
-            vsData?.VariantCode));
+            vehicle?.Katashiki,
+            vehicle?.VariantCode));
 
         ProccessDynamicCanceledFreeServiceItems(result);
 

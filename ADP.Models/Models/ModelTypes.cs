@@ -17,6 +17,7 @@ public static class ModelTypes
     public static readonly PartitionedItemType ServiceItemClaimLine = new("ServiceItemClaimLine");
     public static readonly PartitionedItemType SSCAffectedVIN = new("SSCAffectedVIN");
     public static readonly PartitionedItemType VehicleEntry = new("VehicleEntry");
+    public static readonly PartitionedItemType VehicleServiceActivation = new("VehicleServiceActivation");
     public static readonly PartitionedItemType WarrantyClaim = new("WarrantyClaim");
 
     public static readonly PartitionedItemType FreeServiceItemDateShift = new("FreeServiceItemDateShift");
