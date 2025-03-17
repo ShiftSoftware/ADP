@@ -114,7 +114,7 @@ public class PartLookupService
 
         if (options.PartLookupPriceResolver is not null)
         {
-            var resolvedResult = await options.PartLookupPriceResolver(new(new(cosmosPartCatalog.DistributorPurchasePrice, prices, source), language, services));
+            var resolvedResult = await options.PartLookupPriceResolver(new(new(cosmosPartCatalog?.DistributorPurchasePrice, prices, source), language, services));
 
             distributorPurchasePrice = resolvedResult.distributorPurchasePrice;
             resolvedPrices = resolvedResult.prices;
