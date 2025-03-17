@@ -33,5 +33,5 @@ public class VehicleBase
     public string SaleType { get; set; }
     public string Status { get; set; }
     public string Location { get; set; }
-    public Currencies InvoiceCurrency { get; set; }
+    public Currencies? InvoiceCurrency { get; set; }
 }

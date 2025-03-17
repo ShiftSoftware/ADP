@@ -1,5 +1,4 @@
-﻿using ShiftSoftware.ADP.Models.Enums;
-using System;
+﻿using System;
 
 namespace ShiftSoftware.ADP.Models.Vehicle;
 
