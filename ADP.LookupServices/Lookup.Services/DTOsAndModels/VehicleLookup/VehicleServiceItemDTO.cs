@@ -1,4 +1,5 @@
 ﻿using ShiftSoftware.ADP.Lookup.Services.Enums;
+using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ADP.Models.JsonConverters;
 using ShiftSoftware.ShiftEntity.Model;
 using System;
@@ -30,7 +31,7 @@ public class VehicleServiceItemDTO
     public string Status { get; set; }
     public VehcileServiceItemStatuses StatusEnum { get; set; } = default!;
     public string CampaignCode { get; set; }
-    public string MenuCode { get; set; }
+    public string PackageCode { get; set; }
     public DateTime? RedeemDate { get; set; }
     public long? ModelCostID { get; set; }
     public long ServiceItemID { get; set; }
@@ -43,6 +44,6 @@ public class VehicleServiceItemDTO
     public string JobNumber { get; set; }
     public long? MaximumMileage { get; set; }
     public bool SkipZeroTrust { get; set; }
-    public int? ActiveFor { get; set; }
-    public string ActiveForInterval { get; set; } = default!;
+    public int ActiveFor { get; set; }
+    public DurationType ActiveForInterval { get; set; } = default!;
 }

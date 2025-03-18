@@ -669,7 +669,7 @@ public class VehicleLookupService
         {
             var eligableRedeemableItems = redeeambleItems?
                 .Where(x => !(x.IsDeleted))
-                .Where(x => invoiceDate >= x.PublishDate && invoiceDate <= x.ExpireDate)
+                .Where(x => invoiceDate >= x.StartDate && invoiceDate <= x.ExpireDate)
                 .Where(x => (x.ModelCosts?.Count() ?? 0) == 0
                     ||
                     (x.ModelCosts?.Any(a => vehicle.Katashiki.StartsWith(a?.Katashiki ?? "") && !string.IsNullOrWhiteSpace(a?.Katashiki)
@@ -698,11 +698,10 @@ public class VehicleLookupService
                         Type = "free",
                         TypeEnum = VehcileServiceItemTypes.Free,
                         ModelCostID = modelCost?.ID,
-                        MenuCode = modelCost?.MenuCode ?? item.MenuCode,
-                        SkipZeroTrust = item.SkipZeroTrust,
+                        PackageCode = modelCost?.MenuCode ?? item.PackageCode,
                         MaximumMileage = item.MaximumMileage,
                         ActiveFor = item.ActiveFor,
-                        ActiveForInterval = item.ActiveForInterval
+                        ActiveForInterval = item.ActiveForDurationType
                     };
 
                     result.Add(serviceItem);
@@ -732,7 +731,7 @@ public class VehicleLookupService
                             Type = "paid",
                             MaximumMileage = item.ServiceItem?.MaximumMileage,
                             TypeEnum = VehcileServiceItemTypes.Paid,
-                            MenuCode = item.MenuCode,
+                            PackageCode = item.MenuCode,
                         };
 
                         result.Add(itemResult);
@@ -783,13 +782,13 @@ public class VehicleLookupService
         }
     }
 
-    private DateTime AddInterval(DateTime date, int? intervalValue, string interval)
+    private DateTime AddInterval(DateTime date, int? intervalValue, DurationType durationType)
     {
-        if (string.Equals(interval, "days", StringComparison.OrdinalIgnoreCase))
+        if (durationType == DurationType.Days)
             return date.AddDays(intervalValue.GetValueOrDefault());
-        else if (string.Equals(interval, "months", StringComparison.OrdinalIgnoreCase))
+        else if (durationType == DurationType.Months)
             return date.AddMonths(intervalValue.GetValueOrDefault());
-        else if (string.Equals(interval, "years", StringComparison.OrdinalIgnoreCase))
+        else if (durationType == DurationType.Years)
             return date.AddYears(intervalValue.GetValueOrDefault());
         else
             return date;
@@ -850,11 +849,10 @@ public class VehicleLookupService
                     StatusEnum = VehcileServiceItemStatuses.Processed,
                     Status = "processed",
                     ModelCostID = modelCost?.ID,
-                    MenuCode = modelCost?.MenuCode ?? item.MenuCode,
+                    PackageCode = modelCost?.MenuCode ?? item.PackageCode,
                     RedeemDate = transactionLine?.ClaimDate,
                     InvoiceNumber = transactionLine?.ServiceItemClaim?.InvoiceNumber,
                     JobNumber = transactionLine?.ServiceItemClaim?.JobNumber,
-                    SkipZeroTrust = item.SkipZeroTrust,
                     CompanyID = transactionLine?.CompanyID,
                     MaximumMileage = item.MaximumMileage
                 };
