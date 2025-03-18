@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+﻿    using AutoMapper;
 using LibGit2Sharp;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Logging;
@@ -510,7 +510,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
                 if (syncProgressIndicator is not null)
                     await syncProgressIndicator.LogInformationAsync(
                         cosmosTask, 
-                        string.Format("Processing Step {0} of {1}.\r\n\r\n", cosmosTask.CurrentStep, cosmosTask.TotalStep));
+                        string.Format("Processing Step {0} of {1}.\r\n\r\n", cosmosTask.CurrentStep + 1, cosmosTask.TotalStep));
             }
 
             if (items is null)
@@ -610,7 +610,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
                 if (syncProgressIndicator is not null)
                     await syncProgressIndicator.LogInformationAsync(
                         cosmosTask,
-                        string.Format("Completed Cosmos Operation for the current Batch: Step {0} of {1}.\r\n\r\n", cosmosTask.CurrentStep, cosmosTask.TotalStep));
+                        string.Format("Completed Cosmos Operation for the current Batch: Step {0} of {1}.\r\n\r\n", cosmosTask.CurrentStep + 1, cosmosTask.TotalStep));
 
                 currentStep++;
                 cosmosTask.CurrentStep++;
@@ -634,7 +634,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
                 if (syncProgressIndicator is not null)
                     await syncProgressIndicator.LogWarningAsync(
                         cosmosTask, 
-                        string.Format("Failed Processing the Current Cosmos Operation (Step {0} of {1}). Starting Retry {2} of {3}.\r\n\r\n", cosmosTask.CurrentStep, cosmosTask.TotalStep, retry, retryCount));
+                        string.Format("Failed Processing the Current Cosmos Operation (Step {0} of {1}). Starting Retry {2} of {3}.\r\n\r\n", cosmosTask.CurrentStep + 1, cosmosTask.TotalStep, retry, retryCount));
             }
         }
 
