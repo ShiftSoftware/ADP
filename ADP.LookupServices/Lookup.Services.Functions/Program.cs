@@ -141,12 +141,12 @@ var host = new HostBuilder()
 
             x.CompanyBranchNameResolver = async (h) =>
             {
-                if (string.IsNullOrWhiteSpace(h.Value?.CompanyID) || string.IsNullOrWhiteSpace(h.Value?.BranchID))
+                if (string.IsNullOrWhiteSpace(h.Value) || string.IsNullOrWhiteSpace(h.Value))
                     return null;
 
                 var identityComsosService = h.Services.GetRequiredService<IdentityCosmosService>();
-                long.TryParse(h.Value.BranchID, out long branchId);
-                var branch = await identityComsosService.GetCompanyBranchAsync(h.Value.CompanyID, branchId.ToString());
+                long.TryParse(h.Value, out long branchId);
+                var branch = await identityComsosService.GetCompanyBranchAsync(h.Value, branchId.ToString());
 
                 if (branch is null)
                     return null;
