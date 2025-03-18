@@ -147,11 +147,6 @@ public class Utility
             [Models.Constants.NoSQLConstants.PartitionKeys.Parts.Level1, Models.Constants.NoSQLConstants.PartitionKeys.Parts.Level2, Models.Constants.NoSQLConstants.PartitionKeys.Parts.Level3]
         ));
 
-        //await companyDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
-        //    Models.Constants.NoSQLConstants.Containers.Stock,
-        //    [Models.Constants.NoSQLConstants.PartitionKeys.Stock.Level1, Models.Constants.NoSQLConstants.PartitionKeys.Stock.Level2]
-        //));
-
         await companyDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
             Models.Constants.NoSQLConstants.Containers.ServiceItems,
             "/id"
