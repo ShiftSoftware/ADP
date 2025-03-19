@@ -684,8 +684,13 @@ public class VehicleLookupService
                 .Where(x => invoiceDate >= x.StartDate && invoiceDate <= x.ExpireDate)
                 .Where(x => (x.ModelCosts?.Count() ?? 0) == 0
                     ||
-                    (x.ModelCosts?.Any(a => vehicle.Katashiki.StartsWith(a?.Katashiki ?? "") && !string.IsNullOrWhiteSpace(a?.Katashiki)
-                        || vehicle.VariantCode.StartsWith(a?.Variant ?? "") && !string.IsNullOrWhiteSpace(a?.Variant)) ?? false));
+                    (
+                        x.ModelCosts?.Any(a =>
+                            !string.IsNullOrWhiteSpace(vehicle.Katashiki) && !string.IsNullOrWhiteSpace(a?.Katashiki) && vehicle.Katashiki.StartsWith(a?.Katashiki ?? "") ||
+                            !string.IsNullOrWhiteSpace(vehicle.VariantCode) && !string.IsNullOrWhiteSpace(a?.Variant) && vehicle.VariantCode.StartsWith(a?.Variant ?? "")
+                        )
+                        ?? false
+                    ));
 
             if (eligableRedeemableItems?.Count() > 0)
             {
