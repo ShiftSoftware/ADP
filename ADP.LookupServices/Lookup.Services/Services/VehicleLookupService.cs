@@ -144,7 +144,13 @@ public class VehicleLookupService
             data.Warranty = await GetWarrantyAsync(warrantyStartDate, vehicle.Brand);
         }
 
-        data.ServiceItems = await GetServiceItems(freeServiceStartDate, vehicle, companyDataAggregate.PaidServiceInvoices, companyDataAggregate.ServiceItemClaimLines);
+        data.ServiceItems = await GetServiceItems(
+            freeServiceStartDate, 
+            vehicle, 
+            data.SaleInformation,
+            companyDataAggregate.PaidServiceInvoices, 
+            companyDataAggregate.ServiceItemClaimLines
+        );
 
         // Set accessories
         data.Accessories = await GetAccessories();
@@ -650,6 +656,7 @@ public class VehicleLookupService
     private async Task<IEnumerable<VehicleServiceItemDTO>> GetServiceItems(
         DateTime? invoiceDate,
         VehicleBase vehicle,
+        VehicleSaleInformation vehicleSaleInformation,
         IEnumerable<PaidServiceInvoiceModel> paidServices,
         IEnumerable<ServiceItemClaimLineModel> tlpTransactionLines
     )
@@ -658,7 +665,7 @@ public class VehicleLookupService
         IEnumerable<ServiceItemModel> redeeambleItems = new List<ServiceItemModel>();
 
         if (vehicle is not null)
-            redeeambleItems = await lookupCosmosService.GetServiceItemsAsync(vehicle.Brand);
+            redeeambleItems = await lookupCosmosService.GetServiceItemsAsync();
 
         var shiftDay = companyDataAggregate.FreeServiceItemDateShifts?.FirstOrDefault(x => x.VIN == vehicle.VIN);
         if (shiftDay is not null)
@@ -669,6 +676,11 @@ public class VehicleLookupService
         {
             var eligableRedeemableItems = redeeambleItems?
                 .Where(x => !(x.IsDeleted))
+
+                .Where(x => x.Brands.Any(a => a == vehicle.Brand))
+                .Where(x => x.CompanyIDs is null || x.CompanyIDs.Count() == 0 || x.CompanyIDs.Any(a => a == vehicle?.CompanyID))
+                .Where(x => x.CountryIDs is null || x.CountryIDs.Count() == 0 || x.CountryIDs.Any(a => a == vehicleSaleInformation?.CountryID))
+
                 .Where(x => invoiceDate >= x.StartDate && invoiceDate <= x.ExpireDate)
                 .Where(x => (x.ModelCosts?.Count() ?? 0) == 0
                     ||

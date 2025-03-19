@@ -322,7 +322,7 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         await Task.WhenAll(tasks);
     }
 
-    public async Task<IEnumerable<ServiceItemModel>> GetServiceItemsAsync(Brands brand)
+    public async Task<IEnumerable<ServiceItemModel>> GetServiceItemsAsync()
     {
         //if (invoiceDate is null)
         //    return null;
@@ -333,7 +333,7 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.ServiceItems
         );
 
-        var queryable = container.GetItemLinqQueryable<ServiceItemModel>(true)
+        var queryable = container.GetItemLinqQueryable<ServiceItemModel>(true);
             //.Where(x => !x.Deleted.HasValue || x.Deleted == false)
             //.Where(x => invoiceDate >= x.PublishDate && invoiceDate <= x.ExpireDate)
             //.Where(x => x.ModelCosts.Count() == 0
@@ -341,7 +341,7 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
             //    (katashiki.StartsWith(a.Katashiki) && a.Katashiki.Trim() != string.Empty)
             //    || (variant.StartsWith(a.Variant) && a.Variant.Trim() != string.Empty)))
             //.Where(x => !x.ArchivedVersion.HasValue || x.ArchivedVersion == false || x.ArchivedVersion == null)
-            .Where(x => x.Brands.Any(a => a == brand));
+            //.Where(x => x.Brands.Any(a => a == brand))
 
         var iterator = queryable.ToFeedIterator();
         var items = new List<ServiceItemModel>();
