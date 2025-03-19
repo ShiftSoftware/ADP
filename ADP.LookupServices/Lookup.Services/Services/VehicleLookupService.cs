@@ -710,7 +710,7 @@ public class VehicleLookupService
                         Type = "free",
                         TypeEnum = VehcileServiceItemTypes.Free,
                         ModelCostID = modelCost?.ID,
-                        PackageCode = modelCost?.MenuCode ?? item.PackageCode,
+                        PackageCode = modelCost?.PackageCode ?? item.PackageCode,
                         MaximumMileage = item.MaximumMileage,
                         ActiveFor = item.ActiveFor,
                         ActiveForInterval = item.ActiveForDurationType
@@ -861,7 +861,7 @@ public class VehicleLookupService
                     StatusEnum = VehcileServiceItemStatuses.Processed,
                     Status = "processed",
                     ModelCostID = modelCost?.ID,
-                    PackageCode = modelCost?.MenuCode ?? item.PackageCode,
+                    PackageCode = modelCost?.PackageCode ?? item.PackageCode,
                     RedeemDate = transactionLine?.ClaimDate,
                     InvoiceNumber = transactionLine?.ServiceItemClaim?.InvoiceNumber,
                     JobNumber = transactionLine?.ServiceItemClaim?.JobNumber,

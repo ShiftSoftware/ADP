@@ -6,6 +6,6 @@ public class ServiceItemCostModel
     public long? ServiceItemID { get; set; }
     public string Variant { get; set; }
     public string Katashiki { get; set; }
-    public string MenuCode { get; set; }
+    public string PackageCode { get; set; }
     public decimal? Cost { get; set; }
 }
