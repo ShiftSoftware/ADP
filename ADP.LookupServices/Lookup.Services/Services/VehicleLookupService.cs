@@ -377,7 +377,7 @@ public class VehicleLookupService
             };
         }
 
-        if (vehicle?.ExteriorColorCode is null)
+        if (vehicle?.ExteriorColor is null)
         {
             var color = await lookupCosmosService.GetExteriorColorsAsync(vehicle?.ExteriorColorCode, vehicle?.Brand);
             if (color is not null)
@@ -387,7 +387,7 @@ public class VehicleLookupService
             }
         }
 
-        if (vehicle?.InteriorColorCode is null)
+        if (vehicle?.InteriorColor is null)
         {
             var trim = await lookupCosmosService.GetInteriorColorsAsync(vehicle?.InteriorColorCode, vehicle?.Brand);
             if (trim is not null)

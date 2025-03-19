@@ -178,6 +178,9 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
 
     public async Task<ColorModel> GetExteriorColorsAsync(string colorCode, Brands? brand)
     {
+        if (string.IsNullOrWhiteSpace(colorCode))
+            return null;
+
         var container = client.GetContainer(
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.ExteriorColors
@@ -195,6 +198,9 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
 
     public async Task<ColorModel> GetInteriorColorsAsync(string trimCode, Brands? brand)
     {
+        if (string.IsNullOrWhiteSpace(trimCode))
+            return null;
+
         var container = client.GetContainer(
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.InteriorColors
