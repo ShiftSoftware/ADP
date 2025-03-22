@@ -20,7 +20,7 @@ public class ServiceItemModel
     public IEnumerable<string> CountryIDs { get; set; }
     public IEnumerable<string> CompanyIDs { get; set; }
     public int ActiveFor { get; set; }
-    public DurationType ActiveForDurationType { get; set; }
+    public DurationType? ActiveForDurationType { get; set; }
     public long? MaximumMileage { get; set; }
     public string PackageCode { get; set; }
     public decimal? FixedCost { get; set; }
