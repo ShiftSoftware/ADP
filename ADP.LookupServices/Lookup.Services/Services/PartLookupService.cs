@@ -30,7 +30,8 @@ public class PartLookupService
         int? distributorStockLookupQuantity = null,
         PartLookupLogInfo? logInfo = null,
         string language = "en",
-        PartLookupSource? source = null)
+        PartLookupSource? source = null,
+        bool skipLogging = false)
     {
         var data = await partLookupCosmosService.GetAggregatePartAsync(partNumber);
 
@@ -145,9 +146,12 @@ public class PartLookupService
             SupersededTo = cosmosPartCatalog?.SupersededTo?.Select(x=> x.PartNumber)
         };
 
-        var logId = await logCosmosService.LogPartLookupAsync(logInfo, result, distributorStockLookupQuantity);
+        if (!skipLogging)
+        {
+            var logId = await logCosmosService.LogPartLookupAsync(logInfo, result, distributorStockLookupQuantity);
 
-        result.LogId = logId;
+            result.LogId = logId;
+        }
 
         return result;
     }
