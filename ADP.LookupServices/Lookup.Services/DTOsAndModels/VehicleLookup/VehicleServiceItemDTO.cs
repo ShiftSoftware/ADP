@@ -45,5 +45,5 @@ public class VehicleServiceItemDTO
     public long? MaximumMileage { get; set; }
     public bool SkipZeroTrust { get; set; }
     public int ActiveFor { get; set; }
-    public DurationType ActiveForInterval { get; set; } = default!;
+    public DurationType? ActiveForInterval { get; set; } = default!;
 }

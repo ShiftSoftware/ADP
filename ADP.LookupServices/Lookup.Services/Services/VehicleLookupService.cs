@@ -799,7 +799,7 @@ public class VehicleLookupService
         }
     }
 
-    private DateTime AddInterval(DateTime date, int? intervalValue, DurationType durationType)
+    private DateTime AddInterval(DateTime date, int? intervalValue, DurationType? durationType)
     {
         if (durationType == DurationType.Days)
             return date.AddDays(intervalValue.GetValueOrDefault());
