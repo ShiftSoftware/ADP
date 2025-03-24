@@ -11,6 +11,7 @@ public class NoSQLConstants
         public const string CompanyData = "CompanyData";
         public const string Logs = "Logs";
         public const string Services = "Services";
+        public const string TBP = "TBP";
     }
 
     public class Containers
@@ -30,6 +31,8 @@ public class NoSQLConstants
         public const string CSVUpload = "CSVUpload";
 
         public const string FlatRate = "FlatRate";
+
+        public const string TBP_BrokerStock = "BrokerStock";
     }
 
     public class PartitionKeys
