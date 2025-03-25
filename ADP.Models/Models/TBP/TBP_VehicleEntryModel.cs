@@ -9,4 +9,5 @@ public class TBP_VehicleEntryModel
     public string Status { get; set; }
     public string LineStatus { get; set; }
     public string Location { get; set; }
+    public long? CompanyID { get; set; }
 }

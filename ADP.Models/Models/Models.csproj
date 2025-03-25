@@ -30,7 +30,6 @@
 
 	<ItemGroup>
 	  <Compile Remove="CacheableCSV.cs" />
-	  <Compile Remove="Enums\Genders.cs" />
 	  <Compile Remove="IDealerDataModel.cs" />
 	  <Compile Remove="PhoneConverter.cs" />
 	  <Compile Remove="TBP\BrokerVehicleStockDTO.cs" />
