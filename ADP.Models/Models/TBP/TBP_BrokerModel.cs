@@ -9,6 +9,7 @@ public class TBP_BrokerModel
     public string Name { get; set; }
     public DateTimeOffset? TerminationDate { get; set; }
     public DateTimeOffset? AccountStartDate { get; set; }
+    public string Location { get; set; }
     public bool IsDeleted { get; set; }
     public IEnumerable<string> AccountNumbers { get; set; }
 }
