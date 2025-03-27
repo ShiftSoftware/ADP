@@ -117,12 +117,12 @@ public class TableSyncService<TEntity, TCosmos>
         var replicationDate = DateTime.UtcNow;
 
         // Do the delete from cosmos
-        var deletedRowLogs = await GetDeletedRowLogs(containerId);
+        //var deletedRowLogs = await GetDeletedRowLogs(containerId);
 
-        var deleteSuccessIds = await DeleteFromCosmosAsync(deletedRowLogs, databaseId, containerId, logger);
+        //var deleteSuccessIds = await DeleteFromCosmosAsync(deletedRowLogs, databaseId, containerId, logger);
 
-        await db.Set<DeletedRowLog>().Where(x => deleteSuccessIds.Contains(x.ID))
-            .ExecuteDeleteAsync();
+        //await db.Set<DeletedRowLog>().Where(x => deleteSuccessIds.Contains(x.ID))
+        //    .ExecuteDeleteAsync();
 
         // Do the upsert to cosmos
         var dbSet = db.Set<TEntity>();
