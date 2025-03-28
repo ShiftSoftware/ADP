@@ -32,7 +32,7 @@ public class VehicleServiceItemDTO
     public VehcileServiceItemStatuses StatusEnum { get; set; } = default!;
     public string CampaignCode { get; set; }
     public string PackageCode { get; set; }
-    public DateTime? RedeemDate { get; set; }
+    public DateTime? ClaimDate { get; set; }
     public long? ModelCostID { get; set; }
     public long ServiceItemID { get; set; }
     public long? PaidServiceInvoiceLineID { get; set; }

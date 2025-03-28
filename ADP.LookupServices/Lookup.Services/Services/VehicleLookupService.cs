@@ -662,10 +662,10 @@ public class VehicleLookupService
     )
     {
         var result = new List<VehicleServiceItemDTO>();
-        IEnumerable<ServiceItemModel> redeeambleItems = new List<ServiceItemModel>();
+        IEnumerable<ServiceItemModel> serviceItems = new List<ServiceItemModel>();
 
         if (vehicle is not null)
-            redeeambleItems = await lookupCosmosService.GetServiceItemsAsync();
+            serviceItems = await lookupCosmosService.GetServiceItemsAsync();
 
         var shiftDay = companyDataAggregate.FreeServiceItemDateShifts?.FirstOrDefault(x => x.VIN == vehicle.VIN);
         if (shiftDay is not null)
@@ -674,7 +674,7 @@ public class VehicleLookupService
         // Free services
         if (!companyDataAggregate.FreeServiceItemExcludedVINs.Any())
         {
-            var eligableRedeemableItems = redeeambleItems?
+            var eligableServiceItems = serviceItems?
                 .Where(x => !(x.IsDeleted))
 
                 .Where(x => x.Brands.Any(a => a == vehicle.Brand))
@@ -692,16 +692,16 @@ public class VehicleLookupService
                         ?? false
                     ));
 
-            if (eligableRedeemableItems?.Count() > 0)
+            if (eligableServiceItems?.Count() > 0)
             {
                 // Order them by mileage
-                eligableRedeemableItems = eligableRedeemableItems
+                eligableServiceItems = eligableServiceItems
                     .OrderByDescending(x => x.MaximumMileage.HasValue)
                     .ThenBy(x => x.MaximumMileage);
 
                 var startDate = invoiceDate;
 
-                foreach (var item in eligableRedeemableItems)
+                foreach (var item in eligableServiceItems)
                 {
                     var modelCost = GetModelCost(item.ModelCosts, vehicle.Katashiki, vehicle.VariantCode);
 
@@ -760,11 +760,14 @@ public class VehicleLookupService
         CalculateRollingExpireDateForFreeServiceItems(result, invoiceDate);
         await CalulateServiceItemStatus(result);
 
-        result.AddRange(await GetRedeemedItemsThatNotEligable(
+        var ineligibleServiceItems = await GetIneligibleServiceItems(
             result,
-            redeeambleItems,
+            serviceItems,
             vehicle?.Katashiki,
-            vehicle?.VariantCode));
+            vehicle?.VariantCode
+        );
+
+        result.AddRange(ineligibleServiceItems);
 
         ProccessDynamicCanceledFreeServiceItems(result);
 
@@ -811,74 +814,75 @@ public class VehicleLookupService
             return date;
     }
 
-    private (string statusText, VehcileServiceItemStatuses status, DateTime? redeemDate, string wip, string invoice, string companyID)
+    private (string statusText, VehcileServiceItemStatuses status, DateTime? claimDate, string wip, string invoice, string companyID, string packageCode)
         ProcessServiceItemStatus(
         long id,
         DateTime activatedAt,
         DateTime? expiresAt,
-        IEnumerable<ServiceItemClaimLineModel> tlpTransactionLines,
-        int redeemType)
+        IEnumerable<ServiceItemClaimLineModel> serviceClaimLines)
     {
-        var transactionLine = tlpTransactionLines?.FirstOrDefault(x => x?.ServiceItemID == id.ToString());
+        var claimLine = serviceClaimLines?.FirstOrDefault(x => x?.ServiceItemID == id.ToString());
 
-        if (transactionLine is not null)
+        if (claimLine is not null)
             return ("processed", VehcileServiceItemStatuses.Processed,
-                transactionLine.ClaimDate.HasValue ? transactionLine.ClaimDate.Value : null,
-                transactionLine.ServiceItemClaim?.JobNumber,
-                transactionLine.ServiceItemClaim?.InvoiceNumber, transactionLine.CompanyID);
+                claimLine.ClaimDate.HasValue ? claimLine.ClaimDate.Value : null,
+                claimLine.ServiceItemClaim?.JobNumber,
+                claimLine.ServiceItemClaim?.InvoiceNumber, claimLine.CompanyID, claimLine.PackageCode);
         else if (expiresAt is not null && expiresAt < DateTime.Now)
-            return ("expired", VehcileServiceItemStatuses.Expired, null, null, null, null);
+            return ("expired", VehcileServiceItemStatuses.Expired, null, null, null, null, null);
         else
-            return ("pending", VehcileServiceItemStatuses.Pending, null, null, null, null);
+            return ("pending", VehcileServiceItemStatuses.Pending, null, null, null, null, null);
     }
 
-    private async Task<IEnumerable<VehicleServiceItemDTO>> GetRedeemedItemsThatNotEligable(
-        IEnumerable<VehicleServiceItemDTO> serviceItems,
-        IEnumerable<ServiceItemModel> redeemableItems,
+    private async Task<IEnumerable<VehicleServiceItemDTO>> GetIneligibleServiceItems(
+        IEnumerable<VehicleServiceItemDTO> eligibleServiceItems,
+        IEnumerable<ServiceItemModel> availableServiceItems,
         string katashiki,
         string variant)
     {
         var result = new List<VehicleServiceItemDTO>();
-        serviceItems = serviceItems?.Where(x => x.TypeEnum == VehcileServiceItemTypes.Free);
 
-        var redeemedItems = companyDataAggregate.ServiceItemClaimLines?
+        var existingServiceItemIds = eligibleServiceItems?
+            .Where(x => x.TypeEnum == VehcileServiceItemTypes.Free)
+            .Select(x => x.ServiceItemID.ToString())
+            .ToList();
+
+        var claimedItems = companyDataAggregate.ServiceItemClaimLines?
             .Select(x => x?.ServiceItemID)
-            .Where(x => !(serviceItems?.Any(s => s.ServiceItemID.ToString() == x) ?? false));
+            .Where(x => !(existingServiceItemIds?.Any(s => s == x) ?? false));
 
-        if (redeemableItems != null)
+        foreach (var item in availableServiceItems.Where(x => claimedItems?.Any(a => a == x.ID.ToString()) ?? false))
         {
-            foreach (var item in redeemableItems.Where(x => redeemedItems?.Any(a => a == x.ID.ToString()) ?? false))
+            //var modelCost = GetModelCost(item.ModelCosts, katashiki, variant);
+
+            var claimLine = companyDataAggregate
+                .ServiceItemClaimLines?
+                .FirstOrDefault(t => t.ServiceItemID == item.ID.ToString());
+
+            var serviceItem = new VehicleServiceItemDTO
             {
-                var modelCost = GetModelCost(item.ModelCosts, katashiki, variant);
+                ServiceItemID = item.ID,
+                Name = Utility.GetLocalizedText(item.Name, languageCode),
+                Description = Utility.GetLocalizedText(item.PrintoutDescription, languageCode),
+                Title = Utility.GetLocalizedText(item.PrintoutTitle, languageCode),
+                Image = await GetFirstImageFullUrl(item.Photo),
+                Type = "free",
+                TypeEnum = VehcileServiceItemTypes.Free,
+                StatusEnum = VehcileServiceItemStatuses.Processed,
+                Status = "processed",
+                //ModelCostID = modelCost?.ID,
+                PackageCode = claimLine.PackageCode, //modelCost?.PackageCode ?? item.PackageCode,
+                ClaimDate = claimLine?.ClaimDate,
+                InvoiceNumber = claimLine?.ServiceItemClaim?.InvoiceNumber,
+                JobNumber = claimLine?.ServiceItemClaim?.JobNumber,
+                CompanyID = claimLine?.CompanyID,
+                MaximumMileage = item.MaximumMileage
+            };
 
-                var transactionLine = companyDataAggregate.ServiceItemClaimLines?
-                        .FirstOrDefault(t => t.ServiceItemID == item.ID.ToString());
+            if (!string.IsNullOrWhiteSpace(claimLine?.CompanyID) && options.CompanyNameResolver is not null)
+                serviceItem.CompanyName = await options.CompanyNameResolver(new(claimLine?.CompanyID, languageCode, services));
 
-                var serviceItem = new VehicleServiceItemDTO
-                {
-                    ServiceItemID = item.ID,
-                    Name = Utility.GetLocalizedText(item.Name, languageCode),
-                    Description = Utility.GetLocalizedText(item.PrintoutDescription, languageCode),
-                    Title = Utility.GetLocalizedText(item.PrintoutTitle, languageCode),
-                    Image = await GetFirstImageFullUrl(item.Photo),
-                    Type = "free",
-                    TypeEnum = VehcileServiceItemTypes.Free,
-                    StatusEnum = VehcileServiceItemStatuses.Processed,
-                    Status = "processed",
-                    ModelCostID = modelCost?.ID,
-                    PackageCode = modelCost?.PackageCode ?? item.PackageCode,
-                    RedeemDate = transactionLine?.ClaimDate,
-                    InvoiceNumber = transactionLine?.ServiceItemClaim?.InvoiceNumber,
-                    JobNumber = transactionLine?.ServiceItemClaim?.JobNumber,
-                    CompanyID = transactionLine?.CompanyID,
-                    MaximumMileage = item.MaximumMileage
-                };
-
-                if (!string.IsNullOrWhiteSpace(transactionLine?.CompanyID) && options.CompanyNameResolver is not null)
-                    serviceItem.CompanyName = await options.CompanyNameResolver(new(transactionLine?.CompanyID, languageCode, services));
-
-                result.Add(serviceItem);
-            }
+            result.Add(serviceItem);
         }
 
         return result;
@@ -939,14 +943,16 @@ public class VehicleLookupService
             var statusResult = ProcessServiceItemStatus(item.ServiceItemID,
                 item.ActivatedAt,
                 item.ExpiresAt,
-                companyDataAggregate.ServiceItemClaimLines, item.TypeEnum == VehcileServiceItemTypes.Free ? 4 : 7);
+                companyDataAggregate.ServiceItemClaimLines
+            );
 
             item.Status = statusResult.statusText;
             item.StatusEnum = statusResult.status;
-            item.RedeemDate = statusResult.redeemDate;
+            item.ClaimDate = statusResult.claimDate;
             item.JobNumber = statusResult.wip;
             item.InvoiceNumber = statusResult.invoice;
             item.CompanyID = statusResult.companyID;
+            item.PackageCode = statusResult.packageCode ?? item.PackageCode;
 
             if(!string.IsNullOrWhiteSpace(statusResult.companyID) && options.CompanyNameResolver is not null)
                 item.CompanyName = await options.CompanyNameResolver(new(statusResult.companyID, languageCode, services));

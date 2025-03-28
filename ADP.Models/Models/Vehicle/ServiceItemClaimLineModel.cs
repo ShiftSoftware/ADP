@@ -12,6 +12,7 @@ public class ServiceItemClaimLineModel : IPartitionedItem, ICompanyProps, IBranc
     public DateTime? ClaimDate { get; set; }
     public string ServiceItemID { get; set; }
     public decimal Cost { get; set; }
+    public string PackageCode { get; set; }
     public virtual ServiceItemClaimModel ServiceItemClaim { get; set; }
     public string ItemType => ModelTypes.ServiceItemClaimLine;
 }
