@@ -107,6 +107,9 @@ public class VehicleLookupService
         // Set SSC
         data.SSC = await GetSSCAsync(companyDataAggregate.SSCAffectedVINs, companyDataAggregate.WarrantyClaims, companyDataAggregate.LaborLines, regionIntegrationId);
 
+        var includeInactivatedFreeServiceItems = false;
+        var warrantyStartDateDefaultsToInvoiceDate = true;
+
         DateTime? warrantyStartDate = null;
         DateTime? freeServiceStartDate = null;
 
@@ -118,7 +121,11 @@ public class VehicleLookupService
             //Normal company Sale
             if (data.SaleInformation?.Broker is null)
             {
-                warrantyStartDate = data.SaleInformation?.WarrantyActivationDate ?? data.SaleInformation?.InvoiceDate;
+                warrantyStartDate = data.SaleInformation?.WarrantyActivationDate;
+
+                if (warrantyStartDate is null && warrantyStartDateDefaultsToInvoiceDate)
+                    warrantyStartDate = data.SaleInformation?.InvoiceDate;
+
                 freeServiceStartDate = warrantyStartDate;
             }
             else
@@ -149,7 +156,8 @@ public class VehicleLookupService
             vehicle, 
             data.SaleInformation,
             companyDataAggregate.PaidServiceInvoices, 
-            companyDataAggregate.ServiceItemClaimLines
+            companyDataAggregate.ServiceItemClaimLines,
+            includeInactivatedFreeServiceItems
         );
 
         // Set accessories
@@ -654,11 +662,12 @@ public class VehicleLookupService
     }
 
     private async Task<IEnumerable<VehicleServiceItemDTO>> GetServiceItems(
-        DateTime? invoiceDate,
+        DateTime? freeServiceStartDate,
         VehicleBase vehicle,
         VehicleSaleInformation vehicleSaleInformation,
         IEnumerable<PaidServiceInvoiceModel> paidServices,
-        IEnumerable<ServiceItemClaimLineModel> tlpTransactionLines
+        IEnumerable<ServiceItemClaimLineModel> tlpTransactionLines,
+        bool includeInactivated
     )
     {
         var result = new List<VehicleServiceItemDTO>();
@@ -669,19 +678,28 @@ public class VehicleLookupService
 
         var shiftDay = companyDataAggregate.FreeServiceItemDateShifts?.FirstOrDefault(x => x.VIN == vehicle.VIN);
         if (shiftDay is not null)
-            invoiceDate = shiftDay.NewDate;
+            freeServiceStartDate = shiftDay.NewDate;
+
+        var showingInactivatedItems = false;
+
+        //Allow showing free service items as 'Activation Required'
+        if (includeInactivated && freeServiceStartDate is null)
+        {
+            freeServiceStartDate = DateTime.Now.Date;
+            showingInactivatedItems = true;
+        }
 
         // Free services
         if (!companyDataAggregate.FreeServiceItemExcludedVINs.Any())
         {
-            var eligableServiceItems = serviceItems?
+            var eligibleServiceItems = serviceItems?
                 .Where(x => !(x.IsDeleted))
 
                 .Where(x => x.Brands.Any(a => a == vehicle.Brand))
                 .Where(x => x.CompanyIDs is null || x.CompanyIDs.Count() == 0 || x.CompanyIDs.Any(a => a == vehicle?.CompanyID))
                 .Where(x => x.CountryIDs is null || x.CountryIDs.Count() == 0 || x.CountryIDs.Any(a => a == vehicleSaleInformation?.CountryID))
 
-                .Where(x => invoiceDate >= x.StartDate && invoiceDate <= x.ExpireDate)
+                .Where(x => freeServiceStartDate >= x.StartDate && freeServiceStartDate <= x.ExpireDate)
                 .Where(x => (x.ModelCosts?.Count() ?? 0) == 0
                     ||
                     (
@@ -692,16 +710,16 @@ public class VehicleLookupService
                         ?? false
                     ));
 
-            if (eligableServiceItems?.Count() > 0)
+            if (eligibleServiceItems?.Count() > 0)
             {
                 // Order them by mileage
-                eligableServiceItems = eligableServiceItems
+                eligibleServiceItems = eligibleServiceItems
                     .OrderByDescending(x => x.MaximumMileage.HasValue)
                     .ThenBy(x => x.MaximumMileage);
 
-                var startDate = invoiceDate;
+                var startDate = freeServiceStartDate;
 
-                foreach (var item in eligableServiceItems)
+                foreach (var item in eligibleServiceItems)
                 {
                     var modelCost = GetModelCost(item.ModelCosts, vehicle.Katashiki, vehicle.VariantCode);
 
@@ -757,8 +775,8 @@ public class VehicleLookupService
             }
         }
 
-        CalculateRollingExpireDateForFreeServiceItems(result, invoiceDate);
-        await CalulateServiceItemStatus(result);
+        CalculateRollingExpireDateForFreeServiceItems(result, freeServiceStartDate);
+        await CalulateServiceItemStatus(result, showingInactivatedItems);
 
         var ineligibleServiceItems = await GetIneligibleServiceItems(
             result,
@@ -819,19 +837,30 @@ public class VehicleLookupService
         long id,
         DateTime activatedAt,
         DateTime? expiresAt,
-        IEnumerable<ServiceItemClaimLineModel> serviceClaimLines)
+        IEnumerable<ServiceItemClaimLineModel> serviceClaimLines,
+        bool showingInactivatedItems
+    )
     {
         var claimLine = serviceClaimLines?.FirstOrDefault(x => x?.ServiceItemID == id.ToString());
 
         if (claimLine is not null)
+        {
             return ("processed", VehcileServiceItemStatuses.Processed,
                 claimLine.ClaimDate.HasValue ? claimLine.ClaimDate.Value : null,
                 claimLine.ServiceItemClaim?.JobNumber,
                 claimLine.ServiceItemClaim?.InvoiceNumber, claimLine.CompanyID, claimLine.PackageCode);
+        }
         else if (expiresAt is not null && expiresAt < DateTime.Now)
+        {
             return ("expired", VehcileServiceItemStatuses.Expired, null, null, null, null, null);
+        }
         else
+        {
+            if (showingInactivatedItems)
+                return ("activationRequired", VehcileServiceItemStatuses.ActivationRequired, null, null, null, null, null);
+
             return ("pending", VehcileServiceItemStatuses.Pending, null, null, null, null, null);
+        }
     }
 
     private async Task<IEnumerable<VehicleServiceItemDTO>> GetIneligibleServiceItems(
@@ -936,14 +965,15 @@ public class VehicleLookupService
         }
     }
 
-    private async Task CalulateServiceItemStatus(IEnumerable<VehicleServiceItemDTO> serviceItems)
+    private async Task CalulateServiceItemStatus(IEnumerable<VehicleServiceItemDTO> serviceItems, bool showingInactivatedItems)
     {
         foreach (var item in serviceItems)
         {
             var statusResult = ProcessServiceItemStatus(item.ServiceItemID,
                 item.ActivatedAt,
                 item.ExpiresAt,
-                companyDataAggregate.ServiceItemClaimLines
+                companyDataAggregate.ServiceItemClaimLines,
+                showingInactivatedItems
             );
 
             item.Status = statusResult.statusText;

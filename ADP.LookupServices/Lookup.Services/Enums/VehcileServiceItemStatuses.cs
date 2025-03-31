@@ -12,4 +12,6 @@ public enum VehcileServiceItemStatuses
     Pending = 2,
     [Description("Cancelled")]
     Cancelled = 3,
+    [Description("Activation Required")]
+    ActivationRequired = 4,
 }
