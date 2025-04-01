@@ -23,6 +23,7 @@ public class ServiceItemModel
     public DurationType? ActiveForDurationType { get; set; }
     public long? MaximumMileage { get; set; }
     public string PackageCode { get; set; }
+    public string UniqueReference { get; set; }
     public decimal? FixedCost { get; set; }
     public IEnumerable<ServiceItemCostModel> ModelCosts { get; set; }
 }

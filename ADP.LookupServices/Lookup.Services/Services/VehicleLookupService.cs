@@ -93,8 +93,8 @@ public class VehicleLookupService
         }
 
         // Set IsAuthorized
-        data.IsAuthorized = companyDataAggregate.InitialOfficialVINs?.Count() > 0 || 
-            companyDataAggregate.VehicleEntries?.Count() > 0 || 
+        data.IsAuthorized = companyDataAggregate.InitialOfficialVINs?.Count() > 0 ||
+            companyDataAggregate.VehicleEntries?.Count() > 0 ||
             companyDataAggregate.SSCAffectedVINs.Count() > 0;
 
         // Set NextServiceDate
@@ -107,6 +107,7 @@ public class VehicleLookupService
         data.SSC = await GetSSCAsync(companyDataAggregate.SSCAffectedVINs, companyDataAggregate.WarrantyClaims, companyDataAggregate.LaborLines, regionIntegrationId);
 
         var includeInactivatedFreeServiceItems = false;
+        var perVehicleEligibilitySupport = false;
         var warrantyStartDateDefaultsToInvoiceDate = true;
 
         DateTime? warrantyStartDate = null;
@@ -161,7 +162,8 @@ public class VehicleLookupService
             data.SaleInformation,
             companyDataAggregate.PaidServiceInvoices, 
             companyDataAggregate.ServiceItemClaimLines,
-            includeInactivatedFreeServiceItems
+            includeInactivatedFreeServiceItems,
+            perVehicleEligibilitySupport
         );
 
         // Set accessories
@@ -671,7 +673,8 @@ public class VehicleLookupService
         VehicleSaleInformation vehicleSaleInformation,
         IEnumerable<PaidServiceInvoiceModel> paidServices,
         IEnumerable<ServiceItemClaimLineModel> tlpTransactionLines,
-        bool includeInactivated
+        bool includeInactivated,
+        bool perVehicleEligibilitySupport
     )
     {
         var result = new List<VehicleServiceItemDTO>();
@@ -702,17 +705,21 @@ public class VehicleLookupService
                 .Where(x => x.Brands.Any(a => a == vehicle.Brand))
                 .Where(x => x.CompanyIDs is null || x.CompanyIDs.Count() == 0 || x.CompanyIDs.Any(a => a == vehicle?.CompanyID))
                 .Where(x => x.CountryIDs is null || x.CountryIDs.Count() == 0 || x.CountryIDs.Any(a => a == vehicleSaleInformation?.CountryID))
-
                 .Where(x => freeServiceStartDate >= x.StartDate && freeServiceStartDate <= x.ExpireDate)
-                .Where(x => (x.ModelCosts?.Count() ?? 0) == 0
+
+                .Where(x =>
+                    (!perVehicleEligibilitySupport && (x.ModelCosts?.Count() ?? 0) == 0)
+                    ||
+                    (perVehicleEligibilitySupport && vehicle.EligibleServiceItemUniqueReferences is not null && vehicle.EligibleServiceItemUniqueReferences.Contains(x.UniqueReference, StringComparer.InvariantCultureIgnoreCase))
                     ||
                     (
                         x.ModelCosts?.Any(a =>
                             !string.IsNullOrWhiteSpace(vehicle.Katashiki) && !string.IsNullOrWhiteSpace(a?.Katashiki) && vehicle.Katashiki.StartsWith(a?.Katashiki ?? "") ||
                             !string.IsNullOrWhiteSpace(vehicle.VariantCode) && !string.IsNullOrWhiteSpace(a?.Variant) && vehicle.VariantCode.StartsWith(a?.Variant ?? "")
-                        )
+                            )
                         ?? false
-                    ));
+                    )
+                );
 
             if (eligibleServiceItems?.Count() > 0)
             {
@@ -826,8 +833,16 @@ public class VehicleLookupService
 
     private DateTime AddInterval(DateTime date, int? intervalValue, DurationType? durationType)
     {
-        if (durationType == DurationType.Days)
+        if (durationType == DurationType.Seconds)
+            return date.AddSeconds(intervalValue.GetValueOrDefault());
+        else if (durationType == DurationType.Minutes)
+            return date.AddMinutes(intervalValue.GetValueOrDefault());
+        else if (durationType == DurationType.Hours)
+            return date.AddHours(intervalValue.GetValueOrDefault());
+        else if (durationType == DurationType.Days)
             return date.AddDays(intervalValue.GetValueOrDefault());
+        else if (durationType == DurationType.Weeks)
+            return date.AddDays(7 * intervalValue.GetValueOrDefault());
         else if (durationType == DurationType.Months)
             return date.AddMonths(intervalValue.GetValueOrDefault());
         else if (durationType == DurationType.Years)

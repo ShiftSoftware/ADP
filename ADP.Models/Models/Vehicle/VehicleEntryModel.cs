@@ -1,5 +1,6 @@
 ﻿using ShiftSoftware.ADP.Models.Enums;
 using System;
+using System.Collections.Generic;
 
 namespace ShiftSoftware.ADP.Models.Vehicle;
 
@@ -38,5 +39,10 @@ public class VehicleEntryModel: IPartitionedItem, IBrandProps, ICompanyProps, IR
     public string LineID { get; set; }
     public DateTime? LoadDate { get; set; }
     public DateTime? PostDate { get; set; }
+
+    /// <summary>
+    /// Per Vehicle Service Item Eligibility
+    /// </summary>
+    public IEnumerable<string> EligibleServiceItemUniqueReferences { get; set; }
     public string ItemType => ModelTypes.VehicleEntry;
 }

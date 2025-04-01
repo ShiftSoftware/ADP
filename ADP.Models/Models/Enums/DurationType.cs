@@ -4,24 +4,27 @@ namespace ShiftSoftware.ADP.Models.Enums;
 
 public enum DurationType
 {
+    [Description("Not Specified")]
+    NotSpecified = 0,
+
     [Description("Seconds")]
-    Seconds,
+    Seconds = 1,
 
     [Description("Minutes")]
-    Minutes,
+    Minutes = 2,
 
     [Description("Hours")]
-    Hours,
+    Hours = 3,
 
     [Description("Days")]
-    Days,
+    Days = 4,
 
     [Description("Weeks")]
-    Weeks,
+    Weeks = 5,
 
     [Description("Months")]
-    Months,
+    Months = 6,
 
     [Description("Years")]
-    Years
+    Years = 7
 }
