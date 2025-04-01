@@ -1,6 +1,5 @@
 ﻿using ShiftSoftware.ADP.Lookup.Services.Aggregate;
 using ShiftSoftware.ADP.Models.Enums;
-using ShiftSoftware.ADP.Models.Part;
 using ShiftSoftware.ADP.Models.TBP;
 using ShiftSoftware.ADP.Models.Vehicle;
 using System.Collections.Generic;
@@ -19,9 +18,9 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
         Task<VehicleModelModel> GetVehicleModelsAsync(string variant, Brands? brand);
         Task<ColorModel> GetInteriorColorsAsync(string trimCode, Brands? brand);
         Task SaveChangesAsync();
-        void UpdateVSDataModel(VehicleBase item, VehicleModelModel model);
-        void UpdateVSDataColor(VehicleBase item, ColorModel color);
-        void UpdateVSDataTrim(VehicleBase item, ColorModel trim);
+        void UpdateVSDataModel(VehicleEntryModel item, VehicleModelModel model);
+        void UpdateVSDataColor(VehicleEntryModel item, ColorModel color);
+        void UpdateVSDataTrim(VehicleEntryModel item, ColorModel trim);
         Task<IEnumerable<ServiceItemModel>> GetServiceItemsAsync();
         Task<IEnumerable<VehicleModelModel>> GetAllVehicleModelsAsync();
         Task<IEnumerable<VehicleModelModel>> GetVehicleModelsByKatashikiAsync(string katashiki);

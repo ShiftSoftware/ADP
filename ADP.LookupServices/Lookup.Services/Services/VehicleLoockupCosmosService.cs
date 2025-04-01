@@ -260,7 +260,7 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         return items.FirstOrDefault();
     }
 
-    public void UpdateVSDataColor(VehicleBase item, ColorModel color)
+    public void UpdateVSDataColor(VehicleEntryModel item, ColorModel color)
     {
         var container = client.GetContainer(
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
@@ -279,7 +279,7 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         );
     }
 
-    public void UpdateVSDataTrim(VehicleBase item, ColorModel trim)
+    public void UpdateVSDataTrim(VehicleEntryModel item, ColorModel trim)
     {
         var container = client.GetContainer(
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
@@ -298,7 +298,7 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         );
     }
 
-    public void UpdateVSDataModel(VehicleBase item, VehicleModelModel model)
+    public void UpdateVSDataModel(VehicleEntryModel item, VehicleModelModel model)
     {
         var container = client.GetContainer(
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,

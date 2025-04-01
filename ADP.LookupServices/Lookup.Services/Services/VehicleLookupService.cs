@@ -65,12 +65,12 @@ public class VehicleLookupService
         this.languageCode = languageCode;
 
         // Get the latest Vehicle
-        VehicleBase vehicle = null;
+        VehicleEntryModel vehicle = null;
 
         var vehicles = companyDataAggregate
             .VehicleEntries
-            .Select(x => (VehicleBase)x)
-            .Concat(companyDataAggregate.VehicleServiceActivations.Select(x => (VehicleBase)x))
+            //.Select(x => (VehicleEntryModel)x)
+            //.Concat(companyDataAggregate.VehicleServiceActivations.Select(x => (VehicleEntryModel)x))
             .ToList();
 
         if (vehicles?.Count() > 0)
@@ -95,8 +95,7 @@ public class VehicleLookupService
         // Set IsAuthorized
         data.IsAuthorized = companyDataAggregate.InitialOfficialVINs?.Count() > 0 || 
             companyDataAggregate.VehicleEntries?.Count() > 0 || 
-            companyDataAggregate.SSCAffectedVINs.Count() > 0 ||
-            companyDataAggregate.VehicleServiceActivations.Count() > 0;
+            companyDataAggregate.SSCAffectedVINs.Count() > 0;
 
         // Set NextServiceDate
         data.NextServiceDate = companyDataAggregate.Invoices?.OrderByDescending(x => x.InvoiceDate).FirstOrDefault()?.NextServiceDate;
@@ -122,6 +121,11 @@ public class VehicleLookupService
             if (data.SaleInformation?.Broker is null)
             {
                 warrantyStartDate = data.SaleInformation?.WarrantyActivationDate;
+
+                var serviceActivation = companyDataAggregate.VehicleServiceActivations.FirstOrDefault();
+
+                if (serviceActivation is not null)
+                    warrantyStartDate = serviceActivation.WarrantyActivationDate;
 
                 if (warrantyStartDate is null && warrantyStartDateDefaultsToInvoiceDate)
                     warrantyStartDate = data.SaleInformation?.InvoiceDate;
@@ -350,7 +354,7 @@ public class VehicleLookupService
         return serviceHistory;
     }
 
-    private async Task<VehicleSpecificationDTO> GetSpecificationAsync(VehicleBase vehicle)
+    private async Task<VehicleSpecificationDTO> GetSpecificationAsync(VehicleEntryModel vehicle)
     {
         VehicleSpecificationDTO result = new();
 
@@ -416,7 +420,7 @@ public class VehicleLookupService
         return result;
     }
 
-    private VehicleIdentifiersDTO GetIdentifiers(VehicleBase vehicle, string vin)
+    private VehicleIdentifiersDTO GetIdentifiers(VehicleEntryModel vehicle, string vin)
     {
         return new VehicleIdentifiersDTO
         {
@@ -430,7 +434,7 @@ public class VehicleLookupService
         };
     }
 
-    private async Task<VehicleSaleInformation> GetSaleInformationAsync(List<VehicleBase> vehicles)
+    private async Task<VehicleSaleInformation> GetSaleInformationAsync(List<VehicleEntryModel> vehicles)
     {
         VehicleSaleInformation result = new();
 
@@ -663,7 +667,7 @@ public class VehicleLookupService
 
     private async Task<IEnumerable<VehicleServiceItemDTO>> GetServiceItems(
         DateTime? freeServiceStartDate,
-        VehicleBase vehicle,
+        VehicleEntryModel vehicle,
         VehicleSaleInformation vehicleSaleInformation,
         IEnumerable<PaidServiceInvoiceModel> paidServices,
         IEnumerable<ServiceItemClaimLineModel> tlpTransactionLines,
