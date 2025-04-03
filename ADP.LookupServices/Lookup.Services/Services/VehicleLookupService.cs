@@ -106,10 +106,6 @@ public class VehicleLookupService
         // Set SSC
         data.SSC = await GetSSCAsync(companyDataAggregate.SSCAffectedVINs, companyDataAggregate.WarrantyClaims, companyDataAggregate.LaborLines, regionIntegrationId);
 
-        var includeInactivatedFreeServiceItems = false;
-        var perVehicleEligibilitySupport = false;
-        var warrantyStartDateDefaultsToInvoiceDate = true;
-
         DateTime? warrantyStartDate = null;
         DateTime? freeServiceStartDate = null;
 
@@ -128,7 +124,7 @@ public class VehicleLookupService
                 if (serviceActivation is not null)
                     warrantyStartDate = serviceActivation.WarrantyActivationDate;
 
-                if (warrantyStartDate is null && warrantyStartDateDefaultsToInvoiceDate)
+                if (warrantyStartDate is null && options.WarrantyStartDateDefaultsToInvoiceDate)
                     warrantyStartDate = data.SaleInformation?.InvoiceDate;
 
                 freeServiceStartDate = warrantyStartDate;
@@ -161,9 +157,7 @@ public class VehicleLookupService
             vehicle, 
             data.SaleInformation,
             companyDataAggregate.PaidServiceInvoices, 
-            companyDataAggregate.ServiceItemClaimLines,
-            includeInactivatedFreeServiceItems,
-            perVehicleEligibilitySupport
+            companyDataAggregate.ServiceItemClaimLines
         );
 
         // Set accessories
@@ -672,9 +666,7 @@ public class VehicleLookupService
         VehicleEntryModel vehicle,
         VehicleSaleInformation vehicleSaleInformation,
         IEnumerable<PaidServiceInvoiceModel> paidServices,
-        IEnumerable<ServiceItemClaimLineModel> tlpTransactionLines,
-        bool includeInactivated,
-        bool perVehicleEligibilitySupport
+        IEnumerable<ServiceItemClaimLineModel> tlpTransactionLines
     )
     {
         var result = new List<VehicleServiceItemDTO>();
@@ -690,7 +682,7 @@ public class VehicleLookupService
         var showingInactivatedItems = false;
 
         //Allow showing free service items as 'Activation Required'
-        if (includeInactivated && freeServiceStartDate is null)
+        if (options.IncludeInactivatedFreeServiceItems && freeServiceStartDate is null)
         {
             freeServiceStartDate = DateTime.Now.Date;
             showingInactivatedItems = true;
@@ -708,9 +700,9 @@ public class VehicleLookupService
                 .Where(x => freeServiceStartDate >= x.StartDate && freeServiceStartDate <= x.ExpireDate)
 
                 .Where(x =>
-                    (!perVehicleEligibilitySupport && (x.ModelCosts?.Count() ?? 0) == 0)
+                    (!options.PerVehicleEligibilitySupport && (x.ModelCosts?.Count() ?? 0) == 0)
                     ||
-                    (perVehicleEligibilitySupport && vehicle.EligibleServiceItemUniqueReferences is not null && vehicle.EligibleServiceItemUniqueReferences.Contains(x.UniqueReference, StringComparer.InvariantCultureIgnoreCase))
+                    (options.PerVehicleEligibilitySupport && vehicle.EligibleServiceItemUniqueReferences is not null && vehicle.EligibleServiceItemUniqueReferences.Contains(x.UniqueReference, StringComparer.InvariantCultureIgnoreCase))
                     ||
                     (
                         x.ModelCosts?.Any(a =>

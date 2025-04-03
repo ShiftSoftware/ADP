@@ -21,6 +21,9 @@ public class LookupOptions
     public Func<LookupOptionResolverModel<string>, ValueTask<string?>>? CompanyLogoResolver { get; set; }
     public Func<LookupOptionResolverModel<PartLookupPriceResoulverModel>, ValueTask<(decimal? distributorPurchasePrice, IEnumerable<PartPriceDTO> prices)>>? PartLookupPriceResolver { get; set; }
     public Func<LookupOptionResolverModel<IEnumerable<StockPartDTO>>, ValueTask<IEnumerable<StockPartDTO>>>? PartLookupStocksResolver { get; set; }
+    public bool IncludeInactivatedFreeServiceItems { get; set; }
+    public bool PerVehicleEligibilitySupport { get; set; }
+    public bool WarrantyStartDateDefaultsToInvoiceDate { get; set; } = true;
 }
 
 public class PartLocationNameResolverModel
