@@ -702,7 +702,7 @@ public class VehicleLookupService
                 .Where(x =>
                     (!options.PerVehicleEligibilitySupport && (x.ModelCosts?.Count() ?? 0) == 0)
                     ||
-                    (options.PerVehicleEligibilitySupport && vehicle.EligibleServiceItemUniqueReferences is not null && vehicle.EligibleServiceItemUniqueReferences.Contains(x.UniqueReference, StringComparer.InvariantCultureIgnoreCase))
+                    (options.PerVehicleEligibilitySupport && vehicle.EligibleServiceItemUniqueReferences is not null && vehicle.EligibleServiceItemUniqueReferences.Select(x => x?.Trim()).Contains(x.UniqueReference?.Trim(), StringComparer.InvariantCultureIgnoreCase))
                     ||
                     (
                         x.ModelCosts?.Any(a =>
