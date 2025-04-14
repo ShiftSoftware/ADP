@@ -16,7 +16,7 @@ public class ServiceItemModel
     public Dictionary<string, string> PrintoutTitle { get; set; }
     public Dictionary<string, string> PrintoutDescription { get; set; }
     public IEnumerable<Brands> Brands { get; set; }
-    public IEnumerable<string> BrandDs { get; set; }
+    public IEnumerable<string> BrandIDs { get; set; }
     public IEnumerable<string> CountryIDs { get; set; }
     public IEnumerable<string> CompanyIDs { get; set; }
     public int ActiveFor { get; set; }
@@ -26,4 +26,11 @@ public class ServiceItemModel
     public string UniqueReference { get; set; }
     public decimal? FixedCost { get; set; }
     public IEnumerable<ServiceItemCostModel> ModelCosts { get; set; }
+
+    public long? CampaignID { get; set; }
+    public Dictionary<string, string> CampaignName { get; set; }
+    public string CampaignUniqueReference { get; set; }
+
+    public ClaimableItemCampaignActivationTrigger CampaignActivationTrigger { get; set; }
+    public ClaimableItemCampaignActivationTypes CampaignActivationType { get; set; }
 }
