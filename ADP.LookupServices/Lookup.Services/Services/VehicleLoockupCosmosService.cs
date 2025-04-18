@@ -96,6 +96,11 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
     {
         var companyData = new CompanyDataAggregateCosmosModel();
 
+        companyData.VehicleInspections = items.Where(x => x.ItemType.ToString() == ModelTypes.VehicleInspection)
+            .Select(x => ((JObject)x).ToObject<VehicleInspectionModel>())
+            .Where(x => !(x?.IsDeleted ?? false))
+            .ToList();
+
         companyData.VehicleServiceActivations = items.Where(x => x.ItemType.ToString() == ModelTypes.VehicleServiceActivation)
             .Select(x => ((JObject)x).ToObject<VehicleServiceActivation>())
             .Where(x => !(x?.IsDeleted ?? false))
@@ -329,7 +334,7 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
 
 
         var container = client.GetContainer(
-            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.Services,
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.ServiceItems
         );
 

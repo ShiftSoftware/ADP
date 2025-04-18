@@ -157,7 +157,8 @@ public class VehicleLookupService
             vehicle, 
             data.SaleInformation,
             companyDataAggregate.PaidServiceInvoices, 
-            companyDataAggregate.ServiceItemClaimLines
+            companyDataAggregate.ServiceItemClaimLines,
+            companyDataAggregate.VehicleInspections
         );
 
         // Set accessories
@@ -666,7 +667,8 @@ public class VehicleLookupService
         VehicleEntryModel vehicle,
         VehicleSaleInformation vehicleSaleInformation,
         IEnumerable<PaidServiceInvoiceModel> paidServices,
-        IEnumerable<ServiceItemClaimLineModel> tlpTransactionLines
+        IEnumerable<ServiceItemClaimLineModel> tlpTransactionLines,
+        IEnumerable<VehicleInspectionModel> vehicleInspections
     )
     {
         var result = new List<VehicleServiceItemDTO>();
@@ -777,6 +779,30 @@ public class VehicleLookupService
                 }
             }
         }
+
+        //if (vehicleInspections?.Count() > 0)
+        //{
+        //    foreach (var inspection in vehicleInspections)
+        //    {
+        //        var itemResult = new VehicleServiceItemDTO
+        //        {
+        //            ServiceItemID = long.Parse(inspection.id),
+        //            ActivatedAt = inspection.InspectionDate.DateTime,
+        //            CampaignCode = null,
+        //            Description = "Test", //Utility.GetLocalizedText(item.ServiceItem?.PrintoutDescription, languageCode),
+        //            //Image = await GetFirstImageFullUrl(item.ServiceItem?.Photo),
+        //            Name = "Test", //Utility.GetLocalizedText(item.ServiceItem?.Name, languageCode),
+        //            Title = "Test", //Utility.GetLocalizedText(item.ServiceItem?.PrintoutTitle, languageCode),
+        //            ExpiresAt = inspection.InspectionDate.Date.AddMonths(6),
+        //            Type = "paid",
+        //            MaximumMileage = 1000, //item.ServiceItem?.MaximumMileage,
+        //            TypeEnum = VehcileServiceItemTypes.Paid,
+        //            //PackageCode = item.MenuCode,
+        //        };
+
+        //        result.Add(itemResult);
+        //    }
+        //}
 
         CalculateRollingExpireDateForFreeServiceItems(result, freeServiceStartDate);
         await CalulateServiceItemStatus(result, showingInactivatedItems);

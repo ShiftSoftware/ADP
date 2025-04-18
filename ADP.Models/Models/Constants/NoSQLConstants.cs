@@ -21,6 +21,7 @@ public class NoSQLConstants
         public const string Vehicles = "Vehicles";
         public const string Parts = "Parts";
         //public const string Stock = "Stock";
+        public const string ClaimableItemCampaigns = "ClaimableItemCampaigns";
         public const string ServiceItems = "ServiceItems";
         public const string ExteriorColors = "ExteriorColors";
         public const string InteriorColors = "InteriorColors";

@@ -148,11 +148,6 @@ public class Utility
         ));
 
         await companyDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
-            Models.Constants.NoSQLConstants.Containers.ServiceItems,
-            "/id"
-        ));
-
-        await companyDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
             Models.Constants.NoSQLConstants.Containers.ExteriorColors,
             [Models.Constants.NoSQLConstants.PartitionKeys.ExteriorColors.Level1, Models.Constants.NoSQLConstants.PartitionKeys.ExteriorColors.Level2]
         ));
@@ -185,6 +180,16 @@ public class Utility
         await serviceDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
             Models.Constants.NoSQLConstants.Containers.FlatRate,
             [Models.Constants.NoSQLConstants.PartitionKeys.FlatRate.Level1, Models.Constants.NoSQLConstants.PartitionKeys.FlatRate.Level2]
+        ));
+
+        await serviceDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
+            Models.Constants.NoSQLConstants.Containers.ServiceItems,
+            "/id"
+        ));
+
+        await serviceDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
+            Models.Constants.NoSQLConstants.Containers.ClaimableItemCampaigns,
+            "/id"
         ));
     }
 }
