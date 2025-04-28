@@ -15,8 +15,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lookup.Services", "ADP.Look
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lookup.Services.Functions", "ADP.LookupServices\Lookup.Services.Functions\Lookup.Services.Functions.csproj", "{48A39C57-62E3-4400-916E-AABD982AEAC0}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lookup.Services.Tests", "ADP.LookupServices\Lookup.Services.Tests\Lookup.Services.Tests.csproj", "{2FA4AF43-806F-417B-AC53-B5F43AC1AD1C}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Global", "Global", "{9083B6BE-10E3-43B6-80C5-ACB23642CBFD}"
 	ProjectSection(SolutionItems) = preProject
 		azure-pipeline.yml = azure-pipeline.yml
@@ -26,6 +24,8 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ADP.SyncAgent", "ADP.SyncAgent", "{974D7F12-F417-42E0-A9EB-1A5FA6EB8B23}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ADP.SyncAgent", "ADP.SyncAgent\SyncAgent\ADP.SyncAgent.csproj", "{364D51D6-6BB6-4C01-9B25-90EC01B829A8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lookup.Services.Features", "Lookup.Services.Features\Lookup.Services.Features.csproj", "{3D53AFFF-846C-4E8D-9724-E327D9F00310}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -49,14 +49,14 @@ Global
 		{48A39C57-62E3-4400-916E-AABD982AEAC0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{48A39C57-62E3-4400-916E-AABD982AEAC0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{48A39C57-62E3-4400-916E-AABD982AEAC0}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2FA4AF43-806F-417B-AC53-B5F43AC1AD1C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2FA4AF43-806F-417B-AC53-B5F43AC1AD1C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2FA4AF43-806F-417B-AC53-B5F43AC1AD1C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2FA4AF43-806F-417B-AC53-B5F43AC1AD1C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{364D51D6-6BB6-4C01-9B25-90EC01B829A8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{364D51D6-6BB6-4C01-9B25-90EC01B829A8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{364D51D6-6BB6-4C01-9B25-90EC01B829A8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{364D51D6-6BB6-4C01-9B25-90EC01B829A8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3D53AFFF-846C-4E8D-9724-E327D9F00310}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3D53AFFF-846C-4E8D-9724-E327D9F00310}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3D53AFFF-846C-4E8D-9724-E327D9F00310}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3D53AFFF-846C-4E8D-9724-E327D9F00310}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -66,8 +66,8 @@ Global
 		{96576108-05EF-4E0B-888F-EE122D4241E8} = {3E72BBF7-55F3-4C3D-82D1-8D5DD0024D68}
 		{CEA69284-48E7-41FE-A233-C36674AF1B25} = {89ABB351-4D81-4724-864A-F6B5D9311565}
 		{48A39C57-62E3-4400-916E-AABD982AEAC0} = {89ABB351-4D81-4724-864A-F6B5D9311565}
-		{2FA4AF43-806F-417B-AC53-B5F43AC1AD1C} = {89ABB351-4D81-4724-864A-F6B5D9311565}
 		{364D51D6-6BB6-4C01-9B25-90EC01B829A8} = {974D7F12-F417-42E0-A9EB-1A5FA6EB8B23}
+		{3D53AFFF-846C-4E8D-9724-E327D9F00310} = {89ABB351-4D81-4724-864A-F6B5D9311565}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {9C2AF932-542F-4C6B-B4FA-33D955041860}
