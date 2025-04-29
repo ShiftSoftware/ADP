@@ -46,4 +46,11 @@ public class VehicleServiceItemDTO
     public bool SkipZeroTrust { get; set; }
     public int ActiveFor { get; set; }
     public DurationType? ActiveForInterval { get; set; } = default!;
+    public ClaimableItemCampaignActivationTrigger CampaignActivationTrigger { get; set; }
+    public ClaimableItemCampaignActivationTypes CampaignActivationType { get; set; }
+
+    public VehicleServiceItemDTO Clone()
+    {
+        return (VehicleServiceItemDTO) this.MemberwiseClone();
+    }
 }
