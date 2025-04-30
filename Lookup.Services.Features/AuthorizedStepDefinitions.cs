@@ -75,7 +75,15 @@ public class AuthorizedStepDefinitions
         this._testOutputHelper.WriteLine("");
 
         this._testOutputHelper.WriteLine("VIN is: " + _vin);
-        this._testOutputHelper.WriteLine("Data is: " + JsonSerializer.Serialize(_companyDataAggregate, new JsonSerializerOptions { WriteIndented = true }));
+        this._testOutputHelper.WriteLine("Data is: " + JsonSerializer.Serialize(
+            new
+            {
+                Initial = _companyDataAggregate.InitialOfficialVINs.Count(),
+                Vehicles = _companyDataAggregate.VehicleEntries.Count(),
+                SSC = _companyDataAggregate.SSCAffectedVINs.Count(),
+            },
+            new JsonSerializerOptions { WriteIndented = true })
+        );
 
         Assert.True(authorizedResult);
     }
