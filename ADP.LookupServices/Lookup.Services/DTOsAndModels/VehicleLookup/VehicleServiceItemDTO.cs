@@ -11,6 +11,8 @@ namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 
 public class VehicleServiceItemDTO
 {
+    private const string ActivationAndExpiryDateFormat = "yyyy-MM-dd";
+
     [JsonConverter(typeof(LocalizedTextJsonConverter))]
     public string Name { get; set; }
 
@@ -25,10 +27,10 @@ public class VehicleServiceItemDTO
     public string Type { get; set; }
     public VehcileServiceItemTypes TypeEnum { get; set; } = default!;
 
-    [JsonCustomDateTime("yyyy-MM-dd")]
+    [JsonCustomDateTime(ActivationAndExpiryDateFormat)]
     public DateTime ActivatedAt { get; set; }
 
-    [JsonCustomDateTime("yyyy-MM-dd")]
+    [JsonCustomDateTime(ActivationAndExpiryDateFormat)]
     public DateTime? ExpiresAt { get; set; }
     public string Status { get; set; }
     public VehcileServiceItemStatuses StatusEnum { get; set; } = default!;
@@ -50,6 +52,8 @@ public class VehicleServiceItemDTO
     public DurationType? ActiveForInterval { get; set; } = default!;
     public ClaimableItemCampaignActivationTrigger CampaignActivationTrigger { get; set; }
     public ClaimableItemCampaignActivationTypes CampaignActivationType { get; set; }
+
+    public string VehicleInspectionID { get; set; }
     public string Signature { get; set; }
 
     public string GenerateSignature(string vin, string secretKey)
@@ -58,13 +62,14 @@ public class VehicleServiceItemDTO
             ",",
             vin.ToUpper(),
             (int) this.TypeEnum,
-            this.ActivatedAt.ToString("O"),
-            this.ExpiresAt?.ToString("O") ?? string.Empty,
+            this.ActivatedAt.ToString(ActivationAndExpiryDateFormat),
+            this.ExpiresAt?.ToString(ActivationAndExpiryDateFormat) ?? string.Empty,
             (int) this.StatusEnum,
             this.ModelCostID,
             this.ServiceItemID,
             this.PaidServiceInvoiceLineID,
-            this.SkipZeroTrust
+            this.SkipZeroTrust,
+            this.VehicleInspectionID
         );
 
         var keyBytes = Encoding.UTF8.GetBytes(secretKey);

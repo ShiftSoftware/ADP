@@ -1043,6 +1043,7 @@ public class VehicleLookupService
 
                     cloned.ActivatedAt = vehicleInspection.InspectionDate.DateTime;
                     cloned.ExpiresAt = AddInterval(cloned.ActivatedAt, item.ActiveFor, cloned.ActiveForInterval);
+                    cloned.VehicleInspectionID = vehicleInspection.id;
 
                     newList.Add(cloned);
                 }
