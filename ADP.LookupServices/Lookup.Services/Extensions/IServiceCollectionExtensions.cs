@@ -22,6 +22,7 @@ public static class IServiceCollectionExtensions
         services.AddScoped(x => new PartLookupCosmosService(x.GetRequiredService<T>()));
         //services.AddScoped(x => new TBPCosmosService(x.GetRequiredService<T>()));
         services.AddScoped(x => new ServiceCosmosService(x.GetRequiredService<T>()));
+        services.AddScoped<IVehicleAuthorizationEvaluator, VehicleAuthorizationEvaluator>();
 
         return services;
     }

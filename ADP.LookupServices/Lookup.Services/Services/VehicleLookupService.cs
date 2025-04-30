@@ -23,7 +23,8 @@ public class VehicleLookupService
     readonly LookupOptions options;
     readonly IIdentityCosmosService identityCosmosService;
     private readonly IServiceProvider services;
-    private readonly ILogCosmosService? logCosmosService;
+    private readonly ILogCosmosService logCosmosService;
+    private readonly IVehicleAuthorizationEvaluator vehicleAuthorizationEvaluator;
     CompanyDataAggregateCosmosModel companyDataAggregate = new CompanyDataAggregateCosmosModel();
 
 
@@ -33,15 +34,17 @@ public class VehicleLookupService
     public VehicleLookupService(
         IVehicleLoockupCosmosService lookupService,
         IIdentityCosmosService identityCosmosService,
-        IServiceProvider? services = null,
-        ILogCosmosService? logCosmosService = null,
-        LookupOptions options = null)
+        IServiceProvider services = null,
+        ILogCosmosService logCosmosService = null,
+        LookupOptions options = null,
+        IVehicleAuthorizationEvaluator vehicleAuthorizationEvaluator = null)
     {
         lookupCosmosService = lookupService;
         this.options = options;
         this.identityCosmosService = identityCosmosService;
         this.services = services;
         this.logCosmosService = logCosmosService;
+        this.vehicleAuthorizationEvaluator = vehicleAuthorizationEvaluator;
     }
 
     public async Task<VehicleLookupDTO> LookupAsync(
@@ -92,10 +95,7 @@ public class VehicleLookupService
             data.VehicleSpecification = await GetSpecificationAsync(vehicle);
         }
 
-        // Set IsAuthorized
-        data.IsAuthorized = companyDataAggregate.InitialOfficialVINs?.Count() > 0 ||
-            companyDataAggregate.VehicleEntries?.Count() > 0 ||
-            companyDataAggregate.SSCAffectedVINs.Count() > 0;
+        data.IsAuthorized = this.vehicleAuthorizationEvaluator.Evaluate(vin, companyDataAggregate);
 
         // Set NextServiceDate
         data.NextServiceDate = companyDataAggregate.Invoices?.OrderByDescending(x => x.InvoiceDate).FirstOrDefault()?.NextServiceDate;
