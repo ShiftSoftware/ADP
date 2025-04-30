@@ -13,7 +13,7 @@ public class AuthorizedStepDefinitions
 {
     private string _vin = string.Empty;
     private readonly CompanyDataAggregateCosmosModel _companyDataAggregate;
-    
+
     private readonly ScenarioContext _scenarioContext;
     private readonly ITestOutputHelper _testOutputHelper;
 
@@ -36,7 +36,7 @@ public class AuthorizedStepDefinitions
     }
 
 
-    [Given("the following vehicles in their dealer stock \\(coming from their DMS):")]
+    [Given("a dealer with the following vehicles in their dealer stock \\(coming from their DMS):")]
     public void GivenTheFollowingVehiclesInDealerStock(DataTable dataTable)
     {
         var vins = dataTable.Rows.Select(x => x.Values.ElementAtOrDefault(0));
@@ -45,7 +45,7 @@ public class AuthorizedStepDefinitions
     }
 
 
-    [Given("the following vehicles in official SSC Vehciles \\(Provided by the vehicle manufacturer):")]
+    [Given("a dealer with the following vehicles in official SSC Vehciles \\(Provided by the vehicle manufacturer):")]
     public void GivenTheFollowingVehiclesInSsc(DataTable dataTable)
     {
         var vins = dataTable.Rows.Select(x => x.Values.ElementAtOrDefault(0));
@@ -75,7 +75,16 @@ public class AuthorizedStepDefinitions
         this._testOutputHelper.WriteLine("");
 
         this._testOutputHelper.WriteLine("VIN is: " + _vin);
-        this._testOutputHelper.WriteLine("Data is: " + JsonSerializer.Serialize(_companyDataAggregate, new JsonSerializerOptions { WriteIndented = true }));
+        this._testOutputHelper.WriteLine("Data is: " +
+            JsonSerializer.Serialize(
+                new
+                {
+                    InitialOfficialVINs = _companyDataAggregate.InitialOfficialVINs.Count,
+                    VehicleEntries = _companyDataAggregate.VehicleEntries.Count,
+                    SSCAffectedVINs = _companyDataAggregate.SSCAffectedVINs.Count,
+                },
+                new JsonSerializerOptions { WriteIndented = true }
+        ));
 
         Assert.True(authorizedResult);
     }

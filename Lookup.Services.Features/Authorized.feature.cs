@@ -84,38 +84,6 @@ namespace Lookup.Services.Features
             await testRunner.CollectScenarioErrorsAsync();
         }
         
-        public virtual async System.Threading.Tasks.Task FeatureBackgroundAsync()
-        {
-#line 6
-#line hidden
-            global::Reqnroll.Table table1 = new global::Reqnroll.Table(new string[] {
-                        "VIN"});
-            table1.AddRow(new string[] {
-                        "1FMZU72E12UB00984"});
-            table1.AddRow(new string[] {
-                        "1FMCU0F73AKB12345"});
-#line 7
- await testRunner.GivenAsync("a dealer with the following vehicles as initial stock:", ((string)(null)), table1, "Given ");
-#line hidden
-            global::Reqnroll.Table table2 = new global::Reqnroll.Table(new string[] {
-                        "VIN"});
-            table2.AddRow(new string[] {
-                        "1FDKF37GXVEB34368"});
-            table2.AddRow(new string[] {
-                        "1FTFW1EFXEKD12345"});
-#line 12
- await testRunner.AndAsync("the following vehicles in their dealer stock (coming from their DMS):", ((string)(null)), table2, "And ");
-#line hidden
-            global::Reqnroll.Table table3 = new global::Reqnroll.Table(new string[] {
-                        "VIN"});
-            table3.AddRow(new string[] {
-                        "1G1ZC5E17BF283048"});
-#line 17
- await testRunner.AndAsync("the following vehicles in official SSC Vehciles (Provided by the vehicle manufact" +
-                    "urer):", ((string)(null)), table3, "And ");
-#line hidden
-        }
-        
         async System.Threading.Tasks.Task Xunit.IAsyncLifetime.InitializeAsync()
         {
             await this.TestInitializeAsync();
@@ -134,7 +102,7 @@ namespace Lookup.Services.Features
             string[] tagsOfScenario = ((string[])(null));
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Authorized From Initial Stock", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 21
+#line 6
 this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -144,13 +112,19 @@ this.ScenarioInitialize(scenarioInfo);
             else
             {
                 await this.ScenarioStartAsync();
-#line 6
-await this.FeatureBackgroundAsync();
+                global::Reqnroll.Table table1 = new global::Reqnroll.Table(new string[] {
+                            "VIN"});
+                table1.AddRow(new string[] {
+                            "1FMZU72E12UB00984"});
+                table1.AddRow(new string[] {
+                            "1FMCU0F73AKB12345"});
+#line 7
+ await testRunner.GivenAsync("a dealer with the following vehicles as initial stock:", ((string)(null)), table1, "Given ");
 #line hidden
-#line 22
+#line 11
  await testRunner.WhenAsync("Checking \"1FMZU72E12UB00984\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 23
+#line 12
  await testRunner.ThenAsync("The Vehicle is considered Authroized", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
@@ -165,7 +139,7 @@ await this.FeatureBackgroundAsync();
             string[] tagsOfScenario = ((string[])(null));
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Authorized From Dealer Stock (Dealer DMS)", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 25
+#line 14
 this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -175,13 +149,20 @@ this.ScenarioInitialize(scenarioInfo);
             else
             {
                 await this.ScenarioStartAsync();
-#line 6
-await this.FeatureBackgroundAsync();
+                global::Reqnroll.Table table2 = new global::Reqnroll.Table(new string[] {
+                            "VIN"});
+                table2.AddRow(new string[] {
+                            "1FDKF37GXVEB34368"});
+                table2.AddRow(new string[] {
+                            "1FTFW1EFXEKD12345"});
+#line 15
+ await testRunner.GivenAsync("a dealer with the following vehicles in their dealer stock (coming from their DMS" +
+                        "):", ((string)(null)), table2, "Given ");
 #line hidden
-#line 26
+#line 19
  await testRunner.WhenAsync("Checking \"1FDKF37GXVEB34368\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 27
+#line 20
  await testRunner.ThenAsync("The Vehicle is considered Authroized", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
@@ -196,7 +177,7 @@ await this.FeatureBackgroundAsync();
             string[] tagsOfScenario = ((string[])(null));
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Authorized From SSC", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 29
+#line 22
 this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -206,13 +187,18 @@ this.ScenarioInitialize(scenarioInfo);
             else
             {
                 await this.ScenarioStartAsync();
-#line 6
-await this.FeatureBackgroundAsync();
+                global::Reqnroll.Table table3 = new global::Reqnroll.Table(new string[] {
+                            "VIN"});
+                table3.AddRow(new string[] {
+                            "1G1ZC5E17BF283048"});
+#line 23
+ await testRunner.GivenAsync("a dealer with the following vehicles in official SSC Vehciles (Provided by the ve" +
+                        "hicle manufacturer):", ((string)(null)), table3, "Given ");
 #line hidden
-#line 30
+#line 26
  await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 31
+#line 27
  await testRunner.ThenAsync("The Vehicle is considered Authroized", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
@@ -227,7 +213,7 @@ await this.FeatureBackgroundAsync();
             string[] tagsOfScenario = ((string[])(null));
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Unauthorized", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 34
+#line 30
 this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -237,31 +223,28 @@ this.ScenarioInitialize(scenarioInfo);
             else
             {
                 await this.ScenarioStartAsync();
-#line 6
-await this.FeatureBackgroundAsync();
+#line 31
+ await testRunner.WhenAsync("Checking \"WMWZB3C55BWM46667\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 32
+ await testRunner.ThenAsync("The Vehicle is considered Unauthroized", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 33
+ await testRunner.WhenAsync("Checking \"1FMYU60EXYUA30399\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 34
+ await testRunner.ThenAsync("The Vehicle is considered Unauthroized", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 35
- await testRunner.WhenAsync("Checking \"WMWZB3C55BWM46667\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+ await testRunner.WhenAsync("Checking \"5GAKRBKD5EJ376173\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 36
  await testRunner.ThenAsync("The Vehicle is considered Unauthroized", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 37
- await testRunner.WhenAsync("Checking \"1FMYU60EXYUA30399\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
-#line hidden
-#line 38
- await testRunner.ThenAsync("The Vehicle is considered Unauthroized", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
-#line hidden
-#line 39
- await testRunner.WhenAsync("Checking \"5GAKRBKD5EJ376173\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
-#line hidden
-#line 40
- await testRunner.ThenAsync("The Vehicle is considered Unauthroized", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
-#line hidden
-#line 41
  await testRunner.WhenAsync("Checking \"3VWCD21Y33M352232\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 42
+#line 38
  await testRunner.ThenAsync("The Vehicle is considered Unauthroized", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
