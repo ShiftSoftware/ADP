@@ -24,6 +24,7 @@ public class LookupOptions
     public bool IncludeInactivatedFreeServiceItems { get; set; }
     public bool PerVehicleEligibilitySupport { get; set; }
     public bool WarrantyStartDateDefaultsToInvoiceDate { get; set; } = true;
+    public string SigningSecreteKey { get; set; }
 }
 
 public class PartLocationNameResolverModel

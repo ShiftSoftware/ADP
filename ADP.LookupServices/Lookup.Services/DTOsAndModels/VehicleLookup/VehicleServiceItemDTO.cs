@@ -3,6 +3,8 @@ using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ADP.Models.JsonConverters;
 using ShiftSoftware.ShiftEntity.Model;
 using System;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json.Serialization;
 
 namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
@@ -48,6 +50,40 @@ public class VehicleServiceItemDTO
     public DurationType? ActiveForInterval { get; set; } = default!;
     public ClaimableItemCampaignActivationTrigger CampaignActivationTrigger { get; set; }
     public ClaimableItemCampaignActivationTypes CampaignActivationType { get; set; }
+    public string Signature { get; set; }
+
+    public string GenerateSignature(string vin, string secretKey)
+    {
+        string stringToSign = string.Join(
+            ",",
+            vin.ToUpper(),
+            (int) this.TypeEnum,
+            this.ActivatedAt.ToString("O"),
+            this.ExpiresAt?.ToString("O") ?? string.Empty,
+            (int) this.StatusEnum,
+            this.ModelCostID,
+            this.ServiceItemID,
+            this.PaidServiceInvoiceLineID,
+            this.SkipZeroTrust
+        );
+
+        var keyBytes = Encoding.UTF8.GetBytes(secretKey);
+
+        var messageBytes = Encoding.UTF8.GetBytes(stringToSign);
+
+        using var hmac = new HMACSHA256(keyBytes);
+
+        var hash = hmac.ComputeHash(messageBytes);
+
+        return Convert.ToBase64String(hash);
+    }
+
+    public bool ValidateSignature(string vin, string secretKey)
+    {
+        var generatedSignature = GenerateSignature(vin, secretKey);
+
+        return generatedSignature == this.Signature;
+    }
 
     public VehicleServiceItemDTO Clone()
     {

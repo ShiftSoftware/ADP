@@ -798,32 +798,6 @@ public class VehicleLookupService
             }
         }
 
-        //if (vehicleInspections?.Count() > 0)
-        //{
-        //    foreach (var inspectionGroup in vehicleInspections.GroupBy(x => x.VehicleInspectionTypeID))
-        //    {
-        //        inspectionGroup.First()
-
-        //        var itemResult = new VehicleServiceItemDTO
-        //        {
-        //            ServiceItemID = long.Parse(inspectionGroup.id),
-        //            ActivatedAt = inspectionGroup.InspectionDate.DateTime,
-        //            CampaignCode = null,
-        //            Description = "Test", //Utility.GetLocalizedText(item.ServiceItem?.PrintoutDescription, languageCode),
-        //            //Image = await GetFirstImageFullUrl(item.ServiceItem?.Photo),
-        //            Name = "Test", //Utility.GetLocalizedText(item.ServiceItem?.Name, languageCode),
-        //            Title = "Test", //Utility.GetLocalizedText(item.ServiceItem?.PrintoutTitle, languageCode),
-        //            ExpiresAt = inspectionGroup.InspectionDate.Date.AddMonths(6),
-        //            Type = "paid",
-        //            MaximumMileage = 1000, //item.ServiceItem?.MaximumMileage,
-        //            TypeEnum = VehcileServiceItemTypes.Paid,
-        //            //PackageCode = item.MenuCode,
-        //        };
-
-        //        result.Add(itemResult);
-        //    }
-        //}
-
         CalculateRollingExpireDateForWarrantyActivatedFreeServiceItems(
             result.Where(x => x.TypeEnum == VehcileServiceItemTypes.Free && x.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.WarrantyActivation),
             freeServiceStartDate
@@ -859,6 +833,11 @@ public class VehicleLookupService
             .ThenBy(x => x.ExpiresAt)
             .ThenBy(x => x.StatusEnum)
             .ToList();
+
+        foreach (var item in result)
+        {
+            item.Signature = item.GenerateSignature(vehicle.VIN, this.options.SigningSecreteKey);
+        }
 
         return result;
     }
