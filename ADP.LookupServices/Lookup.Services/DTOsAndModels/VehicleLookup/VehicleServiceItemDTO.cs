@@ -3,12 +3,16 @@ using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ADP.Models.JsonConverters;
 using ShiftSoftware.ShiftEntity.Model;
 using System;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json.Serialization;
 
 namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 
 public class VehicleServiceItemDTO
 {
+    private const string ActivationAndExpiryDateFormat = "yyyy-MM-dd";
+
     [JsonConverter(typeof(LocalizedTextJsonConverter))]
     public string Name { get; set; }
 
@@ -23,10 +27,10 @@ public class VehicleServiceItemDTO
     public string Type { get; set; }
     public VehcileServiceItemTypes TypeEnum { get; set; } = default!;
 
-    [JsonCustomDateTime("yyyy-MM-dd")]
+    [JsonCustomDateTime(ActivationAndExpiryDateFormat)]
     public DateTime ActivatedAt { get; set; }
 
-    [JsonCustomDateTime("yyyy-MM-dd")]
+    [JsonCustomDateTime(ActivationAndExpiryDateFormat)]
     public DateTime? ExpiresAt { get; set; }
     public string Status { get; set; }
     public VehcileServiceItemStatuses StatusEnum { get; set; } = default!;
@@ -46,4 +50,48 @@ public class VehicleServiceItemDTO
     public bool SkipZeroTrust { get; set; }
     public int ActiveFor { get; set; }
     public DurationType? ActiveForInterval { get; set; } = default!;
+    public ClaimableItemCampaignActivationTrigger CampaignActivationTrigger { get; set; }
+    public ClaimableItemCampaignActivationTypes CampaignActivationType { get; set; }
+
+    public string VehicleInspectionID { get; set; }
+    public string Signature { get; set; }
+
+    public string GenerateSignature(string vin, string secretKey)
+    {
+        string stringToSign = string.Join(
+            ",",
+            vin.ToUpper(),
+            (int) this.TypeEnum,
+            this.ActivatedAt.ToString(ActivationAndExpiryDateFormat),
+            this.ExpiresAt?.ToString(ActivationAndExpiryDateFormat) ?? string.Empty,
+            (int) this.StatusEnum,
+            this.ModelCostID,
+            this.ServiceItemID,
+            this.PaidServiceInvoiceLineID,
+            this.SkipZeroTrust,
+            this.VehicleInspectionID
+        );
+
+        var keyBytes = Encoding.UTF8.GetBytes(secretKey);
+
+        var messageBytes = Encoding.UTF8.GetBytes(stringToSign);
+
+        using var hmac = new HMACSHA256(keyBytes);
+
+        var hash = hmac.ComputeHash(messageBytes);
+
+        return Convert.ToBase64String(hash);
+    }
+
+    public bool ValidateSignature(string vin, string secretKey)
+    {
+        var generatedSignature = GenerateSignature(vin, secretKey);
+
+        return generatedSignature == this.Signature;
+    }
+
+    public VehicleServiceItemDTO Clone()
+    {
+        return (VehicleServiceItemDTO) this.MemberwiseClone();
+    }
 }
