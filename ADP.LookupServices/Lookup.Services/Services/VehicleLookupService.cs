@@ -153,6 +153,7 @@ public class VehicleLookupService
         }
 
         data.ServiceItems = await GetServiceItems(
+            vin,
             freeServiceStartDate, 
             vehicle, 
             data.SaleInformation,
@@ -663,6 +664,7 @@ public class VehicleLookupService
     }
 
     private async Task<IEnumerable<VehicleServiceItemDTO>> GetServiceItems(
+        string vin,
         DateTime? freeServiceStartDate,
         VehicleEntryModel vehicle,
         VehicleSaleInformation vehicleSaleInformation,
@@ -674,8 +676,8 @@ public class VehicleLookupService
         var result = new List<VehicleServiceItemDTO>();
         IEnumerable<ServiceItemModel> serviceItems = new List<ServiceItemModel>();
 
-        if (vehicle is not null)
-            serviceItems = await lookupCosmosService.GetServiceItemsAsync();
+        //if (vehicle is not null)
+        serviceItems = await lookupCosmosService.GetServiceItemsAsync();
 
         var shiftDay = companyDataAggregate.FreeServiceItemDateShifts?.FirstOrDefault(x => x.VIN == vehicle.VIN);
         if (shiftDay is not null)
@@ -696,28 +698,28 @@ public class VehicleLookupService
             var eligibleServiceItems = serviceItems.Where(x => !(x.IsDeleted));
 
             // Brand
-            eligibleServiceItems = eligibleServiceItems.Where(x => x.Brands.Any(a => a == vehicle.Brand));
+            eligibleServiceItems = eligibleServiceItems.Where(x => vehicle is null || x.Brands.Any(a => a == vehicle.Brand));
 
             // Company
-            eligibleServiceItems = eligibleServiceItems.Where(x => x.CompanyIDs is null || x.CompanyIDs.Count() == 0 || x.CompanyIDs.Any(a => a == vehicle?.CompanyID));
+            eligibleServiceItems = eligibleServiceItems.Where(x => x.CompanyIDs is null || x.CompanyIDs.Count() == 0 || vehicle is null || x.CompanyIDs.Any(a => a == vehicle?.CompanyID));
 
             // Country
-            eligibleServiceItems = eligibleServiceItems.Where(x => x.CountryIDs is null || x.CountryIDs.Count() == 0 || x.CountryIDs.Any(a => a == vehicleSaleInformation?.CountryID));
+            eligibleServiceItems = eligibleServiceItems.Where(x => x.CountryIDs is null || x.CountryIDs.Count() == 0 || vehicle is null || x.CountryIDs.Any(a => a == vehicleSaleInformation?.CountryID));
 
             // Expiry
             eligibleServiceItems = eligibleServiceItems.Where(x =>
-                x.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.WarrantyActivation ? freeServiceStartDate >= x.StartDate && freeServiceStartDate <= x.ExpireDate :
-                x.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.VehicleInspection ? vehicleInspections?.Where(i => i.InspectionDate >= x.StartDate && i.InspectionDate <= x.ExpireDate).Count() > 0 :
+                x.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.WarrantyActivation ? (freeServiceStartDate >= x.StartDate && freeServiceStartDate <= x.ExpireDate) :
+                x.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.VehicleInspection ? (vehicleInspections?.Where(i => i.InspectionDate >= x.StartDate && i.InspectionDate <= x.ExpireDate).Count() > 0) :
                 false
             );
 
             bool modelCodeMatching(ServiceItemModel x) =>
                 x.ModelCosts?.Any(a =>
-                    !string.IsNullOrWhiteSpace(vehicle.Katashiki) && !string.IsNullOrWhiteSpace(a?.Katashiki) && vehicle.Katashiki.StartsWith(a?.Katashiki ?? "") ||
-                    !string.IsNullOrWhiteSpace(vehicle.VariantCode) && !string.IsNullOrWhiteSpace(a?.Variant) && vehicle.VariantCode.StartsWith(a?.Variant ?? "")
+                    (!string.IsNullOrWhiteSpace(vehicle?.Katashiki) && !string.IsNullOrWhiteSpace(a?.Katashiki) && vehicle.Katashiki.StartsWith(a?.Katashiki ?? "", StringComparison.InvariantCultureIgnoreCase)) ||
+                    (!string.IsNullOrWhiteSpace(vehicle?.VariantCode) && !string.IsNullOrWhiteSpace(a?.Variant) && vehicle.VariantCode.StartsWith(a?.Variant ?? "", StringComparison.InvariantCultureIgnoreCase))
                 ) ?? false;
 
-            if (options.PerVehicleEligibilitySupport)
+            if (vehicle is not null && options.PerVehicleEligibilitySupport)
             {
                 eligibleServiceItems = eligibleServiceItems.Where(x =>
                     vehicle.EligibleServiceItemUniqueReferences is not null && vehicle.EligibleServiceItemUniqueReferences.Select(x => x?.Trim()).Contains(x.UniqueReference?.Trim(), StringComparer.InvariantCultureIgnoreCase) ||
@@ -742,7 +744,7 @@ public class VehicleLookupService
 
                 foreach (var item in eligibleServiceItems)
                 {
-                    var modelCost = GetModelCost(item.ModelCosts, vehicle.Katashiki, vehicle.VariantCode);
+                    var modelCost = GetModelCost(item.ModelCosts, vehicle?.Katashiki, vehicle?.VariantCode);
 
                     var serviceItem = new VehicleServiceItemDTO
                     {
@@ -836,7 +838,7 @@ public class VehicleLookupService
 
         foreach (var item in result)
         {
-            item.Signature = item.GenerateSignature(vehicle.VIN, this.options.SigningSecreteKey);
+            item.Signature = item.GenerateSignature(vin, this.options.SigningSecreteKey);
         }
 
         return result;
