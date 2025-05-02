@@ -11,6 +11,7 @@ public class ServiceItemClaimLineModel : IPartitionedItem, ICompanyProps, IBranc
     public string BranchID { get; set; }
     public DateTime? ClaimDate { get; set; }
     public string ServiceItemID { get; set; }
+    public string VehicleInspectionID { get; set; }
     public decimal Cost { get; set; }
     public string PackageCode { get; set; }
     public virtual ServiceItemClaimModel ServiceItemClaim { get; set; }

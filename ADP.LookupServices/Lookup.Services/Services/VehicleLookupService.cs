@@ -921,7 +921,10 @@ public class VehicleLookupService
         bool showingInactivatedItems
     )
     {
-        var claimLine = serviceClaimLines?.FirstOrDefault(x => x?.ServiceItemID == item.ServiceItemID.ToString());
+        var claimLine = serviceClaimLines?
+            .Where(x => x?.ServiceItemID == item.ServiceItemID.ToString())
+            .Where(x => x?.VehicleInspectionID == item.VehicleInspectionID)
+            .FirstOrDefault();
 
         if (claimLine is not null)
         {
@@ -1070,25 +1073,25 @@ public class VehicleLookupService
             }
             else
             {
-                if (item.ValidityModeEnum == ClaimableItemValidityMode.FixedDateRange)
-                {
-                    newList.Add(item.Clone());
-                    continue;
-                }
+                VehicleInspectionModel vehicleInspection = null;
 
                 if (item.CampaignActivationType == ClaimableItemCampaignActivationTypes.FirstTriggerOnly)
-                {
-                    item.ActivatedAt = vehicleInspections.Min(x => x.InspectionDate).DateTime;
-                    item.ExpiresAt = AddInterval(item.ActivatedAt, item.ActiveFor, item.ActiveForDurationType);
-                    newList.Add(item.Clone());
-                }
+                    vehicleInspection = vehicleInspections.OrderBy(x => x.InspectionDate).First();
 
                 else if (item.CampaignActivationType == ClaimableItemCampaignActivationTypes.ExtendOnEachTrigger)
+                    vehicleInspection = vehicleInspections.OrderByDescending(x => x.InspectionDate).First();
+
+                var cloned = item.Clone();
+
+                cloned.VehicleInspectionID = vehicleInspection.id;
+
+                if (cloned.ValidityModeEnum == ClaimableItemValidityMode.RelativeToActivation)
                 {
-                    item.ActivatedAt = vehicleInspections.Max(x => x.InspectionDate).DateTime;
-                    item.ExpiresAt = AddInterval(item.ActivatedAt, item.ActiveFor, item.ActiveForDurationType);
-                    newList.Add(item.Clone());
+                    cloned.ActivatedAt = vehicleInspection.InspectionDate.DateTime;
+                    cloned.ExpiresAt = AddInterval(cloned.ActivatedAt, cloned.ActiveFor, cloned.ActiveForDurationType);
                 }
+
+                newList.Add(cloned);
             }
         }
 
