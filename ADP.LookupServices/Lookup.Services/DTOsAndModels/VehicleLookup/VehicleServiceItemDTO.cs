@@ -34,7 +34,7 @@ public class VehicleServiceItemDTO
     public DateTime? ExpiresAt { get; set; }
     public string Status { get; set; }
     public VehcileServiceItemStatuses StatusEnum { get; set; } = default!;
-    public string CampaignCode { get; set; }
+    public string CampaignUniqueReference { get; set; }
     public string PackageCode { get; set; }
     public DateTime? ClaimDate { get; set; }
     public long? ModelCostID { get; set; }
@@ -47,11 +47,23 @@ public class VehicleServiceItemDTO
     public string InvoiceNumber { get; set; }
     public string JobNumber { get; set; }
     public long? MaximumMileage { get; set; }
-    public bool SkipZeroTrust { get; set; }
-    public int ActiveFor { get; set; }
-    public DurationType? ActiveForInterval { get; set; } = default!;
+
+    [JsonIgnore]
+    public int? ActiveFor { get; set; }
+
+    [JsonIgnore]
+    public DurationType? ActiveForDurationType { get; set; } = default!;
+
+    [JsonIgnore]
     public ClaimableItemCampaignActivationTrigger CampaignActivationTrigger { get; set; }
+
+    [JsonIgnore]
     public ClaimableItemCampaignActivationTypes CampaignActivationType { get; set; }
+
+    [JsonIgnore]
+    public ClaimableItemValidityMode ValidityModeEnum { get; set; }
+
+    public ClaimableItemClaimingMethod ClaimingMethodEnum { get; set; }
 
     public string VehicleInspectionID { get; set; }
     public string Signature { get; set; }
@@ -68,7 +80,7 @@ public class VehicleServiceItemDTO
             this.ModelCostID,
             this.ServiceItemID,
             this.PaidServiceInvoiceLineID,
-            this.SkipZeroTrust,
+            this.ClaimingMethodEnum,
             this.VehicleInspectionID
         );
 

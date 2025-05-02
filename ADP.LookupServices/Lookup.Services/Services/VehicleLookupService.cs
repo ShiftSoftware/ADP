@@ -708,32 +708,43 @@ public class VehicleLookupService
 
             // Expiry
             eligibleServiceItems = eligibleServiceItems.Where(x =>
-                x.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.WarrantyActivation ? (freeServiceStartDate >= x.StartDate && freeServiceStartDate <= x.ExpireDate) :
-                x.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.VehicleInspection ? (vehicleInspections?.Where(i => i.InspectionDate >= x.StartDate && i.InspectionDate <= x.ExpireDate).Count() > 0) :
+                x.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.WarrantyActivation ? (freeServiceStartDate >= x.CampaignStartDate && freeServiceStartDate <= x.CampaignEndDate) :
+                x.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.VehicleInspection ? (vehicleInspections?.Where(i => i.InspectionDate >= x.CampaignStartDate && i.InspectionDate <= x.CampaignEndDate).Count() > 0) :
                 false
             );
 
-            bool modelCodeMatching(ServiceItemModel x) =>
+            bool modelCodeMatchingEvaluator(ServiceItemModel x) =>
                 x.ModelCosts?.Any(a =>
                     (!string.IsNullOrWhiteSpace(vehicle?.Katashiki) && !string.IsNullOrWhiteSpace(a?.Katashiki) && vehicle.Katashiki.StartsWith(a?.Katashiki ?? "", StringComparison.InvariantCultureIgnoreCase)) ||
                     (!string.IsNullOrWhiteSpace(vehicle?.VariantCode) && !string.IsNullOrWhiteSpace(a?.Variant) && vehicle.VariantCode.StartsWith(a?.Variant ?? "", StringComparison.InvariantCultureIgnoreCase))
                 ) ?? false;
 
-            if (vehicle is not null && options.PerVehicleEligibilitySupport)
+            eligibleServiceItems = eligibleServiceItems.Where(item =>
             {
-                eligibleServiceItems = eligibleServiceItems.Where(x =>
-                    vehicle.EligibleServiceItemUniqueReferences is not null && vehicle.EligibleServiceItemUniqueReferences.Select(x => x?.Trim()).Contains(x.UniqueReference?.Trim(), StringComparer.InvariantCultureIgnoreCase) ||
-                    modelCodeMatching(x)
-                );
-            }
-            else
-            {
-                eligibleServiceItems = eligibleServiceItems.Where(x =>
-                    (x.ModelCosts?.Count() ?? 0) == 0 ||
-                    modelCodeMatching(x)
-                );
-            }
+                var x = false;
 
+                var modelCodeMatch = modelCodeMatchingEvaluator(item);
+
+                //Per vehicle is only applicable for warranty activated (official) items
+                if (
+                    item.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.WarrantyActivation &&
+                    options.PerVehicleEligibilitySupport
+                )
+                {
+                    x = vehicle?.EligibleServiceItemUniqueReferences is not null &&
+                        vehicle.EligibleServiceItemUniqueReferences
+                        .Select(y => y?.Trim())
+                        .Contains(item.UniqueReference?.Trim(), StringComparer.InvariantCultureIgnoreCase);
+                }
+                else
+                {
+                    //Items targgeting all vehicles are applicable for official cars and for non-official cars (In case the item is not warranty activated).
+                    if (vehicle is not null || item.CampaignActivationTrigger != ClaimableItemCampaignActivationTrigger.WarrantyActivation)
+                        x = (item.ModelCosts?.Count() ?? 0) == 0;
+                }
+
+                return x || modelCodeMatch;
+            });
 
             if (eligibleServiceItems?.Count() > 0)
             {
@@ -757,12 +768,26 @@ public class VehicleLookupService
                         TypeEnum = VehcileServiceItemTypes.Free,
                         ModelCostID = modelCost?.ID,
                         PackageCode = modelCost?.PackageCode ?? item.PackageCode,
+                        CampaignUniqueReference = item.CampaignUniqueReference,
+                        
                         MaximumMileage = item.MaximumMileage,
-                        ActiveFor = item.ActiveFor,
-                        ActiveForInterval = item.ActiveForDurationType,
                         CampaignActivationTrigger = item.CampaignActivationTrigger,
                         CampaignActivationType = item.CampaignActivationType,
+
+                        ValidityModeEnum = item.ValidityMode,
+                        ClaimingMethodEnum = item.ClaimingMethod,
                     };
+
+                    if (item.ValidityMode == ClaimableItemValidityMode.FixedDateRange)
+                    {
+                        serviceItem.ActivatedAt = item.ValidFrom.Value;
+                        serviceItem.ExpiresAt = item.ValidTo;
+                    }
+                    else if (item.ValidityMode == ClaimableItemValidityMode.RelativeToActivation)
+                    {
+                        serviceItem.ActiveFor = item.ActiveFor;
+                        serviceItem.ActiveForDurationType = item.ActiveForDurationType;
+                    }
 
                     result.Add(serviceItem);
                 }
@@ -782,7 +807,7 @@ public class VehicleLookupService
                             ServiceItemID = item.ServiceItemID,
                             PaidServiceInvoiceLineID = item.ID,
                             ActivatedAt = paidService.InvoiceDate,
-                            CampaignCode = null,
+                            CampaignUniqueReference = item.ServiceItem?.CampaignUniqueReference,
                             Description = Utility.GetLocalizedText(item.ServiceItem?.PrintoutDescription, languageCode),
                             Image = await GetFirstImageFullUrl(item.ServiceItem?.Photo),
                             Name = Utility.GetLocalizedText(item.ServiceItem?.Name, languageCode),
@@ -792,6 +817,8 @@ public class VehicleLookupService
                             MaximumMileage = item.ServiceItem?.MaximumMileage,
                             TypeEnum = VehcileServiceItemTypes.Paid,
                             PackageCode = item.MenuCode,
+
+                            ClaimingMethodEnum = item.ServiceItem.ClaimingMethod,
                         };
 
                         result.Add(itemResult);
@@ -801,12 +828,15 @@ public class VehicleLookupService
         }
 
         CalculateRollingExpireDateForWarrantyActivatedFreeServiceItems(
-            result.Where(x => x.TypeEnum == VehcileServiceItemTypes.Free && x.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.WarrantyActivation),
+            result.Where(x => x.ValidityModeEnum == ClaimableItemValidityMode.RelativeToActivation)
+                  .Where(x => x.TypeEnum == VehcileServiceItemTypes.Free)
+                  .Where(x => x.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.WarrantyActivation),
             freeServiceStartDate
         );
 
         var newVehicleInspectionActivatedItems = CalculateRollingExpireDateForVehicleInspectionActivatedFreeServiceItems(
-            result.Where(x => x.TypeEnum == VehcileServiceItemTypes.Free && x.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.VehicleInspection),
+            result.Where(x => x.TypeEnum == VehcileServiceItemTypes.Free)
+                  .Where(x => x.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.VehicleInspection),
             vehicleInspections
         );
 
@@ -1001,7 +1031,7 @@ public class VehicleLookupService
         foreach (var item in sequencialServiceItems)
         {
             item.ActivatedAt = startDate.GetValueOrDefault();
-            item.ExpiresAt = AddInterval(startDate.GetValueOrDefault(), item.ActiveFor, item.ActiveForInterval);
+            item.ExpiresAt = AddInterval(startDate.GetValueOrDefault(), item.ActiveFor, item.ActiveForDurationType);
 
             startDate = item.ExpiresAt;
         }
@@ -1021,33 +1051,43 @@ public class VehicleLookupService
 
         foreach (var item in serviceItems)
         {
-            if (item.CampaignActivationType == ClaimableItemCampaignActivationTypes.FirstTriggerOnly)
-            {
-                item.ActivatedAt = vehicleInspections.Min(x => x.InspectionDate).DateTime;
-                item.ExpiresAt = AddInterval(item.ActivatedAt, item.ActiveFor, item.ActiveForInterval);
-
-                newList.Add(item);
-            }
-
-            else if (item.CampaignActivationType == ClaimableItemCampaignActivationTypes.ExtendOnEachTrigger)
-            {
-                item.ActivatedAt = vehicleInspections.Max(x => x.InspectionDate).DateTime;
-                item.ExpiresAt = AddInterval(item.ActivatedAt, item.ActiveFor, item.ActiveForInterval);
-
-                newList.Add(item);
-            }
-
-            else if (item.CampaignActivationType == ClaimableItemCampaignActivationTypes.EveryTrigger)
+            if (item.CampaignActivationType == ClaimableItemCampaignActivationTypes.EveryTrigger)
             {
                 foreach (var vehicleInspection in vehicleInspections)
                 {
                     var cloned = item.Clone();
 
-                    cloned.ActivatedAt = vehicleInspection.InspectionDate.DateTime;
-                    cloned.ExpiresAt = AddInterval(cloned.ActivatedAt, item.ActiveFor, cloned.ActiveForInterval);
+                    if (item.ValidityModeEnum == ClaimableItemValidityMode.RelativeToActivation)
+                    {
+                        cloned.ActivatedAt = vehicleInspection.InspectionDate.DateTime;
+                        cloned.ExpiresAt = AddInterval(cloned.ActivatedAt, item.ActiveFor, cloned.ActiveForDurationType);
+                    }
+
                     cloned.VehicleInspectionID = vehicleInspection.id;
 
                     newList.Add(cloned);
+                }
+            }
+            else
+            {
+                if (item.ValidityModeEnum == ClaimableItemValidityMode.FixedDateRange)
+                {
+                    newList.Add(item.Clone());
+                    continue;
+                }
+
+                if (item.CampaignActivationType == ClaimableItemCampaignActivationTypes.FirstTriggerOnly)
+                {
+                    item.ActivatedAt = vehicleInspections.Min(x => x.InspectionDate).DateTime;
+                    item.ExpiresAt = AddInterval(item.ActivatedAt, item.ActiveFor, item.ActiveForDurationType);
+                    newList.Add(item.Clone());
+                }
+
+                else if (item.CampaignActivationType == ClaimableItemCampaignActivationTypes.ExtendOnEachTrigger)
+                {
+                    item.ActivatedAt = vehicleInspections.Max(x => x.InspectionDate).DateTime;
+                    item.ExpiresAt = AddInterval(item.ActivatedAt, item.ActiveFor, item.ActiveForDurationType);
+                    newList.Add(item.Clone());
                 }
             }
         }
