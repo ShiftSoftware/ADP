@@ -17,6 +17,8 @@ public class SyncService<TCSV, TData> : IDisposable
     private OperationConfigurations operationConfigurations;
     private SyncConfigurations<TCSV, TData> syncConfigurations;
     private Func<DataProcessConfigurations<TData>, ValueTask<bool>> dataProcess;
+    private Func<ValueTask> FailFunction;
+    private Func<ValueTask> SuccessFunction;
 
     private readonly IServiceProvider services;
     private readonly IStorageService storageService;
@@ -103,6 +105,18 @@ public class SyncService<TCSV, TData> : IDisposable
             Mapping = mapping
         };
 
+        return this;
+    }
+
+    public SyncService<TCSV, TData> ConfigureSuccess(Func<ValueTask> success)
+    {
+        SuccessFunction = success;
+        return this;
+    }
+
+    public SyncService<TCSV, TData> ConfigureFail(Func<ValueTask> fail)
+    {
+        FailFunction = fail;
         return this;
     }
 
@@ -341,6 +355,9 @@ public class SyncService<TCSV, TData> : IDisposable
                 await storageService.StoreNewVersionAsync(Path.Combine(workingDirectory.FullName, "file.csv"),
                     this.csvConfigurations.GetDestinationRelativePath(), this.csvConfigurations.DestinationContainerOrShareName, engine.Options.IgnoreFirstLines,
                     GetCancellationToken());
+
+                if(SuccessFunction is not null)
+                    await SuccessFunction();
             }
             catch
             {
@@ -575,6 +592,9 @@ public class SyncService<TCSV, TData> : IDisposable
             }
 
             CleanUp();
+
+            if(FailFunction is not null)
+                await FailFunction();
 
             throw;
         }
