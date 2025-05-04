@@ -1,13 +1,11 @@
 ﻿using AutoMapper;
 using LibGit2Sharp;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Polly;
 using Polly.Retry;
+using ShiftSoftware.ADP.SyncAgent.ConfigurationModels;
 using ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
-using System.Linq.Expressions;
 using System.Text;
-using System.Threading;
 
 namespace ShiftSoftware.ADP.SyncAgent.Services;
 
@@ -585,109 +583,5 @@ public class SyncService<TCSV, TData> : IDisposable
     public void Dispose()
     {
         CleanUp();
-    }
-}
-
-internal class CSVConfigurations
-{
-    public string? CSVFileName { get; set; }
-    public string? SourceContainerOrShareName { get; set; }
-    public string? SourceDirectory { get; set; }
-    public string? DestinationContainerOrShareName { get; set; }
-    public string? DestinationDirectory { get; set; }
-
-    public CSVConfigurations()
-    {
-        
-    }
-
-    public CSVConfigurations(string? csvFileName, string? sourceContainerOrShareName, string? sourceDirectory, string? destinationContainerOrShareName, string? destinationDirectory)
-    {
-        CSVFileName = csvFileName;
-        SourceContainerOrShareName = sourceContainerOrShareName;
-        SourceDirectory = sourceDirectory;
-        DestinationContainerOrShareName = destinationContainerOrShareName;
-        DestinationDirectory = destinationDirectory;
-    }
-
-    internal string GetDestinationRelativePath()
-    {
-        return Path.Combine(DestinationDirectory ?? "", CSVFileName!);
-    }
-
-    internal string GetSourceRelativePath()
-    {
-        return Path.Combine(SourceDirectory ?? "", CSVFileName!);
-    }
-}
-
-internal class OperationConfigurations
-{
-    public int? BatchSize { get; set; }
-    public int? RetryCount { get; set; }
-    public int OperationTimeoutInSeconds { get; set; }
-    public OperationConfigurations()
-    {
-
-    }
-    public OperationConfigurations(int? batchSize, int? retryCount, int operationTimeoutInSecond)
-    {
-        BatchSize = batchSize;
-        RetryCount = retryCount;
-        OperationTimeoutInSeconds = operationTimeoutInSecond;
-    }
-}
-
-internal class SyncConfigurations<TCSV, TData>
-    where TCSV : CacheableCSV
-    where TData : class
-{
-    public string? SyncId { get; set; } = null;
-    public Func<IEnumerable<TCSV>, DataProcessActionType, ValueTask<IEnumerable<TData>>> Mapping { get; set; }
-
-    public SyncConfigurations()
-    {
-        
-    }
-
-    public SyncConfigurations(string? syncId, Func<IEnumerable<TCSV>, DataProcessActionType, ValueTask<IEnumerable<TData>>> mapping)
-    {
-        SyncId = syncId;
-        Mapping = mapping;
-    }
-}
-
-public class DataProcessConfigurations<TData>
-    where TData : class
-{
-    public int CurrentStep { get; private set; }
-    public int TotalStep { get; private set; }
-    public int TotalCount { get; private set; }
-    public DataProcessActionType ActionType { get; private set; }
-    public IEnumerable<TData> Items { get; private set; }
-    public CancellationToken CancellationToken { get; private set; }
-    public SyncTaskStatus TaskStatus { get; private set; }
-
-    public DataProcessConfigurations()
-    {
-        
-    }
-
-    internal DataProcessConfigurations(
-        int currentStep,
-        int totalStep,
-        int totalCount,
-        DataProcessActionType actionType,
-        CancellationToken cancellationToken,
-        IEnumerable<TData> items,
-        SyncTaskStatus taskStatus)
-    {
-        CurrentStep = currentStep;
-        TotalStep = totalStep;
-        TotalCount = totalCount;
-        ActionType = actionType;
-        CancellationToken = cancellationToken;
-        Items = items;
-        TaskStatus = taskStatus;
     }
 }
