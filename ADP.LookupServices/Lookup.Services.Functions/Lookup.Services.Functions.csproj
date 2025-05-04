@@ -19,7 +19,7 @@
     <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.22.0" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" Version="1.2.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="6.0.1" />
-    <PackageReference Include="ShiftSoftware.ShiftEntity.Web" Version="2025.4.29.1" />
+    <PackageReference Include="ShiftSoftware.ShiftEntity.Web" Version="2025.5.4.1" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Lookup.Services\Lookup.Services.csproj" />
