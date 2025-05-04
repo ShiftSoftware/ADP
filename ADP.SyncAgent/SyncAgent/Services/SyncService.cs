@@ -27,7 +27,7 @@ public class SyncService<TCSV, TData> : IDisposable
     private readonly ILogger logger;
     private readonly ISyncProgressIndicator? syncProgressIndicator;
     private DirectoryInfo workingDirectory;
-    private ResiliencePipeline resiliencePipeline;
+    protected ResiliencePipeline ResiliencePipeline { get; private set; }
 
     private CancellationTokenSource cancellationTokenSource = new();
     private int operationTimeoutInSeconds = 300;
@@ -51,7 +51,7 @@ public class SyncService<TCSV, TData> : IDisposable
         this.mapper = mapper;
         this.logger = logger;
         this.syncProgressIndicator = syncProgressIndicator;
-        resiliencePipeline = new ResiliencePipelineBuilder()
+        ResiliencePipeline = new ResiliencePipelineBuilder()
             .AddRetry(new RetryStrategyOptions()) // Add retry using the default options
             .Build(); // Builds the resilience pipeline
     }
@@ -189,13 +189,13 @@ public class SyncService<TCSV, TData> : IDisposable
         GC.Collect();
     }
 
-    private CancellationToken GetCancellationToken()
+    protected CancellationToken GetCancellationToken()
     {
         var timeout = operationTimeoutInSeconds - (DateTime.UtcNow - operationStart).Seconds;
         return new CancellationTokenSource(TimeSpan.FromSeconds(timeout)).Token;
     }
 
-    private void CheckForCancellation()
+    protected void CheckForCancellation()
     {
         if (cancellationTokenSource.Token.IsCancellationRequested)
         {
@@ -204,7 +204,7 @@ public class SyncService<TCSV, TData> : IDisposable
         }
     }
 
-    private void UpdateProgress(SyncTaskStatus syncTask, bool incrementStep = true)
+    protected void UpdateProgress(SyncTaskStatus syncTask, bool incrementStep = true)
     {
         if (incrementStep)
             syncTask.CurrentStep++;
@@ -360,7 +360,7 @@ public class SyncService<TCSV, TData> : IDisposable
     {
         CheckForCancellation();
 
-        var cosmosTask = new SyncTaskStatus
+        var taskStatus = new SyncTaskStatus
         {
             SyncID = this.syncConfigurations.SyncId,
             TaskDescription = actionType == DataProcessActionType.Add ? "Adding data" : "Deleting data",
@@ -369,9 +369,9 @@ public class SyncService<TCSV, TData> : IDisposable
         };
 
         logger.LogInformation("Calculating Cosmos DB Task Steps: Operation Type is: {0}", actionType == DataProcessActionType.Add ? "Add" : "Delete");
-        this.UpdateProgress(cosmosTask, false);
+        this.UpdateProgress(taskStatus, false);
         if (syncProgressIndicator is not null)
-            await syncProgressIndicator.LogInformationAsync(cosmosTask, string.Format("Calculating Cosmos DB Task Steps: Operation Type is: {0}\r\n", actionType == DataProcessActionType.Add ? "Add" : "Delete"));
+            await syncProgressIndicator.LogInformationAsync(taskStatus, string.Format("Calculating Cosmos DB Task Steps: Operation Type is: {0}\r\n", actionType == DataProcessActionType.Add ? "Add" : "Delete"));
 
         using CacheableCSVAsyncEngine<TCSV> engine = new();
         engine.BeginReadFile(csvFilePath);
@@ -383,15 +383,15 @@ public class SyncService<TCSV, TData> : IDisposable
         var retryCount = this.operationConfigurations.RetryCount ?? 0;
         int retry = 0;
 
-        cosmosTask.TotalStep = totalSteps;
+        taskStatus.TotalStep = totalSteps;
 
         logger.LogInformation("Total Item Count is: {0:#,0}", totalCount);
         logger.LogInformation("Batch Size is: {0:#,0}", batchSize);
         logger.LogInformation("Step Count is: {0:#,0}", totalSteps);
 
-        this.UpdateProgress(cosmosTask, false);
+        this.UpdateProgress(taskStatus, false);
         if (syncProgressIndicator is not null)
-            await syncProgressIndicator.LogInformationAsync(cosmosTask, string.Format("Total Item Count is: {0:#,0}, Batch Size is: {1:#,0}, Step Count is: {2:#,0}\r\n", totalCount, batchSize, totalSteps));
+            await syncProgressIndicator.LogInformationAsync(taskStatus, string.Format("Total Item Count is: {0:#,0}, Batch Size is: {1:#,0}, Step Count is: {2:#,0}\r\n", totalCount, batchSize, totalSteps));
 
         IEnumerable<TData?>? items = null;
 
@@ -410,41 +410,41 @@ public class SyncService<TCSV, TData> : IDisposable
                     operationStart.AddSeconds(operationTimeoutInSeconds) - DateTime.UtcNow
                 );
 
-                this.UpdateProgress(cosmosTask, false);
+                this.UpdateProgress(taskStatus, false);
                 if (syncProgressIndicator is not null)
                     await syncProgressIndicator.LogInformationAsync(
-                        cosmosTask,
-                        string.Format("Processing Step {0} of {1}.\r\n\r\n", cosmosTask.CurrentStep + 1, cosmosTask.TotalStep));
+                        taskStatus,
+                        string.Format("Processing Step {0} of {1}.\r\n\r\n", taskStatus.CurrentStep + 1, taskStatus.TotalStep));
             }
 
             if (items is null)
             {
                 logger.LogInformation("Reading the current batch from the CSV file.");
 
-                this.UpdateProgress(cosmosTask, false);
+                this.UpdateProgress(taskStatus, false);
                 if (syncProgressIndicator is not null)
                     await syncProgressIndicator.LogInformationAsync(
-                        cosmosTask,
+                        taskStatus,
                         "Reading the current batch from the CSV file.\r\n\r\n");
 
                 var records = engine.ReadNexts(batchSize);
 
                 logger.LogInformation("Successfully loaded the current batch to memory.");
 
-                this.UpdateProgress(cosmosTask, false);
+                this.UpdateProgress(taskStatus, false);
                 if (syncProgressIndicator is not null)
                     await syncProgressIndicator.LogInformationAsync(
-                        cosmosTask,
+                        taskStatus,
                         "Successfully loaded the current batch to memory.\r\n\r\n");
 
                 if (records?.Any() != true)
                 {
                     logger.LogInformation("No items were loaded.");
 
-                    this.UpdateProgress(cosmosTask, false);
+                    this.UpdateProgress(taskStatus, false);
                     if (syncProgressIndicator is not null)
                         await syncProgressIndicator.LogInformationAsync(
-                            cosmosTask,
+                            taskStatus,
                             "No items were loaded.\r\n\r\n");
 
                     break;
@@ -452,10 +452,10 @@ public class SyncService<TCSV, TData> : IDisposable
 
                 logger.LogInformation("Start mapping CSV records to Data Model.");
 
-                this.UpdateProgress(cosmosTask, false);
+                this.UpdateProgress(taskStatus, false);
                 if (syncProgressIndicator is not null)
                     await syncProgressIndicator.LogInformationAsync(
-                        cosmosTask,
+                        taskStatus,
                         "Start mapping CSV records to Cosmos Data Model.\r\n\r\n");
 
                 if (this.syncConfigurations.Mapping is null)
@@ -465,10 +465,10 @@ public class SyncService<TCSV, TData> : IDisposable
 
                 logger.LogInformation("Completed mapping CSV records to Data Model.");
 
-                this.UpdateProgress(cosmosTask, false);
+                this.UpdateProgress(taskStatus, false);
                 if (syncProgressIndicator is not null)
                     await syncProgressIndicator.LogInformationAsync(
-                        cosmosTask,
+                        taskStatus,
                         "Completed mapping CSV records to Data Model.\r\n\r\n");
             }
 
@@ -476,27 +476,27 @@ public class SyncService<TCSV, TData> : IDisposable
             {
                 logger.LogInformation("Starting data proccessing for the current Batch.");
 
-                this.UpdateProgress(cosmosTask, false);
+                this.UpdateProgress(taskStatus, false);
                 if (syncProgressIndicator is not null)
                     await syncProgressIndicator.LogInformationAsync(
-                        cosmosTask,
+                        taskStatus,
                         "Starting data proccessing for the current Batch.\r\n\r\n");
 
-                var result = await this.dataProcess(new(currentStep, totalSteps, totalCount, actionType, GetCancellationToken(), items!));
+                var result = await this.dataProcess(new(currentStep, totalSteps, totalCount, actionType, GetCancellationToken(), items!, taskStatus));
 
                 if(!result)
                     throw new Exception("Failed to process the data.");
 
                 logger.LogInformation("Completed data proccessing for the current Batch: Step {0} of {1}.", currentStep + 1, totalSteps);
 
-                this.UpdateProgress(cosmosTask, false);
+                this.UpdateProgress(taskStatus, false);
                 if (syncProgressIndicator is not null)
                     await syncProgressIndicator.LogInformationAsync(
-                        cosmosTask,
-                        string.Format("Completed data proccessing for the current Batch: Step {0} of {1}.\r\n\r\n", cosmosTask.CurrentStep + 1, cosmosTask.TotalStep));
+                        taskStatus,
+                        string.Format("Completed data proccessing for the current Batch: Step {0} of {1}.\r\n\r\n", taskStatus.CurrentStep + 1, taskStatus.TotalStep));
 
                 currentStep++;
-                cosmosTask.CurrentStep++;
+                taskStatus.CurrentStep++;
                 retry = 0;
                 items = null;
             }
@@ -513,19 +513,19 @@ public class SyncService<TCSV, TData> : IDisposable
 
                 logger.LogWarning("Failed Processing the Current data proccessing (Step {0} of {1}). Starting Retry {2} of {3}.", currentStep + 1, totalSteps, retry, retryCount);
 
-                this.UpdateProgress(cosmosTask, false);
+                this.UpdateProgress(taskStatus, false);
                 if (syncProgressIndicator is not null)
                     await syncProgressIndicator.LogWarningAsync(
-                        cosmosTask,
-                        string.Format("Failed Processing the Current data proccessing (Step {0} of {1}). Starting Retry {2} of {3}.\r\n\r\n", cosmosTask.CurrentStep + 1, cosmosTask.TotalStep, retry, retryCount));
+                        taskStatus,
+                        string.Format("Failed Processing the Current data proccessing (Step {0} of {1}). Starting Retry {2} of {3}.\r\n\r\n", taskStatus.CurrentStep + 1, taskStatus.TotalStep, retry, retryCount));
             }
         }
 
-        cosmosTask.Completed = true;
+        taskStatus.Completed = true;
 
         logger.LogInformation("Task Successfully Finished");
         if (syncProgressIndicator is not null)
-            await syncProgressIndicator.LogInformationAsync(cosmosTask, "Task Successfully Finished.\r\n\r\n");
+            await syncProgressIndicator.LogInformationAsync(taskStatus, "Task Successfully Finished.\r\n\r\n");
 
         return true;
     }
@@ -554,11 +554,12 @@ public class SyncService<TCSV, TData> : IDisposable
                 logger.LogInformation("Start storing data");
 
                 if (fileProccessSuccess)
-                {
-
-                }
+                    await ProcessDataAsync();
 
                 CleanUp();
+
+                if (syncProgressIndicator is not null)
+                    await syncProgressIndicator.CompleteAllRunningTasks();
             }
         }
         catch (Exception ex)
@@ -659,12 +660,13 @@ internal class SyncConfigurations<TCSV, TData>
 public class DataProcessConfigurations<TData>
     where TData : class
 {
-    public int CurrentStep { get; internal set; }
-    public int TotalStep { get; internal set; }
-    public int TotalCount { get; internal set; }
-    public DataProcessActionType ActionType { get; internal set; }
-    public IEnumerable<TData> Items { get; internal set; }
-    public CancellationToken CancellationToken { get; internal set; }
+    public int CurrentStep { get; private set; }
+    public int TotalStep { get; private set; }
+    public int TotalCount { get; private set; }
+    public DataProcessActionType ActionType { get; private set; }
+    public IEnumerable<TData> Items { get; private set; }
+    public CancellationToken CancellationToken { get; private set; }
+    public SyncTaskStatus TaskStatus { get; private set; }
 
     public DataProcessConfigurations()
     {
@@ -677,7 +679,8 @@ public class DataProcessConfigurations<TData>
         int totalCount,
         DataProcessActionType actionType,
         CancellationToken cancellationToken,
-        IEnumerable<TData> items)
+        IEnumerable<TData> items,
+        SyncTaskStatus taskStatus)
     {
         CurrentStep = currentStep;
         TotalStep = totalStep;
@@ -685,5 +688,6 @@ public class DataProcessConfigurations<TData>
         ActionType = actionType;
         CancellationToken = cancellationToken;
         Items = items;
+        TaskStatus = taskStatus;
     }
 }
