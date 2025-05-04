@@ -184,7 +184,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
             {
                 logger.LogInformation("Processing Files");
 
-                var compareTask = new SyncTask { SyncID = syncId, TaskDescription = "Comparing the new File with the Existing Data", TotalStep = 6, CurrentStep = -1 };
+                var compareTask = new SyncTaskStatus { SyncID = syncId, TaskDescription = "Comparing the new File with the Existing Data", TotalStep = 6, CurrentStep = -1 };
 
                 this.UpdateProgress(compareTask);
                 if (syncProgressIndicator is not null)
@@ -229,7 +229,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
             if (syncProgressIndicator is not null)
             {
                 await syncProgressIndicator.LogErrorAsync(
-                    new SyncTask { TotalStep = 0, CurrentStep = 0, Failed = true, SyncID = syncId, TaskDescription = "Import Failed." },
+                    new SyncTaskStatus { TotalStep = 0, CurrentStep = 0, Failed = true, SyncID = syncId, TaskDescription = "Import Failed." },
                     $"{ex.Message}\r\n\r\n\r\n\r\n{ex.StackTrace}");
 
 
@@ -242,7 +242,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         }
     }
 
-    private void UpdateProgress(SyncTask syncTask, bool incrementStep = true)
+    private void UpdateProgress(SyncTaskStatus syncTask, bool incrementStep = true)
     {
         if (incrementStep)
             syncTask.CurrentStep++;
@@ -252,7 +252,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         syncTask.RemainingTimeToShutdown = operationStart.AddSeconds(operationTimeoutInSeconds) - DateTime.UtcNow;
     }
 
-    public async Task<bool> ProcessFilesAsync(string csvFileName, string? sourceContainerOrShareName, string? sourceDirectory, string? destinationContainerOrShareName, string? destinationDirectory, SyncTask syncTask)
+    public async Task<bool> ProcessFilesAsync(string csvFileName, string? sourceContainerOrShareName, string? sourceDirectory, string? destinationContainerOrShareName, string? destinationDirectory, SyncTaskStatus syncTask)
     {
         using CacheableCSVAsyncEngine<TCSV> engine = new();
 
@@ -457,7 +457,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
     {
         CheckForCancellation();
 
-        var cosmosTask = new SyncTask
+        var cosmosTask = new SyncTaskStatus
         {
             SyncID = syncId,
             TaskDescription = actionType == CosmosActionType.Upsert ? "Upserting to Cosmos DB" : "Deleting from Cosmos DB",

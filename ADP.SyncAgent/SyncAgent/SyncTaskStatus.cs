@@ -1,6 +1,6 @@
 ﻿namespace ShiftSoftware.ADP.SyncAgent;
 
-public class SyncTask
+public class SyncTaskStatus
 {
     public string ID { get; set; } = Guid.NewGuid().ToString();
     public string? SyncID { get; set; }
