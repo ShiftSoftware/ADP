@@ -5,14 +5,14 @@ internal class SyncConfigurations<TCSV, TData>
     where TData : class
 {
     public string? SyncId { get; set; } = null;
-    public Func<IEnumerable<TCSV>, DataProcessActionType, ValueTask<IEnumerable<TData>>> Mapping { get; set; }
+    public Func<IEnumerable<TCSV>, DataProcessActionType, ValueTask<IEnumerable<TData>>>? Mapping { get; set; }
 
     public SyncConfigurations()
     {
         
     }
 
-    public SyncConfigurations(string? syncId, Func<IEnumerable<TCSV>, DataProcessActionType, ValueTask<IEnumerable<TData>>> mapping)
+    public SyncConfigurations(string? syncId, Func<IEnumerable<TCSV>, DataProcessActionType, ValueTask<IEnumerable<TData>>>? mapping)
     {
         SyncId = syncId;
         Mapping = mapping;

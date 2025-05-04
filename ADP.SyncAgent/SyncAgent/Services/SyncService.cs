@@ -97,7 +97,7 @@ public class SyncService<TCSV, TData> : IDisposable
         return this;
     }
 
-    public SyncService<TCSV, TData> ConfigureSync(Func<IEnumerable<TCSV>, DataProcessActionType, ValueTask<IEnumerable<TData>>> mapping, string? syncId = null)
+    public SyncService<TCSV, TData> ConfigureSync(Func<IEnumerable<TCSV>, DataProcessActionType, ValueTask<IEnumerable<TData>>>? mapping, string? syncId = null)
     {
         syncConfigurations = new SyncConfigurations<TCSV, TData>
         {

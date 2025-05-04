@@ -1,7 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Logging;
-using Polly;
 using ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
 using System.Linq.Expressions;
 
@@ -164,5 +163,49 @@ public class CosmosCSVSyncService<TCSV, TCosmos> : SyncService<TCSV, TCosmos>, I
         });
 
         return this;
+    }
+
+    public async Task StartSyncAsync(
+        string csvFileName,
+        string? sourceContainerOrShareName,
+        string? sourceDirectory,
+        string? destinationContainerOrShareName,
+        string? destinationDirectory,
+        string databaseId,
+        string containerId,
+        Expression<Func<TCosmos, object>> partitionKeyLevel1Expression,
+        Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression = null,
+        Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression = null,
+        Func<IEnumerable<TCSV>, DataProcessActionType, ValueTask<IEnumerable<TCosmos>>>? mapping = null,
+        Func<SyncCosmosAction<TCosmos>, ValueTask<SyncCosmosAction<TCosmos>?>>? cosmosAction = null,
+        int? batchSize = null,
+        int? retryCount = 0,
+        int operationTimeoutInSecond = 300,
+        string? syncId = null)
+    {
+        var operation = this
+            .ConfigureCSVFile(
+                csvFileName,
+                sourceContainerOrShareName,
+                sourceDirectory,
+                destinationContainerOrShareName,
+                destinationDirectory)
+            .ConfigureOperation(
+                batchSize,
+                retryCount,
+                operationTimeoutInSecond)
+            .ConfigureSync(
+                mapping,
+                syncId) as CosmosCSVSyncService<TCSV, TCosmos>;
+
+        await operation!
+            .ConfigureCosmosProcess(
+                databaseId,
+                containerId,
+                partitionKeyLevel1Expression,
+                partitionKeyLevel2Expression,
+                partitionKeyLevel3Expression,
+                cosmosAction)
+            .RunAsync();
     }
 }
