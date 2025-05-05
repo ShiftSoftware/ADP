@@ -3,6 +3,7 @@ using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Logging;
 using ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
 using System.Linq.Expressions;
+using System.Threading;
 
 namespace ShiftSoftware.ADP.SyncAgent.Services;
 
@@ -34,7 +35,8 @@ public class CosmosCSVSyncService<TCSV, TCosmos> : SyncService<TCSV, TCosmos>, I
             IEnumerable<SyncCosmosAction<TCosmos>?> items,
             Expression<Func<TCosmos, object>> partitionKeyLevel1Expression,
             Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression,
-            Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression
+            Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression,
+            CancellationToken cancellationToken
         )
     {
         IEnumerable<Task> tasks = [];
@@ -43,12 +45,13 @@ public class CosmosCSVSyncService<TCSV, TCosmos> : SyncService<TCSV, TCosmos>, I
 
         foreach (var item in items)
         {
-            base.CheckForCancellation();
+            if (cancellationToken.IsCancellationRequested)
+                throw new OperationCanceledException();
 
             tasks = tasks.Concat([Task.Run(async () =>
             {
                 if (item?.Mapping is not null)
-                    item.Item = await item.Mapping(new(item.Item, GetCancellationToken()));
+                    item.Item = await item.Mapping(new(item.Item, cancellationToken));
 
                 if (item?.Item is not null)
                 {
@@ -56,10 +59,10 @@ public class CosmosCSVSyncService<TCSV, TCosmos> : SyncService<TCSV, TCosmos>, I
                     await base.ResiliencePipeline.ExecuteAsync(async token =>
                     {
                         await container.UpsertItemAsync(item.Item, partitionKey,
-                            new ItemRequestOptions { EnableContentResponseOnWrite = false }, GetCancellationToken());
-                    }, GetCancellationToken());
+                            new ItemRequestOptions { EnableContentResponseOnWrite = false }, cancellationToken);
+                    }, cancellationToken);
                 }
-            }, GetCancellationToken())]);
+            }, cancellationToken)]);
         }
 
         await Task.WhenAll(tasks);
@@ -74,7 +77,8 @@ public class CosmosCSVSyncService<TCSV, TCosmos> : SyncService<TCSV, TCosmos>, I
             IEnumerable<SyncCosmosAction<TCosmos>?> items,
             Expression<Func<TCosmos, object>> partitionKeyLevel1Expression,
             Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression,
-            Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression
+            Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression,
+            CancellationToken cancellationToken
         )
     {
         IEnumerable<Task> tasks = [];
@@ -83,12 +87,13 @@ public class CosmosCSVSyncService<TCSV, TCosmos> : SyncService<TCSV, TCosmos>, I
 
         foreach (var item in items)
         {
-            CheckForCancellation();
+            if (cancellationToken.IsCancellationRequested)
+                throw new OperationCanceledException();
 
             tasks = tasks.Concat([Task.Run(async () =>
             {
                 if (item?.Mapping is not null)
-                    item.Item = await item.Mapping(new(item.Item, GetCancellationToken()));
+                    item.Item = await item.Mapping(new(item.Item, cancellationToken));
 
                 if (item?.Item is not null)
                 {
@@ -128,17 +133,16 @@ public class CosmosCSVSyncService<TCSV, TCosmos> : SyncService<TCSV, TCosmos>, I
             IEnumerable<SyncCosmosAction<TCosmos>?>? items = null;
 
             if (cosmosAction is null)
-                items = x.Items.Select(x => new SyncCosmosAction<TCosmos>(x, CosmosActionType.Upsert, GetCancellationToken()));
+                items = x.Items.Select(y => new SyncCosmosAction<TCosmos>(y, CosmosActionType.Upsert, x.CancellationToken));
             else
                 foreach (var item in x.Items)
-                    items = (items ?? []).Concat([await cosmosAction(new(item, CosmosActionType.Upsert, GetCancellationToken()))]);
+                    items = (items ?? []).Concat([await cosmosAction(new(item, CosmosActionType.Upsert, x.CancellationToken))]);
 
             logger.LogInformation("Completed comsos action.");
 
-            base.UpdateProgress(x.TaskStatus, false);
             if (syncProgressIndicator is not null)
                 await syncProgressIndicator.LogInformationAsync(
-                    x.TaskStatus,
+                    x.TaskStatus.UpdateProgress(false),
                     "Completed comsos action.\r\n\r\n");
 
             //Some times the CSV comparer marks an item as deleted. But the SyncCosmosAction has the ability to change that to an upsert (This is done outside the sync agent by the programmer.) 
@@ -149,7 +153,8 @@ public class CosmosCSVSyncService<TCSV, TCosmos> : SyncService<TCSV, TCosmos>, I
                 items?.Where(x => x.ActionType == CosmosActionType.Delete) ?? [],
                 partitionKeyLevel1Expression,
                 partitionKeyLevel2Expression,
-                partitionKeyLevel3Expression);
+                partitionKeyLevel3Expression,
+                x.CancellationToken);
 
             await UpsertToCosmosAsync(
                 databaseId,
@@ -157,7 +162,8 @@ public class CosmosCSVSyncService<TCSV, TCosmos> : SyncService<TCSV, TCosmos>, I
                 items?.Where(x => x.ActionType == CosmosActionType.Upsert) ?? [],
                 partitionKeyLevel1Expression,
                 partitionKeyLevel2Expression,
-                partitionKeyLevel3Expression);
+                partitionKeyLevel3Expression,
+                x.CancellationToken);
 
             return true;
         });

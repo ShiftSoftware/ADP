@@ -201,13 +201,7 @@ public class SyncService<TCSV, TData> : IDisposable
         GC.Collect();
     }
 
-    protected CancellationToken GetCancellationToken()
-    {
-        var timeout = operationTimeoutInSeconds - (DateTime.UtcNow - operationStart).Seconds;
-        return new CancellationTokenSource(TimeSpan.FromSeconds(timeout)).Token;
-    }
-
-    protected void CheckForCancellation()
+    private void CheckForCancellation()
     {
         if (cancellationTokenSource.Token.IsCancellationRequested)
         {
@@ -216,7 +210,7 @@ public class SyncService<TCSV, TData> : IDisposable
         }
     }
 
-    protected void UpdateProgress(SyncTaskStatus syncTask, bool incrementStep = true)
+    private void UpdateProgress(SyncTaskStatus syncTask, bool incrementStep = true)
     {
         if (incrementStep)
             syncTask.CurrentStep++;
@@ -247,7 +241,7 @@ public class SyncService<TCSV, TData> : IDisposable
                 Path.Combine(this.csvConfigurations.DestinationDirectory ?? "", this.csvConfigurations.CSVFileName!),
                 Path.Combine(this.workingDirectory.FullName, "file.csv"),
                 engine.Options.IgnoreFirstLines, this.csvConfigurations.DestinationContainerOrShareName,
-                GetCancellationToken());
+                this.cancellationTokenSource.Token);
 
         logger.LogInformation("Initializing a git repo.");
         UpdateProgress(syncTask);
@@ -266,7 +260,7 @@ public class SyncService<TCSV, TData> : IDisposable
             Path.Combine(this.workingDirectory.FullName, "file.csv"),
             engine.Options.IgnoreFirstLines,
             this.csvConfigurations.SourceContainerOrShareName,
-            GetCancellationToken());
+            this.cancellationTokenSource.Token);
 
         logger.LogInformation("Execute 'git diff' on the files.");
         UpdateProgress(syncTask);
@@ -305,10 +299,10 @@ public class SyncService<TCSV, TData> : IDisposable
         using (TextWriter textWriter = new StreamWriter(toInsertFilePath, true, Encoding.UTF8))
         {
             for (int i = 0; i < engine.Options.IgnoreFirstLines; i++)
-                await textWriter.WriteLineAsync(new StringBuilder(engine.GetFileHeader()), GetCancellationToken());
+                await textWriter.WriteLineAsync(new StringBuilder(engine.GetFileHeader()), this.cancellationTokenSource.Token);
 
             foreach (var line in comparision.Added)
-                await textWriter.WriteAsync(new StringBuilder(line), GetCancellationToken());
+                await textWriter.WriteAsync(new StringBuilder(line), this.cancellationTokenSource.Token);
         }
 
         logger.LogInformation("Generating a file for deleted records.");
@@ -319,10 +313,10 @@ public class SyncService<TCSV, TData> : IDisposable
         using (TextWriter textWriter = new StreamWriter(toDeleteFilePath, true, Encoding.UTF8))
         {
             for (int i = 0; i < engine.Options.IgnoreFirstLines; i++)
-                await textWriter.WriteLineAsync(new StringBuilder(engine.GetFileHeader()), GetCancellationToken());
+                await textWriter.WriteLineAsync(new StringBuilder(engine.GetFileHeader()), this.cancellationTokenSource.Token);
 
             foreach (var line in comparision.Deleted)
-                await textWriter.WriteAsync(new StringBuilder(line), GetCancellationToken());
+                await textWriter.WriteAsync(new StringBuilder(line), this.cancellationTokenSource.Token);
         }
 
         //Cleanup some memory usage
@@ -354,7 +348,7 @@ public class SyncService<TCSV, TData> : IDisposable
 
                 await storageService.StoreNewVersionAsync(Path.Combine(workingDirectory.FullName, "file.csv"),
                     this.csvConfigurations.GetDestinationRelativePath(), this.csvConfigurations.DestinationContainerOrShareName, engine.Options.IgnoreFirstLines,
-                    GetCancellationToken());
+                    this.cancellationTokenSource.Token);
 
                 if(SuccessFunction is not null)
                     await SuccessFunction();
@@ -497,7 +491,7 @@ public class SyncService<TCSV, TData> : IDisposable
                         taskStatus,
                         "Starting data proccessing for the current Batch.\r\n\r\n");
 
-                var result = await this.dataProcess(new(currentStep, totalSteps, totalCount, actionType, GetCancellationToken(), items!, taskStatus));
+                var result = await this.dataProcess(new(currentStep, totalSteps, totalCount, actionType, this.cancellationTokenSource.Token, items!, taskStatus));
 
                 if(!result)
                     throw new Exception("Failed to process the data.");
@@ -558,7 +552,14 @@ public class SyncService<TCSV, TData> : IDisposable
             {
                 logger.LogInformation("Processing Files");
 
-                var taskStatus = new SyncTaskStatus { SyncID = this.syncConfigurations.SyncId, TaskDescription = "Comparing the new File with the Existing Data", TotalStep = 6, CurrentStep = -1 };
+                var taskStatus = new SyncTaskStatus { 
+                    SyncID = this.syncConfigurations.SyncId,
+                    TaskDescription = "Comparing the new File with the Existing Data",
+                    TotalStep = 6,
+                    CurrentStep = -1 ,
+                    OperationStart= operationStart,
+                    OperationTimeoutInSeconds = this.operationConfigurations.OperationTimeoutInSeconds
+                };
 
                 this.UpdateProgress(taskStatus);
                 if (syncProgressIndicator is not null)

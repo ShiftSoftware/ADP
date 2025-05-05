@@ -2,15 +2,30 @@
 
 public class SyncTaskStatus
 {
-    public string ID { get; set; } = Guid.NewGuid().ToString();
-    public string? SyncID { get; set; }
-    public string TaskDescription { get; set; } = default!;
-    public double Progress { get; set; }
-    public int CurrentStep { get; set; }
-    public int TotalStep { get; set; }
-    public TimeSpan Elapsed { get; set; }
-    public TimeSpan RemainingTimeToShutdown { get; set; }
-    public bool Completed { get; set; }
-    public bool Failed { get; set; }
-    public int Sort { get; set; }
+    public string ID { get; internal set; } = Guid.NewGuid().ToString();
+    public string? SyncID { get; internal set; }
+    public string TaskDescription { get; internal set; } = default!;
+    public double Progress { get; internal set; }
+    public int CurrentStep { get; internal set; }
+    public int TotalStep { get; internal set; }
+    public TimeSpan Elapsed { get; internal set; }
+    public TimeSpan RemainingTimeToShutdown { get; internal set; }
+    public bool Completed { get; internal set; }
+    public bool Failed { get; internal set; }
+    public int Sort { get; internal set; }
+
+    internal DateTime OperationStart { get; set; }
+    internal int OperationTimeoutInSeconds { get; set; }
+
+    public SyncTaskStatus UpdateProgress(bool incrementStep = true)
+    {
+        if (incrementStep)
+            CurrentStep++;
+
+        Progress = TotalStep == 0 ? 0 : (double)(CurrentStep) / TotalStep;
+        Elapsed = DateTime.UtcNow - OperationStart;
+        RemainingTimeToShutdown = OperationStart.AddSeconds(OperationTimeoutInSeconds) - DateTime.UtcNow;
+
+        return this;
+    }
 }
