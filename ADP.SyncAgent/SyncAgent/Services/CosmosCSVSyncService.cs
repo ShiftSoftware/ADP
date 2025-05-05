@@ -128,6 +128,26 @@ public class CosmosCSVSyncService<TCSV, TCosmos> : SyncService<TCSV, TCosmos>, I
         Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression = null,
         Func<SyncCosmosAction<TCosmos>, ValueTask<SyncCosmosAction<TCosmos>?>>? cosmosAction = null)
     {
+        ConfigureCosmosProcess(
+                databaseId,
+                containerId,
+                partitionKeyLevel1Expression,
+                partitionKeyLevel2Expression,
+                partitionKeyLevel3Expression,
+                cosmosAction is null? null : async x => [await cosmosAction(x)]
+            );
+
+        return this;
+    }
+
+    public CosmosCSVSyncService<TCSV, TCosmos> ConfigureCosmosProcess(
+        string databaseId,
+        string containerId,
+        Expression<Func<TCosmos, object>> partitionKeyLevel1Expression,
+        Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression = null,
+        Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression = null,
+        Func<SyncCosmosAction<TCosmos>, ValueTask<IEnumerable<SyncCosmosAction<TCosmos>?>?>>? cosmosAction = null)
+    {
         base.ConfigureDataProcess(async (x) =>
         {
             IEnumerable<SyncCosmosAction<TCosmos>?>? items = null;
@@ -136,7 +156,7 @@ public class CosmosCSVSyncService<TCSV, TCosmos> : SyncService<TCSV, TCosmos>, I
                 items = x.Items.Select(y => new SyncCosmosAction<TCosmos>(y, CosmosActionType.Upsert, x.CancellationToken));
             else
                 foreach (var item in x.Items)
-                    items = (items ?? []).Concat([await cosmosAction(new(item, CosmosActionType.Upsert, x.CancellationToken))]);
+                    items = (items ?? []).Concat((await cosmosAction(new(item, CosmosActionType.Upsert, x.CancellationToken))) ?? []);
 
             logger.LogInformation("Completed comsos action.");
 
@@ -184,6 +204,50 @@ public class CosmosCSVSyncService<TCSV, TCosmos> : SyncService<TCSV, TCosmos>, I
         Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression = null,
         Func<IEnumerable<TCSV>, DataProcessActionType, ValueTask<IEnumerable<TCosmos>>>? mapping = null,
         Func<SyncCosmosAction<TCosmos>, ValueTask<SyncCosmosAction<TCosmos>?>>? cosmosAction = null,
+        int? batchSize = null,
+        int? retryCount = 0,
+        int operationTimeoutInSecond = 300,
+        string? syncId = null)
+    {
+        var operation = this
+            .ConfigureCSVFile(
+                csvFileName,
+                sourceContainerOrShareName,
+                sourceDirectory,
+                destinationContainerOrShareName,
+                destinationDirectory)
+            .ConfigureOperation(
+                batchSize,
+                retryCount,
+                operationTimeoutInSecond)
+            .ConfigureSync(
+                mapping,
+                syncId) as CosmosCSVSyncService<TCSV, TCosmos>;
+
+        await operation!
+            .ConfigureCosmosProcess(
+                databaseId,
+                containerId,
+                partitionKeyLevel1Expression,
+                partitionKeyLevel2Expression,
+                partitionKeyLevel3Expression,
+                cosmosAction)
+            .RunAsync();
+    }
+
+    public async Task StartSyncAsync(
+        string csvFileName,
+        string? sourceContainerOrShareName,
+        string? sourceDirectory,
+        string? destinationContainerOrShareName,
+        string? destinationDirectory,
+        string databaseId,
+        string containerId,
+        Expression<Func<TCosmos, object>> partitionKeyLevel1Expression,
+        Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression = null,
+        Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression = null,
+        Func<IEnumerable<TCSV>, DataProcessActionType, ValueTask<IEnumerable<TCosmos>>>? mapping = null,
+        Func<SyncCosmosAction<TCosmos>, ValueTask<IEnumerable<SyncCosmosAction<TCosmos>?>?>>? cosmosAction = null,
         int? batchSize = null,
         int? retryCount = 0,
         int operationTimeoutInSecond = 300,
