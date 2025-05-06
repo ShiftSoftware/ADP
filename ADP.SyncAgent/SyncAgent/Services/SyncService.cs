@@ -14,7 +14,6 @@ public class SyncService<TCSV, TData> : IDisposable
     where TData : class
 {
     private CSVConfigurations csvConfigurations;
-    private OperationConfigurations operationConfigurations;
     private SyncConfigurations<TCSV, TData> syncConfigurations;
     private Func<DataProcessConfigurations<TData>, ValueTask<bool>> dataProcess;
     private Func<ValueTask> FailFunction;
@@ -75,16 +74,20 @@ public class SyncService<TCSV, TData> : IDisposable
         return this;
     }
 
-    public SyncService<TCSV, TData> ConfigureOperation(
+    public SyncService<TCSV, TData> ConfigureSync(
         int? batchSize = null,
         int? retryCount = 0,
-        int operationTimeoutInSecond = 300)
+        int operationTimeoutInSecond = 300,
+        Func<IEnumerable<TCSV>, DataProcessActionType, ValueTask<IEnumerable<TData>>>? mapping=null,
+        string? syncId = null)
     {
-        operationConfigurations = new OperationConfigurations
+        syncConfigurations = new SyncConfigurations<TCSV, TData>
         {
             BatchSize = batchSize,
             RetryCount = retryCount,
-            OperationTimeoutInSeconds = operationTimeoutInSecond
+            OperationTimeoutInSeconds = operationTimeoutInSecond,
+            Mapping = mapping,
+            SyncId = syncId
         };
 
         return this;
@@ -94,17 +97,6 @@ public class SyncService<TCSV, TData> : IDisposable
         Func<DataProcessConfigurations<TData>, ValueTask<bool>> dataProcess)
     {
         this.dataProcess = dataProcess;
-        return this;
-    }
-
-    public SyncService<TCSV, TData> ConfigureSync(Func<IEnumerable<TCSV>, DataProcessActionType, ValueTask<IEnumerable<TData>>>? mapping, string? syncId = null)
-    {
-        syncConfigurations = new SyncConfigurations<TCSV, TData>
-        {
-            SyncId = syncId,
-            Mapping = mapping
-        };
-
         return this;
     }
 
@@ -386,10 +378,10 @@ public class SyncService<TCSV, TData> : IDisposable
         engine.BeginReadFile(csvFilePath);
 
         var totalCount = CalculateCSVRecordCountAsync(csvFilePath);
-        var batchSize = this.operationConfigurations.BatchSize ?? totalCount;
+        var batchSize = this.syncConfigurations.BatchSize ?? totalCount;
         var totalSteps = totalCount == 0 ? 0 : (int)Math.Ceiling(totalCount / (double)batchSize);
         var currentStep = 0;
-        var retryCount = this.operationConfigurations.RetryCount ?? 0;
+        var retryCount = this.syncConfigurations.RetryCount ?? 0;
         int retry = 0;
 
         taskStatus.TotalStep = totalSteps;
@@ -546,7 +538,7 @@ public class SyncService<TCSV, TData> : IDisposable
             SetupWorkingDirectory();
 
             operationStart = DateTime.UtcNow;
-            cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(this.operationConfigurations.OperationTimeoutInSeconds));
+            cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(this.syncConfigurations.OperationTimeoutInSeconds));
 
             using (logger.BeginScope("Syncing {csvFileName}", this.csvConfigurations.CSVFileName))
             {
@@ -558,7 +550,7 @@ public class SyncService<TCSV, TData> : IDisposable
                     TotalStep = 6,
                     CurrentStep = -1 ,
                     OperationStart= operationStart,
-                    OperationTimeoutInSeconds = this.operationConfigurations.OperationTimeoutInSeconds
+                    OperationTimeoutInSeconds = this.syncConfigurations.OperationTimeoutInSeconds
                 };
 
                 this.UpdateProgress(taskStatus);
