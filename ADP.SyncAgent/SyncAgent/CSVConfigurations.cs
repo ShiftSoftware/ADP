@@ -1,4 +1,4 @@
-﻿namespace ShiftSoftware.ADP.SyncAgent.ConfigurationModels;
+﻿namespace ShiftSoftware.ADP.SyncAgent;
 
 internal class CSVConfigurations
 {

@@ -1,14 +1,14 @@
 ﻿using AutoMapper;
 using LibGit2Sharp;
 using Microsoft.Extensions.Logging;
-using Polly;
 using Polly.Retry;
+using Polly;
 using ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
 using System.Text;
 
 namespace ShiftSoftware.ADP.SyncAgent.Services;
 
-public class SyncService<TCSV, TData> : IDisposable
+public class SyncService2<TCSV, TData> : IDisposable
     where TCSV : CacheableCSV
     where TData : class
 {
@@ -34,7 +34,7 @@ public class SyncService<TCSV, TData> : IDisposable
     private string toInsertFilePath = "";
     private string toDeleteFilePath = "";
 
-    public SyncService(
+    public SyncService2(
             IServiceProvider services,
             IStorageService storageService,
             SyncAgentOptions options,
@@ -54,7 +54,7 @@ public class SyncService<TCSV, TData> : IDisposable
             .Build(); // Builds the resilience pipeline
     }
 
-    public SyncService<TCSV, TData> ConfigureCSVFile(
+    public SyncService2<TCSV, TData> ConfigureCSVFile(
         string csvFileName,
         string? sourceContainerOrShareName,
         string? sourceDirectory,
@@ -73,18 +73,18 @@ public class SyncService<TCSV, TData> : IDisposable
         return this;
     }
 
-    public SyncService<TCSV, TData> ConfigureSync(
+    public SyncService2<TCSV, TData> ConfigureSync(
         int? batchSize = null,
         int? retryCount = 0,
-        int operationTimeoutInSeconds = 300,
-        Func<IEnumerable<TCSV>, SyncActionType, ValueTask<IEnumerable<TData>>>? mapping=null,
+        int operationTimeoutInSecond = 300,
+        Func<IEnumerable<TCSV>, SyncActionType, ValueTask<IEnumerable<TData>>>? mapping = null,
         string? syncId = null)
     {
         SyncConfigurations = new SyncConfigurations<TCSV, TData>
         {
             BatchSize = batchSize,
             RetryCount = retryCount,
-            OperationTimeoutInSeconds = operationTimeoutInSeconds,
+            OperationTimeoutInSeconds = operationTimeoutInSecond,
             Mapping = mapping,
             SyncId = syncId
         };
@@ -92,20 +92,20 @@ public class SyncService<TCSV, TData> : IDisposable
         return this;
     }
 
-    public SyncService<TCSV, TData> ConfigureDataProcess(
+    public SyncService2<TCSV, TData> ConfigureDataProcess(
         Func<DataProcessConfigurations<TData>, ValueTask<bool>> dataProcess)
     {
         this.dataProcess = dataProcess;
         return this;
     }
 
-    public SyncService<TCSV, TData> ConfigureSuccess(Func<ValueTask> success)
+    public SyncService2<TCSV, TData> ConfigureSuccess(Func<ValueTask> success)
     {
         SuccessFunction = success;
         return this;
     }
 
-    public SyncService<TCSV, TData> ConfigureFail(Func<ValueTask> fail)
+    public SyncService2<TCSV, TData> ConfigureFail(Func<ValueTask> fail)
     {
         FailFunction = fail;
         return this;
@@ -341,7 +341,7 @@ public class SyncService<TCSV, TData> : IDisposable
                     this.csvConfigurations.GetDestinationRelativePath(), this.csvConfigurations.DestinationContainerOrShareName, engine.Options.IgnoreFirstLines,
                     this.cancellationTokenSource.Token);
 
-                if(SuccessFunction is not null)
+                if (SuccessFunction is not null)
                     await SuccessFunction();
             }
             catch
@@ -484,7 +484,7 @@ public class SyncService<TCSV, TData> : IDisposable
 
                 var result = await this.dataProcess(new(currentStep, totalSteps, totalCount, actionType, this.cancellationTokenSource.Token, items!, taskStatus));
 
-                if(!result)
+                if (!result)
                     throw new Exception("Failed to process the data.");
 
                 logger.LogInformation("Completed data proccessing for the current Batch: Step {0} of {1}.", currentStep + 1, totalSteps);
@@ -543,12 +543,13 @@ public class SyncService<TCSV, TData> : IDisposable
             {
                 logger.LogInformation("Processing Files");
 
-                var taskStatus = new SyncTaskStatus { 
+                var taskStatus = new SyncTaskStatus
+                {
                     SyncID = this.SyncConfigurations.SyncId,
                     TaskDescription = "Comparing the new File with the Existing Data",
                     TotalStep = 6,
-                    CurrentStep = -1 ,
-                    OperationStart= operationStart,
+                    CurrentStep = -1,
+                    OperationStart = operationStart,
                     OperationTimeoutInSeconds = this.SyncConfigurations.OperationTimeoutInSeconds
                 };
 
@@ -585,7 +586,7 @@ public class SyncService<TCSV, TData> : IDisposable
 
             CleanUp();
 
-            if(FailFunction is not null)
+            if (FailFunction is not null)
                 await FailFunction();
 
             throw;

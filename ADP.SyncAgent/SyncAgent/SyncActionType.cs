@@ -1,7 +1,7 @@
 ﻿namespace ShiftSoftware.ADP.SyncAgent;
 
-public enum DataProcessActionType
+public enum SyncActionType
 {
-    Add,
+    Upsert,
     Delete,
 }

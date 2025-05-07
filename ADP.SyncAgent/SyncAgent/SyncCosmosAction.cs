@@ -25,7 +25,7 @@ public class SyncCosmosAction<T> where T : class
 public class SyncAgentCosmosAction<T> where T : class
 {
     internal T? Item { get; set; }
-    public DataProcessActionType ActionType { get; set; }
+    public SyncActionType ActionType { get; set; }
 
     public Func<SyncCosmosActionMappingInput<T?>, ValueTask<T?>> Mapping { get; set; }
 
@@ -36,7 +36,7 @@ public class SyncAgentCosmosAction<T> where T : class
 
     }
 
-    internal SyncAgentCosmosAction(T? item, DataProcessActionType actionType, CancellationToken cancellationToken)
+    internal SyncAgentCosmosAction(T? item, SyncActionType actionType, CancellationToken cancellationToken)
     {
         Item = item;
         ActionType = actionType;

@@ -13,7 +13,7 @@ public class FileSystemStorageService : IStorageService
     public FileSystemStorageService()
     {
         ResiliencePipeline = new ResiliencePipelineBuilder()
-            .AddRetry(new RetryStrategyOptions()) // Add retry using the default options
+            .AddRetry(new RetryStrategyOptions()) // Upsert retry using the default options
             .Build(); // Builds the resilience pipeline
     }
 

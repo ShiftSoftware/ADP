@@ -14,6 +14,12 @@
 		<IsPackable>True</IsPackable>
 		<PackageIcon>icon.png</PackageIcon>
 	</PropertyGroup>
+	
+	<ItemGroup>
+	  <Compile Remove="Services\CosmosCSVSyncService.cs" />
+	  <Compile Remove="Services\SyncService.cs" />
+	  <Compile Remove="Services\SyncService2.cs" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="AutoMapper" Version="13.0.1" />
