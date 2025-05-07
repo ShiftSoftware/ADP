@@ -216,11 +216,10 @@ public class CosmosCSVSyncService<TCSV, TCosmos> : SyncService<TCSV, TCosmos>, I
                 sourceDirectory,
                 destinationContainerOrShareName,
                 destinationDirectory)
-            .ConfigureOperation(
+            .ConfigureSync(
                 batchSize,
                 retryCount,
-                operationTimeoutInSecond)
-            .ConfigureSync(
+                operationTimeoutInSecond,
                 mapping,
                 syncId) as CosmosCSVSyncService<TCSV, TCosmos>;
 
@@ -260,11 +259,10 @@ public class CosmosCSVSyncService<TCSV, TCosmos> : SyncService<TCSV, TCosmos>, I
                 sourceDirectory,
                 destinationContainerOrShareName,
                 destinationDirectory)
-            .ConfigureOperation(
+            .ConfigureSync(
                 batchSize,
                 retryCount,
-                operationTimeoutInSecond)
-            .ConfigureSync(
+                operationTimeoutInSecond,
                 mapping,
                 syncId) as CosmosCSVSyncService<TCSV, TCosmos>;
 
