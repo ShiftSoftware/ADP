@@ -32,7 +32,7 @@ public class CosmosCSVSyncService<TCSV, TCosmos> : SyncService<TCSV, TCosmos>, I
     private async Task UpsertToCosmosAsync(
             string databaseId,
             string containerId,
-            IEnumerable<SyncCosmosAction<TCosmos>?> items,
+            IEnumerable<SyncAgentCosmosAction<TCosmos>?> items,
             Expression<Func<TCosmos, object>> partitionKeyLevel1Expression,
             Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression,
             Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression,
@@ -74,7 +74,7 @@ public class CosmosCSVSyncService<TCSV, TCosmos> : SyncService<TCSV, TCosmos>, I
     private async Task DeleteFromCosmosAsync(
             string databaseId,
             string containerId,
-            IEnumerable<SyncCosmosAction<TCosmos>?> items,
+            IEnumerable<SyncAgentCosmosAction<TCosmos>?> items,
             Expression<Func<TCosmos, object>> partitionKeyLevel1Expression,
             Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression,
             Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression,
@@ -126,7 +126,7 @@ public class CosmosCSVSyncService<TCSV, TCosmos> : SyncService<TCSV, TCosmos>, I
         Expression<Func<TCosmos, object>> partitionKeyLevel1Expression,
         Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression = null,
         Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression = null,
-        Func<SyncCosmosAction<TCosmos>, ValueTask<SyncCosmosAction<TCosmos>?>>? cosmosAction = null)
+        Func<SyncAgentCosmosAction<TCosmos>, ValueTask<SyncAgentCosmosAction<TCosmos>?>>? cosmosAction = null)
     {
         ConfigureCosmosProcess(
                 databaseId,
@@ -146,17 +146,17 @@ public class CosmosCSVSyncService<TCSV, TCosmos> : SyncService<TCSV, TCosmos>, I
         Expression<Func<TCosmos, object>> partitionKeyLevel1Expression,
         Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression = null,
         Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression = null,
-        Func<SyncCosmosAction<TCosmos>, ValueTask<IEnumerable<SyncCosmosAction<TCosmos>?>?>>? cosmosAction = null)
+        Func<SyncAgentCosmosAction<TCosmos>, ValueTask<IEnumerable<SyncAgentCosmosAction<TCosmos>?>?>>? cosmosAction = null)
     {
         base.ConfigureDataProcess(async (x) =>
         {
-            IEnumerable<SyncCosmosAction<TCosmos>?>? items = null;
+            IEnumerable<SyncAgentCosmosAction<TCosmos>?>? items = null;
 
             if (cosmosAction is null)
-                items = x.Items.Select(y => new SyncCosmosAction<TCosmos>(y, CosmosActionType.Upsert, x.CancellationToken));
+                items = x.Items.Select(y => new SyncAgentCosmosAction<TCosmos>(y, x.ActionType, x.CancellationToken));
             else
                 foreach (var item in x.Items)
-                    items = (items ?? []).Concat((await cosmosAction(new(item, CosmosActionType.Upsert, x.CancellationToken))) ?? []);
+                    items = (items ?? []).Concat((await cosmosAction(new(item, x.ActionType, x.CancellationToken))) ?? []);
 
             logger.LogInformation("Completed comsos action.");
 
@@ -170,7 +170,7 @@ public class CosmosCSVSyncService<TCSV, TCosmos> : SyncService<TCSV, TCosmos>, I
             await DeleteFromCosmosAsync(
                 databaseId,
                 containerId,
-                items?.Where(x => x.ActionType == CosmosActionType.Delete) ?? [],
+                items?.Where(x => x.ActionType == DataProcessActionType.Delete) ?? [],
                 partitionKeyLevel1Expression,
                 partitionKeyLevel2Expression,
                 partitionKeyLevel3Expression,
@@ -179,7 +179,7 @@ public class CosmosCSVSyncService<TCSV, TCosmos> : SyncService<TCSV, TCosmos>, I
             await UpsertToCosmosAsync(
                 databaseId,
                 containerId,
-                items?.Where(x => x.ActionType == CosmosActionType.Upsert) ?? [],
+                items?.Where(x => x.ActionType == DataProcessActionType.Add) ?? [],
                 partitionKeyLevel1Expression,
                 partitionKeyLevel2Expression,
                 partitionKeyLevel3Expression,
@@ -203,7 +203,7 @@ public class CosmosCSVSyncService<TCSV, TCosmos> : SyncService<TCSV, TCosmos>, I
         Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression = null,
         Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression = null,
         Func<IEnumerable<TCSV>, DataProcessActionType, ValueTask<IEnumerable<TCosmos>>>? mapping = null,
-        Func<SyncCosmosAction<TCosmos>, ValueTask<SyncCosmosAction<TCosmos>?>>? cosmosAction = null,
+        Func<SyncAgentCosmosAction<TCosmos>, ValueTask<SyncAgentCosmosAction<TCosmos>?>>? cosmosAction = null,
         int? batchSize = null,
         int? retryCount = 0,
         int operationTimeoutInSecond = 300,
@@ -246,7 +246,7 @@ public class CosmosCSVSyncService<TCSV, TCosmos> : SyncService<TCSV, TCosmos>, I
         Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression = null,
         Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression = null,
         Func<IEnumerable<TCSV>, DataProcessActionType, ValueTask<IEnumerable<TCosmos>>>? mapping = null,
-        Func<SyncCosmosAction<TCosmos>, ValueTask<IEnumerable<SyncCosmosAction<TCosmos>?>?>>? cosmosAction = null,
+        Func<SyncAgentCosmosAction<TCosmos>, ValueTask<IEnumerable<SyncAgentCosmosAction<TCosmos>?>?>>? cosmosAction = null,
         int? batchSize = null,
         int? retryCount = 0,
         int operationTimeoutInSecond = 300,
