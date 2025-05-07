@@ -29,8 +29,12 @@ public interface ISyncService<TSource, TDestination> : IDisposable
     ISyncService<TSource, TDestination> SetupStoreBatchData(Func<SyncFunctionInput<SyncStoreDataInput<TDestination>>, ValueTask<SyncStoreDataResult<TDestination>>> storeBatchDataFunc);
 
     ISyncService<TSource, TDestination> SetupBatchCompleted(Func<SyncFunctionInput<SyncBatchCompleteInput<TDestination>>, ValueTask<bool>> batchCompletedFunc);
+
     ISyncService<TSource, TDestination> SetupCompleted(Func<SyncFunctionInput<SyncStoreDataResult<TDestination>>, ValueTask<bool>> completedFunc);
+
     CancellationToken GetCancellationToken();
+
+    ValueTask Reset();
 
     Task RunAsync();
 }
