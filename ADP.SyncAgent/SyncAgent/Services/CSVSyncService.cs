@@ -562,10 +562,10 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
                     mappedRecords = await mapping(records, actionType);
 
                 if (cosmosAction is null)
-                    items = mappedRecords.Select(x => new SyncCosmosAction<TCosmos>(x, CosmosActionType.Upsert, GetCancellationToken()));
+                    items = mappedRecords.Select(x => new SyncCosmosAction<TCosmos>(x, actionType, GetCancellationToken()));
                 else
                     foreach (var item in mappedRecords)
-                        items = (items ?? []).Concat([await cosmosAction(new(item, CosmosActionType.Upsert, GetCancellationToken()))]);
+                        items = (items ?? []).Concat([await cosmosAction(new(item, actionType, GetCancellationToken()))]);
 
                 logger.LogInformation("Completed mapping CSV records to Cosmos Data Model.");
 
