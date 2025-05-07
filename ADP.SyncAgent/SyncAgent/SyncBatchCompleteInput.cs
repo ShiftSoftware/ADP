@@ -3,13 +3,13 @@
 public class SyncBatchCompleteInput<T> where T : class
 {
     public SyncStoreDataResult<T> SyncStoreDataResult { get; private set; }
-    public SyncActionStatus SyncActionStatus { get; private set; }
+    public SyncActionStatus Status { get; private set; }
 
     public SyncBatchCompleteInput(
         SyncStoreDataResult<T> syncStoreDataResult,
-        SyncActionStatus syncActionStatus)
+        SyncActionStatus status)
     {
         SyncStoreDataResult = syncStoreDataResult;
-        SyncActionStatus = syncActionStatus;
+        Status = status;
     }
 }
