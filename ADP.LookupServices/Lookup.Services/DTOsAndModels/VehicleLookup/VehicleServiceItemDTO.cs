@@ -48,6 +48,8 @@ public class VehicleServiceItemDTO
     public string JobNumber { get; set; }
     public long? MaximumMileage { get; set; }
 
+    public bool Claimable { get; set; }
+
     [JsonIgnore]
     public int? ActiveFor { get; set; }
 
@@ -81,7 +83,8 @@ public class VehicleServiceItemDTO
             this.ServiceItemID,
             this.PaidServiceInvoiceLineID,
             this.ClaimingMethodEnum,
-            this.VehicleInspectionID
+            this.VehicleInspectionID,
+            this.Claimable
         );
 
         var keyBytes = Encoding.UTF8.GetBytes(secretKey);

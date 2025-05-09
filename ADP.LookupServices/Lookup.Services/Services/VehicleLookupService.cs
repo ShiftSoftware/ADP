@@ -846,6 +846,15 @@ public class VehicleLookupService
 
         await CalulateServiceItemStatus(result, showingInactivatedItems);
 
+        foreach (var item in result)
+        {
+            if (item.StatusEnum == VehcileServiceItemStatuses.Pending)
+                item.Claimable = true;
+
+            if (item.ValidityModeEnum == ClaimableItemValidityMode.FixedDateRange && item.ActivatedAt > DateTime.Now)
+                item.Claimable = false;
+        }
+
         var ineligibleServiceItems = await GetIneligibleServiceItems(
             result,
             serviceItems,
@@ -933,17 +942,14 @@ public class VehicleLookupService
                 claimLine.ServiceItemClaim?.JobNumber,
                 claimLine.ServiceItemClaim?.InvoiceNumber, claimLine.CompanyID, claimLine.PackageCode);
         }
-        else if (item.ExpiresAt is not null && item.ExpiresAt < DateTime.Now)
-        {
-            return ("expired", VehcileServiceItemStatuses.Expired, null, null, null, null, null);
-        }
-        else
-        {
-            if (showingInactivatedItems && item.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.WarrantyActivation)
-                return ("activationRequired", VehcileServiceItemStatuses.ActivationRequired, null, null, null, null, null);
 
-            return ("pending", VehcileServiceItemStatuses.Pending, null, null, null, null, null);
-        }
+        if (item.ExpiresAt is not null && item.ExpiresAt < DateTime.Now)
+            return ("expired", VehcileServiceItemStatuses.Expired, null, null, null, null, null);
+        
+        if (showingInactivatedItems && item.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.WarrantyActivation)
+            return ("activationRequired", VehcileServiceItemStatuses.ActivationRequired, null, null, null, null, null);
+        
+        return ("pending", VehcileServiceItemStatuses.Pending, null, null, null, null, null);
     }
 
     private async Task<IEnumerable<VehicleServiceItemDTO>> GetIneligibleServiceItems(
