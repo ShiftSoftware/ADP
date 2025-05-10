@@ -768,7 +768,7 @@ public class VehicleLookupService
                         TypeEnum = VehcileServiceItemTypes.Free,
                         ModelCostID = modelCost?.ID,
                         PackageCode = modelCost?.PackageCode ?? item.PackageCode,
-                        Cost = modelCost.Cost,
+                        Cost = modelCost?.Cost,
                         CampaignUniqueReference = item.CampaignUniqueReference,
                         
                         MaximumMileage = item.MaximumMileage,
@@ -880,7 +880,10 @@ public class VehicleLookupService
 
         foreach (var item in result)
         {
-            item.SignatureExpiry = now.Add(this.options.SignatureValidityDuration);
+            item.SignatureExpiry = now;
+
+            if (this.options?.IncludeInactivatedFreeServiceItems != null)
+                now = now.Add(this.options.SignatureValidityDuration);
 
             item.Signature = item.GenerateSignature(vin, this.options.SigningSecreteKey);
         }
