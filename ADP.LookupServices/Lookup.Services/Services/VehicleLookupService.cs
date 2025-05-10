@@ -875,8 +875,12 @@ public class VehicleLookupService
             .ThenBy(x => x.StatusEnum)
             .ToList();
 
+        var now = DateTime.UtcNow;
+
         foreach (var item in result)
         {
+            item.SignatureExpiry = now.Add(this.options.SignatureValidityDuration);
+
             item.Signature = item.GenerateSignature(vin, this.options.SigningSecreteKey);
         }
 

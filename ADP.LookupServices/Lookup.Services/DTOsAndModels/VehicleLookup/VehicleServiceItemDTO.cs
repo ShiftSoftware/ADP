@@ -69,6 +69,7 @@ public class VehicleServiceItemDTO
 
     public string VehicleInspectionID { get; set; }
     public string Signature { get; set; }
+    public DateTime SignatureExpiry { get; set; }
 
     public string GenerateSignature(string vin, string secretKey)
     {
@@ -84,7 +85,8 @@ public class VehicleServiceItemDTO
             this.PaidServiceInvoiceLineID,
             this.ClaimingMethodEnum,
             this.VehicleInspectionID,
-            this.Claimable
+            this.Claimable,
+            this.SignatureExpiry.Ticks
         );
 
         var keyBytes = Encoding.UTF8.GetBytes(secretKey);
@@ -100,6 +102,9 @@ public class VehicleServiceItemDTO
 
     public bool ValidateSignature(string vin, string secretKey)
     {
+        if (DateTime.UtcNow > this.SignatureExpiry)
+            return false;
+
         var generatedSignature = GenerateSignature(vin, secretKey);
 
         return generatedSignature == this.Signature;
