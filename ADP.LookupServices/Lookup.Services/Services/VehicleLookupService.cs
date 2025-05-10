@@ -768,6 +768,7 @@ public class VehicleLookupService
                         TypeEnum = VehcileServiceItemTypes.Free,
                         ModelCostID = modelCost?.ID,
                         PackageCode = modelCost?.PackageCode ?? item.PackageCode,
+                        Cost = modelCost.Cost,
                         CampaignUniqueReference = item.CampaignUniqueReference,
                         
                         MaximumMileage = item.MaximumMileage,

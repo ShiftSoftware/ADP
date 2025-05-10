@@ -36,6 +36,7 @@ public class VehicleServiceItemDTO
     public VehcileServiceItemStatuses StatusEnum { get; set; } = default!;
     public string CampaignUniqueReference { get; set; }
     public string PackageCode { get; set; }
+    public decimal? Cost { get; set; }
     public DateTime? ClaimDate { get; set; }
     public long? ModelCostID { get; set; }
     public long ServiceItemID { get; set; }
@@ -86,7 +87,8 @@ public class VehicleServiceItemDTO
             this.ClaimingMethodEnum,
             this.VehicleInspectionID,
             this.Claimable,
-            this.SignatureExpiry.Ticks
+            this.SignatureExpiry.Ticks,
+            this.Cost
         );
 
         var keyBytes = Encoding.UTF8.GetBytes(secretKey);
