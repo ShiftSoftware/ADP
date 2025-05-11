@@ -140,8 +140,9 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
             .Select(x => ((JObject)x).ToObject<PaidServiceInvoiceModel>())
             .Where(x => !(x?.IsDeleted ?? false)).ToList();
 
-        companyData.ServiceItemClaimLines = items.Where(x => x.ItemType.ToString() == ModelTypes.ServiceItemClaimLine)
-            .Select(x => ((JObject)x).ToObject<ServiceItemClaimLineModel>()).ToList();
+        companyData.ItemClaims = items.Where(x => x.ItemType.ToString() == ModelTypes.ItemClaim)
+            .Select(x => ((JObject)x).ToObject<ItemClaimModel>())
+            .Where(x => !(x?.IsDeleted ?? false)).ToList();
 
         companyData.FreeServiceItemExcludedVINs = items.Where(x => x.ItemType.ToString() == ModelTypes.FreeServiceItemExcludedVIN)
             .Select(x => ((JObject)x).ToObject<FreeServiceItemExcludedVINModel>()).ToList();

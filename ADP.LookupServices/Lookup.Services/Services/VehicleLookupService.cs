@@ -158,7 +158,7 @@ public class VehicleLookupService
             vehicle, 
             data.SaleInformation,
             companyDataAggregate.PaidServiceInvoices, 
-            companyDataAggregate.ServiceItemClaimLines,
+            companyDataAggregate.ItemClaims,
             companyDataAggregate.VehicleInspections
         );
 
@@ -669,7 +669,7 @@ public class VehicleLookupService
         VehicleEntryModel vehicle,
         VehicleSaleInformation vehicleSaleInformation,
         IEnumerable<PaidServiceInvoiceModel> paidServices,
-        IEnumerable<ServiceItemClaimLineModel> tlpTransactionLines,
+        IEnumerable<ItemClaimModel> tlpTransactionLines,
         IEnumerable<VehicleInspectionModel> vehicleInspections
     )
     {
@@ -769,6 +769,7 @@ public class VehicleLookupService
                         ModelCostID = modelCost?.ID,
                         PackageCode = modelCost?.PackageCode ?? item.PackageCode,
                         Cost = modelCost?.Cost,
+                        CampaignID = item.CampaignID,
                         CampaignUniqueReference = item.CampaignUniqueReference,
                         
                         MaximumMileage = item.MaximumMileage,
@@ -876,14 +877,14 @@ public class VehicleLookupService
             .ThenBy(x => x.StatusEnum)
             .ToList();
 
-        var now = DateTime.UtcNow;
+        var itemSignatureExpiry = DateTime.UtcNow;
+
+        if (this.options?.SignatureValidityDuration != null)
+            itemSignatureExpiry = itemSignatureExpiry.Add(this.options.SignatureValidityDuration);
 
         foreach (var item in result)
         {
-            item.SignatureExpiry = now;
-
-            if (this.options?.IncludeInactivatedFreeServiceItems != null)
-                now = now.Add(this.options.SignatureValidityDuration);
+            item.SignatureExpiry = itemSignatureExpiry;
 
             item.Signature = item.GenerateSignature(vin, this.options.SigningSecreteKey);
         }
@@ -931,10 +932,10 @@ public class VehicleLookupService
             return date;
     }
 
-    private (string statusText, VehcileServiceItemStatuses status, DateTime? claimDate, string wip, string invoice, string companyID, string packageCode)
+    private (string statusText, VehcileServiceItemStatuses status, DateTimeOffset? claimDate, string wip, string invoice, string companyID, string packageCode)
     ProcessServiceItemStatus(
         VehicleServiceItemDTO item,
-        IEnumerable<ServiceItemClaimLineModel> serviceClaimLines,
+        IEnumerable<ItemClaimModel> serviceClaimLines,
         bool showingInactivatedItems
     )
     {
@@ -946,9 +947,9 @@ public class VehicleLookupService
         if (claimLine is not null)
         {
             return ("processed", VehcileServiceItemStatuses.Processed,
-                claimLine.ClaimDate.HasValue ? claimLine.ClaimDate.Value : null,
-                claimLine.ServiceItemClaim?.JobNumber,
-                claimLine.ServiceItemClaim?.InvoiceNumber, claimLine.CompanyID, claimLine.PackageCode);
+                claimLine.ClaimDate,
+                claimLine.JobNumber,
+                claimLine.InvoiceNumber, claimLine.CompanyID, claimLine.PackageCode);
         }
 
         if (item.ExpiresAt is not null && item.ExpiresAt < DateTime.Now)
@@ -973,7 +974,7 @@ public class VehicleLookupService
             .Select(x => x.ServiceItemID.ToString())
             .ToList();
 
-        var claimedItems = companyDataAggregate.ServiceItemClaimLines?
+        var claimedItems = companyDataAggregate.ItemClaims?
             .Select(x => x?.ServiceItemID)
             .Where(x => !(existingServiceItemIds?.Any(s => s == x) ?? false));
 
@@ -982,7 +983,7 @@ public class VehicleLookupService
             //var modelCost = GetModelCost(item.ModelCosts, katashiki, variant);
 
             var claimLine = companyDataAggregate
-                .ServiceItemClaimLines?
+                .ItemClaims?
                 .FirstOrDefault(t => t.ServiceItemID == item.ID.ToString());
 
             var serviceItem = new VehicleServiceItemDTO
@@ -999,8 +1000,8 @@ public class VehicleLookupService
                 //ModelCostID = modelCost?.ID,
                 PackageCode = claimLine.PackageCode, //modelCost?.PackageCode ?? item.PackageCode,
                 ClaimDate = claimLine?.ClaimDate,
-                InvoiceNumber = claimLine?.ServiceItemClaim?.InvoiceNumber,
-                JobNumber = claimLine?.ServiceItemClaim?.JobNumber,
+                InvoiceNumber = claimLine?.InvoiceNumber,
+                JobNumber = claimLine?.JobNumber,
                 CompanyID = claimLine?.CompanyID,
                 MaximumMileage = item.MaximumMileage
             };
@@ -1118,7 +1119,7 @@ public class VehicleLookupService
         {
             var statusResult = ProcessServiceItemStatus(
                 item,
-                companyDataAggregate.ServiceItemClaimLines,
+                companyDataAggregate.ItemClaims,
                 showingInactivatedItems
             );
 

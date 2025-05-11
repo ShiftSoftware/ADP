@@ -34,10 +34,11 @@ public class VehicleServiceItemDTO
     public DateTime? ExpiresAt { get; set; }
     public string Status { get; set; }
     public VehcileServiceItemStatuses StatusEnum { get; set; } = default!;
+    public long? CampaignID { get; set; }
     public string CampaignUniqueReference { get; set; }
     public string PackageCode { get; set; }
     public decimal? Cost { get; set; }
-    public DateTime? ClaimDate { get; set; }
+    public DateTimeOffset? ClaimDate { get; set; }
     public long? ModelCostID { get; set; }
     public long ServiceItemID { get; set; }
     public long? PaidServiceInvoiceLineID { get; set; }
@@ -88,7 +89,8 @@ public class VehicleServiceItemDTO
             this.VehicleInspectionID,
             this.Claimable,
             this.SignatureExpiry.Ticks,
-            this.Cost
+            this.Cost,
+            this.CampaignID
         );
 
         var keyBytes = Encoding.UTF8.GetBytes(secretKey);

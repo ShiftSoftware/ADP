@@ -20,7 +20,7 @@ public class CompanyDataAggregateCosmosModel
     public List<BrokerInitialVehicleModel> BrokerInitialVehicles { get; set; }
     public List<BrokerInvoiceModel> BrokerInvoices { get; set; }
     public List<PaidServiceInvoiceModel> PaidServiceInvoices { get; set; }
-    public List<ServiceItemClaimLineModel> ServiceItemClaimLines { get; set; }
+    public List<ItemClaimModel> ItemClaims { get; set; }
     public List<FreeServiceItemExcludedVINModel> FreeServiceItemExcludedVINs { get; set; }
     public List<FreeServiceItemDateShiftModel> FreeServiceItemDateShifts { get; set; }
     public List<WarrantyDateShiftModel> WarrantyDateShifts { get; set; }
