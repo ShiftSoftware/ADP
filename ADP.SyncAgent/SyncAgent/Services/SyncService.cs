@@ -5,595 +5,349 @@ using Polly;
 using Polly.Retry;
 using ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
 using System.Text;
+using System.Threading;
 
 namespace ShiftSoftware.ADP.SyncAgent.Services;
 
-public class SyncService<TCSV, TData> : IDisposable
-    where TCSV : CacheableCSV
-    where TData : class
+public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestination>
+    where TSource : class, new()
+    where TDestination : class, new()
 {
-    private CSVConfigurations csvConfigurations;
-    public SyncConfigurations<TCSV, TData> SyncConfigurations { get; private set; }
-    private Func<DataProcessConfigurations<TData>, ValueTask<bool>> dataProcess;
-    private Func<ValueTask> FailFunction;
-    private Func<ValueTask> SuccessFunction;
+    public SyncConfigurations? SyncConfigurations { get; private set; }
 
-    private readonly IServiceProvider services;
-    private readonly IStorageService storageService;
-    private readonly SyncAgentOptions options;
-    private readonly IMapper mapper;
-    private readonly ILogger logger;
-    private readonly ISyncProgressIndicator? syncProgressIndicator;
-    private DirectoryInfo workingDirectory;
-    protected ResiliencePipeline ResiliencePipeline { get; private set; }
+    public Func<SyncFunctionInput, ValueTask<bool>>? Preparing { get; private set; }
 
-    private CancellationTokenSource cancellationTokenSource = new();
-    private int operationTimeoutInSeconds = 300;
-    private DateTime operationStart = new();
+    public Func<SyncFunctionInput<SyncActionType>, ValueTask<long?>>? SourceTotalItemCount { get; private set; }
 
-    private string toInsertFilePath = "";
-    private string toDeleteFilePath = "";
+    public Func<SyncFunctionInput<SyncGetBatchDataInput<TSource>>, ValueTask<IEnumerable<TSource?>?>>? GetSourceBatchItems { get; private set; }
 
-    public SyncService(
-            IServiceProvider services,
-            IStorageService storageService,
-            SyncAgentOptions options,
-            IMapper mapper,
-            ILogger logger,
-            ISyncProgressIndicator? syncProgressIndicator
-        )
+    public Func<SyncFunctionInput<SyncStoreDataInput<TDestination>>, ValueTask<SyncStoreDataResult<TDestination>>>? StoreBatchData { get; private set; }
+
+    public Func<SyncFunctionInput<SyncBatchCompleteInput<TSource, TDestination>>, ValueTask<RetryActionType>>? BatchRetry { get; private set; }
+
+    public Func<SyncFunctionInput<SyncBatchCompleteInput<TSource, TDestination>>, ValueTask<bool>>? BatchCompleted { get; private set; }
+
+    public Func<SyncFunctionInput, ValueTask>? OperationCompleted { get; private set; }
+
+    public Func<SyncFunctionInput<SyncMappingInput<TSource, TDestination>>, ValueTask<IEnumerable<TDestination?>?>>? Mapping { get; private set; }
+
+    public Func<ValueTask>? Failed { get; private set; }
+
+    public Func<ValueTask>? Succeeded { get; private set; }
+
+    public Func<ValueTask>? Finished { get; private set; }
+
+    private CancellationTokenSource? cancellationTokenSource;
+
+    public ISyncService<TSource, TDestination> Configure(int batchSize, int maxRetryCount = 0, int operationTimeoutInSeconds = 300, string? syncId = null)
     {
-        this.services = services;
-        this.storageService = storageService;
-        this.options = options;
-        this.mapper = mapper;
-        this.logger = logger;
-        this.syncProgressIndicator = syncProgressIndicator;
-        ResiliencePipeline = new ResiliencePipelineBuilder()
-            .AddRetry(new RetryStrategyOptions()) // Upsert retry using the default options
-            .Build(); // Builds the resilience pipeline
+        this.SyncConfigurations = new SyncConfigurations(batchSize, maxRetryCount, operationTimeoutInSeconds, syncId);
+        return this;
     }
 
-    public SyncService<TCSV, TData> ConfigureCSVFile(
-        string csvFileName,
-        string? sourceContainerOrShareName,
-        string? sourceDirectory,
-        string? destinationContainerOrShareName,
-        string? destinationDirectory)
+    public ISyncService<TSource, TDestination> SetupPreparing(Func<SyncFunctionInput, ValueTask<bool>> preparingFunc)
     {
-        csvConfigurations = new CSVConfigurations
+        this.Preparing = preparingFunc;
+        return this;
+    }
+
+    public ISyncService<TSource, TDestination> SetupSourceTotalItemCount(Func<SyncFunctionInput<SyncActionType>, ValueTask<long?>>? sourceTotalItemCountFunc)
+    {
+        this.SourceTotalItemCount = sourceTotalItemCountFunc;
+        return this;
+    }
+
+    public ISyncService<TSource, TDestination> SetupGetSourceBatchItems(Func<SyncFunctionInput<SyncGetBatchDataInput<TSource>>, ValueTask<IEnumerable<TSource?>?>> getSourceBatchItemsFunc)
+    {
+        this.GetSourceBatchItems = getSourceBatchItemsFunc;
+        return this;
+    }
+
+    public ISyncService<TSource, TDestination> SetupMapping(Func<SyncFunctionInput<SyncMappingInput<TSource, TDestination>>, ValueTask<IEnumerable<TDestination?>?>> mappingFunc)
+    {
+        this.Mapping = mappingFunc;
+        return this;
+    }
+
+    public ISyncService<TSource, TDestination> SetupStoreBatchData(Func<SyncFunctionInput<SyncStoreDataInput<TDestination>>, ValueTask<SyncStoreDataResult<TDestination>>> storeBatchDataFunc)
+    {
+        this.StoreBatchData = storeBatchDataFunc;
+        return this;
+    }
+
+    public ISyncService<TSource, TDestination> SetupBatchRetry(Func<SyncFunctionInput<SyncBatchCompleteInput<TSource, TDestination>>, ValueTask<RetryActionType>> batchRetryFunc)
+    {
+        this.BatchRetry = batchRetryFunc;
+        return this;
+    }
+
+    public ISyncService<TSource, TDestination> SetupBatchCompleted(Func<SyncFunctionInput<SyncBatchCompleteInput<TSource, TDestination>>, ValueTask<bool>> batchCompletedFunc)
+    {
+        this.BatchCompleted = batchCompletedFunc;
+        return this;
+    }
+
+    public ISyncService<TSource, TDestination> SetupOperationCompleted(Func<SyncFunctionInput, ValueTask> operationCompletedFunc)
+    {
+        this.OperationCompleted = operationCompletedFunc;
+        return this;
+    }
+
+    public ISyncService<TSource, TDestination> SetupFailed(Func<ValueTask> failedFunc)
+    {
+        this.Failed = failedFunc;
+        return this;
+    }
+
+    public ISyncService<TSource, TDestination> SetupSucceeded(Func<ValueTask> succeededFunc)
+    {
+        this.Succeeded = succeededFunc;
+        return this;
+    }
+
+    public async Task<bool> RunAsync()
+    {
+        CheckSetups();
+
+        bool result;
+
+        try
         {
-            CSVFileName = csvFileName,
-            SourceContainerOrShareName = sourceContainerOrShareName,
-            SourceDirectory = sourceDirectory,
-            DestinationContainerOrShareName = destinationContainerOrShareName,
-            DestinationDirectory = destinationDirectory
-        };
+            // Setup cancellation token
+            this.cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(this.SyncConfigurations!.OperationTimeoutInSeconds));
 
-        return this;
-    }
+            // Preparing
+            if(this.Preparing is not null)
+                await this.Preparing!(new SyncFunctionInput(this.GetCancellationToken()));
 
-    public SyncService<TCSV, TData> ConfigureSync(
-        int? batchSize = null,
-        int? retryCount = 0,
-        int operationTimeoutInSeconds = 300,
-        Func<IEnumerable<TCSV>, SyncActionType, ValueTask<IEnumerable<TData>>>? mapping=null,
-        string? syncId = null)
-    {
-        SyncConfigurations = new SyncConfigurations<TCSV, TData>
-        {
-            BatchSize = batchSize,
-            RetryCount = retryCount,
-            OperationTimeoutInSeconds = operationTimeoutInSeconds,
-            Mapping = mapping,
-            SyncId = syncId
-        };
+            // Run operation for delete
+            var deleteResult = await this.RunOperation(SyncActionType.Delete);
 
-        return this;
-    }
+            // Run operation for upsert
+            var upsertRersult = await this.RunOperation(SyncActionType.Upsert);
 
-    public SyncService<TCSV, TData> ConfigureDataProcess(
-        Func<DataProcessConfigurations<TData>, ValueTask<bool>> dataProcess)
-    {
-        this.dataProcess = dataProcess;
-        return this;
-    }
+            result = deleteResult && upsertRersult;
 
-    public SyncService<TCSV, TData> ConfigureSuccess(Func<ValueTask> success)
-    {
-        SuccessFunction = success;
-        return this;
-    }
-
-    public SyncService<TCSV, TData> ConfigureFail(Func<ValueTask> fail)
-    {
-        FailFunction = fail;
-        return this;
-    }
-
-    private void StageAndCommit()
-    {
-        using (var repo = new Repository(this.workingDirectory.FullName))
-        {
-            Commands.Stage(repo, "*");
-
-            Signature author = new Signature("Agent", "@Agent", DateTime.Now);
-            Signature committer = author;
-
-            Commit commit = repo.Commit("First Commit", author, committer);
+            if(result && this.Succeeded is not null)
+                await this.Succeeded!();
+            else if (!result && this.Failed is not null)
+                await this.Failed!();
         }
+        catch (Exception ex)
+        {
+            if(this.Failed is not null)
+                await this.Failed!();
+
+            result = false;
+        }
+
+        if(this.Finished is not null)
+            await this.Finished!();
+
+        return result;
     }
 
-    private (IEnumerable<string> Added, IEnumerable<string> Deleted) CompareVersionsAndGetDiff()
+    private async Task<bool> RunOperation(SyncActionType actionType)
     {
-        IEnumerable<string> added = [];
-        IEnumerable<string> deleted = [];
+        bool result = false;
 
-        using (var repo = new Repository(this.workingDirectory.FullName))
+        // Get total item count
+        long? totalItemCount = null;
+        if(this.SourceTotalItemCount is not null)
+            totalItemCount = await this.SourceTotalItemCount!(new SyncFunctionInput<SyncActionType>(this.GetCancellationToken(), actionType));
+
+        // Prepare batch informations
+        var batchSize = this.SyncConfigurations!.BatchSize;
+        var currentStep = 0;
+        var totalSteps = totalItemCount == null ? null : (long?)Math.Ceiling((double)totalItemCount.Value / (double)batchSize);
+        long retryCount = 0;
+        var maxRetryCount = this.SyncConfigurations.MaxRetryCount;
+
+        IEnumerable<TSource?>? sourceItems = null;
+        IEnumerable<TDestination?>? destinationItems = null;
+        SyncStoreDataResult<TDestination>? storeResult = null;
+
+        while (true)
         {
-            foreach (var item in repo.RetrieveStatus())
-            {
-                if (item.State == FileStatus.ModifiedInWorkdir)
-                {
-                    var patch = repo.Diff.Compare<Patch>([item.FilePath]).First();
+            await CheckForCancellation();
 
-                    added = patch.AddedLines.Select(x => x.Content);
-                    deleted = patch.DeletedLines.Select(x => x.Content);
+            // If provide with total item count and the last step is completed, then stop the operation
+            if (totalSteps != null && currentStep >= totalSteps)
+            {
+                result = true;
+                break;
+            }
+
+            try
+            {
+                // Get current batch data from the source
+                sourceItems = await this.GetSourceBatchItems!(new SyncFunctionInput<SyncGetBatchDataInput<TSource>>(this.GetCancellationToken(), new SyncGetBatchDataInput<TSource>(sourceItems, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType))));
+
+                // If no data is returned and total item count not provided, then stop the operation
+                if (sourceItems is null && totalItemCount is null)
+                {
+                    result = true;
+                    break;
+                }
+
+                // Map the source data to destination data
+                destinationItems = await this.Mapping!(new SyncFunctionInput<SyncMappingInput<TSource, TDestination>>(this.GetCancellationToken(), new SyncMappingInput<TSource, TDestination>(sourceItems, destinationItems, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType))));
+
+                // Store the mapped data to the destination
+                storeResult = await this.StoreBatchData!(new SyncFunctionInput<SyncStoreDataInput<TDestination>>(this.GetCancellationToken(), new SyncStoreDataInput<TDestination>(destinationItems, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType))));
+
+                // Check if retry required
+                if(storeResult.Retry)
+                    throw new Exception("Retry is required.");
+
+                // Run batch completed function
+                if (this.BatchCompleted is not null)
+                {
+                    var batchCompletedResult = await this.BatchCompleted!(new SyncFunctionInput<SyncBatchCompleteInput<TSource, TDestination>>(this.GetCancellationToken(), new SyncBatchCompleteInput<TSource, TDestination>(sourceItems, storeResult, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType))));
+
+                    if (!batchCompletedResult)
+                    {
+                        result = false;
+                        break;
+                    }
+                }
+
+                currentStep++;
+                retryCount = 0;
+                sourceItems = null;
+                destinationItems = null;
+                storeResult = null;
+            }
+            catch (Exception)
+            {
+                RetryActionType retryResult = RetryActionType.RetryAndStopAfterLastRetry;
+                if (this.BatchRetry is not null)
+                    retryResult = await this.BatchRetry!(new SyncFunctionInput<SyncBatchCompleteInput<TSource, TDestination>>(this.GetCancellationToken(), new SyncBatchCompleteInput<TSource, TDestination>(sourceItems, storeResult, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType))));
+
+                // Do action based on the retry result
+                if (retryResult == RetryActionType.RetryAndContinueAfterLastRetry)
+                {
+                    retryCount++;
+
+                    if (retryCount > maxRetryCount)
+                    {
+                        // Run batch completed function
+                        if (this.BatchCompleted is not null)
+                        {
+                            var batchCompletedResult = await this.BatchCompleted!(new SyncFunctionInput<SyncBatchCompleteInput<TSource, TDestination>>(this.GetCancellationToken(), new SyncBatchCompleteInput<TSource, TDestination>(sourceItems, storeResult, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType))));
+
+                            if (!batchCompletedResult)
+                            {
+                                result = false;
+                                break;
+                            }
+                        }
+
+                        currentStep++;
+                        retryCount = 0;
+                        sourceItems = null;
+                        destinationItems = null;
+                        storeResult = null;
+                    }
+                }
+                else if (retryResult == RetryActionType.Skip)
+                {
+                    // Run batch completed function
+                    if (this.BatchCompleted is not null)
+                    {
+                        var batchCompletedResult = await this.BatchCompleted!(new SyncFunctionInput<SyncBatchCompleteInput<TSource, TDestination>>(this.GetCancellationToken(), new SyncBatchCompleteInput<TSource, TDestination>(sourceItems, storeResult, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType))));
+
+                        if (!batchCompletedResult)
+                        {
+                            result = false;
+                            break;
+                        }
+                    }
+
+                    currentStep++;
+                    retryCount = 0;
+                    sourceItems = null;
+                    destinationItems = null;
+                    storeResult = null;
+                }
+                else if (retryResult == RetryActionType.Stop)
+                {
+                    result = false;
+                    break;
+                }
+                else if(retryResult == RetryActionType.RetryAndStopAfterLastRetry)
+                {
+                    retryCount++;
+
+                    if (retryCount > maxRetryCount)
+                    {
+                        result = false;
+                        break;
+                    }
                 }
             }
         }
 
-        return (added, deleted);
+        // Run operation completed function
+        if (this.OperationCompleted is not null)
+            await this.OperationCompleted!(new SyncFunctionInput(this.GetCancellationToken()));
+
+        return result;
     }
 
-    public void SetupWorkingDirectory()
+    private void CheckSetups()
     {
-        var tempFolder = Guid.NewGuid().ToString();
-        workingDirectory = new DirectoryInfo(Path.Combine(options.CSVCompareWorkingDirectory, tempFolder));
-        workingDirectory.Create();
-
-        toInsertFilePath = Path.Combine(workingDirectory.FullName, "to-insert.csv");
-        toDeleteFilePath = Path.Combine(workingDirectory.FullName, "to-delete.csv");
-
-        Repository.Init(workingDirectory.FullName);
+        if (this.SyncConfigurations == null)
+            throw new InvalidOperationException("SyncConfigurations is not set.");
+        if (this.GetSourceBatchItems == null)
+            throw new InvalidOperationException("GetSourceBatchItems function is not set.");
+        if (this.StoreBatchData == null)
+            throw new InvalidOperationException("StoreBatchData function is not set.");
+        if (this.Mapping == null)
+            throw new InvalidOperationException("Mapping function is not set.");
     }
 
-    private void CleanUp()
+    public CancellationToken GetCancellationToken()
     {
-        SetAttributesNormal();
-
-        this.workingDirectory.Delete(true);
-
-        GarbageCollection();
+        return this.cancellationTokenSource!.Token;
     }
 
-    private void SetAttributesNormal()
+    private async Task CheckForCancellation()
     {
-        foreach (var subDir in this.workingDirectory.GetDirectories())
-            SetAttributesNormal(subDir);
-
-        foreach (var file in workingDirectory.GetFiles())
-            file.Attributes = FileAttributes.Normal;
-    }
-
-    private void SetAttributesNormal(DirectoryInfo dir)
-    {
-        foreach (var subDir in dir.GetDirectories())
-            SetAttributesNormal(subDir);
-
-        foreach (var file in dir.GetFiles())
-            file.Attributes = FileAttributes.Normal;
-    }
-
-    private void GarbageCollection()
-    {
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
-        GC.Collect();
-    }
-
-    private void CheckForCancellation()
-    {
-        if (cancellationTokenSource.Token.IsCancellationRequested)
+        if (GetCancellationToken().IsCancellationRequested)
         {
-            CleanUp();
+            await this.Failed!();
             throw new OperationCanceledException();
         }
     }
 
-    private void UpdateProgress(SyncTaskStatus syncTask, bool incrementStep = true)
+    public ValueTask Reset()
     {
-        if (incrementStep)
-            syncTask.CurrentStep++;
-
-        syncTask.Progress = syncTask.TotalStep == 0 ? 0 : (double)(syncTask.CurrentStep) / syncTask.TotalStep;
-        syncTask.Elapsed = DateTime.UtcNow - operationStart;
-        syncTask.RemainingTimeToShutdown = operationStart.AddSeconds(operationTimeoutInSeconds) - DateTime.UtcNow;
+        this.SyncConfigurations = null;
+        this.Preparing = null;
+        this.SourceTotalItemCount = null;
+        this.GetSourceBatchItems = null;
+        this.StoreBatchData = null;
+        this.BatchRetry = null;
+        this.BatchCompleted = null;
+        this.OperationCompleted = null;
+        this.cancellationTokenSource = null;
+        this.Mapping = null;
+        this.Failed = null;
+        this.Succeeded = null;
+        this.Finished = null;
+        return new ValueTask();
     }
 
-    private int CalculateCSVRecordCountAsync(string filePath)
+    public ValueTask DisposeAsync()
     {
-        using CacheableCSVAsyncEngine<TCSV> engine = new();
-        engine.BeginReadFile(filePath);
-        return engine.Count();
+        Reset();
+        return new ValueTask();
     }
 
-    private async Task<bool> ProcessFilesAsync(SyncTaskStatus syncTask)
+    public ISyncService<TSource, TDestination> SetupFinished(Func<ValueTask> finishedFunc)
     {
-        using CacheableCSVAsyncEngine<TCSV> engine = new();
-
-        logger.LogInformation("Loding the existing file.");
-        UpdateProgress(syncTask);
-        if (syncProgressIndicator is not null)
-            await syncProgressIndicator.LogInformationAsync(syncTask, "Loding the existing file.");
-
-        await storageService
-            .LoadOriginalFileAsync(
-                Path.Combine(this.csvConfigurations.DestinationDirectory ?? "", this.csvConfigurations.CSVFileName!),
-                Path.Combine(this.workingDirectory.FullName, "file.csv"),
-                engine.Options.IgnoreFirstLines, this.csvConfigurations.DestinationContainerOrShareName,
-                this.cancellationTokenSource.Token);
-
-        logger.LogInformation("Initializing a git repo.");
-        UpdateProgress(syncTask);
-        if (syncProgressIndicator is not null)
-            await syncProgressIndicator.LogInformationAsync(syncTask, "Initializing a git repo.");
-        StageAndCommit();
-
-        logger.LogInformation("Loding the new file.");
-        UpdateProgress(syncTask);
-        if (syncProgressIndicator is not null)
-            await syncProgressIndicator.LogInformationAsync(syncTask, "Loding the new file.");
-
-        await storageService
-            .LoadNewVersionAsync(
-            Path.Combine(this.csvConfigurations.SourceDirectory ?? "", this.csvConfigurations.CSVFileName!),
-            Path.Combine(this.workingDirectory.FullName, "file.csv"),
-            engine.Options.IgnoreFirstLines,
-            this.csvConfigurations.SourceContainerOrShareName,
-            this.cancellationTokenSource.Token);
-
-        logger.LogInformation("Execute 'git diff' on the files.");
-        UpdateProgress(syncTask);
-        if (syncProgressIndicator is not null)
-            await syncProgressIndicator.LogInformationAsync(syncTask, "Execute 'git diff' on the files.");
-
-        var comparision = CompareVersionsAndGetDiff();
-
-        // Find duplicates in Added and Deleted
-        var duplicates = comparision.Added.Intersect(comparision.Deleted);
-
-        // Remove duplicates from both lists
-        comparision.Added = comparision.Added.Except(duplicates);
-        comparision.Deleted = comparision.Deleted.Except(duplicates);
-
-        if (comparision.Added.Count() == 0 && comparision.Deleted.Count() == 0)
-        {
-            logger.LogInformation("Nothing to do. Skipping");
-
-            syncTask.Completed = true;
-            syncTask.CurrentStep = syncTask.TotalStep - 1;
-
-            UpdateProgress(syncTask);
-
-            if (syncProgressIndicator is not null)
-                await syncProgressIndicator.LogInformationAsync(syncTask, "Nothing to do. Skipping.");
-
-            return false;
-        }
-
-        logger.LogInformation("Generating a file for added records.");
-        UpdateProgress(syncTask);
-        if (syncProgressIndicator is not null)
-            await syncProgressIndicator.LogInformationAsync(syncTask, "Generating a file for added records.");
-
-        using (TextWriter textWriter = new StreamWriter(toInsertFilePath, true, Encoding.UTF8))
-        {
-            for (int i = 0; i < engine.Options.IgnoreFirstLines; i++)
-                await textWriter.WriteLineAsync(new StringBuilder(engine.GetFileHeader()), this.cancellationTokenSource.Token);
-
-            foreach (var line in comparision.Added)
-                await textWriter.WriteAsync(new StringBuilder(line), this.cancellationTokenSource.Token);
-        }
-
-        logger.LogInformation("Generating a file for deleted records.");
-        UpdateProgress(syncTask);
-        if (syncProgressIndicator is not null)
-            await syncProgressIndicator.LogInformationAsync(syncTask, "Generating a file for deleted records.");
-
-        using (TextWriter textWriter = new StreamWriter(toDeleteFilePath, true, Encoding.UTF8))
-        {
-            for (int i = 0; i < engine.Options.IgnoreFirstLines; i++)
-                await textWriter.WriteLineAsync(new StringBuilder(engine.GetFileHeader()), this.cancellationTokenSource.Token);
-
-            foreach (var line in comparision.Deleted)
-                await textWriter.WriteAsync(new StringBuilder(line), this.cancellationTokenSource.Token);
-        }
-
-        //Cleanup some memory usage
-        comparision.Added = null;
-        comparision.Deleted = null;
-        GarbageCollection();
-
-        syncTask.Completed = true;
-        syncTask.Progress = 1;
-
-        logger.LogInformation("File Processing Task has finished successfully.");
-        if (syncProgressIndicator is not null)
-            await syncProgressIndicator.LogInformationAsync(syncTask, "File Processing Task has finished successfully.");
-
-        return true;
-    }
-
-    private async Task ProcessDataAsync()
-    {
-        var deleteSucceeded = await ProcessBatchDataAsync(toDeleteFilePath, SyncActionType.Delete);
-
-        var upsertSucceeded = await ProcessBatchDataAsync(toInsertFilePath, SyncActionType.Upsert);
-
-        if (upsertSucceeded && deleteSucceeded)
-        {
-            try
-            {
-                using CacheableCSVAsyncEngine<TCSV> engine = new();
-
-                await storageService.StoreNewVersionAsync(Path.Combine(workingDirectory.FullName, "file.csv"),
-                    this.csvConfigurations.GetDestinationRelativePath(), this.csvConfigurations.DestinationContainerOrShareName, engine.Options.IgnoreFirstLines,
-                    this.cancellationTokenSource.Token);
-
-                if(SuccessFunction is not null)
-                    await SuccessFunction();
-            }
-            catch
-            {
-                logger.LogError("Failed to store the new version of the file.");
-                throw;
-            }
-        }
-        else
-        {
-            logger.LogError("Failed to sync to cosmos.");
-        }
-    }
-
-    private async Task<bool> ProcessBatchDataAsync(string csvFilePath, SyncActionType actionType)
-    {
-        CheckForCancellation();
-
-        var taskStatus = new SyncTaskStatus
-        {
-            SyncID = this.SyncConfigurations.SyncId,
-            TaskDescription = actionType == SyncActionType.Upsert ? "Adding data" : "Deleting data",
-            TotalStep = 0,
-            CurrentStep = 0
-        };
-
-        logger.LogInformation("Calculating Cosmos DB Task Steps: Operation Type is: {0}", actionType == SyncActionType.Upsert ? "Add" : "Delete");
-        this.UpdateProgress(taskStatus, false);
-        if (syncProgressIndicator is not null)
-            await syncProgressIndicator.LogInformationAsync(taskStatus, string.Format("Calculating Cosmos DB Task Steps: Operation Type is: {0}\r\n", actionType == SyncActionType.Upsert ? "Add" : "Delete"));
-
-        using CacheableCSVAsyncEngine<TCSV> engine = new();
-        engine.BeginReadFile(csvFilePath);
-
-        var totalCount = CalculateCSVRecordCountAsync(csvFilePath);
-        var batchSize = this.SyncConfigurations.BatchSize ?? totalCount;
-        var totalSteps = totalCount == 0 ? 0 : (int)Math.Ceiling(totalCount / (double)batchSize);
-        var currentStep = 0;
-        var retryCount = this.SyncConfigurations.RetryCount ?? 0;
-        int retry = 0;
-
-        taskStatus.TotalStep = totalSteps;
-
-        logger.LogInformation("Total Item Count is: {0:#,0}", totalCount);
-        logger.LogInformation("Batch Size is: {0:#,0}", batchSize);
-        logger.LogInformation("Step Count is: {0:#,0}", totalSteps);
-
-        this.UpdateProgress(taskStatus, false);
-        if (syncProgressIndicator is not null)
-            await syncProgressIndicator.LogInformationAsync(taskStatus, string.Format("Total Item Count is: {0:#,0}, Batch Size is: {1:#,0}, Step Count is: {2:#,0}\r\n", totalCount, batchSize, totalSteps));
-
-        IEnumerable<TData?>? items = null;
-
-        while (true)
-        {
-            CheckForCancellation();
-
-            if (currentStep < totalSteps)
-            {
-                logger.LogInformation(
-                    "{0:P2}: Processing Step {1} of {2}. Elapsed: {3:c}. Remaining Allowed Time: {4:c}",
-                    totalSteps == 0 ? 0 : (double)(currentStep + 1) / totalSteps,
-                    currentStep + 1,
-                    totalSteps,
-                    DateTime.UtcNow - operationStart,
-                    operationStart.AddSeconds(operationTimeoutInSeconds) - DateTime.UtcNow
-                );
-
-                this.UpdateProgress(taskStatus, false);
-                if (syncProgressIndicator is not null)
-                    await syncProgressIndicator.LogInformationAsync(
-                        taskStatus,
-                        string.Format("Processing Step {0} of {1}.\r\n\r\n", taskStatus.CurrentStep + 1, taskStatus.TotalStep));
-            }
-
-            if (items is null)
-            {
-                logger.LogInformation("Reading the current batch from the CSV file.");
-
-                this.UpdateProgress(taskStatus, false);
-                if (syncProgressIndicator is not null)
-                    await syncProgressIndicator.LogInformationAsync(
-                        taskStatus,
-                        "Reading the current batch from the CSV file.\r\n\r\n");
-
-                var records = engine.ReadNexts(batchSize);
-
-                logger.LogInformation("Successfully loaded the current batch to memory.");
-
-                this.UpdateProgress(taskStatus, false);
-                if (syncProgressIndicator is not null)
-                    await syncProgressIndicator.LogInformationAsync(
-                        taskStatus,
-                        "Successfully loaded the current batch to memory.\r\n\r\n");
-
-                if (records?.Any() != true)
-                {
-                    logger.LogInformation("No items were loaded.");
-
-                    this.UpdateProgress(taskStatus, false);
-                    if (syncProgressIndicator is not null)
-                        await syncProgressIndicator.LogInformationAsync(
-                            taskStatus,
-                            "No items were loaded.\r\n\r\n");
-
-                    break;
-                }
-
-                logger.LogInformation("Start mapping CSV records to Data Model.");
-
-                this.UpdateProgress(taskStatus, false);
-                if (syncProgressIndicator is not null)
-                    await syncProgressIndicator.LogInformationAsync(
-                        taskStatus,
-                        "Start mapping CSV records to Cosmos Data Model.\r\n\r\n");
-
-                if (this.SyncConfigurations.Mapping is null)
-                    items = mapper.Map<IEnumerable<TData>>(records);
-                else
-                    items = await this.SyncConfigurations.Mapping(records, actionType);
-
-                logger.LogInformation("Completed mapping CSV records to Data Model.");
-
-                this.UpdateProgress(taskStatus, false);
-                if (syncProgressIndicator is not null)
-                    await syncProgressIndicator.LogInformationAsync(
-                        taskStatus,
-                        "Completed mapping CSV records to Data Model.\r\n\r\n");
-            }
-
-            try
-            {
-                logger.LogInformation("Starting data proccessing for the current Batch.");
-
-                this.UpdateProgress(taskStatus, false);
-                if (syncProgressIndicator is not null)
-                    await syncProgressIndicator.LogInformationAsync(
-                        taskStatus,
-                        "Starting data proccessing for the current Batch.\r\n\r\n");
-
-                var result = await this.dataProcess(new(currentStep, totalSteps, totalCount, actionType, this.cancellationTokenSource.Token, items!, taskStatus));
-
-                if(!result)
-                    throw new Exception("Failed to process the data.");
-
-                logger.LogInformation("Completed data proccessing for the current Batch: Step {0} of {1}.", currentStep + 1, totalSteps);
-
-                this.UpdateProgress(taskStatus, false);
-                if (syncProgressIndicator is not null)
-                    await syncProgressIndicator.LogInformationAsync(
-                        taskStatus,
-                        string.Format("Completed data proccessing for the current Batch: Step {0} of {1}.\r\n\r\n", taskStatus.CurrentStep + 1, taskStatus.TotalStep));
-
-                currentStep++;
-                taskStatus.CurrentStep++;
-                retry = 0;
-                items = null;
-            }
-            catch (Exception ex)
-            {
-                retry++;
-
-                if (retry > (retryCount))
-                {
-                    items = null;
-                    logger.LogError(ex.Message);
-                    throw;
-                }
-
-                logger.LogWarning("Failed Processing the Current data proccessing (Step {0} of {1}). Starting Retry {2} of {3}.", currentStep + 1, totalSteps, retry, retryCount);
-
-                this.UpdateProgress(taskStatus, false);
-                if (syncProgressIndicator is not null)
-                    await syncProgressIndicator.LogWarningAsync(
-                        taskStatus,
-                        string.Format("Failed Processing the Current data proccessing (Step {0} of {1}). Starting Retry {2} of {3}.\r\n\r\n", taskStatus.CurrentStep + 1, taskStatus.TotalStep, retry, retryCount));
-            }
-        }
-
-        taskStatus.Completed = true;
-
-        logger.LogInformation("Task Successfully Finished");
-        if (syncProgressIndicator is not null)
-            await syncProgressIndicator.LogInformationAsync(taskStatus, "Task Successfully Finished.\r\n\r\n");
-
-        return true;
-    }
-
-    public async Task RunAsync()
-    {
-        try
-        {
-            SetupWorkingDirectory();
-
-            operationStart = DateTime.UtcNow;
-            cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(this.SyncConfigurations.OperationTimeoutInSeconds));
-
-            using (logger.BeginScope("Syncing {csvFileName}", this.csvConfigurations.CSVFileName))
-            {
-                logger.LogInformation("Processing Files");
-
-                var taskStatus = new SyncTaskStatus { 
-                    SyncID = this.SyncConfigurations.SyncId,
-                    TaskDescription = "Comparing the new File with the Existing Data",
-                    TotalStep = 6,
-                    CurrentStep = -1 ,
-                    OperationStart= operationStart,
-                    OperationTimeoutInSeconds = this.SyncConfigurations.OperationTimeoutInSeconds
-                };
-
-                this.UpdateProgress(taskStatus);
-                if (syncProgressIndicator is not null)
-                    await syncProgressIndicator.LogInformationAsync(taskStatus, "Processing Files");
-
-                var fileProccessSuccess = await ProcessFilesAsync(taskStatus);
-
-                logger.LogInformation("Start storing data");
-
-                if (fileProccessSuccess)
-                    await ProcessDataAsync();
-
-                CleanUp();
-
-                if (syncProgressIndicator is not null)
-                    await syncProgressIndicator.CompleteAllRunningTasks();
-            }
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex.Message);
-
-            if (syncProgressIndicator is not null)
-            {
-                await syncProgressIndicator.LogErrorAsync(
-                    new SyncTaskStatus { TotalStep = 0, CurrentStep = 0, Failed = true, SyncID = this.SyncConfigurations.SyncId, TaskDescription = "Import Failed." },
-                    $"{ex.Message}\r\n\r\n\r\n\r\n{ex.StackTrace}");
-
-
-                await syncProgressIndicator.FailAllRunningTasks();
-            }
-
-            CleanUp();
-
-            if(FailFunction is not null)
-                await FailFunction();
-
-            throw;
-        }
-    }
-
-    public void Dispose()
-    {
-        CleanUp();
+        this.Finished = finishedFunc;
+        return this;
     }
 }

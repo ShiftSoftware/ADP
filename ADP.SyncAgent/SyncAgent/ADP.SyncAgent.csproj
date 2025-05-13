@@ -17,7 +17,6 @@
 	
 	<ItemGroup>
 	  <Compile Remove="Services\CosmosCSVSyncService.cs" />
-	  <Compile Remove="Services\SyncService.cs" />
 	  <Compile Remove="Services\SyncService2.cs" />
 	</ItemGroup>
 

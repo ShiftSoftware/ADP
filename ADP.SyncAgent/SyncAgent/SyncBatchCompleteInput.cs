@@ -1,15 +1,20 @@
 ﻿namespace ShiftSoftware.ADP.SyncAgent;
 
-public class SyncBatchCompleteInput<T> where T : class
+public class SyncBatchCompleteInput<TSource, TDestination> 
+    where TDestination : class, new()
+    where TSource : class, new()
 {
-    public SyncStoreDataResult<T> SyncStoreDataResult { get; private set; }
+    public IEnumerable<TSource?>? SourceItems { get; private set; }
+    public SyncStoreDataResult<TDestination>? StoreDataResult { get; private set; }
     public SyncActionStatus Status { get; private set; }
 
     public SyncBatchCompleteInput(
-        SyncStoreDataResult<T> syncStoreDataResult,
+        IEnumerable<TSource?>? sourceItems,
+        SyncStoreDataResult<TDestination>? storeDataResult,
         SyncActionStatus status)
     {
-        SyncStoreDataResult = syncStoreDataResult;
+        this.SourceItems = sourceItems;
+        StoreDataResult = storeDataResult;
         Status = status;
     }
 }

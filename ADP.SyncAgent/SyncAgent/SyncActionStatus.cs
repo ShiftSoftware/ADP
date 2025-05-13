@@ -5,7 +5,7 @@ namespace ShiftSoftware.ADP.SyncAgent;
 public class SyncActionStatus
 {
     public long CurrentStep { get; private set; }
-    public long? TotalStep { get; private set; }
+    public long? TotalSteps { get; private set; }
     public long BatchSize { get; private set; }
     public long? TotalCount { get; private set; }
     public long MaxRetryCount { get; set; }
@@ -14,7 +14,7 @@ public class SyncActionStatus
 
     public SyncActionStatus(
         long currentStep,
-        long? totalStep,
+        long? totalSteps,
         long batchSize,
         long? totalCount,
         long maxRetryCount,
@@ -22,7 +22,7 @@ public class SyncActionStatus
         SyncActionType actionType)
     {
         CurrentStep = currentStep;
-        TotalStep = totalStep;
+        TotalSteps = totalSteps;
         BatchSize = batchSize;
         TotalCount = totalCount;
         MaxRetryCount = maxRetryCount;
