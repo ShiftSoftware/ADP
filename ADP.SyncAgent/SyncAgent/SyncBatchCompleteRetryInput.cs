@@ -1,6 +1,6 @@
 ﻿namespace ShiftSoftware.ADP.SyncAgent;
 
-public class SyncBatchCompleteInput<TSource, TDestination> 
+public class SyncBatchCompleteRetryInput<TSource, TDestination> 
     where TDestination : class, new()
     where TSource : class, new()
 {
@@ -8,7 +8,7 @@ public class SyncBatchCompleteInput<TSource, TDestination>
     public SyncStoreDataResult<TDestination>? StoreDataResult { get; private set; }
     public SyncActionStatus Status { get; private set; }
 
-    public SyncBatchCompleteInput(
+    public SyncBatchCompleteRetryInput(
         IEnumerable<TSource?>? sourceItems,
         SyncStoreDataResult<TDestination>? storeDataResult,
         SyncActionStatus status)

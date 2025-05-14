@@ -10,20 +10,13 @@ public interface ISyncService<TSource, TDestination> : IAsyncDisposable
     Func<SyncFunctionInput<SyncGetBatchDataInput<TSource>>, ValueTask<IEnumerable<TSource?>?>>? GetSourceBatchItems { get; }
     Func<SyncFunctionInput<SyncMappingInput<TSource, TDestination>>, ValueTask<IEnumerable<TDestination?>?>>? Mapping { get; }
     Func<SyncFunctionInput<SyncStoreDataInput<TDestination>>, ValueTask<SyncStoreDataResult<TDestination>>>? StoreBatchData { get; }
-
-    /// <summary>
-    /// Return RetryAndContinueAfterLastRetry to continue retrying or the last retry to continue the sync process,
-    /// Return Stop to stop the sync process and does not trigger BatchCompleted function,
-    /// Return Skip to continue the sync process without retrying,
-    /// And the default value if not setup retry is RetryAndContinueAfterLastRetry.
-    /// </summary>
-    Func<SyncFunctionInput<SyncBatchCompleteInput<TSource, TDestination>>, ValueTask<RetryActionType>>? BatchRetry { get; }
+    Func<SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>, ValueTask<RetryAction>>? BatchRetry { get; }
 
     /// <summary>
     /// Return true to continue the sync process,
     /// Return false to stop the sync process.
     /// </summary>
-    Func<SyncFunctionInput<SyncBatchCompleteInput<TSource, TDestination>>, ValueTask<bool>>? BatchCompleted { get; }
+    Func<SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>, ValueTask<bool>>? BatchCompleted { get; }
 
     Func<SyncFunctionInput, ValueTask>? OperationCompleted { get; }
 
@@ -49,7 +42,7 @@ public interface ISyncService<TSource, TDestination> : IAsyncDisposable
 
     ISyncService<TSource, TDestination> SetupStoreBatchData(Func<SyncFunctionInput<SyncStoreDataInput<TDestination>>, ValueTask<SyncStoreDataResult<TDestination>>> storeBatchDataFunc);
 
-    ISyncService<TSource, TDestination> SetupBatchRetry(Func<SyncFunctionInput<SyncBatchCompleteInput<TSource, TDestination>>, ValueTask<RetryActionType>> batchRetryFunc);
+    ISyncService<TSource, TDestination> SetupBatchRetry(Func<SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>, ValueTask<RetryAction>> batchRetryFunc);
 
     /// <summary>
     /// 
@@ -59,7 +52,7 @@ public interface ISyncService<TSource, TDestination> : IAsyncDisposable
     /// Return false to stop the sync process.
     /// </param>
     /// <returns></returns>
-    ISyncService<TSource, TDestination> SetupBatchCompleted(Func<SyncFunctionInput<SyncBatchCompleteInput<TSource, TDestination>>, ValueTask<bool>> batchCompletedFunc);
+    ISyncService<TSource, TDestination> SetupBatchCompleted(Func<SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>, ValueTask<bool>> batchCompletedFunc);
 
     ISyncService<TSource, TDestination> SetupOperationCompleted(Func<SyncFunctionInput, ValueTask> operationCompletedFunc);
 

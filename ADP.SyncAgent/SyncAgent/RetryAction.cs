@@ -1,6 +1,6 @@
 ﻿namespace ShiftSoftware.ADP.SyncAgent;
 
-public enum RetryActionType
+public enum RetryAction
 {
     RetryAndContinueAfterLastRetry,
     RetryAndStopAfterLastRetry,
