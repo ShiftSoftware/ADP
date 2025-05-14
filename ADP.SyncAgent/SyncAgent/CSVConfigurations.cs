@@ -7,19 +7,27 @@ internal class CSVConfigurations
     public string? SourceDirectory { get; set; }
     public string? DestinationContainerOrShareName { get; set; }
     public string? DestinationDirectory { get; set; }
+    public bool SkipReorderedLines { get; set; }
 
     public CSVConfigurations()
     {
         
     }
 
-    public CSVConfigurations(string? csvFileName, string? sourceContainerOrShareName, string? sourceDirectory, string? destinationContainerOrShareName, string? destinationDirectory)
+    public CSVConfigurations(
+        string? csvFileName,
+        string? sourceContainerOrShareName,
+        string? sourceDirectory, 
+        string? destinationContainerOrShareName,
+        string? destinationDirectory,
+        bool skipReorderedLines)
     {
         CSVFileName = csvFileName;
         SourceContainerOrShareName = sourceContainerOrShareName;
         SourceDirectory = sourceDirectory;
         DestinationContainerOrShareName = destinationContainerOrShareName;
         DestinationDirectory = destinationDirectory;
+        SkipReorderedLines = skipReorderedLines;
     }
 
     internal string GetDestinationRelativePath()

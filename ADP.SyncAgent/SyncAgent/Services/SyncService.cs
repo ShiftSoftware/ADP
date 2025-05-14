@@ -27,7 +27,7 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
 
     public Func<SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>, ValueTask<bool>>? BatchCompleted { get; private set; }
 
-    public Func<SyncFunctionInput, ValueTask>? OperationCompleted { get; private set; }
+    public Func<SyncFunctionInput<SyncActionType>, ValueTask>? ActionCompleted { get; private set; }
 
     public Func<SyncFunctionInput<SyncMappingInput<TSource, TDestination>>, ValueTask<IEnumerable<TDestination?>?>>? Mapping { get; private set; }
 
@@ -87,9 +87,9 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
         return this;
     }
 
-    public ISyncService<TSource, TDestination> SetupOperationCompleted(Func<SyncFunctionInput, ValueTask> operationCompletedFunc)
+    public ISyncService<TSource, TDestination> SetupActionCompleted(Func<SyncFunctionInput<SyncActionType>, ValueTask> actionCompletedFunc)
     {
-        this.OperationCompleted = operationCompletedFunc;
+        this.ActionCompleted = actionCompletedFunc;
         return this;
     }
 
@@ -109,7 +109,7 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
     {
         CheckSetups();
 
-        bool result;
+        bool result = false;
 
         try
         {
@@ -117,16 +117,20 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
             this.cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(this.SyncConfigurations!.OperationTimeoutInSeconds));
 
             // Preparing
-            if(this.Preparing is not null)
-                await this.Preparing!(new SyncFunctionInput(this.GetCancellationToken()));
+            bool preparingResult = true;
+            if (this.Preparing is not null)
+                preparingResult = await this.Preparing!(new SyncFunctionInput(this.GetCancellationToken()));
 
-            // Run operation for delete
-            var deleteResult = await this.RunOperation(SyncActionType.Delete);
+            if (preparingResult)
+            {
+                // Run operation for delete
+                var deleteResult = await this.RunAction(SyncActionType.Delete);
 
-            // Run operation for upsert
-            var upsertRersult = await this.RunOperation(SyncActionType.Upsert);
+                // Run operation for upsert
+                var upsertRersult = await this.RunAction(SyncActionType.Upsert);
 
-            result = deleteResult && upsertRersult;
+                result = deleteResult && upsertRersult;
+            }
 
             if(result && this.Succeeded is not null)
                 await this.Succeeded!();
@@ -147,7 +151,7 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
         return result;
     }
 
-    private async Task<bool> RunOperation(SyncActionType actionType)
+    private async Task<bool> RunAction(SyncActionType actionType)
     {
         bool result = false;
 
@@ -289,8 +293,8 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
         }
 
         // Run operation completed function
-        if (this.OperationCompleted is not null)
-            await this.OperationCompleted!(new SyncFunctionInput(this.GetCancellationToken()));
+        if (this.ActionCompleted is not null)
+            await this.ActionCompleted!(new SyncFunctionInput<SyncActionType>(this.GetCancellationToken(), actionType));
 
         return result;
     }
@@ -330,7 +334,7 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
         this.StoreBatchData = null;
         this.BatchRetry = null;
         this.BatchCompleted = null;
-        this.OperationCompleted = null;
+        this.ActionCompleted = null;
         this.cancellationTokenSource = null;
         this.Mapping = null;
         this.Failed = null;

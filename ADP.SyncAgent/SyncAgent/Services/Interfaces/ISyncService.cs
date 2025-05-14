@@ -18,7 +18,7 @@ public interface ISyncService<TSource, TDestination> : IAsyncDisposable
     /// </summary>
     Func<SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>, ValueTask<bool>>? BatchCompleted { get; }
 
-    Func<SyncFunctionInput, ValueTask>? OperationCompleted { get; }
+    Func<SyncFunctionInput<SyncActionType>, ValueTask>? ActionCompleted { get; }
 
     Func<ValueTask>? Failed { get; }
 
@@ -54,7 +54,7 @@ public interface ISyncService<TSource, TDestination> : IAsyncDisposable
     /// <returns></returns>
     ISyncService<TSource, TDestination> SetupBatchCompleted(Func<SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>, ValueTask<bool>> batchCompletedFunc);
 
-    ISyncService<TSource, TDestination> SetupOperationCompleted(Func<SyncFunctionInput, ValueTask> operationCompletedFunc);
+    ISyncService<TSource, TDestination> SetupActionCompleted(Func<SyncFunctionInput<SyncActionType>, ValueTask> actionCompletedFunc);
 
     ISyncService<TSource, TDestination> SetupFailed(Func<ValueTask> failedFunc);
 
