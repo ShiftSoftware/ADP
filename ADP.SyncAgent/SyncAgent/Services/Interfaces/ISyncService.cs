@@ -31,6 +31,22 @@ public interface ISyncService<TSource, TDestination> : IAsyncDisposable
         int maxRetryCount = 0,
         int operationTimeoutInSeconds = 300);
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="batchSize"></param>
+    /// <param name="actionExecutionAndOrder">
+    /// This is decide which action to be run and in which order,
+    /// the default is [SyncActionType.Delete, SyncActionType.Update, SyncActionType.Add]</param>
+    /// <param name="maxRetryCount"></param>
+    /// <param name="operationTimeoutInSeconds"></param>
+    /// <returns></returns>
+    public ISyncService<TSource, TDestination> Configure(
+        int batchSize, 
+        IEnumerable<SyncActionType> actionExecutionAndOrder,
+        int maxRetryCount = 0, 
+        int operationTimeoutInSeconds = 300);
+
     ISyncService<TSource, TDestination> SetupPreparing(Func<SyncFunctionInput, ValueTask<bool>> preparingFunc);
 
     ISyncService<TSource, TDestination> SetupSourceTotalItemCount(Func<SyncFunctionInput<SyncActionType>, ValueTask<long?>>? sourceTotalItemCountFunc);

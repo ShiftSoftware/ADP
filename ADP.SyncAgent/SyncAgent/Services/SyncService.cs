@@ -45,6 +45,23 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
         return this;
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="batchSize"></param>
+    /// <param name="actionExecutionAndOrder">
+    /// This is decide which action to be run and in which order,
+    /// the default is [SyncActionType.Delete, SyncActionType.Update, SyncActionType.Add]
+    /// </param>
+    /// <param name="maxRetryCount"></param>
+    /// <param name="operationTimeoutInSeconds"></param>
+    /// <returns></returns>
+    public ISyncService<TSource, TDestination> Configure(int batchSize, IEnumerable<SyncActionType> actionExecutionAndOrder, int maxRetryCount = 0, int operationTimeoutInSeconds = 300)
+    {
+        this.SyncConfigurations = new SyncConfigurations(batchSize, maxRetryCount, operationTimeoutInSeconds, actionExecutionAndOrder);
+        return this;
+    }
+
     public ISyncService<TSource, TDestination> SetupPreparing(Func<SyncFunctionInput, ValueTask<bool>> preparingFunc)
     {
         this.Preparing = preparingFunc;
@@ -123,16 +140,15 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
 
             if (preparingResult)
             {
-                // Run operation for delete
-                var deleteResult = await this.RunAction(SyncActionType.Delete);
+                bool actionResult = true;
 
-                // Run operation for upsert
-                var upsertRersult = await this.RunAction(SyncActionType.Upsert);
+                foreach (var actionType in this.SyncConfigurations.ActionExecutionAndOrder)
+                    actionResult = actionResult && await RunAction(actionType);
 
-                result = deleteResult && upsertRersult;
+                result = actionResult;
             }
 
-            if(result && this.Succeeded is not null)
+            if (result && this.Succeeded is not null)
                 await this.Succeeded!();
             else if (!result && this.Failed is not null)
                 await this.Failed!();

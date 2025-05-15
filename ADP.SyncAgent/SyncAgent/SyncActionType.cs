@@ -2,6 +2,7 @@
 
 public enum SyncActionType
 {
-    Upsert,
+    Add,
+    Update,
     Delete,
 }

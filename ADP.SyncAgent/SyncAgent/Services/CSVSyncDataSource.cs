@@ -150,10 +150,12 @@ public class CSVSyncDataSource<TSource, TDestination> : ISyncDataAdapter<TSource
 
     public ValueTask<long?> SourceTotalItemCount(SyncFunctionInput<SyncActionType> input)
     {
-        if(input.Input ==  SyncActionType.Upsert)
+        if (input.Input == SyncActionType.Update)
             return new(CalculateCSVRecordCountAsync(toInsertFilePath!));
         else if (input.Input == SyncActionType.Delete)
             return new(CalculateCSVRecordCountAsync(toDeleteFilePath!));
+        else if (input.Input == SyncActionType.Add)
+            return new(0);
 
         throw new NotImplementedException("The action type is not supported.");
     }
@@ -163,10 +165,12 @@ public class CSVSyncDataSource<TSource, TDestination> : ISyncDataAdapter<TSource
         if (input.Input.Status.CurrentRetryCount > 0 && input.Input.PreviousItems is not null)
             return new(input.Input.PreviousItems);
 
-        if (input.Input.Status.ActionType == SyncActionType.Upsert)
+        if (input.Input.Status.ActionType == SyncActionType.Update)
             return new(LoadItems(toInsertFilePath!, (int)input.Input.Status.BatchSize));
         else if (input.Input.Status.ActionType == SyncActionType.Delete)
             return new(LoadItems(toDeleteFilePath!, (int)input.Input.Status.BatchSize));
+        else if (input.Input.Status.ActionType == SyncActionType.Delete)
+            return new([]);
 
         throw new NotImplementedException("The action type is not supported.");
     }

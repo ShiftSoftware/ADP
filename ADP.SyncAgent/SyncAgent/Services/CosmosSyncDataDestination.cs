@@ -21,7 +21,7 @@ public class CosmosSyncDataDestination<TSource, TCosmos> : ISyncDataAdapter<TSou
     {
         this.cosmosClient = syncCosmosClient.Client;
         this.resiliencePipeline = new ResiliencePipelineBuilder()
-            .AddRetry(new RetryStrategyOptions()) // Upsert retry using the default options
+            .AddRetry(new RetryStrategyOptions()) // Update retry using the default options
             .Build(); // Builds the resilience pipeline
     }
 
@@ -76,7 +76,7 @@ public class CosmosSyncDataDestination<TSource, TCosmos> : ISyncDataAdapter<TSou
                 input!.CancellationToken);
 
             var upsertResult = await UpsertToCosmosAsync(
-                items?.Where(x => x.ActionType == SyncActionType.Upsert) ?? [],
+                items?.Where(x => x.ActionType == SyncActionType.Update || x.ActionType == SyncActionType.Add) ?? [],
                 input!.CancellationToken);
 
             var result = new SyncStoreDataResult<TCosmos>
