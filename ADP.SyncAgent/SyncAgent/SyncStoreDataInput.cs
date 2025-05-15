@@ -8,7 +8,7 @@ public class SyncStoreDataInput<T> where T : class
     /// In retry this contains the previous result of the storing of the same step,
     /// otherwise it will be null.
     /// </summary>
-    public SyncStoreDataResult<T>? PreviousResult { get; set; }
+    public SyncStoreDataResult<T>? PreviousResult { get; private set; }
     public SyncActionStatus Status { get; private set; }
 
     public SyncStoreDataInput(
