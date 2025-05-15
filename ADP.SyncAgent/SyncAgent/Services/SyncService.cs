@@ -201,7 +201,7 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
                 storeResult = await this.StoreBatchData!(new SyncFunctionInput<SyncStoreDataInput<TDestination>>(this.GetCancellationToken(), new SyncStoreDataInput<TDestination>(destinationItems, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType))));
 
                 // Check if retry required
-                if(storeResult.Retry)
+                if(storeResult.NeedRetry)
                     throw new Exception("Retry is required.");
 
                 // Run batch completed function

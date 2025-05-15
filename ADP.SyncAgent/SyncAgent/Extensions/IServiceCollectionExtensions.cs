@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Azure.Cosmos;
+using Microsoft.Extensions.DependencyInjection;
 using ShiftSoftware.ADP.SyncAgent.Services;
 using ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
 
@@ -53,6 +54,15 @@ public static class IServiceCollectionExtensions
         var options = new CSVSyncDataSourceOptions();
         optionsProvider(options);
         services.AddCSVSyncDataSource<TStorageService>(options);
+
+        return services;
+    }
+
+    public static IServiceCollection AddCSVSyncDataSource<TCosmosClient>(this IServiceCollection services)
+        where TCosmosClient : CosmosClient
+    {
+        services.AddSingleton<SyncCosmosClient>(x => new(x.GetRequiredService<TCosmosClient>()));
+        services.AddTransient(typeof(CosmosSyncDataDestination<,>));
 
         return services;
     }

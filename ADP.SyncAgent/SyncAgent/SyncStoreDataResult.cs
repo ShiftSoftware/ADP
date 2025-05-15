@@ -4,11 +4,36 @@ public class SyncStoreDataResult<T> where T : class
 {
     public IEnumerable<T?>? SucceededItems { get; set; }
     public IEnumerable<T?>? FailedItems { get; set; }
-    public bool Retry { get; set; }
-    public SyncStoreDataResultType ResultType
-    =>
-        (SucceededItems?.Any() ?? false) == false && (FailedItems?.Any() ?? false) == false ? SyncStoreDataResultType.Skipped :
-        SucceededItems?.Any() == true && (FailedItems?.Any() ?? false) == false ? SyncStoreDataResultType.Succeeded :
-        (SucceededItems?.Any() ?? false) && FailedItems?.Any() ==  true ? SyncStoreDataResultType.Failed :
-        SyncStoreDataResultType.Partial;
+
+    /// <summary>
+    /// Set true to trigger retry proccess, false to skip the retry process
+    /// </summary>
+    public bool NeedRetry { get; set; }
+
+    public SyncStoreDataResultType ResultType =>
+        (SucceededItems, FailedItems) switch
+        {
+            (null, _) => SyncStoreDataResultType.Failed,
+            (_, null) => SyncStoreDataResultType.Failed,
+            (IEnumerable<T?> s, IEnumerable<T?> f) when !s.Any() && f.Any() => SyncStoreDataResultType.Failed,
+            (IEnumerable<T?> s, IEnumerable<T?> f) when s.Any() && !f.Any() => SyncStoreDataResultType.Succeeded,
+            (IEnumerable<T?> s, IEnumerable<T?> f) when s.Any() && f.Any() => SyncStoreDataResultType.Partial,
+            _ => SyncStoreDataResultType.Failed
+        };
+
+    public SyncStoreDataResult(IEnumerable<T?>? succededItems, IEnumerable<T?>? failedItems, bool retry) : this(retry)
+    {
+        this.FailedItems = failedItems;
+        this.SucceededItems = succededItems;
+    }
+
+    public SyncStoreDataResult(bool retry)
+    {
+        this.NeedRetry = retry;
+    }
+
+    public SyncStoreDataResult()
+    {
+        
+    }
 }

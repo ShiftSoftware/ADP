@@ -7,28 +7,25 @@ using System.Text;
 
 namespace ShiftSoftware.ADP.SyncAgent.Services;
 
-public class CSVSyncDataSource<TSource, TDestination> : ISyncDataAdapter<TSource, TDestination, CSVSyncDataSource<TSource, TDestination>>
+public class CSVSyncDataSource<TSource, TDestination> : ISyncDataAdapter<TSource, TDestination, CSVSyncDataSourceConfigurations, CSVSyncDataSource<TSource, TDestination>>
     where TSource : CacheableCSV, new()
     where TDestination : class, new()
 {
     private readonly CSVSyncDataSourceOptions options;
     private readonly IStorageService storageService;
 
-    private CSVConfigurations? csvConfigurations;
     private DirectoryInfo? workingDirectory;
-    private ResiliencePipeline resiliencePipeline;
     private string? toInsertFilePath;
     private string? toDeleteFilePath;
 
     public ISyncService<TSource, TDestination> SyncService { get; private set; } = default!;
 
+    public CSVSyncDataSourceConfigurations? Configurations { get; private set; } = default!;
+
     public CSVSyncDataSource(CSVSyncDataSourceOptions options, IStorageService storageService)
     {
         this.options = options;
         this.storageService = storageService;
-        this.resiliencePipeline = new ResiliencePipelineBuilder()
-            .AddRetry(new RetryStrategyOptions()) // Upsert retry using the default options
-            .Build(); // Builds the resilience pipeline
     }
 
     public CSVSyncDataSource<TSource, TDestination> SetSyncService(ISyncService<TSource, TDestination> syncService)
@@ -37,28 +34,17 @@ public class CSVSyncDataSource<TSource, TDestination> : ISyncDataAdapter<TSource
         return this;
     }
 
-    public CSVSyncDataSource<TSource, TDestination> Configure(string csvFileName,
-        string? sourceContainerOrShareName,
-        string? sourceDirectory,
-        string? destinationContainerOrShareName,
-        string? destinationDirectory,
-        bool skipReorderedLines = false)
+    public ISyncService<TSource, TDestination> Configure(CSVSyncDataSourceConfigurations configurations)
     {
-        this.csvConfigurations = new CSVConfigurations
-        {
-            CSVFileName = csvFileName,
-            SourceContainerOrShareName = sourceContainerOrShareName,
-            SourceDirectory = sourceDirectory,
-            DestinationContainerOrShareName = destinationContainerOrShareName,
-            DestinationDirectory = destinationDirectory,
-            SkipReorderedLines = skipReorderedLines
-        };
+        this.Configurations = configurations;
+
+        var previousPreparing = this.SyncService.Preparing;
+        var previousSucceeded = this.SyncService.Succeeded;
+        var previousFinished = this.SyncService.Finished;
 
         this.SyncService
             .SetupPreparing(async (x) =>
             {
-                var previousPreparing = this.SyncService.Preparing;
-
                 if (previousPreparing is not null)
                     return await previousPreparing(x) && await this.Preparing(x);
                 else
@@ -68,7 +54,6 @@ public class CSVSyncDataSource<TSource, TDestination> : ISyncDataAdapter<TSource
             .SetupGetSourceBatchItems(GetSourceBatchItems)
             .SetupSucceeded(() =>
             {
-                var previousSucceeded = this.SyncService.Succeeded;
                 if (previousSucceeded is not null)
                     return previousSucceeded();
 
@@ -76,14 +61,13 @@ public class CSVSyncDataSource<TSource, TDestination> : ISyncDataAdapter<TSource
             })
             .SetupFinished(() =>
             {
-                var previousFinished = this.SyncService.Finished;
                 if (previousFinished is not null)
                     return previousFinished();
 
                 return Finished();
             });
 
-        return this;
+        return this.SyncService;
     }
 
     public async ValueTask<bool> Preparing(SyncFunctionInput input)
@@ -96,26 +80,26 @@ public class CSVSyncDataSource<TSource, TDestination> : ISyncDataAdapter<TSource
 
             // Load the last CSV file that was synced successfully
             await storageService.LoadOriginalFileAsync(
-                Path.Combine(this.csvConfigurations!.DestinationDirectory ?? "", this.csvConfigurations.CSVFileName!),
+                Path.Combine(this.Configurations!.DestinationDirectory ?? "", this.Configurations.CSVFileName!),
                 Path.Combine(this.workingDirectory!.FullName, "file.csv"),
-                engine.Options.IgnoreFirstLines, this.csvConfigurations.DestinationContainerOrShareName,
+                engine.Options.IgnoreFirstLines, this.Configurations.DestinationContainerOrShareName,
                 this.SyncService.GetCancellationToken());
 
             StageAndCommit();
 
             // Load the new CSV file from the source
             await storageService.LoadNewVersionAsync(
-                Path.Combine(this.csvConfigurations.SourceDirectory ?? "", this.csvConfigurations.CSVFileName!),
+                Path.Combine(this.Configurations.SourceDirectory ?? "", this.Configurations.CSVFileName!),
                 Path.Combine(this.workingDirectory.FullName, "file.csv"),
                 engine.Options.IgnoreFirstLines,
-                this.csvConfigurations.SourceContainerOrShareName,
+                this.Configurations.SourceContainerOrShareName,
                 this.SyncService.GetCancellationToken());
 
             // Exute git diff to get the added and deleted lines
             var comparision = CompareVersionsAndGetDiff();
 
             // Find and skip reordered lines if the option is set
-            if (this.csvConfigurations.SkipReorderedLines) { 
+            if (this.Configurations.SkipReorderedLines) { 
                 // Find duplicates in Added and Deleted
                 var duplicates = comparision.Added.Intersect(comparision.Deleted);
 
@@ -199,32 +183,32 @@ public class CSVSyncDataSource<TSource, TDestination> : ISyncDataAdapter<TSource
         using CacheableCSVAsyncEngine<TSource> engine = new();
 
         await storageService.StoreNewVersionAsync(Path.Combine(workingDirectory!.FullName, "file.csv"),
-            this.csvConfigurations!.GetDestinationRelativePath(), this.csvConfigurations.DestinationContainerOrShareName, engine.Options.IgnoreFirstLines,
+            this.Configurations!.GetDestinationRelativePath(), this.Configurations.DestinationContainerOrShareName, engine.Options.IgnoreFirstLines,
             this.SyncService.GetCancellationToken());
     }
 
     public ValueTask Finished()
     {
         CleanUp();
-        return new();
+        return ValueTask.CompletedTask;
     }
 
     public ValueTask Reset()
     {
-        this.csvConfigurations = null;
+        this.Configurations = null;
         this.workingDirectory = null;
         this.toDeleteFilePath = null;
         this.toInsertFilePath = null;
         CleanUp();
 
-        return new ValueTask();
+        return ValueTask.CompletedTask;
     }
 
     public ValueTask DisposeAsync()
     {
         Reset();
 
-        return new ValueTask();
+        return ValueTask.CompletedTask;
     }
 
     public void SetupWorkingDirectory()

@@ -1,20 +1,20 @@
 ﻿namespace ShiftSoftware.ADP.SyncAgent;
 
-internal class CSVConfigurations
+public class CSVSyncDataSourceConfigurations
 {
-    public string? CSVFileName { get; set; }
+    public required string CSVFileName { get; set; }
     public string? SourceContainerOrShareName { get; set; }
     public string? SourceDirectory { get; set; }
     public string? DestinationContainerOrShareName { get; set; }
     public string? DestinationDirectory { get; set; }
     public bool SkipReorderedLines { get; set; }
 
-    public CSVConfigurations()
+    public CSVSyncDataSourceConfigurations()
     {
         
     }
 
-    public CSVConfigurations(
+    public CSVSyncDataSourceConfigurations(
         string? csvFileName,
         string? sourceContainerOrShareName,
         string? sourceDirectory, 

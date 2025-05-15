@@ -1,14 +1,23 @@
 ﻿namespace ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
 
-public interface ISyncDataAdapter<TSource, TDestination, TImplementer> : IAsyncDisposable
+public interface ISyncDataAdapter<TSource, TDestination, TConfigurations, TImplementer> : IAsyncDisposable
     where TSource : class, new()
     where TDestination : class, new()
-    where TImplementer : ISyncDataAdapter<TSource, TDestination, TImplementer>
+    where TImplementer : ISyncDataAdapter<TSource, TDestination, TConfigurations, TImplementer>
 {
     public ISyncService<TSource, TDestination> SyncService { get; }
+    public TConfigurations? Configurations { get; }
 
 
     public TImplementer SetSyncService(ISyncService<TSource, TDestination> syncService);
+
+    /// <summary>
+    /// To avoid unexpected behavior, call the destination adapter's Configure method after the source adapter is configured.
+    /// </summary>
+    /// <param name="configurations"></param>
+    /// <returns></returns>
+    public ISyncService<TSource, TDestination> Configure(TConfigurations configurations);
+
     public ValueTask<bool> Preparing(SyncFunctionInput input);
     public ValueTask<long?> SourceTotalItemCount(SyncFunctionInput<SyncActionType> input);
     public ValueTask<IEnumerable<TSource?>?> GetSourceBatchItems(SyncFunctionInput<SyncGetBatchDataInput<TSource>> input);
