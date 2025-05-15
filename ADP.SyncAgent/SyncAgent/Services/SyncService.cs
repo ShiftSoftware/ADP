@@ -86,6 +86,12 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
         return this;
     }
 
+    public ISyncService<TSource, TDestination> SetupMapping(Func<IEnumerable<TSource?>?, ValueTask<IEnumerable<TDestination?>?>> mappingFunc)
+    {
+        this.Mapping = x => mappingFunc(x.Input.SourceItems);
+        return this;
+    }
+
     public ISyncService<TSource, TDestination> SetupStoreBatchData(Func<SyncFunctionInput<SyncStoreDataInput<TDestination>>, ValueTask<SyncStoreDataResult<TDestination>>> storeBatchDataFunc)
     {
         this.StoreBatchData = storeBatchDataFunc;
