@@ -1,6 +1,4 @@
-﻿using Org.BouncyCastle.Utilities;
-
-namespace ShiftSoftware.ADP.SyncAgent;
+﻿namespace ShiftSoftware.ADP.SyncAgent;
 
 public class SyncActionStatus
 {
@@ -8,8 +6,8 @@ public class SyncActionStatus
     public long? TotalSteps { get; private set; }
     public long BatchSize { get; private set; }
     public long? TotalCount { get; private set; }
-    public long MaxRetryCount { get; set; }
     public long CurrentRetryCount { get; set; }
+    public long MaxRetryCount { get; set; }
     public SyncActionType ActionType { get; private set; }
 
     public SyncActionStatus(
