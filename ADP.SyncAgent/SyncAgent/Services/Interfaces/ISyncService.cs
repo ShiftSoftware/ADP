@@ -18,7 +18,11 @@ public interface ISyncService<TSource, TDestination> : IAsyncDisposable
     /// </summary>
     Func<SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>, ValueTask<bool>>? BatchCompleted { get; }
 
-    Func<SyncFunctionInput<SyncActionType>, ValueTask>? ActionCompleted { get; }
+    /// <summary>
+    /// Return true to mark the action as completed successfully,
+    /// or false to mark it as failed.
+    /// </summary>
+    Func<SyncFunctionInput<SyncActionCompletedInput>, ValueTask<bool>>? ActionCompleted { get; }
 
     Func<ValueTask>? Failed { get; }
 
@@ -69,7 +73,7 @@ public interface ISyncService<TSource, TDestination> : IAsyncDisposable
     /// <returns></returns>
     ISyncService<TSource, TDestination> SetupBatchCompleted(Func<SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>, ValueTask<bool>> batchCompletedFunc);
 
-    ISyncService<TSource, TDestination> SetupActionCompleted(Func<SyncFunctionInput<SyncActionType>, ValueTask> actionCompletedFunc);
+    ISyncService<TSource, TDestination> SetupActionCompleted(Func<SyncFunctionInput<SyncActionCompletedInput>, ValueTask<bool>>? actionCompletedFunc);
 
     ISyncService<TSource, TDestination> SetupFailed(Func<ValueTask> failedFunc);
 

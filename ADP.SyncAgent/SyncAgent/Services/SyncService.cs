@@ -27,7 +27,7 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
 
     public Func<SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>, ValueTask<bool>>? BatchCompleted { get; private set; }
 
-    public Func<SyncFunctionInput<SyncActionType>, ValueTask>? ActionCompleted { get; private set; }
+    public Func<SyncFunctionInput<SyncActionCompletedInput>, ValueTask<bool>>? ActionCompleted { get; private set; }
 
     public Func<SyncFunctionInput<SyncMappingInput<TSource, TDestination>>, ValueTask<IEnumerable<TDestination?>?>>? Mapping { get; private set; }
 
@@ -104,7 +104,7 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
         return this;
     }
 
-    public ISyncService<TSource, TDestination> SetupActionCompleted(Func<SyncFunctionInput<SyncActionType>, ValueTask> actionCompletedFunc)
+    public ISyncService<TSource, TDestination> SetupActionCompleted(Func<SyncFunctionInput<SyncActionCompletedInput>, ValueTask<bool>> actionCompletedFunc)
     {
         this.ActionCompleted = actionCompletedFunc;
         return this;
@@ -310,7 +310,7 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
 
         // Run operation completed function
         if (this.ActionCompleted is not null)
-            await this.ActionCompleted!(new SyncFunctionInput<SyncActionType>(this.GetCancellationToken(), actionType));
+            result = await this.ActionCompleted!(new SyncFunctionInput<SyncActionCompletedInput>(this.GetCancellationToken(), new(actionType, result)));
 
         return result;
     }
