@@ -29,8 +29,7 @@ public interface ISyncService<TSource, TDestination> : IAsyncDisposable
     ISyncService<TSource, TDestination> Configure(
         int batchSize,
         int maxRetryCount = 0,
-        int operationTimeoutInSeconds = 300,
-        string? syncId = null);
+        int operationTimeoutInSeconds = 300);
 
     ISyncService<TSource, TDestination> SetupPreparing(Func<SyncFunctionInput, ValueTask<bool>> preparingFunc);
 
