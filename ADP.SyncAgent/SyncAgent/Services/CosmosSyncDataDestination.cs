@@ -47,15 +47,10 @@ public class CosmosSyncDataDestination<TSource, TCosmos> : ISyncDataAdapter<TSou
 
             this.SyncService.SetupBatchRetry(async (x) =>
             {
-                RetryAction retryResult = RetryAction.RetryAndStopAfterLastRetry;
-
                 if (batchRetryFunc is not null)
-                    retryResult = await batchRetryFunc(x);
-
-                if(!this.Configurations!.StopOperationWhenOneFailed)
-                    retryResult = RetryAction.RetryAndContinueAfterLastRetry;
-
-                return retryResult;
+                     await batchRetryFunc(x);
+                                
+                return RetryAction.RetryAndContinueAfterLastRetry;
             });
         }
 
