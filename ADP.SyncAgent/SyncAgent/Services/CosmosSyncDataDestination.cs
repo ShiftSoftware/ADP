@@ -146,17 +146,10 @@ public class CosmosSyncDataDestination<TSource, TCosmos> : ISyncDataAdapter<TSou
 
         var container = cosmosClient.GetContainer(this.Configurations!.DatabaseId, this.Configurations!.ContainerId);
 
-        var stopOperation = false;
-        var lockObj = new object();
-
         foreach (var item in items ?? [])
         {
             if (cancellationToken.IsCancellationRequested)
                 throw new OperationCanceledException();
-
-            // Stop further task creation if stopOperation is set and StopOperationWhenOneFailed is true
-            if (this.Configurations?.StopOperationWhenOneFailed == true && stopOperation)
-                break;
 
             tasks = tasks.Concat([Task.Run(async () =>
             {
@@ -166,6 +159,7 @@ public class CosmosSyncDataDestination<TSource, TCosmos> : ISyncDataAdapter<TSou
                 if (item?.Item is not null)
                 {
                     var partitionKey = Utility.GetPartitionKey(item.Item, this.Configurations!.PartitionKeyLevel1Expression, this.Configurations!.PartitionKeyLevel2Expression, this.Configurations!.PartitionKeyLevel3Expression);
+
                     try
                     {
                         await this.resiliencePipeline.ExecuteAsync(async token =>
@@ -178,28 +172,12 @@ public class CosmosSyncDataDestination<TSource, TCosmos> : ISyncDataAdapter<TSou
                     catch (Exception)
                     {
                         failedItems.Add(item.Item); // Only after all retries failed
-
-                        // Signal to stop operation
-                        if (this.Configurations?.StopOperationWhenOneFailed == true)
-                            lock (lockObj)
-                                stopOperation = true;
                     }
                 }
             }, cancellationToken)]);
         }
 
-        // Wait for all tasks, but cancel remaining if stopOperation is set
-        while (tasks.Any())
-        {
-            var runningTasks = tasks.ToArray();
-            var completed = await Task.WhenAny(runningTasks);
-
-            // Cancel all remaining tasks
-            if (this.Configurations?.StopOperationWhenOneFailed == true && stopOperation)
-                break;
-
-            tasks = tasks.Except([completed]);
-        }
+        await Task.WhenAll(tasks);
 
         tasks = null;
         items = null;
@@ -218,17 +196,10 @@ public class CosmosSyncDataDestination<TSource, TCosmos> : ISyncDataAdapter<TSou
 
         var container = cosmosClient.GetContainer(this.Configurations!.DatabaseId, this.Configurations!.ContainerId);
 
-        var stopOperation = false;
-        var lockObj = new object();
-
         foreach (var item in items ?? [])
         {
             if (cancellationToken.IsCancellationRequested)
                 throw new OperationCanceledException();
-
-            // Stop further task creation if stopOperation is set and StopOperationWhenOneFailed is true
-            if (this.Configurations?.StopOperationWhenOneFailed == true && stopOperation)
-                break;
 
             tasks = tasks.Concat([Task.Run(async () =>
             {
@@ -259,28 +230,12 @@ public class CosmosSyncDataDestination<TSource, TCosmos> : ISyncDataAdapter<TSou
                     catch (Exception)
                     {
                         failedItems.Add(item.Item); // Only after all retries failed
-
-                        // Signal to stop operation
-                        if (this.Configurations?.StopOperationWhenOneFailed == true)
-                            lock (lockObj)
-                                stopOperation = true;
                     }
                 }
             }, cancellationToken)]);
         }
 
-        // Wait for all tasks, but cancel remaining if stopOperation is set
-        while (tasks.Any())
-        {
-            var runningTasks = tasks.ToArray();
-            var completed = await Task.WhenAny(runningTasks);
-
-            // Cancel all remaining tasks
-            if (this.Configurations?.StopOperationWhenOneFailed == true && stopOperation)
-                break;
-
-            tasks = tasks.Except([completed]);
-        }
+        await Task.WhenAll(tasks);
 
         tasks = null;
         items = null;
