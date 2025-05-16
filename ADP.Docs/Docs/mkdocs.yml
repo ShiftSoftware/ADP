@@ -1,0 +1,75 @@
+site_name: Auto Distributor Platform
+use_directory_urls: false
+
+theme:
+  name: material
+  custom_dir: docs/overrides
+  logo: assets/images/logo.png
+  features:
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - content.code.copy
+    - navigation.collapse
+
+extra_css:
+  - overrides/css/extra.css
+
+nav:
+    - Introduction: index.md 
+    - Components: 
+        - Intro:                    components/intro.md
+        - Identity:          
+            - Identity System:     components/identity.md
+        - Parts:
+            - Parts Database:       components/parts.md
+        - Vehicles:         
+            - Vehicle Database:     components/vehicles.md
+            - Vehicle Information:
+                - Identifiers:                components/vehicle-information/identifiers.md
+                - Authorized (Official):      components/vehicle-information/authorized.md
+                - Warranty:                   components/vehicle-information/warranty.md
+                - Safety Recalls:             components/vehicle-information/safety-recalls.md
+                - Claimable Items:            components/vehicle-information/claimable-items.md
+                - Service History:            components/vehicle-information/service-history.md
+        - Services:        
+            - Service Database:     components/services.md
+            - Warranty System :     
+                - Intro:                    components/warranty/warranty.md
+        - CRM:
+            - Support Ticket System:    components/tickets.md
+            - Customer Database:        components/customers.md
+    - Architecture: 
+        - Stack: architecture/stack.md
+        - Deployment Pipelines: architecture/deployment-pipelines.md
+    - Integrations: 
+        - Intro: integrations/intro.md
+        - Identity: integrations/identity.md
+        - Part Lines: integrations/part-lines.md
+        - Labor Lines: integrations/labor-lines.md
+        - Vehicl Stock & Sales: integrations/vehicle-stock-and-sales.md
+  
+
+markdown_extensions:
+  - pymdownx.snippets
+  - attr_list
+  - md_in_html
+  - admonition
+  - tables
+  - pymdownx.mark
+  - pymdownx.details
+  - pymdownx.critic
+  - pymdownx.caret
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.tilde 
+  - toc:
+      permalink: true
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+          

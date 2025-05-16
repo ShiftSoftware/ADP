@@ -1,0 +1,10 @@
+trigger:
+ branches:
+    include:
+    - master
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+- group: deployment-variable-group

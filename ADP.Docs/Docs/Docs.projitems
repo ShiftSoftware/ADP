@@ -1,0 +1,57 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>79a53639-c46f-4d94-8cef-fa8da2c6c7bd</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>Docs</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)azure-pipelines.yml" />
+    <None Include="$(MSBuildThisFileDirectory)docs\architecture\deployment-pipelines.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\architecture\stack.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\assets\imgs\deployment-pipelines-production.svg" />
+    <None Include="$(MSBuildThisFileDirectory)docs\assets\imgs\deployment-pipelines-staging.svg" />
+    <None Include="$(MSBuildThisFileDirectory)docs\assets\imgs\microservice-architecture.svg" />
+    <None Include="$(MSBuildThisFileDirectory)docs\assets\imgs\vehicle-database_data-warehousing.svg" />
+    <None Include="$(MSBuildThisFileDirectory)docs\assets\imgs\warranty-system.svg" />
+    <None Include="$(MSBuildThisFileDirectory)docs\components\customers.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\components\identity.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\components\intro.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\components\parts.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\components\services.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\components\tickets.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\components\vehicle-information\authorized.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\components\vehicle-information\claimable-items.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\components\vehicle-information\identifiers.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\components\vehicle-information\safety-recalls.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\components\vehicle-information\service-history.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\components\vehicle-information\warranty.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\components\vehicles.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\components\warranty\twc-certificates.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\components\warranty\twc-csv.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\components\warranty\twc-invoices.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\components\warranty\twc.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\components\warranty\warranty.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\generated\PartCatalog.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\index.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\integrations\identity.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\integrations\intro.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\integrations\labor-lines.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\integrations\parts.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\integrations\vehicle-stock-and-sales.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\overrides\assets\images\spinner.svg" />
+    <None Include="$(MSBuildThisFileDirectory)mkdocs.yml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="$(MSBuildThisFileDirectory)docs\assets\imgs\distributor.png" />
+    <Content Include="$(MSBuildThisFileDirectory)docs\assets\imgs\free-and-paid-services.png" />
+    <Content Include="$(MSBuildThisFileDirectory)docs\assets\imgs\twc.png" />
+    <Content Include="$(MSBuildThisFileDirectory)docs\assets\imgs\vehicle-model-flow.png" />
+    <Content Include="$(MSBuildThisFileDirectory)docs\overrides\assets\images\favicon.png" />
+    <Content Include="$(MSBuildThisFileDirectory)docs\overrides\assets\images\logo.png" />
+    <Content Include="$(MSBuildThisFileDirectory)docs\overrides\css\extra.css" />
+  </ItemGroup>
+</Project>
