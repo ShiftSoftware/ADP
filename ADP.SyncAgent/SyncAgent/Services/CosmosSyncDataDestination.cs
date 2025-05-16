@@ -1,11 +1,19 @@
 ﻿using Microsoft.Azure.Cosmos;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Polly;
 using Polly.Retry;
 using ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
 using System.Collections.Concurrent;
+using System.Linq;
+using System.Linq.Expressions;
 
 namespace ShiftSoftware.ADP.SyncAgent.Services;
 
+/// <summary>
+/// Treat Add and Update action as Upsert to cosmos
+/// </summary>
+/// <typeparam name="TSource"></typeparam>
+/// <typeparam name="TCosmos"></typeparam>
 public class CosmosSyncDataDestination<TSource, TCosmos> : ISyncDataAdapter<TSource, TCosmos, CosmosSyncDataDestinationConfigurations<TCosmos>, CosmosSyncDataDestination<TSource, TCosmos>>
     where TSource : CacheableCSV, new()
     where TCosmos : class, new()
@@ -57,20 +65,38 @@ public class CosmosSyncDataDestination<TSource, TCosmos> : ISyncDataAdapter<TSou
         return this.SyncService;
     }
 
+
+    /// <summary>
+    /// Treat Add and Update action as upsert to cosmos
+    /// </summary>
+    /// <param name="input"></param>
+    /// <returns></returns>
     public async ValueTask<SyncStoreDataResult<TCosmos>> StoreBatchData(SyncFunctionInput<SyncStoreDataInput<TCosmos>> input)
     {
         try
         {
             IEnumerable<SyncAgentCosmosAction<TCosmos>?>? items = null;
+            var inputItems = input.Input.Items;
+
+            // If it is retry, skip the succeeded items to try store them again
+            if(input.Input.Status.CurrentRetryCount > 0 && input.Input.PreviousResult?.SucceededItems?.Any() == true && inputItems?.Any() == true)
+            {
+                // Map the succeeded items to composite keys
+                var succeededKeys = new HashSet<(string? Id, object? Key1, object? Key2, object? Key3)>(
+                    input.Input.PreviousResult!.SucceededItems
+                    .Select(x => GetCompositeKey(x)));
+
+                // Filter the input items to exclude the succeeded items
+                inputItems = inputItems?.Where(x => !succeededKeys.Contains(GetCompositeKey(x)));
+            }
 
             if (this.Configurations!.CosmosAction is null)
-                items = input?.Input?.Items?.Select(y => new SyncAgentCosmosAction<TCosmos>(y, input.Input.Status.ActionType, input.CancellationToken));
+                items = inputItems?.Select(y => new SyncAgentCosmosAction<TCosmos>(y, input.Input.Status.ActionType, input.CancellationToken));
             else
-                foreach (var item in input?.Input?.Items ?? [])
+                foreach (var item in inputItems ?? [])
                     items = (items ?? []).Concat((await this.Configurations!.CosmosAction(new(item, input!.Input.Status.ActionType, input.CancellationToken))) ?? []);
 
             //Some times the CSV comparer marks an item as deleted. But the SyncCosmosAction has the ability to change that to an upsert (This is done outside the sync agent by the programmer.) 
-
             var deleteResult = await DeleteFromCosmosAsync(
                 items?.Where(x => x.ActionType == SyncActionType.Delete) ?? [],
                 input!.CancellationToken);
@@ -82,7 +108,7 @@ public class CosmosSyncDataDestination<TSource, TCosmos> : ISyncDataAdapter<TSou
             var result = new SyncStoreDataResult<TCosmos>
             {
                 FailedItems = deleteResult.FailedItems.Concat(upsertResult.FailedItems),
-                SucceededItems = deleteResult.SucceededItems.Concat(upsertResult.SucceededItems)
+                SucceededItems = deleteResult.SucceededItems.Concat(upsertResult.SucceededItems).Concat(input.Input.PreviousResult?.SucceededItems ?? []),
             };
 
             if (result.ResultType == SyncStoreDataResultType.Failed || result.ResultType == SyncStoreDataResultType.Partial)
@@ -96,6 +122,17 @@ public class CosmosSyncDataDestination<TSource, TCosmos> : ISyncDataAdapter<TSou
         }
 
         return new SyncStoreDataResult<TCosmos>(true);
+    }
+
+    private (string? Id, object? Key1, object? Key2, object? Key3) GetCompositeKey(TCosmos? item)
+    {
+        if (item is null)
+            return (Id: null, Key1: null, Key2: null, Key3: null);
+
+        var key1Value = this.Configurations!.PartitionKeyLevel1Expression.Compile()(item);
+        var key2Value = this.Configurations!.PartitionKeyLevel2Expression != null ? this.Configurations!.PartitionKeyLevel2Expression.Compile()(item) : null;
+        var key3Value = this.Configurations!.PartitionKeyLevel3Expression != null ? this.Configurations!.PartitionKeyLevel3Expression.Compile()(item) : null;
+        return (Id: item.GetType().GetProperty("id")?.GetValue(item)?.ToString() ?? string.Empty, Key1: key1Value, Key2: key2Value, Key3: key3Value);
     }
 
     private async Task<(IEnumerable<TCosmos> SucceededItems, IEnumerable<TCosmos> FailedItems)> UpsertToCosmosAsync(
