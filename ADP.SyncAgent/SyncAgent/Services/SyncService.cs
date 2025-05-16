@@ -88,7 +88,14 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
 
     public ISyncService<TSource, TDestination> SetupMapping(Func<IEnumerable<TSource?>?, ValueTask<IEnumerable<TDestination?>?>> mappingFunc)
     {
-        this.Mapping = x => mappingFunc(x.Input.SourceItems);
+        this.Mapping = x =>
+        {
+            if(x.Input.Status.CurrentRetryCount > 0 && x.Input.PreviousMappedItem is not null)
+                return new(x.Input.PreviousMappedItem);
+
+            return mappingFunc(x.Input.SourceItems);
+        };
+
         return this;
     }
 
