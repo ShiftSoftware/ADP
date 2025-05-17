@@ -164,7 +164,12 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
                 bool actionResult = true;
 
                 foreach (var actionType in this.SyncConfigurations.ActionExecutionAndOrder)
-                    actionResult = actionResult && await RunAction(actionType);
+                {
+                    if (!actionResult)
+                        break;
+
+                    actionResult =  await RunAction(actionType);
+                }
 
                 result = actionResult;
             }
