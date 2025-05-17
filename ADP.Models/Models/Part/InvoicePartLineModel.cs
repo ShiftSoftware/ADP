@@ -3,6 +3,9 @@ using System;
 
 namespace ShiftSoftware.ADP.Models.Part;
 
+/// <summary>
+/// The Invoice Part Line refers to the properties that define the details of each part line in an invoice.
+/// </summary>
 public class InvoicePartLineModel: IPartitionedItem, IBranchProps, ICompanyProps, IInvoiceProps, IInvoiceLineProps
 {
     public string id { get; set; } = default!;

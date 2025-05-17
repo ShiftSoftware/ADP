@@ -1,8 +1,12 @@
 ﻿using ShiftSoftware.ADP.Models.Enums;
 using System;
 
-namespace ShiftSoftware.ADP.Models.Service;
+namespace ShiftSoftware.ADP.Models.Invoice;
 
+
+/// <summary>
+/// A Service Invoice or a Counter Sale Parts Invoice.
+/// </summary>
 public class InvoiceModel: IPartitionedItem, ICompanyProps, IBranchProps, IInvoiceProps
 {
     public string id { get; set; } = default!;

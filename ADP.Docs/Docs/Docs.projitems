@@ -39,8 +39,6 @@
     <None Include="$(MSBuildThisFileDirectory)docs\integrations\identity.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\integrations\intro.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\integrations\labor-lines.md" />
-    <None Include="$(MSBuildThisFileDirectory)docs\integrations\invoice-part-line.md" />
-    <None Include="$(MSBuildThisFileDirectory)docs\integrations\catalog-part.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\integrations\vehicle-stock-and-sales.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\overrides\assets\images\spinner.svg" />
     <None Include="$(MSBuildThisFileDirectory)mkdocs.yml" />
@@ -55,6 +53,9 @@
     <Content Include="$(MSBuildThisFileDirectory)docs\overrides\css\extra.css" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="$(MSBuildThisFileDirectory)docs\generated\" />
+    <Folder Include="$(MSBuildThisFileDirectory)docs\generated\invoice\" />
+    <Folder Include="$(MSBuildThisFileDirectory)docs\generated\vehicle\" />
+    <Folder Include="$(MSBuildThisFileDirectory)docs\generated\service\" />
+    <Folder Include="$(MSBuildThisFileDirectory)docs\generated\part\" />
   </ItemGroup>
 </Project>
