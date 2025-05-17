@@ -58,7 +58,7 @@ public class CosmosSyncDataDestination<TSource, TCosmos> : ISyncDataAdapter<TSou
                 if (batchRetryFunc is not null)
                      await batchRetryFunc(x);
                                 
-                return RetryAction.RetryAndContinueAfterLastRetry;
+                return SyncService.SyncConfigurations!.DefaultRetryAction;
             });
         }
 

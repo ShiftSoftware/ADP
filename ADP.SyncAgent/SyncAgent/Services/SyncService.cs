@@ -41,19 +41,19 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
 
     private CancellationTokenSource? cancellationTokenSource;
 
-    public SyncService(long? batchSize = null, long maxRetryCount = 0, long operationTimeoutInSeconds = 300)
+    public SyncService(long? batchSize = null, long maxRetryCount = 0, long operationTimeoutInSeconds = 300, RetryAction defaultRetryAction = RetryAction.RetryAndStopAfterLastRetry)
     {
-        this.Configure(batchSize, maxRetryCount, operationTimeoutInSeconds);
+        this.Configure(batchSize, maxRetryCount, operationTimeoutInSeconds, defaultRetryAction);
     }
 
-    public SyncService(IEnumerable<SyncActionType> actionExecutionAndOrder, long? batchSize = null, long maxRetryCount = 0, long operationTimeoutInSeconds = 300)
+    public SyncService(IEnumerable<SyncActionType> actionExecutionAndOrder, long? batchSize = null, long maxRetryCount = 0, long operationTimeoutInSeconds = 300, RetryAction defaultRetryAction = RetryAction.RetryAndStopAfterLastRetry)
     {
-        this.Configure(actionExecutionAndOrder, batchSize, maxRetryCount, operationTimeoutInSeconds);
+        this.Configure(actionExecutionAndOrder, batchSize, maxRetryCount, operationTimeoutInSeconds,defaultRetryAction);
     }
 
-    public ISyncService<TSource, TDestination> Configure(long? batchSize = null, long maxRetryCount = 0, long operationTimeoutInSeconds = 300)
+    public ISyncService<TSource, TDestination> Configure(long? batchSize = null, long maxRetryCount = 0, long operationTimeoutInSeconds = 300, RetryAction defaultRetryAction = RetryAction.RetryAndStopAfterLastRetry)
     {
-        this.SyncConfigurations = new SyncConfigurations(batchSize, maxRetryCount, operationTimeoutInSeconds);
+        this.SyncConfigurations = new SyncConfigurations(batchSize, maxRetryCount, operationTimeoutInSeconds,defaultRetryAction);
         return this;
     }
 
@@ -68,9 +68,9 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
     /// <param name="maxRetryCount"></param>
     /// <param name="operationTimeoutInSeconds"></param>
     /// <returns></returns>
-    public ISyncService<TSource, TDestination> Configure(IEnumerable<SyncActionType> actionExecutionAndOrder, long? batchSize = null, long maxRetryCount = 0, long operationTimeoutInSeconds = 300)
+    public ISyncService<TSource, TDestination> Configure(IEnumerable<SyncActionType> actionExecutionAndOrder, long? batchSize = null, long maxRetryCount = 0, long operationTimeoutInSeconds = 300, RetryAction defaultRetryAction = RetryAction.RetryAndStopAfterLastRetry)
     {
-        this.SyncConfigurations = new SyncConfigurations(batchSize, maxRetryCount, operationTimeoutInSeconds, actionExecutionAndOrder);
+        this.SyncConfigurations = new SyncConfigurations(batchSize, maxRetryCount, operationTimeoutInSeconds, defaultRetryAction, actionExecutionAndOrder);
         return this;
     }
 
@@ -288,7 +288,7 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
                 }
                 catch (Exception)
                 {
-                    RetryAction retryResult = RetryAction.RetryAndStopAfterLastRetry;
+                    RetryAction retryResult = this.SyncConfigurations.DefaultRetryAction;
                     if (this.BatchRetry is not null)
                         retryResult = await this.BatchRetry!(new SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>(this.GetCancellationToken(), new SyncBatchCompleteRetryInput<TSource, TDestination>(sourceItems, storeResult, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType))));
 

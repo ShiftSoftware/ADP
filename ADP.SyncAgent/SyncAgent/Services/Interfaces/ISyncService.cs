@@ -40,7 +40,8 @@ public interface ISyncService<TSource, TDestination> : IAsyncDisposable
     ISyncService<TSource, TDestination> Configure(
         long? batchSize = null,
         long maxRetryCount = 0,
-        long operationTimeoutInSeconds = 300);
+        long operationTimeoutInSeconds = 300,
+        RetryAction defaultRetryAction = RetryAction.RetryAndStopAfterLastRetry);
 
     /// <summary>
     /// 
@@ -56,7 +57,8 @@ public interface ISyncService<TSource, TDestination> : IAsyncDisposable
         IEnumerable<SyncActionType> actionExecutionAndOrder,
         long? batchSize = null, 
         long maxRetryCount = 0, 
-        long operationTimeoutInSeconds = 300);
+        long operationTimeoutInSeconds = 300,
+        RetryAction defaultRetryAction = RetryAction.RetryAndStopAfterLastRetry);
 
     ISyncService<TSource, TDestination> SetupPreparing(Func<SyncFunctionInput, ValueTask<bool>> preparingFunc);
 
@@ -92,7 +94,7 @@ public interface ISyncService<TSource, TDestination> : IAsyncDisposable
     /// <returns></returns>
     ISyncService<TSource, TDestination> SetupBatchCompleted(Func<SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>, ValueTask<bool>> batchCompletedFunc);
 
-    ISyncService<TSource, TDestination> SetupActionCompleted(Func<SyncFunctionInput<SyncActionCompletedInput>, ValueTask<bool>>? actionCompletedFunc);
+    ISyncService<TSource, TDestination> SetupActionCompleted(Func<SyncFunctionInput<SyncActionCompletedInput>, ValueTask<bool>> actionCompletedFunc);
 
     ISyncService<TSource, TDestination> SetupFailed(Func<ValueTask> failedFunc);
 
