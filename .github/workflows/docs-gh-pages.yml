@@ -1,0 +1,15 @@
+name: docs-gh-pages
+on:
+  push:
+    tags:
+      - release-docs-*
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.12.4
+      - run: pip install mkdocs-material=="9.6.11" 
+      - run: mkdocs gh-deploy --force
