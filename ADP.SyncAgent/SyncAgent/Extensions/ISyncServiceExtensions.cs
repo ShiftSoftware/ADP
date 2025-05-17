@@ -74,7 +74,22 @@ public static class ISyncServiceExtensions
             });
         }
 
-        if(syncService.GetSourceBatchItems is not null)
+        var previousBatchStarted = syncService.BatchStarted;
+        syncService.SetupBatchStarted ( async (x) =>
+        {
+            logger.LogInformation("");
+            logger.LogInformation("----------------------------------------------------");
+
+            logger.LogInformation($"Batch started for {x.Input.ActionType}, step {x.Input.CurrentStep + 1}" +
+                    (x.Input.TotalSteps.HasValue ? $" of {x.Input.TotalSteps}" : ""));
+
+            if (previousBatchStarted is not null)
+                return await previousBatchStarted(x);
+
+            return true;
+        });
+
+        if (syncService.GetSourceBatchItems is not null)
         {
             var previousGetSourceBatchItems = syncService.GetSourceBatchItems;
             syncService.SetupGetSourceBatchItems ( async (x) =>
@@ -170,6 +185,9 @@ public static class ISyncServiceExtensions
             else
                 logger.LogError($"Batch failed for {x.Input.Status.ActionType}, step {x.Input.Status.CurrentStep + 1}" +
                     (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}" : ""));
+
+            logger.LogInformation("----------------------------------------------------");
+            logger.LogInformation("");
 
             return result;
         });

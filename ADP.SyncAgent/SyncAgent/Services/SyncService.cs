@@ -21,6 +21,8 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
 
     public Func<SyncFunctionInput<SyncActionType>, ValueTask<long?>>? SourceTotalItemCount { get; private set; }
 
+    public Func<SyncFunctionInput<SyncActionStatus>, ValueTask<bool>>? BatchStarted { get; private set; }
+
     public Func<SyncFunctionInput<SyncGetBatchDataInput<TSource>>, ValueTask<IEnumerable<TSource?>?>>? GetSourceBatchItems { get; private set; }
 
     public Func<SyncFunctionInput<SyncStoreDataInput<TDestination>>, ValueTask<SyncStoreDataResult<TDestination>>>? StoreBatchData { get; private set; }
@@ -89,6 +91,12 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
     public ISyncService<TSource, TDestination> SetupSourceTotalItemCount(Func<SyncFunctionInput<SyncActionType>, ValueTask<long?>>? sourceTotalItemCountFunc)
     {
         this.SourceTotalItemCount = sourceTotalItemCountFunc;
+        return this;
+    }
+
+    public ISyncService<TSource, TDestination> SetupBatchStarted(Func<SyncFunctionInput<SyncActionStatus>, ValueTask<bool>> batchStartedFunc)
+    {
+        this.BatchStarted = batchStartedFunc;
         return this;
     }
 
@@ -241,6 +249,15 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
             while (true)
             {
                 await CheckForCancellation();
+
+                // If this is not retry and BatchStarted is not null, the run it
+                if (this.BatchStarted is not null && retryCount == 0)
+                {
+                    var batchStartedResult = await this.BatchStarted!(new SyncFunctionInput<SyncActionStatus>(this.GetCancellationToken(), new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType)));
+
+                    if (!batchStartedResult)
+                        break;
+                }
 
                 // If provide with total item count and the last step is completed, then stop the operation
                 if (totalSteps != null && currentStep >= totalSteps)

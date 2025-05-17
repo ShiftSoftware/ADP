@@ -14,6 +14,13 @@ public interface ISyncService<TSource, TDestination> : IAsyncDisposable
     Func<SyncFunctionInput<SyncActionType>, ValueTask<bool>>? ActionStarted { get; }
 
     Func<SyncFunctionInput<SyncActionType>, ValueTask<long?>>? SourceTotalItemCount { get; }
+
+    /// <summary>
+    /// Return true to continue the sync process,
+    /// Return false to stop the proccess.
+    /// </summary>
+    Func<SyncFunctionInput<SyncActionStatus>, ValueTask<bool>>? BatchStarted { get; }
+
     Func<SyncFunctionInput<SyncGetBatchDataInput<TSource>>, ValueTask<IEnumerable<TSource?>?>>? GetSourceBatchItems { get; }
     Func<SyncFunctionInput<SyncMappingInput<TSource, TDestination>>, ValueTask<IEnumerable<TDestination?>?>>? Mapping { get; }
     Func<SyncFunctionInput<SyncStoreDataInput<TDestination>>, ValueTask<SyncStoreDataResult<TDestination>>>? StoreBatchData { get; }
@@ -73,6 +80,16 @@ public interface ISyncService<TSource, TDestination> : IAsyncDisposable
     ISyncService<TSource, TDestination> SetupActionStarted(Func<SyncFunctionInput<SyncActionType>, ValueTask<bool>>? actionStartedFunc);
 
     ISyncService<TSource, TDestination> SetupSourceTotalItemCount(Func<SyncFunctionInput<SyncActionType>, ValueTask<long?>>? sourceTotalItemCountFunc);
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="batchStartedFunc">
+    /// Return true to continue the sync process,
+    /// Return false to stop the proccess.
+    /// </param>
+    /// <returns></returns>
+    ISyncService<TSource, TDestination> SetupBatchStarted(Func<SyncFunctionInput<SyncActionStatus>, ValueTask<bool>> batchStartedFunc);
 
     ISyncService<TSource, TDestination> SetupGetSourceBatchItems(Func<SyncFunctionInput<SyncGetBatchDataInput<TSource>>, ValueTask<IEnumerable<TSource?>?>> getSourceBatchItemsFunc);
 
