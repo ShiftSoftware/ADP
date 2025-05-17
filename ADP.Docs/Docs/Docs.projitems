@@ -35,12 +35,12 @@
     <None Include="$(MSBuildThisFileDirectory)docs\components\warranty\twc-invoices.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\components\warranty\twc.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\components\warranty\warranty.md" />
-    <None Include="$(MSBuildThisFileDirectory)docs\generated\PartCatalog.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\index.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\integrations\identity.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\integrations\intro.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\integrations\labor-lines.md" />
-    <None Include="$(MSBuildThisFileDirectory)docs\integrations\parts.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\integrations\invoice-part-line.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\integrations\catalog-part.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\integrations\vehicle-stock-and-sales.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\overrides\assets\images\spinner.svg" />
     <None Include="$(MSBuildThisFileDirectory)mkdocs.yml" />
@@ -53,5 +53,8 @@
     <Content Include="$(MSBuildThisFileDirectory)docs\overrides\assets\images\favicon.png" />
     <Content Include="$(MSBuildThisFileDirectory)docs\overrides\assets\images\logo.png" />
     <Content Include="$(MSBuildThisFileDirectory)docs\overrides\css\extra.css" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="$(MSBuildThisFileDirectory)docs\generated\" />
   </ItemGroup>
 </Project>

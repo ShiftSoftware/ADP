@@ -45,7 +45,9 @@ nav:
     - Integrations: 
         - Intro: integrations/intro.md
         - Identity: integrations/identity.md
-        - Part Lines: integrations/part-lines.md
+        - Parts: 
+            - Catalog Part: integrations/catalog-part.md
+            - Invoice Part Lines: integrations/invoice-part-line.md
         - Labor Lines: integrations/labor-lines.md
         - Vehicl Stock & Sales: integrations/vehicle-stock-and-sales.md
   

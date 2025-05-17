@@ -1,39 +1,48 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using ShiftSoftware.ADP.Models.Part;
 using System.Text;
+
+var modelMapping = new Dictionary<string, string>
+{
+    { $"ADP.Models/Models/Part/{nameof(CatalogPartModel)}.cs", $"Docs/docs/generated/{nameof(CatalogPartModel)}.md" },
+    { $"ADP.Models/Models/Part/{nameof(InvoicePartLineModel)}.cs", $"Docs/docs/generated/{nameof(InvoicePartLineModel)}.md" },
+};
 
 var baseDir = AppContext.BaseDirectory;
 
-var filePath = Path.GetFullPath(Path.Combine(baseDir, "../../../../../ADP.Models/Models/Part/CatalogPartModel.cs"));
-
-var source = File.ReadAllText(filePath);
-var tree = CSharpSyntaxTree.ParseText(source);
-var root = tree.GetCompilationUnitRoot();
-
-var classDecl = root.DescendantNodes().OfType<ClassDeclarationSyntax>().FirstOrDefault();
-if (classDecl is null)
+foreach (var model in modelMapping)
 {
-    Console.WriteLine("No class found.");
-    return;
+    var filePath = Path.GetFullPath(Path.Combine(baseDir, $"../../../../../{model.Key}"));
+
+    var source = File.ReadAllText(filePath);
+    var tree = CSharpSyntaxTree.ParseText(source);
+    var root = tree.GetCompilationUnitRoot();
+
+    var classDecl = root.DescendantNodes().OfType<ClassDeclarationSyntax>().FirstOrDefault();
+
+    if (classDecl is null)
+    {
+        Console.WriteLine("No class found.");
+        return;
+    }
+
+    var sb = new StringBuilder();
+    sb.AppendLine();
+    sb.AppendLine("| Property | Summary |");
+    sb.AppendLine("|----------|---------|");
+
+    foreach (var prop in classDecl.Members.OfType<PropertyDeclarationSyntax>())
+    {
+        var name = prop.Identifier.Text;
+        var type = prop.Type.ToString();
+        var summary = EscapeMarkdown(GetSummary(prop));
+        sb.AppendLine($"| {name} <strong style='float: right;'>``{type}``</strong> | {summary} |");
+    }
+
+    File.WriteAllText(Path.GetFullPath(Path.Combine(baseDir, $"../../../../{model.Value}")), sb.ToString());
 }
-
-var sb = new StringBuilder();
-sb.AppendLine($"# {classDecl.Identifier.Text}");
-sb.AppendLine();
-sb.AppendLine("| Property | Type | Summary |");
-sb.AppendLine("|----------|------|---------|");
-
-foreach (var prop in classDecl.Members.OfType<PropertyDeclarationSyntax>())
-{
-    var name = prop.Identifier.Text;
-    var type = prop.Type.ToString();
-    var summary = EscapeMarkdown(GetSummary(prop));
-    sb.AppendLine($"| {name} | {type} | {summary} |");
-}
-
-File.WriteAllText(Path.GetFullPath(Path.Combine(baseDir, "../../../../Docs/docs/generated/PartCatalog.md")), sb.ToString());
-
 
 string EscapeMarkdown(string input) => input.Replace("|", "\\|");
 
