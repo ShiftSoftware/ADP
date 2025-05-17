@@ -60,19 +60,19 @@ public class CSVSyncDataSource<TCSV, TDestination> : ISyncDataAdapter<TCSV, TDes
             .SetupActionStarted(ActionStarted)
             .SetupSourceTotalItemCount(SourceTotalItemCount)
             .SetupGetSourceBatchItems(GetSourceBatchItems)
-            .SetupSucceeded(() =>
+            .SetupSucceeded(async () =>
             {
                 if (previousSucceeded is not null)
-                    return previousSucceeded();
+                    await previousSucceeded();
 
-                return Succeeded();
+                await Succeeded();
             })
-            .SetupFinished(() =>
+            .SetupFinished(async () =>
             {
                 if (previousFinished is not null)
-                    return previousFinished();
+                    await previousFinished();
 
-                return Finished();
+                await Finished();
             });
 
         return this.SyncService;
