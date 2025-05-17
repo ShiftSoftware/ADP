@@ -272,7 +272,7 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
                     sourceItems = await this.GetSourceBatchItems!(new SyncFunctionInput<SyncGetBatchDataInput<TSource>>(this.GetCancellationToken(), new SyncGetBatchDataInput<TSource>(sourceItems, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType))));
 
                     // If no data is returned and total item count not provided, then stop the operation
-                    if (sourceItems is null && totalItemCount is null)
+                    if (!(sourceItems?.Any() ?? false) && totalItemCount is null)
                     {
                         result = true;
                         break;
