@@ -23,6 +23,8 @@ public class CSVSyncDataSource<TCSV, TDestination> : ISyncDataAdapter<TCSV, TDes
     private string? toInsertFilePath;
     private string? toDeleteFilePath;
 
+    private CacheableCSVAsyncEngine<TCSV>? engine;
+
     public ISyncService<TCSV, TDestination> SyncService { get; private set; } = default!;
 
     public CSVSyncDataSourceConfigurations? Configurations { get; private set; } = default!;
@@ -55,6 +57,7 @@ public class CSVSyncDataSource<TCSV, TDestination> : ISyncDataAdapter<TCSV, TDes
                 else
                     return await this.Preparing(x);
             })
+            .SetupActionStarted(ActionStarted)
             .SetupSourceTotalItemCount(SourceTotalItemCount)
             .SetupGetSourceBatchItems(GetSourceBatchItems)
             .SetupSucceeded(() =>
@@ -153,38 +156,57 @@ public class CSVSyncDataSource<TCSV, TDestination> : ISyncDataAdapter<TCSV, TDes
         return true;
     }
 
+    public ValueTask<bool> ActionStarted(SyncFunctionInput<SyncActionType> input)
+    {
+        engine = new();
+
+        try
+        {
+            if (input.Input == SyncActionType.Add)
+                engine.BeginReadFile(toInsertFilePath!);
+            else if (input.Input== SyncActionType.Delete)
+                engine.BeginReadFile(toDeleteFilePath!);
+
+            return new(true);
+        }
+        catch (Exception)
+        {
+            return new(false);
+        }
+    }
+
     public ValueTask<long?> SourceTotalItemCount(SyncFunctionInput<SyncActionType> input)
     {
-        if (input.Input == SyncActionType.Add)
-            return new(CalculateCSVRecordCountAsync(toInsertFilePath!));
-        else if (input.Input == SyncActionType.Delete)
-            return new(CalculateCSVRecordCountAsync(toDeleteFilePath!));
-        else if (input.Input == SyncActionType.Update)
-            return new(0);
+        CacheableCSVAsyncEngine<TCSV>? e = new();
 
-        throw new NotImplementedException("The action type is not supported.");
+        if (input.Input == SyncActionType.Add)
+            e.BeginReadFile(toInsertFilePath!);
+        else if (input.Input == SyncActionType.Delete)
+            e.BeginReadFile(toDeleteFilePath!);
+
+        if (input.Input == SyncActionType.Add || input.Input == SyncActionType.Delete)
+            return new(e!.LongCount());
+
+        return new(0);
     }
 
     public ValueTask<IEnumerable<TCSV?>?> GetSourceBatchItems(SyncFunctionInput<SyncGetBatchDataInput<TCSV>> input)
     {
-        if (input.Input.Status.CurrentRetryCount > 0 && input.Input.PreviousItems is not null)
-            return new(input.Input.PreviousItems);
+        try
+        {
+            if (input.Input.Status.CurrentRetryCount > 0 && input.Input.PreviousItems is not null)
+                return new(input.Input.PreviousItems);
 
-        if (input.Input.Status.ActionType == SyncActionType.Add)
-            return new(LoadItems(toInsertFilePath!, (int)input.Input.Status.BatchSize));
-        else if (input.Input.Status.ActionType == SyncActionType.Delete)
-            return new(LoadItems(toDeleteFilePath!, (int)input.Input.Status.BatchSize));
-        else if (input.Input.Status.ActionType == SyncActionType.Update)
+            if (input.Input.Status.ActionType == SyncActionType.Add || input.Input.Status.ActionType == SyncActionType.Delete)
+                return new(engine!.ReadNexts((int)input.Input.Status.BatchSize));
+
             return new([]);
+        }
+        catch (Exception ex)
+        {
 
-        throw new NotImplementedException("The action type is not supported.");
-    }
-
-    private IEnumerable<TCSV?>? LoadItems(string filePath, int batchSize)
-    {
-        using CacheableCSVAsyncEngine<TCSV> engine = new();
-        engine.BeginReadFile(filePath);
-        return engine.ReadNexts(batchSize);
+            throw;
+        }
     }
 
     public async ValueTask Succeeded()
@@ -216,6 +238,8 @@ public class CSVSyncDataSource<TCSV, TDestination> : ISyncDataAdapter<TCSV, TDes
     public ValueTask DisposeAsync()
     {
         Reset();
+        engine.Dispose();
+        engine = null;
 
         return ValueTask.CompletedTask;
     }
@@ -275,13 +299,6 @@ public class CSVSyncDataSource<TCSV, TDestination> : ISyncDataAdapter<TCSV, TDes
         }
     }
 
-    private long CalculateCSVRecordCountAsync(string filePath)
-    {
-        using CacheableCSVAsyncEngine<TCSV> engine = new();
-        engine.BeginReadFile(filePath);
-        return engine.LongCount();
-    }
-
     private void StageAndCommit()
     {
         using (var repo = new Repository(this.workingDirectory.FullName))
@@ -333,7 +350,7 @@ public class CSVSyncDataSource<TCSV, TDestination> : ISyncDataAdapter<TCSV, TDes
         throw new NotImplementedException();
     }
 
-    public ValueTask ActionCompleted(SyncFunctionInput<SyncActionType> input)
+    public ValueTask<bool> ActionCompleted(SyncFunctionInput<SyncActionType> input)
     {
         throw new NotImplementedException();
     }

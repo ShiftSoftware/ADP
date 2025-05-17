@@ -19,6 +19,14 @@ public interface ISyncDataAdapter<TSource, TDestination, TConfigurations, TImple
     public ISyncService<TSource, TDestination> Configure(TConfigurations configurations);
 
     public ValueTask<bool> Preparing(SyncFunctionInput input);
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="input"></param>
+    /// <returns>True for mark the action as success, false to mark it as fail</returns>
+    public ValueTask<bool> ActionStarted(SyncFunctionInput<SyncActionType> input);
+
     public ValueTask<long?> SourceTotalItemCount(SyncFunctionInput<SyncActionType> input);
     public ValueTask<IEnumerable<TSource?>?> GetSourceBatchItems(SyncFunctionInput<SyncGetBatchDataInput<TSource>> input);
     public ValueTask<SyncStoreDataResult<TDestination>> StoreBatchData(SyncFunctionInput<SyncStoreDataInput<TDestination>> input);
@@ -33,7 +41,14 @@ public interface ISyncDataAdapter<TSource, TDestination, TConfigurations, TImple
     /// Return false to retry.
     /// </returns>
     public ValueTask<bool> BatchCompleted(SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>> input);
-    public ValueTask ActionCompleted(SyncFunctionInput<SyncActionType> input);
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="input"></param>
+    /// <returns>True for mark the action as success, false to mark it as fail</returns>
+    public ValueTask<bool> ActionCompleted(SyncFunctionInput<SyncActionType> input);
+
     public ValueTask Failed();
     public ValueTask Succeeded();
     public ValueTask Finished();

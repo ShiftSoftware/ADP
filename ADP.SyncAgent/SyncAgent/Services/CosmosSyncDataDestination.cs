@@ -255,7 +255,7 @@ public class CosmosSyncDataDestination<TSource, TCosmos> : ISyncDataAdapter<TSou
     }
 
     #region Not Implemented
-    public ValueTask ActionCompleted(SyncFunctionInput<SyncActionType> input)
+    public ValueTask<bool> ActionCompleted(SyncFunctionInput<SyncActionType> input)
     {
         throw new NotImplementedException();
     }
@@ -296,6 +296,11 @@ public class CosmosSyncDataDestination<TSource, TCosmos> : ISyncDataAdapter<TSou
     }
 
     public ValueTask Succeeded()
+    {
+        throw new NotImplementedException();
+    }
+
+    public ValueTask<bool> ActionStarted(SyncFunctionInput<SyncActionType> input)
     {
         throw new NotImplementedException();
     }

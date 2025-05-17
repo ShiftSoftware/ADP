@@ -17,6 +17,8 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
 
     public Func<SyncFunctionInput, ValueTask<bool>>? Preparing { get; private set; }
 
+    public Func<SyncFunctionInput<SyncActionType>, ValueTask<bool>>? ActionStarted { get; private set; }
+
     public Func<SyncFunctionInput<SyncActionType>, ValueTask<long?>>? SourceTotalItemCount { get; private set; }
 
     public Func<SyncFunctionInput<SyncGetBatchDataInput<TSource>>, ValueTask<IEnumerable<TSource?>?>>? GetSourceBatchItems { get; private set; }
@@ -65,6 +67,12 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
     public ISyncService<TSource, TDestination> SetupPreparing(Func<SyncFunctionInput, ValueTask<bool>> preparingFunc)
     {
         this.Preparing = preparingFunc;
+        return this;
+    }
+
+    public ISyncService<TSource, TDestination> SetupActionStarted(Func<SyncFunctionInput<SyncActionType>, ValueTask<bool>>? actionStartedFunc)
+    {
+        this.ActionStarted = actionStartedFunc;
         return this;
     }
 
@@ -197,82 +205,110 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
     {
         bool result = false;
 
-        // Get total item count
-        long? totalItemCount = null;
-        if(this.SourceTotalItemCount is not null)
-            totalItemCount = await this.SourceTotalItemCount!(new SyncFunctionInput<SyncActionType>(this.GetCancellationToken(), actionType));
+        bool actionStartedResult = true;
 
-        // Prepare batch informations
-        var batchSize = this.SyncConfigurations!.BatchSize;
-        var currentStep = 0;
-        var totalSteps = totalItemCount == null ? null : (long?)Math.Ceiling((double)totalItemCount.Value / (double)batchSize);
-        long retryCount = 0;
-        var maxRetryCount = this.SyncConfigurations.MaxRetryCount;
+        if (this.ActionStarted is not null)
+            actionStartedResult = await this.ActionStarted!(new(this.GetCancellationToken(), actionType));
 
-        IEnumerable<TSource?>? sourceItems = null;
-        IEnumerable<TDestination?>? destinationItems = null;
-        SyncStoreDataResult<TDestination>? storeResult = null;
-
-        while (true)
+        if (actionStartedResult)
         {
-            await CheckForCancellation();
+            // Get total item count
+            long? totalItemCount = null;
+            if (this.SourceTotalItemCount is not null)
+                totalItemCount = await this.SourceTotalItemCount!(new SyncFunctionInput<SyncActionType>(this.GetCancellationToken(), actionType));
 
-            // If provide with total item count and the last step is completed, then stop the operation
-            if (totalSteps != null && currentStep >= totalSteps)
+            // Prepare batch informations
+            var batchSize = this.SyncConfigurations!.BatchSize;
+            var currentStep = 0;
+            var totalSteps = totalItemCount == null ? null : (long?)Math.Ceiling((double)totalItemCount.Value / (double)batchSize);
+            long retryCount = 0;
+            var maxRetryCount = this.SyncConfigurations.MaxRetryCount;
+
+            IEnumerable<TSource?>? sourceItems = null;
+            IEnumerable<TDestination?>? destinationItems = null;
+            SyncStoreDataResult<TDestination>? storeResult = null;
+
+            while (true)
             {
-                result = true;
-                break;
-            }
+                await CheckForCancellation();
 
-            try
-            {
-                // Get current batch data from the source
-                sourceItems = await this.GetSourceBatchItems!(new SyncFunctionInput<SyncGetBatchDataInput<TSource>>(this.GetCancellationToken(), new SyncGetBatchDataInput<TSource>(sourceItems, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType))));
-
-                // If no data is returned and total item count not provided, then stop the operation
-                if (sourceItems is null && totalItemCount is null)
+                // If provide with total item count and the last step is completed, then stop the operation
+                if (totalSteps != null && currentStep >= totalSteps)
                 {
                     result = true;
                     break;
                 }
 
-                // Map the source data to destination data
-                destinationItems = await this.Mapping!(new SyncFunctionInput<SyncMappingInput<TSource, TDestination>>(this.GetCancellationToken(), new SyncMappingInput<TSource, TDestination>(sourceItems, destinationItems, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType))));
-
-                // Store the mapped data to the destination
-                storeResult = await this.StoreBatchData!(new SyncFunctionInput<SyncStoreDataInput<TDestination>>(this.GetCancellationToken(), new SyncStoreDataInput<TDestination>(destinationItems, storeResult, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType))));
-
-                // Check if retry required
-                if(storeResult.NeedRetry)
-                    throw new Exception("Retry is required.");
-
-                // Run batch completed function
-                if (this.BatchCompleted is not null)
+                try
                 {
-                    var batchCompletedResult = await this.BatchCompleted!(new SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>(this.GetCancellationToken(), new SyncBatchCompleteRetryInput<TSource, TDestination>(sourceItems, storeResult, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType))));
+                    // Get current batch data from the source
+                    sourceItems = await this.GetSourceBatchItems!(new SyncFunctionInput<SyncGetBatchDataInput<TSource>>(this.GetCancellationToken(), new SyncGetBatchDataInput<TSource>(sourceItems, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType))));
 
-                    if (!batchCompletedResult)
+                    // If no data is returned and total item count not provided, then stop the operation
+                    if (sourceItems is null && totalItemCount is null)
+                    {
+                        result = true;
+                        break;
+                    }
+
+                    // Map the source data to destination data
+                    destinationItems = await this.Mapping!(new SyncFunctionInput<SyncMappingInput<TSource, TDestination>>(this.GetCancellationToken(), new SyncMappingInput<TSource, TDestination>(sourceItems, destinationItems, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType))));
+
+                    // Store the mapped data to the destination
+                    storeResult = await this.StoreBatchData!(new SyncFunctionInput<SyncStoreDataInput<TDestination>>(this.GetCancellationToken(), new SyncStoreDataInput<TDestination>(destinationItems, storeResult, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType))));
+
+                    // Check if retry required
+                    if (storeResult.NeedRetry)
                         throw new Exception("Retry is required.");
+
+                    // Run batch completed function
+                    if (this.BatchCompleted is not null)
+                    {
+                        var batchCompletedResult = await this.BatchCompleted!(new SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>(this.GetCancellationToken(), new SyncBatchCompleteRetryInput<TSource, TDestination>(sourceItems, storeResult, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType))));
+
+                        if (!batchCompletedResult)
+                            throw new Exception("Retry is required.");
+                    }
+
+                    currentStep++;
+                    retryCount = 0;
+                    sourceItems = null;
+                    destinationItems = null;
+                    storeResult = null;
                 }
-
-                currentStep++;
-                retryCount = 0;
-                sourceItems = null;
-                destinationItems = null;
-                storeResult = null;
-            }
-            catch (Exception)
-            {
-                RetryAction retryResult = RetryAction.RetryAndStopAfterLastRetry;
-                if (this.BatchRetry is not null)
-                    retryResult = await this.BatchRetry!(new SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>(this.GetCancellationToken(), new SyncBatchCompleteRetryInput<TSource, TDestination>(sourceItems, storeResult, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType))));
-
-                // Do action based on the retry result
-                if (retryResult == RetryAction.RetryAndContinueAfterLastRetry)
+                catch (Exception)
                 {
-                    retryCount++;
+                    RetryAction retryResult = RetryAction.RetryAndStopAfterLastRetry;
+                    if (this.BatchRetry is not null)
+                        retryResult = await this.BatchRetry!(new SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>(this.GetCancellationToken(), new SyncBatchCompleteRetryInput<TSource, TDestination>(sourceItems, storeResult, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType))));
 
-                    if (retryCount > maxRetryCount)
+                    // Do action based on the retry result
+                    if (retryResult == RetryAction.RetryAndContinueAfterLastRetry)
+                    {
+                        retryCount++;
+
+                        if (retryCount > maxRetryCount)
+                        {
+                            // Run batch completed function
+                            if (this.BatchCompleted is not null)
+                            {
+                                var batchCompletedResult = await this.BatchCompleted!(new SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>(this.GetCancellationToken(), new SyncBatchCompleteRetryInput<TSource, TDestination>(sourceItems, storeResult, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType))));
+
+                                if (!batchCompletedResult)
+                                {
+                                    result = false;
+                                    break;
+                                }
+                            }
+
+                            currentStep++;
+                            retryCount = 0;
+                            sourceItems = null;
+                            destinationItems = null;
+                            storeResult = null;
+                        }
+                    }
+                    else if (retryResult == RetryAction.Skip)
                     {
                         // Run batch completed function
                         if (this.BatchCompleted is not null)
@@ -292,40 +328,20 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
                         destinationItems = null;
                         storeResult = null;
                     }
-                }
-                else if (retryResult == RetryAction.Skip)
-                {
-                    // Run batch completed function
-                    if (this.BatchCompleted is not null)
+                    else if (retryResult == RetryAction.Stop)
                     {
-                        var batchCompletedResult = await this.BatchCompleted!(new SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>(this.GetCancellationToken(), new SyncBatchCompleteRetryInput<TSource, TDestination>(sourceItems, storeResult, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType))));
+                        result = false;
+                        break;
+                    }
+                    else if (retryResult == RetryAction.RetryAndStopAfterLastRetry)
+                    {
+                        retryCount++;
 
-                        if (!batchCompletedResult)
+                        if (retryCount > maxRetryCount)
                         {
                             result = false;
                             break;
                         }
-                    }
-
-                    currentStep++;
-                    retryCount = 0;
-                    sourceItems = null;
-                    destinationItems = null;
-                    storeResult = null;
-                }
-                else if (retryResult == RetryAction.Stop)
-                {
-                    result = false;
-                    break;
-                }
-                else if(retryResult == RetryAction.RetryAndStopAfterLastRetry)
-                {
-                    retryCount++;
-
-                    if (retryCount > maxRetryCount)
-                    {
-                        result = false;
-                        break;
                     }
                 }
             }

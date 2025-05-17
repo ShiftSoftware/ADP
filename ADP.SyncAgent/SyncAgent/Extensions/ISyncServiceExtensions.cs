@@ -48,7 +48,18 @@ public static class ISyncServiceExtensions
             });
         }
 
-        if(syncService.SourceTotalItemCount is not null)
+        var previousActionStarted = syncService.ActionStarted;
+        syncService.SetupActionStarted ( async (x) =>
+        {
+            logger.LogInformation($"Action {x.Input} is started.");
+
+            if(previousActionStarted is not null)
+                return await previousActionStarted(x);
+            
+            return true;
+        });
+
+        if (syncService.SourceTotalItemCount is not null)
         {
             var previousSourceTotalItemCount = syncService.SourceTotalItemCount;
             syncService.SetupSourceTotalItemCount ( async (x) =>
@@ -122,13 +133,23 @@ public static class ISyncServiceExtensions
             if (previousBatchRetry is not null)
                 result = await previousBatchRetry(x);
 
-            if(result == RetryAction.RetryAndStopAfterLastRetry || result == RetryAction.RetryAndContinueAfterLastRetry)
-                logger.LogWarning($"Batch failed we do {x.Input.Status.CurrentRetryCount} retry for {x.Input.Status.ActionType}, step {x.Input.Status.CurrentStep + 1}" +
+            if (result == RetryAction.RetryAndStopAfterLastRetry)
+            {
+                if (x.Input.Status.CurrentRetryCount + 1 <= x.Input.Status.MaxRetryCount)
+                    logger.LogWarning($"Batch failed we do {x.Input.Status.CurrentRetryCount + 1} retry for {x.Input.Status.ActionType}, step {x.Input.Status.CurrentStep + 1}" + (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}" : ""));
+                else
+                    logger.LogError($"Batch failed we do stop for {x.Input.Status.ActionType}, step {x.Input.Status.CurrentStep + 1}" +
                     (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}" : ""));
-            else if(result == RetryAction.Skip)
+            }
+            else if(result == RetryAction.RetryAndContinueAfterLastRetry)
+            {
+                if (x.Input.Status.CurrentRetryCount + 1 <= x.Input.Status.MaxRetryCount)
+                    logger.LogWarning($"Batch failed we do {x.Input.Status.CurrentRetryCount + 1} retry for {x.Input.Status.ActionType}, step {x.Input.Status.CurrentStep + 1}" + (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}" : ""));
+            }
+            else if (result == RetryAction.Skip)
                 logger.LogWarning($"Batch failed we do skip for {x.Input.Status.ActionType}, step {x.Input.Status.CurrentStep + 1}" +
                     (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}" : ""));
-            else if(result == RetryAction.Stop)
+            else if (result == RetryAction.Stop)
                 logger.LogError($"Batch failed we do stop for {x.Input.Status.ActionType}, step {x.Input.Status.CurrentStep + 1}" +
                     (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}" : ""));
 
@@ -156,7 +177,7 @@ public static class ISyncServiceExtensions
         var previousActionCompleted = syncService.ActionCompleted;
         syncService.SetupActionCompleted ( async (x) =>
         {
-            bool result = x.Input.Succeede;
+            bool result = x.Input.Succeeded;
             if(previousActionCompleted is not null)
                 result = await previousActionCompleted(x);
 

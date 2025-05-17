@@ -6,6 +6,13 @@ public interface ISyncService<TSource, TDestination> : IAsyncDisposable
 {
     SyncConfigurations? SyncConfigurations { get; }
     Func<SyncFunctionInput, ValueTask<bool>>? Preparing { get; }
+
+    /// <summary>
+    /// Return true to continue the process,
+    /// or false to stop the proccess.
+    /// </summary>
+    Func<SyncFunctionInput<SyncActionType>, ValueTask<bool>>? ActionStarted { get; }
+
     Func<SyncFunctionInput<SyncActionType>, ValueTask<long?>>? SourceTotalItemCount { get; }
     Func<SyncFunctionInput<SyncGetBatchDataInput<TSource>>, ValueTask<IEnumerable<TSource?>?>>? GetSourceBatchItems { get; }
     Func<SyncFunctionInput<SyncMappingInput<TSource, TDestination>>, ValueTask<IEnumerable<TDestination?>?>>? Mapping { get; }
@@ -52,6 +59,16 @@ public interface ISyncService<TSource, TDestination> : IAsyncDisposable
         int operationTimeoutInSeconds = 300);
 
     ISyncService<TSource, TDestination> SetupPreparing(Func<SyncFunctionInput, ValueTask<bool>> preparingFunc);
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="actionStartedFunc">
+    /// Return true to continue the process,
+    /// or false to stop the proccess.
+    /// </param>
+    /// <returns></returns>
+    ISyncService<TSource, TDestination> SetupActionStarted(Func<SyncFunctionInput<SyncActionType>, ValueTask<bool>>? actionStartedFunc);
 
     ISyncService<TSource, TDestination> SetupSourceTotalItemCount(Func<SyncFunctionInput<SyncActionType>, ValueTask<long?>>? sourceTotalItemCountFunc);
 
