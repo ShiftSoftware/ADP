@@ -51,7 +51,7 @@ public interface ISyncDataAdapter<TSource, TDestination, TConfigurations, TImple
     /// </summary>
     /// <param name="input"></param>
     /// <returns>True for mark the action as success, false to mark it as fail</returns>
-    public ValueTask<bool> ActionCompleted(SyncFunctionInput<SyncActionType> input);
+    public ValueTask<bool> ActionCompleted(SyncFunctionInput<SyncActionCompletedInput> input);
 
     public ValueTask Failed();
     public ValueTask Succeeded();

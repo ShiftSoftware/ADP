@@ -59,6 +59,8 @@ public class CSVSyncDataSource<TCSV, TDestination> : ISyncDataAdapter<TCSV, TDes
             var previousPreparing = this.SyncService.Preparing;
             var previousSucceeded = this.SyncService.Succeeded;
             var previousFinished = this.SyncService.Finished;
+            var previousActionStarted = this.SyncService.ActionStarted;
+            var previousActionCompleted = this.SyncService.ActionCompleted;
 
             this.SyncService
                 .SetupPreparing(async (x) =>
@@ -68,9 +70,22 @@ public class CSVSyncDataSource<TCSV, TDestination> : ISyncDataAdapter<TCSV, TDes
                     else
                         return await this.Preparing(x);
                 })
-                .SetupActionStarted(ActionStarted)
+                .SetupActionStarted(async (x) =>
+                {
+                    if (previousActionStarted is not null)
+                        return await previousActionStarted(x) && await this.ActionStarted(x);
+                    
+                    return await this.ActionStarted(x);
+                })
                 .SetupSourceTotalItemCount(SourceTotalItemCount)
                 .SetupGetSourceBatchItems(GetSourceBatchItems)
+                .SetupActionCompleted(async (x) =>
+                {
+                    if (previousActionCompleted is not null)
+                        return await previousActionCompleted(x) && await this.ActionCompleted(x);
+                    
+                    return await this.ActionCompleted(x);
+                })
                 .SetupSucceeded(async () =>
                 {
                     if (previousSucceeded is not null)
@@ -221,6 +236,15 @@ public class CSVSyncDataSource<TCSV, TDestination> : ISyncDataAdapter<TCSV, TDes
         }
     }
 
+    public ValueTask<bool> ActionCompleted(SyncFunctionInput<SyncActionCompletedInput> input)
+    {
+        this.engine?.Close();
+        this.engine?.Dispose();
+        this.engine = null;
+
+        return new(input.Input.Succeeded);
+    }
+
     public async ValueTask Succeeded()
     {
         using CacheableCSVAsyncEngine<TCSV> engine = new();
@@ -358,11 +382,6 @@ public class CSVSyncDataSource<TCSV, TDestination> : ISyncDataAdapter<TCSV, TDes
     }
 
     public ValueTask Failed()
-    {
-        throw new NotImplementedException();
-    }
-
-    public ValueTask<bool> ActionCompleted(SyncFunctionInput<SyncActionType> input)
     {
         throw new NotImplementedException();
     }

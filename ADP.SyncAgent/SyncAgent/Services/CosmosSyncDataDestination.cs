@@ -53,22 +53,7 @@ public class CosmosSyncDataDestination<TSource, TCosmos> : ISyncDataAdapter<TSou
         this.Configurations = configurations;
 
         if (configureSyncService)
-        {
             this.SyncService.SetupStoreBatchData(this.StoreBatchData);
-
-            if (!this.Configurations.StopOperationWhenOneFailed)
-            {
-                var batchRetryFunc = this.SyncService.BatchRetry;
-
-                this.SyncService.SetupBatchRetry(async (x) =>
-                {
-                    if (batchRetryFunc is not null)
-                        await batchRetryFunc(x);
-
-                    return SyncService.Configurations!.DefaultRetryAction;
-                });
-            }
-        }
 
         return this.SyncService;
     }
@@ -263,7 +248,7 @@ public class CosmosSyncDataDestination<TSource, TCosmos> : ISyncDataAdapter<TSou
     }
 
     #region Not Implemented
-    public ValueTask<bool> ActionCompleted(SyncFunctionInput<SyncActionType> input)
+    public ValueTask<bool> ActionCompleted(SyncFunctionInput<SyncActionCompletedInput> input)
     {
         throw new NotImplementedException();
     }
