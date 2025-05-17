@@ -12,4 +12,4 @@ jobs:
         with:
           python-version: 3.12.4
       - run: pip install mkdocs-material=="9.6.11" 
-      - run: mkdocs gh-deploy --force
+      - run: mkdocs gh-deploy --force --config-file ADP.Docs/Docs/mkdocs.yml
