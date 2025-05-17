@@ -122,8 +122,6 @@ public class CosmosSyncDataDestination<TSource, TCosmos> : ISyncDataAdapter<TSou
         {
             return new SyncStoreDataResult<TCosmos>(true);
         }
-
-        return new SyncStoreDataResult<TCosmos>(true);
     }
 
     private (string? Id, object? Key1, object? Key2, object? Key3) GetCompositeKey(TCosmos? item)

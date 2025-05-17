@@ -7,6 +7,11 @@ using System.Text;
 
 namespace ShiftSoftware.ADP.SyncAgent.Services;
 
+/// <summary>
+/// This provide Add and Delete operations for CSV files.
+/// </summary>
+/// <typeparam name="TCSV"></typeparam>
+/// <typeparam name="TDestination"></typeparam>
 public class CSVSyncDataSource<TCSV, TDestination> : ISyncDataAdapter<TCSV, TDestination, CSVSyncDataSourceConfigurations, CSVSyncDataSource<TCSV, TDestination>>
     where TCSV : CacheableCSV, new()
     where TDestination : class, new()
@@ -150,11 +155,11 @@ public class CSVSyncDataSource<TCSV, TDestination> : ISyncDataAdapter<TCSV, TDes
 
     public ValueTask<long?> SourceTotalItemCount(SyncFunctionInput<SyncActionType> input)
     {
-        if (input.Input == SyncActionType.Update)
+        if (input.Input == SyncActionType.Add)
             return new(CalculateCSVRecordCountAsync(toInsertFilePath!));
         else if (input.Input == SyncActionType.Delete)
             return new(CalculateCSVRecordCountAsync(toDeleteFilePath!));
-        else if (input.Input == SyncActionType.Add)
+        else if (input.Input == SyncActionType.Update)
             return new(0);
 
         throw new NotImplementedException("The action type is not supported.");
@@ -165,11 +170,11 @@ public class CSVSyncDataSource<TCSV, TDestination> : ISyncDataAdapter<TCSV, TDes
         if (input.Input.Status.CurrentRetryCount > 0 && input.Input.PreviousItems is not null)
             return new(input.Input.PreviousItems);
 
-        if (input.Input.Status.ActionType == SyncActionType.Update)
+        if (input.Input.Status.ActionType == SyncActionType.Add)
             return new(LoadItems(toInsertFilePath!, (int)input.Input.Status.BatchSize));
         else if (input.Input.Status.ActionType == SyncActionType.Delete)
             return new(LoadItems(toDeleteFilePath!, (int)input.Input.Status.BatchSize));
-        else if (input.Input.Status.ActionType == SyncActionType.Delete)
+        else if (input.Input.Status.ActionType == SyncActionType.Update)
             return new([]);
 
         throw new NotImplementedException("The action type is not supported.");
