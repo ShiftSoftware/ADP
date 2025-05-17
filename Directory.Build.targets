@@ -1,6 +1,0 @@
-<Project>
-	<Target Name="GenerateDocs" AfterTargets="Build">
-		<Message Text="Running ModelDocGen..." Importance="high" />
-		<Exec Command='dotnet "$(SolutionDir)/ADP.Docs/ModelDocGen/bin/Debug/net8.0/ModelDocGen.dll"' />
-	</Target>
-</Project>

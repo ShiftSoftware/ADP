@@ -20,7 +20,6 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Global", "Global", "{9083B6BE-10E3-43B6-80C5-ACB23642CBFD}"
 	ProjectSection(SolutionItems) = preProject
 		azure-pipeline.yml = azure-pipeline.yml
-		Directory.Build.targets = Directory.Build.targets
 		GlobalSettings.props = GlobalSettings.props
 	EndProjectSection
 EndProject

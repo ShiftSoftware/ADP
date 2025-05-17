@@ -10,4 +10,14 @@
 		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
 		<PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.14.0" />
 	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\..\ADP.LookupServices\Lookup.Services\Lookup.Services.csproj" />
+	  <ProjectReference Include="..\..\ADP.Models\Models\Models.csproj" />
+	  <ProjectReference Include="..\..\ADP.SyncAgent\SyncAgent\ADP.SyncAgent.csproj" />
+	</ItemGroup>
+
+	<Target Name="RunSelfAfterBuild" AfterTargets="Build">
+		<Exec Command='dotnet "$(TargetPath)"' />
+	</Target>
 </Project>
