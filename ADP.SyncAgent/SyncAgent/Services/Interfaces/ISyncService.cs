@@ -95,6 +95,11 @@ public interface ISyncService<TSource, TDestination> : IAsyncDisposable
 
     ISyncService<TSource, TDestination> SetupAdvancedMapping(Func<SyncFunctionInput<SyncMappingInput<TSource, TDestination>>, ValueTask<IEnumerable<TDestination?>?>> mappingFunc);
 
+    /// <summary>
+    /// This is using the advanced mapping too, but for simplify,if the operation is not retyr and previous mapped items not null, it return the previous mapped items., otherwise it will mapp it with this function.
+    /// </summary>
+    /// <param name="mappingFunc"></param>
+    /// <returns></returns>
     ISyncService<TSource, TDestination> SetupMapping(Func<IEnumerable<TSource?>?, SyncActionType, ValueTask<IEnumerable<TDestination?>?>> mappingFunc);
 
     ISyncService<TSource, TDestination> SetupStoreBatchData(Func<SyncFunctionInput<SyncStoreDataInput<TDestination>>, ValueTask<SyncStoreDataResult<TDestination>>> storeBatchDataFunc);
@@ -122,6 +127,9 @@ public interface ISyncService<TSource, TDestination> : IAsyncDisposable
     CancellationToken GetCancellationToken();
 
     ValueTask Reset();
+
+    ISyncService<TSource, TDestination> SetDataAddapter<TConfigurations, TImplementer>(ISyncDataAdapter<TSource, TDestination, TConfigurations, TImplementer> dataAdapter, TConfigurations configurations)
+        where TImplementer : ISyncDataAdapter<TSource, TDestination, TConfigurations, TImplementer>;
 
     Task<bool> RunAsync();
 }

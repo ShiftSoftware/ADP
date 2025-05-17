@@ -112,6 +112,11 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
         return this;
     }
 
+    /// <summary>
+    /// This is using the advanced mapping too, but for simplify,if the operation is not retyr and previous mapped items not null, it return the previous mapped items., otherwise it will mapp it with this function.
+    /// </summary>
+    /// <param name="mappingFunc"></param>
+    /// <returns></returns>
     public ISyncService<TSource, TDestination> SetupMapping(Func<IEnumerable<TSource?>?, SyncActionType, ValueTask<IEnumerable<TDestination?>?>> mappingFunc)
     {
         this.Mapping = x =>
@@ -434,6 +439,15 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
     public ISyncService<TSource, TDestination> SetupFinished(Func<ValueTask> finishedFunc)
     {
         this.Finished = finishedFunc;
+        return this;
+    }
+
+    public ISyncService<TSource, TDestination> SetDataAddapter<TConfigurations, TImplementer>(ISyncDataAdapter<TSource, TDestination, TConfigurations, TImplementer> dataAdapter, TConfigurations configurations) 
+        where TImplementer : ISyncDataAdapter<TSource, TDestination, TConfigurations, TImplementer>
+    {
+
+        dataAdapter.SetSyncService(this).Configure(configurations);
+
         return this;
     }
 }
