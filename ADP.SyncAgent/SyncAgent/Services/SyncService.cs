@@ -41,17 +41,17 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
 
     private CancellationTokenSource? cancellationTokenSource;
 
-    public SyncService(int batchSize, int maxRetryCount = 0, int operationTimeoutInSeconds = 300)
+    public SyncService(long? batchSize = null, long maxRetryCount = 0, long operationTimeoutInSeconds = 300)
     {
         this.Configure(batchSize, maxRetryCount, operationTimeoutInSeconds);
     }
 
-    public SyncService(int batchSize, IEnumerable<SyncActionType> actionExecutionAndOrder, int maxRetryCount = 0, int operationTimeoutInSeconds = 300)
+    public SyncService(IEnumerable<SyncActionType> actionExecutionAndOrder, long? batchSize = null, long maxRetryCount = 0, long operationTimeoutInSeconds = 300)
     {
-        this.Configure(batchSize, actionExecutionAndOrder, maxRetryCount, operationTimeoutInSeconds);
+        this.Configure(actionExecutionAndOrder, batchSize, maxRetryCount, operationTimeoutInSeconds);
     }
 
-    public ISyncService<TSource, TDestination> Configure(int batchSize, int maxRetryCount = 0, int operationTimeoutInSeconds = 300)
+    public ISyncService<TSource, TDestination> Configure(long? batchSize = null, long maxRetryCount = 0, long operationTimeoutInSeconds = 300)
     {
         this.SyncConfigurations = new SyncConfigurations(batchSize, maxRetryCount, operationTimeoutInSeconds);
         return this;
@@ -60,15 +60,15 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
     /// <summary>
     /// 
     /// </summary>
-    /// <param name="batchSize"></param>
     /// <param name="actionExecutionAndOrder">
     /// This is decide which action to be run and in which order,
     /// the default is [SyncActionType.Delete, SyncActionType.Update, SyncActionType.Add]
     /// </param>
+    /// <param name="batchSize"></param>
     /// <param name="maxRetryCount"></param>
     /// <param name="operationTimeoutInSeconds"></param>
     /// <returns></returns>
-    public ISyncService<TSource, TDestination> Configure(int batchSize, IEnumerable<SyncActionType> actionExecutionAndOrder, int maxRetryCount = 0, int operationTimeoutInSeconds = 300)
+    public ISyncService<TSource, TDestination> Configure(IEnumerable<SyncActionType> actionExecutionAndOrder, long? batchSize = null, long maxRetryCount = 0, long operationTimeoutInSeconds = 300)
     {
         this.SyncConfigurations = new SyncConfigurations(batchSize, maxRetryCount, operationTimeoutInSeconds, actionExecutionAndOrder);
         return this;
@@ -228,7 +228,7 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
                 totalItemCount = await this.SourceTotalItemCount!(new SyncFunctionInput<SyncActionType>(this.GetCancellationToken(), actionType));
 
             // Prepare batch informations
-            var batchSize = this.SyncConfigurations!.BatchSize;
+            var batchSize = (this.SyncConfigurations!.BatchSize ?? totalItemCount) ?? 0;
             var currentStep = 0;
             var totalSteps = totalItemCount == null ? null : (long?)Math.Ceiling((double)totalItemCount.Value / (double)batchSize);
             long retryCount = 0;

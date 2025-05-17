@@ -38,9 +38,9 @@ public interface ISyncService<TSource, TDestination> : IAsyncDisposable
     Func<ValueTask>? Finished { get; }
 
     ISyncService<TSource, TDestination> Configure(
-        int batchSize,
-        int maxRetryCount = 0,
-        int operationTimeoutInSeconds = 300);
+        long? batchSize = null,
+        long maxRetryCount = 0,
+        long operationTimeoutInSeconds = 300);
 
     /// <summary>
     /// 
@@ -53,10 +53,10 @@ public interface ISyncService<TSource, TDestination> : IAsyncDisposable
     /// <param name="operationTimeoutInSeconds"></param>
     /// <returns></returns>
     public ISyncService<TSource, TDestination> Configure(
-        int batchSize, 
         IEnumerable<SyncActionType> actionExecutionAndOrder,
-        int maxRetryCount = 0, 
-        int operationTimeoutInSeconds = 300);
+        long? batchSize = null, 
+        long maxRetryCount = 0, 
+        long operationTimeoutInSeconds = 300);
 
     ISyncService<TSource, TDestination> SetupPreparing(Func<SyncFunctionInput, ValueTask<bool>> preparingFunc);
 
