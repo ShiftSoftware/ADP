@@ -46,6 +46,11 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
         this.Configure(batchSize, maxRetryCount, operationTimeoutInSeconds);
     }
 
+    public SyncService(int batchSize, IEnumerable<SyncActionType> actionExecutionAndOrder, int maxRetryCount = 0, int operationTimeoutInSeconds = 300)
+    {
+        this.Configure(batchSize, actionExecutionAndOrder, maxRetryCount, operationTimeoutInSeconds);
+    }
+
     public ISyncService<TSource, TDestination> Configure(int batchSize, int maxRetryCount = 0, int operationTimeoutInSeconds = 300)
     {
         this.SyncConfigurations = new SyncConfigurations(batchSize, maxRetryCount, operationTimeoutInSeconds);
