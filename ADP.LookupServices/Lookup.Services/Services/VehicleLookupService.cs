@@ -3,6 +3,7 @@ using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.SSC;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using ShiftSoftware.ADP.Lookup.Services.Enums;
 using ShiftSoftware.ADP.Models.Enums;
+using ShiftSoftware.ADP.Models.Invoice;
 using ShiftSoftware.ADP.Models.Part;
 using ShiftSoftware.ADP.Models.Service;
 using ShiftSoftware.ADP.Models.Vehicle;

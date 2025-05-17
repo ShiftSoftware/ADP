@@ -2,6 +2,10 @@
 
 namespace ShiftSoftware.ADP.Models.Part;
 
+/// <summary>
+/// The Catalog Part refers to a specific part in the Parts Catalog.  
+/// It is used to define the properties and information of a part.
+/// </summary>
 public class CatalogPartModel : IPartitionedItem
 {
     public string id { get; set; } = default!;

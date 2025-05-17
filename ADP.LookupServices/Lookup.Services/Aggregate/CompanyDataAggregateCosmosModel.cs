@@ -1,4 +1,5 @@
-﻿using ShiftSoftware.ADP.Models.Part;
+﻿using ShiftSoftware.ADP.Models.Invoice;
+using ShiftSoftware.ADP.Models.Part;
 using ShiftSoftware.ADP.Models.Service;
 using ShiftSoftware.ADP.Models.TBP;
 using ShiftSoftware.ADP.Models.Vehicle;
