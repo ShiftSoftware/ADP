@@ -128,7 +128,7 @@ public static class ISyncServiceExtensions
         var previousBatchRetry = syncService.BatchRetry;
         syncService.SetupBatchRetry ( async (x) =>
         {
-            RetryAction result = syncService.SyncConfigurations!.DefaultRetryAction;
+            RetryAction result = syncService.Configurations!.DefaultRetryAction;
 
             if (previousBatchRetry is not null)
                 result = await previousBatchRetry(x);

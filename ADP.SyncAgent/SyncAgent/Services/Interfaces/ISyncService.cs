@@ -4,7 +4,7 @@ public interface ISyncService<TSource, TDestination> : IAsyncDisposable
     where TSource : class, new()
     where TDestination : class, new()
 {
-    SyncConfigurations? SyncConfigurations { get; }
+    SyncConfigurations? Configurations { get; }
     Func<SyncFunctionInput, ValueTask<bool>>? Preparing { get; }
 
     /// <summary>
