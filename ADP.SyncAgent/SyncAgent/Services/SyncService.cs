@@ -111,6 +111,14 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
         return this;
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="batchCompletedFunc">
+    /// Return true to continue the sync process,
+    /// Return false to retry.
+    /// </param>
+    /// <returns></returns>
     public ISyncService<TSource, TDestination> SetupBatchCompleted(Func<SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>, ValueTask<bool>> batchCompletedFunc)
     {
         this.BatchCompleted = batchCompletedFunc;
@@ -239,10 +247,7 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
                     var batchCompletedResult = await this.BatchCompleted!(new SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>(this.GetCancellationToken(), new SyncBatchCompleteRetryInput<TSource, TDestination>(sourceItems, storeResult, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType))));
 
                     if (!batchCompletedResult)
-                    {
-                        result = false;
-                        break;
-                    }
+                        throw new Exception("Retry is required.");
                 }
 
                 currentStep++;

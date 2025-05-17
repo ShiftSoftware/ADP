@@ -14,7 +14,7 @@ public interface ISyncService<TSource, TDestination> : IAsyncDisposable
 
     /// <summary>
     /// Return true to continue the sync process,
-    /// Return false to stop the sync process.
+    /// Return false to retry.
     /// </summary>
     Func<SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>, ValueTask<bool>>? BatchCompleted { get; }
 
@@ -70,7 +70,7 @@ public interface ISyncService<TSource, TDestination> : IAsyncDisposable
     /// </summary>
     /// <param name="batchCompletedFunc">
     /// Return true to continue the sync process,
-    /// Return false to stop the sync process.
+    /// Return false to retry.
     /// </param>
     /// <returns></returns>
     ISyncService<TSource, TDestination> SetupBatchCompleted(Func<SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>, ValueTask<bool>> batchCompletedFunc);

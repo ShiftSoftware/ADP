@@ -23,6 +23,15 @@ public interface ISyncDataAdapter<TSource, TDestination, TConfigurations, TImple
     public ValueTask<IEnumerable<TSource?>?> GetSourceBatchItems(SyncFunctionInput<SyncGetBatchDataInput<TSource>> input);
     public ValueTask<SyncStoreDataResult<TDestination>> StoreBatchData(SyncFunctionInput<SyncStoreDataInput<TDestination>> input);
     public ValueTask<RetryAction> BatchRetry(SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>> input);
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="input"></param>
+    /// <returns>
+    /// Return true to continue the sync process,
+    /// Return false to retry.
+    /// </returns>
     public ValueTask<bool> BatchCompleted(SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>> input);
     public ValueTask ActionCompleted(SyncFunctionInput<SyncActionType> input);
     public ValueTask Failed();
