@@ -41,39 +41,51 @@ public class CSVSyncDataSource<TCSV, TDestination> : ISyncDataAdapter<TCSV, TDes
         return this;
     }
 
-    public ISyncService<TCSV, TDestination> Configure(CSVSyncDataSourceConfigurations configurations)
+    /// <summary>
+    /// To avoid unexpected behavior, call this before the destination adapter is configured
+    /// </summary>
+    /// <param name="configurations"></param>
+    /// <param name="configureSyncService">
+    /// If set false just configure DataAdapter and skip the configuration of the SyncService, 
+    /// then you may be configure SyncService by your self
+    /// </param>
+    /// <returns></returns>
+    public ISyncService<TCSV, TDestination> Configure(CSVSyncDataSourceConfigurations configurations, bool configureSyncService = true)
     {
         this.Configurations = configurations;
 
-        var previousPreparing = this.SyncService.Preparing;
-        var previousSucceeded = this.SyncService.Succeeded;
-        var previousFinished = this.SyncService.Finished;
+        if(configureSyncService)
+        {
+            var previousPreparing = this.SyncService.Preparing;
+            var previousSucceeded = this.SyncService.Succeeded;
+            var previousFinished = this.SyncService.Finished;
 
-        this.SyncService
-            .SetupPreparing(async (x) =>
-            {
-                if (previousPreparing is not null)
-                    return await previousPreparing(x) && await this.Preparing(x);
-                else
-                    return await this.Preparing(x);
-            })
-            .SetupActionStarted(ActionStarted)
-            .SetupSourceTotalItemCount(SourceTotalItemCount)
-            .SetupGetSourceBatchItems(GetSourceBatchItems)
-            .SetupSucceeded(async () =>
-            {
-                if (previousSucceeded is not null)
-                    await previousSucceeded();
+            this.SyncService
+                .SetupPreparing(async (x) =>
+                {
+                    if (previousPreparing is not null)
+                        return await previousPreparing(x) && await this.Preparing(x);
+                    else
+                        return await this.Preparing(x);
+                })
+                .SetupActionStarted(ActionStarted)
+                .SetupSourceTotalItemCount(SourceTotalItemCount)
+                .SetupGetSourceBatchItems(GetSourceBatchItems)
+                .SetupSucceeded(async () =>
+                {
+                    if (previousSucceeded is not null)
+                        await previousSucceeded();
 
-                await Succeeded();
-            })
-            .SetupFinished(async () =>
-            {
-                if (previousFinished is not null)
-                    await previousFinished();
+                    await Succeeded();
+                })
+                .SetupFinished(async () =>
+                {
+                    if (previousFinished is not null)
+                        await previousFinished();
 
-                await Finished();
-            });
+                    await Finished();
+                });
+        }
 
         return this.SyncService;
     }

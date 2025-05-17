@@ -10,13 +10,17 @@ public interface ISyncDataAdapter<TSource, TDestination, TConfigurations, TImple
 
 
     public TImplementer SetSyncService(ISyncService<TSource, TDestination> syncService);
-
+    
     /// <summary>
     /// To avoid unexpected behavior, call the destination adapter's Configure method after the source adapter is configured.
     /// </summary>
     /// <param name="configurations"></param>
+    /// <param name="configureSyncService">
+    /// If set false just configure DataAdapter and skip the configuration of the SyncService, 
+    /// then you may be configure SyncService by your self
+    /// </param>
     /// <returns></returns>
-    public ISyncService<TSource, TDestination> Configure(TConfigurations configurations);
+    public ISyncService<TSource, TDestination> Configure(TConfigurations configurations, bool configureSyncService = true);
 
     public ValueTask<bool> Preparing(SyncFunctionInput input);
 

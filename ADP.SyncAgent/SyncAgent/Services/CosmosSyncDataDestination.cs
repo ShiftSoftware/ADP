@@ -40,26 +40,34 @@ public class CosmosSyncDataDestination<TSource, TCosmos> : ISyncDataAdapter<TSou
     }
 
     /// <summary>
-    /// To avoid unexpected behavior, call this after the source adapter is configured.
+    /// To avoid unexpected behavior, call this after the source adapter is configured
     /// </summary>
+    /// <param name="configurations"></param>
+    /// <param name="configureSyncService">
+    /// If set false just configure DataAdapter and skip the configuration of the SyncService, 
+    /// then you may be configure SyncService by your self
+    /// </param>
     /// <returns></returns>
-    public ISyncService<TSource, TCosmos> Configure(CosmosSyncDataDestinationConfigurations<TCosmos> configurations)
+    public ISyncService<TSource, TCosmos> Configure(CosmosSyncDataDestinationConfigurations<TCosmos> configurations , bool configureSyncService = true)
     {
         this.Configurations = configurations;
 
-        this.SyncService.SetupStoreBatchData(this.StoreBatchData);
-
-        if(!this.Configurations.StopOperationWhenOneFailed)
+        if (configureSyncService)
         {
-            var batchRetryFunc = this.SyncService.BatchRetry;
+            this.SyncService.SetupStoreBatchData(this.StoreBatchData);
 
-            this.SyncService.SetupBatchRetry(async (x) =>
+            if (!this.Configurations.StopOperationWhenOneFailed)
             {
-                if (batchRetryFunc is not null)
-                     await batchRetryFunc(x);
-                                
-                return SyncService.Configurations!.DefaultRetryAction;
-            });
+                var batchRetryFunc = this.SyncService.BatchRetry;
+
+                this.SyncService.SetupBatchRetry(async (x) =>
+                {
+                    if (batchRetryFunc is not null)
+                        await batchRetryFunc(x);
+
+                    return SyncService.Configurations!.DefaultRetryAction;
+                });
+            }
         }
 
         return this.SyncService;
