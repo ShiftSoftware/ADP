@@ -58,7 +58,7 @@ public static class IServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddCSVSyncDataSource<TCosmosClient>(this IServiceCollection services)
+    public static IServiceCollection AddCosmosSyncDataDestination<TCosmosClient>(this IServiceCollection services)
         where TCosmosClient : CosmosClient
     {
         services.AddSingleton<SyncCosmosClient>(x => new(x.GetRequiredService<TCosmosClient>()));

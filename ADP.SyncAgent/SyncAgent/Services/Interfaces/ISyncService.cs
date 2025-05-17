@@ -59,7 +59,7 @@ public interface ISyncService<TSource, TDestination> : IAsyncDisposable
 
     ISyncService<TSource, TDestination> SetupAdvancedMapping(Func<SyncFunctionInput<SyncMappingInput<TSource, TDestination>>, ValueTask<IEnumerable<TDestination?>?>> mappingFunc);
 
-    ISyncService<TSource, TDestination> SetupMapping(Func<IEnumerable<TSource?>?, ValueTask<IEnumerable<TDestination?>?>> mappingFunc);
+    ISyncService<TSource, TDestination> SetupMapping(Func<IEnumerable<TSource?>?, SyncActionType, ValueTask<IEnumerable<TDestination?>?>> mappingFunc);
 
     ISyncService<TSource, TDestination> SetupStoreBatchData(Func<SyncFunctionInput<SyncStoreDataInput<TDestination>>, ValueTask<SyncStoreDataResult<TDestination>>> storeBatchDataFunc);
 

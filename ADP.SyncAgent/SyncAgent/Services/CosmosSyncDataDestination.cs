@@ -115,6 +115,8 @@ public class CosmosSyncDataDestination<TSource, TCosmos> : ISyncDataAdapter<TSou
                 result.NeedRetry = true;
             else
                 result.NeedRetry = false;
+
+            return result;
         }
         catch (Exception)
         {

@@ -12,7 +12,7 @@ public static class ISyncServiceExtensions
         where TSource : class, new()
         where TDestination : class, new()
     {
-        syncService.SetupMapping(x =>new ValueTask<IEnumerable<TDestination?>?>(mapper.Map<IEnumerable<TDestination>>(x)));
+        syncService.SetupMapping((x, y) => new(mapper.Map<IEnumerable<TDestination>>(x)));
 
         return syncService;
     }
@@ -123,7 +123,7 @@ public static class ISyncServiceExtensions
                 result = await previousBatchRetry(x);
 
             if(result == RetryAction.RetryAndStopAfterLastRetry || result == RetryAction.RetryAndContinueAfterLastRetry)
-                logger.LogWarning($"Batch failed we do retry for {x.Input.Status.ActionType}, step {x.Input.Status.CurrentStep + 1}" +
+                logger.LogWarning($"Batch failed we do {x.Input.Status.CurrentRetryCount} retry for {x.Input.Status.ActionType}, step {x.Input.Status.CurrentStep + 1}" +
                     (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}" : ""));
             else if(result == RetryAction.Skip)
                 logger.LogWarning($"Batch failed we do skip for {x.Input.Status.ActionType}, step {x.Input.Status.CurrentStep + 1}" +
@@ -156,7 +156,7 @@ public static class ISyncServiceExtensions
         var previousActionCompleted = syncService.ActionCompleted;
         syncService.SetupActionCompleted ( async (x) =>
         {
-            bool result = true;
+            bool result = x.Input.Succeede;
             if(previousActionCompleted is not null)
                 result = await previousActionCompleted(x);
 

@@ -7,8 +7,8 @@ using System.Text;
 
 namespace ShiftSoftware.ADP.SyncAgent.Services;
 
-public class CSVSyncDataSource<TSource, TDestination> : ISyncDataAdapter<TSource, TDestination, CSVSyncDataSourceConfigurations, CSVSyncDataSource<TSource, TDestination>>
-    where TSource : CacheableCSV, new()
+public class CSVSyncDataSource<TCSV, TDestination> : ISyncDataAdapter<TCSV, TDestination, CSVSyncDataSourceConfigurations, CSVSyncDataSource<TCSV, TDestination>>
+    where TCSV : CacheableCSV, new()
     where TDestination : class, new()
 {
     private readonly CSVSyncDataSourceOptions options;
@@ -18,7 +18,7 @@ public class CSVSyncDataSource<TSource, TDestination> : ISyncDataAdapter<TSource
     private string? toInsertFilePath;
     private string? toDeleteFilePath;
 
-    public ISyncService<TSource, TDestination> SyncService { get; private set; } = default!;
+    public ISyncService<TCSV, TDestination> SyncService { get; private set; } = default!;
 
     public CSVSyncDataSourceConfigurations? Configurations { get; private set; } = default!;
 
@@ -28,13 +28,13 @@ public class CSVSyncDataSource<TSource, TDestination> : ISyncDataAdapter<TSource
         this.storageService = storageService;
     }
 
-    public CSVSyncDataSource<TSource, TDestination> SetSyncService(ISyncService<TSource, TDestination> syncService)
+    public CSVSyncDataSource<TCSV, TDestination> SetSyncService(ISyncService<TCSV, TDestination> syncService)
     {
         this.SyncService = syncService;
         return this;
     }
 
-    public ISyncService<TSource, TDestination> Configure(CSVSyncDataSourceConfigurations configurations)
+    public ISyncService<TCSV, TDestination> Configure(CSVSyncDataSourceConfigurations configurations)
     {
         this.Configurations = configurations;
 
@@ -76,7 +76,7 @@ public class CSVSyncDataSource<TSource, TDestination> : ISyncDataAdapter<TSource
         {
             SetupWorkingDirectory();
 
-            using CacheableCSVAsyncEngine<TSource> engine = new();
+            using CacheableCSVAsyncEngine<TCSV> engine = new();
 
             // Load the last CSV file that was synced successfully
             await storageService.LoadOriginalFileAsync(
@@ -160,7 +160,7 @@ public class CSVSyncDataSource<TSource, TDestination> : ISyncDataAdapter<TSource
         throw new NotImplementedException("The action type is not supported.");
     }
 
-    public ValueTask<IEnumerable<TSource?>?> GetSourceBatchItems(SyncFunctionInput<SyncGetBatchDataInput<TSource>> input)
+    public ValueTask<IEnumerable<TCSV?>?> GetSourceBatchItems(SyncFunctionInput<SyncGetBatchDataInput<TCSV>> input)
     {
         if (input.Input.Status.CurrentRetryCount > 0 && input.Input.PreviousItems is not null)
             return new(input.Input.PreviousItems);
@@ -175,16 +175,16 @@ public class CSVSyncDataSource<TSource, TDestination> : ISyncDataAdapter<TSource
         throw new NotImplementedException("The action type is not supported.");
     }
 
-    private IEnumerable<TSource?>? LoadItems(string filePath, int batchSize)
+    private IEnumerable<TCSV?>? LoadItems(string filePath, int batchSize)
     {
-        using CacheableCSVAsyncEngine<TSource> engine = new();
+        using CacheableCSVAsyncEngine<TCSV> engine = new();
         engine.BeginReadFile(filePath);
         return engine.ReadNexts(batchSize);
     }
 
     public async ValueTask Succeeded()
     {
-        using CacheableCSVAsyncEngine<TSource> engine = new();
+        using CacheableCSVAsyncEngine<TCSV> engine = new();
 
         await storageService.StoreNewVersionAsync(Path.Combine(workingDirectory!.FullName, "file.csv"),
             this.Configurations!.GetDestinationRelativePath(), this.Configurations.DestinationContainerOrShareName, engine.Options.IgnoreFirstLines,
@@ -272,7 +272,7 @@ public class CSVSyncDataSource<TSource, TDestination> : ISyncDataAdapter<TSource
 
     private long CalculateCSVRecordCountAsync(string filePath)
     {
-        using CacheableCSVAsyncEngine<TSource> engine = new();
+        using CacheableCSVAsyncEngine<TCSV> engine = new();
         engine.BeginReadFile(filePath);
         return engine.LongCount();
     }
@@ -313,12 +313,12 @@ public class CSVSyncDataSource<TSource, TDestination> : ISyncDataAdapter<TSource
     }
 
     #region Not Implemented
-    public ValueTask<bool> BatchCompleted(SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>> input)
+    public ValueTask<bool> BatchCompleted(SyncFunctionInput<SyncBatchCompleteRetryInput<TCSV, TDestination>> input)
     {
         throw new NotImplementedException();
     }
 
-    public ValueTask<RetryAction> BatchRetry(SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>> input)
+    public ValueTask<RetryAction> BatchRetry(SyncFunctionInput<SyncBatchCompleteRetryInput<TCSV, TDestination>> input)
     {
         throw new NotImplementedException();
     }
