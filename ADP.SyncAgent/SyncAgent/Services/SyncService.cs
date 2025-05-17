@@ -41,6 +41,11 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
 
     private CancellationTokenSource? cancellationTokenSource;
 
+    public SyncService(int batchSize, int maxRetryCount = 0, int operationTimeoutInSeconds = 300)
+    {
+        this.Configure(batchSize, maxRetryCount, operationTimeoutInSeconds);
+    }
+
     public ISyncService<TSource, TDestination> Configure(int batchSize, int maxRetryCount = 0, int operationTimeoutInSeconds = 300)
     {
         this.SyncConfigurations = new SyncConfigurations(batchSize, maxRetryCount, operationTimeoutInSeconds);
