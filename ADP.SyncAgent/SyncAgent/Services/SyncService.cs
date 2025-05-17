@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using LibGit2Sharp;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Polly;
 using Polly.Retry;
@@ -456,5 +457,13 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
         dataAdapter.SetSyncService(this).Configure(configurations);
 
         return this;
+    }
+
+    public TDataAdapter SetDataAddapter<TDataAdapter>(IServiceProvider services) where TDataAdapter : ISyncDataAdapter<TSource, TDestination, TDataAdapter>
+    {
+        var dataAdapter = services.GetRequiredService<TDataAdapter>();
+        dataAdapter.SetSyncService(this);
+
+        return dataAdapter;
     }
 }

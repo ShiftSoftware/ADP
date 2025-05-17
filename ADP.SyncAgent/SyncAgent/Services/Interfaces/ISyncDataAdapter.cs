@@ -1,16 +1,12 @@
 ﻿namespace ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
 
-public interface ISyncDataAdapter<TSource, TDestination, TConfigurations, TImplementer> : IAsyncDisposable
+public interface ISyncDataAdapter<TSource, TDestination, TConfigurations, TSelf> : ISyncDataAdapter<TSource, TDestination, TSelf>, IAsyncDisposable
     where TSource : class, new()
     where TDestination : class, new()
-    where TImplementer : ISyncDataAdapter<TSource, TDestination, TConfigurations, TImplementer>
+    where TSelf : ISyncDataAdapter<TSource, TDestination, TConfigurations, TSelf>
 {
-    public ISyncService<TSource, TDestination> SyncService { get; }
     public TConfigurations? Configurations { get; }
 
-
-    public TImplementer SetSyncService(ISyncService<TSource, TDestination> syncService);
-    
     /// <summary>
     /// To avoid unexpected behavior, call the destination adapter's Configure method after the source adapter is configured.
     /// </summary>
@@ -21,6 +17,16 @@ public interface ISyncDataAdapter<TSource, TDestination, TConfigurations, TImple
     /// </param>
     /// <returns></returns>
     public ISyncService<TSource, TDestination> Configure(TConfigurations configurations, bool configureSyncService = true);
+}
+
+public interface ISyncDataAdapter<TSource, TDestination, TSelf> : IAsyncDisposable
+    where TSource : class, new()
+    where TDestination : class, new()
+    where TSelf : ISyncDataAdapter<TSource, TDestination, TSelf>
+{
+    public ISyncService<TSource, TDestination> SyncService { get; }
+
+    public TSelf SetSyncService(ISyncService<TSource, TDestination> syncService);
 
     public ValueTask<bool> Preparing(SyncFunctionInput input);
 

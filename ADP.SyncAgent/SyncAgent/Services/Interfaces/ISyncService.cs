@@ -128,8 +128,11 @@ public interface ISyncService<TSource, TDestination> : IAsyncDisposable
 
     ValueTask Reset();
 
-    ISyncService<TSource, TDestination> SetDataAddapter<TConfigurations, TImplementer>(ISyncDataAdapter<TSource, TDestination, TConfigurations, TImplementer> dataAdapter, TConfigurations configurations)
-        where TImplementer : ISyncDataAdapter<TSource, TDestination, TConfigurations, TImplementer>;
+    ISyncService<TSource, TDestination> SetDataAddapter<TConfigurations, TDataAdapter>(ISyncDataAdapter<TSource, TDestination, TConfigurations, TDataAdapter> dataAdapter, TConfigurations configurations)
+        where TDataAdapter : ISyncDataAdapter<TSource, TDestination, TConfigurations, TDataAdapter>;
+
+    TDataAdapter SetDataAddapter<TDataAdapter>(IServiceProvider services)
+        where TDataAdapter : ISyncDataAdapter<TSource, TDestination, TDataAdapter>;
 
     Task<bool> RunAsync();
 }
