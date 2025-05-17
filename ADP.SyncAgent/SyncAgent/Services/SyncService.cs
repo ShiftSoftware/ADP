@@ -1,12 +1,5 @@
-﻿using AutoMapper;
-using LibGit2Sharp;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Polly;
-using Polly.Retry;
+﻿using Microsoft.Extensions.DependencyInjection;
 using ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
-using System.Text;
-using System.Threading;
 
 namespace ShiftSoftware.ADP.SyncAgent.Services;
 
@@ -44,14 +37,16 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
 
     private CancellationTokenSource? cancellationTokenSource;
 
-    public SyncService(long? batchSize = null, long maxRetryCount = 0, long operationTimeoutInSeconds = 300, RetryAction defaultRetryAction = RetryAction.RetryAndStopAfterLastRetry)
+    private readonly IServiceProvider services;
+
+    public SyncService(IServiceProvider services)
     {
-        this.Configure(batchSize, maxRetryCount, operationTimeoutInSeconds, defaultRetryAction);
+        this.services = services;
     }
 
-    public SyncService(IEnumerable<SyncActionType> actionExecutionAndOrder, long? batchSize = null, long maxRetryCount = 0, long operationTimeoutInSeconds = 300, RetryAction defaultRetryAction = RetryAction.RetryAndStopAfterLastRetry)
+    public SyncService()
     {
-        this.Configure(actionExecutionAndOrder, batchSize, maxRetryCount, operationTimeoutInSeconds,defaultRetryAction);
+        this.Configure();
     }
 
     public ISyncService<TSource, TDestination> Configure(long? batchSize = null, long maxRetryCount = 0, long operationTimeoutInSeconds = 300, RetryAction defaultRetryAction = RetryAction.RetryAndStopAfterLastRetry)
@@ -462,6 +457,14 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
     public TDataAdapter SetDataAddapter<TDataAdapter>(IServiceProvider services) where TDataAdapter : ISyncDataAdapter<TSource, TDestination, TDataAdapter>
     {
         var dataAdapter = services.GetRequiredService<TDataAdapter>();
+        dataAdapter.SetSyncService(this);
+
+        return dataAdapter;
+    }
+
+    public TDataAdapter SetDataAddapter<TDataAdapter>() where TDataAdapter : ISyncDataAdapter<TSource, TDestination, TDataAdapter>
+    {
+        var dataAdapter = this.services.GetRequiredService<TDataAdapter>();
         dataAdapter.SetSyncService(this);
 
         return dataAdapter;

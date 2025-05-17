@@ -134,5 +134,8 @@ public interface ISyncService<TSource, TDestination> : IAsyncDisposable
     TDataAdapter SetDataAddapter<TDataAdapter>(IServiceProvider services)
         where TDataAdapter : ISyncDataAdapter<TSource, TDestination, TDataAdapter>;
 
+    TDataAdapter SetDataAddapter<TDataAdapter>()
+        where TDataAdapter : ISyncDataAdapter<TSource, TDestination, TDataAdapter>;
+
     Task<bool> RunAsync();
 }
