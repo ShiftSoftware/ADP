@@ -15,7 +15,8 @@
 }
 
     .md-header__button.md-logo img, .md-header__button.md-logo svg {
-        height: 2.0rem;
+        height: 2.5rem;
+        margin-bottom:3px;
     }
 
 .md-header__topic{
