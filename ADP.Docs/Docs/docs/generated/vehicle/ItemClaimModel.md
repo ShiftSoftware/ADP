@@ -1,18 +1,18 @@
 
 | Property | Summary |
 |----------|---------|
-| id <strong style='float: right;'>``string``</strong> |  |
-| ID <strong style='float: right;'>``long``</strong> |  |
-| VIN <strong style='float: right;'>``string``</strong> |  |
-| CompanyID <strong style='float: right;'>``string``</strong> |  |
-| BranchID <strong style='float: right;'>``string``</strong> |  |
-| ClaimDate <strong style='float: right;'>``DateTimeOffset``</strong> |  |
-| IsDeleted <strong style='float: right;'>``bool``</strong> |  |
-| ServiceItemID <strong style='float: right;'>``string``</strong> |  |
-| VehicleInspectionID <strong style='float: right;'>``string``</strong> |  |
-| Cost <strong style='float: right;'>``decimal``</strong> |  |
-| PackageCode <strong style='float: right;'>``string``</strong> |  |
-| JobNumber <strong style='float: right;'>``string``</strong> |  |
-| InvoiceNumber <strong style='float: right;'>``string``</strong> |  |
-| QRCode <strong style='float: right;'>``string``</strong> |  |
-| ItemType <strong style='float: right;'>``string``</strong> |  |
+| id <div><strong>``string``</strong></div> |  |
+| ID <div><strong>``long``</strong></div> |  |
+| VIN <div><strong>``string``</strong></div> |  |
+| CompanyID <div><strong>``string``</strong></div> |  |
+| BranchID <div><strong>``string``</strong></div> |  |
+| ClaimDate <div><strong>``DateTimeOffset``</strong></div> |  |
+| IsDeleted <div><strong>``bool``</strong></div> |  |
+| ServiceItemID <div><strong>``string``</strong></div> |  |
+| VehicleInspectionID <div><strong>``string``</strong></div> |  |
+| Cost <div><strong>``decimal``</strong></div> |  |
+| PackageCode <div><strong>``string``</strong></div> |  |
+| JobNumber <div><strong>``string``</strong></div> |  |
+| InvoiceNumber <div><strong>``string``</strong></div> |  |
+| QRCode <div><strong>``string``</strong></div> |  |
+| ItemType <div><strong>``string``</strong></div> |  |

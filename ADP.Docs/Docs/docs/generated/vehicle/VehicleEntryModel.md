@@ -1,38 +1,39 @@
 
 | Property | Summary |
 |----------|---------|
-| id <strong style='float: right;'>``string``</strong> |  |
-| Brand <strong style='float: right;'>``Brands``</strong> |  |
-| BrandID <strong style='float: right;'>``string``</strong> |  |
-| ProductionDate <strong style='float: right;'>``DateTime?``</strong> |  |
-| ModelYear <strong style='float: right;'>``int?``</strong> |  |
-| ExteriorColorCode <strong style='float: right;'>``string``</strong> |  |
-| InteriorColorCode <strong style='float: right;'>``string``</strong> |  |
-| ExteriorColor <strong style='float: right;'>``ColorModel``</strong> |  |
-| InteriorColor <strong style='float: right;'>``ColorModel``</strong> |  |
-| ModelCode <strong style='float: right;'>``string``</strong> |  |
-| ModelDescription <strong style='float: right;'>``string``</strong> |  |
-| Katashiki <strong style='float: right;'>``string``</strong> |  |
-| VariantCode <strong style='float: right;'>``string``</strong> |  |
-| VIN <strong style='float: right;'>``string``</strong> |  |
-| VehicleModel <strong style='float: right;'>``VehicleModelModel``</strong> |  |
-| InvoiceDate <strong style='float: right;'>``DateTime?``</strong> |  |
-| CompanyID <strong style='float: right;'>``string``</strong> |  |
-| BranchID <strong style='float: right;'>``string``</strong> |  |
-| WarrantyActivationDate <strong style='float: right;'>``DateTime?``</strong> |  |
-| InvoiceNumber <strong style='float: right;'>``string``</strong> |  |
-| AccountNumber <strong style='float: right;'>``string``</strong> |  |
-| CustomerAccountNumber <strong style='float: right;'>``string``</strong> |  |
-| CustomerID <strong style='float: right;'>``string``</strong> |  |
-| InvoiceTotal <strong style='float: right;'>``decimal?``</strong> |  |
-| RegionID <strong style='float: right;'>``string``</strong> |  |
-| SaleType <strong style='float: right;'>``string``</strong> |  |
-| Status <strong style='float: right;'>``string``</strong> |  |
-| Location <strong style='float: right;'>``string``</strong> |  |
-| InvoiceCurrency <strong style='float: right;'>``Currencies?``</strong> |  |
-| LineStatus <strong style='float: right;'>``string``</strong> |  |
-| LineID <strong style='float: right;'>``string``</strong> |  |
-| LoadDate <strong style='float: right;'>``DateTime?``</strong> |  |
-| PostDate <strong style='float: right;'>``DateTime?``</strong> |  |
-| EligibleServiceItemUniqueReferences <strong style='float: right;'>``IEnumerable<string>``</strong> | Per Vehicle Service Item Eligibility |
-| ItemType <strong style='float: right;'>``string``</strong> |  |
+| id <div><strong>``string``</strong></div> |  |
+| Brand <div><strong>``Brands``</strong></div> |  |
+| BrandID <div><strong>``string``</strong></div> |  |
+| ProductionDate <div><strong>``DateTime?``</strong></div> |  |
+| ModelYear <div><strong>``int?``</strong></div> |  |
+| ExteriorColorCode <div><strong>``string``</strong></div> |  |
+| InteriorColorCode <div><strong>``string``</strong></div> |  |
+| ExteriorColor <div><strong>``ColorModel``</strong></div> |  |
+| InteriorColor <div><strong>``ColorModel``</strong></div> |  |
+| ModelCode <div><strong>``string``</strong></div> |  |
+| ModelDescription <div><strong>``string``</strong></div> |  |
+| Katashiki <div><strong>``string``</strong></div> |  |
+| VariantCode <div><strong>``string``</strong></div> |  |
+| VIN <div><strong>``string``</strong></div> |  |
+| VehicleModel <div><strong>``VehicleModelModel``</strong></div> |  |
+| InvoiceDate <div><strong>``DateTime?``</strong></div> |  |
+| CompanyID <div><strong>``string``</strong></div> |  |
+| BranchID <div><strong>``string``</strong></div> |  |
+| WarrantyActivationDate <div><strong>``DateTime?``</strong></div> |  |
+| InvoiceNumber <div><strong>``string``</strong></div> |  |
+| AccountNumber <div><strong>``string``</strong></div> |  |
+| CustomerAccountNumber <div><strong>``string``</strong></div> |  |
+| CustomerID <div><strong>``string``</strong></div> |  |
+| InvoiceTotal <div><strong>``decimal?``</strong></div> |  |
+| RegionID <div><strong>``string``</strong></div> |  |
+| RegionHashID <div><strong>``string``</strong></div> |  |
+| SaleType <div><strong>``string``</strong></div> |  |
+| Status <div><strong>``string``</strong></div> |  |
+| Location <div><strong>``string``</strong></div> |  |
+| InvoiceCurrency <div><strong>``Currencies?``</strong></div> |  |
+| LineStatus <div><strong>``string``</strong></div> |  |
+| LineID <div><strong>``string``</strong></div> |  |
+| LoadDate <div><strong>``DateTime?``</strong></div> |  |
+| PostDate <div><strong>``DateTime?``</strong></div> |  |
+| EligibleServiceItemUniqueReferences <div><strong>``IEnumerable<string>``</strong></div> | Per Vehicle Service Item Eligibility |
+| ItemType <div><strong>``string``</strong></div> |  |

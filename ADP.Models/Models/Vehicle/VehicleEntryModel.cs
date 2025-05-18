@@ -31,6 +31,7 @@ public class VehicleEntryModel: IPartitionedItem, IBrandProps, ICompanyProps, IR
     public string CustomerID { get; set; }
     public decimal? InvoiceTotal { get; set; }
     public string RegionID { get; set; }
+    public string RegionHashID { get; set; }
     public string SaleType { get; set; }
     public string Status { get; set; }
     public string Location { get; set; }

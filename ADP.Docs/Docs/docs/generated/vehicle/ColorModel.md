@@ -1,8 +1,8 @@
 
 | Property | Summary |
 |----------|---------|
-| id <strong style='float: right;'>``string``</strong> |  |
-| Brand <strong style='float: right;'>``Brands``</strong> |  |
-| BrandID <strong style='float: right;'>``string``</strong> |  |
-| Code <strong style='float: right;'>``string``</strong> |  |
-| Description <strong style='float: right;'>``string``</strong> |  |
+| id <div><strong>``string``</strong></div> |  |
+| Brand <div><strong>``Brands``</strong></div> |  |
+| BrandID <div><strong>``string``</strong></div> |  |
+| Code <div><strong>``string``</strong></div> |  |
+| Description <div><strong>``string``</strong></div> |  |

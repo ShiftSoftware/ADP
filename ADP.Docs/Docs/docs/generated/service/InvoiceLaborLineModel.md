@@ -1,27 +1,27 @@
 
 | Property | Summary |
 |----------|---------|
-| id <strong style='float: right;'>``string``</strong> |  |
-| VIN <strong style='float: right;'>``string``</strong> |  |
-| LaborCode <strong style='float: right;'>``string``</strong> |  |
-| Status <strong style='float: right;'>``string``</strong> |  |
-| LineStatus <strong style='float: right;'>``string``</strong> |  |
-| InvoiceDate <strong style='float: right;'>``DateTime?``</strong> |  |
-| JobNumber <strong style='float: right;'>``int``</strong> |  |
-| InvoiceNumber <strong style='float: right;'>``string``</strong> |  |
-| InvoiceCurrency <strong style='float: right;'>``Currencies?``</strong> |  |
-| SaleType <strong style='float: right;'>``string``</strong> |  |
-| AccountNumber <strong style='float: right;'>``string``</strong> |  |
-| MenuCode <strong style='float: right;'>``string``</strong> |  |
-| ExtendedPrice <strong style='float: right;'>``decimal?``</strong> |  |
-| CustomerID <strong style='float: right;'>``string``</strong> |  |
-| CustomerAccountNumber <strong style='float: right;'>``string``</strong> |  |
-| ServiceCode <strong style='float: right;'>``string``</strong> |  |
-| ServiceDescription <strong style='float: right;'>``string``</strong> |  |
-| Department <strong style='float: right;'>``string``</strong> |  |
-| LineID <strong style='float: right;'>``string``</strong> |  |
-| LoadDate <strong style='float: right;'>``DateTime?``</strong> |  |
-| PostDate <strong style='float: right;'>``DateTime?``</strong> |  |
-| CompanyID <strong style='float: right;'>``string``</strong> |  |
-| BranchID <strong style='float: right;'>``string``</strong> |  |
-| ItemType <strong style='float: right;'>``string``</strong> |  |
+| id <div><strong>``string``</strong></div> |  |
+| VIN <div><strong>``string``</strong></div> |  |
+| LaborCode <div><strong>``string``</strong></div> |  |
+| Status <div><strong>``string``</strong></div> |  |
+| LineStatus <div><strong>``string``</strong></div> |  |
+| InvoiceDate <div><strong>``DateTime?``</strong></div> |  |
+| JobNumber <div><strong>``int``</strong></div> |  |
+| InvoiceNumber <div><strong>``string``</strong></div> |  |
+| InvoiceCurrency <div><strong>``Currencies?``</strong></div> |  |
+| SaleType <div><strong>``string``</strong></div> |  |
+| AccountNumber <div><strong>``string``</strong></div> |  |
+| MenuCode <div><strong>``string``</strong></div> |  |
+| ExtendedPrice <div><strong>``decimal?``</strong></div> |  |
+| CustomerID <div><strong>``string``</strong></div> |  |
+| CustomerAccountNumber <div><strong>``string``</strong></div> |  |
+| ServiceCode <div><strong>``string``</strong></div> |  |
+| ServiceDescription <div><strong>``string``</strong></div> |  |
+| Department <div><strong>``string``</strong></div> |  |
+| LineID <div><strong>``string``</strong></div> |  |
+| LoadDate <div><strong>``DateTime?``</strong></div> |  |
+| PostDate <div><strong>``DateTime?``</strong></div> |  |
+| CompanyID <div><strong>``string``</strong></div> |  |
+| BranchID <div><strong>``string``</strong></div> |  |
+| ItemType <div><strong>``string``</strong></div> |  |

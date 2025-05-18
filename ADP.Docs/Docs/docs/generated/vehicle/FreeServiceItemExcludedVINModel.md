@@ -1,6 +1,6 @@
 
 | Property | Summary |
 |----------|---------|
-| id <strong style='float: right;'>``string``</strong> |  |
-| VIN <strong style='float: right;'>``string``</strong> |  |
-| ItemType <strong style='float: right;'>``string``</strong> |  |
+| id <div><strong>``string``</strong></div> |  |
+| VIN <div><strong>``string``</strong></div> |  |
+| ItemType <div><strong>``string``</strong></div> |  |

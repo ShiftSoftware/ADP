@@ -1,9 +1,9 @@
 
 | Property | Summary |
 |----------|---------|
-| ID <strong style='float: right;'>``long``</strong> |  |
-| PayCode <strong style='float: right;'>``string``</strong> |  |
-| MainOperation <strong style='float: right;'>``bool``</strong> |  |
-| LaborCode <strong style='float: right;'>``string``</strong> |  |
-| Hour <strong style='float: right;'>``decimal``</strong> |  |
-| DistributorHour <strong style='float: right;'>``decimal?``</strong> |  |
+| ID <div><strong>``long``</strong></div> |  |
+| PayCode <div><strong>``string``</strong></div> |  |
+| MainOperation <div><strong>``bool``</strong></div> |  |
+| LaborCode <div><strong>``string``</strong></div> |  |
+| Hour <div><strong>``decimal``</strong></div> |  |
+| DistributorHour <div><strong>``decimal?``</strong></div> |  |

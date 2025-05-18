@@ -1,10 +1,10 @@
 
 | Property | Summary |
 |----------|---------|
-| ID <strong style='float: right;'>``long``</strong> |  |
-| PaidServiceInvoiceID <strong style='float: right;'>``long``</strong> |  |
-| ServiceItemID <strong style='float: right;'>``long``</strong> |  |
-| Cost <strong style='float: right;'>``decimal``</strong> |  |
-| ExpireDate <strong style='float: right;'>``DateTime?``</strong> |  |
-| MenuCode <strong style='float: right;'>``string``</strong> |  |
-| ServiceItem <strong style='float: right;'>``ServiceItemModel``</strong> |  |
+| ID <div><strong>``long``</strong></div> |  |
+| PaidServiceInvoiceID <div><strong>``long``</strong></div> |  |
+| ServiceItemID <div><strong>``long``</strong></div> |  |
+| Cost <div><strong>``decimal``</strong></div> |  |
+| ExpireDate <div><strong>``DateTime?``</strong></div> |  |
+| MenuCode <div><strong>``string``</strong></div> |  |
+| ServiceItem <div><strong>``ServiceItemModel``</strong></div> |  |

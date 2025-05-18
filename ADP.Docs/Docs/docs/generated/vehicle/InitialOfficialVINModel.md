@@ -1,8 +1,8 @@
 
 | Property | Summary |
 |----------|---------|
-| id <strong style='float: right;'>``string``</strong> |  |
-| VIN <strong style='float: right;'>``string``</strong> |  |
-| Model <strong style='float: right;'>``string``</strong> |  |
-| Date <strong style='float: right;'>``DateTime``</strong> |  |
-| ItemType <strong style='float: right;'>``string``</strong> |  |
+| id <div><strong>``string``</strong></div> |  |
+| VIN <div><strong>``string``</strong></div> |  |
+| Model <div><strong>``string``</strong></div> |  |
+| Date <div><strong>``DateTime``</strong></div> |  |
+| ItemType <div><strong>``string``</strong></div> |  |

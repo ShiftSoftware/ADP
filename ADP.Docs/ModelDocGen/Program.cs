@@ -11,7 +11,8 @@ using System.Text;
 var modelMapping = new Dictionary<string, string>
 {
     { $"ADP.Models/Models/Part/{nameof(CatalogPartModel)}.cs", $"Docs/docs/generated/part/{nameof(CatalogPartModel)}.md" },
-    { $"ADP.Models/Models/Part/{nameof(CountryDataModel)}.cs", $"Docs/docs/generated/part/{nameof(CountryDataModel)}.md" },
+    { $"ADP.Models/Models/Part/{nameof(PartSupersessionModel)}.cs", $"Docs/docs/generated/part/{nameof(PartSupersessionModel)}.md" },
+    { $"ADP.Models/Models/Part/{nameof(PartCountryDataModel)}.cs", $"Docs/docs/generated/part/{nameof(PartCountryDataModel)}.md" },
     { $"ADP.Models/Models/Part/{nameof(InvoicePartLineModel)}.cs", $"Docs/docs/generated/part/{nameof(InvoicePartLineModel)}.md" },
     { $"ADP.Models/Models/Part/{nameof(RegionPriceModel)}.cs", $"Docs/docs/generated/part/{nameof(RegionPriceModel)}.md" },
     { $"ADP.Models/Models/Part/{nameof(StockPartModel)}.cs", $"Docs/docs/generated/part/{nameof(StockPartModel)}.md" },
@@ -98,7 +99,7 @@ foreach (var model in modelMapping)
         var name = prop.Identifier.Text;
         var type = prop.Type.ToString();
         var summary = EscapeMarkdown(GetSummary(prop));
-        sb.AppendLine($"| {name} <strong style='float: right;'>``{type}``</strong> | {summary} |");
+        sb.AppendLine($"| {name} <div><strong>``{type}``</strong></div> | {summary} |");
     }
 
     File.WriteAllText(Path.GetFullPath(Path.Combine(baseDir, $"../../../../{model.Value}")), sb.ToString());
@@ -106,27 +107,46 @@ foreach (var model in modelMapping)
 
 string EscapeMarkdown(string input) => input.Replace("|", "\\|");
 
-string GetSummary(PropertyDeclarationSyntax prop)
+static string GetSummary(SyntaxNode node)
 {
-    foreach (var trivia in prop.GetLeadingTrivia())
+    foreach (var trivia in node.GetLeadingTrivia())
     {
         var structure = trivia.GetStructure();
         if (structure is DocumentationCommentTriviaSyntax docComment)
         {
-            var summaryElement = docComment.Content
+            var summary = docComment.Content
                 .OfType<XmlElementSyntax>()
                 .FirstOrDefault(e => e.StartTag.Name.ToString() == "summary");
 
-            if (summaryElement != null)
+            if (summary != null)
             {
-                var text = summaryElement.Content
-                    .OfType<XmlTextSyntax>()
-                    .SelectMany(t => t.TextTokens)
-                    .Where(token => token.IsKind(SyntaxKind.XmlTextLiteralToken))
-                    .Select(token => token.Text.Trim())
-                    .Where(t => !string.IsNullOrWhiteSpace(t));
+                var sb = new StringBuilder();
 
-                return string.Join(" ", text);
+                foreach (var c in summary.Content)
+                {
+                    if (c is XmlTextSyntax text)
+                    {
+                        // Combine all the tokens, trimming /// and newlines
+                        var cleanText = string.Concat(text.TextTokens.Select(t => t.Text));
+                        sb.Append(cleanText);
+                    }
+                    else if (c is XmlElementSyntax element && element.StartTag.Name.ToString() == "see")
+                    {
+                        var hrefAttr = element.StartTag.Attributes
+                            .OfType<XmlTextAttributeSyntax>()
+                            .FirstOrDefault();
+
+                        var href = hrefAttr?.TextTokens.ToFullString().Trim('"') ?? "";
+                        var linkText = string.Concat(element.Content.Select(e => e.ToFullString())).Trim();
+
+                        if (!string.IsNullOrEmpty(href))
+                        {
+                            sb.Append($"[{linkText}]({href.Replace("https://adp.shift.software", "")})");
+                        }
+                    }
+                }
+
+                return sb.ToString().Trim();
             }
         }
     }

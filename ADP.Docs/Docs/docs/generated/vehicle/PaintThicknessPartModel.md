@@ -1,7 +1,7 @@
 
 | Property | Summary |
 |----------|---------|
-| ID <strong style='float: right;'>``long``</strong> |  |
-| Part <strong style='float: right;'>``string``</strong> |  |
-| Left <strong style='float: right;'>``string``</strong> |  |
-| Right <strong style='float: right;'>``string``</strong> |  |
+| ID <div><strong>``long``</strong></div> |  |
+| Part <div><strong>``string``</strong></div> |  |
+| Left <div><strong>``string``</strong></div> |  |
+| Right <div><strong>``string``</strong></div> |  |

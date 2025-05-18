@@ -49,6 +49,9 @@ nav:
             - Invoice: generated/invoice/InvoiceModel.md  
         - Parts: 
             - Catalog Part: generated/part/CatalogPartModel.md
+            - Part Supersession: generated/part/PartSupersessionModel.md
+            - Part Country Data: generated/part/PartCountryDataModel.md
+            - Per Region Price: generated/part/RegionPriceModel.md
             - Invoice Part Line: generated/part/InvoicePartLineModel.md
         - Labor Lines: integrations/labor-lines.md
         - Vehicl Stock & Sales: integrations/vehicle-stock-and-sales.md

@@ -1,8 +1,8 @@
 
 | Property | Summary |
 |----------|---------|
-| id <strong style='float: right;'>``string``</strong> |  |
-| Location <strong style='float: right;'>``string``</strong> |  |
-| PartNumber <strong style='float: right;'>``string``</strong> |  |
-| Quantity <strong style='float: right;'>``decimal``</strong> |  |
-| ItemType <strong style='float: right;'>``string``</strong> |  |
+| id <div><strong>``string``</strong></div> |  |
+| Location <div><strong>``string``</strong></div> |  |
+| PartNumber <div><strong>``string``</strong></div> |  |
+| Quantity <div><strong>``decimal``</strong></div> |  |
+| ItemType <div><strong>``string``</strong></div> |  |

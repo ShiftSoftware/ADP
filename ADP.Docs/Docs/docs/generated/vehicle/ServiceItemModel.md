@@ -1,32 +1,32 @@
 
 | Property | Summary |
 |----------|---------|
-| id <strong style='float: right;'>``string``</strong> |  |
-| ID <strong style='float: right;'>``long``</strong> |  |
-| Name <strong style='float: right;'>``Dictionary<string, string>``</strong> |  |
-| Photo <strong style='float: right;'>``Dictionary<string, string>``</strong> |  |
-| IsDeleted <strong style='float: right;'>``bool``</strong> |  |
-| CampaignStartDate <strong style='float: right;'>``DateTime``</strong> |  |
-| CampaignEndDate <strong style='float: right;'>``DateTime``</strong> |  |
-| ValidFrom <strong style='float: right;'>``DateTime?``</strong> |  |
-| ValidTo <strong style='float: right;'>``DateTime?``</strong> |  |
-| PrintoutTitle <strong style='float: right;'>``Dictionary<string, string>``</strong> |  |
-| PrintoutDescription <strong style='float: right;'>``Dictionary<string, string>``</strong> |  |
-| Brands <strong style='float: right;'>``IEnumerable<Brands>``</strong> |  |
-| BrandIDs <strong style='float: right;'>``IEnumerable<string>``</strong> |  |
-| CountryIDs <strong style='float: right;'>``IEnumerable<string>``</strong> |  |
-| CompanyIDs <strong style='float: right;'>``IEnumerable<string>``</strong> |  |
-| ActiveFor <strong style='float: right;'>``int?``</strong> |  |
-| ActiveForDurationType <strong style='float: right;'>``DurationType?``</strong> |  |
-| MaximumMileage <strong style='float: right;'>``long?``</strong> |  |
-| PackageCode <strong style='float: right;'>``string``</strong> |  |
-| UniqueReference <strong style='float: right;'>``string``</strong> |  |
-| FixedCost <strong style='float: right;'>``decimal?``</strong> |  |
-| ModelCosts <strong style='float: right;'>``IEnumerable<ServiceItemCostModel>``</strong> |  |
-| CampaignID <strong style='float: right;'>``long?``</strong> |  |
-| CampaignName <strong style='float: right;'>``Dictionary<string, string>``</strong> |  |
-| CampaignUniqueReference <strong style='float: right;'>``string``</strong> |  |
-| CampaignActivationTrigger <strong style='float: right;'>``ClaimableItemCampaignActivationTrigger``</strong> |  |
-| CampaignActivationType <strong style='float: right;'>``ClaimableItemCampaignActivationTypes``</strong> |  |
-| ValidityMode <strong style='float: right;'>``ClaimableItemValidityMode``</strong> |  |
-| ClaimingMethod <strong style='float: right;'>``ClaimableItemClaimingMethod``</strong> |  |
+| id <div><strong>``string``</strong></div> |  |
+| ID <div><strong>``long``</strong></div> |  |
+| Name <div><strong>``Dictionary<string, string>``</strong></div> |  |
+| Photo <div><strong>``Dictionary<string, string>``</strong></div> |  |
+| IsDeleted <div><strong>``bool``</strong></div> |  |
+| CampaignStartDate <div><strong>``DateTime``</strong></div> |  |
+| CampaignEndDate <div><strong>``DateTime``</strong></div> |  |
+| ValidFrom <div><strong>``DateTime?``</strong></div> |  |
+| ValidTo <div><strong>``DateTime?``</strong></div> |  |
+| PrintoutTitle <div><strong>``Dictionary<string, string>``</strong></div> |  |
+| PrintoutDescription <div><strong>``Dictionary<string, string>``</strong></div> |  |
+| Brands <div><strong>``IEnumerable<Brands>``</strong></div> |  |
+| BrandIDs <div><strong>``IEnumerable<string>``</strong></div> |  |
+| CountryIDs <div><strong>``IEnumerable<string>``</strong></div> |  |
+| CompanyIDs <div><strong>``IEnumerable<string>``</strong></div> |  |
+| ActiveFor <div><strong>``int?``</strong></div> |  |
+| ActiveForDurationType <div><strong>``DurationType?``</strong></div> |  |
+| MaximumMileage <div><strong>``long?``</strong></div> |  |
+| PackageCode <div><strong>``string``</strong></div> |  |
+| UniqueReference <div><strong>``string``</strong></div> |  |
+| FixedCost <div><strong>``decimal?``</strong></div> |  |
+| ModelCosts <div><strong>``IEnumerable<ServiceItemCostModel>``</strong></div> |  |
+| CampaignID <div><strong>``long?``</strong></div> |  |
+| CampaignName <div><strong>``Dictionary<string, string>``</strong></div> |  |
+| CampaignUniqueReference <div><strong>``string``</strong></div> |  |
+| CampaignActivationTrigger <div><strong>``ClaimableItemCampaignActivationTrigger``</strong></div> |  |
+| CampaignActivationType <div><strong>``ClaimableItemCampaignActivationTypes``</strong></div> |  |
+| ValidityMode <div><strong>``ClaimableItemValidityMode``</strong></div> |  |
+| ClaimingMethod <div><strong>``ClaimableItemClaimingMethod``</strong></div> |  |
