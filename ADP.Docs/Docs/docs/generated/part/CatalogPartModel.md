@@ -25,4 +25,3 @@ The Catalog Part refers to a specific part in the Parts Catalog.
 | LocalDescription <strong style='float: right;'>``string``</strong> |  |
 | HSCode <strong style='float: right;'>``string``</strong> |  |
 | CountryData <strong style='float: right;'>``IEnumerable<CountryDataModel>``</strong> |  |
-| ItemType <strong style='float: right;'>``string``</strong> |  |

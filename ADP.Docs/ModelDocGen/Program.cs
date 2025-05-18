@@ -1,6 +1,7 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using ShiftSoftware.ADP.Models;
 using ShiftSoftware.ADP.Models.Invoice;
 using ShiftSoftware.ADP.Models.Part;
 using ShiftSoftware.ADP.Models.Service;
@@ -52,6 +53,16 @@ foreach (var model in modelMapping)
     var tree = CSharpSyntaxTree.ParseText(source);
     var root = tree.GetCompilationUnitRoot();
 
+    var compilation = CSharpCompilation.Create("TempCompilation")
+    .AddSyntaxTrees(tree)
+    .AddReferences(
+        MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
+        MetadataReference.CreateFromFile(typeof(System.Runtime.GCSettings).Assembly.Location),
+        MetadataReference.CreateFromFile(typeof(DocIgnoreAttribute).Assembly.Location)
+    );
+
+    var semanticModel = compilation.GetSemanticModel(tree);
+
     var classDecl = root.DescendantNodes().OfType<ClassDeclarationSyntax>().FirstOrDefault();
 
     if (classDecl is null)
@@ -75,6 +86,15 @@ foreach (var model in modelMapping)
 
     foreach (var prop in classDecl.Members.OfType<PropertyDeclarationSyntax>())
     {
+
+        var symbol = semanticModel.GetDeclaredSymbol(prop);
+        var hasDocIgnore = symbol?.GetAttributes().Any(attr =>
+            attr.AttributeClass?.Name == "DocIgnoreAttribute" ||
+            attr.AttributeClass?.ToDisplayString() == "ShiftSoftware.ADP.Models.DocIgnoreAttribute") == true;
+
+        if (hasDocIgnore)
+            continue;
+
         var name = prop.Identifier.Text;
         var type = prop.Type.ToString();
         var summary = EscapeMarkdown(GetSummary(prop));

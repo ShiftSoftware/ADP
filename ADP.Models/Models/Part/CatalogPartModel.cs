@@ -29,6 +29,8 @@ public class CatalogPartModel : IPartitionedItem
     public string LocalDescription { get; set; }
     public string HSCode { get; set; }
     public IEnumerable<CountryDataModel> CountryData { get; set; }
+
+    [DocIgnore]
     public string ItemType => ModelTypes.CatalogPart;
 }
 
