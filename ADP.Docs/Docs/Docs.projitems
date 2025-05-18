@@ -17,6 +17,7 @@
     <None Include="$(MSBuildThisFileDirectory)docs\assets\imgs\microservice-architecture.svg" />
     <None Include="$(MSBuildThisFileDirectory)docs\assets\imgs\vehicle-database_data-warehousing.svg" />
     <None Include="$(MSBuildThisFileDirectory)docs\assets\imgs\warranty-system.svg" />
+    <None Include="$(MSBuildThisFileDirectory)docs\CNAME" />
     <None Include="$(MSBuildThisFileDirectory)docs\components\customers.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\components\identity.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\components\intro.md" />
