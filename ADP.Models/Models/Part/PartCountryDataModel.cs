@@ -6,6 +6,7 @@ namespace ShiftSoftware.ADP.Models.Part;
 /// <summary>
 /// Represents the country-specific information for a part.
 /// </summary>
+[Docable]
 public class PartCountryDataModel : ICountryProps
 {
     [DocIgnore]
@@ -23,7 +24,7 @@ public class PartCountryDataModel : ICountryProps
 
 
     /// <summary>
-    /// <see href="https://adp.shift.software/generated/part/RegionPriceModel.html">Region</see>-specific price information for the part.
+    /// <see href="https://adp.shift.software/generated/Models/Part/RegionPriceModel.html">Region</see>-specific price information for the part.
     /// </summary>
     public IEnumerable<RegionPriceModel> RegionPrices { get; set; }
 }

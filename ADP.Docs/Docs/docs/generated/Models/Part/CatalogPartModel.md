@@ -20,7 +20,7 @@ The Catalog Part refers to a specific part in the Parts Catalog.
 | CubicMeasure <div><strong>``decimal?``</strong></div> | The cubic measure of the part. |
 | GrossWeight <div><strong>``decimal?``</strong></div> | The gross weight of the part. |
 | Origin <div><strong>``string``</strong></div> | The country of origin of the part. |
-| SupersededTo <div><strong>``IEnumerable<PartSupersessionModel>``</strong></div> | A list of all the [Supersessions](/generated/part/PartSupersessionModel.html) that the part has. |
+| SupersededTo <div><strong>``IEnumerable<PartSupersessionModel>``</strong></div> | A list of all the [Supersessions](/generated/Models/Part/PartSupersessionModel.html) that the part has. |
 | LocalDescription <div><strong>``string``</strong></div> | The localized description of the part. |
 | HSCode <div><strong>``string``</strong></div> | The Harmonized System (HS) code for the part. |
-| CountryData <div><strong>``IEnumerable<PartCountryDataModel>``</strong></div> | [Per Country](/generated/part/PartCountryDataModel.html) data for the part. |
+| CountryData <div><strong>``IEnumerable<PartCountryDataModel>``</strong></div> | [Per Country](/generated/Models/Part/PartCountryDataModel.html) data for the part. |

@@ -4,6 +4,7 @@
 /// <summary>
 /// Used to define the price of a part in a specific region.
 /// </summary>
+[Docable]
 public class RegionPriceModel : IRegionProps
 {
 

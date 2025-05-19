@@ -54,9 +54,6 @@
     <Content Include="$(MSBuildThisFileDirectory)docs\overrides\css\extra.css" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="$(MSBuildThisFileDirectory)docs\generated\invoice\" />
-    <Folder Include="$(MSBuildThisFileDirectory)docs\generated\vehicle\" />
-    <Folder Include="$(MSBuildThisFileDirectory)docs\generated\service\" />
-    <Folder Include="$(MSBuildThisFileDirectory)docs\generated\part\" />
+    <Folder Include="$(MSBuildThisFileDirectory)docs\generated\" />
   </ItemGroup>
 </Project>

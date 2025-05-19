@@ -7,6 +7,7 @@ namespace ShiftSoftware.ADP.Models.Invoice;
 /// <summary>
 /// A Service Invoice or a Counter Sale Parts Invoice.
 /// </summary>
+[Docable]
 public class InvoiceModel: IPartitionedItem, ICompanyProps, IBranchProps, IInvoiceProps
 {
     public string id { get; set; } = default!;

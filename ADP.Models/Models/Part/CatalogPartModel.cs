@@ -6,6 +6,7 @@ namespace ShiftSoftware.ADP.Models.Part;
 /// The Catalog Part refers to a specific part in the Parts Catalog.  
 /// It is used to define the properties and information of a part.
 /// </summary>
+[Docable]
 public class CatalogPartModel : IPartitionedItem
 {
     /// <summary>
@@ -99,7 +100,7 @@ public class CatalogPartModel : IPartitionedItem
     public string Origin { get; set; }
 
     /// <summary>
-    /// A list of all the <see href="https://adp.shift.software/generated/part/PartSupersessionModel.html">Supersessions</see> that the part has.
+    /// A list of all the <see href="https://adp.shift.software/generated/Models/Part/PartSupersessionModel.html">Supersessions</see> that the part has.
     /// </summary>
     public IEnumerable<PartSupersessionModel> SupersededTo { get; set; }
 
@@ -114,7 +115,7 @@ public class CatalogPartModel : IPartitionedItem
     public string HSCode { get; set; }
 
     /// <summary>
-    /// <see href="https://adp.shift.software/generated/part/PartCountryDataModel.html">Per Country</see> data for the part.
+    /// <see href="https://adp.shift.software/generated/Models/Part/PartCountryDataModel.html">Per Country</see> data for the part.
     /// </summary>
     public IEnumerable<PartCountryDataModel> CountryData { get; set; }
 

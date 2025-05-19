@@ -4,6 +4,7 @@
 /// <summary>
 /// Represents a part's supersession information. A part can be superseded by another part.
 /// </summary>
+[Docable]
 public class PartSupersessionModel
 {
     /// <summary>

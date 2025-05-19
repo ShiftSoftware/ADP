@@ -1,5 +1,6 @@
 ﻿namespace ShiftSoftware.ADP.Models.Part;
 
+[Docable]
 public class StockPartModel: IPartitionedItem
 {
     public string id { get; set; } = default!;
