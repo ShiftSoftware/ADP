@@ -24,7 +24,7 @@ public class PartCountryDataModel : ICountryProps
 
 
     /// <summary>
-    /// <see href="https://adp.shift.software/generated/Models/Part/RegionPriceModel.html">Region</see>-specific price information for the part.
+    /// <see cref="RegionPriceModel">Region</see>-specific price information for the part.
     /// </summary>
     public IEnumerable<RegionPriceModel> RegionPrices { get; set; }
 }

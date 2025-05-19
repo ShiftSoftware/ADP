@@ -100,7 +100,7 @@ public class CatalogPartModel : IPartitionedItem
     public string Origin { get; set; }
 
     /// <summary>
-    /// A list of all the <see href="https://adp.shift.software/generated/Models/Part/PartSupersessionModel.html">Supersessions</see> that the part has.
+    /// A list of all the <see cref="PartSupersessionModel">Supersessions</see> that the part has.
     /// </summary>
     public IEnumerable<PartSupersessionModel> SupersededTo { get; set; }
 
@@ -115,7 +115,7 @@ public class CatalogPartModel : IPartitionedItem
     public string HSCode { get; set; }
 
     /// <summary>
-    /// <see href="https://adp.shift.software/generated/Models/Part/PartCountryDataModel.html">Per Country</see> data for the part.
+    /// <see cref="PartCountryDataModel">Per Country</see> data for the part.
     /// </summary>
     public IEnumerable<PartCountryDataModel> CountryData { get; set; }
 
