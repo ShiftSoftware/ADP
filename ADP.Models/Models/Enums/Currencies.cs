@@ -2,6 +2,7 @@
 
 namespace ShiftSoftware.ADP.Models.Enums;
 
+[Docable]
 public enum Currencies
 {
     [Description("Not Specified")]

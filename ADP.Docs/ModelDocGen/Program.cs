@@ -4,7 +4,6 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using ShiftSoftware.ADP.Models;
 using System.Text;
 
-
 var baseDir = AppContext.BaseDirectory;
 var modelFiles = Directory.GetFiles(Path.Combine(Path.GetFullPath(Path.Combine(baseDir, "../../../../../ADP.Models"))), "*.cs", SearchOption.AllDirectories);
 
@@ -23,55 +22,73 @@ foreach (var file in modelFiles)
             MetadataReference.CreateFromFile(typeof(DocIgnoreAttribute).Assembly.Location)
         );
 
+    var destinationPath = file.Contains("") ? file.Substring(file.IndexOf(@"\ADP.Models") + 12) : ""; // Handle Later
+
+    var sb = new StringBuilder();
+    sb.AppendLine();
+
     var semanticModel = compilation.GetSemanticModel(tree);
 
-    //var semanticModel = compilation.GetSemanticModel(tree);
+    var typeDecl = root.DescendantNodes().FirstOrDefault(n => n is ClassDeclarationSyntax || n is EnumDeclarationSyntax);
 
-    var classDecl = root.DescendantNodes().OfType<ClassDeclarationSyntax>().FirstOrDefault();
+    if (typeDecl == null) continue;
 
-    if (classDecl is null)
-    {
-        //Console.WriteLine("No class found.");
-        continue;
-    }
+    var docableSymbol = semanticModel.GetDeclaredSymbol(typeDecl);
 
-    var docableSymbol = semanticModel.GetDeclaredSymbol(classDecl);
     var docableAttr = docableSymbol?.GetAttributes().FirstOrDefault(a =>
         a.AttributeClass?.Name == "DocableAttribute" ||
         a.AttributeClass?.ToDisplayString() == "ShiftSoftware.ADP.Models.DocableAttribute");
 
     if (docableAttr == null) continue;
 
-    var destinationPath = file.Contains("") ? file.Substring(file.IndexOf(@"\ADP.Models") + 12) : ""; // Handle Later
-
-    var sb = new StringBuilder();
-    sb.AppendLine();
-
-    var classSummary = GetSyntaxNodeSummary(classDecl);
-    if (!string.IsNullOrWhiteSpace(classSummary))
+    if (typeDecl is ClassDeclarationSyntax classDecl)
     {
-        sb.AppendLine(EscapeMarkdown(classSummary));
-        sb.AppendLine();
+        var classSummary = GetSyntaxNodeSummary(classDecl);
+        if (!string.IsNullOrWhiteSpace(classSummary))
+        {
+            sb.AppendLine(EscapeMarkdown(classSummary));
+            sb.AppendLine();
+        }
+
+        sb.AppendLine("| Property | Summary |");
+        sb.AppendLine("|----------|---------|");
+
+        foreach (var prop in classDecl.Members.OfType<PropertyDeclarationSyntax>())
+        {
+
+            var symbol = semanticModel.GetDeclaredSymbol(prop);
+            var hasDocIgnore = symbol?.GetAttributes().Any(attr =>
+                attr.AttributeClass?.Name == "DocIgnoreAttribute" ||
+                attr.AttributeClass?.ToDisplayString() == "ShiftSoftware.ADP.Models.DocIgnoreAttribute") == true;
+
+            if (hasDocIgnore)
+                continue;
+
+            var name = prop.Identifier.Text;
+            var type = prop.Type.ToString();
+            var summary = EscapeMarkdown(GetSummary(prop, semanticModel));
+            sb.AppendLine($"| {name} <div><strong>``{type}``</strong></div> | {summary} |");
+        }
     }
 
-    sb.AppendLine("| Property | Summary |");
-    sb.AppendLine("|----------|---------|");
-
-    foreach (var prop in classDecl.Members.OfType<PropertyDeclarationSyntax>())
+    else if (typeDecl is EnumDeclarationSyntax enumDecl)
     {
+        var enumSummary = GetSyntaxNodeSummary(enumDecl);
+        if (!string.IsNullOrWhiteSpace(enumSummary))
+        {
+            sb.AppendLine(EscapeMarkdown(enumSummary));
+            sb.AppendLine();
+        }
 
-        var symbol = semanticModel.GetDeclaredSymbol(prop);
-        var hasDocIgnore = symbol?.GetAttributes().Any(attr =>
-            attr.AttributeClass?.Name == "DocIgnoreAttribute" ||
-            attr.AttributeClass?.ToDisplayString() == "ShiftSoftware.ADP.Models.DocIgnoreAttribute") == true;
+        sb.AppendLine("| Value | Summary |");
+        sb.AppendLine("|-------|---------|");
 
-        if (hasDocIgnore)
-            continue;
-
-        var name = prop.Identifier.Text;
-        var type = prop.Type.ToString();
-        var summary = EscapeMarkdown(GetSummary(prop));
-        sb.AppendLine($"| {name} <div><strong>``{type}``</strong></div> | {summary} |");
+        foreach (var member in enumDecl.Members)
+        {
+            var name = member.Identifier.Text;
+            var summary = EscapeMarkdown(GetSummary(member, semanticModel));
+            sb.AppendLine($"| {name} | {summary} |");
+        }
     }
 
     destinationPath = Path.GetFullPath(Path.Combine(baseDir, $"../../../../Docs/docs/generated/{destinationPath}"));
@@ -90,7 +107,7 @@ foreach (var file in modelFiles)
 
 string EscapeMarkdown(string input) => input.Replace("|", "\\|");
 
-static string GetSummary(SyntaxNode node)
+static string GetSummary(SyntaxNode node, SemanticModel semanticModel)
 {
     foreach (var trivia in node.GetLeadingTrivia())
     {
@@ -118,13 +135,18 @@ static string GetSummary(SyntaxNode node)
                         var crefAttr = element.StartTag.Attributes
                             .OfType<XmlCrefAttributeSyntax>()
                             .FirstOrDefault();
-
-                        var cref = crefAttr?.Cref.ToFullString().Trim('"') ?? "";
+                        
                         var linkText = string.Concat(element.Content.Select(e => e.ToFullString())).Trim();
 
-                        if (!string.IsNullOrEmpty(cref))
+                        var symbolInfo = semanticModel.GetSymbolInfo(crefAttr?.Cref);
+                        var crefSymbol = symbolInfo.Symbol;
+
+                        if (crefSymbol is INamedTypeSymbol typeSymbol)
                         {
-                            sb.Append($"[{linkText}]({cref.ToString()}.html)");
+                            // Use full name with namespace
+                            var fullName = typeSymbol.ToDisplayString(); // e.g., "ShiftSoftware.ADP.Models.Part.CountryDataModel"
+                            var markdownLink = fullName.Substring(fullName.IndexOf(@"ADP.Models") + 4).Replace('.', '/') + ".html";
+                            sb.Append($"[{linkText}](/generated/{markdownLink})");
                         }
                     }
                 }
@@ -139,7 +161,7 @@ static string GetSummary(SyntaxNode node)
 
 string? GetSyntaxNodeSummary(SyntaxNode node)
 {
-     foreach (var trivia in node.GetLeadingTrivia())
+    foreach (var trivia in node.GetLeadingTrivia())
     {
         var structure = trivia.GetStructure();
         if (structure is DocumentationCommentTriviaSyntax docComment)
