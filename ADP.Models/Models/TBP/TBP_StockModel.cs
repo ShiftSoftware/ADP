@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace ShiftSoftware.ADP.Models.TBP;
@@ -9,6 +10,8 @@ public class TBP_StockModel
     public string VIN { get; set; }
     public long BrokerID { get; set; }
     public int Quantity { get; private set; }
+    public DateTime? OneKOrFiveKServieDate { get; set; }
+    public DateTime? FirstServieDate { get; set; }
     public string ItemType => ModelTypes.TBP_BrokerStock;
     public TBP_BrokerModel? Broker { get; set; }
     public BrokerVehicleModel? Vehicle { get; set; }

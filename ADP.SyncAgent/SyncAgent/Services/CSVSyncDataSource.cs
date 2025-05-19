@@ -145,7 +145,7 @@ public class CSVSyncDataSource<TCSV, TDestination> : ISyncDataAdapter<TCSV, TDes
 
             if (comparision.Added.Count() == 0 && comparision.Deleted.Count() == 0)
             {
-                // No changes, so we can skip the sync process
+                // No changes, so we can stop the sync process
                 CleanUp();
                 return false;
             }
@@ -274,7 +274,7 @@ public class CSVSyncDataSource<TCSV, TDestination> : ISyncDataAdapter<TCSV, TDes
     public ValueTask DisposeAsync()
     {
         Reset();
-        engine.Dispose();
+        engine?.Dispose();
         engine = null;
 
         return ValueTask.CompletedTask;
@@ -296,18 +296,34 @@ public class CSVSyncDataSource<TCSV, TDestination> : ISyncDataAdapter<TCSV, TDes
     {
         SetAttributesNormal();
 
-        this.workingDirectory.Delete(true);
+        try
+        {
+            this.workingDirectory?.Delete(true);
+        }
+        catch {}
 
         GarbageCollection();
     }
 
     private void SetAttributesNormal()
     {
-        foreach (var subDir in this.workingDirectory.GetDirectories())
-            SetAttributesNormal(subDir);
+        foreach (var subDir in this.workingDirectory?.GetDirectories() ?? [])
+        {
+            try
+            {
+                SetAttributesNormal(subDir);
+            }
+            catch {}
+        }
 
-        foreach (var file in workingDirectory.GetFiles())
-            file.Attributes = FileAttributes.Normal;
+        foreach (var file in workingDirectory?.GetFiles() ?? [])
+        {
+            try
+            {
+                file.Attributes = FileAttributes.Normal;
+            }
+            catch {}
+        }
     }
 
     private void SetAttributesNormal(DirectoryInfo dir)

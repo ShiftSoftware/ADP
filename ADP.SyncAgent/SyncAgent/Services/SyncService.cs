@@ -253,6 +253,13 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
                 {
                     await CheckForCancellation();
 
+                    // If provide with total item count and the last step is completed, then stop the operation
+                    if (totalSteps != null && currentStep >= totalSteps)
+                    {
+                        result = true;
+                        break;
+                    }
+
                     // If this is not retry and BatchStarted is not null, the run it
                     if (this.BatchStarted is not null && retryCount == 0)
                     {
@@ -260,13 +267,6 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
 
                         if (!batchStartedResult)
                             break;
-                    }
-
-                    // If provide with total item count and the last step is completed, then stop the operation
-                    if (totalSteps != null && currentStep >= totalSteps)
-                    {
-                        result = true;
-                        break;
                     }
 
                     try
