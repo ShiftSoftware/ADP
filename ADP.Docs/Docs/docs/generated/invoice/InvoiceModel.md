@@ -5,7 +5,9 @@ A Service Invoice or a Counter Sale Parts Invoice.
 |----------|---------|
 | id <div><strong>``string``</strong></div> |  |
 | CompanyID <div><strong>``string``</strong></div> |  |
+| CompanyHashID <div><strong>``string``</strong></div> |  |
 | BranchID <div><strong>``string``</strong></div> |  |
+| BranchHashID <div><strong>``string``</strong></div> |  |
 | VIN <div><strong>``string``</strong></div> |  |
 | InvoiceDate <div><strong>``DateTime?``</strong></div> |  |
 | ServiceDetails <div><strong>``string``</strong></div> |  |

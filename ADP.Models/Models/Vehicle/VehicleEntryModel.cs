@@ -9,6 +9,7 @@ public class VehicleEntryModel: IPartitionedItem, IBrandProps, ICompanyProps, IR
     public string id { get; set; }
     public Brands Brand { get; set; }
     public string BrandID { get; set; }
+    public string BrandHashID { get; set; }
     public DateTime? ProductionDate { get; set; }
     public int? ModelYear { get; set; }
     public string ExteriorColorCode { get; set; }
@@ -23,7 +24,9 @@ public class VehicleEntryModel: IPartitionedItem, IBrandProps, ICompanyProps, IR
     public VehicleModelModel VehicleModel { get; set; }
     public DateTime? InvoiceDate { get; set; }
     public string CompanyID { get; set; }
+    public string CompanyHashID { get; set; }
     public string BranchID { get; set; }
+    public string BranchHashID { get; set; }
     public DateTime? WarrantyActivationDate { get; set; }
     public string InvoiceNumber { get; set; }
     public string AccountNumber { get; set; }

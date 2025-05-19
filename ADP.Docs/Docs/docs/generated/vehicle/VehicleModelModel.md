@@ -4,6 +4,7 @@
 | id <div><strong>``string``</strong></div> |  |
 | Brand <div><strong>``Brands``</strong></div> |  |
 | BrandID <div><strong>``string``</strong></div> |  |
+| BrandHashID <div><strong>``string``</strong></div> |  |
 | BasicModelCode <div><strong>``string``</strong></div> |  |
 | ModelCode <div><strong>``string``</strong></div> |  |
 | ModelDescription <div><strong>``string``</strong></div> |  |

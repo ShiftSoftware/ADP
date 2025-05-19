@@ -1,4 +1,5 @@
-﻿using ShiftSoftware.ADP.Models.Part;
+﻿using ShiftSoftware.ADP.Models.Customer;
+using ShiftSoftware.ADP.Models.Part;
 using ShiftSoftware.ADP.Models.Service;
 using ShiftSoftware.ADP.Models.Vehicle;
 
@@ -89,6 +90,13 @@ public class NoSQLConstants
         {
             public const string Level1 = "/" + nameof(FlatRateModel.VDS);
             public const string Level2 = "/" + nameof(FlatRateModel.WMI);
+        }
+
+        public class Customers
+        {
+            public const string Level1 = "/" + nameof(CustomerModel.GoldenCustomerID);
+            public const string Level2 = "/" + nameof(CustomerModel.CustomerID);
+            public const string Level3 = "/" + nameof(CustomerModel.ItemType);
         }
     }
 }

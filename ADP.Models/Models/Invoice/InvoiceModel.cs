@@ -11,7 +11,9 @@ public class InvoiceModel: IPartitionedItem, ICompanyProps, IBranchProps, IInvoi
 {
     public string id { get; set; } = default!;
     public string CompanyID { get; set; }
+    public string CompanyHashID { get; set; }
     public string BranchID { get; set; }
+    public string BranchHashID { get; set; }
     public string VIN { get; set; }
     public DateTime? InvoiceDate { get; set; }
     public string ServiceDetails { get; set; }

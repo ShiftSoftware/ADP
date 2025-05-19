@@ -23,5 +23,7 @@
 | LoadDate <div><strong>``DateTime?``</strong></div> |  |
 | PostDate <div><strong>``DateTime?``</strong></div> |  |
 | CompanyID <div><strong>``string``</strong></div> |  |
+| CompanyHashID <div><strong>``string``</strong></div> |  |
 | BranchID <div><strong>``string``</strong></div> |  |
+| BranchHashID <div><strong>``string``</strong></div> |  |
 | ItemType <div><strong>``string``</strong></div> |  |

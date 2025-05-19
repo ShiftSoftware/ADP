@@ -5,7 +5,9 @@
 | ID <div><strong>``long``</strong></div> |  |
 | VIN <div><strong>``string``</strong></div> |  |
 | CompanyID <div><strong>``string``</strong></div> |  |
+| CompanyHashID <div><strong>``string``</strong></div> |  |
 | BranchID <div><strong>``string``</strong></div> |  |
+| BranchHashID <div><strong>``string``</strong></div> |  |
 | ClaimDate <div><strong>``DateTimeOffset``</strong></div> |  |
 | IsDeleted <div><strong>``bool``</strong></div> |  |
 | ServiceItemID <div><strong>``string``</strong></div> |  |

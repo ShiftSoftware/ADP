@@ -17,6 +17,7 @@
 | DateOfReceipt <div><strong>``DateTime?``</strong></div> |  |
 | WarrantyType <div><strong>``string``</strong></div> |  |
 | BrandID <div><strong>``string``</strong></div> |  |
+| BrandHashID <div><strong>``string``</strong></div> |  |
 | Brand <div><strong>``Brands``</strong></div> |  |
 | DeliveryDate <div><strong>``DateTime?``</strong></div> |  |
 | RepairCompletionDate <div><strong>``DateTime?``</strong></div> |  |
@@ -25,4 +26,5 @@
 | ProcessDate <div><strong>``DateTime?``</strong></div> |  |
 | DistributorProcessDate <div><strong>``DateTime?``</strong></div> |  |
 | CompanyID <div><strong>``string``</strong></div> |  |
+| CompanyHashID <div><strong>``string``</strong></div> |  |
 | LaborLines <div><strong>``IEnumerable<WarrantyClaimLaborLineModel>``</strong></div> |  |

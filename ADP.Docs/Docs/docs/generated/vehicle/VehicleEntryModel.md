@@ -4,6 +4,7 @@
 | id <div><strong>``string``</strong></div> |  |
 | Brand <div><strong>``Brands``</strong></div> |  |
 | BrandID <div><strong>``string``</strong></div> |  |
+| BrandHashID <div><strong>``string``</strong></div> |  |
 | ProductionDate <div><strong>``DateTime?``</strong></div> |  |
 | ModelYear <div><strong>``int?``</strong></div> |  |
 | ExteriorColorCode <div><strong>``string``</strong></div> |  |
@@ -18,7 +19,9 @@
 | VehicleModel <div><strong>``VehicleModelModel``</strong></div> |  |
 | InvoiceDate <div><strong>``DateTime?``</strong></div> |  |
 | CompanyID <div><strong>``string``</strong></div> |  |
+| CompanyHashID <div><strong>``string``</strong></div> |  |
 | BranchID <div><strong>``string``</strong></div> |  |
+| BranchHashID <div><strong>``string``</strong></div> |  |
 | WarrantyActivationDate <div><strong>``DateTime?``</strong></div> |  |
 | InvoiceNumber <div><strong>``string``</strong></div> |  |
 | AccountNumber <div><strong>``string``</strong></div> |  |
