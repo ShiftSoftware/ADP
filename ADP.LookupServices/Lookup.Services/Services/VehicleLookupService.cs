@@ -292,7 +292,7 @@ public class VehicleLookupService
     private async Task<IEnumerable<VehicleServiceHistoryDTO>> GetServiceHistory(
         IEnumerable<InvoiceModel> cpus,
         IEnumerable<InvoiceLaborLineModel> labors,
-        IEnumerable<InvoicePartLineModel> parts)
+        IEnumerable<JobPartLineModel> parts)
     {
         var serviceHistory = new List<VehicleServiceHistoryDTO>();
 

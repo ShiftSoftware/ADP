@@ -15,7 +15,7 @@ public class CompanyDataAggregateCosmosModel
     public List<InitialOfficialVINModel> InitialOfficialVINs { get; set; }
     public List<InvoiceModel> Invoices { get; set; }
     public List<InvoiceLaborLineModel> LaborLines { get; set; }
-    public List<InvoicePartLineModel> PartLines { get; set; }
+    public List<JobPartLineModel> PartLines { get; set; }
     public List<SSCAffectedVINModel> SSCAffectedVINs { get; set; }
     public List<WarrantyClaimModel> WarrantyClaims { get; set; }
     public List<BrokerInitialVehicleModel> BrokerInitialVehicles { get; set; }
