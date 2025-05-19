@@ -297,5 +297,15 @@ public class CosmosSyncDataDestination<TSource, TCosmos> : ISyncDataAdapter<TSou
     {
         throw new NotImplementedException();
     }
+
+    public ValueTask<IEnumerable<TCosmos?>?> AdvancedMapping(SyncFunctionInput<SyncMappingInput<TSource, TCosmos>> input)
+    {
+        throw new NotImplementedException();
+    }
+
+    public ValueTask<IEnumerable<TCosmos?>?> Mapping(IEnumerable<TSource?>? sourceItems, SyncActionType actionType)
+    {
+        throw new NotImplementedException();
+    }
     #endregion
 }

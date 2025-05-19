@@ -390,5 +390,15 @@ public class CSVSyncDataSource<TCSV, TDestination> : ISyncDataAdapter<TCSV, TDes
     {
         throw new NotImplementedException();
     }
+
+    public ValueTask<IEnumerable<TDestination?>?> AdvancedMapping(SyncFunctionInput<SyncMappingInput<TCSV, TDestination>> input)
+    {
+        throw new NotImplementedException();
+    }
+
+    public ValueTask<IEnumerable<TDestination?>?> Mapping(IEnumerable<TCSV?>? sourceItems, SyncActionType actionType)
+    {
+        throw new NotImplementedException();
+    }
     #endregion
 }
