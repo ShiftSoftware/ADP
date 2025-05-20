@@ -25,6 +25,16 @@ foreach (var file in modelFiles)
     var destinationPath = file.Contains("") ? file.Substring(file.IndexOf(@"\ADP.Models") + 12) : ""; // Handle Later
 
     var sb = new StringBuilder();
+
+    sb.Append(
+        """""
+        ---
+        hide:
+            - toc
+        ---
+        """""
+    );
+
     sb.AppendLine();
 
     var semanticModel = compilation.GetSemanticModel(tree);
