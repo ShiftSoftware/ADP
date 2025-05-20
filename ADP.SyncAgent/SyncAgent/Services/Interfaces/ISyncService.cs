@@ -1,8 +1,10 @@
-﻿namespace ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
+﻿using ShiftSoftware.ADP.SyncAgent.Configurations;
+
+namespace ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
 
 public interface ISyncService<TSource, TDestination> : IAsyncDisposable
-    where TSource : class, new()
-    where TDestination : class, new()
+    where TSource : class
+    where TDestination : class
 {
     SyncConfigurations? Configurations { get; }
     Func<SyncFunctionInput, ValueTask<SyncPreparingResponseAction>>? Preparing { get; }

@@ -1,8 +1,8 @@
 ﻿using System.Linq.Expressions;
 
-namespace ShiftSoftware.ADP.SyncAgent;
+namespace ShiftSoftware.ADP.SyncAgent.Configurations;
 
-public class CosmosSyncDataDestinationConfigurations<TCosmos> where TCosmos : class, new()
+public class CosmosSyncDataDestinationConfigurations<TCosmos> where TCosmos : class
 {
     public required string DatabaseId { get; set; } = default!;
     public required string ContainerId { get; set; } = default!;
