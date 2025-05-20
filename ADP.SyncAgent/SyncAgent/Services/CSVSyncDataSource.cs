@@ -24,6 +24,7 @@ public class CSVSyncDataSource<TCSV, TDestination> : ISyncDataAdapter<TCSV, TDes
     private string? toDeleteFilePath;
 
     private CacheableCSVAsyncEngine<TCSV>? engine;
+    private SyncPreparingResponseAction? prepareResult;
 
     public ISyncService<TCSV, TDestination> SyncService { get; private set; } = default!;
 
@@ -65,10 +66,21 @@ public class CSVSyncDataSource<TCSV, TDestination> : ISyncDataAdapter<TCSV, TDes
             this.SyncService
                 .SetupPreparing(async (x) =>
                 {
+                    SyncPreparingResponseAction previousResult = SyncPreparingResponseAction.Succeeded; ;
+
                     if (previousPreparing is not null)
-                        return await previousPreparing(x) && await this.Preparing(x);
+                        previousResult = await previousPreparing(x);
+
+                    var currentResult = await this.Preparing(x);
+
+                    if (previousResult == SyncPreparingResponseAction.Skiped || currentResult == SyncPreparingResponseAction.Skiped)
+                        prepareResult = SyncPreparingResponseAction.Skiped;
+                    else if (previousResult == SyncPreparingResponseAction.Succeeded && currentResult == SyncPreparingResponseAction.Succeeded)
+                        prepareResult = SyncPreparingResponseAction.Succeeded;
                     else
-                        return await this.Preparing(x);
+                        prepareResult = SyncPreparingResponseAction.Failed;
+
+                    return prepareResult.Value;
                 })
                 .SetupActionStarted(async (x) =>
                 {
@@ -105,7 +117,7 @@ public class CSVSyncDataSource<TCSV, TDestination> : ISyncDataAdapter<TCSV, TDes
         return this.SyncService;
     }
 
-    public async ValueTask<bool> Preparing(SyncFunctionInput input)
+    public async ValueTask<SyncPreparingResponseAction> Preparing(SyncFunctionInput input)
     {
         try
         {
@@ -144,11 +156,7 @@ public class CSVSyncDataSource<TCSV, TDestination> : ISyncDataAdapter<TCSV, TDes
             }
 
             if (comparision.Added.Count() == 0 && comparision.Deleted.Count() == 0)
-            {
-                // No changes, so we can stop the sync process
-                CleanUp();
-                return false;
-            }
+                return SyncPreparingResponseAction.Skiped;
 
             // Save the added lines to the toInsertFilePath
             using (TextWriter textWriter = new StreamWriter(toInsertFilePath, true, Encoding.UTF8))
@@ -177,10 +185,10 @@ public class CSVSyncDataSource<TCSV, TDestination> : ISyncDataAdapter<TCSV, TDes
         }
         catch (Exception)
         {
-            return false;
+            return SyncPreparingResponseAction.Failed;
         }
 
-        return true;
+        return SyncPreparingResponseAction.Succeeded;
     }
 
     public ValueTask<bool> ActionStarted(SyncFunctionInput<SyncActionType> input)
@@ -247,11 +255,14 @@ public class CSVSyncDataSource<TCSV, TDestination> : ISyncDataAdapter<TCSV, TDes
 
     public async ValueTask Succeeded()
     {
-        using CacheableCSVAsyncEngine<TCSV> engine = new();
+        if (prepareResult != SyncPreparingResponseAction.Skiped)
+        {
+            using CacheableCSVAsyncEngine<TCSV> engine = new();
 
-        await storageService.StoreNewVersionAsync(Path.Combine(workingDirectory!.FullName, "file.csv"),
-            this.Configurations!.GetDestinationRelativePath(), this.Configurations.DestinationContainerOrShareName, engine.Options.IgnoreFirstLines,
-            this.SyncService.GetCancellationToken());
+            await storageService.StoreNewVersionAsync(Path.Combine(workingDirectory!.FullName, "file.csv"),
+                this.Configurations!.GetDestinationRelativePath(), this.Configurations.DestinationContainerOrShareName, engine.Options.IgnoreFirstLines,
+                this.SyncService.GetCancellationToken());
+        }
     }
 
     public ValueTask Finished()

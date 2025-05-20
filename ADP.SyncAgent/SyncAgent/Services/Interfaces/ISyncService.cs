@@ -5,7 +5,7 @@ public interface ISyncService<TSource, TDestination> : IAsyncDisposable
     where TDestination : class, new()
 {
     SyncConfigurations? Configurations { get; }
-    Func<SyncFunctionInput, ValueTask<bool>>? Preparing { get; }
+    Func<SyncFunctionInput, ValueTask<SyncPreparingResponseAction>>? Preparing { get; }
 
     /// <summary>
     /// Return true to continue the process,
@@ -67,7 +67,7 @@ public interface ISyncService<TSource, TDestination> : IAsyncDisposable
         long operationTimeoutInSeconds = 300,
         RetryAction defaultRetryAction = RetryAction.RetryAndStopAfterLastRetry);
 
-    ISyncService<TSource, TDestination> SetupPreparing(Func<SyncFunctionInput, ValueTask<bool>> preparingFunc);
+    ISyncService<TSource, TDestination> SetupPreparing(Func<SyncFunctionInput, ValueTask<SyncPreparingResponseAction>> preparingFunc);
 
     /// <summary>
     /// 

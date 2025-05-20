@@ -28,7 +28,7 @@ public interface ISyncDataAdapter<TSource, TDestination, TSelf> : IAsyncDisposab
 
     public TSelf SetSyncService(ISyncService<TSource, TDestination> syncService);
 
-    public ValueTask<bool> Preparing(SyncFunctionInput input);
+    public ValueTask<SyncPreparingResponseAction> Preparing(SyncFunctionInput input);
 
     /// <summary>
     /// 

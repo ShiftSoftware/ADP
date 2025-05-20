@@ -278,7 +278,7 @@ public class CosmosSyncDataDestination<TSource, TCosmos> : ISyncDataAdapter<TSou
         throw new NotImplementedException();
     }
 
-    public ValueTask<bool> Preparing(SyncFunctionInput input)
+    public ValueTask<SyncPreparingResponseAction> Preparing(SyncFunctionInput input)
     {
         throw new NotImplementedException();
     }

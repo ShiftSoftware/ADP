@@ -42,7 +42,12 @@ public static class ISyncServiceExtensions
 
                 var result = await previousPreparing(x);
 
-                logger.LogInformation("Preparing finished.");
+                if(result == SyncPreparingResponseAction.Succeeded)
+                    logger.LogInformation("Preparing finished successfully.");
+                else if(result == SyncPreparingResponseAction.Failed)
+                    logger.LogError("Preparing failed.");
+                else if(result == SyncPreparingResponseAction.Skiped)
+                    logger.LogWarning("Preparing skipped.");
 
                 return result;
             });

@@ -9,7 +9,7 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
 {
     public SyncConfigurations? Configurations { get; private set; }
 
-    public Func<SyncFunctionInput, ValueTask<bool>>? Preparing { get; private set; }
+    public Func<SyncFunctionInput, ValueTask<SyncPreparingResponseAction>>? Preparing { get; private set; }
 
     public Func<SyncFunctionInput<SyncActionType>, ValueTask<bool>>? ActionStarted { get; private set; }
 
@@ -72,7 +72,7 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
         return this;
     }
 
-    public ISyncService<TSource, TDestination> SetupPreparing(Func<SyncFunctionInput, ValueTask<bool>> preparingFunc)
+    public ISyncService<TSource, TDestination> SetupPreparing(Func<SyncFunctionInput, ValueTask<SyncPreparingResponseAction>> preparingFunc)
     {
         this.Preparing = preparingFunc;
         return this;
@@ -182,11 +182,11 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
             this.cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(this.Configurations!.OperationTimeoutInSeconds));
 
             // Preparing
-            bool preparingResult = true;
+            var preparingResult = SyncPreparingResponseAction.Succeeded;
             if (this.Preparing is not null)
                 preparingResult = await this.Preparing!(new SyncFunctionInput(this.GetCancellationToken()));
 
-            if (preparingResult)
+            if (preparingResult == SyncPreparingResponseAction.Succeeded)
             {
                 bool actionResult = true;
 
@@ -201,7 +201,7 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
                 result = actionResult;
             }
 
-            if (result && this.Succeeded is not null)
+            if ((result || preparingResult == SyncPreparingResponseAction.Skiped) && this.Succeeded is not null)
                 await this.Succeeded!();
             else if (!result && this.Failed is not null)
                 await this.Failed!();
