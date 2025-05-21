@@ -1,8 +1,8 @@
 ﻿namespace ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
 
 public interface ISyncDataAdapter<TSource, TDestination, TConfigurations, TSelf> : ISyncDataAdapter<TSource, TDestination, TSelf>, IAsyncDisposable
-    where TSource : class, new()
-    where TDestination : class, new()
+    where TSource : class
+    where TDestination : class
     where TSelf : ISyncDataAdapter<TSource, TDestination, TConfigurations, TSelf>
 {
     public TConfigurations? Configurations { get; }
@@ -20,8 +20,8 @@ public interface ISyncDataAdapter<TSource, TDestination, TConfigurations, TSelf>
 }
 
 public interface ISyncDataAdapter<TSource, TDestination, TSelf> : IAsyncDisposable
-    where TSource : class, new()
-    where TDestination : class, new()
+    where TSource : class
+    where TDestination : class
     where TSelf : ISyncDataAdapter<TSource, TDestination, TSelf>
 {
     public ISyncService<TSource, TDestination> SyncService { get; }

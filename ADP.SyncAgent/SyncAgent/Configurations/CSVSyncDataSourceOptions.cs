@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ShiftSoftware.ADP.SyncAgent;
+namespace ShiftSoftware.ADP.SyncAgent.Configurations;
 
 public class CSVSyncDataSourceOptions
 {

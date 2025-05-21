@@ -1,5 +1,6 @@
 ﻿using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.DependencyInjection;
+using ShiftSoftware.ADP.SyncAgent.Configurations;
 using ShiftSoftware.ADP.SyncAgent.Services;
 using ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
 

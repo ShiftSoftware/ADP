@@ -1,11 +1,9 @@
 ﻿using Microsoft.Azure.Cosmos;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Polly;
 using Polly.Retry;
+using ShiftSoftware.ADP.SyncAgent.Configurations;
 using ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
 using System.Collections.Concurrent;
-using System.Linq;
-using System.Linq.Expressions;
 
 namespace ShiftSoftware.ADP.SyncAgent.Services;
 
@@ -15,8 +13,8 @@ namespace ShiftSoftware.ADP.SyncAgent.Services;
 /// <typeparam name="TSource"></typeparam>
 /// <typeparam name="TCosmos"></typeparam>
 public class CosmosSyncDataDestination<TSource, TCosmos> : ISyncDataAdapter<TSource, TCosmos, CosmosSyncDataDestinationConfigurations<TCosmos>, CosmosSyncDataDestination<TSource, TCosmos>>
-    where TSource : CacheableCSV, new()
-    where TCosmos : class, new()
+    where TSource : CacheableCSV
+    where TCosmos : class
 {
     private readonly CosmosClient cosmosClient;
 

@@ -1,4 +1,4 @@
-﻿namespace ShiftSoftware.ADP.SyncAgent;
+﻿namespace ShiftSoftware.ADP.SyncAgent.Configurations;
 
 public class SyncConfigurations
 {

@@ -1,7 +1,5 @@
 ﻿using LibGit2Sharp;
-using Microsoft.Azure.Cosmos.Serialization.HybridRow.RecordIO;
-using Polly;
-using Polly.Retry;
+using ShiftSoftware.ADP.SyncAgent.Configurations;
 using ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
 using System.Text;
 
@@ -13,8 +11,8 @@ namespace ShiftSoftware.ADP.SyncAgent.Services;
 /// <typeparam name="TCSV"></typeparam>
 /// <typeparam name="TDestination"></typeparam>
 public class CSVSyncDataSource<TCSV, TDestination> : ISyncDataAdapter<TCSV, TDestination, CSVSyncDataSourceConfigurations, CSVSyncDataSource<TCSV, TDestination>>
-    where TCSV : CacheableCSV, new()
-    where TDestination : class, new()
+    where TCSV : CacheableCSV
+    where TDestination : class
 {
     private readonly CSVSyncDataSourceOptions options;
     private readonly IStorageService storageService;
