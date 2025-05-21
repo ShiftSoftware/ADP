@@ -3,15 +3,20 @@ using System;
 
 namespace ShiftSoftware.ADP.Models.Service;
 
-public class InvoiceLaborLineModel : IPartitionedItem, IBranchProps, ICompanyProps, IInvoiceProps, IInvoiceLineProps
+public class InvoiceLaborLineModel : 
+    IPartitionedItem, 
+    IBranchProps, 
+    ICompanyProps, 
+    IInvoiceProps, 
+    IOrderDocumentProps
 {
     public string id { get; set; } = default!;
     public string VIN { get; set; }
     public string LaborCode { get; set; }
-    public string Status { get; set; }
-    public string LineStatus { get; set; }
+    public string OrderStatus { get; set; }
+    public string LoadStatus { get; set; }
     public DateTime? InvoiceDate { get; set; }
-    public int JobNumber { get; set; }
+    public string OrderDocumentNumber { get; set; }
     public string InvoiceNumber { get; set; }
     public Currencies? InvoiceCurrency { get; set; }
     public string SaleType { get; set; }

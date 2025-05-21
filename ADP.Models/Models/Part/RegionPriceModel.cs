@@ -13,7 +13,7 @@ public class RegionPriceModel : IRegionProps
 
 
     /// <summary>
-    /// The Identity Hash ID of the region.
+    /// The Region Hash ID from the Identity System.
     /// </summary>
     public string RegionHashID { get; set; }
 

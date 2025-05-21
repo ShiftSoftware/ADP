@@ -1,4 +1,7 @@
-
+---
+hide:
+    - toc
+---
 | Value | Summary |
 |-------|---------|
 | NotSpecified |  |

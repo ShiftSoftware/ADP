@@ -1,4 +1,7 @@
-
+---
+hide:
+    - toc
+---
 Refers to a Part in a Stock (Warehouse)
 
 | Property | Summary |

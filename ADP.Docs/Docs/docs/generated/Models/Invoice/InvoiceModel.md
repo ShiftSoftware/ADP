@@ -1,9 +1,13 @@
-
+---
+hide:
+    - toc
+---
 A Service Invoice or a Counter Sale Parts Invoice.
 
 | Property | Summary |
 |----------|---------|
 | id <div><strong>``string``</strong></div> |  |
+| OrderDocumentNumber <div><strong>``string``</strong></div> |  |
 | CompanyID <div><strong>``string``</strong></div> |  |
 | CompanyHashID <div><strong>``string``</strong></div> |  |
 | BranchID <div><strong>``string``</strong></div> |  |
@@ -12,7 +16,6 @@ A Service Invoice or a Counter Sale Parts Invoice.
 | InvoiceDate <div><strong>``DateTime?``</strong></div> |  |
 | ServiceDetails <div><strong>``string``</strong></div> |  |
 | Mileage <div><strong>``int?``</strong></div> |  |
-| JobNumber <div><strong>``int?``</strong></div> |  |
 | AccountNumber <div><strong>``string``</strong></div> |  |
 | CustomerAccountNumber <div><strong>``string``</strong></div> |  |
 | CustomerID <div><strong>``string``</strong></div> |  |

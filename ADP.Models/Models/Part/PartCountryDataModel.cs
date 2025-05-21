@@ -13,7 +13,7 @@ public class PartCountryDataModel : ICountryProps
     public string CountryID { get; set; }
 
     /// <summary>
-    /// The Identity Hash ID of the country.
+    /// The Country Hash ID from the Identity System.
     /// </summary>
     public string CountryHashID { get; set; }
 

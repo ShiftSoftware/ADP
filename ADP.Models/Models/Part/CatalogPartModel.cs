@@ -3,17 +3,24 @@
 namespace ShiftSoftware.ADP.Models.Part;
 
 /// <summary>
-/// The Catalog Part refers to a specific part in the Parts Catalog.  
+/// Catalog Part refers to a specific part in the Parts Catalog.  
 /// It is used to define the properties and information of a part.
 /// </summary>
 [Docable]
-public class CatalogPartModel : IPartitionedItem
+public class CatalogPartModel : 
+    IPartitionedItem
 {
+    /// <summary>
+    /// The ADP ID of the part. This is a unique identifier that ADP generates for each part.
+    /// </summary>
+    [DocIgnore]
+    public string id { get; set; } = default!;
+
+
     /// <summary>
     /// The unique identifier for the catalog part. If an ID is not available, then the part number should be used as the ID.
     /// </summary>
-    public string id { get; set; } = default!;
-
+    public string ID { get; set; }
 
     /// <summary>
     /// Catalog Part does not actually have a location. But it is used in the partition key on the database

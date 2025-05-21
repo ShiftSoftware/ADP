@@ -4,7 +4,14 @@ using System.Collections.Generic;
 
 namespace ShiftSoftware.ADP.Models.Vehicle;
 
-public class VehicleEntryModel: IPartitionedItem, IBrandProps, ICompanyProps, IRegionProps, IBranchProps, IInvoiceLineProps, IInvoiceProps
+public class VehicleEntryModel : 
+    IPartitionedItem, 
+    IBrandProps, 
+    ICompanyProps, 
+    IRegionProps, 
+    IBranchProps, 
+    IOrderDocumentProps, 
+    IInvoiceProps
 {
     public string id { get; set; }
     public Brands Brand { get; set; }
@@ -36,10 +43,10 @@ public class VehicleEntryModel: IPartitionedItem, IBrandProps, ICompanyProps, IR
     public string RegionID { get; set; }
     public string RegionHashID { get; set; }
     public string SaleType { get; set; }
-    public string Status { get; set; }
+    public string OrderStatus { get; set; }
     public string Location { get; set; }
     public Currencies? InvoiceCurrency { get; set; }
-    public string LineStatus { get; set; }
+    public string LoadStatus { get; set; }
     public string LineID { get; set; }
     public DateTime? LoadDate { get; set; }
     public DateTime? PostDate { get; set; }
@@ -49,4 +56,5 @@ public class VehicleEntryModel: IPartitionedItem, IBrandProps, ICompanyProps, IR
     /// </summary>
     public IEnumerable<string> EligibleServiceItemUniqueReferences { get; set; }
     public string ItemType => ModelTypes.VehicleEntry;
+    public string OrderDocumentNumber { get; set; }
 }

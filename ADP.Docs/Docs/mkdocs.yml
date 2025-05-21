@@ -4,7 +4,7 @@ use_directory_urls: false
 theme:
   name: material
   custom_dir: docs/overrides
-  logo: assets/images/logo.png
+  logo: assets/images/ADP.svg
   features:
     - navigation.tracking
     - navigation.tabs
@@ -44,18 +44,16 @@ nav:
         - Deployment Pipelines: architecture/deployment-pipelines.md
     - Integrations: 
         - Intro: integrations/intro.md
-        - Identity: integrations/identity.md
-        - Invoices: 
-            - Invoice: generated/Models/Invoice/InvoiceModel.md  
+        # - Invoices: 
+        #     - Invoice: generated/Models/Invoice/InvoiceModel.md  
         - Parts: 
+            - Parts Integration: integrations/parts.md
             - Catalog Part: generated/Models/Part/CatalogPartModel.md
             - Part Supersession: generated/Models/Part/PartSupersessionModel.md
             - Part Country Data: generated/Models/Part/PartCountryDataModel.md
             - Per Region Price: generated/Models/Part/RegionPriceModel.md
             - Stock Part: generated/Models/Part/StockPartModel.md
-            - Invoice Part Line: generated/Models/Part/JobPartLineModel.md
-        - Labor Lines: integrations/labor-lines.md
-        - Vehicl Stock & Sales: integrations/vehicle-stock-and-sales.md
+            - Order Part Line: generated/Models/Part/OrderPartLineModel.md
   
 
 markdown_extensions:

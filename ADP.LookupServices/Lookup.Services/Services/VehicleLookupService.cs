@@ -292,7 +292,7 @@ public class VehicleLookupService
     private async Task<IEnumerable<VehicleServiceHistoryDTO>> GetServiceHistory(
         IEnumerable<InvoiceModel> cpus,
         IEnumerable<InvoiceLaborLineModel> labors,
-        IEnumerable<JobPartLineModel> parts)
+        IEnumerable<OrderPartLineModel> parts)
     {
         var serviceHistory = new List<VehicleServiceHistoryDTO>();
 
@@ -319,8 +319,8 @@ public class VehicleLookupService
                     BranchID = x.BranchID,
                     AccountNumber = x.AccountNumber,
                     InvoiceNumber = x.InvoiceNumber,
-                    JobNumber = x.JobNumber,
-                    LaborLines = labors?.Where(l => l.JobNumber == x.JobNumber && l.InvoiceNumber == x.InvoiceNumber &&
+                    JobNumber = x.OrderDocumentNumber,
+                    LaborLines = labors?.Where(l => l.OrderDocumentNumber == x.OrderDocumentNumber && l.InvoiceNumber == x.InvoiceNumber &&
                         l.CompanyID == x.CompanyID)
                             .Select(l => new VehicleLaborDTO
                             {
@@ -329,7 +329,7 @@ public class VehicleLookupService
                                 RTSCode = l.LaborCode,
                                 ServiceCode = l.ServiceCode
                             }),
-                    PartLines = parts?.Where(p => p.JobNumber == x.JobNumber && p.InvoiceNumber == x.InvoiceNumber &&
+                    PartLines = parts?.Where(p => p.OrderDocumentNumber == x.OrderDocumentNumber && p.InvoiceNumber == x.InvoiceNumber &&
                         p.CompanyID == x.CompanyID)
                             .Select(p => new VehiclePartDTO
                             {
@@ -447,7 +447,7 @@ public class VehicleLookupService
 
         result.InvoiceDate = vsData?.InvoiceDate;
         result.WarrantyActivationDate = vsData?.WarrantyActivationDate;
-        result.Status = vsData.Status;
+        result.Status = vsData.OrderStatus;
         result.Location = vsData.Location;
         result.SaleType = vsData.SaleType;
         result.AccountNumber = vsData.AccountNumber;
@@ -598,7 +598,7 @@ public class VehicleLookupService
                 var labor = labors?.OrderByDescending(s => s.InvoiceDate)
                     .FirstOrDefault(s =>
                     (s.LaborCode.Equals(x.LaborCode1) || s.LaborCode.Equals(x.LaborCode2) || s.LaborCode.Equals(x.LaborCode3)) &&
-                    (s.Status.Equals("X") || s.LineStatus.Equals("C"))
+                    (s.OrderStatus.Equals("X") || s.LoadStatus.Equals("C"))
                 );
 
                 if (labor is not null)
