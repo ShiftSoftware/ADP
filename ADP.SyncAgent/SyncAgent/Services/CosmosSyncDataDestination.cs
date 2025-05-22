@@ -1,4 +1,5 @@
 ﻿using Microsoft.Azure.Cosmos;
+using Microsoft.Extensions.DependencyInjection;
 using Polly;
 using Polly.Retry;
 using ShiftSoftware.ADP.SyncAgent.Configurations;
@@ -12,9 +13,10 @@ namespace ShiftSoftware.ADP.SyncAgent.Services;
 /// </summary>
 /// <typeparam name="TSource"></typeparam>
 /// <typeparam name="TCosmos"></typeparam>
-public class CosmosSyncDataDestination<TSource, TCosmos> : ISyncDataAdapter<TSource, TCosmos, CosmosSyncDataDestinationConfigurations<TCosmos>, CosmosSyncDataDestination<TSource, TCosmos>>
+public class CosmosSyncDataDestination<TSource, TCosmos, TCosmosClinet> : ISyncDataAdapter<TSource, TCosmos, CosmosSyncDataDestinationConfigurations<TCosmos>, CosmosSyncDataDestination<TSource, TCosmos, TCosmosClinet>>
     where TSource : class
     where TCosmos : class
+    where TCosmosClinet : CosmosClient
 {
     private readonly CosmosClient cosmosClient;
 
@@ -23,15 +25,15 @@ public class CosmosSyncDataDestination<TSource, TCosmos> : ISyncDataAdapter<TSou
 
     private ResiliencePipeline resiliencePipeline;
 
-    public CosmosSyncDataDestination(SyncCosmosClient syncCosmosClient)
+    public CosmosSyncDataDestination(IServiceProvider services)
     {
-        this.cosmosClient = syncCosmosClient.Client;
+        this.cosmosClient = services.GetRequiredService<TCosmosClinet>();
         this.resiliencePipeline = new ResiliencePipelineBuilder()
             .AddRetry(new RetryStrategyOptions()) // Update retry using the default options
             .Build(); // Builds the resilience pipeline
     }
 
-    public CosmosSyncDataDestination<TSource, TCosmos> SetSyncService(ISyncService<TSource, TCosmos> syncService)
+    public CosmosSyncDataDestination<TSource, TCosmos, TCosmosClinet> SetSyncService(ISyncService<TSource, TCosmos> syncService)
     {
         this.SyncService = syncService;
         return this;

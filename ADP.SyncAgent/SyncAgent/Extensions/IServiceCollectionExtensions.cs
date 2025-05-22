@@ -67,11 +67,9 @@ public static class IServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddCosmosSyncDataDestination<TCosmosClient>(this IServiceCollection services)
-        where TCosmosClient : CosmosClient
+    public static IServiceCollection AddCosmosSyncDataDestination(this IServiceCollection services)
     {
-        services.AddSingleton<SyncCosmosClient>(x => new(x.GetRequiredService<TCosmosClient>()));
-        services.AddTransient(typeof(CosmosSyncDataDestination<,>));
+        services.AddTransient(typeof(CosmosSyncDataDestination<,,>));
 
         return services;
     }
