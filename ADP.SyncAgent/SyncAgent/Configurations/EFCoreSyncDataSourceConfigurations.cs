@@ -19,7 +19,7 @@ public class EFCoreSyncDataSourceConfigurations<TSource, TDestination> : EFCoreS
         Expression<Func<TSource, object>> sourceKey,
         Expression<Func<TDestination, object>> destinationKey,
         Expression<Func<TSource, DateTimeOffset?>> syncTimestamp) 
-        : base(query, sourceKey, destinationKey, syncTimestamp)
+        : base(query, sourceKey, sourceKey, destinationKey, syncTimestamp)
     {
     }
 }
@@ -31,6 +31,7 @@ public class EFCoreSyncDataSourceConfigurations<TEntity, TSource, TDestination>
 {
     public Func<IQueryable<TEntity>, SyncActionType, IQueryable<TSource>> Query { get; set; }
     public Expression<Func<TEntity, object>>? EntityKey { get; set; }
+    public Expression<Func<TSource, object>>? SourceKey { get; set; }
     public Expression<Func<TDestination, object>>? DestinationKey { get; set; }
 
     /// <summary>
@@ -51,10 +52,12 @@ public class EFCoreSyncDataSourceConfigurations<TEntity, TSource, TDestination>
     public EFCoreSyncDataSourceConfigurations(
         Func<IQueryable<TEntity>, SyncActionType, IQueryable<TSource>> query, 
         Expression<Func<TEntity, object>> entityKey,
+        Expression<Func<TSource, object>> sourceKey,
         Expression<Func<TDestination, object>> destinationKey,
         Expression<Func<TEntity, DateTimeOffset?>> syncTimestamp) : this(query)
     {
         this.EntityKey = entityKey;
+        this.SourceKey = sourceKey;
         this.DestinationKey = destinationKey;
         this.SyncTimestamp = syncTimestamp;
     }

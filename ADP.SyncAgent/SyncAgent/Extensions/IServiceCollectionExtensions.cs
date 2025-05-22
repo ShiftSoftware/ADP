@@ -59,6 +59,14 @@ public static class IServiceCollectionExtensions
         return services;
     }
 
+    public static IServiceCollection AddEFCoreSyncDataSource(this IServiceCollection services)
+    {
+        services.AddScoped(typeof(EFCoreSyncDataSource<, , >));
+        services.AddScoped(typeof(EFCoreSyncDataSource<, , , >));
+
+        return services;
+    }
+
     public static IServiceCollection AddCosmosSyncDataDestination<TCosmosClient>(this IServiceCollection services)
         where TCosmosClient : CosmosClient
     {

@@ -244,7 +244,7 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
             long retryCount = 0;
             var maxRetryCount = this.Configurations.MaxRetryCount;
 
-            if (totalSteps > 0)
+            if (totalSteps > 0  || totalItemCount is null)
             {
                 IEnumerable<TSource?>? sourceItems = null;
                 IEnumerable<TDestination?>? destinationItems = null;

@@ -10,5 +10,5 @@ public class CosmosSyncDataDestinationConfigurations<TCosmos> where TCosmos : cl
     public required Expression<Func<TCosmos, object>> PartitionKeyLevel1Expression { get; set; } = default!;
     public Expression<Func<TCosmos, object>>? PartitionKeyLevel2Expression { get; set; }
     public Expression<Func<TCosmos, object>>? PartitionKeyLevel3Expression { get; set; }
-    public Func<SyncAgentCosmosAction<TCosmos>, ValueTask<IEnumerable<SyncAgentCosmosAction<TCosmos>?>?>>? CosmosAction { get; set; }
+    public Func<SyncCosmosAction<TCosmos>, ValueTask<IEnumerable<SyncCosmosAction<TCosmos>?>?>>? CosmosAction { get; set; }
 }
