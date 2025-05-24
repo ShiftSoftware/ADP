@@ -52,12 +52,12 @@ foreach (var (file, tree) in syntaxTreeWithPaths)
         {
             var symbol = semanticModel.GetDeclaredSymbol(prop);
 
-            var hasJsonIgnore = symbol?.GetAttributes().Any(attr =>
-                attr.AttributeClass?.Name == "TypeScriptIgnore" ||
-                attr.AttributeClass?.ToDisplayString() == "ShiftSoftware.ADP.Models.TypeScriptIgnore") == true
+            var hasTypeScriptIgnore = symbol?.GetAttributes().Any(attr =>
+                attr.AttributeClass?.Name == "TypeScriptIgnoreAttribute" ||
+                attr.AttributeClass?.ToDisplayString() == "ShiftSoftware.ADP.Models.TypeScriptIgnoreAttribute") == true
                 ;
 
-            if (hasJsonIgnore)
+            if (hasTypeScriptIgnore)
                 continue;
 
             var tsType = GetTypescriptType(semanticModel, prop.Type);
