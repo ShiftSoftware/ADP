@@ -1,10 +1,12 @@
 ﻿using Newtonsoft.Json;
+using ShiftSoftware.ADP.Models;
 using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Part;
 
+[TypeScriptModel]
 public class PartLookupDTO
 {
     public string PartNumber { get; set; }

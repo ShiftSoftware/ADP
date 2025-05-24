@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>d6d8e763-24c4-477e-a648-4a42b62ee2f0</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>adp_web_components</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)src\global\types\part\branchDeadStockDTO.ts" />
+    <None Include="$(MSBuildThisFileDirectory)src\global\types\part\deadStockDTO.ts" />
+    <None Include="$(MSBuildThisFileDirectory)src\global\types\part\hsCodeDTO.ts" />
+    <None Include="$(MSBuildThisFileDirectory)src\global\types\part\partLookupDTO.ts" />
+    <None Include="$(MSBuildThisFileDirectory)src\global\types\part\partPriceDTO.ts" />
+    <None Include="$(MSBuildThisFileDirectory)src\global\types\part\priceDTO.ts" />
+    <None Include="$(MSBuildThisFileDirectory)src\global\types\part\stockPartDTO.ts" />
+  </ItemGroup>
+</Project>

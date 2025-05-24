@@ -1,8 +1,7 @@
 ﻿using System;
-
 namespace ShiftSoftware.ADP.Models;
 
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-public class DocIgnoreAttribute : Attribute
+public class TypeScriptIgnoreAttribute : Attribute
 {
 }
