@@ -9,7 +9,7 @@ public class TBP_StockModel
     public string id { get; set; }
     public string VIN { get; set; }
     public long BrokerID { get; set; }
-    public int Quantity { get; private set; }
+    public int Quantity { get; set; }
     public DateTime? OneKOrFiveKServieDate { get; set; }
     public DateTime? FirstServieDate { get; set; }
     public string ItemType => ModelTypes.TBP_BrokerStock;
