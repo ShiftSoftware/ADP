@@ -5,8 +5,8 @@ using ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
 
 namespace ShiftSoftware.ADP.SyncAgent.Services;
 
-public class EFCoreSyncDataSource<TSource, TDestination, TDbContext> : EFCoreSyncDataSource<TSource, TSource, TDestination, TDbContext> , 
-    ISyncDataAdapter<TSource, TDestination, EFCoreSyncDataSourceConfigurations<TSource, TSource, TDestination>, EFCoreSyncDataSource<TSource, TDestination, TDbContext>>
+public class EFCoreSyncDataSource<TSource, TDestination, TDbContext> : EFCoreSyncDataSource<TSource, TSource, TDestination, TDbContext>,
+    ISyncDataAdapter<TSource, TDestination, EFCoreSyncDataSourceConfigurations<TSource, TDestination>, EFCoreSyncDataSource<TSource, TDestination, TDbContext>>
     where TSource : class
     where TDestination : class
     where TDbContext : DbContext
@@ -15,7 +15,15 @@ public class EFCoreSyncDataSource<TSource, TDestination, TDbContext> : EFCoreSyn
     {
     }
 
-    EFCoreSyncDataSource<TSource, TDestination, TDbContext> ISyncDataAdapter<TSource, TDestination, EFCoreSyncDataSource<TSource, TDestination, TDbContext>>.SetSyncService(ISyncService<TSource, TDestination> syncService)
+    public new EFCoreSyncDataSourceConfigurations<TSource, TDestination>? Configurations => (EFCoreSyncDataSourceConfigurations<TSource, TDestination>?)base.Configurations;
+
+    public ISyncService<TSource, TDestination> Configure(EFCoreSyncDataSourceConfigurations<TSource, TDestination> configurations, bool configureSyncService = true)
+    {
+        base.Configure(configurations, configureSyncService);
+        return this.SyncService;
+    }
+
+    public new EFCoreSyncDataSource<TSource, TDestination, TDbContext> SetSyncService(ISyncService<TSource, TDestination> syncService)
     {
         base.SetSyncService(syncService);
         return this;
