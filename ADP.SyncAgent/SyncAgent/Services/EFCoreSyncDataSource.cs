@@ -5,6 +5,30 @@ using ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
 
 namespace ShiftSoftware.ADP.SyncAgent.Services;
 
+public class EFCoreSyncDataSource<T, TDbContext> : EFCoreSyncDataSource<T, T, T, TDbContext>,
+    ISyncDataAdapter<T, T, EFCoreSyncDataSourceConfigurations<T>, EFCoreSyncDataSource<T, TDbContext>>
+    where T : class
+    where TDbContext : DbContext
+{
+    public EFCoreSyncDataSource(TDbContext db) : base(db)
+    {
+    }
+
+    public EFCoreSyncDataSourceConfigurations<T>? Configurations => (EFCoreSyncDataSourceConfigurations<T>?)base.Configurations;
+
+    public ISyncService<T, T> Configure(EFCoreSyncDataSourceConfigurations<T> configurations, bool configureSyncService = true)
+    {
+        base.Configure(configurations, configureSyncService);
+        return this.SyncService;
+    }
+
+    public EFCoreSyncDataSource<T, TDbContext> SetSyncService(ISyncService<T, T> syncService)
+    {
+        base.SetSyncService(syncService);
+        return this;
+    }
+}
+
 public class EFCoreSyncDataSource<TSource, TDestination, TDbContext> : EFCoreSyncDataSource<TSource, TSource, TDestination, TDbContext>,
     ISyncDataAdapter<TSource, TDestination, EFCoreSyncDataSourceConfigurations<TSource, TDestination>, EFCoreSyncDataSource<TSource, TDestination, TDbContext>>
     where TSource : class

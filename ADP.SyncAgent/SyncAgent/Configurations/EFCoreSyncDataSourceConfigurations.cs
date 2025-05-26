@@ -2,6 +2,27 @@
 
 namespace ShiftSoftware.ADP.SyncAgent.Configurations;
 
+public class EFCoreSyncDataSourceConfigurations<T> : EFCoreSyncDataSourceConfigurations<T, T>
+    where T : class
+{
+    public EFCoreSyncDataSourceConfigurations() : base()
+    {
+    }
+
+    public EFCoreSyncDataSourceConfigurations(Func<IQueryable<T>, SyncActionType, IQueryable<T>> query) : base(query)
+    {
+    }
+
+    public EFCoreSyncDataSourceConfigurations(
+        Func<IQueryable<T>, SyncActionType, IQueryable<T>> query,
+        Expression<Func<T, object>> key,
+        Expression<Func<T, DateTimeOffset?>> syncTimestamp,
+        bool updateSyncTimeStampForSkippedItems = false)
+        : base(query, key, key, syncTimestamp, updateSyncTimeStampForSkippedItems)
+    {
+    }
+}
+
 public class EFCoreSyncDataSourceConfigurations<TSource, TDestination> : EFCoreSyncDataSourceConfigurations<TSource, TSource, TDestination>
     where TSource : class
     where TDestination : class
