@@ -141,6 +141,9 @@ public class EFCoreSyncDataSource<TEntity, TSource, TDestination, TDbContext>
             var succeededIds = input.Input?.StoreDataResult?.SucceededItems?.Select(x => Configurations?.DestinationKey?.Compile()(x!)).Distinct();
             var failedIds = input.Input?.StoreDataResult?.FailedItems?.Select(x => Configurations?.DestinationKey?.Compile()(x!)).Distinct();
 
+            if (this.Configurations?.UpdateSyncTimeStampForSkippedItems ?? false)
+                succeededIds = succeededIds?.Union(input.Input?.StoreDataResult?.SkippedItems?.Select(x => Configurations?.DestinationKey?.Compile()(x!)).Distinct() ?? []);
+
             // Exclude failed items from the succeeded items
             if (failedIds?.Any() == true && succeededIds?.Any() == true)
                 succeededIds = succeededIds.Except(failedIds);  // This is helpful if one source item have multiple reference items in destination

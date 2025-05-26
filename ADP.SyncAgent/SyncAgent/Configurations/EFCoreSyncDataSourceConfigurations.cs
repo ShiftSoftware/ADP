@@ -35,6 +35,12 @@ public class EFCoreSyncDataSourceConfigurations<TEntity, TSource, TDestination>
     public Expression<Func<TDestination, object>>? DestinationKey { get; set; }
 
     /// <summary>
+    /// IF true, the sync timestamp will be updated for items that were skipped during the store proccess.
+    /// Default is false.
+    /// </summary>
+    public bool UpdateSyncTimeStampForSkippedItems { get; set; } = false;
+
+    /// <summary>
     /// Should be a DateTime or DateTimeOffset property.
     /// </summary>
     public Expression<Func<TEntity, DateTimeOffset?>>? SyncTimestamp { get; set; }
@@ -44,9 +50,10 @@ public class EFCoreSyncDataSourceConfigurations<TEntity, TSource, TDestination>
         
     }
 
-    public EFCoreSyncDataSourceConfigurations(Func<IQueryable<TEntity>, SyncActionType, IQueryable<TSource>> query)
+    public EFCoreSyncDataSourceConfigurations(Func<IQueryable<TEntity>, SyncActionType, IQueryable<TSource>> query, bool updateSyncTimeStampForSkippedItems = false)
     {
         this.Query = query;
+        this.UpdateSyncTimeStampForSkippedItems = updateSyncTimeStampForSkippedItems;
     }
 
     public EFCoreSyncDataSourceConfigurations(
@@ -54,7 +61,8 @@ public class EFCoreSyncDataSourceConfigurations<TEntity, TSource, TDestination>
         Expression<Func<TEntity, object>> entityKey,
         Expression<Func<TSource, object>> sourceKey,
         Expression<Func<TDestination, object>> destinationKey,
-        Expression<Func<TEntity, DateTimeOffset?>> syncTimestamp) : this(query)
+        Expression<Func<TEntity, DateTimeOffset?>> syncTimestamp,
+        bool updateSyncTimeStampForSkippedItems = false) : this(query, updateSyncTimeStampForSkippedItems)
     {
         this.EntityKey = entityKey;
         this.SourceKey = sourceKey;
