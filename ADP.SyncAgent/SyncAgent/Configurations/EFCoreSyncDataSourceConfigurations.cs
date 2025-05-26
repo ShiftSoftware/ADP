@@ -18,8 +18,9 @@ public class EFCoreSyncDataSourceConfigurations<TSource, TDestination> : EFCoreS
         Func<IQueryable<TSource>, SyncActionType, IQueryable<TSource>> query,
         Expression<Func<TSource, object>> sourceKey,
         Expression<Func<TDestination, object>> destinationKey,
-        Expression<Func<TSource, DateTimeOffset?>> syncTimestamp) 
-        : base(query, sourceKey, sourceKey, destinationKey, syncTimestamp)
+        Expression<Func<TSource, DateTimeOffset?>> syncTimestamp,
+        bool updateSyncTimeStampForSkippedItems = false) 
+        : base(query, sourceKey, sourceKey, destinationKey, syncTimestamp, updateSyncTimeStampForSkippedItems)
     {
     }
 }
