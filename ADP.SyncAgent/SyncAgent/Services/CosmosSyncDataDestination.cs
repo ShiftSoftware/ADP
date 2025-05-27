@@ -11,8 +11,70 @@ namespace ShiftSoftware.ADP.SyncAgent.Services;
 /// <summary>
 /// Treat Add and Update action as Upsert to cosmos
 /// </summary>
+/// <typeparam name="T"></typeparam>
+/// <typeparam name="TCosmosClinet"></typeparam>
+public class CosmosSyncDataDestination<T, TCosmosClinet> : CosmosSyncDataDestination<T, T, T, TCosmosClinet>,
+    ISyncDataAdapter<T, T, CosmosSyncDataDestinationConfigurations<T>, CosmosSyncDataDestination<T, TCosmosClinet>>
+    where T : class
+    where TCosmosClinet : CosmosClient
+{
+    public CosmosSyncDataDestination(IServiceProvider services) : base(services)
+    {
+    }
+
+    public new CosmosSyncDataDestinationConfigurations<T>? Configurations => (CosmosSyncDataDestinationConfigurations<T>?)base.Configurations;
+
+    public ISyncService<T, T> Configure(CosmosSyncDataDestinationConfigurations<T> configurations, bool configureSyncService = true)
+    {
+        base.Configure(configurations, configureSyncService);
+        return base.SyncService;
+    }
+
+    public new CosmosSyncDataDestination<T, TCosmosClinet> SetSyncService(ISyncService<T, T> syncService)
+    {
+        base.SetSyncService(syncService);
+        return this;
+    }
+}
+
+/// <summary>
+/// Treat Add and Update action as Upsert to cosmos
+/// </summary>
+/// <typeparam name="T"></typeparam>
+/// <typeparam name="TCosmos"></typeparam>
+/// <typeparam name="TCosmosClinet"></typeparam>
+public class CosmosSyncDataDestination<T, TCosmos, TCosmosClinet> : CosmosSyncDataDestination<T, T, TCosmos, TCosmosClinet>,
+    ISyncDataAdapter<T, T, CosmosSyncDataDestinationConfigurations<T, TCosmos>, CosmosSyncDataDestination<T, TCosmos, TCosmosClinet>>
+    where T : class
+    where TCosmos : class
+    where TCosmosClinet : CosmosClient
+{
+    public CosmosSyncDataDestination(IServiceProvider services) : base(services)
+    {
+    }
+
+    public new CosmosSyncDataDestinationConfigurations<T, TCosmos>? Configurations => base.Configurations;
+
+    public new ISyncService<T, T> Configure(CosmosSyncDataDestinationConfigurations<T, TCosmos> configurations, bool configureSyncService = true)
+    {
+        base.Configure(configurations, configureSyncService);
+        return base.SyncService;
+    }
+
+    public new CosmosSyncDataDestination<T, TCosmos, TCosmosClinet> SetSyncService(ISyncService<T, T> syncService)
+    {
+        base.SetSyncService(syncService);
+        return this;
+    }
+}
+
+/// <summary>
+/// Treat Add and Update action as Upsert to cosmos
+/// </summary>
 /// <typeparam name="TSource"></typeparam>
 /// <typeparam name="TDestination"></typeparam>
+/// <typeparam name="TCosmos"></typeparam>
+/// <typeparam name="TCosmosClinet"></typeparam>
 public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosClinet> : ISyncDataAdapter<TSource, TDestination, CosmosSyncDataDestinationConfigurations<TDestination, TCosmos>, CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosClinet>>
     where TSource : class
     where TDestination : class

@@ -2,6 +2,11 @@
 
 namespace ShiftSoftware.ADP.SyncAgent.Configurations;
 
+public class CosmosSyncDataDestinationConfigurations<T> : CosmosSyncDataDestinationConfigurations<T, T>
+    where T : class
+{
+}
+
 public class CosmosSyncDataDestinationConfigurations<TDestination, TCosmos> 
     where TCosmos : class
     where TDestination : class

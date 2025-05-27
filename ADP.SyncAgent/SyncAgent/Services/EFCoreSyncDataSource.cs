@@ -14,7 +14,7 @@ public class EFCoreSyncDataSource<T, TDbContext> : EFCoreSyncDataSource<T, T, T,
     {
     }
 
-    public EFCoreSyncDataSourceConfigurations<T>? Configurations => (EFCoreSyncDataSourceConfigurations<T>?)base.Configurations;
+    public new EFCoreSyncDataSourceConfigurations<T>? Configurations => (EFCoreSyncDataSourceConfigurations<T>?)base.Configurations;
 
     public ISyncService<T, T> Configure(EFCoreSyncDataSourceConfigurations<T> configurations, bool configureSyncService = true)
     {
@@ -22,7 +22,7 @@ public class EFCoreSyncDataSource<T, TDbContext> : EFCoreSyncDataSource<T, T, T,
         return this.SyncService;
     }
 
-    public EFCoreSyncDataSource<T, TDbContext> SetSyncService(ISyncService<T, T> syncService)
+    public new EFCoreSyncDataSource<T, TDbContext> SetSyncService(ISyncService<T, T> syncService)
     {
         base.SetSyncService(syncService);
         return this;
