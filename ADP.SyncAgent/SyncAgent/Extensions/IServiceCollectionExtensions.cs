@@ -70,6 +70,8 @@ public static class IServiceCollectionExtensions
 
     public static IServiceCollection AddCosmosSyncDataDestination(this IServiceCollection services)
     {
+        services.AddTransient(typeof(CosmosSyncDataDestination<,>));
+        services.AddTransient(typeof(CosmosSyncDataDestination<,,>));
         services.AddTransient(typeof(CosmosSyncDataDestination<,,,>));
 
         return services;
