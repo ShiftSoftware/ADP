@@ -4,9 +4,21 @@ using ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
 
 namespace ShiftSoftware.ADP.SyncAgent.Services;
 
+public class SyncService<T> : SyncService<T, T>
+    where T : class
+{
+    public SyncService() : base()
+    {
+    }
+
+    public SyncService(IServiceProvider services): base(services)
+    {
+    }
+}
+
 public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestination>
-    where TSource : class, new()
-    where TDestination : class, new()
+    where TSource : class
+    where TDestination : class
 {
     public SyncConfigurations? Configurations { get; private set; }
 
@@ -40,14 +52,14 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
 
     private readonly IServiceProvider services;
 
-    public SyncService(IServiceProvider services)
-    {
-        this.services = services;
-    }
-
     public SyncService()
     {
         this.Configure();
+    }
+
+    public SyncService(IServiceProvider services) : this()
+    {
+        this.services = services;
     }
 
     public ISyncService<TSource, TDestination> Configure(long? batchSize = null, long maxRetryCount = 0, long operationTimeoutInSeconds = 300, RetryAction defaultRetryAction = RetryAction.RetryAndStopAfterLastRetry)

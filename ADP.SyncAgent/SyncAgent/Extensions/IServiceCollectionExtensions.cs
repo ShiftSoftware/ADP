@@ -74,4 +74,12 @@ public static class IServiceCollectionExtensions
 
         return services;
     }
+
+    public static IServiceCollection AddSyncService(this IServiceCollection services)
+    {
+        services.AddTransient(typeof(SyncService<>));
+        services.AddTransient(typeof(SyncService<,>));
+
+        return services;
+    }
 }
