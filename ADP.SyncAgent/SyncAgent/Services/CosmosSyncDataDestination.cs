@@ -26,6 +26,7 @@ public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosCl
 
     private ResiliencePipeline resiliencePipeline;
     private ConcurrentDictionary<TDestination, CosmosActionResult<TCosmos>> cosmosActionResults = new();
+    private IEnumerable<SyncCosmosAction<TDestination, TCosmos>?> actionItems = [];
 
     public CosmosSyncDataDestination(IServiceProvider services)
     {
@@ -80,27 +81,29 @@ public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosCl
     {
         try
         {
-            IEnumerable<SyncCosmosAction<TDestination, TCosmos>?>? items = null;
             var inputItems = input.Input.Items;
 
             // If it is retry, retry only the failed items from the previous result
             if (input.Input.Status.CurrentRetryCount > 0 && (input.Input.PreviousResult?.IsEligibleToUseItAsRetryInput(input.Input?.Items?.LongCount()) ?? false))
                 inputItems = input.Input?.PreviousResult?.FailedItems;
 
-            if (this.Configurations!.CosmosAction is null)
-                items = inputItems?.Select(y => new SyncCosmosAction<TDestination, TCosmos>(y, input.Input.Status.ActionType, input.CancellationToken));
-            else
-                foreach (var item in inputItems ?? [])
-                    items = (items ?? []).Append(await this.Configurations!.CosmosAction(new(item, input!.Input.Status.ActionType, input.CancellationToken)));
+            if (input.Input?.Status.CurrentRetryCount == 0 || !actionItems.Any())
+            {
+                if (this.Configurations!.CosmosAction is null)
+                    actionItems = inputItems?.Select(y => new SyncCosmosAction<TDestination, TCosmos>(y, input.Input.Status.ActionType, input.CancellationToken)) ?? [];
+                else
+                    foreach (var item in inputItems ?? [])
+                        actionItems = (actionItems ?? []).Append(await this.Configurations!.CosmosAction(new(item, input!.Input.Status.ActionType, input.CancellationToken)));
+            }
 
             //Some times the CSV comparer marks an item as deleted. But the SyncAgentCosmosAction has the ability to change that to an upsert (This is done outside the sync agent by the programmer.) 
             var deleteResult = await DeleteFromCosmosAsync(
-                items?.Where(x => x.ActionType == SyncActionType.Delete) ?? [],
-                input!.Input.Status.CurrentRetryCount,
+                actionItems?.Where(x => x.ActionType == SyncActionType.Delete) ?? [],
+                input!.Input!.Status.CurrentRetryCount,
                 input!.CancellationToken);
 
             var upsertResult = await UpsertToCosmosAsync(
-                items?.Where(x => x.ActionType == SyncActionType.Update || x.ActionType == SyncActionType.Add) ?? [],
+                actionItems?.Where(x => x.ActionType == SyncActionType.Update || x.ActionType == SyncActionType.Add) ?? [],
                 input!.Input.Status.CurrentRetryCount,
                 input!.CancellationToken);
 
@@ -186,6 +189,7 @@ public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosCl
                                 {
                                     await container.UpsertItemAsync(mappedItem, partitionKey,
                                         new ItemRequestOptions { EnableContentResponseOnWrite = false }, cancellationToken);
+
                                     innerSucceededItems.Add(mappedItem!);
                                 }, cancellationToken);
                             }
@@ -334,6 +338,7 @@ public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosCl
     public ValueTask<bool> BatchCompleted(SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>> input)
     {
         this.cosmosActionResults.Clear(); // Clear the results for the next batch
+        this.actionItems = []; // Clear the action items for the next batch
         return new(true);
     }
 
