@@ -47,4 +47,9 @@ public class SyncStoreDataResult<T> where T : class
     {
         
     }
+
+    public bool IsEligibleToUseItAsRetryInput(long? expectedCount)
+    {
+        return (SucceededItems?.LongCount() ?? 0) + (FailedItems?.LongCount() ?? 0) + (SkippedItems?.LongCount() ?? 0) == expectedCount;
+    }
 }

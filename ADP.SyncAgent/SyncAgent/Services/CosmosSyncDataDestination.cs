@@ -83,9 +83,9 @@ public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosCl
             IEnumerable<SyncCosmosAction<TDestination, TCosmos>?>? items = null;
             var inputItems = input.Input.Items;
 
-            // If it is retry, skip the succeeded items to try store them again
-            if (input.Input.Status.CurrentRetryCount > 0 && input.Input.PreviousResult?.SucceededItems?.Any() == true && inputItems?.Any() == true)
-                inputItems = inputItems?.Except(input.Input.PreviousResult?.SucceededItems ?? []);  // Filter the input items to exclude the succeeded items
+            // If it is retry, retry only the failed items from the previous result
+            if (input.Input.Status.CurrentRetryCount > 0 && (input.Input.PreviousResult?.IsEligibleToUseItAsRetryInput(input.Input?.Items?.LongCount()) ?? false))
+                inputItems = input.Input?.PreviousResult?.FailedItems;
 
             if (this.Configurations!.CosmosAction is null)
                 items = inputItems?.Select(y => new SyncCosmosAction<TDestination, TCosmos>(y, input.Input.Status.ActionType, input.CancellationToken));
