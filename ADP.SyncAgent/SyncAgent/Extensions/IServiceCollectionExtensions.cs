@@ -61,15 +61,16 @@ public static class IServiceCollectionExtensions
 
     public static IServiceCollection AddEFCoreSyncDataSource(this IServiceCollection services)
     {
-        services.AddScoped(typeof(EFCoreSyncDataSource<, , >));
-        services.AddScoped(typeof(EFCoreSyncDataSource<, , , >));
+        services.AddTransient(typeof(EFCoreSyncDataSource< , >));
+        services.AddTransient(typeof(EFCoreSyncDataSource<, , >));
+        services.AddTransient(typeof(EFCoreSyncDataSource<, , , >));
 
         return services;
     }
 
     public static IServiceCollection AddCosmosSyncDataDestination(this IServiceCollection services)
     {
-        services.AddTransient(typeof(CosmosSyncDataDestination<,,>));
+        services.AddTransient(typeof(CosmosSyncDataDestination<,,,>));
 
         return services;
     }

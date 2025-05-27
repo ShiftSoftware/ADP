@@ -12,18 +12,20 @@ namespace ShiftSoftware.ADP.SyncAgent.Services;
 /// Treat Add and Update action as Upsert to cosmos
 /// </summary>
 /// <typeparam name="TSource"></typeparam>
-/// <typeparam name="TCosmos"></typeparam>
-public class CosmosSyncDataDestination<TSource, TCosmos, TCosmosClinet> : ISyncDataAdapter<TSource, TCosmos, CosmosSyncDataDestinationConfigurations<TCosmos>, CosmosSyncDataDestination<TSource, TCosmos, TCosmosClinet>>
+/// <typeparam name="TDestination"></typeparam>
+public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosClinet> : ISyncDataAdapter<TSource, TDestination, CosmosSyncDataDestinationConfigurations<TDestination, TCosmos>, CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosClinet>>
     where TSource : class
+    where TDestination : class
     where TCosmos : class
     where TCosmosClinet : CosmosClient
 {
     private readonly CosmosClient cosmosClient;
 
-    public ISyncService<TSource, TCosmos> SyncService { get; private set; }
-    public CosmosSyncDataDestinationConfigurations<TCosmos>? Configurations { get; private set; }
+    public ISyncService<TSource, TDestination> SyncService { get; private set; }
+    public CosmosSyncDataDestinationConfigurations<TDestination, TCosmos>? Configurations { get; private set; }
 
     private ResiliencePipeline resiliencePipeline;
+    private ConcurrentDictionary<TDestination, CosmosActionResult<TCosmos>> cosmosActionResults = new();
 
     public CosmosSyncDataDestination(IServiceProvider services)
     {
@@ -33,7 +35,7 @@ public class CosmosSyncDataDestination<TSource, TCosmos, TCosmosClinet> : ISyncD
             .Build(); // Builds the resilience pipeline
     }
 
-    public CosmosSyncDataDestination<TSource, TCosmos, TCosmosClinet> SetSyncService(ISyncService<TSource, TCosmos> syncService)
+    public CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosClinet> SetSyncService(ISyncService<TSource, TDestination> syncService)
     {
         this.SyncService = syncService;
         return this;
@@ -48,12 +50,22 @@ public class CosmosSyncDataDestination<TSource, TCosmos, TCosmosClinet> : ISyncD
     /// then you may be configure SyncService by your self
     /// </param>
     /// <returns></returns>
-    public ISyncService<TSource, TCosmos> Configure(CosmosSyncDataDestinationConfigurations<TCosmos> configurations , bool configureSyncService = true)
+    public ISyncService<TSource, TDestination> Configure(CosmosSyncDataDestinationConfigurations<TDestination, TCosmos> configurations , bool configureSyncService = true)
     {
         this.Configurations = configurations;
 
+        var previousBatchCompleted = this.SyncService.BatchCompleted;
+
         if (configureSyncService)
-            this.SyncService.SetupStoreBatchData(async (x)=> await this.StoreBatchData(x));
+            this.SyncService
+                .SetupStoreBatchData(async (x)=> await this.StoreBatchData(x))
+                .SetupBatchCompleted(async (x) =>
+                {
+                    if (previousBatchCompleted is not null)
+                        return await previousBatchCompleted(x) && await this.BatchCompleted(x);
+
+                    return await this.BatchCompleted(x);
+                });
 
         return this.SyncService;
     }
@@ -64,45 +76,39 @@ public class CosmosSyncDataDestination<TSource, TCosmos, TCosmosClinet> : ISyncD
     /// </summary>
     /// <param name="input"></param>
     /// <returns></returns>
-    public async ValueTask<SyncStoreDataResult<TCosmos>> StoreBatchData(SyncFunctionInput<SyncStoreDataInput<TCosmos>> input)
+    public async ValueTask<SyncStoreDataResult<TDestination>> StoreBatchData(SyncFunctionInput<SyncStoreDataInput<TDestination>> input)
     {
         try
         {
-            IEnumerable<SyncCosmosAction<TCosmos>?>? items = null;
+            IEnumerable<SyncCosmosAction<TDestination, TCosmos>?>? items = null;
             var inputItems = input.Input.Items;
 
             // If it is retry, skip the succeeded items to try store them again
-            if(input.Input.Status.CurrentRetryCount > 0 && input.Input.PreviousResult?.SucceededItems?.Any() == true && inputItems?.Any() == true)
-            {
-                // Map the succeeded items to composite keys
-                var succeededKeys = new HashSet<(string? Id, object? Key1, object? Key2, object? Key3)>(
-                    input.Input.PreviousResult!.SucceededItems
-                    .Select(x => GetCompositeKey(x)));
-
-                // Filter the input items to exclude the succeeded items
-                inputItems = inputItems?.Where(x => !succeededKeys.Contains(GetCompositeKey(x)));
-            }
+            if (input.Input.Status.CurrentRetryCount > 0 && input.Input.PreviousResult?.SucceededItems?.Any() == true && inputItems?.Any() == true)
+                inputItems = inputItems?.Except(input.Input.PreviousResult?.SucceededItems ?? []);  // Filter the input items to exclude the succeeded items
 
             if (this.Configurations!.CosmosAction is null)
-                items = inputItems?.Select(y => new SyncCosmosAction<TCosmos>(y, input.Input.Status.ActionType, input.CancellationToken));
+                items = inputItems?.Select(y => new SyncCosmosAction<TDestination, TCosmos>(y, input.Input.Status.ActionType, input.CancellationToken));
             else
                 foreach (var item in inputItems ?? [])
-                    items = (items ?? []).Concat((await this.Configurations!.CosmosAction(new(item, input!.Input.Status.ActionType, input.CancellationToken))) ?? []);
+                    items = (items ?? []).Append(await this.Configurations!.CosmosAction(new(item, input!.Input.Status.ActionType, input.CancellationToken)));
 
             //Some times the CSV comparer marks an item as deleted. But the SyncAgentCosmosAction has the ability to change that to an upsert (This is done outside the sync agent by the programmer.) 
             var deleteResult = await DeleteFromCosmosAsync(
                 items?.Where(x => x.ActionType == SyncActionType.Delete) ?? [],
+                input!.Input.Status.CurrentRetryCount,
                 input!.CancellationToken);
 
             var upsertResult = await UpsertToCosmosAsync(
                 items?.Where(x => x.ActionType == SyncActionType.Update || x.ActionType == SyncActionType.Add) ?? [],
+                input!.Input.Status.CurrentRetryCount,
                 input!.CancellationToken);
 
-            var result = new SyncStoreDataResult<TCosmos>
+            var result = new SyncStoreDataResult<TDestination>
             {
-                FailedItems = deleteResult.FailedItems.Concat(upsertResult.FailedItems),
-                SucceededItems = deleteResult.SucceededItems.Concat(upsertResult.SucceededItems).Concat(input.Input.PreviousResult?.SucceededItems ?? []),
-                SkippedItems = deleteResult.SkippedItems.Concat(upsertResult.SkippedItems),
+                FailedItems = deleteResult.FailedItems.Union(upsertResult.FailedItems).Union(input.Input.PreviousResult?.FailedItems ?? []),
+                SucceededItems = deleteResult.SucceededItems.Union(upsertResult.SucceededItems).Union(input.Input.PreviousResult?.SucceededItems ?? []),
+                SkippedItems = deleteResult.SkippedItems.Union(upsertResult.SkippedItems).Union(input.Input.PreviousResult?.SkippedItems ?? []),
             };
 
             if (result.ResultType == SyncStoreDataResultType.Failed || result.ResultType == SyncStoreDataResultType.Partial)
@@ -114,30 +120,20 @@ public class CosmosSyncDataDestination<TSource, TCosmos, TCosmosClinet> : ISyncD
         }
         catch (Exception)
         {
-            return new SyncStoreDataResult<TCosmos>(true);
+            return new SyncStoreDataResult<TDestination>(true);
         }
     }
 
-    private (string? Id, object? Key1, object? Key2, object? Key3) GetCompositeKey(TCosmos? item)
-    {
-        if (item is null)
-            return (Id: null, Key1: null, Key2: null, Key3: null);
-
-        var key1Value = this.Configurations!.PartitionKeyLevel1Expression.Compile()(item);
-        var key2Value = this.Configurations!.PartitionKeyLevel2Expression != null ? this.Configurations!.PartitionKeyLevel2Expression.Compile()(item) : null;
-        var key3Value = this.Configurations!.PartitionKeyLevel3Expression != null ? this.Configurations!.PartitionKeyLevel3Expression.Compile()(item) : null;
-        return (Id: item.GetType().GetProperty("id")?.GetValue(item)?.ToString() ?? string.Empty, Key1: key1Value, Key2: key2Value, Key3: key3Value);
-    }
-
-    private async Task<(IEnumerable<TCosmos> SucceededItems, IEnumerable<TCosmos> FailedItems, IEnumerable<TCosmos> SkippedItems)> UpsertToCosmosAsync(
-            IEnumerable<SyncCosmosAction<TCosmos>?>? items,
+    private async Task<(IEnumerable<TDestination> SucceededItems, IEnumerable<TDestination> FailedItems, IEnumerable<TDestination> SkippedItems)> UpsertToCosmosAsync(
+            IEnumerable<SyncCosmosAction<TDestination, TCosmos>?>? items,
+            long retryCount,
             CancellationToken cancellationToken
         )
     {
         IEnumerable<Task>? tasks = [];
-        ConcurrentBag<TCosmos> succeededItems = new();
-        ConcurrentBag<TCosmos> failedItems = new();
-        ConcurrentBag<TCosmos> skippedItems = new();
+        ConcurrentBag<TDestination> succeededItems = new();
+        ConcurrentBag<TDestination> failedItems = new();
+        ConcurrentBag<TDestination> skippedItems = new();
 
         var container = cosmosClient.GetContainer(this.Configurations!.DatabaseId, this.Configurations!.ContainerId);
 
@@ -146,23 +142,41 @@ public class CosmosSyncDataDestination<TSource, TCosmos, TCosmosClinet> : ISyncD
             if (cancellationToken.IsCancellationRequested)
                 throw new OperationCanceledException();
 
-            tasks = tasks.Concat([Task.Run(async () =>
+            tasks = tasks.Append(Task.Run(async () =>
             {
-                IEnumerable<TCosmos?>? mappedItems= [item?.Item];
+                ConcurrentBag<TCosmos> innerSucceededItems = new();
+                ConcurrentBag<TCosmos> innerFailedItems = new();
 
-                if (item?.Mapping is not null)
-                    mappedItems = await item.Mapping(new(item.Item, cancellationToken));
+                IEnumerable<TCosmos?>? mappedItems = [];
 
-                // Skip null items
-                mappedItems = mappedItems?.Where(x => x is not null);
+                var previousResult = this.cosmosActionResults.GetValueOrDefault(item?.Item!);
+
+                if(previousResult?.EligibleToUseItAsRetryInput == true && retryCount > 0)
+                {
+                    mappedItems = previousResult?.FailedItems;
+                }
+                else
+                {
+                    // If the item is TCosmos, we can directly use it as mapped item
+                    if(item?.Item is TCosmos)
+                        mappedItems = [item?.Item as TCosmos];
+                    else if(item?.Mapping is null)
+                        throw new ArgumentException("Mapping function is required in cosmos action.");
+
+                    if (item?.Mapping is not null)
+                        mappedItems = await item.Mapping(new(item.Item, cancellationToken));
+
+                    // Skip null items
+                    mappedItems = mappedItems?.Where(x => x is not null);
+                }
 
                 if (mappedItems?.Any() == true)
                 {
-                    IEnumerable<Task>? innedTasks = [];
+                    IEnumerable<Task>? innerTasks = [];
 
                     foreach (var mappedItem in mappedItems)
                     {
-                        innedTasks.Concat([Task.Run(async () =>
+                        innerTasks = innerTasks.Append(Task.Run(async () =>
                         {
                             var partitionKey = Utility.GetPartitionKey(mappedItem!, this.Configurations!.PartitionKeyLevel1Expression, this.Configurations!.PartitionKeyLevel2Expression, this.Configurations!.PartitionKeyLevel3Expression);
 
@@ -172,24 +186,33 @@ public class CosmosSyncDataDestination<TSource, TCosmos, TCosmosClinet> : ISyncD
                                 {
                                     await container.UpsertItemAsync(mappedItem, partitionKey,
                                         new ItemRequestOptions { EnableContentResponseOnWrite = false }, cancellationToken);
-                                    succeededItems.Add(mappedItem!);
+                                    innerSucceededItems.Add(mappedItem!);
                                 }, cancellationToken);
                             }
-                            catch (Exception)
+                            catch (Exception ex)
                             {
-                                failedItems.Add(mappedItem!); // Only after all retries failed
+                                innerFailedItems.Add(mappedItem!); // Only after all retries failed
                             }
-                        }, cancellationToken)]);
+                        }, cancellationToken));
                     }
 
                     // Wait for all inner tasks to complete
-                    await Task.WhenAll(innedTasks);
+                    await Task.WhenAll(innerTasks);
+
+                    var cosmosActionResult = new CosmosActionResult<TCosmos>(innerSucceededItems, innerFailedItems);
+
+                    if(cosmosActionResult.IsSuccessful(mappedItems?.LongCount()??-1))
+                        succeededItems.Add(item!.Item!);
+                    else
+                        failedItems.Add(item!.Item!);
+
+                    this.cosmosActionResults.AddOrUpdate(item!.Item!, cosmosActionResult, (_,_)=> cosmosActionResult);
                 }
                 else
                 {
                     skippedItems.Add(item?.Item!);
                 }
-            }, cancellationToken)]);
+            }, cancellationToken));
         }
 
         await Task.WhenAll(tasks);
@@ -200,15 +223,16 @@ public class CosmosSyncDataDestination<TSource, TCosmos, TCosmosClinet> : ISyncD
         return (succeededItems, failedItems, skippedItems);
     }
 
-    private async Task<(IEnumerable<TCosmos> SucceededItems, IEnumerable<TCosmos> FailedItems, IEnumerable<TCosmos> SkippedItems)> DeleteFromCosmosAsync(
-            IEnumerable<SyncCosmosAction<TCosmos>?>? items,
+    private async Task<(IEnumerable<TDestination> SucceededItems, IEnumerable<TDestination> FailedItems, IEnumerable<TDestination> SkippedItems)> DeleteFromCosmosAsync(
+            IEnumerable<SyncCosmosAction<TDestination, TCosmos>?>? items,
+            long retryCount,
             CancellationToken cancellationToken
         )
     {
         IEnumerable<Task>? tasks = [];
-        ConcurrentBag<TCosmos> succeededItems = new();
-        ConcurrentBag<TCosmos> failedItems = new();
-        ConcurrentBag<TCosmos> skippedItems = new();
+        ConcurrentBag<TDestination> succeededItems = new();
+        ConcurrentBag<TDestination> failedItems = new();
+        ConcurrentBag<TDestination> skippedItems = new();
 
         var container = cosmosClient.GetContainer(this.Configurations!.DatabaseId, this.Configurations!.ContainerId);
 
@@ -217,23 +241,41 @@ public class CosmosSyncDataDestination<TSource, TCosmos, TCosmosClinet> : ISyncD
             if (cancellationToken.IsCancellationRequested)
                 throw new OperationCanceledException();
 
-            tasks = tasks.Concat([Task.Run(async () =>
+            tasks = tasks.Append(Task.Run(async () =>
             {
-                IEnumerable<TCosmos?>? mappedItems = [item?.Item];
+                ConcurrentBag<TCosmos> innerSucceededItems = new();
+                ConcurrentBag<TCosmos> innerFailedItems = new();
 
-                if (item?.Mapping is not null)
-                    mappedItems = await item.Mapping(new(item.Item, cancellationToken));
+                IEnumerable<TCosmos?>? mappedItems = null;
 
-                // Skip null items
-                mappedItems = mappedItems?.Where(x => x is not null);
+                var previousResult = this.cosmosActionResults.GetValueOrDefault(item?.Item!);
+
+                if(previousResult?.EligibleToUseItAsRetryInput == true && retryCount > 0)
+                {
+                    mappedItems = previousResult.FailedItems;
+                }
+                else
+                {
+                    // If the item is TCosmos, we can directly use it as mapped item
+                    if(item?.Item is TCosmos)
+                        mappedItems = [item?.Item as TCosmos];
+                    else if(item?.Mapping is null)
+                        throw new ArgumentException("Mapping function is required in cosmos action.");
+
+                    if (item?.Mapping is not null)
+                        mappedItems = await item.Mapping(new(item.Item, cancellationToken));
+
+                    // Skip null items
+                    mappedItems = mappedItems?.Where(x => x is not null);
+                }
 
                 if (mappedItems?.Any() == true)
                 {
-                    IEnumerable<Task>? innedTasks = [];
+                    IEnumerable<Task>? innerTasks = [];
 
                     foreach (var mappedItem in mappedItems)
                     {
-                        innedTasks.Concat([Task.Run(async () =>
+                        innerTasks = innerTasks.Append(Task.Run(async () =>
                         {
                             var partitionKey = Utility.GetPartitionKey(mappedItem!, this.Configurations!.PartitionKeyLevel1Expression, this.Configurations!.PartitionKeyLevel2Expression, this.Configurations!.PartitionKeyLevel3Expression);
 
@@ -245,31 +287,40 @@ public class CosmosSyncDataDestination<TSource, TCosmos, TCosmosClinet> : ISyncD
                                     {
                                         var type = mappedItem!.GetType();
                                         var id = (string?)type.GetProperty("id")?.GetValue(mappedItem!);
-                                        await container.DeleteItemAsync<TCosmos>(id, partitionKey);
+                                        await container.DeleteItemAsync<TDestination>(id, partitionKey);
                                     }
                                     catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
                                     {
-                                        succeededItems.Add(mappedItem!); // Item not found, but we consider it as succeeded
+                                        innerSucceededItems.Add(mappedItem!); // Item not found, but we consider it as succeeded
                                     }
 
-                                    succeededItems.Add(mappedItem!);
+                                    innerSucceededItems.Add(mappedItem!);
                                 }, cancellationToken);
                             }
                             catch (Exception)
                             {
-                                failedItems.Add(mappedItem!); // Only after all retries failed
+                                innerFailedItems.Add(mappedItem!); // Only after all retries failed
                             }
-                        })]);
+                        }, cancellationToken));
                     }
 
                     // Wait for all inner tasks to complete
-                    await Task.WhenAll(innedTasks);
+                    await Task.WhenAll(innerTasks);
+
+                    var cosmosActionResult = new CosmosActionResult<TCosmos>(innerSucceededItems, innerFailedItems);
+
+                    if(cosmosActionResult.IsSuccessful(mappedItems.LongCount()))
+                        succeededItems.Add(item!.Item!);
+                    else
+                        failedItems.Add(item!.Item!);
+
+                    this.cosmosActionResults.AddOrUpdate(item!.Item!, cosmosActionResult, (_,_)=> cosmosActionResult);
                 }
                 else
                 {
                     skippedItems.Add(item?.Item!);
                 }
-            }, cancellationToken)]);
+            }, cancellationToken));
         }
 
         await Task.WhenAll(tasks);
@@ -278,6 +329,12 @@ public class CosmosSyncDataDestination<TSource, TCosmos, TCosmosClinet> : ISyncD
         items = null;
 
         return (succeededItems, failedItems, skippedItems);
+    }
+
+    public ValueTask<bool> BatchCompleted(SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>> input)
+    {
+        this.cosmosActionResults.Clear(); // Clear the results for the next batch
+        return new(true);
     }
 
     public ValueTask Reset()
@@ -297,12 +354,7 @@ public class CosmosSyncDataDestination<TSource, TCosmos, TCosmosClinet> : ISyncD
         throw new NotImplementedException();
     }
 
-    public ValueTask<bool> BatchCompleted(SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TCosmos>> input)
-    {
-        throw new NotImplementedException();
-    }
-
-    public ValueTask<RetryAction> BatchRetry(SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TCosmos>> input)
+    public ValueTask<RetryAction> BatchRetry(SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>> input)
     {
         throw new NotImplementedException();
     }
@@ -342,14 +394,41 @@ public class CosmosSyncDataDestination<TSource, TCosmos, TCosmosClinet> : ISyncD
         throw new NotImplementedException();
     }
 
-    public ValueTask<IEnumerable<TCosmos?>?> AdvancedMapping(SyncFunctionInput<SyncMappingInput<TSource, TCosmos>> input)
+    public ValueTask<IEnumerable<TDestination?>?> AdvancedMapping(SyncFunctionInput<SyncMappingInput<TSource, TDestination>> input)
     {
         throw new NotImplementedException();
     }
 
-    public ValueTask<IEnumerable<TCosmos?>?> Mapping(IEnumerable<TSource?>? sourceItems, SyncActionType actionType)
+    public ValueTask<IEnumerable<TDestination?>?> Mapping(IEnumerable<TSource?>? sourceItems, SyncActionType actionType)
     {
         throw new NotImplementedException();
     }
     #endregion
+}
+
+internal class CosmosActionResult<T>
+    where T : class
+{
+    public IEnumerable<T>? SucceededItems { get; set; } = [];
+    public IEnumerable<T>? FailedItems { get; set; } = [];
+    public bool EligibleToUseItAsRetryInput { get; private set; } = false;
+
+    public CosmosActionResult() { }
+
+    public CosmosActionResult(IEnumerable<T>? succeededItems, IEnumerable<T>? failedItems)
+    {
+        SucceededItems = succeededItems;
+        FailedItems = failedItems;
+    }
+
+    public bool IsSuccessful(long expectedCount)
+    {
+        var totalCount = (SucceededItems?.LongCount() ?? 0) + (FailedItems?.LongCount() ?? 0);
+        EligibleToUseItAsRetryInput = totalCount == expectedCount;
+
+        if (!(FailedItems?.Any() ?? false) && SucceededItems?.LongCount() == expectedCount)
+            return true;
+
+        return false;
+    }
 }

@@ -22,12 +22,14 @@ public class SyncAgentCosmosAction<T> where T : class
     }
 }
 
-public class SyncCosmosAction<T> where T : class
+public class SyncCosmosAction<T, TCosmos> 
+    where T : class
+    where TCosmos : class
 {
     internal T? Item { get; set; }
     public SyncActionType ActionType { get; set; }
 
-    public Func<SyncCosmosActionMappingInput<T?>, ValueTask<IEnumerable<T?>?>> Mapping { get; set; }
+    public Func<SyncCosmosActionMappingInput<T?>, ValueTask<IEnumerable<TCosmos?>?>> Mapping { get; set; }
 
     public CancellationToken CancellationToken { get; private set; }
 
