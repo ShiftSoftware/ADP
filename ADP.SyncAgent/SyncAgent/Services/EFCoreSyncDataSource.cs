@@ -170,6 +170,10 @@ public class EFCoreSyncDataSource<TEntity, TSource, TDestination, TDbContext>
     {
         try
         {
+            // Skip the process if the SyncTimestamp is not set
+            if (this.Configurations?.SyncTimestamp is null)
+                return true;
+
             var succeededIds = input.Input?.StoreDataResult?.SucceededItems?.Select(x => Configurations?.DestinationKey?.Compile()(x!)).Distinct();
             var failedIds = input.Input?.StoreDataResult?.FailedItems?.Select(x => Configurations?.DestinationKey?.Compile()(x!)).Distinct();
 
