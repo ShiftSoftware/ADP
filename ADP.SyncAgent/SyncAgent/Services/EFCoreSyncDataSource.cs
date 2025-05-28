@@ -14,15 +14,15 @@ public class EFCoreSyncDataSource<T, TDbContext> : EFCoreSyncDataSource<T, T, T,
     {
     }
 
-    public new EFCoreSyncDataSourceConfigurations<T>? Configurations => (EFCoreSyncDataSourceConfigurations<T>?)base.Configurations;
+    public virtual new EFCoreSyncDataSourceConfigurations<T>? Configurations => (EFCoreSyncDataSourceConfigurations<T>?)base.Configurations;
 
-    public ISyncService<T, T> Configure(EFCoreSyncDataSourceConfigurations<T> configurations, bool configureSyncService = true)
+    public virtual ISyncService<T, T> Configure(EFCoreSyncDataSourceConfigurations<T> configurations, bool configureSyncService = true)
     {
         base.Configure(configurations, configureSyncService);
         return this.SyncService;
     }
 
-    public new EFCoreSyncDataSource<T, TDbContext> SetSyncService(ISyncService<T, T> syncService)
+    public virtual new EFCoreSyncDataSource<T, TDbContext> SetSyncService(ISyncService<T, T> syncService)
     {
         base.SetSyncService(syncService);
         return this;
@@ -39,15 +39,15 @@ public class EFCoreSyncDataSource<TSource, TDestination, TDbContext> : EFCoreSyn
     {
     }
 
-    public new EFCoreSyncDataSourceConfigurations<TSource, TDestination>? Configurations => (EFCoreSyncDataSourceConfigurations<TSource, TDestination>?)base.Configurations;
+    public virtual new EFCoreSyncDataSourceConfigurations<TSource, TDestination>? Configurations => (EFCoreSyncDataSourceConfigurations<TSource, TDestination>?)base.Configurations;
 
-    public ISyncService<TSource, TDestination> Configure(EFCoreSyncDataSourceConfigurations<TSource, TDestination> configurations, bool configureSyncService = true)
+    public virtual ISyncService<TSource, TDestination> Configure(EFCoreSyncDataSourceConfigurations<TSource, TDestination> configurations, bool configureSyncService = true)
     {
         base.Configure(configurations, configureSyncService);
         return this.SyncService;
     }
 
-    public new EFCoreSyncDataSource<TSource, TDestination, TDbContext> SetSyncService(ISyncService<TSource, TDestination> syncService)
+    public virtual new EFCoreSyncDataSource<TSource, TDestination, TDbContext> SetSyncService(ISyncService<TSource, TDestination> syncService)
     {
         base.SetSyncService(syncService);
         return this;
@@ -68,8 +68,8 @@ public class EFCoreSyncDataSource<TEntity, TSource, TDestination, TDbContext>
 
     private object? lastSyncId = null;
 
-    public EFCoreSyncDataSourceConfigurations<TEntity, TSource, TDestination>? Configurations { get; private set; }
-    public ISyncService<TSource, TDestination> SyncService { get; private set; }
+    public virtual EFCoreSyncDataSourceConfigurations<TEntity, TSource, TDestination>? Configurations { get; private set; }
+    public virtual ISyncService<TSource, TDestination> SyncService { get; private set; }
 
     public EFCoreSyncDataSource(TDbContext db)
     {
@@ -77,13 +77,13 @@ public class EFCoreSyncDataSource<TEntity, TSource, TDestination, TDbContext>
         dbSet = db.Set<TEntity>();
     }
 
-    public EFCoreSyncDataSource<TEntity, TSource, TDestination, TDbContext> SetSyncService(ISyncService<TSource, TDestination> syncService)
+    public virtual EFCoreSyncDataSource<TEntity, TSource, TDestination, TDbContext> SetSyncService(ISyncService<TSource, TDestination> syncService)
     {
         SyncService = syncService;
         return this;
     }
 
-    public ISyncService<TSource, TDestination> Configure(EFCoreSyncDataSourceConfigurations<TEntity, TSource, TDestination> configurations, bool configureSyncService = true)
+    public virtual ISyncService<TSource, TDestination> Configure(EFCoreSyncDataSourceConfigurations<TEntity, TSource, TDestination> configurations, bool configureSyncService = true)
     {
         Configurations = configurations;
         var previousBatchStarted = SyncService.BatchStarted;
@@ -111,18 +111,18 @@ public class EFCoreSyncDataSource<TEntity, TSource, TDestination, TDbContext>
         return SyncService;
     }
 
-    public ValueTask<long?> SourceTotalItemCount(SyncFunctionInput<SyncActionType> input)
+    public virtual ValueTask<long?> SourceTotalItemCount(SyncFunctionInput<SyncActionType> input)
     {
         return new((long?)null);
     }
 
-    public ValueTask<bool> BatchStarted(SyncFunctionInput<SyncActionStatus> input)
+    public virtual ValueTask<bool> BatchStarted(SyncFunctionInput<SyncActionStatus> input)
     {
         lastSyncTimestamp = DateTimeOffset.UtcNow;
         return new(true);
     }
 
-    public async ValueTask<IEnumerable<TSource?>?> GetSourceBatchItems(SyncFunctionInput<SyncGetBatchDataInput<TSource>> input)
+    public virtual async ValueTask<IEnumerable<TSource?>?> GetSourceBatchItems(SyncFunctionInput<SyncGetBatchDataInput<TSource>> input)
     {
         if (input.Input.Status.CurrentRetryCount > 0 && input.Input.PreviousItems is not null)
             return input.Input.PreviousItems;
@@ -166,7 +166,7 @@ public class EFCoreSyncDataSource<TEntity, TSource, TDestination, TDbContext>
         }
     }
 
-    public async ValueTask<bool> BatchCompleted(SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>> input)
+    public virtual async ValueTask<bool> BatchCompleted(SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>> input)
     {
         try
         {
@@ -203,7 +203,7 @@ public class EFCoreSyncDataSource<TEntity, TSource, TDestination, TDbContext>
         }
     }
 
-    public ValueTask Reset()
+    public virtual ValueTask Reset()
     {
         lastSyncTimestamp = null;
         Configurations = null;
@@ -211,7 +211,7 @@ public class EFCoreSyncDataSource<TEntity, TSource, TDestination, TDbContext>
         return ValueTask.CompletedTask;
     }
 
-    public ValueTask DisposeAsync()
+    public virtual ValueTask DisposeAsync()
     {
         Reset();
 
@@ -222,52 +222,52 @@ public class EFCoreSyncDataSource<TEntity, TSource, TDestination, TDbContext>
     }
 
     #region Not Implemented
-    public ValueTask<SyncStoreDataResult<TDestination>> StoreBatchData(SyncFunctionInput<SyncStoreDataInput<TDestination>> input)
+    public virtual ValueTask<SyncStoreDataResult<TDestination>> StoreBatchData(SyncFunctionInput<SyncStoreDataInput<TDestination>> input)
     {
         throw new NotImplementedException();
     }
 
-    public ValueTask Succeeded()
+    public virtual ValueTask Succeeded()
     {
         throw new NotImplementedException();
     }
 
-    public ValueTask<IEnumerable<TDestination?>?> Mapping(IEnumerable<TSource?>? sourceItems, SyncActionType actionType)
+    public virtual ValueTask<IEnumerable<TDestination?>?> Mapping(IEnumerable<TSource?>? sourceItems, SyncActionType actionType)
     {
         throw new NotImplementedException();
     }
 
-    public ValueTask<SyncPreparingResponseAction> Preparing(SyncFunctionInput input)
+    public virtual ValueTask<SyncPreparingResponseAction> Preparing(SyncFunctionInput input)
     {
         throw new NotImplementedException();
     }
 
-    public ValueTask Failed()
+    public virtual ValueTask Failed()
     {
         throw new NotImplementedException();
     }
 
-    public ValueTask Finished()
+    public virtual ValueTask Finished()
     {
         throw new NotImplementedException();
     }
 
-    public ValueTask<RetryAction> BatchRetry(SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>> input)
+    public virtual ValueTask<RetryAction> BatchRetry(SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>> input)
     {
         throw new NotImplementedException();
     }
 
-    public ValueTask<bool> ActionCompleted(SyncFunctionInput<SyncActionCompletedInput> input)
+    public virtual ValueTask<bool> ActionCompleted(SyncFunctionInput<SyncActionCompletedInput> input)
     {
         throw new NotImplementedException();
     }
 
-    public ValueTask<bool> ActionStarted(SyncFunctionInput<SyncActionType> input)
+    public virtual ValueTask<bool> ActionStarted(SyncFunctionInput<SyncActionType> input)
     {
         throw new NotImplementedException();
     }
 
-    public ValueTask<IEnumerable<TDestination?>?> AdvancedMapping(SyncFunctionInput<SyncMappingInput<TSource, TDestination>> input)
+    public virtual ValueTask<IEnumerable<TDestination?>?> AdvancedMapping(SyncFunctionInput<SyncMappingInput<TSource, TDestination>> input)
     {
         throw new NotImplementedException();
     }

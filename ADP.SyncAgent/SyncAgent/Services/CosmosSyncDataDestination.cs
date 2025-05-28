@@ -22,15 +22,15 @@ public class CosmosSyncDataDestination<T, TCosmosClinet> : CosmosSyncDataDestina
     {
     }
 
-    public new CosmosSyncDataDestinationConfigurations<T>? Configurations => (CosmosSyncDataDestinationConfigurations<T>?)base.Configurations;
+    public virtual new CosmosSyncDataDestinationConfigurations<T>? Configurations => (CosmosSyncDataDestinationConfigurations<T>?)base.Configurations;
 
-    public ISyncService<T, T> Configure(CosmosSyncDataDestinationConfigurations<T> configurations, bool configureSyncService = true)
+    public virtual ISyncService<T, T> Configure(CosmosSyncDataDestinationConfigurations<T> configurations, bool configureSyncService = true)
     {
         base.Configure(configurations, configureSyncService);
         return base.SyncService;
     }
 
-    public new CosmosSyncDataDestination<T, TCosmosClinet> SetSyncService(ISyncService<T, T> syncService)
+    public virtual new CosmosSyncDataDestination<T, TCosmosClinet> SetSyncService(ISyncService<T, T> syncService)
     {
         base.SetSyncService(syncService);
         return this;
@@ -53,15 +53,15 @@ public class CosmosSyncDataDestination<T, TCosmos, TCosmosClinet> : CosmosSyncDa
     {
     }
 
-    public new CosmosSyncDataDestinationConfigurations<T, TCosmos>? Configurations => base.Configurations;
+    public virtual new CosmosSyncDataDestinationConfigurations<T, TCosmos>? Configurations => base.Configurations;
 
-    public new ISyncService<T, T> Configure(CosmosSyncDataDestinationConfigurations<T, TCosmos> configurations, bool configureSyncService = true)
+    public virtual new ISyncService<T, T> Configure(CosmosSyncDataDestinationConfigurations<T, TCosmos> configurations, bool configureSyncService = true)
     {
         base.Configure(configurations, configureSyncService);
         return base.SyncService;
     }
 
-    public new CosmosSyncDataDestination<T, TCosmos, TCosmosClinet> SetSyncService(ISyncService<T, T> syncService)
+    public virtual new CosmosSyncDataDestination<T, TCosmos, TCosmosClinet> SetSyncService(ISyncService<T, T> syncService)
     {
         base.SetSyncService(syncService);
         return this;
@@ -83,8 +83,8 @@ public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosCl
 {
     private readonly CosmosClient cosmosClient;
 
-    public ISyncService<TSource, TDestination> SyncService { get; private set; }
-    public CosmosSyncDataDestinationConfigurations<TDestination, TCosmos>? Configurations { get; private set; }
+    public virtual ISyncService<TSource, TDestination> SyncService { get; private set; }
+    public virtual CosmosSyncDataDestinationConfigurations<TDestination, TCosmos>? Configurations { get; private set; }
 
     private ResiliencePipeline resiliencePipeline;
     private ConcurrentDictionary<TDestination, CosmosActionResult<TCosmos>> cosmosActionResults = new();
@@ -98,7 +98,7 @@ public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosCl
             .Build(); // Builds the resilience pipeline
     }
 
-    public CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosClinet> SetSyncService(ISyncService<TSource, TDestination> syncService)
+    public virtual CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosClinet> SetSyncService(ISyncService<TSource, TDestination> syncService)
     {
         this.SyncService = syncService;
         return this;
@@ -113,7 +113,7 @@ public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosCl
     /// then you may be configure SyncService by your self
     /// </param>
     /// <returns></returns>
-    public ISyncService<TSource, TDestination> Configure(CosmosSyncDataDestinationConfigurations<TDestination, TCosmos> configurations , bool configureSyncService = true)
+    public virtual ISyncService<TSource, TDestination> Configure(CosmosSyncDataDestinationConfigurations<TDestination, TCosmos> configurations , bool configureSyncService = true)
     {
         this.Configurations = configurations;
 
@@ -139,7 +139,7 @@ public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosCl
     /// </summary>
     /// <param name="input"></param>
     /// <returns></returns>
-    public async ValueTask<SyncStoreDataResult<TDestination>> StoreBatchData(SyncFunctionInput<SyncStoreDataInput<TDestination>> input)
+    public virtual async ValueTask<SyncStoreDataResult<TDestination>> StoreBatchData(SyncFunctionInput<SyncStoreDataInput<TDestination>> input)
     {
         try
         {
@@ -397,76 +397,76 @@ public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosCl
         return (succeededItems, failedItems, skippedItems);
     }
 
-    public ValueTask<bool> BatchCompleted(SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>> input)
+    public virtual ValueTask<bool> BatchCompleted(SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>> input)
     {
         this.cosmosActionResults.Clear(); // Clear the results for the next batch
         this.actionItems = []; // Clear the action items for the next batch
         return new(true);
     }
 
-    public ValueTask Reset()
+    public virtual ValueTask Reset()
     {
         this.Configurations = null;
         return ValueTask.CompletedTask;
     }
 
-    public async ValueTask DisposeAsync()
+    public virtual async ValueTask DisposeAsync()
     {
         await Reset();
     }
 
     #region Not Implemented
-    public ValueTask<bool> ActionCompleted(SyncFunctionInput<SyncActionCompletedInput> input)
+    public virtual ValueTask<bool> ActionCompleted(SyncFunctionInput<SyncActionCompletedInput> input)
     {
         throw new NotImplementedException();
     }
 
-    public ValueTask<RetryAction> BatchRetry(SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>> input)
+    public virtual ValueTask<RetryAction> BatchRetry(SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>> input)
     {
         throw new NotImplementedException();
     }
 
-    public ValueTask Failed()
+    public virtual ValueTask Failed()
     {
         throw new NotImplementedException();
     }
 
-    public ValueTask Finished()
+    public virtual ValueTask Finished()
     {
         throw new NotImplementedException();
     }
 
-    public ValueTask<IEnumerable<TSource?>?> GetSourceBatchItems(SyncFunctionInput<SyncGetBatchDataInput<TSource>> input)
+    public virtual ValueTask<IEnumerable<TSource?>?> GetSourceBatchItems(SyncFunctionInput<SyncGetBatchDataInput<TSource>> input)
     {
         throw new NotImplementedException();
     }
 
-    public ValueTask<SyncPreparingResponseAction> Preparing(SyncFunctionInput input)
+    public virtual ValueTask<SyncPreparingResponseAction> Preparing(SyncFunctionInput input)
     {
         throw new NotImplementedException();
     }
 
-    public ValueTask<long?> SourceTotalItemCount(SyncFunctionInput<SyncActionType> input)
+    public virtual ValueTask<long?> SourceTotalItemCount(SyncFunctionInput<SyncActionType> input)
     {
         throw new NotImplementedException();
     }
 
-    public ValueTask Succeeded()
+    public virtual ValueTask Succeeded()
     {
         throw new NotImplementedException();
     }
 
-    public ValueTask<bool> ActionStarted(SyncFunctionInput<SyncActionType> input)
+    public virtual ValueTask<bool> ActionStarted(SyncFunctionInput<SyncActionType> input)
     {
         throw new NotImplementedException();
     }
 
-    public ValueTask<IEnumerable<TDestination?>?> AdvancedMapping(SyncFunctionInput<SyncMappingInput<TSource, TDestination>> input)
+    public virtual ValueTask<IEnumerable<TDestination?>?> AdvancedMapping(SyncFunctionInput<SyncMappingInput<TSource, TDestination>> input)
     {
         throw new NotImplementedException();
     }
 
-    public ValueTask<IEnumerable<TDestination?>?> Mapping(IEnumerable<TSource?>? sourceItems, SyncActionType actionType)
+    public virtual ValueTask<IEnumerable<TDestination?>?> Mapping(IEnumerable<TSource?>? sourceItems, SyncActionType actionType)
     {
         throw new NotImplementedException();
     }
