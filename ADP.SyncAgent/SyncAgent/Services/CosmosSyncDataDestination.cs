@@ -426,12 +426,12 @@ public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosCl
         throw new NotImplementedException();
     }
 
-    public virtual ValueTask Failed()
+    public virtual ValueTask Failed(SyncFunctionInput input)
     {
         throw new NotImplementedException();
     }
 
-    public virtual ValueTask Finished()
+    public virtual ValueTask Finished(SyncFunctionInput input)
     {
         throw new NotImplementedException();
     }
@@ -451,7 +451,7 @@ public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosCl
         throw new NotImplementedException();
     }
 
-    public virtual ValueTask Succeeded()
+    public virtual ValueTask Succeeded(SyncFunctionInput input)
     {
         throw new NotImplementedException();
     }

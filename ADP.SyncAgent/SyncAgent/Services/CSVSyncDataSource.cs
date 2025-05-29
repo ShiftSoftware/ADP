@@ -10,109 +10,32 @@ namespace ShiftSoftware.ADP.SyncAgent.Services;
 /// </summary>
 /// <typeparam name="TCSV"></typeparam>
 /// <typeparam name="TDestination"></typeparam>
-public class CSVSyncDataSource<TCSV, TDestination> : ISyncDataAdapter<TCSV, TDestination, CSVSyncDataSourceConfigurations, CSVSyncDataSource<TCSV, TDestination>>
-    where TCSV : CacheableCSV
-    where TDestination : class
+public abstract class CsvSyncDataSource: IAsyncDisposable
 {
     private readonly CSVSyncDataSourceOptions options;
     private readonly IStorageService storageService;
 
     private DirectoryInfo? workingDirectory;
-    private string? toInsertFilePath;
-    private string? toDeleteFilePath;
+    protected string? toInsertFilePath;
+    protected string? toDeleteFilePath;
 
-    private CacheableCSVAsyncEngine<TCSV>? engine;
-    private SyncPreparingResponseAction? prepareResult;
-
-    public ISyncService<TCSV, TDestination> SyncService { get; private set; } = default!;
+    protected SyncPreparingResponseAction? prepareResult;
+    private int numberOfHeaderLines = 0;
+    private IEnumerable<string> headers = [];
 
     public CSVSyncDataSourceConfigurations? Configurations { get; private set; } = default!;
 
-    public CSVSyncDataSource(CSVSyncDataSourceOptions options, IStorageService storageService)
+    public CsvSyncDataSource(CSVSyncDataSourceOptions options, IStorageService storageService)
     {
-        this.options = options;
         this.storageService = storageService;
+        this.options = options;
     }
 
-    public CSVSyncDataSource<TCSV, TDestination> SetSyncService(ISyncService<TCSV, TDestination> syncService)
-    {
-        this.SyncService = syncService;
-        return this;
-    }
-
-    /// <summary>
-    /// To avoid unexpected behavior, call this before the destination adapter is configured
-    /// </summary>
-    /// <param name="configurations"></param>
-    /// <param name="configureSyncService">
-    /// If set false just configure DataAdapter and skip the configuration of the SyncService, 
-    /// then you may be configure SyncService by your self
-    /// </param>
-    /// <returns></returns>
-    public ISyncService<TCSV, TDestination> Configure(CSVSyncDataSourceConfigurations configurations, bool configureSyncService = true)
+    public void Configure(CSVSyncDataSourceConfigurations configurations, IEnumerable<string>? headers)
     {
         this.Configurations = configurations;
-
-        if(configureSyncService)
-        {
-            var previousPreparing = this.SyncService.Preparing;
-            var previousSucceeded = this.SyncService.Succeeded;
-            var previousFinished = this.SyncService.Finished;
-            var previousActionStarted = this.SyncService.ActionStarted;
-            var previousActionCompleted = this.SyncService.ActionCompleted;
-
-            this.SyncService
-                .SetupPreparing(async (x) =>
-                {
-                    SyncPreparingResponseAction previousResult = SyncPreparingResponseAction.Succeeded; ;
-
-                    if (previousPreparing is not null)
-                        previousResult = await previousPreparing(x);
-
-                    var currentResult = await this.Preparing(x);
-
-                    if (previousResult == SyncPreparingResponseAction.Skiped || currentResult == SyncPreparingResponseAction.Skiped)
-                        prepareResult = SyncPreparingResponseAction.Skiped;
-                    else if (previousResult == SyncPreparingResponseAction.Succeeded && currentResult == SyncPreparingResponseAction.Succeeded)
-                        prepareResult = SyncPreparingResponseAction.Succeeded;
-                    else
-                        prepareResult = SyncPreparingResponseAction.Failed;
-
-                    return prepareResult.Value;
-                })
-                .SetupActionStarted(async (x) =>
-                {
-                    if (previousActionStarted is not null)
-                        return await previousActionStarted(x) && await this.ActionStarted(x);
-                    
-                    return await this.ActionStarted(x);
-                })
-                .SetupSourceTotalItemCount(SourceTotalItemCount)
-                .SetupGetSourceBatchItems(GetSourceBatchItems)
-                .SetupActionCompleted(async (x) =>
-                {
-                    if (previousActionCompleted is not null)
-                        return await previousActionCompleted(x) && await this.ActionCompleted(x);
-                    
-                    return await this.ActionCompleted(x);
-                })
-                .SetupSucceeded(async () =>
-                {
-                    if (previousSucceeded is not null)
-                        await previousSucceeded();
-
-                    await Succeeded();
-                })
-                .SetupFinished(async () =>
-                {
-                    if (previousFinished is not null)
-                        await previousFinished();
-
-                    await Finished();
-                });
-        }
-
-        return this.SyncService;
+        this.numberOfHeaderLines = headers?.Count() ?? 0;
+        this.headers = headers ?? [];
     }
 
     public async ValueTask<SyncPreparingResponseAction> Preparing(SyncFunctionInput input)
@@ -121,14 +44,12 @@ public class CSVSyncDataSource<TCSV, TDestination> : ISyncDataAdapter<TCSV, TDes
         {
             SetupWorkingDirectory();
 
-            using CacheableCSVAsyncEngine<TCSV> engine = new();
-
             // Load the last CSV file that was synced successfully
             await storageService.LoadOriginalFileAsync(
                 Path.Combine(this.Configurations!.DestinationDirectory ?? "", this.Configurations.CSVFileName!),
                 Path.Combine(this.workingDirectory!.FullName, "file.csv"),
-                engine.Options.IgnoreFirstLines, this.Configurations.DestinationContainerOrShareName,
-                this.SyncService.GetCancellationToken());
+                this.numberOfHeaderLines, this.Configurations.DestinationContainerOrShareName,
+                input.CancellationToken);
 
             StageAndCommit();
 
@@ -136,9 +57,9 @@ public class CSVSyncDataSource<TCSV, TDestination> : ISyncDataAdapter<TCSV, TDes
             await storageService.LoadNewVersionAsync(
                 Path.Combine(this.Configurations.SourceDirectory ?? "", this.Configurations.CSVFileName!),
                 Path.Combine(this.workingDirectory.FullName, "file.csv"),
-                engine.Options.IgnoreFirstLines,
+                this.numberOfHeaderLines,
                 this.Configurations.SourceContainerOrShareName,
-                this.SyncService.GetCancellationToken());
+                input.CancellationToken);
 
             // Exute git diff to get the added and deleted lines
             var comparision = CompareVersionsAndGetDiff();
@@ -159,21 +80,21 @@ public class CSVSyncDataSource<TCSV, TDestination> : ISyncDataAdapter<TCSV, TDes
             // Save the added lines to the toInsertFilePath
             using (TextWriter textWriter = new StreamWriter(toInsertFilePath, true, Encoding.UTF8))
             {
-                for (int i = 0; i < engine.Options.IgnoreFirstLines; i++)
-                    await textWriter.WriteLineAsync(new StringBuilder(engine.GetFileHeader()), this.SyncService.GetCancellationToken());
+                foreach (var header in this.headers)
+                    await textWriter.WriteLineAsync(new StringBuilder(header), input.CancellationToken);
 
                 foreach (var line in comparision.Added)
-                    await textWriter.WriteAsync(new StringBuilder(line), this.SyncService.GetCancellationToken());
+                    await textWriter.WriteAsync(new StringBuilder(line), input.CancellationToken);
             }
 
             // Save the deleted lines to the toDeleteFilePath
             using (TextWriter textWriter = new StreamWriter(toDeleteFilePath, true, Encoding.UTF8))
             {
-                for (int i = 0; i < engine.Options.IgnoreFirstLines; i++)
-                    await textWriter.WriteLineAsync(new StringBuilder(engine.GetFileHeader()), this.SyncService.GetCancellationToken());
+                foreach (var header in this.headers)
+                    await textWriter.WriteLineAsync(new StringBuilder(header), input.CancellationToken);
 
                 foreach (var line in comparision.Deleted)
-                    await textWriter.WriteAsync(new StringBuilder(line), this.SyncService.GetCancellationToken());
+                    await textWriter.WriteAsync(new StringBuilder(line), input.CancellationToken);
             }
 
             //Cleanup some memory usage
@@ -189,81 +110,17 @@ public class CSVSyncDataSource<TCSV, TDestination> : ISyncDataAdapter<TCSV, TDes
         return SyncPreparingResponseAction.Succeeded;
     }
 
-    public ValueTask<bool> ActionStarted(SyncFunctionInput<SyncActionType> input)
+    public async ValueTask Succeeded(SyncFunctionInput input)
     {
-        engine = new();
-
-        try
+        if (this.prepareResult != SyncPreparingResponseAction.Skiped)
         {
-            if (input.Input == SyncActionType.Add)
-                engine.BeginReadFile(toInsertFilePath!);
-            else if (input.Input== SyncActionType.Delete)
-                engine.BeginReadFile(toDeleteFilePath!);
-
-            return new(true);
-        }
-        catch (Exception)
-        {
-            return new(false);
-        }
-    }
-
-    public ValueTask<long?> SourceTotalItemCount(SyncFunctionInput<SyncActionType> input)
-    {
-        CacheableCSVAsyncEngine<TCSV>? e = new();
-
-        if (input.Input == SyncActionType.Add)
-            e.BeginReadFile(toInsertFilePath!);
-        else if (input.Input == SyncActionType.Delete)
-            e.BeginReadFile(toDeleteFilePath!);
-
-        if (input.Input == SyncActionType.Add || input.Input == SyncActionType.Delete)
-            return new(e!.LongCount());
-
-        return new(0);
-    }
-
-    public ValueTask<IEnumerable<TCSV?>?> GetSourceBatchItems(SyncFunctionInput<SyncGetBatchDataInput<TCSV>> input)
-    {
-        try
-        {
-            if (input.Input.Status.CurrentRetryCount > 0 && input.Input.PreviousItems is not null)
-                return new(input.Input.PreviousItems);
-
-            if (input.Input.Status.ActionType == SyncActionType.Add || input.Input.Status.ActionType == SyncActionType.Delete)
-                return new(engine!.ReadNexts((int)input.Input.Status.BatchSize));
-
-            return new([]);
-        }
-        catch (Exception ex)
-        {
-
-            throw;
-        }
-    }
-
-    public ValueTask<bool> ActionCompleted(SyncFunctionInput<SyncActionCompletedInput> input)
-    {
-        this.engine?.Close();
-        this.engine?.Dispose();
-        this.engine = null;
-
-        return new(input.Input.Succeeded);
-    }
-
-    public async ValueTask Succeeded()
-    {
-        if (prepareResult != SyncPreparingResponseAction.Skiped)
-        {
-            using CacheableCSVAsyncEngine<TCSV> engine = new();
-
             await storageService.StoreNewVersionAsync(Path.Combine(workingDirectory!.FullName, "file.csv"),
-                this.Configurations!.GetDestinationRelativePath(), this.Configurations.DestinationContainerOrShareName, engine.Options.IgnoreFirstLines,
-                this.SyncService.GetCancellationToken());
+                this.Configurations!.GetDestinationRelativePath(), this.Configurations.DestinationContainerOrShareName, this.numberOfHeaderLines,
+                input.CancellationToken);
         }
     }
 
-    public ValueTask Finished()
+    public ValueTask Finished(SyncFunctionInput input)
     {
         CleanUp();
         return ValueTask.CompletedTask;
@@ -283,13 +140,10 @@ public class CSVSyncDataSource<TCSV, TDestination> : ISyncDataAdapter<TCSV, TDes
     public ValueTask DisposeAsync()
     {
         Reset();
-        engine?.Dispose();
-        engine = null;
-
         return ValueTask.CompletedTask;
     }
 
-    public void SetupWorkingDirectory()
+    private void SetupWorkingDirectory()
     {
         var tempFolder = Guid.NewGuid().ToString();
         workingDirectory = new DirectoryInfo(Path.Combine(options.CSVCompareWorkingDirectory, tempFolder));
@@ -351,18 +205,9 @@ public class CSVSyncDataSource<TCSV, TDestination> : ISyncDataAdapter<TCSV, TDes
         GC.Collect();
     }
 
-    private void CheckForCancellation()
-    {
-        if (this.SyncService.GetCancellationToken().IsCancellationRequested)
-        {
-            CleanUp();
-            throw new OperationCanceledException();
-        }
-    }
-
     private void StageAndCommit()
     {
-        using (var repo = new Repository(this.workingDirectory.FullName))
+        using (var repo = new Repository(this.workingDirectory?.FullName))
         {
             Commands.Stage(repo, "*");
 
@@ -395,35 +240,68 @@ public class CSVSyncDataSource<TCSV, TDestination> : ISyncDataAdapter<TCSV, TDes
         return (added, deleted);
     }
 
-    #region Not Implemented
-    public ValueTask<bool> BatchCompleted(SyncFunctionInput<SyncBatchCompleteRetryInput<TCSV, TDestination>> input)
+    protected void ConfigureSyncService<TCSV, TDestination, TDataAdapter>(
+        CSVSyncDataSourceConfigurations configurations,
+        ISyncDataAdapter<TCSV, TDestination, CSVSyncDataSourceConfigurations, TDataAdapter> dataAdapter
+    )
+        where TCSV : class
+        where TDestination : class
+        where TDataAdapter : ISyncDataAdapter<TCSV, TDestination, CSVSyncDataSourceConfigurations, TDataAdapter>
     {
-        throw new NotImplementedException();
-    }
+        var previousPreparing = dataAdapter.SyncService.Preparing;
+        var previousSucceeded = dataAdapter.SyncService.Succeeded;
+        var previousFinished = dataAdapter.SyncService.Finished;
+        var previousActionStarted = dataAdapter.SyncService.ActionStarted;
+        var previousActionCompleted = dataAdapter.SyncService.ActionCompleted;
 
-    public ValueTask<RetryAction> BatchRetry(SyncFunctionInput<SyncBatchCompleteRetryInput<TCSV, TDestination>> input)
-    {
-        throw new NotImplementedException();
-    }
+        dataAdapter.SyncService
+            .SetupPreparing(async (x) =>
+            {
+                SyncPreparingResponseAction previousResult = SyncPreparingResponseAction.Succeeded; ;
 
-    public ValueTask Failed()
-    {
-        throw new NotImplementedException();
-    }
+                if (previousPreparing is not null)
+                    previousResult = await previousPreparing(x);
 
-    public ValueTask<SyncStoreDataResult<TDestination>> StoreBatchData(SyncFunctionInput<SyncStoreDataInput<TDestination>> input)
-    {
-        throw new NotImplementedException();
-    }
+                var currentResult = await this.Preparing(x);
 
-    public ValueTask<IEnumerable<TDestination?>?> AdvancedMapping(SyncFunctionInput<SyncMappingInput<TCSV, TDestination>> input)
-    {
-        throw new NotImplementedException();
-    }
+                if (previousResult == SyncPreparingResponseAction.Skiped || currentResult == SyncPreparingResponseAction.Skiped)
+                    prepareResult = SyncPreparingResponseAction.Skiped;
+                else if (previousResult == SyncPreparingResponseAction.Succeeded && currentResult == SyncPreparingResponseAction.Succeeded)
+                    prepareResult = SyncPreparingResponseAction.Succeeded;
+                else
+                    prepareResult = SyncPreparingResponseAction.Failed;
 
-    public ValueTask<IEnumerable<TDestination?>?> Mapping(IEnumerable<TCSV?>? sourceItems, SyncActionType actionType)
-    {
-        throw new NotImplementedException();
+                return prepareResult.Value;
+            })
+            .SetupActionStarted(async (x) =>
+            {
+                if (previousActionStarted is not null)
+                    return await previousActionStarted(x) && await dataAdapter.ActionStarted(x);
+
+                return await dataAdapter.ActionStarted(x);
+            })
+            .SetupSourceTotalItemCount(dataAdapter.SourceTotalItemCount)
+            .SetupGetSourceBatchItems(dataAdapter.GetSourceBatchItems)
+            .SetupActionCompleted(async (x) =>
+            {
+                if (previousActionCompleted is not null)
+                    return await previousActionCompleted(x) && await dataAdapter.ActionCompleted(x);
+
+                return await dataAdapter.ActionCompleted(x);
+            })
+            .SetupSucceeded(async (x) =>
+            {
+                if (previousSucceeded is not null)
+                    await previousSucceeded(x);
+
+                await dataAdapter.Succeeded(x);
+            })
+            .SetupFinished(async (x) =>
+            {
+                if (previousFinished is not null)
+                    await previousFinished(x);
+
+                await dataAdapter.Finished(x);
+            });
     }
-    #endregion
 }

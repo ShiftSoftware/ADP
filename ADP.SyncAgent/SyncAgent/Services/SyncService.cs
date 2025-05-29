@@ -42,11 +42,11 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
 
     public virtual Func<SyncFunctionInput<SyncMappingInput<TSource, TDestination>>, ValueTask<IEnumerable<TDestination?>?>>? Mapping { get; private set; }
 
-    public virtual Func<ValueTask>? Failed { get; private set; }
+    public virtual Func<SyncFunctionInput, ValueTask>? Failed { get; private set; }
 
-    public virtual Func<ValueTask>? Succeeded { get; private set; }
+    public virtual Func<SyncFunctionInput, ValueTask>? Succeeded { get; private set; }
 
-    public virtual Func<ValueTask>? Finished { get; private set; }
+    public virtual Func<SyncFunctionInput, ValueTask>? Finished { get; private set; }
 
     private CancellationTokenSource? cancellationTokenSource;
 
@@ -171,13 +171,13 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
         return this;
     }
 
-    public virtual ISyncService<TSource, TDestination> SetupFailed(Func<ValueTask> failedFunc)
+    public virtual ISyncService<TSource, TDestination> SetupFailed(Func<SyncFunctionInput, ValueTask> failedFunc)
     {
         this.Failed = failedFunc;
         return this;
     }
 
-    public virtual ISyncService<TSource, TDestination> SetupSucceeded(Func<ValueTask> succeededFunc)
+    public virtual ISyncService<TSource, TDestination> SetupSucceeded(Func<SyncFunctionInput, ValueTask> succeededFunc)
     {
         this.Succeeded = succeededFunc;
         return this;
@@ -189,11 +189,11 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
 
         bool result = false;
 
+        // Setup cancellation token
+        this.cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(this.Configurations!.OperationTimeoutInSeconds));
+
         try
         {
-            // Setup cancellation token
-            this.cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(this.Configurations!.OperationTimeoutInSeconds));
-
             // Preparing
             var preparingResult = SyncPreparingResponseAction.Succeeded;
             if (this.Preparing is not null)
@@ -215,20 +215,20 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
             }
 
             if ((result || preparingResult == SyncPreparingResponseAction.Skiped) && this.Succeeded is not null)
-                await this.Succeeded!();
+                await this.Succeeded!(new(GetCancellationToken()));
             else if (!result && this.Failed is not null)
-                await this.Failed!();
+                await this.Failed!(new(GetCancellationToken()));
         }
         catch (Exception ex)
         {
             if(this.Failed is not null)
-                await this.Failed!();
+                await this.Failed!(new(GetCancellationToken()));
 
             result = false;
         }
 
         if(this.Finished is not null)
-            await this.Finished!();
+            await this.Finished!(new(GetCancellationToken()));
 
         return result;
     }
@@ -423,7 +423,7 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
     {
         if (GetCancellationToken().IsCancellationRequested)
         {
-            await this.Failed!();
+            await this.Failed!(new(GetCancellationToken()));
             throw new OperationCanceledException();
         }
     }
@@ -452,7 +452,7 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
         return new ValueTask();
     }
 
-    public virtual ISyncService<TSource, TDestination> SetupFinished(Func<ValueTask> finishedFunc)
+    public virtual ISyncService<TSource, TDestination> SetupFinished(Func<SyncFunctionInput, ValueTask> finishedFunc)
     {
         this.Finished = finishedFunc;
         return this;

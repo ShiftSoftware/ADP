@@ -61,8 +61,8 @@ public interface ISyncDataAdapter<TSource, TDestination, TSelf> : IAsyncDisposab
     /// <returns>True for mark the action as success, false to mark it as fail</returns>
     public ValueTask<bool> ActionCompleted(SyncFunctionInput<SyncActionCompletedInput> input);
 
-    public ValueTask Failed();
-    public ValueTask Succeeded();
-    public ValueTask Finished();
+    public ValueTask Failed(SyncFunctionInput input);
+    public ValueTask Succeeded(SyncFunctionInput input);
+    public ValueTask Finished(SyncFunctionInput input);
     ValueTask Reset();
 }

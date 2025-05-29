@@ -213,28 +213,28 @@ public static class ISyncServiceExtensions
         });
 
         var previousFailed = syncService.Failed;
-        syncService.SetupFailed ( async () =>
+        syncService.SetupFailed ( async (x) =>
         {
             if(previousFailed is not null)
-                await previousFailed();
+                await previousFailed(x);
 
             logger.LogError("The sync operation is failed.");
         });
 
         var previousSucceeded = syncService.Succeeded;
-        syncService.SetupSucceeded ( async () =>
+        syncService.SetupSucceeded ( async (x) =>
         {
             if(previousSucceeded is not null)
-                await previousSucceeded();
+                await previousSucceeded(x);
 
             logger.LogInformation("The sync operation is succeeded.");
         });
 
         var previousFinished = syncService.Finished;
-        syncService.SetupFinished ( async () =>
+        syncService.SetupFinished ( async (x) =>
         {
             if(previousFinished is not null)
-                await previousFinished();
+                await previousFinished(x);
 
             logger.LogInformation("The sync operation is finished.");
         });

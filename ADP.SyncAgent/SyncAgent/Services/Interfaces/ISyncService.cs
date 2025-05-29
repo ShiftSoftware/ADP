@@ -40,11 +40,11 @@ public interface ISyncService<TSource, TDestination> : IAsyncDisposable
     /// </summary>
     Func<SyncFunctionInput<SyncActionCompletedInput>, ValueTask<bool>>? ActionCompleted { get; }
 
-    Func<ValueTask>? Failed { get; }
+    Func<SyncFunctionInput, ValueTask>? Failed { get; }
 
-    Func<ValueTask>? Succeeded { get; }
+    Func<SyncFunctionInput, ValueTask>? Succeeded { get; }
 
-    Func<ValueTask>? Finished { get; }
+    Func<SyncFunctionInput, ValueTask>? Finished { get; }
 
     ISyncService<TSource, TDestination> Configure(
         long? batchSize = null,
@@ -120,11 +120,11 @@ public interface ISyncService<TSource, TDestination> : IAsyncDisposable
 
     ISyncService<TSource, TDestination> SetupActionCompleted(Func<SyncFunctionInput<SyncActionCompletedInput>, ValueTask<bool>> actionCompletedFunc);
 
-    ISyncService<TSource, TDestination> SetupFailed(Func<ValueTask> failedFunc);
+    ISyncService<TSource, TDestination> SetupFailed(Func<SyncFunctionInput, ValueTask> failedFunc);
 
-    ISyncService<TSource, TDestination> SetupSucceeded(Func<ValueTask> succeededFunc);
+    ISyncService<TSource, TDestination> SetupSucceeded(Func<SyncFunctionInput, ValueTask> succeededFunc);
 
-    ISyncService<TSource, TDestination> SetupFinished(Func<ValueTask> finishedFunc);
+    ISyncService<TSource, TDestination> SetupFinished(Func<SyncFunctionInput, ValueTask> finishedFunc);
 
     CancellationToken GetCancellationToken();
 

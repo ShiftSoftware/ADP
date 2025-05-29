@@ -141,7 +141,7 @@ public class EFCoreSyncDataSource<TEntity, TSource, TDestination, TDbContext>
 
         var items = await queryMapped
             .Take((int)(SyncService?.Configurations?.BatchSize ?? 0))
-            .ToListAsync();
+            .ToListAsync(input.CancellationToken);
 
         // Store the last key of the current batch
         this.lastSyncId = items?.Select(x => this.Configurations.SourceKey?.Compile()(x))?.Max();
@@ -227,7 +227,7 @@ public class EFCoreSyncDataSource<TEntity, TSource, TDestination, TDbContext>
         throw new NotImplementedException();
     }
 
-    public virtual ValueTask Succeeded()
+    public virtual ValueTask Succeeded(SyncFunctionInput input)
     {
         throw new NotImplementedException();
     }
@@ -242,12 +242,12 @@ public class EFCoreSyncDataSource<TEntity, TSource, TDestination, TDbContext>
         throw new NotImplementedException();
     }
 
-    public virtual ValueTask Failed()
+    public virtual ValueTask Failed(SyncFunctionInput input)
     {
         throw new NotImplementedException();
     }
 
-    public virtual ValueTask Finished()
+    public virtual ValueTask Finished(SyncFunctionInput input)
     {
         throw new NotImplementedException();
     }

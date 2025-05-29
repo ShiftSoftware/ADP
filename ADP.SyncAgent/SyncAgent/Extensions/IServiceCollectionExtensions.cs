@@ -26,7 +26,7 @@ public static class IServiceCollectionExtensions
     public static IServiceCollection AddCSVSyncDataSource(this IServiceCollection services, CSVSyncDataSourceOptions options)
     {
         services.AddScoped(x => options);
-        services.AddTransient(typeof(CSVSyncDataSource<,>));
+        services.AddTransient(typeof(FileHelperCsvSyncDataSource<,>));
 
         return services;
     }
