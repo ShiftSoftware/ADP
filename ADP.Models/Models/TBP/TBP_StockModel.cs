@@ -38,7 +38,7 @@ public class TBP_StockModel
     {
         var stockBrandAccess = Broker?.BrandAccesses?.FirstOrDefault(x => x.BrandID == BrandID);
 
-        if(stockBrandAccess?.Active != true)
+        if(stockBrandAccess?.Active != true || Broker.IsDeleted)
         {
             Quantity = 0;
             return;
