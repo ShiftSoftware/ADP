@@ -25,9 +25,6 @@ public static class ModelTypes
     public static readonly PartitionedItemType WarrantyDateShift = new("WarrantyDateShift");
     public static readonly PartitionedItemType FreeServiceItemExcludedVIN = new("FreeServiceItemExcludedVIN");
 
-
-    public static readonly PartitionedItemType TBP_BrokerStock = new("BrokerStock");
-
     public static readonly PartitionedItemType DealerCustomer = new("DealerCustomer");
     public static readonly PartitionedItemType GoldenCustomer = new("GoldenCustomer");
 }

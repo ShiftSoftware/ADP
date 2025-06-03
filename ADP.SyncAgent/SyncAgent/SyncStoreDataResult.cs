@@ -14,6 +14,10 @@ public class SyncStoreDataResult<T> where T : class
     public SyncStoreDataResultType ResultType =>
         (SucceededItems, FailedItems, SkippedItems) switch
         {
+            // success and fail items not null and but both empty
+            (IEnumerable<T?> s, IEnumerable<T?> f, _)
+                when !(s?.Any() ?? true) && !(f?.Any() ?? true)
+                    => SyncStoreDataResultType.Succeeded,
             (null, _, _) => SyncStoreDataResultType.Failed,
             (_, null, _) => SyncStoreDataResultType.Failed,
             (IEnumerable<T?> s, IEnumerable<T?> f, IEnumerable<T?> k)
