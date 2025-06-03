@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using ShiftSoftware.ADP.SyncAgent.Configurations;
 using ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
+using System.Collections;
 
 namespace ShiftSoftware.ADP.SyncAgent.Services;
 
@@ -54,7 +55,7 @@ public class EFCoreSyncDataSource<TSource, TDestination, TDbContext> : EFCoreSyn
     }
 }
 
-public class EFCoreSyncDataSource<TEntity, TSource, TDestination, TDbContext> 
+public class EFCoreSyncDataSource<TEntity, TSource, TDestination, TDbContext>
     : ISyncDataAdapter<TSource, TDestination, EFCoreSyncDataSourceConfigurations<TEntity, TSource, TDestination>, EFCoreSyncDataSource<TEntity, TSource, TDestination, TDbContext>>
     where TEntity : class
     where TSource : class
@@ -174,18 +175,43 @@ public class EFCoreSyncDataSource<TEntity, TSource, TDestination, TDbContext>
             if (this.Configurations?.SyncTimestamp is null)
                 return true;
 
-            var succeededIds = input.Input?.StoreDataResult?.SucceededItems?.Select(x => Configurations?.DestinationKey?.Compile()(x!)).Distinct();
-            var failedIds = input.Input?.StoreDataResult?.FailedItems?.Select(x => Configurations?.DestinationKey?.Compile()(x!)).Distinct();
+            var succeededIds = input.Input?.StoreDataResult?.SucceededItems?
+                .SelectMany(x =>
+                {
+                    var key = Configurations?.DestinationKey?.Compile()(x!);
+                    return key is IEnumerable collection && key is not string
+                        ? collection.Cast<object>()
+                        : [key!];
+                })?
+                .Distinct() ?? [];
+            var failedIds = input.Input?.StoreDataResult?.FailedItems?
+                .SelectMany(x =>
+                {
+                    var key = Configurations?.DestinationKey?.Compile()(x!);
+                    return key is IEnumerable collection && key is not string
+                        ? collection.Cast<object>()
+                        : [key!];
+                })?
+                .Distinct() ?? [];
+            var skippedIds = input.Input?.StoreDataResult?.SkippedItems?
+                .SelectMany(x =>
+                {
+                    var key = Configurations?.DestinationKey?.Compile()(x!);
+                    return key is IEnumerable collection && key is not string
+                        ? collection.Cast<object>()
+                        : [key!];
+                })?
+                .Distinct() ?? [];
 
             if (this.Configurations?.UpdateSyncTimeStampForSkippedItems ?? false)
-                succeededIds = succeededIds?.Union(input.Input?.StoreDataResult?.SkippedItems?.Select(x => Configurations?.DestinationKey?.Compile()(x!)).Distinct() ?? []);
+                succeededIds = succeededIds?.Union(skippedIds);
 
             // Exclude failed items from the succeeded items
             if (failedIds?.Any() == true && succeededIds?.Any() == true)
                 succeededIds = succeededIds.Except(failedIds);  // This is helpful if one source item have multiple reference items in destination
 
             // Update the last sync timestamp for the succeeded items
-            if(succeededIds?.Any() == true)
+            if (succeededIds?.Any() == true)
             {
                 var keyName = Utility.GetPropertyName(Configurations!.EntityKey!);
                 var syncTimestampName = Utility.GetPropertyName(Configurations!.SyncTimestamp!);
