@@ -57,7 +57,7 @@ public class TBP_StockModel
         bool hasValidVSData = false;
         if (VehilceEntries?.Any() == true)
             hasValidVSData = VehilceEntries.Any(x => (stockBrandAccess?.AccountStartDate is not null && x.InvoiceDate.HasValue ? x.InvoiceDate >= stockBrandAccess.AccountStartDate : true) &&
-                (Broker.AccountNumbers.Contains(x.CustomerAccountNumber) ? x.LineStatus.ToLower() == "i" && x.Status.ToLower() == "i" : true));
+                (Broker.AccountNumbers.Any(a => a.AccountNumber == x.CustomerAccountNumber && a.CompanyID == x.CompanyID) ? x.LineStatus.ToLower() == "i" && x.Status.ToLower() == "i" : true));
 
         if (stockBrandAccess?.TerminationDate is not null)
             Quantity = 0;
