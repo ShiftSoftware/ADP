@@ -24,7 +24,6 @@ public class TBP_StockModel
     /// </summary>
     public string VIN { get; set; }
 
-    public Brands Brand { get; set; }
     public int Quantity { get; set; }
     public DateTime? OneKOrFiveKServieDate { get; set; }
     public DateTime? FirstServieDate { get; set; }
