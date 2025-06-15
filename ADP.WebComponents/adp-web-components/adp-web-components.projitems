@@ -9,6 +9,12 @@
     <Import_RootNamespace>adp_web_components</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory).editorconfig" />
+    <None Include="$(MSBuildThisFileDirectory).husky\pre-commit" />
+    <None Include="$(MSBuildThisFileDirectory).npmrc" />
+    <None Include="$(MSBuildThisFileDirectory).prettierignore" />
+    <None Include="$(MSBuildThisFileDirectory).prettierrc" />
+    <None Include="$(MSBuildThisFileDirectory)generate-locale-mapper.mjs" />
     <None Include="$(MSBuildThisFileDirectory)src\global\types\part\branchDeadStockDTO.ts" />
     <None Include="$(MSBuildThisFileDirectory)src\global\types\part\deadStockDTO.ts" />
     <None Include="$(MSBuildThisFileDirectory)src\global\types\part\hsCodeDTO.ts" />
@@ -16,5 +22,12 @@
     <None Include="$(MSBuildThisFileDirectory)src\global\types\part\partPriceDTO.ts" />
     <None Include="$(MSBuildThisFileDirectory)src\global\types\part\priceDTO.ts" />
     <None Include="$(MSBuildThisFileDirectory)src\global\types\part\stockPartDTO.ts" />
+    <None Include="$(MSBuildThisFileDirectory)stencil.config.ts" />
+    <None Include="$(MSBuildThisFileDirectory)tailwind.config.js" />
+    <None Include="$(MSBuildThisFileDirectory)yarn.lock" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="$(MSBuildThisFileDirectory)package.json" />
+    <Content Include="$(MSBuildThisFileDirectory)tsconfig.json" />
   </ItemGroup>
 </Project>
