@@ -1,4 +1,5 @@
 ﻿using ShiftSoftware.ADP.Lookup.Services.Enums;
+using ShiftSoftware.ADP.Models;
 using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ADP.Models.JsonConverters;
 using ShiftSoftware.ShiftEntity.Model;
@@ -9,6 +10,7 @@ using System.Text.Json.Serialization;
 
 namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 
+[TypeScriptModel]
 public class VehicleServiceItemDTO
 {
     private const string ActivationAndExpiryDateFormat = "yyyy-MM-dd";
@@ -53,18 +55,23 @@ public class VehicleServiceItemDTO
     public bool Claimable { get; set; }
 
     [JsonIgnore]
+    [TypeScriptIgnore]
     public int? ActiveFor { get; set; }
 
     [JsonIgnore]
+    [TypeScriptIgnore]
     public DurationType? ActiveForDurationType { get; set; } = default!;
 
     [JsonIgnore]
+    [TypeScriptIgnore]
     public ClaimableItemCampaignActivationTrigger CampaignActivationTrigger { get; set; }
 
     [JsonIgnore]
+    [TypeScriptIgnore]
     public ClaimableItemCampaignActivationTypes CampaignActivationType { get; set; }
 
     [JsonIgnore]
+    [TypeScriptIgnore]
     public ClaimableItemValidityMode ValidityModeEnum { get; set; }
 
     public ClaimableItemClaimingMethod ClaimingMethodEnum { get; set; }

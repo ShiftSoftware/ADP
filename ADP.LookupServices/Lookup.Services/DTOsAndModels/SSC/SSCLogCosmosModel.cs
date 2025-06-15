@@ -13,7 +13,7 @@ public class SSCLogCosmosModel
     public string Name { get; set; }
     public string Phone { get; set; }
     public string Email { get; set; }
-    public IEnumerable<SSCDTO> SSC { get; set; }
+    public IEnumerable<SscDTO> SSC { get; set; }
     public DateTimeOffset LookupDate { get; set; }
     public SSCLookupStatuses SSCLookupStatus { get; set; }
     public TMCSaRIIResponse TMCSaRIIResponse { get; set; }

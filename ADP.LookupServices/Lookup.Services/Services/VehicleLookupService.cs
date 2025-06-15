@@ -484,12 +484,12 @@ public class VehicleLookupService
         if(options.CompanyLogoResolver is not null)
             companyLogo = await options.CompanyLogoResolver(new(vsData.CompanyID, languageCode, services));   
 
-        if(!string.IsNullOrWhiteSpace(companyLogo))
-            try
-            {
-                result.CompanyLogo = await GetCompanyLogo(JsonSerializer.Deserialize<List<ShiftFileDTO>>(companyLogo));
-            }
-            catch (Exception){}
+        //if(!string.IsNullOrWhiteSpace(companyLogo))
+        //    try
+        //    {
+        //        result.CompanyLogo = await GetCompanyLogo(JsonSerializer.Deserialize<List<ShiftFileDTO>>(companyLogo));
+        //    }
+        //    catch (Exception){}
 
         if (companyDataAggregate.BrokerInvoices?.Any() ?? false)
         {
@@ -561,7 +561,7 @@ public class VehicleLookupService
         return result;
     }
 
-    private async Task<IEnumerable<SSCDTO>> GetSSCAsync(
+    private async Task<IEnumerable<SscDTO>> GetSSCAsync(
         IEnumerable<SSCAffectedVINModel> ssc,
         IEnumerable<WarrantyClaimModel> warrantyClaims,
         IEnumerable<InvoiceLaborLineModel> labors,
@@ -570,7 +570,7 @@ public class VehicleLookupService
         if (ssc?.Count() == 0)
             return null;
 
-        var data = new List<SSCDTO>();
+        var data = new List<SscDTO>();
 
         data = ssc?.Select(x =>
         {
@@ -608,7 +608,7 @@ public class VehicleLookupService
                 }
             }
 
-            var sscData = new SSCDTO
+            var sscData = new SscDTO
             {
                 Description = x.Description,
                 SSCCode = x.CampaignCode,
