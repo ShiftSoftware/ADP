@@ -1,0 +1,17 @@
+{
+  "origin": "Origin",
+  "warrantyPrice": "Warranty Price",
+  "specialPrice": "Special Price",
+  "wholesalesPrice": "Wholesales Price",
+  "pnc": "PNC",
+  "pncName": "PNC $ Name",
+  "binCode": "Bin Code",
+  "dimension1": "Dimension 1",
+  "dimension2": "Dimension 2",
+  "dimension3": "Dimension 3",
+  "netWeight": "Net Weight",
+  "grossWeight": "Gross Weight",
+  "cubicMeasure": "Cubic Measure",
+  "hsCode": "HS Code",
+  "uzHsCode": "UZ HS Code"
+}

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dead Stock Lookup</title>
+    <script nomodule src="/build/shift-components.js"></script>
+    <script type="module" src="/build/shift-components.esm.js"></script>
+    <script src="./mock-data.js"></script>
+  </head>
+  <body>
+    <a href="#" onclick="history.back()" style="color: blue; display: block; margin-bottom: 16px">Back</a>
+
+    <h1>Dead Stock Lookup</h1>
+    <dead-stock-lookup language="ku" is-dev="true" query-string="" id="dead-stock-lookup" base-url="https://tiq-vehicles-functions.azurewebsites.net/api/secure-part-lookup/">
+    </dead-stock-lookup>
+
+    <div class="button-container">
+      <button class="sample-button" onclick="updateLang('en')">En</button>
+      <button class="sample-button" onclick="updateLang('ku')">Ku</button>
+      <button class="sample-button" onclick="updateLang('ar')">Ar</button>
+      <button class="sample-button" onclick="updateLang('ru')">Ru</button>
+    </div>
+
+    <div class="button-container">
+      <button class="sample-button" onclick="fetchData()">reload</button>
+      <button class="sample-button" onclick="fetchData('')">Empty (close)</button>
+      <button class="sample-button" onclick="fetchData('error')">Error</button>
+      <button class="sample-button" onclick="fetchData('SU00302474')">SU00302474</button>
+    </div>
+
+    <script>
+      let deadStockLookup;
+
+      document.addEventListener('DOMContentLoaded', function () {
+        deadStockLookup = document.getElementById('dead-stock-lookup');
+
+        deadStockLookup.setMockData(mockData);
+
+        deadStockLookup.loadedResponse = newResponse => console.log(newResponse);
+        deadStockLookup.loadingStateChange = isLoading => {
+          console.log('isLoading: ' + isLoading);
+        };
+      });
+
+      function updateLang(newLang) {
+        deadStockLookup.language = newLang;
+      }
+
+      function fetchData(newVin) {
+        deadStockLookup.fetchData(newVin);
+      }
+
+      function setData(key) {
+        deadStockLookup.setData(mockData[key]);
+      }
+    </script>
+
+    <style>
+      .button-container {
+        margin-top: 50px;
+        border: 1px solid #e1e1e1;
+        padding: 20px;
+        display: flex;
+        flex-wrap: wrap;
+        align-content: center;
+        justify-content: center;
+        gap: 10px;
+      }
+
+      .sample-button {
+        background-color: #428bca;
+        padding: 10px 15px;
+      }
+
+      .sample-button:hover {
+        background-color: #3071a9;
+      }
+    </style>
+  </body>
+</html>

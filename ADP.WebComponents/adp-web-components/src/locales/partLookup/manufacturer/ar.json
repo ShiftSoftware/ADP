@@ -1,0 +1,17 @@
+{
+  "origin": "أصل",
+  "warrantyPrice": "سعر الضمان",
+  "specialPrice": "سعر خاص",
+  "wholesalesPrice": "سعر الجملة",
+  "pnc": "PNC",
+  "pncName": "PNC اسم $",
+  "binCode": "رمز سلة المهملات",
+  "dimension1": "البعد 1",
+  "dimension2": "البعد 2",
+  "dimension3": "البعد 3",
+  "netWeight": "الوزن الصافي",
+  "grossWeight": "الوزن الإجمالي",
+  "cubicMeasure": "القياس المكعب",
+  "hsCode": "رمز HS",
+  "uzHsCode": "رمز UZ HS"
+}

@@ -1,0 +1,10 @@
+{
+  "serviceHistory": "Сервисная история",
+  "noData": "Данных нет.",
+  "branch": "Филиал",
+  "dealer": "Дилер",
+  "invoiceNumber": "Номер Счета",
+  "date": "Дата",
+  "serviceType": "Тип услуги",
+  "odometer": "Одометр"
+}

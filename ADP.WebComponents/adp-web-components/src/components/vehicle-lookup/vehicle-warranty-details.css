@@ -1,0 +1,331 @@
+@import '../style/shift-skeleton.css';
+@import '../style/vehicle-info.css';
+
+:host {
+  all: initial !important;
+  display: block;
+}
+
+* {
+  font-family: Arial;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.fade-in {
+  opacity: 0;
+  animation: fadeIn 300ms ease-in forwards;
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+.fade-out {
+  opacity: 1;
+  animation: fadeIn 300ms ease-in forwards;
+}
+
+.loading-spinner {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  transition: all;
+  align-items: center;
+  pointer-events: none;
+  justify-content: center;
+  transition-duration: 100ms;
+}
+
+.loading-spinner img {
+  width: 40px;
+  height: 40px;
+}
+
+.warranty {
+  transition: all;
+  overflow: hidden;
+  position: relative;
+  transition-duration: 300ms;
+}
+
+.hide {
+  opacity: 0;
+}
+
+.absolute {
+  top: 0px;
+  left: 0px;
+  position: absolute;
+}
+
+.h-0 {
+  height: 0px !important;
+}
+
+.card {
+  gap: 8px;
+  display: flex;
+  flex-shrink: 0;
+  padding: 8px 12px;
+  border: 1px solid;
+  align-items: center;
+  border-radius: 6px;
+  @apply text-slate-900 border-slate-300 bg-slate-100;
+}
+
+.card p {
+  margin: 0px;
+  height: 25px;
+  flex: 1 1 0%;
+  display: flex;
+  font-size: 16px;
+  padding-left: 50px;
+  align-items: center;
+}
+
+.card p.no-padding {
+  padding-left: 4px;
+}
+
+.card img {
+  width: 25px;
+  height: 25px;
+}
+
+.recaptcha-response {
+  font-size: 20px;
+  padding: 8px 16px;
+  border: 1px solid;
+  width: fit-content;
+  border-radius: 8px;
+  margin: 16px auto 0px auto;
+}
+
+.success-card {
+  color: #0b3521 !important;
+  background: #d0e7de !important;
+  border-color: #a2d0bb !important;
+}
+
+.reject-card {
+  color: #58151c !important;
+  background: #f7d7d8 !important;
+  border-color: #f2aeb5 !important;
+}
+
+.warning-card {
+  color: #8a6d3b;
+  background: #fcf8e3;
+  border-color: #faebcc !important;
+}
+
+.span-entire-1st-row {
+  grid-column: 1 / 3;
+  grid-row: 1 / 3;
+}
+
+.span-entire-2nd-row {
+  grid-column: 1 / 3;
+  grid-row: 2 / 3;
+}
+
+.tags-container {
+  max-width: 1000px;
+}
+
+.warranty-tags {
+  gap: 12px;
+  display: grid;
+  max-width: 1000px;
+  grid-template-columns: 1fr 1fr;
+}
+
+.py-3,
+.pt-3 {
+  padding-top: 12px;
+}
+
+.py-3,
+.pb-3 {
+  padding-bottom: 12px;
+}
+
+.py-4,
+.pt-4 {
+  padding-top: 16px;
+}
+
+.py-4,
+.pb-4 {
+  padding-bottom: 16px;
+}
+
+.max-w-500 {
+  max-width: 500px;
+}
+
+.mx-auto {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.my-4,
+.mt-4 {
+  margin-top: 16px;
+}
+
+.my-4,
+.mt-4 {
+  margin-bottom: 16px;
+}
+
+.transition {
+  transition: all;
+  transition-duration: 300ms;
+}
+
+.duration-1000 {
+  transition-duration: 1000ms;
+}
+
+.duration-500 {
+  transition-duration: 500ms;
+}
+
+.duration-700 {
+  transition-duration: 700ms;
+}
+
+.font-semibold {
+  font-weight: 600;
+}
+
+.pr-1 {
+  padding-right: 4px;
+}
+
+.warranty * {
+  box-sizing: border-box;
+}
+
+.wrapper-table {
+  display: flex;
+  margin-top: 12px;
+  max-height: 70vh;
+  overflow: hidden;
+  border-radius: 4px;
+  flex-direction: column;
+  border: 1px solid #d6d8dc;
+}
+
+.ssc-table-container {
+  height: 0px;
+  flex: 1 1 0%;
+  overflow: auto;
+}
+
+.wrapper-table .header {
+  width: 100%;
+  height: 40px;
+  display: flex;
+  flex-shrink: 0;
+  font-size: 18px;
+  color: #383c43;
+  align-items: center;
+  background: #e1e3e5;
+  justify-content: center;
+}
+
+.ssc-table {
+  width: 100%;
+  overflow: auto;
+  position: relative;
+  border-collapse: collapse;
+}
+
+.ssc-table thead {
+  top: 0px;
+  font-weight: 700;
+  position: sticky;
+  background-color: white;
+}
+
+.ssc-table th,
+.ssc-table td {
+  transition: all;
+  padding: 10px 20px;
+  text-align: center;
+  white-space: nowrap;
+  transition-duration: 300ms;
+  border-bottom: 1px solid #d6d8dc;
+}
+
+.ssc-table tr:hover {
+  background: #f4f4f4;
+}
+
+.ssc-table tr:last-child td {
+  border: none;
+}
+
+.table-cell-container {
+  gap: 8px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.table-cell-parts-container,
+.table-cell-labors-container {
+  flex-wrap: wrap;
+}
+
+.table-cell-parts-container div,
+.table-cell-labors-container div {
+  font-size: 14px;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.table-cell-parts-container div.success,
+.table-cell-labors-container div.success {
+  background: #d0e7de;
+}
+
+.table-cell-parts-container div.reject,
+.table-cell-labors-container div.reject {
+  background: #f7d7d8;
+}
+
+.table-status-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.warranty-vin {
+  font-size: 20px;
+  padding-top: 4px;
+  text-align: center;
+}
+
+.recaptcha-container {
+  display: flex;
+  overflow: hidden;
+  justify-content: center;
+}

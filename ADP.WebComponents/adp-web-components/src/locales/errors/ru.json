@@ -1,0 +1,12 @@
+{
+  "noBaseUrl": "Укажите базовый URL",
+  "noPartsFound": "Запчасти не найдены",
+  "invalidVin": "Недействительный VIN",
+  "vinNumberRequired": "Требуется VIN",
+  "noServiceAvailable": "Нет доступных сервисов",
+  "partNumberRequired": "Требуется номер запчасти",
+  "wrongResponseFormat": "Неправильный формат",
+  "wrongFormStructure": "Структура формы недействительна.",
+  "wildCard": "Произошла неожиданная ошибка, пожалуйста, попробуйте еще раз позже.",
+  "requestFailedPleaseTryAgainLater": "Запрос не удался, попробуйте еще раз позже"
+}

@@ -1,0 +1,19 @@
+{
+  "fullName": "Полное имя",
+  "fullNameIsRequired": "Необходимо указать полное имя.",
+  "fullNameMinimum": "Полное имя должно содержать не менее 3 символов.",
+  "emailAddress": "Адрес электронной почты",
+  "emailAddressNotValid": "Пожалуйста, введите действительный адрес электронной почты.",
+  "city": "город",
+  "selectCity": "Выберите город.",
+  "cityIsRequired": "Город обязателен.",
+  "phoneNumber": "Номер телефона",
+  "phoneNumberIsRequired": "Номер телефона обязателен.",
+  "phoneNumberFormatInvalid": "Неверный формат номера телефона.",
+  "inquiryType": "Тип запроса",
+  "selectInquiryType": "Выберите тип запроса",
+  "inquiryTypeIsRequired": "Требуется указать тип запроса.",
+  "writeAMessage": "Написать сообщение",
+  "leaveUsMessage": "Оставьте нам сообщение",
+  "messageIsRequired": "Сообщение обязательно."
+}

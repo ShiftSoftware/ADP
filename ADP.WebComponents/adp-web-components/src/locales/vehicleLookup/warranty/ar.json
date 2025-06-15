@@ -1,0 +1,19 @@
+{
+  "dealer": "تاجر",
+  "authorized": "مُصرح به",
+  "unauthorized": "غير مصرح به",
+  "activeWarranty": "لديه ضمان نشط",
+  "notActiveWarranty": "لا يوجد ضمان نشط",
+  "notInvoiced": "الضمان غير فعال لأن هذه المركبة لم يتم إصدار فاتورة لها من قبل شريك الأعمال الموثوق به التالي: ",
+  "from": "من",
+  "to": "الى",
+  "pendingSSC": "هذه السيارة لديها حملة خدمة خاصة معلقة",
+  "noPendingSSC": "لا توجد حملة خدمة خاصة معلقة",
+  "checkingTMC": "فحص TMC",
+  "sscCampings": "حملات الخدمة الخاصة",
+  "sscTableCode": "شفرة",
+  "sscTableDescription": "وصف",
+  "sscTableRepairStatus": "حالة الإصلاح",
+  "sscTableOPCode": "أكواد OP",
+  "sscTablePartNumber": "رقم القطعة"
+}

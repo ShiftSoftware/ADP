@@ -1,0 +1,10 @@
+{
+  "serviceHistory": "سجل الخدمة",
+  "noData": "لا توجد بيانات متاحة.",
+  "branch": "فرع",
+  "dealer": "تاجر",
+  "invoiceNumber": "رقم الفاتورة",
+  "date": "تاريخ",
+  "serviceType": "نوع الخدمة",
+  "odometer": "عداد المسافات"
+}

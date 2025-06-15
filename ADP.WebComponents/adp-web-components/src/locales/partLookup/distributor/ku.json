@@ -1,0 +1,16 @@
+{
+  "info": "زانیاری",
+  "distributorStock": "کۆگا",
+  "availability": "بەردەست بوون",
+  "notAvailable": "بەردەست نییە",
+  "partiallyAvailable": "بەشێکی بەردەستە",
+  "available": "بەردەستە",
+  "location": "شوێن",
+  "description": "وەسف",
+  "productGroup": "گروپی کاڵا",
+  "localDescription": "وەسفی $",
+  "dealerPurchasePrice": "نرخی کڕین لای بریکار",
+  "recommendedRetailPrice": "نرخی پێشنیارکراوی فرۆشتنی تاکەکەسی",
+  "supersededFrom": "گۆڕدراوە لە",
+  "supersessions": "پارچەی هاوشێوە"
+}

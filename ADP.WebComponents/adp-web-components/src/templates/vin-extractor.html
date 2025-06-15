@@ -1,0 +1,238 @@
+<!doctype html>
+<html dir="ltr" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0" />
+    <title>Vin Extractor</title>
+    <script nomodule src="/build/shift-components.js"></script>
+    <script type="module" src="/build/shift-components.esm.js"></script>
+  </head>
+  <body>
+    <a href="#" onclick="history.back()" style="color: blue; display: block; margin-bottom: 16px">Back</a>
+
+    <h1 style="font-weight: 700; margin: 16px 8px; font-size: 30px">Vin Extractor Demo</h1>
+
+    <ol>
+      <li>
+        <div>OCR 2000ms</div>
+        <button id="case-1-button" onclick="openExtractor('case-1')" type="button">open</button>
+        <vin-extractor
+          use-ocr="true"
+          title="OCR-2000ms"
+          on-error="onError"
+          id="case-1-element"
+          on-extract="onExtract"
+          on-processing="onProcessing"
+          on-open-change="openChanged"
+          ocr-endpoint="https://tiq-vehicles-functions-staging.azurewebsites.net/api/vehicle-lookup/ocr"
+        ></vin-extractor>
+      </li>
+      <li>
+        <div>sticker 2000ms</div>
+        <button id="case-2-button" onclick="openExtractor('case-2')" type="button">open</button>
+        <vin-extractor
+          read-sticker="true"
+          on-error="onError"
+          id="case-2-element"
+          title="sticker-2000ms"
+          on-extract="onExtract"
+          on-processing="onProcessing"
+          on-open-change="openChanged"
+        ></vin-extractor>
+      </li>
+      <li>
+        <div>both 2000ms -verbose</div>
+        <button id="case-3-button" onclick="openExtractor('case-3')" type="button">open</button>
+        <vin-extractor
+          verbose="false"
+          use-ocr="true"
+          read-sticker="true"
+          title="both-2000ms"
+          on-error="onError"
+          id="case-3-element"
+          on-extract="onExtract"
+          on-processing="onProcessing"
+          on-open-change="openChanged"
+          ocr-endpoint=""
+        ></vin-extractor>
+      </li>
+      <li>
+        <div>both skip validation</div>
+        <button id="case-4-button" onclick="openExtractor('case-4')" type="button">open</button>
+        <vin-extractor
+          use-ocr="true"
+          on-error="onError"
+          read-sticker="true"
+          id="case-4-element"
+          skip-validation="true"
+          on-extract="onExtract"
+          on-processing="onProcessing"
+          title="both skip validation"
+          on-open-change="openChanged"
+          ocr-endpoint=""
+        ></vin-extractor>
+      </li>
+      <li>
+        <div>both manual-capture</div>
+        <button id="case-5-button" onclick="openExtractor('case-5')" type="button">open</button>
+        <vin-extractor
+          use-ocr="true"
+          on-error="onError"
+          read-sticker="true"
+          id="case-5-element"
+          manual-capture="true"
+          skip-validation="true"
+          on-extract="onExtract"
+          title="both manual-capture"
+          on-processing="onProcessing"
+          on-open-change="openChanged"
+          ocr-endpoint=""
+        ></vin-extractor>
+      </li>
+      <li>
+        <div>both file upload</div>
+
+        <vin-extractor
+          use-ocr="true"
+          file-upload="true"
+          read-sticker="true"
+          id="case-6-element"
+          skip-validation="true"
+          on-processing="onProcessing"
+          uploader-button-id="vin-extractor-button"
+          ocr-endpoint=""
+        >
+          <button id="vin-extractor-button" type="button">upload</button>
+        </vin-extractor>
+      </li>
+      <li>
+        <div>ocr file upload</div>
+
+        <vin-extractor
+          use-ocr="true"
+          file-upload="true"
+          id="case-7-element"
+          skip-validation="true"
+          on-processing="onProcessing"
+          uploader-button-id="vin-extractor-button2"
+          ocr-endpoint=""
+        >
+          <button id="vin-extractor-button2" type="button">upload</button>
+        </vin-extractor>
+      </li>
+      <li>
+        <div>sticker file upload</div>
+
+        <vin-extractor file-upload="true" read-sticker="true" id="case-8-element" skip-validation="true" on-processing="onProcessing" uploader-button-id="vin-extractor-button3">
+          <button id="vin-extractor-button3" type="button">upload</button>
+        </vin-extractor>
+      </li>
+      <li>
+        <div>sticker file upload capture environment</div>
+
+        <vin-extractor
+          file-upload="true"
+          read-sticker="true"
+          id="case-9-element"
+          skip-validation="true"
+          capture-environment="true"
+          on-processing="onProcessing"
+          uploader-button-id="vin-extractor-button4"
+        >
+          <button id="vin-extractor-button4" type="button">upload</button>
+        </vin-extractor>
+      </li>
+    </ol>
+
+    <h2>
+      Vin:
+      <span id="vin">N/A</span>
+    </h2>
+  </body>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const vinExtractor = document.getElementById('case-6-element');
+      const vinExtractor2 = document.getElementById('case-7-element');
+      const vinExtractor3 = document.getElementById('case-8-element');
+      const vinExtractor4 = document.getElementById('case-9-element');
+
+      [vinExtractor, vinExtractor2, vinExtractor3, vinExtractor4].forEach(vinExt => {
+        if (!vinExt) return;
+        vinExt.onError = onError;
+        vinExt.onExtract = onExtract;
+        vinExt.onProcessing = onProcessing;
+      });
+    });
+
+    function getBlazorRef(target) {
+      const blazor = {};
+
+      blazor.invokeMethodAsync = function (methodName, ...args) {
+        if (methodName === 'onError') {
+          closeExtractor(target);
+          onError(...args);
+        } else if (methodName === 'onExtract') {
+          closeExtractor(target);
+          onExtract(...args);
+        } else if (methodName === 'openChanged') {
+          openChanged(target, ...args);
+        } else if (methodName === 'onProcessing') {
+          onProcessing(...args);
+        }
+      };
+
+      return blazor;
+    }
+
+    function openChanged(target, isOpen) {
+      if (!isOpen) {
+        closeExtractor(target);
+      }
+    }
+
+    function getTargetElements(target) {
+      const vinExtractor = document.getElementById(`${target}-element`);
+      const button = document.getElementById(`${target}-button`);
+      return { vinExtractor, button };
+    }
+
+    function onError(error) {
+      console.error('Error:', error);
+    }
+
+    function onExtract(data) {
+      console.log('Extracted data:', data);
+      document.getElementById('vin').innerHTML = data;
+
+      const scanners = Array.from(document.getElementsByTagName('vin-extractor'));
+
+      scanners.forEach(scanner => {
+        scanner.close();
+      });
+    }
+
+    function openExtractor(target) {
+      const { vinExtractor, button } = getTargetElements(target);
+
+      vinExtractor.setBlazorRef(getBlazorRef(target));
+
+      button.innerHTML = 'Loading...';
+      button.setAttribute('disabled', true);
+
+      vinExtractor.open();
+    }
+
+    function closeExtractor(target) {
+      const { vinExtractor, button } = getTargetElements(target);
+
+      button.innerHTML = 'open';
+      button.removeAttribute('disabled');
+    }
+
+    function onProcessing(isProcessing) {
+      if (isProcessing) console.log('Processing...');
+      else console.log('Processing finished');
+    }
+  </script>
+</html>

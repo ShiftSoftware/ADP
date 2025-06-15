@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Warranty Details</title>
+    <script src="./warranty-mock-data.js"></script>
+    <script nomodule src="/build/shift-components.js"></script>
+    <script type="module" src="/build/shift-components.esm.js"></script>
+  </head>
+  <body>
+    <a href="#" onclick="history.back()" style="color: blue; display: block; margin-bottom: 16px">Back</a>
+
+    <h1>Vehicle Warranty Details</h1>
+    <vehicle-warranty-details
+      user-id="1"
+      language="ku"
+      is-dev="true"
+      id="warranty"
+      show-ssc="true"
+      query-string=""
+      show-warranty="true"
+      brand-integration-id="TYT"
+      recaptcha-key="6LetFoYqAAAAAE0fg-070Qtm3z-DG24sMJ8wzY1f"
+      base-url="http://localhost:7174/api/secure-vehicle-lookup/"
+      unauthorized-ssc-lookup-base-url="http://localhost:7174/api/secure-unauthorized-ssc-lookup/"
+    >
+      <div class="g-recaptcha" id="warranty-recaptcha" data-sitekey="6LetFoYqAAAAAE0fg-070Qtm3z-DG24sMJ8wzY1f"></div>
+    </vehicle-warranty-details>
+
+    <div class="button-container">
+      <button class="sample-button" onclick="updateLang('en')">En</button>
+      <button class="sample-button" onclick="updateLang('ku')">Ku</button>
+      <button class="sample-button" onclick="updateLang('ar')">Ar</button>
+      <button class="sample-button" onclick="updateLang('ru')">Ru</button>
+    </div>
+
+    <div class="button-container">
+      <button class="sample-button" onclick="fetchData('')">Empty</button>
+      <button class="sample-button" onclick="fetchData('error')">Error</button>
+      <button class="sample-button" onclick="fetchData('JTMHX01J8L4198295')">JTMHX01J8L4198295</button>
+      <button class="sample-button" onclick="fetchData('JTMHX01J8L4198296')">JTMHX01J8L4198296</button>
+      <button class="sample-button" onclick="fetchData('MR0BX8CD3P2791075')">MR0BX8CD3P2791075</button>
+      <button class="sample-button" onclick="fetchData('JTMHX01J8L4198299')">JTMHX01J8L4198299</button>
+      <button class="sample-button" onclick="fetchData('JTMABBBJ9P4099243')">JTMABBBJ9P4099243</button>
+      <button class="sample-button" onclick="fetchData('JTMHU09J6E4100543')">JTMHU09J6E4100543</button>
+      <button class="sample-button" onclick="fetchData('JTMABBBJ9P4099200')">JTMABBBJ9P4099200</button>
+      <button class="sample-button" onclick="fetchData('JTMABBBJ9P4099294')">JTMABBBJ9P4099294 (Broker Stock)</button>
+    </div>
+
+    <script>
+      let warranty;
+
+      document.addEventListener('DOMContentLoaded', function () {
+        warranty = document.getElementById('warranty');
+
+        warranty.setMockData(mockData);
+
+        warranty.loadingStateChange = isLoading => {
+          console.log('isLoading: ' + isLoading);
+        };
+
+        warranty.loadedResponse = newResponse => console.log(newResponse);
+      });
+
+      function fetchData(newVin) {
+        warranty.fetchData(newVin);
+      }
+
+      function setData(key) {
+        warranty.setData(mockData[key]);
+      }
+
+      function updateLang(newLang) {
+        warranty.language = newLang;
+      }
+    </script>
+
+    <style>
+      .button-container {
+        margin-top: 50px;
+        border: 1px solid #e1e1e1;
+        padding: 20px;
+        display: flex;
+        flex-wrap: wrap;
+        align-content: center;
+        justify-content: center;
+        gap: 10px;
+      }
+      .sample-button {
+        background-color: #428bca;
+        padding: 10px 15px;
+      }
+
+      .sample-button:hover {
+        background-color: #3071a9;
+      }
+    </style>
+  </body>
+</html>

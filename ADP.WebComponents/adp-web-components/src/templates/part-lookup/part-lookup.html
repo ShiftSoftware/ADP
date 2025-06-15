@@ -1,0 +1,219 @@
+<!doctype html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Vehicle Lookup</title>
+    <!-- Latest compiled and minified CSS -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css"
+      integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu"
+      crossorigin="anonymous"
+    />
+
+    <!-- Optional theme -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap-theme.min.css"
+      integrity="sha384-6pzBo3FDv/PJ8r2KRkGHifhEocL+1X2rVCTTkUfGk7/0pbek5mMa1upzvWbrUbOZ"
+      crossorigin="anonymous"
+    />
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha384-nvAa0+6Qg9clwYCGGPpDQLVpLNn0fRaROjHqs13t4Ggj3Ez50XnGQqc/r8MhnRDZ" crossorigin="anonymous"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/js/bootstrap.min.js"
+      integrity="sha384-aJ21OjlMXNL5UyIl/XNwTMqvzeRMZH2w8c5cRVpzpU8Y5bApTppSuUkhZXN0VxHd"
+      crossorigin="anonymous"
+    ></script>
+
+    <script nomodule src="/build/shift-components.js"></script>
+    <script type="module" src="/build/shift-components.esm.js"></script>
+
+    <!-- <script type="module" src="../../../dist/shift-components/shift-components.esm.js"></script> -->
+
+    <style>
+      body {
+        background: #f7f7f7;
+        padding: 25px;
+      }
+
+      #vehicle-info-tab a {
+        color: black;
+        font-size: 18px;
+        transition: 0.3s;
+        user-select: none;
+      }
+
+      #vehicle-info-tab li.active a {
+        font-weight: bold;
+        background: #425368;
+        color: white;
+      }
+
+      input.disabled {
+        background: #e0e0e0;
+      }
+
+      .nav-tabs li.disabled {
+        background: #e0e0e0;
+        opacity: 0.5;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <a href="#" onclick="history.back()" style="color: blue; display: block; margin-bottom: 16px">Back</a>
+
+    <div class="section_inner" style="width: 90%; margin: auto">
+      <div>
+        <div class="container-fluid">
+          <div class="row" runat="server" id="rowSubmitForm">
+            <div class="col-sm-12">
+              <div class="row">
+                <div class="col-lg-offset-3 col-lg-6" runat="server" id="colCustomerName">
+                  <div>
+                    <p class="font_f_o_b f16 mb10 error_bg text-center">Part number <span class="required">*Required</span></p>
+                  </div>
+                  <input value="T5245160030" class="shift-form-field" style="width: 100%" autocomplete="off" id="vinInput" />
+                  <div class="ltc-ferrari-red error-message error text-center"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-sm-12 text-center btn_list clearfix" style="margin-top: 20px">
+              <button onclick="fetchPartNumber()" id="searchButton" type="button" class="btn_type_5 f14 font_f_o_b">
+                <i id="search-icon" class="fa fa-search"></i>
+                <i id="spinner-icon" class="fa fa-spin fa-spinner" style="display: none"></i>
+                <span id="search-text">Search</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="button-container">
+            <button class="sample-button" onclick="updateLang('en')">En</button>
+            <button class="sample-button" onclick="updateLang('ku')">Ku</button>
+            <button class="sample-button" onclick="updateLang('ar')">Ar</button>
+            <button class="sample-button" onclick="updateLang('ru')">Ru</button>
+          </div>
+
+          <div class="button-container">
+            <button class="sample-button" onclick="fetchPartNumber()">reload</button>
+            <button class="sample-button" onclick="fetchPartNumber('error')">Error</button>
+            <button class="sample-button" onclick="fetchPartNumber('')">Empty (close)</button>
+            <button class="sample-button" onclick="fetchPartNumber('T5245160030')">T5245160030</button>
+            <button class="sample-button" onclick="fetchPartNumber('T5245160030/1')">T5245160030/1</button>
+            <button class="sample-button" onclick="fetchPartNumber('T5245160030/11')">T5245160030/11</button>
+            <button class="sample-button" onclick="fetchPartNumber('MR0AX8CDXP4446478')">MR0AX8CDXP4446478</button>
+          </div>
+
+          <style>
+            .button-container {
+              margin-top: 50px;
+              border: 1px solid #e1e1e1;
+              padding: 20px;
+              display: flex;
+              flex-wrap: wrap;
+              align-content: center;
+              justify-content: center;
+              gap: 10px;
+            }
+            .sample-button {
+              background-color: #428bca;
+              padding: 10px 15px;
+            }
+
+            .sample-button:hover {
+              background-color: #3071a9;
+            }
+          </style>
+
+          <div class="well" style="background: white; margin-top: 30px; border-radius: 10px">
+            <!-- Nav tabs -->
+            <ul class="nav nav-tabs" role="tablist" id="vehicle-info-tab" style="display: flex; justify-content: center; border-bottom: none">
+              <li role="presentation" onclick="changeLookup('dead-stock-lookup')" class="active">
+                <a class="disable-auto-scroll" href="#deadStock" aria-controls="deadStock" role="tab" data-toggle="tab"><span>DeadStock</span></a>
+              </li>
+              <li role="presentation" onclick="changeLookup('distributor-lookup')">
+                <a class="disable-auto-scroll" href="#distributor" aria-controls="distributor" role="tab" data-toggle="tab"><span>Distributor</span></a>
+              </li>
+              <li role="presentation" onclick="changeLookup('manufacturer-lookup')">
+                <a class="disable-auto-scroll" href="#manufacturer" aria-controls="manufacturer" role="tab" data-toggle="tab"><span>Manufacturer</span></a>
+              </li>
+            </ul>
+
+            <!-- Tab panes -->
+            <div class="tab-content" style="background: white; border: 1px solid #dddddd; padding: 25px; border-radius: 10px">
+              <part-lookup
+                language="ku"
+                id="part-lookup"
+                active-element="dead-stock-lookup"
+                children-props='{"manufacturer-lookup":{"headerTitle":"kodo"}}'
+                base-url="https://vehicles-functions-adp.azurewebsites.net/api/secure-part-lookup/"
+              ></part-lookup>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let partLookup;
+      let searching = false;
+
+      const searchIcon = document.getElementById('search-icon');
+      const searchText = document.getElementById('search-text');
+      const spinnerIcon = document.getElementById('spinner-icon');
+      const errorMessage = document.getElementsByClassName('error-message')[0];
+
+      const input = document.getElementById('vinInput');
+
+      function updateLang(newLang) {
+        partLookup.language = newLang;
+      }
+
+      function changeLookup(newIndex) {
+        partLookup.activeElement = newIndex;
+      }
+
+      function fetchPartNumber(vin) {
+        partLookup.fetchPartNumber(vin || input.value);
+      }
+
+      document.addEventListener('DOMContentLoaded', async function () {
+        partLookup = document.getElementById('part-lookup');
+
+        partLookup.errorStateListener = async function errorStateListener(error) {
+          if (error) {
+            input.classList.add('error_bg');
+            errorMessage.innerHTML = error;
+          } else {
+            input.classList.remove('error_bg');
+            errorMessage.innerHTML = '';
+          }
+        };
+
+        partLookup.onLoadingStateChanged = function onLoadingStateChanged(isLoading) {
+          if (isLoading) {
+            $("li:not('.active')").addClass('disabled');
+            searching = true;
+            searchIcon.style.display = 'none';
+            spinnerIcon.style.display = 'inline-block';
+            searchText.innerHTML = 'Searching...';
+            input.readOnly = true;
+            input.classList.add('disabled');
+          } else {
+            $("li:not('.active')").removeClass('disabled');
+            searchIcon.style.display = 'inline-block';
+            spinnerIcon.style.display = 'none';
+            searchText.innerHTML = 'Search';
+            input.readOnly = false;
+            input.classList.remove('disabled');
+            searching = false;
+          }
+        };
+      });
+    </script>
+  </body>
+</html>

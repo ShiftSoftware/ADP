@@ -1,0 +1,12 @@
+{
+    "noBaseUrl": "من فضلك قدم base-url",
+    "invalidVin": "رقم الشانسی غير صالح",
+    "vinNumberRequired": "رقم الشانسی مطلوب",
+    "partNumberRequired": "رقم القطعة مطلوب",
+    "wrongResponseFormat": "تنسيق الرد خاطئ",
+    "noPartsFound": "لم يتم العثور على أجزاء",
+    "noServiceAvailable": "لا توجد خدمة متاحة",
+    "wrongFormStructure": "بنية النموذج غير صالحة.",
+    "wildCard": "حدث خطأ غير متوقع، يرجى المحاولة مرة أخرى لاحقًا.",
+    "requestFailedPleaseTryAgainLater": "فشل الطلب، يرجى المحاولة مرة أخرى لاحقًا"
+}

@@ -1,0 +1,19 @@
+{
+  "dealer": "дилер",
+  "authorized": "Официальный",
+  "unauthorized": "Неофициальный",
+  "activeWarranty": "Имеет активную гарантию",
+  "notActiveWarranty": "Нет действующей гарантии",
+  "notInvoiced": "Гарантия неактивна, поскольку счет за этот автомобиль не выставлен  доверенным деловым партнером: ",
+  "from": "От",
+  "to": "Кому",
+  "pendingSSC": "У этого автомобиля ожидается SSC",
+  "noPendingSSC": "Нет SSC",
+  "checkingTMC": "Проверка TMC",
+  "sscCampings": "Специальные Сервисные Кампании",
+  "sscTableCode": "Код",
+  "sscTableDescription": "Описание",
+  "sscTableRepairStatus": "Статус ремонта",
+  "sscTableOPCode": "OP-коды",
+  "sscTablePartNumber": "Номер запчасти"
+}
