@@ -3,7 +3,7 @@ import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stenci
 
 import { LanguageKeys } from '~types/locale';
 import { AppStates, MockJson } from '~types/components';
-import { PartInformation } from '~types/part-information';
+import { partLookupDTO } from '~types/part/partLookupDTO';
 
 import cn from '~lib/cn';
 import { ErrorKeys, getLocaleLanguage, getSharedLocal, SharedLocales, sharedLocalesSchema } from '~lib/get-local-language';
@@ -12,7 +12,7 @@ import { getPartInformation, PartInformationInterface } from '~api/partInformati
 
 import deadStockSchema from '~locales/partLookup/deadStock/type';
 
-let mockData: MockJson<PartInformation> = {};
+let mockData: MockJson<partLookupDTO> = {};
 
 const closedAccordionHeight = '46px' as const;
 
@@ -28,11 +28,11 @@ export class DeadStockLookup implements PartInformationInterface {
   @Prop() language: LanguageKeys = 'en';
   @Prop() errorCallback: (errorMessage: ErrorKeys) => void;
   @Prop() loadingStateChange?: (isLoading: boolean) => void;
-  @Prop() loadedResponse?: (response: PartInformation) => void;
+  @Prop() loadedResponse?: (response: partLookupDTO) => void;
 
   @State() state: AppStates = 'idle';
   @State() errorMessage?: ErrorKeys = null;
-  @State() partInformation?: PartInformation;
+  @State() partInformation?: partLookupDTO;
   @State() externalPartNumber?: string = null;
 
   @State() sharedLocales: SharedLocales = sharedLocalesSchema.getDefault();
@@ -54,12 +54,12 @@ export class DeadStockLookup implements PartInformationInterface {
     this.sharedLocales = localeResponses[1];
   }
 
-  private handleSettingData(response: PartInformation) {
+  private handleSettingData(response: partLookupDTO) {
     this.partInformation = response;
   }
 
   @Method()
-  async setData(newData: PartInformation | string, headers: any = {}) {
+  async setData(newData: partLookupDTO | string, headers: any = {}) {
     clearTimeout(this.networkTimeoutRef);
     if (this.abortController) this.abortController.abort();
     this.abortController = new AbortController();
@@ -121,7 +121,7 @@ export class DeadStockLookup implements PartInformationInterface {
   }
 
   @Method()
-  async setMockData(newMockData: MockJson<PartInformation>) {
+  async setMockData(newMockData: MockJson<partLookupDTO>) {
     mockData = newMockData;
   }
 

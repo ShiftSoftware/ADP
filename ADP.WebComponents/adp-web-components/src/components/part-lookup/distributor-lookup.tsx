@@ -6,12 +6,12 @@ import { ErrorKeys, getLocaleLanguage, getSharedLocal, SharedLocales, sharedLoca
 
 import { LanguageKeys } from '~types/locale';
 import { AppStates, MockJson } from '~types/components';
-import { PartInformation } from '~types/part-information';
+import { partLookupDTO } from '~types/part/partLookupDTO';
 
 import { getPartInformation, PartInformationInterface } from '~api/partInformation';
 import distributerSchema from '~locales/partLookup/distributor/type';
 
-let mockData: MockJson<PartInformation> = {};
+let mockData: MockJson<partLookupDTO> = {};
 
 @Component({
   shadow: true,
@@ -27,11 +27,11 @@ export class DistributorLookup implements PartInformationInterface {
   @Prop() localizationName?: string = '';
   @Prop() errorCallback: (errorMessage: string) => void;
   @Prop() loadingStateChange?: (isLoading: boolean) => void;
-  @Prop() loadedResponse?: (response: PartInformation) => void;
+  @Prop() loadedResponse?: (response: partLookupDTO) => void;
 
   @State() state: AppStates = 'idle';
   @State() errorMessage?: ErrorKeys = null;
-  @State() partInformation?: PartInformation;
+  @State() partInformation?: partLookupDTO;
   @State() externalPartNumber?: string = null;
 
   @State() sharedLocales: SharedLocales = sharedLocalesSchema.getDefault();
@@ -53,12 +53,12 @@ export class DistributorLookup implements PartInformationInterface {
     this.sharedLocales = localeResponses[1];
   }
 
-  private handleSettingData(response: PartInformation) {
+  private handleSettingData(response: partLookupDTO) {
     this.partInformation = response;
   }
 
   @Method()
-  async setData(newData: PartInformation | string, headers: any = {}) {
+  async setData(newData: partLookupDTO | string, headers: any = {}) {
     clearTimeout(this.networkTimeoutRef);
     if (this.abortController) this.abortController.abort();
     this.abortController = new AbortController();
@@ -120,7 +120,7 @@ export class DistributorLookup implements PartInformationInterface {
   }
 
   @Method()
-  async setMockData(newMockData: MockJson<PartInformation>) {
+  async setMockData(newMockData: MockJson<partLookupDTO>) {
     mockData = newMockData;
   }
 
@@ -134,7 +134,7 @@ export class DistributorLookup implements PartInformationInterface {
     const partsInformation = this.partInformation
       ? [
           { label: texts.description, key: 'partDescription', value: this.partInformation.partDescription },
-          { label: texts.productGroup, key: 'group', value: this.partInformation.group },
+          { label: texts.productGroup, key: 'productGroup', value: this.partInformation.productGroup },
           {
             label: texts.localDescription.replace('$', localName),
             key: 'localDescription',
@@ -171,7 +171,7 @@ export class DistributorLookup implements PartInformationInterface {
 
     const displayDistributer = this.partInformation
       ? !this.partInformation.stockParts.some(
-          ({ quantityLookUpResult }) => quantityLookUpResult === 'LookupIsSkipped' || quantityLookUpResult === 'QuantityNotWithinLookupThreshold',
+          ({ quantityLookUpResult }) => quantityLookUpResult === 'lookupIsSkipped' || quantityLookUpResult === 'quantityNotWithinLookupThreshold',
         )
       : false;
 
@@ -246,14 +246,14 @@ export class DistributorLookup implements PartInformationInterface {
                                 <td class={cn('px-[10px] py-[20px] text-center whitespace-nowrap')}>
                                   <div
                                     class={cn('text-[red]', {
-                                      'text-[green]': stock.quantityLookUpResult === 'Available',
-                                      'text-[orange]': stock.quantityLookUpResult === 'PartiallyAvailable',
+                                      'text-[green]': stock.quantityLookUpResult === 'available',
+                                      'text-[orange]': stock.quantityLookUpResult === 'partiallyAvailable',
                                     })}
                                   >
                                     <strong>
-                                      {stock.quantityLookUpResult === 'Available'
+                                      {stock.quantityLookUpResult === 'available'
                                         ? texts.available
-                                        : stock.quantityLookUpResult === 'PartiallyAvailable'
+                                        : stock.quantityLookUpResult === 'partiallyAvailable'
                                           ? texts.partiallyAvailable
                                           : texts.notAvailable}
                                     </strong>

@@ -1,5 +1,5 @@
 import { MockJson } from '~types/components';
-import { PartInformation } from '~types/part-information';
+import { partLookupDTO } from '~types/part/partLookupDTO';
 
 export interface PartInformationInterface {
   isDev: boolean;
@@ -7,23 +7,23 @@ export interface PartInformationInterface {
   queryString?: string;
   abortController: AbortController;
   networkTimeoutRef: ReturnType<typeof setTimeout>;
-  loadedResponse?: (response: PartInformation) => void;
+  loadedResponse?: (response: partLookupDTO) => void;
 }
 
 type GetPartInformationProps = {
   partNumber: string;
   notAvailableMessage?: string;
-  mockData: MockJson<PartInformation>;
+  mockData: MockJson<partLookupDTO>;
   scopedTimeoutRef: ReturnType<typeof setTimeout>;
-  middlewareCallback?: (PartInformation) => void;
+  middlewareCallback?: (part: partLookupDTO) => void;
 };
 
-export const getPartInformation = async (component: PartInformationInterface, generalProps: GetPartInformationProps, headers: any = {}): Promise<PartInformation> => {
+export const getPartInformation = async (component: PartInformationInterface, generalProps: GetPartInformationProps, headers: any = {}): Promise<partLookupDTO> => {
   const { notAvailableMessage, mockData, partNumber, scopedTimeoutRef, middlewareCallback } = generalProps;
 
   const { isDev, baseUrl, queryString, abortController, networkTimeoutRef, loadedResponse } = component;
 
-  const handleResult = (newPartInformation: PartInformation): PartInformation => {
+  const handleResult = (newPartInformation: partLookupDTO): partLookupDTO => {
     if (networkTimeoutRef === scopedTimeoutRef) {
       if (!newPartInformation && partNumber) throw new Error(notAvailableMessage || 'wrongResponseFormat');
 
@@ -44,7 +44,7 @@ export const getPartInformation = async (component: PartInformationInterface, ge
 
     if (response.status === 204) throw new Error('noPartsFound');
 
-    const newData = (await response.json()) as PartInformation;
+    const newData = (await response.json()) as partLookupDTO;
 
     return handleResult(newData);
   }
