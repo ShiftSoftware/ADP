@@ -37,6 +37,8 @@
     <h1>Vehicle Claimable Items</h1>
     <vehicle-claimable-items language="en" id="vehicle-claimable-items" is-dev="true" query-string="" base-url=""></vehicle-claimable-items>
 
+    <claim-temp language="en" id="claim-temp"></claim-temp>
+
     <div class="button-container">
       <button class="sample-button" onclick="updateLang('en')">En</button>
       <button class="sample-button" onclick="updateLang('ku')">Ku</button>
@@ -60,8 +62,10 @@
     </div>
     <script>
       let claimableItems;
+      let claimTemp;
 
       document.addEventListener('DOMContentLoaded', function () {
+        claimTemp = document.getElementById('claim-temp');
         claimableItems = document.getElementById('vehicle-claimable-items');
 
         claimableItems.setMockData(mockData);
@@ -106,6 +110,7 @@
       });
 
       function updateLang(newLang) {
+        claimTemp.language = newLang;
         claimableItems.language = newLang;
       }
 

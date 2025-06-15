@@ -1,11 +1,9 @@
-import { InferType } from 'yup';
 import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
 import cn from '~lib/cn';
 import { scrollIntoContainerView } from '~lib/scroll-into-container-view';
-import { ErrorKeys, getLocaleLanguage, getSharedLocal, SharedLocales, sharedLocalesSchema } from '~lib/get-local-language';
+import { ErrorKeys } from '~lib/get-local-language';
 
-import { LanguageKeys } from '~types/locale';
 import { MockJson } from '~types/components';
 import { ClaimPayload, ServiceItem, ServiceItemGroup, VehicleInformation } from '~types/vehicle-information';
 
@@ -15,9 +13,8 @@ import cancelledIcon from './assets/cancelled.svg';
 import processedIcon from './assets/processed.svg';
 import activationRequiredIcon from './assets/activationRequired.svg';
 
-import { getVehicleInformation, VehicleInformationInterface } from '~api/vehicleInformation';
+import { getVehicleInformation } from '~api/vehicleInformation';
 
-import dynamicClaimSchema from '~locales/vehicleLookup/claimableItems/type';
 import { VehicleItemClaimForm } from './vehicle-item-claim-form';
 
 import { VehicleInfoLayout } from '../components/vehicle-info-layout';
@@ -37,13 +34,11 @@ const icons = {
   tag: 'vehicle-claimable-items',
   styleUrl: 'vehicle-claimable-items.css',
 })
-export class VehicleClaimableItems implements VehicleInformationInterface {
+export class VehicleClaimableItems {
   @Prop() baseUrl: string;
   @Prop() headers: any = {};
-  @Prop() isDev: boolean = false;
   @Prop() queryString: string = '';
   @Prop() coreOnly: boolean = false;
-  @Prop() language: LanguageKeys = 'en';
   @Prop() print?: (claimResponse: any) => void;
   @Prop() maximumDocumentFileSizeInMb: number = 30;
   @Prop() claimEndPoint: string = 'api/vehicle/swift-claim';
@@ -51,9 +46,6 @@ export class VehicleClaimableItems implements VehicleInformationInterface {
   @Prop() loadingStateChange?: (isLoading: boolean) => void;
   @Prop() loadedResponse?: (response: VehicleInformation) => void;
   @Prop() activate?: (vehicleInformation: VehicleInformation) => void;
-
-  @State() sharedLocales: SharedLocales = sharedLocalesSchema.getDefault();
-  @State() locale: InferType<typeof dynamicClaimSchema> = dynamicClaimSchema.getDefault();
 
   @State() activeTab: string = '';
   @State() isError: boolean = false;
@@ -84,17 +76,6 @@ export class VehicleClaimableItems implements VehicleInformationInterface {
   popupPositionRef: HTMLElement;
   claimForm: VehicleItemClaimForm;
   claimableContentWrapper: HTMLElement;
-
-  async componentWillLoad() {
-    await this.changeLanguage(this.language);
-  }
-
-  @Watch('language')
-  async changeLanguage(newLanguage: LanguageKeys) {
-    const localeResponses = await Promise.all([getLocaleLanguage(newLanguage, 'vehicleLookup.claimableItems', dynamicClaimSchema), getSharedLocal(newLanguage)]);
-    this.locale = localeResponses[0];
-    this.sharedLocales = localeResponses[1];
-  }
 
   async componentDidLoad() {
     this.claimableContentWrapper = this.el.shadowRoot.querySelector('.claimable-content-wrapper');

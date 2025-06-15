@@ -2,6 +2,10 @@ import { FunctionalComponent, h } from '@stencil/core';
 
 import cn from '~lib/cn';
 
+export interface VehicleInfoLayoutInterface {
+  coreOnly?: boolean;
+}
+
 interface VehicleInfoLayoutProps {
   vin: string;
   isError: boolean;
