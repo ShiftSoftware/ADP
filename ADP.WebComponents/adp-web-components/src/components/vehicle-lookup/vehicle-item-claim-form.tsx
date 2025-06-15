@@ -172,7 +172,7 @@ export class VehicleItemClaimForm {
     if (event === null || event.key === 'Enter') {
       if (!this.confirmServiceCancellation || !this.confirmUnInvoicedTBPVehicles) return;
 
-      if (event !== null) event.preventDefault();
+      if (event !== null) event?.preventDefault();
 
       if (!this?.handleClaiming) return;
 
@@ -252,6 +252,8 @@ export class VehicleItemClaimForm {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
 
+    this.documentUploader.value = '';
+
     if (!file) return;
 
     this.selectedFile = file;
@@ -260,7 +262,13 @@ export class VehicleItemClaimForm {
       this.documentError = 'documentLimitError';
       this.isDocumentError = true;
       return;
-    } else this.isDocumentError = false;
+    } else {
+      this.isDocumentError = false;
+      if (this.claimViaBarcodeScanner) {
+        // @ts-ignore
+        this.inputKeyDown({ key: 'Enter', preventDefault: () => {} });
+      }
+    }
   };
 
   clearFile = (event: MouseEvent) => {
