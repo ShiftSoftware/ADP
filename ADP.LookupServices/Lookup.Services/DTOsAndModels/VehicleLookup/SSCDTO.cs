@@ -1,10 +1,12 @@
-﻿using ShiftSoftware.ADP.Models.JsonConverters;
+﻿using ShiftSoftware.ADP.Models;
+using ShiftSoftware.ADP.Models.JsonConverters;
 using System;
 using System.Collections.Generic;
 
 namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 
-public class SSCDTO
+[TypeScriptModel]
+public class SscDTO
 {
     public string SSCCode { get; set; } = default!;
     public string Description { get; set; } = default!;
@@ -15,7 +17,7 @@ public class SSCDTO
     public DateTime? RepairDate { get; set; }
     public IEnumerable<SSCPartDTO> Parts { get; set; }
 
-    public SSCDTO()
+    public SscDTO()
     {
         Parts = new List<SSCPartDTO>();
     }

@@ -1,7 +1,9 @@
-﻿using ShiftSoftware.ADP.Models.Enums;
+﻿using ShiftSoftware.ADP.Models;
+using ShiftSoftware.ADP.Models.Enums;
 
 namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 
+[TypeScriptModel]
 public class VehicleIdentifiersDTO
 {
     public string VIN { get; set; } = default!;

@@ -13,7 +13,7 @@ public interface ILogCosmosService
     Task<Guid> LogPartLookupAsync(PartLookupLogInfo logInfo, PartLookupDTO lookupResult, int? distributorStockLookupQuantity);
 
     Task<Guid> LogSSCLookupAsync(SSCLogInfo? sscLogInfo,
-        IEnumerable<SSCDTO> ssc,
+        IEnumerable<SscDTO> ssc,
         string vin,
         bool isAuthorized,
         bool hasActiveWarranty,

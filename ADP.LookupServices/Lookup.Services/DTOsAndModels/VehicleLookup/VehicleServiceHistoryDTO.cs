@@ -1,4 +1,5 @@
-﻿using ShiftSoftware.ADP.Models.JsonConverters;
+﻿using ShiftSoftware.ADP.Models;
+using ShiftSoftware.ADP.Models.JsonConverters;
 using ShiftSoftware.ShiftEntity.Model;
 using System;
 using System.Collections.Generic;
@@ -6,6 +7,7 @@ using System.Text.Json.Serialization;
 
 namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 
+[TypeScriptModel]
 public class VehicleServiceHistoryDTO
 {
     public string ServiceType { get; set; } = default!;

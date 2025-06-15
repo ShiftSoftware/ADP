@@ -1,0 +1,22 @@
+export type vehicleSpecificationDTO = {
+    modelCode: string;
+    modelYear?: number;
+    productionDate?: string;
+    modelDescription: string;
+    variantDescription: string;
+    class: string;
+    bodyType: string;
+    engine: string;
+    cylinders: string;
+    lightHeavyType: string;
+    doors: string;
+    fuel: string;
+    transmission: string;
+    side: string;
+    engineType: string;
+    tankCap: string;
+    style: string;
+    fuelLiter?: number;
+    exteriorColor: string;
+    interiorColor: string;
+};
