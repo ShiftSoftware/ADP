@@ -15,6 +15,12 @@ public class VehicleServiceItemDTO
 {
     private const string ActivationAndExpiryDateFormat = "yyyy-MM-dd";
 
+    public VehicleServiceItemGoup Group { get; set; }
+
+    public bool ShowDocumentUploader { get; set; }
+
+    public bool DocumentUploaderIsRequired { get; set; }
+
     [JsonConverter(typeof(LocalizedTextJsonConverter))]
     public string Name { get; set; }
 
