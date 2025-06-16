@@ -1,5 +1,6 @@
 {
   "private": true,
+
   "workspaces": [
     "ADP.WebComponents/adp-web-components"
   ],
