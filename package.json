@@ -1,0 +1,19 @@
+{
+  "private": true,
+  "workspaces": [
+    "ADP.WebComponents/adp-web-components"
+  ],
+  "scripts": {
+    "prepare": "husky install"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.2"
+  },
+  "lint-staged": {
+    "ADP.WebComponents/adp-web-components/src/**/*.{ts,tsx,js,jsx,css,scss,html}": [
+      "yarn workspace adp-web-components prettier --write"
+    ]
+  },
+  "dependencies": {}
+}

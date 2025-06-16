@@ -1,7 +1,6 @@
 import { FunctionalComponent, h } from '@stencil/core';
 import cn from '~lib/cn';
 
-
 interface CardContentProps {
   title: string;
   width?: string;
