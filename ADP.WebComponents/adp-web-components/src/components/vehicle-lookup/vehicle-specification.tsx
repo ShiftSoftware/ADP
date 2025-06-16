@@ -3,7 +3,7 @@ import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stenci
 
 import { LanguageKeys } from '~types/locale';
 import { AppStates, MockJson } from '~types/components';
-import { VehicleInformation } from '~types/vehicle-information';
+import { vehicleLookupDTO } from '~types/vehicleLookup/vehicleLookupDTO';
 
 import { ErrorKeys, getLocaleLanguage, getSharedLocal, SharedLocales, sharedLocalesSchema } from '~lib/get-local-language';
 
@@ -14,7 +14,7 @@ import specificationSchema from '~locales/vehicleLookup/specification/type';
 import { VehicleInfoLayout } from '../components/vehicle-info-layout';
 import { MaterialCard, MaterialCardChildren } from '../components/material-card';
 
-let mockData: MockJson<VehicleInformation> = {};
+let mockData: MockJson<vehicleLookupDTO> = {};
 
 @Component({
   shadow: true,
@@ -29,7 +29,7 @@ export class VehicleSpecification implements VehicleInformationInterface {
   @Prop() language: LanguageKeys = 'en';
   @Prop() errorCallback: (errorMessage: ErrorKeys) => void;
   @Prop() loadingStateChange?: (isLoading: boolean) => void;
-  @Prop() loadedResponse?: (response: VehicleInformation) => void;
+  @Prop() loadedResponse?: (response: vehicleLookupDTO) => void;
 
   @State() sharedLocales: SharedLocales = sharedLocalesSchema.getDefault();
   @State() locale: InferType<typeof specificationSchema> = specificationSchema.getDefault();
@@ -37,7 +37,7 @@ export class VehicleSpecification implements VehicleInformationInterface {
   @State() state: AppStates = 'idle';
   @State() externalVin?: string = null;
   @State() errorMessage?: ErrorKeys = null;
-  @State() vehicleInformation?: VehicleInformation;
+  @State() vehicleInformation?: vehicleLookupDTO;
 
   abortController: AbortController;
   networkTimeoutRef: ReturnType<typeof setTimeout>;
@@ -56,7 +56,7 @@ export class VehicleSpecification implements VehicleInformationInterface {
   }
 
   @Method()
-  async setData(newData: VehicleInformation | string, headers: any = {}) {
+  async setData(newData: vehicleLookupDTO | string, headers: any = {}) {
     clearTimeout(this.networkTimeoutRef);
     if (this.abortController) this.abortController.abort();
     this.abortController = new AbortController();
@@ -117,7 +117,7 @@ export class VehicleSpecification implements VehicleInformationInterface {
   }
 
   @Method()
-  async setMockData(newMockData: MockJson<VehicleInformation>) {
+  async setMockData(newMockData: MockJson<vehicleLookupDTO>) {
     mockData = newMockData;
   }
 
@@ -157,20 +157,20 @@ export class VehicleSpecification implements VehicleInformationInterface {
               <MaterialCard class="grow" title={texts?.model} minWidth="300px">
                 <MaterialCardChildren
                   class="text-center"
-                  hidden={!this?.vehicleInformation?.vehicleVariantInfo?.modelCode?.trim() && !this?.vehicleInformation?.vehicleSpecification?.modelDesc?.trim()}
+                  hidden={!this?.vehicleInformation?.vehicleVariantInfo?.modelCode?.trim() && !this?.vehicleInformation?.vehicleSpecification?.modelDescription?.trim()}
                 >
                   {this?.vehicleInformation?.vehicleVariantInfo?.modelCode?.trim() || '...'} <br class="my-2" />
-                  {this?.vehicleInformation?.vehicleSpecification?.modelDesc?.trim() || '...'}
+                  {this?.vehicleInformation?.vehicleSpecification?.modelDescription?.trim() || '...'}
                 </MaterialCardChildren>
               </MaterialCard>
 
               <MaterialCard class="grow" title={texts?.variant} minWidth="300px">
                 <MaterialCardChildren
                   class="text-center"
-                  hidden={!this?.vehicleInformation?.identifiers?.variant?.trim() && !this?.vehicleInformation?.vehicleSpecification?.variantDesc?.trim()}
+                  hidden={!this?.vehicleInformation?.identifiers?.variant?.trim() && !this?.vehicleInformation?.vehicleSpecification?.variantDescription?.trim()}
                 >
                   {this?.vehicleInformation?.identifiers?.variant?.trim() || '...'} <br />
-                  {this?.vehicleInformation?.vehicleSpecification?.variantDesc?.trim() || '...'}
+                  {this?.vehicleInformation?.vehicleSpecification?.variantDescription?.trim() || '...'}
                 </MaterialCardChildren>
               </MaterialCard>
 

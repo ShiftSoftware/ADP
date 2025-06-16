@@ -7,7 +7,8 @@ import { ErrorKeys, getLocaleLanguage, getSharedLocal, SharedLocales, sharedLoca
 
 import { LanguageKeys } from '~types/locale';
 import { MockJson } from '~types/components';
-import { ClaimPayload, ServiceItem, ServiceItemGroup, VehicleInformation } from '~types/vehicle-information';
+import { vehicleLookupDTO } from '~types/vehicleLookup/vehicleLookupDTO';
+import { vehicleServiceItemDTO } from '~types/vehicleLookup/vehicleServiceItemDTO';
 
 import expiredIcon from './assets/expired.svg';
 import pendingIcon from './assets/pending.svg';
@@ -18,11 +19,11 @@ import activationRequiredIcon from './assets/activationRequired.svg';
 import { getVehicleInformation, VehicleInformationInterface } from '~api/vehicleInformation';
 
 import dynamicClaimSchema from '~locales/vehicleLookup/claimableItems/type';
-import { VehicleItemClaimForm } from './vehicle-item-claim-form';
+import { ClaimFormPayload, VehicleItemClaimForm } from './vehicle-item-claim-form';
 
 import { VehicleInfoLayout } from '../components/vehicle-info-layout';
 
-let mockData: MockJson<VehicleInformation> = {};
+let mockData: MockJson<vehicleLookupDTO> = {};
 
 const icons = {
   expired: expiredIcon,
@@ -49,8 +50,8 @@ export class VehicleClaimableItems implements VehicleInformationInterface {
   @Prop() claimEndPoint: string = 'api/vehicle/swift-claim';
   @Prop() errorCallback: (errorMessage: ErrorKeys) => void;
   @Prop() loadingStateChange?: (isLoading: boolean) => void;
-  @Prop() loadedResponse?: (response: VehicleInformation) => void;
-  @Prop() activate?: (vehicleInformation: VehicleInformation) => void;
+  @Prop() loadedResponse?: (response: vehicleLookupDTO) => void;
+  @Prop() activate?: (vehicleInformation: vehicleLookupDTO) => void;
 
   @State() sharedLocales: SharedLocales = sharedLocalesSchema.getDefault();
   @State() locale: InferType<typeof dynamicClaimSchema> = dynamicClaimSchema.getDefault();
@@ -64,9 +65,9 @@ export class VehicleClaimableItems implements VehicleInformationInterface {
   @State() errorMessage?: ErrorKeys = null;
   @State() tabAnimationLoading: boolean = false;
   @State() activePopupIndex: null | number = null;
-  @State() tabs: ServiceItemGroup[] = [];
+  @State() tabs: vehicleServiceItemDTO['group'][] = [];
   @State() lastSuccessfulClaimResponse: any = null;
-  @State() vehicleInformation?: VehicleInformation;
+  @State() vehicleInformation?: vehicleLookupDTO;
 
   pendingItemHighlighted = false;
 
@@ -78,7 +79,7 @@ export class VehicleClaimableItems implements VehicleInformationInterface {
   networkTimeoutRef: ReturnType<typeof setTimeout>;
   tabAnimationTimeoutRef: ReturnType<typeof setTimeout>;
 
-  cachedClaimItem: ServiceItem;
+  cachedClaimItem: vehicleServiceItemDTO;
 
   progressBar: HTMLElement;
   popupPositionRef: HTMLElement;
@@ -103,12 +104,12 @@ export class VehicleClaimableItems implements VehicleInformationInterface {
   }
 
   @Method()
-  async setMockData(newMockData: MockJson<VehicleInformation>) {
+  async setMockData(newMockData: MockJson<vehicleLookupDTO>) {
     mockData = newMockData;
   }
 
   @Method()
-  async setData(newData: VehicleInformation | string, headers: any = {}) {
+  async setData(newData: vehicleLookupDTO | string, headers: any = {}) {
     clearTimeout(this.networkTimeoutRef);
     if (this.abortController) this.abortController.abort();
     this.abortController = new AbortController();
@@ -143,8 +144,8 @@ export class VehicleClaimableItems implements VehicleInformationInterface {
         this.vehicleInformation = vehicleResponse;
 
         if (vehicleResponse?.serviceItems?.length) {
-          let orderedGroups: ServiceItemGroup[] = [];
-          const unOrderedGroups: ServiceItemGroup[] = [];
+          let orderedGroups: vehicleServiceItemDTO['group'][] = [];
+          const unOrderedGroups: vehicleServiceItemDTO['group'][] = [];
 
           vehicleResponse.serviceItems.forEach(({ group }) => {
             if (!group?.name) return;
@@ -334,7 +335,7 @@ export class VehicleClaimableItems implements VehicleInformationInterface {
 
     this.pendingItemHighlighted = false;
 
-    const vehicleDataClone = JSON.parse(JSON.stringify(this.vehicleInformation)) as VehicleInformation;
+    const vehicleDataClone = JSON.parse(JSON.stringify(this.vehicleInformation)) as vehicleLookupDTO;
     vehicleDataClone.serviceItems = serviceDataClone;
     this.vehicleInformation = JSON.parse(JSON.stringify(vehicleDataClone));
 
@@ -343,14 +344,14 @@ export class VehicleClaimableItems implements VehicleInformationInterface {
   }
 
   @Method()
-  async claim(item: ServiceItem) {
+  async claim(item: vehicleServiceItemDTO) {
     const serviceItems = this.getServiceItems();
 
     const vinDataClone = JSON.parse(JSON.stringify(serviceItems));
     const index = serviceItems.indexOf(item);
 
     //Find other items before this item that have status 'pending'
-    let pendingItemsBefore = vinDataClone.slice(0, index).filter(x => x.status === 'pending') as ServiceItem[];
+    let pendingItemsBefore = vinDataClone.slice(0, index).filter(x => x.status === 'pending') as vehicleServiceItemDTO[];
 
     this.cachedClaimItem = item;
 
@@ -365,7 +366,7 @@ export class VehicleClaimableItems implements VehicleInformationInterface {
 
   private async handleClaiming() {
     if (this.isDev) {
-      this.claimForm.handleClaiming = async ({ document }: ClaimPayload) => {
+      this.claimForm.handleClaiming = async ({ document }: ClaimFormPayload) => {
         if (document) {
           this.claimForm.uploadProgress = 0;
           let uploadChunks = 20;
@@ -383,7 +384,7 @@ export class VehicleClaimableItems implements VehicleInformationInterface {
         this.claimForm.handleClaiming = null;
       };
     } else {
-      this.claimForm.handleClaiming = async ({ document, ...payload }: ClaimPayload) => {
+      this.claimForm.handleClaiming = async ({ document, ...payload }: ClaimFormPayload) => {
         try {
           const formData = new FormData();
           formData.append(
@@ -453,8 +454,8 @@ export class VehicleClaimableItems implements VehicleInformationInterface {
     }
   }
 
-  private openRedeem(item: ServiceItem, oldItems: ServiceItem[]) {
-    const vehicleInformation = this.vehicleInformation as VehicleInformation;
+  private openRedeem(item: vehicleServiceItemDTO, oldItems: vehicleServiceItemDTO[]) {
+    const vehicleInformation = this.vehicleInformation as vehicleLookupDTO;
 
     this.claimForm.vin = vehicleInformation?.vin;
     this.claimForm.item = item;
@@ -467,7 +468,7 @@ export class VehicleClaimableItems implements VehicleInformationInterface {
     this.handleClaiming();
   }
 
-  private getServiceItems = (): VehicleInformation['serviceItems'] => {
+  private getServiceItems = (): vehicleLookupDTO['serviceItems'] => {
     if (!this.vehicleInformation?.serviceItems?.length) return [];
 
     if (!this.tabs?.length) return this.vehicleInformation?.serviceItems;
@@ -489,7 +490,7 @@ export class VehicleClaimableItems implements VehicleInformationInterface {
     }, 500);
   };
 
-  createPopup(item: ServiceItem) {
+  createPopup(item: vehicleServiceItemDTO) {
     const texts = this.locale;
 
     return (
@@ -631,7 +632,7 @@ export class VehicleClaimableItems implements VehicleInformationInterface {
                   'bg-transparent border-transparent': this.isLoading || this.tabAnimationLoading || !serviceItems.length,
                 })}
               >
-                {serviceItems.map((item: ServiceItem, idx) => {
+                {serviceItems.map((item: vehicleServiceItemDTO, idx) => {
                   let statusClass = '';
 
                   if (item.status === 'pending') {

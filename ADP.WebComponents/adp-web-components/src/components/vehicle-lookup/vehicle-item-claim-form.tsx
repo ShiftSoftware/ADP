@@ -1,12 +1,24 @@
 import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
 import { LanguageKeys } from '~types/locale';
-import { ClaimPayload, ServiceItem } from '~types/vehicle-information';
+import { vehicleServiceItemDTO } from '~types/vehicleLookup/vehicleServiceItemDTO';
+import { vehicleSaleInformation } from '~types/vehicleLookup/vehicleSaleInformation';
 
 import cn from '~lib/cn';
 import { getSharedLocal, SharedLocales, sharedLocalesSchema } from '~lib/get-local-language';
 
 import { claimFormSchema, ClaimFormType } from '~locales/vehicleLookup/claimableItems/type';
+
+export type ClaimFormPayload = {
+  vin: string;
+  qrCode?: string;
+  document?: File;
+  invoice?: string;
+  jobNumber?: string;
+  serviceItem: vehicleServiceItemDTO;
+  saleInformation: vehicleSaleInformation;
+  cancelledServiceItems: vehicleServiceItemDTO[];
+};
 
 @Component({
   shadow: true,
@@ -15,18 +27,18 @@ import { claimFormSchema, ClaimFormType } from '~locales/vehicleLookup/claimable
 })
 export class VehicleItemClaimForm {
   @Prop() vin?: string = '';
-  @Prop() item?: ServiceItem = null;
   @Prop() language: LanguageKeys = 'en';
+  @Prop() item?: vehicleServiceItemDTO = null;
   @Prop() maximumDocumentFileSizeInMb: number;
-  @Prop() canceledItems?: ServiceItem[] = null;
   @Prop() unInvoicedByBrokerName?: string = null;
-  @Prop() handleClaiming?: (payload: ClaimPayload) => void;
+  @Prop() canceledItems?: vehicleServiceItemDTO[] = null;
   //@Prop() handleQrChanges?: (code: string) => void;
   @Prop() loadingStateChange?: (isLoading: boolean) => void;
+  @Prop() handleClaiming?: (payload: ClaimFormPayload) => void;
   @Prop() locale: ClaimFormType = claimFormSchema.getDefault();
 
-  @State() claimViaBarcodeScanner: boolean = true;
   @State() sharedLocales: SharedLocales = sharedLocalesSchema.getDefault();
+  @State() claimViaBarcodeScanner: vehicleServiceItemDTO['claimingMethodEnum'] = 'claimByScanningQRCode';
 
   @State() internalVin?: string = '';
   @State() uploadProgress: number = 0;
@@ -34,10 +46,10 @@ export class VehicleItemClaimForm {
   @State() isOpened?: boolean = false;
   @State() isDocumentError: boolean = false;
   @State() selectedFile: File | null = null;
-  @State() internalItem?: ServiceItem = null;
+  @State() internalItem?: vehicleServiceItemDTO = null;
   @State() confirmServiceCancellation: boolean = false;
-  @State() internalCanceledItem?: ServiceItem[] = null;
   @State() confirmUnInvoicedTBPVehicles: boolean = false;
+  @State() internalCanceledItem?: vehicleServiceItemDTO[] = null;
   @State() documentError: 'documentLimitError' | 'documentRequiredError' = 'documentRequiredError';
 
   @State() readyToClaim: boolean = false;
@@ -114,7 +126,7 @@ export class VehicleItemClaimForm {
     this.isOpened = !!newItem;
     if (newItem) this.internalItem = newItem;
 
-    this.claimViaBarcodeScanner = this.item?.claimingMethodEnum === 1;
+    this.claimViaBarcodeScanner = this.item?.claimingMethodEnum;
 
     if (newItem) {
       this.closeModalListenerRef = (event: KeyboardEvent) => event.key === 'Escape' && this.quite();
@@ -204,7 +216,7 @@ export class VehicleItemClaimForm {
 
       this.isLoading = true;
 
-      await this.handleClaiming({ jobNumber: this.job, invoice: this.invoice, qrCode: this.qrCode, document: this.selectedFile } as ClaimPayload);
+      await this.handleClaiming({ jobNumber: this.job, invoice: this.invoice, qrCode: this.qrCode, document: this.selectedFile } as ClaimFormPayload);
 
       this.isLoading = false;
       this.readyToClaim = true;

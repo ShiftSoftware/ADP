@@ -3,9 +3,9 @@ import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stenci
 
 import { LanguageKeys } from '~types/locale';
 import { AppStates, MockJson } from '~types/components';
-import { VehicleInformation } from '~types/vehicle-information';
 
 import { getVehicleInformation } from '~api/vehicleInformation';
+import { vehicleLookupDTO } from '~types/vehicleLookup/vehicleLookupDTO';
 
 import cn from '~lib/cn';
 import { closeImageViewer, ImageViewerInterface, openImageViewer } from '~lib/image-expansion';
@@ -18,7 +18,10 @@ import accessoriesSchema from '~locales/vehicleLookup/accessories/type';
 import { VehicleInfoLayout } from '../components/vehicle-info-layout';
 import { InformationTableColumn } from '../components/information-table';
 
-let mockData: MockJson<VehicleInformation> = {};
+// forbidden.d.ts
+// Do not use this file
+
+let mockData: MockJson<vehicleLookupDTO> = {};
 
 @Component({
   shadow: true,
@@ -33,7 +36,7 @@ export class VehicleAccessories implements ImageViewerInterface {
   @Prop() language: LanguageKeys = 'en';
   @Prop() errorCallback: (errorMessage: ErrorKeys) => void;
   @Prop() loadingStateChange?: (isLoading: boolean) => void;
-  @Prop() loadedResponse?: (response: VehicleInformation) => void;
+  @Prop() loadedResponse?: (response: vehicleLookupDTO) => void;
 
   @State() sharedLocales: SharedLocales = sharedLocalesSchema.getDefault();
   @State() locale: InferType<typeof accessoriesSchema> = accessoriesSchema.getDefault();
@@ -42,7 +45,7 @@ export class VehicleAccessories implements ImageViewerInterface {
   @State() externalVin?: string = null;
   @State() expandedImage?: string = null;
   @State() errorMessage?: ErrorKeys = null;
-  @State() vehicleInformation?: VehicleInformation;
+  @State() vehicleInformation?: vehicleLookupDTO;
 
   originalImage: HTMLImageElement;
   abortController: AbortController;
@@ -61,13 +64,13 @@ export class VehicleAccessories implements ImageViewerInterface {
     this.sharedLocales = localeResponses[1];
   }
 
-  private handleSettingData(response: VehicleInformation) {
+  private handleSettingData(response: vehicleLookupDTO) {
     if (!response.accessories || !Array.isArray(response.accessories)) response.accessories = [];
     this.vehicleInformation = response;
   }
 
   @Method()
-  async setData(newData: VehicleInformation | string, headers: any = {}) {
+  async setData(newData: vehicleLookupDTO | string, headers: any = {}) {
     clearTimeout(this.networkTimeoutRef);
     if (this.abortController) this.abortController.abort();
     this.abortController = new AbortController();
@@ -129,7 +132,7 @@ export class VehicleAccessories implements ImageViewerInterface {
   }
 
   @Method()
-  async setMockData(newMockData: MockJson<VehicleInformation>) {
+  async setMockData(newMockData: MockJson<vehicleLookupDTO>) {
     mockData = newMockData;
   }
 

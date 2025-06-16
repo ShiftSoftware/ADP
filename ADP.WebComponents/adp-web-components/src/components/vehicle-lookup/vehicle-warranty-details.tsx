@@ -7,7 +7,7 @@ import { ErrorKeys, getLocaleLanguage, getSharedLocal, SharedLocales, sharedLoca
 import { Grecaptcha } from '~types/general';
 import { LanguageKeys } from '~types/locale';
 import { AppStates, MockJson } from '~types/components';
-import { VehicleInformation } from '~types/vehicle-information';
+import { vehicleLookupDTO } from '~types/vehicleLookup/vehicleLookupDTO';
 
 import { getVehicleInformation, VehicleInformationInterface } from '~api/vehicleInformation';
 
@@ -20,7 +20,7 @@ import { InformationTableColumn } from '../components/information-table';
 import XIcon from './assets/x-mark.svg';
 import CheckIcon from './assets/check.svg';
 
-let mockData: MockJson<VehicleInformation> = {};
+let mockData: MockJson<vehicleLookupDTO> = {};
 
 declare const grecaptcha: Grecaptcha;
 
@@ -56,14 +56,14 @@ export class VehicleWarrantyDetails implements VehicleInformationInterface {
 
   @Prop() errorCallback: (errorMessage: ErrorKeys) => void;
   @Prop() loadingStateChange?: (isLoading: boolean) => void;
-  @Prop() loadedResponse?: (response: VehicleInformation) => void;
+  @Prop() loadedResponse?: (response: vehicleLookupDTO) => void;
 
   @State() state: AppStates = 'idle';
   @State() externalVin?: string = null;
   @State() showRecaptcha: boolean = false;
   @State() errorMessage?: ErrorKeys = null;
+  @State() vehicleInformation?: vehicleLookupDTO;
   @State() unInvoicedByBrokerName?: string = null;
-  @State() vehicleInformation?: VehicleInformation;
   @State() checkingUnauthorizedSSC: boolean = false;
   @State() recaptchaRes: { hasSSC: boolean; message: 'noPendingSSC' | 'pendingSSC' } | null = null;
   @State() headers: any = {};
@@ -88,7 +88,7 @@ export class VehicleWarrantyDetails implements VehicleInformationInterface {
     this.sharedLocales = localeResponses[1];
   }
 
-  private handleSettingData(response: VehicleInformation) {
+  private handleSettingData(response: vehicleLookupDTO) {
     if (response.warranty === null)
       response.warranty = {
         warrantyEndDate: '',
@@ -167,7 +167,7 @@ export class VehicleWarrantyDetails implements VehicleInformationInterface {
   }
 
   @Method()
-  async setData(newData: VehicleInformation | string, headers: any = {}) {
+  async setData(newData: vehicleLookupDTO | string, headers: any = {}) {
     this.recaptchaRes = null;
     this.headers = headers;
     clearTimeout(this.networkTimeoutRef);
@@ -241,7 +241,7 @@ export class VehicleWarrantyDetails implements VehicleInformationInterface {
   }
 
   @Method()
-  async setMockData(newMockData: MockJson<VehicleInformation>) {
+  async setMockData(newMockData: MockJson<vehicleLookupDTO>) {
     mockData = newMockData;
   }
 

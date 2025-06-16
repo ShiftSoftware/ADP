@@ -1730,8 +1730,8 @@ const mockData = {
     ssc: null,
     vehicleVariantInfo: null,
     vehicleSpecification: {
-      modelDesc: 'HILUX 2.7 D/C 4*4/AT/High/ADD',
-      variantDesc: '2.7L/DC/4x4/AT/High/ADD',
+      modelDescription: 'HILUX 2.7 D/C 4*4/AT/High/ADD',
+      variantDescription: '2.7L/DC/4x4/AT/High/ADD',
       class: 'C',
       bodyType: ' ',
       productionDate: '2025-12-01T00:00:00',
@@ -2566,8 +2566,8 @@ const mockData = {
       modelYear: 2023,
     },
     vehicleSpecification: {
-      modelDesc: 'LAND CRUISER 3.5 LC300',
-      variantDesc: '3.5L Turbo AX HIGH/Plus',
+      modelDescription: 'LAND CRUISER 3.5 LC300',
+      variantDescription: '3.5L Turbo AX HIGH/Plus',
       class: 'P',
       bodyType: ' ',
       engine: ' 3500 ',
@@ -3669,8 +3669,8 @@ const mockData = {
       modelYear: 2023,
     },
     vehicleSpecification: {
-      modelDesc: 'LAND CRUISER 3.5 LC300',
-      variantDesc: '3.5L Turbo AX HIGH/Plus',
+      modelDescription: 'LAND CRUISER 3.5 LC300',
+      variantDescription: '3.5L Turbo AX HIGH/Plus',
       class: 'P',
       bodyType: ' ',
       engine: ' 3500 ',
@@ -4234,8 +4234,8 @@ const mockData = {
       modelYear: 2023,
     },
     vehicleSpecification: {
-      modelDesc: 'LAND CRUISER 3.5 LC300',
-      variantDesc: '3.5L Turbo AX HIGH/Plus',
+      modelDescription: 'LAND CRUISER 3.5 LC300',
+      variantDescription: '3.5L Turbo AX HIGH/Plus',
       class: 'P',
       bodyType: ' ',
       engine: ' 3500 ',
