@@ -1,4 +1,4 @@
-export type vehicleWarrantyDTO = {
+export type VehicleWarrantyDTO = {
     hasActiveWarranty: boolean;
     warrantyStartDate?: string;
     warrantyEndDate?: string;

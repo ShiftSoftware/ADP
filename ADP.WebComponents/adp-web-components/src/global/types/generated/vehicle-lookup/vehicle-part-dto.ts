@@ -1,4 +1,4 @@
-export type vehiclePartDTO = {
+export type VehiclePartDTO = {
     partNumber: string;
     qty?: number;
     menuCode: string;

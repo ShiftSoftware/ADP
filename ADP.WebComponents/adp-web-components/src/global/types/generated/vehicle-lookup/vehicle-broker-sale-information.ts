@@ -1,4 +1,4 @@
-export type vehicleBrokerSaleInformation = {
+export type VehicleBrokerSaleInformation = {
     brokerID: number;
     brokerName: string;
     customerID?: number;

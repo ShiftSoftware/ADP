@@ -1,6 +1,6 @@
-import type { vehicleLaborDTO } from './vehicleLaborDTO';
-import type { vehiclePartDTO } from './vehiclePartDTO';
-export type vehicleServiceHistoryDTO = {
+import type { VehicleLaborDTO } from './vehicle-labor-dto';
+import type { VehiclePartDTO } from './vehicle-part-dto';
+export type VehicleServiceHistoryDTO = {
     serviceType: string;
     serviceDate?: string;
     mileage?: number;
@@ -11,6 +11,6 @@ export type vehicleServiceHistoryDTO = {
     accountNumber: string;
     invoiceNumber: string;
     jobNumber: string;
-    laborLines: vehicleLaborDTO[];
-    partLines: vehiclePartDTO[];
+    laborLines: VehicleLaborDTO[];
+    partLines: VehiclePartDTO[];
 };

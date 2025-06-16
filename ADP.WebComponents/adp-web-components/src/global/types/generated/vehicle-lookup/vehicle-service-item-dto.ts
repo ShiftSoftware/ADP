@@ -1,22 +1,22 @@
-export type vehicleServiceItemDTO = {
-  group: {
-    name?: string;
+export type VehicleServiceItemDTO = {
+  group?: {
+    name: string;
     tabOrder?: number;
     isDefault?: boolean;
     isSequential?: boolean;
   };
   showDocumentUploader?: boolean;
-  documentUploaderIsRequired: boolean;
+  documentUploaderIsRequired?: boolean;
   name: string;
   description: string;
   title: string;
   image: string;
   type: string;
-  typeEnum: 'free' | 'paid';
+  typeEnum: 'Free' | 'Paid';
   activatedAt: string;
   expiresAt?: string;
   status: string;
-  statusEnum: 'processed' | 'expired' | 'pending' | 'cancelled' | 'activationRequired';
+  statusEnum: 'Processed' | 'Expired' | 'Pending' | 'Cancelled' | 'ActivationRequired';
   campaignID?: number;
   campaignUniqueReference: string;
   packageCode: string;
@@ -31,7 +31,7 @@ export type vehicleServiceItemDTO = {
   jobNumber: string;
   maximumMileage?: number;
   claimable: boolean;
-  claimingMethodEnum: 'claimByScanningQRCode' | 'claimByEnteringInvoiceAndJobNumber';
+  claimingMethodEnum: 'ClaimByScanningQRCode' | 'ClaimByEnteringInvoiceAndJobNumber';
   vehicleInspectionID: string;
   signature: string;
   signatureExpiry: string;

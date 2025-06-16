@@ -1,4 +1,4 @@
-export type vehicleSpecificationDTO = {
+export type VehicleSpecificationDTO = {
     modelCode: string;
     modelYear?: number;
     productionDate?: string;

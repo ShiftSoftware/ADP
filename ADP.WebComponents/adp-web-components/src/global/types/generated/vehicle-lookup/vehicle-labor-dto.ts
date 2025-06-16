@@ -1,4 +1,4 @@
-export type vehicleLaborDTO = {
+export type VehicleLaborDTO = {
     rtsCode: string;
     menuCode: string;
     serviceCode: string;

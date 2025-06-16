@@ -3,7 +3,7 @@ import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stenci
 
 import { LanguageKeys } from '~types/locale';
 import { AppStates, MockJson } from '~types/components';
-import { vehicleLookupDTO } from '~types/vehicleLookup/vehicleLookupDTO';
+import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
 import { ErrorKeys, getLocaleLanguage, getSharedLocal, SharedLocales, sharedLocalesSchema } from '~lib/get-local-language';
 
@@ -14,7 +14,7 @@ import specificationSchema from '~locales/vehicleLookup/specification/type';
 import { VehicleInfoLayout } from '../components/vehicle-info-layout';
 import { MaterialCard, MaterialCardChildren } from '../components/material-card';
 
-let mockData: MockJson<vehicleLookupDTO> = {};
+let mockData: MockJson<VehicleLookupDTO> = {};
 
 @Component({
   shadow: true,
@@ -29,7 +29,7 @@ export class VehicleSpecification implements VehicleInformationInterface {
   @Prop() language: LanguageKeys = 'en';
   @Prop() errorCallback: (errorMessage: ErrorKeys) => void;
   @Prop() loadingStateChange?: (isLoading: boolean) => void;
-  @Prop() loadedResponse?: (response: vehicleLookupDTO) => void;
+  @Prop() loadedResponse?: (response: VehicleLookupDTO) => void;
 
   @State() sharedLocales: SharedLocales = sharedLocalesSchema.getDefault();
   @State() locale: InferType<typeof specificationSchema> = specificationSchema.getDefault();
@@ -37,7 +37,7 @@ export class VehicleSpecification implements VehicleInformationInterface {
   @State() state: AppStates = 'idle';
   @State() externalVin?: string = null;
   @State() errorMessage?: ErrorKeys = null;
-  @State() vehicleInformation?: vehicleLookupDTO;
+  @State() vehicleInformation?: VehicleLookupDTO;
 
   abortController: AbortController;
   networkTimeoutRef: ReturnType<typeof setTimeout>;
@@ -56,7 +56,7 @@ export class VehicleSpecification implements VehicleInformationInterface {
   }
 
   @Method()
-  async setData(newData: vehicleLookupDTO | string, headers: any = {}) {
+  async setData(newData: VehicleLookupDTO | string, headers: any = {}) {
     clearTimeout(this.networkTimeoutRef);
     if (this.abortController) this.abortController.abort();
     this.abortController = new AbortController();
@@ -117,7 +117,7 @@ export class VehicleSpecification implements VehicleInformationInterface {
   }
 
   @Method()
-  async setMockData(newMockData: MockJson<vehicleLookupDTO>) {
+  async setMockData(newMockData: MockJson<VehicleLookupDTO>) {
     mockData = newMockData;
   }
 

@@ -6,12 +6,12 @@ import { ErrorKeys, getLocaleLanguage, getSharedLocal, SharedLocales, sharedLoca
 
 import { LanguageKeys } from '~types/locale';
 import { AppStates, MockJson } from '~types/components';
-import { partLookupDTO } from '~types/part/partLookupDTO';
+import { PartLookupDTO } from '~types/generated/part/part-lookup-dto';
 
 import { getPartInformation, PartInformationInterface } from '~api/partInformation';
 import distributerSchema from '~locales/partLookup/distributor/type';
 
-let mockData: MockJson<partLookupDTO> = {};
+let mockData: MockJson<PartLookupDTO> = {};
 
 @Component({
   shadow: true,
@@ -27,11 +27,11 @@ export class DistributorLookup implements PartInformationInterface {
   @Prop() localizationName?: string = '';
   @Prop() errorCallback: (errorMessage: string) => void;
   @Prop() loadingStateChange?: (isLoading: boolean) => void;
-  @Prop() loadedResponse?: (response: partLookupDTO) => void;
+  @Prop() loadedResponse?: (response: PartLookupDTO) => void;
 
   @State() state: AppStates = 'idle';
   @State() errorMessage?: ErrorKeys = null;
-  @State() partInformation?: partLookupDTO;
+  @State() partInformation?: PartLookupDTO;
   @State() externalPartNumber?: string = null;
 
   @State() sharedLocales: SharedLocales = sharedLocalesSchema.getDefault();
@@ -53,12 +53,12 @@ export class DistributorLookup implements PartInformationInterface {
     this.sharedLocales = localeResponses[1];
   }
 
-  private handleSettingData(response: partLookupDTO) {
+  private handleSettingData(response: PartLookupDTO) {
     this.partInformation = response;
   }
 
   @Method()
-  async setData(newData: partLookupDTO | string, headers: any = {}) {
+  async setData(newData: PartLookupDTO | string, headers: any = {}) {
     clearTimeout(this.networkTimeoutRef);
     if (this.abortController) this.abortController.abort();
     this.abortController = new AbortController();
@@ -120,7 +120,7 @@ export class DistributorLookup implements PartInformationInterface {
   }
 
   @Method()
-  async setMockData(newMockData: MockJson<partLookupDTO>) {
+  async setMockData(newMockData: MockJson<PartLookupDTO>) {
     mockData = newMockData;
   }
 
@@ -171,7 +171,7 @@ export class DistributorLookup implements PartInformationInterface {
 
     const displayDistributer = this.partInformation
       ? !this.partInformation.stockParts.some(
-          ({ quantityLookUpResult }) => quantityLookUpResult === 'lookupIsSkipped' || quantityLookUpResult === 'quantityNotWithinLookupThreshold',
+          ({ quantityLookUpResult }) => quantityLookUpResult === 'LookupIsSkipped' || quantityLookUpResult === 'QuantityNotWithinLookupThreshold',
         )
       : false;
 
@@ -246,14 +246,14 @@ export class DistributorLookup implements PartInformationInterface {
                                 <td class={cn('px-[10px] py-[20px] text-center whitespace-nowrap')}>
                                   <div
                                     class={cn('text-[red]', {
-                                      'text-[green]': stock.quantityLookUpResult === 'available',
-                                      'text-[orange]': stock.quantityLookUpResult === 'partiallyAvailable',
+                                      'text-[green]': stock.quantityLookUpResult === 'Available',
+                                      'text-[orange]': stock.quantityLookUpResult === 'PartiallyAvailable',
                                     })}
                                   >
                                     <strong>
-                                      {stock.quantityLookUpResult === 'available'
+                                      {stock.quantityLookUpResult === 'Available'
                                         ? texts.available
-                                        : stock.quantityLookUpResult === 'partiallyAvailable'
+                                        : stock.quantityLookUpResult === 'PartiallyAvailable'
                                           ? texts.partiallyAvailable
                                           : texts.notAvailable}
                                     </strong>

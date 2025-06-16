@@ -9,7 +9,7 @@ import { getVehicleInformation } from '~api/vehicleInformation';
 
 import { LanguageKeys } from '~types/locale';
 import { AppStates, MockJson } from '~types/components';
-import { vehicleLookupDTO } from '~types/vehicleLookup/vehicleLookupDTO';
+import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
 import Eye from '~assets/eye.svg';
 
@@ -18,7 +18,7 @@ import paintThicknessSchema from '~locales/vehicleLookup/paintThickness/type';
 import { VehicleInfoLayout } from '../components/vehicle-info-layout';
 import { InformationTableColumn } from '../components/information-table';
 
-let mockData: MockJson<vehicleLookupDTO> = {};
+let mockData: MockJson<VehicleLookupDTO> = {};
 
 @Component({
   shadow: true,
@@ -33,7 +33,7 @@ export class VehiclePaintThickness implements ImageViewerInterface {
   @Prop() language: LanguageKeys = 'en';
   @Prop() errorCallback: (errorMessage: ErrorKeys) => void;
   @Prop() loadingStateChange?: (isLoading: boolean) => void;
-  @Prop() loadedResponse?: (response: vehicleLookupDTO) => void;
+  @Prop() loadedResponse?: (response: VehicleLookupDTO) => void;
 
   @State() sharedLocales: SharedLocales = sharedLocalesSchema.getDefault();
   @State() locale: InferType<typeof paintThicknessSchema> = paintThicknessSchema.getDefault();
@@ -42,7 +42,7 @@ export class VehiclePaintThickness implements ImageViewerInterface {
   @State() externalVin?: string = null;
   @State() expandedImage?: string = null;
   @State() errorMessage?: ErrorKeys = null;
-  @State() vehicleInformation?: vehicleLookupDTO;
+  @State() vehicleInformation?: VehicleLookupDTO;
 
   abortController: AbortController;
   networkTimeoutRef: ReturnType<typeof setTimeout>;
@@ -62,7 +62,7 @@ export class VehiclePaintThickness implements ImageViewerInterface {
     this.sharedLocales = localeResponses[1];
   }
 
-  private handleSettingData(response: vehicleLookupDTO) {
+  private handleSettingData(response: VehicleLookupDTO) {
     if (!response.paintThickness) response.paintThickness = { imageGroups: [], parts: [] };
     if (!response.paintThickness.parts || !Array.isArray(response.paintThickness.parts)) response.paintThickness.parts = [];
     if (!response.paintThickness.imageGroups || !Array.isArray(response.paintThickness.imageGroups)) response.paintThickness.imageGroups = [];
@@ -71,7 +71,7 @@ export class VehiclePaintThickness implements ImageViewerInterface {
   }
 
   @Method()
-  async setData(newData: vehicleLookupDTO | string, headers: any = {}) {
+  async setData(newData: VehicleLookupDTO | string, headers: any = {}) {
     clearTimeout(this.networkTimeoutRef);
     if (this.abortController) this.abortController.abort();
     this.abortController = new AbortController();
@@ -136,7 +136,7 @@ export class VehiclePaintThickness implements ImageViewerInterface {
   }
 
   @Method()
-  async setMockData(newMockData: MockJson<vehicleLookupDTO>) {
+  async setMockData(newMockData: MockJson<VehicleLookupDTO>) {
     mockData = newMockData;
   }
 

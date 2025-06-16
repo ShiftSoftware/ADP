@@ -1,5 +1,5 @@
 import { MockJson } from '~types/components';
-import { vehicleLookupDTO } from '~types/vehicleLookup/vehicleLookupDTO';
+import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
 const vehicleRequestHeaders = {
   cityId: 'City-Id',
@@ -23,23 +23,23 @@ export interface VehicleInformationInterface extends VehicleRequestHeaders {
   queryString?: string;
   abortController: AbortController;
   networkTimeoutRef: ReturnType<typeof setTimeout>;
-  loadedResponse?: (response: vehicleLookupDTO) => void;
+  loadedResponse?: (response: VehicleLookupDTO) => void;
 }
 
 type GetVehicleInformationProps = {
   vin: string;
   notAvailableMessage?: string;
-  mockData: MockJson<vehicleLookupDTO>;
+  mockData: MockJson<VehicleLookupDTO>;
   scopedTimeoutRef: ReturnType<typeof setTimeout>;
   middlewareCallback?: (VehicleInformation) => void;
 };
 
-export const getVehicleInformation = async (component: VehicleInformationInterface, generalProps: GetVehicleInformationProps, headers: any = {}): Promise<vehicleLookupDTO> => {
+export const getVehicleInformation = async (component: VehicleInformationInterface, generalProps: GetVehicleInformationProps, headers: any = {}): Promise<VehicleLookupDTO> => {
   const { notAvailableMessage, mockData, vin, scopedTimeoutRef, middlewareCallback } = generalProps;
 
   const { isDev, baseUrl, queryString, abortController, networkTimeoutRef, loadedResponse } = component;
 
-  const handleResult = (newVehicleInformation: vehicleLookupDTO): vehicleLookupDTO => {
+  const handleResult = (newVehicleInformation: VehicleLookupDTO): VehicleLookupDTO => {
     if (networkTimeoutRef === scopedTimeoutRef) {
       if (!newVehicleInformation && vin) throw new Error(notAvailableMessage || 'wrongResponseFormat');
 
@@ -64,7 +64,7 @@ export const getVehicleInformation = async (component: VehicleInformationInterfa
 
     const response = await fetch(`${baseUrl}${vin}?${queryString}`, { signal: abortController.signal, headers: componentHeaders });
 
-    const newData = (await response.json()) as vehicleLookupDTO;
+    const newData = (await response.json()) as VehicleLookupDTO;
 
     return handleResult(newData);
   }

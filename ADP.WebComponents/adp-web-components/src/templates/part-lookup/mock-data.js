@@ -114,7 +114,7 @@ const mockData = {
     supersededTo: ['1110109263', '137410PH00', '138010PH00', '139350PH00'],
     stockParts: [
       {
-        quantityLookUpResult: 'available',
+        quantityLookUpResult: 'Available',
         locationID: 'UZ-UZ-BS',
         locationName: 'Besten Stock',
       },

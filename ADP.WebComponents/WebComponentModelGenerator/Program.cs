@@ -21,10 +21,17 @@ var compilation = CSharpCompilation.Create("Temp")
         MetadataReference.CreateFromFile(typeof(Guid).Assembly.Location)
     );
 
+var generatedTypesFolderPath = "../../../../adp-web-components/src/global/types/generated";
+
+if (Directory.Exists(generatedTypesFolderPath))
+    Directory.Delete(generatedTypesFolderPath, true);
+
+Directory.CreateDirectory(generatedTypesFolderPath!);
+
 foreach (var (file, tree) in syntaxTreeWithPaths)
 {
     var semanticModel = compilation.GetSemanticModel(tree);
-    
+
     var root = tree.GetCompilationUnitRoot();
 
     var destinationPath = file.Contains("Lookup.Services\\DTOsAndModel") ? file.Substring(file.IndexOf(@"\Lookup.Services\DTOsAndModel") + @"\Lookup.Services\DTOsAndModel".Length + 1) : ""; // Handle Later
@@ -70,28 +77,26 @@ foreach (var (file, tree) in syntaxTreeWithPaths)
             typeLines.AppendLine($"    {ToCamelCase(name)}{(prop.Type is NullableTypeSyntax ? "?" : "")}: {tsType};");
         }
 
-        var tsTypeName = ToCamelCase(classDecl.Identifier.Text);
-
         // Generate imports only once, before the type definition
         var importSb = new StringBuilder();
         foreach (var refType in referencedTypes)
         {
             if (refType != classDecl.Identifier.Text)
-                importSb.AppendLine($"import type {{ {ToCamelCase(refType)} }} from './{ToCamelCase(refType)}';");
+                importSb.AppendLine($"import type {{ {refType} }} from './{ToKebabCase(refType)}';");
         }
 
         sb.Append(importSb.ToString());
-        sb.AppendLine($"export type {tsTypeName} = " + "{");
+        sb.AppendLine($"export type {classDecl.Identifier.Text} = " + "{");
         sb.Append(typeLines.ToString());
         sb.Append("};");
 
         destinationPath = string.Join('\\',
             destinationPath
             .Split('\\')
-            .Select(x => ToCamelCase(x))
+            .Select(x => ToKebabCase(x))
         );
 
-        destinationPath = Path.GetFullPath(Path.Combine(baseDir, $"../../../../adp-web-components/src/global/types/{destinationPath}"));
+        destinationPath = Path.GetFullPath(Path.Combine(baseDir, $"{generatedTypesFolderPath}/{destinationPath}"));
 
         destinationPath = Path.ChangeExtension(destinationPath, ".ts");
 
@@ -183,7 +188,7 @@ bool IsPrimitiveType(string tsType)
 
         if (enumMembers.Length > 0)
         {
-            return (null, string.Join(" | ", enumMembers.Select(m => $"'{ToCamelCase(m.Name)}'")));
+            return (null, string.Join(" | ", enumMembers.Select(m => $"'{m.Name}'")));
         }
     }
 
@@ -200,7 +205,46 @@ bool IsPrimitiveType(string tsType)
     }
 
     // Otherwise — custom types: assume will be generated elsewhere
-    return (symbol.MetadataName, ToCamelCase(symbol.Name));
+    return (symbol.MetadataName, symbol.Name);
+}
+
+string ToKebabCase(string name)
+{
+    if (string.IsNullOrEmpty(name))
+        return name;
+
+    var lastDotIndex = name.LastIndexOf('.');
+    string namePart = lastDotIndex > 0 ? name.Substring(0, lastDotIndex) : name;
+    string extensionPart = lastDotIndex > 0 ? name.Substring(lastDotIndex) : "";
+
+    var sb = new StringBuilder();
+    for (int i = 0; i < namePart.Length; i++)
+    {
+        var current = namePart[i];
+        var next = i + 1 < namePart.Length ? namePart[i + 1] : '\0';
+        var prev = i > 0 ? namePart[i - 1] : '\0';
+
+        // New word start if:
+        // - Current is uppercase
+        // - Previous is lowercase or digit (e.g., "fooBar" or "version1ID")
+        // - OR transition from abbreviation to lowercase (e.g., "SSCItem" → ssc-item)
+        if (char.IsUpper(current))
+        {
+            bool isAbbreviationEnd = char.IsUpper(prev) && char.IsLower(next);
+            bool isNewWord = i > 0 && (!char.IsUpper(prev) || isAbbreviationEnd);
+
+            if (isNewWord)
+                sb.Append('-');
+
+            sb.Append(char.ToLowerInvariant(current));
+        }
+        else
+        {
+            sb.Append(current);
+        }
+    }
+
+    return sb.ToString() + extensionPart;
 }
 
 string ToCamelCase(string name)
@@ -231,7 +275,6 @@ string ToCamelCase(string name)
     // Standard PascalCase → camelCase
     return char.ToLowerInvariant(name[0]) + name.Substring(1);
 }
-
 bool IsInlineEnumType(string tsType)
 {
     return tsType.ToString() == "System.Enum" || tsType.GetType().BaseType.ToString() == "System.Enum";

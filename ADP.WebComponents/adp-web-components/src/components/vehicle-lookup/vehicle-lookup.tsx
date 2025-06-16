@@ -5,7 +5,7 @@ import { ErrorKeys, getLocaleLanguage, getSharedLocal, SharedLocales, sharedLoca
 
 import { LanguageKeys } from '~types/locale';
 import { DotNetObjectReference } from '~types/components';
-import { vehicleLookupDTO } from '~types/vehicleLookup/vehicleLookupDTO';
+import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
 import vehicleLookupWrapperSchema from '~locales/vehicleLookup/wrapper-type';
 
@@ -58,7 +58,7 @@ export class VehicleLookup {
   @Prop() loadingStateChanged?: (isLoading: boolean) => void;
   @Prop() blazorOnLoadingStateChange = '';
 
-  @Prop() dynamicClaimActivate?: (vehicleInformation: vehicleLookupDTO) => void;
+  @Prop() dynamicClaimActivate?: (vehicleInformation: VehicleLookupDTO) => void;
   @Prop() blazorDynamicClaimActivate = '';
 
   @State() errorKey: ErrorKeys;
@@ -131,7 +131,7 @@ export class VehicleLookup {
   };
 
   @Method()
-  handleLoadData(newResponse: vehicleLookupDTO, activeElement) {
+  handleLoadData(newResponse: VehicleLookupDTO, activeElement) {
     this.isError = false;
     this.currentVin = newResponse.vin || '';
     Object.values(this.componentsList).forEach(element => {

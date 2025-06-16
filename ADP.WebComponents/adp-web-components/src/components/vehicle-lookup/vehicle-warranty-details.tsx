@@ -7,7 +7,7 @@ import { ErrorKeys, getLocaleLanguage, getSharedLocal, SharedLocales, sharedLoca
 import { Grecaptcha } from '~types/general';
 import { LanguageKeys } from '~types/locale';
 import { AppStates, MockJson } from '~types/components';
-import { vehicleLookupDTO } from '~types/vehicleLookup/vehicleLookupDTO';
+import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
 import { getVehicleInformation, VehicleInformationInterface } from '~api/vehicleInformation';
 
@@ -20,7 +20,7 @@ import { InformationTableColumn } from '../components/information-table';
 import XIcon from './assets/x-mark.svg';
 import CheckIcon from './assets/check.svg';
 
-let mockData: MockJson<vehicleLookupDTO> = {};
+let mockData: MockJson<VehicleLookupDTO> = {};
 
 declare const grecaptcha: Grecaptcha;
 
@@ -56,13 +56,13 @@ export class VehicleWarrantyDetails implements VehicleInformationInterface {
 
   @Prop() errorCallback: (errorMessage: ErrorKeys) => void;
   @Prop() loadingStateChange?: (isLoading: boolean) => void;
-  @Prop() loadedResponse?: (response: vehicleLookupDTO) => void;
+  @Prop() loadedResponse?: (response: VehicleLookupDTO) => void;
 
   @State() state: AppStates = 'idle';
   @State() externalVin?: string = null;
   @State() showRecaptcha: boolean = false;
   @State() errorMessage?: ErrorKeys = null;
-  @State() vehicleInformation?: vehicleLookupDTO;
+  @State() vehicleInformation?: VehicleLookupDTO;
   @State() unInvoicedByBrokerName?: string = null;
   @State() checkingUnauthorizedSSC: boolean = false;
   @State() recaptchaRes: { hasSSC: boolean; message: 'noPendingSSC' | 'pendingSSC' } | null = null;
@@ -88,7 +88,7 @@ export class VehicleWarrantyDetails implements VehicleInformationInterface {
     this.sharedLocales = localeResponses[1];
   }
 
-  private handleSettingData(response: vehicleLookupDTO) {
+  private handleSettingData(response: VehicleLookupDTO) {
     if (response.warranty === null)
       response.warranty = {
         warrantyEndDate: '',
@@ -167,7 +167,7 @@ export class VehicleWarrantyDetails implements VehicleInformationInterface {
   }
 
   @Method()
-  async setData(newData: vehicleLookupDTO | string, headers: any = {}) {
+  async setData(newData: VehicleLookupDTO | string, headers: any = {}) {
     this.recaptchaRes = null;
     this.headers = headers;
     clearTimeout(this.networkTimeoutRef);
@@ -241,7 +241,7 @@ export class VehicleWarrantyDetails implements VehicleInformationInterface {
   }
 
   @Method()
-  async setMockData(newMockData: MockJson<vehicleLookupDTO>) {
+  async setMockData(newMockData: MockJson<VehicleLookupDTO>) {
     mockData = newMockData;
   }
 

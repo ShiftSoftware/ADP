@@ -5,7 +5,7 @@ import { ErrorKeys, getLocaleLanguage, getSharedLocal, SharedLocales, sharedLoca
 
 import { LanguageKeys } from '~types/locale';
 import { AppStates, MockJson } from '~types/components';
-import { vehicleLookupDTO } from '~types/vehicleLookup/vehicleLookupDTO';
+import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
 import { getVehicleInformation, VehicleInformationInterface } from '~api/vehicleInformation';
 
@@ -14,7 +14,7 @@ import ServiceHistorySchema from '~locales/vehicleLookup/serviceHistory/type';
 import { VehicleInfoLayout } from '../components/vehicle-info-layout';
 import { InformationTableColumn } from '../components/information-table';
 
-let mockData: MockJson<vehicleLookupDTO> = {};
+let mockData: MockJson<VehicleLookupDTO> = {};
 
 @Component({
   shadow: true,
@@ -29,7 +29,7 @@ export class VehicleServiceHistory implements VehicleInformationInterface {
   @Prop() language: LanguageKeys = 'en';
   @Prop() errorCallback: (errorMessage: ErrorKeys) => void;
   @Prop() loadingStateChange?: (isLoading: boolean) => void;
-  @Prop() loadedResponse?: (response: vehicleLookupDTO) => void;
+  @Prop() loadedResponse?: (response: VehicleLookupDTO) => void;
 
   @State() sharedLocales: SharedLocales = sharedLocalesSchema.getDefault();
   @State() locale: InferType<typeof ServiceHistorySchema> = ServiceHistorySchema.getDefault();
@@ -37,7 +37,7 @@ export class VehicleServiceHistory implements VehicleInformationInterface {
   @State() state: AppStates = 'idle';
   @State() externalVin?: string = null;
   @State() errorMessage?: ErrorKeys = null;
-  @State() vehicleInformation?: vehicleLookupDTO;
+  @State() vehicleInformation?: VehicleLookupDTO;
 
   abortController: AbortController;
   networkTimeoutRef: ReturnType<typeof setTimeout>;
@@ -55,13 +55,13 @@ export class VehicleServiceHistory implements VehicleInformationInterface {
     this.sharedLocales = localeResponses[1];
   }
 
-  private handleSettingData(response: vehicleLookupDTO) {
+  private handleSettingData(response: VehicleLookupDTO) {
     if (response.serviceHistory === null) response.serviceHistory = [];
     this.vehicleInformation = response;
   }
 
   @Method()
-  async setData(newData: vehicleLookupDTO | string, headers: any = {}) {
+  async setData(newData: VehicleLookupDTO | string, headers: any = {}) {
     clearTimeout(this.networkTimeoutRef);
     if (this.abortController) this.abortController.abort();
     this.abortController = new AbortController();
@@ -123,7 +123,7 @@ export class VehicleServiceHistory implements VehicleInformationInterface {
   }
 
   @Method()
-  async setMockData(newMockData: MockJson<vehicleLookupDTO>) {
+  async setMockData(newMockData: MockJson<VehicleLookupDTO>) {
     mockData = newMockData;
   }
 

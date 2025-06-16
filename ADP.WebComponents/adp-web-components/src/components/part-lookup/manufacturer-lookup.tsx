@@ -6,13 +6,13 @@ import { ErrorKeys, getLocaleLanguage, getSharedLocal, SharedLocales, sharedLoca
 
 import { LanguageKeys } from '~types/locale';
 import { AppStates, MockJson } from '~types/components';
-import { partLookupDTO } from '~types/part/partLookupDTO';
+import { PartLookupDTO } from '~types/generated/part/part-lookup-dto';
 
 import { getPartInformation, PartInformationInterface } from '~api/partInformation';
 
 import manufacturerSchema from '~locales/partLookup/manufacturer/type';
 
-let mockData: MockJson<partLookupDTO> = {};
+let mockData: MockJson<PartLookupDTO> = {};
 
 @Component({
   shadow: true,
@@ -29,11 +29,11 @@ export class ManufacturerLookup implements PartInformationInterface {
   @Prop() headerTitle: string = 'Manufacturer';
   @Prop() errorCallback: (errorMessage: string) => void;
   @Prop() loadingStateChange?: (isLoading: boolean) => void;
-  @Prop() loadedResponse?: (response: partLookupDTO) => void;
+  @Prop() loadedResponse?: (response: PartLookupDTO) => void;
 
   @State() state: AppStates = 'idle';
   @State() errorMessage?: ErrorKeys = null;
-  @State() partInformation?: partLookupDTO;
+  @State() partInformation?: PartLookupDTO;
   @State() externalPartNumber?: string = null;
 
   @State() sharedLocales: SharedLocales = sharedLocalesSchema.getDefault();
@@ -55,12 +55,12 @@ export class ManufacturerLookup implements PartInformationInterface {
     this.sharedLocales = localeResponses[1];
   }
 
-  private handleSettingData(response: partLookupDTO) {
+  private handleSettingData(response: PartLookupDTO) {
     this.partInformation = response;
   }
 
   @Method()
-  async setData(newData: partLookupDTO | string, headers: any = {}) {
+  async setData(newData: PartLookupDTO | string, headers: any = {}) {
     clearTimeout(this.networkTimeoutRef);
     if (this.abortController) this.abortController.abort();
     this.abortController = new AbortController();
@@ -122,7 +122,7 @@ export class ManufacturerLookup implements PartInformationInterface {
   }
 
   @Method()
-  async setMockData(newMockData: MockJson<partLookupDTO>) {
+  async setMockData(newMockData: MockJson<PartLookupDTO>) {
     mockData = newMockData;
   }
 

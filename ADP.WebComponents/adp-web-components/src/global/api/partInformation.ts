@@ -1,5 +1,5 @@
 import { MockJson } from '~types/components';
-import { partLookupDTO } from '~types/part/partLookupDTO';
+import { PartLookupDTO } from '~types/generated/part/part-lookup-dto';
 
 export interface PartInformationInterface {
   isDev: boolean;
@@ -7,23 +7,23 @@ export interface PartInformationInterface {
   queryString?: string;
   abortController: AbortController;
   networkTimeoutRef: ReturnType<typeof setTimeout>;
-  loadedResponse?: (response: partLookupDTO) => void;
+  loadedResponse?: (response: PartLookupDTO) => void;
 }
 
 type GetPartInformationProps = {
   partNumber: string;
   notAvailableMessage?: string;
-  mockData: MockJson<partLookupDTO>;
+  mockData: MockJson<PartLookupDTO>;
   scopedTimeoutRef: ReturnType<typeof setTimeout>;
-  middlewareCallback?: (part: partLookupDTO) => void;
+  middlewareCallback?: (part: PartLookupDTO) => void;
 };
 
-export const getPartInformation = async (component: PartInformationInterface, generalProps: GetPartInformationProps, headers: any = {}): Promise<partLookupDTO> => {
+export const getPartInformation = async (component: PartInformationInterface, generalProps: GetPartInformationProps, headers: any = {}): Promise<PartLookupDTO> => {
   const { notAvailableMessage, mockData, partNumber, scopedTimeoutRef, middlewareCallback } = generalProps;
 
   const { isDev, baseUrl, queryString, abortController, networkTimeoutRef, loadedResponse } = component;
 
-  const handleResult = (newPartInformation: partLookupDTO): partLookupDTO => {
+  const handleResult = (newPartInformation: PartLookupDTO): PartLookupDTO => {
     if (networkTimeoutRef === scopedTimeoutRef) {
       if (!newPartInformation && partNumber) throw new Error(notAvailableMessage || 'wrongResponseFormat');
 
@@ -44,7 +44,7 @@ export const getPartInformation = async (component: PartInformationInterface, ge
 
     if (response.status === 204) throw new Error('noPartsFound');
 
-    const newData = (await response.json()) as partLookupDTO;
+    const newData = (await response.json()) as PartLookupDTO;
 
     return handleResult(newData);
   }

@@ -1,5 +1,5 @@
-import type { vehicleBrokerSaleInformation } from './vehicleBrokerSaleInformation';
-export type vehicleSaleInformation = {
+import type { VehicleBrokerSaleInformation } from './vehicle-broker-sale-information';
+export type VehicleSaleInformation = {
     countryID: string;
     countryName: string;
     companyID: string;
@@ -11,6 +11,6 @@ export type vehicleSaleInformation = {
     invoiceDate?: string;
     warrantyActivationDate?: string;
     invoiceNumber: string;
-    broker: vehicleBrokerSaleInformation;
+    broker: VehicleBrokerSaleInformation;
     regionID: string;
 };

@@ -1,8 +1,8 @@
 import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
 import { LanguageKeys } from '~types/locale';
-import { vehicleServiceItemDTO } from '~types/vehicleLookup/vehicleServiceItemDTO';
-import { vehicleSaleInformation } from '~types/vehicleLookup/vehicleSaleInformation';
+import { VehicleServiceItemDTO } from '~types/generated/vehicle-lookup/vehicle-service-item-dto';
+import { VehicleSaleInformation } from '~types/generated/vehicle-lookup/vehicle-sale-information';
 
 import cn from '~lib/cn';
 import { getSharedLocal, SharedLocales, sharedLocalesSchema } from '~lib/get-local-language';
@@ -15,9 +15,9 @@ export type ClaimFormPayload = {
   document?: File;
   invoice?: string;
   jobNumber?: string;
-  serviceItem: vehicleServiceItemDTO;
-  saleInformation: vehicleSaleInformation;
-  cancelledServiceItems: vehicleServiceItemDTO[];
+  serviceItem: VehicleServiceItemDTO;
+  saleInformation: VehicleSaleInformation;
+  cancelledServiceItems: VehicleServiceItemDTO[];
 };
 
 @Component({
@@ -28,17 +28,17 @@ export type ClaimFormPayload = {
 export class VehicleItemClaimForm {
   @Prop() vin?: string = '';
   @Prop() language: LanguageKeys = 'en';
-  @Prop() item?: vehicleServiceItemDTO = null;
+  @Prop() item?: VehicleServiceItemDTO = null;
   @Prop() maximumDocumentFileSizeInMb: number;
   @Prop() unInvoicedByBrokerName?: string = null;
-  @Prop() canceledItems?: vehicleServiceItemDTO[] = null;
+  @Prop() canceledItems?: VehicleServiceItemDTO[] = null;
   //@Prop() handleQrChanges?: (code: string) => void;
   @Prop() loadingStateChange?: (isLoading: boolean) => void;
   @Prop() handleClaiming?: (payload: ClaimFormPayload) => void;
   @Prop() locale: ClaimFormType = claimFormSchema.getDefault();
 
+  @State() claimViaBarcodeScanner: boolean = false;
   @State() sharedLocales: SharedLocales = sharedLocalesSchema.getDefault();
-  @State() claimViaBarcodeScanner: vehicleServiceItemDTO['claimingMethodEnum'] = 'claimByScanningQRCode';
 
   @State() internalVin?: string = '';
   @State() uploadProgress: number = 0;
@@ -46,10 +46,10 @@ export class VehicleItemClaimForm {
   @State() isOpened?: boolean = false;
   @State() isDocumentError: boolean = false;
   @State() selectedFile: File | null = null;
-  @State() internalItem?: vehicleServiceItemDTO = null;
+  @State() internalItem?: VehicleServiceItemDTO = null;
   @State() confirmServiceCancellation: boolean = false;
   @State() confirmUnInvoicedTBPVehicles: boolean = false;
-  @State() internalCanceledItem?: vehicleServiceItemDTO[] = null;
+  @State() internalCanceledItem?: VehicleServiceItemDTO[] = null;
   @State() documentError: 'documentLimitError' | 'documentRequiredError' = 'documentRequiredError';
 
   @State() readyToClaim: boolean = false;
@@ -126,7 +126,7 @@ export class VehicleItemClaimForm {
     this.isOpened = !!newItem;
     if (newItem) this.internalItem = newItem;
 
-    this.claimViaBarcodeScanner = this.item?.claimingMethodEnum;
+    this.claimViaBarcodeScanner = this.item?.claimingMethodEnum === 'ClaimByScanningQRCode';
 
     if (newItem) {
       this.closeModalListenerRef = (event: KeyboardEvent) => event.key === 'Escape' && this.quite();
@@ -365,6 +365,9 @@ export class VehicleItemClaimForm {
                         class="confirm-cancellation-input m-[3px] ml-1"
                         onChange={() => {
                           this.confirmServiceCancellation = !this.confirmServiceCancellation;
+                          setTimeout(() => {
+                            this.qrInput.focus();
+                          }, 100);
                         }}
                       />
                       {texts.confirmSkipServices}
@@ -391,6 +394,9 @@ export class VehicleItemClaimForm {
                         class="confirm-cancellation-input m-[3px] ml-1"
                         onChange={() => {
                           this.confirmUnInvoicedTBPVehicles = !this.confirmUnInvoicedTBPVehicles;
+                          setTimeout(() => {
+                            this.qrInput.focus();
+                          }, 100);
                         }}
                       />
                       {texts.confirmNotInvoiced}

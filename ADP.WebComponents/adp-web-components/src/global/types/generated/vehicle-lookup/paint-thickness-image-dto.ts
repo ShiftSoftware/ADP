@@ -1,4 +1,4 @@
-export type paintThicknessImageDTO = {
+export type PaintThicknessImageDTO = {
     name: string;
     images: string[];
 };

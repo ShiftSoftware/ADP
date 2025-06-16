@@ -1,4 +1,4 @@
-export type priceDTO = {
+export type PriceDTO = {
     value?: number;
     currecntySymbol: string;
     cultureName: string;
