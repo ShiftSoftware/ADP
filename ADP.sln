@@ -21,6 +21,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Global", "Global", "{9083B6
 	ProjectSection(SolutionItems) = preProject
 		azure-pipeline.yml = azure-pipeline.yml
 		GlobalSettings.props = GlobalSettings.props
+		package.json = package.json
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ADP.SyncAgent", "ADP.SyncAgent", "{974D7F12-F417-42E0-A9EB-1A5FA6EB8B23}"
