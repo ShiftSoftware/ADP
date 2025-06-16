@@ -25,7 +25,6 @@
 
 		<Exec Command='yarn install' WorkingDirectory='$(MSBuildThisFileDirectory)..\adp-web-components' />
 
-		<!-- Step 3: Run "yarn" at the Git root -->
 		<Exec Command='yarn install' WorkingDirectory='$(MSBuildThisFileDirectory)..\..\..\' />
 	</Target>
 
