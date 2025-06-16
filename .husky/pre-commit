@@ -1,17 +1,22 @@
 cd ADP.WebComponents/adp-web-components
 
 echo "🎨 Fixing Prettier formatting..."
-npx lint-staged
+
+cd ADP.WebComponents/adp-web-components && npx lint-staged
 
 echo "🔧 TypeScript check..."
+
 yarn tsc --noEmit
+
 if [ $? -ne 0 ]; then
   echo "❌ TypeScript errors. Push aborted."
   exit 1
 fi
 
 echo "🧪 Running tests..."
+
 yarn test
+
 if [ $? -ne 0 ]; then
   echo "❌ Tests failed. Push aborted."
   exit 1
