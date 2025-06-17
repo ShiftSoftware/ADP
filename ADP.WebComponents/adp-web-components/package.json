@@ -34,7 +34,6 @@
     "loader/"
   ],
   "scripts": {
-    "prepare": "husky",
     "test": "stencil test --spec",
     "generate": "stencil generate",
     "build": "stencil build -- --prod",
