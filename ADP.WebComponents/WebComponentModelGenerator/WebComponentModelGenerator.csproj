@@ -20,12 +20,4 @@
 		<Exec Command='dotnet "$(TargetPath)"' />
 	</Target>
 
-	<Target Name="SetupYarnDeps" AfterTargets="Build">
-		<Exec Command='where yarn || npm install -g yarn' />
-
-		<Exec Command='yarn install' WorkingDirectory='$(MSBuildThisFileDirectory)..\adp-web-components' />
-
-		<Exec Command='yarn install' WorkingDirectory='$(MSBuildThisFileDirectory)..\..\..\' />
-	</Target>
-
 </Project>

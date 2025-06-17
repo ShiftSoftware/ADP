@@ -1,6 +1,6 @@
-import type { VehicleServiceItemGoup } from './vehicle-service-item-goup';
+import type { VehicleServiceItemGroup } from './vehicle-service-item-group';
 export type VehicleServiceItemDTO = {
-    group: VehicleServiceItemGoup;
+    group: VehicleServiceItemGroup;
     showDocumentUploader: boolean;
     documentUploaderIsRequired: boolean;
     name: string;

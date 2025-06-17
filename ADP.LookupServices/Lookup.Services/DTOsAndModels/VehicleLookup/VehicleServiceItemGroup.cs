@@ -2,7 +2,7 @@
 namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 
 [TypeScriptModel]
-public class VehicleServiceItemGoup
+public class VehicleServiceItemGroup
 {
     public string Name { get; set; }
     public int TabOrder { get; set; }
