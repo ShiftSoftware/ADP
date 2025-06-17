@@ -57,7 +57,7 @@ public class LogCosmosService : ILogCosmosService
     }
 
     public async Task<Guid> LogSSCLookupAsync(SSCLogInfo? sscLogInfo,
-        IEnumerable<SSCDTO> ssc, 
+        IEnumerable<SscDTO> ssc, 
         string vin,
         bool isAuthorized, 
         bool hasActiveWarranty,

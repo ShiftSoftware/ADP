@@ -1,11 +1,14 @@
+import { InferType } from 'yup';
 import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
 import cn from '~lib/cn';
 import { scrollIntoContainerView } from '~lib/scroll-into-container-view';
-import { ErrorKeys } from '~lib/get-local-language';
+import { ErrorKeys, getLocaleLanguage, getSharedLocal, SharedLocales, sharedLocalesSchema } from '~lib/get-local-language';
 
+import { LanguageKeys } from '~types/locale';
 import { MockJson } from '~types/components';
-import { ClaimPayload, ServiceItem, ServiceItemGroup, VehicleInformation } from '~types/vehicle-information';
+import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
+import { VehicleServiceItemDTO } from '~types/generated/vehicle-lookup/vehicle-service-item-dto';
 
 import expiredIcon from './assets/expired.svg';
 import pendingIcon from './assets/pending.svg';
@@ -13,13 +16,14 @@ import cancelledIcon from './assets/cancelled.svg';
 import processedIcon from './assets/processed.svg';
 import activationRequiredIcon from './assets/activationRequired.svg';
 
-import { getVehicleInformation } from '~api/vehicleInformation';
+import { getVehicleInformation, VehicleInformationInterface } from '~api/vehicleInformation';
 
-import { VehicleItemClaimForm } from './vehicle-item-claim-form';
+import dynamicClaimSchema from '~locales/vehicleLookup/claimableItems/type';
+import { ClaimFormPayload, VehicleItemClaimForm } from './vehicle-item-claim-form';
 
 import { VehicleInfoLayout } from '../components/vehicle-info-layout';
 
-let mockData: MockJson<VehicleInformation> = {};
+let mockData: MockJson<VehicleLookupDTO> = {};
 
 const icons = {
   expired: expiredIcon,
@@ -34,18 +38,23 @@ const icons = {
   tag: 'vehicle-claimable-items',
   styleUrl: 'vehicle-claimable-items.css',
 })
-export class VehicleClaimableItems {
+export class VehicleClaimableItems implements VehicleInformationInterface {
   @Prop() baseUrl: string;
   @Prop() headers: any = {};
+  @Prop() isDev: boolean = false;
   @Prop() queryString: string = '';
   @Prop() coreOnly: boolean = false;
+  @Prop() language: LanguageKeys = 'en';
   @Prop() print?: (claimResponse: any) => void;
   @Prop() maximumDocumentFileSizeInMb: number = 30;
   @Prop() claimEndPoint: string = 'api/vehicle/swift-claim';
   @Prop() errorCallback: (errorMessage: ErrorKeys) => void;
   @Prop() loadingStateChange?: (isLoading: boolean) => void;
-  @Prop() loadedResponse?: (response: VehicleInformation) => void;
-  @Prop() activate?: (vehicleInformation: VehicleInformation) => void;
+  @Prop() loadedResponse?: (response: VehicleLookupDTO) => void;
+  @Prop() activate?: (vehicleInformation: VehicleLookupDTO) => void;
+
+  @State() sharedLocales: SharedLocales = sharedLocalesSchema.getDefault();
+  @State() locale: InferType<typeof dynamicClaimSchema> = dynamicClaimSchema.getDefault();
 
   @State() activeTab: string = '';
   @State() isError: boolean = false;
@@ -56,9 +65,9 @@ export class VehicleClaimableItems {
   @State() errorMessage?: ErrorKeys = null;
   @State() tabAnimationLoading: boolean = false;
   @State() activePopupIndex: null | number = null;
-  @State() tabs: ServiceItemGroup[] = [];
+  @State() tabs: VehicleServiceItemDTO['group'][] = [];
   @State() lastSuccessfulClaimResponse: any = null;
-  @State() vehicleInformation?: VehicleInformation;
+  @State() vehicleInformation?: VehicleLookupDTO;
 
   pendingItemHighlighted = false;
 
@@ -70,12 +79,23 @@ export class VehicleClaimableItems {
   networkTimeoutRef: ReturnType<typeof setTimeout>;
   tabAnimationTimeoutRef: ReturnType<typeof setTimeout>;
 
-  cachedClaimItem: ServiceItem;
+  cachedClaimItem: VehicleServiceItemDTO;
 
   progressBar: HTMLElement;
   popupPositionRef: HTMLElement;
   claimForm: VehicleItemClaimForm;
   claimableContentWrapper: HTMLElement;
+
+  async componentWillLoad() {
+    await this.changeLanguage(this.language);
+  }
+
+  @Watch('language')
+  async changeLanguage(newLanguage: LanguageKeys) {
+    const localeResponses = await Promise.all([getLocaleLanguage(newLanguage, 'vehicleLookup.claimableItems', dynamicClaimSchema), getSharedLocal(newLanguage)]);
+    this.locale = localeResponses[0];
+    this.sharedLocales = localeResponses[1];
+  }
 
   async componentDidLoad() {
     this.claimableContentWrapper = this.el.shadowRoot.querySelector('.claimable-content-wrapper');
@@ -84,12 +104,12 @@ export class VehicleClaimableItems {
   }
 
   @Method()
-  async setMockData(newMockData: MockJson<VehicleInformation>) {
+  async setMockData(newMockData: MockJson<VehicleLookupDTO>) {
     mockData = newMockData;
   }
 
   @Method()
-  async setData(newData: VehicleInformation | string, headers: any = {}) {
+  async setData(newData: VehicleLookupDTO | string, headers: any = {}) {
     clearTimeout(this.networkTimeoutRef);
     if (this.abortController) this.abortController.abort();
     this.abortController = new AbortController();
@@ -124,8 +144,8 @@ export class VehicleClaimableItems {
         this.vehicleInformation = vehicleResponse;
 
         if (vehicleResponse?.serviceItems?.length) {
-          let orderedGroups: ServiceItemGroup[] = [];
-          const unOrderedGroups: ServiceItemGroup[] = [];
+          let orderedGroups: VehicleServiceItemDTO['group'][] = [];
+          const unOrderedGroups: VehicleServiceItemDTO['group'][] = [];
 
           vehicleResponse.serviceItems.forEach(({ group }) => {
             if (!group?.name) return;
@@ -315,7 +335,7 @@ export class VehicleClaimableItems {
 
     this.pendingItemHighlighted = false;
 
-    const vehicleDataClone = JSON.parse(JSON.stringify(this.vehicleInformation)) as VehicleInformation;
+    const vehicleDataClone = JSON.parse(JSON.stringify(this.vehicleInformation)) as VehicleLookupDTO;
     vehicleDataClone.serviceItems = serviceDataClone;
     this.vehicleInformation = JSON.parse(JSON.stringify(vehicleDataClone));
 
@@ -324,14 +344,14 @@ export class VehicleClaimableItems {
   }
 
   @Method()
-  async claim(item: ServiceItem) {
+  async claim(item: VehicleServiceItemDTO) {
     const serviceItems = this.getServiceItems();
 
     const vinDataClone = JSON.parse(JSON.stringify(serviceItems));
     const index = serviceItems.indexOf(item);
 
     //Find other items before this item that have status 'pending'
-    let pendingItemsBefore = vinDataClone.slice(0, index).filter(x => x.status === 'pending') as ServiceItem[];
+    let pendingItemsBefore = vinDataClone.slice(0, index).filter(x => x.status === 'pending') as VehicleServiceItemDTO[];
 
     this.cachedClaimItem = item;
 
@@ -346,7 +366,7 @@ export class VehicleClaimableItems {
 
   private async handleClaiming() {
     if (this.isDev) {
-      this.claimForm.handleClaiming = async ({ document }: ClaimPayload) => {
+      this.claimForm.handleClaiming = async ({ document }: ClaimFormPayload) => {
         if (document) {
           this.claimForm.uploadProgress = 0;
           let uploadChunks = 20;
@@ -364,7 +384,7 @@ export class VehicleClaimableItems {
         this.claimForm.handleClaiming = null;
       };
     } else {
-      this.claimForm.handleClaiming = async ({ document, ...payload }: ClaimPayload) => {
+      this.claimForm.handleClaiming = async ({ document, ...payload }: ClaimFormPayload) => {
         try {
           const formData = new FormData();
           formData.append(
@@ -434,8 +454,8 @@ export class VehicleClaimableItems {
     }
   }
 
-  private openRedeem(item: ServiceItem, oldItems: ServiceItem[]) {
-    const vehicleInformation = this.vehicleInformation as VehicleInformation;
+  private openRedeem(item: VehicleServiceItemDTO, oldItems: VehicleServiceItemDTO[]) {
+    const vehicleInformation = this.vehicleInformation as VehicleLookupDTO;
 
     this.claimForm.vin = vehicleInformation?.vin;
     this.claimForm.item = item;
@@ -448,7 +468,7 @@ export class VehicleClaimableItems {
     this.handleClaiming();
   }
 
-  private getServiceItems = (): VehicleInformation['serviceItems'] => {
+  private getServiceItems = (): VehicleLookupDTO['serviceItems'] => {
     if (!this.vehicleInformation?.serviceItems?.length) return [];
 
     if (!this.tabs?.length) return this.vehicleInformation?.serviceItems;
@@ -470,7 +490,7 @@ export class VehicleClaimableItems {
     }, 500);
   };
 
-  createPopup(item: ServiceItem) {
+  createPopup(item: VehicleServiceItemDTO) {
     const texts = this.locale;
 
     return (
@@ -612,7 +632,7 @@ export class VehicleClaimableItems {
                   'bg-transparent border-transparent': this.isLoading || this.tabAnimationLoading || !serviceItems.length,
                 })}
               >
-                {serviceItems.map((item: ServiceItem, idx) => {
+                {serviceItems.map((item: VehicleServiceItemDTO, idx) => {
                   let statusClass = '';
 
                   if (item.status === 'pending') {

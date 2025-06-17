@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using ShiftSoftware.ADP.Models;
 using ShiftSoftware.ADP.Models.JsonConverters;
 using System;
 using System.Collections.Generic;
@@ -7,6 +8,7 @@ using System.Text.Json.Serialization;
 
 namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 
+[TypeScriptModel]
 public class VehicleLookupDTO
 {
     public string VIN { get; set; } = default!;
@@ -31,7 +33,7 @@ public class VehicleLookupDTO
     [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public Guid? SSCLogId { get; set; }
 
-    public IEnumerable<SSCDTO> SSC { get; set; }
+    public IEnumerable<SscDTO> SSC { get; set; }
 
     public VehicleVariantInfoDTO VehicleVariantInfo
     {

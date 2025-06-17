@@ -21,10 +21,17 @@ var compilation = CSharpCompilation.Create("Temp")
         MetadataReference.CreateFromFile(typeof(Guid).Assembly.Location)
     );
 
+var generatedTypesFolderPath = "../../../../adp-web-components/src/global/types/generated";
+
+if (Directory.Exists(generatedTypesFolderPath))
+    Directory.Delete(generatedTypesFolderPath, true);
+
+Directory.CreateDirectory(generatedTypesFolderPath!);
+
 foreach (var (file, tree) in syntaxTreeWithPaths)
 {
     var semanticModel = compilation.GetSemanticModel(tree);
-    
+
     var root = tree.GetCompilationUnitRoot();
 
     var destinationPath = file.Contains("Lookup.Services\\DTOsAndModel") ? file.Substring(file.IndexOf(@"\Lookup.Services\DTOsAndModel") + @"\Lookup.Services\DTOsAndModel".Length + 1) : ""; // Handle Later
@@ -60,46 +67,36 @@ foreach (var (file, tree) in syntaxTreeWithPaths)
             if (hasTypeScriptIgnore)
                 continue;
 
-            var tsType = GetTypescriptType(semanticModel, prop.Type);
-            var name = prop.Identifier.Text;
+            var (referenceType, tsType) = GetTypescriptType(semanticModel, prop.Type);
 
-            // Check if the type is a custom type (not primitive)
-            if (!IsPrimitiveType(tsType) && !tsType.EndsWith("[]") && !IsInlineEnumType(tsType))
-            {
-                referencedTypes.Add(tsType.Replace("[]", ""));
-            }
-            else if (tsType.EndsWith("[]"))
-            {
-                var elementType = tsType.Replace("[]", "");
-                if (!IsPrimitiveType(elementType) && !IsInlineEnumType(elementType))
-                    referencedTypes.Add(elementType);
-            }
+            if (referenceType is not null)
+                referencedTypes.Add(referenceType);
+
+            var name = prop.Identifier.Text;
 
             typeLines.AppendLine($"    {ToCamelCase(name)}{(prop.Type is NullableTypeSyntax ? "?" : "")}: {tsType};");
         }
-
-        var tsTypeName = ToCamelCase(classDecl.Identifier.Text);
 
         // Generate imports only once, before the type definition
         var importSb = new StringBuilder();
         foreach (var refType in referencedTypes)
         {
-            if (refType != classDecl.Identifier.Text && !IsInlineEnumType(refType))
-                importSb.AppendLine($"import type {{ {ToCamelCase(refType)} }} from './{ToCamelCase(refType)}';");
+            if (refType != classDecl.Identifier.Text)
+                importSb.AppendLine($"import type {{ {refType} }} from './{ToKebabCase(refType)}';");
         }
 
         sb.Append(importSb.ToString());
-        sb.AppendLine($"export type {tsTypeName} = " + "{");
+        sb.AppendLine($"export type {classDecl.Identifier.Text} = " + "{");
         sb.Append(typeLines.ToString());
         sb.Append("};");
 
         destinationPath = string.Join('\\',
             destinationPath
             .Split('\\')
-            .Select(x => ToCamelCase(x))
+            .Select(x => ToKebabCase(x))
         );
 
-        destinationPath = Path.GetFullPath(Path.Combine(baseDir, $"../../../../adp-web-components/src/global/types/{destinationPath}"));
+        destinationPath = Path.GetFullPath(Path.Combine(baseDir, $"{generatedTypesFolderPath}/{destinationPath}"));
 
         destinationPath = Path.ChangeExtension(destinationPath, ".ts");
 
@@ -116,7 +113,7 @@ bool IsPrimitiveType(string tsType)
     return tsType is "number" or "string" or "boolean" or "any";
 }
 
-string GetTypescriptType(SemanticModel semanticModel, TypeSyntax type)
+(string? referenceType, string tsType) GetTypescriptType(SemanticModel semanticModel, TypeSyntax type)
 {
     // Normalize nullable types
     var nonNullableType = type is NullableTypeSyntax nullableType ? nullableType.ElementType : type;
@@ -127,13 +124,14 @@ string GetTypescriptType(SemanticModel semanticModel, TypeSyntax type)
     return GetTypescriptTypeFromSymbol(symbol);
 }
 
-string GetTypescriptTypeFromSymbol(ITypeSymbol symbol)
+(string? referenceType, string tsType) GetTypescriptTypeFromSymbol(ITypeSymbol? symbol)
 {
-    if (symbol == null) return "any";
+    if (symbol == null) return (null, "any");
 
     if (symbol is IArrayTypeSymbol arrayType)
     {
-        return $"{GetTypescriptTypeFromSymbol(arrayType.ElementType)}[]";
+        var inner = GetTypescriptTypeFromSymbol(arrayType.ElementType);
+        return (inner.referenceType, $"{inner.tsType}[]");
     }
 
     switch (symbol.SpecialType)
@@ -144,24 +142,30 @@ string GetTypescriptTypeFromSymbol(ITypeSymbol symbol)
         case SpecialType.System_Single:
         case SpecialType.System_Double:
         case SpecialType.System_Decimal:
-            return "number";
+            return (null, "number");
         case SpecialType.System_String:
-            return "string";
+            return (null, "string");
         case SpecialType.System_Boolean:
-            return "boolean";
-        case SpecialType.System_DateTime:
+            return (null, "boolean");
+        //case SpecialType.System_DateTime:
         //case SpecialType.System_Guid:
         //    return "string";
         case SpecialType.System_Object:
-            return "any";
+            return (null, "any");
     }
 
     if (symbol.ToDisplayString() == "System.Guid")
-        return "string";
+        return (null, "string");
+
+    if (symbol.ToDisplayString() == "System.DateTimeOffset")
+        return (null, "string");
+
+    if (symbol.ToDisplayString() == "System.DateTime")
+        return (null, "string");
 
     // byte[]
     if (symbol.ToDisplayString() == "byte[]")
-        return "string"; // base64 encoded
+        return (null, "string"); // base64 encoded
 
     // Nullable<T>
     if (symbol.OriginalDefinition.ToDisplayString() == "System.Nullable<T>" &&
@@ -169,11 +173,12 @@ string GetTypescriptTypeFromSymbol(ITypeSymbol symbol)
         nullableSymbol.TypeArguments.Length == 1)
     {
         var inner = GetTypescriptTypeFromSymbol(nullableSymbol.TypeArguments[0]);
-        return $"{inner} | null";
+        return (inner.referenceType, $"{inner.tsType} | null");
     }
 
     // Enum inline string union
-    if (symbol is INamedTypeSymbol enumSymbol && enumSymbol.TypeKind == TypeKind.Enum)
+    //if (symbol is INamedTypeSymbol enumSymbol && enumSymbol?.TypeKind == TypeKind.Enum) //TypeKind sometimes is not Enum, so we check BaseType
+    if (symbol is INamedTypeSymbol enumSymbol && enumSymbol?.BaseType?.ToString() == "System.Enum")
     {
         var enumMembers = enumSymbol
             .GetMembers()
@@ -183,7 +188,7 @@ string GetTypescriptTypeFromSymbol(ITypeSymbol symbol)
 
         if (enumMembers.Length > 0)
         {
-            return string.Join(" | ", enumMembers.Select(m => $"'{ToCamelCase(m.Name)}'"));
+            return (null, string.Join(" | ", enumMembers.Select(m => $"'{m.Name}'")));
         }
     }
 
@@ -193,11 +198,53 @@ string GetTypescriptTypeFromSymbol(ITypeSymbol symbol)
         namedType.AllInterfaces.Any(i => i.Name == "IEnumerable"))
     {
         var itemType = namedType.TypeArguments[0];
-        return $"{GetTypescriptTypeFromSymbol(itemType)}[]";
+
+        var inner = GetTypescriptTypeFromSymbol(itemType);
+
+        return (inner.referenceType, $"{inner.tsType}[]");
     }
 
     // Otherwise — custom types: assume will be generated elsewhere
-    return ToCamelCase(symbol.Name);
+    return (symbol.MetadataName, symbol.Name);
+}
+
+string ToKebabCase(string name)
+{
+    if (string.IsNullOrEmpty(name))
+        return name;
+
+    var lastDotIndex = name.LastIndexOf('.');
+    string namePart = lastDotIndex > 0 ? name.Substring(0, lastDotIndex) : name;
+    string extensionPart = lastDotIndex > 0 ? name.Substring(lastDotIndex) : "";
+
+    var sb = new StringBuilder();
+    for (int i = 0; i < namePart.Length; i++)
+    {
+        var current = namePart[i];
+        var next = i + 1 < namePart.Length ? namePart[i + 1] : '\0';
+        var prev = i > 0 ? namePart[i - 1] : '\0';
+
+        // New word start if:
+        // - Current is uppercase
+        // - Previous is lowercase or digit (e.g., "fooBar" or "version1ID")
+        // - OR transition from abbreviation to lowercase (e.g., "SSCItem" → ssc-item)
+        if (char.IsUpper(current))
+        {
+            bool isAbbreviationEnd = char.IsUpper(prev) && char.IsLower(next);
+            bool isNewWord = i > 0 && (!char.IsUpper(prev) || isAbbreviationEnd);
+
+            if (isNewWord)
+                sb.Append('-');
+
+            sb.Append(char.ToLowerInvariant(current));
+        }
+        else
+        {
+            sb.Append(current);
+        }
+    }
+
+    return sb.ToString() + extensionPart;
 }
 
 string ToCamelCase(string name)
@@ -228,8 +275,7 @@ string ToCamelCase(string name)
     // Standard PascalCase → camelCase
     return char.ToLowerInvariant(name[0]) + name.Substring(1);
 }
-
 bool IsInlineEnumType(string tsType)
 {
-    return tsType.Contains("'") && tsType.Contains("|");
+    return tsType.ToString() == "System.Enum" || tsType.GetType().BaseType.ToString() == "System.Enum";
 }

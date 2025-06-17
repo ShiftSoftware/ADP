@@ -6,13 +6,13 @@ import { ErrorKeys, getLocaleLanguage, getSharedLocal, SharedLocales, sharedLoca
 
 import { LanguageKeys } from '~types/locale';
 import { AppStates, MockJson } from '~types/components';
-import { PartInformation } from '~types/part-information';
+import { PartLookupDTO } from '~types/generated/part/part-lookup-dto';
 
 import { getPartInformation, PartInformationInterface } from '~api/partInformation';
 
 import manufacturerSchema from '~locales/partLookup/manufacturer/type';
 
-let mockData: MockJson<PartInformation> = {};
+let mockData: MockJson<PartLookupDTO> = {};
 
 @Component({
   shadow: true,
@@ -29,11 +29,11 @@ export class ManufacturerLookup implements PartInformationInterface {
   @Prop() headerTitle: string = 'Manufacturer';
   @Prop() errorCallback: (errorMessage: string) => void;
   @Prop() loadingStateChange?: (isLoading: boolean) => void;
-  @Prop() loadedResponse?: (response: PartInformation) => void;
+  @Prop() loadedResponse?: (response: PartLookupDTO) => void;
 
   @State() state: AppStates = 'idle';
   @State() errorMessage?: ErrorKeys = null;
-  @State() partInformation?: PartInformation;
+  @State() partInformation?: PartLookupDTO;
   @State() externalPartNumber?: string = null;
 
   @State() sharedLocales: SharedLocales = sharedLocalesSchema.getDefault();
@@ -55,12 +55,12 @@ export class ManufacturerLookup implements PartInformationInterface {
     this.sharedLocales = localeResponses[1];
   }
 
-  private handleSettingData(response: PartInformation) {
+  private handleSettingData(response: PartLookupDTO) {
     this.partInformation = response;
   }
 
   @Method()
-  async setData(newData: PartInformation | string, headers: any = {}) {
+  async setData(newData: PartLookupDTO | string, headers: any = {}) {
     clearTimeout(this.networkTimeoutRef);
     if (this.abortController) this.abortController.abort();
     this.abortController = new AbortController();
@@ -122,7 +122,7 @@ export class ManufacturerLookup implements PartInformationInterface {
   }
 
   @Method()
-  async setMockData(newMockData: MockJson<PartInformation>) {
+  async setMockData(newMockData: MockJson<PartLookupDTO>) {
     mockData = newMockData;
   }
 
@@ -147,8 +147,8 @@ export class ManufacturerLookup implements PartInformationInterface {
           { label: texts.specialPrice, key: 'specialPrice', value: null },
           { label: texts.wholesalesPrice, key: 'salesPrice', value: null },
           { label: texts.pnc, key: 'pnc', value: this.partInformation.pnc },
-          { label: texts.pncName.replace('$', localName), key: 'pncLocalName', value: this.partInformation.pncLocalName },
-          { label: texts.binCode, key: 'binCode', value: this.partInformation.binCode },
+          { label: texts.pncName.replace('$', localName), key: 'pnc', value: this.partInformation.pnc },
+          { label: texts.binCode, key: 'binType', value: this.partInformation.binType },
           { label: texts.dimension1, key: 'dimension1', value: this.partInformation.dimension1 },
           { label: texts.dimension2, key: 'dimension2', value: this.partInformation.dimension2 },
           { label: texts.dimension3, key: 'dimension3', value: this.partInformation.dimension3 },
@@ -156,7 +156,7 @@ export class ManufacturerLookup implements PartInformationInterface {
           { label: texts.grossWeight, key: 'grossWeight', value: this.partInformation.grossWeight },
           { label: texts.cubicMeasure, key: 'cubicMeasure', value: this.partInformation.cubicMeasure },
           { label: texts.hsCode, key: 'hsCode', value: this.partInformation.hsCode },
-          { label: texts.uzHsCode, key: 'uzHsCode', value: this.partInformation.uzHsCode },
+          { label: texts.uzHsCode, key: 'hsCode', value: this.partInformation.hsCode },
         ]
       : [];
 

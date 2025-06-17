@@ -1,7 +1,7 @@
 import { InferType } from 'yup';
 import { h } from '@stencil/core';
 
-import { VehicleInformation } from '~types/vehicle-information';
+import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
 import StatusCard from './StatusCard';
 
@@ -14,7 +14,7 @@ type Props = {
   isLoading: boolean;
   isAuthorized: boolean;
   unInvoicedByBrokerName?: string;
-  vehicleInformation: VehicleInformation;
+  vehicleInformation: VehicleLookupDTO;
   warrantyLocale: InferType<typeof warrantySchema>;
 };
 

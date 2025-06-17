@@ -1,8 +1,8 @@
-import type { stockPartDTO } from './stockPartDTO';
-import type { partPriceDTO } from './partPriceDTO';
-import type { hsCodeDTO } from './hsCodeDTO';
-import type { deadStockDTO } from './deadStockDTO';
-export type partLookupDTO = {
+import type { StockPartDTO } from './stock-part-dto';
+import type { PartPriceDTO } from './part-price-dto';
+import type { HSCodeDTO } from './hs-code-dto';
+import type { DeadStockDTO } from './dead-stock-dto';
+export type PartLookupDTO = {
     partNumber: string;
     partDescription: string;
     localDescription: string;
@@ -19,9 +19,9 @@ export type partLookupDTO = {
     hsCode: string;
     origin: string;
     supersededTo: string[];
-    stockParts: stockPartDTO[];
-    prices: partPriceDTO[];
-    hsCodes: hsCodeDTO[];
-    deadStock: deadStockDTO[];
+    stockParts: StockPartDTO[];
+    prices: PartPriceDTO[];
+    hsCodes: HSCodeDTO[];
+    deadStock: DeadStockDTO[];
     logId?: string;
 };

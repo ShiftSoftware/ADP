@@ -1,0 +1,27 @@
+import type { VehicleIdentifiersDTO } from './vehicle-identifiers-dto';
+import type { VehicleSaleInformation } from './vehicle-sale-information';
+import type { PaintThicknessDTO } from './paint-thickness-dto';
+import type { VehicleWarrantyDTO } from './vehicle-warranty-dto';
+import type { VehicleServiceHistoryDTO } from './vehicle-service-history-dto';
+import type { SscDTO } from './ssc-dto';
+import type { VehicleVariantInfoDTO } from './vehicle-variant-info-dto';
+import type { VehicleSpecificationDTO } from './vehicle-specification-dto';
+import type { VehicleServiceItemDTO } from './vehicle-service-item-dto';
+import type { AccessoryDTO } from './accessory-dto';
+export type VehicleLookupDTO = {
+    vin: string;
+    identifiers: VehicleIdentifiersDTO;
+    saleInformation: VehicleSaleInformation;
+    paintThickness: PaintThicknessDTO;
+    isAuthorized: boolean;
+    warranty: VehicleWarrantyDTO;
+    nextServiceDate?: string;
+    serviceHistory: VehicleServiceHistoryDTO[];
+    sscLogId?: string;
+    ssc: SscDTO[];
+    vehicleVariantInfo: VehicleVariantInfoDTO;
+    vehicleSpecification: VehicleSpecificationDTO;
+    serviceItems: VehicleServiceItemDTO[];
+    accessories: AccessoryDTO[];
+    basicModelCode: string;
+};
