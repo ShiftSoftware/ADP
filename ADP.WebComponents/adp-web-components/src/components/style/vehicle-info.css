@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 .vehicle-info-container {
-  @apply relative transition-all duration-300 overflow-hidden p-0 rounded-[5px] border border-[#dcdcdc] bg-[#fdfdfd] shadow-[inset_0_1px_3px_rgba(0,0,0,0.05),0_1px_0_rgba(255,255,255,0.1)];
+  @apply relative transition-all duration-500 overflow-hidden p-0 rounded-[5px] border border-[#dcdcdc] bg-[#fdfdfd] shadow-[inset_0_1px_3px_rgba(0,0,0,0.05),0_1px_0_rgba(255,255,255,0.1)];
 }
 
 *::-webkit-scrollbar {
@@ -39,7 +39,7 @@
 }
 
 .vehicle-info-content {
-  @apply transition duration-300 w-full;
+  @apply transition duration-500 w-full;
 }
 
 .vehicle-info-header {
@@ -47,7 +47,7 @@
 }
 
 .vehicle-info-header-vin {
-  @apply transition-all text-[16px] duration-[0.4s] inline-block;
+  @apply transition-all text-[16px] duration-[0.5s] inline-block;
 }
 
 .vehicle-info-header-vin span {

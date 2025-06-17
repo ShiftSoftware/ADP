@@ -9,3 +9,121 @@
 * {
   font-family: Arial;
 }
+
+.claimable-item {
+  @apply size-0 relative [&_*]:transition [&_*]:duration-500;
+}
+
+.loading .claimable-item {
+  @apply pointer-events-none;
+}
+
+.claimable-item-container {
+  @apply relative flex items-center justify-center bg-slate-400 -translate-x-1/2 -translate-y-1/2;
+}
+
+.claimable-item-header {
+  @apply absolute bottom-full mb-[16px] size-[100px] bg-slate-300;
+}
+
+.loading .claimable-item-header {
+  @apply opacity-0 scale-[70%] translate-y-[-5px];
+}
+
+.claimable-item-header.load-animation {
+  animation: item-header-fade-in 0.5s ease forwards;
+}
+
+@keyframes item-header-fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-5px) scale(70%);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(100%);
+  }
+}
+
+.claimable-item-circle {
+  @apply size-[25px] border-[5px] border-double border-[#ececec] rounded-full bg-black;
+}
+
+.loading .claimable-item-circle {
+  @apply opacity-0 scale-[150%];
+}
+
+.claimable-item-circle.load-animation {
+  animation: item-circle-fade-in 0.5s ease forwards;
+}
+
+@keyframes item-circle-fade-in {
+  0% {
+    opacity: 0;
+    transform: scale(150%);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(100%);
+  }
+}
+
+.claimable-item-footer {
+  @apply absolute top-full mt-[8px] text-center w-[220px] font-medium text-[16px];
+}
+
+.loading .claimable-item-footer {
+  @apply opacity-0 translate-y-[10px] scale-[70%];
+}
+
+.claimable-item-footer.load-animation {
+  animation: item-footer-fade-in 0.5s ease forwards;
+}
+
+@keyframes item-footer-fade-in {
+  0% {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px) scale(70%);
+  }
+
+  100% {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0px) scale(100%);
+  }
+}
+
+.processed .claimable-item-circle {
+  @apply bg-[#3071a9];
+}
+
+.processed .claimable-item-header {
+  @apply text-[#3071a9];
+}
+
+.expired .claimable-item-circle {
+  @apply bg-[#282828];
+}
+
+.expired .claimable-item-header {
+  @apply text-[#282828];
+}
+
+.cancelled .claimable-item-circle {
+  @apply bg-[#a80000];
+}
+
+.cancelled .claimable-item-header {
+  @apply text-[#a80000];
+}
+
+.pending .claimable-item-circle {
+  @apply bg-[#00a300];
+}
+
+.pending .claimable-item-header {
+  @apply text-[#00a300];
+}

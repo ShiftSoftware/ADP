@@ -3,7 +3,12 @@ import VehicleLookupComponent, { vehicleRequestHeaders } from '~types/interfaces
 
 import { ErrorKeys } from '~lib/get-local-language';
 
-export const setVehicleLookupData = async (context: VehicleLookupComponent, newData: VehicleLookupDTO | string, headers: any = {}) => {
+export const setVehicleLookupData = async (
+  context: VehicleLookupComponent,
+  newData: VehicleLookupDTO | string,
+  headers: any = {},
+  { beforeAssignment }: { beforeAssignment?: (vehicleLookup: VehicleLookupDTO) => Promise<VehicleLookupDTO> } = {},
+) => {
   // clears network timeoutRef which serves as await for animation
   clearTimeout(context.networkTimeoutRef);
 
@@ -29,7 +34,7 @@ export const setVehicleLookupData = async (context: VehicleLookupComponent, newD
     context.isLoading = true;
 
     await new Promise(r => {
-      scopedTimeoutRef = setTimeout(r, 500);
+      scopedTimeoutRef = setTimeout(r, 1000);
       context.networkTimeoutRef = scopedTimeoutRef;
     });
 
@@ -37,9 +42,8 @@ export const setVehicleLookupData = async (context: VehicleLookupComponent, newD
 
     if (context.networkTimeoutRef === scopedTimeoutRef) {
       if (!vehicleResponse) throw new Error('wrongResponseFormat');
-      if (!Array.isArray(vehicleResponse.serviceItems)) throw new Error('noServiceAvailable');
-
-      context.vehicleLookup = vehicleResponse;
+      if (beforeAssignment) context.vehicleLookup = await beforeAssignment(vehicleResponse);
+      else context.vehicleLookup = vehicleResponse;
     }
 
     context.errorMessage = null;

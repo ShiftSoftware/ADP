@@ -36,7 +36,7 @@
 
     <h1>Vehicle Claimable Items</h1>
     <vehicle-claimable-items id="vehicle-claimable-items" is-dev="true" query-string="" base-url=""></vehicle-claimable-items>
-
+    <div style="height: 50px"></div>
     <claim-temp id="claim-temp" is-dev="true" base-url="" query-string=""></claim-temp>
 
     <div class="button-container">
@@ -72,15 +72,15 @@
         claimableItems.setMockData(mockData);
 
         claimTemp.loadingStateChange = isLoading => {
-          console.log('isLoading: ' + isLoading);
+          // console.log('isLoading: ' + isLoading);
         };
 
         claimableItems.loadingStateChange = isLoading => {
-          console.log('isLoading: ' + isLoading);
+          // console.log('isLoading: ' + isLoading);
         };
 
         claimTemp.loadedResponse = newResponse => {
-          console.log(newResponse);
+          // console.log(newResponse);
 
           const urlParams = new URLSearchParams(window.location.search);
 
@@ -94,7 +94,7 @@
         };
 
         claimableItems.loadedResponse = newResponse => {
-          console.log(newResponse);
+          // console.log(newResponse);
 
           const urlParams = new URLSearchParams(window.location.search);
 
@@ -116,13 +116,13 @@
         }
 
         claimTemp.activate = vehicleInformation => {
-          console.log(vehicleInformation);
+          // console.log(vehicleInformation);
 
           alert(JSON.stringify(vehicleInformation));
         };
 
         claimableItems.activate = vehicleInformation => {
-          console.log(vehicleInformation);
+          // console.log(vehicleInformation);
 
           alert(JSON.stringify(vehicleInformation));
         };
