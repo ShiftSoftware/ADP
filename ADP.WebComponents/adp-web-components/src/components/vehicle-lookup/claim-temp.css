@@ -10,6 +10,10 @@
   font-family: Arial;
 }
 
+.progress-container-style {
+  @apply h-[10px] -translate-y-1/2 rounded-full transition duration-500 bg-[#f2f2f2] border border-[#ddd];
+}
+
 .claimable-item {
   @apply size-0 relative [&_*]:transition [&_*]:duration-500;
 }
@@ -23,7 +27,11 @@
 }
 
 .claimable-item-header {
-  @apply absolute bottom-full mb-[16px] size-[100px] bg-slate-300;
+  @apply absolute bottom-full mb-[16px] flex flex-col justify-center [&_img]:duration-1000 [&_img]:size-[40px] cursor-pointer items-center font-bold text-[16px];
+}
+
+.claimable-item-header:hover {
+  @apply [&_img]:rotate-[360deg] [&_img]:scale-[125%];
 }
 
 .loading .claimable-item-header {
@@ -126,4 +134,36 @@
 
 .pending .claimable-item-header {
   @apply text-[#00a300];
+}
+
+.loading .lane-inc {
+  animation: lane-increase 2.5s infinite ease;
+}
+
+.loading .lane-dec {
+  animation: lane-decrease 2.5s 1s infinite ease;
+}
+
+@keyframes lane-increase {
+  from {
+    left: -5%;
+    width: 5%;
+  }
+
+  to {
+    left: 130%;
+    width: 100%;
+  }
+}
+
+@keyframes lane-decrease {
+  from {
+    left: -80%;
+    width: 80%;
+  }
+
+  to {
+    left: 110%;
+    width: 10%;
+  }
 }

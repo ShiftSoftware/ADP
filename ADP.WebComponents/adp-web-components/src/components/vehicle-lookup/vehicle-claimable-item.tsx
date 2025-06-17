@@ -74,81 +74,6 @@ export class VehicleClaimableItem {
     this.progressBar = this.el.shadowRoot.querySelector('.progress-bar');
   }
 
-  @Method()
-  async setData(newData: VehicleLookupDTO | string, headers: any = {}) {
-    clearTimeout(this.networkTimeoutRef);
-    if (this.abortController) this.abortController.abort();
-    this.abortController = new AbortController();
-    let scopedTimeoutRef: ReturnType<typeof setTimeout>;
-
-    const isVinRequest = typeof newData === 'string';
-
-    const vin = isVinRequest ? newData : newData?.vin;
-    this.externalVin = vin;
-
-    try {
-      if (!vin || vin.trim().length === 0) {
-        this.isError = false;
-        this.vehicleInformation = null;
-        return;
-      }
-
-      this.isLoading = true;
-      this.showPrintBox = false;
-      await new Promise(r => {
-        scopedTimeoutRef = setTimeout(r, 1000);
-        this.networkTimeoutRef = scopedTimeoutRef;
-      });
-
-      this.claimableContentWrapper.scrollLeft = 0;
-
-      const vehicleResponse = isVinRequest ? await getVehicleLookup(this, { scopedTimeoutRef, vin, mockData }, headers) : newData;
-
-      if (this.networkTimeoutRef === scopedTimeoutRef) {
-        if (!vehicleResponse) throw new Error('wrongResponseFormat');
-        if (!Array.isArray(vehicleResponse.serviceItems)) throw new Error('noServiceAvailable');
-        this.vehicleInformation = vehicleResponse;
-
-        if (vehicleResponse?.serviceItems?.length) {
-          let orderedGroups: VehicleServiceItemDTO['group'][] = [];
-          const unOrderedGroups: VehicleServiceItemDTO['group'][] = [];
-
-          vehicleResponse.serviceItems.forEach(({ group }) => {
-            if (!group?.name) return;
-
-            if ([...orderedGroups, ...unOrderedGroups].find(g => g?.name === group?.name)) return;
-
-            if (group?.isDefault) this.activeTab = group?.name;
-
-            if (typeof group?.tabOrder === 'number') orderedGroups.push(group);
-            else unOrderedGroups.push(group);
-          });
-
-          if (!!unOrderedGroups.length || !!orderedGroups.length) {
-            orderedGroups = orderedGroups.sort((a, b) => a.tabOrder - b.tabOrder);
-            this.tabs = [...orderedGroups, ...unOrderedGroups];
-            if (!this.activeTab) this.activeTab = this.tabs[0].name;
-          } else {
-            this.tabs = [];
-            this.activeTab = '';
-          }
-        } else {
-          this.tabs = [];
-          this.activeTab = '';
-        }
-      }
-
-      this.errorMessage = null;
-      this.isLoading = false;
-      this.isError = false;
-    } catch (error) {
-      if (error && error?.name === 'AbortError') return;
-      if (this.errorCallback) this.errorCallback(error.message);
-      console.error(error);
-      this.setErrorMessage(error.message);
-    }
-  }
-
   async setLoadingUi(isLoading: boolean) {
     if (!isLoading) {
       this.progressBar.style.width = '0';
@@ -596,26 +521,6 @@ export class VehicleClaimableItem {
                       </span>
                       {this.activePopupIndex === idx && this.createPopup(item)}
                     </div>
-                    <div
-                      onAnimationEnd={this.removeLoadAnimationClass}
-                      class={cn(
-                        'claimable-item-circle load-animation w-[18px] translate-y-[2px] h-[18px] rounded-[50%] bg-[#a1a1a1] border-[5px] border-double border-[#ececec] transition-all duration-[0.4s] z-[1]',
-                        {
-                          '!opacity-0 !scale-[150%]': this.isLoading || this.tabAnimationLoading,
-                        },
-                      )}
-                    ></div>
-                    <p
-                      onAnimationEnd={this.removeLoadAnimationClass}
-                      class={cn(
-                        'claimable-item-footer load-animation transition-all duration-[0.4s] px-[20px] text-center leading-[1.5em] h-[4.5em] overflow-hidden text-ellipsis m-0',
-                        {
-                          '!opacity-0 !translate-y-[10px] !scale-[70%]': this.isLoading || this.tabAnimationLoading,
-                        },
-                      )}
-                    >
-                      {item.name}
-                    </p>
                   </div>
                 );
               })}

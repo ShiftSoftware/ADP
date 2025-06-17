@@ -155,25 +155,40 @@ export class ClaimTemp implements MultiLingual, VehicleInfoLayoutInterface, Vehi
           direction={this.locale.sharedLocales.direction}
           errorMessage={this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard}
         >
-          <div dir="ltr" class={cn('relative h-[320px] transition-all duration-300', { loading: this.isLoading })}>
-            <div class="px-[30px] relative overflow-x-scroll [&_*]:shrink-0 gap-[250px] justify-between h-full overflow-y-hidden flex items-center">
+          <div dir="ltr" class={cn('relative flex items-center h-[320px] transition-all duration-300', { loading: this.isLoading })}>
+            <div class={cn('absolute w-[calc(100%-60px)] left-[30px] progress-container-style opacity-0', { 'opacity-100': this.isLoading })}>
+              <div class="w-full h-full rounded-[4px] overflow-x-hidden absolute left-0 top-0">
+                <div class="absolute opacity-0 bg-[#1a1a1a] w-[150%] h-full" />
+                <div class="absolute h-full bg-[linear-gradient(to_bottom,_#428bca_0%,_#3071a9_100%)] lane-inc" />
+                <div class="absolute h-full bg-[linear-gradient(to_bottom,_#428bca_0%,_#3071a9_100%)] lane-dec" />
+              </div>
+            </div>
+
+            <div class="px-[30px] min-w-full relative overflow-x-scroll h-full overflow-y-hidden">
+              <div class="flex relative w-fit min-w-full items-center h-full [&_*]:shrink-0 gap-[250px] justify-between">
+                <div class={cn('absolute w-[calc(100%-0px)] translate-y-0 progress-container-style opacity-100', { 'opacity-0': this.isLoading })}></div>
+
+                <div class="ml-[-125px]" />
+
+                {serviceItems.map(item => (
+                  <ClaimableItem item={item} locale={this.locale} />
+                ))}
+
+                <div class="ml-[-125px]" />
+              </div>
+
               <div
                 dir={this.locale.sharedLocales.direction}
-                class={cn('absolute top-0 left-0 size-full box-content flex flex-col justify-center opacity-0 transition duration-500 items-center text-slate-700', {
-                  'opacity-100 scale-100': isNoServicesAvailable,
-                })}
+                class={cn(
+                  'absolute top-0 left-0 pointer-events-none size-full box-content flex flex-col justify-center opacity-0 transition duration-500 items-center text-slate-700',
+                  {
+                    'opacity-100 scale-100': isNoServicesAvailable,
+                  },
+                )}
               >
                 <EmptyTableIcon class="size-[90px]" />
                 <div class="text-[22px]">{this.locale.sharedLocales.errors.noServiceAvailable}</div>
               </div>
-
-              <div class="ml-[-125px]" />
-
-              {serviceItems.map(item => (
-                <ClaimableItem item={item} />
-              ))}
-
-              <div class="ml-[-125px]" />
             </div>
           </div>
         </VehicleInfoLayout>
