@@ -7,4 +7,4 @@ src/components.d.ts
 src/locale-mapper.ts
 locale-mapper.ts
 
-src/global/types
+src/global/types/generated

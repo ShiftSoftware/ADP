@@ -9,7 +9,7 @@ import { LanguageKeys } from '~types/locale';
 import { AppStates, MockJson } from '~types/components';
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
-import { getVehicleInformation, VehicleInformationInterface } from '~api/vehicleInformation';
+import { getVehicleLookup } from '~api/vehicleInformation';
 
 import warrantySchema from '~locales/vehicleLookup/warranty/type';
 
@@ -29,7 +29,7 @@ declare const grecaptcha: Grecaptcha;
   tag: 'vehicle-warranty-details',
   styleUrl: 'vehicle-warranty-details.css',
 })
-export class VehicleWarrantyDetails implements VehicleInformationInterface {
+export class VehicleWarrantyDetails {
   @Prop() baseUrl: string = '';
   @Prop() isDev: boolean = false;
   @Prop() showSsc: boolean = false;
@@ -196,7 +196,8 @@ export class VehicleWarrantyDetails implements VehicleInformationInterface {
         this.networkTimeoutRef = scopedTimeoutRef;
       });
 
-      const vehicleResponse = isVinRequest ? await getVehicleInformation(this, { scopedTimeoutRef, vin, mockData }, headers) : newData;
+      // @ts-ignore
+      const vehicleResponse = isVinRequest ? await getVehicleLookup(this, { scopedTimeoutRef, vin, mockData }, headers) : newData;
 
       if (this.networkTimeoutRef === scopedTimeoutRef) {
         if (!vehicleResponse) throw new Error('wrongResponseFormat');

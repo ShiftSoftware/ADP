@@ -7,7 +7,7 @@ import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup
 
 import { ErrorKeys, getLocaleLanguage, getSharedLocal, SharedLocales, sharedLocalesSchema } from '~lib/get-local-language';
 
-import { getVehicleInformation, VehicleInformationInterface } from '~api/vehicleInformation';
+import { getVehicleLookup } from '~api/vehicleInformation';
 
 import specificationSchema from '~locales/vehicleLookup/specification/type';
 
@@ -21,7 +21,7 @@ let mockData: MockJson<VehicleLookupDTO> = {};
   tag: 'vehicle-specification',
   styleUrl: 'vehicle-specification.css',
 })
-export class VehicleSpecification implements VehicleInformationInterface {
+export class VehicleSpecification {
   @Prop() baseUrl: string = '';
   @Prop() isDev: boolean = false;
   @Prop() queryString: string = '';
@@ -82,7 +82,8 @@ export class VehicleSpecification implements VehicleInformationInterface {
         this.networkTimeoutRef = scopedTimeoutRef;
       });
 
-      const vehicleResponse = isVinRequest ? await getVehicleInformation(this, { scopedTimeoutRef, vin, mockData }, headers) : newData;
+      // @ts-ignore
+      const vehicleResponse = isVinRequest ? await getVehicleLookup(this, { scopedTimeoutRef, vin, mockData }, headers) : newData;
 
       if (this.networkTimeoutRef === scopedTimeoutRef) {
         if (!vehicleResponse) throw new Error('wrongResponseFormat');

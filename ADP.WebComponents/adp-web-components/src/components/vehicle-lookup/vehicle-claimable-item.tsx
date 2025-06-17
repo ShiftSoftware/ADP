@@ -1,11 +1,11 @@
-import { InferType } from 'yup';
+// @ts-nocheck
+
 import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
 import cn from '~lib/cn';
 import { scrollIntoContainerView } from '~lib/scroll-into-container-view';
-import { ErrorKeys, getLocaleLanguage, getSharedLocal, SharedLocales, sharedLocalesSchema } from '~lib/get-local-language';
+import { ErrorKeys } from '~lib/get-local-language';
 
-import { LanguageKeys } from '~types/locale';
 import { MockJson } from '~types/components';
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 import { VehicleServiceItemDTO } from '~types/generated/vehicle-lookup/vehicle-service-item-dto';
@@ -16,12 +16,13 @@ import cancelledIcon from './assets/cancelled.svg';
 import processedIcon from './assets/processed.svg';
 import activationRequiredIcon from './assets/activationRequired.svg';
 
-import { getVehicleLookup } from '~api/vehicleInformation';
+import { getVehicleLookup, VehicleInformationInterface } from '~api/vehicleInformation';
 
-import dynamicClaimSchema from '~locales/vehicleLookup/claimableItems/type';
 import { ClaimFormPayload, VehicleItemClaimForm } from './vehicle-item-claim-form';
 
 import { VehicleInfoLayout } from '../components/vehicle-info-layout';
+
+let mockData: MockJson<VehicleLookupDTO> = {};
 
 const icons = {
   expired: expiredIcon,
@@ -33,49 +34,31 @@ const icons = {
 
 @Component({
   shadow: true,
-  tag: 'vehicle-claimable-items',
-  styleUrl: 'vehicle-claimable-items.css',
+  tag: 'vehicle-claimable-item',
+  styleUrl: 'vehicle-claimable-item.css',
 })
-export class VehicleClaimableItems {
-  mockData: MockJson<VehicleLookupDTO> = {};
-  @Prop() baseUrl: string;
-  @Prop() headers: any = {};
-  @Prop() isDev: boolean = false;
-  @Prop() queryString: string = '';
-  @Prop() coreOnly: boolean = false;
-  @Prop() language: LanguageKeys = 'en';
+export class VehicleClaimableItem {
   @Prop() print?: (claimResponse: any) => void;
   @Prop() maximumDocumentFileSizeInMb: number = 30;
   @Prop() claimEndPoint: string = 'api/vehicle/swift-claim';
-  @Prop() errorCallback: (errorMessage: ErrorKeys) => void;
-  @Prop() loadingStateChange?: (isLoading: boolean) => void;
-  @Prop() loadedResponse?: (response: VehicleLookupDTO) => void;
+
   @Prop() activate?: (vehicleInformation: VehicleLookupDTO) => void;
 
-  @State() sharedLocales: SharedLocales = sharedLocalesSchema.getDefault();
-  @State() locale: InferType<typeof dynamicClaimSchema> = dynamicClaimSchema.getDefault();
-
   @State() activeTab: string = '';
-  @State() isError: boolean = false;
+
   @State() showPopup: boolean = false;
-  @State() isLoading: boolean = false;
   @State() externalVin?: string = null;
   @State() showPrintBox: boolean = false;
-  @State() errorMessage?: ErrorKeys = null;
+
   @State() tabAnimationLoading: boolean = false;
   @State() activePopupIndex: null | number = null;
   @State() tabs: VehicleServiceItemDTO['group'][] = [];
   @State() lastSuccessfulClaimResponse: any = null;
-  @State() vehicleInformation?: VehicleLookupDTO;
 
   pendingItemHighlighted = false;
 
-  @Element() el: HTMLElement;
-
   scrollListenerRef: () => void;
-  abortController: AbortController;
   timeoutRef: ReturnType<typeof setTimeout>;
-  networkTimeoutRef: ReturnType<typeof setTimeout>;
   tabAnimationTimeoutRef: ReturnType<typeof setTimeout>;
 
   cachedClaimItem: VehicleServiceItemDTO;
@@ -85,26 +68,10 @@ export class VehicleClaimableItems {
   claimForm: VehicleItemClaimForm;
   claimableContentWrapper: HTMLElement;
 
-  async componentWillLoad() {
-    await this.changeLanguage(this.language);
-  }
-
-  @Watch('language')
-  async changeLanguage(newLanguage: LanguageKeys) {
-    const localeResponses = await Promise.all([getLocaleLanguage(newLanguage, 'vehicleLookup.claimableItems', dynamicClaimSchema), getSharedLocal(newLanguage)]);
-    this.locale = localeResponses[0];
-    this.sharedLocales = localeResponses[1];
-  }
-
   async componentDidLoad() {
     this.claimableContentWrapper = this.el.shadowRoot.querySelector('.claimable-content-wrapper');
     this.claimForm = this.el.shadowRoot.getElementById('vehicle-item-claim-form') as unknown as VehicleItemClaimForm;
     this.progressBar = this.el.shadowRoot.querySelector('.progress-bar');
-  }
-
-  @Method()
-  async setMockData(newMockData: MockJson<VehicleLookupDTO>) {
-    this.mockData = newMockData;
   }
 
   @Method()
@@ -135,7 +102,7 @@ export class VehicleClaimableItems {
 
       this.claimableContentWrapper.scrollLeft = 0;
 
-      const vehicleResponse = isVinRequest ? await getVehicleLookup(this, { scopedTimeoutRef, vin }, headers) : newData;
+      const vehicleResponse = isVinRequest ? await getVehicleLookup(this, { scopedTimeoutRef, vin, mockData }, headers) : newData;
 
       if (this.networkTimeoutRef === scopedTimeoutRef) {
         if (!vehicleResponse) throw new Error('wrongResponseFormat');
@@ -180,25 +147,6 @@ export class VehicleClaimableItems {
       console.error(error);
       this.setErrorMessage(error.message);
     }
-  }
-
-  @Method()
-  async setErrorMessage(message: ErrorKeys) {
-    this.isError = true;
-    this.isLoading = false;
-    this.vehicleInformation = null;
-    this.errorMessage = message;
-  }
-
-  @Method()
-  async fetchData(requestedVin: string = this.externalVin, headers: any = {}) {
-    await this.setData(requestedVin, headers);
-  }
-
-  @Watch('isLoading')
-  onLoadingChange(newValue: boolean) {
-    if (this.loadingStateChange) this.loadingStateChange(newValue);
-    this.setLoadingUi(newValue);
   }
 
   async setLoadingUi(isLoading: boolean) {

@@ -1,68 +1,96 @@
-import { MockJson } from '~types/components';
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
+import VehicleLookupComponent, { vehicleRequestHeaders } from '~types/interfaces/vehicle-lookup-component';
 
-const vehicleRequestHeaders = {
-  cityId: 'City-Id',
-  userId: 'User-Id',
-  companyId: 'Company-Id',
-  customerName: 'Customer-Name',
-  customerPhone: 'Customer-Phone',
-  customerEmail: 'Customer-Email',
-  companyBranchId: 'Company-Branch-Id',
-  cityIntegrationId: 'City-Integration-Id',
-  brandIntegrationId: 'Brand-Integration-Id',
-  companyIntegrationId: 'Company-Integration-Id',
-  companyBranchIntegrationId: 'Company-Branch-Integration-Id',
-} as const;
+import { ErrorKeys } from '~lib/get-local-language';
 
-type VehicleRequestHeaders = Partial<Record<keyof typeof vehicleRequestHeaders, string>>;
+export const setVehicleLookupData = async (context: VehicleLookupComponent, newData: VehicleLookupDTO | string, headers: any = {}) => {
+  // clears network timeoutRef which serves as await for animation
+  clearTimeout(context.networkTimeoutRef);
 
-export interface VehicleInformationInterface extends VehicleRequestHeaders {
-  isDev: boolean;
-  baseUrl: string;
-  queryString?: string;
-  abortController: AbortController;
-  networkTimeoutRef: ReturnType<typeof setTimeout>;
-  loadedResponse?: (response: VehicleLookupDTO) => void;
-}
+  // handles request spam by canceling the previous ones
+  if (context.abortController) context.abortController.abort();
+  context.abortController = new AbortController();
 
-type GetVehicleInformationProps = {
-  vin: string;
-  notAvailableMessage?: string;
-  mockData: MockJson<VehicleLookupDTO>;
-  scopedTimeoutRef: ReturnType<typeof setTimeout>;
-  middlewareCallback?: (VehicleInformation) => void;
+  // syncing the internal timeout ref with external network ref
+  let scopedTimeoutRef: ReturnType<typeof setTimeout>;
+
+  const isVinRequest = typeof newData === 'string';
+
+  const vin = isVinRequest ? newData : newData?.vin;
+
+  try {
+    if (!vin || vin.trim().length === 0) {
+      context.isError = false;
+      context.isLoading = false;
+      context.vehicleLookup = undefined;
+      return;
+    }
+
+    context.isLoading = true;
+
+    await new Promise(r => {
+      scopedTimeoutRef = setTimeout(r, 500);
+      context.networkTimeoutRef = scopedTimeoutRef;
+    });
+
+    const vehicleResponse = isVinRequest ? await getVehicleLookup(context, { scopedTimeoutRef, vin }, headers) : newData;
+
+    if (context.networkTimeoutRef === scopedTimeoutRef) {
+      if (!vehicleResponse) throw new Error('wrongResponseFormat');
+      if (!Array.isArray(vehicleResponse.serviceItems)) throw new Error('noServiceAvailable');
+
+      context.vehicleLookup = vehicleResponse;
+    }
+
+    context.errorMessage = null;
+    context.isLoading = false;
+    context.isError = false;
+  } catch (error) {
+    if (error && error?.name === 'AbortError') return;
+    if (context.errorCallback) context.errorCallback(error.message);
+    console.error(error);
+    context.setErrorMessage(error.message);
+  }
 };
 
-export const getVehicleInformation = async (component: VehicleInformationInterface, generalProps: GetVehicleInformationProps, headers: any = {}): Promise<VehicleLookupDTO> => {
-  const { notAvailableMessage, mockData, vin, scopedTimeoutRef, middlewareCallback } = generalProps;
+export const setVehicleLookupErrorState = (context: VehicleLookupComponent, message: ErrorKeys) => {
+  context.isError = true;
+  context.isLoading = false;
+  context.errorMessage = message;
+  context.vehicleLookup = undefined;
+};
 
-  const { isDev, baseUrl, queryString, abortController, networkTimeoutRef, loadedResponse } = component;
+type GetVehicleLookupProps = {
+  vin: string;
+  scopedTimeoutRef: ReturnType<typeof setTimeout>;
+};
+
+export const getVehicleLookup = async (context: VehicleLookupComponent, generalProps: GetVehicleLookupProps, headers: any = {}): Promise<VehicleLookupDTO> => {
+  const { vin, scopedTimeoutRef } = generalProps;
 
   const handleResult = (newVehicleInformation: VehicleLookupDTO): VehicleLookupDTO => {
-    if (networkTimeoutRef === scopedTimeoutRef) {
-      if (!newVehicleInformation && vin) throw new Error(notAvailableMessage || 'wrongResponseFormat');
+    if (context?.networkTimeoutRef === scopedTimeoutRef) {
+      if (!newVehicleInformation && vin) throw new Error('wrongResponseFormat');
 
-      if (loadedResponse) loadedResponse(newVehicleInformation);
-      if (middlewareCallback) middlewareCallback(newVehicleInformation);
+      if (context?.loadedResponse) context?.loadedResponse(newVehicleInformation);
       return newVehicleInformation;
     }
   };
 
-  if (isDev) {
-    const newData = mockData[vin];
+  if (context?.isDev) {
+    const newData = context?.mockData[vin];
 
     return handleResult(newData);
   } else {
-    if (!baseUrl) throw new Error('noBaseUrl');
+    if (!context?.baseUrl) throw new Error('noBaseUrl');
 
     const componentHeaders = { ...headers };
 
     Object.entries(vehicleRequestHeaders).forEach(([componentHeaderKey, headerField]) => {
-      if (component[componentHeaderKey]) componentHeaders[headerField] = component[componentHeaderKey];
+      if (context[componentHeaderKey]) componentHeaders[headerField] = context[componentHeaderKey];
     });
 
-    const response = await fetch(`${baseUrl}${vin}?${queryString}`, { signal: abortController.signal, headers: componentHeaders });
+    const response = await fetch(`${context?.baseUrl}${vin}?${context?.queryString}`, { signal: context?.abortController.signal, headers: componentHeaders });
 
     const newData = (await response.json()) as VehicleLookupDTO;
 

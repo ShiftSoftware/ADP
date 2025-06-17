@@ -5,7 +5,7 @@ import { LanguageKeys } from '~types/locale';
 import { AppStates, MockJson } from '~types/components';
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
-import { getVehicleInformation } from '~api/vehicleInformation';
+import { getVehicleLookup } from '~api/vehicleInformation';
 
 import cn from '~lib/cn';
 import { closeImageViewer, ImageViewerInterface, openImageViewer } from '~lib/image-expansion';
@@ -93,7 +93,8 @@ export class VehicleAccessories implements ImageViewerInterface {
         this.networkTimeoutRef = scopedTimeoutRef;
       });
 
-      const vehicleResponse = isVinRequest ? await getVehicleInformation(this, { scopedTimeoutRef, vin, mockData }, headers) : newData;
+      // @ts-ignore
+      const vehicleResponse = isVinRequest ? await getVehicleLookup(this, { scopedTimeoutRef, vin, mockData }, headers) : newData;
 
       if (this.networkTimeoutRef === scopedTimeoutRef) {
         if (!vehicleResponse) throw new Error('wrongResponseFormat');

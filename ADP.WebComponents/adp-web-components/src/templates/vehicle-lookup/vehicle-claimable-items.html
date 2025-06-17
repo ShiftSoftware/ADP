@@ -35,9 +35,9 @@
     <a href="#" onclick="history.back()" style="color: blue; display: block; margin-bottom: 16px">Back</a>
 
     <h1>Vehicle Claimable Items</h1>
-    <vehicle-claimable-items language="en" id="vehicle-claimable-items" is-dev="true" query-string="" base-url=""></vehicle-claimable-items>
+    <vehicle-claimable-items id="vehicle-claimable-items" is-dev="true" query-string="" base-url=""></vehicle-claimable-items>
 
-    <claim-temp language="en" id="claim-temp"></claim-temp>
+    <claim-temp id="claim-temp" is-dev="true" base-url="" query-string=""></claim-temp>
 
     <div class="button-container">
       <button class="sample-button" onclick="updateLang('en')">En</button>
@@ -68,10 +68,29 @@
         claimTemp = document.getElementById('claim-temp');
         claimableItems = document.getElementById('vehicle-claimable-items');
 
+        claimTemp.setMockData(mockData);
         claimableItems.setMockData(mockData);
+
+        claimTemp.loadingStateChange = isLoading => {
+          console.log('isLoading: ' + isLoading);
+        };
 
         claimableItems.loadingStateChange = isLoading => {
           console.log('isLoading: ' + isLoading);
+        };
+
+        claimTemp.loadedResponse = newResponse => {
+          console.log(newResponse);
+
+          const urlParams = new URLSearchParams(window.location.search);
+
+          const claimIndex = urlParams.get('claim');
+
+          if (claimIndex) {
+            var itemToClaim = newResponse['serviceItems'][claimIndex];
+
+            claimTemp.claim(itemToClaim);
+          }
         };
 
         claimableItems.loadedResponse = newResponse => {
@@ -96,6 +115,12 @@
           vinLookup(vin);
         }
 
+        claimTemp.activate = vehicleInformation => {
+          console.log(vehicleInformation);
+
+          alert(JSON.stringify(vehicleInformation));
+        };
+
         claimableItems.activate = vehicleInformation => {
           console.log(vehicleInformation);
 
@@ -115,10 +140,12 @@
       }
 
       function vinLookup(vin) {
+        claimTemp.fetchData(vin);
         claimableItems.fetchData(vin);
       }
 
       function setData(key) {
+        claimTemp.setData(mockData[key]);
         claimableItems.setData(mockData[key]);
       }
     </script>

@@ -5,7 +5,7 @@ import cn from '~lib/cn';
 import { closeImageViewer, ImageViewerInterface, openImageViewer } from '~lib/image-expansion';
 import { ErrorKeys, getLocaleLanguage, getSharedLocal, SharedLocales, sharedLocalesSchema } from '~lib/get-local-language';
 
-import { getVehicleInformation } from '~api/vehicleInformation';
+import { getVehicleLookup } from '~api/vehicleInformation';
 
 import { LanguageKeys } from '~types/locale';
 import { AppStates, MockJson } from '~types/components';
@@ -97,7 +97,8 @@ export class VehiclePaintThickness implements ImageViewerInterface {
         this.networkTimeoutRef = scopedTimeoutRef;
       });
 
-      const vehicleResponse = isVinRequest ? await getVehicleInformation(this, { scopedTimeoutRef, vin, mockData }, headers) : newData;
+      // @ts-ignore
+      const vehicleResponse = isVinRequest ? await getVehicleLookup(this, { scopedTimeoutRef, vin, mockData }, headers) : newData;
 
       if (this.networkTimeoutRef === scopedTimeoutRef) {
         if (!vehicleResponse) throw new Error('wrongResponseFormat');
