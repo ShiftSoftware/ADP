@@ -109,6 +109,8 @@ export class ClaimTemp implements MultiLingual, VehicleInfoLayoutInterface, Vehi
   @State() showPrintBox: boolean = false;
   @State() tabAnimationLoading: boolean = false;
   @State() lastSuccessfulClaimResponse: any = null;
+  @State() showClaimableItemPopover: boolean = false;
+  @State() selectedClaimItem?: VehicleServiceItemDTO;
   @State() tabs: VehicleServiceItemDTO['group'][] = [];
 
   private progressBar: HTMLElement;
@@ -253,6 +255,13 @@ export class ClaimTemp implements MultiLingual, VehicleInfoLayoutInterface, Vehi
       }
     }
   };
+
+  setClaimableItemPopover = (showPopover: boolean, claimableItem?: VehicleServiceItemDTO) => {
+    if (showPopover) {
+      this.selectedClaimItem = claimableItem;
+      this.showClaimableItemPopover = true;
+    } else this.showClaimableItemPopover = false;
+  };
   // ====== End Component Logic
 
   render() {
@@ -328,7 +337,12 @@ export class ClaimTemp implements MultiLingual, VehicleInfoLayoutInterface, Vehi
                 <div class="ml-[-125px]" />
 
                 {serviceItems.map((item, idx) => (
-                  <ClaimableItem item={item} locale={this.locale} addStatusClass={item.status !== 'pending' || serviceItems.findIndex(i => i.status === 'pending') === idx} />
+                  <ClaimableItem
+                    item={item}
+                    locale={this.locale}
+                    setClaimableItemPopover={this.setClaimableItemPopover}
+                    addStatusClass={item.status !== 'pending' || serviceItems.findIndex(i => i.status === 'pending') === idx}
+                  />
                 ))}
 
                 <div class="ml-[-125px]" />

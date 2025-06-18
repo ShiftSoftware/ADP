@@ -399,52 +399,6 @@ export class VehicleClaimableItem {
           id="vehicle-item-claim-form"
           maximumDocumentFileSizeInMb={this.maximumDocumentFileSizeInMb}
         ></vehicle-item-claim-form>
-
-        <div class="relative">
-          <div
-            dir="ltr"
-            class={cn('flex overflow-x-scroll px-[30px] relative h-[320px] items-center transition-all duration-300 claimable-content-wrapper', {
-              'hide-scroll': this.tabAnimationLoading,
-            })}
-          >
-            <div class={cn('absolute w-[90%] left-1/2 ml-[-45%] bottom-[40px] z-[1]', { '!z-[-1]': !this.showPrintBox })}>
-              <div
-                class={cn('card warning-card span-entire-1st-row activation-panel', {
-                  loading: this.isLoading,
-                  visible: this.showPrintBox,
-                })}
-              >
-                <p class="no-padding flex gap-2">
-                  <span class="font-semibold">{texts.successFulClaimMessage}</span>
-                </p>
-
-                <button
-                  onClick={() => {
-                    if (this.print) {
-                      this.print(this.lastSuccessfulClaimResponse);
-                    } else {
-                      if (this.lastSuccessfulClaimResponse.PrintURL) {
-                        window.open(this.lastSuccessfulClaimResponse.PrintURL, '_blank').focus();
-                      }
-                    }
-                  }}
-                  class="claim-button dynamic-claim-button"
-                >
-                  <svg width="30px" height="30px" viewBox="-5 -5 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path
-                      fill-rule="evenodd"
-                      clip-rule="evenodd"
-                      d="M17 7H7V6h10v1zm0 12H7v-6h10v6zm2-12V3H5v4H1v8.996C1 17.103 1.897 18 3.004 18H5v3h14v-3h1.996A2.004 2.004 0 0 0 23 15.996V7h-4z"
-                      fill="rgb(252, 248, 227)"
-                    />
-                  </svg>
-
-                  <span>{texts.print}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
       </Host>
     );
   }
