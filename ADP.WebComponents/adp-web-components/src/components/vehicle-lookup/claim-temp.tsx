@@ -22,6 +22,7 @@ import { EmptyTableIcon } from '~assets/empty-table-icon';
 import { scrollIntoContainerView } from '~lib/scroll-into-container-view';
 import { PrintIcon } from '~assets/print-icon';
 import { ActivationIcon } from '../../global/assets/activation-icon';
+import { ClaimableItemPopover } from './components/claimable-item-popover';
 
 @Component({
   shadow: true,
@@ -112,6 +113,9 @@ export class ClaimTemp implements MultiLingual, VehicleInfoLayoutInterface, Vehi
   @State() showClaimableItemPopover: boolean = false;
   @State() selectedClaimItem?: VehicleServiceItemDTO;
   @State() tabs: VehicleServiceItemDTO['group'][] = [];
+  @State() popoverTargetLocation: { x: number; y: number } = { x: 0, y: 0 };
+
+  private claimableItemPopoverRef: HTMLDivElement;
 
   private progressBar: HTMLElement;
   private claimableItemsBox: HTMLElement;
@@ -214,10 +218,15 @@ export class ClaimTemp implements MultiLingual, VehicleInfoLayoutInterface, Vehi
     this.claimableItemsBox = this.el.shadowRoot.querySelector('.claimable-items-box');
 
     window.addEventListener('resize', this.updateProgressBar);
+
+    if (this.claimableItemsBox) this.claimableItemsBox.addEventListener('scroll', this.updatePopoverLocation);
+    window.addEventListener('scroll', this.updatePopoverLocation);
   }
 
   async disconnectedCallback() {
     window.removeEventListener('resize', this.updateProgressBar);
+    if (this.claimableItemsBox) this.claimableItemsBox.removeEventListener('scroll', this.updatePopoverLocation);
+    window.removeEventListener('scroll', this.updatePopoverLocation);
   }
 
   @Watch('vehicleLookup')
@@ -256,12 +265,28 @@ export class ClaimTemp implements MultiLingual, VehicleInfoLayoutInterface, Vehi
     }
   };
 
-  setClaimableItemPopover = (showPopover: boolean, claimableItem?: VehicleServiceItemDTO) => {
+  updatePopoverLocation = () => {
+    console.log(this.claimableItemPopoverRef);
+
+    if (!this.claimableItemPopoverRef) return;
+
+    const { x, bottom, width } = this.claimableItemPopoverRef.getBoundingClientRect();
+
+    this.popoverTargetLocation = { x: x + width / 2, y: bottom + 2 };
+  };
+
+  setClaimableItemPopover = (showPopover: boolean, claimableItem?: VehicleServiceItemDTO, claimableItemPopoverRef?: HTMLDivElement) => {
     if (showPopover) {
+      this.claimableItemPopoverRef = claimableItemPopoverRef;
+      this.updatePopoverLocation();
       this.selectedClaimItem = claimableItem;
       this.showClaimableItemPopover = true;
-    } else this.showClaimableItemPopover = false;
+    } else {
+      this.showClaimableItemPopover = false;
+    }
   };
+
+  claim = () => {};
   // ====== End Component Logic
 
   render() {
@@ -277,6 +302,13 @@ export class ClaimTemp implements MultiLingual, VehicleInfoLayoutInterface, Vehi
 
     return (
       <Host>
+        <ClaimableItemPopover
+          claim={this.claim}
+          locale={this.locale}
+          item={this.selectedClaimItem}
+          showPopover={this.showClaimableItemPopover}
+          targetLocation={this.popoverTargetLocation}
+        />
         <VehicleInfoLayout
           isError={this.isError}
           coreOnly={this.coreOnly}

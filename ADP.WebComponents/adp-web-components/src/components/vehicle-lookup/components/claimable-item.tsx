@@ -25,7 +25,7 @@ type ClaimableItemProps = {
   addStatusClass: boolean;
   item: VehicleServiceItemDTO;
   locale: InferType<typeof dynamicClaimSchema>;
-  setClaimableItemPopover: (showPopover: boolean, claimableItem?: VehicleServiceItemDTO) => void;
+  setClaimableItemPopover: (showPopover: boolean, claimableItem?: VehicleServiceItemDTO, claimableItemPopoverRef?: HTMLDivElement) => void;
 };
 
 export const ClaimableItem: FunctionalComponent<ClaimableItemProps> = ({ item, locale, addStatusClass, setClaimableItemPopover }) => {
@@ -34,14 +34,21 @@ export const ClaimableItem: FunctionalComponent<ClaimableItemProps> = ({ item, l
     component.classList.remove('load-animation');
   };
 
-  const openPopover = () => setClaimableItemPopover(true, item);
+  const openPopover = event => setClaimableItemPopover(true, item, event?.target);
 
   const closePopover = () => setClaimableItemPopover(false);
 
   return (
-    <div class={cn('claimable-item', { [item.status]: addStatusClass })} onMouseEnter={openPopover} onMouseLeave={closePopover} onClick={openPopover} onBlur={closePopover}>
+    <div class={cn('claimable-item', { [item.status]: addStatusClass })}>
       <div class="claimable-item-container">
-        <div onAnimationEnd={removeLoadAnimationClass} class="claimable-item-header load-animation">
+        <div
+          onBlur={closePopover}
+          onClick={openPopover}
+          onMouseEnter={openPopover}
+          onMouseLeave={closePopover}
+          onAnimationEnd={removeLoadAnimationClass}
+          class="claimable-item-header load-animation"
+        >
           <img src={icons[item.status]} alt="status icon" />
           <div>{locale[item?.status]}</div>
         </div>
