@@ -430,7 +430,14 @@ export class VehicleClaimableItems implements VehicleInformationInterface {
                 }
                 resolve();
               } else {
+                try {
+                  const responseData = JSON.parse(xhr.responseText);
+
+                  alert(responseData.Message)
+                }
+                catch {
                 reject(new Error(`Upload failed with status ${xhr.status}`));
+                }
               }
             };
 
