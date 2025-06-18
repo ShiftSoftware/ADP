@@ -23,16 +23,16 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Compile Remove="DTOsAndModels\Part\CatalogPartDTO.cs" />
-	  <Compile Remove="Services\TBPCosmosService.cs" />
+		<Compile Remove="DTOsAndModels\Part\CatalogPartDTO.cs" />
+		<Compile Remove="Services\TBPCosmosService.cs" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.Azure.Cosmos" Version="3.43.1" />
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.1" />
+		<PackageReference Include="Microsoft.Azure.Cosmos" Version="3.52.0" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.6" />
 		<PackageReference Include="ShiftSoftware.ADP.Models" Version="$(ADPVersion)" Condition="!Exists('..\..\ADP.Models\Models\Models.csproj')" />
-		<PackageReference Include="ShiftSoftware.ShiftEntity.Model" Version="2025.5.7.1" />
-		<PackageReference Include="System.Text.Json" Version="8.0.5" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.Model" Version="2025.6.17.1" />
+		<PackageReference Include="System.Text.Json" Version="9.0.6" />
 		<PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
 	</ItemGroup>
 

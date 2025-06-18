@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
-		<TargetFramework>net8.0</TargetFramework>
+		<TargetFramework>net9.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
@@ -12,9 +12,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\..\ADP.LookupServices\Lookup.Services\Lookup.Services.csproj" />
-	  <ProjectReference Include="..\..\ADP.Models\Models\Models.csproj" />
-	  <ProjectReference Include="..\..\ADP.SyncAgent\SyncAgent\ADP.SyncAgent.csproj" />
+		<ProjectReference Include="..\..\ADP.LookupServices\Lookup.Services\Lookup.Services.csproj" />
+		<ProjectReference Include="..\..\ADP.Models\Models\Models.csproj" />
+		<ProjectReference Include="..\..\ADP.SyncAgent\SyncAgent\ADP.SyncAgent.csproj" />
 	</ItemGroup>
 
 	<Target Name="RunSelfAfterBuild" AfterTargets="Build">

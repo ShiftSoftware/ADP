@@ -49,6 +49,12 @@ var host = new HostBuilder()
 
         services.AddLookupService<CosmosClient>(x =>
         {
+            x.WarrantyStartDateDefaultsToInvoiceDate = false;
+            x.IncludeInactivatedFreeServiceItems = true;
+            x.PerVehicleEligibilitySupport = true;
+            x.SigningSecreteKey = hostBuilder.Configuration.GetValue<string>("ADPSigningSecreteKey")!;
+            x.SignatureValidityDuration = TimeSpan.FromMinutes(2);
+
             x.ServiceItemImageUrlResolver = (x) =>
             {
                 string result = null;
@@ -86,12 +92,12 @@ var host = new HostBuilder()
                     return null;
 
                 var identityComsosService = h.Services.GetRequiredService<IdentityCosmosService>();
-                var country = await identityComsosService.GetTCACountryAsync(h.Value);
+                var country = await identityComsosService.GetCountryAsync(h.Value);
 
                 if (country is null)
                     return null;
 
-                var localizedCountryName = Utility.GetLocalizedText(country?.Name, h.Language);
+                var localizedCountryName = ShiftSoftware.ADP.Lookup.Services.Utility.GetLocalizedText(country?.Name, h.Language);
 
                 return localizedCountryName;
             };
@@ -102,12 +108,12 @@ var host = new HostBuilder()
                     return null;
 
                 var identityComsosService = h.Services.GetRequiredService<IdentityCosmosService>();
-                var region = await identityComsosService.GetTCARegionAsync(h.Value);
+                var region = await identityComsosService.GetRegionAsync(h.Value);
 
                 if (region is null)
                     return null;
 
-                var localizedRegionName = Utility.GetLocalizedText(region?.Name, h.Language); ;
+                var localizedRegionName = ShiftSoftware.ADP.Lookup.Services.Utility.GetLocalizedText(region?.Name, h.Language); ;
 
                 return localizedRegionName;
             };
@@ -141,17 +147,16 @@ var host = new HostBuilder()
 
             x.CompanyBranchNameResolver = async (h) =>
             {
-                if (string.IsNullOrWhiteSpace(h.Value) || string.IsNullOrWhiteSpace(h.Value))
+                if (string.IsNullOrWhiteSpace(h.Value))
                     return null;
 
                 var identityComsosService = h.Services.GetRequiredService<IdentityCosmosService>();
-                long.TryParse(h.Value, out long branchId);
-                var branch = await identityComsosService.GetCompanyBranchAsync(h.Value, branchId.ToString());
+                var branch = await identityComsosService.GetCompanyBranchAsync(h.Value);
 
                 if (branch is null)
                     return null;
 
-                var localizedCompanyName = Utility.GetLocalizedText(branch?.Name, h.Language);
+                var localizedCompanyName = ShiftSoftware.ADP.Lookup.Services.Utility.GetLocalizedText(branch?.Name, h.Language);
 
                 return localizedCompanyName;
             };
