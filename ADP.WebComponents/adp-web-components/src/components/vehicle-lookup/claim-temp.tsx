@@ -19,11 +19,14 @@ import { ClaimableItem } from './components/claimable-item';
 import cn from '~lib/cn';
 
 import { EmptyTableIcon } from '~assets/empty-table-icon';
+import { scrollIntoContainerView } from '~lib/scroll-into-container-view';
+import { PrintIcon } from '~assets/print-icon';
+import { ActivationIcon } from '../../global/assets/activation-icon';
 
 @Component({
+  shadow: true,
   tag: 'claim-temp',
   styleUrl: 'claim-temp.css',
-  shadow: true,
 })
 export class ClaimTemp implements MultiLingual, VehicleInfoLayoutInterface, VehicleLookupComponent {
   // ====== Start Localization
@@ -75,39 +78,10 @@ export class ClaimTemp implements MultiLingual, VehicleInfoLayoutInterface, Vehi
 
   @Method()
   async setData(newData: VehicleLookupDTO | string, headers: any = {}) {
-    // Parse group information
-    const beforeAssignment = async response => {
-      if (response?.serviceItems?.length) {
-        let orderedGroups: VehicleServiceItemDTO['group'][] = [];
-        const unOrderedGroups: VehicleServiceItemDTO['group'][] = [];
-
-        response.serviceItems.forEach(({ group }) => {
-          if (!group?.name) return;
-
-          if ([...orderedGroups, ...unOrderedGroups].find(g => g?.name === group?.name)) return;
-
-          if (group?.isDefault) this.activeTab = group?.name;
-
-          if (typeof group?.tabOrder === 'number') orderedGroups.push(group);
-          else unOrderedGroups.push(group);
-        });
-
-        if (!!unOrderedGroups.length || !!orderedGroups.length) {
-          orderedGroups = orderedGroups.sort((a, b) => a.tabOrder - b.tabOrder);
-          this.tabs = [...orderedGroups, ...unOrderedGroups];
-          if (!this.activeTab) this.activeTab = this.tabs[0].name;
-        } else {
-          this.tabs = [];
-          this.activeTab = '';
-        }
-      } else {
-        this.tabs = [];
-        this.activeTab = '';
-      }
-
-      return response;
+    const beforeAssignment = async (vehicleLookup: VehicleLookupDTO) => {
+      await this.parseGroupData(vehicleLookup);
+      return vehicleLookup;
     };
-
     await setVehicleLookupData(this, newData, headers, { beforeAssignment });
   }
 
@@ -128,8 +102,18 @@ export class ClaimTemp implements MultiLingual, VehicleInfoLayoutInterface, Vehi
   // ====== End Vehicle Lookup Component Shared Logic
 
   // ====== Start Component Logic
+  @Prop() print?: (claimResponse: any) => void;
+  @Prop() activate?: (vehicleInformation: VehicleLookupDTO) => void;
+
   @State() activeTab: string = '';
+  @State() showPrintBox: boolean = false;
+  @State() tabAnimationLoading: boolean = false;
+  @State() lastSuccessfulClaimResponse: any = null;
   @State() tabs: VehicleServiceItemDTO['group'][] = [];
+
+  private progressBar: HTMLElement;
+  private claimableItemsBox: HTMLElement;
+  private tabAnimationTimeoutRef: ReturnType<typeof setTimeout>;
 
   private getServiceItems = (): VehicleLookupDTO['serviceItems'] => {
     if (!this.vehicleLookup?.serviceItems?.length) return [];
@@ -138,6 +122,137 @@ export class ClaimTemp implements MultiLingual, VehicleInfoLayoutInterface, Vehi
 
     return this.vehicleLookup?.serviceItems.filter(serviceItem => serviceItem?.group?.name === this.activeTab);
   };
+
+  private parseGroupData = (vehicleLookup: VehicleLookupDTO) => {
+    if (vehicleLookup?.serviceItems?.length) {
+      let orderedGroups: VehicleServiceItemDTO['group'][] = [];
+      const unOrderedGroups: VehicleServiceItemDTO['group'][] = [];
+
+      vehicleLookup.serviceItems.forEach(({ group }) => {
+        if (!group?.name) return;
+
+        if ([...orderedGroups, ...unOrderedGroups].find(g => g?.name === group?.name)) return;
+
+        if (group?.isDefault) this.activeTab = group?.name;
+
+        if (typeof group?.tabOrder === 'number') orderedGroups.push(group);
+        else unOrderedGroups.push(group);
+      });
+
+      if (!!unOrderedGroups.length || !!orderedGroups.length) {
+        orderedGroups = orderedGroups.sort((a, b) => a.tabOrder - b.tabOrder);
+        this.tabs = [...orderedGroups, ...unOrderedGroups];
+        if (!this.activeTab) this.activeTab = this.tabs[0].name;
+      } else {
+        this.tabs = [];
+        this.activeTab = '';
+      }
+    } else {
+      this.tabs = [];
+      this.activeTab = '';
+    }
+
+    return vehicleLookup;
+  };
+
+  private updateProgressBar = async (payload?: object) => {
+    // payload indicates its not a fresh list rather it is an update to current one
+    if (!payload) {
+      // hard reset of the bar
+      this.progressBar.style.transitionDuration = '0s';
+      this.progressBar.style.opacity = '0';
+      this.progressBar.style.width = '0%';
+
+      // apply changes
+      await new Promise(r => setTimeout(r, 10));
+    }
+
+    this.progressBar.style.transitionDuration = '1s';
+    this.progressBar.style.opacity = '1';
+
+    if (!this.vehicleLookup) return;
+
+    if (!!this.tabs?.length && this.tabs.find(tab => tab.name === this.activeTab) && !this.tabs.find(tab => tab.name === this.activeTab)?.isSequential) return;
+
+    const serviceItems = this.getServiceItems();
+
+    const firstPendingItemIndex = serviceItems.findIndex(x => x.status === 'pending');
+
+    if (firstPendingItemIndex !== -1) {
+      const pendingItemRef = this.el.shadowRoot.querySelectorAll('.claimable-item')[firstPendingItemIndex] as HTMLElement;
+
+      const progressLaneRef = this.el.shadowRoot.querySelector('.progress-lane') as HTMLElement;
+
+      const { left: pendingItemLeftOffset } = pendingItemRef.getBoundingClientRect();
+      const { width: progressLaneWidth, left: progressLeftOffset } = progressLaneRef.getBoundingClientRect();
+
+      const offsetToLeftRatio = ((pendingItemLeftOffset - progressLeftOffset) / progressLaneWidth) * 100;
+
+      this.progressBar.style.width = `${offsetToLeftRatio.toFixed(2)}%`;
+
+      if (firstPendingItemIndex === serviceItems.length - 1)
+        this.claimableItemsBox.scrollTo({
+          left: this.claimableItemsBox.scrollWidth,
+          behavior: 'smooth',
+        });
+      else scrollIntoContainerView(pendingItemRef, this.claimableItemsBox);
+    } else if (!(serviceItems.length === 0 || serviceItems.filter(x => x.status === 'activationRequired').length === serviceItems.length)) {
+      this.progressBar.style.width = '100%';
+
+      this.claimableItemsBox.scrollTo({
+        left: this.claimableItemsBox.scrollWidth,
+        behavior: 'smooth',
+      });
+    }
+  };
+
+  async componentDidLoad() {
+    this.progressBar = this.el.shadowRoot.querySelector('.progress-bar');
+
+    this.claimableItemsBox = this.el.shadowRoot.querySelector('.claimable-items-box');
+
+    window.addEventListener('resize', this.updateProgressBar);
+  }
+
+  async disconnectedCallback() {
+    window.removeEventListener('resize', this.updateProgressBar);
+  }
+
+  @Watch('vehicleLookup')
+  async onVehicleChange() {
+    // wait for jsx update
+    setTimeout(() => {
+      this.updateProgressBar();
+    }, 50);
+  }
+
+  private onActiveTabChange = ({ label }: { label: string; idx: number }) => {
+    this.tabAnimationLoading = true;
+    clearTimeout(this.tabAnimationTimeoutRef);
+
+    this.tabAnimationTimeoutRef = setTimeout(() => {
+      this.activeTab = label;
+      // wait for jsx update
+      setTimeout(() => {
+        this.tabAnimationLoading = false;
+        this.updateProgressBar();
+      }, 50);
+    }, 750);
+  };
+
+  private activateClaimItem = () => {
+    if (this.activate) this.activate(this.vehicleLookup);
+  };
+
+  private printLastClaimResponse = () => {
+    if (this.print) {
+      this.print(this.lastSuccessfulClaimResponse);
+    } else {
+      if (this.lastSuccessfulClaimResponse.PrintURL) {
+        window.open(this.lastSuccessfulClaimResponse.PrintURL, '_blank').focus();
+      }
+    }
+  };
   // ====== End Component Logic
 
   render() {
@@ -145,18 +260,32 @@ export class ClaimTemp implements MultiLingual, VehicleInfoLayoutInterface, Vehi
 
     const isNoServicesAvailable = !this.isLoading && this.vehicleLookup && !serviceItems.length;
 
+    const hideTabs = this.isLoading || this.isError || !this.tabs.length || !serviceItems.length;
+
+    const tabs = this.tabs.map(group => group.name);
+
+    const hasInactiveItems = serviceItems.filter(x => x.status === 'activationRequired').length > 0;
+
     return (
       <Host>
         <VehicleInfoLayout
           isError={this.isError}
           coreOnly={this.coreOnly}
-          isLoading={this.isLoading}
           vin={this.vehicleLookup?.vin}
           direction={this.locale.sharedLocales.direction}
+          isLoading={this.isLoading || this.tabAnimationLoading}
           errorMessage={this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard}
         >
-          <div dir="ltr" class={cn('relative flex items-center h-[320px] transition-all duration-300', { loading: this.isLoading })}>
-            <div class={cn('absolute w-[calc(100%-60px)] left-[30px] progress-container-style opacity-0', { 'opacity-100': this.isLoading })}>
+          <div dir="ltr" class={cn('relative flex items-center h-[320px] transition-all duration-300', { loading: this.isLoading || this.tabAnimationLoading })}>
+            {/* Tabs container */}
+            <div dir={this.locale.sharedLocales.direction} class="absolute top-0 z-10 w-full pt-[16px]">
+              <div class={cn('duration-300', { 'translate-y-[-50%] opacity-0': hideTabs })}>
+                <shift-tabs activeTabLabel={this.activeTab} changeActiveTab={this.onActiveTabChange} tabs={tabs}></shift-tabs>
+              </div>
+            </div>
+
+            {/* Loading Component  */}
+            <div class={cn('absolute w-[calc(100%-60px)] left-[30px] progress-container-style opacity-0', { 'opacity-100': this.isLoading || this.tabAnimationLoading })}>
               <div class="w-full h-full rounded-[4px] overflow-x-hidden absolute left-0 top-0">
                 <div class="absolute opacity-0 bg-[#1a1a1a] w-[150%] h-full" />
                 <div class="absolute h-full bg-[linear-gradient(to_bottom,_#428bca_0%,_#3071a9_100%)] lane-inc" />
@@ -164,19 +293,48 @@ export class ClaimTemp implements MultiLingual, VehicleInfoLayoutInterface, Vehi
               </div>
             </div>
 
-            <div class="px-[30px] min-w-full relative overflow-x-scroll h-full overflow-y-hidden">
-              <div class="flex relative w-fit min-w-full items-center h-full [&_*]:shrink-0 gap-[250px] justify-between">
-                <div class={cn('absolute w-[calc(100%-0px)] translate-y-0 progress-container-style opacity-100', { 'opacity-0': this.isLoading })}></div>
+            {/* Inactive items activation & Print functionality */}
+            <div
+              dir={this.locale.sharedLocales.direction}
+              class={cn(
+                'absolute w-[90%] z-10 pointer-events-none border opacity-0 translate-y-[-5px] scale-[70%] text-[#8a6d3b] bg-[#fcf8e3] border-[#faebcc] p-[25px] text-[16px] rounded-[6px] flex items-center justify-between left-1/2 -translate-x-1/2 h-10 bottom-[40px] transition duration-500',
+                {
+                  'opacity-100 pointer-events-auto translate-y-0 scale-100':
+                    !this.isLoading && this.vehicleLookup && !this.tabAnimationLoading && (hasInactiveItems || this.showPrintBox),
+                },
+              )}
+            >
+              <span class="font-semibold">{this.showPrintBox ? this.locale.successFulClaimMessage : this.locale.warrantyAndServicesNotActivated}</span>
 
+              <button class="claim-button" onClick={this.showPrintBox ? this.printLastClaimResponse : this.activateClaimItem}>
+                {this.showPrintBox ? <PrintIcon class="size-[30px] duration-200" /> : <ActivationIcon class="size-[30px] duration-200" />}
+                <span>{this.showPrintBox ? this.locale.print : this.locale.activateNow}</span>
+              </button>
+            </div>
+
+            <div class="claimable-items-box px-[30px] min-w-full relative overflow-x-scroll h-full overflow-y-hidden">
+              <div class="flex relative w-fit min-w-full items-center h-full [&_*]:shrink-0 gap-[250px] justify-between">
+                {/* Lane */}
+                <div
+                  class={cn('progress-container-style progress-lane absolute overflow-hidden w-[calc(100%-0px)] translate-y-0 opacity-100', {
+                    'opacity-0': this.isLoading || this.tabAnimationLoading || isNoServicesAvailable || !this.vehicleLookup,
+                  })}
+                >
+                  {/* Progress lane */}
+                  <div part="progress-bar" class="progress-bar transition-all w-1/2 h-full bg-[linear-gradient(to_bottom,_#428bca_0%,_#3071a9_100%)]" />
+                </div>
+
+                {/* Claim items */}
                 <div class="ml-[-125px]" />
 
-                {serviceItems.map(item => (
-                  <ClaimableItem item={item} locale={this.locale} />
+                {serviceItems.map((item, idx) => (
+                  <ClaimableItem item={item} locale={this.locale} addStatusClass={item.status !== 'pending' || serviceItems.findIndex(i => i.status === 'pending') === idx} />
                 ))}
 
                 <div class="ml-[-125px]" />
               </div>
 
+              {/* Empty state */}
               <div
                 dir={this.locale.sharedLocales.direction}
                 class={cn(
