@@ -12,16 +12,6 @@ steps:
       versionSpec: '16.x' # Use your desired Node.js version
     displayName: 'Set up Node.js'
 
-  - task: Bash@3
-    inputs:
-      targetType: 'inline'
-      script: |
-        echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ADP.WebComponents/adp-web-components/.npmrc
-    displayName: 'Configure npm for Authentication'
-    env:
-      NPM_TOKEN: $(NPM_TOKEN)
-
-
   - task: Npm@1
     displayName: 'Install dependencies'
     inputs:
