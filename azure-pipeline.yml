@@ -1,7 +1,7 @@
 trigger:
  tags:
     include:
-    - release*
+    - release-nuget-*
 
 pool:
   vmImage: ubuntu-22.04
