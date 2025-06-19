@@ -26,7 +26,11 @@ public class ServiceItemModel
     public long? MaximumMileage { get; set; }
     public string PackageCode { get; set; }
     public string UniqueReference { get; set; }
+
+    //Will be null if costing type is 'Per Model'
     public decimal? FixedCost { get; set; }
+
+    //Will be null if costing type is 'Fixed'
     public IEnumerable<ServiceItemCostModel> ModelCosts { get; set; }
 
     public long? CampaignID { get; set; }
@@ -37,4 +41,5 @@ public class ServiceItemModel
     public ClaimableItemCampaignActivationTypes CampaignActivationType { get; set; }
     public ClaimableItemValidityMode ValidityMode { get; set; }
     public ClaimableItemClaimingMethod ClaimingMethod { get; set; }
+    public ClaimableItemAttachmentFieldBehavior AttachmentFieldBehavior { get; set; }
 }

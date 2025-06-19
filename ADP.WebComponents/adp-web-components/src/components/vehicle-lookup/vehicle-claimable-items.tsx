@@ -436,7 +436,7 @@ export class VehicleClaimableItems implements VehicleInformationInterface {
                   alert(responseData.Message)
                 }
                 catch {
-                reject(new Error(`Upload failed with status ${xhr.status}`));
+                  reject(new Error(`Upload failed with status ${xhr.status}`));
                 }
               }
             };

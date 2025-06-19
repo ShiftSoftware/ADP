@@ -33,6 +33,8 @@ public class VehicleServiceItemDTO
     [JsonConverter(typeof(LocalizedTextJsonConverter))]
     public string Image { get; set; } = default!;
     public string Type { get; set; }
+
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public VehcileServiceItemTypes TypeEnum { get; set; } = default!;
 
     [JsonCustomDateTime(ActivationAndExpiryDateFormat)]
@@ -41,6 +43,8 @@ public class VehicleServiceItemDTO
     [JsonCustomDateTime(ActivationAndExpiryDateFormat)]
     public DateTime? ExpiresAt { get; set; }
     public string Status { get; set; }
+
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public VehcileServiceItemStatuses StatusEnum { get; set; } = default!;
     public long? CampaignID { get; set; }
     public string CampaignUniqueReference { get; set; }
@@ -80,6 +84,8 @@ public class VehicleServiceItemDTO
     [TypeScriptIgnore]
     public ClaimableItemValidityMode ValidityModeEnum { get; set; }
 
+
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public ClaimableItemClaimingMethod ClaimingMethodEnum { get; set; }
 
     public string VehicleInspectionID { get; set; }
