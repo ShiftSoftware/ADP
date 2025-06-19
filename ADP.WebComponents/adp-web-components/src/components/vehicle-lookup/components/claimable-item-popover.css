@@ -1,0 +1,60 @@
+.claimable-item-popover {
+  @apply transition-opacity opacity-0 fixed z-50 block duration-500 w-fit pointer-events-none;
+}
+
+.claimable-item-popover:hover,
+.claimable-item-popover[aria-expanded='true'] {
+  @apply !opacity-100 !pointer-events-auto [&_*]:!pointer-events-auto;
+}
+
+.popover-relative-container {
+  @apply relative w-fit;
+}
+
+.popover-arrow-1 {
+  @apply absolute w-0 h-0 border-[10px] border-t-0 !border-b-[#dddddd] border-transparent;
+}
+
+.popover-arrow-2 {
+  @apply mt-[1px] absolute w-0 h-0 border-[10px] border-t-0 !border-b-[#f9f9f9] border-transparent;
+}
+
+.popover-body {
+  @apply relative z-10 bg-[#f9f9f9] border shadow border-[#dddddd] w-[400px] p-[20px] rounded-[5px]  text-[#282828];
+}
+
+.popover-body button {
+  @apply py-[4px] flex justify-center w-[80%] mt-[16px] m-auto [&_svg]:size-[30px] [&_svg]:!pointer-events-none;
+}
+
+.popover-info-row {
+  @apply flex [&_*]:flex-1 [&_*]:shrink-0 text-start border-b h-[35px] pt-[2px] items-center text-[16px];
+}
+
+.popover-arrow-icon {
+  @apply bottom-[calc(100%-12px)] absolute z-50 left-1/2 -translate-x-1/2;
+}
+
+.popover-arrow-icon.flipped {
+  @apply bottom-[12px] rotate-180 translate-y-full;
+}
+
+.popover-arrow-icon-svg {
+  @apply size-[40px] text-[#ddd] fill-[#f9f9f9] stroke-[0.5px];
+}
+
+.popover-arrow-bottom-line {
+  @apply h-[1.5px] absolute w-[30px] left-[4.5px] top-[27.75px] bg-[#f9f9f9];
+}
+
+.claimable-item-popover .claim-button {
+  @apply active:[&_svg]:scale-[125%] active:bg-[#27ae60] [&_circle]:fill-[#2ecc71] hover:text-white hover:bg-[#2ecc71] hover:stroke-white hover:fill-white hover:[&_circle]:fill-white outline-none flex items-center gap-[3px] border border-[#27ae60] bg-transparent fill-[#27ae60] stroke-[#27ae60] text-[#27ae60]  rounded-[5px] cursor-pointer duration-200 font-bold px-[10px];
+}
+
+.claimable-item-popover .claim-button path {
+  transition: 0.2s;
+}
+
+.claimable-item-popover .claim-button:hover path {
+  fill: #2ecc71;
+}

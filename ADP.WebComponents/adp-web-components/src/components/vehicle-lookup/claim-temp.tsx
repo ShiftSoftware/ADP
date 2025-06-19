@@ -113,7 +113,7 @@ export class ClaimTemp implements MultiLingual, VehicleInfoLayoutInterface, Vehi
   @State() showClaimableItemPopover: boolean = false;
   @State() selectedClaimItem?: VehicleServiceItemDTO;
   @State() tabs: VehicleServiceItemDTO['group'][] = [];
-  @State() popoverTargetLocation: { x: number; y: number } = { x: 0, y: 0 };
+  @State() popoverTargetLocation: { left: number; bottom: number; top: number } = { left: 0, bottom: 0, top: 0 };
 
   private claimableItemPopoverRef: HTMLDivElement;
 
@@ -221,12 +221,14 @@ export class ClaimTemp implements MultiLingual, VehicleInfoLayoutInterface, Vehi
 
     if (this.claimableItemsBox) this.claimableItemsBox.addEventListener('scroll', this.updatePopoverLocation);
     window.addEventListener('scroll', this.updatePopoverLocation);
+    window.addEventListener('resize', this.updatePopoverLocation);
   }
 
   async disconnectedCallback() {
     window.removeEventListener('resize', this.updateProgressBar);
     if (this.claimableItemsBox) this.claimableItemsBox.removeEventListener('scroll', this.updatePopoverLocation);
     window.removeEventListener('scroll', this.updatePopoverLocation);
+    window.removeEventListener('resize', this.updatePopoverLocation);
   }
 
   @Watch('vehicleLookup')
@@ -266,13 +268,11 @@ export class ClaimTemp implements MultiLingual, VehicleInfoLayoutInterface, Vehi
   };
 
   updatePopoverLocation = () => {
-    console.log(this.claimableItemPopoverRef);
-
     if (!this.claimableItemPopoverRef) return;
 
-    const { x, bottom, width } = this.claimableItemPopoverRef.getBoundingClientRect();
+    const { left, bottom, width, top } = this.claimableItemPopoverRef.getBoundingClientRect();
 
-    this.popoverTargetLocation = { x: x + width / 2, y: bottom + 2 };
+    this.popoverTargetLocation = { left: left + width / 2, bottom, top };
   };
 
   setClaimableItemPopover = (showPopover: boolean, claimableItem?: VehicleServiceItemDTO, claimableItemPopoverRef?: HTMLDivElement) => {
