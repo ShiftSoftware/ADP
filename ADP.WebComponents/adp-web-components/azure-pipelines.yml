@@ -12,21 +12,32 @@ steps:
       versionSpec: '16.x' # Use your desired Node.js version
     displayName: 'Set up Node.js'
 
-  - script: |
-      echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > .npmrc
+  - task: Bash@3
+    inputs:
+      targetType: 'inline'
+      script: |
+        echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ADP.WebComponents/adp-web-components/.npmrc
     displayName: 'Configure npm for Authentication'
     env:
       NPM_TOKEN: $(NPM_TOKEN)
 
-  - script: npm install
-    displayName: 'Install dependencies'
-    continueOnError: false
-  
-  - script: npm run build
-    displayName: 'Build the project'
-    continueOnError: false
 
-  - script: npm publish
+  - task: Npm@1
+    displayName: 'Install dependencies'
+    inputs:
+      command: 'install'
+      workingDir: 'ADP.WebComponents/adp-web-components'
+
+  - task: Npm@1
+    displayName: 'Build the project'
+    inputs:
+      command: 'custom'
+      customCommand: 'run build'
+      workingDir: 'ADP.WebComponents/adp-web-components'
+
+  - task: Npm@1
     displayName: 'Publish to npm'
     condition: contains(variables['Build.SourceBranch'], 'refs/tags/release')
-    continueOnError: false
+    inputs:
+      command: 'publish'
+      workingDir: 'ADP.WebComponents/adp-web-components'
