@@ -42,3 +42,4 @@ steps:
     inputs:
       command: 'publish'
       workingDir: 'ADP.WebComponents/adp-web-components'
+      publishEndpoint: 'NPM'
