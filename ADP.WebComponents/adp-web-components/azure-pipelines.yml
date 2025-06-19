@@ -25,8 +25,9 @@ steps:
   - task: Npm@1
     displayName: 'Install dependencies'
     inputs:
-      command: 'install'
+      command: 'custom'
       workingDir: 'ADP.WebComponents/adp-web-components'
+      customCommand: 'install --ignore-scripts'
 
   - task: Npm@1
     displayName: 'Build the project'
