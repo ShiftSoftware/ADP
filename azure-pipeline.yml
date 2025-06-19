@@ -19,15 +19,15 @@ steps:
    displayName: 'Build All Projects'
 
  - script: dotnet pack ADP.Models/Models --configuration Release --output $(Build.ArtifactStagingDirectory)/ADP
-   condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-adp')) 
+   condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-nuget')) 
    displayName: 'pack ADP.Models'
 
  - script: dotnet pack ADP.LookupServices/Lookup.Services --configuration Release --output $(Build.ArtifactStagingDirectory)/ADP
-   condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-adp')) 
+   condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-nuget')) 
    displayName: 'pack ADP.LookupServices'
 
  - script: dotnet pack ADP.SyncAgent/SyncAgent --configuration Release --output $(Build.ArtifactStagingDirectory)/ADP
-   condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-adp')) 
+   condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-nuget')) 
    displayName: 'pack ADP.SyncAgent'
 
 
@@ -45,7 +45,7 @@ steps:
 
  - task: NuGetCommand@2
    displayName: 'Push ADP Packages'
-   condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-adp'))
+   condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-nuget'))
    inputs:
     command: 'custom'
     arguments: 'push "$(Build.ArtifactStagingDirectory)/ADP/**/*.nupkg" -Source https://api.nuget.org/v3/index.json -ApiKey $(ShiftSoftwareNugetApiKey) -SkipDuplicate'
