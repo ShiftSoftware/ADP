@@ -464,6 +464,8 @@ export class VehicleClaimableItems {
       this.claimForm.unInvoicedByBrokerName = vehicleInformation?.saleInformation?.broker?.brokerName;
     else this.claimForm.unInvoicedByBrokerName = null;
 
+    console.log(99);
+
     this.handleClaiming();
   }
 

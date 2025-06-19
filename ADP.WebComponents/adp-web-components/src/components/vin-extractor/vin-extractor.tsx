@@ -138,7 +138,7 @@ export class VinExtractor {
   };
 
   @Method()
-  setBlazorRef(newBlazorRef: DotNetObjectReference) {
+  async setBlazorRef(newBlazorRef: DotNetObjectReference) {
     this.blazorRef = newBlazorRef;
   }
 
@@ -336,7 +336,7 @@ export class VinExtractor {
   };
 
   @Method()
-  open() {
+  async open() {
     this.isOpen = true;
   }
 

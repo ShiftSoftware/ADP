@@ -23,6 +23,7 @@ import { scrollIntoContainerView } from '~lib/scroll-into-container-view';
 import { PrintIcon } from '~assets/print-icon';
 import { ActivationIcon } from '../../global/assets/activation-icon';
 import { ClaimableItemPopover } from './components/claimable-item-popover';
+import { ClaimFormPayload, ClaimTempForm } from './claim-temp-form';
 
 @Component({
   shadow: true,
@@ -104,6 +105,8 @@ export class ClaimTemp implements MultiLingual, VehicleInfoLayoutInterface, Vehi
 
   // ====== Start Component Logic
   @Prop() print?: (claimResponse: any) => void;
+  @Prop() maximumDocumentFileSizeInMb: number = 30;
+  @Prop() claimEndPoint: string = 'api/vehicle/swift-claim';
   @Prop() activate?: (vehicleInformation: VehicleLookupDTO) => void;
 
   @State() activeTab: string = '';
@@ -114,6 +117,8 @@ export class ClaimTemp implements MultiLingual, VehicleInfoLayoutInterface, Vehi
   @State() selectedClaimItem?: VehicleServiceItemDTO;
   @State() tabs: VehicleServiceItemDTO['group'][] = [];
   @State() popoverTargetLocation: { left: number; bottom: number; top: number } = { left: 0, bottom: 0, top: 0 };
+
+  claimForm: ClaimTempForm;
 
   private claimableItemPopoverRef: HTMLDivElement;
 
@@ -215,6 +220,8 @@ export class ClaimTemp implements MultiLingual, VehicleInfoLayoutInterface, Vehi
   async componentDidLoad() {
     this.progressBar = this.el.shadowRoot.querySelector('.progress-bar');
 
+    this.claimForm = this.el.shadowRoot.querySelector('.vehicle-item-claim-form') as unknown as ClaimTempForm;
+
     this.claimableItemsBox = this.el.shadowRoot.querySelector('.claimable-items-box');
 
     window.addEventListener('resize', this.updateProgressBar);
@@ -286,7 +293,140 @@ export class ClaimTemp implements MultiLingual, VehicleInfoLayoutInterface, Vehi
     }
   };
 
-  claim = () => {};
+  @Method()
+  async completeClaim(response: any) {
+    const serviceItems = this.getServiceItems();
+
+    const item = this.selectedClaimItem;
+    const serviceDataClone = JSON.parse(JSON.stringify(serviceItems));
+
+    const index = serviceItems.indexOf(item);
+    const pendingItemsBefore = serviceDataClone.slice(0, index).filter(x => x.status === 'pending');
+
+    serviceDataClone[index].claimable = false;
+    serviceDataClone[index].status = 'processed';
+
+    pendingItemsBefore.forEach(function (otherItem) {
+      otherItem.status = 'cancelled';
+    });
+
+    const vehicleDataClone = JSON.parse(JSON.stringify(this.vehicleLookup)) as VehicleLookupDTO;
+    vehicleDataClone.serviceItems = serviceDataClone;
+    this.vehicleLookup = JSON.parse(JSON.stringify(vehicleDataClone));
+
+    this.showPrintBox = true;
+    this.lastSuccessfulClaimResponse = response;
+  }
+
+  private handleClaim = async ({ document, ...payload }: ClaimFormPayload) => {
+    try {
+      const formData = new FormData();
+      formData.append(
+        'payload',
+        JSON.stringify({
+          ...payload,
+          vin: this.vehicleLookup.vin,
+          serviceItem: this.claimForm.item,
+          saleInformation: this.vehicleLookup.saleInformation,
+          cancelledServiceItems: this.claimForm.canceledItems,
+        }),
+      );
+      if (document) formData.append('document', document);
+
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', this.claimEndPoint);
+
+        Object.entries(this.headers || {}).forEach(([key, value]) => {
+          xhr.setRequestHeader(key, value as string);
+        });
+
+        xhr.upload.onprogress = e => {
+          if (e.lengthComputable) this.claimForm.setFileUploadProgression(Math.round((e.loaded / e.total) * 100));
+        };
+
+        xhr.onload = () => {
+          this.claimForm.close();
+          if (xhr.status === 200) {
+            try {
+              const responseData = JSON.parse(xhr.responseText);
+
+              this.completeClaim(responseData);
+              resolve();
+            } catch (parseError) {
+              console.error('Response is not valid JSON', {
+                rawResponse: xhr.responseText,
+                error: parseError,
+              });
+
+              reject(new Error('Upload succeeded but response is not valid JSON'));
+            }
+            resolve();
+          } else {
+            reject(new Error(`Upload failed with status ${xhr.status}`));
+          }
+        };
+
+        xhr.onerror = e => {
+          console.log(e);
+
+          this.claimForm.close();
+          reject(new Error('Network error'));
+        };
+
+        xhr.send(formData);
+      });
+    } catch (error) {
+      console.error(error);
+      alert(this.locale.sharedLocales.errors.requestFailedPleaseTryAgainLater);
+      this.claimForm.close();
+    }
+  };
+
+  private handleDevClaim = async ({ document }: ClaimFormPayload) => {
+    if (document) {
+      this.claimForm.setFileUploadProgression(0);
+      let uploadChunks = 20;
+      for (let index = 0; index < uploadChunks; index++) {
+        const uploadPercentage = Math.round(((index + 1) / uploadChunks) * 100);
+
+        await new Promise(r => setTimeout(r, 200));
+
+        this.claimForm.setFileUploadProgression(uploadPercentage);
+      }
+    }
+
+    this.claimForm.close();
+    this.completeClaim({ Success: true, ID: '11223344', PrintURL: 'http://localhost/test/print/1122' });
+    this.claimForm.handleClaiming = null;
+  };
+
+  @Method()
+  async claim(item: VehicleServiceItemDTO) {
+    const serviceItems = this.getServiceItems();
+
+    const vinDataClone = JSON.parse(JSON.stringify(serviceItems));
+    const index = serviceItems.indexOf(item);
+
+    this.selectedClaimItem = item;
+
+    //Find other items before this item that have status 'pending'
+    let pendingItemsBefore = vinDataClone.slice(0, index).filter(x => x.status === 'pending') as VehicleServiceItemDTO[];
+
+    if (item?.maximumMileage === null) pendingItemsBefore = [];
+
+    this.claimForm.item = item;
+    this.claimForm.vin = this.vehicleLookup?.vin;
+    this.claimForm.canceledItems = pendingItemsBefore;
+
+    if (this.vehicleLookup?.saleInformation?.broker !== null && this.vehicleLookup?.saleInformation?.broker?.invoiceDate === null)
+      this.claimForm.unInvoicedByBrokerName = this.vehicleLookup?.saleInformation?.broker?.brokerName;
+    else this.claimForm.unInvoicedByBrokerName = null;
+
+    this.claimForm.handleClaiming = this.isDev ? this.handleDevClaim : this.handleClaim;
+
+    this.claimForm.open();
+  }
   // ====== End Component Logic
 
   render() {
@@ -302,13 +442,20 @@ export class ClaimTemp implements MultiLingual, VehicleInfoLayoutInterface, Vehi
 
     return (
       <Host>
+        <claim-temp-form
+          class="vehicle-item-claim-form"
+          maximumDocumentFileSizeInMb={this.maximumDocumentFileSizeInMb}
+          locale={{ sharedLocales: this.locale.sharedLocales, ...this.locale.claimForm }}
+        />
+
         <ClaimableItemPopover
-          claim={this.claim}
           locale={this.locale}
+          claim={this.claim.bind(this)}
           item={this.selectedClaimItem}
           showPopover={this.showClaimableItemPopover}
           targetLocation={this.popoverTargetLocation}
         />
+
         <VehicleInfoLayout
           isError={this.isError}
           coreOnly={this.coreOnly}
