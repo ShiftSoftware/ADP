@@ -249,9 +249,6 @@ export class VehicleItemClaimForm {
 
     const isFormValid = this.getIsFormValid();
 
-    // @ts-ignore
-    window.a = this;
-
     return (
       <Host>
         <div

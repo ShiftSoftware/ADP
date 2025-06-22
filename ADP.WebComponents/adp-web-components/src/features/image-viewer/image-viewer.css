@@ -1,0 +1,56 @@
+.image-viewer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 50;
+  width: 100dvw;
+  height: 100dvh;
+  background-color: rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  transition-property: all;
+  transition-duration: 400ms;
+  pointer-events: none;
+}
+
+.image-viewer-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+  transition-delay: 200ms;
+}
+
+.image-viewer-close-btn {
+  display: flex;
+  cursor: pointer;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  margin-top: 16px;
+  margin-right: 16px;
+  float: right;
+}
+
+.image-viewer-close-line {
+  height: 0.25rem;
+  width: 3rem;
+  border-radius: 9999px;
+  position: absolute;
+  background-color: white;
+}
+
+.image-viewer-close-line.first {
+  transform: rotate(45deg);
+}
+
+.image-viewer-close-line.second {
+  transform: rotate(-45deg);
+}
+
+.image-viewer-expanded-image {
+  position: fixed;
+  z-index: 50;
+  opacity: 0;
+  transition-property: all;
+  border-radius: 0.5rem;
+}

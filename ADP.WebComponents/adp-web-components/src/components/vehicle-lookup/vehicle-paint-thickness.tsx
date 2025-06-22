@@ -2,7 +2,6 @@ import { InferType } from 'yup';
 import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
 import cn from '~lib/cn';
-import { closeImageViewer, ImageViewerInterface, openImageViewer } from '~lib/image-expansion';
 
 import { getVehicleLookup } from '~features/vehicle-lookup-component/vehicle-lookup-api-integration';
 
@@ -17,6 +16,7 @@ import { VehicleInfoLayout } from '../../features/vehicle-info-layout/vehicle-in
 import { InformationTableColumn } from '../components/information-table';
 
 import { ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, SharedLocales, sharedLocalesSchema } from '~features/multi-lingual';
+import { ImageViewerInterface } from '~features/image-viewer/interface';
 
 let mockData: MockJson<VehicleLookupDTO> = {};
 
@@ -145,13 +145,9 @@ export class VehiclePaintThickness implements ImageViewerInterface {
     this.closeImage(event);
   };
 
-  openImage = (target: HTMLImageElement, imageSrc: string) => {
-    openImageViewer(this, target, imageSrc);
-  };
+  openImage = (target: HTMLImageElement, imageSrc: string) => {};
 
-  closeImage = (event?: KeyboardEvent) => {
-    closeImageViewer(this, event);
-  };
+  closeImage = (event?: KeyboardEvent) => {};
 
   render() {
     const texts = this.locale;

@@ -26,7 +26,7 @@
   networkTimeoutRef: ReturnType<typeof setTimeout>;
 
   @Method()
-  async setMockData(newMockData: MockJson<VehicleLookupDTO>) {
+  async setMockData(newMockData: VehicleLookupMock) {
     this.mockData = newMockData;
   }
 

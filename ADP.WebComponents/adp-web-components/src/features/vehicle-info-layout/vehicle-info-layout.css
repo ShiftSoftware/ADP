@@ -1,9 +1,15 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 .vehicle-info-container {
-  @apply relative transition-all duration-500 overflow-hidden p-0 rounded-[5px] border border-[#dcdcdc] bg-[#fdfdfd] shadow-[inset_0_1px_3px_rgba(0,0,0,0.05),0_1px_0_rgba(255,255,255,0.1)];
+  position: relative;
+  transition-property: all;
+  transition-duration: 500ms;
+  overflow: hidden;
+  padding: 0;
+  border-radius: 5px;
+  border: 1px solid #dcdcdc;
+  background-color: #fdfdfd;
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.05),
+    0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 *::-webkit-scrollbar {
@@ -35,25 +41,44 @@
 }
 
 .vehicle-info-body {
-  @apply overflow-hidden flex flex-col relative transition-all duration-500 ease-in-out;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition-property: all;
+  transition-duration: 500ms;
+  transition-timing-function: ease-in-out;
 }
 
 .vehicle-info-content {
-  @apply transition duration-500 w-full;
+  transition-property: all;
+  transition-duration: 500ms;
+  width: 100%;
 }
 
 .vehicle-info-header {
-  @apply h-[54px] flex items-center justify-center text-center bg-[#f6f6f6] border border-[#ededed];
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background-color: #f6f6f6;
+  border: 1px solid #ededed;
 }
 
 .vehicle-info-header-vin {
-  @apply transition-all text-[16px] duration-[0.5s] inline-block;
+  transition-property: all;
+  font-size: 16px;
+  transition-duration: 0.5s;
+  display: inline-block;
 }
 
 .vehicle-info-header-vin span {
-  @apply text-red-500;
+  color: #ef4444; /* Tailwind's red-500 */
 }
 
 .loading .vehicle-info-header-vin {
-  @apply opacity-0 invisible scale-[1.5];
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(1.5);
 }
