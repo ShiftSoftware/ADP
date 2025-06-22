@@ -44,6 +44,7 @@ nav:
         - Deployment Pipelines: architecture/deployment-pipelines.md
     - Integrations: 
         - Intro: integrations/intro.md
+        - Sync Agent: integrations/adp-sync-agent.md
         # - Invoices: 
         #     - Invoice: generated/Models/Invoice/InvoiceModel.md  
         - Parts: 
