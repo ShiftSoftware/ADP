@@ -25,7 +25,6 @@ export interface VehicleLookupComponent extends VehicleRequestHeaders {
   loadingStateChange?: (isLoading: boolean) => void;
   errorCallback?: (errorMessage: ErrorKeys) => void;
   loadedResponse?: (response: VehicleLookupDTO) => void;
-  fetchData: (requestedVin: string, headers?: object) => Promise<void>;
   setMockData: (newMockData: VehicleLookupMock) => Promise<void>;
-  setData: (newData: VehicleLookupDTO | string, headers?: object) => Promise<void>;
+  fetchData: (newData: VehicleLookupDTO | string, headers?: object) => Promise<void>;
 }

@@ -134,7 +134,8 @@ export class VehicleLookup {
     this.isError = false;
     this.currentVin = newResponse.vin || '';
     Object.values(this.componentsList).forEach(element => {
-      if (element !== null && element !== activeElement && newResponse) element.setData(newResponse);
+      // @ts-ignore
+      if (element !== null && element !== activeElement && newResponse) element.fetchData(newResponse);
     });
   }
 

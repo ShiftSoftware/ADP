@@ -11,6 +11,8 @@ export const setVehicleLookupData = async (
   headers: any = {},
   { beforeAssignment }: { beforeAssignment?: (vehicleLookup: VehicleLookupDTO) => Promise<VehicleLookupDTO> } = {},
 ) => {
+  if (newData === null || newData === undefined) newData = context.vehicleLookup?.vin || '';
+
   // clears network timeoutRef which serves as await for animation
   clearTimeout(context.networkTimeoutRef);
 
@@ -23,7 +25,7 @@ export const setVehicleLookupData = async (
 
   const isVinRequest = typeof newData === 'string';
 
-  const vin = isVinRequest ? newData : newData?.vin;
+  const vin = typeof newData === 'string' ? newData : newData?.vin;
 
   try {
     if (!vin || vin.trim().length === 0) {
@@ -40,7 +42,7 @@ export const setVehicleLookupData = async (
       context.networkTimeoutRef = scopedTimeoutRef;
     });
 
-    const vehicleResponse = isVinRequest ? await getVehicleLookup(context, { scopedTimeoutRef, vin }, headers) : newData;
+    const vehicleResponse = isVinRequest ? await getVehicleLookup(context, { scopedTimeoutRef, vin }, headers) : (newData as VehicleLookupDTO);
 
     if (context.networkTimeoutRef === scopedTimeoutRef) {
       if (!vehicleResponse) throw new Error('wrongResponseFormat');

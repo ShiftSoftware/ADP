@@ -31,7 +31,7 @@
   }
 
   @Method()
-  async setData(newData: VehicleLookupDTO | string, headers: any = {}) {
+  async fetchData(newData: VehicleLookupDTO | string, headers: any = {}) {
     await setVehicleLookupData(this, newData, headers);
   }
 
@@ -43,11 +43,6 @@
   @Watch('isLoading')
   onLoadingChange(newValue: boolean) {
     if (this.loadingStateChange) this.loadingStateChange(newValue);
-  }
-
-  @Method()
-  async fetchData(requestedVin: string, headers: any = {}) {
-    await this.setData(requestedVin, headers);
   }
 
  // ====== End Vehicle Lookup Component Shared Logic

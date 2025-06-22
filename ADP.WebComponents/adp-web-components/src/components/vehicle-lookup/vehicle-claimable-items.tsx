@@ -75,7 +75,7 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
   }
 
   @Method()
-  async setData(newData: VehicleLookupDTO | string, headers: any = {}) {
+  async fetchData(newData: VehicleLookupDTO | string, headers: any = {}) {
     const beforeAssignment = async (vehicleLookup: VehicleLookupDTO) => {
       await this.parseGroupData(vehicleLookup);
       return vehicleLookup;
@@ -93,10 +93,6 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
     if (this.loadingStateChange) this.loadingStateChange(newValue);
   }
 
-  @Method()
-  async fetchData(requestedVin: string, headers: any = {}) {
-    await this.setData(requestedVin, headers);
-  }
   // ====== End Vehicle Lookup Component Shared Logic
 
   // ====== Start Component Logic
