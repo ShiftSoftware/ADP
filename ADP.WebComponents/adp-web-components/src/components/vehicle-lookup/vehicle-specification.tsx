@@ -8,7 +8,7 @@ import { getVehicleLookup } from '~features/vehicle-lookup-component/vehicle-loo
 
 import specificationSchema from '~locales/vehicleLookup/specification/type';
 
-import { VehicleInfoLayout } from '../components/vehicle-info-layout';
+import { VehicleInfoLayout } from '../../features/vehicle-info-layout/vehicle-info-layout';
 import { MaterialCard, MaterialCardChildren } from '../components/material-card';
 import { ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, SharedLocales, sharedLocalesSchema } from '~features/multi-lingual';
 

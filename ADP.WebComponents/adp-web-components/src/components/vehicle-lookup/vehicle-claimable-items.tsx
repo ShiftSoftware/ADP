@@ -6,13 +6,13 @@ import { scrollIntoContainerView } from '~lib/scroll-into-container-view';
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 import { VehicleServiceItemDTO } from '~types/generated/vehicle-lookup/vehicle-service-item-dto';
 
+import { VehicleInfoLayout, VehicleInfoLayoutInterface } from '~features/vehicle-info-layout';
 import { setVehicleLookupData, setVehicleLookupErrorState, VehicleLookupComponent } from '~features/vehicle-lookup-component';
 import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, sharedLocalesSchema } from '~features/multi-lingual';
 
 import { ClaimableItem } from './components/claimable-item';
 import { ClaimableItemPopover } from './components/claimable-item-popover';
 import { ClaimFormPayload, VehicleItemClaimForm } from './vehicle-item-claim-form';
-import { VehicleInfoLayoutInterface, VehicleInfoLayout } from '../components/vehicle-info-layout';
 
 import dynamicClaimSchema from '~locales/vehicleLookup/claimableItems/type';
 

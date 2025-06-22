@@ -13,7 +13,7 @@ import { VehiclePaintThickness } from './vehicle-paint-thickness';
 import { VehicleServiceHistory } from './vehicle-service-history';
 import { VehicleWarrantyDetails } from './vehicle-warranty-details';
 
-import { VehicleInfoLayout } from '../components/vehicle-info-layout';
+import { VehicleInfoLayout } from '../../features/vehicle-info-layout/vehicle-info-layout';
 
 import { ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, SharedLocales, sharedLocalesSchema } from '~features/multi-lingual';
 

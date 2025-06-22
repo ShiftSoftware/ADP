@@ -8,7 +8,7 @@ import { getVehicleLookup } from '~features/vehicle-lookup-component/vehicle-loo
 
 import ServiceHistorySchema from '~locales/vehicleLookup/serviceHistory/type';
 
-import { VehicleInfoLayout } from '../components/vehicle-info-layout';
+import { VehicleInfoLayout } from '../../features/vehicle-info-layout/vehicle-info-layout';
 import { InformationTableColumn } from '../components/information-table';
 
 import { ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, SharedLocales, sharedLocalesSchema } from '~features/multi-lingual';

@@ -12,7 +12,7 @@ import Eye from '~assets/eye.svg';
 
 import accessoriesSchema from '~locales/vehicleLookup/accessories/type';
 
-import { VehicleInfoLayout } from '../components/vehicle-info-layout';
+import { VehicleInfoLayout } from '../../features/vehicle-info-layout/vehicle-info-layout';
 import { InformationTableColumn } from '../components/information-table';
 
 import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, SharedLocales, sharedLocalesSchema } from '~features/multi-lingual';

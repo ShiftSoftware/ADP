@@ -2,18 +2,14 @@ import { FunctionalComponent, h } from '@stencil/core';
 
 import cn from '~lib/cn';
 
-export interface VehicleInfoLayoutInterface {
-  coreOnly?: boolean;
-}
-
-interface VehicleInfoLayoutProps {
+type VehicleInfoLayoutProps = {
   vin: string;
   isError: boolean;
   direction: string;
   coreOnly?: boolean;
   isLoading: boolean;
   errorMessage: string;
-}
+};
 
 export const VehicleInfoLayout: FunctionalComponent<VehicleInfoLayoutProps> = (props, children) =>
   props.coreOnly ? (

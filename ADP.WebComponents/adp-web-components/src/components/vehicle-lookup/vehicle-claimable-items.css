@@ -1,7 +1,7 @@
-@import '../style/vehicle-info.css';
 @import '../style/shift-skeleton.css';
 @import './components/claimable-item.css';
 @import './components/claimable-item-popover.css';
+@import '../../features/vehicle-info-layout/vehicle-info-layout.css';
 
 :host {
   all: initial !important;

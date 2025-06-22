@@ -12,7 +12,7 @@ import { getVehicleLookup } from '~features/vehicle-lookup-component/vehicle-loo
 import warrantySchema from '~locales/vehicleLookup/warranty/type';
 
 import CardsContainer from './components/CardsContainer';
-import { VehicleInfoLayout } from '../components/vehicle-info-layout';
+import { VehicleInfoLayout } from '../../features/vehicle-info-layout/vehicle-info-layout';
 import { InformationTableColumn } from '../components/information-table';
 
 import XIcon from './assets/x-mark.svg';
