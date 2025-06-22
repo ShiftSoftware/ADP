@@ -4,7 +4,7 @@ import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stenci
 import { AppStates, MockJson } from '~types/components';
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
-import { getVehicleLookup } from '~api/vehicleInformation';
+import { getVehicleLookup } from '~features/vehicle-lookup-component/vehicle-lookup-api-integration';
 
 import ServiceHistorySchema from '~locales/vehicleLookup/serviceHistory/type';
 

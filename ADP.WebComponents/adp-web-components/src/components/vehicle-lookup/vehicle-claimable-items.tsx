@@ -3,13 +3,10 @@ import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stenci
 import cn from '~lib/cn';
 import { scrollIntoContainerView } from '~lib/scroll-into-container-view';
 
-import { MockJson } from '~types/components';
-import VehicleLookupComponent from '~types/interfaces/vehicle-lookup-component';
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 import { VehicleServiceItemDTO } from '~types/generated/vehicle-lookup/vehicle-service-item-dto';
 
-import { setVehicleLookupData, setVehicleLookupErrorState } from '~api/vehicleInformation';
-
+import { setVehicleLookupData, setVehicleLookupErrorState, VehicleLookupComponent } from '~features/vehicle-lookup-component';
 import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, sharedLocalesSchema } from '~features/multi-lingual';
 
 import { ClaimableItem } from './components/claimable-item';
@@ -22,6 +19,7 @@ import dynamicClaimSchema from '~locales/vehicleLookup/claimableItems/type';
 import { PrintIcon } from '~assets/print-icon';
 import { ActivationIcon } from '~assets/activation-icon';
 import { EmptyTableIcon } from '~assets/empty-table-icon';
+import { VehicleLookupMock } from '~features/vehicle-lookup-component/types';
 
 @Component({
   shadow: true,
@@ -72,7 +70,7 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
   networkTimeoutRef: ReturnType<typeof setTimeout>;
 
   @Method()
-  async setMockData(newMockData: MockJson<VehicleLookupDTO>) {
+  async setMockData(newMockData: VehicleLookupMock) {
     this.mockData = newMockData;
   }
 

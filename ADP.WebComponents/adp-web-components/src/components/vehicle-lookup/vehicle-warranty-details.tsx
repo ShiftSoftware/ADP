@@ -7,7 +7,7 @@ import { Grecaptcha } from '~types/general';
 import { AppStates, MockJson } from '~types/components';
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
-import { getVehicleLookup } from '~api/vehicleInformation';
+import { getVehicleLookup } from '~features/vehicle-lookup-component/vehicle-lookup-api-integration';
 
 import warrantySchema from '~locales/vehicleLookup/warranty/type';
 
