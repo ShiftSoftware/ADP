@@ -2,11 +2,10 @@ import { InferType } from 'yup';
 import { Component, Host, Prop, State, Watch, h } from '@stencil/core';
 
 import cn from '~lib/cn';
-import { getLocaleLanguage, getSharedLocal, SharedLocales, sharedLocalesSchema } from '~lib/get-local-language';
-
-import { LanguageKeys } from '~types/locale';
 
 import generalSchema from '~locales/general/type';
+
+import { getLocaleLanguage, getSharedLocal, LanguageKeys, SharedLocales, sharedLocalesSchema } from '~features/multi-lingual';
 
 @Component({
   shadow: false,

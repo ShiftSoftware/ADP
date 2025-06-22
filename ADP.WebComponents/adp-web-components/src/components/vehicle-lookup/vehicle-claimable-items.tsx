@@ -1,18 +1,16 @@
 import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
 import cn from '~lib/cn';
-import ComponentLocale from '~lib/component-locale';
 import { scrollIntoContainerView } from '~lib/scroll-into-container-view';
-import { ErrorKeys, getLocaleLanguage, getSharedLocal, sharedLocalesSchema } from '~lib/get-local-language';
 
 import { MockJson } from '~types/components';
-import { LanguageKeys } from '~types/locale';
-import MultiLingual from '~types/interfaces/multi-lingual';
 import VehicleLookupComponent from '~types/interfaces/vehicle-lookup-component';
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 import { VehicleServiceItemDTO } from '~types/generated/vehicle-lookup/vehicle-service-item-dto';
 
 import { setVehicleLookupData, setVehicleLookupErrorState } from '~api/vehicleInformation';
+
+import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, sharedLocalesSchema } from '~features/multi-lingual';
 
 import { ClaimableItem } from './components/claimable-item';
 import { ClaimableItemPopover } from './components/claimable-item-popover';

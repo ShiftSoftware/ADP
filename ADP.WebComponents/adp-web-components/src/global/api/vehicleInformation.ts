@@ -1,7 +1,7 @@
+import { ErrorKeys } from '~features/multi-lingual';
+
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 import VehicleLookupComponent, { vehicleRequestHeaders } from '~types/interfaces/vehicle-lookup-component';
-
-import { ErrorKeys } from '~lib/get-local-language';
 
 export const setVehicleLookupData = async (
   context: VehicleLookupComponent,

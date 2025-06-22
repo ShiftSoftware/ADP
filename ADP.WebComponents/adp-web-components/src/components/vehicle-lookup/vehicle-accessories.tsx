@@ -1,7 +1,5 @@
-import { InferType } from 'yup';
 import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
-import { LanguageKeys } from '~types/locale';
 import { AppStates, MockJson } from '~types/components';
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
@@ -9,7 +7,6 @@ import { getVehicleLookup } from '~api/vehicleInformation';
 
 import cn from '~lib/cn';
 import { closeImageViewer, ImageViewerInterface, openImageViewer } from '~lib/image-expansion';
-import { ErrorKeys, getLocaleLanguage, getSharedLocal, SharedLocales, sharedLocalesSchema } from '~lib/get-local-language';
 
 import Eye from '~assets/eye.svg';
 
@@ -18,6 +15,8 @@ import accessoriesSchema from '~locales/vehicleLookup/accessories/type';
 import { VehicleInfoLayout } from '../components/vehicle-info-layout';
 import { InformationTableColumn } from '../components/information-table';
 
+import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, SharedLocales, sharedLocalesSchema } from '~features/multi-lingual';
+
 let mockData: MockJson<VehicleLookupDTO> = {};
 
 @Component({
@@ -25,18 +24,34 @@ let mockData: MockJson<VehicleLookupDTO> = {};
   tag: 'vehicle-accessories',
   styleUrl: 'vehicle-accessories.css',
 })
-export class VehicleAccessories implements ImageViewerInterface {
+export class VehicleAccessories implements MultiLingual, ImageViewerInterface {
+  // ====== Start Localization
+
+  @Prop() language: LanguageKeys = 'en';
+
+  @State() locale: ComponentLocale<typeof accessoriesSchema> = { sharedLocales: sharedLocalesSchema.getDefault(), ...accessoriesSchema.getDefault() };
+
+  async componentWillLoad() {
+    await this.changeLanguage(this.language);
+  }
+
+  @Watch('language')
+  async changeLanguage(newLanguage: LanguageKeys) {
+    const [sharedLocales, locale] = await Promise.all([getSharedLocal(newLanguage), getLocaleLanguage(newLanguage, 'vehicleLookup.accessories', accessoriesSchema)]);
+    this.locale = { sharedLocales, ...locale };
+  }
+
+  // ====== End Localization
+
   @Prop() baseUrl: string = '';
   @Prop() isDev: boolean = false;
   @Prop() coreOnly: boolean = false;
   @Prop() queryString: string = '';
-  @Prop() language: LanguageKeys = 'en';
   @Prop() errorCallback: (errorMessage: ErrorKeys) => void;
   @Prop() loadingStateChange?: (isLoading: boolean) => void;
   @Prop() loadedResponse?: (response: VehicleLookupDTO) => void;
 
   @State() sharedLocales: SharedLocales = sharedLocalesSchema.getDefault();
-  @State() locale: InferType<typeof accessoriesSchema> = accessoriesSchema.getDefault();
 
   @State() state: AppStates = 'idle';
   @State() externalVin?: string = null;
@@ -49,17 +64,6 @@ export class VehicleAccessories implements ImageViewerInterface {
   networkTimeoutRef: ReturnType<typeof setTimeout>;
 
   @Element() el: HTMLElement;
-
-  async componentWillLoad() {
-    await this.changeLanguage(this.language);
-  }
-
-  @Watch('language')
-  async changeLanguage(newLanguage: LanguageKeys) {
-    const localeResponses = await Promise.all([getLocaleLanguage(newLanguage, 'vehicleLookup.accessories', accessoriesSchema), getSharedLocal(newLanguage)]);
-    this.locale = localeResponses[0];
-    this.sharedLocales = localeResponses[1];
-  }
 
   private handleSettingData(response: VehicleLookupDTO) {
     if (!response.accessories || !Array.isArray(response.accessories)) response.accessories = [];

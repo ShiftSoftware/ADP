@@ -1,7 +1,7 @@
-import { ErrorKeys } from '~lib/get-local-language';
-
 import { MockJson } from '~types/components';
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
+
+import { ErrorKeys } from '~features/multi-lingual';
 
 export const vehicleRequestHeaders = {
   cityId: 'City-Id',

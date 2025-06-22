@@ -1,14 +1,14 @@
 import { h } from '@stencil/core';
 
 import { InputParams } from '~types/general';
-import { LanguageKeys } from '~types/locale';
 import { FormElementMapper } from '~types/forms';
 import { FormSelectFetcher, FormSelectItem } from '~types/forms';
 
 import { ContactUs, phoneValidator } from './validations';
-import { getLocaleLanguage } from '~lib/get-local-language';
 import { CITY_ENDPOINT } from '~api/urls';
 import generalTicketTypesSchema from '~locales/generalTicketTypes/type';
+
+import { getLocaleLanguage, LanguageKeys } from '~features/multi-lingual';
 
 export const contactUsElements: FormElementMapper<ContactUs> = {
   submit: formContext => {

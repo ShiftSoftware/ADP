@@ -3,11 +3,9 @@ import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stenci
 
 import cn from '~lib/cn';
 import { closeImageViewer, ImageViewerInterface, openImageViewer } from '~lib/image-expansion';
-import { ErrorKeys, getLocaleLanguage, getSharedLocal, SharedLocales, sharedLocalesSchema } from '~lib/get-local-language';
 
 import { getVehicleLookup } from '~api/vehicleInformation';
 
-import { LanguageKeys } from '~types/locale';
 import { AppStates, MockJson } from '~types/components';
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
@@ -17,6 +15,8 @@ import paintThicknessSchema from '~locales/vehicleLookup/paintThickness/type';
 
 import { VehicleInfoLayout } from '../components/vehicle-info-layout';
 import { InformationTableColumn } from '../components/information-table';
+
+import { ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, SharedLocales, sharedLocalesSchema } from '~features/multi-lingual';
 
 let mockData: MockJson<VehicleLookupDTO> = {};
 

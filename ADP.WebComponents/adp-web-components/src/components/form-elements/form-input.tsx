@@ -3,14 +3,14 @@ import { Component, Element, Host, Prop, State, Watch, h } from '@stencil/core';
 
 import cn from '~lib/cn';
 import { FormHook } from '~lib/form-hook';
-import { getLocaleLanguage, getSharedLocal, LocaleKeyEntries, SharedLocales, sharedLocalesSchema } from '~lib/get-local-language';
 
 import { InputParams } from '~types/general';
-import { LanguageKeys } from '~types/locale';
 import { FormElement, LocaleFormKeys } from '~types/forms';
 
 import formsSchema from '~locales/forms/type';
 import formWrapperSchema from '~locales/forms/wrapper-type';
+
+import { getLocaleLanguage, getSharedLocal, LanguageKeys, LocaleKeyEntries, SharedLocales, sharedLocalesSchema } from '~features/multi-lingual';
 
 @Component({
   shadow: false,

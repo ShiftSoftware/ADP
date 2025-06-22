@@ -1,7 +1,6 @@
 import { Component, Element, Host, Prop, State, h } from '@stencil/core';
 
 import { Grecaptcha } from '~types/general';
-import { LanguageKeys } from '~types/locale';
 import { FormHookInterface } from '~types/forms';
 
 import cn from '~lib/cn';
@@ -11,6 +10,8 @@ import { ContactUs, contactUsSchema } from './service-booking/validations';
 
 import themes from './service-booking/themes.json';
 import { contactUsElements } from './service-booking/element-mapper';
+
+import { LanguageKeys } from '~features/multi-lingual';
 
 declare const grecaptcha: Grecaptcha;
 

@@ -2,10 +2,8 @@ import { InferType } from 'yup';
 import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
 import cn from '~lib/cn';
-import { ErrorKeys, getLocaleLanguage, getSharedLocal, SharedLocales, sharedLocalesSchema } from '~lib/get-local-language';
 
 import { Grecaptcha } from '~types/general';
-import { LanguageKeys } from '~types/locale';
 import { AppStates, MockJson } from '~types/components';
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
@@ -19,6 +17,8 @@ import { InformationTableColumn } from '../components/information-table';
 
 import XIcon from './assets/x-mark.svg';
 import CheckIcon from './assets/check.svg';
+
+import { ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, SharedLocales, sharedLocalesSchema } from '~features/multi-lingual';
 
 let mockData: MockJson<VehicleLookupDTO> = {};
 

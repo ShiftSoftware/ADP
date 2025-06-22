@@ -3,11 +3,11 @@ import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stenci
 
 import { MaterialCard } from '../components/material-card';
 
-import { SharedLocales } from '~lib/get-local-language';
-
 import { ClaimFormType } from '~locales/vehicleLookup/claimableItems/type';
 
 import { VehicleServiceItemDTO } from '~types/generated/vehicle-lookup/vehicle-service-item-dto';
+
+import { SharedLocales } from '~features/multi-lingual';
 
 import { AddIcon } from '~assets/add-icon';
 import { AlertIcon } from '~assets/alert-icon';

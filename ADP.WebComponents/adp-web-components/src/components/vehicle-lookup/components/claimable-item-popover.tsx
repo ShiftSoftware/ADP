@@ -3,12 +3,13 @@ import { h, FunctionalComponent } from '@stencil/core';
 import { VehicleServiceItemDTO } from '~types/generated/vehicle-lookup/vehicle-service-item-dto';
 
 import cn from '~lib/cn';
-import ComponentLocale from '~lib/component-locale';
 
 import { TriangleIcon } from '~assets/triangle-icon';
 import { ActivationIcon } from '~assets/activation-icon';
 
 import dynamicClaimSchema from '~locales/vehicleLookup/claimableItems/type';
+
+import { ComponentLocale } from '~features/multi-lingual';
 
 type DetailRow = { label: keyof ComponentLocale<typeof dynamicClaimSchema>; key: keyof VehicleServiceItemDTO; formatter?: (item: VehicleServiceItemDTO) => string };
 

@@ -1,11 +1,8 @@
 import { InferType } from 'yup';
 import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
-import { LanguageKeys } from '~types/locale';
 import { AppStates, MockJson } from '~types/components';
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
-
-import { ErrorKeys, getLocaleLanguage, getSharedLocal, SharedLocales, sharedLocalesSchema } from '~lib/get-local-language';
 
 import { getVehicleLookup } from '~api/vehicleInformation';
 
@@ -13,6 +10,7 @@ import specificationSchema from '~locales/vehicleLookup/specification/type';
 
 import { VehicleInfoLayout } from '../components/vehicle-info-layout';
 import { MaterialCard, MaterialCardChildren } from '../components/material-card';
+import { ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, SharedLocales, sharedLocalesSchema } from '~features/multi-lingual';
 
 let mockData: MockJson<VehicleLookupDTO> = {};
 
