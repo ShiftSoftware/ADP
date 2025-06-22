@@ -9,7 +9,7 @@ export const setVehicleLookupData = async (
   context: VehicleLookupComponent,
   newData: VehicleLookupDTO | string,
   headers: any = {},
-  { beforeAssignment }: { beforeAssignment?: (vehicleLookup: VehicleLookupDTO) => Promise<VehicleLookupDTO> } = {},
+  { beforeAssignment }: { beforeAssignment?: (vehicleLookup: VehicleLookupDTO, extra: { scopedTimeoutRef: ReturnType<typeof setTimeout> }) => Promise<VehicleLookupDTO> } = {},
 ) => {
   if (newData === null || newData === undefined) newData = context.vehicleLookup?.vin || '';
 
@@ -46,7 +46,7 @@ export const setVehicleLookupData = async (
 
     if (context.networkTimeoutRef === scopedTimeoutRef) {
       if (!vehicleResponse) throw new Error('wrongResponseFormat');
-      if (beforeAssignment) context.vehicleLookup = await beforeAssignment(vehicleResponse);
+      if (beforeAssignment) context.vehicleLookup = await beforeAssignment(vehicleResponse, { scopedTimeoutRef });
       else context.vehicleLookup = vehicleResponse;
     }
 
