@@ -36,8 +36,6 @@
 
     <h1>Vehicle Claimable Items</h1>
     <vehicle-claimable-items id="vehicle-claimable-items" is-dev="true" query-string="" base-url=""></vehicle-claimable-items>
-    <div style="height: 50px"></div>
-    <claim-temp id="claim-temp" is-dev="true" base-url="" query-string=""></claim-temp>
 
     <div class="button-container">
       <button class="sample-button" onclick="updateLang('en')">En</button>
@@ -96,35 +94,14 @@
     <h1>test</h1>
     <script>
       let claimableItems;
-      let claimTemp;
 
       document.addEventListener('DOMContentLoaded', function () {
-        claimTemp = document.getElementById('claim-temp');
         claimableItems = document.getElementById('vehicle-claimable-items');
 
-        claimTemp.setMockData(mockData);
         claimableItems.setMockData(mockData);
-
-        claimTemp.loadingStateChange = isLoading => {
-          // console.log('isLoading: ' + isLoading);
-        };
 
         claimableItems.loadingStateChange = isLoading => {
           // console.log('isLoading: ' + isLoading);
-        };
-
-        claimTemp.loadedResponse = newResponse => {
-          // console.log(newResponse);
-
-          const urlParams = new URLSearchParams(window.location.search);
-
-          const claimIndex = urlParams.get('claim');
-
-          if (claimIndex) {
-            var itemToClaim = newResponse['serviceItems'][claimIndex];
-
-            claimTemp.claim(itemToClaim);
-          }
         };
 
         claimableItems.loadedResponse = newResponse => {
@@ -149,12 +126,6 @@
           vinLookup(vin);
         }
 
-        claimTemp.activate = vehicleInformation => {
-          // console.log(vehicleInformation);
-
-          alert(JSON.stringify(vehicleInformation));
-        };
-
         claimableItems.activate = vehicleInformation => {
           // console.log(vehicleInformation);
 
@@ -169,17 +140,14 @@
       });
 
       function updateLang(newLang) {
-        claimTemp.language = newLang;
         claimableItems.language = newLang;
       }
 
       function vinLookup(vin) {
-        claimTemp.fetchData(vin);
         claimableItems.fetchData(vin);
       }
 
       function setData(key) {
-        claimTemp.setData(mockData[key]);
         claimableItems.setData(mockData[key]);
       }
     </script>
