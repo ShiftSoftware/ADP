@@ -1,14 +1,20 @@
-import { Component, Element, Host, Method, Prop, State, h } from '@stencil/core';
-import { MaterialCard } from 'components/components/material-card';
+import cn from '~lib/cn';
+import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stencil/core';
+
+import { MaterialCard } from '../components/material-card';
+
+import { SharedLocales } from '~lib/get-local-language';
+
+import { ClaimFormType } from '~locales/vehicleLookup/claimableItems/type';
+
+import { VehicleServiceItemDTO } from '~types/generated/vehicle-lookup/vehicle-service-item-dto';
+
 import { AddIcon } from '~assets/add-icon';
 import { AlertIcon } from '~assets/alert-icon';
-import { AttachIcon } from '~assets/attach-icon';
 import { CheckIcon } from '~assets/check-icon';
+import { AttachIcon } from '~assets/attach-icon';
 import { FormSubmitSVG } from '~assets/form-submit-svg';
-import cn from '~lib/cn';
-import { SharedLocales } from '~lib/get-local-language';
-import { ClaimFormType } from '~locales/vehicleLookup/claimableItems/type';
-import { VehicleServiceItemDTO } from '~types/generated/vehicle-lookup/vehicle-service-item-dto';
+import { ActivationIcon } from '~assets/activation-icon';
 
 export type ClaimFormPayload = {
   qrCode?: string;
@@ -25,14 +31,15 @@ export type ClaimFormPayload = {
 export class ClaimTempForm {
   // ====== Start Component Logic
   @Prop() vin?: string;
-  @State() uploadProgress = 0;
   @Prop() item?: VehicleServiceItemDTO;
   @Prop() unInvoicedByBrokerName?: string;
   @Prop() maximumDocumentFileSizeInMb: number;
   @Prop() canceledItems?: VehicleServiceItemDTO[] = [];
+  @Prop() loadingStateChange?: (isLoading: boolean) => void;
   @Prop() locale: { sharedLocales: SharedLocales } & ClaimFormType;
   @Prop() handleClaiming?: (payload: ClaimFormPayload) => Promise<void>;
 
+  @State() uploadProgress = 0;
   @State() isOpened: boolean = false;
   @State() isLoading: boolean = false;
   @State() inputs: Record<string, any> = {};
@@ -41,6 +48,8 @@ export class ClaimTempForm {
 
   @Element() el: HTMLElement;
 
+  private closeModalListenerRef: (event: KeyboardEvent) => void;
+
   @Method()
   async open() {
     this.isOpened = true;
@@ -48,11 +57,22 @@ export class ClaimTempForm {
     document.body.style.overflow = 'hidden';
 
     this.focusInputs();
+
+    window.removeEventListener('keydown', this.closeModalListenerRef);
+
+    this.closeModalListenerRef = (event: KeyboardEvent) => event.key === 'Escape' && this.close();
+
+    window.addEventListener('keydown', this.closeModalListenerRef);
+  }
+
+  @Watch('isLoading')
+  onIsLoadingChange(newValue: boolean) {
+    if (this.loadingStateChange) this.loadingStateChange(newValue);
   }
 
   @Method()
-  async close() {
-    if (this.isLoading) return;
+  async close(forceClose: boolean = false) {
+    if (this.isLoading && !forceClose) return;
 
     this.isOpened = false;
     document.body.style.overflow = 'auto';
@@ -60,12 +80,19 @@ export class ClaimTempForm {
     await new Promise(r => setTimeout(r, 500));
 
     this.resetState();
+    window.removeEventListener('keydown', this.closeModalListenerRef);
   }
 
   @Method()
   async setFileUploadProgression(uploadPercentage: number) {
     this.uploadProgress = uploadPercentage;
   }
+
+  setErrorValue = (errorName: string, value: { text?: string; show?: boolean }) => {
+    const previousError = (this.errors[errorName] || {}) as { text: string; show: boolean };
+
+    this.errors = { ...this.errors, [errorName]: { ...previousError, ...value } };
+  };
 
   setInputValue = (inputName: string, value: any) => {
     this.inputs = { ...this.inputs, [inputName]: value };
@@ -82,13 +109,13 @@ export class ClaimTempForm {
     this.setInputValue('document', file);
 
     if (this.inputs.document.size > this.maximumDocumentFileSizeInMb * 1024 * 1024) {
-      this.errors.document = {
+      this.setErrorValue('document', {
         show: true,
         text: 'documentLimitError',
-      };
+      });
       return;
     } else {
-      if (this.errors?.document) this.errors = { ...this.errors, document: { text: this.errors.document?.text, show: false } };
+      if (this.errors?.document) this.setErrorValue('document', { text: this.errors.document?.text, show: false });
       if (this.item?.claimingMethodEnum === 'ClaimByScanningQRCode') {
         if (this.inputs?.qrCode) this.submit();
         else this.focusInputs();
@@ -106,15 +133,63 @@ export class ClaimTempForm {
     setTimeout(() => {
       const inputs = this.el.shadowRoot.querySelectorAll('input[type="text"]') as NodeListOf<HTMLInputElement>;
 
-      console.log(inputs);
-
       const firstEnabled = Array.from(inputs).find(input => !input.disabled && !input.readOnly);
 
       if (firstEnabled) firstEnabled.focus();
     }, 50);
   };
 
-  submit = async () => {};
+  private focusEmptyInputs = () => {
+    const inputs = this.el.shadowRoot.querySelectorAll('input[type="text"]') as NodeListOf<HTMLInputElement>;
+
+    const firstEmptyInput = Array.from(inputs).find(input => !input.value?.trim());
+
+    if (firstEmptyInput) firstEmptyInput.focus();
+
+    if (this.item?.documentUploaderIsRequired && !this.inputs?.document) {
+      this.setErrorValue('document', {
+        show: true,
+        text: 'documentRequiredError',
+      });
+    }
+  };
+
+  private submit = async () => {
+    if (!this.getIsFormValid()) return this.focusEmptyInputs();
+
+    if (!this.getIsFormConfirmed()) return;
+
+    if (this.item?.showDocumentUploader) {
+      if (this.inputs?.document && this.inputs?.document?.size > this.maximumDocumentFileSizeInMb * 1024 * 1024) {
+        this.setErrorValue('document', {
+          show: true,
+          text: 'documentLimitError',
+        });
+
+        return;
+      }
+
+      if (this.item?.documentUploaderIsRequired && !this.inputs?.document) {
+        this.setErrorValue('document', {
+          show: true,
+          text: 'documentRequiredError',
+        });
+        return;
+      }
+    }
+
+    this.isLoading = true;
+
+    if (this.handleClaiming)
+      await this.handleClaiming({
+        qrCode: this.inputs?.qrCode,
+        invoice: this.inputs?.invoice,
+        document: this.inputs?.document,
+        jobNumber: this.inputs?.jobNumber,
+      } as ClaimFormPayload);
+
+    this.close(true);
+  };
 
   private onConfirmCheckboxChange = (confirmationName: string) => (event: Event) => {
     const target = event.target as HTMLInputElement;
@@ -128,6 +203,19 @@ export class ClaimTempForm {
     if (!!this.canceledItems?.length && !this.confirmationStates?.canceledItems) return false;
 
     if (!!this.unInvoicedByBrokerName && !this.confirmationStates?.unInvoicedByBrokerName) return false;
+    return true;
+  };
+
+  private getIsFormValid = (): boolean => {
+    if (this.item?.claimingMethodEnum === 'ClaimByScanningQRCode') {
+      if (!this.inputs?.qrCode?.trim().length) return false;
+    } else {
+      if (!this.inputs?.invoice?.trim().length) return false;
+      if (!this.inputs?.jobNumber?.trim().length) return false;
+    }
+
+    if (this.item?.documentUploaderIsRequired && !this.inputs?.document) return false;
+
     return true;
   };
 
@@ -145,7 +233,7 @@ export class ClaimTempForm {
     event.stopPropagation();
 
     this.setInputValue('document', undefined);
-    if (this.errors?.document) this.errors = { ...this.errors, document: { text: this.errors.document?.text, show: false } };
+    if (this.errors?.document) this.setErrorValue('document', { text: this.errors.document?.text, show: false });
   };
 
   onKeyDown = (event: KeyboardEvent) => {
@@ -155,11 +243,11 @@ export class ClaimTempForm {
   // ====== End Component Logic
 
   render() {
-    console.log(this.inputs);
-
     const isQRScannerForm = this.item?.claimingMethodEnum === 'ClaimByScanningQRCode';
 
     const disableInputs = !this.getIsFormConfirmed() || this.isLoading;
+
+    const isFormValid = this.getIsFormValid();
 
     // @ts-ignore
     window.a = this;
@@ -182,8 +270,8 @@ export class ClaimTempForm {
           >
             <AddIcon class="stroke-[1.5px]" />
           </button>
-          <div class="flex pt-[50px] flex-col h-full gap-[32px] justify-between">
-            <div class="flex flex-col gap-[20px]">
+          <div class="flex flex-col h-full gap-[32px] justify-between">
+            <div class="flex mt-[50px] flex-col shrink-0 gap-[20px]">
               <div class="border overflow-hidden rounded-[6px] border-[#dcdcdc] box-border">
                 <div class="text-[16px] h-[50px] font-semibold flex items-center justify-center bg-[#f6f6f6]">{this.vin}</div>
 
@@ -256,9 +344,12 @@ export class ClaimTempForm {
               </div>
             </div>
             <div
-              class={cn('flex flex-col gap-[20px] p-[50px] border-[2px] border-[#3071a9] transition duration-500 items-center rounded-[8px] shadow-lg bg-[#f4f4f4]', {
-                'border-[#f4f4f4]': this.isLoading,
-              })}
+              class={cn(
+                'flex flex-col shrink-0 my-auto gap-[20px] h-fit p-[50px] border-[2px] border-[#3071a9] transition duration-500 items-center rounded-[8px] shadow-lg bg-[#f4f4f4]',
+                {
+                  'border-[#f4f4f4]': this.isLoading,
+                },
+              )}
             >
               <div class="relative w-[200px] h-[140px]">
                 <div class={cn('absolute size-full transition-all duration-500 flex flex-col items-center gap-[12px] left-0 top-0', { 'left-full opacity-0': this.isLoading })}>
@@ -273,15 +364,17 @@ export class ClaimTempForm {
                     <div class="lds-ripple" />
                     <div class="lds-ripple" />
                   </div>
-                  {this.item?.showDocumentUploader && this.inputs['documents'] ? (
+                  {this.item?.showDocumentUploader && this.inputs['document'] ? (
                     <div class="relative border-[#3071a9] text-[#3071a9] text-[16px] w-[300px] border-[2px] font-semibold h-[30px] overflow-hidden rounded-full flex items-center justify-center">
-                      {this.locale.processing} {`${this.uploadProgress}%`}
+                      <span class="relative z-20">
+                        {this.locale.processing} {`${this.uploadProgress}%`}
+                      </span>
                       <div
                         style={{
                           width: `${this.uploadProgress}%`,
                           background: `linear-gradient(to right, rgba(219, 234, 254, ${Math.min(0.1 + this.uploadProgress / 100, 1)}), rgba(191, 219, 254, ${Math.min(0.15 + this.uploadProgress / 100, 1)}), rgba(147, 197, 253, ${Math.min(0.2 + this.uploadProgress / 100, 1)}))`,
                         }}
-                        class="absolute left-0 top-0 h-full -z-10 transition-[width] duration-700 ease-out"
+                        class="absolute left-0 z-10 top-0 h-full transition-[width] duration-700 ease-out"
                       />
                     </div>
                   ) : (
@@ -373,7 +466,17 @@ export class ClaimTempForm {
                   />
                 </div>
               )}
+
+              <button
+                onClick={this.submit}
+                disabled={!isFormValid || disableInputs}
+                class="text-[22px] transition duration-500 hover: mt-[16px] disabled:opacity-50 text-white w-full max-w-[250px] px-[8px] h-[40px] enabled:hover:scale-110 flex gap-[8px] border rounded-[4px] enabled:shadow items-center justify-center border-[#27ae60] bg-[#32b267] enabled:hover:border-[#27ae5fc1] enabled:hover:bg-[#32b267c7]"
+              >
+                <ActivationIcon class="size-[30px] [&_circle]:fill-white stroke-white text-red-300" />
+                <span>{this.locale.claim}</span>
+              </button>
             </div>
+            <div class="shrink-0 h-[16px]" />
           </div>
         </div>
       </Host>

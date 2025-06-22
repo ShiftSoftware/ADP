@@ -1,12 +1,14 @@
+import cn from '~lib/cn';
 import { h, FunctionalComponent } from '@stencil/core';
 
 import { VehicleServiceItemDTO } from '~types/generated/vehicle-lookup/vehicle-service-item-dto';
 
-import dynamicClaimSchema from '~locales/vehicleLookup/claimableItems/type';
 import ComponentLocale from '~lib/component-locale';
+
 import { TriangleIcon } from '~assets/triangle-icon';
 import { ActivationIcon } from '~assets/activation-icon';
-import cn from '~lib/cn';
+
+import dynamicClaimSchema from '~locales/vehicleLookup/claimableItems/type';
 
 type DetailRow = { label: keyof ComponentLocale<typeof dynamicClaimSchema>; key: keyof VehicleServiceItemDTO; formatter?: (item: VehicleServiceItemDTO) => string };
 

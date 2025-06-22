@@ -318,7 +318,7 @@ export class ClaimTemp implements MultiLingual, VehicleInfoLayoutInterface, Vehi
     this.lastSuccessfulClaimResponse = response;
   }
 
-  private handleClaim = async ({ document, ...payload }: ClaimFormPayload) => {
+  handleClaim = async ({ document, ...payload }: ClaimFormPayload) => {
     try {
       const formData = new FormData();
       formData.append(
@@ -346,7 +346,6 @@ export class ClaimTemp implements MultiLingual, VehicleInfoLayoutInterface, Vehi
         };
 
         xhr.onload = () => {
-          this.claimForm.close();
           if (xhr.status === 200) {
             try {
               const responseData = JSON.parse(xhr.responseText);
@@ -370,7 +369,6 @@ export class ClaimTemp implements MultiLingual, VehicleInfoLayoutInterface, Vehi
         xhr.onerror = e => {
           console.log(e);
 
-          this.claimForm.close();
           reject(new Error('Network error'));
         };
 
@@ -379,11 +377,10 @@ export class ClaimTemp implements MultiLingual, VehicleInfoLayoutInterface, Vehi
     } catch (error) {
       console.error(error);
       alert(this.locale.sharedLocales.errors.requestFailedPleaseTryAgainLater);
-      this.claimForm.close();
     }
   };
 
-  private handleDevClaim = async ({ document }: ClaimFormPayload) => {
+  handleDevClaim = async ({ document }: ClaimFormPayload) => {
     if (document) {
       this.claimForm.setFileUploadProgression(0);
       let uploadChunks = 20;
@@ -396,9 +393,9 @@ export class ClaimTemp implements MultiLingual, VehicleInfoLayoutInterface, Vehi
       }
     }
 
-    this.claimForm.close();
+    await new Promise(r => setTimeout(r, 1000));
+
     this.completeClaim({ Success: true, ID: '11223344', PrintURL: 'http://localhost/test/print/1122' });
-    this.claimForm.handleClaiming = null;
   };
 
   @Method()
@@ -423,7 +420,7 @@ export class ClaimTemp implements MultiLingual, VehicleInfoLayoutInterface, Vehi
       this.claimForm.unInvoicedByBrokerName = this.vehicleLookup?.saleInformation?.broker?.brokerName;
     else this.claimForm.unInvoicedByBrokerName = null;
 
-    this.claimForm.handleClaiming = this.isDev ? this.handleDevClaim : this.handleClaim;
+    this.claimForm.handleClaiming = this.isDev ? this.handleDevClaim.bind(this) : this.handleClaim.bind(this);
 
     this.claimForm.open();
   }
