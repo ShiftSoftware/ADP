@@ -1,0 +1,35 @@
+trigger:
+ tags:
+    include:
+    - release-web-components-*
+
+variables:
+- group: Deployment
+
+steps:
+  - task: NodeTool@0
+    inputs:
+      versionSpec: '16.x' # Use your desired Node.js version
+    displayName: 'Set up Node.js'
+
+  - task: Npm@1
+    displayName: 'Install dependencies'
+    inputs:
+      command: 'custom'
+      workingDir: 'ADP.WebComponents/adp-web-components'
+      customCommand: 'install --ignore-scripts'
+
+  - task: Npm@1
+    displayName: 'Build the project'
+    inputs:
+      command: 'custom'
+      customCommand: 'run build'
+      workingDir: 'ADP.WebComponents/adp-web-components'
+
+  - task: Npm@1
+    displayName: 'Publish to npm'
+    condition: contains(variables['Build.SourceBranch'], 'refs/tags/release')
+    inputs:
+      command: 'publish'
+      workingDir: 'ADP.WebComponents/adp-web-components'
+      publishEndpoint: 'NPM'

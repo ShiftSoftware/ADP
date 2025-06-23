@@ -37,6 +37,7 @@
     <None Include="$(MSBuildThisFileDirectory)docs\components\warranty\twc.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\components\warranty\warranty.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\index.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\integrations\adp-sync-agent.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\integrations\intro.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\integrations\parts.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\overrides\assets\images\spinner.svg" />

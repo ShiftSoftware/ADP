@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace ShiftSoftware.ADP.Models.Part;
 
@@ -85,6 +86,21 @@ public class CatalogPartModel :
     /// The height of the part.
     /// </summary>
     public decimal? Height { get; set; }
+
+
+    [DocIgnore]
+    [Obsolete("Changed to Length bu kept for compatibility.")]
+    public decimal? Dimension1 { get; set; }
+    
+    [DocIgnore]
+    [Obsolete("Changed to Width bu kept for compatibility.")]
+    public decimal? Dimension2 { get; set; }
+
+
+    [DocIgnore]
+    [Obsolete("Changed to Height bu kept for compatibility.")]
+    public decimal? Dimension3 { get; set; }
+
 
     /// <summary>
     /// The weight of the part.

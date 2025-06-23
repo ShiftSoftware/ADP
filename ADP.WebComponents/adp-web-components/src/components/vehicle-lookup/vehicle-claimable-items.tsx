@@ -354,7 +354,13 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
             }
             resolve();
           } else {
-            reject(new Error(`Upload failed with status ${xhr.status}`));
+            try {
+              const responseData = JSON.parse(xhr.responseText);
+
+              alert(responseData.Message);
+            } catch {
+              reject(new Error(`Upload failed with status ${xhr.status}`));
+            }
           }
         };
 

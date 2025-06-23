@@ -756,7 +756,10 @@ public class VehicleLookupService
 
                 foreach (var item in eligibleServiceItems)
                 {
-                    var modelCost = GetModelCost(item.ModelCosts, vehicle?.Katashiki, vehicle?.VariantCode);
+                    ServiceItemCostModel modelCost = null;
+
+                    if (item.ModelCosts != null)
+                        modelCost = GetModelCost(item.ModelCosts, vehicle?.Katashiki, vehicle?.VariantCode);
 
                     var serviceItem = new VehicleServiceItemDTO
                     {
@@ -769,16 +772,19 @@ public class VehicleLookupService
                         TypeEnum = VehcileServiceItemTypes.Free,
                         ModelCostID = modelCost?.ID,
                         PackageCode = modelCost?.PackageCode ?? item.PackageCode,
-                        Cost = modelCost?.Cost,
+                        Cost = modelCost == null ? item?.FixedCost : modelCost?.Cost,
                         CampaignID = item.CampaignID,
                         CampaignUniqueReference = item.CampaignUniqueReference,
-                        
+
                         MaximumMileage = item.MaximumMileage,
                         CampaignActivationTrigger = item.CampaignActivationTrigger,
                         CampaignActivationType = item.CampaignActivationType,
 
                         ValidityModeEnum = item.ValidityMode,
                         ClaimingMethodEnum = item.ClaimingMethod,
+
+                        ShowDocumentUploader = item.AttachmentFieldBehavior != ClaimableItemAttachmentFieldBehavior.Hidden,
+                        DocumentUploaderIsRequired = item.AttachmentFieldBehavior == ClaimableItemAttachmentFieldBehavior.Required,
                     };
 
                     if (item.ValidityMode == ClaimableItemValidityMode.FixedDateRange)
@@ -908,6 +914,7 @@ public class VehicleLookupService
                 {
                     item.Status = "cancelled";
                     item.StatusEnum = VehcileServiceItemStatuses.Cancelled;
+                    item.Claimable = false;
                 }
             }
         }

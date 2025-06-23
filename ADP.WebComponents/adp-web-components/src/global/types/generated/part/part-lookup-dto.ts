@@ -10,9 +10,9 @@ export type PartLookupDTO = {
     pnc: string;
     binType: string;
     distributorPurchasePrice?: number;
-    dimension1?: number;
-    dimension2?: number;
-    dimension3?: number;
+    length?: number;
+    width?: number;
+    height?: number;
     netWeight?: number;
     grossWeight?: number;
     cubicMeasure?: number;

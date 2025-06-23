@@ -10,9 +10,9 @@
   </PropertyGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory).editorconfig" />
-    <None Include="$(MSBuildThisFileDirectory).npmrc" />
     <None Include="$(MSBuildThisFileDirectory).prettierignore" />
     <None Include="$(MSBuildThisFileDirectory).prettierrc" />
+    <None Include="$(MSBuildThisFileDirectory)azure-pipelines.yml" />
     <None Include="$(MSBuildThisFileDirectory)documentation\docs\components\components-list.md" />
     <None Include="$(MSBuildThisFileDirectory)documentation\docs\components\dead-stock-lookup.md" />
     <None Include="$(MSBuildThisFileDirectory)documentation\docs\components\distributor-lookup.md" />
