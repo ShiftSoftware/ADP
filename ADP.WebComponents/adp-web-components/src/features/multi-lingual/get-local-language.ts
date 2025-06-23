@@ -1,23 +1,12 @@
 import { Build } from '@stencil/core';
-import { InferType, object, ObjectSchema } from 'yup';
+import { InferType, ObjectSchema } from 'yup';
 
 import { version } from '../../../package.json';
 import localeNetworkMapper from '../../locale-mapper';
 
-import { LanguageKeys, languageMapper } from '~types/locale';
-
 import globalSchema from '~locales/type';
 import errorsSchema from '~locales/errors/type';
-
-export type LocaleKeyEntries = keyof typeof localeNetworkMapper;
-
-export type ErrorKeys = keyof InferType<typeof errorsSchema>;
-
-export const sharedLocalesSchema = object({
-  errors: errorsSchema,
-}).concat(globalSchema);
-
-export type SharedLocales = InferType<typeof sharedLocalesSchema>;
+import { LanguageKeys, languageMapper, LocaleKeyEntries, SharedLocales } from './types';
 
 const cachedLocales = {};
 

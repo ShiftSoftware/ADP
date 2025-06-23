@@ -1,8 +1,9 @@
 import { JSX } from '@stencil/core/internal';
 
 import { FormHook } from '~lib/form-hook';
-import { LanguageKeys } from './locale';
 import formWrapperSchema from '~locales/forms/wrapper-type';
+
+import { LanguageKeys } from '~features/multi-lingual';
 
 export interface FormHookInterface<T> {
   el: HTMLElement;

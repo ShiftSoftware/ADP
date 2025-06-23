@@ -1,21 +1,21 @@
-export interface ImageViewerInterface {
-  el: HTMLElement;
-  expandedImage?: string;
-  originalImage: HTMLImageElement;
-  closeImage: (event?: KeyboardEvent) => void;
-  closeImageListener: (event?: KeyboardEvent) => void;
-}
+import { ImageViewerInterface } from './interface';
 
-export function openImageViewer(context: ImageViewerInterface, target: HTMLImageElement, imageSrc: string) {
-  if (context.expandedImage === imageSrc) return;
+let closeImageListener;
 
-  context.originalImage = target;
+export function openImageViewer(this: ImageViewerInterface, target: HTMLImageElement, imageSrc: string) {
+  if (this.expandedImage === imageSrc) return;
 
-  const expandedImageRef = context.el.shadowRoot.getElementById('expanded-image') as HTMLImageElement;
+  this.originalImage = target;
+
+  const expandedImageRef = this.el.shadowRoot.querySelector('.image-viewer-expanded-image') as HTMLImageElement;
 
   expandedImageRef.src = target.src;
 
-  document.addEventListener('keydown', context.closeImageListener);
+  document.removeEventListener('keydown', closeImageListener);
+
+  closeImageListener = () => closeImageViewer.bind(this)();
+
+  document.addEventListener('keydown', closeImageListener);
 
   const rect = target.getBoundingClientRect();
 
@@ -59,18 +59,20 @@ export function openImageViewer(context: ImageViewerInterface, target: HTMLImage
       left: `${(window.innerWidth - width) / 2}px`,
     });
 
-    context.expandedImage = imageSrc;
+    this.expandedImage = imageSrc;
   }, 200);
 }
 
-export function closeImageViewer(context?: ImageViewerInterface, event?: KeyboardEvent) {
+export function closeImageViewer(this: ImageViewerInterface, event?: KeyboardEvent) {
+  event?.preventDefault();
+
   if (event && event.key !== 'Escape') return;
 
-  document.removeEventListener('keydown', context.closeImageListener);
+  document.removeEventListener('keydown', closeImageListener);
 
-  const expandedImageRef = context.el.shadowRoot.getElementById('expanded-image') as HTMLImageElement;
+  const expandedImageRef = this.el.shadowRoot.querySelector('.image-viewer-expanded-image') as HTMLImageElement;
 
-  const rect = context.originalImage.getBoundingClientRect();
+  const rect = this.originalImage.getBoundingClientRect();
 
   Object.assign(expandedImageRef.style, {
     top: `${rect.top}px`,
@@ -87,5 +89,5 @@ export function closeImageViewer(context?: ImageViewerInterface, event?: Keyboar
     expandedImageRef.style.transitionDuration = '0s';
   }, 300);
   document.body.style.overflow = '';
-  context.expandedImage = null;
+  this.expandedImage = null;
 }

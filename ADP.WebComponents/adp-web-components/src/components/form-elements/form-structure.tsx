@@ -1,14 +1,14 @@
+import { InferType } from 'yup';
 import { Component, Fragment, Host, Prop, State, Watch, h } from '@stencil/core';
 
 import cn from '~lib/cn';
 import { FormHook } from '~lib/form-hook';
-import { getLocaleLanguage, getSharedLocal, SharedLocales, sharedLocalesSchema } from '~lib/get-local-language';
 import { isValidStructure } from '~lib/validate-form-structure';
 
-import { LanguageKeys } from '~types/locale';
 import { FormElementMapper, StructureObject } from '~types/forms';
 import generalSchema from '~locales/general/type';
-import { InferType } from 'yup';
+
+import { getLocaleLanguage, getSharedLocal, LanguageKeys, SharedLocales, sharedLocalesSchema } from '~features/multi-lingual';
 
 @Component({
   shadow: false,

@@ -2,15 +2,15 @@ import { InferType } from 'yup';
 import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
 import cn from '~lib/cn';
-import { ErrorKeys, getLocaleLanguage, getSharedLocal, SharedLocales, sharedLocalesSchema } from '~lib/get-local-language';
 
-import { LanguageKeys } from '~types/locale';
 import { AppStates, MockJson } from '~types/components';
 import { PartLookupDTO } from '~types/generated/part/part-lookup-dto';
 
 import { getPartInformation, PartInformationInterface } from '~api/partInformation';
 
 import manufacturerSchema from '~locales/partLookup/manufacturer/type';
+
+import { ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, SharedLocales, sharedLocalesSchema } from '~features/multi-lingual';
 
 let mockData: MockJson<PartLookupDTO> = {};
 

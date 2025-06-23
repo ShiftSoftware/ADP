@@ -3,9 +3,7 @@ import { Component, Element, Host, Prop, State, Watch, h } from '@stencil/core';
 
 import cn from '~lib/cn';
 import { FormHook } from '~lib/form-hook';
-import { ErrorKeys, getLocaleLanguage, getSharedLocal, LocaleKeyEntries, SharedLocales, sharedLocalesSchema } from '~lib/get-local-language';
 
-import { LanguageKeys } from '~types/locale';
 import { FormElement, FormSelectFetcher, FormSelectItem, LocaleFormKeys } from '~types/forms';
 
 import Loader from '~assets/loader.svg';
@@ -13,6 +11,8 @@ import Loader from '~assets/loader.svg';
 import formsSchema from '~locales/forms/type';
 import generalSchema from '~locales/general/type';
 import formWrapperSchema from '~locales/forms/wrapper-type';
+
+import { ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, LocaleKeyEntries, SharedLocales, sharedLocalesSchema } from '~features/multi-lingual';
 
 @Component({
   shadow: false,

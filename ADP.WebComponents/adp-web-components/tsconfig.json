@@ -5,6 +5,7 @@
       "~api/*": ["global/api/*"],
       "~lib/*": ["global/lib/*"],
       "~locales/*": ["locales/*"],
+      "~features/*": ["features/*"],
       "~types/*": ["global/types/*"],
       "~assets/*": ["global/assets/*"]
     },

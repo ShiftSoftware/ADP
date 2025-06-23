@@ -1,6 +1,6 @@
 import { h } from '@stencil/core';
-import SuccessIcon from '../assets/check.svg';
-import RejectIcon from '../assets/x-mark.svg';
+import SuccessIcon from '~assets/check.svg';
+import RejectIcon from '~assets/x-mark.svg';
 
 import cn from '~lib/cn';
 

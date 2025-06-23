@@ -1,6 +1,5 @@
 import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
-import { LanguageKeys } from '~types/locale';
 import { DotNetObjectReference } from '~types/components';
 
 import { DeadStockLookup } from './dead-stock-lookup';
@@ -8,8 +7,9 @@ import { DistributorLookup } from './distributor-lookup';
 import { ManufacturerLookup } from './manufacturer-lookup';
 
 import cn from '~lib/cn';
-import { ErrorKeys, getLocaleLanguage, getSharedLocal, SharedLocales, sharedLocalesSchema } from '~lib/get-local-language';
 import partLookupWrapperSchema from '~locales/partLookup/wrapper-type';
+
+import { ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, SharedLocales, sharedLocalesSchema } from '~features/multi-lingual';
 
 const componentTags = {
   deadStock: 'dead-stock-lookup',

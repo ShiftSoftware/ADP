@@ -34,7 +34,6 @@
     "loader/"
   ],
   "scripts": {
-    "prepare": "test \"$CI\" != \"true\" && husky install || echo 'Skipping husky in CI'",
     "test": "stencil test --spec",
     "generate": "stencil generate",
     "build": "stencil build -- --prod",

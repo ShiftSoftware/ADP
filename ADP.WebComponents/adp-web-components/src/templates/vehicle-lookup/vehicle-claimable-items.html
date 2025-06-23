@@ -35,7 +35,7 @@
     <a href="#" onclick="history.back()" style="color: blue; display: block; margin-bottom: 16px">Back</a>
 
     <h1>Vehicle Claimable Items</h1>
-    <vehicle-claimable-items language="en" id="vehicle-claimable-items" is-dev="true" query-string="" base-url=""></vehicle-claimable-items>
+    <vehicle-claimable-items id="vehicle-claimable-items" is-dev="true" query-string="" base-url=""></vehicle-claimable-items>
 
     <div class="button-container">
       <button class="sample-button" onclick="updateLang('en')">En</button>
@@ -58,6 +58,7 @@
       <button class="sample-button" onclick="vinLookup('JTMABBBJ9P4099201')">Sample 10 (Realistic at TBP Stock)</button>
       <button class="sample-button" onclick="vinLookup('1G8ZY1275YZ188208')">Inactive Services</button>
     </div>
+
     <script>
       let claimableItems;
 
@@ -67,11 +68,11 @@
         claimableItems.setMockData(mockData);
 
         claimableItems.loadingStateChange = isLoading => {
-          console.log('isLoading: ' + isLoading);
+          // console.log('isLoading: ' + isLoading);
         };
 
         claimableItems.loadedResponse = newResponse => {
-          console.log(newResponse);
+          // console.log(newResponse);
 
           const urlParams = new URLSearchParams(window.location.search);
 
@@ -93,7 +94,7 @@
         }
 
         claimableItems.activate = vehicleInformation => {
-          console.log(vehicleInformation);
+          // console.log(vehicleInformation);
 
           alert(JSON.stringify(vehicleInformation));
         };
@@ -111,10 +112,6 @@
 
       function vinLookup(vin) {
         claimableItems.fetchData(vin);
-      }
-
-      function setData(key) {
-        claimableItems.setData(mockData[key]);
       }
     </script>
   </body>

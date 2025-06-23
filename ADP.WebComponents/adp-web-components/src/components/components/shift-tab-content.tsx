@@ -41,7 +41,7 @@ export class ShiftTabContent {
   render() {
     return (
       <Host>
-        <flexible-container classes="relative">
+        <flexible-container>
           {Object.entries(this.components).map(([componentName, component]) => (
             <div
               onAnimationEnd={() => this.clearAnimationClasses(componentName)}

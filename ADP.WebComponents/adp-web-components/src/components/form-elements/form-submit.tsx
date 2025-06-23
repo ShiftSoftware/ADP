@@ -2,14 +2,15 @@ import { InferType } from 'yup';
 import { Component, Prop, State, Watch, h } from '@stencil/core';
 
 import cn from '~lib/cn';
-import { getLocaleLanguage } from '~lib/get-local-language';
+import { getLocaleLanguage } from '~features/multi-lingual/get-local-language';
 
-import { LanguageKeys } from '~types/locale';
 import { FormFieldParams, StructureObject } from '~types/forms';
 
 import Loader from '~assets/white-loader.svg';
 
 import generalSchema from '~locales/general/type';
+
+import { LanguageKeys } from '~features/multi-lingual/types';
 
 @Component({
   shadow: false,

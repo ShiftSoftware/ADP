@@ -1,5 +1,6 @@
-@import '../style/vehicle-info.css';
 @import '../style/shift-skeleton.css';
+@import '../../features/image-viewer/image-viewer.css';
+@import '../../features/vehicle-info-layout/vehicle-info-layout.css';
 
 :host {
   all: initial !important;

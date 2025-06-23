@@ -1,112 +1,19 @@
-@import '../style/vehicle-info.css';
+@import '../style/shift-skeleton.css';
+@import './components/claimable-item.css';
+@import './components/claimable-item-popover.css';
+@import '../../features/vehicle-info-layout/vehicle-info-layout.css';
 
 :host {
   all: initial !important;
   display: block;
-  flex: 1 1 0 !important;
-  width: 100% !important;
-  flex-shrink: 0 !important;
 }
 
 * {
   font-family: Arial;
-  margin: revert;
-  padding: revert;
-  box-sizing: content-box;
 }
 
-.claimable-item-header.load-animation {
-  animation: item-header-fade-in 0.65s ease forwards;
-}
-
-@keyframes item-header-fade-in {
-  0% {
-    opacity: 0;
-    transform: translateY(-5px) scale(70%);
-  }
-
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(100%);
-  }
-}
-
-.claimable-item-footer {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-}
-
-.claimable-item-footer.load-animation {
-  animation: item-footer-fade-in 0.65s ease forwards;
-}
-
-@keyframes item-footer-fade-in {
-  0% {
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(5px) scale(70%);
-  }
-
-  100% {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0px) scale(100%);
-  }
-}
-
-.claimable-item-circle.load-animation {
-  animation: item-circle-fade-in 0.65s ease forwards;
-}
-
-@keyframes item-circle-fade-in {
-  0% {
-    opacity: 0;
-    visibility: hidden;
-    transform: scale(150%);
-  }
-
-  100% {
-    opacity: 1;
-    visibility: visible;
-    transform: scale(100%);
-  }
-}
-
-.processed .claimable-item-circle {
-  background-color: #3071a9;
-}
-
-.processed .claimable-item-header {
-  color: #3071a9;
-}
-
-.expired .claimable-item-circle {
-  background-color: #282828;
-}
-
-.expired .claimable-item-header {
-  color: #282828;
-}
-
-.cancelled .claimable-item-circle {
-  background-color: #a80000;
-}
-
-.cancelled .claimable-item-header {
-  color: #a80000;
-}
-
-.pending .claimable-item-circle {
-  background-color: #00a300;
-}
-
-.pending .claimable-item-header {
-  color: #00a300;
-}
-
-.activationRequired .claimable-item-header {
-  color: #9e9e9e;
+.progress-container-style {
+  @apply h-[10px] -translate-y-1/2 rounded-full transition duration-500 bg-[#f2f2f2] border border-[#ddd];
 }
 
 .loading .lane-inc {
@@ -142,82 +49,7 @@
 }
 
 .claim-button {
-  @apply active:[&_svg]:scale-[125%] active:bg-[#27ae60] [&_circle]:fill-[#2ecc71] hover:text-white hover:bg-[#2ecc71] hover:stroke-white hover:fill-white hover:[&_circle]:fill-white outline-none flex items-center gap-[3px] border border-[#27ae60] bg-transparent fill-[#27ae60] stroke-[#27ae60] text-[#27ae60]  rounded-[5px] cursor-pointer duration-200 font-bold pr-[10px];
-}
-
-.card {
-  gap: 8px;
-  display: flex;
-  flex-shrink: 0;
-  padding: 8px 12px;
-  border: 1px solid;
-  align-items: center;
-  border-radius: 6px;
-}
-
-.card p {
-  margin: 0px;
-  height: 25px;
-  flex: 1 1 0%;
-  display: flex;
-  font-size: 16px;
-  padding-left: 50px;
-  align-items: center;
-}
-
-.card p.no-padding {
-  padding-left: 4px;
-}
-
-.card img {
-  width: 25px;
-  height: 25px;
-}
-
-.warning-card {
-  color: #8a6d3b;
-  background: #fcf8e3;
-  border-color: #faebcc !important;
-}
-
-.activation-panel {
-  opacity: 0;
-}
-
-.activation-panel.visible {
-  animation: activation-panel-fade-in 0.75s ease forwards;
-}
-
-.activation-panel.visible.loading {
-  animation: activation-panel-fade-out 0.75s ease forwards;
-}
-
-@keyframes activation-panel-fade-in {
-  0% {
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(-5px) scale(70%);
-  }
-
-  100% {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0) scale(100%);
-  }
-}
-
-@keyframes activation-panel-fade-out {
-  100% {
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(-5px) scale(70%);
-  }
-
-  0% {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0) scale(100%);
-  }
+  @apply active:[&_svg]:scale-[125%] active:bg-[#27ae60] [&_circle]:fill-[#2ecc71] hover:text-white hover:bg-[#2ecc71] hover:stroke-white hover:fill-white hover:[&_circle]:fill-white outline-none flex items-center gap-[3px] border border-[#27ae60] bg-transparent fill-[#27ae60] stroke-[#27ae60] text-[#27ae60]  rounded-[5px] cursor-pointer duration-200 font-bold px-[10px];
 }
 
 .claim-button path {

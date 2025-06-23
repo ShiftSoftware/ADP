@@ -15,7 +15,7 @@ export const MaterialCard: FunctionalComponent<MaterialCardProps> = (props, chil
   const wrapperStyle: JSXBase.HTMLAttributes<HTMLDivElement>['style'] = {
     flex: '1',
     display: 'flex',
-    width: props.class,
+    width: props.width,
     flexDirection: 'column',
     minWidth: props.minWidth,
     maxWidth: props.maxWidth,
@@ -32,7 +32,7 @@ export const MaterialCard: FunctionalComponent<MaterialCardProps> = (props, chil
     <div style={wrapperStyle} class={props.class}>
       <strong style={titleStyle}>{props.title}</strong>
       <flexible-container>
-        {!children.length ? <MaterialCardChildren hidden={['...', ''].includes(props?.desc?.trim())}>{props.desc || '...'}</MaterialCardChildren> : children}
+        {!children.length ? <MaterialCardChildren hidden={'' === props?.desc?.trim()}>{props.desc || <p>&nbsp;</p>}</MaterialCardChildren> : children}
       </flexible-container>
     </div>
   );

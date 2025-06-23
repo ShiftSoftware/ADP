@@ -1,8 +1,6 @@
 import { Component, Host, Prop, State, Watch, h } from '@stencil/core';
 
-import { getSharedLocal, SharedLocales, sharedLocalesSchema } from '~lib/get-local-language';
-
-import { LanguageKeys } from '~types/locale';
+import { getSharedLocal, LanguageKeys, SharedLocales, sharedLocalesSchema } from '~features/multi-lingual';
 
 @Component({
   shadow: false,

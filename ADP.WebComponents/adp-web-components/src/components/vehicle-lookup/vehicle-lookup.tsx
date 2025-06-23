@@ -1,9 +1,6 @@
 import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
 import validateVin from '~lib/validate-vin';
-import { ErrorKeys, getLocaleLanguage, getSharedLocal, SharedLocales, sharedLocalesSchema } from '~lib/get-local-language';
-
-import { LanguageKeys } from '~types/locale';
 import { DotNetObjectReference } from '~types/components';
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
@@ -16,7 +13,9 @@ import { VehiclePaintThickness } from './vehicle-paint-thickness';
 import { VehicleServiceHistory } from './vehicle-service-history';
 import { VehicleWarrantyDetails } from './vehicle-warranty-details';
 
-import { VehicleInfoLayout } from '../components/vehicle-info-layout';
+import { VehicleInfoLayout } from '../../features/vehicle-info-layout/vehicle-info-layout';
+
+import { ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, SharedLocales, sharedLocalesSchema } from '~features/multi-lingual';
 
 const componentTags = {
   vehicleAccessories: 'vehicle-accessories',
@@ -135,7 +134,7 @@ export class VehicleLookup {
     this.isError = false;
     this.currentVin = newResponse.vin || '';
     Object.values(this.componentsList).forEach(element => {
-      if (element !== null && element !== activeElement && newResponse) element.setData(newResponse);
+      if (element !== null && element !== activeElement && newResponse) element.fetchData(newResponse);
     });
   }
 

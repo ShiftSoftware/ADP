@@ -19,5 +19,4 @@
 	<Target Name="RunSelfAfterBuild" AfterTargets="Build">
 		<Exec Command='dotnet "$(TargetPath)"' />
 	</Target>
-
 </Project>
