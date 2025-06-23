@@ -77,6 +77,7 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
   @Method()
   async fetchData(newData: VehicleLookupDTO | string, headers: any = {}) {
     const beforeAssignment = async (vehicleLookup: VehicleLookupDTO) => {
+      this.showPrintBox = false;
       await this.parseGroupData(vehicleLookup);
       return vehicleLookup;
     };
