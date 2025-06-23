@@ -10,8 +10,8 @@ import warrantySchema from '~locales/vehicleLookup/warranty/type';
 import CardsContainer from './components/CardsContainer';
 import { InformationTableColumn } from '../components/information-table';
 
-import XIcon from './assets/x-mark.svg';
-import CheckIcon from './assets/check.svg';
+import XIcon from '~assets/x-mark.svg';
+import CheckIcon from '~assets/check.svg';
 
 import { VehicleInfoLayout, VehicleInfoLayoutInterface } from '~features/vehicle-info-layout';
 import { VehicleLookupComponent, VehicleLookupMock } from '~features/vehicle-lookup-component';

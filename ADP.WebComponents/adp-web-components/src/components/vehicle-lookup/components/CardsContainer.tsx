@@ -5,7 +5,7 @@ import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup
 
 import StatusCard from './StatusCard';
 
-import RejectIcon from '../assets/x-mark.svg';
+import RejectIcon from '~assets/x-mark.svg';
 
 import warrantySchema from '~locales/vehicleLookup/warranty/type';
 import cn from '~lib/cn';
