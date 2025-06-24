@@ -87,7 +87,8 @@ export class PartLookup {
 
   private handleLoadData(newResponse, activeElement) {
     Object.values(this.componentsList).forEach(element => {
-      if (element !== null && element !== activeElement && newResponse) element.setData(newResponse);
+      // @ts-ignore
+      if (element !== null && element !== activeElement && newResponse) element.fetchData(newResponse);
     });
   }
 
