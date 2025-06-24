@@ -30,6 +30,7 @@ export const setPartLookupData = async (
     if (!searchString || searchString.trim().length === 0) {
       context.isError = false;
       context.isLoading = false;
+      context.searchString = '';
       context.partLookup = undefined;
       return;
     }

@@ -90,7 +90,6 @@ export class ManufacturerLookup implements MultiLingual, VehicleInfoLayoutInterf
 
   @Prop() hiddenFields: string = '';
   @Prop() localizationName?: string = '';
-  @Prop() headerTitle: string = 'Manufacturer';
 
   render() {
     const localName = this.partLookup ? this.localizationName || 'russian' : 'russian';
@@ -123,11 +122,6 @@ export class ManufacturerLookup implements MultiLingual, VehicleInfoLayoutInterf
 
     const displayedManufacturerData = manufacturerData.filter(part => !hiddenFields.includes(part.key));
 
-    console.log(99);
-
-    displayedManufacturerData.forEach(part => {
-      console.log(part.value);
-    });
     return (
       <Host>
         <VehicleInfoLayout

@@ -17,7 +17,24 @@ const mockData = {
     hsCode: null,
     origin: 'JP',
     supersededTo: ['1110109263', '137410PH00', '138010PH00', '139350PH00'],
-    stockParts: [],
+    stockParts: [
+      {
+        locationName: 'Besten Stock',
+        quantityLookUpResult: 'Available',
+      },
+      {
+        locationName: 'Besten Stock',
+        quantityLookUpResult: 'Available',
+      },
+      {
+        locationName: 'Besten Stock',
+        quantityLookUpResult: 'PartiallyAvailable',
+      },
+      {
+        locationName: 'Besten Stock 2',
+        quantityLookUpResult: 'PartiallyAvailable',
+      },
+    ],
     prices: [
       {
         countryIntegrationID: 'TM',
