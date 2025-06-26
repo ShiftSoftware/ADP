@@ -37,7 +37,7 @@ public class CsvHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource,
     /// <returns></returns>
     public ISyncService<TCSV, TDestination> Configure(CSVSyncDataSourceConfigurations configurations, bool configureSyncService = true)
     {
-        base.Configure(configurations, [""]);
+        base.Configure(configurations, configurations.HasHeaderRecord ? [""] : []);
 
         this.Configurations = configurations;
 
@@ -61,7 +61,10 @@ public class CsvHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource,
             else if (input.Input == SyncActionType.Delete)
                 this.streamReader = new StreamReader(toDeleteFilePath!);
 
-            this.csvReader = new CsvReader(this.streamReader!, new CsvHelper.Configuration.CsvConfiguration(CultureInfo.InvariantCulture));
+            this.csvReader = new CsvReader(this.streamReader!, new CsvHelper.Configuration.CsvConfiguration(CultureInfo.InvariantCulture)
+            {
+                HasHeaderRecord = Configurations!.HasHeaderRecord
+            });
 
             return new(true);
         }
@@ -85,7 +88,10 @@ public class CsvHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource,
     {
         long count = 0;
         using var reader = new StreamReader(filePath);
-        using var csv = new CsvReader(reader, new CsvHelper.Configuration.CsvConfiguration(CultureInfo.InvariantCulture));
+        using var csv = new CsvReader(reader, new CsvHelper.Configuration.CsvConfiguration(CultureInfo.InvariantCulture)
+        {
+            HasHeaderRecord = Configurations!.HasHeaderRecord
+        });
 
         await foreach (var record in csv.EnumerateRecordsAsync(new TCSV()))
             count++;

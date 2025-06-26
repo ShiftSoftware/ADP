@@ -9,6 +9,11 @@ public class CSVSyncDataSourceConfigurations
     public string? DestinationDirectory { get; set; }
     public bool SkipReorderedLines { get; set; }
 
+    /// <summary>
+    /// Default is true.
+    /// </summary>
+    public bool HasHeaderRecord { get; set; } = true;
+
     public CSVSyncDataSourceConfigurations()
     {
         
@@ -17,10 +22,11 @@ public class CSVSyncDataSourceConfigurations
     public CSVSyncDataSourceConfigurations(
         string? csvFileName,
         string? sourceContainerOrShareName,
-        string? sourceDirectory, 
+        string? sourceDirectory,
         string? destinationContainerOrShareName,
         string? destinationDirectory,
-        bool skipReorderedLines)
+        bool skipReorderedLines,
+        bool hasHeaderRecord = true)
     {
         CSVFileName = csvFileName;
         SourceContainerOrShareName = sourceContainerOrShareName;
@@ -28,6 +34,7 @@ public class CSVSyncDataSourceConfigurations
         DestinationContainerOrShareName = destinationContainerOrShareName;
         DestinationDirectory = destinationDirectory;
         SkipReorderedLines = skipReorderedLines;
+        HasHeaderRecord = hasHeaderRecord;
     }
 
     internal string GetDestinationRelativePath()
