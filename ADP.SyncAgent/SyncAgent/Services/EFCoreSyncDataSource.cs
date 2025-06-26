@@ -17,13 +17,13 @@ public class EFCoreSyncDataSource<T, TDbContext> : EFCoreSyncDataSource<T, T, T,
 
     public virtual new EFCoreSyncDataSourceConfigurations<T>? Configurations => (EFCoreSyncDataSourceConfigurations<T>?)base.Configurations;
 
-    public virtual ISyncService<T, T> Configure(EFCoreSyncDataSourceConfigurations<T> configurations, bool configureSyncService = true)
+    public virtual ISyncEngine<T, T> Configure(EFCoreSyncDataSourceConfigurations<T> configurations, bool configureSyncService = true)
     {
         base.Configure(configurations, configureSyncService);
         return this.SyncService;
     }
 
-    public virtual new EFCoreSyncDataSource<T, TDbContext> SetSyncService(ISyncService<T, T> syncService)
+    public virtual new EFCoreSyncDataSource<T, TDbContext> SetSyncService(ISyncEngine<T, T> syncService)
     {
         base.SetSyncService(syncService);
         return this;
@@ -42,13 +42,13 @@ public class EFCoreSyncDataSource<TSource, TDestination, TDbContext> : EFCoreSyn
 
     public virtual new EFCoreSyncDataSourceConfigurations<TSource, TDestination>? Configurations => (EFCoreSyncDataSourceConfigurations<TSource, TDestination>?)base.Configurations;
 
-    public virtual ISyncService<TSource, TDestination> Configure(EFCoreSyncDataSourceConfigurations<TSource, TDestination> configurations, bool configureSyncService = true)
+    public virtual ISyncEngine<TSource, TDestination> Configure(EFCoreSyncDataSourceConfigurations<TSource, TDestination> configurations, bool configureSyncService = true)
     {
         base.Configure(configurations, configureSyncService);
         return this.SyncService;
     }
 
-    public virtual new EFCoreSyncDataSource<TSource, TDestination, TDbContext> SetSyncService(ISyncService<TSource, TDestination> syncService)
+    public virtual new EFCoreSyncDataSource<TSource, TDestination, TDbContext> SetSyncService(ISyncEngine<TSource, TDestination> syncService)
     {
         base.SetSyncService(syncService);
         return this;
@@ -70,7 +70,7 @@ public class EFCoreSyncDataSource<TEntity, TSource, TDestination, TDbContext>
     private object? lastSyncId = null;
 
     public virtual EFCoreSyncDataSourceConfigurations<TEntity, TSource, TDestination>? Configurations { get; private set; }
-    public virtual ISyncService<TSource, TDestination> SyncService { get; private set; }
+    public virtual ISyncEngine<TSource, TDestination> SyncService { get; private set; }
 
     public EFCoreSyncDataSource(TDbContext db)
     {
@@ -78,13 +78,13 @@ public class EFCoreSyncDataSource<TEntity, TSource, TDestination, TDbContext>
         dbSet = db.Set<TEntity>();
     }
 
-    public virtual EFCoreSyncDataSource<TEntity, TSource, TDestination, TDbContext> SetSyncService(ISyncService<TSource, TDestination> syncService)
+    public virtual EFCoreSyncDataSource<TEntity, TSource, TDestination, TDbContext> SetSyncService(ISyncEngine<TSource, TDestination> syncService)
     {
         SyncService = syncService;
         return this;
     }
 
-    public virtual ISyncService<TSource, TDestination> Configure(EFCoreSyncDataSourceConfigurations<TEntity, TSource, TDestination> configurations, bool configureSyncService = true)
+    public virtual ISyncEngine<TSource, TDestination> Configure(EFCoreSyncDataSourceConfigurations<TEntity, TSource, TDestination> configurations, bool configureSyncService = true)
     {
         Configurations = configurations;
         var previousBatchStarted = SyncService.BatchStarted;

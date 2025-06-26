@@ -12,7 +12,7 @@ public class CsvHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource,
     StreamReader? streamReader = default!;
     CsvReader? csvReader = default!;
 
-    public ISyncService<TCSV, TDestination> SyncService { get; private set; } = default!;
+    public ISyncEngine<TCSV, TDestination> SyncService { get; private set; } = default!;
 
     public CSVSyncDataSourceConfigurations? Configurations { get; private set; } = default!;
 
@@ -20,7 +20,7 @@ public class CsvHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource,
     {
     }
 
-    public CsvHelperCsvSyncDataSource<TCSV, TDestination> SetSyncService(ISyncService<TCSV, TDestination> syncService)
+    public CsvHelperCsvSyncDataSource<TCSV, TDestination> SetSyncService(ISyncEngine<TCSV, TDestination> syncService)
     {
         this.SyncService = syncService;
         return this;
@@ -35,7 +35,7 @@ public class CsvHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource,
     /// then you may be configure SyncService by your self
     /// </param>
     /// <returns></returns>
-    public ISyncService<TCSV, TDestination> Configure(CSVSyncDataSourceConfigurations configurations, bool configureSyncService = true)
+    public ISyncEngine<TCSV, TDestination> Configure(CSVSyncDataSourceConfigurations configurations, bool configureSyncService = true)
     {
         base.Configure(configurations, configurations.HasHeaderRecord ? [""] : []);
 

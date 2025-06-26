@@ -6,8 +6,8 @@ namespace ShiftSoftware.ADP.SyncAgent.Extensions;
 
 public static class ISyncServiceExtensions
 {
-    public static ISyncService<TSource, TDestination> UseAutoMapper<TSource, TDestination>(
-        this ISyncService<TSource, TDestination> syncService,
+    public static ISyncEngine<TSource, TDestination> UseAutoMapper<TSource, TDestination>(
+        this ISyncEngine<TSource, TDestination> syncService,
         IMapper mapper)
         where TSource : class, new()
         where TDestination : class, new()
@@ -26,8 +26,8 @@ public static class ISyncServiceExtensions
     /// <param name="syncService"></param>
     /// <param name="logger"></param>
     /// <returns></returns>
-    public static ISyncService<TSource, TDestination> AddLogger<TSource, TDestination>(
-        this ISyncService<TSource, TDestination> syncService,
+    public static ISyncEngine<TSource, TDestination> AddLogger<TSource, TDestination>(
+        this ISyncEngine<TSource, TDestination> syncService,
         ILogger logger)
         where TSource : class, new()
         where TDestination : class, new()

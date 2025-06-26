@@ -16,7 +16,7 @@ public interface ISyncDataAdapter<TSource, TDestination, TConfigurations, TSelf>
     /// then you may be configure SyncService by your self
     /// </param>
     /// <returns></returns>
-    public ISyncService<TSource, TDestination> Configure(TConfigurations configurations, bool configureSyncService = true);
+    public ISyncEngine<TSource, TDestination> Configure(TConfigurations configurations, bool configureSyncService = true);
 }
 
 public interface ISyncDataAdapter<TSource, TDestination, TSelf> : IAsyncDisposable
@@ -24,9 +24,9 @@ public interface ISyncDataAdapter<TSource, TDestination, TSelf> : IAsyncDisposab
     where TDestination : class
     where TSelf : ISyncDataAdapter<TSource, TDestination, TSelf>
 {
-    public ISyncService<TSource, TDestination> SyncService { get; }
+    public ISyncEngine<TSource, TDestination> SyncService { get; }
 
-    public TSelf SetSyncService(ISyncService<TSource, TDestination> syncService);
+    public TSelf SetSyncService(ISyncEngine<TSource, TDestination> syncService);
 
     public ValueTask<SyncPreparingResponseAction> Preparing(SyncFunctionInput input);
 

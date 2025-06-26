@@ -24,13 +24,13 @@ public class CosmosSyncDataDestination<T, TCosmosClinet> : CosmosSyncDataDestina
 
     public virtual new CosmosSyncDataDestinationConfigurations<T>? Configurations => (CosmosSyncDataDestinationConfigurations<T>?)base.Configurations;
 
-    public virtual ISyncService<T, T> Configure(CosmosSyncDataDestinationConfigurations<T> configurations, bool configureSyncService = true)
+    public virtual ISyncEngine<T, T> Configure(CosmosSyncDataDestinationConfigurations<T> configurations, bool configureSyncService = true)
     {
         base.Configure(configurations, configureSyncService);
         return base.SyncService;
     }
 
-    public virtual new CosmosSyncDataDestination<T, TCosmosClinet> SetSyncService(ISyncService<T, T> syncService)
+    public virtual new CosmosSyncDataDestination<T, TCosmosClinet> SetSyncService(ISyncEngine<T, T> syncService)
     {
         base.SetSyncService(syncService);
         return this;
@@ -55,13 +55,13 @@ public class CosmosSyncDataDestination<T, TCosmos, TCosmosClinet> : CosmosSyncDa
 
     public virtual new CosmosSyncDataDestinationConfigurations<T, TCosmos>? Configurations => base.Configurations;
 
-    public virtual new ISyncService<T, T> Configure(CosmosSyncDataDestinationConfigurations<T, TCosmos> configurations, bool configureSyncService = true)
+    public virtual new ISyncEngine<T, T> Configure(CosmosSyncDataDestinationConfigurations<T, TCosmos> configurations, bool configureSyncService = true)
     {
         base.Configure(configurations, configureSyncService);
         return base.SyncService;
     }
 
-    public virtual new CosmosSyncDataDestination<T, TCosmos, TCosmosClinet> SetSyncService(ISyncService<T, T> syncService)
+    public virtual new CosmosSyncDataDestination<T, TCosmos, TCosmosClinet> SetSyncService(ISyncEngine<T, T> syncService)
     {
         base.SetSyncService(syncService);
         return this;
@@ -83,7 +83,7 @@ public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosCl
 {
     private readonly CosmosClient cosmosClient;
 
-    public virtual ISyncService<TSource, TDestination> SyncService { get; private set; }
+    public virtual ISyncEngine<TSource, TDestination> SyncService { get; private set; }
     public virtual CosmosSyncDataDestinationConfigurations<TDestination, TCosmos>? Configurations { get; private set; }
 
     private ResiliencePipeline resiliencePipeline;
@@ -98,7 +98,7 @@ public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosCl
             .Build(); // Builds the resilience pipeline
     }
 
-    public virtual CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosClinet> SetSyncService(ISyncService<TSource, TDestination> syncService)
+    public virtual CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosClinet> SetSyncService(ISyncEngine<TSource, TDestination> syncService)
     {
         this.SyncService = syncService;
         return this;
@@ -113,7 +113,7 @@ public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosCl
     /// then you may be configure SyncService by your self
     /// </param>
     /// <returns></returns>
-    public virtual ISyncService<TSource, TDestination> Configure(CosmosSyncDataDestinationConfigurations<TDestination, TCosmos> configurations , bool configureSyncService = true)
+    public virtual ISyncEngine<TSource, TDestination> Configure(CosmosSyncDataDestinationConfigurations<TDestination, TCosmos> configurations , bool configureSyncService = true)
     {
         this.Configurations = configurations;
 

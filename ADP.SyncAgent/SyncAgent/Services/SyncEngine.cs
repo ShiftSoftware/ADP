@@ -4,19 +4,19 @@ using ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
 
 namespace ShiftSoftware.ADP.SyncAgent.Services;
 
-public class SyncService<T> : SyncService<T, T>
+public class SyncEngine<T> : SyncService<T, T>
     where T : class
 {
-    public SyncService() : base()
+    public SyncEngine() : base()
     {
     }
 
-    public SyncService(IServiceProvider services): base(services)
+    public SyncEngine(IServiceProvider services): base(services)
     {
     }
 }
 
-public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestination>
+public class SyncService<TSource, TDestination> : ISyncEngine<TSource, TDestination>
     where TSource : class
     where TDestination : class
 {
@@ -62,7 +62,7 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
         this.services = services;
     }
 
-    public virtual ISyncService<TSource, TDestination> Configure(long? batchSize = null, long maxRetryCount = 0, long operationTimeoutInSeconds = 300, RetryAction defaultRetryAction = RetryAction.RetryAndStopAfterLastRetry)
+    public virtual ISyncEngine<TSource, TDestination> Configure(long? batchSize = null, long maxRetryCount = 0, long operationTimeoutInSeconds = 300, RetryAction defaultRetryAction = RetryAction.RetryAndStopAfterLastRetry)
     {
         this.Configurations = new SyncConfigurations(batchSize, maxRetryCount, operationTimeoutInSeconds,defaultRetryAction);
         return this;
@@ -79,43 +79,43 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
     /// <param name="maxRetryCount"></param>
     /// <param name="operationTimeoutInSeconds"></param>
     /// <returns></returns>
-    public virtual ISyncService<TSource, TDestination> Configure(IEnumerable<SyncActionType> actionExecutionAndOrder, long? batchSize = null, long maxRetryCount = 0, long operationTimeoutInSeconds = 300, RetryAction defaultRetryAction = RetryAction.RetryAndStopAfterLastRetry)
+    public virtual ISyncEngine<TSource, TDestination> Configure(IEnumerable<SyncActionType> actionExecutionAndOrder, long? batchSize = null, long maxRetryCount = 0, long operationTimeoutInSeconds = 300, RetryAction defaultRetryAction = RetryAction.RetryAndStopAfterLastRetry)
     {
         this.Configurations = new SyncConfigurations(batchSize, maxRetryCount, operationTimeoutInSeconds, defaultRetryAction, actionExecutionAndOrder);
         return this;
     }
 
-    public virtual ISyncService<TSource, TDestination> SetupPreparing(Func<SyncFunctionInput, ValueTask<SyncPreparingResponseAction>> preparingFunc)
+    public virtual ISyncEngine<TSource, TDestination> SetupPreparing(Func<SyncFunctionInput, ValueTask<SyncPreparingResponseAction>> preparingFunc)
     {
         this.Preparing = preparingFunc;
         return this;
     }
 
-    public virtual ISyncService<TSource, TDestination> SetupActionStarted(Func<SyncFunctionInput<SyncActionType>, ValueTask<bool>>? actionStartedFunc)
+    public virtual ISyncEngine<TSource, TDestination> SetupActionStarted(Func<SyncFunctionInput<SyncActionType>, ValueTask<bool>>? actionStartedFunc)
     {
         this.ActionStarted = actionStartedFunc;
         return this;
     }
 
-    public virtual ISyncService<TSource, TDestination> SetupSourceTotalItemCount(Func<SyncFunctionInput<SyncActionType>, ValueTask<long?>>? sourceTotalItemCountFunc)
+    public virtual ISyncEngine<TSource, TDestination> SetupSourceTotalItemCount(Func<SyncFunctionInput<SyncActionType>, ValueTask<long?>>? sourceTotalItemCountFunc)
     {
         this.SourceTotalItemCount = sourceTotalItemCountFunc;
         return this;
     }
 
-    public virtual ISyncService<TSource, TDestination> SetupBatchStarted(Func<SyncFunctionInput<SyncActionStatus>, ValueTask<bool>> batchStartedFunc)
+    public virtual ISyncEngine<TSource, TDestination> SetupBatchStarted(Func<SyncFunctionInput<SyncActionStatus>, ValueTask<bool>> batchStartedFunc)
     {
         this.BatchStarted = batchStartedFunc;
         return this;
     }
 
-    public virtual ISyncService<TSource, TDestination> SetupGetSourceBatchItems(Func<SyncFunctionInput<SyncGetBatchDataInput<TSource>>, ValueTask<IEnumerable<TSource?>?>> getSourceBatchItemsFunc)
+    public virtual ISyncEngine<TSource, TDestination> SetupGetSourceBatchItems(Func<SyncFunctionInput<SyncGetBatchDataInput<TSource>>, ValueTask<IEnumerable<TSource?>?>> getSourceBatchItemsFunc)
     {
         this.GetSourceBatchItems = getSourceBatchItemsFunc;
         return this;
     }
 
-    public virtual ISyncService<TSource, TDestination> SetupAdvancedMapping(Func<SyncFunctionInput<SyncMappingInput<TSource, TDestination>>, ValueTask<IEnumerable<TDestination?>?>> mappingFunc)
+    public virtual ISyncEngine<TSource, TDestination> SetupAdvancedMapping(Func<SyncFunctionInput<SyncMappingInput<TSource, TDestination>>, ValueTask<IEnumerable<TDestination?>?>> mappingFunc)
     {
         this.Mapping = mappingFunc;
         return this;
@@ -126,7 +126,7 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
     /// </summary>
     /// <param name="mappingFunc"></param>
     /// <returns></returns>
-    public virtual ISyncService<TSource, TDestination> SetupMapping(Func<IEnumerable<TSource?>?, SyncActionType, ValueTask<IEnumerable<TDestination?>?>> mappingFunc)
+    public virtual ISyncEngine<TSource, TDestination> SetupMapping(Func<IEnumerable<TSource?>?, SyncActionType, ValueTask<IEnumerable<TDestination?>?>> mappingFunc)
     {
         this.Mapping = x =>
         {
@@ -139,13 +139,13 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
         return this;
     }
 
-    public virtual ISyncService<TSource, TDestination> SetupStoreBatchData(Func<SyncFunctionInput<SyncStoreDataInput<TDestination>>, ValueTask<SyncStoreDataResult<TDestination>>> storeBatchDataFunc)
+    public virtual ISyncEngine<TSource, TDestination> SetupStoreBatchData(Func<SyncFunctionInput<SyncStoreDataInput<TDestination>>, ValueTask<SyncStoreDataResult<TDestination>>> storeBatchDataFunc)
     {
         this.StoreBatchData = storeBatchDataFunc;
         return this;
     }
 
-    public virtual ISyncService<TSource, TDestination> SetupBatchRetry(Func<SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>, ValueTask<RetryAction>> batchRetryFunc)
+    public virtual ISyncEngine<TSource, TDestination> SetupBatchRetry(Func<SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>, ValueTask<RetryAction>> batchRetryFunc)
     {
         this.BatchRetry = batchRetryFunc;
         return this;
@@ -159,25 +159,25 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
     /// Return false to retry.
     /// </param>
     /// <returns></returns>
-    public virtual ISyncService<TSource, TDestination> SetupBatchCompleted(Func<SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>, ValueTask<bool>> batchCompletedFunc)
+    public virtual ISyncEngine<TSource, TDestination> SetupBatchCompleted(Func<SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>, ValueTask<bool>> batchCompletedFunc)
     {
         this.BatchCompleted = batchCompletedFunc;
         return this;
     }
 
-    public virtual ISyncService<TSource, TDestination> SetupActionCompleted(Func<SyncFunctionInput<SyncActionCompletedInput>, ValueTask<bool>> actionCompletedFunc)
+    public virtual ISyncEngine<TSource, TDestination> SetupActionCompleted(Func<SyncFunctionInput<SyncActionCompletedInput>, ValueTask<bool>> actionCompletedFunc)
     {
         this.ActionCompleted = actionCompletedFunc;
         return this;
     }
 
-    public virtual ISyncService<TSource, TDestination> SetupFailed(Func<SyncFunctionInput, ValueTask> failedFunc)
+    public virtual ISyncEngine<TSource, TDestination> SetupFailed(Func<SyncFunctionInput, ValueTask> failedFunc)
     {
         this.Failed = failedFunc;
         return this;
     }
 
-    public virtual ISyncService<TSource, TDestination> SetupSucceeded(Func<SyncFunctionInput, ValueTask> succeededFunc)
+    public virtual ISyncEngine<TSource, TDestination> SetupSucceeded(Func<SyncFunctionInput, ValueTask> succeededFunc)
     {
         this.Succeeded = succeededFunc;
         return this;
@@ -452,13 +452,13 @@ public class SyncService<TSource, TDestination> : ISyncService<TSource, TDestina
         return new ValueTask();
     }
 
-    public virtual ISyncService<TSource, TDestination> SetupFinished(Func<SyncFunctionInput, ValueTask> finishedFunc)
+    public virtual ISyncEngine<TSource, TDestination> SetupFinished(Func<SyncFunctionInput, ValueTask> finishedFunc)
     {
         this.Finished = finishedFunc;
         return this;
     }
 
-    public virtual ISyncService<TSource, TDestination> SetDataAddapter<TConfigurations, TImplementer>(ISyncDataAdapter<TSource, TDestination, TConfigurations, TImplementer> dataAdapter, TConfigurations configurations) 
+    public virtual ISyncEngine<TSource, TDestination> SetDataAddapter<TConfigurations, TImplementer>(ISyncDataAdapter<TSource, TDestination, TConfigurations, TImplementer> dataAdapter, TConfigurations configurations) 
         where TImplementer : ISyncDataAdapter<TSource, TDestination, TConfigurations, TImplementer>
     {
 

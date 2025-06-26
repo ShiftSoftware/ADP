@@ -2,7 +2,7 @@
 
 namespace ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
 
-public interface ISyncService<TSource, TDestination> : IAsyncDisposable
+public interface ISyncEngine<TSource, TDestination> : IAsyncDisposable
     where TSource : class
     where TDestination : class
 {
@@ -46,7 +46,7 @@ public interface ISyncService<TSource, TDestination> : IAsyncDisposable
 
     Func<SyncFunctionInput, ValueTask>? Finished { get; }
 
-    ISyncService<TSource, TDestination> Configure(
+    ISyncEngine<TSource, TDestination> Configure(
         long? batchSize = null,
         long maxRetryCount = 0,
         long operationTimeoutInSeconds = 300,
@@ -62,14 +62,14 @@ public interface ISyncService<TSource, TDestination> : IAsyncDisposable
     /// <param name="maxRetryCount"></param>
     /// <param name="operationTimeoutInSeconds"></param>
     /// <returns></returns>
-    public ISyncService<TSource, TDestination> Configure(
+    public ISyncEngine<TSource, TDestination> Configure(
         IEnumerable<SyncActionType> actionExecutionAndOrder,
         long? batchSize = null, 
         long maxRetryCount = 0, 
         long operationTimeoutInSeconds = 300,
         RetryAction defaultRetryAction = RetryAction.RetryAndStopAfterLastRetry);
 
-    ISyncService<TSource, TDestination> SetupPreparing(Func<SyncFunctionInput, ValueTask<SyncPreparingResponseAction>> preparingFunc);
+    ISyncEngine<TSource, TDestination> SetupPreparing(Func<SyncFunctionInput, ValueTask<SyncPreparingResponseAction>> preparingFunc);
 
     /// <summary>
     /// 
@@ -79,9 +79,9 @@ public interface ISyncService<TSource, TDestination> : IAsyncDisposable
     /// or false to stop the proccess.
     /// </param>
     /// <returns></returns>
-    ISyncService<TSource, TDestination> SetupActionStarted(Func<SyncFunctionInput<SyncActionType>, ValueTask<bool>>? actionStartedFunc);
+    ISyncEngine<TSource, TDestination> SetupActionStarted(Func<SyncFunctionInput<SyncActionType>, ValueTask<bool>>? actionStartedFunc);
 
-    ISyncService<TSource, TDestination> SetupSourceTotalItemCount(Func<SyncFunctionInput<SyncActionType>, ValueTask<long?>>? sourceTotalItemCountFunc);
+    ISyncEngine<TSource, TDestination> SetupSourceTotalItemCount(Func<SyncFunctionInput<SyncActionType>, ValueTask<long?>>? sourceTotalItemCountFunc);
 
     /// <summary>
     /// 
@@ -91,22 +91,22 @@ public interface ISyncService<TSource, TDestination> : IAsyncDisposable
     /// Return false to stop the proccess.
     /// </param>
     /// <returns></returns>
-    ISyncService<TSource, TDestination> SetupBatchStarted(Func<SyncFunctionInput<SyncActionStatus>, ValueTask<bool>> batchStartedFunc);
+    ISyncEngine<TSource, TDestination> SetupBatchStarted(Func<SyncFunctionInput<SyncActionStatus>, ValueTask<bool>> batchStartedFunc);
 
-    ISyncService<TSource, TDestination> SetupGetSourceBatchItems(Func<SyncFunctionInput<SyncGetBatchDataInput<TSource>>, ValueTask<IEnumerable<TSource?>?>> getSourceBatchItemsFunc);
+    ISyncEngine<TSource, TDestination> SetupGetSourceBatchItems(Func<SyncFunctionInput<SyncGetBatchDataInput<TSource>>, ValueTask<IEnumerable<TSource?>?>> getSourceBatchItemsFunc);
 
-    ISyncService<TSource, TDestination> SetupAdvancedMapping(Func<SyncFunctionInput<SyncMappingInput<TSource, TDestination>>, ValueTask<IEnumerable<TDestination?>?>> mappingFunc);
+    ISyncEngine<TSource, TDestination> SetupAdvancedMapping(Func<SyncFunctionInput<SyncMappingInput<TSource, TDestination>>, ValueTask<IEnumerable<TDestination?>?>> mappingFunc);
 
     /// <summary>
     /// This is using the advanced mapping too, but for simplify,if the operation is not retyr and previous mapped items not null, it return the previous mapped items., otherwise it will mapp it with this function.
     /// </summary>
     /// <param name="mappingFunc"></param>
     /// <returns></returns>
-    ISyncService<TSource, TDestination> SetupMapping(Func<IEnumerable<TSource?>?, SyncActionType, ValueTask<IEnumerable<TDestination?>?>> mappingFunc);
+    ISyncEngine<TSource, TDestination> SetupMapping(Func<IEnumerable<TSource?>?, SyncActionType, ValueTask<IEnumerable<TDestination?>?>> mappingFunc);
 
-    ISyncService<TSource, TDestination> SetupStoreBatchData(Func<SyncFunctionInput<SyncStoreDataInput<TDestination>>, ValueTask<SyncStoreDataResult<TDestination>>> storeBatchDataFunc);
+    ISyncEngine<TSource, TDestination> SetupStoreBatchData(Func<SyncFunctionInput<SyncStoreDataInput<TDestination>>, ValueTask<SyncStoreDataResult<TDestination>>> storeBatchDataFunc);
 
-    ISyncService<TSource, TDestination> SetupBatchRetry(Func<SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>, ValueTask<RetryAction>> batchRetryFunc);
+    ISyncEngine<TSource, TDestination> SetupBatchRetry(Func<SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>, ValueTask<RetryAction>> batchRetryFunc);
 
     /// <summary>
     /// 
@@ -116,21 +116,21 @@ public interface ISyncService<TSource, TDestination> : IAsyncDisposable
     /// Return false to retry.
     /// </param>
     /// <returns></returns>
-    ISyncService<TSource, TDestination> SetupBatchCompleted(Func<SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>, ValueTask<bool>> batchCompletedFunc);
+    ISyncEngine<TSource, TDestination> SetupBatchCompleted(Func<SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>, ValueTask<bool>> batchCompletedFunc);
 
-    ISyncService<TSource, TDestination> SetupActionCompleted(Func<SyncFunctionInput<SyncActionCompletedInput>, ValueTask<bool>> actionCompletedFunc);
+    ISyncEngine<TSource, TDestination> SetupActionCompleted(Func<SyncFunctionInput<SyncActionCompletedInput>, ValueTask<bool>> actionCompletedFunc);
 
-    ISyncService<TSource, TDestination> SetupFailed(Func<SyncFunctionInput, ValueTask> failedFunc);
+    ISyncEngine<TSource, TDestination> SetupFailed(Func<SyncFunctionInput, ValueTask> failedFunc);
 
-    ISyncService<TSource, TDestination> SetupSucceeded(Func<SyncFunctionInput, ValueTask> succeededFunc);
+    ISyncEngine<TSource, TDestination> SetupSucceeded(Func<SyncFunctionInput, ValueTask> succeededFunc);
 
-    ISyncService<TSource, TDestination> SetupFinished(Func<SyncFunctionInput, ValueTask> finishedFunc);
+    ISyncEngine<TSource, TDestination> SetupFinished(Func<SyncFunctionInput, ValueTask> finishedFunc);
 
     CancellationToken GetCancellationToken();
 
     ValueTask Reset();
 
-    ISyncService<TSource, TDestination> SetDataAddapter<TConfigurations, TDataAdapter>(ISyncDataAdapter<TSource, TDestination, TConfigurations, TDataAdapter> dataAdapter, TConfigurations configurations)
+    ISyncEngine<TSource, TDestination> SetDataAddapter<TConfigurations, TDataAdapter>(ISyncDataAdapter<TSource, TDestination, TConfigurations, TDataAdapter> dataAdapter, TConfigurations configurations)
         where TDataAdapter : ISyncDataAdapter<TSource, TDestination, TConfigurations, TDataAdapter>;
 
     TDataAdapter SetDataAddapter<TDataAdapter>(IServiceProvider services)
