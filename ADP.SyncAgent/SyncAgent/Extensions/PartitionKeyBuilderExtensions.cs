@@ -11,7 +11,7 @@ public static class PartitionKeyBuilderExtensions
             return builder;
 
         if (partitionKeyDetail.Value.type == typeof(string))
-            builder.Add(Convert.ToString(partitionKeyDetail.Value.value));
+            builder.Add(partitionKeyDetail.Value.value is not null ? Convert.ToString(partitionKeyDetail.Value.value) : (string?)null);
         else if (partitionKeyDetail.Value.type.IsNumericType() || partitionKeyDetail.Value.type.IsEnum)
             builder.Add(Convert.ToDouble(partitionKeyDetail.Value.value));
         else if (partitionKeyDetail.Value.type == typeof(bool) || partitionKeyDetail.Value.type == typeof(bool?))
