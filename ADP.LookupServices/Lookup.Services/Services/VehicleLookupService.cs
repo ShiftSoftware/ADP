@@ -725,6 +725,7 @@ public class VehicleLookupService
                 var x = false;
 
                 var modelCodeMatch = modelCodeMatchingEvaluator(item);
+                //var modelCodeMatch = showingInactivatedItems ? false : modelCodeMatchingEvaluator(item);
 
                 //Per vehicle is only applicable for warranty activated (official) items
                 if (

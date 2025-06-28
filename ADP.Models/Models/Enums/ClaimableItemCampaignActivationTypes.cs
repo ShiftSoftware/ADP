@@ -33,7 +33,37 @@ public static class ClaimableItemCampaignActivationRules
                     ClaimableItemCampaignActivationTypes.EveryTrigger,
                     ClaimableItemCampaignActivationTypes.ExtendOnEachTrigger
                 }
-            }
+            },
+            {
+                ClaimableItemCampaignActivationTrigger.OnTaxiCardRegistration,
+                new[]
+                {
+                    ClaimableItemCampaignActivationTypes.FirstTriggerOnly,
+                }
+            },
+            {
+                ClaimableItemCampaignActivationTrigger.OnDynamicSurveyAnswer,
+                new[]
+                {
+                    ClaimableItemCampaignActivationTypes.FirstTriggerOnly,
+                    ClaimableItemCampaignActivationTypes.EveryTrigger,
+                    ClaimableItemCampaignActivationTypes.ExtendOnEachTrigger
+                }
+            },
+            {
+                ClaimableItemCampaignActivationTrigger.OnNewOwnerCeremonyVisit,
+                new[]
+                {
+                    ClaimableItemCampaignActivationTypes.FirstTriggerOnly,
+                }
+            },
+            {
+                ClaimableItemCampaignActivationTrigger.OnUniversityGraduation,
+                new[]
+                {
+                    ClaimableItemCampaignActivationTypes.FirstTriggerOnly,
+                }
+            },
         };
 
     public static ClaimableItemCampaignActivationTypes[] GetValidTypes(ClaimableItemCampaignActivationTrigger trigger) =>
