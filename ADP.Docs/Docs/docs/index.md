@@ -24,9 +24,9 @@ In addition to links to the Core ADP Components, the Hub provides the following 
 ## Core Components of ADP
 The ADP consists of the following core components distributed as microservices:
 
-- [Identity System 	↗](components/identity.html)
-- [Vehicle Database 	↗](components/vehicles.html)
-- [Parts Database 	↗](components/parts.html)
-- [Service Database 	↗](components/services.html)
-- [Support Ticket System 	↗](components/tickets.html)
-- [Customer Database 	↗](components/customers.html)
+- [Identity System 	↗](components/identity.md)
+- [Vehicle Database 	↗](components/vehicles.md)
+- [Parts Database 	↗](components/parts.md)
+- [Service Database 	↗](components/services/intro.md)
+- [Support Ticket System 	↗](components/tickets.md)
+- [Customer Database 	↗](components/customers.md)

@@ -30,12 +30,13 @@ nav:
                 - Authorized (Official):      components/vehicle-information/authorized.md
                 - Warranty:                   components/vehicle-information/warranty.md
                 - Safety Recalls:             components/vehicle-information/safety-recalls.md
-                - Claimable Items:            components/vehicle-information/claimable-items.md
                 - Service History:            components/vehicle-information/service-history.md
+                - Item Claim:                 components/vehicle-information/item-claim.md
         - Services:        
-            - Service Database:     components/services.md
+            - Service Database:     components/services/intro.md
             - Warranty System :     
-                - Intro:                    components/warranty/warranty.md
+                - Intro:                    components/services/warranty/warranty.md
+            - Claimable Items:              components/services/claimable-items.md
         - CRM:
             - Support Ticket System:    components/tickets.md
             - Customer Database:        components/customers.md
