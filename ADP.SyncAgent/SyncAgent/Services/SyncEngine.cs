@@ -4,7 +4,7 @@ using ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
 
 namespace ShiftSoftware.ADP.SyncAgent.Services;
 
-public class SyncEngine<T> : SyncService<T, T>
+public class SyncEngine<T> : SyncEngine<T, T>
     where T : class
 {
     public SyncEngine() : base()
@@ -16,7 +16,7 @@ public class SyncEngine<T> : SyncService<T, T>
     }
 }
 
-public class SyncService<TSource, TDestination> : ISyncEngine<TSource, TDestination>
+public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestination>
     where TSource : class
     where TDestination : class
 {
@@ -52,12 +52,12 @@ public class SyncService<TSource, TDestination> : ISyncEngine<TSource, TDestinat
 
     private readonly IServiceProvider services;
 
-    public SyncService()
+    public SyncEngine()
     {
         this.Configure();
     }
 
-    public SyncService(IServiceProvider services) : this()
+    public SyncEngine(IServiceProvider services) : this()
     {
         this.services = services;
     }
