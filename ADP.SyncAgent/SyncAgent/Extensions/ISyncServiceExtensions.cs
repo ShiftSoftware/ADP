@@ -173,6 +173,9 @@ public static class ISyncServiceExtensions
                 logger.LogError($"Batch failed we do stop for {x.Input.Status.ActionType}, step {x.Input.Status.CurrentStep + 1}" +
                     (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}" : ""));
 
+            if (x.Input?.Exception is not null)
+                logger.LogError(x.Input.Exception, "The sync operation is failed with exception.");
+
             return result;
         });
 
