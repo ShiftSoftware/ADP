@@ -42,7 +42,7 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
 
     public virtual Func<SyncFunctionInput<SyncMappingInput<TSource, TDestination>>, ValueTask<IEnumerable<TDestination?>?>>? Mapping { get; private set; }
 
-    public virtual Func<SyncFunctionInput, ValueTask>? Failed { get; private set; }
+    public virtual Func<SyncFunctionInput<Exception?>, ValueTask>? Failed { get; private set; }
 
     public virtual Func<SyncFunctionInput, ValueTask>? Succeeded { get; private set; }
 
@@ -171,7 +171,7 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
         return this;
     }
 
-    public virtual ISyncEngine<TSource, TDestination> SetupFailed(Func<SyncFunctionInput, ValueTask> failedFunc)
+    public virtual ISyncEngine<TSource, TDestination> SetupFailed(Func<SyncFunctionInput<Exception?>, ValueTask> failedFunc)
     {
         this.Failed = failedFunc;
         return this;
@@ -217,12 +217,12 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
             if ((result || preparingResult == SyncPreparingResponseAction.Skiped) && this.Succeeded is not null)
                 await this.Succeeded!(new(GetCancellationToken()));
             else if (!result && this.Failed is not null)
-                await this.Failed!(new(GetCancellationToken()));
+                await this.Failed!(new(GetCancellationToken(), null));
         }
         catch (Exception ex)
         {
             if(this.Failed is not null)
-                await this.Failed!(new(GetCancellationToken()));
+                await this.Failed!(new(GetCancellationToken(), ex));
 
             result = false;
         }
@@ -264,7 +264,7 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
 
                 while (true)
                 {
-                    await CheckForCancellation();
+                    CheckForCancellation();
 
                     // If provide with total item count and the last step is completed, then stop the operation
                     if (totalSteps != null && currentStep >= totalSteps)
@@ -319,7 +319,7 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
                         destinationItems = null;
                         storeResult = null;
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
                         RetryAction retryResult = this.Configurations.DefaultRetryAction;
                         if (this.BatchRetry is not null)
@@ -419,13 +419,10 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
         return this.cancellationTokenSource!.Token;
     }
 
-    private async Task CheckForCancellation()
+    private void CheckForCancellation()
     {
         if (GetCancellationToken().IsCancellationRequested)
-        {
-            await this.Failed!(new(GetCancellationToken()));
             throw new OperationCanceledException();
-        }
     }
 
     public virtual ValueTask Reset()

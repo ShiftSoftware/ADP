@@ -40,7 +40,7 @@ public interface ISyncEngine<TSource, TDestination> : IAsyncDisposable
     /// </summary>
     Func<SyncFunctionInput<SyncActionCompletedInput>, ValueTask<bool>>? ActionCompleted { get; }
 
-    Func<SyncFunctionInput, ValueTask>? Failed { get; }
+    Func<SyncFunctionInput<Exception?>, ValueTask>? Failed { get; }
 
     Func<SyncFunctionInput, ValueTask>? Succeeded { get; }
 
@@ -120,7 +120,7 @@ public interface ISyncEngine<TSource, TDestination> : IAsyncDisposable
 
     ISyncEngine<TSource, TDestination> SetupActionCompleted(Func<SyncFunctionInput<SyncActionCompletedInput>, ValueTask<bool>> actionCompletedFunc);
 
-    ISyncEngine<TSource, TDestination> SetupFailed(Func<SyncFunctionInput, ValueTask> failedFunc);
+    ISyncEngine<TSource, TDestination> SetupFailed(Func<SyncFunctionInput<Exception?>, ValueTask> failedFunc);
 
     ISyncEngine<TSource, TDestination> SetupSucceeded(Func<SyncFunctionInput, ValueTask> succeededFunc);
 

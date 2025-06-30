@@ -215,10 +215,12 @@ public static class ISyncServiceExtensions
         var previousFailed = syncService.Failed;
         syncService.SetupFailed ( async (x) =>
         {
-            if(previousFailed is not null)
+            if (previousFailed is not null)
                 await previousFailed(x);
 
             logger.LogError("The sync operation is failed.");
+            if (x.Input is not null)
+                logger.LogError(x.Input, "The sync operation is failed with exception.");
         });
 
         var previousSucceeded = syncService.Succeeded;
