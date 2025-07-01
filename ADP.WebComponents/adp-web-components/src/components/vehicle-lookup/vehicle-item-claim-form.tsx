@@ -303,7 +303,13 @@ export class VehicleItemClaimForm {
                       },
                     )}
                   >
-                    <input type="checkbox" class="peer sr-only" disabled={this.isLoading} onChange={this.onConfirmCheckboxChange('canceledItems')} />
+                    <input
+                      type="checkbox"
+                      class="peer sr-only"
+                      disabled={this.isLoading}
+                      checked={!!this.confirmationStates.canceledItems}
+                      onChange={this.onConfirmCheckboxChange('canceledItems')}
+                    />
                     <div class="size-[20px] rounded border border-[#ffb74d] transition duration-300 text-transparent peer-checked:text-white peer-checked:bg-[#ff9100] peer-checked:border-[#ff9100] flex items-center justify-center">
                       <CheckIcon class="size-[18px]" />
                     </div>
@@ -331,7 +337,13 @@ export class VehicleItemClaimForm {
                       },
                     )}
                   >
-                    <input type="checkbox" class="peer sr-only" disabled={this.isLoading} onChange={this.onConfirmCheckboxChange('unInvoicedByBrokerName')} />
+                    <input
+                      type="checkbox"
+                      class="peer sr-only"
+                      disabled={this.isLoading}
+                      checked={!!this.confirmationStates.unInvoicedByBrokerName}
+                      onChange={this.onConfirmCheckboxChange('unInvoicedByBrokerName')}
+                    />
                     <div class="size-[20px] rounded border border-[#ffb74d] transition duration-300 text-transparent peer-checked:text-white peer-checked:bg-[#ff9100] peer-checked:border-[#ff9100] flex items-center justify-center">
                       <CheckIcon class="size-[18px]" />
                     </div>
