@@ -40,7 +40,7 @@ export const MaterialCard: FunctionalComponent<MaterialCardProps> = (props, chil
 
 type MaterialCardChildrenProps = {
   class?: string;
-  hidden: boolean;
+  hidden?: boolean;
 };
 
 export const MaterialCardChildren: FunctionalComponent<MaterialCardChildrenProps> = (props, children) => {
