@@ -13,9 +13,8 @@ import { VehiclePaintThickness } from './vehicle-paint-thickness';
 import { VehicleServiceHistory } from './vehicle-service-history';
 import { VehicleWarrantyDetails } from './vehicle-warranty-details';
 
-import { VehicleInfoLayout } from '../../features/vehicle-info-layout/vehicle-info-layout';
-
-import { ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, SharedLocales, sharedLocalesSchema } from '~features/multi-lingual';
+import { VehicleInfoLayout } from '~features/vehicle-info-layout/vehicle-info-layout';
+import { ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, SharedLocales, sharedLocalesSchema } from '~features/multi-lingual';
 
 const componentTags = {
   vehicleAccessories: 'vehicle-accessories',
@@ -42,20 +41,39 @@ export type ActiveElement = (typeof componentTags)[keyof typeof componentTags] |
   tag: 'vehicle-lookup',
   styleUrl: 'vehicle-lookup.css',
 })
-export class VehicleLookup {
+export class VehicleLookup implements MultiLingual {
+  // ====== Start Localization
+
+  @Prop() language: LanguageKeys = 'en';
+
+  @State() locale: SharedLocales = sharedLocalesSchema.getDefault();
+
+  async componentWillLoad() {
+    await this.changeLanguage(this.language);
+  }
+
+  @Watch('language')
+  async changeLanguage(newLanguage: LanguageKeys) {
+    const localeResponses = await Promise.all([getLocaleLanguage(newLanguage, 'vehicleLookup', vehicleLookupWrapperSchema), getSharedLocal(newLanguage)]);
+    this.locale = localeResponses[1];
+  }
+
+  // ====== End Localization
+
+  // ====== Wrapper Logic
+
   @Prop() activeElement?: ActiveElement = '';
 
   @Prop() baseUrl: string = '';
   @Prop() isDev: boolean = false;
   @Prop() queryString: string = '';
-  @Prop() language: LanguageKeys = 'en';
   @Prop() childrenProps?: string | Object;
 
-  @Prop() errorStateListener?: (newError: string) => void;
   @Prop() blazorErrorStateListener = '';
+  @Prop() errorStateListener?: (newError: string) => void;
 
-  @Prop() loadingStateChanged?: (isLoading: boolean) => void;
   @Prop() blazorOnLoadingStateChange = '';
+  @Prop() loadingStateChanged?: (isLoading: boolean) => void;
 
   @Prop() dynamicClaimActivate?: (vehicleInformation: VehicleLookupDTO) => void;
   @Prop() blazorDynamicClaimActivate = '';
@@ -67,21 +85,9 @@ export class VehicleLookup {
   @State() isLoading: boolean = false;
   @State() blazorRef?: DotNetObjectReference;
 
-  @State() sharedLocales: SharedLocales = sharedLocalesSchema.getDefault();
-
   @Element() el: HTMLElement;
 
   private componentsList: ComponentMap;
-
-  async componentWillLoad() {
-    await this.changeLanguage(this.language);
-  }
-
-  @Watch('language')
-  async changeLanguage(newLanguage: LanguageKeys) {
-    const localeResponses = await Promise.all([getLocaleLanguage(newLanguage, 'vehicleLookup', vehicleLookupWrapperSchema), getSharedLocal(newLanguage)]);
-    this.sharedLocales = localeResponses[1];
-  }
 
   async componentDidLoad() {
     const vehicleAccessories = this.el.getElementsByTagName('vehicle-accessories')[0] as unknown as VehicleAccessories;
@@ -165,9 +171,9 @@ export class VehicleLookup {
 
     if (!activeElement) return;
 
-    if (vin == '') return (this.wrapperErrorState = this.sharedLocales.errors.vinNumberRequired);
+    if (vin == '') return (this.wrapperErrorState = this.locale.errors.vinNumberRequired);
 
-    if (!validateVin(vin)) return (this.wrapperErrorState = this.sharedLocales.errors.invalidVin);
+    if (!validateVin(vin)) return (this.wrapperErrorState = this.locale.errors.invalidVin);
 
     activeElement.fetchData(vin, headers);
   }
@@ -208,7 +214,7 @@ export class VehicleLookup {
           language={this.language}
           query-string={this.queryString}
           {...props[componentTags.vehicleSpecification]}
-        ></vehicle-specification>
+        />
       ),
       'vehicle-accessories': (
         <vehicle-accessories
@@ -218,7 +224,7 @@ export class VehicleLookup {
           language={this.language}
           query-string={this.queryString}
           {...props[componentTags.vehicleAccessories]}
-        ></vehicle-accessories>
+        />
       ),
       'vehicle-warranty-details': (
         <vehicle-warranty-details
@@ -242,7 +248,7 @@ export class VehicleLookup {
           language={this.language}
           query-string={this.queryString}
           {...props[componentTags.vehicleServiceHistory]}
-        ></vehicle-service-history>
+        />
       ),
       'vehicle-paint-thickness': (
         <vehicle-paint-thickness
@@ -252,7 +258,7 @@ export class VehicleLookup {
           language={this.language}
           query-string={this.queryString}
           {...props[componentTags.vehiclePaintThickness]}
-        ></vehicle-paint-thickness>
+        />
       ),
       'vehicle-claimable-items': (
         <vehicle-claimable-items
@@ -262,7 +268,7 @@ export class VehicleLookup {
           language={this.language}
           query-string={this.queryString}
           {...props[componentTags.vehicleClaimableItems]}
-        ></vehicle-claimable-items>
+        />
       ),
     };
 
@@ -272,8 +278,8 @@ export class VehicleLookup {
           vin={this.currentVin}
           isError={this.isError}
           isLoading={this.isLoading}
-          direction={this.sharedLocales.direction}
-          errorMessage={this.sharedLocales.errors[this.errorKey] || this.sharedLocales.errors.wildCard}
+          direction={this.locale.direction}
+          errorMessage={this.locale.errors[this.errorKey] || this.locale.errors.wildCard}
         >
           <shift-tab-content components={componentList} activeComponent={this.activeElement}></shift-tab-content>
         </VehicleInfoLayout>

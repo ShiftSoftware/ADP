@@ -30,6 +30,7 @@
 
     <script nomodule src="/build/shift-components.js"></script>
     <script type="module" src="/build/shift-components.esm.js"></script>
+    <script src="./mock-data.js"></script>
 
     <!-- <script type="module" src="../../../dist/shift-components/shift-components.esm.js"></script> -->
 
@@ -60,6 +61,43 @@
         background: #e0e0e0;
         opacity: 0.5;
         pointer-events: none;
+      }
+
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 34px;
+      }
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        inset: 0;
+        background-color: #ccc;
+        transition: 0.4s;
+        border-radius: 34px;
+      }
+      .slider::before {
+        position: absolute;
+        content: '';
+        height: 26px;
+        width: 26px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: 0.4s;
+        border-radius: 50%;
+      }
+      input:checked + .slider {
+        background-color: #4caf50;
+      }
+      input:checked + .slider::before {
+        transform: translateX(26px);
       }
     </style>
   </head>
@@ -129,6 +167,20 @@
             }
           </style>
 
+          <div class="button-container button-container-part-numbers">
+            <div style="display: flex; align-items: center; gap: 16px">
+              <label for="toggleSwitch">is development</label>
+              <label class="switch">
+                <input type="checkbox" id="toggleSwitch" />
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <button class="sample-button" onclick="searchStaticVin()">reload</button>
+            <button class="sample-button" onclick="searchStaticVin('')">Empty (close)</button>
+            <button class="sample-button" onclick="searchStaticVin('error')">Error</button>
+          </div>
+
           <div class="well" style="background: white; margin-top: 30px; border-radius: 10px">
             <!-- Nav tabs -->
             <ul class="nav nav-tabs" role="tablist" id="vehicle-info-tab" style="display: flex; justify-content: center; border-bottom: none">
@@ -167,6 +219,16 @@
       const spinnerIcon = document.getElementById('spinner-icon');
       const errorMessage = document.getElementsByClassName('error-message')[0];
 
+      const container = document.querySelector('.button-container-part-numbers');
+
+      Object.keys(mockData).forEach(vin => {
+        const button = document.createElement('button');
+        button.className = 'sample-button';
+        button.textContent = vin;
+        button.onclick = () => searchStaticVin(vin);
+        container.appendChild(button);
+      });
+
       const input = document.getElementById('vinInput');
 
       function updateLang(newLang) {
@@ -179,6 +241,19 @@
 
       function fetchPartNumber(vin) {
         partLookup.fetchPartNumber(vin || input.value);
+      }
+
+      const toggle = document.getElementById('toggleSwitch');
+      let isDev = false;
+
+      toggle.addEventListener('change', function () {
+        isDev = this.checked;
+        partLookup.isDev = isDev;
+      });
+
+      function searchStaticVin(vin) {
+        if (!isDev) partLookup.fetchVin(vin, { headers: 'headers-value' });
+        else partLookup.handleLoadData(mockData[vin], null);
       }
 
       document.addEventListener('DOMContentLoaded', async function () {

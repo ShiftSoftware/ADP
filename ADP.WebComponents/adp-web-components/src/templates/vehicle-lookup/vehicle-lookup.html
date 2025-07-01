@@ -241,6 +241,10 @@
         vehicleLookup.activeElement = newIndex;
       }
 
+      function fetchVin() {
+        vehicleLookup.fetchVin(input.value, { headers: 'headers-value' });
+      }
+
       const toggle = document.getElementById('toggleSwitch');
       let isDev = false;
 
@@ -248,10 +252,6 @@
         isDev = this.checked;
         vehicleLookup.isDev = isDev;
       });
-
-      function fetchVin() {
-        vehicleLookup.fetchVin(input.value, { headers: 'headers-value' });
-      }
 
       function searchStaticVin(vin) {
         if (!isDev) vehicleLookup.fetchVin(vin, { headers: 'headers-value' });

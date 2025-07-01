@@ -141,7 +141,7 @@ export class ManufacturerLookup implements MultiLingual, VehicleInfoLayoutInterf
                       {values
                         .filter(x => x.body)
                         .map(x => (
-                          <span class="inline-flex items-center bg-red-50 text-red-800 text-sm font-medium px-3 text-[16px] py-1 me-1 mt-2 rounded-lg border border-red-300">
+                          <span class="inline-flex items-center bg-red-50 text-red-800 font-medium px-3 text-[16px] py-1 me-1 mt-2 rounded-lg border border-red-300">
                             {x.header && <span class="font-semibold">{x.header}:</span>}
                             <span class="ml-1">{x.body}</span>
                           </span>
