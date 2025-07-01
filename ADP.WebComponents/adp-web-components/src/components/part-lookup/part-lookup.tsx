@@ -186,7 +186,7 @@ export class PartLookup implements MultiLingual {
       <Host>
         <VehicleInfoLayout
           isError={this.isError}
-          vin={this.header}
+          header={this.header}
           isLoading={this.isLoading}
           direction={this.locale.direction}
           errorMessage={this.locale.errors[this.errorKey] || this.locale.errors.wildCard}

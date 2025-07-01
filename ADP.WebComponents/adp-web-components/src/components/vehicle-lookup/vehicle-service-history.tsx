@@ -124,9 +124,9 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
       <Host>
         <VehicleInfoLayout
           isError={this.isError}
-          isLoading={this.isLoading}
           coreOnly={this.coreOnly}
-          vin={this.vehicleLookup?.vin}
+          isLoading={this.isLoading}
+          header={this.vehicleLookup?.vin}
           direction={this.locale.sharedLocales.direction}
           errorMessage={this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard}
         >

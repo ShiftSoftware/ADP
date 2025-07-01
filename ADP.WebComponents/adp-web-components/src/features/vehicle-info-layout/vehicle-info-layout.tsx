@@ -3,7 +3,7 @@ import { FunctionalComponent, h } from '@stencil/core';
 import cn from '~lib/cn';
 
 type VehicleInfoLayoutProps = {
-  vin: string;
+  header: string;
   isError: boolean;
   direction: string;
   coreOnly?: boolean;
@@ -23,7 +23,7 @@ export const VehicleInfoLayout: FunctionalComponent<VehicleInfoLayoutProps> = (p
               {props.errorMessage}
             </span>
           ) : (
-            props.vin
+            props.header
           )}
         </strong>
       </div>

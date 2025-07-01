@@ -128,7 +128,7 @@ export class ManufacturerLookup implements MultiLingual, VehicleInfoLayoutInterf
           isError={this.isError}
           coreOnly={this.coreOnly}
           isLoading={this.isLoading}
-          vin={this.partLookup?.partNumber}
+          header={this.partLookup?.partNumber}
           direction={this.locale.sharedLocales.direction}
           errorMessage={this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard}
         >

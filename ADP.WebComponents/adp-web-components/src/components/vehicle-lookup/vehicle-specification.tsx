@@ -110,7 +110,7 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
           isError={this.isError}
           coreOnly={this.coreOnly}
           isLoading={this.isLoading}
-          vin={this.vehicleLookup?.vin}
+          header={this.vehicleLookup?.vin}
           direction={this.locale.sharedLocales.direction}
           errorMessage={this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard}
         >
