@@ -89,6 +89,8 @@ export class DistributorLookup implements MultiLingual, VehicleInfoLayoutInterfa
 
   // ====== End Part Lookup Component Shared Logic
 
+  // ===== Start Component Logic
+
   @Prop() hiddenFields?: string = '';
   @Prop() localizationName?: string = '';
 

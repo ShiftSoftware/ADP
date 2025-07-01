@@ -20,6 +20,8 @@ export class InformationTable {
   @Prop() rows: object[] = [];
   @Prop() templateRow: object = {};
   @Prop() isLoading: boolean = false;
+  @Prop() showHeader: boolean = true;
+  @Prop() customSkeleton: boolean = false;
   @Prop() headers: InformationTableColumn[];
 
   @State() tableRowHeight: number | 'auto' = 'auto';
@@ -43,7 +45,7 @@ export class InformationTable {
           style={{ width: `${width}px`, ...styles }}
           class={cn('px-[16px] py-[16px]', { 'text-center': centeredHorizontally, 'my-auto': centeredVertically })}
         >
-          <div class="shift-skeleton">
+          <div class={cn({ 'shift-skeleton': !this.customSkeleton })}>
             {(data[key] === null || data[key] === undefined) && <div>&nbsp;</div>}
             {(data[key] !== null || data[key] !== undefined) && (typeof data[key] === 'string' || typeof data[key] === 'number') && data[key]}
             {(data[key] !== null || data[key] !== undefined) && typeof data[key] === 'function' && data[key]()}
@@ -55,17 +57,19 @@ export class InformationTable {
 
   render() {
     return (
-      <div class={cn('mx-auto w-fit', { loading: this.isLoading })}>
-        <div class="flex">
-          {this.headers.map(({ label, width, centeredHorizontally = true, styles = {} }, idx) => (
-            <div key={label + idx} style={{ width: `${width}px`, ...styles }} class={cn('py-[16px] px-[16px] font-semibold border-b', { 'text-center': centeredHorizontally })}>
-              {label}
-            </div>
-          ))}
-        </div>
+      <div class={cn('information-table-wrapper mx-auto w-fit', { loading: this.isLoading })}>
+        {this.showHeader && (
+          <div class="flex">
+            {this.headers.map(({ label, width, centeredHorizontally = true, styles = {} }, idx) => (
+              <div key={label + idx} style={{ width: `${width}px`, ...styles }} class={cn('py-[16px] px-[16px] font-semibold border-b', { 'text-center': centeredHorizontally })}>
+                {label}
+              </div>
+            ))}
+          </div>
+        )}
         <flexible-container height={this.tableRowHeight}>
-          {!this.rows.length && this.renderRow(this.templateRow)}
-          {!!this.rows.length && this.rows.map(row => this.renderRow(row))}
+          {!this.rows?.length && this.renderRow(this.templateRow)}
+          {!!this.rows?.length && this.rows.map(row => this.renderRow(row))}
         </flexible-container>
       </div>
     );

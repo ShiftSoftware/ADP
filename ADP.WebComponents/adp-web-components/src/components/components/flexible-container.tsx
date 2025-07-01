@@ -1,7 +1,7 @@
 import { Component, Element, Prop, Watch, State, h, Method } from '@stencil/core';
-import childrenWithTag from '~lib/children-with-tag';
 
 import cn from '~lib/cn';
+import { parentsWithTag } from '~lib/parents-with-tag';
 
 @Component({
   shadow: false,
@@ -20,29 +20,20 @@ export class FlexibleContainer {
   container: HTMLDivElement;
   @Element() el: HTMLElement;
 
-  @State() initialTransitionDone: boolean = true;
   @State() childrenAnimatingList: FlexibleContainer[] = [];
 
   private resizeListener: () => void;
 
   private mutationObserver: MutationObserver;
 
-  private parentListeners: FlexibleContainer[] = [];
-
+  private animationTimeoutRef: ReturnType<typeof setTimeout>;
   private ChildUpdatesActionTimeout: ReturnType<typeof setTimeout>;
 
-  @Method()
-  subscribeAsParent(parent: FlexibleContainer) {
-    this.parentListeners.push(parent);
-  }
+  private initialStyle: any;
 
   async componentDidLoad() {
     this.container = this.el.querySelector('.flexible-container');
     this.content = this.el.querySelector('.flexible-container-content');
-
-    const flexibleChildren = childrenWithTag<FlexibleContainer>(this.el, 'flexible-container');
-
-    flexibleChildren.forEach(child => child.subscribeAsParent(this));
 
     const mustUpdate = () => this.handleChildUpdates();
 
@@ -61,10 +52,10 @@ export class FlexibleContainer {
 
     window.addEventListener('resize', this.resizeListener);
 
-    setTimeout(() => {
-      this.initialTransitionDone = false;
-      this.startTransition();
-    }, 200);
+    if (this.isOpened)
+      setTimeout(() => {
+        this.startTransition();
+      }, 200);
   }
 
   async disconnectedCallback() {
@@ -73,9 +64,32 @@ export class FlexibleContainer {
   }
 
   private startTransition = (staticHeight?: number) => {
-    if (staticHeight) return (this.container.style.height = `${staticHeight}px`);
+    if (staticHeight !== -1) {
+      const parents = parentsWithTag<FlexibleContainer>(this.el, 'flexible-container');
+
+      parents.forEach(parent => {
+        parent.isOpened && parent.addChildrenAnimation(this);
+      });
+
+      clearTimeout(this.animationTimeoutRef);
+
+      this.animationTimeoutRef = setTimeout(() => {
+        parents.forEach(parent => {
+          parent.onAnimationPlayChanges(false);
+          parent.removeChildrenAnimation(this);
+        });
+      }, 510);
+    }
+
+    if (!this.isOpened) {
+      this.container.style.height = '0px';
+      this.container.style.opacity = '0.1';
+      return;
+    }
+
+    this.container.style.opacity = '1';
+    if (staticHeight && staticHeight !== -1) return (this.container.style.height = `${staticHeight}px`);
     if (this.height !== 'auto') return;
-    if (!this.isOpened) this.container.style.height = '0px';
     else this.container.style.height = `${this.content.clientHeight}px`;
   };
 
@@ -97,6 +111,7 @@ export class FlexibleContainer {
     else if (typeof newHeight === 'number') this.handleChildUpdates(newHeight);
   }
 
+  @Method()
   @Watch('stopAnimation')
   async onAnimationPlayChanges(isAnimationStopped: boolean) {
     if (!isAnimationStopped) this.container.style.height = `${this.content.clientHeight}px`;
@@ -112,29 +127,15 @@ export class FlexibleContainer {
     this.childrenAnimatingList = this.childrenAnimatingList.filter(x => x !== child);
   }
 
-  startTransitionAnimation = () => {
-    if (!this.initialTransitionDone) {
-      this.initialTransitionDone = true;
-      return;
-    }
-
-    this.parentListeners.forEach(parent => parent.addChildrenAnimation(this));
-  };
-  stopTransitionAnimation = () => {
-    this.parentListeners.forEach(parent => {
-      parent.onAnimationPlayChanges(false);
-      parent.removeChildrenAnimation(this);
-    });
-  };
-
   render() {
+    if (!this.initialStyle) this.initialStyle = !this.isOpened ? { height: '0px' } : { height: 'auto' };
+
     return (
       <div
-        onTransitionEnd={this.stopTransitionAnimation}
-        onTransitionStart={this.startTransitionAnimation}
+        style={this.initialStyle}
         class={cn(
           'flexible-container w-full min-w-full transition-all overflow-hidden duration-500',
-          { 'h-0 opacity-0': !this.isOpened, '!h-auto !duration-0 !transition-none': this.stopAnimation || !!this.childrenAnimatingList.length },
+          { '!h-auto !duration-0 !transition-none': this.stopAnimation || !!this.childrenAnimatingList.length },
           this.containerClasses,
         )}
       >
