@@ -121,9 +121,6 @@ export class DeadStockLookup implements MultiLingual, VehicleInfoLayoutInterface
   };
 
   render() {
-    // @ts-ignore
-    window.ss = this;
-
     return (
       <Host>
         <VehicleInfoLayout
