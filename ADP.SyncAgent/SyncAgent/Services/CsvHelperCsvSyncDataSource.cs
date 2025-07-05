@@ -31,8 +31,8 @@ public class CsvHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource,
     /// </summary>
     /// <param name="configurations"></param>
     /// <param name="configureSyncService">
-    /// If set false just configure DataAdapter and skip the configuration of the SyncService, 
-    /// then you may be configure SyncService by your self
+    /// If set false just configure DataAdapter and skip the configuration of the SyncEngine, 
+    /// then you may be configure SyncEngine by your self
     /// </param>
     /// <returns></returns>
     public ISyncEngine<TCSV, TDestination> Configure(CSVSyncDataSourceConfigurations configurations, bool configureSyncService = true)

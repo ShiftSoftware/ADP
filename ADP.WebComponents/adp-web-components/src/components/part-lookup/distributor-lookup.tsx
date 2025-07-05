@@ -1,45 +1,29 @@
-import { InferType } from 'yup';
 import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
 import cn from '~lib/cn';
 
-import { AppStates, MockJson } from '~types/components';
+import { InformationTableColumn } from '../components/information-table';
+import { MaterialCard, MaterialCardChildren } from '../components/material-card';
+
 import { PartLookupDTO } from '~types/generated/part/part-lookup-dto';
 
-import { getPartInformation, PartInformationInterface } from '~api/partInformation';
 import distributerSchema from '~locales/partLookup/distributor/type';
-import { ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, SharedLocales, sharedLocalesSchema } from '~features/multi-lingual';
 
-let mockData: MockJson<PartLookupDTO> = {};
+import { VehicleInfoLayout, VehicleInfoLayoutInterface } from '~features/vehicle-info-layout';
+import { PartLookupComponent, PartLookupMock, setPartLookupData, setPartLookupErrorState } from '~features/part-lookup-components';
+import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, sharedLocalesSchema } from '~features/multi-lingual';
 
 @Component({
   shadow: true,
   tag: 'distributor-lookup',
   styleUrl: 'distributor-lookup.css',
 })
-export class DistributorLookup implements PartInformationInterface {
-  @Prop() baseUrl: string = '';
-  @Prop() isDev: boolean = false;
-  @Prop() queryString: string = '';
-  @Prop() hiddenFields?: string = '';
+export class DistributorLookup implements MultiLingual, VehicleInfoLayoutInterface, PartLookupComponent {
+  // ====== Start Localization
+
   @Prop() language: LanguageKeys = 'en';
-  @Prop() localizationName?: string = '';
-  @Prop() errorCallback: (errorMessage: string) => void;
-  @Prop() loadingStateChange?: (isLoading: boolean) => void;
-  @Prop() loadedResponse?: (response: PartLookupDTO) => void;
 
-  @State() state: AppStates = 'idle';
-  @State() errorMessage?: ErrorKeys = null;
-  @State() partInformation?: PartLookupDTO;
-  @State() externalPartNumber?: string = null;
-
-  @State() sharedLocales: SharedLocales = sharedLocalesSchema.getDefault();
-  @State() locale: InferType<typeof distributerSchema> = distributerSchema.getDefault();
-
-  abortController: AbortController;
-  networkTimeoutRef: ReturnType<typeof setTimeout>;
-
-  @Element() el: HTMLElement;
+  @State() locale: ComponentLocale<typeof distributerSchema> = { sharedLocales: sharedLocalesSchema.getDefault(), ...distributerSchema.getDefault() };
 
   async componentWillLoad() {
     await this.changeLanguage(this.language);
@@ -47,229 +31,182 @@ export class DistributorLookup implements PartInformationInterface {
 
   @Watch('language')
   async changeLanguage(newLanguage: LanguageKeys) {
-    const localeResponses = await Promise.all([getLocaleLanguage(newLanguage, 'partLookup.distributor', distributerSchema), getSharedLocal(newLanguage)]);
-    this.locale = localeResponses[0];
-    this.sharedLocales = localeResponses[1];
+    const [sharedLocales, locale] = await Promise.all([getSharedLocal(newLanguage), getLocaleLanguage(newLanguage, 'partLookup.distributor', distributerSchema)]);
+    this.locale = { sharedLocales, ...locale };
   }
 
-  private handleSettingData(response: PartLookupDTO) {
-    this.partInformation = response;
+  // ====== End Localization
+
+  // ====== Start Vehicle info layout prop
+
+  @Prop() coreOnly: boolean = false;
+
+  // ====== End Vehicle info layout prop
+
+  // ====== Start Part Lookup Component Shared Logic
+
+  @Prop() isDev: boolean;
+  @Prop() baseUrl: string;
+  @Prop() headers: object = {};
+  @Prop() queryString: string = '';
+
+  @Prop() errorCallback?: (errorMessage: ErrorKeys) => void;
+  @Prop() loadingStateChange?: (isLoading: boolean) => void;
+  @Prop() loadedResponse?: (response: PartLookupDTO) => void;
+
+  @State() searchString: string;
+  @State() isError: boolean = false;
+  @State() errorMessage?: ErrorKeys;
+  @State() isLoading: boolean = false;
+  @State() partLookup?: PartLookupDTO;
+
+  @Element() el: HTMLElement;
+
+  mockData;
+
+  abortController: AbortController;
+  networkTimeoutRef: ReturnType<typeof setTimeout>;
+
+  @Method()
+  async setMockData(newMockData: PartLookupMock) {
+    this.mockData = newMockData;
   }
 
   @Method()
-  async setData(newData: PartLookupDTO | string, headers: any = {}) {
-    clearTimeout(this.networkTimeoutRef);
-    if (this.abortController) this.abortController.abort();
-    this.abortController = new AbortController();
-    let scopedTimeoutRef: ReturnType<typeof setTimeout>;
-
-    const isPartNumberRequest = typeof newData === 'string';
-
-    const partNumber = isPartNumberRequest ? newData : newData?.partNumber;
-    this.externalPartNumber = partNumber;
-
-    try {
-      if (!partNumber || partNumber.trim().length === 0) {
-        this.state = 'idle';
-        return;
-      }
-
-      if (this.state === 'data' || this.state === 'error') {
-        this.state = (this.state + '-loading') as 'data-loading' | 'error-loading';
-      } else this.state = 'loading';
-
-      await new Promise(r => {
-        scopedTimeoutRef = setTimeout(r, 700);
-        this.networkTimeoutRef = scopedTimeoutRef;
-      });
-
-      const partResponse = isPartNumberRequest ? await getPartInformation(this, { scopedTimeoutRef, partNumber, mockData }, headers) : newData;
-
-      if (this.networkTimeoutRef === scopedTimeoutRef) {
-        if (!partResponse) throw new Error('wrongResponseFormat');
-
-        this.handleSettingData(partResponse);
-      }
-
-      this.errorMessage = null;
-      this.state = 'data';
-    } catch (error) {
-      if (error && error?.name === 'AbortError') return;
-      if (this.errorCallback) this.errorCallback(error.message);
-      console.error(error);
-      this.setErrorMessage(error.message);
-    }
+  async fetchData(newData: PartLookupDTO | string, headers: any = {}) {
+    await setPartLookupData(this, newData, headers);
   }
 
   @Method()
   async setErrorMessage(message: ErrorKeys) {
-    this.state = 'error';
-    this.partInformation = null;
-    this.errorMessage = message;
+    setPartLookupErrorState(this, message);
   }
 
-  @Method()
-  async fetchData(partNumber: string = this.externalPartNumber, headers: any = {}) {
-    await this.setData(partNumber, headers);
+  @Watch('isLoading')
+  onLoadingChange(newValue: boolean) {
+    if (this.loadingStateChange) this.loadingStateChange(newValue);
   }
 
-  @Watch('state')
-  async loadingListener() {
-    if (this.loadingStateChange) this.loadingStateChange(this.state.includes('loading'));
-  }
+  // ====== End Part Lookup Component Shared Logic
 
-  @Method()
-  async setMockData(newMockData: MockJson<PartLookupDTO>) {
-    mockData = newMockData;
-  }
+  // ===== Start Component Logic
+
+  @Prop() hiddenFields?: string = '';
+  @Prop() localizationName?: string = '';
 
   render() {
-    const texts = this.locale;
+    const localName = this.partLookup ? this.localizationName || 'russian' : 'russian';
 
-    const localName = this.partInformation ? this.localizationName || 'russian' : 'russian';
+    const hiddenFields = this.hiddenFields?.split(',')?.map(field => field.trim()) || [];
 
-    const hiddenFields = this.partInformation ? this.hiddenFields.split(',')?.map(field => field.trim()) || [] : [];
-
-    const partsInformation = this.partInformation
-      ? [
-          { label: texts.description, key: 'partDescription', value: this.partInformation.partDescription },
-          { label: texts.productGroup, key: 'productGroup', value: this.partInformation.productGroup },
-          {
-            label: texts.localDescription.replace('$', localName),
-            key: 'localDescription',
-            value: this.partInformation.localDescription,
-          },
-          {
-            label: texts.dealerPurchasePrice,
-            key: 'purchasePrice',
-            value: null,
-            values: this.partInformation.prices?.map(price => {
-              return { header: price?.countryName, body: price?.purchasePrice?.formattedValue };
-            }),
-          },
-          {
-            label: texts.recommendedRetailPrice,
-            key: 'retailPrice',
-            value: null,
-            values: this.partInformation.prices?.map(price => {
-              return { header: price?.countryName, body: price?.retailPrice?.formattedValue };
-            }),
-          },
-          {
-            label: texts.supersessions,
-            key: 'supersededTo',
-            value: null,
-            values: this.partInformation.supersededTo?.map(part => {
-              return { header: null, body: part };
-            }),
-          },
-        ]
-      : [];
+    const partsInformation = [
+      { label: this.locale.description, key: 'partDescription', value: this.partLookup?.partDescription },
+      { label: this.locale.productGroup, key: 'productGroup', value: this.partLookup?.productGroup },
+      {
+        key: 'localDescription',
+        value: this.partLookup?.localDescription,
+        label: this.locale.localDescription.replace('$', localName),
+      },
+      {
+        key: 'purchasePrice',
+        label: this.locale.dealerPurchasePrice,
+        values: this.partLookup?.prices?.map(price => ({ header: price?.countryName, body: price?.purchasePrice?.formattedValue })),
+      },
+      {
+        key: 'retailPrice',
+        label: this.locale.recommendedRetailPrice,
+        values: this.partLookup?.prices?.map(price => ({ header: price?.countryName, body: price?.retailPrice?.formattedValue })),
+      },
+      {
+        key: 'supersededTo',
+        label: this.locale.supersessions,
+        values: this.partLookup?.supersededTo?.map(part => ({ header: null, body: part })),
+      },
+    ];
 
     const displayedFields = partsInformation.filter(part => !hiddenFields.includes(part.key));
 
-    const displayDistributer = this.partInformation
-      ? !this.partInformation.stockParts.some(
-          ({ quantityLookUpResult }) => quantityLookUpResult === 'LookupIsSkipped' || quantityLookUpResult === 'QuantityNotWithinLookupThreshold',
-        )
-      : false;
+    const tableHeaders: InformationTableColumn[] = [
+      {
+        width: 300,
+        key: 'locationName',
+        label: this.locale.location,
+      },
+      {
+        width: 300,
+        key: 'quantityLookUpResult',
+        label: this.locale.availability,
+      },
+    ];
+
+    const displayDistributer = !this.partLookup?.stockParts.some(
+      ({ quantityLookUpResult }) => quantityLookUpResult === 'LookupIsSkipped' || quantityLookUpResult === 'QuantityNotWithinLookupThreshold',
+    );
+
+    const rows = displayDistributer
+      ? this.partLookup?.stockParts.map(stock => ({
+          locationName: stock.locationName,
+          quantityLookUpResult: () => (
+            <div
+              class={cn('text-[red]', {
+                'text-[green]': stock.quantityLookUpResult === 'Available',
+                'text-[orange]': stock.quantityLookUpResult === 'PartiallyAvailable',
+              })}
+            >
+              <strong>
+                {stock.quantityLookUpResult === 'Available'
+                  ? this.locale.available
+                  : stock.quantityLookUpResult === 'PartiallyAvailable'
+                    ? this.locale.partiallyAvailable
+                    : this.locale.notAvailable}
+              </strong>
+            </div>
+          ),
+        }))
+      : [];
 
     return (
       <Host>
-        <div dir={this.sharedLocales.direction} class="min-h-[100px] relative transition-all duration-300 overflow-hidden">
-          <div>
-            <loading-spinner isLoading={this.state.includes('loading')} />
-            <div class={cn('transition-all !duration-700', { 'scale-0': this.state.includes('loading') || this.state === 'idle', 'opacity-0': this.state.includes('loading') })}>
-              {['error', 'error-loading'].includes(this.state) && (
-                <div class="py-[16px] min-h-[100px] flex items-center">
-                  <div class=" px-[16px] py-[8px] border reject-card text-[20px] rounded-[8px] w-fit mx-auto">
-                    {this.sharedLocales.errors[this.errorMessage] || this.sharedLocales.errors.wildCard}
-                  </div>
-                </div>
-              )}
+        <VehicleInfoLayout
+          isError={this.isError}
+          coreOnly={this.coreOnly}
+          isLoading={this.isLoading}
+          header={this.partLookup?.partNumber}
+          direction={this.locale.sharedLocales.direction}
+          errorMessage={this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard}
+        >
+          <div class="p-[16px]">
+            <flexible-container>
+              <div class="flex [&>div]:grow overflow-auto gap-[16px] items-stretch justify-center md:justify-between flex-wrap">
+                {displayedFields.map(({ label, value, values }) =>
+                  values ? (
+                    <MaterialCard title={label} minWidth="250px">
+                      <MaterialCardChildren class="flex flex-wrap gap-[8px] p-[2px]">
+                        {values
+                          .filter(x => x.body)
+                          .map(x => (
+                            <span class="inline-flex items-center bg-red-50 text-red-800 font-medium px-3 text-[16px] py-1 me-1 mt-2 rounded-lg border border-red-300">
+                              {x.header && <span class="font-semibold">{x.header}:</span>}
+                              <span class="ml-1">{x.body}</span>
+                            </span>
+                          ))}
+                      </MaterialCardChildren>
+                    </MaterialCard>
+                  ) : (
+                    <MaterialCard desc={value?.toString() || ''} title={label} minWidth="250px" />
+                  ),
+                )}
+              </div>
+            </flexible-container>
 
-              {['data', 'data-loading'].includes(this.state) && (
-                <div>
-                  <div class="flex mt-[12px] max-h-[70dvh] overflow-hidden rounded-[4px] flex-col border border-[#d6d8dc]">
-                    <div class="w-full h-[40px] flex shrink-0 justify-center text-[18px] items-center text-[#383c43] text-center bg-[#e1e3e5]">{texts.info}</div>
-
-                    <div class="py-[10px] px-[30px] flex flex-col gap-[15px]">
-                      <div class="grid grid-cols-3 gap-[50px]">
-                        {displayedFields.map(({ label, value, values, key }) => (
-                          <div key={key} class="flex flex-col flex-1">
-                            <strong class="py-[10px] px-0 border-b-[gray] border-b">{label}</strong>
-                            {values ? (
-                              <div>
-                                {values
-                                  .filter(x => x.body)
-                                  .map(x => (
-                                    <span
-                                      key={x.header + x.body}
-                                      class="inline-flex items-center bg-red-50 text-red-800 text-sm font-medium px-3 py-1 me-1 mt-2 rounded-lg border border-red-300"
-                                    >
-                                      {x.header && <span class="font-semibold">{x.header}:</span>}
-                                      <span class="ml-1">{x.body}</span>
-                                    </span>
-                                  ))}
-                              </div>
-                            ) : (
-                              <div class="py-[10px] px-0">{value}</div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {displayDistributer && (
-                    <div class="flex mt-[12px] max-h-[70dvh] overflow-hidden rounded-[4px] flex-col border border-[#d6d8dc]">
-                      <div class="w-full h-[40px] flex shrink-0 justify-center text-[18px] items-center text-[#383c43] text-center bg-[#e1e3e5]">{texts.distributorStock}</div>
-
-                      <div class="flex flex-col gap-[15px]">
-                        <table class="w-full overflow-auto relative border-collapse">
-                          <thead class="top-0 font-bold sticky bg-white">
-                            <tr>
-                              {[texts.location, texts.availability].map(title => (
-                                <th key={title} class="px-[10px] py-[20px] text-center whitespace-nowrap border-b border-[#d6d8dc]">
-                                  {title}
-                                </th>
-                              ))}
-                            </tr>
-                          </thead>
-
-                          <tbody>
-                            {this.partInformation?.stockParts?.map(stock => (
-                              <tr class="transition-colors duration-100 border-b border-[#d6d8dc] last:border-none hover:bg-slate-100" key={stock.locationID}>
-                                <td class={cn('px-[10px] py-[20px] text-center whitespace-nowrap')}>{stock.locationName}</td>
-
-                                <td class={cn('px-[10px] py-[20px] text-center whitespace-nowrap')}>
-                                  <div
-                                    class={cn('text-[red]', {
-                                      'text-[green]': stock.quantityLookUpResult === 'Available',
-                                      'text-[orange]': stock.quantityLookUpResult === 'PartiallyAvailable',
-                                    })}
-                                  >
-                                    <strong>
-                                      {stock.quantityLookUpResult === 'Available'
-                                        ? texts.available
-                                        : stock.quantityLookUpResult === 'PartiallyAvailable'
-                                          ? texts.partiallyAvailable
-                                          : texts.notAvailable}
-                                    </strong>
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+            <div class="mt-[32px] mx-auto w-fit max-w-full">
+              <div class="bg-[#f6f6f6] h-[50px] flex items-center justify-center px-[16px] font-bold text-[18px]">{this.locale.distributorStock}</div>
+              <div class="overflow-x-auto">
+                <information-table isLoading={this.isLoading} rows={rows} headers={tableHeaders} />
+              </div>
             </div>
           </div>
-        </div>
+        </VehicleInfoLayout>
       </Host>
     );
   }

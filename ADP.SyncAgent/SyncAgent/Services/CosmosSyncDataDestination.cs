@@ -109,8 +109,8 @@ public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosCl
     /// </summary>
     /// <param name="configurations"></param>
     /// <param name="configureSyncService">
-    /// If set false just configure DataAdapter and skip the configuration of the SyncService, 
-    /// then you may be configure SyncService by your self
+    /// If set false just configure DataAdapter and skip the configuration of the SyncEngine, 
+    /// then you may be configure SyncEngine by your self
     /// </param>
     /// <returns></returns>
     public virtual ISyncEngine<TSource, TDestination> Configure(CosmosSyncDataDestinationConfigurations<TDestination, TCosmos> configurations , bool configureSyncService = true)

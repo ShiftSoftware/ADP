@@ -173,6 +173,9 @@ public static class ISyncServiceExtensions
                 logger.LogError($"Batch failed we do stop for {x.Input.Status.ActionType}, step {x.Input.Status.CurrentStep + 1}" +
                     (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}" : ""));
 
+            if (x.Input?.Exception is not null)
+                logger.LogError(x.Input.Exception, "The sync operation is failed with exception.");
+
             return result;
         });
 
@@ -215,10 +218,12 @@ public static class ISyncServiceExtensions
         var previousFailed = syncService.Failed;
         syncService.SetupFailed ( async (x) =>
         {
-            if(previousFailed is not null)
+            if (previousFailed is not null)
                 await previousFailed(x);
 
             logger.LogError("The sync operation is failed.");
+            if (x.Input is not null)
+                logger.LogError(x.Input, "The sync operation is failed with exception.");
         });
 
         var previousSucceeded = syncService.Succeeded;

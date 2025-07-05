@@ -4,7 +4,7 @@ using ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
 
 namespace ShiftSoftware.ADP.SyncAgent.Services;
 
-public class SyncEngine<T> : SyncService<T, T>
+public class SyncEngine<T> : SyncEngine<T, T>
     where T : class
 {
     public SyncEngine() : base()
@@ -16,7 +16,7 @@ public class SyncEngine<T> : SyncService<T, T>
     }
 }
 
-public class SyncService<TSource, TDestination> : ISyncEngine<TSource, TDestination>
+public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestination>
     where TSource : class
     where TDestination : class
 {
@@ -42,7 +42,7 @@ public class SyncService<TSource, TDestination> : ISyncEngine<TSource, TDestinat
 
     public virtual Func<SyncFunctionInput<SyncMappingInput<TSource, TDestination>>, ValueTask<IEnumerable<TDestination?>?>>? Mapping { get; private set; }
 
-    public virtual Func<SyncFunctionInput, ValueTask>? Failed { get; private set; }
+    public virtual Func<SyncFunctionInput<Exception?>, ValueTask>? Failed { get; private set; }
 
     public virtual Func<SyncFunctionInput, ValueTask>? Succeeded { get; private set; }
 
@@ -52,12 +52,12 @@ public class SyncService<TSource, TDestination> : ISyncEngine<TSource, TDestinat
 
     private readonly IServiceProvider services;
 
-    public SyncService()
+    public SyncEngine()
     {
         this.Configure();
     }
 
-    public SyncService(IServiceProvider services) : this()
+    public SyncEngine(IServiceProvider services) : this()
     {
         this.services = services;
     }
@@ -171,7 +171,7 @@ public class SyncService<TSource, TDestination> : ISyncEngine<TSource, TDestinat
         return this;
     }
 
-    public virtual ISyncEngine<TSource, TDestination> SetupFailed(Func<SyncFunctionInput, ValueTask> failedFunc)
+    public virtual ISyncEngine<TSource, TDestination> SetupFailed(Func<SyncFunctionInput<Exception?>, ValueTask> failedFunc)
     {
         this.Failed = failedFunc;
         return this;
@@ -217,12 +217,12 @@ public class SyncService<TSource, TDestination> : ISyncEngine<TSource, TDestinat
             if ((result || preparingResult == SyncPreparingResponseAction.Skiped) && this.Succeeded is not null)
                 await this.Succeeded!(new(GetCancellationToken()));
             else if (!result && this.Failed is not null)
-                await this.Failed!(new(GetCancellationToken()));
+                await this.Failed!(new(GetCancellationToken(), null));
         }
         catch (Exception ex)
         {
             if(this.Failed is not null)
-                await this.Failed!(new(GetCancellationToken()));
+                await this.Failed!(new(GetCancellationToken(), ex));
 
             result = false;
         }
@@ -264,7 +264,7 @@ public class SyncService<TSource, TDestination> : ISyncEngine<TSource, TDestinat
 
                 while (true)
                 {
-                    await CheckForCancellation();
+                    CheckForCancellation();
 
                     // If provide with total item count and the last step is completed, then stop the operation
                     if (totalSteps != null && currentStep >= totalSteps)
@@ -302,15 +302,15 @@ public class SyncService<TSource, TDestination> : ISyncEngine<TSource, TDestinat
 
                         // Check if retry required
                         if (storeResult.NeedRetry)
-                            throw new Exception("Retry is required.");
+                            throw new Exception("Need retry.");
 
                         // Run batch completed function
                         if (this.BatchCompleted is not null)
                         {
-                            var batchCompletedResult = await this.BatchCompleted!(new SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>(this.GetCancellationToken(), new SyncBatchCompleteRetryInput<TSource, TDestination>(sourceItems, storeResult, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType))));
+                            var batchCompletedResult = await this.BatchCompleted!(new SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>(this.GetCancellationToken(), new SyncBatchCompleteRetryInput<TSource, TDestination>(sourceItems, storeResult, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType), null)));
 
                             if (!batchCompletedResult)
-                                throw new Exception("Retry is required.");
+                                throw new Exception("Need retry.");
                         }
 
                         currentStep++;
@@ -319,11 +319,11 @@ public class SyncService<TSource, TDestination> : ISyncEngine<TSource, TDestinat
                         destinationItems = null;
                         storeResult = null;
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
                         RetryAction retryResult = this.Configurations.DefaultRetryAction;
                         if (this.BatchRetry is not null)
-                            retryResult = await this.BatchRetry!(new SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>(this.GetCancellationToken(), new SyncBatchCompleteRetryInput<TSource, TDestination>(sourceItems, storeResult, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType))));
+                            retryResult = await this.BatchRetry!(new SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>(this.GetCancellationToken(), new SyncBatchCompleteRetryInput<TSource, TDestination>(sourceItems, storeResult, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType), ex)));
 
                         // Do action based on the retry result
                         if (retryResult == RetryAction.RetryAndContinueAfterLastRetry)
@@ -335,7 +335,7 @@ public class SyncService<TSource, TDestination> : ISyncEngine<TSource, TDestinat
                                 // Run batch completed function
                                 if (this.BatchCompleted is not null)
                                 {
-                                    var batchCompletedResult = await this.BatchCompleted!(new SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>(this.GetCancellationToken(), new SyncBatchCompleteRetryInput<TSource, TDestination>(sourceItems, storeResult, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType))));
+                                    var batchCompletedResult = await this.BatchCompleted!(new SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>(this.GetCancellationToken(), new SyncBatchCompleteRetryInput<TSource, TDestination>(sourceItems, storeResult, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType), ex)));
 
                                     if (!batchCompletedResult)
                                     {
@@ -356,7 +356,7 @@ public class SyncService<TSource, TDestination> : ISyncEngine<TSource, TDestinat
                             // Run batch completed function
                             if (this.BatchCompleted is not null)
                             {
-                                var batchCompletedResult = await this.BatchCompleted!(new SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>(this.GetCancellationToken(), new SyncBatchCompleteRetryInput<TSource, TDestination>(sourceItems, storeResult, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType))));
+                                var batchCompletedResult = await this.BatchCompleted!(new SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>(this.GetCancellationToken(), new SyncBatchCompleteRetryInput<TSource, TDestination>(sourceItems, storeResult, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType), ex)));
 
                                 if (!batchCompletedResult)
                                 {
@@ -419,13 +419,10 @@ public class SyncService<TSource, TDestination> : ISyncEngine<TSource, TDestinat
         return this.cancellationTokenSource!.Token;
     }
 
-    private async Task CheckForCancellation()
+    private void CheckForCancellation()
     {
         if (GetCancellationToken().IsCancellationRequested)
-        {
-            await this.Failed!(new(GetCancellationToken()));
             throw new OperationCanceledException();
-        }
     }
 
     public virtual ValueTask Reset()

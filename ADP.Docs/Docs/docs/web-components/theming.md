@@ -64,7 +64,7 @@ Developers can find parts in 2 ways
 - Each Component in their dedicated documentation has **Structure** section where their structure is showed similar to the above structure.
 - Developers can explore the components and find out what is each element part names using [browser devtools](https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Tools_and_setup/What_are_browser_developer_tools), as showed in the bellow image.
 
-<img src="overrides/part-exploring.png" alt="Custom Element Structure" class="image-with-border" />
+<img src="./assets/part-exploring.png" alt="Custom Element Structure" class="image-with-border" />
 
 ## Next Steps
 

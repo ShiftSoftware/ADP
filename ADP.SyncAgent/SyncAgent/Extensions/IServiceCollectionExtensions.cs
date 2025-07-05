@@ -81,7 +81,7 @@ public static class IServiceCollectionExtensions
     public static IServiceCollection AddSyncService(this IServiceCollection services)
     {
         services.AddTransient(typeof(SyncEngine<>));
-        services.AddTransient(typeof(SyncService<,>));
+        services.AddTransient(typeof(SyncEngine<,>));
 
         return services;
     }

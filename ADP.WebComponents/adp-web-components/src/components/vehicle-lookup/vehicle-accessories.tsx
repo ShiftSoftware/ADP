@@ -149,7 +149,7 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
           isError={this.isError}
           isLoading={this.isLoading}
           coreOnly={this.coreOnly}
-          vin={this.vehicleLookup?.vin}
+          header={this.vehicleLookup?.vin}
           direction={this.locale.sharedLocales.direction}
           errorMessage={this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard}
         >

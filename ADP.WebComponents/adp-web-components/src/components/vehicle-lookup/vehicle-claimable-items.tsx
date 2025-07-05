@@ -455,7 +455,7 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
         <VehicleInfoLayout
           isError={this.isError}
           coreOnly={this.coreOnly}
-          vin={this.vehicleLookup?.vin}
+          header={this.vehicleLookup?.vin}
           direction={this.locale.sharedLocales.direction}
           isLoading={this.isLoading || this.tabAnimationLoading}
           errorMessage={this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard}
