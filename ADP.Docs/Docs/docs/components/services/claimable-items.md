@@ -1,4 +1,12 @@
-Claimable Items are any benefits, services, or offers associated with a vehicle that can be claimed by its owner. These items are often used to incentivize service visits or customer engagement. They may include:
+
+Most Authorized Vehicles are usually sold with certain free services included. These services may vary depending on a number of factors and they are constantly subject to change. 
+
+After activation, the service items can be claimed within a certain time window and the claiming dealer is reimbursed by the distributor.
+
+
+In addition to standard free service items, additional items belonging to various campaigns can be rewarded to vehicles. These items can come in the form of free services or discount vouchers that can be claimed in a similar way.
+
+In General, Claimable Items are any benefits, services, or offers associated with a vehicle that can be claimed by its owner. These items are often used to incentivize service visits or customer engagement. They may include:
 
 - **Free Services** (such as 1,000 KM or 5,000 KM maintenance)
 - **Paid Services** (such as Extended Warranty)
@@ -19,6 +27,7 @@ Similar to Free Services, Paid Services can also be assigned to vehicles. These 
 In addition to Free and Paid Services, Service Campaign Items may be rewarded to vehicles based on specific events or conditions. These may include:
 
 - The vehicle is brought in for certain services or inspections.
+- The vehicle is converted to special-purpose public/private vehicles (Taxi, Ambulance, Traffice Police, ...etc)
 - The vehicle owner participates in a survey.
 - The vehicle owner attends a special event.
 - Loyalty Criteria (e.g., number of visits or service spend on the vehicle).
