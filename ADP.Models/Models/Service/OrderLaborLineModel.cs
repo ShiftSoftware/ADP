@@ -3,7 +3,7 @@ using System;
 
 namespace ShiftSoftware.ADP.Models.Service;
 
-public class InvoiceLaborLineModel : 
+public class OrderLaborLineModel : 
     IPartitionedItem, 
     IBranchProps, 
     ICompanyProps, 
