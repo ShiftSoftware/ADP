@@ -291,7 +291,7 @@ public class VehicleLookupService
 
     private async Task<IEnumerable<VehicleServiceHistoryDTO>> GetServiceHistory(
         IEnumerable<InvoiceModel> cpus,
-        IEnumerable<InvoiceLaborLineModel> labors,
+        IEnumerable<OrderLaborLineModel> labors,
         IEnumerable<OrderPartLineModel> parts)
     {
         var serviceHistory = new List<VehicleServiceHistoryDTO>();
@@ -564,7 +564,7 @@ public class VehicleLookupService
     private async Task<IEnumerable<SscDTO>> GetSSCAsync(
         IEnumerable<SSCAffectedVINModel> ssc,
         IEnumerable<WarrantyClaimModel> warrantyClaims,
-        IEnumerable<InvoiceLaborLineModel> labors,
+        IEnumerable<OrderLaborLineModel> labors,
         string regionIntegrationId)
     {
         if (ssc?.Count() == 0)

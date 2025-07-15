@@ -117,7 +117,7 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
             .Select(x => ((JObject)x).ToObject<InvoiceModel>()).ToList();
 
         companyData.LaborLines = items.Where(x => x.ItemType.ToString() == ModelTypes.InvoiceLaborLine)
-            .Select(x => ((JObject)x).ToObject<InvoiceLaborLineModel>()).ToList();
+            .Select(x => ((JObject)x).ToObject<OrderLaborLineModel>()).ToList();
 
         companyData.PartLines = items.Where(x => x.ItemType.ToString() == ModelTypes.InvoicePartLine)
             .Select(x => ((JObject)x).ToObject<OrderPartLineModel>()).ToList();
