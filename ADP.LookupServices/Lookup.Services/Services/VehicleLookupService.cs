@@ -439,16 +439,16 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
             result.CustomerID = vsData?.CustomerMagic;
             result.CustomerAccount = vsData?.CustomerAccount;
 
-            if (options.CompanyNameResolver is not null)
+            if (options?.CompanyNameResolver is not null)
                 result.DealerName = await options.CompanyNameResolver(new(vsData.DealerIntegrationID, languageCode, services));
 
-            if (options.CompanyBranchNameResolver is not null)
+            if (options?.CompanyBranchNameResolver is not null)
                 result.BranchName = await options.CompanyBranchNameResolver(
                     new(new(vsData.DealerIntegrationID, vsData.BranchIntegrationID, DepartmentType.Sales), languageCode, services));
 
             string? dealerLogo = null;
 
-            if(options.CompanyLogoResolver is not null)
+            if(options?.CompanyLogoResolver is not null)
                 dealerLogo = await options.CompanyLogoResolver(new(vsData.DealerIntegrationID, languageCode, services));   
 
             if(!string.IsNullOrWhiteSpace(dealerLogo))
@@ -663,10 +663,27 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
                 var eligableRedeemableItems = redeeambleItems?
                     .Where(x => !(x.Deleted ?? false))
                     .Where(x => invoiceDate >= x.PublishDate && invoiceDate <= x.ExpireDate)
-                    .Where(x => (x.ModelCosts?.Count() ?? 0) == 0
+                    .Where(
+                        x => (x.ModelCosts?.Count() ?? 0) == 0
                         ||
-                        (x.ModelCosts?.Any(a => vsData.Katashiki.StartsWith(a?.Katashiki ?? "") && !string.IsNullOrWhiteSpace(a?.Katashiki)
-                            || vsData.VariantCode.StartsWith(a?.Variant ?? "") && !string.IsNullOrWhiteSpace(a?.Variant)) ?? false));
+                        (
+                            (x.ModelCosts?.Any(a =>
+                                (
+                                    (vsData.Katashiki ?? "").StartsWith(a?.Katashiki ?? "")
+                                    ||
+                                    (vsData.VariantCode ?? "").StartsWith(a?.Variant ?? "")
+                                )) ?? false
+                            )
+                            &&
+                            !(x.ModelCosts?.Any(a =>
+                                (
+                                    ((a.Katashiki ?? "").StartsWith("!") && (vsData.Katashiki ?? "").StartsWith(a?.Katashiki?.Substring(1) ?? ""))
+                                    ||
+                                    ((a.Variant ?? "").StartsWith("!") && (vsData.VariantCode ?? "").StartsWith(a?.Variant?.Substring(1) ?? ""))
+                                )) ?? false
+                            )
+                        )
+                    );
 
                 if (eligableRedeemableItems?.Count() > 0)
                 {
@@ -872,9 +889,11 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
                 return null;
 
             return modelCosts?
-                .Where(x => katashiki.StartsWith(x?.Katashiki ?? "") && !string.IsNullOrWhiteSpace(x?.Katashiki ?? "")
-                    || variant.StartsWith(x?.Variant ?? "") && !string.IsNullOrWhiteSpace(x?.Variant ?? ""))
-                .FirstOrDefault();
+                .Where(x => 
+                        (katashiki != null && katashiki.StartsWith(x?.Katashiki ?? "") && !string.IsNullOrWhiteSpace(x?.Katashiki ?? ""))
+                        || 
+                        (variant != null && variant.StartsWith(x?.Variant ?? "") && !string.IsNullOrWhiteSpace(x?.Variant ?? ""))
+                ).FirstOrDefault();
         }
 
         private void CheckCanceledServiceItems(IEnumerable<VehicleServiceItemDTO> serviceItems)

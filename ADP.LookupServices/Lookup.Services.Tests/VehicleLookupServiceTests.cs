@@ -1,4 +1,5 @@
 ﻿using Moq;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ShiftSoftware.ADP.Lookup.Services.Services;
 using ShiftSoftware.ADP.Models.DealerData;
@@ -1361,5 +1362,76 @@ public class VehicleLookupServiceTests
             && x.ExpiresAt == invoiceDate.AddMonths(1).AddMonths(1)));
         Assert.True(result.ServiceItems?.Any(x => x.TypeEnum == VehcileServiceItemTypes.Free
             && x.StatusEnum == VehcileServiceItemStatuses.Processed));
+    }
+
+    [Fact(DisplayName = "Service Items: Katashiki & Variant Exclusion")]
+    public async Task ServiceItems_DynamicCancelFreeServices2()
+    {
+        var mock = new Mock<IVehicleLoockupCosmosService>();
+
+        mock.Setup(x => x.GetAggregatedDealerData("1"))
+            .ReturnsAsync(VehicleLoockupCosmosService.ConvertDynamicListItemsToDealerData(new List<dynamic>
+            {
+                JObject.Parse(JsonConvert.SerializeObject(new VSDataCosmosModel {
+                    VIN = "1",
+                    InvoiceDate = DateTime.UtcNow.AddDays(-50),
+                    Katashiki = "K1111-1111",
+                    Brand = Franchises.Toyota
+                }))
+            }));
+
+        mock.Setup(x => x.GetAggregatedDealerData("2"))
+            .ReturnsAsync(VehicleLoockupCosmosService.ConvertDynamicListItemsToDealerData(new List<dynamic>
+            {
+                JObject.Parse(JsonConvert.SerializeObject(new VSDataCosmosModel {
+                    VIN = "2",
+                    InvoiceDate = DateTime.UtcNow.AddDays(-50),
+                    Katashiki = "K1111-2222",
+                    Brand = Franchises.Toyota
+                })),
+            }));
+
+        mock.Setup(x => x.GetAggregatedDealerData("3"))
+            .ReturnsAsync(VehicleLoockupCosmosService.ConvertDynamicListItemsToDealerData(new List<dynamic>
+            {
+                JObject.Parse(JsonConvert.SerializeObject(new VSDataCosmosModel {
+                    VIN = "3",
+                    InvoiceDate = DateTime.UtcNow.AddDays(-50),
+                    Katashiki = "K1111-3333",
+                    Brand = Franchises.Toyota
+                })),
+            }));
+
+        var redeemalbeItem1 = new ToyotaLoyaltyProgramRedeemableItemCosmosModel
+        {
+            ToyotaLoyaltyProgramRedeemableItemId = 1,
+            ActiveFor = 1,
+            ActiveForInterval = "Months",
+            MaximumMileage = 1000,
+            Brands = new List<Franchises> { Franchises.Toyota },
+            PublishDate = DateTime.UtcNow.AddMonths(-300),
+            ExpireDate = DateTime.UtcNow.AddMonths(100),
+            ModelCosts = new List<ToyotaLoyaltyProgramRedeemableItemModelCostCosmosModel>()
+            {
+                new ToyotaLoyaltyProgramRedeemableItemModelCostCosmosModel { 
+                    Katashiki = "K1111"
+                },
+                new ToyotaLoyaltyProgramRedeemableItemModelCostCosmosModel {
+                    Katashiki = "!K1111-33"
+                },
+            }
+        };
+
+        mock.Setup(x => x.GetRedeemableItemsAsync(Franchises.Toyota))
+            .ReturnsAsync(new List<ToyotaLoyaltyProgramRedeemableItemCosmosModel>
+            {
+                redeemalbeItem1
+            });
+
+        var service = new VehicleLookupService(mock.Object, _identityCosmosServiceMock.Object);
+
+        Assert.True((await service.LookupAsync("1", "", null)).ServiceItems?.Count() > 0);
+        Assert.True((await service.LookupAsync("2", "", null)).ServiceItems?.Count() > 0);
+        Assert.True((await service.LookupAsync("3", "", null)).ServiceItems?.Count() == 0);
     }
 }
