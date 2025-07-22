@@ -1,0 +1,36 @@
+.slide-content-in {
+  animation: slideContentIn 0.35s ease-out forwards;
+}
+
+@keyframes slideContentIn {
+  0% {
+    opacity: 0;
+    transform: translateY(50px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0px);
+  }
+}
+
+.slide-content-out {
+  animation: slideContentOut 0.35s ease-out forwards;
+}
+
+@keyframes slideContentOut {
+  0% {
+    opacity: 1;
+    transform: translateY(0px);
+  }
+
+  99% {
+    opacity: 0;
+    transform: translateY(-50px);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-200%) translateX(-200%);
+  }
+}

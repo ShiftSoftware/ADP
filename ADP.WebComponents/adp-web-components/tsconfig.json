@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "baseUrl": "./src",
+    "paths": {
+      "~api/*": ["global/api/*"],
+      "~lib/*": ["global/lib/*"],
+      "~locales/*": ["locales/*"],
+      "~features/*": ["features/*"],
+      "~types/*": ["global/types/*"],
+      "~assets/*": ["global/assets/*"]
+    },
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "allowUnreachableCode": false,
+    "declaration": false,
+    "experimentalDecorators": true,
+    "lib": ["dom", "es2017", "dom.iterable"],
+    "target": "es2017",
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "jsx": "react",
+    "jsxFactory": "h"
+  },
+  "include": ["src"],
+  "exclude": ["node_modules"]
+}

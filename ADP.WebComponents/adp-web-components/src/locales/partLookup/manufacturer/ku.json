@@ -1,0 +1,17 @@
+{
+  "origin": "ڕەسەن",
+  "warrantyPrice": "نرخی گەرەنتی",
+  "specialPrice": "نرخی تایبەت",
+  "wholesalesPrice": "نرخی جوملە",
+  "pnc": "PNC",
+  "pncName": "PNC ناوی $",
+  "binCode": "کۆدی بین",
+  "length": "درێژی",
+  "width": "پانی",
+  "height": "بەرزی",
+  "netWeight": "کێشی پاک",
+  "grossWeight": "کێشی گشتی",
+  "cubicMeasure": "پێوانە سێجا",
+  "hsCode": "کۆدی HS",
+  "uzHsCode": "کۆدی UZ HS"
+}

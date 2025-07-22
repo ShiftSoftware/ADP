@@ -1,0 +1,27 @@
+import type { StockPartDTO } from './stock-part-dto';
+import type { PartPriceDTO } from './part-price-dto';
+import type { HSCodeDTO } from './hs-code-dto';
+import type { DeadStockDTO } from './dead-stock-dto';
+export type PartLookupDTO = {
+    partNumber: string;
+    partDescription: string;
+    localDescription: string;
+    productGroup: string;
+    pnc: string;
+    binType: string;
+    distributorPurchasePrice?: number;
+    length?: number;
+    width?: number;
+    height?: number;
+    netWeight?: number;
+    grossWeight?: number;
+    cubicMeasure?: number;
+    hsCode: string;
+    origin: string;
+    supersededTo: string[];
+    stockParts: StockPartDTO[];
+    prices: PartPriceDTO[];
+    hsCodes: HSCodeDTO[];
+    deadStock: DeadStockDTO[];
+    logId?: string;
+};

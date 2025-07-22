@@ -11,6 +11,7 @@ public class BrokerModel: ICompanyProps
     public DateTime? AccountStartDate { get; set; }
     public DateTime? TerminationDate { get; set; }
     public string CompanyID { get; set; }
+    public string CompanyHashID { get; set; }
     public IEnumerable<string> AccountNumbers { get; set; }
     public bool IsDeleted { get; set; }
 }

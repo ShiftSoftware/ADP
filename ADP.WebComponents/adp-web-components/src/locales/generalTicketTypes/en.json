@@ -1,0 +1,10 @@
+{
+  "TLP": "TLP",
+  "Complaint": "Complaint",
+  "PartInquiry": "PartInquiry",
+  "SalesCampaign": "SalesCampaign",
+  "GeneralInquiry": "General Inquiry",
+  "ServiceCampaign": "ServiceCampaign",
+  "InstallmentPayment": "InstallmentPayment",
+  "ServicePriceInquiry": "ServicePriceInquiry"
+}

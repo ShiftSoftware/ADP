@@ -1,0 +1,61 @@
+@import '../style/shift-skeleton.css';
+@import './components/claimable-item.css';
+@import './components/claimable-item-popover.css';
+@import '../../features/vehicle-info-layout/vehicle-info-layout.css';
+
+:host {
+  all: initial !important;
+  display: block;
+}
+
+* {
+  font-family: Arial;
+}
+
+.progress-container-style {
+  @apply h-[10px] -translate-y-1/2 rounded-full transition duration-500 bg-[#f2f2f2] border border-[#ddd];
+}
+
+.loading .lane-inc {
+  animation: lane-increase 2.5s infinite ease;
+}
+
+.loading .lane-dec {
+  animation: lane-decrease 2.5s 1s infinite ease;
+}
+
+@keyframes lane-increase {
+  from {
+    left: -5%;
+    width: 5%;
+  }
+
+  to {
+    left: 130%;
+    width: 100%;
+  }
+}
+
+@keyframes lane-decrease {
+  from {
+    left: -80%;
+    width: 80%;
+  }
+
+  to {
+    left: 110%;
+    width: 10%;
+  }
+}
+
+.claim-button {
+  @apply active:[&_svg]:scale-[125%] active:bg-[#27ae60] [&_circle]:fill-[#2ecc71] hover:text-white hover:bg-[#2ecc71] hover:stroke-white hover:fill-white hover:[&_circle]:fill-white outline-none flex items-center gap-[3px] border border-[#27ae60] bg-transparent fill-[#27ae60] stroke-[#27ae60] text-[#27ae60]  rounded-[5px] cursor-pointer duration-200 font-bold px-[10px];
+}
+
+.claim-button path {
+  transition: 0.2s;
+}
+
+.claim-button:hover path {
+  fill: #2ecc71;
+}

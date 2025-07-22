@@ -1,0 +1,12 @@
+@import '../style/shift-skeleton.css';
+@import './components/dead-stock-item.css';
+@import '../../features/vehicle-info-layout/vehicle-info-layout.css';
+
+:host {
+  all: initial !important;
+  display: block;
+}
+
+* {
+  font-family: Arial;
+}

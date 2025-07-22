@@ -1,0 +1,10 @@
+{
+  "serviceHistory": "Service History",
+  "noData": "No data is available.",
+  "branch": "Branch",
+  "dealer": "Dealer",
+  "invoiceNumber": "Invoice No.",
+  "date": "Date",
+  "serviceType": "Service Type",
+  "odometer": "Odometer"
+}

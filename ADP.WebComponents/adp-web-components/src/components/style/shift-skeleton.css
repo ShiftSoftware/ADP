@@ -1,0 +1,35 @@
+.shift-skeleton {
+  @apply !relative !rounded-[4px];
+}
+
+.loading.shift-skeleton,
+.loading .shift-skeleton {
+  @apply !relative !overflow-hidden !pointer-events-none;
+}
+
+.shift-skeleton::after {
+  content: '';
+  @apply absolute !rounded-[4px] left-0 top-0 z-10 opacity-0 origin-left transition-all duration-500 pointer-events-none;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(-45deg, #d4d8de, #e2e5e9, #d4d8de);
+  background-size: 300% 300%;
+}
+
+.loading.shift-skeleton::after,
+.loading .shift-skeleton::after {
+  @apply opacity-100 scale-x-100;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 100% 0%;
+  }
+  50% {
+    background-position: 0% 100%;
+  }
+  100% {
+    background-position: 100% 0%;
+  }
+}

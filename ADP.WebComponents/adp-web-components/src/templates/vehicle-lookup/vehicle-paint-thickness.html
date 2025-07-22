@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Paint Thickness</title>
+    <script nomodule src="/build/shift-components.js"></script>
+    <script type="module" src="/build/shift-components.esm.js"></script>
+    <script src="./mock-data.js"></script>
+  </head>
+  <body>
+    <a href="#" onclick="history.back()" style="color: blue; display: block; margin-bottom: 16px">Back</a>
+
+    <h1>Vehicle Paint Thickness</h1>
+
+    <vehicle-paint-thickness language="ku" is-dev="true" query-string="" id="paint-thickness" base-url="http://localhost:7174/api/secure-vehicle-lookup-test/">
+    </vehicle-paint-thickness>
+
+    <div class="button-container">
+      <button class="sample-button" onclick="updateLang('en')">En</button>
+      <button class="sample-button" onclick="updateLang('ku')">Ku</button>
+      <button class="sample-button" onclick="updateLang('ar')">Ar</button>
+      <button class="sample-button" onclick="updateLang('ru')">Ru</button>
+    </div>
+
+    <div class="button-container">
+      <button class="sample-button" onclick="fetchData()">reload</button>
+      <button class="sample-button" onclick="fetchData('')">Empty (close)</button>
+      <button class="sample-button" onclick="fetchData('error')">Error</button>
+      <button class="sample-button" onclick="fetchData('JTMHX01J8L4198295')">JTMHX01J8L4198295</button>
+      <button class="sample-button" onclick="fetchData('JTMHX01J8L4198296')">JTMHX01J8L4198296</button>
+      <button class="sample-button" onclick="fetchData('MR0BX8CD3P2791075')">MR0BX8CD3P2791075</button>
+      <button class="sample-button" onclick="fetchData('JTMHX01J8L4198299')">JTMHX01J8L4198299</button>
+      <button class="sample-button" onclick="fetchData('JTMABBBJ9P4099243')">JTMABBBJ9P4099243</button>
+      <button class="sample-button" onclick="fetchData('JTMHU09J6E4100543')">JTMHU09J6E4100543</button>
+      <button class="sample-button" onclick="fetchData('JTMABBBJ9P4099200')">JTMABBBJ9P4099200</button>
+    </div>
+
+    <script>
+      let paintThickness;
+
+      document.addEventListener('DOMContentLoaded', function () {
+        paintThickness = document.getElementById('paint-thickness');
+
+        paintThickness.setMockData(mockData);
+
+        paintThickness.loadedResponse = newResponse => console.log(newResponse);
+        paintThickness.loadingStateChange = isLoading => {
+          console.log('isLoading: ' + isLoading);
+        };
+      });
+
+      function updateLang(newLang) {
+        paintThickness.language = newLang;
+      }
+
+      function fetchData(newVin) {
+        paintThickness.fetchData(newVin);
+      }
+
+      function setData(key) {
+        paintThickness.setData(mockData[key]);
+      }
+    </script>
+
+    <style>
+      .button-container {
+        margin-top: 50px;
+        border: 1px solid #e1e1e1;
+        padding: 20px;
+        display: flex;
+        flex-wrap: wrap;
+        align-content: center;
+        justify-content: center;
+        gap: 10px;
+      }
+      .sample-button {
+        background-color: #428bca;
+        padding: 10px 15px;
+      }
+
+      .sample-button:hover {
+        background-color: #3071a9;
+      }
+    </style>
+  </body>
+</html>

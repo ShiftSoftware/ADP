@@ -1,10 +1,12 @@
 ﻿using Newtonsoft.Json;
+using ShiftSoftware.ADP.Models;
 using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Part;
 
+[TypeScriptModel]
 public class PartLookupDTO
 {
     public string PartNumber { get; set; }
@@ -14,9 +16,9 @@ public class PartLookupDTO
     public string PNC { get; set; }
     public string BinType { get; set; }
     public decimal? DistributorPurchasePrice { get; set; }
-    public decimal? Dimension1 { get; set; }
-    public decimal? Dimension2 { get; set; }
-    public decimal? Dimension3 { get; set; }
+    public decimal? Length { get; set; }
+    public decimal? Width { get; set; }
+    public decimal? Height { get; set; }
     public decimal? NetWeight { get; set; }
     public decimal? GrossWeight { get; set; }
     public decimal? CubicMeasure { get; set; }

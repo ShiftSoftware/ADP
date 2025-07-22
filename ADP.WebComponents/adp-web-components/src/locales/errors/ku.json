@@ -1,0 +1,12 @@
+{
+  "invalidVin": "ژمارەی شانسی نادروستە",
+  "noBaseUrl": "تکایە base-url دابین بکە",
+  "vinNumberRequired": "ژمارەی شانسی پێویستە",
+  "partNumberRequired": "ژمارەی پارچە پێویستە",
+  "noPartsFound": "هیچ پارچەیەک نەدۆزراوەتەوە",
+  "wrongResponseFormat": "فۆرماتی وەڵامدانەوە هەڵەیە",
+  "wrongFormStructure": "پێکهاتەی فۆرم لە نادروستدایە.",
+  "noServiceAvailable": "هیچ خزمەتگوزارییەک بەردەست نییە",
+  "wildCard": "کێشەیەکی چاوەڕواننەکراو ڕویدا تکایە دواتر هەوڵبدەوە.",
+  "requestFailedPleaseTryAgainLater": "داواکارییەکە شکستی هێنا تکایە دواتر هەوڵبدەرەوە"
+}

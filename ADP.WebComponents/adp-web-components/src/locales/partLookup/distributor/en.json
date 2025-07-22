@@ -1,0 +1,16 @@
+{
+  "info": "Info",
+  "distributorStock": "Distributor Stock",
+  "availability": "Availability",
+  "notAvailable": "Not Available",
+  "partiallyAvailable": "Partially Available",
+  "available": "Available",
+  "location": "Location",
+  "description": "Description",
+  "productGroup": "Product Group",
+  "localDescription": "$ Description",
+  "dealerPurchasePrice": "Dealer Purchase price",
+  "recommendedRetailPrice": "Recommended Retail price",
+  "supersededFrom": "Superseded From",
+  "supersessions": "Supersessions"
+}

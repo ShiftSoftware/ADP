@@ -1,0 +1,102 @@
+.dead-stock-item {
+  overflow: hidden;
+  border-radius: 6px;
+  border: 1px solid #d6d8dc;
+}
+
+.dead-stock-item > .button {
+  gap: 50px;
+  width: 100%;
+  height: 50px;
+  display: flex;
+  padding: 0px 16px;
+  align-items: center;
+  transition-property: all;
+  transition-duration: 500ms;
+  justify-content: space-between;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dead-stock-item > .button.cursor-default {
+  cursor: default;
+}
+
+.dead-stock-item > .button.bg-slate-100 {
+  background-color: #f1f5f9;
+}
+
+.dead-stock-item .header {
+  flex-shrink: 0;
+  font-size: 20px;
+  text-align: start;
+  font-weight: 700;
+}
+
+.dead-stock-item .icon-container {
+  transform: rotate(180deg);
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 500ms;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+}
+
+.dead-stock-item .icon-container.rotate-0 {
+  transform: rotate(0deg);
+}
+
+.dead-stock-item .dead-stock-table {
+  width: 100%;
+  padding: 20px;
+  overflow: auto;
+  border-collapse: collapse;
+}
+
+.dead-stock-item .dead-stock-table-header {
+  padding: 20px 10px;
+  text-align: start;
+  white-space: nowrap;
+  border-bottom: 1px solid #d6d8dc;
+}
+
+.dead-stock-item .dead-stock-table-row {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 100ms;
+  border-bottom: 1px solid #d6d8dc;
+}
+
+.dead-stock-item .dead-stock-table-row:last-child {
+  border: none;
+}
+
+.dead-stock-item .dead-stock-table-row:hover {
+  background-color: #f1f5f9;
+}
+
+.dead-stock-item .dead-stock-table-row td {
+  padding: 20px 10px;
+  text-align: start;
+  white-space: nowrap;
+}
+
+@keyframes showAfterDelay {
+  0% {
+    opacity: 0;
+  }
+  99.9% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.show-after-delay {
+  opacity: 0;
+  animation: showAfterDelay 0.5s forwards;
+}

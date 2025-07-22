@@ -32,7 +32,7 @@ public class TableSyncService<TEntity, TCosmos>
         this.mapper = mapper;
 
         ResiliencePipeline = new ResiliencePipelineBuilder()
-            .AddRetry(new RetryStrategyOptions()) // Add retry using the default options
+            .AddRetry(new RetryStrategyOptions()) // Upsert retry using the default options
             .Build(); // Builds the resilience pipeline
     }
 

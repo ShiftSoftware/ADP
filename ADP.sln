@@ -19,11 +19,24 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Global", "Global", "{9083B6
 	ProjectSection(SolutionItems) = preProject
 		azure-pipeline.yml = azure-pipeline.yml
 		GlobalSettings.props = GlobalSettings.props
+		package.json = package.json
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ADP.SyncAgent", "ADP.SyncAgent", "{974D7F12-F417-42E0-A9EB-1A5FA6EB8B23}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ADP.SyncAgent", "ADP.SyncAgent\SyncAgent\ADP.SyncAgent.csproj", "{364D51D6-6BB6-4C01-9B25-90EC01B829A8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ADP.Docs", "ADP.Docs", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Docs", "ADP.Docs\Docs\Docs.shproj", "{79A53639-C46F-4D94-8CEF-FA8DA2C6C7BD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModelDocGen", "ADP.Docs\ModelDocGen\ModelDocGen.csproj", "{9D6E753E-A97E-4CFE-9B1B-3AF3A21DC60E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ADP.WebComponents", "ADP.WebComponents", "{4CD1F2B2-D59D-4675-BC91-A2229EFEB99F}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "adp-web-components", "ADP.WebComponents\adp-web-components\adp-web-components.shproj", "{D6D8E763-24C4-477E-A648-4A42B62EE2F0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebComponentModelGenerator", "ADP.WebComponents\WebComponentModelGenerator\WebComponentModelGenerator.csproj", "{50415FAD-2B9F-4E51-8CDF-D6B108B3B076}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lookup.Services.Features", "Lookup.Services.Features\Lookup.Services.Features.csproj", "{3D53AFFF-846C-4E8D-9724-E327D9F00310}"
 EndProject
@@ -57,6 +70,14 @@ Global
 		{3D53AFFF-846C-4E8D-9724-E327D9F00310}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3D53AFFF-846C-4E8D-9724-E327D9F00310}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3D53AFFF-846C-4E8D-9724-E327D9F00310}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9D6E753E-A97E-4CFE-9B1B-3AF3A21DC60E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9D6E753E-A97E-4CFE-9B1B-3AF3A21DC60E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9D6E753E-A97E-4CFE-9B1B-3AF3A21DC60E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9D6E753E-A97E-4CFE-9B1B-3AF3A21DC60E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{50415FAD-2B9F-4E51-8CDF-D6B108B3B076}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{50415FAD-2B9F-4E51-8CDF-D6B108B3B076}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{50415FAD-2B9F-4E51-8CDF-D6B108B3B076}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{50415FAD-2B9F-4E51-8CDF-D6B108B3B076}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -67,9 +88,17 @@ Global
 		{CEA69284-48E7-41FE-A233-C36674AF1B25} = {89ABB351-4D81-4724-864A-F6B5D9311565}
 		{48A39C57-62E3-4400-916E-AABD982AEAC0} = {89ABB351-4D81-4724-864A-F6B5D9311565}
 		{364D51D6-6BB6-4C01-9B25-90EC01B829A8} = {974D7F12-F417-42E0-A9EB-1A5FA6EB8B23}
+		{79A53639-C46F-4D94-8CEF-FA8DA2C6C7BD} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{9D6E753E-A97E-4CFE-9B1B-3AF3A21DC60E} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{D6D8E763-24C4-477E-A648-4A42B62EE2F0} = {4CD1F2B2-D59D-4675-BC91-A2229EFEB99F}
+		{50415FAD-2B9F-4E51-8CDF-D6B108B3B076} = {4CD1F2B2-D59D-4675-BC91-A2229EFEB99F}
 		{3D53AFFF-846C-4E8D-9724-E327D9F00310} = {89ABB351-4D81-4724-864A-F6B5D9311565}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {9C2AF932-542F-4C6B-B4FA-33D955041860}
+	EndGlobalSection
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		ADP.Docs\Docs\Docs.projitems*{79a53639-c46f-4d94-8cef-fa8da2c6c7bd}*SharedItemsImports = 13
+		ADP.WebComponents\adp-web-components\adp-web-components.projitems*{d6d8e763-24c4-477e-a648-4a42b62ee2f0}*SharedItemsImports = 13
 	EndGlobalSection
 EndGlobal

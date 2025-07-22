@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using ShiftSoftware.ADP.Models.Enums;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace ShiftSoftware.ADP.Models.TBP;
@@ -6,10 +8,25 @@ namespace ShiftSoftware.ADP.Models.TBP;
 public class TBP_StockModel
 {
     public string id { get; set; }
-    public string VIN { get; set; }
+
+    /// <summary>
+    /// First partition key
+    /// </summary>
+    public long BrandID { get; set; }
+
+    /// <summary>
+    /// Second partition key
+    /// </summary>
     public long BrokerID { get; set; }
-    public int Quantity { get; private set; }
-    public string ItemType => ModelTypes.TBP_BrokerStock;
+
+    /// <summary>
+    /// Third partition key
+    /// </summary>
+    public string VIN { get; set; }
+
+    public int Quantity { get; set; }
+    public DateTime? OneKOrFiveKServieDate { get; set; }
+    public DateTime? FirstServieDate { get; set; }
     public TBP_BrokerModel? Broker { get; set; }
     public BrokerVehicleModel? Vehicle { get; set; }
     public IEnumerable<TBP_VehicleTransferModel> Transfers { get; set; }
@@ -18,6 +35,14 @@ public class TBP_StockModel
 
     public void CalculateQuantity()
     {
+        var stockBrandAccess = Broker?.BrandAccesses?.FirstOrDefault(x => x.BrandID == BrandID);
+
+        if(stockBrandAccess?.Active != true || Broker.IsDeleted)
+        {
+            Quantity = 0;
+            return;
+        }
+
         var transferBalance = Transfers?.Where(x => !x.IsDeleted).Sum(x =>
         {
             if (x.SellerBrokerID == BrokerID)
@@ -30,10 +55,10 @@ public class TBP_StockModel
 
         bool hasValidVSData = false;
         if (VehilceEntries?.Any() == true)
-            hasValidVSData = VehilceEntries.Any(x => (Broker.AccountStartDate.HasValue && x.InvoiceDate.HasValue ? x.InvoiceDate >= Broker.AccountStartDate : true) &&
-                (Broker.AccountNumbers.Contains(x.CustomerAccountNumber) ? x.LineStatus.ToLower() == "i" && x.Status.ToLower() == "i" : true));
+            hasValidVSData = VehilceEntries.Any(x => (stockBrandAccess?.AccountStartDate is not null && x.InvoiceDate.HasValue ? x.InvoiceDate >= stockBrandAccess.AccountStartDate : true) &&
+                (Broker.AccountNumbers.Any(a => a.AccountNumber == x.CustomerAccountNumber && a.CompanyID == x.CompanyID) ? x.LineStatus.ToLower() == "i" && x.Status.ToLower() == "i" : true));
 
-        if (Broker?.TerminationDate is not null)
+        if (stockBrandAccess?.TerminationDate is not null)
             Quantity = 0;
         else
             Quantity = (hasValidVSData == true ? 1 : 0) + (Invoices?.Any(x => !x.IsDeleted) ?? false ? -1 : 0) + transferBalance;

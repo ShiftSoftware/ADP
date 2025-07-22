@@ -1,0 +1,17 @@
+{
+  "origin": "Первоисточник",
+  "warrantyPrice": "Цена по гарантии",
+  "specialPrice": "Специальная цена",
+  "wholesalesPrice": "Оптовая цена",
+  "pnc": "PNC",
+  "pncName": "PNC $ Имя",
+  "binCode": "Бин-код",
+  "length": "длина",
+  "width": "ширина",
+  "height": "высота",
+  "netWeight": "Вес нетто",
+  "grossWeight": "Вес брутто",
+  "cubicMeasure": "Кубическая мера",
+  "hsCode": "HS - код",
+  "uzHsCode": "UZ HS CODE"
+}

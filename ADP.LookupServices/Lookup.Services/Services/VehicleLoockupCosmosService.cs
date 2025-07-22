@@ -4,6 +4,7 @@ using Newtonsoft.Json.Linq;
 using ShiftSoftware.ADP.Lookup.Services.Aggregate;
 using ShiftSoftware.ADP.Models;
 using ShiftSoftware.ADP.Models.Enums;
+using ShiftSoftware.ADP.Models.Invoice;
 using ShiftSoftware.ADP.Models.Part;
 using ShiftSoftware.ADP.Models.Service;
 using ShiftSoftware.ADP.Models.TBP;
@@ -116,10 +117,10 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
             .Select(x => ((JObject)x).ToObject<InvoiceModel>()).ToList();
 
         companyData.LaborLines = items.Where(x => x.ItemType.ToString() == ModelTypes.InvoiceLaborLine)
-            .Select(x => ((JObject)x).ToObject<InvoiceLaborLineModel>()).ToList();
+            .Select(x => ((JObject)x).ToObject<OrderLaborLineModel>()).ToList();
 
         companyData.PartLines = items.Where(x => x.ItemType.ToString() == ModelTypes.InvoicePartLine)
-            .Select(x => ((JObject)x).ToObject<InvoicePartLineModel>()).ToList();
+            .Select(x => ((JObject)x).ToObject<OrderPartLineModel>()).ToList();
 
         companyData.SSCAffectedVINs = items.Where(x => x.ItemType.ToString() == ModelTypes.SSCAffectedVIN)
             .Select(x => ((JObject)x).ToObject<SSCAffectedVINModel>()).ToList();
@@ -140,8 +141,9 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
             .Select(x => ((JObject)x).ToObject<PaidServiceInvoiceModel>())
             .Where(x => !(x?.IsDeleted ?? false)).ToList();
 
-        companyData.ServiceItemClaimLines = items.Where(x => x.ItemType.ToString() == ModelTypes.ServiceItemClaimLine)
-            .Select(x => ((JObject)x).ToObject<ServiceItemClaimLineModel>()).ToList();
+        companyData.ItemClaims = items.Where(x => x.ItemType.ToString() == ModelTypes.ItemClaim)
+            .Select(x => ((JObject)x).ToObject<ItemClaimModel>())
+            .Where(x => !(x?.IsDeleted ?? false)).ToList();
 
         companyData.FreeServiceItemExcludedVINs = items.Where(x => x.ItemType.ToString() == ModelTypes.FreeServiceItemExcludedVIN)
             .Select(x => ((JObject)x).ToObject<FreeServiceItemExcludedVINModel>()).ToList();

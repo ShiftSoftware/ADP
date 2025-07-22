@@ -23,6 +23,21 @@ public class Utility
         throw new ArgumentException("Invalid expression");
     }
 
+    public static string GetPropertyName<T>(Expression<Func<T, DateTimeOffset?>> expression)
+    {
+        if (expression.Body is MemberExpression memberExpression)
+        {
+            return memberExpression.Member.Name;
+        }
+
+        if (expression.Body is UnaryExpression unaryExpression && unaryExpression.Operand is MemberExpression operand)
+        {
+            return operand.Member.Name;
+        }
+
+        throw new ArgumentException("Invalid expression");
+    }
+
     public static string GetPropertyName<T>(Expression<Func<T, bool?>> expression)
     {
         if (expression.Body is MemberExpression memberExpression)

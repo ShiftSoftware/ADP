@@ -1,0 +1,13 @@
+* {
+  font-family: Arial;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin-slow {
+  animation: spin 2s linear infinite;
+}

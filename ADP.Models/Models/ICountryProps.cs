@@ -3,4 +3,5 @@
 public interface ICountryProps
 {
     public string CountryID { get; set; }
+    public string CountryHashID { get; set; }
 }

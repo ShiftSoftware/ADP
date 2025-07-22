@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>vehicle-claimable-items</title>
+
+    <script src="./mock-data.js"></script>
+
+    <script nomodule src="/build/shift-components.js"></script>
+    <script type="module" src="/build/shift-components.esm.js"></script>
+  </head>
+  <style>
+    .button-container {
+      margin-top: 50px;
+      border: 1px solid #e1e1e1;
+      padding: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      align-content: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .sample-button {
+      background-color: #428bca;
+      padding: 10px 15px;
+    }
+
+    .sample-button:hover {
+      background-color: #3071a9;
+    }
+  </style>
+
+  <body>
+    <a href="#" onclick="history.back()" style="color: blue; display: block; margin-bottom: 16px">Back</a>
+
+    <h1>Vehicle Claimable Items</h1>
+    <vehicle-claimable-items id="vehicle-claimable-items" is-dev="true" query-string="" base-url=""></vehicle-claimable-items>
+
+    <div class="button-container">
+      <button class="sample-button" onclick="updateLang('en')">En</button>
+      <button class="sample-button" onclick="updateLang('ku')">Ku</button>
+      <button class="sample-button" onclick="updateLang('ar')">Ar</button>
+      <button class="sample-button" onclick="updateLang('ru')">Ru</button>
+    </div>
+
+    <div style="margin-top: 50px; border: 1px solid #e1e1e1; padding: 20px; display: flex; align-content: center; justify-content: center; gap: 10px">
+      <button class="sample-button" onclick="vinLookup('')">empty (Reset)</button>
+      <button class="sample-button" onclick="vinLookup('JTMHX01J8L4198293')">Sample 1 (Not Available Null)</button>
+      <button class="sample-button" onclick="vinLookup('JTMHX01J8L4198294')">Sample 2 (Not Available Empty)</button>
+      <button class="sample-button" onclick="vinLookup('JTMHX01J8L4198295')">Sample 3</button>
+      <button class="sample-button" onclick="vinLookup('JTMHX01J8L4198296')">Sample 4</button>
+      <button class="sample-button" onclick="vinLookup('MR0BX8CD3P2791075')">Sample 5</button>
+      <button class="sample-button" onclick="vinLookup('JTMHX01J8L4198299')">Sample 6</button>
+      <button class="sample-button" onclick="vinLookup('JTMABBBJ9P4099243')">Sample 7</button>
+      <button class="sample-button" onclick="vinLookup('JTMHU09J6E4100543')">Sample 8</button>
+      <button class="sample-button" onclick="vinLookup('JTMABBBJ9P4099200')">Sample 9 (Realistic)</button>
+      <button class="sample-button" onclick="vinLookup('JTMABBBJ9P4099201')">Sample 10 (Realistic at TBP Stock)</button>
+      <button class="sample-button" onclick="vinLookup('1G8ZY1275YZ188208')">Inactive Services</button>
+    </div>
+
+    <script>
+      let claimableItems;
+
+      document.addEventListener('DOMContentLoaded', function () {
+        claimableItems = document.getElementById('vehicle-claimable-items');
+
+        claimableItems.setMockData(mockData);
+
+        claimableItems.loadingStateChange = isLoading => {
+          // console.log('isLoading: ' + isLoading);
+        };
+
+        claimableItems.loadedResponse = newResponse => {
+          // console.log(newResponse);
+
+          const urlParams = new URLSearchParams(window.location.search);
+
+          const claimIndex = urlParams.get('claim');
+
+          if (claimIndex) {
+            var itemToClaim = newResponse['serviceItems'][claimIndex];
+
+            claimableItems.claim(itemToClaim);
+          }
+        };
+
+        const urlParams = new URLSearchParams(window.location.search);
+
+        const vin = urlParams.get('vin');
+
+        if (vin) {
+          vinLookup(vin);
+        }
+
+        claimableItems.activate = vehicleInformation => {
+          // console.log(vehicleInformation);
+
+          alert(JSON.stringify(vehicleInformation));
+        };
+
+        //claimableItems.print = lastClaimResponse => {
+        //  console.log(lastClaimResponse);
+
+        //  alert(JSON.stringify(lastClaimResponse))
+        //};
+      });
+
+      function updateLang(newLang) {
+        claimableItems.language = newLang;
+      }
+
+      function vinLookup(vin) {
+        claimableItems.fetchData(vin);
+      }
+    </script>
+  </body>
+</html>

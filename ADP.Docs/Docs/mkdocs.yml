@@ -1,0 +1,98 @@
+site_name: Auto Distributor Platform
+use_directory_urls: false
+
+theme:
+  name: material
+  custom_dir: docs/overrides
+  logo: assets/images/ADP.svg
+  features:
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - content.code.copy
+    - navigation.collapse
+
+extra_css:
+  - overrides/css/extra.css
+
+nav:
+  - Introduction: index.md
+  - Components:
+      - Intro: components/intro.md
+      - Identity:
+          - Identity System: components/identity.md
+      - Parts:
+          - Parts Database: components/parts.md
+      - Vehicles:
+          - Vehicle Database: components/vehicles.md
+          - Vehicle Information:
+              - Identifiers: components/vehicle-information/identifiers.md
+              - Authorized (Official): components/vehicle-information/authorized.md
+              - Warranty: components/vehicle-information/warranty.md
+              - Safety Recalls: components/vehicle-information/safety-recalls.md
+              - Service History: components/vehicle-information/service-history.md
+              - Item Claim: components/vehicle-information/item-claim.md
+      - Services:
+          - Service Database: components/services/intro.md
+          - Warranty System:
+              - Intro: components/services/warranty/warranty.md
+          - Claimable Items: components/services/claimable-items.md
+      - CRM:
+          - Support Ticket System: components/tickets.md
+          - Customer Database: components/customers.md
+  - Architecture:
+      - Stack: architecture/stack.md
+      - Deployment Pipelines: architecture/deployment-pipelines.md
+  - Integrations:
+      - Intro: integrations/intro.md
+      - Sync Agent: integrations/adp-sync-agent.md
+      # - Invoices:
+      #     - Invoice: generated/Models/Invoice/InvoiceModel.md
+      - Parts:
+          - Parts Integration: integrations/parts.md
+          - Catalog Part: generated/Models/Part/CatalogPartModel.md
+          - Part Supersession: generated/Models/Part/PartSupersessionModel.md
+          - Part Country Data: generated/Models/Part/PartCountryDataModel.md
+          - Per Region Price: generated/Models/Part/RegionPriceModel.md
+          - Stock Part: generated/Models/Part/StockPartModel.md
+          - Order Part Line: generated/Models/Part/OrderPartLineModel.md
+  - Web Components:
+      - Introduction: web-components/introduction.md
+      - Installation: web-components/installation.md
+      - Theming: web-components/theming.md
+
+      - Components:
+          - Components List: web-components/components/components-list.md
+          - Vehicle Lookup Wrapper: web-components/components/vehicle-lookup.md
+          - Vehicle Specification: web-components/components/vehicle-specification.md
+          - Vehicle Accessories: web-components/components/vehicle-accessories.md
+          - Warranty Details: web-components/components/warranty-details.md
+          - Service History: web-components/components/service-history.md
+          - Paint Thickness: web-components/components/paint-thickness.md
+          - Swift Claim: web-components/components/swift-claim.md
+          - Dead Stock Lookup: web-components/components/dead-stock-lookup.md
+          - Distributor Lookup: web-components/components/distributor-lookup.md
+          - Manufacturer Lookup: web-components/components/manufacturer-lookup.md
+
+markdown_extensions:
+  - pymdownx.snippets
+  - attr_list
+  - md_in_html
+  - admonition
+  - tables
+  - pymdownx.mark
+  - pymdownx.details
+  - pymdownx.critic
+  - pymdownx.caret
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.tilde
+  - toc:
+      permalink: true
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format

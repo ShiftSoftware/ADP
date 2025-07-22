@@ -1,0 +1,19 @@
+{
+  "dealer": "Dealer",
+  "authorized": "Authorized",
+  "unauthorized": "Unauthorized",
+  "activeWarranty": "Has Active Warranty",
+  "notActiveWarranty": "Doesn't Have Active Warranty",
+  "notInvoiced": "Warranty is not Active because this Vehicle is not Invoiced by the following Trusted Business Partner: ",
+  "from": "Form",
+  "to": "To",
+  "pendingSSC": "This Vehicle has a Pending SSC",
+  "noPendingSSC": "No Pending SSC",
+  "checkingTMC": "Checking TMC",
+  "sscCampings": "SSC Campings",
+  "sscTableCode": "Code",
+  "sscTableDescription": "Description",
+  "sscTableRepairStatus": "Repair Status",
+  "sscTableOPCode": "OP-Codes",
+  "sscTablePartNumber": "Part Number"
+}

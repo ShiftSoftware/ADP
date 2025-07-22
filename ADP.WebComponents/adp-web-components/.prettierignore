@@ -1,0 +1,10 @@
+node_modules
+dist
+build
+www
+components.d.ts
+src/components.d.ts
+src/locale-mapper.ts
+locale-mapper.ts
+
+src/global/types/generated

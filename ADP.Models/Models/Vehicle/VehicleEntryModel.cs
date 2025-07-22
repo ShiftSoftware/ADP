@@ -4,11 +4,19 @@ using System.Collections.Generic;
 
 namespace ShiftSoftware.ADP.Models.Vehicle;
 
-public class VehicleEntryModel: IPartitionedItem, IBrandProps, ICompanyProps, IRegionProps, IBranchProps, IInvoiceLineProps, IInvoiceProps
+public class VehicleEntryModel : 
+    IPartitionedItem, 
+    IBrandProps, 
+    ICompanyProps, 
+    IRegionProps, 
+    IBranchProps, 
+    IOrderDocumentProps, 
+    IInvoiceProps
 {
     public string id { get; set; }
     public Brands Brand { get; set; }
     public string BrandID { get; set; }
+    public string BrandHashID { get; set; }
     public DateTime? ProductionDate { get; set; }
     public int? ModelYear { get; set; }
     public string ExteriorColorCode { get; set; }
@@ -23,7 +31,9 @@ public class VehicleEntryModel: IPartitionedItem, IBrandProps, ICompanyProps, IR
     public VehicleModelModel VehicleModel { get; set; }
     public DateTime? InvoiceDate { get; set; }
     public string CompanyID { get; set; }
+    public string CompanyHashID { get; set; }
     public string BranchID { get; set; }
+    public string BranchHashID { get; set; }
     public DateTime? WarrantyActivationDate { get; set; }
     public string InvoiceNumber { get; set; }
     public string AccountNumber { get; set; }
@@ -31,11 +41,12 @@ public class VehicleEntryModel: IPartitionedItem, IBrandProps, ICompanyProps, IR
     public string CustomerID { get; set; }
     public decimal? InvoiceTotal { get; set; }
     public string RegionID { get; set; }
+    public string RegionHashID { get; set; }
     public string SaleType { get; set; }
-    public string Status { get; set; }
+    public string OrderStatus { get; set; }
     public string Location { get; set; }
     public Currencies? InvoiceCurrency { get; set; }
-    public string LineStatus { get; set; }
+    public string LoadStatus { get; set; }
     public string LineID { get; set; }
     public DateTime? LoadDate { get; set; }
     public DateTime? PostDate { get; set; }
@@ -45,4 +56,5 @@ public class VehicleEntryModel: IPartitionedItem, IBrandProps, ICompanyProps, IR
     /// </summary>
     public IEnumerable<string> EligibleServiceItemUniqueReferences { get; set; }
     public string ItemType => ModelTypes.VehicleEntry;
+    public string OrderDocumentNumber { get; set; }
 }

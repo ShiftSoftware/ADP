@@ -1,0 +1,16 @@
+{
+  "info": "معلومات",
+  "distributorStock": "موزع الأسهم",
+  "availability": "التوفر",
+  "notAvailable": "غير متوفر",
+  "partiallyAvailable": "متاح جزئيا",
+  "available": "متوفر",
+  "location": "موقع",
+  "description": "وصف",
+  "productGroup": "مجموعة المنتجات",
+  "localDescription": "وصف $",
+  "dealerPurchasePrice": "سعر شراء التاجر",
+  "recommendedRetailPrice": "سعر التجزئة الموصى به",
+  "supersededFrom": "تم استبداله من",
+  "supersessions": "البدائل"
+}

@@ -4,8 +4,8 @@ public static class ModelTypes
 {
     public static readonly PartitionedItemType CatalogPart = new("CatalogPart");
     public static readonly PartitionedItemType StockPart = new("StockPart");
-    public static readonly PartitionedItemType InvoicePartLine = new("InvoicePartLine");
-    public static readonly PartitionedItemType InvoiceLaborLine = new("InvoiceLaborLine");
+    public static readonly PartitionedItemType InvoicePartLine = new("OrderPartLine");
+    public static readonly PartitionedItemType InvoiceLaborLine = new("OrderLaborLine");
     public static readonly PartitionedItemType Invoice = new("Invoice");
     public static readonly PartitionedItemType BrokerInitialVehicle = new("BrokerInitialVehicle");
     public static readonly PartitionedItemType BrokerInvoice = new("BrokerInvoice");
@@ -14,7 +14,7 @@ public static class ModelTypes
     public static readonly PartitionedItemType InitialOfficialVIN = new("InitialOfficialVIN");
     public static readonly PartitionedItemType PaidServiceInvoice = new("PaidServiceInvoice");
     public static readonly PartitionedItemType PaintThicknessInspection = new("PaintThicknessInspection");
-    public static readonly PartitionedItemType ServiceItemClaimLine = new("ServiceItemClaimLine");
+    public static readonly PartitionedItemType ItemClaim = new("ItemClaim");
     public static readonly PartitionedItemType SSCAffectedVIN = new("SSCAffectedVIN");
     public static readonly PartitionedItemType VehicleEntry = new("VehicleEntry");
     public static readonly PartitionedItemType VehicleServiceActivation = new("VehicleServiceActivation");
@@ -25,6 +25,6 @@ public static class ModelTypes
     public static readonly PartitionedItemType WarrantyDateShift = new("WarrantyDateShift");
     public static readonly PartitionedItemType FreeServiceItemExcludedVIN = new("FreeServiceItemExcludedVIN");
 
-
-    public static readonly PartitionedItemType TBP_BrokerStock = new("BrokerStock");
+    public static readonly PartitionedItemType DealerCustomer = new("DealerCustomer");
+    public static readonly PartitionedItemType GoldenCustomer = new("GoldenCustomer");
 }

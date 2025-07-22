@@ -1,0 +1,10 @@
+/* TODO;
+- create interfaces for each feature
+- refactor claimable items mainly
+- refactor other components partially
+- add mock up request
+- add a mock factory ( probably not ) 
+- migrate part lookup to new UI
+- dev ops code publishing
+- do we need docs here?
+*/

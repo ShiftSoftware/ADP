@@ -1,5 +1,8 @@
-﻿namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
+﻿using ShiftSoftware.ADP.Models;
 
+namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
+
+[TypeScriptModel]
 public class SSCLaborDTO
 {
     public string LaborCode { get; set; }

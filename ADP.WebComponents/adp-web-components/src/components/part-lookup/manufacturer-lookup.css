@@ -1,0 +1,11 @@
+@import '../style/shift-skeleton.css';
+@import '../../features/vehicle-info-layout/vehicle-info-layout.css';
+
+:host {
+  all: initial !important;
+  display: block;
+}
+
+* {
+  font-family: Arial;
+}

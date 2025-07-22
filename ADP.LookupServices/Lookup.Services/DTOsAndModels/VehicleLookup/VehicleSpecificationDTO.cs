@@ -1,7 +1,10 @@
-﻿using System;
+﻿using ShiftSoftware.ADP.Models;
+using System;
 
 namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 
+
+[TypeScriptModel]
 public class VehicleSpecificationDTO
 {
     public string ModelCode { get; set; }

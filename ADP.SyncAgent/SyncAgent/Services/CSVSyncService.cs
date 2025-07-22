@@ -168,7 +168,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression = null,
         Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression = null,
         Func<IEnumerable<TCSV>, CosmosActionType, ValueTask<IEnumerable<TCosmos>>>? mapping = null,
-        Func<SyncCosmosAction<TCosmos>, ValueTask<SyncCosmosAction<TCosmos>?>>? cosmosAction = null,
+        Func<SyncAgentCosmosAction<TCosmos>, ValueTask<SyncAgentCosmosAction<TCosmos>?>>? cosmosAction = null,
         int? batchSize = null,
         int? retryCount = 0,
         int operationTimeoutInSecond = 300,
@@ -184,7 +184,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
             {
                 logger.LogInformation("Processing Files");
 
-                var compareTask = new SyncTask { SyncID = syncId, TaskDescription = "Comparing the new File with the Existing Data", TotalStep = 6, CurrentStep = -1 };
+                var compareTask = new SyncTaskStatus { SyncID = syncId, TaskDescription = "Comparing the new File with the Existing Data", TotalStep = 6, CurrentStep = -1 };
 
                 this.UpdateProgress(compareTask);
                 if (syncProgressIndicator is not null)
@@ -229,7 +229,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
             if (syncProgressIndicator is not null)
             {
                 await syncProgressIndicator.LogErrorAsync(
-                    new SyncTask { TotalStep = 0, CurrentStep = 0, Failed = true, SyncID = syncId, TaskDescription = "Import Failed." },
+                    new SyncTaskStatus { TotalStep = 0, CurrentStep = 0, Failed = true, SyncID = syncId, TaskDescription = "Import Failed." },
                     $"{ex.Message}\r\n\r\n\r\n\r\n{ex.StackTrace}");
 
 
@@ -242,7 +242,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         }
     }
 
-    private void UpdateProgress(SyncTask syncTask, bool incrementStep = true)
+    private void UpdateProgress(SyncTaskStatus syncTask, bool incrementStep = true)
     {
         if (incrementStep)
             syncTask.CurrentStep++;
@@ -252,7 +252,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         syncTask.RemainingTimeToShutdown = operationStart.AddSeconds(operationTimeoutInSeconds) - DateTime.UtcNow;
     }
 
-    public async Task<bool> ProcessFilesAsync(string csvFileName, string? sourceContainerOrShareName, string? sourceDirectory, string? destinationContainerOrShareName, string? destinationDirectory, SyncTask syncTask)
+    public async Task<bool> ProcessFilesAsync(string csvFileName, string? sourceContainerOrShareName, string? sourceDirectory, string? destinationContainerOrShareName, string? destinationDirectory, SyncTaskStatus syncTask)
     {
         using CacheableCSVAsyncEngine<TCSV> engine = new();
 
@@ -383,7 +383,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         Expression<Func<TCosmos, object>> partitionKeyLevel1Expression,
         Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression = null,
         Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression = null,
-        Func<SyncCosmosAction<TCosmos>, ValueTask<SyncCosmosAction<TCosmos>?>>? cosmosAction = null,
+        Func<SyncAgentCosmosAction<TCosmos>, ValueTask<SyncAgentCosmosAction<TCosmos>?>>? cosmosAction = null,
         int? batchSize = null,
         int? retryCount = 0,
         string? syncId = null)
@@ -449,7 +449,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
             Expression<Func<TCosmos, object>> partitionKeyLevel1Expression,
             Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression,
             Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression,
-            Func<SyncCosmosAction<TCosmos>, ValueTask<SyncCosmosAction<TCosmos>?>>? cosmosAction,
+            Func<SyncAgentCosmosAction<TCosmos>, ValueTask<SyncAgentCosmosAction<TCosmos>?>>? cosmosAction,
             int? batchSize,
             int? retryCount,
             string? syncId
@@ -457,7 +457,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
     {
         CheckForCancellation();
 
-        var cosmosTask = new SyncTask
+        var cosmosTask = new SyncTaskStatus
         {
             SyncID = syncId,
             TaskDescription = actionType == CosmosActionType.Upsert ? "Upserting to Cosmos DB" : "Deleting from Cosmos DB",
@@ -489,7 +489,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
         if (syncProgressIndicator is not null)
             await syncProgressIndicator.LogInformationAsync(cosmosTask, string.Format("Total Item Count is: {0:#,0}, Batch Size is: {1:#,0}, Step Count is: {2:#,0}\r\n", totalCount, batchSize, totalSteps));
 
-        IEnumerable<SyncCosmosAction<TCosmos>?>? items = null;
+        IEnumerable<SyncAgentCosmosAction<TCosmos>?>? items = null;
 
         while (true)
         {
@@ -562,10 +562,10 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
                     mappedRecords = await mapping(records, actionType);
 
                 if (cosmosAction is null)
-                    items = mappedRecords.Select(x => new SyncCosmosAction<TCosmos>(x, CosmosActionType.Upsert, GetCancellationToken()));
+                    items = mappedRecords.Select(x => new SyncAgentCosmosAction<TCosmos>(x, actionType, GetCancellationToken()));
                 else
                     foreach (var item in mappedRecords)
-                        items = (items ?? []).Concat([await cosmosAction(new(item, CosmosActionType.Upsert, GetCancellationToken()))]);
+                        items = (items ?? []).Concat([await cosmosAction(new(item, actionType, GetCancellationToken()))]);
 
                 logger.LogInformation("Completed mapping CSV records to Cosmos Data Model.");
 
@@ -586,7 +586,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
                         cosmosTask,
                         "Starting Cosmos Operation for the current Batch.\r\n\r\n");
 
-                //Some times the CSV comparer marks an item as deleted. But the SyncCosmosAction has the ability to change that to an upsert (This is done outside the sync agent by the programmer.) 
+                //Some times the CSV comparer marks an item as deleted. But the SyncAgentCosmosAction has the ability to change that to an upsert (This is done outside the sync agent by the programmer.) 
 
                 await DeleteFromCosmosAsync(
                     databaseId,
@@ -660,7 +660,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
     private async Task UpsertToCosmosAsync(
             string databaseId,
             string containerId,
-            IEnumerable<SyncCosmosAction<TCosmos>?> items,
+            IEnumerable<SyncAgentCosmosAction<TCosmos>?> items,
             Expression<Func<TCosmos, object>> partitionKeyLevel1Expression,
             Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression,
             Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression
@@ -700,7 +700,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
     private async Task DeleteFromCosmosAsync(
             string databaseId,
             string containerId,
-            IEnumerable<SyncCosmosAction<TCosmos>?> items,
+            IEnumerable<SyncAgentCosmosAction<TCosmos>?> items,
             Expression<Func<TCosmos, object>> partitionKeyLevel1Expression,
             Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression,
             Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression

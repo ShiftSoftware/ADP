@@ -1,5 +1,8 @@
-﻿namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Part;
+﻿using ShiftSoftware.ADP.Models;
 
+namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Part;
+
+[TypeScriptModel]
 public class HSCodeDTO
 {
     public string CountryIntegrationID { get; set; }

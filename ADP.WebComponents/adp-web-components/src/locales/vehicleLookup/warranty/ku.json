@@ -1,0 +1,19 @@
+{
+  "dealer": "بریکار",
+  "authorized": "ڕێگەپێدراو",
+  "unauthorized": "بێ مۆڵەت",
+  "activeWarranty": "گەرەنتی چالاکی هەیە",
+  "notActiveWarranty": "گەرەنتی چالاکی نییە",
+  "notInvoiced": "گەرەنتی چالاک نییە چونکە ئەم ئۆتۆمبێلە لەلایەن ئەم هاوبەشە بازرگانییە متمانەپێکراوەی خوارەوە فاتورەی بۆ نەکراوە: ",
+  "from": "لە",
+  "to": "بۆ",
+  "pendingSSC": "ئەم ئۆتۆمبێلە هەڵمەتێکی خزمەتگوزاری تایبەتی چاوەڕوانکراوی هەیە",
+  "noPendingSSC": "هیچ هەڵمەتێکی خزمەتگوزاری تایبەتی چاوەڕوانکراو نییە",
+  "checkingTMC": "پشکنینی TMC",
+  "sscCampings": "هەڵمەتەکانی خزمەتگوزاری تایبەت",
+  "sscTableCode": "کۆد",
+  "sscTableDescription": "وەسف",
+  "sscTableRepairStatus": "دۆخی چاککردنەوە",
+  "sscTableOPCode": "OP-کۆدەکان",
+  "sscTablePartNumber": "ژمارەی پارچە"
+}
