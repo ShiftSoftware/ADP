@@ -11,7 +11,7 @@ public class WarrantyClaimModel : IPartitionedItem, IBrandProps, ICompanyProps
     public string VIN { get; set; }
     public bool IsDeleted { get; set; }
     public DateTime? RepairDate { get; set; }
-    public WarrantyClaimStatus ClaimStatus { get; set; }
+    public ClaimStatus ClaimStatus { get; set; }
     public WarrantyManufacturerClaimStatus ManufacturerStatus { get; set; }
     public string DistributorComment { get; set; }
     public string LaborOperationNoMain { get; set; }

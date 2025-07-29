@@ -2,7 +2,7 @@
 
 namespace ShiftSoftware.ADP.Models.Enums;
 
-public enum WarrantyClaimStatus
+public enum ClaimStatus
 {
     [Description("Draft")]
     Draft = 0,

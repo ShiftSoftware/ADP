@@ -581,7 +581,7 @@ public class VehicleLookupService
             DateTime? repairDate = x.RepairDate;
 
             var warrantyClaim = warrantyClaims?
-                .Where(w => new List<WarrantyClaimStatus> { WarrantyClaimStatus.Accepted, WarrantyClaimStatus.Certified, WarrantyClaimStatus.Invoiced }.Contains(w?.ClaimStatus ?? 0))
+                .Where(w => new List<ClaimStatus> { ClaimStatus.Accepted, ClaimStatus.Certified, ClaimStatus.Invoiced }.Contains(w?.ClaimStatus ?? 0))
                 .OrderByDescending(w => w.RepairCompletionDate)
                 .FirstOrDefault(w => (
                     w.DistributorComment?.Contains(x.CampaignCode) ?? false) ||
