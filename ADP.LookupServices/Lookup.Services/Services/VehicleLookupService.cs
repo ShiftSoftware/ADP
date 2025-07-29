@@ -2,6 +2,7 @@
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.SSC;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using ShiftSoftware.ADP.Lookup.Services.Enums;
+using ShiftSoftware.ADP.Lookup.Services.Services.Evaluators;
 using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ADP.Models.Invoice;
 using ShiftSoftware.ADP.Models.Part;
@@ -26,6 +27,9 @@ public class VehicleLookupService
     private readonly IServiceProvider services;
     private readonly ILogCosmosService logCosmosService;
     private readonly IVehicleAuthorizationEvaluator vehicleAuthorizationEvaluator;
+    private readonly IWarrantyAndFreeServiceEvaluator warrantyAndFreeServiceEvaluator;
+    private readonly ISaleInfoExtractor saleInfoExtractor;
+
     CompanyDataAggregateCosmosModel companyDataAggregate = new CompanyDataAggregateCosmosModel();
 
 
@@ -38,7 +42,10 @@ public class VehicleLookupService
         IServiceProvider services = null,
         ILogCosmosService logCosmosService = null,
         LookupOptions options = null,
-        IVehicleAuthorizationEvaluator vehicleAuthorizationEvaluator = null)
+        IVehicleAuthorizationEvaluator vehicleAuthorizationEvaluator = null,
+        IWarrantyAndFreeServiceEvaluator warrantyAndFreeServiceEvaluator = null,
+        ISaleInfoExtractor saleInfoExtractor = null
+    )
     {
         lookupCosmosService = lookupService;
         this.options = options;
@@ -46,6 +53,8 @@ public class VehicleLookupService
         this.services = services;
         this.logCosmosService = logCosmosService;
         this.vehicleAuthorizationEvaluator = vehicleAuthorizationEvaluator;
+        this.warrantyAndFreeServiceEvaluator = warrantyAndFreeServiceEvaluator; 
+        this.saleInfoExtractor = saleInfoExtractor;
     }
 
     public async Task<VehicleLookupDTO> LookupAsync(
@@ -98,6 +107,8 @@ public class VehicleLookupService
 
         data.IsAuthorized = this.vehicleAuthorizationEvaluator.Evaluate(vin, companyDataAggregate);
 
+        data.SaleInformation = await this.saleInfoExtractor.ExtractSaleInformationAsync(vehicles, languageCode, companyDataAggregate);
+
         // Set NextServiceDate
         data.NextServiceDate = companyDataAggregate.Invoices?.OrderByDescending(x => x.InvoiceDate).FirstOrDefault()?.NextServiceDate;
 
@@ -107,50 +118,16 @@ public class VehicleLookupService
         // Set SSC
         data.SSC = await GetSSCAsync(companyDataAggregate.SSCAffectedVINs, companyDataAggregate.WarrantyClaims, companyDataAggregate.LaborLines, regionIntegrationId);
 
-        DateTime? warrantyStartDate = null;
         DateTime? freeServiceStartDate = null;
 
         if (vehicle is not null)
         {
-            // Set SaleInformation
-            data.SaleInformation = await GetSaleInformationAsync(vehicles);
-
-            //Normal company Sale
-            if (data.SaleInformation?.Broker is null)
-            {
-                warrantyStartDate = data.SaleInformation?.WarrantyActivationDate;
-
-                var serviceActivation = companyDataAggregate.VehicleServiceActivations.FirstOrDefault();
-
-                if (serviceActivation is not null)
-                    warrantyStartDate = serviceActivation.WarrantyActivationDate;
-
-                if (warrantyStartDate is null && options.WarrantyStartDateDefaultsToInvoiceDate)
-                    warrantyStartDate = data.SaleInformation?.InvoiceDate;
-
-                freeServiceStartDate = warrantyStartDate;
-            }
-            else
-            {
-                //Broker Stock
-                if (data.SaleInformation.Broker.InvoiceDate is null)
-                {
-                    if (ignoreBrokerStock)
-                    {
-                        warrantyStartDate = null;
-                        freeServiceStartDate = data.SaleInformation?.WarrantyActivationDate ?? data.SaleInformation?.InvoiceDate;
-                    }
-                }
-                //Normal Broker Sale
-                else
-                {
-                    warrantyStartDate = data.SaleInformation?.Broker?.InvoiceDate;
-                    freeServiceStartDate = data.SaleInformation?.Broker?.InvoiceDate;
-                }
-            }
-
-            // Set Warranty
-            data.Warranty = await GetWarrantyAsync(warrantyStartDate, vehicle.Brand);
+            freeServiceStartDate = await this.warrantyAndFreeServiceEvaluator.EvaluateFreeServiceStartDate(
+               vehicle.Brand,
+               ignoreBrokerStock,
+               data,
+               this.companyDataAggregate
+           );
         }
 
         data.ServiceItems = await GetServiceItems(
@@ -433,132 +410,12 @@ public class VehicleLookupService
         };
     }
 
-    private async Task<VehicleSaleInformation> GetSaleInformationAsync(List<VehicleEntryModel> vehicles)
-    {
-        VehicleSaleInformation result = new();
-
-        if (!(vehicles?.Any() ?? false))
-            return null;
-
-        var vsData = vehicles
-            .OrderByDescending(x => x.InvoiceDate == null)
-            .ThenByDescending(x => x.InvoiceDate)
-            .FirstOrDefault();
-
-        result.InvoiceDate = vsData?.InvoiceDate;
-        result.WarrantyActivationDate = vsData?.WarrantyActivationDate;
-        result.Status = vsData.OrderStatus;
-        result.Location = vsData.Location;
-        result.SaleType = vsData.SaleType;
-        result.AccountNumber = vsData.AccountNumber;
-        result.RegionID = vsData.RegionID;
-
-        result.InvoiceNumber = vsData?.InvoiceNumber;
-        result.InvoiceTotal = vsData?.InvoiceTotal ?? 0;
-        result.CompanyID = vsData?.CompanyID;
-        result.BranchID = vsData?.BranchID;
-
-        result.CustomerID = vsData?.CustomerID;
-        result.CustomerAccountNumber = vsData?.CustomerAccountNumber;
-
-        if (options.CountryFromBranchIDResolver is not null)
-        {
-            var countryResult = await options.CountryFromBranchIDResolver(new(vsData.BranchID, languageCode, services));
-
-            if (countryResult is not null)
-            {
-                result.CountryID = countryResult.Value.countryID;
-                result.CountryName = countryResult.Value.countryName;
-            }
-        }
-
-        if (options.CompanyNameResolver is not null)
-            result.CompanyName = await options.CompanyNameResolver(new(vsData.CompanyID, languageCode, services));
-
-        if (options.CompanyBranchNameResolver is not null)
-            result.BranchName = await options.CompanyBranchNameResolver(
-                new(vsData.BranchID, languageCode, services));
-
-        string? companyLogo = null;
-
-        if(options.CompanyLogoResolver is not null)
-            companyLogo = await options.CompanyLogoResolver(new(vsData.CompanyID, languageCode, services));   
-
-        //if(!string.IsNullOrWhiteSpace(companyLogo))
-        //    try
-        //    {
-        //        result.CompanyLogo = await GetCompanyLogo(JsonSerializer.Deserialize<List<ShiftFileDTO>>(companyLogo));
-        //    }
-        //    catch (Exception){}
-
-        if (companyDataAggregate.BrokerInvoices?.Any() ?? false)
-        {
-            var brokerInvoice = companyDataAggregate.BrokerInvoices.FirstOrDefault();
-            var broker = await lookupCosmosService.GetBrokerAsync(brokerInvoice.ID);
-
-            result.Broker = new VehicleBrokerSaleInformation
-            {
-                BrokerID = brokerInvoice.ID,
-                BrokerName = broker?.Name,
-                CustomerID = (brokerInvoice.BrokerCustomerID ?? brokerInvoice.NonOfficialBrokerCustomerID) ?? 0,
-                InvoiceDate = brokerInvoice.InvoiceDate,
-                InvoiceNumber = brokerInvoice.InvoiceNumber,
-            };
-        }
-        else
-        {
-            var broker = await lookupCosmosService.GetBrokerAsync(vsData?.CustomerAccountNumber, vsData?.CompanyID);
-
-            // If vehicle sold to broker and the broker is terminated, then make vsdata as start date.
-            // If vehicle sold to broker before start date and it is not exists in broker intial vehicles,
-            // then make vsdata as start date.
-            if (broker is not null)
-                if (!broker.TerminationDate.HasValue && (broker.AccountStartDate <= vsData?.InvoiceDate || companyDataAggregate.BrokerInitialVehicles?.Count(x => x?.BrokerID == broker.ID) > 0))
-                    result.Broker = new VehicleBrokerSaleInformation
-                    {
-                        BrokerID = broker.ID,
-                        BrokerName = broker.Name
-                    };
-        }
-
-        return result;
-    }
-
     private async Task<List<ShiftFileDTO>> GetCompanyLogo(List<ShiftFileDTO> companyLogo)
     {
         if (options?.CompanyLogoImageResolver is not null)
             return await options.CompanyLogoImageResolver(new(companyLogo, this.languageCode, this.services));
 
         return companyLogo;
-    }
-
-    private async Task<VehicleWarrantyDTO> GetWarrantyAsync(DateTime? invoiceDate, Brands brand)
-    {
-        VehicleWarrantyDTO result = new();
-
-        var shiftDate = companyDataAggregate.WarrantyDateShifts?.FirstOrDefault();
-        if (shiftDate is not null)
-            invoiceDate = shiftDate.NewDate;
-
-        result.WarrantyStartDate = invoiceDate;
-
-        if (brand == Brands.Lexus)
-            result.WarrantyEndDate = invoiceDate?.AddYears(4);
-        else
-            result.WarrantyEndDate = invoiceDate?.AddYears(3);
-
-
-        // Extended warranty
-        //var extendedWarranty = extendedWarranties?.FirstOrDefault(x => x.ResponseType == "3");
-
-        //if (extendedWarranty is not null)
-        //{
-        //    result.ExtendedWarrantyStartDate = extendedWarranty?.UpdatedDate is null ? null
-        //        : DateOnly.FromDateTime(extendedWarranty.UpdatedDate.Value);
-        //    result.ExtendedWarrantyEndDate = result.ExtendedWarrantyStartDate?.AddYears(2);
-        //}
-
-        return result;
     }
 
     private async Task<IEnumerable<SscDTO>> GetSSCAsync(

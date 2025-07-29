@@ -9,15 +9,15 @@ namespace ShiftSoftware.ADP.Lookup.Services.Aggregate;
 
 public class CompanyDataAggregateCosmosModel
 {
-    public List<VehicleEntryModel> VehicleEntries { get; set; }
-    public List<VehicleServiceActivation> VehicleServiceActivations { get; set; }
+    public List<VehicleEntryModel> VehicleEntries { get; set; } = new();
+    public List<VehicleServiceActivation> VehicleServiceActivations { get; set; } = new();
     public List<VehicleInspectionModel> VehicleInspections { get; set; }
-    public List<InitialOfficialVINModel> InitialOfficialVINs { get; set; }
+    public List<InitialOfficialVINModel> InitialOfficialVINs { get; set; } = new();
     public List<InvoiceModel> Invoices { get; set; }
     public List<OrderLaborLineModel> LaborLines { get; set; }
-    public List<OrderPartLineModel> PartLines { get; set; }
-    public List<SSCAffectedVINModel> SSCAffectedVINs { get; set; }
-    public List<WarrantyClaimModel> WarrantyClaims { get; set; }
+    public List<OrderPartLineModel> PartLines { get; set; } = new();
+    public List<SSCAffectedVINModel> SSCAffectedVINs { get; set; } = new();
+    public List<WarrantyClaimModel> WarrantyClaims { get; set; } = new();
     public List<BrokerInitialVehicleModel> BrokerInitialVehicles { get; set; }
     public List<BrokerInvoiceModel> BrokerInvoices { get; set; }
     public List<PaidServiceInvoiceModel> PaidServiceInvoices { get; set; }

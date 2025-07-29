@@ -1,6 +1,6 @@
 ﻿using ShiftSoftware.ADP.Lookup.Services.Aggregate;
 
-namespace ShiftSoftware.ADP.Lookup.Services.Services;
+namespace ShiftSoftware.ADP.Lookup.Services.Services.Evaluators;
 
 public interface IVehicleAuthorizationEvaluator
 {
