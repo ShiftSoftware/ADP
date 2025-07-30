@@ -31,7 +31,7 @@
 		<PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.7" />
 		<PackageReference Include="Polly" Version="8.6.2" />
 		<PackageReference Include="ShiftSoftware.ADP.Models" Version="$(ADPVersion)" Condition="!Exists('..\..\ADP.Models\Models\Models.csproj')" />
-		<PackageReference Include="ShiftSoftware.ShiftEntity.Model" Version="2025.7.23.3" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.Model" Version="2025.7.30.1" />
 	</ItemGroup>
 
 	<ItemGroup>
