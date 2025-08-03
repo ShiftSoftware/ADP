@@ -215,10 +215,41 @@ public class EFCoreSyncDataSource<TEntity, TSource, TDestination, TDbContext>
             {
                 var keyName = Utility.GetPropertyName(Configurations!.EntityKey!);
                 var syncTimestampName = Utility.GetPropertyName(Configurations!.SyncTimestamp!);
+                var syncTimestampProperty = typeof(TEntity).GetProperty(syncTimestampName);
 
-                await dbSet
-                    .Where(x => succeededIds!.Contains(EF.Property<object>(x, keyName)))
-                    .ExecuteUpdateAsync(x => x.SetProperty(p => EF.Property<DateTimeOffset?>(p, syncTimestampName), this.lastSyncTimestamp), cancellationToken: input.CancellationToken);
+                if (syncTimestampProperty != null)
+                {
+                    var propertyType = syncTimestampProperty.PropertyType;
+
+                    if (propertyType == typeof(DateTimeOffset) || propertyType == typeof(DateTimeOffset?))
+                    {
+                        await dbSet
+                            .Where(x => succeededIds!.Contains(EF.Property<object>(x, keyName)))
+                            .ExecuteUpdateAsync(
+                                x => x.SetProperty(
+                                    p => EF.Property<DateTimeOffset?>(p, syncTimestampName),
+                                    this.lastSyncTimestamp
+                                ),
+                                cancellationToken: input.CancellationToken
+                            );
+                    }
+                    else if (propertyType == typeof(DateTime) || propertyType == typeof(DateTime?))
+                    {
+                        await dbSet
+                            .Where(x => succeededIds!.Contains(EF.Property<object>(x, keyName)))
+                            .ExecuteUpdateAsync(
+                                x => x.SetProperty(
+                                    p => EF.Property<DateTime?>(p, syncTimestampName),
+                                    this.lastSyncTimestamp.GetValueOrDefault().UtcDateTime
+                                ),
+                                cancellationToken: input.CancellationToken
+                            );
+                    }
+                    else
+                    {
+                        throw new NotSupportedException($"SyncTimestamp property type '{propertyType}' is not supported. Only DateTimeOffset and DateTime are allowed.");
+                    }
+                }
             }
 
             return true;
