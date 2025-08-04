@@ -21,7 +21,8 @@
   "claimForm": {
     "documentLimitError": "لقد تجاوز المستند الحد الأقصى لحجم الملف: ",
     "documentRequiredError": "من فضلك إملأ حقل المستند.",
-    "document": "وثيقة",
+    "uploadSingleDocument": "تحميل مستند",
+    "uploadMultipleDocument": "تحميل المستندات",
     "serviceType": "نوع الخدمة",
     "name": "اسم",
     "activationDate": "تاريخ التفعيل",

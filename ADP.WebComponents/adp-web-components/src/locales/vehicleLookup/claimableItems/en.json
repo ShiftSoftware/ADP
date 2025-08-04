@@ -21,7 +21,8 @@
   "claimForm": {
     "documentLimitError": "The document exceeded the file size limit: ",
     "documentRequiredError": "Please Fill the document field.",
-    "document": "Document",
+    "uploadSingleDocument": "Upload a document",
+    "uploadMultipleDocument": "Upload the documents",
     "serviceType": "Service Type",
     "name": "Name",
     "activationDate": "Activation Date",

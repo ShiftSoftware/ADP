@@ -21,7 +21,8 @@
   "claimForm": {
     "documentLimitError": "بەڵگەنامەکە سنووری قەبارەی پەڕگەکەی تێپەڕاند: ",
     "documentRequiredError": "تکایە بەڵگەنامەکە داخڵبکە.",
-    "document": "بەڵگەنامە",
+    "uploadSingleDocument": "دانانی بەڵگەنامەیەک",
+    "uploadMultipleDocument": "دانانی بەڵگەنامەکان",
     "serviceType": "جۆری خزمەتگوزاری",
     "name": "ناو",
     "activationDate": "بەرواری چالاککردن",

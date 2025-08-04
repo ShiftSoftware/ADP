@@ -21,7 +21,8 @@
   "claimForm": {
     "documentLimitError": "Размер файла документа превысил ограничение: ",
     "documentRequiredError": "Пожалуйста, заполните поле документа.",
-    "document": "Документ",
+    "uploadSingleDocument": "Загрузить документ",
+    "uploadMultipleDocument": "Загрузить документы",
     "serviceType": "Тип обслуживания",
     "name": "Имя",
     "activationDate": "Дата активации",

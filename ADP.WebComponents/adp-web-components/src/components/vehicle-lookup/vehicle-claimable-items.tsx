@@ -52,6 +52,7 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
   @Prop() baseUrl: string;
   @Prop() headers: object = {};
   @Prop() queryString: string = '';
+  @Prop() uploadMultipleDocumentsAtTheForm: boolean = true;
 
   @Prop() errorCallback?: (errorMessage: ErrorKeys) => void;
   @Prop() loadingStateChange?: (isLoading: boolean) => void;
@@ -311,7 +312,7 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
     this.lastSuccessfulClaimResponse = response;
   }
 
-  handleClaim = async ({ document, ...payload }: ClaimFormPayload) => {
+  handleClaim = async ({ documents, ...payload }: ClaimFormPayload) => {
     try {
       const formData = new FormData();
       formData.append(
@@ -324,7 +325,12 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
           cancelledServiceItems: this.claimForm.canceledItems,
         }),
       );
-      if (document) formData.append('document', document);
+
+      if (documents && documents.length > 0) {
+        documents.forEach(doc => {
+          formData.append('document', doc);
+        });
+      }
 
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
@@ -379,8 +385,8 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
     }
   };
 
-  handleDevClaim = async ({ document }: ClaimFormPayload) => {
-    if (document) {
+  handleDevClaim = async ({ documents }: ClaimFormPayload) => {
+    if (documents && documents.length > 0) {
       this.claimForm.setFileUploadProgression(0);
       let uploadChunks = 20;
       for (let index = 0; index < uploadChunks; index++) {
@@ -441,6 +447,7 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
         <vehicle-item-claim-form
           class="vehicle-item-claim-form"
           maximumDocumentFileSizeInMb={this.maximumDocumentFileSizeInMb}
+          uploadMultipleDocuments={this.uploadMultipleDocumentsAtTheForm}
           locale={{ sharedLocales: this.locale.sharedLocales, ...this.locale.claimForm }}
         />
 
