@@ -169,86 +169,92 @@ public class EFCoreSyncDataSource<TEntity, TSource, TDestination, TDbContext>
 
     public virtual async ValueTask<bool> BatchCompleted(SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>> input)
     {
+        var queryable = dbSet.AsQueryable().AsNoTracking();
+
         try
         {
-            // Skip the process if the SyncTimestamp is not set
-            if (this.Configurations?.SyncTimestamp is null)
-                return true;
-
-            var succeededIds = input.Input?.StoreDataResult?.SucceededItems?
-                .SelectMany(x =>
-                {
-                    var key = Configurations?.DestinationKey?.Compile()(x!);
-                    return key is IEnumerable collection && key is not string
-                        ? collection.Cast<object>()
-                        : [key!];
-                })?
-                .Distinct() ?? [];
-            var failedIds = input.Input?.StoreDataResult?.FailedItems?
-                .SelectMany(x =>
-                {
-                    var key = Configurations?.DestinationKey?.Compile()(x!);
-                    return key is IEnumerable collection && key is not string
-                        ? collection.Cast<object>()
-                        : [key!];
-                })?
-                .Distinct() ?? [];
-            var skippedIds = input.Input?.StoreDataResult?.SkippedItems?
-                .SelectMany(x =>
-                {
-                    var key = Configurations?.DestinationKey?.Compile()(x!);
-                    return key is IEnumerable collection && key is not string
-                        ? collection.Cast<object>()
-                        : [key!];
-                })?
-                .Distinct() ?? [];
-
-            if (this.Configurations?.UpdateSyncTimeStampForSkippedItems ?? false)
-                succeededIds = succeededIds?.Union(skippedIds);
-
-            // Exclude failed items from the succeeded items
-            if (failedIds?.Any() == true && succeededIds?.Any() == true)
-                succeededIds = succeededIds.Except(failedIds);  // This is helpful if one source item have multiple reference items in destination
-
-            // Update the last sync timestamp for the succeeded items
-            if (succeededIds?.Any() == true)
+            if (this.Configurations?.UpdateTimeStampFilter is null)
             {
+                // Skip the process if the SyncTimestamp is not set
+                if (this.Configurations?.SyncTimestamp is null)
+                    return true;
+
+                var succeededIds = input.Input?.StoreDataResult?.SucceededItems?
+                    .SelectMany(x =>
+                    {
+                        var key = Configurations?.DestinationKey?.Compile()(x!);
+                        return key is IEnumerable collection && key is not string
+                            ? collection.Cast<object>()
+                            : [key!];
+                    })?
+                    .Distinct() ?? [];
+                var failedIds = input.Input?.StoreDataResult?.FailedItems?
+                    .SelectMany(x =>
+                    {
+                        var key = Configurations?.DestinationKey?.Compile()(x!);
+                        return key is IEnumerable collection && key is not string
+                            ? collection.Cast<object>()
+                            : [key!];
+                    })?
+                    .Distinct() ?? [];
+                var skippedIds = input.Input?.StoreDataResult?.SkippedItems?
+                    .SelectMany(x =>
+                    {
+                        var key = Configurations?.DestinationKey?.Compile()(x!);
+                        return key is IEnumerable collection && key is not string
+                            ? collection.Cast<object>()
+                            : [key!];
+                    })?
+                    .Distinct() ?? [];
+
+                if (this.Configurations?.UpdateSyncTimeStampForSkippedItems ?? false)
+                    succeededIds = succeededIds?.Union(skippedIds);
+
+                // Exclude failed items from the succeeded items
+                if (failedIds?.Any() == true && succeededIds?.Any() == true)
+                    succeededIds = succeededIds.Except(failedIds);  // This is helpful if one source item have multiple reference items in destination
+
                 var keyName = Utility.GetPropertyName(Configurations!.EntityKey!);
-                var syncTimestampName = Utility.GetPropertyName(Configurations!.SyncTimestamp!);
-                var syncTimestampProperty = typeof(TEntity).GetProperty(syncTimestampName);
 
-                if (syncTimestampProperty != null)
+                queryable = queryable.Where(x => succeededIds!.Contains(EF.Property<object>(x, keyName)));
+            }
+            else
+            {
+                queryable = Configurations!.UpdateTimeStampFilter!(queryable, input);
+            }
+
+            var syncTimestampName = Utility.GetPropertyName(Configurations!.SyncTimestamp!);
+            var syncTimestampProperty = typeof(TEntity).GetProperty(syncTimestampName);
+
+            if (syncTimestampProperty != null)
+            {
+                var propertyType = syncTimestampProperty.PropertyType;
+
+                if (propertyType == typeof(DateTimeOffset) || propertyType == typeof(DateTimeOffset?))
                 {
-                    var propertyType = syncTimestampProperty.PropertyType;
-
-                    if (propertyType == typeof(DateTimeOffset) || propertyType == typeof(DateTimeOffset?))
-                    {
-                        await dbSet
-                            .Where(x => succeededIds!.Contains(EF.Property<object>(x, keyName)))
-                            .ExecuteUpdateAsync(
-                                x => x.SetProperty(
-                                    p => EF.Property<DateTimeOffset?>(p, syncTimestampName),
-                                    this.lastSyncTimestamp
-                                ),
-                                cancellationToken: input.CancellationToken
-                            );
-                    }
-                    else if (propertyType == typeof(DateTime) || propertyType == typeof(DateTime?))
-                    {
-                        await dbSet
-                            .Where(x => succeededIds!.Contains(EF.Property<object>(x, keyName)))
-                            .ExecuteUpdateAsync(
-                                x => x.SetProperty(
-                                    p => EF.Property<DateTime?>(p, syncTimestampName),
-                                    this.lastSyncTimestamp.GetValueOrDefault().UtcDateTime
-                                ),
-                                cancellationToken: input.CancellationToken
-                            );
-                    }
-                    else
-                    {
-                        throw new NotSupportedException($"SyncTimestamp property type '{propertyType}' is not supported. Only DateTimeOffset and DateTime are allowed.");
-                    }
+                    await queryable
+                        .ExecuteUpdateAsync(
+                            x => x.SetProperty(
+                                p => EF.Property<DateTimeOffset?>(p, syncTimestampName),
+                                this.lastSyncTimestamp
+                            ),
+                            cancellationToken: input.CancellationToken
+                        );
+                }
+                else if (propertyType == typeof(DateTime) || propertyType == typeof(DateTime?))
+                {
+                    await queryable
+                        .ExecuteUpdateAsync(
+                            x => x.SetProperty(
+                                p => EF.Property<DateTime?>(p, syncTimestampName),
+                                this.lastSyncTimestamp.GetValueOrDefault().UtcDateTime
+                            ),
+                            cancellationToken: input.CancellationToken
+                        );
+                }
+                else
+                {
+                    throw new NotSupportedException($"SyncTimestamp property type '{propertyType}' is not supported. Only DateTimeOffset and DateTime are allowed.");
                 }
             }
 
