@@ -40,7 +40,7 @@ Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "adp-web-components", "ADP.W
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebComponentModelGenerator", "ADP.WebComponents\WebComponentModelGenerator\WebComponentModelGenerator.csproj", "{50415FAD-2B9F-4E51-8CDF-D6B108B3B076}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ADP.LookupServices.BDD", "ADP.LookupServices.BDD\ADP.LookupServices.BDD.csproj", "{73D323FC-3355-4D5B-B3EC-2E9588879501}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LookupServices.BDD", "ADP.LookupServices.BDD\LookupServices.BDD.csproj", "{73D323FC-3355-4D5B-B3EC-2E9588879501}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -3,7 +3,7 @@ using ShiftSoftware.ADP.Lookup.Services.Aggregate;
 using ShiftSoftware.ADP.Lookup.Services.Evaluators;
 using Xunit;
 
-namespace ADP.LookupServices.BDD.StepDefinitions;
+namespace LookupServices.BDD.StepDefinitions;
 
 [Binding]
 public class AuthorizedStepDefinitions

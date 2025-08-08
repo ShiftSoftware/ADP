@@ -10,7 +10,7 @@
 // ------------------------------------------------------------------------------
 #region Designer generated code
 #pragma warning disable
-namespace ADP.LookupServices.BDD.Features
+namespace LookupServices.BDD.Features
 {
     using Reqnroll;
     using System;

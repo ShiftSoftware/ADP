@@ -2,7 +2,7 @@
 using ShiftSoftware.ADP.Lookup.Services.Aggregate;
 using ShiftSoftware.ADP.Models.Vehicle;
 
-namespace ADP.LookupServices.BDD.StepDefinitions;
+namespace LookupServices.BDD.StepDefinitions;
 
 [Binding]
 public class SharedStepDefinitions

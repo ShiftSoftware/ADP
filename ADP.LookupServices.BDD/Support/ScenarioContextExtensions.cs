@@ -1,7 +1,7 @@
 ﻿using Reqnroll;
 using ShiftSoftware.ADP.Lookup.Services.Aggregate;
 
-namespace ADP.LookupServices.BDD;
+namespace LookupServices.BDD;
 
 public static class ScenarioContextExtensions
 {
