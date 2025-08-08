@@ -37,7 +37,7 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         );
 
         var query = new QueryDefinition("SELECT * FROM c WHERE c.VIN = @vin");
-        query.WithParameter("@vin", vin?.Trim().ToUpper());
+        query.WithParameter("@vin", vin);
 
         var iterator = container.GetItemQueryIterator<dynamic>(query);
 
@@ -60,6 +60,8 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         if (vins.Count() > 100)
             throw new Exception("Can't lookup more than 100 VINs at a time.");
 
+        vins = vins.Select(x => x?.Trim()?.ToUpper());
+
         var container = client.GetContainer(
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.Vehicles
@@ -81,9 +83,15 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
 
     public async Task<CompanyDataAggregateCosmosModel> GetAggregatedCompanyData(string vin)
     {
+        vin = vin?.Trim()?.ToUpper();
+
         var items = await GetLookupItems(vin);
 
-        return ConvertDynamicListItemsToCompanyData(items);
+        var aggregate = ConvertDynamicListItemsToCompanyData(items);
+
+        aggregate.VIN = vin;
+
+        return aggregate;
     }
 
     public async Task<CompanyDataAggregateCosmosModel> GetAggregatedCompanyData(IEnumerable<string> vins, IEnumerable<string> itemTypes)

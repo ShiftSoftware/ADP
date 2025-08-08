@@ -2,6 +2,7 @@
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.SSC;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using ShiftSoftware.ADP.Lookup.Services.Enums;
+using ShiftSoftware.ADP.Lookup.Services.Evaluators;
 using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ADP.Models.Invoice;
 using ShiftSoftware.ADP.Models.Part;
@@ -93,10 +94,8 @@ public class VehicleLookupService
             data.VehicleSpecification = await GetSpecificationAsync(vehicle);
         }
 
-        // Set IsAuthorized
-        data.IsAuthorized = companyDataAggregate.InitialOfficialVINs?.Count() > 0 ||
-            companyDataAggregate.VehicleEntries?.Count() > 0 ||
-            companyDataAggregate.SSCAffectedVINs.Count() > 0;
+        data.IsAuthorized = new VehicleAuthorizationEvaluator(companyDataAggregate)
+            .Evaluate(data.VIN);
 
         // Set NextServiceDate
         data.NextServiceDate = companyDataAggregate.Invoices?.OrderByDescending(x => x.InvoiceDate).FirstOrDefault()?.NextServiceDate;
