@@ -19,6 +19,8 @@ public class VehicleServiceItemDTO
 
     public bool ShowDocumentUploader { get; set; }
 
+    public string? PrintUrl { get; set; }
+
     public bool DocumentUploaderIsRequired { get; set; }
 
     [JsonConverter(typeof(LocalizedTextJsonConverter))]

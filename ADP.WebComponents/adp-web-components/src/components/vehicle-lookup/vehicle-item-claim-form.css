@@ -41,3 +41,7 @@
     opacity: 0;
   }
 }
+
+.sign-document-info:hover .tooltip {
+  opacity: 100;
+}

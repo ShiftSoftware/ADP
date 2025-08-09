@@ -19,6 +19,8 @@
   "activationRequired": "Activation Required",
   "warrantyAndServicesNotActivated": "Warranty & Services have not been activated for this vehicle.",
   "claimForm": {
+    "print": "مطبعة",
+    "signDocumentInfo": "يرجى التأكد من توقيع هذه الوثيقة المطبوعة وتحميلها لتقديم المطالبة بشكل صحيح.",
     "documentLimitError": "لقد تجاوز المستند الحد الأقصى لحجم الملف: ",
     "documentRequiredError": "من فضلك إملأ حقل المستند.",
     "uploadSingleDocument": "تحميل مستند",
