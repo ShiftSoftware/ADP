@@ -2,7 +2,7 @@
 
 namespace ShiftSoftware.ADP.Models.Vehicle;
 
-public class SSCAffectedVINModel : IPartitionedItem
+public class SSCAffectedVINModel : IPartitionedItem, ICompanyProps
 {
     public string id { get; set; } = default!;
     public string VIN { get; set; } = default!;
@@ -22,4 +22,6 @@ public class SSCAffectedVINModel : IPartitionedItem
     public string OriginalFormatPartNumber3 { get; set; }
     public DateTime? RepairDate { get; set; }
     public string ItemType => ModelTypes.SSCAffectedVIN;
+    public string CompanyID { get; set; }
+    public string CompanyHashID { get; set; }
 }

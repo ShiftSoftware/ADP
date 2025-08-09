@@ -1,6 +1,6 @@
 ﻿namespace ShiftSoftware.ADP.Models.Vehicle;
 
-public class VehicleAccessoryModel: IPartitionedItem
+public class VehicleAccessoryModel: IPartitionedItem, ICompanyProps
 {
     public string id { get; set; } = default!;
     public string VIN { get; set; } = default!;
@@ -9,5 +9,7 @@ public class VehicleAccessoryModel: IPartitionedItem
     public int JobNumber { get; set; } = default!;
     public int InvoiceNumber { get; set; }
     public string Image { get; set; }
+    public string CompanyID { get; set; }
+    public string CompanyHashID { get; set; }
     public string ItemType => ModelTypes.VehicleAccessory;
 }

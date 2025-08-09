@@ -57,6 +57,11 @@ public class EFCoreSyncDataSourceConfigurations<TEntity, TSource, TDestination>
     public Expression<Func<TDestination, object>>? DestinationKey { get; set; }
 
     /// <summary>
+    /// If null it filter by the key property of the entity and destination, if not null do it by this function.
+    /// </summary>
+    public Func<IQueryable<TEntity>, SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>, IQueryable<TEntity>>? UpdateTimeStampFilter { get; set; } = null;
+
+    /// <summary>
     /// IF true, the sync timestamp will be updated for items that were skipped during the store proccess.
     /// Default is false.
     /// </summary>
@@ -72,7 +77,10 @@ public class EFCoreSyncDataSourceConfigurations<TEntity, TSource, TDestination>
         
     }
 
-    public EFCoreSyncDataSourceConfigurations(Func<IQueryable<TEntity>, SyncActionType, IQueryable<TSource>> query, bool updateSyncTimeStampForSkippedItems = false)
+    public EFCoreSyncDataSourceConfigurations(
+        Func<IQueryable<TEntity>, SyncActionType,
+            IQueryable<TSource>> query,
+        bool updateSyncTimeStampForSkippedItems = false)
     {
         this.Query = query;
         this.UpdateSyncTimeStampForSkippedItems = updateSyncTimeStampForSkippedItems;

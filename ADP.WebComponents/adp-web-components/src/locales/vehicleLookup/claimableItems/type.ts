@@ -3,7 +3,8 @@ import { object, InferType } from 'yup';
 import yupTypeMapper from '~lib/yup-type-mapper';
 
 export const claimFormSchema = yupTypeMapper([
-  'document',
+  'uploadSingleDocument',
+  'uploadMultipleDocument',
   'serviceType',
   'name',
   'print',

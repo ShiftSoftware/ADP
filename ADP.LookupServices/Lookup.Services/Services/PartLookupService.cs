@@ -33,6 +33,8 @@ public class PartLookupService
         PartLookupSource? source = null,
         bool skipLogging = false)
     {
+        partNumber = partNumber?.Replace("-", "");
+
         var data = await partLookupCosmosService.GetAggregatePartAsync(partNumber);
 
         if (data == null)

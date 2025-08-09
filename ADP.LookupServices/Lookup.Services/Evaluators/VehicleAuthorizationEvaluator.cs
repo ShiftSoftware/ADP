@@ -1,0 +1,22 @@
+﻿using ShiftSoftware.ADP.Lookup.Services.Aggregate;
+using System.Linq;
+
+namespace ShiftSoftware.ADP.Lookup.Services.Evaluators;
+
+public class VehicleAuthorizationEvaluator
+{
+    private readonly CompanyDataAggregateCosmosModel CompanyDataAggregate;
+    
+    public VehicleAuthorizationEvaluator(CompanyDataAggregateCosmosModel companyDataAggregate)
+    {
+        CompanyDataAggregate = companyDataAggregate;
+    }
+
+    public bool Evaluate(string vin)
+    {
+        return
+            CompanyDataAggregate?.InitialOfficialVINs?.Any(x => x.VIN.Equals(vin, System.StringComparison.InvariantCultureIgnoreCase)) == true ||
+            CompanyDataAggregate?.VehicleEntries?.Any(x => x.VIN.Equals(vin, System.StringComparison.InvariantCultureIgnoreCase)) == true ||
+            CompanyDataAggregate?.SSCAffectedVINs?.Any(x => x.VIN.Equals(vin, System.StringComparison.InvariantCultureIgnoreCase)) == true;
+    }
+}

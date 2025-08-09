@@ -40,6 +40,8 @@ Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "adp-web-components", "ADP.W
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebComponentModelGenerator", "ADP.WebComponents\WebComponentModelGenerator\WebComponentModelGenerator.csproj", "{50415FAD-2B9F-4E51-8CDF-D6B108B3B076}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LookupServices.BDD", "ADP.LookupServices.BDD\LookupServices.BDD.csproj", "{73D323FC-3355-4D5B-B3EC-2E9588879501}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -78,6 +80,10 @@ Global
 		{50415FAD-2B9F-4E51-8CDF-D6B108B3B076}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{50415FAD-2B9F-4E51-8CDF-D6B108B3B076}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{50415FAD-2B9F-4E51-8CDF-D6B108B3B076}.Release|Any CPU.Build.0 = Release|Any CPU
+		{73D323FC-3355-4D5B-B3EC-2E9588879501}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{73D323FC-3355-4D5B-B3EC-2E9588879501}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{73D323FC-3355-4D5B-B3EC-2E9588879501}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{73D323FC-3355-4D5B-B3EC-2E9588879501}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -93,6 +99,7 @@ Global
 		{9D6E753E-A97E-4CFE-9B1B-3AF3A21DC60E} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{D6D8E763-24C4-477E-A648-4A42B62EE2F0} = {4CD1F2B2-D59D-4675-BC91-A2229EFEB99F}
 		{50415FAD-2B9F-4E51-8CDF-D6B108B3B076} = {4CD1F2B2-D59D-4675-BC91-A2229EFEB99F}
+		{73D323FC-3355-4D5B-B3EC-2E9588879501} = {89ABB351-4D81-4724-864A-F6B5D9311565}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {9C2AF932-542F-4C6B-B4FA-33D955041860}

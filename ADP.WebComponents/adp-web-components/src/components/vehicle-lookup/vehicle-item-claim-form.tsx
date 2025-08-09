@@ -19,9 +19,9 @@ import { QuestionMark } from '~assets/question-mark';
 
 export type ClaimFormPayload = {
   qrCode?: string;
-  document?: File;
   invoice?: string;
   jobNumber?: string;
+  documents?: File[];
 };
 
 @Component({
@@ -35,6 +35,7 @@ export class VehicleItemClaimForm {
   @Prop() item?: VehicleServiceItemDTO;
   @Prop() unInvoicedByBrokerName?: string;
   @Prop() maximumDocumentFileSizeInMb: number;
+  @Prop() uploadMultipleDocuments?: boolean = true;
   @Prop() canceledItems?: VehicleServiceItemDTO[] = [];
   @Prop() loadingStateChange?: (isLoading: boolean) => void;
   @Prop() locale: { sharedLocales: SharedLocales } & ClaimFormType;
@@ -43,9 +44,11 @@ export class VehicleItemClaimForm {
   @State() uploadProgress = 0;
   @State() isOpened: boolean = false;
   @State() isLoading: boolean = false;
-  @State() inputs: Record<string, any> = {};
   @State() confirmationStates: Record<string, boolean> = {};
   @State() errors: Record<string, { text: string; show: boolean }> = {};
+  @State() inputs: Record<string, any> = {
+    documents: [],
+  };
 
   @Element() el: HTMLElement;
 
@@ -101,27 +104,43 @@ export class VehicleItemClaimForm {
 
   onFileUploaderChange = (event: Event) => {
     const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
+    if (!input.files) return;
+
+    const maxSize = parseInt(input.dataset.maxSize || '0', 10);
+
+    const newFiles = this.uploadMultipleDocuments ? Array.from(input.files) : [input.files[0]];
 
     input.value = '';
 
-    if (!file) return;
+    let anyFileExceedsMaxSize = false;
 
-    this.setInputValue('document', file);
+    const filteredNewFiles = newFiles.filter(newFile => {
+      const isFileSizeValid = newFile.size <= maxSize;
 
-    if (this.inputs.document.size > this.maximumDocumentFileSizeInMb * 1024 * 1024) {
-      this.setErrorValue('document', {
+      if (!isFileSizeValid) {
+        anyFileExceedsMaxSize = true;
+        return false;
+      }
+      const isFileAlreadyExists = this.inputs?.documents?.some(
+        existingFile => existingFile.name === newFile.name && existingFile.size === newFile.size && existingFile.lastModified === newFile.lastModified,
+      );
+
+      return !isFileAlreadyExists;
+    });
+
+    this.setInputValue('documents', this.uploadMultipleDocuments ? [...(this.inputs?.documents || []), ...filteredNewFiles] : filteredNewFiles);
+
+    if (anyFileExceedsMaxSize) {
+      this.setErrorValue('documents', {
         show: true,
         text: 'documentLimitError',
       });
       return;
-    } else {
-      if (this.errors?.document) this.setErrorValue('document', { text: this.errors.document?.text, show: false });
-      if (this.item?.claimingMethodEnum === 'ClaimByScanningQRCode') {
-        if (this.inputs?.qrCode) this.submit();
-        else this.focusInputs();
-      }
-    }
+    } else if (this.errors?.documents) this.setErrorValue('documents', { text: this.errors.documents?.text, show: false });
+
+    if (this.item?.claimingMethodEnum === 'ClaimByScanningQRCode') {
+      if (this.inputs?.qrCode) this.submit();
+    } else this.focusInputs();
   };
 
   onDocumentButtonClicked = () => {
@@ -147,8 +166,8 @@ export class VehicleItemClaimForm {
 
     if (firstEmptyInput) firstEmptyInput.focus();
 
-    if (this.item?.documentUploaderIsRequired && !this.inputs?.document) {
-      this.setErrorValue('document', {
+    if (this.item?.documentUploaderIsRequired && !this.inputs?.documents.length) {
+      this.setErrorValue('documents', {
         show: true,
         text: 'documentRequiredError',
       });
@@ -161,17 +180,8 @@ export class VehicleItemClaimForm {
     if (!this.getIsFormConfirmed()) return;
 
     if (this.item?.showDocumentUploader) {
-      if (this.inputs?.document && this.inputs?.document?.size > this.maximumDocumentFileSizeInMb * 1024 * 1024) {
-        this.setErrorValue('document', {
-          show: true,
-          text: 'documentLimitError',
-        });
-
-        return;
-      }
-
-      if (this.item?.documentUploaderIsRequired && !this.inputs?.document) {
-        this.setErrorValue('document', {
+      if (this.item?.documentUploaderIsRequired && !this.inputs?.documents?.length) {
+        this.setErrorValue('documents', {
           show: true,
           text: 'documentRequiredError',
         });
@@ -185,7 +195,7 @@ export class VehicleItemClaimForm {
       await this.handleClaiming({
         qrCode: this.inputs?.qrCode,
         invoice: this.inputs?.invoice,
-        document: this.inputs?.document,
+        documents: this.inputs?.documents,
         jobNumber: this.inputs?.jobNumber,
       } as ClaimFormPayload);
 
@@ -215,7 +225,7 @@ export class VehicleItemClaimForm {
       if (!this.inputs?.jobNumber?.trim().length) return false;
     }
 
-    if (this.item?.documentUploaderIsRequired && !this.inputs?.document) return false;
+    if (this.item?.documentUploaderIsRequired && !this.inputs?.documents.length) return false;
 
     return true;
   };
@@ -223,18 +233,31 @@ export class VehicleItemClaimForm {
   resetState = () => {
     this.item = null;
     this.errors = {};
-    this.inputs = {};
+    this.inputs = {
+      documents: [],
+    };
     this.isLoading = false;
     this.canceledItems = [];
     this.confirmationStates = {};
     this.unInvoicedByBrokerName = null;
   };
 
-  clearFile = (event: MouseEvent) => {
-    event.stopPropagation();
+  clearFile = (event: MouseEvent | number) => {
+    if (typeof event === 'number') {
+      const newDocuments = this.inputs.documents.filter((_, idx) => idx !== event);
+      this.setInputValue('documents', newDocuments);
+      if (this?.item?.documentUploaderIsRequired && !newDocuments.length) {
+        this.setErrorValue('documents', {
+          show: true,
+          text: 'documentRequiredError',
+        });
+      }
+    } else {
+      event.stopPropagation();
 
-    this.setInputValue('document', undefined);
-    if (this.errors?.document) this.setErrorValue('document', { text: this.errors.document?.text, show: false });
+      this.setInputValue('documents', []);
+      if (this.errors?.documents) this.setErrorValue('documents', { text: this.errors.documents?.text, show: false });
+    }
   };
 
   onKeyDown = (event: KeyboardEvent) => {
@@ -393,7 +416,7 @@ export class VehicleItemClaimForm {
                     <div class="lds-ripple" />
                     <div class="lds-ripple" />
                   </div>
-                  {this.item?.showDocumentUploader && this.inputs['document'] ? (
+                  {this.item?.showDocumentUploader && !!this.inputs['documents'].length ? (
                     <div class="relative border-[#3071a9] text-[#3071a9] text-[16px] w-[300px] border-[2px] font-semibold h-[30px] overflow-hidden rounded-full flex items-center justify-center">
                       <span class="relative z-20">
                         {this.locale.processing} {`${this.uploadProgress}%`}
@@ -413,8 +436,17 @@ export class VehicleItemClaimForm {
               </div>
 
               {this.item?.showDocumentUploader && (
-                <div class="flex mb-[16px] flex-col">
-                  <input class="document-uploader" disabled={this.isLoading} onChange={this.onFileUploaderChange} type="file" accept="image/*,application/pdf" hidden />
+                <div class="flex mb-[16px] w-full flex-col">
+                  <input
+                    hidden
+                    type="file"
+                    class="document-uploader"
+                    disabled={this.isLoading}
+                    accept="image/*,application/pdf"
+                    onChange={this.onFileUploaderChange}
+                    multiple={this.uploadMultipleDocuments}
+                    data-max-size={this.maximumDocumentFileSizeInMb * 1024 * 1024}
+                  />
                   <div
                     onClick={this.onDocumentButtonClicked}
                     class={cn(
@@ -422,25 +454,55 @@ export class VehicleItemClaimForm {
                       { 'pointer-events-none bg-[#d5d5d5] cursor-default': disableInputs },
                     )}
                   >
-                    <div title={this.inputs?.document?.name || this.locale.document} class="max-w-[200px] truncate whitespace-nowrap overflow-hidden text-ellipsis">
-                      {this.inputs?.document?.name || this.locale.document}
-                      {this?.item?.documentUploaderIsRequired && !this.inputs?.document && <span class={cn('ps-[4px] text-red-500', { 'text-white': disableInputs })}>*</span>}
+                    <div
+                      title={this.uploadMultipleDocuments ? this.locale.uploadMultipleDocument : this.locale.uploadSingleDocument}
+                      class="max-w-[200px] truncate whitespace-nowrap overflow-hidden text-ellipsis"
+                    >
+                      {this.uploadMultipleDocuments ? this.locale.uploadMultipleDocument : this.locale.uploadSingleDocument}
+                      {this?.item?.documentUploaderIsRequired && !this.inputs?.documents.length && (
+                        <span class={cn('ps-[4px] text-red-500', { 'text-white': disableInputs })}>*</span>
+                      )}
                     </div>
                     <button
                       onClick={this.clearFile}
                       class={cn('overflow-hidden transition duration-300 hover:bg-red-600 relative cursor-pointer flex items-center justify-center size-[32px]', {
-                        'pointer-events-none cursor-default': !this.inputs?.document,
+                        'pointer-events-none cursor-default': !this.inputs?.documents.length,
                       })}
                     >
-                      <AttachIcon class={cn('size-[24px] absolute transition duration-500', { '-translate-y-[32px]': !!this.inputs?.document })} />
-                      <AddIcon class={cn('size-[24px] rotate-[45deg] absolute transition translate-y-[32px] duration-500', { 'translate-y-0': !!this.inputs?.document })} />
+                      <AttachIcon class={cn('size-[24px] absolute transition duration-500', { '-translate-y-[32px]': !!this.inputs?.documents.length })} />
+                      <AddIcon class={cn('size-[24px] rotate-[45deg] absolute transition translate-y-[32px] duration-500', { 'translate-y-0': !!this.inputs?.documents.length })} />
                     </button>
                   </div>
-                  <flexible-container isOpened={!!this.errors?.document?.show}>
+                  <flexible-container isOpened={!!this.errors?.documents?.show}>
                     <div class="text-red-700 w-fit mx-auto pt-[8px]">
-                      {this.errors?.document?.text === 'documentLimitError'
+                      {this.errors?.documents?.text === 'documentLimitError'
                         ? this.locale.documentLimitError + `${this.maximumDocumentFileSizeInMb}Mb`
                         : this.locale.documentRequiredError || this.locale.sharedLocales.errors.wildCard}
+                    </div>
+                  </flexible-container>
+
+                  <flexible-container isOpened={!!this.inputs?.documents?.length} containerClasses="">
+                    <div class="flex w-full pt-[16px] flex-wrap justify-center gap-[16px]">
+                      {this.inputs?.documents?.map((doc, idx) => (
+                        <div
+                          class={cn('flex relative overflow-hidden max-w-[400px] items-center justify-between gap-[20px] bg-slate-400 rounded-[4px] text-white text-[14px]', {
+                            'pointer-events-none bg-[#d5d5d5] cursor-default': disableInputs,
+                          })}
+                        >
+                          <span title={doc.name} class="truncate ps-[16px] py-[8px]">
+                            {doc.name}
+                          </span>
+                          <button
+                            disabled={disableInputs}
+                            onClick={() => this.clearFile(idx)}
+                            class={cn('overflow-hidden transition duration-300 hover:bg-red-600 relative cursor-pointer flex items-center justify-center size-[32px]', {
+                              'pointer-events-none cursor-default': !this.inputs?.documents.length,
+                            })}
+                          >
+                            <AddIcon class="size-[24px] rotate-[45deg]" />
+                          </button>
+                        </div>
+                      ))}
                     </div>
                   </flexible-container>
                 </div>

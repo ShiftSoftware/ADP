@@ -31,13 +31,9 @@ steps:
    displayName: 'pack ADP.SyncAgent'
 
 
- # - script: dotnet test ../TypeAuth/TypeAuth.Core.Tests
- #   condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-typeauth'))
- #   displayName: 'Test TypeAuth.Core'
+ - script: dotnet test ADP.LookupServices.BDD
+   displayName: 'ADP.LookupServices BDD Tests'
 
- # - script: dotnet test ../TypeAuth/TypeAuth.AspNetCore.Tests
- #   condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-typeauth')) 
- #   displayName: 'Test TypeAuth.AspNetCore'
 
  - task: NuGetToolInstaller@1
    inputs:
