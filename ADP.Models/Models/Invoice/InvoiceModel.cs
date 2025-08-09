@@ -5,7 +5,7 @@ namespace ShiftSoftware.ADP.Models.Invoice;
 
 
 /// <summary>
-/// A Service Invoice or a Counter Sale Parts Invoice.
+/// A Service Invoice or a Counter Sale Panels Invoice.
 /// </summary>
 [Docable]
 public class InvoiceModel: 
