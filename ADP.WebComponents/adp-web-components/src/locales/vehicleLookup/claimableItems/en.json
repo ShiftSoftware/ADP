@@ -19,6 +19,8 @@
   "activationRequired": "Activation Required",
   "warrantyAndServicesNotActivated": "Warranty & Services have not been activated for this vehicle.",
   "claimForm": {
+    "print": "Print",
+    "signDocumentInfo": "Please insure this printed document is signed and uploaded to submit the claim correctly.",
     "documentLimitError": "The document exceeded the file size limit: ",
     "documentRequiredError": "Please Fill the document field.",
     "document": "Document",

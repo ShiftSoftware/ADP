@@ -2,6 +2,7 @@ import type { VehicleServiceItemGroup } from './vehicle-service-item-group';
 export type VehicleServiceItemDTO = {
     group: VehicleServiceItemGroup;
     showDocumentUploader: boolean;
+    printUrl?: string;
     documentUploaderIsRequired: boolean;
     name: string;
     description: string;

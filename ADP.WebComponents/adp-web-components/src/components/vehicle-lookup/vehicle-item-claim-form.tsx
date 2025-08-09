@@ -15,6 +15,7 @@ import { CheckIcon } from '~assets/check-icon';
 import { AttachIcon } from '~assets/attach-icon';
 import { FormSubmitSVG } from '~assets/form-submit-svg';
 import { ActivationIcon } from '~assets/activation-icon';
+import { QuestionMark } from '~assets/question-mark';
 
 export type ClaimFormPayload = {
   qrCode?: string;
@@ -270,7 +271,26 @@ export class VehicleItemClaimForm {
           <div class="flex flex-col h-full gap-[32px] justify-between">
             <div class="flex mt-[50px] flex-col shrink-0 gap-[20px]">
               <div class="border overflow-hidden rounded-[6px] border-[#dcdcdc] box-border">
-                <div class="text-[16px] h-[50px] font-semibold flex items-center justify-center bg-[#f6f6f6]">{this.vin}</div>
+                <div class="relative text-[16px] h-[50px] font-semibold flex items-center justify-center bg-[#f6f6f6]">
+                  {this.vin}
+                  {!!this.item?.printUrl && (
+                    <div class="absolute flex-row-reverse end-[16px] flex items-center gap-[16px] h-full]">
+                      <button
+                        onClick={() => window.open(this.item.printUrl, '_blank').focus()}
+                        class="text-[18px] transition !duration-300 text-white max-w-[250px] px-[8px] h-[30px] hover:scale-110 flex gap-[8px] border rounded-[4px] shadow items-center justify-center border-[#27ae60] bg-[#32b267] hover:border-[#27ae5fc1] hover:bg-[#32b267c7]"
+                      >
+                        {this.locale.print}
+                      </button>
+
+                      <div class="size-fit sign-document-info hover:[&_.tooltip]:opacity-100 relative">
+                        <QuestionMark class="size-[20px] text-red-600" />
+                        <div class="tooltip transition duration-300 w-[400px] font-normal text-[16px] ltr:right-[calc(100%+8px)] rtl:left-[calc(100%+8px)] pointer-events-none opacity-0 -top-[4px] absolute bg-white border border-slate-200 shadow-lg rounded-[8px] p-[12px]">
+                          {this.locale.signDocumentInfo}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
 
                 <div class="overflow-hidden flex p-[22px] [&_div]:min-w-[200px] gap-[32px] flex-wrap justify-center">
                   <MaterialCard title={this.locale.serviceType}>{this.item?.type}</MaterialCard>

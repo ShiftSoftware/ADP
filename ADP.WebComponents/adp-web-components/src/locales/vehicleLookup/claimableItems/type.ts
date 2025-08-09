@@ -6,6 +6,8 @@ export const claimFormSchema = yupTypeMapper([
   'document',
   'serviceType',
   'name',
+  'print',
+  'signDocumentInfo',
   'documentLimitError',
   'documentRequiredError',
   'activationDate',

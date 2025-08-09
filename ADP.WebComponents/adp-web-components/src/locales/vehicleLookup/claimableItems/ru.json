@@ -19,6 +19,8 @@
   "activationRequired": "Activation Required",
   "warrantyAndServicesNotActivated": "Warranty & Services have not been activated for this vehicle.",
   "claimForm": {
+    "print": "Печать",
+    "signDocumentInfo": "Пожалуйста, убедитесь, что этот распечатанный документ подписан и загружен для правильной подачи заявления.",
     "documentLimitError": "Размер файла документа превысил ограничение: ",
     "documentRequiredError": "Пожалуйста, заполните поле документа.",
     "document": "Документ",
