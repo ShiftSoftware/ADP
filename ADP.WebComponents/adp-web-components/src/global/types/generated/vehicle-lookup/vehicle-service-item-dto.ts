@@ -1,7 +1,9 @@
 import type { VehicleServiceItemGroup } from './vehicle-service-item-group';
+import type { VehicleItemWarning } from './vehicle-item-warning';
 export type VehicleServiceItemDTO = {
     group: VehicleServiceItemGroup;
     showDocumentUploader: boolean;
+    warnings?: VehicleItemWarning[];
     printUrl?: string;
     documentUploaderIsRequired: boolean;
     name: string;

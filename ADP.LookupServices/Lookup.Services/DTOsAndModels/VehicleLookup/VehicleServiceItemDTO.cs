@@ -4,6 +4,7 @@ using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ADP.Models.JsonConverters;
 using ShiftSoftware.ShiftEntity.Model;
 using System;
+using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -18,6 +19,8 @@ public class VehicleServiceItemDTO
     public VehicleServiceItemGroup Group { get; set; }
 
     public bool ShowDocumentUploader { get; set; }
+
+    public List<VehicleItemWarning>? Warnings { get; set; }
 
     public string? PrintUrl { get; set; }
 
