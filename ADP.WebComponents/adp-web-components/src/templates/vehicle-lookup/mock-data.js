@@ -2743,6 +2743,41 @@ const mockData = {
         name: '85,000 KM Free Service',
         type: 'free',
         claimable: true,
+        warnings: [
+          {
+            title: 'Warning',
+            key: 'signableItems',
+            confirmationText: 'Iconfirm that the signed document is uploaded.',
+            bodyContent: 'Please insure this printed document is signed and uploaded to submit the claim correctly.',
+          },
+          {
+            title: 'Warning 2',
+            key: 'signableItems2',
+            confirmationText: 'Iconfirm that the signed document is uploaded.',
+            imageUrl: 'https://images.pexels.com/photos/206359/pexels-photo-206359.jpeg?cs=srgb&dl=pexels-pixabay-206359.jpg&fm=jpg',
+            bodyContent: 'Please insure this printed <b>document</b> is signed and uploaded to submit the claim correctly.',
+          },
+          {
+            title: 'Warning 2',
+            key: 'signableItems3',
+            bodyContent: 'Please insure this printed <b>document</b> is signed and uploaded to submit the claim correctly.',
+          },
+          {
+            title: 'Warning',
+            key: 'signableItems4',
+            bodyContent: `<div style="font-size: 16px;">
+  the following Services Are still 'Pending' and they will be marked as 'Cancelled'.
+</div>
+
+<ul style="list-style-type: disc; margin-top: 16px;">
+  <li style="margin-left: 50px; font-size: 16px; margin-top: 4px;">
+    80,000 KM Free Service
+  </li>
+</ul>
+`,
+            confirmationText: 'I confirm',
+          },
+        ],
         printUrl: 'https://shift.software/',
         showDocumentUploader: true,
         documentUploaderIsRequired: true,

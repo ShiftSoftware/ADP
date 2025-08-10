@@ -1,3 +1,5 @@
+@import '../../features/image-viewer/image-viewer.css';
+
 :host {
   all: initial !important;
   display: block;
@@ -44,4 +46,16 @@
 
 .sign-document-info:hover .tooltip {
   opacity: 100;
+}
+
+.outline-button {
+  @apply active:[&_svg]:scale-[125%] active:bg-[#27ae60] [&_circle]:fill-[#2ecc71] hover:text-white hover:bg-[#2ecc71] hover:stroke-white hover:fill-white hover:[&_circle]:fill-white outline-none flex items-center gap-[3px] border border-[#27ae60] bg-transparent fill-[#27ae60] stroke-[#27ae60] text-[#27ae60]  rounded-[5px] cursor-pointer duration-200 font-bold px-[10px];
+}
+
+.outline-button path {
+  transition: 0.2s;
+}
+
+.outline-button:hover path {
+  fill: #2ecc71;
 }

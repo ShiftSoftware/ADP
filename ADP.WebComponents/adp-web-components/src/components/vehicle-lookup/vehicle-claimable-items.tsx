@@ -322,7 +322,6 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
           vin: this.vehicleLookup.vin,
           serviceItem: this.claimForm.item,
           saleInformation: this.vehicleLookup.saleInformation,
-          cancelledServiceItems: this.claimForm.canceledItems,
         }),
       );
 
@@ -419,11 +418,6 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
 
     this.claimForm.item = item;
     this.claimForm.vin = this.vehicleLookup?.vin;
-    this.claimForm.canceledItems = pendingItemsBefore;
-
-    if (this.vehicleLookup?.saleInformation?.broker !== null && this.vehicleLookup?.saleInformation?.broker?.invoiceDate === null)
-      this.claimForm.unInvoicedByBrokerName = this.vehicleLookup?.saleInformation?.broker?.brokerName;
-    else this.claimForm.unInvoicedByBrokerName = null;
 
     this.claimForm.handleClaiming = this.isDev ? this.handleDevClaim.bind(this) : this.handleClaim.bind(this);
 

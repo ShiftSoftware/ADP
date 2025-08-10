@@ -1,6 +1,7 @@
 export type VehicleItemWarning = {
+    key: string;
     title: string;
-    bodyContent: string;
     imageUrl?: string;
-    confiramtionText?: string;
+    bodyContent: string;
+    confirmationText?: string;
 };

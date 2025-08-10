@@ -9,13 +9,16 @@ import { VehicleServiceItemDTO } from '~types/generated/vehicle-lookup/vehicle-s
 
 import { SharedLocales } from '~features/multi-lingual';
 
+import { closeImageViewer, ImageViewer, ImageViewerInterface, openImageViewer } from '~features/image-viewer';
+
 import { AddIcon } from '~assets/add-icon';
 import { AlertIcon } from '~assets/alert-icon';
 import { CheckIcon } from '~assets/check-icon';
 import { AttachIcon } from '~assets/attach-icon';
 import { FormSubmitSVG } from '~assets/form-submit-svg';
 import { ActivationIcon } from '~assets/activation-icon';
-import { QuestionMark } from '~assets/question-mark';
+import { PrintIcon } from '~assets/print-icon';
+import Eye from '~assets/eye.svg';
 
 export type ClaimFormPayload = {
   qrCode?: string;
@@ -29,14 +32,34 @@ export type ClaimFormPayload = {
   tag: 'vehicle-item-claim-form',
   styleUrl: 'vehicle-item-claim-form.css',
 })
-export class VehicleItemClaimForm {
+export class VehicleItemClaimForm implements ImageViewerInterface {
+  // ====== Start Image Viewer Logic
+
+  @State() expandedImage?: string = '';
+
+  originalImage: HTMLImageElement;
+
+  @Watch('expandedImage')
+  onImageViewerToggles(newValue: string | null) {
+    window.removeEventListener('keydown', this.closeModalListenerRef);
+    console.log(newValue);
+
+    if (newValue === null) {
+      setTimeout(() => {
+        this.closeModalListenerRef = (event: KeyboardEvent) => event.key === 'Escape' && this.close();
+
+        window.addEventListener('keydown', this.closeModalListenerRef);
+      }, 200);
+    }
+  }
+
+  // ====== End Image Viewer Logic
+
   // ====== Start Component Logic
   @Prop() vin?: string;
   @Prop() item?: VehicleServiceItemDTO;
-  @Prop() unInvoicedByBrokerName?: string;
   @Prop() maximumDocumentFileSizeInMb: number;
   @Prop() uploadMultipleDocuments?: boolean = true;
-  @Prop() canceledItems?: VehicleServiceItemDTO[] = [];
   @Prop() loadingStateChange?: (isLoading: boolean) => void;
   @Prop() locale: { sharedLocales: SharedLocales } & ClaimFormType;
   @Prop() handleClaiming?: (payload: ClaimFormPayload) => Promise<void>;
@@ -211,9 +234,14 @@ export class VehicleItemClaimForm {
   };
 
   private getIsFormConfirmed = (): boolean => {
-    if (!!this.canceledItems?.length && !this.confirmationStates?.canceledItems) return false;
+    if (Array.isArray(this.item?.warnings)) {
+      for (let idx = 0; idx < this.item?.warnings.length; idx++) {
+        const warning = this.item.warnings[idx];
 
-    if (!!this.unInvoicedByBrokerName && !this.confirmationStates?.unInvoicedByBrokerName) return false;
+        if (!!warning?.confirmationText && !this.confirmationStates[warning.key]) return false;
+      }
+    }
+
     return true;
   };
 
@@ -237,9 +265,7 @@ export class VehicleItemClaimForm {
       documents: [],
     };
     this.isLoading = false;
-    this.canceledItems = [];
     this.confirmationStates = {};
-    this.unInvoicedByBrokerName = null;
   };
 
   clearFile = (event: MouseEvent | number) => {
@@ -275,6 +301,12 @@ export class VehicleItemClaimForm {
 
     return (
       <Host>
+        <ImageViewer
+          style={{ 'z-index': '99999999' }}
+          expandedImage={this.expandedImage}
+          imageStyle={{ 'z-index': '999999999' }}
+          closeImageViewer={() => closeImageViewer.bind(this)()}
+        />
         <div
           dir={this.locale.sharedLocales.direction}
           class={cn(
@@ -297,21 +329,10 @@ export class VehicleItemClaimForm {
                 <div class="relative text-[16px] h-[50px] font-semibold flex items-center justify-center bg-[#f6f6f6]">
                   {this.vin}
                   {!!this.item?.printUrl && (
-                    <div class="absolute flex-row-reverse end-[16px] flex items-center gap-[16px] h-full]">
-                      <button
-                        onClick={() => window.open(this.item.printUrl, '_blank').focus()}
-                        class="text-[18px] transition !duration-300 text-white max-w-[250px] px-[8px] h-[30px] hover:scale-110 flex gap-[8px] border rounded-[4px] shadow items-center justify-center border-[#27ae60] bg-[#32b267] hover:border-[#27ae5fc1] hover:bg-[#32b267c7]"
-                      >
-                        {this.locale.print}
-                      </button>
-
-                      <div class="size-fit sign-document-info hover:[&_.tooltip]:opacity-100 relative">
-                        <QuestionMark class="size-[20px] text-red-600" />
-                        <div class="tooltip transition duration-300 w-[400px] font-normal text-[16px] ltr:right-[calc(100%+8px)] rtl:left-[calc(100%+8px)] pointer-events-none opacity-0 -top-[4px] absolute bg-white border border-slate-200 shadow-lg rounded-[8px] p-[12px]">
-                          {this.locale.signDocumentInfo}
-                        </div>
-                      </div>
-                    </div>
+                    <button class="outline-button absolute end-[16px]" onClick={() => window.open(this.item.printUrl, '_blank').focus()}>
+                      <PrintIcon class="size-[30px] duration-200" />
+                      <span>{this.locale.print}</span>
+                    </button>
                   )}
                 </div>
 
@@ -324,76 +345,56 @@ export class VehicleItemClaimForm {
                 </div>
               </div>
 
-              <div class={cn('border overflow-hidden rounded-[6px] border-[#ff9100] box-border', { hidden: !this.canceledItems.length })}>
-                <div class="text-[16px] px-[22px] h-[50px] font-semibold flex items-center gap-[8px] bg-[#ff91001a]">
-                  <AlertIcon class="size-[25px] text-[#ff9100]" /> {this.locale.warning}
-                </div>
-
-                <div class="p-[16px]">
-                  <div class="text-[16px]">{this.locale.skipServicesWarning}</div>
-                  <ul class="list-disc mt-[16px]">
-                    {this.canceledItems.map(({ name }) => (
-                      <li class="ms-[50px] text-[16px] mt-[4px]">{name}</li>
-                    ))}
-                  </ul>
-
-                  <label
-                    class={cn(
-                      'select-none text-[16px] flex font-semibold group items-center px-[16px] gap-[10px] mt-[20px] h-[36px] transition duration-300 rounded-[6px] cursor-pointer text-[#663c00] bg-[#ff91001a] border border-[#ffd28f]',
-                      {
-                        'hover:bg-[#fff8e1]': !this.isLoading,
-                        'opacity-50 pointer-events-none': this.isLoading,
-                      },
-                    )}
-                  >
-                    <input
-                      type="checkbox"
-                      class="peer sr-only"
-                      disabled={this.isLoading}
-                      checked={!!this.confirmationStates.canceledItems}
-                      onChange={this.onConfirmCheckboxChange('canceledItems')}
-                    />
-                    <div class="size-[20px] rounded border border-[#ffb74d] transition duration-300 text-transparent peer-checked:text-white peer-checked:bg-[#ff9100] peer-checked:border-[#ff9100] flex items-center justify-center">
-                      <CheckIcon class="size-[18px]" />
+              {Array.isArray(this.item?.warnings) &&
+                this.item.warnings.map(warning => (
+                  <div key={warning.key} class="border overflow-hidden rounded-[6px] border-[#ff9100] box-border">
+                    <div class="text-[16px] px-[22px] h-[50px] font-semibold flex items-center gap-[8px] bg-[#ff91001a]">
+                      <AlertIcon class="size-[25px] text-[#ff9100]" /> {warning.title}
                     </div>
-                    {this.locale.confirmSkipServices}
-                  </label>
-                </div>
-              </div>
 
-              <div class={cn('border overflow-hidden rounded-[6px] border-[#ff9100] box-border', { hidden: !this.unInvoicedByBrokerName })}>
-                <div class="text-[16px] px-[22px] h-[50px] font-semibold flex items-center gap-[8px] bg-[#ff91001a]">
-                  <AlertIcon class="size-[25px] text-[#ff9100]" /> {this.locale.warning}
-                </div>
+                    <div class="p-[16px]">
+                      <div class="text-[16px] flex-col items-center md:flex-row flex gap-[16px]">
+                        <div class="flex-1" innerHTML={warning.bodyContent} />
+                        {warning?.imageUrl && (
+                          <button
+                            onClick={({ target }) => openImageViewer.bind(this)(target as HTMLImageElement, warning?.imageUrl)}
+                            class="shrink-0 relative ring-0 outline-none w-fit mx-auto [&_img]:hover:shadow-lg [&_div]:hover:!opacity-100 cursor-pointer"
+                          >
+                            <div class="absolute flex-col justify-center gap-[4px] size-full flex items-center pointer-events-none hover:opacity-100 rounded-lg opacity-0 bg-black/40 transition-all duration-300">
+                              <img src={Eye} />
+                              <span class="text-white">{this.locale.expand}</span>
+                            </div>
+                            <img class="w-auto h-auto max-w-[200px] max-h-[200px] cursor-pointer shadow-sm rounded-lg transition-all duration-300" src={warning?.imageUrl} />
+                          </button>
+                        )}
+                      </div>
 
-                <div class="p-[16px]">
-                  <div class="flex gap-[8px] text-[16px]">
-                    {this.locale.notInvoiced} <b>{this.unInvoicedByBrokerName}</b>
+                      {warning?.confirmationText && (
+                        <label
+                          class={cn(
+                            'select-none text-[16px] flex font-semibold group items-center px-[16px] gap-[10px] mt-[20px] h-[36px] transition duration-300 rounded-[6px] cursor-pointer text-[#663c00] bg-[#ff91001a] border border-[#ffd28f]',
+                            {
+                              'hover:bg-[#fff8e1]': !this.isLoading,
+                              'opacity-50 pointer-events-none': this.isLoading,
+                            },
+                          )}
+                        >
+                          <input
+                            type="checkbox"
+                            class="peer sr-only"
+                            disabled={this.isLoading}
+                            checked={!!this.confirmationStates[warning.key]}
+                            onChange={this.onConfirmCheckboxChange(warning.key)}
+                          />
+                          <div class="size-[20px] rounded border border-[#ffb74d] transition duration-300 text-transparent peer-checked:text-white peer-checked:bg-[#ff9100] peer-checked:border-[#ff9100] flex items-center justify-center">
+                            <CheckIcon class="size-[18px]" />
+                          </div>
+                          {warning?.confirmationText}
+                        </label>
+                      )}
+                    </div>
                   </div>
-
-                  <label
-                    class={cn(
-                      'select-none text-[16px] flex font-semibold group items-center px-[16px] gap-[10px] mt-[20px] h-[36px] transition duration-300 rounded-[6px] cursor-pointer text-[#663c00] bg-[#ff91001a] border border-[#ffd28f]',
-                      {
-                        'hover:bg-[#fff8e1]': !this.isLoading,
-                        'opacity-50 pointer-events-none': this.isLoading,
-                      },
-                    )}
-                  >
-                    <input
-                      type="checkbox"
-                      class="peer sr-only"
-                      disabled={this.isLoading}
-                      checked={!!this.confirmationStates.unInvoicedByBrokerName}
-                      onChange={this.onConfirmCheckboxChange('unInvoicedByBrokerName')}
-                    />
-                    <div class="size-[20px] rounded border border-[#ffb74d] transition duration-300 text-transparent peer-checked:text-white peer-checked:bg-[#ff9100] peer-checked:border-[#ff9100] flex items-center justify-center">
-                      <CheckIcon class="size-[18px]" />
-                    </div>
-                    {this.locale.confirmNotInvoiced}
-                  </label>
-                </div>
-              </div>
+                ))}
             </div>
             <div
               class={cn(
