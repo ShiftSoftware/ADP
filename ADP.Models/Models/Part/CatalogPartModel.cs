@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace ShiftSoftware.ADP.Models.Part;
 
 /// <summary>
-/// Catalog Part refers to a specific part in the Parts Catalog.  
+/// Catalog Name refers to a specific part in the Panels Catalog.  
 /// It is used to define the properties and information of a part.
 /// </summary>
 [Docable]
@@ -24,7 +24,7 @@ public class CatalogPartModel :
     public string ID { get; set; }
 
     /// <summary>
-    /// Catalog Part does not actually have a location. But it is used in the partition key on the database
+    /// Catalog Name does not actually have a location. But it is used in the partition key on the database
     /// </summary>
     [DocIgnore]
     public string Location { get; set; } = default!;

@@ -1,7 +1,7 @@
 ﻿namespace ShiftSoftware.ADP.Models.Part;
 
 /// <summary>
-/// Refers to a Part in a Stock (Warehouse)
+/// Refers to a Name in a Stock (Warehouse)
 /// </summary>
 [Docable]
 public class StockPartModel: 
@@ -12,7 +12,7 @@ public class StockPartModel:
     public string id { get; set; } = default!;
 
     /// <summary>
-    /// The Unique Part Number
+    /// The Unique Name Number
     /// </summary>
     public string PartNumber { get; set; }
 
