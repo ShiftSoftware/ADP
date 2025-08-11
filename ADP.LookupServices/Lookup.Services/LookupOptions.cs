@@ -1,4 +1,5 @@
 ﻿using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Part;
+using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using ShiftSoftware.ShiftEntity.Model.Dtos;
 using System;
 using System.Collections.Generic;
@@ -26,6 +27,9 @@ public class LookupOptions
     public bool WarrantyStartDateDefaultsToInvoiceDate { get; set; } = true;
     public string SigningSecreteKey { get; set; }
     public TimeSpan SignatureValidityDuration { get; set; }
+    public string ServiceActivationPreClaimVoucherPrintingURL { get; set; }
+    public string VehicleInspectionPreClaimVoucherPrintingURL { get; set; }
+    public List<VehicleItemWarning> StandardItemClaimWarnings { get; set; }
 }
 
 public class PartLocationNameResolverModel

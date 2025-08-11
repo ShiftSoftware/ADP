@@ -109,6 +109,8 @@ public class VehicleLookupService
         DateTime? warrantyStartDate = null;
         DateTime? freeServiceStartDate = null;
 
+        var serviceActivation = companyDataAggregate.VehicleServiceActivations.FirstOrDefault();
+
         if (vehicle is not null)
         {
             // Set SaleInformation
@@ -118,8 +120,6 @@ public class VehicleLookupService
             if (data.SaleInformation?.Broker is null)
             {
                 warrantyStartDate = data.SaleInformation?.WarrantyActivationDate;
-
-                var serviceActivation = companyDataAggregate.VehicleServiceActivations.FirstOrDefault();
 
                 if (serviceActivation is not null)
                     warrantyStartDate = serviceActivation.WarrantyActivationDate;
@@ -159,7 +159,8 @@ public class VehicleLookupService
             data.SaleInformation,
             companyDataAggregate.PaidServiceInvoices, 
             companyDataAggregate.ItemClaims,
-            companyDataAggregate.VehicleInspections
+            companyDataAggregate.VehicleInspections,
+            serviceActivation
         );
 
         // Set accessories
@@ -670,7 +671,8 @@ public class VehicleLookupService
         VehicleSaleInformation vehicleSaleInformation,
         IEnumerable<PaidServiceInvoiceModel> paidServices,
         IEnumerable<ItemClaimModel> tlpTransactionLines,
-        IEnumerable<VehicleInspectionModel> vehicleInspections
+        IEnumerable<VehicleInspectionModel> vehicleInspections,
+        VehicleServiceActivation serviceActivation
     )
     {
         var result = new List<VehicleServiceItemDTO>();
@@ -893,6 +895,15 @@ public class VehicleLookupService
             item.SignatureExpiry = itemSignatureExpiry;
 
             item.Signature = item.GenerateSignature(vin, this.options.SigningSecreteKey);
+
+            if (options.VehicleInspectionPreClaimVoucherPrintingURL is not null && item.VehicleInspectionID is not null)
+                item.PrintUrl = $"{options.VehicleInspectionPreClaimVoucherPrintingURL}{item.VehicleInspectionID}/{item.ServiceItemID}";
+
+            //Service Activation takes priority and overrides PrintURL if applicable
+            if (options.ServiceActivationPreClaimVoucherPrintingURL is not null && serviceActivation is not null)
+                item.PrintUrl = $"{options.ServiceActivationPreClaimVoucherPrintingURL}{serviceActivation.id}/{item.ServiceItemID}";
+
+            item.Warnings = options.StandardItemClaimWarnings;
         }
 
         return result;
