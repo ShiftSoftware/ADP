@@ -4,7 +4,7 @@ using System;
 namespace ShiftSoftware.ADP.Models.Part;
 
 /// <summary>
-/// Refers to a Name Line on an Order (This might be a Job Card on Workshop Module, or a Counter Sale on Panels Module).
+/// Refers to a Part Line on an Order (This might be a Job Card on Workshop Module, or a Counter Sale on Parts Module).
 /// </summary>
 [Docable]
 public class OrderPartLineModel: 
@@ -71,7 +71,7 @@ public class OrderPartLineModel:
     public decimal? ExtendedPrice { get; set; }
 
     /// <summary>
-    /// The uniqe Name Number of the <see cref="CatalogPartModel">Catalog Name</see>.
+    /// The uniqe Part Number of the <see cref="CatalogPartModel">Catalog Part</see>.
     /// </summary>
     public string PartNumber { get; set; }
 
@@ -116,7 +116,7 @@ public class OrderPartLineModel:
     public DateTime? LoadDate { get; set; }
 
     /// <summary>
-    /// The date at which this line was posted. This could mean (Job Completed, Name Dispatched, Vehicle Allocated, etc. based on the type of the Order Document).
+    /// The date at which this line was posted. This could mean (Job Completed, Part Dispatched, Vehicle Allocated, etc. based on the type of the Order Document).
     /// </summary>
     public DateTime? PostDate { get; set; }
 
