@@ -308,7 +308,9 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
     vehicleDataClone.serviceItems = serviceDataClone;
     this.vehicleLookup = JSON.parse(JSON.stringify(vehicleDataClone));
 
-    this.showPrintBox = true;
+    if (response.PrintURL)
+      this.showPrintBox = true;
+
     this.lastSuccessfulClaimResponse = response;
   }
 
