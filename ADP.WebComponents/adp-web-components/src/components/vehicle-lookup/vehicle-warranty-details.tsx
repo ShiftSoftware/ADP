@@ -161,7 +161,7 @@ export class VehicleWarrantyDetails implements MultiLingual, VehicleInfoLayoutIn
           } else {
             this.checkingUnauthorizedSSC = true;
 
-            this.showRecaptcha = false;
+            //this.showRecaptcha = false;
 
             const response = await fetch(`${this.unauthorizedSscLookupBaseUrl}${newVehicleLookup?.vin}/${newVehicleLookup?.sscLogId}?${this.unauthorizedSscLookupQueryString}`, {
               signal: this.abortController.signal,
