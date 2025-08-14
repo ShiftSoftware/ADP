@@ -146,7 +146,7 @@ export class VehicleWarrantyDetails implements MultiLingual, VehicleInfoLayoutIn
           if (this.isDev) {
             this.checkingUnauthorizedSSC = true;
 
-            this.showRecaptcha = false;
+            //this.showRecaptcha = false;
 
             await new Promise(r => setTimeout(r, 3000));
 
