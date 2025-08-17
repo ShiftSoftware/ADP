@@ -17,7 +17,7 @@ public class VehicleLookupDTO
 
     public VehicleSaleInformation SaleInformation { get; set; }
 
-    public PaintThicknessDTO PaintThickness { get; set; }
+    public IEnumerable<PaintThicknessInspectionDTO> PaintThicknessInspections { get; set; }
 
     public bool IsAuthorized { get; set; }
 

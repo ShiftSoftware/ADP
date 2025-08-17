@@ -62,7 +62,7 @@ public class VehicleLookupService
         companyDataAggregate = await lookupCosmosService.GetAggregatedCompanyData(vin);
 
         // Set paint thickness
-        data.PaintThickness = await GetPaintThickness();
+        data.PaintThicknessInspections = await GetPaintThickness();
 
         this.languageCode = languageCode;
 
@@ -190,7 +190,7 @@ public class VehicleLookupService
             {
                 PartNumber = accessory.PartNumber,
                 Description = accessory.PartDescription,
-                Image = await GetPaintAccessoryImageFullUrl(accessory.Image)
+                Image = await GetAccessoryImageFullUrl(accessory.Image)
             };
 
             accessories.Add(accessoryDTO);
@@ -199,7 +199,7 @@ public class VehicleLookupService
         return accessories;
     }
 
-    private async Task<string> GetPaintAccessoryImageFullUrl(string image)
+    private async Task<string> GetAccessoryImageFullUrl(string image)
     {
         if (options?.AccessoryImageUrlResolver is not null)
             return await options.AccessoryImageUrlResolver(new(image,languageCode,services));
@@ -207,78 +207,24 @@ public class VehicleLookupService
         return image;
     }
 
-    private async Task<PaintThicknessDTO> GetPaintThickness()
+    private async Task<IEnumerable<PaintThicknessInspectionDTO>> GetPaintThickness()
     {
         if (companyDataAggregate.PaintThicknessInspections is null)
             return null;
 
-        var groups = companyDataAggregate.PaintThicknessInspections.Images?.GroupBy(x => x.ToLower().Replace("left", string.Empty).Replace("right", string.Empty));
-        var nonPairGroups = groups?.Where(x => x.Count() == 1).SelectMany(x => x)
-            .GroupBy(x => x.Substring(0, x.LastIndexOf('_')));
-
-        var imageGroups = new List<PaintThicknessImageDTO>();
-
-        if (groups != null)
+        return companyDataAggregate.PaintThicknessInspections.Select(p => new PaintThicknessInspectionDTO
         {
-            foreach (var group in groups.Where(x => x.Count() == 2))
+            InspectionDate = p.InspectionDate,
+            Source = p.Source,
+            Panels = p.Panels?.Select(async x => new PaintThicknessInspectionPanelDTO
             {
-                string filename = Path.GetFileNameWithoutExtension(group.FirstOrDefault());
-
-                var name = Regex.Replace(filename, "left", string.Empty, RegexOptions.IgnoreCase);
-                name = Regex.Replace(name, "right", string.Empty, RegexOptions.IgnoreCase);
-                name = name.Replace("_", " ").Trim();
-
-                var images = new List<string>();
-                foreach (var image in group.OrderBy(o => o))
-                {
-                    images.Add(await GetPaintThicknessImageFullUrl(image));
-                }
-
-                var result = new PaintThicknessImageDTO
-                {
-                    Images = images,
-                    Name = name
-                };
-
-                imageGroups.Add(result);
-            }
-        }
-
-        if (nonPairGroups != null)
-        {
-            foreach (var group in nonPairGroups)
-            {
-                string filename = Path.GetFileNameWithoutExtension(group.FirstOrDefault());
-
-                var name = filename.Substring(0, filename.LastIndexOf('_'));
-                name = name.Replace("_", " ").Trim();
-
-                var images = new List<string>();
-                foreach (var image in group.OrderBy(o => o))
-                {
-                    images.Add(await GetPaintThicknessImageFullUrl(image));
-                }
-
-                var result = new PaintThicknessImageDTO
-                {
-                    Images = images,
-                    Name = name
-                };
-
-                imageGroups.Add(result);
-            }
-        }
-
-        return new PaintThicknessDTO
-        {
-            Parts = companyDataAggregate.PaintThicknessInspections.Parts?.Select(x => new PaintThicknessPartDTO
-            {
-                Part = x.Part,
-                Left = x.Left,
-                Right = x.Right,
-            }),
-            ImageGroups = imageGroups
-        };
+                Images = await Task.WhenAll(x.Images.Select(async i => await GetPaintThicknessImageFullUrl(i))),
+                MeasuredThickness = x.MeasuredThickness,
+                PanelPosition = x.PanelPosition,
+                PanelSide = x.PanelSide,
+                PanelType = x.PanelType,
+            }).Select(t => t.Result),
+        });
     }
 
     private async Task<string> GetPaintThicknessImageFullUrl(string image)

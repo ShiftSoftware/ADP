@@ -9,7 +9,7 @@ public class PaintThicknessInspectionModel : IPartitionedItem, ICompanyProps
     public string ModelYear { get; set; }
     public string ModelDescription { get; set; }
     public string ColorCode { get; set; }
-    public DateTime? CreateDate { get; set; }
+    public DateTime? InspectionDate { get; set; }
     public string VIN { get; set; } = default!;
     public IEnumerable<PaintThicknessInspectionPanelModel> Panels { get; set; }
     public string CompanyID { get; set; }

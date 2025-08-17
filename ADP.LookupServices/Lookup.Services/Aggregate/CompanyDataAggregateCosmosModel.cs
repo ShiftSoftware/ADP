@@ -26,6 +26,6 @@ public class CompanyDataAggregateCosmosModel
     public List<FreeServiceItemExcludedVINModel> FreeServiceItemExcludedVINs { get; set; }  = new();
     public List<FreeServiceItemDateShiftModel> FreeServiceItemDateShifts { get; set; }  = new();
     public List<WarrantyDateShiftModel> WarrantyDateShifts { get; set; }  = new();
-    public PaintThicknessInspectionModel PaintThicknessInspections { get; set; }
+    public IEnumerable<PaintThicknessInspectionModel> PaintThicknessInspections { get; set; }
     public List<VehicleAccessoryModel> Accessories { get; set; } = new();
 }
