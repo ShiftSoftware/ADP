@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace ShiftSoftware.ADP.Models.Vehicle;
 
-public class PaidServiceInvoiceModel : IPartitionedItem, IBrandProps
+public class PaidServiceInvoiceModel : IPartitionedItem, IBrandProps, ICompanyProps
 {
     public string id { get; set; } = default!;
     public long ID { get; set; }
@@ -18,4 +18,6 @@ public class PaidServiceInvoiceModel : IPartitionedItem, IBrandProps
     public string BrandID { get; set; }
     public string BrandHashID { get; set; }
     public string ItemType => ModelTypes.PaidServiceInvoice;
+    public string CompanyID { get; set; }
+    public string CompanyHashID { get; set; }
 }
