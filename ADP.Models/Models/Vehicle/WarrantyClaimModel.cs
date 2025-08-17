@@ -7,7 +7,6 @@ namespace ShiftSoftware.ADP.Models.Vehicle;
 public class WarrantyClaimModel : IPartitionedItem, IBrandProps, ICompanyProps
 {
     public string id { get; set; }
-    public long ID { get; set; }
     public string VIN { get; set; }
     public bool IsDeleted { get; set; }
     public DateTime? RepairDate { get; set; }
