@@ -308,8 +308,7 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
     vehicleDataClone.serviceItems = serviceDataClone;
     this.vehicleLookup = JSON.parse(JSON.stringify(vehicleDataClone));
 
-    if (response.PrintURL)
-      this.showPrintBox = true;
+    if (response.PrintURL) this.showPrintBox = true;
 
     this.lastSuccessfulClaimResponse = response;
   }
@@ -406,17 +405,7 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
 
   @Method()
   async claim(item: VehicleServiceItemDTO) {
-    const serviceItems = this.getServiceItems();
-
-    const vinDataClone = JSON.parse(JSON.stringify(serviceItems));
-    const index = serviceItems.indexOf(item);
-
     this.selectedClaimItem = item;
-
-    //Find other items before this item that have status 'pending'
-    let pendingItemsBefore = vinDataClone.slice(0, index).filter(x => x.status === 'pending') as VehicleServiceItemDTO[];
-
-    if (item?.maximumMileage === null) pendingItemsBefore = [];
 
     this.claimForm.item = item;
     this.claimForm.vin = this.vehicleLookup?.vin;
