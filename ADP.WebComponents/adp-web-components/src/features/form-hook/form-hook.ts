@@ -1,5 +1,5 @@
 import { AnyObjectSchema, SchemaDescription } from 'yup';
-import { Field, FormElement, FormHookInterface, FormStateOptions, Subscribers, ValidationType } from '~types/forms';
+import { Field, FormElement, FormHookInterface, FormStateOptions, Subscribers, ValidationType } from './interface';
 
 export class FormHook<T> {
   successAnimation = () => {};

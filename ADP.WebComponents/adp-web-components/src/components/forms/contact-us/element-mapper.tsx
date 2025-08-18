@@ -1,8 +1,7 @@
 import { h } from '@stencil/core';
 
 import { InputParams } from '~types/general';
-import { FormElementMapper } from '~types/forms';
-import { FormSelectFetcher, FormSelectItem } from '~types/forms';
+import { FormSelectFetcher, FormSelectItem, FormElementMapper } from '~features/form-hook';
 
 import { ContactUs, phoneValidator } from './validations';
 import { CITY_ENDPOINT } from '~api/urls';
@@ -15,7 +14,7 @@ export const contactUsElements: FormElementMapper<ContactUs> = {
     return <form-submit {...formContext} />;
   },
 
-  name: ({ form, language, structureElement }) => {
+  name: ({ form, language }) => {
     const { disabled, errorMessage, isError, isRequired, name } = form.getInputState('name');
 
     const inputParams: InputParams = {
@@ -35,13 +34,11 @@ export const contactUsElements: FormElementMapper<ContactUs> = {
         inputParams={inputParams}
         formLocaleName="contactUs"
         errorMessage={errorMessage}
-        wrapperId={structureElement.id}
-        wrapperClass={structureElement.class}
       />
     );
   },
 
-  email: ({ form, language, structureElement }) => {
+  email: ({ form, language }) => {
     const { disabled, errorMessage, isError, isRequired, name } = form.getInputState('email');
 
     const inputParams: InputParams = {
@@ -61,13 +58,11 @@ export const contactUsElements: FormElementMapper<ContactUs> = {
         inputParams={inputParams}
         formLocaleName="contactUs"
         errorMessage={errorMessage}
-        wrapperId={structureElement.id}
-        wrapperClass={structureElement.class}
       />
     );
   },
 
-  phone: ({ form, language, structureElement }) => {
+  phone: ({ form, language }) => {
     const { disabled, errorMessage, isError, isRequired, name } = form.getInputState('phone');
 
     const inputParams: InputParams = {
@@ -95,13 +90,11 @@ export const contactUsElements: FormElementMapper<ContactUs> = {
         inputParams={inputParams}
         formLocaleName="contactUs"
         errorMessage={errorMessage}
-        wrapperId={structureElement.id}
-        wrapperClass={structureElement.class}
       />
     );
   },
 
-  message: ({ form, language, structureElement }) => {
+  message: ({ form, language }) => {
     const { disabled, errorMessage, isError, isRequired, name } = form.getInputState('message');
 
     const inputParams: InputParams = {
@@ -121,13 +114,11 @@ export const contactUsElements: FormElementMapper<ContactUs> = {
         inputParams={inputParams}
         formLocaleName="contactUs"
         errorMessage={errorMessage}
-        wrapperId={structureElement.id}
-        wrapperClass={structureElement.class}
       />
     );
   },
 
-  generalTicketType: ({ form, language, structureElement }) => {
+  generalTicketType: ({ form, language }) => {
     const { disabled, errorMessage, isError, isRequired, name } = form.getInputState('generalTicketType');
 
     const fetcher: FormSelectFetcher = async (language: LanguageKeys, _: AbortSignal): Promise<FormSelectItem[]> => {
@@ -160,13 +151,11 @@ export const contactUsElements: FormElementMapper<ContactUs> = {
         formLocaleName="contactUs"
         errorMessage={errorMessage}
         placeholder="selectInquiryType"
-        wrapperId={structureElement.id}
-        wrapperClass={structureElement.class}
       />
     );
   },
 
-  cityId: ({ form, language, structureElement }) => {
+  cityId: ({ form, language }) => {
     const { disabled, errorMessage, isError, isRequired, name } = form.getInputState('cityId');
 
     const fetcher: FormSelectFetcher = async (language: LanguageKeys, signal: AbortSignal): Promise<FormSelectItem[]> => {
@@ -192,9 +181,9 @@ export const contactUsElements: FormElementMapper<ContactUs> = {
         placeholder="selectCity"
         formLocaleName="contactUs"
         errorMessage={errorMessage}
-        wrapperId={structureElement.id}
-        wrapperClass={structureElement.class}
       />
     );
   },
-};
+} as const;
+
+export type contactUsElementNames = keyof typeof contactUsElements;

@@ -1,17 +1,17 @@
-import { Component, Element, Host, Prop, State, h } from '@stencil/core';
+import { Component, Element, Host, Prop, State, Watch, h } from '@stencil/core';
 
 import { Grecaptcha } from '~types/general';
-import { FormHookInterface } from '~types/forms';
 
 import cn from '~lib/cn';
-import { FormHook } from '~lib/form-hook';
+import { FormHook } from '~features/form-hook/form-hook';
 
-import { ContactUs, contactUsSchema } from './contact-us/validations';
+import contactUsSchema from '~locales/forms/contactUs/type';
+import { ContactUsStructures } from './contact-us/structure';
+import { ContactUs, contactUsInputsValidation } from './contact-us/validations';
+import { contactUsElementNames, contactUsElements } from './contact-us/element-mapper';
 
-import themes from './contact-us/themes.json';
-import { contactUsElements } from './contact-us/element-mapper';
-
-import { LanguageKeys } from '~features/multi-lingual';
+import { FormHookInterface, FormElementStructure, gistLoader } from '~features/form-hook';
+import { ComponentLocale, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, sharedLocalesSchema } from '~features/multi-lingual';
 
 declare const grecaptcha: Grecaptcha;
 
@@ -20,48 +20,60 @@ declare const grecaptcha: Grecaptcha;
   tag: 'contact-us-form',
   styleUrl: 'contact-us/form.css',
 })
-export class ContactUsForm implements FormHookInterface<ContactUs> {
-  @Prop() theme: string;
-  @Prop() baseUrl: string;
-  @Prop() brandId: string;
-  @Prop() queryString: string = '';
+export class ContactUsForm implements FormHookInterface<ContactUs>, MultiLingual {
+  // ====== Start Localization
   @Prop() language: LanguageKeys = 'en';
 
-  @Prop() structure: string = '["submit.Submit"]';
-  @Prop() recaptchaKey: string = '6Lehq6IpAAAAAETTDS2Zh60nHIT1a8oVkRtJ2WsA';
+  @State() locale: ComponentLocale<typeof contactUsSchema> = { sharedLocales: sharedLocalesSchema.getDefault(), ...contactUsSchema.getDefault() };
 
-  @Prop() errorCallback: (error: any) => void;
-  @Prop() successCallback: (values: any) => void;
-  @Prop() loadingChanges: (loading: boolean) => void;
+  @Watch('language')
+  async changeLanguage(newLanguage: LanguageKeys) {
+    const [sharedLocales, locale] = await Promise.all([getSharedLocal(newLanguage), getLocaleLanguage(newLanguage, 'forms.contactUs', contactUsSchema)]);
+    this.locale = { sharedLocales, ...locale };
+  }
+  // ====== End Localization
 
-  @State() isLoading: boolean;
+  // ====== Start Form Hook logic
   @State() renderControl = {};
+  @State() isLoading: boolean;
   @State() errorMessage: string;
 
-  recaptchaWidget: number | null = null;
-
-  form = new FormHook(this, contactUsSchema);
+  @Prop() theme: string;
+  @Prop() gistId?: string;
+  @Prop() brandId: string;
+  @Prop() errorCallback: (error: any) => void;
+  @Prop() successCallback: (data: any) => void;
+  @Prop() loadingChanges: (loading: boolean) => void;
+  @Prop() structure: FormElementStructure<contactUsElementNames> | undefined;
 
   @Element() el: HTMLElement;
 
-  async componentDidLoad() {
-    try {
-      if (this.recaptchaKey) {
-        const script = document.createElement('script');
-        script.src = `https://www.google.com/recaptcha/api.js?render=${this.recaptchaKey}&hl=${this.language}`;
-        script.async = true;
-        script.defer = true;
+  setIsLoading(isLoading: boolean) {
+    this.isLoading = isLoading;
+    if (this.loadingChanges) this.loadingChanges(true);
+  }
 
-        document.head.appendChild(script);
-      }
-    } catch (error) {
-      console.log(error);
-    }
+  setErrorCallback(error: any) {
+    if (error?.message) this.errorMessage = error.message;
+    if (this.errorCallback) this.errorCallback(error);
+  }
+
+  setSuccessCallback(data: any) {
+    if (this.successCallback) this.successCallback(data);
+  }
+
+  async componentWillLoad() {
+    await this.changeLanguage(this.language);
+
+    if (this.structure) return;
+
+    if (this.gistId) this.structure = await gistLoader(this.gistId);
+    else if (this.theme === 'tiq') this.structure = ContactUsStructures.tiq;
   }
 
   async formSubmit(formValues: ContactUs) {
     try {
-      if (this.loadingChanges) this.loadingChanges(true);
+      this.setIsLoading(true);
 
       const token = await grecaptcha.execute(this.recaptchaKey, { action: 'submit' });
 
@@ -78,7 +90,7 @@ export class ContactUsForm implements FormHookInterface<ContactUs> {
 
       const data = await response.json();
 
-      if (this.successCallback) this.successCallback(data);
+      this.setSuccessCallback(data);
 
       this.form.successAnimation();
       setTimeout(() => {
@@ -87,10 +99,34 @@ export class ContactUsForm implements FormHookInterface<ContactUs> {
     } catch (error) {
       console.error(error);
 
-      if (this.errorCallback) this.errorCallback(error);
-      if (error?.message) this.errorMessage = error.message;
+      this.setErrorCallback(error);
     } finally {
-      if (this.loadingChanges) this.loadingChanges(false);
+      this.setIsLoading(false);
+    }
+  }
+  // ====== End Form Hook logic
+
+  @Prop() baseUrl: string;
+  @Prop() queryString: string = '';
+
+  @Prop() recaptchaKey: string = '6Lehq6IpAAAAAETTDS2Zh60nHIT1a8oVkRtJ2WsA';
+
+  recaptchaWidget: number | null = null;
+
+  form = new FormHook(this, contactUsInputsValidation);
+
+  async componentDidLoad() {
+    try {
+      if (this.recaptchaKey) {
+        const script = document.createElement('script');
+        script.src = `https://www.google.com/recaptcha/api.js?render=${this.recaptchaKey}&hl=${this.language}`;
+        script.async = true;
+        script.defer = true;
+
+        document.head.appendChild(script);
+      }
+    } catch (error) {
+      console.log(error);
     }
   }
 
@@ -102,10 +138,9 @@ export class ContactUsForm implements FormHookInterface<ContactUs> {
         })}
       >
         <form-structure
-          themes={themes}
           form={this.form}
-          theme={this.theme}
           language={this.language}
+          structure={this.structure}
           isLoading={this.isLoading}
           errorMessage={this.errorMessage}
           renderControl={this.renderControl}

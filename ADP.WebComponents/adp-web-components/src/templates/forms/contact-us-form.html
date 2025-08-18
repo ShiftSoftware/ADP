@@ -51,6 +51,7 @@
       language="en"
       brand-id="kWrKw"
       id="contact-us-form"
+      gist-id="5619a94de99135028cf5969a28f7f2a8"
       base-url="https://tiq-tickets.azurewebsites.net/api/external/website/general-inquiry"
     ></contact-us-form>
 
@@ -59,6 +60,17 @@
 
       document.addEventListener('DOMContentLoaded', function () {
         contactUsForm = document.getElementById('contact-us-form');
+
+        // contactUsForm.structure = {
+        //   tag: 'div',
+        //   id: 'container',
+        //   children: [
+        //     { tag: 'div', id: 'inputs_wrapper', children: ['name', 'email', 'cityId', 'phone', 'generalTicketType'] },
+        //     { name: 'message', id: 'message' },
+        //     { tag: 'div', id: 'recaptcha_container' },
+        //     { name: 'submit', id: 'Submit' },
+        //   ],
+        // };
 
         contactUsForm.loadingChanges = loadingChanges;
 

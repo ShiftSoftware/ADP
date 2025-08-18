@@ -1,3 +1,0 @@
-{
-  "tiq": ["div#container", ["div#inputs_wrapper", "name", "email", "cityId", "phone", "generalTicketType"], "message#message", ["div#recaptcha_container", "slot"], "submit.Submit"]
-}

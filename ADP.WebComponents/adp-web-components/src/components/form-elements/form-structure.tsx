@@ -1,14 +1,11 @@
-import { InferType } from 'yup';
-import { Component, Fragment, Host, Prop, State, Watch, h } from '@stencil/core';
+import { Component, Host, Prop, State, Watch, h } from '@stencil/core';
 
 import cn from '~lib/cn';
-import { FormHook } from '~lib/form-hook';
-import { isValidStructure } from '~lib/validate-form-structure';
 
-import { FormElementMapper, StructureObject } from '~types/forms';
 import generalSchema from '~locales/general/type';
 
-import { getLocaleLanguage, getSharedLocal, LanguageKeys, SharedLocales, sharedLocalesSchema } from '~features/multi-lingual';
+import { ComponentLocale, getLocaleLanguage, getSharedLocal, LanguageKeys, sharedLocalesSchema } from '~features/multi-lingual';
+import { FormHook, FormElementMapper, FormElementMapperFunctionProps, FormElementStructure, renderStructure } from '~features/form-hook';
 
 @Component({
   shadow: false,
@@ -16,21 +13,10 @@ import { getLocaleLanguage, getSharedLocal, LanguageKeys, SharedLocales, sharedL
   styleUrl: 'form-structure.css',
 })
 export class FormStructure {
-  @Prop() theme: string;
-  @Prop() themes: any = {};
-  @Prop() renderControl = {};
-  @Prop() isLoading: boolean;
-  @Prop() form: FormHook<any>;
-  @Prop() errorMessage: string;
+  // ====== Start Localization
   @Prop() language: LanguageKeys = 'en';
-  @Prop() structure: string = '["submit.Submit"]';
-  @Prop() formElementMapper: FormElementMapper<any>;
 
-  @State() showSuccess: boolean = false;
-  @State() structureObject: StructureObject = null;
-
-  @State() sharedLocales: SharedLocales = sharedLocalesSchema.getDefault();
-  @State() generalLocale: InferType<typeof generalSchema> = generalSchema.getDefault();
+  @State() locale: ComponentLocale<typeof generalSchema> = { sharedLocales: sharedLocalesSchema.getDefault(), ...generalSchema.getDefault() };
 
   async componentWillLoad() {
     this.form.setSuccessAnimation(() => {
@@ -40,56 +26,36 @@ export class FormStructure {
       }, 4000);
     });
 
-    let structure;
-
-    if (this.theme && this.themes[this.theme]) structure = this.themes[this.theme];
-    else structure = this.structure;
-
-    await Promise.all([this.structureValidation(structure), this.changeLanguage(this.language)]);
-  }
-
-  @Watch('structure')
-  async onStructureChange(newStructure: string) {
-    await this.structureValidation(newStructure);
-  }
-
-  async structureValidation(structureString: string) {
-    this.structureObject = isValidStructure(structureString);
+    await this.changeLanguage(this.language);
   }
 
   @Watch('language')
   async changeLanguage(newLanguage: LanguageKeys) {
-    const localeResponses = await Promise.all([getLocaleLanguage(newLanguage, 'general', generalSchema), getSharedLocal(newLanguage)]);
-    this.generalLocale = localeResponses[0];
-    this.sharedLocales = localeResponses[1];
+    const [sharedLocales, locale] = await Promise.all([getSharedLocal(newLanguage), getLocaleLanguage(newLanguage, 'general', generalSchema)]);
+    this.locale = { sharedLocales, ...locale };
   }
 
-  private renderLoop(structureElement: StructureObject) {
-    if (structureElement.element === '') return <Fragment>{structureElement.children.map(child => this.renderLoop(child))}</Fragment>;
+  // ====== End Localization
 
-    if (structureElement.element === 'div')
-      return (
-        <div class={structureElement.class} id={structureElement.id}>
-          {structureElement.children.map(child => this.renderLoop(child))}
-        </div>
-      );
+  @Prop() renderControl = {};
+  @Prop() isLoading: boolean;
+  @Prop() form: FormHook<any>;
+  @Prop() errorMessage: string;
+  @Prop() structure: FormElementStructure<any>;
+  @Prop() formElementMapper: FormElementMapper<any>;
 
-    if (structureElement.element === 'slot') return <slot />;
-
-    if (this.formElementMapper[structureElement.element])
-      return this.formElementMapper[structureElement.element]({ form: this.form, isLoading: this.isLoading, structureElement, language: this.language });
-
-    return false;
-  }
+  @State() showSuccess: boolean = false;
 
   render() {
-    if (this.structureObject === null) return <form-structure-error language={this.language} />;
+    const generalProps: FormElementMapperFunctionProps = { form: this.form, isLoading: this.isLoading, language: this.language, props: {} };
+
+    if (!this.structure) return <form-structure-error language={this.language} />;
 
     const { formController, resetFormErrorMessage } = this.form;
 
     return (
       <Host>
-        <form class="relative overflow-hidden" dir={this.sharedLocales.direction} {...formController}>
+        <form class="relative overflow-hidden" dir={this.locale.sharedLocales.direction} {...formController}>
           <div
             class={cn('absolute -translate-x-full transition duration-1000 flex items-center justify-center size-full opacity-0', {
               'opacity-100 translate-x-0': this.showSuccess,
@@ -110,11 +76,13 @@ export class FormStructure {
                 <path d="m9 12 2 2 4-4" />
               </svg>
 
-              <div class="text-[20px]">{this.generalLocale.formSubmittedSuccessfully}</div>
+              <div class="text-[20px]">{this.locale.formSubmittedSuccessfully}</div>
             </div>
           </div>
           <form-dialog dialogClosed={resetFormErrorMessage} language={this.language} errorMessage={this.errorMessage} />
-          <div class={cn('transition duration-1000', { 'translate-x-full opacity-0': this.showSuccess })}>{this.renderLoop(this.structureObject)}</div>
+          <div class={cn('transition duration-1000', { 'translate-x-full opacity-0': this.showSuccess })}>
+            {renderStructure(this.structure, this.formElementMapper, generalProps)}
+          </div>
         </form>
       </Host>
     );

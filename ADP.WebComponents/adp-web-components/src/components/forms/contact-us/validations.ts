@@ -12,7 +12,7 @@ phoneValidator.default = '+' + phoneValidator.metadata.numberingPlan.metadata[0]
 
 phoneValidator.input(phoneValidator.default);
 
-export const contactUsSchema = object({
+export const contactUsInputsValidation = object({
   cityId: string(),
   email: string().email('emailAddressNotValid'),
   message: string().required('messageIsRequired'),
@@ -23,4 +23,4 @@ export const contactUsSchema = object({
     .test('libphonenumber-validation', 'phoneNumberFormatInvalid', () => phoneValidator.isValid()),
 });
 
-export type ContactUs = InferType<typeof contactUsSchema>;
+export type ContactUs = InferType<typeof contactUsInputsValidation>;

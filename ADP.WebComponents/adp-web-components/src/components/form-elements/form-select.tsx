@@ -2,9 +2,9 @@ import { InferType, ObjectSchema } from 'yup';
 import { Component, Element, Host, Prop, State, Watch, h } from '@stencil/core';
 
 import cn from '~lib/cn';
-import { FormHook } from '~lib/form-hook';
+import { FormHook } from '~features/form-hook/form-hook';
 
-import { FormElement, FormSelectFetcher, FormSelectItem, LocaleFormKeys } from '~types/forms';
+import { FormElement, FormSelectFetcher, FormSelectItem, LocaleFormKeys } from '~features/form-hook/';
 
 import Loader from '~assets/loader.svg';
 

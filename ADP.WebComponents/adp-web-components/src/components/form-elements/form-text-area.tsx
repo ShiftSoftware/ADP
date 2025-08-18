@@ -2,10 +2,10 @@ import { InferType, ObjectSchema } from 'yup';
 import { Component, Element, Host, Prop, State, Watch, h } from '@stencil/core';
 
 import cn from '~lib/cn';
-import { FormHook } from '~lib/form-hook';
+import { FormHook } from '~features/form-hook/form-hook';
 
 import { InputParams } from '~types/general';
-import { FormElement, LocaleFormKeys } from '~types/forms';
+import { FormElement, LocaleFormKeys } from '~features/form-hook/interface';
 
 import formsSchema from '~locales/forms/type';
 import formWrapperSchema from '~locales/forms/wrapper-type';

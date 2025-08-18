@@ -1,6 +1,6 @@
 import { Component, Prop, h, Watch } from '@stencil/core';
 
-import { FormHook } from '~lib/form-hook';
+import { FormHook } from '~features/form-hook/form-hook';
 
 @Component({
   shadow: false,
