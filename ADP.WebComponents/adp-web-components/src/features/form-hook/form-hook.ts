@@ -1,23 +1,25 @@
 import { AnyObjectSchema, SchemaDescription } from 'yup';
 import { Field, FormElement, FormHookInterface, FormStateOptions, Subscribers, ValidationType } from './interface';
 
+import { LanguageKeys, MultiLingual, SharedFormLocales } from '~features/multi-lingual';
+import { forceUpdate } from '@stencil/core';
 export class FormHook<T> {
   successAnimation = () => {};
 
+  haltValidation: boolean = false;
   private isSubmitted = false;
   private cachedValues: Partial<T> = {};
   private subscribers: Subscribers = [];
-  private context: FormHookInterface<T>;
   private schemaObject: AnyObjectSchema;
-  private haltValidation: boolean = false;
   private onValuesUpdate: (formValues: T) => void;
   private validationType: ValidationType = 'onSubmit';
-  private subscribedFields: { [key: string]: Field } = {};
+  private context: FormHookInterface<T> & MultiLingual;
+  private subscribedFields: { [key: string]: Field<any> } = {};
   formErrors: { [key: string]: string } = {};
 
   formController;
 
-  constructor(context: FormHookInterface<T>, schemaObject: AnyObjectSchema, formStateOptions?: FormStateOptions) {
+  constructor(context: FormHookInterface<T> & MultiLingual, schemaObject: AnyObjectSchema, formStateOptions?: FormStateOptions) {
     this.context = context;
     this.schemaObject = schemaObject;
     this.formController = { onSubmit: this.onSubmit, onInput: this.onInput };
@@ -33,16 +35,19 @@ export class FormHook<T> {
   reset() {
     this.haltValidation = true;
 
-    this.signal({ isError: false, disabled: false });
-
     this.subscribers.forEach(subscriber => {
       subscriber.context.reset();
     });
 
     this.isSubmitted = false;
-    this.haltValidation = false;
 
-    this.context.renderControl = {};
+    this.signal({ isError: false, disabled: false });
+
+    this.rerender({ rerenderAll: true, rerenderForm: true });
+
+    setTimeout(() => {
+      this.haltValidation = false;
+    }, 50);
   }
 
   onInput = (event: Event) => {
@@ -56,6 +61,8 @@ export class FormHook<T> {
   resetFormErrorMessage = () => (this.context.errorMessage = '');
 
   getFormErrors = () => this.formErrors;
+
+  getFormLocale = (): [SharedFormLocales, LanguageKeys] => [this.context.locale, this.context.language];
 
   setCachedValues = (newValues: Partial<T>) => {
     this.cachedValues = newValues;
@@ -71,7 +78,7 @@ export class FormHook<T> {
     return { ...this.cachedValues, ...formObject };
   };
 
-  private focusFirstInput = (errorFields: Partial<Field>[]) => {
+  private focusFirstInput = (errorFields: Partial<Field<any>>[]) => {
     if (errorFields.length) {
       const formDom = this.context.el.shadowRoot || this.context.el;
 
@@ -103,7 +110,7 @@ export class FormHook<T> {
       } catch (error) {
         if (error.name === 'ValidationError') {
           this.formErrors = {};
-          const errorFields: Partial<Field>[] = [];
+          const errorFields: Partial<Field<any>>[] = [];
 
           error.inner.forEach((element: { path: string; message: string }) => {
             if (element.path) {
@@ -120,7 +127,7 @@ export class FormHook<T> {
 
           this.signal(errorFields);
           this.focusFirstInput(errorFields);
-          this.context.renderControl = {};
+          this.rerender({ rerenderAll: true, rerenderForm: true });
         } else console.error('Unexpected Error:', error);
       } finally {
         this.signal({ disabled: false });
@@ -129,7 +136,7 @@ export class FormHook<T> {
     })();
   };
 
-  getInputState = (name: string) => {
+  getInputState = <MetaType>(name: string): Field<MetaType> => {
     const validationDescription = this.schemaObject.describe().fields[name] as SchemaDescription;
 
     if (!this.subscribedFields[name])
@@ -139,13 +146,14 @@ export class FormHook<T> {
         disabled: false,
         errorMessage: '',
         continuousValidation: false,
+        meta: validationDescription?.meta as MetaType,
         isRequired: validationDescription?.tests.some(test => test.name === 'required'),
       };
 
     return this.subscribedFields[name];
   };
 
-  private signal = (partialSignal: Partial<Field> | Partial<Field>[]) => {
+  private signal = (partialSignal: Partial<Field<any>> | Partial<Field<any>>[]) => {
     if (Array.isArray(partialSignal)) {
       partialSignal.forEach(field => {
         if (this.subscribedFields[field.name]) Object.assign(this.subscribedFields[field.name], field);
@@ -161,6 +169,17 @@ export class FormHook<T> {
     return this.validateForm(name, value, false);
   };
 
+  rerender = ({ inputName, rerenderAll, rerenderForm }: { inputName?: string; rerenderForm?: boolean; rerenderAll?: boolean }) => {
+    if (rerenderForm) forceUpdate(this.context);
+
+    if (rerenderAll) {
+      this.subscribers.forEach(sub => forceUpdate(sub.context));
+    } else if (inputName) {
+      const ctx = this.subscribers.find(sub => sub.name === inputName)?.context;
+      forceUpdate(ctx);
+    }
+  };
+
   validateForm = (name: string, value: string, strict = true) => {
     if (strict) {
       if (this.haltValidation) return;
@@ -173,12 +192,12 @@ export class FormHook<T> {
       // @ts-ignore
       this.schemaObject.fields[name].validateSync(value);
       this.signal([{ name, isError: false }]);
-      if (wasError !== false) this.context.renderControl = {};
+      if (wasError !== false) this.rerender({ inputName: name || '', rerenderForm: true });
       return { isError: false, errorMessage: '' };
     } catch (error) {
       if (error.message) {
         this.signal([{ name, isError: true, errorMessage: error.message }]);
-        this.context.renderControl = {};
+        this.rerender({ inputName: name || '', rerenderForm: true });
         return { isError: true, errorMessage: error.message };
       }
     } finally {

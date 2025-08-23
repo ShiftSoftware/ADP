@@ -10,10 +10,11 @@ import { FormHook, FormElementMapper, FormElementMapperFunctionProps, FormElemen
 @Component({
   shadow: false,
   tag: 'form-structure',
-  styleUrl: 'form-structure.css',
+  styleUrl: 'form-inputs.css',
 })
 export class FormStructure {
   // ====== Start Localization
+  @Prop() formLocale: any = {};
   @Prop() language: LanguageKeys = 'en';
 
   @State() locale: ComponentLocale<typeof generalSchema> = { sharedLocales: sharedLocalesSchema.getDefault(), ...generalSchema.getDefault() };
@@ -37,17 +38,16 @@ export class FormStructure {
 
   // ====== End Localization
 
-  @Prop() renderControl = {};
   @Prop() isLoading: boolean;
   @Prop() form: FormHook<any>;
   @Prop() errorMessage: string;
   @Prop() structure: FormElementStructure<any>;
-  @Prop() formElementMapper: FormElementMapper<any>;
+  @Prop() formElementMapper: FormElementMapper<any, any>;
 
   @State() showSuccess: boolean = false;
 
   render() {
-    const generalProps: FormElementMapperFunctionProps = { form: this.form, isLoading: this.isLoading, language: this.language, props: {} };
+    const generalProps: FormElementMapperFunctionProps<any> = { form: this.form, isLoading: this.isLoading, language: this.language, locale: this.formLocale, props: {} };
 
     if (!this.structure) return <form-structure-error language={this.language} />;
 

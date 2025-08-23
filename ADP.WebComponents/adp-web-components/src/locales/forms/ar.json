@@ -1,1 +1,7 @@
-{ "reCaptchaIsRequired": "مطلوب الكابتشا", "inputValueIsIncorrect": "قيمة الحقل غير صحيحة." }
+{
+  "submit": "إرسال",
+  "noSelectOptions": "لا يوجد خيارات.",
+  "reCaptchaIsRequired": "مطلوب الكابتشا",
+  "inputValueIsIncorrect": "قيمة الحقل غير صحيحة.",
+  "errors": { "wildCard": "حدث خطأ غير متوقع، يرجى المحاولة مرة أخرى لاحقًا." }
+}

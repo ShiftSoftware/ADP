@@ -15,5 +15,9 @@
   "inquiryTypeIsRequired": "نوع الاستفسار مطلوب.",
   "writeAMessage": "اكتب رسالة",
   "leaveUsMessage": "اترك لنا رسالة",
-  "messageIsRequired": "الرسالة مطلوبة."
+  "messageIsRequired": "الرسالة مطلوبة.",
+  "ticketTypes": {
+    "complaint": "شكوى",
+    "generalInquiry": "استفسار عام"
+  }
 }

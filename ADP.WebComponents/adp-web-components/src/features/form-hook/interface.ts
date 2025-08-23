@@ -25,7 +25,6 @@ export interface FormHookInterface<T> {
   gistId?: string;
   brandId: string;
   el: HTMLElement;
-  renderControl: {};
   isLoading: boolean;
   errorMessage: string;
   language: LanguageKeys;
@@ -41,8 +40,9 @@ export interface FormHookInterface<T> {
 
 export type ValidationType = 'onSubmit' | 'always';
 
-export interface Field {
+export interface Field<MetaType> {
   name: string;
+  meta?: MetaType;
   isError: boolean;
   disabled: boolean;
   isRequired: boolean;
@@ -50,7 +50,7 @@ export interface Field {
   continuousValidation: boolean;
 }
 
-export type FieldControllers = Record<string, Field>;
+export type FieldControllers = Record<string, Field<any>>;
 
 export interface FormStateOptions {
   validationType?: ValidationType;
@@ -71,12 +71,12 @@ export interface FormElement {
 
 export type Subscribers = { name: string; context: FormElement }[];
 
-export type FormElementMapperFunctionProps = { form: FormHook<any>; isLoading: boolean; props: any; language: LanguageKeys };
+export type FormElementMapperFunctionProps<T> = { form: FormHook<any>; isLoading: boolean; props: any; language: LanguageKeys; locale: T };
 
-type FormElementMapperFunction = (ElementContext: FormElementMapperFunctionProps) => JSX.Element;
+type FormElementMapperFunction<T> = (ElementContext: FormElementMapperFunctionProps<T>) => JSX.Element;
 
-export type FormElementMapper<T> = {
-  [K in keyof T]: FormElementMapperFunction;
+export type FormElementMapper<T, FORM_LOCALE> = {
+  [K in keyof T]: FormElementMapperFunction<FORM_LOCALE>;
 } & {
-  submit: FormElementMapperFunction;
+  submit: FormElementMapperFunction<FORM_LOCALE>;
 };

@@ -15,5 +15,9 @@
   "inquiryTypeIsRequired": "Требуется указать тип запроса.",
   "writeAMessage": "Написать сообщение",
   "leaveUsMessage": "Оставьте нам сообщение",
-  "messageIsRequired": "Сообщение обязательно."
+  "messageIsRequired": "Сообщение обязательно.",
+  "ticketTypes": {
+    "complaint": "Жалоба",
+    "generalInquiry": "Общий запрос"
+  }
 }

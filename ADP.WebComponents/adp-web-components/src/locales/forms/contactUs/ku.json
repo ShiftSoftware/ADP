@@ -15,5 +15,9 @@
   "inquiryTypeIsRequired": "جۆری پرسیار پێویستە.",
   "writeAMessage": "پەیامێک بنووسە",
   "leaveUsMessage": "پەیامێکمان بۆ بەجێبهێڵە",
-  "messageIsRequired": "پەیام پێویستە."
+  "messageIsRequired": "پەیام پێویستە.",
+  "ticketTypes": {
+    "complaint": "سکاڵا",
+    "generalInquiry": "پرسیاری گشتی"
+  }
 }

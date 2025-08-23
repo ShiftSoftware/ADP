@@ -1,1 +1,7 @@
-{ "reCaptchaIsRequired": "پێویستە کاپچا", "inputValueIsIncorrect": "تکایە بەهای باشتر دابین بکەن" }
+{
+  "submit": "ناردن",
+  "reCaptchaIsRequired": "پێویستە کاپچا",
+  "noSelectOptions": "هیچ بژاردەیەک نییە.",
+  "inputValueIsIncorrect": "تکایە بەهای باشتر دابین بکەن",
+  "errors": { "wildCard": "کێشەیەکی چاوەڕواننەکراو ڕویدا تکایە دواتر هەوڵبدەوە." }
+}

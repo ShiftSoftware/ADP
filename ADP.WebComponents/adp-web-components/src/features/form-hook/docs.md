@@ -1,6 +1,5 @@
 ```typescript
   // ====== Start Form Hook logic
-  @State() renderControl = {};
   @State() isLoading: boolean;
   @State() errorMessage: string;
 

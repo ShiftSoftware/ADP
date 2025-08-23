@@ -4,6 +4,7 @@ import globalSchema from '~locales/type';
 import errorsSchema from '~locales/errors/type';
 
 import localeNetworkMapper from '../../locale-mapper';
+import formsSchema from '~locales/forms/type';
 
 export type LocaleKeyEntries = keyof typeof localeNetworkMapper;
 
@@ -17,6 +18,14 @@ export type SharedLocales = InferType<typeof sharedLocalesSchema>;
 
 export type ComponentLocale<T extends AnyObjectSchema> = {
   sharedLocales?: SharedLocales;
+} & InferType<T>;
+
+export const sharedFormLocalesSchema = object({}).concat(globalSchema).concat(formsSchema);
+
+export type SharedFormLocales = InferType<typeof sharedFormLocalesSchema>;
+
+export type FormLocale<T extends AnyObjectSchema> = {
+  sharedFormLocales?: SharedFormLocales;
 } & InferType<T>;
 
 export const ARABIC_JSON_FILE = 'ar.json';

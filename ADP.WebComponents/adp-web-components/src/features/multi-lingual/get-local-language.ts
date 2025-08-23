@@ -6,7 +6,8 @@ import localeNetworkMapper from '../../locale-mapper';
 
 import globalSchema from '~locales/type';
 import errorsSchema from '~locales/errors/type';
-import { LanguageKeys, languageMapper, LocaleKeyEntries, SharedLocales } from './types';
+import { LanguageKeys, languageMapper, LocaleKeyEntries, SharedFormLocales, SharedLocales } from './types';
+import formsSchema from '~locales/forms/type';
 
 const cachedLocales = {};
 
@@ -14,6 +15,12 @@ export async function getSharedLocal(languageKey: LanguageKeys): Promise<SharedL
   const [errors, globalKeys] = await Promise.all([getLocaleLanguage(languageKey, 'errors', errorsSchema), getLocaleLanguage(languageKey, '-', globalSchema)]);
 
   return { errors, ...globalKeys };
+}
+
+export async function getSharedFormLocal(languageKey: LanguageKeys): Promise<SharedFormLocales> {
+  const [globalKeys, sharedFormKeys] = await Promise.all([getLocaleLanguage(languageKey, '-', globalSchema), getLocaleLanguage(languageKey, 'forms*', formsSchema)]);
+
+  return { ...globalKeys, ...sharedFormKeys };
 }
 
 export async function getLocaleLanguage<T extends ObjectSchema<any>>(languageKey: LanguageKeys, component: LocaleKeyEntries, schema: T): Promise<InferType<T>> {
@@ -91,10 +98,12 @@ async function requestLocaleFile(localeFile: string) {
   if (cachedLocales[localeFile]) return await cachedLocales[localeFile];
 
   try {
-    const fetchPromise = (Build.isDev ? fetch('http://localhost:3000/' + localeFile) : fetch(`https://cdn.jsdelivr.net/npm/adp-web-components@${version}/dist/${localeFile}`)).then(res => {
-      if (!res.ok) delete cachedLocales[localeFile];
-      return res.json();
-    });
+    const fetchPromise = (Build.isDev ? fetch('http://localhost:3000/' + localeFile) : fetch(`https://cdn.jsdelivr.net/npm/adp-web-components@${version}/dist/${localeFile}`)).then(
+      res => {
+        if (!res.ok) delete cachedLocales[localeFile];
+        return res.json();
+      },
+    );
 
     cachedLocales[localeFile] = fetchPromise;
 

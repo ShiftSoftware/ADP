@@ -1,5 +1,8 @@
+import { object } from 'yup';
 import yupTypeMapper from '~lib/yup-type-mapper';
 
-const formsSchema = yupTypeMapper(['reCaptchaIsRequired', 'inputValueIsIncorrect']);
+const errors = yupTypeMapper(['wildCard']);
+
+const formsSchema = object({ errors }).concat(yupTypeMapper(['reCaptchaIsRequired', 'noSelectOptions', 'inputValueIsIncorrect', 'submit']));
 
 export default formsSchema;

@@ -1,9 +1,7 @@
 {
   "TLP": "TLP",
-  "Complaint": "شكوى",
   "PartInquiry": "PartInquiry",
   "SalesCampaign": "SalesCampaign",
-  "GeneralInquiry": "استفسار عام",
   "ServiceCampaign": "ServiceCampaign",
   "InstallmentPayment": "InstallmentPayment",
   "ServicePriceInquiry": "ServicePriceInquiry"

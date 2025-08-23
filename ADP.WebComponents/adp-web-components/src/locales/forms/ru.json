@@ -1,4 +1,7 @@
 {
+  "submit": "Отправить",
+  "noSelectOptions": "Вариантов нет.",
   "reCaptchaIsRequired": "Требуется капча",
-  "inputValueIsIncorrect": "Значение поля неверно."
+  "inputValueIsIncorrect": "Значение поля неверно.",
+  "errors": { "wildCard": "Произошла неожиданная ошибка, пожалуйста, попробуйте еще раз позже." }
 }

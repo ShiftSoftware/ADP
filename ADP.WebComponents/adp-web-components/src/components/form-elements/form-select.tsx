@@ -1,73 +1,55 @@
-import { InferType, ObjectSchema } from 'yup';
 import { Component, Element, Host, Prop, State, Watch, h } from '@stencil/core';
 
 import cn from '~lib/cn';
-import { FormHook } from '~features/form-hook/form-hook';
+import { getNestedValue } from '~lib/get-nested-value';
 
-import { FormElement, FormSelectFetcher, FormSelectItem, LocaleFormKeys } from '~features/form-hook/';
+import { FormHook } from '~features/form-hook/form-hook';
+import { ErrorKeys, LanguageKeys } from '~features/multi-lingual';
+import { FormElement, FormInputMeta, FormSelectFetcher, FormSelectItem } from '~features/form-hook/';
 
 import Loader from '~assets/loader.svg';
+import { TickIcon } from '~assets/tick-icon';
+import { ArrowUpIcon } from '~assets/arrow-up-icon';
 
-import formsSchema from '~locales/forms/type';
-import generalSchema from '~locales/general/type';
-import formWrapperSchema from '~locales/forms/wrapper-type';
-
-import { ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, LocaleKeyEntries, SharedLocales, sharedLocalesSchema } from '~features/multi-lingual';
-
+const partKeyPrefix = 'form-select-';
 @Component({
   shadow: false,
   tag: 'form-select',
-  styleUrl: 'form-select.css',
+  styleUrl: 'form-inputs.css',
 })
 export class FormSelect implements FormElement {
   @Prop() name: string;
-  @Prop() label: string;
-  @Prop() isError: boolean;
   @Prop() wrapperId: string;
-  @Prop() disabled: boolean;
   @Prop() form: FormHook<any>;
-  @Prop() isRequired: boolean;
-  @Prop() errorMessage: string;
   @Prop() wrapperClass: string;
-  @Prop() fetcher: FormSelectFetcher;
   @Prop() language: LanguageKeys = 'en';
-  @Prop() formLocaleName: LocaleFormKeys;
-  @Prop() placeholder: string = 'Select an option';
+  @Prop() fetcher: FormSelectFetcher<any>;
 
   @State() isLoading: boolean;
   @State() isOpen: boolean = false;
   @State() selectedValue: string = '';
   @State() openUpwards: boolean = false;
   @State() options: FormSelectItem[] = [];
-  @State() fetchingErrorMessage?: ErrorKeys = null;
 
-  @State() sharedLocales: SharedLocales = sharedLocalesSchema.getDefault();
-  @State() locale: InferType<typeof formWrapperSchema> = formWrapperSchema.getDefault();
-  @State() generalLocales: InferType<typeof generalSchema> = generalSchema.getDefault();
+  @State() fetchingErrorMessage?: ErrorKeys = null;
 
   @Element() el!: HTMLElement;
   private abortController: AbortController;
 
   @Watch('language')
-  async changeLanguage(newLanguage: LanguageKeys) {
-    const currentFormSchema = formWrapperSchema.fields[this.formLocaleName] as ObjectSchema<InferType<any>>;
-
-    const localeResponses = await Promise.all([
-      getLocaleLanguage(newLanguage, 'forms*', formsSchema),
-      getSharedLocal(newLanguage),
-      getLocaleLanguage(newLanguage, ('forms.' + this.formLocaleName) as LocaleKeyEntries, currentFormSchema),
-      getLocaleLanguage(newLanguage, 'general', generalSchema),
-    ]);
-    Object.assign(this.locale, localeResponses[0]);
-    Object.assign(this.locale[this.formLocaleName], localeResponses[2]);
-    this.sharedLocales = localeResponses[1];
-    this.generalLocales = localeResponses[3];
+  async changeLanguage() {
     this.fetch();
   }
 
   async componentWillLoad() {
     this.form.subscribe(this.name, this);
-    await this.changeLanguage(this.language);
+  }
+
+  async disconnectedCallback() {
+    this.abortController.abort();
+    this.form.unsubscribe(this.name);
+    document.removeEventListener('click', this.closeDropdown);
+    document.removeEventListener('keydown', this.handleKeyDown.bind(this));
   }
 
   toggleDropdown = () => {
@@ -125,7 +107,7 @@ export class FormSelect implements FormElement {
 
       this.abortController = new AbortController();
 
-      const options = await this.fetcher(this.language, this.abortController.signal);
+      const options = await this.fetcher({ language: this.language, signal: this.abortController.signal, locale: this.form.getFormLocale()[0] });
 
       this.fetchingErrorMessage = null;
       this.options = options;
@@ -140,18 +122,19 @@ export class FormSelect implements FormElement {
   }
 
   async componentDidLoad() {
+    this.fetch();
     document.addEventListener('click', this.closeDropdown);
     document.addEventListener('keydown', this.handleKeyDown.bind(this));
   }
 
-  async disconnectedCallback() {
-    this.abortController.abort();
-    document.removeEventListener('click', this.closeDropdown);
-    document.removeEventListener('keydown', this.handleKeyDown.bind(this));
-  }
-
   render() {
-    const texts = this.locale[this.formLocaleName];
+    const { disabled, isRequired, meta, isError, errorMessage } = this.form.getInputState<FormInputMeta>(this.name);
+    const [locale] = this.form.getFormLocale();
+
+    const part = partKeyPrefix + this.name;
+
+    const label = getNestedValue(locale, meta?.label);
+    const placeholder = getNestedValue(locale, meta?.placeholder) || 'Select an option';
 
     const selectedItem = this.options.find(item => this.selectedValue === item.value);
 
@@ -161,11 +144,11 @@ export class FormSelect implements FormElement {
 
     return (
       <Host>
-        <label id={this.wrapperId} class={cn('relative w-full inline-flex flex-col', this.wrapperClass)}>
-          {this.label && (
+        <label part={part} id={this.wrapperId} class={cn('relative w-full inline-flex flex-col', this.wrapperClass)}>
+          {label && (
             <div class="mb-[4px]">
-              {texts[this.label] || this.label}
-              {this.isRequired && <span class="ms-0.5 text-red-600">*</span>}
+              {label}
+              {isRequired && <span class="ms-0.5 text-red-600">*</span>}
             </div>
           )}
 
@@ -175,29 +158,19 @@ export class FormSelect implements FormElement {
             <button
               type="button"
               name={this.name}
-              disabled={this.disabled}
+              disabled={disabled}
               onClick={this.toggleDropdown}
               class={cn(
                 'select-button enabled:focus:border-slate-600 enabled:focus:shadow-[0_0_0_0.2rem_rgba(71,85,105,0.25)] border bg-white h-[38px] flex justify-between overflow-hidden disabled:opacity-75 flex-1 py-[6px] px-[12px] transition-all duration-300 rounded-md outline-none w-full',
                 {
                   'text-[#9CA3AF]': !selectedItem,
-                  '!border-red-500 focus:shadow-[0_0_0_0.2rem_rgba(239,68,68,0.25)]': this.isError,
+                  '!border-red-500 focus:shadow-[0_0_0_0.2rem_rgba(239,68,68,0.25)]': isError,
                   'enabled:border-slate-600 enabled:shadow-[0_0_0_0.2rem_rgba(71,85,105,0.25)]': this.isOpen,
                 },
               )}
             >
-              {selectedItem ? selectedItem.label : <span>{texts[this.placeholder]}</span>}
-              <svg
-                fill="none"
-                stroke-width="2"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                class={cn('select-arrow size-6 transition duration-300', { 'rotate-180': this.isOpen })}
-              >
-                <path d="m6 9 6 6 6-6" />
-              </svg>
+              {selectedItem ? selectedItem.label : <span>{placeholder}</span>}
+              <ArrowUpIcon class={cn('select-arrow size-6 transition text-[#9CA3AF] duration-300', { 'rotate-180': !this.isOpen })} />
             </button>
 
             <div
@@ -220,35 +193,18 @@ export class FormSelect implements FormElement {
                     })}
                   >
                     <div>{option.label}</div>
-                    <svg
-                      fill="none"
-                      stroke-width="2"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      class={cn('size-5 opacity-0 transition duration-300', { 'opacity-100': this.selectedValue === option.value })}
-                    >
-                      <path d="M20 6 9 17l-5-5" />
-                    </svg>
+                    <TickIcon class={cn('size-5 opacity-0 transition duration-300', { 'opacity-100': this.selectedValue === option.value })} />
                   </button>
                 ))}
               {!this.options.length && (
                 <div class={cn('select-empty-container h-[100px] flex items-center justify-center', { 'text-red-500': this.fetchingErrorMessage })}>
-                  {this.fetchingErrorMessage && (this.sharedLocales.errors[this.fetchingErrorMessage] || this.sharedLocales.errors.wildCard)}
-                  {!this.fetchingErrorMessage && (this.isLoading ? <img class="spin-slow size-[22px]" src={Loader} /> : this.generalLocales.noSelectOptions)}
+                  {this.fetchingErrorMessage && (getNestedValue(locale, this.fetchingErrorMessage) || locale.errors.wildCard)}
+                  {!this.fetchingErrorMessage && (this.isLoading ? <img class="spin-slow size-[22px]" src={Loader} /> : locale.noSelectOptions)}
                 </div>
               )}
             </div>
           </div>
-
-          <div
-            class={cn('absolute pt-[1px] -z-10 text-[12px] text-red-500 opacity-0 -translate-y-[4px] bottom-0 transition duration-300', {
-              'translate-y-full error-message opacity-100': this.isError,
-            })}
-          >
-            {texts[this.errorMessage] || this.locale.inputValueIsIncorrect || this.errorMessage}
-          </div>
+          <form-error-message isError={isError} errorMessage={locale[errorMessage] || locale?.inputValueIsIncorrect || errorMessage} />
         </label>
       </Host>
     );

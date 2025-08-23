@@ -5,7 +5,7 @@ import { getSharedLocal, LanguageKeys, SharedLocales, sharedLocalesSchema } from
 @Component({
   shadow: false,
   tag: 'form-structure-error',
-  styleUrl: 'form-structure-error.css',
+  styleUrl: 'form-inputs.css',
 })
 export class FormStructureError {
   @Prop() language: LanguageKeys = 'en';

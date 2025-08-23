@@ -1,9 +1,7 @@
 {
   "TLP": "TLP",
-  "Complaint": "Жалоба",
   "PartInquiry": "PartInquiry",
   "SalesCampaign": "SalesCampaign",
-  "GeneralInquiry": "Общий запрос",
   "ServiceCampaign": "ServiceCampaign",
   "InstallmentPayment": "InstallmentPayment",
   "ServicePriceInquiry": "ServicePriceInquiry"

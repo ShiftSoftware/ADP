@@ -7,6 +7,15 @@
   font-family: Arial;
 }
 
+.dialog-blur {
+  backdrop-filter: blur(1.5px) !important;
+}
+
+.rtl-form-input::placeholder {
+  direction: rtl;
+  text-align: right;
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);

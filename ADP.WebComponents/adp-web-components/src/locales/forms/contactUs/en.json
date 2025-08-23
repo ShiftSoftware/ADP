@@ -15,5 +15,9 @@
   "inquiryTypeIsRequired": "Inquiry Type is required.",
   "writeAMessage": "Write a Message",
   "leaveUsMessage": "Leave us a Message",
-  "messageIsRequired": "Message is required."
+  "messageIsRequired": "Message is required.",
+  "ticketTypes": {
+    "complaint": "Complaint",
+    "generalInquiry": "General Inquiry"
+  }
 }

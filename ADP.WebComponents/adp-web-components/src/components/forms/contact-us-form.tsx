@@ -7,11 +7,11 @@ import { FormHook } from '~features/form-hook/form-hook';
 
 import contactUsSchema from '~locales/forms/contactUs/type';
 import { ContactUsStructures } from './contact-us/structure';
-import { ContactUs, contactUsInputsValidation } from './contact-us/validations';
 import { contactUsElementNames, contactUsElements } from './contact-us/element-mapper';
+import { ContactUs, ContactUsFormLocale, contactUsInputsValidation } from './contact-us/validations';
 
 import { FormHookInterface, FormElementStructure, gistLoader } from '~features/form-hook';
-import { ComponentLocale, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, sharedLocalesSchema } from '~features/multi-lingual';
+import { getLocaleLanguage, getSharedFormLocal, LanguageKeys, MultiLingual, sharedFormLocalesSchema } from '~features/multi-lingual';
 
 declare const grecaptcha: Grecaptcha;
 
@@ -24,17 +24,19 @@ export class ContactUsForm implements FormHookInterface<ContactUs>, MultiLingual
   // ====== Start Localization
   @Prop() language: LanguageKeys = 'en';
 
-  @State() locale: ComponentLocale<typeof contactUsSchema> = { sharedLocales: sharedLocalesSchema.getDefault(), ...contactUsSchema.getDefault() };
+  @State() locale: ContactUsFormLocale = { sharedFormLocales: sharedFormLocalesSchema.getDefault(), ...contactUsSchema.getDefault() };
 
   @Watch('language')
   async changeLanguage(newLanguage: LanguageKeys) {
-    const [sharedLocales, locale] = await Promise.all([getSharedLocal(newLanguage), getLocaleLanguage(newLanguage, 'forms.contactUs', contactUsSchema)]);
-    this.locale = { sharedLocales, ...locale };
+    const [sharedLocales, locale] = await Promise.all([getSharedFormLocal(newLanguage), getLocaleLanguage(newLanguage, 'forms.contactUs', contactUsSchema)]);
+
+    this.locale = { ...sharedLocales, ...locale };
+
+    this.form.rerender({ rerenderAll: true });
   }
   // ====== End Localization
 
   // ====== Start Form Hook logic
-  @State() renderControl = {};
   @State() isLoading: boolean;
   @State() errorMessage: string;
 
@@ -73,6 +75,8 @@ export class ContactUsForm implements FormHookInterface<ContactUs>, MultiLingual
 
   async formSubmit(formValues: ContactUs) {
     try {
+      console.log(formValues);
+
       this.setIsLoading(true);
 
       const token = await grecaptcha.execute(this.recaptchaKey, { action: 'submit' });
@@ -140,10 +144,10 @@ export class ContactUsForm implements FormHookInterface<ContactUs>, MultiLingual
         <form-structure
           form={this.form}
           language={this.language}
+          formLocale={this.locale}
           structure={this.structure}
           isLoading={this.isLoading}
           errorMessage={this.errorMessage}
-          renderControl={this.renderControl}
           formElementMapper={contactUsElements}
         >
           <slot></slot>

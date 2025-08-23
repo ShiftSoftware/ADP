@@ -10,7 +10,7 @@ import { getLocaleLanguage, getSharedLocal, LanguageKeys, SharedLocales, sharedL
 @Component({
   shadow: false,
   tag: 'form-dialog',
-  styleUrl: 'form-dialog.css',
+  styleUrl: 'form-inputs.css',
 })
 export class FormInput {
   @Prop() errorMessage: string;

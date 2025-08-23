@@ -3,8 +3,8 @@ import { FormElementStructure, FormElementMapper, FormElementMapperFunctionProps
 
 export function renderStructure(
   structure: FormElementStructure<any> | string,
-  elementMapper: FormElementMapper<any>,
-  generaProps: FormElementMapperFunctionProps,
+  elementMapper: FormElementMapper<any, any>,
+  generaProps: FormElementMapperFunctionProps<any>,
 ): JSX.Element | false {
   if (typeof structure === 'string') {
     if (typeof structure === 'string' && structure && elementMapper[structure]) return elementMapper[structure](generaProps);
@@ -13,13 +13,13 @@ export function renderStructure(
 
     delete generaProps.props;
 
-    generaProps.props = props || {};
-
     if (tag) {
       const Tag = tag as any;
 
       return <Tag {...props}>{Array.isArray(children) && children.map(child => renderStructure(child, elementMapper, generaProps))}</Tag>;
     }
+
+    generaProps.props = { wrapperId: props?.id, wrapperClass: props?.class };
 
     if (typeof name === 'string' && name && elementMapper[name]) return elementMapper[name](generaProps);
   }

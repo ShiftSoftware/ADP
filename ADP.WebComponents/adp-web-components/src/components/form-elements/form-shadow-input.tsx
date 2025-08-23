@@ -5,7 +5,7 @@ import { FormHook } from '~features/form-hook/form-hook';
 @Component({
   shadow: false,
   tag: 'form-shadow-input',
-  styleUrl: 'form-shadow-input.css',
+  styleUrl: 'form-inputs.css',
 })
 export class FormInput {
   @Prop() name: string;
@@ -19,10 +19,12 @@ export class FormInput {
 
   @Watch('value')
   async handleValueChange(newValue: string) {
+    if (this.form.haltValidation) return;
+
     this.form.validateForm(this.name, newValue);
   }
 
   render() {
-    return <input name={this.name} type="string" hidden value={this.value} />;
+    return <input hidden name={this.name} type="string" value={this.value} />;
   }
 }
