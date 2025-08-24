@@ -22,9 +22,16 @@ public class StockPartModel:
     public string Location { get; set; } = default!;
 
     /// <summary>
-    /// The current on-hand Quantity of the part in the stock.
+    /// The current AvailableQuantity of the part in the stock.
     /// </summary>
-    public decimal Quantity { get; set; }
+    public decimal AvailableQuantity { get; set; }
+
+    /// <summary>
+    /// The current on-hand quantity of the part in the stock
+    /// </summary>
+    public decimal OnHandQuantity { get; set; }
+
+    public decimal OrderQauntity { get; set; }
 
     [DocIgnore]
     public string ItemType => ModelTypes.StockPart;
@@ -37,4 +44,6 @@ public class StockPartModel:
     /// The Company Hash ID from the Identity System.
     /// </summary>
     public string CompanyHashID { get; set; }
+
+    public string IntegrationID { get; set; }
 }
