@@ -3,6 +3,7 @@
   "fullNameIsRequired": "Full Name is required.",
   "fullNameMinimum": "Full Name must be 3 characters or more.",
   "emailAddress": "Email Address",
+  "confirmPolicy": "Do you confirm?",
   "emailAddressNotValid": "Please enter a valid email address.",
   "city": "City",
   "selectCity": "Select a city.",

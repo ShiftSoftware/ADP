@@ -6,6 +6,7 @@
   "emailAddressNotValid": "تکایە ناونیشانی ئیمەیڵێکی دروست دابنێ.",
   "city": "شار",
   "selectCity": "شارێک هەڵبژێرە.",
+  "confirmPolicy": "Do you confirm?",
   "cityIsRequired": "شار پێویستە.",
   "phoneNumber": "ژمارەی مۆبایل",
   "phoneNumberIsRequired": "ژمارەی مۆبایل پێویستە.",

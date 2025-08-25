@@ -8,6 +8,7 @@ const demoSchema = object({
 }).concat(
   yupTypeMapper([
     'fullName',
+    'confirmPolicy',
     'fullNameIsRequired',
     'fullNameMinimum',
     'emailAddress',

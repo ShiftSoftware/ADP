@@ -1,4 +1,4 @@
-import { InferType, object, string } from 'yup';
+import { bool, InferType, object, string } from 'yup';
 
 import { FormLocale } from '~features/multi-lingual';
 import { FormInputMeta, getPhoneValidator } from '~features/form-hook';
@@ -7,6 +7,9 @@ import demoSchema from '~locales/forms/demo/type';
 export const phoneValidator = getPhoneValidator();
 
 export const demoInputsValidation = object({
+  confirmPolicy: bool()
+    .meta({ label: 'confirmPolicy' } as FormInputMeta)
+    .required(),
   cityId: string().meta({ label: 'city', placeholder: 'selectCity' } as FormInputMeta),
   email: string()
     .meta({ label: 'emailAddress', placeholder: 'emailAddress' } as FormInputMeta)

@@ -52,10 +52,13 @@ export class FormHook<T> {
 
   onInput = (event: Event) => {
     const target = event.target as HTMLInputElement;
+    let value: string | boolean = target.value;
 
-    if (this.onValuesUpdate) this.onValuesUpdate({ ...this.getValues(), [target.name]: target.value } as T);
+    if (target.type === 'checkbox') value = target.checked;
 
-    this.validateForm(target.name, target.value);
+    if (this.onValuesUpdate) this.onValuesUpdate({ ...this.getValues(), [target.name]: value } as T);
+
+    this.validateForm(target.name, value);
   };
 
   resetFormErrorMessage = () => (this.context.errorMessage = '');
@@ -72,6 +75,7 @@ export class FormHook<T> {
     const formDom = this.context.el.shadowRoot || this.context.el;
 
     const form = formDom.querySelector('form') as HTMLFormElement;
+
     const formData = new FormData(form);
     const formObject = Object.fromEntries(formData.entries() as Iterable<[string, FormDataEntryValue]>);
 
@@ -104,6 +108,16 @@ export class FormHook<T> {
         this.context.isLoading = true;
         this.signal({ isError: false, disabled: true });
         const formObject = { ...this.cachedValues, ...this.getValues() };
+
+        const description = this.schemaObject.describe();
+
+        Object.entries(description.fields)
+          .filter(([_, desc]) => desc.type === 'boolean')
+          .forEach(([name]) => {
+            // @ts-ignore
+            formObject[name] = typeof formObject[name] === 'string' && formObject[name] === 'true';
+          });
+
         const values = await this.schemaObject.validate(formObject, { abortEarly: false });
 
         await this.context.formSubmit(values);
@@ -125,6 +139,7 @@ export class FormHook<T> {
             }
           });
 
+          console.log(this.formErrors);
           this.signal(errorFields);
           this.focusFirstInput(errorFields);
           this.rerender({ rerenderAll: true, rerenderForm: true });
@@ -180,7 +195,7 @@ export class FormHook<T> {
     }
   };
 
-  validateForm = (name: string, value: string, strict = true) => {
+  validateForm = (name: string, value: string | boolean, strict = true) => {
     if (strict) {
       if (this.haltValidation) return;
       if (!this.isSubmitted && this.validationType !== 'always' && !this.subscribedFields[name].continuousValidation) return;
@@ -191,7 +206,7 @@ export class FormHook<T> {
     try {
       // @ts-ignore
       this.schemaObject.fields[name].validateSync(value);
-      this.signal([{ name, isError: false }]);
+      this.signal([{ name, isError: false, errorMessage: '' }]);
       if (wasError !== false) this.rerender({ inputName: name || '', rerenderForm: true });
       return { isError: false, errorMessage: '' };
     } catch (error) {

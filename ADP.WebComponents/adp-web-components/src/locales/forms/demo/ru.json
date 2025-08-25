@@ -16,6 +16,7 @@
   "writeAMessage": "Написать сообщение",
   "leaveUsMessage": "Оставьте нам сообщение",
   "messageIsRequired": "Сообщение обязательно.",
+  "confirmPolicy": "Do you confirm?",
   "ticketTypes": {
     "complaint": "Жалоба",
     "generalInquiry": "Общий запрос"

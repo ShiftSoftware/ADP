@@ -16,6 +16,8 @@ export const demoElements: FormElementMapper<Demo, DemoFormLocale> = {
 
   message: ({ form, props }) => <form-text-area {...props} form={form} name="message" />,
 
+  confirmPolicy: ({ form, props }) => <form-checkbox {...props} form={form} name="confirmPolicy" />,
+
   generalTicketType: ({ form, language, props }) => {
     const fetcher: FormSelectFetcher<DemoFormLocale> = async ({ locale }): Promise<FormSelectItem[]> => {
       const generalInquiryTypes: FormSelectItem[] = [

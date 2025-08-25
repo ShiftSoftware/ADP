@@ -1,5 +1,6 @@
 {
   "fullName": "الاسم الكامل",
+  "confirmPolicy": "Do you confirm?",
   "fullNameIsRequired": "الاسم الكامل مطلوب.",
   "fullNameMinimum": "الاسم الكامل يجب أن يتكون من 3 أحرف أو أكثر.",
   "emailAddress": "البريد الإلكتروني",
