@@ -8,6 +8,10 @@ import { FormInputMeta } from '~features/form-hook';
 import { FormHook } from '~features/form-hook/form-hook';
 import { FormElement } from '~features/form-hook/interface';
 
+import { FormInputLabel } from './components/form-input-label';
+import { FormErrorMessage } from './components/form-error-message';
+import { FormInputPrefix } from './components/form-input-prefix';
+
 const partKeyPrefix = 'form-input-';
 
 @Component({
@@ -19,7 +23,7 @@ export class FormPhoneNumber implements FormElement {
   @Prop() name: string;
   @Prop() wrapperId: string;
   @Prop() form: FormHook<any>;
-  @Prop() inputPreFix: string;
+  @Prop() inputPrefix: string;
   @Prop() wrapperClass: string;
   @Prop() defaultValue: string;
   @Prop() type: string = 'text';
@@ -72,41 +76,27 @@ export class FormPhoneNumber implements FormElement {
 
     return (
       <Host>
-        <label part={part} id={this.wrapperId} class={cn('relative w-full inline-flex flex-col', this.wrapperClass)}>
-          {label && (
-            <div class="mb-[4px]">
-              {label}
-              {isRequired && <span class="ms-0.5 text-red-600">*</span>}
-            </div>
-          )}
+        <label part={part} id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, disabled)}>
+          <FormInputLabel isRequired={isRequired} label={label} />
 
-          <div dir="ltr" class={cn('relative', { 'opacity-75': disabled })}>
-            {this.inputPreFix && (
-              <div
-                class={cn('prefix absolute h-[38px] px-2 left-0 top-0 pointer-events-none items-center justify-center flex', { 'left-auto right-0': locale.direction === 'rtl' })}
-              >
-                {this.inputPreFix}
-              </div>
-            )}
+          <div dir="ltr" part="form-input-container" class="form-input-container">
+            <FormInputPrefix direction={locale.direction} prefix={this.inputPrefix} />
+
             <input
               type={this.type}
               name={this.name}
+              part="form-input"
               disabled={disabled}
               onInput={this.onInputChange}
               defaultValue={this.defaultValue}
               placeholder={placeholder || meta?.placeholder}
               style={{ ...(this.prefixWidth ? { [locale.direction === 'rtl' ? 'paddingRight' : 'paddingLeft']: `${this.prefixWidth}px` } : {}) }}
-              class={cn(
-                'border appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none form-input disabled:bg-white flex-1 py-[6px] px-[12px] transition duration-300 rounded-md outline-none focus:border-slate-600 focus:shadow-[0_0_0_0.2rem_rgba(71,85,105,0.25)] w-full',
-                part,
-                {
-                  '!border-red-500 focus:shadow-[0_0_0_0.2rem_rgba(239,68,68,0.25)]': isError,
-                  'rtl-form-input': locale.direction === 'rtl',
-                },
-              )}
+              class={cn('form-input-style', {
+                'form-input-error-style': isError,
+              })}
             />
           </div>
-          <form-error-message isError={isError} errorMessage={locale[errorMessage] || locale?.inputValueIsIncorrect || errorMessage} />
+          <FormErrorMessage isError={isError} errorMessage={locale[errorMessage] || locale?.inputValueIsIncorrect || errorMessage} />
         </label>
       </Host>
     );

@@ -40,18 +40,15 @@ export class FormSubmit implements FormElement {
         type="submit"
         part={buttonSubscriberKey}
         disabled={this.isLoading}
-        class={cn(
-          'h-[38px] relative overflow-hidden px-4 enabled:hover:bg-slate-600 transition-colors duration-300 bg-slate-700 enabled:active:bg-slate-800 rounded text-white flex items-center',
-          {
-            'bg-slate-600': this.isLoading,
-          },
-        )}
+        class={cn('form-submit', {
+          loading: this.isLoading,
+        })}
       >
-        <div class="opacity-0">{submitText}</div>
-        <div class={cn('absolute size-full top-0 left-0 flex items-center justify-center transition !duration-1000', { 'translate-y-full': this.isLoading })}>{submitText}</div>
+        <div class="opacity-0 form-submit-text-style">{submitText}</div>
+        <div class="form-submit-text-style form-submit-text-position">{submitText}</div>
 
-        <div class={cn('absolute flex justify-center items-center top-0 left-0 size-full transition !duration-1000 -translate-y-full', { 'translate-y-0': this.isLoading })}>
-          <img class="spin-slow size-[22px]" src={Loader} />
+        <div part="form-submit-loading-container" class="form-submit-loading-container">
+          <img part="form-submit-loading-icon" class="form-submit-loading-icon" src={Loader} />
         </div>
       </button>
     );

@@ -11,11 +11,6 @@
   backdrop-filter: blur(1.5px) !important;
 }
 
-.rtl-form-input::placeholder {
-  direction: rtl;
-  text-align: right;
-}
-
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -24,4 +19,194 @@
 
 .spin-slow {
   animation: spin 2s linear infinite;
+}
+
+.error-message {
+  @apply absolute text-[12px] pt-[1px] -z-10 text-red-500 opacity-0 -translate-y-[4px] bottom-0 transition !duration-300;
+}
+
+.display-error-message {
+  @apply translate-y-full !opacity-100;
+}
+
+.dialog-drop-container {
+  @apply fixed pointer-events-none flex items-center justify-center top-0 left-0 z-[9999999999] w-[100dvw] h-[100dvh] transition !duration-300;
+}
+
+.opened-dialog-drop-container {
+  @apply bg-black/50 pointer-events-auto;
+}
+
+.dialog-wrapper {
+  @apply bg-white min-w-[322px] max-w-[80dvw] gap-[16px] flex flex-col transition !duration-300 opacity-0 scale-50 rounded shadow p-[20px];
+}
+
+.opened-dialog-wrapper {
+  @apply scale-100 opacity-100;
+}
+
+.dialog-close-icon-button {
+  @apply float-right -mb-[10px] self-end size-[20px] rotate-45 transition !duration-300 opacity-40 hover:opacity-100;
+}
+
+.dialog-content {
+  @apply text-justify;
+}
+
+.dialog-close-button {
+  @apply h-[32px] w-fit text-white relative overflow-hidden px-[14px] hover:bg-red-400 transition-colors !duration-300 bg-red-500 active:bg-red-700 rounded flex items-center;
+}
+
+.form-input-label-container {
+  @apply relative w-full inline-flex flex-col;
+}
+
+.form-input-label {
+  @apply mb-[4px];
+}
+
+.form-input-label-required-star {
+  @apply ms-0.5 text-red-600;
+}
+
+.form-input-container {
+  @apply relative;
+}
+
+.form-input-label-container.disabled .form-input-container {
+  @apply opacity-75;
+}
+
+.form-input-prefix {
+  @apply absolute h-[38px] px-2 left-0 top-0 pointer-events-none items-center justify-center flex rtl:left-auto rtl:right-0;
+}
+
+.form-input-style {
+  @apply border appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none disabled:bg-white flex-1 py-[6px] px-[12px] transition !duration-300 rounded-md outline-none enabled:focus:border-slate-600 enabled:focus:shadow-[0_0_0_0.2rem_rgba(71,85,105,0.25)] w-full;
+}
+
+.form-input-textarea-style {
+  @apply resize-none h-[200px] py-[6px] px-[12px];
+}
+
+.form-input-error-style {
+  @apply !border-red-500 enabled:focus:shadow-[0_0_0_0.2rem_rgba(239,68,68,0.25)];
+}
+
+.form-input-select {
+  @apply pe-[36px];
+}
+
+.form-input-select[readonly] {
+  @apply cursor-pointer;
+}
+
+.form-input-select-icon-container {
+  @apply absolute end-0 h-full pointer-events-none w-[36px] flex items-center justify-center top-0;
+}
+
+.form-input-select-icon {
+  @apply size-[24px] text-[#9CA3AF] pointer-events-auto;
+}
+
+.form-input-container.disabled .form-input-select-icon {
+  @apply pointer-events-none;
+}
+
+.form-input-select-icon.cross {
+  @apply rotate-45 hover:text-black cursor-pointer;
+}
+
+.form-input-select-icon.arrow {
+  @apply transition !duration-300;
+}
+
+.form-input-container.open .form-input-select-icon.arrow {
+  @apply rotate-180;
+}
+
+.form-select-container {
+  @apply z-[10] flex flex-col pointer-events-none absolute w-full bg-white border rounded-md shadow opacity-0 transition-opacity !duration-300 max-h-[250px] overflow-auto;
+}
+
+.form-input-container.open .form-select-container {
+  @apply opacity-100 pointer-events-auto;
+}
+
+.form-select-container.upwards {
+  @apply top-0 -mt-[8px] -translate-y-full;
+}
+
+.form-select-container.downwards {
+  @apply top-0 mt-[8px] translate-y-[38px];
+}
+
+.form-select-option {
+  @apply flex justify-between px-4 py-2 hover:bg-slate-100;
+}
+
+.form-select-option.selected {
+  @apply bg-slate-200;
+}
+
+.form-select-option-tick {
+  @apply size-5 opacity-0 transition !duration-300;
+}
+
+.form-select-option.selected .form-select-option-tick {
+  @apply opacity-100;
+}
+
+.form-select-empty-container {
+  @apply h-[100px] flex items-center justify-center;
+}
+
+.form-select-empty-container.error {
+  @apply text-red-500;
+}
+
+.form-select-sinner {
+  animation: spin 2s linear infinite;
+  @apply size-[22px];
+}
+
+.form-structure-error-container {
+  @apply py-[16px] min-h-[100px] flex items-center;
+}
+
+.form-structure-error-content {
+  @apply px-[16px] py-[8px] border text-[#58151c] border-[#f2aeb5] bg-[#f7d7d8] text-[20px] rounded-[8px] w-fit mx-auto;
+}
+
+.form-submit {
+  @apply h-[38px] relative overflow-hidden px-4 enabled:hover:bg-slate-600 transition-colors duration-300 bg-slate-700 enabled:active:bg-slate-800 rounded text-white flex items-center;
+}
+
+.form-submit.loading {
+  @apply bg-slate-600;
+}
+
+.form-submit-text-position {
+  @apply absolute top-0 left-0 transition !duration-1000;
+}
+
+.form-submit-text-style {
+  @apply text-[18px] size-full flex items-center justify-center;
+}
+
+.form-submit.loading .form-submit-text-position {
+  @apply translate-y-full;
+}
+
+.form-submit-loading-container {
+  @apply absolute flex justify-center items-center top-0 left-0 size-full transition !duration-1000 -translate-y-full;
+}
+
+.form-submit.loading .form-submit-loading-container {
+  @apply translate-y-0;
+}
+
+.form-submit-loading-icon {
+  animation: spin 2s linear infinite;
+  @apply size-[22px];
 }

@@ -1,5 +1,6 @@
 {
   "submit": "ناردن",
+  "close": "داخستن",
   "reCaptchaIsRequired": "پێویستە کاپچا",
   "noSelectOptions": "هیچ بژاردەیەک نییە.",
   "inputValueIsIncorrect": "تکایە بەهای باشتر دابین بکەن",

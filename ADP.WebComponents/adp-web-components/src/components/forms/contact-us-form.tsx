@@ -79,6 +79,8 @@ export class ContactUsForm implements FormHookInterface<ContactUs>, MultiLingual
 
       this.setIsLoading(true);
 
+      if (formValues) throw new Error('a');
+
       const token = await grecaptcha.execute(this.recaptchaKey, { action: 'submit' });
 
       const response = await fetch(`${this.baseUrl}?${this.queryString}`, {

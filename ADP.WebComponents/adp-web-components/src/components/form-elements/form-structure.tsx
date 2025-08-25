@@ -47,6 +47,7 @@ export class FormStructure {
   @State() showSuccess: boolean = false;
 
   render() {
+    const [locale] = this.form.getFormLocale();
     const generalProps: FormElementMapperFunctionProps<any> = { form: this.form, isLoading: this.isLoading, language: this.language, locale: this.formLocale, props: {} };
 
     if (!this.structure) return <form-structure-error language={this.language} />;
@@ -79,7 +80,7 @@ export class FormStructure {
               <div class="text-[20px]">{this.locale.formSubmittedSuccessfully}</div>
             </div>
           </div>
-          <form-dialog dialogClosed={resetFormErrorMessage} language={this.language} errorMessage={this.errorMessage} />
+          <form-dialog dialogClosed={resetFormErrorMessage} closeText={locale.close} form={this.form} errorMessage={this.errorMessage} />
           <div class={cn('transition duration-1000', { 'translate-x-full opacity-0': this.showSuccess })}>
             {renderStructure(this.structure, this.formElementMapper, generalProps)}
           </div>

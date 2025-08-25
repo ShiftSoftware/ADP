@@ -46,7 +46,7 @@ export const contactUsElements: FormElementMapper<ContactUs, ContactUsFormLocale
       return selectItems;
     };
 
-    return <form-select {...props} name="cityId" form={form} fetcher={fetcher} language={language} />;
+    return <form-select {...props} name="cityId" searchable form={form} fetcher={fetcher} language={language} />;
   },
 } as const;
 

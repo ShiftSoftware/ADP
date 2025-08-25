@@ -11,6 +11,10 @@ import Loader from '~assets/loader.svg';
 import { TickIcon } from '~assets/tick-icon';
 import { ArrowUpIcon } from '~assets/arrow-up-icon';
 
+import { FormInputLabel } from './components/form-input-label';
+import { FormErrorMessage } from './components/form-error-message';
+import { AddIcon } from '~assets/add-icon';
+
 const partKeyPrefix = 'form-select-';
 @Component({
   shadow: false,
@@ -21,10 +25,12 @@ export class FormSelect implements FormElement {
   @Prop() name: string;
   @Prop() wrapperId: string;
   @Prop() form: FormHook<any>;
+  @Prop() searchable: boolean;
   @Prop() wrapperClass: string;
   @Prop() language: LanguageKeys = 'en';
   @Prop() fetcher: FormSelectFetcher<any>;
 
+  @State() searchValue = '';
   @State() isLoading: boolean;
   @State() isOpen: boolean = false;
   @State() selectedValue: string = '';
@@ -53,14 +59,14 @@ export class FormSelect implements FormElement {
   }
 
   toggleDropdown = () => {
-    if (this.isOpen) this.isOpen = false;
+    if (this.isOpen && !this.searchable) this.isOpen = false;
     else this.adjustDropdownPosition();
   };
 
   adjustDropdownPosition() {
     requestAnimationFrame(() => {
-      const selectButton = this.el.getElementsByClassName('select-button')[0] as HTMLDivElement;
-      const selectContainer = this.el.getElementsByClassName('select-container')[0] as HTMLDivElement;
+      const selectButton = this.el.getElementsByClassName('form-input-select')[0] as HTMLDivElement;
+      const selectContainer = this.el.getElementsByClassName('form-select-container')[0] as HTMLDivElement;
 
       const rect = selectButton.getBoundingClientRect();
 
@@ -76,6 +82,7 @@ export class FormSelect implements FormElement {
 
   handleSelection(option: FormSelectItem) {
     this.selectedValue = option.value;
+    this.searchValue = option.label;
     this.isOpen = false;
   }
 
@@ -121,6 +128,23 @@ export class FormSelect implements FormElement {
     }
   }
 
+  onSearchInput = (event: InputEvent) => {
+    const target = event.target as HTMLInputElement;
+
+    this.searchValue = target.value;
+    this.selectedValue = '';
+  };
+
+  clearInput = () => {
+    this.searchValue = '';
+    this.selectedValue = '';
+
+    const selectButton = this.el.getElementsByClassName('form-input-select')[0] as HTMLDivElement;
+
+    selectButton.focus();
+    if (!this.isOpen) this.adjustDropdownPosition();
+  };
+
   async componentDidLoad() {
     this.fetch();
     document.addEventListener('click', this.closeDropdown);
@@ -142,69 +166,66 @@ export class FormSelect implements FormElement {
       this.selectedValue = '';
     }
 
+    const filteredOptions = selectedItem ? this.options : this.options.filter(option => option.label.toLowerCase().includes(this.searchValue.toLowerCase()));
+
     return (
       <Host>
-        <label part={part} id={this.wrapperId} class={cn('relative w-full inline-flex flex-col', this.wrapperClass)}>
-          {label && (
-            <div class="mb-[4px]">
-              {label}
-              {isRequired && <span class="ms-0.5 text-red-600">*</span>}
-            </div>
-          )}
+        <label part={part} id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, disabled)}>
+          <FormInputLabel isRequired={isRequired} label={label} />
 
           <form-shadow-input name={this.name} form={this.form} value={this.selectedValue} />
 
-          <div class="relative">
-            <button
-              type="button"
-              name={this.name}
+          <div part="form-input-container" class={cn('form-input-container', { open: this.isOpen, disabled })}>
+            <input
+              type="text"
               disabled={disabled}
+              part="form-input-select"
+              value={this.searchValue}
+              readOnly={!this.searchable}
+              onInput={this.onSearchInput}
               onClick={this.toggleDropdown}
-              class={cn(
-                'select-button enabled:focus:border-slate-600 enabled:focus:shadow-[0_0_0_0.2rem_rgba(71,85,105,0.25)] border bg-white h-[38px] flex justify-between overflow-hidden disabled:opacity-75 flex-1 py-[6px] px-[12px] transition-all duration-300 rounded-md outline-none w-full',
-                {
-                  'text-[#9CA3AF]': !selectedItem,
-                  '!border-red-500 focus:shadow-[0_0_0_0.2rem_rgba(239,68,68,0.25)]': isError,
-                  'enabled:border-slate-600 enabled:shadow-[0_0_0_0.2rem_rgba(71,85,105,0.25)]': this.isOpen,
-                },
-              )}
-            >
-              {selectedItem ? selectedItem.label : <span>{placeholder}</span>}
-              <ArrowUpIcon class={cn('select-arrow size-6 transition text-[#9CA3AF] duration-300', { 'rotate-180': !this.isOpen })} />
-            </button>
+              placeholder={placeholder || meta?.placeholder}
+              class={cn('form-input-style form-input-select', {
+                'form-input-error-style': isError,
+              })}
+            />
+
+            <div part="form-input-select-icon-container" class="form-input-select-icon-container">
+              {selectedItem || this.searchValue ? <AddIcon onClick={this.clearInput} class="form-input-select-icon cross" /> : <ArrowUpIcon class="form-input-select-icon arrow" />}
+            </div>
 
             <div
-              class={cn(
-                'select-container z-[10] flex flex-col pointer-events-none absolute w-full bg-white border rounded-md shadow opacity-0 transition-opacity duration-300 max-h-[250px] overflow-auto',
-                {
-                  'opacity-100 pointer-events-auto': this.isOpen,
-                  'top-0 -mt-[8px] -translate-y-full': this.openUpwards,
-                  'top-0 mt-[8px] translate-y-[38px]': !this.openUpwards,
-                },
-              )}
+              part="form-select-container"
+              class={cn('form-select-container', {
+                upwards: this.openUpwards,
+                downwards: !this.openUpwards,
+              })}
             >
-              {!!this.options.length &&
-                this.options.map(option => (
+              {!!filteredOptions.length &&
+                filteredOptions.map(option => (
                   <button
                     type="button"
+                    part="form-select-option"
                     onClick={() => this.handleSelection(option)}
-                    class={cn('select-option flex justify-between px-4 py-2 hover:bg-slate-100 transition-colors duration-300', {
-                      'bg-slate-200': this.selectedValue === option.value,
+                    class={cn('form-select-option', {
+                      selected: this.selectedValue === option.value,
                     })}
                   >
-                    <div>{option.label}</div>
-                    <TickIcon class={cn('size-5 opacity-0 transition duration-300', { 'opacity-100': this.selectedValue === option.value })} />
+                    <div part="form-select-option-label" class="form-select-option-label">
+                      {option.label}
+                    </div>
+                    <TickIcon class="form-select-option-tick" />
                   </button>
                 ))}
-              {!this.options.length && (
-                <div class={cn('select-empty-container h-[100px] flex items-center justify-center', { 'text-red-500': this.fetchingErrorMessage })}>
+              {!filteredOptions.length && (
+                <div part="form-select-empty-container" class={cn('form-select-empty-container', { error: this.fetchingErrorMessage })}>
                   {this.fetchingErrorMessage && (getNestedValue(locale, this.fetchingErrorMessage) || locale.errors.wildCard)}
-                  {!this.fetchingErrorMessage && (this.isLoading ? <img class="spin-slow size-[22px]" src={Loader} /> : locale.noSelectOptions)}
+                  {!this.fetchingErrorMessage && (this.isLoading ? <img class="form-select-sinner" src={Loader} /> : locale.noSelectOptions)}
                 </div>
               )}
             </div>
           </div>
-          <form-error-message isError={isError} errorMessage={locale[errorMessage] || locale?.inputValueIsIncorrect || errorMessage} />
+          <FormErrorMessage isError={isError} errorMessage={locale[errorMessage] || locale?.inputValueIsIncorrect || errorMessage} />
         </label>
       </Host>
     );

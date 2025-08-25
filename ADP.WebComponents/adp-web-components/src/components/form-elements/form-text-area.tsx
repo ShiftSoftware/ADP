@@ -6,6 +6,9 @@ import { getNestedValue } from '~lib/get-nested-value';
 import { FormElement } from '~features/form-hook/interface';
 import { FormHook, FormInputMeta } from '~features/form-hook';
 
+import { FormInputLabel } from './components/form-input-label';
+import { FormErrorMessage } from './components/form-error-message';
+
 const partKeyPrefix = 'form-textarea-';
 @Component({
   shadow: false,
@@ -52,25 +55,20 @@ export class FormTextArea implements FormElement {
 
     return (
       <Host>
-        <label part={part} id={this.wrapperId} class={cn('relative w-full inline-flex flex-col', this.wrapperClass)}>
-          {label && (
-            <div class="mb-[4px]">
-              {label}
-              {isRequired && <span class="ms-0.5 text-red-600">*</span>}
-            </div>
-          )}
-          <div class={cn('relative h-fit', { 'opacity-75': disabled })}>
+        <label part={part} id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, disabled)}>
+          <FormInputLabel isRequired={isRequired} label={label} />
+
+          <div part="form-input-container" class="form-input-container">
             <textarea
               name={this.name}
               placeholder={placeholder}
-              class={cn(
-                'border h-[200px] form-input resize-none disabled:bg-white flex-1 py-[6px] px-[12px] transition !duration-300 rounded-md outline-none focus:border-slate-600 focus:shadow-[0_0_0_0.2rem_rgba(71,85,105,0.25)] w-full',
-                'form-textarea-' + this.name,
-                { '!border-red-500 focus:shadow-[0_0_0_0.2rem_rgba(239,68,68,0.25)]': isError },
-              )}
+              part="form-input-textarea"
+              class={cn('form-input-style form-input-textarea-style', {
+                'form-input-error-style': isError,
+              })}
             />
           </div>
-          <form-error-message isError={isError} errorMessage={locale[errorMessage] || locale?.inputValueIsIncorrect || errorMessage} />
+          <FormErrorMessage isError={isError} errorMessage={locale[errorMessage] || locale?.inputValueIsIncorrect || errorMessage} />
         </label>
       </Host>
     );
