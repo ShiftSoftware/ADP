@@ -27,7 +27,7 @@
     if (this.successCallback) this.successCallback(data);
   }
 
-  async formSubmit(formValues: ContactUs) {
+  async formSubmit(formValues: Demo) {
     try {
       this.setIsLoading(true);
 

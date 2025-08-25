@@ -3,9 +3,9 @@ import { h } from '@stencil/core';
 import { FormSelectFetcher, FormSelectItem, FormElementMapper } from '~features/form-hook';
 
 import { CITY_ENDPOINT } from '~api/urls';
-import { ContactUs, ContactUsFormLocale, phoneValidator } from './validations';
+import { Demo, DemoFormLocale, phoneValidator } from './validations';
 
-export const contactUsElements: FormElementMapper<ContactUs, ContactUsFormLocale> = {
+export const demoElements: FormElementMapper<Demo, DemoFormLocale> = {
   submit: ({ form, isLoading, props }) => <form-submit {...props} form={form} isLoading={isLoading} />,
 
   name: ({ props, form }) => <form-input {...props} form={form} name="name" />,
@@ -17,7 +17,7 @@ export const contactUsElements: FormElementMapper<ContactUs, ContactUsFormLocale
   message: ({ form, props }) => <form-text-area {...props} form={form} name="message" />,
 
   generalTicketType: ({ form, language, props }) => {
-    const fetcher: FormSelectFetcher<ContactUsFormLocale> = async ({ locale }): Promise<FormSelectItem[]> => {
+    const fetcher: FormSelectFetcher<DemoFormLocale> = async ({ locale }): Promise<FormSelectItem[]> => {
       const generalInquiryTypes: FormSelectItem[] = [
         {
           value: 'GeneralInquiry',
@@ -36,7 +36,7 @@ export const contactUsElements: FormElementMapper<ContactUs, ContactUsFormLocale
   },
 
   cityId: ({ form, language, props }) => {
-    const fetcher: FormSelectFetcher<ContactUsFormLocale> = async ({ language, signal }): Promise<FormSelectItem[]> => {
+    const fetcher: FormSelectFetcher<DemoFormLocale> = async ({ language, signal }): Promise<FormSelectItem[]> => {
       const response = await fetch(CITY_ENDPOINT, { signal, headers: { 'Accept-Language': language } });
 
       const arrayRes = (await response.json()) as { Name: string; ID: string; IntegrationId: string }[];
@@ -50,4 +50,4 @@ export const contactUsElements: FormElementMapper<ContactUs, ContactUsFormLocale
   },
 } as const;
 
-export type contactUsElementNames = keyof typeof contactUsElements;
+export type demoElementNames = keyof typeof demoElements;

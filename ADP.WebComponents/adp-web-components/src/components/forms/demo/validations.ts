@@ -1,12 +1,12 @@
 import { InferType, object, string } from 'yup';
 
 import { FormLocale } from '~features/multi-lingual';
-import contactUsSchema from '~locales/forms/contactUs/type';
 import { FormInputMeta, getPhoneValidator } from '~features/form-hook';
+import demoSchema from '~locales/forms/demo/type';
 
 export const phoneValidator = getPhoneValidator();
 
-export const contactUsInputsValidation = object({
+export const demoInputsValidation = object({
   cityId: string().meta({ label: 'city', placeholder: 'selectCity' } as FormInputMeta),
   email: string()
     .meta({ label: 'emailAddress', placeholder: 'emailAddress' } as FormInputMeta)
@@ -27,6 +27,6 @@ export const contactUsInputsValidation = object({
     .test('libphonenumber-validation', 'phoneNumberFormatInvalid', () => phoneValidator.isValid()),
 });
 
-export type ContactUs = InferType<typeof contactUsInputsValidation>;
+export type Demo = InferType<typeof demoInputsValidation>;
 
-export type ContactUsFormLocale = FormLocale<typeof contactUsSchema>;
+export type DemoFormLocale = FormLocale<typeof demoSchema>;

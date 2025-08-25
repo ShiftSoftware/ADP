@@ -34,7 +34,7 @@
   </style>
   <body>
     <a href="#" onclick="history.back()" style="color: blue; display: block; margin-bottom: 16px">Back</a>
-    <h1>Contact Us Form</h1>
+    <h1>Demo Form</h1>
 
     <div class="button-container">
       <button class="sample-button" onclick="updateLang('en')">En</button>
@@ -47,21 +47,15 @@
     <!-- query-string="" -->
     <!-- structure='' -->
     <!-- gist-id="5619a94de99135028cf5969a28f7f2a8" -->
-    <contact-us-form
-      theme="tiq"
-      language="en"
-      brand-id="kWrKw"
-      id="contact-us-form"
-      base-url="https://tiq-tickets.azurewebsites.net/api/external/website/general-inquiry"
-    ></contact-us-form>
+    <demo-form theme="tiq" language="en" brand-id="kWrKw" id="demo-form" base-url="https://tiq-tickets.azurewebsites.net/api/external/website/general-inquiry"></demo-form>
 
     <script>
-      let contactUsForm;
+      let demoForm;
 
       document.addEventListener('DOMContentLoaded', function () {
-        contactUsForm = document.getElementById('contact-us-form');
+        demoForm = document.getElementById('demo-form');
 
-        // contactUsForm.structure = {
+        // demoForm.structure = {
         //   tag: 'div',
         //   id: 'container',
         //   children: [
@@ -72,11 +66,11 @@
         //   ],
         // };
 
-        contactUsForm.loadingChanges = loadingChanges;
+        demoForm.loadingChanges = loadingChanges;
 
-        contactUsForm.successCallback = successCallback;
+        demoForm.successCallback = successCallback;
 
-        contactUsForm.errorCallback = errorCallback;
+        demoForm.errorCallback = errorCallback;
       });
 
       loadingChanges = loading => {
@@ -92,7 +86,7 @@
       };
 
       function updateLang(newLang) {
-        contactUsForm.language = newLang;
+        demoForm.language = newLang;
       }
     </script>
   </body>

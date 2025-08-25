@@ -1,7 +1,7 @@
-import { contactUsElementNames } from './element-mapper';
+import { demoElementNames } from './element-mapper';
 import { FormElementStructure } from '~features/form-hook';
 
-const tiq: FormElementStructure<contactUsElementNames> = {
+const tiq: FormElementStructure<demoElementNames> = {
   tag: 'div',
   id: 'container',
   children: [
@@ -12,4 +12,4 @@ const tiq: FormElementStructure<contactUsElementNames> = {
   ],
 };
 
-export const ContactUsStructures = { tiq };
+export const DemoStructures = { tiq };

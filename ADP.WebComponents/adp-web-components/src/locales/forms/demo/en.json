@@ -1,0 +1,23 @@
+{
+  "fullName": "Full Name",
+  "fullNameIsRequired": "Full Name is required.",
+  "fullNameMinimum": "Full Name must be 3 characters or more.",
+  "emailAddress": "Email Address",
+  "emailAddressNotValid": "Please enter a valid email address.",
+  "city": "City",
+  "selectCity": "Select a city.",
+  "cityIsRequired": "City is required.",
+  "phoneNumber": "Phone Number",
+  "phoneNumberIsRequired": "Phone Number is Required.",
+  "phoneNumberFormatInvalid": "Phone Number format is invalid.",
+  "inquiryType": "Inquiry Type",
+  "selectInquiryType": "Select Inquiry Type",
+  "inquiryTypeIsRequired": "Inquiry Type is required.",
+  "writeAMessage": "Write a Message",
+  "leaveUsMessage": "Leave us a Message",
+  "messageIsRequired": "Message is required.",
+  "ticketTypes": {
+    "complaint": "Complaint",
+    "generalInquiry": "General Inquiry"
+  }
+}

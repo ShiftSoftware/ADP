@@ -5,10 +5,11 @@ import { Grecaptcha } from '~types/general';
 import cn from '~lib/cn';
 import { FormHook } from '~features/form-hook/form-hook';
 
-import contactUsSchema from '~locales/forms/contactUs/type';
-import { ContactUsStructures } from './contact-us/structure';
-import { contactUsElementNames, contactUsElements } from './contact-us/element-mapper';
-import { ContactUs, ContactUsFormLocale, contactUsInputsValidation } from './contact-us/validations';
+import demoSchema from '~locales/forms/demo/type';
+
+import { DemoStructures } from './demo/structure';
+import { demoElementNames, demoElements } from './demo/element-mapper';
+import { Demo, DemoFormLocale, demoInputsValidation } from './demo/validations';
 
 import { FormHookInterface, FormElementStructure, gistLoader } from '~features/form-hook';
 import { getLocaleLanguage, getSharedFormLocal, LanguageKeys, MultiLingual, sharedFormLocalesSchema } from '~features/multi-lingual';
@@ -17,18 +18,18 @@ declare const grecaptcha: Grecaptcha;
 
 @Component({
   shadow: false,
-  tag: 'contact-us-form',
-  styleUrl: 'contact-us/form.css',
+  tag: 'demo-form',
+  styleUrl: 'demo/themes.css',
 })
-export class ContactUsForm implements FormHookInterface<ContactUs>, MultiLingual {
+export class DemoForm implements FormHookInterface<Demo>, MultiLingual {
   // ====== Start Localization
   @Prop() language: LanguageKeys = 'en';
 
-  @State() locale: ContactUsFormLocale = { sharedFormLocales: sharedFormLocalesSchema.getDefault(), ...contactUsSchema.getDefault() };
+  @State() locale: DemoFormLocale = { sharedFormLocales: sharedFormLocalesSchema.getDefault(), ...demoSchema.getDefault() };
 
   @Watch('language')
   async changeLanguage(newLanguage: LanguageKeys) {
-    const [sharedLocales, locale] = await Promise.all([getSharedFormLocal(newLanguage), getLocaleLanguage(newLanguage, 'forms.contactUs', contactUsSchema)]);
+    const [sharedLocales, locale] = await Promise.all([getSharedFormLocal(newLanguage), getLocaleLanguage(newLanguage, 'forms.demo', demoSchema)]);
 
     this.locale = { ...sharedLocales, ...locale };
 
@@ -46,7 +47,7 @@ export class ContactUsForm implements FormHookInterface<ContactUs>, MultiLingual
   @Prop() errorCallback: (error: any) => void;
   @Prop() successCallback: (data: any) => void;
   @Prop() loadingChanges: (loading: boolean) => void;
-  @Prop() structure: FormElementStructure<contactUsElementNames> | undefined;
+  @Prop() structure: FormElementStructure<demoElementNames> | undefined;
 
   @Element() el: HTMLElement;
 
@@ -70,10 +71,10 @@ export class ContactUsForm implements FormHookInterface<ContactUs>, MultiLingual
     if (this.structure) return;
 
     if (this.gistId) this.structure = await gistLoader(this.gistId);
-    else if (this.theme === 'tiq') this.structure = ContactUsStructures.tiq;
+    else if (this.theme === 'tiq') this.structure = DemoStructures.tiq;
   }
 
-  async formSubmit(formValues: ContactUs) {
+  async formSubmit(formValues: Demo) {
     try {
       console.log(formValues);
 
@@ -119,7 +120,7 @@ export class ContactUsForm implements FormHookInterface<ContactUs>, MultiLingual
 
   recaptchaWidget: number | null = null;
 
-  form = new FormHook(this, contactUsInputsValidation);
+  form = new FormHook(this, demoInputsValidation);
 
   async componentDidLoad() {
     try {
@@ -140,7 +141,7 @@ export class ContactUsForm implements FormHookInterface<ContactUs>, MultiLingual
     return (
       <Host
         class={cn({
-          [`contact-us-${this.theme}`]: this.theme,
+          [`demo-${this.theme}`]: this.theme,
         })}
       >
         <form-structure
@@ -150,7 +151,7 @@ export class ContactUsForm implements FormHookInterface<ContactUs>, MultiLingual
           structure={this.structure}
           isLoading={this.isLoading}
           errorMessage={this.errorMessage}
-          formElementMapper={contactUsElements}
+          formElementMapper={demoElements}
         >
           <slot></slot>
         </form-structure>

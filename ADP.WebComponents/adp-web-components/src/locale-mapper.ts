@@ -11,10 +11,14 @@ const localeMapper = {
   ],
   "forms": [
     "locales/forms/",
-    "locales/forms/contactUs/"
+    "locales/forms/contactUs/",
+    "locales/forms/demo/"
   ],
   "forms.contactUs": [
     "locales/forms/contactUs/"
+  ],
+  "forms.demo": [
+    "locales/forms/demo/"
   ],
   "general": [
     "locales/general/"
