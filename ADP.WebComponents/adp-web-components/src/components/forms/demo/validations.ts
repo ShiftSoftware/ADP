@@ -10,6 +10,10 @@ export const demoInputsValidation = object({
   confirmPolicy: bool()
     .meta({ label: 'confirmPolicy' } as FormInputMeta)
     .required(),
+  ageConfirmation: bool()
+    .isTrue('must be true')
+    .meta({ label: 'agePlus18' } as FormInputMeta)
+    .required(),
   cityId: string().meta({ label: 'city', placeholder: 'selectCity' } as FormInputMeta),
   email: string()
     .meta({ label: 'emailAddress', placeholder: 'emailAddress' } as FormInputMeta)

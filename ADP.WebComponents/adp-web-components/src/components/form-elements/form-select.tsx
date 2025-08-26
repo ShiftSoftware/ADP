@@ -157,7 +157,7 @@ export class FormSelect implements FormElement {
 
     const part = partKeyPrefix + this.name;
 
-    const label = getNestedValue(locale, meta?.label);
+    const label = getNestedValue(locale, meta?.label) || meta?.label;
     const placeholder = getNestedValue(locale, meta?.placeholder) || 'Select an option';
 
     const selectedItem = this.options.find(item => this.selectedValue === item.value);
@@ -225,7 +225,7 @@ export class FormSelect implements FormElement {
               )}
             </div>
           </div>
-          <FormErrorMessage isError={isError} errorMessage={locale[errorMessage] || locale?.inputValueIsIncorrect || errorMessage} />
+          <FormErrorMessage isError={isError} errorMessage={locale[errorMessage] || errorMessage} />
         </label>
       </Host>
     );

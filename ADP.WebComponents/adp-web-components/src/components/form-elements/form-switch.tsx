@@ -10,10 +10,10 @@ import { FormErrorMessage } from './components/form-error-message';
 
 @Component({
   shadow: false,
-  tag: 'form-checkbox',
+  tag: 'form-switch',
   styleUrl: 'form-inputs.css',
 })
-export class FormCheckbox implements FormElement {
+export class FormSwitch implements FormElement {
   @Prop() name: string;
   @Prop() wrapperId: string;
   @Prop() form: FormHook<any>;
@@ -53,9 +53,9 @@ export class FormCheckbox implements FormElement {
 
     return (
       <Host>
-        <div part="form-checkbox" id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, disabled)}>
+        <div part="form-switch" id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, disabled)}>
           <div part="form-input-container" class="form-input-container">
-            <shift-checkbox name={this.name} label={label} class="form-checkbox" />
+            <shift-switch name={this.name} label={label} class="form-switch" />
           </div>
           <FormErrorMessage isError={isError} errorMessage={locale[errorMessage] || errorMessage} />
         </div>

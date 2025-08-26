@@ -59,7 +59,7 @@ export class FormInput implements FormElement {
 
     const part = partKeyPrefix + this.name;
 
-    const label = getNestedValue(locale, meta?.label);
+    const label = getNestedValue(locale, meta?.label) || meta?.label;
     const placeholder = getNestedValue(locale, meta?.placeholder);
 
     return (
@@ -82,7 +82,7 @@ export class FormInput implements FormElement {
               })}
             />
           </div>
-          <FormErrorMessage isError={isError} errorMessage={locale[errorMessage] || locale?.inputValueIsIncorrect || errorMessage} />
+          <FormErrorMessage isError={isError} errorMessage={locale[errorMessage] || errorMessage} />
         </label>
       </Host>
     );

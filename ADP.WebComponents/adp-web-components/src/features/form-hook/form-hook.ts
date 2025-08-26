@@ -206,7 +206,7 @@ export class FormHook<T> {
     try {
       // @ts-ignore
       this.schemaObject.fields[name].validateSync(value);
-      this.signal([{ name, isError: false, errorMessage: '' }]);
+      this.signal([{ name, isError: false }]);
       if (wasError !== false) this.rerender({ inputName: name || '', rerenderForm: true });
       return { isError: false, errorMessage: '' };
     } catch (error) {
