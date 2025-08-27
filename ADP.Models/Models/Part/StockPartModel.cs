@@ -1,4 +1,6 @@
-﻿namespace ShiftSoftware.ADP.Models.Part;
+﻿using System;
+
+namespace ShiftSoftware.ADP.Models.Part;
 
 /// <summary>
 /// Refers to a Part in a Stock (Warehouse)
@@ -32,6 +34,16 @@ public class StockPartModel:
     public decimal OnHandQuantity { get; set; }
 
     public decimal OrderQauntity { get; set; }
+
+    public DateTimeOffset? InventoryDate { get; set; }
+
+    public DateTimeOffset? LastSoldDate { get; set; }
+
+    public DateTimeOffset? LastArrivedDate { get; set; }
+
+    public DateTimeOffset? LastPurchasedDate { get; set; }
+
+    public DateTimeOffset? FirstReceivedDate { get; set; }
 
     [DocIgnore]
     public string ItemType => ModelTypes.StockPart;
