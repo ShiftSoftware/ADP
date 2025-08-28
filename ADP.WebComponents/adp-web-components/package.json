@@ -39,8 +39,9 @@
     "build": "stencil build -- --prod",
     "start": "stencil build --dev --watch --serve",
     "test.watch": "stencil test --spec --watchAll",
-    "create:locale": "node ./auto/generate-locale.mjs",
-    "create:locale-mapper": "node ./auto/generate-locale-mapper.mjs",
+    "create:form": "node ./automation/generate-form.mjs",
+    "create:locale": "node ./automation/generate-locale.mjs",
+    "create:locale-mapper": "node ./automation/generate-locale-mapper.mjs",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,css,scss,html}\"",
     "prettier": "prettier --check \"src/**/*.{ts,tsx,js,jsx,css,scss,html}\""
   },

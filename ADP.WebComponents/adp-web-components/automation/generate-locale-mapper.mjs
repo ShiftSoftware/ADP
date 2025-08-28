@@ -57,7 +57,7 @@ export function generateLocaleMap() {
     `export default localeMapper;\n`;
 
   fs.writeFileSync(OUTPUT_FILE, tsContent, 'utf-8');
-  console.log(`✅ Generated: ${OUTPUT_FILE}`);
+  console.log(`✅ Generated: src/locale-mapper.ts`);
 }
 
 generateLocaleMap();
