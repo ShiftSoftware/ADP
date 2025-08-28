@@ -77,7 +77,7 @@ export class FormInput implements FormElement {
               defaultValue={this.defaultValue}
               placeholder={placeholder || meta?.placeholder}
               style={{ ...(this.prefixWidth ? { [locale.direction === 'rtl' ? 'paddingRight' : 'paddingLeft']: `${this.prefixWidth}px` } : {}) }}
-              class={cn('form-input-style', {
+              class={cn('form-input-style', part, {
                 'form-input-error-style': isError,
               })}
             />
