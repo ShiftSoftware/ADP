@@ -33,7 +33,7 @@ public class StockPartModel:
     /// </summary>
     public decimal OnHandQuantity { get; set; }
 
-    public decimal OrderQauntity { get; set; }
+    public decimal OnOrderQauntity { get; set; }
 
     public DateTimeOffset? InventoryDate { get; set; }
 
