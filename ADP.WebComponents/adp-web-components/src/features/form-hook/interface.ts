@@ -5,10 +5,10 @@ import formWrapperSchema from '~locales/forms/wrapper-type';
 
 import { LanguageKeys } from '~features/multi-lingual';
 
-export type FormElementStructure<T> = {
+export type FormElementStructureComponents<T> = {
   id?: string;
   class?: string;
-  children?: (FormElementStructure<T> | T)[];
+  children?: (FormElementStructureComponents<T> | T)[];
 } & (
   | {
       tag?: string;
@@ -19,6 +19,8 @@ export type FormElementStructure<T> = {
       name?: T;
     }
 );
+
+export type FormElementStructure<T> = {} & FormElementStructureComponents<T>;
 
 export interface FormHookInterface<T> {
   theme: string;
