@@ -1,0 +1,16 @@
+:host {
+  all: initial !important;
+  display: block;
+}
+
+* {
+  font-family: Arial;
+}
+
+.vehicle-quotation-tiq #container {
+  @apply mx-auto max-w-[700px];
+}
+
+.vehicle-quotation-tiq #inputs_wrapper {
+  @apply flex flex-col gap-[24px] mb-[24px] sm:grid sm:grid-cols-2;
+}

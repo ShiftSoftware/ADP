@@ -239,7 +239,7 @@ export class ${pascalName}Form implements FormHookInterface<${pascalName}>, Mult
     return (
       <Host
         class={cn({
-          ['${tagName}-\${this.theme}']: this.theme,
+          [${'`'}${tagName}-\${this.theme}${'`'}]: this.theme,
         })}
       >
         <form-structure
@@ -352,7 +352,7 @@ if (!fs.existsSync(newFormTemplatePath)) {
       };
 
       function updateLang(newLang) {
-        demoForm.language = newLang;
+        ${camelName}Form.language = newLang;
       }
     </script>
   </body>

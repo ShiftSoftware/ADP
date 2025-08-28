@@ -25,7 +25,6 @@ export type FormElementStructure<T> = {} & FormElementStructureComponents<T>;
 export interface FormHookInterface<T> {
   theme: string;
   gistId?: string;
-  brandId: string;
   el: HTMLElement;
   isLoading: boolean;
   errorMessage: string;
