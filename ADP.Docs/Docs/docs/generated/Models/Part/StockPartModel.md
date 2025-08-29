@@ -8,5 +8,13 @@ Refers to a Part in a Stock (Warehouse)
 |----------|---------|
 | PartNumber <div><strong>``string``</strong></div> | The Unique Part Number |
 | Location <div><strong>``string``</strong></div> | The Warehouse/Location Identifier where the part is stored. |
-| Quantity <div><strong>``decimal``</strong></div> | The current on-hand Quantity of the part in the stock. |
+| AvailableQuantity <div><strong>``decimal``</strong></div> | The current AvailableQuantity of the part in the stock. |
+| OnHandQuantity <div><strong>``decimal``</strong></div> | The current on-hand quantity of the part in the stock |
+| OnOrderQauntity <div><strong>``decimal``</strong></div> |  |
+| InventoryDate <div><strong>``DateTimeOffset?``</strong></div> |  |
+| LastSoldDate <div><strong>``DateTimeOffset?``</strong></div> |  |
+| LastArrivedDate <div><strong>``DateTimeOffset?``</strong></div> |  |
+| LastPurchasedDate <div><strong>``DateTimeOffset?``</strong></div> |  |
+| FirstReceivedDate <div><strong>``DateTimeOffset?``</strong></div> |  |
 | CompanyHashID <div><strong>``string``</strong></div> | The Company Hash ID from the Identity System. |
+| IntegrationID <div><strong>``string``</strong></div> |  |
