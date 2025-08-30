@@ -50,9 +50,14 @@ public class OrderPartLineModel:
     public Currencies? InvoiceCurrency { get; set; }
 
     /// <summary>
-    /// The quantity of the part line.
+    /// The quantity of the part line that sold.
     /// </summary>
-    public decimal? Quantity { get; set; }
+    public decimal? SoldQuantity { get; set; }
+
+    /// <summary>
+    /// The quantity of the part line that ordered.
+    /// </summary>
+    public decimal? OrderQuantity { get; set; }
 
     /// <summary>
     /// The type of sale. (e.g. Internal, Bulk, Retail, etc.)

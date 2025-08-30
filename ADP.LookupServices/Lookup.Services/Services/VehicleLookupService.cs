@@ -281,7 +281,7 @@ public class VehicleLookupService
                             {
                                 MenuCode = p.MenuCode,
                                 PartNumber = p.PartNumber,
-                                QTY = p.Quantity,
+                                QTY = p.SoldQuantity,
                             })
                 };
 
