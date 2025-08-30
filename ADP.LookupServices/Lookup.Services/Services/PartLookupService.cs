@@ -51,8 +51,8 @@ public class PartLookupService
                 QuantityLookUpResult =
                                         distributorStockLookupQuantity is null ? Enums.QuantityLookUpResults.LookupIsSkipped :
                                         distributorStockLookupQuantity >= 10 || distributorStockLookupQuantity == 0 ? Enums.QuantityLookUpResults.QuantityNotWithinLookupThreshold :
-                                        item.Quantity <= 0 ? Enums.QuantityLookUpResults.NotAvailable :
-                                        item.Quantity >= distributorStockLookupQuantity ? Enums.QuantityLookUpResults.Available :
+                                        item.AvailableQuantity <= 0 ? Enums.QuantityLookUpResults.NotAvailable :
+                                        item.AvailableQuantity >= distributorStockLookupQuantity ? Enums.QuantityLookUpResults.Available :
                                         Enums.QuantityLookUpResults.PartiallyAvailable,
                 LocationID = item.Location,
             };
