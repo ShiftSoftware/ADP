@@ -19,6 +19,7 @@ Refers to a Part Line on an Order (This might be a Job Card on Workshop Module, 
 | MenuCode <div><strong>``string``</strong></div> | The Menu Code in case this part line is a menu item. |
 | ExtendedPrice <div><strong>``decimal?``</strong></div> | The final price of this line item after accounting for quantity, discounts, and any applicable taxes or additional charges |
 | PartNumber <div><strong>``string``</strong></div> | The uniqe Part Number of the [Catalog Part](/generated/Models/Part/CatalogPartModel.html). |
+| Location <div><strong>``string``</strong></div> | The Warehouse/Location Identifier where the transaction happens. |
 | AccountNumber <div><strong>``string``</strong></div> | The Account Number from the Accounting System. |
 | CustomerAccountNumber <div><strong>``string``</strong></div> | The Customer Account Number from the Accounting System. |
 | CustomerID <div><strong>``string``</strong></div> | The Company Specific Customer ID. |

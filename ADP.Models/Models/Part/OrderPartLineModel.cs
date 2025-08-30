@@ -80,6 +80,11 @@ public class OrderPartLineModel:
     /// </summary>
     public string PartNumber { get; set; }
 
+    /// <summary>
+    /// The Warehouse/Location Identifier where the transaction happens.
+    /// </summary>
+    public string Location { get; set; } = default!;
+
 
     /// <summary>
     /// The Account Number from the Accounting System.
