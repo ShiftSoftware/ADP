@@ -23,16 +23,21 @@ const partKeyPrefix = 'form-select-';
 })
 export class FormSelect implements FormElement {
   @Prop() name: string;
+  @Prop() resetKey: any;
+  @Prop() fetcherKey: any;
   @Prop() wrapperId: string;
   @Prop() clearable = false;
+  @Prop() isLoading: boolean;
   @Prop() form: FormHook<any>;
   @Prop() searchable: boolean;
+  @Prop() isRequired: boolean;
+  @Prop() isDisabled: boolean;
   @Prop() wrapperClass: string;
   @Prop() language: LanguageKeys = 'en';
   @Prop() fetcher: FormSelectFetcher<any>;
 
   @State() searchValue = '';
-  @State() isLoading: boolean;
+  @State() isFetching: boolean;
   @State() isOpen: boolean = false;
   @State() selectedValue: string = '';
   @State() openUpwards: boolean = false;
@@ -46,6 +51,16 @@ export class FormSelect implements FormElement {
   @Watch('language')
   async changeLanguage() {
     this.fetch();
+  }
+
+  @Watch('fetcherKey')
+  async fetchListener() {
+    this.fetch();
+  }
+
+  @Watch('resetKey')
+  async resetListener() {
+    this.reset();
   }
 
   async componentWillLoad() {
@@ -109,7 +124,7 @@ export class FormSelect implements FormElement {
 
   async fetch() {
     try {
-      this.isLoading = true;
+      this.isFetching = true;
 
       if (this.abortController) this.abortController.abort();
 
@@ -125,7 +140,7 @@ export class FormSelect implements FormElement {
       this.options = [];
       this.fetchingErrorMessage = error.message;
     } finally {
-      this.isLoading = false;
+      this.isFetching = false;
     }
   }
 
@@ -169,19 +184,21 @@ export class FormSelect implements FormElement {
 
     const filteredOptions = selectedItem ? this.options : this.options.filter(option => option.label.toLowerCase().includes(this.searchValue.toLowerCase()));
 
+    const disableInput = disabled || this.isDisabled || this.isLoading;
+
     return (
       <Host>
-        <label part={part} id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, disabled)}>
-          <FormInputLabel isRequired={isRequired} label={label} />
+        <label part={part} id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, { disabled: disableInput })}>
+          <FormInputLabel isRequired={isRequired || this.isRequired} label={label} />
 
           <form-shadow-input name={this.name} form={this.form} value={this.selectedValue} />
 
-          <div part="form-input-container" class={cn('form-input-container', { open: this.isOpen, disabled })}>
+          <div part="form-input-container" class={cn('form-input-container', { open: this.isOpen, disableInput })}>
             <input
               type="text"
-              disabled={disabled}
+              disabled={disableInput}
               part="form-input-select"
-              value={this.searchValue}
+              value={this.searchable ? this.searchValue : selectedItem?.label || ''}
               readOnly={!this.searchable}
               onInput={this.onSearchInput}
               onClick={this.toggleDropdown}
@@ -225,7 +242,7 @@ export class FormSelect implements FormElement {
               {!filteredOptions.length && (
                 <div part="form-select-empty-container" class={cn('form-select-empty-container', { error: this.fetchingErrorMessage })}>
                   {this.fetchingErrorMessage && (getNestedValue(locale, this.fetchingErrorMessage) || locale.errors.wildCard)}
-                  {!this.fetchingErrorMessage && (this.isLoading ? <img class="form-select-spinner" src={Loader} /> : locale.noSelectOptions)}
+                  {!this.fetchingErrorMessage && (this.isFetching ? <img class="form-select-spinner" src={Loader} /> : locale.noSelectOptions)}
                 </div>
               )}
             </div>

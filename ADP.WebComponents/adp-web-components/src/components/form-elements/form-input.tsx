@@ -20,6 +20,7 @@ const partKeyPrefix = 'form-input-';
 export class FormInput implements FormElement {
   @Prop() name: string;
   @Prop() wrapperId: string;
+  @Prop() isLoading?: boolean;
   @Prop() form: FormHook<any>;
   @Prop() inputPrefix: string;
   @Prop() defaultValue: string;
@@ -61,10 +62,11 @@ export class FormInput implements FormElement {
 
     const label = getNestedValue(locale, meta?.label) || meta?.label;
     const placeholder = getNestedValue(locale, meta?.placeholder);
+    console.log(9999999);
 
     return (
       <Host>
-        <label part={part} id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, disabled)}>
+        <label part={part} id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, { disabled: this.isLoading })}>
           <FormInputLabel isRequired={isRequired} label={label} />
 
           <div part="form-input-container" class="form-input-container">
@@ -73,8 +75,8 @@ export class FormInput implements FormElement {
               type={this.type}
               name={this.name}
               part="form-input"
-              disabled={disabled}
               defaultValue={this.defaultValue}
+              disabled={disabled || this.isLoading}
               placeholder={placeholder || meta?.placeholder}
               style={{ ...(this.prefixWidth ? { [locale.direction === 'rtl' ? 'paddingRight' : 'paddingLeft']: `${this.prefixWidth}px` } : {}) }}
               class={cn('form-input-style', part, {

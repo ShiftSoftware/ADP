@@ -12,13 +12,34 @@ export const vehicleQuotationInputsValidation = object({
     .meta({ label: 'Vehicle', placeholder: 'Please select a Vehicle' } as FormInputMeta)
     .required('This field is required.'),
   name: string()
-    .meta({ label: 'Full Name', placeholder: 'Enter a full name' } as FormInputMeta)
-    .required('Full name is required.')
-    .min(3, 'Must be 3 characters or more.'),
+    .meta({ label: 'Full name', placeholder: 'Full name' } as FormInputMeta)
+    .required('Full name is required')
+    .min(3, 'Full name minimum'),
   phone: string()
     .meta({ label: 'Phone number', placeholder: 'Phone number' } as FormInputMeta)
-    .required('Phone number is required.')
-    .test('libphonenumber-validation', 'Please enter a valid phone number', () => phoneValidator.isValid()),
+    .required('Phone number is required')
+    .test('libphonenumber-validation', 'Phone number format invalid', () => phoneValidator.isValid()),
+  dealer: string()
+    .meta({ label: 'Dealer', placeholder: 'Select a dealer' } as FormInputMeta)
+    .required('Dealer is required'),
+  paymentType: string().meta({ label: 'Preferred purchasing method', placeholder: 'Select the purchasing method' } as FormInputMeta),
+  ownVehicle: string()
+    .meta({ label: 'Do you own a vehicle?', placeholder: 'Do you own a vehicle?' } as FormInputMeta)
+    .required('Please answer this field'),
+  currentVehicleBrand: string()
+    .meta({ label: 'Your current vehicle', placeholder: 'Your current vehicle' } as FormInputMeta)
+    .when('ownVehicle', {
+      is: (val: string) => val === 'yes',
+      then: schema => schema.required('Please answer this field'),
+      otherwise: schema => schema.optional(),
+    }),
+  currentVehicleModel: string()
+    .meta({ label: 'Vehicle Model', placeholder: 'Vehicle Model' } as FormInputMeta)
+    .when(['ownVehicle', 'currentVehicleBrand'], {
+      is: (val: string) => val === 'yes',
+      then: schema => schema.required('Please answer this field'),
+      otherwise: schema => schema.optional(),
+    }),
 });
 
 export type VehicleQuotation = InferType<typeof vehicleQuotationInputsValidation>;

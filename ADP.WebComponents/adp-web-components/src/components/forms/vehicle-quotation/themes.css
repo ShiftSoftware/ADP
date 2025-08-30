@@ -43,7 +43,7 @@
 }
 
 .vehicle-quotation-tiq .section-title {
-  @apply font-medium text-[18px] mb-[8px] text-slate-500;
+  @apply font-semibold text-[18px] mb-[8px] text-slate-400;
 }
 
 .vehicle-quotation-tiq .vehicle-image-wrapper .loading-wrapper {

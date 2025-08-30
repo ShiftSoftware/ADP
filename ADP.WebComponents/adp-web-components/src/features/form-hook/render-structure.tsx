@@ -11,15 +11,13 @@ export function renderStructure(
   } else {
     const { tag, name, children, data, ...props } = structure;
 
-    delete generaProps.props;
-
     if (tag) {
       const Tag = tag as any;
 
       return <Tag {...props}>{Array.isArray(children) && children.map(child => renderStructure(child, elementMapper, generaProps))}</Tag>;
     }
 
-    generaProps.props = { wrapperId: props?.id, wrapperClass: props?.class };
+    generaProps.props = { wrapperId: props?.id, wrapperClass: props?.class, isLoading: generaProps.isLoading };
 
     if (typeof name === 'string' && name && elementMapper[name]) return elementMapper[name](generaProps);
   }

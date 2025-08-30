@@ -30,20 +30,23 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
 
     this.locale = { ...sharedLocales, ...locale };
 
+    this.localeLanguage = newLanguage;
+
     this.form.rerender({ rerenderAll: true });
   }
   // ====== End Localization
 
   // ====== Start Form Hook logic
-  @State() isLoading: boolean;
   @State() errorMessage: string;
+  @State() isLoading: boolean = false;
+  @State() localeLanguage: LanguageKeys;
 
   @Prop() theme: string;
   @Prop() gistId?: string;
   @Prop() errorCallback: (error: any) => void;
   @Prop() successCallback: (data: any) => void;
   @Prop() loadingChanges: (loading: boolean) => void;
-  @Prop() structure: FormElementStructure<vehicleQuotationElementNames> | undefined;
+  @Prop({ mutable: true }) structure: FormElementStructure<vehicleQuotationElementNames> | undefined;
 
   @Element() el: HTMLElement;
 
@@ -75,6 +78,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
         if (this.theme === 'tiq') this.structure = VehicleQuotationStructures.tiq;
       }
     }
+    this.localeLanguage = this.language;
   }
 
   async formSubmit(formValues: VehicleQuotation) {
@@ -106,6 +110,8 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
   form = new FormHook(this, vehicleQuotationInputsValidation);
 
   render() {
+    // @ts-ignore
+    window.aa = this;
     return (
       <Host
         class={cn({
@@ -114,10 +120,10 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
       >
         <form-structure
           form={this.form}
-          language={this.language}
           formLocale={this.locale}
           structure={this.structure}
           isLoading={this.isLoading}
+          language={this.localeLanguage}
           errorMessage={this.errorMessage}
           formElementMapper={vehicleQuotationElements}
         >

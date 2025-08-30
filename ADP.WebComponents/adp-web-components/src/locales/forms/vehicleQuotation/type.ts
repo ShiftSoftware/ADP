@@ -1,5 +1,32 @@
 import yupTypeMapper from '~lib/yup-type-mapper';
 
-const vehicleQuotationSchema = yupTypeMapper(['Vehicle', 'Please select a Vehicle', 'This field is required.', 'Choose', 'Contact Information', 'Full name']);
+const vehicleQuotationSchema = yupTypeMapper([
+  'Vehicle',
+  'Please select a Vehicle',
+  'This field is required.',
+  'Choose',
+  'Contact Information',
+  'Full name',
+  'Full name is required',
+  'Full name minimum',
+  'Phone number',
+  'Phone number is required',
+  'Phone number format invalid',
+  'Dealer',
+  'Select a dealer',
+  'Dealer is required',
+  'Preferred purchasing method',
+  'Select the purchasing method',
+  'Cash',
+  'Flexible',
+  'Your current car',
+  'Do you own a vehicle?',
+  'Please answer this field',
+  'Yes',
+  'No',
+  'Your current vehicle',
+  'Vehicle Model',
+  'Others',
+]);
 
 export default vehicleQuotationSchema;

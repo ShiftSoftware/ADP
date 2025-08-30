@@ -22,6 +22,7 @@ const partKeyPrefix = 'form-input-';
 export class FormPhoneNumber implements FormElement {
   @Prop() name: string;
   @Prop() wrapperId: string;
+  @Prop() isLoading?: boolean;
   @Prop() form: FormHook<any>;
   @Prop() inputPrefix: string;
   @Prop() wrapperClass: string;
@@ -76,7 +77,7 @@ export class FormPhoneNumber implements FormElement {
 
     return (
       <Host>
-        <label part={part} id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, disabled)}>
+        <label part={part} id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, { disabled: this.isLoading })}>
           <FormInputLabel isRequired={isRequired} label={label} />
 
           <div dir="ltr" part="form-input-container" class="form-input-container">
@@ -86,9 +87,9 @@ export class FormPhoneNumber implements FormElement {
               type={this.type}
               name={this.name}
               part="form-input"
-              disabled={disabled}
               onInput={this.onInputChange}
               defaultValue={this.defaultValue}
+              disabled={disabled || this.isLoading}
               placeholder={placeholder || meta?.placeholder}
               style={{ ...(this.prefixWidth ? { [locale.direction === 'rtl' ? 'paddingRight' : 'paddingLeft']: `${this.prefixWidth}px` } : {}) }}
               class={cn('form-input-style', part, {

@@ -81,6 +81,14 @@
   @apply absolute h-[38px] px-2 left-0 top-0 pointer-events-none items-center justify-center flex rtl:left-auto rtl:right-0;
 }
 
+.form-input-label-container.disabled * {
+  @apply pointer-events-none;
+}
+
+.form-input-label-container.disabled .form-input-style {
+  @apply opacity-75;
+}
+
 .form-input-style {
   @apply border border-slate-300 appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none disabled:bg-white flex-1 py-[6px] px-[12px] transition !duration-300 rounded-md outline-none enabled:focus:border-slate-600 enabled:focus:shadow-[0_0_0_0.2rem_rgba(71,85,105,0.25)] w-full;
 }
@@ -142,7 +150,7 @@
 }
 
 .form-select-option {
-  @apply flex justify-between px-4 py-2 hover:bg-slate-100;
+  @apply flex justify-between text-start px-4 py-2 hover:bg-slate-100;
 }
 
 .form-select-option.selected {
