@@ -1,1 +1,8 @@
-{}
+{
+  "Vehicle": "Транспортное средство",
+  "Please select a Vehicle": "Пожалуйста, выберите автомобиль",
+  "This field is required.": "Это поле обязательно к заполнению.",
+  "Choose": "Выбирать",
+  "Contact Information": "Персональная информация",
+  "Full name": "Полное имя"
+}

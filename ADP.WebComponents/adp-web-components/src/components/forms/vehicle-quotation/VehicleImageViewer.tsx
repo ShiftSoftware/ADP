@@ -1,0 +1,72 @@
+import { FunctionalComponent, h } from '@stencil/core';
+import { FormHook, FormSelectItem } from '~features/form-hook';
+import { VehicleQuotation } from './validations';
+import { LoaderIcon } from '~assets/loader-icon';
+import cn from '~lib/cn';
+
+interface VehicleImageViewerProps {
+  form: FormHook<VehicleQuotation>;
+}
+
+const cachedImages: Record<string, any> = {};
+
+const cacheImage = (form: FormHook<any>, imSrc: string, id: string) => {
+  fetch(imSrc)
+    .then(res => res.blob())
+    .then(blob => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        cachedImages[id] = reader.result as string;
+
+        form.rerender({ rerenderForm: true });
+      };
+      reader.readAsDataURL(blob);
+    })
+    .catch(e => {
+      console.log(e);
+
+      // fail silently, keep fallback
+    });
+};
+
+let imageSrcBase64 = '';
+
+export const VehicleImageViewer: FunctionalComponent<VehicleImageViewerProps> = ({ form }) => {
+  form.addWatcher('vehicle');
+
+  let vehicleId = form.getValue<VehicleQuotation>('vehicle');
+
+  let openContainer = !!vehicleId;
+
+  const selectedVehicle = form.context['toyotaVehicleList']?.find((vehicle: FormSelectItem) => vehicle.value === vehicleId);
+
+  let imSrc;
+
+  if (selectedVehicle) {
+    imSrc = selectedVehicle?.meta?.image;
+    vehicleId = selectedVehicle.value;
+  } else if (form.context['toyotaVehicleList'] && form.context['toyotaVehicleList'][0]) {
+    imSrc = form.context['toyotaVehicleList'][0]?.meta?.image;
+    vehicleId = form.context['toyotaVehicleList'][0].value;
+  }
+
+  let isLoading = false;
+
+  if (cachedImages[vehicleId]) {
+    imageSrcBase64 = cachedImages[vehicleId];
+  } else if (form && imSrc && vehicleId) {
+    cacheImage(form, imSrc, vehicleId);
+    isLoading = true;
+  }
+
+  return (
+    <flexible-container isOpened={openContainer}>
+      <div class={cn('vehicle-image-wrapper', { loading: isLoading })}>
+        <div class="loading-wrapper">
+          <LoaderIcon class="img" />
+        </div>
+        <img src={imageSrcBase64} alt="toyota vehicle" />
+      </div>
+    </flexible-container>
+  );
+};

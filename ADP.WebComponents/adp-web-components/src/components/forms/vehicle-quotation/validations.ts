@@ -8,6 +8,9 @@ import vehicleQuotationSchema from '~locales/forms/vehicleQuotation/type';
 export const phoneValidator = getPhoneValidator();
 
 export const vehicleQuotationInputsValidation = object({
+  vehicle: string()
+    .meta({ label: 'Vehicle', placeholder: 'Please select a Vehicle' } as FormInputMeta)
+    .required('This field is required.'),
   name: string()
     .meta({ label: 'Full Name', placeholder: 'Enter a full name' } as FormInputMeta)
     .required('Full name is required.')

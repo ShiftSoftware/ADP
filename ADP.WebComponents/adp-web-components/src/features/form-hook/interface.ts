@@ -20,7 +20,9 @@ export type FormElementStructureComponents<T> = {
     }
 );
 
-export type FormElementStructure<T> = {} & FormElementStructureComponents<T>;
+export type FormElementStructure<T> = {
+  data?: Record<string, string>;
+} & FormElementStructureComponents<T>;
 
 export interface FormHookInterface<T> {
   theme: string;
@@ -72,12 +74,16 @@ export interface FormElement {
 
 export type Subscribers = { name: string; context: FormElement }[];
 
+export type WatchCallback = (props: { form: FormHook<any>; values: Record<string, any> }) => void;
+
+export type Watchers = Record<string, WatchCallback>;
+
 export type FormElementMapperFunctionProps<T> = { form: FormHook<any>; isLoading: boolean; props: any; language: LanguageKeys; locale: T };
 
 type FormElementMapperFunction<T> = (ElementContext: FormElementMapperFunctionProps<T>) => JSX.Element;
 
-export type FormElementMapper<T, FORM_LOCALE> = {
+export type FormElementMapper<T, FORM_LOCALE, Extra extends string = never> = {
   [K in keyof T]: FormElementMapperFunction<FORM_LOCALE>;
 } & {
-  submit: FormElementMapperFunction<FORM_LOCALE>;
+  [K in Extra]: FormElementMapperFunction<FORM_LOCALE>;
 };

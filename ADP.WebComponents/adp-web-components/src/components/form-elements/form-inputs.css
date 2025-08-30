@@ -82,7 +82,7 @@
 }
 
 .form-input-style {
-  @apply border appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none disabled:bg-white flex-1 py-[6px] px-[12px] transition !duration-300 rounded-md outline-none enabled:focus:border-slate-600 enabled:focus:shadow-[0_0_0_0.2rem_rgba(71,85,105,0.25)] w-full;
+  @apply border border-slate-300 appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none disabled:bg-white flex-1 py-[6px] px-[12px] transition !duration-300 rounded-md outline-none enabled:focus:border-slate-600 enabled:focus:shadow-[0_0_0_0.2rem_rgba(71,85,105,0.25)] w-full;
 }
 
 .form-input-textarea-style {
@@ -118,11 +118,11 @@
 }
 
 .form-input-select-icon.arrow {
-  @apply transition !duration-300;
+  @apply transition rotate-180 !duration-300;
 }
 
 .form-input-container.open .form-input-select-icon.arrow {
-  @apply rotate-180;
+  @apply rotate-0;
 }
 
 .form-select-container {
@@ -165,9 +165,9 @@
   @apply text-red-500;
 }
 
-.form-select-sinner {
+.form-select-spinner {
   animation: spin 2s linear infinite;
-  @apply size-[22px];
+  @apply !size-[22px];
 }
 
 .form-structure-error-container {

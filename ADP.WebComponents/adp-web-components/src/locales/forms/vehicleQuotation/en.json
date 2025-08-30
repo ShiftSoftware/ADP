@@ -1,1 +1,8 @@
-{}
+{
+  "Vehicle": "Vehicle",
+  "Please select a Vehicle": "Please select a Vehicle",
+  "This field is required.": "This field is required.",
+  "Choose": "Choose",
+  "Contact Information": "Your Contact Information",
+  "Full name": "Full name"
+}

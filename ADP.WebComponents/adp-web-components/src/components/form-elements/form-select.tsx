@@ -24,6 +24,7 @@ const partKeyPrefix = 'form-select-';
 export class FormSelect implements FormElement {
   @Prop() name: string;
   @Prop() wrapperId: string;
+  @Prop() clearable = false;
   @Prop() form: FormHook<any>;
   @Prop() searchable: boolean;
   @Prop() wrapperClass: string;
@@ -191,7 +192,11 @@ export class FormSelect implements FormElement {
             />
 
             <div part="form-input-select-icon-container" class="form-input-select-icon-container">
-              {selectedItem || this.searchValue ? <AddIcon onClick={this.clearInput} class="form-input-select-icon cross" /> : <ArrowUpIcon class="form-input-select-icon arrow" />}
+              {(selectedItem || this.searchValue) && this.clearable ? (
+                <AddIcon onClick={this.clearInput} class="form-input-select-icon cross" />
+              ) : (
+                <ArrowUpIcon class="form-input-select-icon arrow" />
+              )}
             </div>
 
             <div
@@ -220,7 +225,7 @@ export class FormSelect implements FormElement {
               {!filteredOptions.length && (
                 <div part="form-select-empty-container" class={cn('form-select-empty-container', { error: this.fetchingErrorMessage })}>
                   {this.fetchingErrorMessage && (getNestedValue(locale, this.fetchingErrorMessage) || locale.errors.wildCard)}
-                  {!this.fetchingErrorMessage && (this.isLoading ? <img class="form-select-sinner" src={Loader} /> : locale.noSelectOptions)}
+                  {!this.fetchingErrorMessage && (this.isLoading ? <img class="form-select-spinner" src={Loader} /> : locale.noSelectOptions)}
                 </div>
               )}
             </div>

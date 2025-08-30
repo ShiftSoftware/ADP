@@ -5,7 +5,9 @@ import { FormSelectFetcher, FormSelectItem, FormElementMapper } from '~features/
 import { CITY_ENDPOINT } from '~api/urls';
 import { Demo, DemoFormLocale, phoneValidator } from './validations';
 
-export const demoElements: FormElementMapper<Demo, DemoFormLocale> = {
+type AdditionalFields = 'submit';
+
+export const demoElements: FormElementMapper<Demo, DemoFormLocale, AdditionalFields> = {
   submit: ({ form, isLoading, props }) => <form-submit {...props} form={form} isLoading={isLoading} />,
 
   name: ({ props, form }) => <form-input {...props} form={form} name="name" />,

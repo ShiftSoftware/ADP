@@ -11,6 +11,7 @@ import { VehicleQuotation, VehicleQuotationFormLocale, vehicleQuotationInputsVal
 
 import { FormHookInterface, FormElementStructure, gistLoader } from '~features/form-hook';
 import { getLocaleLanguage, getSharedFormLocal, LanguageKeys, MultiLingual, sharedFormLocalesSchema } from '~features/multi-lingual';
+import getLanguageFromUrl from '~lib/get-language-from-url';
 
 @Component({
   shadow: false,
@@ -19,7 +20,7 @@ import { getLocaleLanguage, getSharedFormLocal, LanguageKeys, MultiLingual, shar
 })
 export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>, MultiLingual {
   // ====== Start Localization
-  @Prop() language: LanguageKeys = 'en';
+  @Prop({ mutable: true, reflect: true }) language: LanguageKeys = 'en';
 
   @State() locale: VehicleQuotationFormLocale = { sharedFormLocales: sharedFormLocalesSchema.getDefault(), ...vehicleQuotationSchema.getDefault() };
 
@@ -61,12 +62,19 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
   }
 
   async componentWillLoad() {
-    await this.changeLanguage(this.language);
+    this.language = getLanguageFromUrl();
 
-    if (this.structure) return;
-
-    if (this.gistId) this.structure = await gistLoader(this.gistId);
-    else if (this.theme === 'tiq') this.structure = VehicleQuotationStructures.tiq;
+    if (this.structure) {
+      await this.changeLanguage(this.language);
+    } else {
+      if (this.gistId) {
+        const [newGistStructure] = await Promise.all([gistLoader(this.gistId), this.changeLanguage(this.language)]);
+        this.structure = newGistStructure as FormElementStructure<vehicleQuotationElementNames>;
+      } else {
+        await this.changeLanguage(this.language);
+        if (this.theme === 'tiq') this.structure = VehicleQuotationStructures.tiq;
+      }
+    }
   }
 
   async formSubmit(formValues: VehicleQuotation) {

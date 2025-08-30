@@ -1,23 +1,29 @@
+import { forceUpdate } from '@stencil/core';
 import { AnyObjectSchema, SchemaDescription } from 'yup';
-import { Field, FormElement, FormHookInterface, FormStateOptions, Subscribers, ValidationType } from './interface';
 
 import { LanguageKeys, MultiLingual, SharedFormLocales } from '~features/multi-lingual';
-import { forceUpdate } from '@stencil/core';
+
+import { Field, FormElement, FormHookInterface, FormStateOptions, Subscribers, ValidationType, WatchCallback, Watchers } from './interface';
+
+import { FormStructure } from '../../components/form-elements/form-structure';
+
 export class FormHook<T> {
   successAnimation = () => {};
 
   haltValidation: boolean = false;
   private isSubmitted = false;
+  private watchers: Watchers = {};
   private cachedValues: Partial<T> = {};
   private subscribers: Subscribers = [];
   private schemaObject: AnyObjectSchema;
   private onValuesUpdate: (formValues: T) => void;
   private validationType: ValidationType = 'onSubmit';
-  private context: FormHookInterface<T> & MultiLingual;
   private subscribedFields: { [key: string]: Field<any> } = {};
   formErrors: { [key: string]: string } = {};
 
   formController;
+  formStructure?: FormStructure;
+  context: FormHookInterface<T> & MultiLingual;
 
   constructor(context: FormHookInterface<T> & MultiLingual, schemaObject: AnyObjectSchema, formStateOptions?: FormStateOptions) {
     this.context = context;
@@ -50,13 +56,33 @@ export class FormHook<T> {
     }, 50);
   }
 
+  addWatcher = (key?: string, callback?: WatchCallback) => {
+    if (this.watchers[key]) return;
+
+    if (!key?.trim())
+      this.watchers['all'] = ({ form }) => {
+        form.rerender({ rerenderForm: true });
+      };
+    else if (callback) this.watchers[key] = callback;
+    else
+      this.watchers[key] = ({ form }) => {
+        form.rerender({ rerenderForm: true });
+      };
+  };
+
+  removeWatcher = (key: string) => {
+    delete this.watchers[key];
+  };
+
   onInput = (event: Event) => {
     const target = event.target as HTMLInputElement;
     let value: string | boolean = target.value;
 
     if (target.type === 'checkbox') value = target.checked;
 
-    if (this.onValuesUpdate) this.onValuesUpdate({ ...this.getValues(), [target.name]: value } as T);
+    const values = { ...this.getValues(), [target.name]: value } as T;
+
+    if (this.onValuesUpdate) this.onValuesUpdate(values);
 
     this.validateForm(target.name, value);
   };
@@ -71,15 +97,21 @@ export class FormHook<T> {
     this.cachedValues = newValues;
   };
 
-  getValues = () => {
+  getValue = <T>(name: keyof T) => {
+    return this.getValues<T>()[name];
+  };
+
+  getValues = <T>(): T => {
     const formDom = this.context.el.shadowRoot || this.context.el;
 
     const form = formDom.querySelector('form') as HTMLFormElement;
 
+    if (!form) return {} as T;
+
     const formData = new FormData(form);
     const formObject = Object.fromEntries(formData.entries() as Iterable<[string, FormDataEntryValue]>);
 
-    return { ...this.cachedValues, ...formObject };
+    return { ...this.cachedValues, ...formObject } as T;
   };
 
   private focusFirstInput = (errorFields: Partial<Field<any>>[]) => {
@@ -107,7 +139,7 @@ export class FormHook<T> {
         this.isSubmitted = true;
         this.context.isLoading = true;
         this.signal({ isError: false, disabled: true });
-        const formObject = { ...this.cachedValues, ...this.getValues() };
+        const formObject = { ...this.cachedValues, ...this.getValues<T>() };
 
         const description = this.schemaObject.describe();
 
@@ -185,7 +217,10 @@ export class FormHook<T> {
   };
 
   rerender = ({ inputName, rerenderAll, rerenderForm }: { inputName?: string; rerenderForm?: boolean; rerenderAll?: boolean }) => {
-    if (rerenderForm) forceUpdate(this.context);
+    if (rerenderForm) {
+      forceUpdate(this.context);
+      forceUpdate(this?.formStructure);
+    }
 
     if (rerenderAll) {
       this.subscribers.forEach(sub => forceUpdate(sub.context));
@@ -196,6 +231,14 @@ export class FormHook<T> {
   };
 
   validateForm = (name: string, value: string | boolean, strict = true) => {
+    setTimeout(() => {
+      const values = { ...this.getValues<T>(), [name]: value };
+      const watch = this.watchers[name];
+      if (watch) watch({ form: this, values });
+
+      if (this.watchers['all']) this.watchers['all']({ form: this, values });
+    }, 50);
+
     if (strict) {
       if (this.haltValidation) return;
       if (!this.isSubmitted && this.validationType !== 'always' && !this.subscribedFields[name].continuousValidation) return;

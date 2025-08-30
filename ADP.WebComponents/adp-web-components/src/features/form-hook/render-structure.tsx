@@ -9,7 +9,7 @@ export function renderStructure(
   if (typeof structure === 'string') {
     if (typeof structure === 'string' && structure && elementMapper[structure]) return elementMapper[structure](generaProps);
   } else {
-    const { tag, name, children, ...props } = structure;
+    const { tag, name, children, data, ...props } = structure;
 
     delete generaProps.props;
 

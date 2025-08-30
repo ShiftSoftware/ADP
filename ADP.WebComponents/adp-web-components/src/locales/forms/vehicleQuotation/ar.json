@@ -1,1 +1,10 @@
-{}
+{
+  "Vehicle": "سيارة",
+  "Please select a Vehicle": "الرجاء اختر السيارة",
+  "This field is required.": "هذه الحقل مطلوب.",
+  "Choose": "اختر",
+  "Contact Information": "معلومات الاتصال الخاصة بك",
+  "Full name": "الاسم الكامل",
+  "fullNameIsRequired": "الاسم الكامل مطلوب.",
+  "fullNameMinimum": "الاسم الكامل يجب أن يتكون من 3 أحرف أو أكثر."
+}

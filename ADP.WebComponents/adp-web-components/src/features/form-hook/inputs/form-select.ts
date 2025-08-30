@@ -1,6 +1,7 @@
 export type FormSelectItem = {
   value: string;
   label: string;
+  meta?: Record<string, string>;
 };
 
 type FormSelectFetcherProps<T> = {

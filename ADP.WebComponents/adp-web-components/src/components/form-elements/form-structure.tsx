@@ -20,6 +20,7 @@ export class FormStructure {
   @State() locale: ComponentLocale<typeof generalSchema> = { sharedLocales: sharedLocalesSchema.getDefault(), ...generalSchema.getDefault() };
 
   async componentWillLoad() {
+    this.form.formStructure = this;
     this.form.setSuccessAnimation(() => {
       this.showSuccess = true;
       setTimeout(() => {
@@ -48,6 +49,7 @@ export class FormStructure {
 
   render() {
     const [locale] = this.form.getFormLocale();
+
     const generalProps: FormElementMapperFunctionProps<any> = { form: this.form, isLoading: this.isLoading, language: this.language, locale: this.formLocale, props: {} };
 
     if (!this.structure) return <form-structure-error language={this.language} />;
@@ -56,10 +58,10 @@ export class FormStructure {
 
     return (
       <Host>
-        <form class="relative overflow-hidden" dir={this.locale.sharedLocales.direction} {...formController}>
+        <form class="relative" dir={this.locale.sharedLocales.direction} {...formController}>
           <div
-            class={cn('absolute -translate-x-full transition duration-1000 flex items-center justify-center size-full opacity-0', {
-              'opacity-100 translate-x-0': this.showSuccess,
+            class={cn('absolute pointer-events-none transition duration-1000 flex items-center justify-center size-full opacity-0', {
+              'opacity-100': this.showSuccess,
             })}
           >
             <div class="flex flex-col gap-[16px] items-center">
@@ -81,9 +83,7 @@ export class FormStructure {
             </div>
           </div>
           <form-dialog dialogClosed={resetFormErrorMessage} closeText={locale.close} form={this.form} errorMessage={this.errorMessage} />
-          <div class={cn('transition duration-1000', { 'translate-x-full opacity-0': this.showSuccess })}>
-            {renderStructure(this.structure, this.formElementMapper, generalProps)}
-          </div>
+          <div class={cn('transition duration-1000', { 'opacity-0': this.showSuccess })}>{renderStructure(this.structure, this.formElementMapper, generalProps)}</div>
         </form>
       </Host>
     );
