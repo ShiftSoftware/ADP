@@ -30,3 +30,4 @@ Refers to a Part Line on an Order (This might be a Job Card on Workshop Module, 
 | PostDate <div><strong>``DateTime?``</strong></div> | The date at which this line was posted. This could mean (Job Completed, Part Dispatched, Vehicle Allocated, etc. based on the type of the Order Document). |
 | CompanyHashID <div><strong>``string``</strong></div> | The Company Hash ID from the Identity System. |
 | BranchHashID <div><strong>``string``</strong></div> | The Branch Hash ID from the Identity System. |
+| IntegrationID <div><strong>``string``</strong></div> |  |

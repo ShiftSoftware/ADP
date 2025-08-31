@@ -8,7 +8,8 @@ namespace ShiftSoftware.ADP.Models.Part;
 [Docable]
 public class StockPartModel: 
     IPartitionedItem,
-    ICompanyProps
+    ICompanyProps,
+    IIntegrationProps
 {
     [DocIgnore]
     public string id { get; set; } = default!;

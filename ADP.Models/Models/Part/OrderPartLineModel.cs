@@ -14,7 +14,8 @@ public class OrderPartLineModel:
     IInvoiceProps, 
     IOrderDocumentProps, 
     IOrderLineProps,
-    ICustomerProps
+    ICustomerProps,
+    IIntegrationProps
 {
     [DocIgnore]
     public string id { get; set; } = default!;
@@ -152,4 +153,6 @@ public class OrderPartLineModel:
 
     [DocIgnore]
     public string ItemType => ModelTypes.InvoicePartLine;
+
+    public string IntegrationID { get; set; }
 }
