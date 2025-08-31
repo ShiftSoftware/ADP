@@ -31,3 +31,4 @@ Refers to a Part Line on an Order (This might be a Job Card on Workshop Module, 
 | CompanyHashID <div><strong>``string``</strong></div> | The Company Hash ID from the Identity System. |
 | BranchHashID <div><strong>``string``</strong></div> | The Branch Hash ID from the Identity System. |
 | IntegrationID <div><strong>``string``</strong></div> |  |
+| IntegrationSuccessStatus <div><strong>``bool``</strong></div> | A boolean flag indicating the completion of system to system Integration |

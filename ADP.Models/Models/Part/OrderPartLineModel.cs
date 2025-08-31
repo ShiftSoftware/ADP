@@ -155,4 +155,9 @@ public class OrderPartLineModel:
     public string ItemType => ModelTypes.InvoicePartLine;
 
     public string IntegrationID { get; set; }
+
+    /// <summary>
+    /// A boolean flag indicating the completion of system to system Integration
+    /// </summary>
+    public bool IntegrationSuccessStatus { get; set; }
 }
