@@ -1,9 +1,7 @@
 import { Component, Element, Host, Prop, State, Watch, h } from '@stencil/core';
 
-import { Grecaptcha } from '~types/general';
-
 import cn from '~lib/cn';
-import { FormHook } from '~features/form-hook/form-hook';
+import { Grecaptcha } from '~lib/recaptcha';
 
 import demoSchema from '~locales/forms/demo/type';
 
@@ -11,6 +9,7 @@ import { DemoStructures } from './demo/structure';
 import { demoElementNames, demoElements } from './demo/element-mapper';
 import { Demo, DemoFormLocale, demoInputsValidation } from './demo/validations';
 
+import { FormHook } from '~features/form-hook/form-hook';
 import { FormHookInterface, FormElementStructure, gistLoader } from '~features/form-hook';
 import { getLocaleLanguage, getSharedFormLocal, LanguageKeys, MultiLingual, sharedFormLocalesSchema } from '~features/multi-lingual';
 

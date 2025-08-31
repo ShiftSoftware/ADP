@@ -4,8 +4,11 @@ import { FormElementStructure } from '~features/form-hook';
 const tiq: FormElementStructure<vehicleQuotationElementNames> = {
   data: {
     brandId: 'kWrKw',
+    quotationType: 'NewVehiclePurchase',
+    recaptchaKey: '6Lehq6IpAAAAAETTDS2Zh60nHIT1a8oVkRtJ2WsA',
     vehicleApi: 'https://tiq-publications-functions.azurewebsites.net/api/models',
     currentVehiclesApi: 'https://tiq-vehicles-functions-staging.azurewebsites.net/api/BrandAndModels',
+    requestUrl: 'https://tiq-tickets.azurewebsites.net/api/external/website/vehicle-quotation',
     dealerApi: 'https://tiq-identity-server.azurewebsites.net/api/public/company-branch?brands=TYT&services=new-vehicle-sale',
   },
   tag: 'div',

@@ -1,7 +1,5 @@
 import { Component, Host, Prop, State, Watch, h } from '@stencil/core';
 
-import cn from '~lib/cn';
-
 import generalSchema from '~locales/general/type';
 
 import { ComponentLocale, getLocaleLanguage, getSharedLocal, LanguageKeys, sharedLocalesSchema } from '~features/multi-lingual';

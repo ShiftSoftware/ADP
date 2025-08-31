@@ -1,8 +1,8 @@
 import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
 import cn from '~lib/cn';
+import { Grecaptcha } from '~lib/recaptcha';
 
-import { Grecaptcha } from '~types/general';
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
 import warrantySchema from '~locales/vehicleLookup/warranty/type';

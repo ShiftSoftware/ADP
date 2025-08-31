@@ -1,7 +1,7 @@
 import { Component, Element, Host, Prop, State, Watch, h } from '@stencil/core';
 
 import cn from '~lib/cn';
-import { FormHook } from '~features/form-hook/form-hook';
+import { Grecaptcha } from '~lib/recaptcha';
 
 import vehicleQuotationSchema from '~locales/forms/vehicleQuotation/type';
 
@@ -9,9 +9,12 @@ import { VehicleQuotationStructures } from './vehicle-quotation/structure';
 import { vehicleQuotationElementNames, vehicleQuotationElements } from './vehicle-quotation/element-mapper';
 import { VehicleQuotation, VehicleQuotationFormLocale, vehicleQuotationInputsValidation } from './vehicle-quotation/validations';
 
+import { FormHook } from '~features/form-hook/form-hook';
 import { FormHookInterface, FormElementStructure, gistLoader } from '~features/form-hook';
 import { getLocaleLanguage, getSharedFormLocal, LanguageKeys, MultiLingual, sharedFormLocalesSchema } from '~features/multi-lingual';
 import getLanguageFromUrl from '~lib/get-language-from-url';
+
+declare const grecaptcha: Grecaptcha;
 
 @Component({
   shadow: false,
@@ -83,19 +86,51 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
 
   async formSubmit(formValues: VehicleQuotation) {
     try {
-      console.log(formValues);
-
       this.setIsLoading(true);
 
-      await new Promise(r => setTimeout(r, 3000));
+      const payload: any = {
+        name: formValues.name,
+        phone: formValues.phone,
+        vehicle: formValues.vehicle,
+        companyBranchId: formValues.dealer,
+        PreferredPurchasingMethod: formValues.paymentType,
+        vehicleQuotationType: this.structure.data?.quotationType,
+        additionalData: {
+          DoYouOwnAVehicle: formValues?.ownVehicle === 'yes',
+        },
+      };
 
-      this.setSuccessCallback({});
+      if (formValues?.ownVehicle === 'yes') {
+        payload.additionalData.youCurrentVehicle = formValues.currentVehicleBrand || '';
+        payload.additionalData.vehicleModel = formValues.currentVehicleModel || '';
+      }
+      const token = await grecaptcha.execute(this.structure.data?.recaptchaKey, { action: 'submit' });
 
-      this.form.openDialog();
-      setTimeout(() => {
-        this.form.reset();
-        this.form.rerender({ rerenderForm: true, rerenderAll: true });
-      }, 100);
+      const response = await fetch(this.structure.data?.requestUrl, {
+        method: 'POST',
+        headers: {
+          'Recaptcha-Token': token,
+          'Brand': this.structure.data?.brandId,
+          'Accept-Language': this.localeLanguage || 'en',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      console.log(response);
+
+      if (response.ok) {
+        const result = await response?.json();
+        this.setSuccessCallback(result);
+        this.form.openDialog();
+        setTimeout(() => {
+          this.form.reset();
+          this.form.rerender({ rerenderForm: true, rerenderAll: true });
+        }, 100);
+      } else {
+        const errorText = await response?.text();
+        throw new Error(errorText);
+      }
     } catch (error) {
       console.error(error);
 
@@ -107,6 +142,22 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
   // ====== End Form Hook logic
 
   // ====== component logic
+
+  async componentDidLoad() {
+    try {
+      const key = this.structure.data?.recaptchaKey;
+      if (key) {
+        const script = document.createElement('script');
+        script.src = `https://www.google.com/recaptcha/api.js?render=${key}&hl=${this.language}`;
+        script.async = true;
+        script.defer = true;
+
+        document.head.appendChild(script);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
 
   form = new FormHook(this, vehicleQuotationInputsValidation);
 

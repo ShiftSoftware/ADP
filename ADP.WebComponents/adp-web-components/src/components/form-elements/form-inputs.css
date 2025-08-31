@@ -65,7 +65,7 @@
   @apply flex flex-col items-center;
 }
 
-.dialog-wrapper.error .dialog-close-button {
+.dialog-drop-container.error .dialog-close-button {
   @apply text-white hover:bg-red-400 bg-red-500 active:bg-red-700;
 }
 

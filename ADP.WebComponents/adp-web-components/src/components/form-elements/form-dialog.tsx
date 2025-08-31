@@ -67,7 +67,10 @@ export class FormInput {
               <AddIcon />
             </button>
             <div part="dialog-content" class="dialog-content">
-              {this.isError ? this.internalMessage : <slot />}
+              {this.isError && this.internalMessage}
+              <div style={{ display: this.isError ? 'none' : 'block' }}>
+                <slot />
+              </div>
             </div>
             <button part="dialog-close-button" type="button" onClick={this.closeDialog} class="dialog-close-button">
               {this.closeText}
