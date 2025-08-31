@@ -10,7 +10,7 @@ namespace ShiftSoftware.ADP.Models;
 public interface IOrderLineProps
 {
     public string LineID { get; set; }
-    public decimal? Quantity { get; set; }
+    public decimal? SoldQuantity { get; set; }
     public decimal? ExtendedPrice { get; set; }
     public string LoadStatus { get; set; }
     public string OrderStatus { get; set; }
