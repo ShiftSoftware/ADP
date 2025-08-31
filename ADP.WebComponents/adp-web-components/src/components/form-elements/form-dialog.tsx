@@ -11,22 +11,24 @@ import { FormHook } from '~features/form-hook';
   styleUrl: 'form-inputs.css',
 })
 export class FormInput {
+  @Prop() message: string;
+  @Prop() isError: boolean;
   @Prop() closeText: string;
   @Prop() form: FormHook<any>;
-  @Prop() errorMessage: string;
   @State() internalMessage: string;
   @State() isOpened: boolean = false;
 
   @Prop() dialogClosed: () => void;
 
   async componentWillLoad() {
+    this.form.openDialog = () => (this.isOpened = true);
     if (this.internalMessage) {
-      this.internalMessage = this.errorMessage;
+      this.internalMessage = this.message;
       setTimeout(() => (this.isOpened = true), 100);
     }
   }
 
-  @Watch('errorMessage')
+  @Watch('message')
   async changeErrorMiddleware(newError: string) {
     if (newError && newError !== this.internalMessage) {
       this.internalMessage = newError;
@@ -52,6 +54,7 @@ export class FormInput {
           dir={locale.direction}
           class={cn('dialog-drop-container', {
             'opened-dialog-drop-container dialog-blur': this.isOpened,
+            'error': this.isError,
           })}
         >
           <div
@@ -64,7 +67,7 @@ export class FormInput {
               <AddIcon />
             </button>
             <div part="dialog-content" class="dialog-content">
-              {this.internalMessage}
+              {this.isError ? this.internalMessage : <slot />}
             </div>
             <button part="dialog-close-button" type="button" onClick={this.closeDialog} class="dialog-close-button">
               {this.closeText}

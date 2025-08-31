@@ -8,17 +8,11 @@ import { VehicleImageViewer } from './VehicleImageViewer';
 type AdditionalFields = 'vehicleImage' | 'submit' | 'choose' | 'contact information' | 'current car';
 
 export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, VehicleQuotationFormLocale, AdditionalFields> = {
-  'submit': ({ form, props }) => <form-submit {...props} form={form} />,
+  'submit': ({ props }) => <form-submit {...props} />,
 
-  'name': ({ props, form }) => {
-    console.log('name', props);
+  'name': ({ props }) => <form-input {...props} />,
 
-    return <form-input {...props} form={form} name="name" />;
-  },
-
-  'phone': ({ form, props, isLoading }) => (
-    <form-phone-number {...props} form={form} name="phone" isLoading={isLoading} defaultValue={phoneValidator.default} validator={phoneValidator} />
-  ),
+  'phone': ({ props, isLoading }) => <form-phone-number {...props} isLoading={isLoading} defaultValue={phoneValidator.default} validator={phoneValidator} />,
 
   'vehicle': ({ form, language, props }) => {
     const fetcher: FormSelectFetcher<VehicleQuotationFormLocale> = async ({ signal }): Promise<FormSelectItem[]> => {
@@ -36,7 +30,7 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Vehic
       return form.context['toyotaVehicleList'];
     };
 
-    return <form-select {...props} name="vehicle" searchable form={form} fetcher={fetcher} language={language} />;
+    return <form-select {...props} searchable fetcher={fetcher} language={language} />;
   },
 
   'dealer': ({ form, language, props }) => {
@@ -53,10 +47,10 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Vehic
       return form.context['toyotaDealerList'];
     };
 
-    return <form-select {...props} name="dealer" clearable searchable form={form} fetcher={fetcher} language={language} />;
+    return <form-select {...props} clearable searchable fetcher={fetcher} language={language} />;
   },
 
-  'paymentType': ({ form, language, props, locale }) => {
+  'paymentType': ({ language, props, locale }) => {
     const fetcher: FormSelectFetcher<VehicleQuotationFormLocale> = async ({}): Promise<FormSelectItem[]> => {
       return [
         {
@@ -70,10 +64,10 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Vehic
       ] as FormSelectItem[];
     };
 
-    return <form-select {...props} name="paymentType" clearable form={form} fetcher={fetcher} language={language} />;
+    return <form-select {...props} clearable fetcher={fetcher} language={language} />;
   },
 
-  'ownVehicle': ({ form, language, props, locale }) => {
+  'ownVehicle': ({ language, props, locale }) => {
     const fetcher: FormSelectFetcher<VehicleQuotationFormLocale> = async ({}): Promise<FormSelectItem[]> => {
       return [
         {
@@ -87,7 +81,7 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Vehic
       ] as FormSelectItem[];
     };
 
-    return <form-select {...props} name="ownVehicle" form={form} fetcher={fetcher} language={language} />;
+    return <form-select {...props} fetcher={fetcher} language={language} />;
   },
 
   'currentVehicleBrand': ({ form, language, props, locale }) => {
@@ -113,19 +107,7 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Vehic
       ] as FormSelectItem[];
     };
 
-    return (
-      <form-select
-        {...props}
-        searchable
-        form={form}
-        fetcher={fetcher}
-        language={language}
-        resetKey={ownVehicle}
-        isRequired={ownVehicle}
-        isDisabled={!ownVehicle}
-        name="currentVehicleBrand"
-      />
-    );
+    return <form-select {...props} searchable fetcher={fetcher} language={language} resetKey={ownVehicle} isRequired={ownVehicle} isDisabled={!ownVehicle} />;
   },
 
   'currentVehicleModel': ({ form, language, props, locale }) => {
@@ -155,10 +137,8 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Vehic
       <form-select
         {...props}
         searchable
-        form={form}
         fetcher={fetcher}
         language={language}
-        name="currentVehicleModel"
         resetKey={currentVehicleBrand}
         fetcherKey={currentVehicleBrand}
         isRequired={ownVehicle && currentVehicleBrand !== 'others'}
@@ -167,10 +147,10 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Vehic
     );
   },
 
-  'choose': ({ locale }) => <h1 class="section-title">{locale.Choose}</h1>,
   'vehicleImage': ({ form }) => <VehicleImageViewer form={form} />,
-  'contact information': ({ locale }) => <h1 class="section-title">{locale['Contact Information']}</h1>,
+  'choose': ({ locale }) => <h1 class="section-title">{locale.Choose}</h1>,
   'current car': ({ locale }) => <h1 class="section-title">{locale['Your current car']}</h1>,
+  'contact information': ({ locale }) => <h1 class="section-title">{locale['Contact Information']}</h1>,
 } as const;
 
 export type vehicleQuotationElementNames = keyof typeof vehicleQuotationElements;

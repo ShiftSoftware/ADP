@@ -217,7 +217,6 @@ export class ${pascalName}Form implements FormHookInterface<${pascalName}>, Mult
 
       this.setSuccessCallback({});
 
-      this.form.successAnimation();
       setTimeout(() => {
         this.form.reset();
       }, 1000);

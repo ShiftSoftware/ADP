@@ -21,12 +21,6 @@ export class FormStructure {
 
   async componentWillLoad() {
     this.form.formStructure = this;
-    this.form.setSuccessAnimation(() => {
-      this.showSuccess = true;
-      setTimeout(() => {
-        this.showSuccess = false;
-      }, 4000);
-    });
 
     await this.changeLanguage(this.language);
   }
@@ -42,10 +36,9 @@ export class FormStructure {
   @Prop() isLoading: boolean;
   @Prop() form: FormHook<any>;
   @Prop() errorMessage: string;
+  @Prop() successMessage: string;
   @Prop() structure: FormElementStructure<any>;
   @Prop() formElementMapper: FormElementMapper<any, any>;
-
-  @State() showSuccess: boolean = false;
 
   @State() formContent;
 
@@ -57,7 +50,7 @@ export class FormStructure {
       isLoading: this.isLoading,
       language: this.language,
       locale: this.formLocale,
-      props: { isLoading: this.isLoading },
+      props: { isLoading: this.isLoading, form: this.form },
     };
 
     if (!this.structure) return <form-structure-error language={this.language} />;
@@ -67,12 +60,8 @@ export class FormStructure {
     return (
       <Host>
         <form class="relative" dir={this.locale.sharedLocales.direction} {...formController}>
-          <div
-            class={cn('absolute pointer-events-none transition duration-1000 flex items-center justify-center size-full opacity-0', {
-              'opacity-100': this.showSuccess,
-            })}
-          >
-            <div class="flex flex-col gap-[16px] items-center">
+          <form-dialog dialogClosed={resetFormErrorMessage} isError={!!this.errorMessage} closeText={locale.close} form={this.form} message={this.errorMessage}>
+            <div class="form-success-container">
               <svg
                 fill="none"
                 stroke-width="2"
@@ -86,12 +75,10 @@ export class FormStructure {
                 <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
                 <path d="m9 12 2 2 4-4" />
               </svg>
-
-              <div class="text-[20px]">{this.locale.formSubmittedSuccessfully}</div>
+              {this.successMessage}
             </div>
-          </div>
-          <form-dialog dialogClosed={resetFormErrorMessage} closeText={locale.close} form={this.form} errorMessage={this.errorMessage} />
-          <div class={cn('transition duration-1000', { 'opacity-0': this.showSuccess })}>{renderStructure(this.structure, this.formElementMapper, generalProps)}</div>
+          </form-dialog>
+          <div>{renderStructure(this.structure, this.formElementMapper, generalProps)}</div>
         </form>
       </Host>
     );

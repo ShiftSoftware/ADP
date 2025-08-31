@@ -99,7 +99,7 @@ export class DemoForm implements FormHookInterface<Demo>, MultiLingual {
 
       this.setSuccessCallback(data);
 
-      this.form.successAnimation();
+      this.form.openDialog();
       setTimeout(() => {
         this.form.reset();
       }, 1000);

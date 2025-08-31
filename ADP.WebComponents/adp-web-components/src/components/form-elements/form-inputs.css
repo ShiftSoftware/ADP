@@ -54,7 +54,19 @@
 }
 
 .dialog-close-button {
-  @apply h-[32px] w-fit text-white relative overflow-hidden px-[14px] hover:bg-red-400 transition-colors !duration-300 bg-red-500 active:bg-red-700 rounded flex items-center;
+  @apply h-[32px] w-fit relative overflow-hidden px-[14px] transition-colors !duration-300 rounded flex items-center;
+}
+
+.dialog-wrapper .dialog-close-button {
+  @apply text-white hover:bg-slate-400 bg-slate-500 active:bg-slate-700;
+}
+
+.dialog-wrapper .form-success-container {
+  @apply flex flex-col items-center;
+}
+
+.dialog-wrapper.error .dialog-close-button {
+  @apply text-white hover:bg-red-400 bg-red-500 active:bg-red-700;
 }
 
 .form-input-label-container {
@@ -86,7 +98,7 @@
 }
 
 .form-input-label-container.disabled .form-input-style {
-  @apply opacity-75;
+  @apply opacity-50;
 }
 
 .form-input-style {

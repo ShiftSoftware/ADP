@@ -91,10 +91,11 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
 
       this.setSuccessCallback({});
 
-      this.form.successAnimation();
+      this.form.openDialog();
       setTimeout(() => {
         this.form.reset();
-      }, 1000);
+        this.form.rerender({ rerenderForm: true, rerenderAll: true });
+      }, 100);
     } catch (error) {
       console.error(error);
 
@@ -126,6 +127,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
           language={this.localeLanguage}
           errorMessage={this.errorMessage}
           formElementMapper={vehicleQuotationElements}
+          successMessage={this.locale['Form submitted successfully.']}
         >
           <slot></slot>
         </form-structure>

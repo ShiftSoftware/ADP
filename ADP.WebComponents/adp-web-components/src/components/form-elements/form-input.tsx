@@ -62,7 +62,6 @@ export class FormInput implements FormElement {
 
     const label = getNestedValue(locale, meta?.label) || meta?.label;
     const placeholder = getNestedValue(locale, meta?.placeholder);
-    console.log(9999999);
 
     return (
       <Host>

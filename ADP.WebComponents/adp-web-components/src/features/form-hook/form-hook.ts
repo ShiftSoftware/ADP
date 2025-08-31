@@ -8,8 +8,6 @@ import { Field, FormElement, FormHookInterface, FormStateOptions, Subscribers, V
 import { FormStructure } from '../../components/form-elements/form-structure';
 
 export class FormHook<T> {
-  successAnimation = () => {};
-
   haltValidation: boolean = false;
   private isSubmitted = false;
   private watchers: Watchers = {};
@@ -23,6 +21,7 @@ export class FormHook<T> {
 
   formController;
   formStructure?: FormStructure;
+  openDialog: () => void = () => {};
   context: FormHookInterface<T> & MultiLingual;
 
   constructor(context: FormHookInterface<T> & MultiLingual, schemaObject: AnyObjectSchema, formStateOptions?: FormStateOptions) {
@@ -31,8 +30,6 @@ export class FormHook<T> {
     this.formController = { onSubmit: this.onSubmit, onInput: this.onInput };
     if (formStateOptions?.validationType) this.validationType = formStateOptions.validationType;
   }
-
-  setSuccessAnimation = (newSuccessAnimation: typeof this.successAnimation) => (this.successAnimation = newSuccessAnimation);
 
   subscribe = (formName: string, formElement: FormElement) => this.subscribers.push({ name: formName, context: formElement });
 
