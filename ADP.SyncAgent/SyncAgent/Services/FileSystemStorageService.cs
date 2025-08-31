@@ -6,15 +6,19 @@ namespace ShiftSoftware.ADP.SyncAgent.Services;
 
 public class FileSystemStorageService : IStorageService
 {
-    const string sourceBasrPaht = @"C:\mounts\adp-sync-agent-source";
-    const string destinationBasePath = @"C:\mounts\adp-sync-agent-destination";
     ResiliencePipeline ResiliencePipeline;
 
-    public FileSystemStorageService()
+    private readonly string sourceBasePath;
+    private readonly string destinationBasePath;
+
+    public FileSystemStorageService(SyncAgentOptions syncAgentOptions)
     {
         ResiliencePipeline = new ResiliencePipelineBuilder()
             .AddRetry(new RetryStrategyOptions()) // Upsert retry using the default options
             .Build(); // Builds the resilience pipeline
+
+        this.sourceBasePath = syncAgentOptions.SourceBasePath;
+        this.destinationBasePath = syncAgentOptions.DestinationBasePath;
     }
 
     private async Task LoadFileAsync(string sourcePath, string destinationPath, int ignoreFirstLines, CancellationToken cancellationToken)
@@ -35,7 +39,7 @@ public class FileSystemStorageService : IStorageService
 
     public async Task LoadNewVersionAsync(string sourceRelativePath, string destinationPath, int ignoreFirstLines, string? containerOrShareName, CancellationToken cancellationToken)
     {
-        var sourcePath = Path.Combine(sourceBasrPaht, sourceRelativePath);
+        var sourcePath = Path.Combine(this.sourceBasePath, sourceRelativePath);
         await LoadFileAsync(sourcePath, destinationPath, ignoreFirstLines, cancellationToken);
     }
 
