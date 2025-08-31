@@ -30,7 +30,11 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Vehic
       return form.context['toyotaVehicleList'];
     };
 
-    return <form-select {...props} searchable fetcher={fetcher} language={language} />;
+    const params = new URLSearchParams(window.location.search);
+
+    const defaultValue = params.get(form.context.structure.data?.vehicleIdQueryParam);
+
+    return <form-select {...props} defaultValue={defaultValue} searchable fetcher={fetcher} language={language} />;
   },
 
   'dealer': ({ form, language, props }) => {

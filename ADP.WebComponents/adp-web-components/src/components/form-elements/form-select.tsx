@@ -33,6 +33,7 @@ export class FormSelect implements FormElement {
   @Prop() isRequired: boolean;
   @Prop() isDisabled: boolean;
   @Prop() wrapperClass: string;
+  @Prop() defaultValue: string;
   @Prop() language: LanguageKeys = 'en';
   @Prop() fetcher: FormSelectFetcher<any>;
 
@@ -65,6 +66,7 @@ export class FormSelect implements FormElement {
 
   async componentWillLoad() {
     this.form.subscribe(this.name, this);
+    this.selectedValue = this.defaultValue;
   }
 
   async disconnectedCallback() {
@@ -111,7 +113,7 @@ export class FormSelect implements FormElement {
   }
 
   reset = (newValue: string = '') => {
-    const defaultOption = this.options.find(opt => opt.value === newValue) || { value: newValue, label: '' };
+    const defaultOption = this.options.find(opt => opt.value === newValue || opt.value === this.defaultValue) || { value: newValue, label: '' };
 
     this.handleSelection(defaultOption);
   };
@@ -134,6 +136,11 @@ export class FormSelect implements FormElement {
 
       this.fetchingErrorMessage = null;
       this.options = options;
+
+      if (this.defaultValue) {
+        const defaultOption = options.find(option => option.value === this.defaultValue);
+        if (defaultOption) this.handleSelection(defaultOption);
+      }
     } catch (error) {
       if (error && error?.name === 'AbortError') return;
       console.error(error);
