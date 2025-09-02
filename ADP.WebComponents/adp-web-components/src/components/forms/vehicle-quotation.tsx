@@ -1,11 +1,9 @@
 import { Component, Element, Host, Prop, State, Watch, h } from '@stencil/core';
 
-import cn from '~lib/cn';
 import { Grecaptcha } from '~lib/recaptcha';
 
 import vehicleQuotationSchema from '~locales/forms/vehicleQuotation/type';
 
-import { VehicleQuotationStructures } from './vehicle-quotation/structure';
 import { vehicleQuotationElementNames, vehicleQuotationElements } from './vehicle-quotation/element-mapper';
 import { VehicleQuotation, VehicleQuotationFormLocale, vehicleQuotationInputsValidation } from './vehicle-quotation/validations';
 
@@ -44,8 +42,8 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
   @State() isLoading: boolean = false;
   @State() localeLanguage: LanguageKeys;
 
-  @Prop() theme: string;
   @Prop() gistId?: string;
+  @Prop() structureUrl?: string;
   @Prop() errorCallback: (error: any) => void;
   @Prop() successCallback: (data: any) => void;
   @Prop() loadingChanges: (loading: boolean) => void;
@@ -76,9 +74,10 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
       if (this.gistId) {
         const [newGistStructure] = await Promise.all([gistLoader(this.gistId), this.changeLanguage(this.language)]);
         this.structure = newGistStructure as FormElementStructure<vehicleQuotationElementNames>;
-      } else {
+      } else if (this.structureUrl) {
         await this.changeLanguage(this.language);
-        if (this.theme === 'tiq') this.structure = VehicleQuotationStructures.tiq;
+        //     const [newGistStructure] = await Promise.all([gistLoader(this.gistId), this.changeLanguage(this.language)]);
+        // this.structure = newGistStructure as FormElementStructure<vehicleQuotationElementNames>;
       }
     }
     this.localeLanguage = this.language;
@@ -182,11 +181,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
     // @ts-ignore
     window.aa = this;
     return (
-      <Host
-        class={cn({
-          [`vehicle-quotation-${this.theme}`]: this.theme,
-        })}
-      >
+      <Host class={`vehicle-quotation-${this.structure.data?.theme}`}>
         <form-structure
           form={this.form}
           formLocale={this.locale}
