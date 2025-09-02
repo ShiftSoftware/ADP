@@ -3,8 +3,10 @@ import { FormElementStructure } from '~features/form-hook';
 
 const tiq: FormElementStructure<vehicleQuotationElementNames> = {
   data: {
+    theme: 'tiq',
     brandId: 'kWrKw',
     vehicleIdQueryParam: 'cId',
+    nameContactedVehicles: false,
     quotationType: 'NewVehiclePurchase',
     recaptchaKey: '6Lehq6IpAAAAAETTDS2Zh60nHIT1a8oVkRtJ2WsA',
     vehicleApi: 'https://tiq-publications-functions.azurewebsites.net/api/models',

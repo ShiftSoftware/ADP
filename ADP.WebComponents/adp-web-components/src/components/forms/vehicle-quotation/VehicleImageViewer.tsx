@@ -1,5 +1,5 @@
 import { FunctionalComponent, h } from '@stencil/core';
-import { FormHook, FormSelectItem } from '~features/form-hook';
+import { FormHook } from '~features/form-hook';
 import { VehicleQuotation } from './validations';
 import { LoaderIcon } from '~assets/loader-icon';
 import cn from '~lib/cn';
@@ -38,16 +38,16 @@ export const VehicleImageViewer: FunctionalComponent<VehicleImageViewerProps> = 
 
   let openContainer = !!vehicleId;
 
-  const selectedVehicle = form.context['toyotaVehicleList']?.find((vehicle: FormSelectItem) => vehicle.value === vehicleId);
+  const selectedVehicle = form.context['vehicleList']?.find(vehicle => `${vehicle?.ID}` === vehicleId);
 
   let imSrc;
 
   if (selectedVehicle) {
-    imSrc = selectedVehicle?.meta?.image;
-    vehicleId = selectedVehicle.value;
-  } else if (form.context['toyotaVehicleList'] && form.context['toyotaVehicleList'][0]) {
-    imSrc = form.context['toyotaVehicleList'][0]?.meta?.image;
-    vehicleId = form.context['toyotaVehicleList'][0].value;
+    imSrc = selectedVehicle?.Image;
+    vehicleId = selectedVehicle.ID;
+  } else if (form.context['vehicleList'] && form.context['vehicleList'][0]) {
+    imSrc = form.context['vehicleList'][0]?.meta?.image;
+    vehicleId = form.context['vehicleList'][0].value;
   }
 
   let isLoading = false;

@@ -20,14 +20,15 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Vehic
 
       const response = await fetch(vehicleEndpoint, { signal, headers: { 'Accept-Language': language } });
 
-      form.context['toyotaVehicleList'] = (await response.json()).map(vehicle => ({
+      form.context['vehicleList'] = await response.json();
+
+      forceUpdate(form.formStructure);
+
+      return form.context['vehicleList'].map(vehicle => ({
         label: vehicle.Title,
         value: `${vehicle.ID}`,
         meta: { image: vehicle.Image },
       })) as FormSelectItem[];
-
-      forceUpdate(form.formStructure);
-      return form.context['toyotaVehicleList'];
     };
 
     const params = new URLSearchParams(window.location.search);
@@ -43,12 +44,12 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Vehic
 
       const response = await fetch(dealerEndpoint, { signal, headers: { 'Accept-Language': language } });
 
-      form.context['toyotaDealerList'] = (await response.json()).map(dealer => ({
+      form.context['dealerList'] = (await response.json()).map(dealer => ({
         label: dealer.Name,
         value: `${dealer.ID}`,
       })) as FormSelectItem[];
 
-      return form.context['toyotaDealerList'];
+      return form.context['dealerList'];
     };
 
     return <form-select {...props} clearable searchable fetcher={fetcher} language={language} />;

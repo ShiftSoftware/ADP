@@ -88,22 +88,39 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
     try {
       this.setIsLoading(true);
 
+      const nameContactedVehicles = this.structure.data?.nameContactedVehicles;
+
       const payload: any = {
         name: formValues.name,
         phone: formValues.phone,
-        vehicle: formValues.vehicle,
         companyBranchId: formValues.dealer,
-        PreferredPurchasingMethod: formValues.paymentType,
+        preferredPaymentMethod: formValues.paymentType,
         vehicleQuotationType: this.structure.data?.quotationType,
-        additionalData: {
-          DoYouOwnAVehicle: formValues?.ownVehicle === 'yes',
-        },
       };
 
-      if (formValues?.ownVehicle === 'yes') {
-        payload.additionalData.youCurrentVehicle = formValues.currentVehicleBrand || '';
-        payload.additionalData.vehicleModel = formValues.currentVehicleModel || '';
+      if (nameContactedVehicles) {
+        payload.vehicle = this['vehicleList'].find(vehicle => `${vehicle.ID}` === formValues.vehicle)?.Title || '';
+
+        if (formValues?.ownVehicle === 'yes') {
+          const currentBrand = this['currentVehiclesList'].find(brand => `${brand.id}` === formValues.currentVehicleBrand) || false;
+
+          let currentModel;
+
+          if (currentBrand) currentModel = currentBrand.models.find(model => `${model.id}` === formValues.currentVehicleModel) || false;
+
+          payload.currentOrTradeInVehicle = `${currentBrand.name || this.locale.Others} - ${currentModel.name || this.locale.Others}`;
+        }
+      } else {
+        payload.vehicle = formValues.vehicle;
+        payload.additionalData = {
+          DoYouOwnAVehicle: formValues?.ownVehicle === 'yes',
+        };
+        if (formValues?.ownVehicle === 'yes') {
+          payload.additionalData.youCurrentVehicle = formValues.currentVehicleBrand || this.locale.Others;
+          payload.additionalData.vehicleModel = formValues.currentVehicleModel || this.locale.Others;
+        }
       }
+
       const token = await grecaptcha.execute(this.structure.data?.recaptchaKey, { action: 'submit' });
 
       const response = await fetch(this.structure.data?.requestUrl, {

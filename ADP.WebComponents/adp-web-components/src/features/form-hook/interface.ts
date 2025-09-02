@@ -21,7 +21,7 @@ export type FormElementStructureComponents<T> = {
 );
 
 export type FormElementStructure<T> = {
-  data?: Record<string, string>;
+  data?: Record<string, any>;
 } & FormElementStructureComponents<T>;
 
 export interface FormHookInterface<T> {
