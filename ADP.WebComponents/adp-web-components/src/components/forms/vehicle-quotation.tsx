@@ -108,7 +108,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
 
           if (currentBrand) currentModel = currentBrand.models.find(model => `${model.id}` === formValues.currentVehicleModel) || false;
 
-          payload.currentOrTradeInVehicle = `${currentBrand.name || this.locale.Others} - ${currentModel.name || this.locale.Others}`;
+          payload.currentOrTradeInVehicle = `${currentBrand?.name || this.locale.Others} - ${currentModel?.name || this.locale.Others}`;
         }
       } else {
         payload.vehicle = formValues.vehicle;
