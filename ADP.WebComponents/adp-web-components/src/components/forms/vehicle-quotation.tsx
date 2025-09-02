@@ -11,6 +11,7 @@ import { FormHook } from '~features/form-hook/form-hook';
 import { FormHookInterface, FormElementStructure, gistLoader } from '~features/form-hook';
 import { getLocaleLanguage, getSharedFormLocal, LanguageKeys, MultiLingual, sharedFormLocalesSchema } from '~features/multi-lingual';
 import getLanguageFromUrl from '~lib/get-language-from-url';
+import { fetchJson } from '~lib/fetch-json';
 
 declare const grecaptcha: Grecaptcha;
 
@@ -76,8 +77,8 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
         this.structure = newGistStructure as FormElementStructure<vehicleQuotationElementNames>;
       } else if (this.structureUrl) {
         await this.changeLanguage(this.language);
-        //     const [newGistStructure] = await Promise.all([gistLoader(this.gistId), this.changeLanguage(this.language)]);
-        // this.structure = newGistStructure as FormElementStructure<vehicleQuotationElementNames>;
+        const [newGistStructure] = await Promise.all([fetchJson<FormElementStructure<vehicleQuotationElementNames>>(this.structureUrl), this.changeLanguage(this.language)]);
+        this.structure = newGistStructure;
       }
     }
     this.localeLanguage = this.language;
@@ -93,8 +94,8 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
         name: formValues.name,
         phone: formValues.phone,
         companyBranchId: formValues.dealer,
-        preferredPaymentMethod: formValues.paymentType,
         vehicleQuotationType: this.structure.data?.quotationType,
+        preferredPaymentMethod: formValues?.paymentType || 'NotSpecified',
       };
 
       if (nameContactedVehicles) {
@@ -107,7 +108,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
 
           if (currentBrand) currentModel = currentBrand.models.find(model => `${model.id}` === formValues.currentVehicleModel) || false;
 
-          payload.currentOrTradeInVehicle = `${currentBrand.name || this.locale.Others} - ${currentModel.name || this.locale.Others}`;
+          payload.currentOrTradeInVehicle = `${currentBrand?.name || this.locale.Others} - ${currentModel?.name || this.locale.Others}`;
         }
       } else {
         payload.vehicle = formValues.vehicle;
@@ -178,8 +179,6 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
   form = new FormHook(this, vehicleQuotationInputsValidation);
 
   render() {
-    // @ts-ignore
-    window.aa = this;
     return (
       <Host class={`vehicle-quotation-${this.structure.data?.theme}`}>
         <form-structure
