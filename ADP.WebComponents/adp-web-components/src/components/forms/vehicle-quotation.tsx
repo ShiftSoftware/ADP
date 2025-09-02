@@ -1,11 +1,9 @@
 import { Component, Element, Host, Prop, State, Watch, h } from '@stencil/core';
 
-import cn from '~lib/cn';
 import { Grecaptcha } from '~lib/recaptcha';
 
 import vehicleQuotationSchema from '~locales/forms/vehicleQuotation/type';
 
-import { VehicleQuotationStructures } from './vehicle-quotation/structure';
 import { vehicleQuotationElementNames, vehicleQuotationElements } from './vehicle-quotation/element-mapper';
 import { VehicleQuotation, VehicleQuotationFormLocale, vehicleQuotationInputsValidation } from './vehicle-quotation/validations';
 
@@ -13,6 +11,7 @@ import { FormHook } from '~features/form-hook/form-hook';
 import { FormHookInterface, FormElementStructure, gistLoader } from '~features/form-hook';
 import { getLocaleLanguage, getSharedFormLocal, LanguageKeys, MultiLingual, sharedFormLocalesSchema } from '~features/multi-lingual';
 import getLanguageFromUrl from '~lib/get-language-from-url';
+import { fetchJson } from '~lib/fetch-json';
 
 declare const grecaptcha: Grecaptcha;
 
@@ -44,8 +43,8 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
   @State() isLoading: boolean = false;
   @State() localeLanguage: LanguageKeys;
 
-  @Prop() theme: string;
   @Prop() gistId?: string;
+  @Prop() structureUrl?: string;
   @Prop() errorCallback: (error: any) => void;
   @Prop() successCallback: (data: any) => void;
   @Prop() loadingChanges: (loading: boolean) => void;
@@ -76,9 +75,10 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
       if (this.gistId) {
         const [newGistStructure] = await Promise.all([gistLoader(this.gistId), this.changeLanguage(this.language)]);
         this.structure = newGistStructure as FormElementStructure<vehicleQuotationElementNames>;
-      } else {
+      } else if (this.structureUrl) {
         await this.changeLanguage(this.language);
-        if (this.theme === 'tiq') this.structure = VehicleQuotationStructures.tiq;
+        const [newGistStructure] = await Promise.all([fetchJson<FormElementStructure<vehicleQuotationElementNames>>(this.structureUrl), this.changeLanguage(this.language)]);
+        this.structure = newGistStructure;
       }
     }
     this.localeLanguage = this.language;
@@ -94,8 +94,8 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
         name: formValues.name,
         phone: formValues.phone,
         companyBranchId: formValues.dealer,
-        preferredPaymentMethod: formValues.paymentType,
         vehicleQuotationType: this.structure.data?.quotationType,
+        preferredPaymentMethod: formValues?.paymentType || 'NotSpecified',
       };
 
       if (nameContactedVehicles) {
@@ -179,14 +179,8 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
   form = new FormHook(this, vehicleQuotationInputsValidation);
 
   render() {
-    // @ts-ignore
-    window.aa = this;
     return (
-      <Host
-        class={cn({
-          [`vehicle-quotation-${this.theme}`]: this.theme,
-        })}
-      >
+      <Host class={`vehicle-quotation-${this.structure.data?.theme}`}>
         <form-structure
           form={this.form}
           formLocale={this.locale}

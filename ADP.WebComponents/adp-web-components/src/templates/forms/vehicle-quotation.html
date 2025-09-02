@@ -6,6 +6,7 @@
     <title>Vehicle Quotation Form</title>
     <script nomodule src="/build/shift-components.js"></script>
     <script type="module" src="/build/shift-components.esm.js"></script>
+    <link rel="stylesheet" href="https://tiqappstorage.blob.core.windows.net/template-files/vehicle-quotation-tiq.css" />
   </head>
   <style>
     body {
@@ -43,46 +44,6 @@
       <button class="sample-button" onclick="updateLang('ru')">Ru</button>
     </div>
 
-    <!-- gist-id="" -->
-    <vehicle-quotation-form theme="tiq" id="vehicle-quotation-form"></vehicle-quotation-form>
-
-    <script>
-      let vehicleQuotationForm;
-
-      document.addEventListener('DOMContentLoaded', function () {
-        vehicleQuotationForm = document.getElementById('vehicle-quotation-form');
-
-        // vehicleQuotationForm.structure = {
-        //   tag: 'div',
-        //   id: 'container',
-        //   children: [
-        //   { tag: 'div', id: 'inputs_wrapper', children: ['name', 'phone'] },
-        //   { name: 'submit', id: 'Submit' },
-        //   ]
-        // };
-
-        vehicleQuotationForm.loadingChanges = loadingChanges;
-
-        vehicleQuotationForm.successCallback = successCallback;
-
-        vehicleQuotationForm.errorCallback = errorCallback;
-      });
-
-      loadingChanges = loading => {
-        console.log(1, loading);
-      };
-
-      successCallback = values => {
-        console.log(2, values);
-      };
-
-      errorCallback = error => {
-        console.log(3, error);
-      };
-
-      function updateLang(newLang) {
-        vehicleQuotationForm.language = newLang;
-      }
-    </script>
+    <vehicle-quotation-form structure-url="https://tiqappstorage.blob.core.windows.net/template-files/tiq-vehicle-quotation-form-structure.json"></vehicle-quotation-form>
   </body>
 </html>
