@@ -72,6 +72,27 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Vehic
     return <form-select {...props} clearable fetcher={fetcher} language={language} />;
   },
 
+  'contactTime': ({ language, props, locale }) => {
+    const fetcher: FormSelectFetcher<VehicleQuotationFormLocale> = async ({}): Promise<FormSelectItem[]> => {
+      return [
+        {
+          value: 'Morning',
+          label: locale?.Morning,
+        },
+        {
+          value: 'Noon',
+          label: locale?.Noon,
+        },
+        {
+          value: 'Afternoon',
+          label: locale?.Afternoon,
+        },
+      ] as FormSelectItem[];
+    };
+
+    return <form-select {...props} clearable fetcher={fetcher} language={language} />;
+  },
+
   'ownVehicle': ({ language, props, locale }) => {
     const fetcher: FormSelectFetcher<VehicleQuotationFormLocale> = async ({}): Promise<FormSelectItem[]> => {
       return [

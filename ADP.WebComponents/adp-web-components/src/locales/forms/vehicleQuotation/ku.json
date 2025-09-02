@@ -25,5 +25,10 @@
   "Vehicle Model": "مۆدێلی ئۆتۆمبێلەکەت",
   "Your current vehicle": "براندی ئۆتۆمبێلەکەت",
   "Others": "ئی تر",
-  "Form submitted successfully.": "فۆڕمەکە بە سەرکەوتوویی پێشکەش کرا."
+  "Form submitted successfully.": "فۆڕمەکە بە سەرکەوتوویی پێشکەش کرا.",
+  "Preferred contact time": "کاتی پەیوەندیکردنی پەسند کراو",
+  "Please select a time": "تکایە کاتێک هەڵبژێرە",
+  "Morning": "بەیانی",
+  "Noon": "نیوەڕۆ",
+  "Afternoon": "دوای نیوەڕۆ"
 }

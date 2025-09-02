@@ -28,6 +28,11 @@ const vehicleQuotationSchema = yupTypeMapper([
   'Vehicle Model',
   'Others',
   'Form submitted successfully.',
+  'Preferred contact time',
+  'Please select a time',
+  'Morning',
+  'Noon',
+  'Afternoon',
 ]);
 
 export default vehicleQuotationSchema;

@@ -25,5 +25,10 @@
   "Vehicle Model": "Модель транспортного средства",
   "Your current vehicle": "Ваш текущий автомобиль",
   "Others": "другие",
-  "Form submitted successfully.": "Форма успешно отправлена."
+  "Form submitted successfully.": "Форма успешно отправлена.",
+  "Preferred contact time": "Предпочтительное время контакта",
+  "Please select a time": "Пожалуйста, выберите время",
+  "Morning": "утро",
+  "Noon": "Полдень",
+  "Afternoon": "Полдень"
 }
