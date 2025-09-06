@@ -12,7 +12,16 @@
     <a href="#" onclick="history.back()" style="color: blue; display: block; margin-bottom: 16px">Back</a>
 
     <h1>Vehicle Specification</h1>
-    <vehicle-specification language="ku" is-dev="true" query-string="" id="vehicle-specification" base-url="http://localhost:7174/api/secure-vehicle-lookup-test/">
+    <vehicle-specification
+      language="ku"
+      is-dev="true"
+      query-string=""
+      id="vehicle-specification"
+      error-callback="blazorErrorCallback"
+      loaded-response="blazorLoadedResponse"
+      loading-state-change="blazorLoadingStateChange"
+      base-url="http://localhost:7174/api/secure-vehicle-lookup-test/"
+    >
     </vehicle-specification>
 
     <div class="button-container">
@@ -38,17 +47,39 @@
     <script>
       let vehicleSpecification;
 
+      const functionReferences = {
+        blazorErrorCallback,
+        blazorLoadedResponse,
+        blazorLoadingStateChange,
+      };
+
+      const virtualBlazorRef = {
+        invokeMethodAsync: (functionName, ...args) => {
+          if (functionReferences[functionName]) functionReferences[functionName](...args);
+        },
+      };
+
       document.addEventListener('DOMContentLoaded', function () {
         vehicleSpecification = document.getElementById('vehicle-specification');
 
         vehicleSpecification.setMockData(mockData);
 
-        vehicleSpecification.loadingStateChange = isLoading => {
-          console.log('isLoading: ' + isLoading);
-        };
+        vehicleSpecification.setBlazorRef(virtualBlazorRef);
 
-        vehicleSpecification.loadedResponse = newResponse => console.log(newResponse);
+        // vehicleSpecification.errorCallback = err => console.log('error', err);
+        // vehicleSpecification.loadedResponse = newResponse => console.log(newResponse);
+        // vehicleSpecification.loadingStateChange = isLoading => console.log('isLoading: ' + isLoading);
       });
+
+      function blazorErrorCallback(err) {
+        console.log('error', err);
+      }
+      function blazorLoadedResponse(newResponse) {
+        console.log('response', newResponse);
+      }
+      function blazorLoadingStateChange(isLoading) {
+        console.log('isLoading: ' + isLoading);
+      }
 
       function updateLang(newLang) {
         vehicleSpecification.language = newLang;

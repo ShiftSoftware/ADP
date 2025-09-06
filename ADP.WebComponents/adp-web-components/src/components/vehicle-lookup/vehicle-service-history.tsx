@@ -17,7 +17,7 @@ import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, Language
   tag: 'vehicle-service-history',
   styleUrl: 'vehicle-service-history.css',
 })
-export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInterface, VehicleLookupComponent {
+export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInterface, VehicleLookupComponent, BlazorInvokable {
   // ====== Start Localization
 
   @Prop() language: LanguageKeys = 'en';
