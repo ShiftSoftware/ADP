@@ -12,7 +12,16 @@
     <a href="#" onclick="history.back()" style="color: blue; display: block; margin-bottom: 16px">Back</a>
 
     <h1>Dead Stock Lookup</h1>
-    <dead-stock-lookup language="ku" is-dev="true" query-string="" id="dead-stock-lookup" base-url="https://tiq-vehicles-functions.azurewebsites.net/api/secure-part-lookup/">
+    <dead-stock-lookup
+      language="ku"
+      is-dev="true"
+      query-string=""
+      id="dead-stock-lookup"
+      error-callback="blazorErrorCallback"
+      loaded-response="blazorLoadedResponse"
+      loading-state-change="blazorLoadingStateChange"
+      base-url="https://tiq-vehicles-functions.azurewebsites.net/api/secure-part-lookup/"
+    >
     </dead-stock-lookup>
 
     <div class="button-container">
@@ -33,16 +42,40 @@
     <script>
       let deadStockLookup;
 
+      const functionReferences = {
+        blazorErrorCallback,
+        blazorLoadedResponse,
+        blazorLoadingStateChange,
+      };
+
+      const virtualBlazorRef = {
+        invokeMethodAsync: (functionName, ...args) => {
+          if (functionReferences[functionName]) functionReferences[functionName](...args);
+        },
+      };
+
       document.addEventListener('DOMContentLoaded', function () {
         deadStockLookup = document.getElementById('dead-stock-lookup');
 
         deadStockLookup.setMockData(mockData);
 
-        deadStockLookup.loadedResponse = newResponse => console.log(newResponse);
-        deadStockLookup.loadingStateChange = isLoading => {
-          console.log('isLoading: ' + isLoading);
-        };
+        deadStockLookup.setBlazorRef(virtualBlazorRef);
+        // deadStockLookup.errorCallback = err => console.log('error', err);
+        // deadStockLookup.loadedResponse = newResponse => console.log('response', newResponse);
+        // deadStockLookup.loadingStateChange = isLoading => {
+        //   console.log('isLoading: ' + isLoading);
+        // };
       });
+
+      function blazorErrorCallback(err) {
+        console.log('error', err);
+      }
+      function blazorLoadedResponse(newResponse) {
+        console.log('response', newResponse);
+      }
+      function blazorLoadingStateChange(isLoading) {
+        console.log('isLoading: ' + isLoading);
+      }
 
       function updateLang(newLang) {
         deadStockLookup.language = newLang;

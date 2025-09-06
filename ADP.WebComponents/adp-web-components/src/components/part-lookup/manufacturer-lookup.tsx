@@ -7,6 +7,7 @@ import { PartLookupDTO } from '~types/generated/part/part-lookup-dto';
 import manufacturerSchema from '~locales/partLookup/manufacturer/type';
 
 import { VehicleInfoLayout, VehicleInfoLayoutInterface } from '~features/vehicle-info-layout';
+import { BlazorInvokable, DotNetObjectReference, smartInvokable, BlazorInvokableFunction } from '~features/blazor-ref';
 import { PartLookupComponent, PartLookupMock, setPartLookupData, setPartLookupErrorState } from '~features/part-lookup-components';
 import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, sharedLocalesSchema } from '~features/multi-lingual';
 
@@ -15,7 +16,7 @@ import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, Language
   tag: 'manufacturer-lookup',
   styleUrl: 'manufacturer-lookup.css',
 })
-export class ManufacturerLookup implements MultiLingual, VehicleInfoLayoutInterface, PartLookupComponent {
+export class ManufacturerLookup implements MultiLingual, VehicleInfoLayoutInterface, PartLookupComponent, BlazorInvokable {
   // ====== Start Localization
 
   @Prop() language: LanguageKeys = 'en';
@@ -47,9 +48,9 @@ export class ManufacturerLookup implements MultiLingual, VehicleInfoLayoutInterf
   @Prop() headers: object = {};
   @Prop() queryString: string = '';
 
-  @Prop() errorCallback?: (errorMessage: ErrorKeys) => void;
-  @Prop() loadingStateChange?: (isLoading: boolean) => void;
-  @Prop() loadedResponse?: (response: PartLookupDTO) => void;
+  @Prop() errorCallback?: BlazorInvokableFunction<(errorMessage: ErrorKeys) => void>;
+  @Prop() loadingStateChange?: BlazorInvokableFunction<(isLoading: boolean) => void>;
+  @Prop() loadedResponse?: BlazorInvokableFunction<(response: PartLookupDTO) => void>;
 
   @State() searchString: string;
   @State() isError: boolean = false;
@@ -81,10 +82,19 @@ export class ManufacturerLookup implements MultiLingual, VehicleInfoLayoutInterf
 
   @Watch('isLoading')
   onLoadingChange(newValue: boolean) {
-    if (this.loadingStateChange) this.loadingStateChange(newValue);
+    smartInvokable.bind(this)(this.loadingStateChange, newValue);
   }
 
   // ====== End Part Lookup Component Shared Logic
+
+  // ====== Start Blazor Invokable logic
+  @State() blazorRef?: DotNetObjectReference;
+
+  @Method()
+  async setBlazorRef(newBlazorRef: DotNetObjectReference) {
+    this.blazorRef = newBlazorRef;
+  }
+  // ====== End Blazor Invokable logic
 
   // ====== Start Component Logic
 

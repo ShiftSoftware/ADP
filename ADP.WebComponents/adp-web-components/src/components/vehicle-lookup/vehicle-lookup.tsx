@@ -1,7 +1,6 @@
 import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
 import validateVin from '~lib/validate-vin';
-import { DotNetObjectReference } from '~types/components';
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
 import vehicleLookupWrapperSchema from '~locales/vehicleLookup/wrapper-type';
@@ -13,6 +12,7 @@ import { VehiclePaintThickness } from './vehicle-paint-thickness';
 import { VehicleServiceHistory } from './vehicle-service-history';
 import { VehicleWarrantyDetails } from './vehicle-warranty-details';
 
+import { DotNetObjectReference } from '~features/blazor-ref';
 import { VehicleInfoLayout } from '~features/vehicle-info-layout/vehicle-info-layout';
 import { ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, SharedLocales, sharedLocalesSchema } from '~features/multi-lingual';
 

@@ -9,8 +9,8 @@ import partLookupWrapperSchema from '~locales/partLookup/wrapper-type';
 import { VehicleInfoLayout } from '~features/vehicle-info-layout';
 import { ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, SharedLocales, sharedLocalesSchema } from '~features/multi-lingual';
 
-import { DotNetObjectReference } from '~types/components';
 import { PartLookupDTO } from '~types/generated/part/part-lookup-dto';
+import { DotNetObjectReference } from '~features/blazor-ref';
 
 const componentTags = {
   deadStock: 'dead-stock-lookup',

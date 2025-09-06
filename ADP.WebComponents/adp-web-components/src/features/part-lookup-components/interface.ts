@@ -1,4 +1,5 @@
 import { ErrorKeys } from '~features/multi-lingual';
+import { BlazorInvokableFunction } from '~features/blazor-ref';
 
 import { PartLookupMock } from './types';
 import { PartLookupDTO } from '~types/generated/part/part-lookup-dto';
@@ -20,11 +21,12 @@ export interface PartLookupComponent {
   abortController: AbortController;
   networkTimeoutRef: ReturnType<typeof setTimeout>;
 
+  errorCallback?: BlazorInvokableFunction<(errorMessage: ErrorKeys) => void>;
+  loadingStateChange?: BlazorInvokableFunction<(isLoading: boolean) => void>;
+  loadedResponse?: BlazorInvokableFunction<(response: PartLookupDTO) => void>;
+
   onLoadingChange: (newValue: boolean) => void;
   setErrorMessage: (message: ErrorKeys) => void;
-  loadingStateChange?: (isLoading: boolean) => void;
-  errorCallback?: (errorMessage: ErrorKeys) => void;
-  loadedResponse?: (response: PartLookupDTO) => void;
   setMockData: (newMockData: PartLookupMock) => Promise<void>;
   fetchData: (newData: PartLookupDTO | string, headers?: object) => Promise<void>;
 }

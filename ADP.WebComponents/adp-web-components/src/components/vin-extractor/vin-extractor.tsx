@@ -1,7 +1,7 @@
 import { Component, Prop, State, Watch, h, Host, Method, Element } from '@stencil/core';
+import { DotNetObjectReference } from '~features/blazor-ref';
 import cn from '~lib/cn';
 import validateVin from '~lib/validate-vin';
-import { DotNetObjectReference } from '~types/components';
 
 const CAPTURE_INTERVAL = 2000;
 const ACTIVE_CAMERA_ID_KEY = 'activeCameraId';

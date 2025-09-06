@@ -3,6 +3,7 @@ import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stenci
 import deadStockSchema from '~locales/partLookup/deadStock/type';
 
 import { VehicleInfoLayout, VehicleInfoLayoutInterface } from '~features/vehicle-info-layout';
+import { BlazorInvokable, DotNetObjectReference, smartInvokable, BlazorInvokableFunction } from '~features/blazor-ref';
 import { PartLookupComponent, PartLookupMock, setPartLookupData, setPartLookupErrorState } from '~features/part-lookup-components';
 import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, sharedLocalesSchema } from '~features/multi-lingual';
 
@@ -18,7 +19,7 @@ import { DeadStockItem } from './components/dead-stock-item';
   tag: 'dead-stock-lookup',
   styleUrl: 'dead-stock-lookup.css',
 })
-export class DeadStockLookup implements MultiLingual, VehicleInfoLayoutInterface, PartLookupComponent {
+export class DeadStockLookup implements MultiLingual, VehicleInfoLayoutInterface, PartLookupComponent, BlazorInvokable {
   // ====== Start Localization
 
   @Prop() language: LanguageKeys = 'en';
@@ -43,6 +44,15 @@ export class DeadStockLookup implements MultiLingual, VehicleInfoLayoutInterface
 
   // ====== End Vehicle info layout prop
 
+  // ====== Start Blazor Invokable logic
+  @State() blazorRef?: DotNetObjectReference;
+
+  @Method()
+  async setBlazorRef(newBlazorRef: DotNetObjectReference) {
+    this.blazorRef = newBlazorRef;
+  }
+  // ====== End Blazor Invokable logic
+
   // ====== Start Part Lookup Component Shared Logic
 
   @Prop() isDev: boolean;
@@ -50,9 +60,9 @@ export class DeadStockLookup implements MultiLingual, VehicleInfoLayoutInterface
   @Prop() headers: object = {};
   @Prop() queryString: string = '';
 
-  @Prop() errorCallback?: (errorMessage: ErrorKeys) => void;
-  @Prop() loadingStateChange?: (isLoading: boolean) => void;
-  @Prop() loadedResponse?: (response: PartLookupDTO) => void;
+  @Prop() errorCallback?: BlazorInvokableFunction<(errorMessage: ErrorKeys) => void>;
+  @Prop() loadingStateChange?: BlazorInvokableFunction<(isLoading: boolean) => void>;
+  @Prop() loadedResponse?: BlazorInvokableFunction<(response: PartLookupDTO) => void>;
 
   @State() searchString: string;
   @State() isError: boolean = false;
@@ -91,7 +101,7 @@ export class DeadStockLookup implements MultiLingual, VehicleInfoLayoutInterface
 
   @Watch('isLoading')
   onLoadingChange(newValue: boolean) {
-    if (this.loadingStateChange) this.loadingStateChange(newValue);
+    smartInvokable.bind(this)(this.loadingStateChange, newValue);
   }
 
   // ====== End Part Lookup Component Shared Logic

@@ -1,11 +1,12 @@
 import { PartLookupComponent } from './interface';
 
 import { ErrorKeys } from '~features/multi-lingual';
+import { BlazorInvokable, smartInvokable } from '~features/blazor-ref';
 
 import { PartLookupDTO } from '~types/generated/part/part-lookup-dto';
 
 export const setPartLookupData = async (
-  context: PartLookupComponent,
+  context: PartLookupComponent & BlazorInvokable,
   newData: PartLookupDTO | string,
   headers: any = {},
   { beforeAssignment }: { beforeAssignment?: (partLookup: PartLookupDTO, extra: { scopedTimeoutRef: ReturnType<typeof setTimeout> }) => Promise<PartLookupDTO> } = {},
@@ -57,7 +58,7 @@ export const setPartLookupData = async (
     context.isError = false;
   } catch (error) {
     if (error && error?.name === 'AbortError') return;
-    if (context.errorCallback) context.errorCallback(error.message);
+    smartInvokable.bind(context)(context.errorCallback, error.message);
     console.error(error);
     context.setErrorMessage(error.message);
   }
@@ -81,7 +82,7 @@ export async function getPartLookup(context: PartLookupComponent, generalProps: 
     if (context?.networkTimeoutRef === scopedTimeoutRef) {
       if (!newPartLookup && context?.searchString) throw new Error('wrongResponseFormat');
 
-      if (context?.loadedResponse) context?.loadedResponse(newPartLookup);
+      smartInvokable.bind(context)(context?.loadedResponse, newPartLookup);
       return newPartLookup;
     }
   };
