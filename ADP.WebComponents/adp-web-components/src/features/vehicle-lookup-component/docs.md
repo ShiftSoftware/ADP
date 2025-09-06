@@ -9,9 +9,9 @@
   @Prop() headers: object = {};
   @Prop() queryString: string = '';
 
-  @Prop() errorCallback?: (errorMessage: ErrorKeys) => void;
-  @Prop() loadingStateChange?: (isLoading: boolean) => void;
-  @Prop() loadedResponse?: (response: VehicleLookupDTO) => void;
+  @Prop() errorCallback?: BlazorInvokableFunction<(errorMessage: ErrorKeys) => void>;
+  @Prop() loadingStateChange?: BlazorInvokableFunction<(isLoading: boolean) => void>;
+  @Prop() loadedResponse?: BlazorInvokableFunction<(response: VehicleLookupDTO) => void>;
 
   @State() isError: boolean = false;
   @State() errorMessage?: ErrorKeys;
@@ -42,7 +42,7 @@
 
   @Watch('isLoading')
   onLoadingChange(newValue: boolean) {
-    if (this.loadingStateChange) this.loadingStateChange(newValue);
+    smartInvokable.bind(this)(this.loadingStateChange, newValue);
   }
 
  // ====== End Vehicle Lookup Component Shared Logic

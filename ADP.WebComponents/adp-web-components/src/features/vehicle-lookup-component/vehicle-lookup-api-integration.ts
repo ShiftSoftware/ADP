@@ -1,4 +1,5 @@
 import { ErrorKeys } from '~features/multi-lingual';
+import { BlazorInvokable, smartInvokable } from '~features/blazor-ref';
 
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
@@ -6,7 +7,7 @@ import { vehicleRequestHeaders } from './types';
 import { VehicleLookupComponent } from './interface';
 
 export const setVehicleLookupData = async (
-  context: VehicleLookupComponent,
+  context: VehicleLookupComponent & BlazorInvokable,
   newData: VehicleLookupDTO | string,
   headers: any = {},
   { beforeAssignment }: { beforeAssignment?: (vehicleLookup: VehicleLookupDTO, extra: { scopedTimeoutRef: ReturnType<typeof setTimeout> }) => Promise<VehicleLookupDTO> } = {},
@@ -55,7 +56,7 @@ export const setVehicleLookupData = async (
     context.isError = false;
   } catch (error) {
     if (error && error?.name === 'AbortError') return;
-    if (context.errorCallback) context.errorCallback(error.message);
+    smartInvokable.bind(context)(context?.errorCallback, error.message);
     console.error(error);
     context.setErrorMessage(error.message);
   }
@@ -80,7 +81,8 @@ export const getVehicleLookup = async (context: VehicleLookupComponent, generalP
     if (context?.networkTimeoutRef === scopedTimeoutRef) {
       if (!newVehicleInformation && vin) throw new Error('wrongResponseFormat');
 
-      if (context?.loadedResponse) context?.loadedResponse(newVehicleInformation);
+      smartInvokable.bind(context)(context?.loadedResponse, newVehicleInformation);
+
       return newVehicleInformation;
     }
   };

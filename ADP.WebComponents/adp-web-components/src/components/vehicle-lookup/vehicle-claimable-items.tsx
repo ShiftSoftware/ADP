@@ -7,6 +7,7 @@ import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup
 import { VehicleServiceItemDTO } from '~types/generated/vehicle-lookup/vehicle-service-item-dto';
 
 import { VehicleInfoLayout, VehicleInfoLayoutInterface } from '~features/vehicle-info-layout';
+import { BlazorInvokable, DotNetObjectReference, smartInvokable, BlazorInvokableFunction } from '~features/blazor-ref';
 import { setVehicleLookupData, setVehicleLookupErrorState, VehicleLookupComponent } from '~features/vehicle-lookup-component';
 import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, sharedLocalesSchema } from '~features/multi-lingual';
 
@@ -26,7 +27,7 @@ import { VehicleLookupMock } from '~features/vehicle-lookup-component/types';
   tag: 'vehicle-claimable-items',
   styleUrl: 'vehicle-claimable-items.css',
 })
-export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInterface, VehicleLookupComponent {
+export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInterface, VehicleLookupComponent, BlazorInvokable {
   // ====== Start Localization
   @Prop() language: LanguageKeys = 'en';
 
@@ -54,9 +55,9 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
   @Prop() queryString: string = '';
   @Prop() uploadMultipleDocumentsAtTheForm: boolean = true;
 
-  @Prop() errorCallback?: (errorMessage: ErrorKeys) => void;
-  @Prop() loadingStateChange?: (isLoading: boolean) => void;
-  @Prop() loadedResponse?: (response: VehicleLookupDTO) => void;
+  @Prop() errorCallback?: BlazorInvokableFunction<(errorMessage: ErrorKeys) => void>;
+  @Prop() loadingStateChange?: BlazorInvokableFunction<(isLoading: boolean) => void>;
+  @Prop() loadedResponse?: BlazorInvokableFunction<(response: VehicleLookupDTO) => void>;
 
   @State() isError: boolean = false;
   @State() errorMessage?: ErrorKeys;
@@ -92,10 +93,19 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
 
   @Watch('isLoading')
   onLoadingChange(newValue: boolean) {
-    if (this.loadingStateChange) this.loadingStateChange(newValue);
+    smartInvokable.bind(this)(this.loadingStateChange, newValue);
   }
 
   // ====== End Vehicle Lookup Component Shared Logic
+
+  // ====== Start Blazor Invokable logic
+  @State() blazorRef?: DotNetObjectReference;
+
+  @Method()
+  async setBlazorRef(newBlazorRef: DotNetObjectReference) {
+    this.blazorRef = newBlazorRef;
+  }
+  // ====== End Blazor Invokable logic
 
   // ====== Start Component Logic
   @Prop() print?: (claimResponse: any) => void;

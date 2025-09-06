@@ -10,6 +10,7 @@ import { InformationTableColumn } from '../components/information-table';
 
 import { VehicleInfoLayout, VehicleInfoLayoutInterface } from '~features/vehicle-info-layout';
 import { closeImageViewer, ImageViewer, ImageViewerInterface, openImageViewer } from '~features/image-viewer';
+import { BlazorInvokable, DotNetObjectReference, smartInvokable, BlazorInvokableFunction } from '~features/blazor-ref';
 import { setVehicleLookupData, setVehicleLookupErrorState, VehicleLookupComponent, VehicleLookupMock } from '~features/vehicle-lookup-component';
 import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, sharedLocalesSchema } from '~features/multi-lingual';
 
@@ -18,7 +19,7 @@ import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, Language
   tag: 'vehicle-accessories',
   styleUrl: 'vehicle-accessories.css',
 })
-export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterface, ImageViewerInterface, VehicleLookupComponent {
+export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterface, ImageViewerInterface, VehicleLookupComponent, BlazorInvokable {
   // ====== Start Localization
 
   @Prop() language: LanguageKeys = 'en';
@@ -51,6 +52,15 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
 
   // ====== End Image Viewer Logic
 
+  // ====== Start Blazor Invokable logic
+  @State() blazorRef?: DotNetObjectReference;
+
+  @Method()
+  async setBlazorRef(newBlazorRef: DotNetObjectReference) {
+    this.blazorRef = newBlazorRef;
+  }
+  // ====== End Blazor Invokable logic
+
   // ====== Start Vehicle Lookup Component Shared Logic
 
   @Prop() isDev: boolean;
@@ -58,9 +68,9 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
   @Prop() headers: object = {};
   @Prop() queryString: string = '';
 
-  @Prop() errorCallback?: (errorMessage: ErrorKeys) => void;
-  @Prop() loadingStateChange?: (isLoading: boolean) => void;
-  @Prop() loadedResponse?: (response: VehicleLookupDTO) => void;
+  @Prop() errorCallback?: BlazorInvokableFunction<(errorMessage: ErrorKeys) => void>;
+  @Prop() loadingStateChange?: BlazorInvokableFunction<(isLoading: boolean) => void>;
+  @Prop() loadedResponse?: BlazorInvokableFunction<(response: VehicleLookupDTO) => void>;
 
   @State() isError: boolean = false;
   @State() errorMessage?: ErrorKeys;
@@ -91,7 +101,7 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
 
   @Watch('isLoading')
   onLoadingChange(newValue: boolean) {
-    if (this.loadingStateChange) this.loadingStateChange(newValue);
+    smartInvokable.bind(this)(this.loadingStateChange, newValue);
   }
 
   // ====== End Vehicle Lookup Component Shared Logic
