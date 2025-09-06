@@ -21,7 +21,7 @@ declare const grecaptcha: Grecaptcha;
   styleUrl: 'demo/themes.css',
 })
 export class DemoForm implements FormHookInterface<Demo>, MultiLingual {
-  // ====== Start Localization
+  // #region Localization
   @Prop() language: LanguageKeys = 'en';
 
   @State() locale: DemoFormLocale = { sharedFormLocales: sharedFormLocalesSchema.getDefault(), ...demoSchema.getDefault() };
@@ -34,9 +34,9 @@ export class DemoForm implements FormHookInterface<Demo>, MultiLingual {
 
     this.form.rerender({ rerenderAll: true });
   }
-  // ====== End Localization
+  // #endregion  Localization
 
-  // ====== Start Form Hook logic
+  // #region Form Hook logic
   @State() isLoading: boolean;
   @State() errorMessage: string;
 
@@ -110,7 +110,7 @@ export class DemoForm implements FormHookInterface<Demo>, MultiLingual {
       this.setIsLoading(false);
     }
   }
-  // ====== End Form Hook logic
+  // #endregion  Form Hook logic
 
   @Prop() baseUrl: string;
   @Prop() queryString: string = '';

@@ -1,7 +1,7 @@
 ## static content ( can be extended )
 
 ```typescript
-  // ====== Start Localization
+  // #region Localization
 
   @Prop() language: LanguageKeys = 'en';
 
@@ -17,5 +17,5 @@
       this.locale = { sharedLocales, ...locale };
   }
 
-  // ====== End Localization
+  // #endregion  Localization
 ```

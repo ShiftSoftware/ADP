@@ -32,7 +32,7 @@ export type ActiveElement = (typeof componentTags)[keyof typeof componentTags] |
   styleUrl: 'part-lookup.css',
 })
 export class PartLookup implements MultiLingual {
-  // ====== Start Localization
+  // #region Localization
 
   @Prop() language: LanguageKeys = 'en';
 
@@ -48,7 +48,7 @@ export class PartLookup implements MultiLingual {
     this.locale = localeResponses[1];
   }
 
-  // ====== End Localization
+  // #endregion  Localization
 
   // ====== Wrapper Logic
 
@@ -147,6 +147,7 @@ export class PartLookup implements MultiLingual {
     activeElement.fetchData(searchingText, headers);
   }
 
+  // #endregion Wrapper Logic
   render() {
     const props = {
       [componentTags.deadStock]: {},

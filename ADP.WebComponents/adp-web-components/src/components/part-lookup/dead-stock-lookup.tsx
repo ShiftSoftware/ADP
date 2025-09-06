@@ -20,7 +20,7 @@ import { DeadStockItem } from './components/dead-stock-item';
   styleUrl: 'dead-stock-lookup.css',
 })
 export class DeadStockLookup implements MultiLingual, VehicleInfoLayoutInterface, PartLookupComponent, BlazorInvokable {
-  // ====== Start Localization
+  // #region Localization
 
   @Prop() language: LanguageKeys = 'en';
 
@@ -36,24 +36,24 @@ export class DeadStockLookup implements MultiLingual, VehicleInfoLayoutInterface
     this.locale = { sharedLocales, ...locale };
   }
 
-  // ====== End Localization
+  // #endregion  Localization
 
-  // ====== Start Vehicle info layout prop
+  // #region Vehicle info layout prop
 
   @Prop() coreOnly: boolean = false;
 
-  // ====== End Vehicle info layout prop
+  // #endregion  Vehicle info layout prop
 
-  // ====== Start Blazor Invokable logic
+  // #region Blazor Invokable logic
   @State() blazorRef?: DotNetObjectReference;
 
   @Method()
   async setBlazorRef(newBlazorRef: DotNetObjectReference) {
     this.blazorRef = newBlazorRef;
   }
-  // ====== End Blazor Invokable logic
+  // #endregion  Blazor Invokable logic
 
-  // ====== Start Part Lookup Component Shared Logic
+  // #region Part Lookup Component Shared Logic
 
   @Prop() isDev: boolean;
   @Prop() baseUrl: string;
@@ -104,9 +104,9 @@ export class DeadStockLookup implements MultiLingual, VehicleInfoLayoutInterface
     smartInvokable.bind(this)(this.loadingStateChange, newValue);
   }
 
-  // ====== End Part Lookup Component Shared Logic
+  // #endregion  Part Lookup Component Shared Logic
 
-  // ====== Start Component Logic
+  // #region Component Logic
 
   @State() openedAccordions: string[] = [];
   @State() newItemsHasBeenRendered: boolean = false;
@@ -129,6 +129,7 @@ export class DeadStockLookup implements MultiLingual, VehicleInfoLayoutInterface
       this.openedAccordions = [...this.openedAccordions, header];
     }
   };
+  // #endregion Component Logic
 
   render() {
     return (

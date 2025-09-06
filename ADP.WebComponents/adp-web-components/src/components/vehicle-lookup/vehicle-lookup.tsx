@@ -42,7 +42,7 @@ export type ActiveElement = (typeof componentTags)[keyof typeof componentTags] |
   styleUrl: 'vehicle-lookup.css',
 })
 export class VehicleLookup implements MultiLingual {
-  // ====== Start Localization
+  // #region Localization
 
   @Prop() language: LanguageKeys = 'en';
 
@@ -58,9 +58,9 @@ export class VehicleLookup implements MultiLingual {
     this.locale = localeResponses[1];
   }
 
-  // ====== End Localization
+  // #endregion  Localization
 
-  // ====== Wrapper Logic
+  // #region Wrapper Logic
 
   @Prop() activeElement?: ActiveElement = '';
 
@@ -177,7 +177,7 @@ export class VehicleLookup implements MultiLingual {
 
     activeElement.fetchData(vin, headers);
   }
-
+  // #endregion Wrapper Logic
   render() {
     const props = {
       [componentTags.vehicleAccessories]: {},

@@ -33,7 +33,7 @@ export type ClaimFormPayload = {
   styleUrl: 'vehicle-item-claim-form.css',
 })
 export class VehicleItemClaimForm implements ImageViewerInterface {
-  // ====== Start Image Viewer Logic
+  // #region Image Viewer Logic
 
   @State() expandedImage?: string = '';
 
@@ -53,9 +53,9 @@ export class VehicleItemClaimForm implements ImageViewerInterface {
     }
   }
 
-  // ====== End Image Viewer Logic
+  // #endregion  Image Viewer Logic
 
-  // ====== Start Component Logic
+  // #region Component Logic
   @Prop() vin?: string;
   @Prop() item?: VehicleServiceItemDTO;
   @Prop() maximumDocumentFileSizeInMb: number;
@@ -290,7 +290,7 @@ export class VehicleItemClaimForm implements ImageViewerInterface {
     if (event.key === 'Enter') this.submit();
   };
 
-  // ====== End Component Logic
+  // #endregion  Component Logic
 
   render() {
     const isQRScannerForm = this.item?.claimingMethodEnum === 'ClaimByScanningQRCode';

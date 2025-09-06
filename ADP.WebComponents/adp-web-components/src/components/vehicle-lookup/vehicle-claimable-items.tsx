@@ -28,7 +28,7 @@ import { VehicleLookupMock } from '~features/vehicle-lookup-component/types';
   styleUrl: 'vehicle-claimable-items.css',
 })
 export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInterface, VehicleLookupComponent, BlazorInvokable {
-  // ====== Start Localization
+  // #region Localization
   @Prop() language: LanguageKeys = 'en';
 
   @State() locale: ComponentLocale<typeof dynamicClaimSchema> = { sharedLocales: sharedLocalesSchema.getDefault(), ...dynamicClaimSchema.getDefault() };
@@ -42,13 +42,13 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
     const [sharedLocales, locale] = await Promise.all([getSharedLocal(newLanguage), getLocaleLanguage(newLanguage, 'vehicleLookup.claimableItems', dynamicClaimSchema)]);
     this.locale = { sharedLocales, ...locale };
   }
-  // ====== End Localization
+  // #endregion  Localization
 
-  // ====== Start Vehicle info layout prop
+  // #region Vehicle info layout prop
   @Prop() coreOnly: boolean = false;
-  // ====== End Vehicle info layout prop
+  // #endregion  Vehicle info layout prop
 
-  // ====== Start Vehicle Lookup Component Shared Logic
+  // #region Vehicle Lookup Component Shared Logic
   @Prop() isDev: boolean;
   @Prop() baseUrl: string;
   @Prop() headers: object = {};
@@ -96,18 +96,18 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
     smartInvokable.bind(this)(this.loadingStateChange, newValue);
   }
 
-  // ====== End Vehicle Lookup Component Shared Logic
+  // #endregion  Vehicle Lookup Component Shared Logic
 
-  // ====== Start Blazor Invokable logic
+  // #region Blazor Invokable logic
   @State() blazorRef?: DotNetObjectReference;
 
   @Method()
   async setBlazorRef(newBlazorRef: DotNetObjectReference) {
     this.blazorRef = newBlazorRef;
   }
-  // ====== End Blazor Invokable logic
+  // #endregion  Blazor Invokable logic
 
-  // ====== Start Component Logic
+  // #region Component Logic
   @Prop() print?: (claimResponse: any) => void;
   @Prop() maximumDocumentFileSizeInMb: number = 30;
   @Prop() claimEndPoint: string = 'api/vehicle/swift-claim';
@@ -424,7 +424,7 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
 
     this.claimForm.open();
   }
-  // ====== End Component Logic
+  // #endregion  Component Logic
 
   render() {
     const serviceItems = this.getServiceItems();

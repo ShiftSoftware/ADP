@@ -2,7 +2,7 @@
 
 ```typescript
 
-  // ====== Start Part Lookup Component Shared Logic
+  // #region Part Lookup Component Shared Logic
 
  @Prop() isDev: boolean;
   @Prop() baseUrl: string;
@@ -46,5 +46,5 @@
     smartInvokable.bind(this)(this.loadingStateChange, newValue);
   }
 
- // ====== End Part Lookup Component Shared Logic
+ // #endregion  Part Lookup Component Shared Logic
 ```

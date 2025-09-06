@@ -11,7 +11,7 @@ import { FormHook, FormElementMapper, FormElementMapperFunctionProps, FormElemen
   styleUrl: 'form-inputs.css',
 })
 export class FormStructure {
-  // ====== Start Localization
+  // #region Localization
   @Prop({ reflect: true }) formLocale: any = {};
   @Prop({ reflect: true }) language: LanguageKeys = 'en';
 
@@ -29,7 +29,7 @@ export class FormStructure {
     this.locale = { sharedLocales, ...locale };
   }
 
-  // ====== End Localization
+  // #endregion  Localization
 
   @Prop() isLoading: boolean;
   @Prop() form: FormHook<any>;

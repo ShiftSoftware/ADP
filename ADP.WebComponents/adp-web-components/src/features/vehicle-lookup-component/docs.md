@@ -2,7 +2,7 @@
 
 ```typescript
 
-  // ====== Start Vehicle Lookup Component Shared Logic
+  // #region Vehicle Lookup Component Shared Logic
 
  @Prop() isDev: boolean;
   @Prop() baseUrl: string;
@@ -45,5 +45,5 @@
     smartInvokable.bind(this)(this.loadingStateChange, newValue);
   }
 
- // ====== End Vehicle Lookup Component Shared Logic
+ // #endregion  Vehicle Lookup Component Shared Logic
 ```

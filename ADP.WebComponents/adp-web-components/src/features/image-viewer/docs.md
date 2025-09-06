@@ -1,11 +1,11 @@
 ```typescript
-  // ====== Start Image Viewer Logic
+  // #region Image Viewer Logic
 
   @State() expandedImage?: string = '';
 
   originalImage: HTMLImageElement;
 
-  // ====== End Image Viewer Logic
+  // #endregion  Image Viewer Logic
 //   <ImageViewer closeImageViewer={() => closeImageViewer.bind(this)()} expandedImage={this.expandedImage} />
 
 // <button

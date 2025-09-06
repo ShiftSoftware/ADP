@@ -21,7 +21,7 @@ declare const grecaptcha: Grecaptcha;
   styleUrl: 'vehicle-quotation/themes.css',
 })
 export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>, MultiLingual {
-  // ====== Start Localization
+  // #region Localization
   @Prop({ mutable: true, reflect: true }) language: LanguageKeys = 'en';
 
   @State() locale: VehicleQuotationFormLocale = { sharedFormLocales: sharedFormLocalesSchema.getDefault(), ...vehicleQuotationSchema.getDefault() };
@@ -36,9 +36,9 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
 
     this.form.rerender({ rerenderAll: true });
   }
-  // ====== End Localization
+  // #endregion  Localization
 
-  // ====== Start Form Hook logic
+  // #region Form Hook logic
   @State() errorMessage: string;
   @State() isLoading: boolean = false;
   @State() localeLanguage: LanguageKeys;
@@ -157,9 +157,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
       this.setIsLoading(false);
     }
   }
-  // ====== End Form Hook logic
-
-  // ====== component logic
+  // #endregion  Form Hook logic
 
   async componentDidLoad() {
     try {

@@ -1,5 +1,5 @@
 ```typescript
-  // ====== Start Form Hook logic
+  // #region Form Hook logic
   @State() isLoading: boolean;
   @State() errorMessage: string;
 
@@ -60,5 +60,5 @@
       this.setIsLoading(false);
     }
   }
-  // ====== End Form Hook logic
+  // #endregion  Form Hook logic
 ```

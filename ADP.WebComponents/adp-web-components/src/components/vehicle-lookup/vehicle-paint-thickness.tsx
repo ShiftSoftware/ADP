@@ -22,7 +22,7 @@ import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, Language
   styleUrl: 'vehicle-paint-thickness.css',
 })
 export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInterface, ImageViewerInterface, VehicleLookupComponent, BlazorInvokable {
-  // ====== Start Localization
+  // #region Localization
 
   @Prop() language: LanguageKeys = 'en';
 
@@ -38,32 +38,32 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
     this.locale = { sharedLocales, ...locale };
   }
 
-  // ====== End Localization
+  // #endregion  Localization
 
-  // ====== Start Vehicle info layout prop
+  // #region Vehicle info layout prop
 
   @Prop() coreOnly: boolean = false;
 
-  // ====== End Vehicle info layout prop
+  // #endregion  Vehicle info layout prop
 
-  // ====== Start Image Viewer Logic
+  // #region Image Viewer Logic
 
   @State() expandedImage?: string = '';
 
   originalImage: HTMLImageElement;
 
-  // ====== End Image Viewer Logic
+  // #endregion  Image Viewer Logic
 
-  // ====== Start Blazor Invokable logic
+  // #region Blazor Invokable logic
   @State() blazorRef?: DotNetObjectReference;
 
   @Method()
   async setBlazorRef(newBlazorRef: DotNetObjectReference) {
     this.blazorRef = newBlazorRef;
   }
-  // ====== End Blazor Invokable logic
+  // #endregion  Blazor Invokable logic
 
-  // ====== Start Vehicle Lookup Component Shared Logic
+  // #region Vehicle Lookup Component Shared Logic
 
   @Prop() isDev: boolean;
   @Prop() baseUrl: string;
@@ -106,7 +106,7 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
     smartInvokable.bind(this)(this.loadingStateChange, newValue);
   }
 
-  // ====== End Vehicle Lookup Component Shared Logic
+  // #endregion  Vehicle Lookup Component Shared Logic
 
   render() {
     const texts = this.locale;

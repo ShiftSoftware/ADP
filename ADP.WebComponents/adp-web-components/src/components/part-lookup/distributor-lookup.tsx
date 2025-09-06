@@ -20,7 +20,7 @@ import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, Language
   styleUrl: 'distributor-lookup.css',
 })
 export class DistributorLookup implements MultiLingual, VehicleInfoLayoutInterface, PartLookupComponent, BlazorInvokable {
-  // ====== Start Localization
+  // #region Localization
 
   @Prop() language: LanguageKeys = 'en';
 
@@ -36,15 +36,15 @@ export class DistributorLookup implements MultiLingual, VehicleInfoLayoutInterfa
     this.locale = { sharedLocales, ...locale };
   }
 
-  // ====== End Localization
+  // #endregion  Localization
 
-  // ====== Start Vehicle info layout prop
+  // #region Vehicle info layout prop
 
   @Prop() coreOnly: boolean = false;
 
-  // ====== End Vehicle info layout prop
+  // #endregion  Vehicle info layout prop
 
-  // ====== Start Part Lookup Component Shared Logic
+  // #region Part Lookup Component Shared Logic
 
   @Prop() isDev: boolean;
   @Prop() baseUrl: string;
@@ -88,22 +88,23 @@ export class DistributorLookup implements MultiLingual, VehicleInfoLayoutInterfa
     smartInvokable.bind(this)(this.loadingStateChange, newValue);
   }
 
-  // ====== End Part Lookup Component Shared Logic
+  // #endregion  Part Lookup Component Shared Logic
 
-  // ====== Start Blazor Invokable logic
+  // #region Blazor Invokable logic
   @State() blazorRef?: DotNetObjectReference;
 
   @Method()
   async setBlazorRef(newBlazorRef: DotNetObjectReference) {
     this.blazorRef = newBlazorRef;
   }
-  // ====== End Blazor Invokable logic
+  // #region Component Logic
 
   // ===== Start Component Logic
 
   @Prop() hiddenFields?: string = '';
   @Prop() localizationName?: string = '';
 
+  // #endregion Component Logic
   render() {
     const localName = this.partLookup ? this.localizationName || 'russian' : 'russian';
 

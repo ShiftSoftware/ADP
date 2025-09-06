@@ -156,7 +156,7 @@ import { getLocaleLanguage, getSharedFormLocal, LanguageKeys, MultiLingual, shar
   styleUrl: '${tagName}/themes.css',
 })
 export class ${pascalName}Form implements FormHookInterface<${pascalName}>, MultiLingual {
-  // ====== Start Localization
+  // #region Localization
   @Prop() language: LanguageKeys = 'en';
 
   @State() locale: ${pascalName}FormLocale = { sharedFormLocales: sharedFormLocalesSchema.getDefault(), ...${camelName}Schema.getDefault() };
@@ -169,9 +169,9 @@ export class ${pascalName}Form implements FormHookInterface<${pascalName}>, Mult
 
     this.form.rerender({ rerenderAll: true });
   }
-  // ====== End Localization
+  // #endregion  Localization
 
-  // ====== Start Form Hook logic
+  // #region Form Hook logic
   @State() isLoading: boolean;
   @State() errorMessage: string;
 
@@ -228,12 +228,14 @@ export class ${pascalName}Form implements FormHookInterface<${pascalName}>, Mult
       this.setIsLoading(false);
     }
   }
-  // ====== End Form Hook logic
+  // #endregion  Form Hook logic
 
-  // ====== component logic
+  // #region Component Logic
 
   form = new FormHook(this, ${camelName}InputsValidation);
-
+  
+  // #endregion Component Logic
+  
   render() {
     return (
       <Host
