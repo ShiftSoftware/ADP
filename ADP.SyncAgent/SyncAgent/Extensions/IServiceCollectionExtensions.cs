@@ -85,4 +85,13 @@ public static class IServiceCollectionExtensions
 
         return services;
     }
+
+    public static IServiceCollection AddEFCoreSyncDataDestination(this IServiceCollection services)
+    {
+        services.AddTransient(typeof(EFCoreSyncDataDestination<,>));
+        services.AddTransient(typeof(EFCoreSyncDataDestination<,,>));
+        services.AddTransient(typeof(EFCoreSyncDataDestination<,,,>));
+
+        return services;
+    }
 }
