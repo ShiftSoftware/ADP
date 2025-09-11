@@ -257,7 +257,7 @@ if (!fs.existsSync(newFormTemplatePath)) {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>${pascalName} Form</title>
+    <title>${capitalizeName} Form</title>
     <script nomodule src="/build/shift-components.js"></script>
     <script type="module" src="/build/shift-components.esm.js"></script>
   </head>
@@ -308,7 +308,7 @@ if (!fs.existsSync(newFormTemplatePath)) {
   </style>
   <body>
     <a href="#" onclick="history.back()" style="color: blue; display: block; margin-bottom: 16px">Back</a>
-    <h1>${pascalName} Form</h1>
+    <h1>${capitalizeName} Form</h1>
 
     <div class="button-container">
       <button class="sample-button" onclick="updateLang('en')">En</button>
@@ -327,6 +327,7 @@ if (!fs.existsSync(newFormTemplatePath)) {
         ${camelName}Form = document.getElementById('${tagName}-form');
 
         ${camelName}Form.structure = {
+          data: {},
           tag: 'div',
           id: 'container',
           children: [
