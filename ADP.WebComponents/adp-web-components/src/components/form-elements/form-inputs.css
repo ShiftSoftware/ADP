@@ -22,7 +22,7 @@
 }
 
 .error-message {
-  @apply absolute text-[12px] pt-[1px] -z-10 text-red-500 opacity-0 -translate-y-[4px] bottom-0 transition !duration-300;
+  @apply absolute text-[12px] pt-[1px] text-red-500 opacity-0 -translate-y-[4px] z-[1] bottom-0 transition !duration-300;
 }
 
 .display-error-message {
@@ -82,7 +82,7 @@
 }
 
 .form-input-container {
-  @apply relative;
+  @apply relative z-[2];
 }
 
 .form-input-label-container.disabled .form-input-container {
