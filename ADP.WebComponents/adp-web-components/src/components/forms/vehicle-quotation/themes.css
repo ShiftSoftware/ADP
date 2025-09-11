@@ -1,8 +1,15 @@
 :host {
   all: initial !important;
   display: block;
+  font-family: inherit !important;
 }
 
-* {
-  font-family: Arial;
-}
+/* :host,
+:host * {
+  font-family: inherit !important;
+} */
+
+/* :host,
+:host * {
+  font-family: var(--app-font-family) !important;
+} */

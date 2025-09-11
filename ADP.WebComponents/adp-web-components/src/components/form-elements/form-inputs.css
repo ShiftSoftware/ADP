@@ -3,10 +3,6 @@
   display: block;
 }
 
-* {
-  font-family: Arial;
-}
-
 .dialog-blur {
   backdrop-filter: blur(1.5px) !important;
 }
