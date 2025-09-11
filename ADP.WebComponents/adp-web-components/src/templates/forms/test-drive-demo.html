@@ -64,7 +64,10 @@
     </div>
 
     <!-- gist-id="" -->
-    <test-drive-demo-form theme="tiq" language="en" id="test-drive-demo-form"></test-drive-demo-form>
+    <test-drive-demo-form
+      structure-url="https://adpstoragev2.blob.core.windows.net/templates/tca-test-drive-drmo-structure.json?sv=2023-01-03&st=2025-09-11T04%3A59%3A18Z&se=2999-09-12T04%3A59%3A00Z&sr=b&sp=r&sig=%2Ba4255Iz1wU5sBpKamoGbzL%2FdYC0rhm7oWAtJxJkURg%3D"
+      id="test-drive-demo-form"
+    ></test-drive-demo-form>
 
     <script>
       let testDriveDemoForm;
@@ -72,15 +75,15 @@
       document.addEventListener('DOMContentLoaded', function () {
         testDriveDemoForm = document.getElementById('test-drive-demo-form');
 
-        testDriveDemoForm.structure = {
-          data: {},
-          tag: 'div',
-          id: 'container',
-          children: [
-            { tag: 'div', id: 'inputs_wrapper', children: ['name', 'phone'] },
-            { name: 'submit', id: 'Submit' },
-          ],
-        };
+        // testDriveDemoForm.structure = {
+        //   data: {},
+        //   tag: 'div',
+        //   id: 'container',
+        //   children: [
+        //     { tag: 'div', id: 'inputs_wrapper', children: ['name', 'phone'] },
+        //     { name: 'submit', id: 'Submit' },
+        //   ],
+        // };
       });
 
       function updateLang(newLang) {

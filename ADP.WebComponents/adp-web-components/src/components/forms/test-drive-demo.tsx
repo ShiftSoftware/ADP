@@ -82,19 +82,43 @@ export class TestDriveDemoForm implements FormHookInterface<TestDriveDemo>, Mult
 
   async formSubmit(formValues: TestDriveDemo) {
     try {
-      console.log(formValues);
-
       this.setIsLoading(true);
 
-      await new Promise(r => setTimeout(r, 3000));
+      const payload = {
+        name: formValues.name,
+        phone: formValues.phone,
+        email: formValues?.email || '',
+        companyBranchId: formValues.branch,
+        ticketPriority: formValues.priority,
+      };
 
-      this.setSuccessCallback({});
+      const requestUrl = this.structure?.data?.requestUrl as string;
+      const functionKey = this.structure?.data['x-functions-key'] as string;
 
-      this.form.openDialog();
-      setTimeout(() => {
-        this.form.reset();
-        this.form.rerender({ rerenderForm: true, rerenderAll: true });
-      }, 100);
+      const response = await fetch(requestUrl, {
+        method: 'POST',
+        headers: {
+          'x-functions-key': functionKey,
+          'Content-Type': 'application/json',
+          'Accept-Language': this.localeLanguage || 'en',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      console.log(response);
+
+      if (response.ok) {
+        const result = await response?.json();
+        this.setSuccessCallback(result);
+        this.form.openDialog();
+        setTimeout(() => {
+          this.form.reset();
+          this.form.rerender({ rerenderForm: true, rerenderAll: true });
+        }, 100);
+      } else {
+        const errorText = await response?.text();
+        throw new Error(errorText);
+      }
     } catch (error) {
       console.error(error);
 
@@ -113,7 +137,7 @@ export class TestDriveDemoForm implements FormHookInterface<TestDriveDemo>, Mult
   render() {
     return (
       <Host>
-        <div part={`test-drive-demo-${this.structure.data?.theme}`}>
+        <div part={`test-drive-demo-${this.structure?.data?.theme}`}>
           <form-structure
             form={this.form}
             formLocale={this.locale}

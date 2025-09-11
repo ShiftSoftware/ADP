@@ -16,6 +16,15 @@ export const testDriveDemoInputsValidation = object({
     .meta({ label: 'Phone number', placeholder: 'Phone number' } as FormInputMeta)
     .required('Phone number is required.')
     .test('libphonenumber-validation', 'Please enter a valid phone number', () => phoneValidator.isValid()),
+  email: string()
+    .meta({ label: 'Email Address', placeholder: 'Email Address' } as FormInputMeta)
+    .email('Email Address is not valid'),
+  priority: string()
+    .meta({ label: 'Priority', placeholder: 'Ticket Priority' } as FormInputMeta)
+    .required('Ticket Priority is required.'),
+  branch: string()
+    .meta({ label: 'Branch', placeholder: 'Select a branch' } as FormInputMeta)
+    .required('Branch is required.'),
 });
 
 export type TestDriveDemo = InferType<typeof testDriveDemoInputsValidation>;

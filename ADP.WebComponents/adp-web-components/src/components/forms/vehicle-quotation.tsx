@@ -182,7 +182,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
   render() {
     return (
       <Host>
-        <div part={`vehicle-quotation-${this.structure.data?.theme}`}>
+        <div part={`vehicle-quotation-${this.structure?.data?.theme}`}>
           <form-structure
             form={this.form}
             formLocale={this.locale}

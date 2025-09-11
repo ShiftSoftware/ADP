@@ -223,7 +223,7 @@ export class ${pascalName}Form implements FormHookInterface<${pascalName}>, Mult
   render() {
     return (
       <Host>
-        <div part={${'`'}${tagName}-\${this.structure.data?.theme}${'`'}}>
+        <div part={${'`'}${tagName}-\${this.structure?.data?.theme}${'`'}}>
           <form-structure
             form={this.form}
             formLocale={this.locale}
@@ -327,7 +327,9 @@ if (!fs.existsSync(newFormTemplatePath)) {
         ${camelName}Form = document.getElementById('${tagName}-form');
 
         ${camelName}Form.structure = {
-          data: {},
+          data: {
+            theme: "",
+          },
           tag: 'div',
           id: 'container',
           children: [

@@ -38,6 +38,7 @@ export class FormSubmit implements FormElement {
     return (
       <button
         type="submit"
+        formnovalidate
         part={buttonSubscriberKey}
         disabled={this.isLoading}
         class={cn('form-submit', {
