@@ -61,7 +61,7 @@ export const VehicleImageViewer: FunctionalComponent<VehicleImageViewerProps> = 
 
   return (
     <flexible-container isOpened={openContainer}>
-      <div part="vehicle-image-wrapper" class={cn('vehicle-image-wrapper', { loading: isLoading })}>
+      <div style={{ 'min-height': '60px' }} part="vehicle-image-wrapper" class={cn('vehicle-image-wrapper', { loading: isLoading })}>
         <div part={cn('vehicle-image-loading-wrapper', { 'vehicle-image-active-loading-wrapper': isLoading })} class="loading-wrapper">
           <LoaderIcon part="vehicle-image-loader-icon" class="img" />
         </div>
