@@ -221,6 +221,8 @@ export class ${pascalName}Form implements FormHookInterface<${pascalName}>, Mult
 
   // #endregion
   render() {
+    const successMessageKey = 'Form submitted successfully.';
+    
     return (
       <Host>
         <div part={${'`'}${tagName}-\${this.structure?.data?.theme}${'`'}}>
@@ -232,7 +234,7 @@ export class ${pascalName}Form implements FormHookInterface<${pascalName}>, Mult
             language={this.localeLanguage}
             errorMessage={this.errorMessage}
             formElementMapper={${camelName}Elements}
-            successMessage={this.locale['Form submitted successfully.']}
+            successMessage={this.locale[successMessageKey] || successMessageKey}
           >
             <slot></slot>
           </form-structure>

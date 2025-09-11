@@ -135,6 +135,7 @@ export class TestDriveDemoForm implements FormHookInterface<TestDriveDemo>, Mult
 
   // #endregion
   render() {
+    const successMessageKey = 'Form submitted successfully.';
     return (
       <Host>
         <div part={`test-drive-demo-${this.structure?.data?.theme}`}>
@@ -146,7 +147,7 @@ export class TestDriveDemoForm implements FormHookInterface<TestDriveDemo>, Mult
             language={this.localeLanguage}
             errorMessage={this.errorMessage}
             formElementMapper={testDriveDemoElements}
-            successMessage={this.locale['Form submitted successfully.']}
+            successMessage={this.locale[successMessageKey] || successMessageKey}
           >
             <slot></slot>
           </form-structure>
