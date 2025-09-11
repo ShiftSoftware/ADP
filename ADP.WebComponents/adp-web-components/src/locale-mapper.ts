@@ -13,6 +13,7 @@ const localeMapper = {
     "locales/forms/",
     "locales/forms/contactUs/",
     "locales/forms/demo/",
+    "locales/forms/testDriveDemo/",
     "locales/forms/vehicleQuotation/"
   ],
   "forms.contactUs": [
@@ -20,6 +21,9 @@ const localeMapper = {
   ],
   "forms.demo": [
     "locales/forms/demo/"
+  ],
+  "forms.testDriveDemo": [
+    "locales/forms/testDriveDemo/"
   ],
   "forms.vehicleQuotation": [
     "locales/forms/vehicleQuotation/"

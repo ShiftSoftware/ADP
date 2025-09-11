@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test Drive-demo Form</title>
+    <script nomodule src="/build/shift-components.js"></script>
+    <script type="module" src="/build/shift-components.esm.js"></script>
+  </head>
+  <style>
+    body {
+      padding: 16px;
+    }
+
+    .button-container {
+      margin: 50px 0px;
+      border: 1px solid #e1e1e1;
+      padding: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      align-content: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .sample-button {
+      background-color: #428bca;
+      padding: 10px 15px;
+    }
+
+    .sample-button:hover {
+      background-color: #3071a9;
+    }
+
+    #test-drive-demo-form::part(container) {
+      margin-left: auto;
+      margin-right: auto;
+      max-width: 700px;
+    }
+
+    #test-drive-demo-form::part(inputs_wrapper) {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    @media (min-width: 640px) {
+      #test-drive-demo-form::part(inputs_wrapper) {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+  </style>
+  <body>
+    <a href="#" onclick="history.back()" style="color: blue; display: block; margin-bottom: 16px">Back</a>
+    <h1>Test Drive-demo Form</h1>
+
+    <div class="button-container">
+      <button class="sample-button" onclick="updateLang('en')">En</button>
+      <button class="sample-button" onclick="updateLang('ku')">Ku</button>
+      <button class="sample-button" onclick="updateLang('ar')">Ar</button>
+      <button class="sample-button" onclick="updateLang('ru')">Ru</button>
+    </div>
+
+    <!-- gist-id="" -->
+    <test-drive-demo-form theme="tiq" language="en" id="test-drive-demo-form"></test-drive-demo-form>
+
+    <script>
+      let testDriveDemoForm;
+
+      document.addEventListener('DOMContentLoaded', function () {
+        testDriveDemoForm = document.getElementById('test-drive-demo-form');
+
+        testDriveDemoForm.structure = {
+          data: {},
+          tag: 'div',
+          id: 'container',
+          children: [
+            { tag: 'div', id: 'inputs_wrapper', children: ['name', 'phone'] },
+            { name: 'submit', id: 'Submit' },
+          ],
+        };
+      });
+
+      function updateLang(newLang) {
+        testDriveDemoForm.language = newLang;
+      }
+    </script>
+  </body>
+</html>
