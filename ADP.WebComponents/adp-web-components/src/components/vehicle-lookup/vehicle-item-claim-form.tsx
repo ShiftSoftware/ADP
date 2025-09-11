@@ -53,7 +53,7 @@ export class VehicleItemClaimForm implements ImageViewerInterface {
     }
   }
 
-  // #endregion  Image Viewer Logic
+  // #endregion
 
   // #region Component Logic
   @Prop() vin?: string;
@@ -290,7 +290,7 @@ export class VehicleItemClaimForm implements ImageViewerInterface {
     if (event.key === 'Enter') this.submit();
   };
 
-  // #endregion  Component Logic
+  // #endregion
 
   render() {
     const isQRScannerForm = this.item?.claimingMethodEnum === 'ClaimByScanningQRCode';

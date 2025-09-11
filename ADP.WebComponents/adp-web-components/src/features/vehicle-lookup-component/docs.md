@@ -45,5 +45,5 @@
     smartInvokable.bind(this)(this.loadingStateChange, newValue);
   }
 
- // #endregion  Vehicle Lookup Component Shared Logic
+ // #endregion
 ```

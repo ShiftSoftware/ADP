@@ -9,5 +9,5 @@
   async setBlazorRef(newBlazorRef: DotNetObjectReference) {
     this.blazorRef = newBlazorRef;
   }
-  // #endregion  Blazor Invokable logic
+  // #endregion
 ```

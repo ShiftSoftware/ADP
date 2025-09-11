@@ -36,13 +36,13 @@ export class DeadStockLookup implements MultiLingual, VehicleInfoLayoutInterface
     this.locale = { sharedLocales, ...locale };
   }
 
-  // #endregion  Localization
+  // #endregion
 
   // #region Vehicle info layout prop
 
   @Prop() coreOnly: boolean = false;
 
-  // #endregion  Vehicle info layout prop
+  // #endregion
 
   // #region Blazor Invokable logic
   @State() blazorRef?: DotNetObjectReference;
@@ -51,7 +51,7 @@ export class DeadStockLookup implements MultiLingual, VehicleInfoLayoutInterface
   async setBlazorRef(newBlazorRef: DotNetObjectReference) {
     this.blazorRef = newBlazorRef;
   }
-  // #endregion  Blazor Invokable logic
+  // #endregion
 
   // #region Part Lookup Component Shared Logic
 
@@ -104,7 +104,7 @@ export class DeadStockLookup implements MultiLingual, VehicleInfoLayoutInterface
     smartInvokable.bind(this)(this.loadingStateChange, newValue);
   }
 
-  // #endregion  Part Lookup Component Shared Logic
+  // #endregion
 
   // #region Component Logic
 
@@ -129,7 +129,7 @@ export class DeadStockLookup implements MultiLingual, VehicleInfoLayoutInterface
       this.openedAccordions = [...this.openedAccordions, header];
     }
   };
-  // #endregion Component Logic
+  // #endregion
 
   render() {
     return (

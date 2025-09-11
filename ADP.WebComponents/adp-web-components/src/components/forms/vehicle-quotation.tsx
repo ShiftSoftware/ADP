@@ -36,7 +36,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
 
     this.form.rerender({ rerenderAll: true });
   }
-  // #endregion  Localization
+  // #endregion
 
   // #region Form Hook logic
   @State() errorMessage: string;
@@ -157,8 +157,9 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
       this.setIsLoading(false);
     }
   }
-  // #endregion  Form Hook logic
+  // #endregion
 
+  // #region Component Logic
   async componentDidLoad() {
     try {
       const key = this.structure.data?.recaptchaKey;
@@ -177,6 +178,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
 
   form = new FormHook(this, vehicleQuotationInputsValidation);
 
+  // #endregion
   render() {
     return (
       <Host class={`vehicle-quotation-${this.structure.data?.theme}`}>

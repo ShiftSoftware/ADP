@@ -43,13 +43,13 @@ export class VehicleWarrantyDetails implements MultiLingual, VehicleInfoLayoutIn
     this.locale = { sharedLocales, ...locale };
   }
 
-  // #endregion  Localization
+  // #endregion
 
   // #region Vehicle info layout prop
 
   @Prop() coreOnly: boolean = false;
 
-  // #endregion  Vehicle info layout prop
+  // #endregion
 
   // #region Vehicle Lookup Component Shared Logic
 
@@ -106,7 +106,7 @@ export class VehicleWarrantyDetails implements MultiLingual, VehicleInfoLayoutIn
     smartInvokable.bind(this)(this.loadingStateChange, newValue);
   }
 
-  // #endregion  Vehicle Lookup Component Shared Logic
+  // #endregion
 
   // #region Blazor Invokable logic
   @State() blazorRef?: DotNetObjectReference;
@@ -115,7 +115,7 @@ export class VehicleWarrantyDetails implements MultiLingual, VehicleInfoLayoutIn
   async setBlazorRef(newBlazorRef: DotNetObjectReference) {
     this.blazorRef = newBlazorRef;
   }
-  // #endregion  Blazor Invokable logic
+  // #endregion
 
   // #region Component Logic
   @Prop() showSsc: boolean = false;
@@ -215,7 +215,7 @@ export class VehicleWarrantyDetails implements MultiLingual, VehicleInfoLayoutIn
     }
   }
 
-  // #endregion  Component Logic
+  // #endregion
 
   render() {
     const tableHeaders: InformationTableColumn[] = [

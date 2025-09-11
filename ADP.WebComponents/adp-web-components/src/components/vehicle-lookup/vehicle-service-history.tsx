@@ -34,13 +34,13 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
     this.locale = { sharedLocales, ...locale };
   }
 
-  // #endregion  Localization
+  // #endregion
 
   // #region Vehicle info layout prop
 
   @Prop() coreOnly: boolean = false;
 
-  // #endregion  Vehicle info layout prop
+  // #endregion
 
   // #region Blazor Invokable logic
   @State() blazorRef?: DotNetObjectReference;
@@ -49,7 +49,7 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
   async setBlazorRef(newBlazorRef: DotNetObjectReference) {
     this.blazorRef = newBlazorRef;
   }
-  // #endregion  Blazor Invokable logic
+  // #endregion
 
   // #region Vehicle Lookup Component Shared Logic
 
@@ -94,7 +94,7 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
     smartInvokable.bind(this)(this.loadingStateChange, newValue);
   }
 
-  // #endregion  Vehicle Lookup Component Shared Logic
+  // #endregion
 
   render() {
     const tableHeaders: InformationTableColumn[] = [

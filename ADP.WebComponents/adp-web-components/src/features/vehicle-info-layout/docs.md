@@ -5,5 +5,5 @@
 
   @Prop() coreOnly: boolean = false;
 
-  // #endregion  Vehicle info layout prop
+  // #endregion
 ```

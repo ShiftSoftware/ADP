@@ -17,5 +17,5 @@
       this.locale = { sharedLocales, ...locale };
   }
 
-  // #endregion  Localization
+  // #endregion
 ```

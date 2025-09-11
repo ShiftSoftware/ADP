@@ -36,13 +36,13 @@ export class DistributorLookup implements MultiLingual, VehicleInfoLayoutInterfa
     this.locale = { sharedLocales, ...locale };
   }
 
-  // #endregion  Localization
+  // #endregion
 
   // #region Vehicle info layout prop
 
   @Prop() coreOnly: boolean = false;
 
-  // #endregion  Vehicle info layout prop
+  // #endregion
 
   // #region Part Lookup Component Shared Logic
 
@@ -88,7 +88,7 @@ export class DistributorLookup implements MultiLingual, VehicleInfoLayoutInterfa
     smartInvokable.bind(this)(this.loadingStateChange, newValue);
   }
 
-  // #endregion  Part Lookup Component Shared Logic
+  // #endregion
 
   // #region Blazor Invokable logic
   @State() blazorRef?: DotNetObjectReference;
@@ -104,7 +104,7 @@ export class DistributorLookup implements MultiLingual, VehicleInfoLayoutInterfa
   @Prop() hiddenFields?: string = '';
   @Prop() localizationName?: string = '';
 
-  // #endregion Component Logic
+  // #endregion
   render() {
     const localName = this.partLookup ? this.localizationName || 'russian' : 'russian';
 

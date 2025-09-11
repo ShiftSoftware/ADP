@@ -34,7 +34,7 @@ export class DemoForm implements FormHookInterface<Demo>, MultiLingual {
 
     this.form.rerender({ rerenderAll: true });
   }
-  // #endregion  Localization
+  // #endregion
 
   // #region Form Hook logic
   @State() isLoading: boolean;
@@ -110,7 +110,7 @@ export class DemoForm implements FormHookInterface<Demo>, MultiLingual {
       this.setIsLoading(false);
     }
   }
-  // #endregion  Form Hook logic
+  // #endregion
 
   @Prop() baseUrl: string;
   @Prop() queryString: string = '';

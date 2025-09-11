@@ -169,7 +169,7 @@ export class ${pascalName}Form implements FormHookInterface<${pascalName}>, Mult
 
     this.form.rerender({ rerenderAll: true });
   }
-  // #endregion  Localization
+  // #endregion
 
   // #region Form Hook logic
   @State() isLoading: boolean;
@@ -228,13 +228,13 @@ export class ${pascalName}Form implements FormHookInterface<${pascalName}>, Mult
       this.setIsLoading(false);
     }
   }
-  // #endregion  Form Hook logic
+  // #endregion
 
   // #region Component Logic
 
   form = new FormHook(this, ${camelName}InputsValidation);
   
-  // #endregion Component Logic
+  // #endregion
   
   render() {
     return (

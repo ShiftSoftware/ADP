@@ -48,7 +48,7 @@ export class PartLookup implements MultiLingual {
     this.locale = localeResponses[1];
   }
 
-  // #endregion  Localization
+  // #endregion
 
   // ====== Wrapper Logic
 
@@ -147,7 +147,7 @@ export class PartLookup implements MultiLingual {
     activeElement.fetchData(searchingText, headers);
   }
 
-  // #endregion Wrapper Logic
+  // #endregion
   render() {
     const props = {
       [componentTags.deadStock]: {},

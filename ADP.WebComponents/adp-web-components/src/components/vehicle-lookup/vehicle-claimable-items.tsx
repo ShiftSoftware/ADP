@@ -42,11 +42,11 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
     const [sharedLocales, locale] = await Promise.all([getSharedLocal(newLanguage), getLocaleLanguage(newLanguage, 'vehicleLookup.claimableItems', dynamicClaimSchema)]);
     this.locale = { sharedLocales, ...locale };
   }
-  // #endregion  Localization
+  // #endregion
 
   // #region Vehicle info layout prop
   @Prop() coreOnly: boolean = false;
-  // #endregion  Vehicle info layout prop
+  // #endregion
 
   // #region Vehicle Lookup Component Shared Logic
   @Prop() isDev: boolean;
@@ -96,7 +96,7 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
     smartInvokable.bind(this)(this.loadingStateChange, newValue);
   }
 
-  // #endregion  Vehicle Lookup Component Shared Logic
+  // #endregion
 
   // #region Blazor Invokable logic
   @State() blazorRef?: DotNetObjectReference;
@@ -105,7 +105,7 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
   async setBlazorRef(newBlazorRef: DotNetObjectReference) {
     this.blazorRef = newBlazorRef;
   }
-  // #endregion  Blazor Invokable logic
+  // #endregion
 
   // #region Component Logic
   @Prop() print?: (claimResponse: any) => void;
@@ -424,7 +424,7 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
 
     this.claimForm.open();
   }
-  // #endregion  Component Logic
+  // #endregion
 
   render() {
     const serviceItems = this.getServiceItems();

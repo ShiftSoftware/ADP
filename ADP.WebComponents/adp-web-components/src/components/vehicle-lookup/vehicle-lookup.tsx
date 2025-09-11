@@ -58,7 +58,7 @@ export class VehicleLookup implements MultiLingual {
     this.locale = localeResponses[1];
   }
 
-  // #endregion  Localization
+  // #endregion
 
   // #region Wrapper Logic
 
@@ -177,7 +177,7 @@ export class VehicleLookup implements MultiLingual {
 
     activeElement.fetchData(vin, headers);
   }
-  // #endregion Wrapper Logic
+  // #endregion
   render() {
     const props = {
       [componentTags.vehicleAccessories]: {},

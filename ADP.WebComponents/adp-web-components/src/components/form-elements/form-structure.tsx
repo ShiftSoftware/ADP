@@ -29,7 +29,7 @@ export class FormStructure {
     this.locale = { sharedLocales, ...locale };
   }
 
-  // #endregion  Localization
+  // #endregion
 
   @Prop() isLoading: boolean;
   @Prop() form: FormHook<any>;

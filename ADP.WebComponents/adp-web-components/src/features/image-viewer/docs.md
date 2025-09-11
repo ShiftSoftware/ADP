@@ -5,7 +5,7 @@
 
   originalImage: HTMLImageElement;
 
-  // #endregion  Image Viewer Logic
+  // #endregion
 //   <ImageViewer closeImageViewer={() => closeImageViewer.bind(this)()} expandedImage={this.expandedImage} />
 
 // <button
