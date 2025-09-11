@@ -21,12 +21,15 @@
   animation: spin 2s linear infinite;
 }
 
+.error-message-container {
+  @apply overflow-hidden absolute pt-[1px] bottom-0 translate-y-full;
+}
 .error-message {
-  @apply absolute text-[12px] pt-[1px] text-red-500 opacity-0 -translate-y-[4px] z-[1] bottom-0 transition !duration-300;
+  @apply text-[12px] -translate-y-full text-red-500 opacity-0 transition !duration-300;
 }
 
 .display-error-message {
-  @apply translate-y-full !opacity-100;
+  @apply !opacity-100 -translate-y-0;
 }
 
 .dialog-drop-container {
@@ -82,7 +85,7 @@
 }
 
 .form-input-container {
-  @apply relative z-[2];
+  @apply relative;
 }
 
 .form-input-label-container.disabled .form-input-container {
