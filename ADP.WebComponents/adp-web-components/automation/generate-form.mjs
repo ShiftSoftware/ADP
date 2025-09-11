@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename);
 
 const args = process.argv.slice(2);
 if (args.length < 1) {
-  console.error('❌ Please provide a tag name. \nExample: \nyarn create:form vehicle-quotation');
+  console.error('❌ Please provide a tag name. \nExample: \nyarn create:form ${tagName}');
   process.exit(1);
 }
 
@@ -40,14 +40,6 @@ if (!fs.existsSync(themesPath)) {
 
 * {
   font-family: Arial;
-}
-
-.${tagName}-tiq #container {
-  @apply mx-auto max-w-[700px];
-}
-
-.${tagName}-tiq #inputs_wrapper {
-  @apply flex flex-col gap-[24px] mb-[24px] sm:grid sm:grid-cols-2;
 }`;
   fs.writeFileSync(themesPath, content);
 }
@@ -86,28 +78,6 @@ export type ${pascalName}FormLocale = FormLocale<typeof ${camelName}Schema>;
 
 console.log(`📝 Created: ./${tagName}/${path.basename(validationsPath)}`);
 
-// generate structure
-const structurePath = path.join(formLibsPath, 'structure.ts');
-
-if (!fs.existsSync(structurePath)) {
-  const content = `import { ${camelName}ElementNames } from './element-mapper';
-import { FormElementStructure } from '~features/form-hook';
-
-const tiq: FormElementStructure<${camelName}ElementNames> = {
-  tag: 'div',
-  id: 'container',
-  children: [
-    { tag: 'div', id: 'inputs_wrapper', children: ['name', 'phone'] },
-    { name: 'submit', id: 'Submit' },
-  ],
-};
-
-export const ${pascalName}Structures = { tiq };
-`;
-  fs.writeFileSync(structurePath, content);
-}
-console.log(`📝 Created: ./${tagName}/${path.basename(structurePath)}`);
-
 // generate element-mapper
 const elementMapperPath = path.join(formLibsPath, 'element-mapper.tsx');
 
@@ -118,12 +88,14 @@ import { FormElementMapper } from '~features/form-hook';
 
 import { ${pascalName}, ${pascalName}FormLocale, phoneValidator } from './validations';
 
-export const ${camelName}Elements: FormElementMapper<${pascalName}, ${pascalName}FormLocale> = {
-  submit: ({ form, isLoading, props }) => <form-submit {...props} form={form} isLoading={isLoading} />,
+type AdditionalFields = 'submit';
 
-  name: ({ props, form }) => <form-input {...props} form={form} name="name" />,
+export const ${camelName}Elements: FormElementMapper<${pascalName}, ${pascalName}FormLocale, AdditionalFields> = {
+  submit: ({ props }) => <form-submit {...props} />,
 
-  phone: ({ form, props }) => <form-phone-number {...props} form={form} name="phone" defaultValue={phoneValidator.default} validator={phoneValidator} />,
+  name: ({ props }) => <form-input {...props} />,
+
+  phone: ({ props, isLoading }) => <form-phone-number {...props} isLoading={isLoading} defaultValue={phoneValidator.default} validator={phoneValidator} />,
 } as const;
 
 export type ${camelName}ElementNames = keyof typeof ${camelName}Elements;
@@ -138,26 +110,25 @@ const formElementPath = path.join(formsPath, `${tagName}.tsx`);
 if (!fs.existsSync(formElementPath)) {
   const content = `import { Component, Element, Host, Prop, State, Watch, h } from '@stencil/core';
 
-import cn from '~lib/cn';
-import { FormHook } from '~features/form-hook/form-hook';
-
 import ${camelName}Schema from '~locales/forms/${camelName}/type';
 
-import { ${pascalName}Structures } from './${tagName}/structure';
 import { ${camelName}ElementNames, ${camelName}Elements } from './${tagName}/element-mapper';
 import { ${pascalName}, ${pascalName}FormLocale, ${camelName}InputsValidation } from './${tagName}/validations';
 
+import { FormHook } from '~features/form-hook/form-hook';
 import { FormHookInterface, FormElementStructure, gistLoader } from '~features/form-hook';
 import { getLocaleLanguage, getSharedFormLocal, LanguageKeys, MultiLingual, sharedFormLocalesSchema } from '~features/multi-lingual';
+import getLanguageFromUrl from '~lib/get-language-from-url';
+import { fetchJson } from '~lib/fetch-json';
 
 @Component({
-  shadow: false,
+  shadow: true,
   tag: '${tagName}-form',
   styleUrl: '${tagName}/themes.css',
 })
 export class ${pascalName}Form implements FormHookInterface<${pascalName}>, MultiLingual {
   // #region Localization
-  @Prop() language: LanguageKeys = 'en';
+  @Prop({ mutable: true, reflect: true }) language: LanguageKeys = 'en';
 
   @State() locale: ${pascalName}FormLocale = { sharedFormLocales: sharedFormLocalesSchema.getDefault(), ...${camelName}Schema.getDefault() };
 
@@ -167,20 +138,23 @@ export class ${pascalName}Form implements FormHookInterface<${pascalName}>, Mult
 
     this.locale = { ...sharedLocales, ...locale };
 
+    this.localeLanguage = newLanguage;
+
     this.form.rerender({ rerenderAll: true });
   }
   // #endregion
 
   // #region Form Hook logic
-  @State() isLoading: boolean;
   @State() errorMessage: string;
+  @State() isLoading: boolean = false;
+  @State() localeLanguage: LanguageKeys;
 
-  @Prop() theme: string;
   @Prop() gistId?: string;
+  @Prop() structureUrl?: string;
   @Prop() errorCallback: (error: any) => void;
   @Prop() successCallback: (data: any) => void;
   @Prop() loadingChanges: (loading: boolean) => void;
-  @Prop() structure: FormElementStructure<${camelName}ElementNames> | undefined;
+  @Prop({ mutable: true }) structure: FormElementStructure<${camelName}ElementNames> | undefined;
 
   @Element() el: HTMLElement;
 
@@ -199,12 +173,21 @@ export class ${pascalName}Form implements FormHookInterface<${pascalName}>, Mult
   }
 
   async componentWillLoad() {
-    await this.changeLanguage(this.language);
+    this.language = getLanguageFromUrl();
 
-    if (this.structure) return;
-
-    if (this.gistId) this.structure = await gistLoader(this.gistId);
-    else if (this.theme === 'tiq') this.structure = ${pascalName}Structures.tiq;
+    if (this.structure) {
+      await this.changeLanguage(this.language);
+    } else {
+      if (this.gistId) {
+        const [newGistStructure] = await Promise.all([gistLoader(this.gistId), this.changeLanguage(this.language)]);
+        this.structure = newGistStructure as FormElementStructure<${camelName}ElementNames>;
+      } else if (this.structureUrl) {
+        await this.changeLanguage(this.language);
+        const [newGistStructure] = await Promise.all([fetchJson<FormElementStructure<${camelName}ElementNames>>(this.structureUrl), this.changeLanguage(this.language)]);
+        this.structure = newGistStructure;
+      }
+    }
+    this.localeLanguage = this.language;
   }
 
   async formSubmit(formValues: ${pascalName}) {
@@ -217,9 +200,11 @@ export class ${pascalName}Form implements FormHookInterface<${pascalName}>, Mult
 
       this.setSuccessCallback({});
 
+      this.form.openDialog();
       setTimeout(() => {
         this.form.reset();
-      }, 1000);
+        this.form.rerender({ rerenderForm: true, rerenderAll: true });
+      }, 100);
     } catch (error) {
       console.error(error);
 
@@ -233,27 +218,25 @@ export class ${pascalName}Form implements FormHookInterface<${pascalName}>, Mult
   // #region Component Logic
 
   form = new FormHook(this, ${camelName}InputsValidation);
-  
+
   // #endregion
-  
   render() {
     return (
-      <Host
-        class={cn({
-          [${'`'}${tagName}-\${this.theme}${'`'}]: this.theme,
-        })}
-      >
-        <form-structure
-          form={this.form}
-          language={this.language}
-          formLocale={this.locale}
-          structure={this.structure}
-          isLoading={this.isLoading}
-          errorMessage={this.errorMessage}
-          formElementMapper={${camelName}Elements}
-        >
-          <slot></slot>
-        </form-structure>
+      <Host>
+        <div part={${'`'}${tagName}-\${this.structure.data?.theme}${'`'}}>
+          <form-structure
+            form={this.form}
+            formLocale={this.locale}
+            structure={this.structure}
+            isLoading={this.isLoading}
+            language={this.localeLanguage}
+            errorMessage={this.errorMessage}
+            formElementMapper={${camelName}Elements}
+            successMessage={this.locale['Form submitted successfully.']}
+          >
+            <slot></slot>
+          </form-structure>
+        </div>
       </Host>
     );
   }
@@ -263,7 +246,7 @@ export class ${pascalName}Form implements FormHookInterface<${pascalName}>, Mult
 }
 console.log(`📝 Created: ./${path.basename(formElementPath)}`);
 
-// generate html template
+// #region generate html template
 const formTemplatesFolder = path.join(__dirname, '../src/templates/forms');
 
 const newFormTemplatePath = path.join(formTemplatesFolder, `${tagName}.html`);
@@ -274,7 +257,7 @@ if (!fs.existsSync(newFormTemplatePath)) {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>${capitalizeName} Form</title>
+    <title>${pascalName} Form</title>
     <script nomodule src="/build/shift-components.js"></script>
     <script type="module" src="/build/shift-components.esm.js"></script>
   </head>
@@ -302,10 +285,30 @@ if (!fs.existsSync(newFormTemplatePath)) {
     .sample-button:hover {
       background-color: #3071a9;
     }
+
+    #${tagName}-form::part(container) {
+      margin-left: auto;
+      margin-right: auto;
+      max-width: 700px;
+    }
+
+    #${tagName}-form::part(inputs_wrapper) {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    @media (min-width: 640px) {
+      #${tagName}-form::part(inputs_wrapper) {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
   </style>
   <body>
     <a href="#" onclick="history.back()" style="color: blue; display: block; margin-bottom: 16px">Back</a>
-    <h1>${capitalizeName} Form</h1>
+    <h1>${pascalName} Form</h1>
 
     <div class="button-container">
       <button class="sample-button" onclick="updateLang('en')">En</button>
@@ -313,7 +316,6 @@ if (!fs.existsSync(newFormTemplatePath)) {
       <button class="sample-button" onclick="updateLang('ar')">Ar</button>
       <button class="sample-button" onclick="updateLang('ru')">Ru</button>
     </div>
-
 
     <!-- gist-id="" -->
     <${tagName}-form theme="tiq" language="en" id="${tagName}-form"></${tagName}-form>
@@ -324,33 +326,15 @@ if (!fs.existsSync(newFormTemplatePath)) {
       document.addEventListener('DOMContentLoaded', function () {
         ${camelName}Form = document.getElementById('${tagName}-form');
 
-        // ${camelName}Form.structure = {
-        //   tag: 'div',
-        //   id: 'container',
-        //   children: [
-        //   { tag: 'div', id: 'inputs_wrapper', children: ['name', 'phone'] },
-        //   { name: 'submit', id: 'Submit' },
-        //   ]
-        // };
-
-        ${camelName}Form.loadingChanges = loadingChanges;
-
-        ${camelName}Form.successCallback = successCallback;
-
-        ${camelName}Form.errorCallback = errorCallback;
+        ${camelName}Form.structure = {
+          tag: 'div',
+          id: 'container',
+          children: [
+            { tag: 'div', id: 'inputs_wrapper', children: ['name', 'phone'] },
+            { name: 'submit', id: 'Submit' },
+          ],
+        };
       });
-
-      loadingChanges = loading => {
-        console.log(1, loading);
-      };
-
-      successCallback = values => {
-        console.log(2, values);
-      };
-
-      errorCallback = error => {
-        console.log(3, error);
-      };
 
       function updateLang(newLang) {
         ${camelName}Form.language = newLang;
@@ -362,6 +346,7 @@ if (!fs.existsSync(newFormTemplatePath)) {
   fs.writeFileSync(newFormTemplatePath, content);
 }
 console.log(`📝 Created: ${path.basename(newFormTemplatePath)}`);
+//#endregion
 
 const formTemplatesEntryFile = path.join(formTemplatesFolder, 'index.html');
 

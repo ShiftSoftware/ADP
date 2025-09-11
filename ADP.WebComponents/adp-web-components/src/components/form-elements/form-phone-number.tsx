@@ -77,19 +77,19 @@ export class FormPhoneNumber implements FormElement {
 
     return (
       <Host>
-        <label part={part} id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, { disabled: this.isLoading })}>
-          <FormInputLabel isRequired={isRequired} label={label} />
+        <label part={this.name} id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, { disabled: this.isLoading })}>
+          <FormInputLabel name={this.name} isRequired={isRequired} label={label} />
 
-          <div dir="ltr" part="form-input-container" class="form-input-container">
-            <FormInputPrefix direction={locale.direction} prefix={this.inputPrefix} />
+          <div dir="ltr" part={`${this.name}-container form-input-container`} class="form-input-container">
+            <FormInputPrefix name={this.name} direction={locale.direction} prefix={this.inputPrefix} />
 
             <input
               type={this.type}
               name={this.name}
-              part="form-input"
               onInput={this.onInputChange}
               defaultValue={this.defaultValue}
               disabled={disabled || this.isLoading}
+              part={`${this.name}-input form-input`}
               placeholder={placeholder || meta?.placeholder}
               style={{ ...(this.prefixWidth ? { [locale.direction === 'rtl' ? 'paddingRight' : 'paddingLeft']: `${this.prefixWidth}px` } : {}) }}
               class={cn('form-input-style', part, {
@@ -97,7 +97,7 @@ export class FormPhoneNumber implements FormElement {
               })}
             />
           </div>
-          <FormErrorMessage isError={isError} errorMessage={locale[errorMessage] || errorMessage} />
+          <FormErrorMessage name={this.name} isError={isError} errorMessage={locale[errorMessage] || errorMessage} />
         </label>
       </Host>
     );

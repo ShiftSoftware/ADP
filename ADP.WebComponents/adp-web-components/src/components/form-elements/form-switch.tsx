@@ -53,11 +53,11 @@ export class FormSwitch implements FormElement {
 
     return (
       <Host>
-        <div part="form-switch" id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, disabled)}>
-          <div part="form-input-container" class="form-input-container">
+        <div part={`${this.name}`} id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, disabled)}>
+          <div part={`${this.name}-container form-input-container`} class="form-input-container">
             <shift-switch name={this.name} label={label} class="form-switch" />
           </div>
-          <FormErrorMessage isError={isError} errorMessage={locale[errorMessage] || errorMessage} />
+          <FormErrorMessage name={this.name} isError={isError} errorMessage={locale[errorMessage] || errorMessage} />
         </div>
       </Host>
     );

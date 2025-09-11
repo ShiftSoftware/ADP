@@ -17,7 +17,11 @@ export function renderStructure(
     if (tag) {
       const Tag = tag as any;
 
-      return <Tag {...props}>{Array.isArray(children) && children.map(child => renderStructure(child, elementMapper, generaProps))}</Tag>;
+      return (
+        <Tag part={props?.id || ''} {...props}>
+          {Array.isArray(children) && children.map(child => renderStructure(child, elementMapper, generaProps))}
+        </Tag>
+      );
     }
 
     generaProps.props = { wrapperId: props?.id, wrapperClass: props?.class, isLoading: generaProps.isLoading, form: generaProps.form };

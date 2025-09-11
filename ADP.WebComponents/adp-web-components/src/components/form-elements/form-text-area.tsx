@@ -48,27 +48,25 @@ export class FormTextArea implements FormElement {
     const { disabled, isRequired, meta, isError, errorMessage } = this.form.getInputState<FormInputMeta>(this.name);
     const [locale] = this.form.getFormLocale();
 
-    const part = partKeyPrefix + this.name;
-
     const label = getNestedValue(locale, meta?.label) || meta?.label;
     const placeholder = getNestedValue(locale, meta?.placeholder);
 
     return (
       <Host>
-        <label part={part} id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, disabled)}>
-          <FormInputLabel isRequired={isRequired} label={label} />
+        <label part={`${this.name}`} id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, disabled)}>
+          <FormInputLabel name={this.name} isRequired={isRequired} label={label} />
 
-          <div part="form-input-container" class="form-input-container">
+          <div part={`${this.name}-container form-input-container`} class="form-input-container">
             <textarea
               name={this.name}
               placeholder={placeholder}
-              part="form-input-textarea"
+              part={`${this.name}-textarea form-input-textarea`}
               class={cn('form-input-style form-input-textarea-style', {
                 'form-input-error-style': isError,
               })}
             />
           </div>
-          <FormErrorMessage isError={isError} errorMessage={locale[errorMessage] || errorMessage} />
+          <FormErrorMessage name={this.name} isError={isError} errorMessage={locale[errorMessage] || errorMessage} />
         </label>
       </Host>
     );

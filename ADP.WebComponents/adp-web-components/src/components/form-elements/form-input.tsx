@@ -65,17 +65,17 @@ export class FormInput implements FormElement {
 
     return (
       <Host>
-        <label part={part} id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, { disabled: this.isLoading })}>
+        <label part={this.name} id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, { disabled: this.isLoading })}>
           <FormInputLabel isRequired={isRequired} label={label} />
 
-          <div part="form-input-container" class="form-input-container">
-            <FormInputPrefix direction={locale.direction} prefix={this.inputPrefix} />
+          <div part={`${this.name}-container form-input-container`} class="form-input-container">
+            <FormInputPrefix name={this.name} direction={locale.direction} prefix={this.inputPrefix} />
             <input
               type={this.type}
               name={this.name}
-              part="form-input"
               defaultValue={this.defaultValue}
               disabled={disabled || this.isLoading}
+              part={`${this.name}-input form-input`}
               placeholder={placeholder || meta?.placeholder}
               style={{ ...(this.prefixWidth ? { [locale.direction === 'rtl' ? 'paddingRight' : 'paddingLeft']: `${this.prefixWidth}px` } : {}) }}
               class={cn('form-input-style', part, {
@@ -83,7 +83,7 @@ export class FormInput implements FormElement {
               })}
             />
           </div>
-          <FormErrorMessage isError={isError} errorMessage={locale[errorMessage] || errorMessage} />
+          <FormErrorMessage name={this.name} isError={isError} errorMessage={locale[errorMessage] || errorMessage} />
         </label>
       </Host>
     );

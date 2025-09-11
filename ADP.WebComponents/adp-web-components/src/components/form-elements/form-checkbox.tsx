@@ -53,11 +53,11 @@ export class FormCheckbox implements FormElement {
 
     return (
       <Host>
-        <div part="form-checkbox" id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, disabled)}>
-          <div part="form-input-container" class="form-input-container">
+        <div part={this.name} id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, disabled)}>
+          <div part={`${this.name}-container form-input-container`} class="form-input-container">
             <shift-checkbox name={this.name} label={label} class="form-checkbox" />
           </div>
-          <FormErrorMessage isError={isError} errorMessage={locale[errorMessage] || errorMessage} />
+          <FormErrorMessage name={this.name} isError={isError} errorMessage={locale[errorMessage] || errorMessage} />
         </div>
       </Host>
     );

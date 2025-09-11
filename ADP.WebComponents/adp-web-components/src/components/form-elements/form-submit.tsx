@@ -44,8 +44,12 @@ export class FormSubmit implements FormElement {
           loading: this.isLoading,
         })}
       >
-        <div class="opacity-0 form-submit-text-style">{submitText}</div>
-        <div class="form-submit-text-style form-submit-text-position">{submitText}</div>
+        <div part="form-submit-text" class="opacity-0 form-submit-text-style">
+          {submitText}
+        </div>
+        <div part="form-submit-text" class="form-submit-text-style form-submit-text-position">
+          {submitText}
+        </div>
 
         <div part="form-submit-loading-container" class="form-submit-loading-container">
           <img part="form-submit-loading-icon" class="form-submit-loading-icon" src={Loader} />

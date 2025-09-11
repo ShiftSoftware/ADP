@@ -2,10 +2,11 @@ import { h, FunctionalComponent } from '@stencil/core';
 
 type ArrowUpIconProps = {
   class?: string;
+  part?: string;
 };
 
 export const ArrowUpIcon: FunctionalComponent<ArrowUpIconProps> = props => (
-  <svg class={props.class} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor">
+  <svg {...props} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor">
     <path
       fill-rule="evenodd"
       clip-rule="evenodd"

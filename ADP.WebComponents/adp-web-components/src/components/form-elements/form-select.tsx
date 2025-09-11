@@ -15,7 +15,6 @@ import { FormInputLabel } from './components/form-input-label';
 import { FormErrorMessage } from './components/form-error-message';
 import { AddIcon } from '~assets/add-icon';
 
-const partKeyPrefix = 'form-select-';
 @Component({
   shadow: false,
   tag: 'form-select',
@@ -178,8 +177,6 @@ export class FormSelect implements FormElement {
     const { disabled, isRequired, meta, isError, errorMessage } = this.form.getInputState<FormInputMeta>(this.name);
     const [locale] = this.form.getFormLocale();
 
-    const part = partKeyPrefix + this.name;
-
     const label = getNestedValue(locale, meta?.label) || meta?.label;
     const placeholder = getNestedValue(locale, meta?.placeholder) || 'Select an option';
 
@@ -195,16 +192,16 @@ export class FormSelect implements FormElement {
 
     return (
       <Host>
-        <label part={part} id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, { disabled: disableInput })}>
-          <FormInputLabel isRequired={isRequired || this.isRequired} label={label} />
+        <label part={`${this.name}`} id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, { disabled: disableInput })}>
+          <FormInputLabel name={this.name} isRequired={isRequired || this.isRequired} label={label} />
 
           <form-shadow-input name={this.name} form={this.form} value={this.selectedValue} />
 
-          <div part="form-input-container" class={cn('form-input-container', { open: this.isOpen, disableInput })}>
+          <div part={`${this.name}-container form-input-container`} class={cn('form-input-container', { open: this.isOpen, disableInput })}>
             <input
               type="text"
               disabled={disableInput}
-              part="form-input-select"
+              part={`${this.name}-input-select form-input-select`}
               value={this.searchable ? this.searchValue : selectedItem?.label || ''}
               readOnly={!this.searchable}
               onInput={this.onSearchInput}
@@ -215,16 +212,16 @@ export class FormSelect implements FormElement {
               })}
             />
 
-            <div part="form-input-select-icon-container" class="form-input-select-icon-container">
+            <div part={`${this.name}-select-icon-container form-input-select-icon-container`} class="form-input-select-icon-container">
               {(selectedItem || this.searchValue) && this.clearable ? (
-                <AddIcon onClick={this.clearInput} class="form-input-select-icon cross" />
+                <AddIcon part={`${this.name}-cross-icon`} onClick={this.clearInput} class="form-input-select-icon cross" />
               ) : (
-                <ArrowUpIcon class="form-input-select-icon arrow" />
+                <ArrowUpIcon part={`${this.name}-arrow-icon`} class="form-input-select-icon arrow" />
               )}
             </div>
 
             <div
-              part="form-select-container"
+              part={`${this.name}-select-container form-select-container`}
               class={cn('form-select-container', {
                 upwards: this.openUpwards,
                 downwards: !this.openUpwards,
@@ -234,27 +231,27 @@ export class FormSelect implements FormElement {
                 filteredOptions.map(option => (
                   <button
                     type="button"
-                    part="form-select-option"
+                    part={`${this.name}-select-option form-select-option`}
                     onClick={() => this.handleSelection(option)}
                     class={cn('form-select-option', {
                       selected: this.selectedValue === option.value,
                     })}
                   >
-                    <div part="form-select-option-label" class="form-select-option-label">
+                    <div part={`${this.name}-select-option-label form-select-option-label`} class="form-select-option-label">
                       {option.label}
                     </div>
-                    <TickIcon class="form-select-option-tick" />
+                    <TickIcon part={`${this.name}-tick-icon`} class="form-select-option-tick" />
                   </button>
                 ))}
               {!filteredOptions.length && (
-                <div part="form-select-empty-container" class={cn('form-select-empty-container', { error: this.fetchingErrorMessage })}>
+                <div part={`${this.name}-select-empty-container form-select-empty-container`} class={cn('form-select-empty-container', { error: this.fetchingErrorMessage })}>
                   {this.fetchingErrorMessage && (getNestedValue(locale, this.fetchingErrorMessage) || locale.errors.wildCard)}
-                  {!this.fetchingErrorMessage && (this.isFetching ? <img class="form-select-spinner" src={Loader} /> : locale.noSelectOptions)}
+                  {!this.fetchingErrorMessage && (this.isFetching ? <img part={`${this.name}-select-spinner form-select-spinner`} src={Loader} /> : locale.noSelectOptions)}
                 </div>
               )}
             </div>
           </div>
-          <FormErrorMessage isError={isError} errorMessage={locale[errorMessage] || errorMessage} />
+          <FormErrorMessage name={this.name} isError={isError} errorMessage={locale[errorMessage] || errorMessage} />
         </label>
       </Host>
     );
