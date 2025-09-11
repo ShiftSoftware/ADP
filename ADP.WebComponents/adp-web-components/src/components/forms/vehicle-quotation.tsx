@@ -16,7 +16,7 @@ import { fetchJson } from '~lib/fetch-json';
 declare const grecaptcha: Grecaptcha;
 
 @Component({
-  shadow: false,
+  shadow: true,
   tag: 'vehicle-quotation-form',
   styleUrl: 'vehicle-quotation/themes.css',
 })
@@ -181,19 +181,21 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
   // #endregion
   render() {
     return (
-      <Host class={`vehicle-quotation-${this.structure.data?.theme}`}>
-        <form-structure
-          form={this.form}
-          formLocale={this.locale}
-          structure={this.structure}
-          isLoading={this.isLoading}
-          language={this.localeLanguage}
-          errorMessage={this.errorMessage}
-          formElementMapper={vehicleQuotationElements}
-          successMessage={this.locale['Form submitted successfully.']}
-        >
-          <slot></slot>
-        </form-structure>
+      <Host>
+        <div part={`vehicle-quotation-${this.structure.data?.theme}`}>
+          <form-structure
+            form={this.form}
+            formLocale={this.locale}
+            structure={this.structure}
+            isLoading={this.isLoading}
+            language={this.localeLanguage}
+            errorMessage={this.errorMessage}
+            formElementMapper={vehicleQuotationElements}
+            successMessage={this.locale['Form submitted successfully.']}
+          >
+            <slot></slot>
+          </form-structure>
+        </div>
       </Host>
     );
   }

@@ -1,6 +1,5 @@
 import { Component, Element, Host, Prop, State, Watch, h } from '@stencil/core';
 
-import cn from '~lib/cn';
 import { Grecaptcha } from '~lib/recaptcha';
 
 import demoSchema from '~locales/forms/demo/type';
@@ -138,11 +137,7 @@ export class DemoForm implements FormHookInterface<Demo>, MultiLingual {
 
   render() {
     return (
-      <Host
-        class={cn({
-          [`demo-${this.theme}`]: this.theme,
-        })}
-      >
+      <Host class={`demo-${this.theme}`}>
         <form-structure
           form={this.form}
           language={this.language}
