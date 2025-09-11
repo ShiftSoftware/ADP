@@ -1,5 +1,6 @@
 import { h, JSX } from '@stencil/core';
 import { FormElementStructure, FormElementMapper, FormElementMapperFunctionProps } from '~features/form-hook';
+import cn from '~lib/cn';
 
 export function renderStructure(
   structure: FormElementStructure<any> | string,
@@ -18,7 +19,7 @@ export function renderStructure(
       const Tag = tag as any;
 
       return (
-        <Tag part={props?.id || ''} {...props}>
+        <Tag {...props} part={cn(props?.id, props?.class, `element-${tag}`, tag)}>
           {Array.isArray(children) && children.map(child => renderStructure(child, elementMapper, generaProps))}
         </Tag>
       );

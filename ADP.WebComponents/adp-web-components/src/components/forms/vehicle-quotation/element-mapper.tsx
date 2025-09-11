@@ -174,9 +174,9 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Vehic
   },
 
   'vehicleImage': ({ form }) => <VehicleImageViewer form={form} />,
-  'choose': ({ locale }) => <h1 class="section-title">{locale.Choose}</h1>,
-  'current car': ({ locale }) => <h1 class="section-title">{locale['Your current car']}</h1>,
-  'contact information': ({ locale }) => <h1 class="section-title">{locale['Contact Information']}</h1>,
+  'choose': ({ locale }) => <h1 part="section-title">{locale.Choose}</h1>,
+  'current car': ({ locale }) => <h1 part="section-title">{locale['Your current car']}</h1>,
+  'contact information': ({ locale }) => <h1 part="section-title">{locale['Contact Information']}</h1>,
 } as const;
 
 export type vehicleQuotationElementNames = keyof typeof vehicleQuotationElements;
