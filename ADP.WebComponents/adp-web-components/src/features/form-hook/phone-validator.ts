@@ -1,15 +1,18 @@
 import { AsYouType } from 'libphonenumber-js';
 
-export const getPhoneValidator = () => {
+export const getPhoneValidator = (useDefault = true) => {
   const phoneValidator = new AsYouType('IQ') as AsYouType & {
     default: string;
     metadata: {
       numberingPlan: { metadata: [string] };
     };
   };
-  phoneValidator.default = '+' + phoneValidator.metadata.numberingPlan.metadata[0];
 
-  phoneValidator.input(phoneValidator.default);
+  if (useDefault) {
+    phoneValidator.default = '+' + phoneValidator.metadata.numberingPlan.metadata[0];
+
+    phoneValidator.input(phoneValidator.default);
+  }
 
   return phoneValidator;
 };

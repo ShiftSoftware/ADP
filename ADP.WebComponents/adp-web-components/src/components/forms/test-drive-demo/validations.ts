@@ -5,7 +5,7 @@ import { FormInputMeta, getPhoneValidator } from '~features/form-hook';
 
 import testDriveDemoSchema from '~locales/forms/testDriveDemo/type';
 
-export const phoneValidator = getPhoneValidator();
+export const phoneValidator = getPhoneValidator(false);
 
 export const testDriveDemoInputsValidation = object({
   name: string()
