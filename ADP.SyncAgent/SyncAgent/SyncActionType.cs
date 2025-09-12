@@ -5,4 +5,5 @@ public enum SyncActionType
     Add,
     Update,
     Delete,
+    Upsert
 }
