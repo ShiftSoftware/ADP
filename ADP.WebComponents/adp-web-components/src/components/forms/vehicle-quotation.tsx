@@ -86,9 +86,18 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
 
   async formSubmit(formValues: VehicleQuotation) {
     try {
+      console.log('compoennt', this);
+
+      console.log(this.structure?.data);
+
+      console.log('formValues', formValues);
+
       this.setIsLoading(true);
+      console.log('loading:', true);
 
       const nameContactedVehicles = this.structure.data?.nameContactedVehicles;
+
+      console.log('nameContactVehicles:', nameContactedVehicles);
 
       const payload: any = {
         name: formValues.name,
@@ -99,39 +108,53 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
         preferredPaymentMethod: formValues?.paymentType || 'NotSpecified',
       };
 
+      console.log('payload', payload);
       if (nameContactedVehicles) {
+        console.log('named', true);
         payload.vehicle = this['vehicleList'].find(vehicle => `${vehicle.ID}` === formValues.vehicle)?.Title || '';
-
+        console.log('payload.vehicle', payload.vehicle);
+        console.log('own?', formValues?.ownVehicle);
         if (formValues?.ownVehicle === 'yes') {
+          console.log('v-list', this['currentVehiclesList']);
           const currentBrand = this['currentVehiclesList'].find(brand => `${brand.id}` === formValues.currentVehicleBrand) || false;
-
+          console.log('brand', currentBrand);
           let currentModel;
 
           if (currentBrand) currentModel = currentBrand.models.find(model => `${model.id}` === formValues.currentVehicleModel) || false;
-
+          console.log('model', currentModel);
           payload.currentOrTradeInVehicle = `${currentBrand?.name || this.locale.Others} - ${currentModel?.name || this.locale.Others}`;
+          console.log('a----', payload.currentOrTradeInVehicle);
         }
       } else {
         payload.vehicle = formValues.vehicle;
+        console.log('vehicleee', formValues.vehicle);
         payload.additionalData = {
           DoYouOwnAVehicle: formValues?.ownVehicle === 'yes',
         };
+        console.log('payload again', formValues);
         if (formValues?.ownVehicle === 'yes') {
-          payload.additionalData.youCurrentVehicle = formValues.currentVehicleBrand || this.locale.Others;
-          payload.additionalData.vehicleModel = formValues.currentVehicleModel || this.locale.Others;
+          payload.additionalData.yourCurrentVehicle = formValues?.currentVehicleBrand || this.locale.Others;
+          payload.additionalData.vehicleModel = formValues?.currentVehicleModel || this.locale.Others;
+          console.log('111', payload.additionalData.yourCurrentVehicle);
+          console.log('222', payload.additionalData.vehicleModel);
         }
       }
 
       const token = await grecaptcha.execute(this.structure.data?.recaptchaKey, { action: 'submit' });
+      console.log('tokennnn', token);
+      console.log('req url', this.structure.data?.requestUrl);
 
+      const headers = {
+        'Recaptcha-Token': token,
+        'Brand': this.structure.data?.brandId,
+        'Accept-Language': this.localeLanguage || 'en',
+        'Content-Type': 'application/json',
+      };
+
+      console.log('headers', headers);
       const response = await fetch(this.structure.data?.requestUrl, {
+        headers,
         method: 'POST',
-        headers: {
-          'Recaptcha-Token': token,
-          'Brand': this.structure.data?.brandId,
-          'Accept-Language': this.localeLanguage || 'en',
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(payload),
       });
 
