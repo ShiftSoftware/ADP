@@ -8,7 +8,16 @@ Vehicles that are subject to a recall can be looked up by their VIN using the **
 
 
 ## Recalls on **Authorized** Vehicles
-The distributor has precise recall records for Authorized Vehicles. Making the lookup process straightforward by simply checking the database for the VIN.
+The distributor has precise recall records for Authorized Vehicles, making the lookup process straightforward by simply checking the database for the VIN.
+
+In addition to identifying whether a vehicle is affected by a recall, the system also determines whether the recall has been repaired or still requires action.
+This is done through a multi-source repair status check:
+
+- **Inline Data**: If the recall record itself directly indicates that the repair has been completed, this information is used.
+- **Warranty Claims**: The system also checks warranty claims (if available) to confirm completion. This is determined by validating the Labor Operation Code and the presence of the Campaign Code in the warranty notes.
+- **Labor Lines**: As a final step, the system reviews labor lines retrieved from the DMS (if available) for evidence that the recall-related work has been performed.
+
+By combining these sources, the system ensures the most accurate status for each recall. This helps service teams and customers know not just whether a vehicle is affected, but also whether the recall has already been addressed.
 
 
 ## Recalls on **Unauthorized** Vehicles
