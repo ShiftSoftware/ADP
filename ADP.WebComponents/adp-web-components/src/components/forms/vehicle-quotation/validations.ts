@@ -24,9 +24,7 @@ export const vehicleQuotationInputsValidation = object({
     .required('Dealer is required'),
   paymentType: string().meta({ label: 'Preferred purchasing method', placeholder: 'Select the purchasing method' } as FormInputMeta),
   contactTime: string().meta({ label: 'Preferred contact time', placeholder: 'Please select a time' } as FormInputMeta),
-  ownVehicle: string()
-    .meta({ label: 'Do you own a vehicle?', placeholder: 'Do you own a vehicle?' } as FormInputMeta)
-    .required('Please answer this field'),
+  ownVehicle: string().meta({ label: 'Do you own a vehicle?', placeholder: 'Do you own a vehicle?' } as FormInputMeta),
   currentVehicleBrand: string()
     .meta({ label: 'Your current vehicle', placeholder: 'Your current vehicle' } as FormInputMeta)
     .when('ownVehicle', {
