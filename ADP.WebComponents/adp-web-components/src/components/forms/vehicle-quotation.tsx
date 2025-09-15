@@ -106,7 +106,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
           let currentModel;
 
           if (currentBrand) currentModel = currentBrand.models.find(model => `${model.id}` === formValues.currentVehicleModel) || false;
-          payload.currentOrTradeInVehicle = `${currentBrand?.name || this.locale.Others} - ${currentModel?.name || this.locale.Others}`;
+          payload.currentOrTradeInVehicle = `${currentBrand?.name || this.locale.Other} - ${currentModel?.name || this.locale.Other}`;
         }
       } else {
         payload.vehicle = formValues.vehicle;
@@ -114,8 +114,8 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
           DoYouOwnAVehicle: formValues?.ownVehicle === 'yes',
         };
         if (formValues?.ownVehicle === 'yes') {
-          payload.additionalData.yourCurrentVehicle = formValues?.currentVehicleBrand || this.locale.Others;
-          payload.additionalData.vehicleModel = formValues?.currentVehicleModel || this.locale.Others;
+          payload.additionalData.yourCurrentVehicle = formValues?.currentVehicleBrand || this.locale.Other;
+          payload.additionalData.vehicleModel = formValues?.currentVehicleModel || this.locale.Other;
         }
       }
 

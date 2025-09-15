@@ -117,9 +117,9 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Vehic
     const fetcher: FormSelectFetcher<VehicleQuotationFormLocale> = async ({ signal }): Promise<FormSelectItem[]> => {
       const currentVehiclesEndpoint = form.context.structure?.data.currentVehiclesApi as string;
 
-      const response = await fetch(currentVehiclesEndpoint, { signal, headers: { 'Accept-Language': language } });
+      const response = await fetch(currentVehiclesEndpoint, { signal, headers: { 'Accept-Language': 'en' } });
 
-      form.context['currentVehiclesList'] = await response.json();
+      form.context['currentVehiclesList'] = (await response.json()).filter(vehicle => vehicle.name !== 'Other');
 
       return [
         ...form.context['currentVehiclesList'].map(vehicle => ({
@@ -127,8 +127,8 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Vehic
           value: `${vehicle.id}`,
         })),
         {
-          value: 'others',
-          label: locale.Others,
+          value: 'Other',
+          label: locale.Other,
         },
       ] as FormSelectItem[];
     };
@@ -153,8 +153,8 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Vehic
       return [
         ...selectedBrand?.models.map(model => ({ label: model.name, value: `${model.id}` })),
         {
-          value: 'others',
-          label: locale.Others,
+          value: 'Other',
+          label: locale.Other,
         },
       ] as FormSelectItem[];
     };
@@ -167,8 +167,8 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Vehic
         language={language}
         resetKey={currentVehicleBrand}
         fetcherKey={currentVehicleBrand}
-        isRequired={ownVehicle && currentVehicleBrand !== 'others'}
-        isDisabled={!currentVehicleBrand || currentVehicleBrand === 'others'}
+        isRequired={ownVehicle && currentVehicleBrand !== 'Other'}
+        isDisabled={!currentVehicleBrand || currentVehicleBrand === 'Other'}
       />
     );
   },

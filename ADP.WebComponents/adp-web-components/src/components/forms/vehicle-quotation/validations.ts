@@ -35,7 +35,7 @@ export const vehicleQuotationInputsValidation = object({
   currentVehicleModel: string()
     .meta({ label: 'Vehicle Model', placeholder: 'Vehicle Model' } as FormInputMeta)
     .when(['ownVehicle', 'currentVehicleBrand'], {
-      is: (ownVehicle: string, brand: string) => ownVehicle === 'yes' && brand !== 'others',
+      is: (ownVehicle: string, brand: string) => ownVehicle === 'yes' && brand !== 'Other',
       then: schema => schema.required('Please answer this field'),
       otherwise: schema => schema.optional(),
     }),

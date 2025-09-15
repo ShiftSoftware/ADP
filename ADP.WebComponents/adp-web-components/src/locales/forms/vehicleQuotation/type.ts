@@ -26,7 +26,7 @@ const vehicleQuotationSchema = yupTypeMapper([
   'No',
   'Your current vehicle',
   'Vehicle Model',
-  'Others',
+  'Other',
   'Form submitted successfully.',
   'Preferred contact time',
   'Please select a time',
