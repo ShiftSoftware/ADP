@@ -50,6 +50,11 @@ public class StockPartModel:
     public string ItemType => ModelTypes.StockPart;
 
 
+    /// <summary>
+    /// The type of sale. (e.g. Internal, Bulk, Retail, etc.)
+    /// </summary>
+    public string SaleType { get; set; }
+
     [DocIgnore]
     public string CompanyID { get; set; }
 
