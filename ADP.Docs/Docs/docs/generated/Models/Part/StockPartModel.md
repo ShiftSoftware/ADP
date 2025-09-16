@@ -8,9 +8,9 @@ Refers to a Part in a Stock (Warehouse)
 |----------|---------|
 | PartNumber <div><strong>``string``</strong></div> | The Unique Part Number |
 | Location <div><strong>``string``</strong></div> | The Warehouse/Location Identifier where the part is stored. |
-| AvailableQuantity <div><strong>``decimal``</strong></div> | The current AvailableQuantity of the part in the stock. |
-| OnHandQuantity <div><strong>``decimal``</strong></div> | The current on-hand quantity of the part in the stock |
-| OnOrderQauntity <div><strong>``decimal``</strong></div> |  |
+| AvailableQuantity <div><strong>``decimal?``</strong></div> | The current AvailableQuantity of the part in the stock. |
+| OnHandQuantity <div><strong>``decimal?``</strong></div> | The current on-hand quantity of the part in the stock |
+| OnOrderQauntity <div><strong>``decimal?``</strong></div> |  |
 | InventoryDate <div><strong>``DateTimeOffset?``</strong></div> |  |
 | LastSoldDate <div><strong>``DateTimeOffset?``</strong></div> |  |
 | LastArrivedDate <div><strong>``DateTimeOffset?``</strong></div> |  |

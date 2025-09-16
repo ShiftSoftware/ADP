@@ -27,14 +27,14 @@ public class StockPartModel:
     /// <summary>
     /// The current AvailableQuantity of the part in the stock.
     /// </summary>
-    public decimal AvailableQuantity { get; set; }
+    public decimal? AvailableQuantity { get; set; }
 
     /// <summary>
     /// The current on-hand quantity of the part in the stock
     /// </summary>
-    public decimal OnHandQuantity { get; set; }
+    public decimal? OnHandQuantity { get; set; }
 
-    public decimal OnOrderQauntity { get; set; }
+    public decimal? OnOrderQauntity { get; set; }
 
     public DateTimeOffset? InventoryDate { get; set; }
 
