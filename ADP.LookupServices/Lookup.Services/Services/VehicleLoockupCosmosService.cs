@@ -154,16 +154,19 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
             .Where(x => !(x?.IsDeleted ?? false)).ToList();
 
         companyData.FreeServiceItemExcludedVINs = items.Where(x => x.ItemType.ToString() == ModelTypes.FreeServiceItemExcludedVIN)
-            .Select(x => ((JObject)x).ToObject<FreeServiceItemExcludedVINModel>()).ToList();
+            .Select(x => ((JObject)x).ToObject<FreeServiceItemExcludedVINModel>())
+            .Where(x => !(x?.IsDeleted ?? false)).ToList();
 
         companyData.FreeServiceItemDateShifts = items.Where(x => x.ItemType.ToString() == ModelTypes.FreeServiceItemDateShift)
-            .Select(x => ((JObject)x).ToObject<FreeServiceItemDateShiftModel>()).ToList();
+            .Select(x => ((JObject)x).ToObject<FreeServiceItemDateShiftModel>())
+            .Where(x => !(x?.IsDeleted ?? false)).ToList();
 
         companyData.PaintThicknessInspections = items.Where(x => x.ItemType.ToString() == ModelTypes.PaintThicknessInspection)
             .Select(x => ((JObject)x).ToObject<PaintThicknessInspectionModel>());
 
         companyData.WarrantyDateShifts = items.Where(x => x.ItemType.ToString() == ModelTypes.WarrantyDateShift)
-            .Select(x => ((JObject)x).ToObject<WarrantyDateShiftModel>()).ToList();
+            .Select(x => ((JObject)x).ToObject<WarrantyDateShiftModel>())
+            .Where(x => !(x?.IsDeleted ?? false)).ToList();
 
         companyData.Accessories = items.Where(x => x.ItemType.ToString() == ModelTypes.VehicleAccessory)
             .Select(x => ((JObject)x).ToObject<VehicleAccessoryModel>()).ToList();
