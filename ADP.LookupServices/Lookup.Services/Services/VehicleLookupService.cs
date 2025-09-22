@@ -646,7 +646,7 @@ public class VehicleLookupService
             var eligibleServiceItems = serviceItems.Where(x => !(x.IsDeleted));
 
             // Brand
-            eligibleServiceItems = eligibleServiceItems.Where(x => vehicle is null || x.Brands.Any(a => a == vehicle.Brand));
+            eligibleServiceItems = eligibleServiceItems.Where(x => vehicle is null || x.BrandIDs.Any(a => a == vehicle.BranchID));
 
             // Company
             eligibleServiceItems = eligibleServiceItems.Where(x => x.CompanyIDs is null || x.CompanyIDs.Count() == 0 || vehicle is null || x.CompanyIDs.Any(a => a == vehicle?.CompanyID));
