@@ -26,8 +26,9 @@ public class OrderPartLineModel:
     /// </summary>
     public string LineID { get; set; }
 
+    public string ItemStatus { get; set; }
     public string OrderStatus { get; set; }
-    public string LoadStatus { get; set; }
+    public string InvoiceStatus { get; set; }
 
     /// <summary>
     /// The date at which this line was invoiced.

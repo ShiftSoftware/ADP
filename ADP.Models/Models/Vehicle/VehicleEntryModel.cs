@@ -11,7 +11,8 @@ public class VehicleEntryModel :
     IRegionProps, 
     IBranchProps, 
     IOrderDocumentProps, 
-    IInvoiceProps
+    IInvoiceProps,
+    IOrderLineProps
 {
     public string id { get; set; }
     public Brands Brand { get; set; }
@@ -46,7 +47,6 @@ public class VehicleEntryModel :
     public string OrderStatus { get; set; }
     public string Location { get; set; }
     public Currencies? InvoiceCurrency { get; set; }
-    public string LoadStatus { get; set; }
     public string LineID { get; set; }
     public DateTime? LoadDate { get; set; }
     public DateTime? PostDate { get; set; }
@@ -56,5 +56,12 @@ public class VehicleEntryModel :
     /// </summary>
     public IEnumerable<string> EligibleServiceItemUniqueReferences { get; set; }
     public string ItemType => ModelTypes.VehicleEntry;
+
+
     public string OrderDocumentNumber { get; set; }
+    public decimal? OrderQuantity { get; set; }
+    public decimal? SoldQuantity { get; set; }
+    public decimal? ExtendedPrice { get; set; }
+    public string ItemStatus { get; set; }
+    public string InvoiceStatus { get; set; }
 }

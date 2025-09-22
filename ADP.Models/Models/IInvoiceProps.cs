@@ -8,6 +8,7 @@ internal interface IInvoiceProps
     public DateTime? InvoiceDate { get; set; }
     public string InvoiceNumber { get; set; }
     public Currencies? InvoiceCurrency { get; set; }
+    public string InvoiceStatus { get; set; }
     public string AccountNumber { get; set; }
     public string CustomerAccountNumber { get; set; }
     public string CustomerID { get; set; }

@@ -26,3 +26,4 @@ A Service Invoice or a Counter Sale Parts Invoice.
 | PartLineCount <div><strong>``int?``</strong></div> |  |
 | NextServiceDate <div><strong>``DateTime?``</strong></div> |  |
 | ItemType <div><strong>``string``</strong></div> |  |
+| InvoiceStatus <div><strong>``string``</strong></div> |  |

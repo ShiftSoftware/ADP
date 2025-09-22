@@ -10,9 +10,14 @@ namespace ShiftSoftware.ADP.Models;
 public interface IOrderLineProps
 {
     public string LineID { get; set; }
+    public decimal? OrderQuantity { get; set; }
     public decimal? SoldQuantity { get; set; }
     public decimal? ExtendedPrice { get; set; }
-    public string LoadStatus { get; set; }
+
+    /// <summary>
+    /// The Physical Status of the Item. It could be a Vehicle or a Part. This will indicate statuses such as: Reserved, In Transit ...etc
+    /// </summary>
+    public string ItemStatus { get; set; }
     public string OrderStatus { get; set; }
     public DateTime? LoadDate { get; set; }
     public DateTime? PostDate { get; set; }

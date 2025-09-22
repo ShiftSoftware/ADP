@@ -35,4 +35,6 @@ public class InvoiceModel:
     public int? PartLineCount { get; set; }
     public DateTime? NextServiceDate { get; set; }
     public string ItemType => ModelTypes.Invoice;
+
+    public string InvoiceStatus { get; set; }
 }

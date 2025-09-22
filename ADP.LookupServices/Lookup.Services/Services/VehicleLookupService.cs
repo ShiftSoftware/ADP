@@ -544,7 +544,7 @@ public class VehicleLookupService
                 var labor = labors?.OrderByDescending(s => s.InvoiceDate)
                     .FirstOrDefault(s =>
                     (s.LaborCode.Equals(x.LaborCode1) || s.LaborCode.Equals(x.LaborCode2) || s.LaborCode.Equals(x.LaborCode3)) &&
-                    (s.OrderStatus.Equals("X") || s.LoadStatus.Equals("C"))
+                    (s.InvoiceStatus.Equals("X") || s.InvoiceStatus.Equals("C"))
                 );
 
                 if (labor is not null)
