@@ -16,7 +16,7 @@
   "Preferred purchasing method": "شێوازی کڕین کە تۆ پێت باشە",
   "Select the purchasing method": "تکایە شێوازی کڕین هەڵبژێرە",
   "Cash": "کاش",
-  "Flexible": "قیست",
+  "Flexible": "هەریەکێکیان",
   "Your current car": "زانیاری دەربارەی ئۆتۆمبێلی ئێستات",
   "Do you own a vehicle?": "ئایا تۆ خاوەنی ئۆتۆمبێلیت؟",
   "Please answer this field": "تکایە وەڵامی ئەم بەشە بدەنەوە",
@@ -30,5 +30,6 @@
   "Please select a time": "تکایە کاتێک هەڵبژێرە",
   "Morning": "بەیانی",
   "Noon": "نیوەڕۆ",
-  "Afternoon": "دوای نیوەڕۆ"
+  "Afternoon": "دوای نیوەڕۆ",
+  "Installments": "قیست"
 }

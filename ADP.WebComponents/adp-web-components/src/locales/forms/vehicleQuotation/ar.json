@@ -16,7 +16,7 @@
   "Preferred purchasing method": "طريقة الشراء التي تفضلها",
   "Select the purchasing method": "الرجاء تحديد طريقة الشراء",
   "Cash": "نقداً",
-  "Flexible": "أقساط",
+  "Flexible": "غير محدد",
   "Your current car": "معلومات عن سيارتك الحالية",
   "Do you own a vehicle?": "هل تمتلك سيارة حالياً؟",
   "Please answer this field": "الرجاء الإجابة على هذا الحقل",
@@ -30,5 +30,6 @@
   "Please select a time": "الرجاء تحديد الوقت",
   "Morning": "صباح",
   "Noon": "الظهر",
-  "Afternoon": "بعد الظهر"
+  "Afternoon": "بعد الظهر",
+  "Installments": "أقساط"
 }

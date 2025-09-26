@@ -63,6 +63,10 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Vehic
           label: locale?.Cash,
         },
         {
+          value: 'InstallmentsPaymentPlan',
+          label: locale.Installments,
+        },
+        {
           value: 'FlexiblePaymentPlan',
           label: locale.Flexible,
         },

@@ -6,6 +6,8 @@ import { execSync } from 'child_process';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// yarn update:locale vehicle-quotation ./forms -name "" -en "" -ar "" -ku ""
+
 function setNestedKey(obj, keyPath, value) {
   const keys = keyPath.split('.');
   let current = obj;
@@ -32,11 +34,11 @@ function getArg(flag) {
 const targetFile = args[0]; // e.g. vehicle-quotation
 if (!targetFile) console.error('❌ Missing required arguments: target file (e.g. vehicle-quotation)');
 
-const targetFolderPath = args[1]; // e.g. vehicle-quotation
+const targetFolderPath = args[1]; // e.g. ./forms
 if (!targetFolderPath) console.error('❌ Missing required arguments: target folder path relative to locales folder (e.g. ./forms)');
 
-const keyPath = getArg('-key'); // e.g. form.phone
-if (!keyPath) console.error('❌ Missing required arguments: -key');
+const keyPath = getArg('-name'); // e.g. form.phone
+if (!keyPath) console.error('❌ Missing required arguments: -name');
 
 const enValue = getArg('-en'); // required english language
 if (!enValue) console.error('❌ Missing required arguments: -en');
@@ -67,4 +69,4 @@ for (const lang of languages) {
   console.log(`✅ Updated ${targetFileLang} with ${keyPath} = "${value}"`);
 }
 
-execSync(`yarn create:type ${targetFolderPath}/${targetFile}`, { stdio: 'inherit' });
+execSync(`yarn create:type ${targetFolderPath}/${camelName}`, { stdio: 'inherit' });

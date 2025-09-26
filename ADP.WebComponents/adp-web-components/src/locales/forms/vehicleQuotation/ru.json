@@ -16,7 +16,7 @@
   "Preferred purchasing method": "Предпочтительный способ покупки",
   "Select the purchasing method": "Выберите способ покупки",
   "Cash": "наличными",
-  "Flexible": "рассрочка",
+  "Flexible": "Flexible",
   "Your current car": "Ваш текущий автомобиль",
   "Do you own a vehicle?": "У вас есть собственное транспортное средство?",
   "Please answer this field": "Пожалуйста, ответьте на это поле",
@@ -30,5 +30,6 @@
   "Please select a time": "Пожалуйста, выберите время",
   "Morning": "утро",
   "Noon": "Полдень",
-  "Afternoon": "Полдень"
+  "Afternoon": "Полдень",
+  "Installments": "Installments"
 }
