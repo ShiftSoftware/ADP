@@ -51,7 +51,7 @@ export class FormInput {
       <Host>
         <div
           part="form-dialog-modal"
-          dir={locale.direction}
+          dir={locale.sharedFormLocales.direction}
           class={cn('dialog-drop-container', {
             'opened-dialog-drop-container dialog-blur': this.isOpened,
             'error': this.isError,

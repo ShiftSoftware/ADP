@@ -20,7 +20,7 @@ export type ComponentLocale<T extends AnyObjectSchema> = {
   sharedLocales?: SharedLocales;
 } & InferType<T>;
 
-export const sharedFormLocalesSchema = object({}).concat(globalSchema).concat(formsSchema);
+export const sharedFormLocalesSchema = object({}).concat(globalSchema).concat(formsSchema).concat(errorsSchema);
 
 export type SharedFormLocales = InferType<typeof sharedFormLocalesSchema>;
 

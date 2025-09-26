@@ -30,7 +30,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
   async changeLanguage(newLanguage: LanguageKeys) {
     const [sharedLocales, locale] = await Promise.all([getSharedFormLocal(newLanguage), getLocaleLanguage(newLanguage, 'forms.vehicleQuotation', vehicleQuotationSchema)]);
 
-    this.locale = { ...sharedLocales, ...locale };
+    this.locale = { sharedFormLocales: sharedLocales, ...locale };
 
     this.localeLanguage = newLanguage;
 
@@ -58,7 +58,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
   }
 
   setErrorCallback(error: any) {
-    if (error?.message) this.errorMessage = error.message;
+    this.errorMessage = error.message || this.locale?.sharedFormLocales?.errors?.wildCard || '';
     if (this.errorCallback) this.errorCallback(error);
   }
 

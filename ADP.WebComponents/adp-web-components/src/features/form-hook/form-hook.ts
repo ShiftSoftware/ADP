@@ -88,7 +88,7 @@ export class FormHook<T> {
 
   getFormErrors = () => this.formErrors;
 
-  getFormLocale = (): [SharedFormLocales, LanguageKeys] => [this.context.locale, this.context.language];
+  getFormLocale = (): [{ sharedFormLocales: SharedFormLocales }, LanguageKeys] => [this.context.locale, this.context.language];
 
   setCachedValues = (newValues: Partial<T>) => {
     this.cachedValues = newValues;

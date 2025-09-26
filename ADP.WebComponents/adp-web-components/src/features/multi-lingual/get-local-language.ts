@@ -18,9 +18,13 @@ export async function getSharedLocal(languageKey: LanguageKeys): Promise<SharedL
 }
 
 export async function getSharedFormLocal(languageKey: LanguageKeys): Promise<SharedFormLocales> {
-  const [globalKeys, sharedFormKeys] = await Promise.all([getLocaleLanguage(languageKey, '-', globalSchema), getLocaleLanguage(languageKey, 'forms*', formsSchema)]);
+  const [errors, globalKeys, sharedFormKeys] = await Promise.all([
+    getLocaleLanguage(languageKey, 'errors', errorsSchema),
+    getLocaleLanguage(languageKey, '-', globalSchema),
+    getLocaleLanguage(languageKey, 'forms*', formsSchema),
+  ]);
 
-  return { ...globalKeys, ...sharedFormKeys };
+  return { ...globalKeys, ...sharedFormKeys, ...errors };
 }
 
 export async function getLocaleLanguage<T extends ObjectSchema<any>>(languageKey: LanguageKeys, component: LocaleKeyEntries, schema: T): Promise<InferType<T>> {

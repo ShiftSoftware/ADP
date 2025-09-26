@@ -69,7 +69,7 @@ export class FormInput implements FormElement {
           <FormInputLabel isRequired={isRequired} label={label} />
 
           <div part={`${this.name}-container form-input-container`} class="form-input-container">
-            <FormInputPrefix name={this.name} direction={locale.direction} prefix={this.inputPrefix} />
+            <FormInputPrefix name={this.name} direction={locale.sharedFormLocales.direction} prefix={this.inputPrefix} />
             <input
               type={this.type}
               name={this.name}
@@ -77,7 +77,7 @@ export class FormInput implements FormElement {
               disabled={disabled || this.isLoading}
               part={`${this.name}-input form-input`}
               placeholder={placeholder || meta?.placeholder}
-              style={{ ...(this.prefixWidth ? { [locale.direction === 'rtl' ? 'paddingRight' : 'paddingLeft']: `${this.prefixWidth}px` } : {}) }}
+              style={{ ...(this.prefixWidth ? { [locale.sharedFormLocales.direction === 'rtl' ? 'paddingRight' : 'paddingLeft']: `${this.prefixWidth}px` } : {}) }}
               class={cn('form-input-style', part, {
                 'form-input-error-style': isError,
               })}
