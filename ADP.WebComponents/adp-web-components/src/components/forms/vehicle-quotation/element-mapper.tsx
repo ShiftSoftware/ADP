@@ -63,11 +63,11 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Vehic
           label: locale?.Cash,
         },
         {
-          value: 'InstallmentsPaymentPlan',
+          value: 'Installments',
           label: locale.Installments,
         },
         {
-          value: 'FlexiblePaymentPlan',
+          value: 'Flexible',
           label: locale.Flexible,
         },
       ] as FormSelectItem[];
