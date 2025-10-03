@@ -9,7 +9,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
 {
     public interface IVehicleLoockupCosmosService
     {
-        Task<BrokerModel> GetBrokerAsync(string accountNumber, string companyIntegrationID);
+        Task<BrokerModel> GetBrokerAsync(string accountNumber, long? companyID);
         Task<BrokerModel> GetBrokerAsync(long id);
         Task<CompanyDataAggregateCosmosModel> GetAggregatedCompanyData(string vin);
         Task<CompanyDataAggregateCosmosModel> GetAggregatedCompanyData(IEnumerable<string> vins, IEnumerable<string> itemTypes);

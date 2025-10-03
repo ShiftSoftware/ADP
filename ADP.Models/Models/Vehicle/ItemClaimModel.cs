@@ -6,9 +6,9 @@ public class ItemClaimModel : IPartitionedItem, ICompanyProps, IBranchProps
 {
     public string id { get; set; }
     public string VIN { get; set; } = default!;
-    public string CompanyID { get; set; }
+    public long? CompanyID { get; set; }
     public string CompanyHashID { get; set; }
-    public string BranchID { get; set; }
+    public long? BranchID { get; set; }
     public string BranchHashID { get; set; }
     public DateTimeOffset ClaimDate { get; set; }
     public bool IsDeleted { get; set; }

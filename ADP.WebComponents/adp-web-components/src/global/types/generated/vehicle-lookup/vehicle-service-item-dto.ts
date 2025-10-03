@@ -24,7 +24,6 @@ export type VehicleServiceItemDTO = {
     modelCostID?: number;
     serviceItemID: number;
     paidServiceInvoiceLineID?: number;
-    companyID: string;
     companyName: string;
     invoiceNumber: string;
     jobNumber: string;

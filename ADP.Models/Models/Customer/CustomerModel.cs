@@ -10,7 +10,7 @@ public class CustomerModel :
     public string GoldenCustomerID { get; set; } //Will be assigned a corresponding GoldenCustomerID
     public string CustomerID { get; set; } // The original customer ID from dealer system
     public string ItemType => ModelTypes.DealerCustomer;
-    public string CompanyID { get; set; }
+    public long? CompanyID { get; set; }
     public string CompanyHashID { get; set; }
 }
 

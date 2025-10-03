@@ -261,8 +261,8 @@ public class VehicleLookupService
                     ServiceType = serviceType,
                     ServiceDate = x.InvoiceDate,
                     Mileage = x.Mileage,
-                    CompanyID = x.CompanyID,
-                    BranchID = x.BranchID,
+                    //CompanyID = x.CompanyID,
+                    //BranchID = x.BranchID,
                     AccountNumber = x.AccountNumber,
                     InvoiceNumber = x.InvoiceNumber,
                     JobNumber = x.OrderDocumentNumber,
@@ -375,7 +375,7 @@ public class VehicleLookupService
             Color = vehicle.ExteriorColorCode,
             Trim = vehicle.InteriorColorCode,
             Brand = vehicle.Brand,
-            BrandID = vehicle.BrandID
+            //BrandID = vehicle.BrandID
         };
     }
 
@@ -397,12 +397,12 @@ public class VehicleLookupService
         result.Location = vsData.Location;
         result.SaleType = vsData.SaleType;
         result.AccountNumber = vsData.AccountNumber;
-        result.RegionID = vsData.RegionID;
+        //result.RegionID = vsData.RegionID;
 
         result.InvoiceNumber = vsData?.InvoiceNumber;
         result.InvoiceTotal = vsData?.InvoiceTotal ?? 0;
-        result.CompanyID = vsData?.CompanyID;
-        result.BranchID = vsData?.BranchID;
+        //result.CompanyID = vsData?.CompanyID;
+        //result.BranchID = vsData?.BranchID;
 
         result.CustomerID = vsData?.CustomerID;
         result.CustomerAccountNumber = vsData?.CustomerAccountNumber;
@@ -413,7 +413,7 @@ public class VehicleLookupService
 
             if (countryResult is not null)
             {
-                result.CountryID = countryResult.Value.countryID;
+                result.CountryID = countryResult.Value.countryID?.ToString();
                 result.CountryName = countryResult.Value.countryName;
             }
         }
@@ -646,10 +646,10 @@ public class VehicleLookupService
             var eligibleServiceItems = serviceItems.Where(x => !(x.IsDeleted));
 
             // Brand
-            eligibleServiceItems = eligibleServiceItems.Where(x => vehicle is null || x.BrandIDs.Any(a => a == vehicle.BranchID));
+            eligibleServiceItems = eligibleServiceItems.Where(x => vehicle is null || x.BrandIDs.Any(a => a == vehicle.BranchID.ToString()));
 
             // Company
-            eligibleServiceItems = eligibleServiceItems.Where(x => x.CompanyIDs is null || x.CompanyIDs.Count() == 0 || vehicle is null || x.CompanyIDs.Any(a => a == vehicle?.CompanyID));
+            eligibleServiceItems = eligibleServiceItems.Where(x => x.CompanyIDs is null || x.CompanyIDs.Count() == 0 || vehicle is null || x.CompanyIDs.Any(a => a == vehicle?.CompanyID.ToString()));
 
             // Country
             eligibleServiceItems = eligibleServiceItems.Where(x => x.CountryIDs is null || x.CountryIDs.Count() == 0 || vehicle is null || x.CountryIDs.Any(a => a == vehicleSaleInformation?.CountryID));
@@ -896,7 +896,7 @@ public class VehicleLookupService
             return date;
     }
 
-    private (string statusText, VehcileServiceItemStatuses status, DateTimeOffset? claimDate, string wip, string invoice, string companyID, string packageCode)
+    private (string statusText, VehcileServiceItemStatuses status, DateTimeOffset? claimDate, string wip, string invoice, long? companyID, string packageCode)
     ProcessServiceItemStatus(
         VehicleServiceItemDTO item,
         IEnumerable<ItemClaimModel> serviceClaimLines,
@@ -966,11 +966,11 @@ public class VehicleLookupService
                 ClaimDate = claimLine?.ClaimDate,
                 InvoiceNumber = claimLine?.InvoiceNumber,
                 JobNumber = claimLine?.JobNumber,
-                CompanyID = claimLine?.CompanyID,
+                //CompanyID = claimLine?.CompanyID,
                 MaximumMileage = item.MaximumMileage
             };
 
-            if (!string.IsNullOrWhiteSpace(claimLine?.CompanyID) && options.CompanyNameResolver is not null)
+            if (claimLine.CompanyID != null && claimLine.CompanyID != 0 && options.CompanyNameResolver is not null)
                 serviceItem.CompanyName = await options.CompanyNameResolver(new(claimLine?.CompanyID, languageCode, services));
 
             result.Add(serviceItem);
@@ -1092,10 +1092,10 @@ public class VehicleLookupService
             item.ClaimDate = statusResult.claimDate;
             item.JobNumber = statusResult.wip;
             item.InvoiceNumber = statusResult.invoice;
-            item.CompanyID = statusResult.companyID;
+            //item.CompanyID = statusResult.companyID;
             item.PackageCode = statusResult.packageCode ?? item.PackageCode;
 
-            if(!string.IsNullOrWhiteSpace(statusResult.companyID) && options.CompanyNameResolver is not null)
+            if (statusResult.companyID != null && statusResult.companyID != 0 && options.CompanyNameResolver is not null)
                 item.CompanyName = await options.CompanyNameResolver(new(statusResult.companyID, languageCode, services));
         }
     }

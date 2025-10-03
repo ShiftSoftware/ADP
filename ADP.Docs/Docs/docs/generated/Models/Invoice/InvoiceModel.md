@@ -8,9 +8,9 @@ A Service Invoice or a Counter Sale Parts Invoice.
 |----------|---------|
 | id <div><strong>``string``</strong></div> |  |
 | OrderDocumentNumber <div><strong>``string``</strong></div> |  |
-| CompanyID <div><strong>``string``</strong></div> |  |
+| CompanyID <div><strong>``long?``</strong></div> |  |
 | CompanyHashID <div><strong>``string``</strong></div> |  |
-| BranchID <div><strong>``string``</strong></div> |  |
+| BranchID <div><strong>``long?``</strong></div> |  |
 | BranchHashID <div><strong>``string``</strong></div> |  |
 | VIN <div><strong>``string``</strong></div> |  |
 | InvoiceDate <div><strong>``DateTime?``</strong></div> |  |

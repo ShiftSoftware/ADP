@@ -8,7 +8,7 @@ public class FreeServiceItemDateShiftModel : IPartitionedItem, ICompanyProps
     public string VIN { get; set; }
     public DateTime NewDate { get; set; }
     public string ItemType => ModelTypes.FreeServiceItemDateShift;
-    public string CompanyID { get; set; }
+    public long? CompanyID { get; set; }
     public string CompanyHashID { get; set; }
     public bool IsDeleted { get; set; }
 }

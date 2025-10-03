@@ -6,8 +6,6 @@ export type VehicleServiceHistoryDTO = {
     mileage?: number;
     companyName: string;
     branchName: string;
-    companyID: string;
-    branchID: string;
     accountNumber: string;
     invoiceNumber: string;
     jobNumber: string;

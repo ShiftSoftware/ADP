@@ -9,7 +9,7 @@ public class TBP_BrokerModel : IRegionProps
     public string Name { get; set; }
     public bool IsDeleted { get; set; }
     public IEnumerable<TBP_BrokerAccountNumberModel> AccountNumbers { get; set; }
-    public string RegionID { get; set; }
+    public long? RegionID { get; set; }
     public string RegionHashID { get; set; }
     public IEnumerable<TBP_BrokerBrokerBrandAccessModel> BrandAccesses { get; set; }
 }

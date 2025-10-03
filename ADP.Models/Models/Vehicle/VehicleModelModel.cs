@@ -6,7 +6,7 @@ public class VehicleModelModel: IBrandProps
 {
     public string id { get; set; }
     public Brands Brand { get; set; }
-    public string BrandID { get; set; }
+    public long? BrandID { get; set; }
     public string BrandHashID { get; set; }
     public string BasicModelCode { get; set; }
     public string SFX { get; set; }

@@ -9,7 +9,7 @@ public class RegionPriceModel : IRegionProps
 {
 
     [DocIgnore]
-    public string RegionID { get; set; }
+    public long? RegionID { get; set; }
 
 
     /// <summary>

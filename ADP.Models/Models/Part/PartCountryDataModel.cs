@@ -10,7 +10,7 @@ namespace ShiftSoftware.ADP.Models.Part;
 public class PartCountryDataModel : ICountryProps
 {
     [DocIgnore]
-    public string CountryID { get; set; }
+    public long? CountryID { get; set; }
 
     /// <summary>
     /// The Country Hash ID from the Identity System.

@@ -21,8 +21,8 @@ public class VehicleServiceHistoryDTO
 
     [JsonConverter(typeof(LocalizedTextJsonConverter))]
     public string BranchName { get; set; }
-    public string CompanyID { get; set; }
-    public string BranchID { get; set; }
+    //public string CompanyID { get; set; }
+    //public string BranchID { get; set; }
     public string AccountNumber { get; set; } = default!;
     public string InvoiceNumber { get; set; }
     public string JobNumber { get; set; }

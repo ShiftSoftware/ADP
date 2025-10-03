@@ -5,5 +5,4 @@ export type VehicleIdentifiersDTO = {
     color: string;
     trim: string;
     brand?: 'Toyota' | 'Lexus' | 'Hino' | 'Other' | 'NA';
-    brandID: string;
 };

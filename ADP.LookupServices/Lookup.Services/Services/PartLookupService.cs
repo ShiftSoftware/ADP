@@ -76,7 +76,7 @@ public class PartLookupService
                 string? countryName = null;
                 if (options?.CountryNameResolver is not null)
                 {
-                    countryName = await options.CountryNameResolver(new LookupOptionResolverModel<string>
+                    countryName = await options.CountryNameResolver(new LookupOptionResolverModel<long?>
                     {
                         Services = services,
                         Value = countryPrice.CountryID,
@@ -89,7 +89,7 @@ public class PartLookupService
                     string regionName = null;
                     if (options?.RegionNameResolver is not null)
                     {
-                        regionName = await options.RegionNameResolver(new LookupOptionResolverModel<string>
+                        regionName = await options.RegionNameResolver(new LookupOptionResolverModel<long?>
                         {
                             Services = services,
                             Value = price.RegionID,
@@ -99,9 +99,9 @@ public class PartLookupService
 
                     prices.Add(new PartPriceDTO
                     {
-                        CountryID = countryPrice.CountryID,
+                        CountryID = countryPrice.CountryID.ToString(),
                         CountryName = countryName,
-                        RegionID = price.RegionID,
+                        RegionID = price.RegionID.ToString(),
                         RegionName = regionName,
                         PurchasePrice = new(price.PurchasePrice),
                         RetailPrice = new(price.RetailPrice),

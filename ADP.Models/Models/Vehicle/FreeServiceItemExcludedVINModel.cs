@@ -5,7 +5,7 @@ public class FreeServiceItemExcludedVINModel : IPartitionedItem, ICompanyProps
     public string id { get; set; }
     public string VIN { get; set; }
     public string ItemType => ModelTypes.FreeServiceItemExcludedVIN;
-    public string CompanyID { get; set; }
+    public long? CompanyID { get; set; }
     public string CompanyHashID { get; set; }
     public bool IsDeleted { get; set; }
 }

@@ -22,6 +22,6 @@ public class SSCAffectedVINModel : IPartitionedItem, ICompanyProps
     public string OriginalFormatPartNumber3 { get; set; }
     public DateTime? RepairDate { get; set; }
     public string ItemType => ModelTypes.SSCAffectedVIN;
-    public string CompanyID { get; set; }
+    public long? CompanyID { get; set; }
     public string CompanyHashID { get; set; }
 }

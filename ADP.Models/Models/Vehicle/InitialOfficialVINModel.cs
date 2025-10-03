@@ -9,6 +9,6 @@ public class InitialOfficialVINModel: IPartitionedItem, ICompanyProps
     public string Model { get; set; } = default!;
     public DateTime Date { get; set; }
     public string ItemType => ModelTypes.InitialOfficialVIN;
-    public string CompanyID { get; set; }
+    public long? CompanyID { get; set; }
     public string CompanyHashID { get; set; }
 }

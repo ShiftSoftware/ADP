@@ -134,7 +134,7 @@ public class OrderPartLineModel:
 
 
     [DocIgnore]
-    public string CompanyID { get; set; }
+    public long? CompanyID { get; set; }
 
 
     /// <summary>
@@ -144,7 +144,7 @@ public class OrderPartLineModel:
 
 
     [DocIgnore]
-    public string BranchID { get; set; }
+    public long? BranchID { get; set; }
 
     /// <summary>
     /// The Branch Hash ID from the Identity System.

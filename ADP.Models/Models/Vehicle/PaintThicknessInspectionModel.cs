@@ -12,7 +12,7 @@ public class PaintThicknessInspectionModel : IPartitionedItem, ICompanyProps
     public DateTime? InspectionDate { get; set; }
     public string VIN { get; set; } = default!;
     public IEnumerable<PaintThicknessInspectionPanelModel> Panels { get; set; }
-    public string CompanyID { get; set; }
+    public long? CompanyID { get; set; }
     public string CompanyHashID { get; set; }
     public string Source { get; set; }
     public string ItemType => ModelTypes.PaintThicknessInspection;

@@ -2,6 +2,6 @@
 
 public interface IRegionProps
 {
-    public string RegionID { get; set; }
+    public long? RegionID { get; set; }
     public string RegionHashID { get; set; }
 }

@@ -2,7 +2,7 @@
 
 internal interface ICompanyProps
 {
-    public string CompanyID { get; set; }
+    public long? CompanyID { get; set; }
 
     /// <summary>
     /// The Company Hash ID from the Identity System.

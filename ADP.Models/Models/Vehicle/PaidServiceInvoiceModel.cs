@@ -15,9 +15,9 @@ public class PaidServiceInvoiceModel : IPartitionedItem, IBrandProps, ICompanyPr
     public string VIN { get; set; } = default!;
     public virtual IEnumerable<PaidServiceInvoiceLineModel> Lines { get; set; }
     public Brands Brand { get; set; }
-    public string BrandID { get; set; }
+    public long? BrandID { get; set; }
     public string BrandHashID { get; set; }
     public string ItemType => ModelTypes.PaidServiceInvoice;
-    public string CompanyID { get; set; }
+    public long? CompanyID { get; set; }
     public string CompanyHashID { get; set; }
 }

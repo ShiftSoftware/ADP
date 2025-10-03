@@ -56,7 +56,7 @@ public class StockPartModel:
     public string SaleType { get; set; }
 
     [DocIgnore]
-    public string CompanyID { get; set; }
+    public long? CompanyID { get; set; }
 
     /// <summary>
     /// The Company Hash ID from the Identity System.

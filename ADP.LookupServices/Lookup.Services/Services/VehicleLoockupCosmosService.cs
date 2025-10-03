@@ -234,7 +234,7 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         return null;
     }
 
-    public async Task<BrokerModel> GetBrokerAsync(string accountNumber, string companyID)
+    public async Task<BrokerModel> GetBrokerAsync(string accountNumber, long? companyID)
     {
         var container = client.GetContainer(
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
@@ -242,7 +242,7 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         );
 
         var queryable = container.GetItemLinqQueryable<BrokerModel>(true)
-            .Where(x => !x.IsDeleted && x.AccountNumbers.Contains(accountNumber) && x.id == companyID);
+            .Where(x => !x.IsDeleted && x.AccountNumbers.Contains(accountNumber) && x.CompanyID == companyID);
 
         var iterator = queryable.ToFeedIterator();
         var items = new List<BrokerModel>();

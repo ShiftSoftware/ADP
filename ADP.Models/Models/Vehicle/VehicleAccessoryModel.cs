@@ -9,7 +9,7 @@ public class VehicleAccessoryModel: IPartitionedItem, ICompanyProps
     public int JobNumber { get; set; } = default!;
     public int InvoiceNumber { get; set; }
     public string Image { get; set; }
-    public string CompanyID { get; set; }
+    public long? CompanyID { get; set; }
     public string CompanyHashID { get; set; }
     public string ItemType => ModelTypes.VehicleAccessory;
 }
