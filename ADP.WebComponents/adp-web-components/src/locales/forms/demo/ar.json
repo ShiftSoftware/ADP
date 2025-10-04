@@ -6,7 +6,7 @@
   "emailAddress": "البريد الإلكتروني",
   "emailAddressNotValid": "يرجى إدخال عنوان بريد إلكتروني صالح.",
   "city": "مدينة",
-  "selectCity": "اختر مدينة.",
+  "selectCity": "اختيار مدينة.",
   "cityIsRequired": "المدينة مطلوبة.",
   "phoneNumber": "رقم الهاتف",
   "phoneNumberIsRequired": "رقم الهاتف مطلوب.",

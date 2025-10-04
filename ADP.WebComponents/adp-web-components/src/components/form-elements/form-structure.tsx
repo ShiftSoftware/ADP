@@ -58,7 +58,7 @@ export class FormStructure {
     return (
       <Host>
         <form class="relative" dir={this.locale.sharedLocales.direction} {...formController}>
-          <form-dialog dialogClosed={resetFormErrorMessage} isError={!!this.errorMessage} closeText={locale.sharedFormLocales.close} form={this.form} message={this.errorMessage}>
+          <form-dialog dialogClosed={resetFormErrorMessage} isError={!!this.errorMessage} closeText={locale?.sharedFormLocales?.close} form={this.form} message={this.errorMessage}>
             <div class="form-success-container">
               <svg
                 fill="none"

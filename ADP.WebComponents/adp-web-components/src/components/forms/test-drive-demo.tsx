@@ -26,7 +26,7 @@ export class TestDriveDemoForm implements FormHookInterface<TestDriveDemo>, Mult
   async changeLanguage(newLanguage: LanguageKeys) {
     const [sharedLocales, locale] = await Promise.all([getSharedFormLocal(newLanguage), getLocaleLanguage(newLanguage, 'forms.testDriveDemo', testDriveDemoSchema)]);
 
-    this.locale = { ...sharedLocales, ...locale };
+    this.locale = { sharedFormLocales: sharedLocales, ...locale };
 
     this.localeLanguage = newLanguage;
 

@@ -29,7 +29,7 @@ export class DemoForm implements FormHookInterface<Demo>, MultiLingual {
   async changeLanguage(newLanguage: LanguageKeys) {
     const [sharedLocales, locale] = await Promise.all([getSharedFormLocal(newLanguage), getLocaleLanguage(newLanguage, 'forms.demo', demoSchema)]);
 
-    this.locale = { ...sharedLocales, ...locale };
+    this.locale = { sharedFormLocales: sharedLocales, ...locale };
 
     this.form.rerender({ rerenderAll: true });
   }
