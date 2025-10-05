@@ -19,7 +19,7 @@ export class FormSubmit implements FormElement {
   @Prop() isLoading: boolean;
   @Prop() form: FormHook<any>;
   @Prop() wrapperClass: string;
-  @Prop() submitTextKey?: string;
+  @Prop() submitTextKey?: string = 'submit';
 
   async componentWillLoad() {
     this.form.subscribe(buttonSubscriberKey, this);
@@ -34,7 +34,7 @@ export class FormSubmit implements FormElement {
   render() {
     const [locale] = this.form.getFormLocale();
 
-    const submitText = getNestedValue(locale, this.submitTextKey) || getNestedValue(locale, 'submit') || 'Submit';
+    const submitText = getNestedValue(locale, this.submitTextKey) || getNestedValue(locale, 'sharedFormLocales.submit') || 'Submit';
     return (
       <button
         type="submit"
