@@ -162,11 +162,13 @@ public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosCl
             var deleteResult = await DeleteFromCosmosAsync(
                 actionItems?.Where(x => x.ActionType == SyncActionType.Delete) ?? [],
                 input!.Input!.Status.CurrentRetryCount,
+                input.Input.Status.ActionType,
                 input!.CancellationToken);
 
             var upsertResult = await UpsertToCosmosAsync(
                 actionItems?.Where(x => x.ActionType == SyncActionType.Update || x.ActionType == SyncActionType.Add) ?? [],
                 input!.Input.Status.CurrentRetryCount,
+                input.Input.Status.ActionType,
                 input!.CancellationToken);
 
             var result = new SyncStoreDataResult<TDestination>
@@ -192,6 +194,7 @@ public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosCl
     private async Task<(IEnumerable<TDestination> SucceededItems, IEnumerable<TDestination> FailedItems, IEnumerable<TDestination> SkippedItems)> UpsertToCosmosAsync(
             IEnumerable<SyncCosmosAction<TDestination, TCosmos>?>? items,
             long retryCount,
+            SyncActionType originalActionType,
             CancellationToken cancellationToken
         )
     {
@@ -229,7 +232,7 @@ public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosCl
                         throw new ArgumentException("Mapping function is required in cosmos action.");
 
                     if (item?.Mapping is not null)
-                        mappedItems = await item.Mapping(new(item.Item, cancellationToken));
+                        mappedItems = await item.Mapping(new(item.Item, originalActionType, cancellationToken));
 
                     // Skip null items
                     mappedItems = mappedItems?.Where(x => x is not null);
@@ -292,6 +295,7 @@ public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosCl
     private async Task<(IEnumerable<TDestination> SucceededItems, IEnumerable<TDestination> FailedItems, IEnumerable<TDestination> SkippedItems)> DeleteFromCosmosAsync(
             IEnumerable<SyncCosmosAction<TDestination, TCosmos>?>? items,
             long retryCount,
+            SyncActionType originalActionType,
             CancellationToken cancellationToken
         )
     {
@@ -329,7 +333,7 @@ public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosCl
                         throw new ArgumentException("Mapping function is required in cosmos action.");
 
                     if (item?.Mapping is not null)
-                        mappedItems = await item.Mapping(new(item.Item, cancellationToken));
+                        mappedItems = await item.Mapping(new(item.Item, originalActionType, cancellationToken));
 
                     // Skip null items
                     mappedItems = mappedItems?.Where(x => x is not null);
