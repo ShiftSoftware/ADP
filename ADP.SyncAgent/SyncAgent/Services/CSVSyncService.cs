@@ -594,7 +594,8 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
                     items?.Where(x => x.ActionType == CosmosActionType.Delete) ?? [],
                     partitionKeyLevel1Expression,
                     partitionKeyLevel2Expression,
-                    partitionKeyLevel3Expression);
+                    partitionKeyLevel3Expression,
+                    ConverCosmosActionTypeToSyncActionType(actionType));
 
                 await UpsertToCosmosAsync(
                     databaseId,
@@ -602,7 +603,8 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
                     items?.Where(x => x.ActionType == CosmosActionType.Upsert) ?? [],
                     partitionKeyLevel1Expression,
                     partitionKeyLevel2Expression,
-                    partitionKeyLevel3Expression);
+                    partitionKeyLevel3Expression,
+                    ConverCosmosActionTypeToSyncActionType(actionType));
 
                 logger.LogInformation("Completed Cosmos Operation for the current Batch: Step {0} of {1}.", currentStep + 1, totalSteps);
 
@@ -663,7 +665,8 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
             IEnumerable<SyncAgentCosmosAction<TCosmos>?> items,
             Expression<Func<TCosmos, object>> partitionKeyLevel1Expression,
             Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression,
-            Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression
+            Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression,
+            SyncActionType originalActionType
         )
     {
         IEnumerable<Task> tasks = [];
@@ -677,7 +680,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
             tasks = tasks.Concat([Task.Run(async () =>
             {
                 if (item?.Mapping is not null)
-                    item.Item = await item.Mapping(new(item.Item, GetCancellationToken()));
+                    item.Item = await item.Mapping(new(item.Item,originalActionType, GetCancellationToken()));
 
                 if (item?.Item is not null)
                 {
@@ -703,7 +706,8 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
             IEnumerable<SyncAgentCosmosAction<TCosmos>?> items,
             Expression<Func<TCosmos, object>> partitionKeyLevel1Expression,
             Expression<Func<TCosmos, object>>? partitionKeyLevel2Expression,
-            Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression
+            Expression<Func<TCosmos, object>>? partitionKeyLevel3Expression,
+            SyncActionType originalActionType
         )
     {
         IEnumerable<Task> tasks = [];
@@ -717,7 +721,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
             tasks = tasks.Concat([Task.Run(async () =>
             {
                 if (item?.Mapping is not null)
-                    item.Item = await item.Mapping(new(item.Item, GetCancellationToken()));
+                    item.Item = await item.Mapping(new(item.Item, originalActionType, GetCancellationToken()));
 
                 if (item?.Item is not null)
                 {
@@ -747,6 +751,11 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
     public void Dispose()
     {
         CleanUp();
+    }
+
+    private SyncActionType ConverCosmosActionTypeToSyncActionType(CosmosActionType type)
+    {
+        return type == CosmosActionType.Delete ? SyncActionType.Delete : SyncActionType.Upsert;
     }
 }
 
