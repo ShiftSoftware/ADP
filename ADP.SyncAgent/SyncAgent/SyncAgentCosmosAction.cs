@@ -50,15 +50,17 @@ public class SyncCosmosActionMappingInput<T> where T : class
 {
     public T? Item { get; private set; }
     public CancellationToken CancellationToken { get; private set; }
+    public SyncActionType OriginalActionType { get; set; }
 
     public SyncCosmosActionMappingInput()
     {
 
     }
 
-    public SyncCosmosActionMappingInput(T? item, CancellationToken cancellationToken)
+    public SyncCosmosActionMappingInput(T? item, SyncActionType cosmosActionType, CancellationToken cancellationToken)
     {
         Item = item;
         CancellationToken = cancellationToken;
+        OriginalActionType = cosmosActionType;
     }
 }
