@@ -32,12 +32,12 @@ export interface FormHookInterface<T> {
   language: LanguageKeys;
   structure: FormElementStructure<any>;
   formSubmit: (formValues: T) => void;
-  errorCallback?: (error: any) => void;
   successCallback?: (data: any) => void;
   setErrorCallback: (error: any) => void;
   setSuccessCallback: (data: any) => void;
   setIsLoading: (loading: boolean) => void;
   loadingChanges?: (loading: boolean) => void;
+  errorCallback?: (error: any, message: string) => void;
 }
 
 export type ValidationType = 'onSubmit' | 'always';

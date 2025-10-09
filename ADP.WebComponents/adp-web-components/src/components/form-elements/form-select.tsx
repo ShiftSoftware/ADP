@@ -144,7 +144,7 @@ export class FormSelect implements FormElement {
       if (error && error?.name === 'AbortError') return;
       console.error(error);
       this.options = [];
-      this.fetchingErrorMessage = error.message;
+      this.fetchingErrorMessage = error?.message || null;
     } finally {
       this.isFetching = false;
     }
@@ -245,7 +245,7 @@ export class FormSelect implements FormElement {
                 ))}
               {!filteredOptions.length && (
                 <div part={`${this.name}-select-empty-container form-select-empty-container`} class={cn('form-select-empty-container', { error: this.fetchingErrorMessage })}>
-                  {this.fetchingErrorMessage && (getNestedValue(locale, this.fetchingErrorMessage) || locale.sharedFormLocales.errors.wildCard)}
+                  {this.fetchingErrorMessage && (getNestedValue(locale, this.fetchingErrorMessage) || this.fetchingErrorMessage || locale.sharedFormLocales.errors.wildCard)}
                   {!this.fetchingErrorMessage &&
                     (this.isFetching ? (
                       <img part={`${this.name}-select-spinner form-select-spinner`} class="form-select-spinner" src={Loader} />

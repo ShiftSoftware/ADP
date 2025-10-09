@@ -45,9 +45,9 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
 
   @Prop() gistId?: string;
   @Prop() structureUrl?: string;
-  @Prop() errorCallback: (error: any) => void;
   @Prop() successCallback: (data: any) => void;
   @Prop() loadingChanges: (loading: boolean) => void;
+  @Prop() errorCallback: (error: any, message: string) => void;
   @Prop({ mutable: true }) structure: FormElementStructure<vehicleQuotationElementNames> | undefined;
 
   @Element() el: HTMLElement;
@@ -60,7 +60,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
   setErrorCallback(error: any) {
     const message = error.message || this.locale?.sharedFormLocales?.errors?.wildCard || '';
 
-    if (this.errorCallback) this.errorCallback(error);
+    if (this.errorCallback) this.errorCallback(error, message);
     else this.errorMessage = message;
   }
 
