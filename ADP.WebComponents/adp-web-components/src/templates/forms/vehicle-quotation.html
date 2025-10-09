@@ -12,37 +12,10 @@
     body {
       padding: 16px;
     }
-
-    .button-container {
-      margin: 50px 0px;
-      border: 1px solid #e1e1e1;
-      padding: 20px;
-      display: flex;
-      flex-wrap: wrap;
-      align-content: center;
-      justify-content: center;
-      gap: 10px;
-    }
-
-    .sample-button {
-      background-color: #428bca;
-      padding: 10px 15px;
-    }
-
-    .sample-button:hover {
-      background-color: #3071a9;
-    }
   </style>
   <body>
     <a href="#" onclick="history.back()" style="color: blue; display: block; margin-bottom: 16px">Back</a>
     <h1>Vehicle Quotation Form</h1>
-
-    <div class="button-container">
-      <button class="sample-button" onclick="updateLang('en')">En</button>
-      <button class="sample-button" onclick="updateLang('ku')">Ku</button>
-      <button class="sample-button" onclick="updateLang('ar')">Ar</button>
-      <button class="sample-button" onclick="updateLang('ru')">Ru</button>
-    </div>
 
     <vehicle-quotation-form structure-url="https://tiqappstorage.blob.core.windows.net/template-files/tiq-vehicle-quotation-form-structure.json"></vehicle-quotation-form>
   </body>

@@ -22,7 +22,7 @@ declare const grecaptcha: Grecaptcha;
 })
 export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>, MultiLingual {
   // #region Localization
-  @Prop({ mutable: true, reflect: true }) language: LanguageKeys = 'en';
+  @Prop({ mutable: true, reflect: true }) language: LanguageKeys;
 
   @State() locale: VehicleQuotationFormLocale = { sharedFormLocales: sharedFormLocalesSchema.getDefault(), ...vehicleQuotationSchema.getDefault() };
 
@@ -58,16 +58,19 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
   }
 
   setErrorCallback(error: any) {
-    this.errorMessage = error.message || this.locale?.sharedFormLocales?.errors?.wildCard || '';
+    const message = error.message || this.locale?.sharedFormLocales?.errors?.wildCard || '';
+
     if (this.errorCallback) this.errorCallback(error);
+    else this.errorMessage = message;
   }
 
   setSuccessCallback(data: any) {
     if (this.successCallback) this.successCallback(data);
+    else this.form.openDialog();
   }
 
   async componentWillLoad() {
-    this.language = getLanguageFromUrl();
+    if (!this.language) this.language = getLanguageFromUrl();
 
     if (this.structure) {
       await this.changeLanguage(this.language);
@@ -118,15 +121,18 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
           payload.additionalData.vehicleModel = formValues?.currentVehicleModel || this.locale.Other;
         }
       }
-
-      const token = await grecaptcha.execute(this.structure.data?.recaptchaKey, { action: 'submit' });
-
       const headers = {
-        'Recaptcha-Token': token,
         'Brand': this.structure.data?.brandId,
         'Accept-Language': this.localeLanguage || 'en',
         'Content-Type': 'application/json',
       };
+
+      if (this.bearerToken) {
+        headers['Authorization'] = this.getBearerToken();
+      } else {
+        const token = await grecaptcha.execute(this.structure.data?.recaptchaKey, { action: 'submit' });
+        headers['Recaptcha-Token'] = token;
+      }
 
       const response = await fetch(this.structure.data?.requestUrl, {
         headers,
@@ -137,7 +143,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
       if (response.ok) {
         const result = await response?.json();
         this.setSuccessCallback(result);
-        this.form.openDialog();
+
         setTimeout(() => {
           this.form.reset();
           this.form.rerender({ rerenderForm: true, rerenderAll: true });
@@ -158,6 +164,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
 
   // #region Component Logic
   async componentDidLoad() {
+    if (this.bearerToken) return;
     try {
       const key = this.structure.data?.recaptchaKey;
       if (key) {
@@ -172,6 +179,9 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
       console.log(error);
     }
   }
+
+  @Prop() bearerToken: boolean;
+  @Prop() getBearerToken?: () => string;
 
   form = new FormHook(this, vehicleQuotationInputsValidation);
 
