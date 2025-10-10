@@ -1,12 +1,16 @@
 ﻿using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Shared;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using ShiftSoftware.ADP.Models.Enums;
+using ShiftSoftware.ShiftEntity.Model.Flags;
 using System;
 using System.Collections.Generic;
 
 namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.SSC;
 
-public class SSCLogCosmosModel
+public class SSCLogCosmosModel :
+    IEntityHasCompany<SSCLogCosmosModel>,
+    IEntityHasCity<SSCLogCosmosModel>,
+    IEntityHasCompanyBranch<SSCLogCosmosModel>
 {
     public Guid id { get; set; }
     public string VIN { get; set; } = default!;
@@ -34,7 +38,6 @@ public class SSCLogCosmosModel
     public long? CompanyID { get; set; }
     public long? CompanyBranchID { get; set; }
     public long? UserID { get; set; }
-
     public long? CityIntegrationID { get; set; }
     public long? CompanyIntegrationID { get; set; }
     public long? CompanyBranchIntegrationID { get; set; }
