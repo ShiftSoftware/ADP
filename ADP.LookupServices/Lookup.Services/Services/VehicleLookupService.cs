@@ -646,13 +646,13 @@ public class VehicleLookupService
             var eligibleServiceItems = serviceItems.Where(x => !(x.IsDeleted));
 
             // Brand
-            eligibleServiceItems = eligibleServiceItems.Where(x => vehicle is null || x.BrandIDs.Any(a => a == vehicle.BranchID.ToString()));
+            eligibleServiceItems = eligibleServiceItems.Where(x => vehicle is null || x.BrandIDs.Any(a => a == vehicle.BranchID));
 
             // Company
-            eligibleServiceItems = eligibleServiceItems.Where(x => x.CompanyIDs is null || x.CompanyIDs.Count() == 0 || vehicle is null || x.CompanyIDs.Any(a => a == vehicle?.CompanyID.ToString()));
+            eligibleServiceItems = eligibleServiceItems.Where(x => x.CompanyIDs is null || x.CompanyIDs.Count() == 0 || vehicle is null || x.CompanyIDs.Any(a => a == vehicle?.CompanyID));
 
             // Country
-            eligibleServiceItems = eligibleServiceItems.Where(x => x.CountryIDs is null || x.CountryIDs.Count() == 0 || vehicle is null || x.CountryIDs.Any(a => a == vehicleSaleInformation?.CountryID));
+            eligibleServiceItems = eligibleServiceItems.Where(x => x.CountryIDs is null || x.CountryIDs.Count() == 0 || vehicle is null || x.CountryIDs.Any(a => a == vehicleSaleInformation?.CountryID?.ToLong()));
 
             // Expiry
             eligibleServiceItems = eligibleServiceItems.Where(x =>
