@@ -23,7 +23,7 @@ public class AuthorizedStepDefinitions
     {
         var authorizedResult = new 
             VehicleAuthorizationEvaluator(this.CompanyDataAggregate)
-            .Evaluate(this.CompanyDataAggregate?.VIN);
+            .Evaluate();
 
         Assert.True(authorizedResult);
     }
@@ -34,7 +34,7 @@ public class AuthorizedStepDefinitions
     {
         var authorizedResult = 
             new VehicleAuthorizationEvaluator(this.CompanyDataAggregate)
-            .Evaluate(this.CompanyDataAggregate?.VIN);
+            .Evaluate();
 
         Assert.False(authorizedResult);
     }
