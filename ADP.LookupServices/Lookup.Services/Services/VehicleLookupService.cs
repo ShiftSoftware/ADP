@@ -61,7 +61,7 @@ public class VehicleLookupService
         {
             VIN = vin,
             IsAuthorized = new VehicleAuthorizationEvaluator(companyDataAggregate).Evaluate(),
-            PaintThicknessInspections = GetPaintThickness(),
+            PaintThicknessInspections = await new VehiclePaintThicknessEvaluator(companyDataAggregate, options, services).Evaluate(languageCode),
             Identifiers = new VehicleIdentifierEvaluator(companyDataAggregate).Evaluate(vehicle),
             VehicleSpecification = await new VehicleSpecificationEvaluator(lookupCosmosService).Evaluate(vehicle),
             ServiceHistory = await new VehicleServiceHistoryEvaluator(companyDataAggregate, options, this.services).Evaluate(languageCode),
@@ -129,34 +129,6 @@ public class VehicleLookupService
         }
 
         return data;
-    }
-
-    private IEnumerable<PaintThicknessInspectionDTO> GetPaintThickness()
-    {
-        if (companyDataAggregate.PaintThicknessInspections is null)
-            return null;
-
-        return companyDataAggregate.PaintThicknessInspections.Select(p => new PaintThicknessInspectionDTO
-        {
-            InspectionDate = p.InspectionDate,
-            Source = p.Source,
-            Panels = p.Panels?.Select(async x => new PaintThicknessInspectionPanelDTO
-            {
-                Images = await Task.WhenAll(x.Images.Select(async i => await GetPaintThicknessImageFullUrl(i))),
-                MeasuredThickness = x.MeasuredThickness,
-                PanelPosition = x.PanelPosition,
-                PanelSide = x.PanelSide,
-                PanelType = x.PanelType,
-            }).Select(t => t.Result),
-        });
-    }
-
-    private async Task<string> GetPaintThicknessImageFullUrl(string image)
-    {
-        if (options?.PaintThickneesImageUrlResolver is not null)
-            return await options.PaintThickneesImageUrlResolver(new (image,languageCode,services));
-
-        return image;
     }
 
     private async Task<List<ShiftFileDTO>> GetCompanyLogo(List<ShiftFileDTO> companyLogo)
