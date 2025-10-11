@@ -24,6 +24,7 @@ Catalog Part refers to a specific part in the Parts Catalog.
 | GrossWeight <div><strong>``decimal?``</strong></div> | The gross weight of the part. |
 | Origin <div><strong>``string``</strong></div> | The country of origin of the part. |
 | SupersededTo <div><strong>``IEnumerable<PartSupersessionModel>``</strong></div> | A list of all the [Supersessions](/generated/Models/Part/PartSupersessionModel.html) that the part has. |
+| SupersededFrom <div><strong>``IEnumerable<PartSupersessionModel>``</strong></div> | A list of all [Supersessions](/generated/Models/Part/PartSupersessionModel.html) Where this part is the superseding part. |
 | LocalDescription <div><strong>``string``</strong></div> | The localized description of the part. |
 | HSCode <div><strong>``string``</strong></div> | The Harmonized System (HS) code for the part. |
 | CountryData <div><strong>``IEnumerable<PartCountryDataModel>``</strong></div> | [Per Country](/generated/Models/Part/PartCountryDataModel.html) data for the part. |

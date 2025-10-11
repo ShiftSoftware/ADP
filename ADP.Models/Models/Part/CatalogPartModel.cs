@@ -128,8 +128,7 @@ public class CatalogPartModel :
     public IEnumerable<PartSupersessionModel> SupersededTo { get; set; }
 
     /// <summary>
-    /// A list of all <see cref="PartSupersessionModel">supersession</see> records where this part is the superseding part.
-    /// These represent parts that have been replaced by this part in the catalog.
+    /// A list of all <see cref="PartSupersessionModel">Supersessions</see> Where this part is the superseding part.
     /// </summary>
     public IEnumerable<PartSupersessionModel> SupersededFrom { get; set; }
 
