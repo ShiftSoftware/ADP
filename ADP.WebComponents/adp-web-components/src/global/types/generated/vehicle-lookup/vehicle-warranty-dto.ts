@@ -5,4 +5,5 @@ export type VehicleWarrantyDTO = {
     hasExtendedWarranty: boolean;
     extendedWarrantyStartDate?: string;
     extendedWarrantyEndDate?: string;
+    freeServiceStartDate?: string;
 };

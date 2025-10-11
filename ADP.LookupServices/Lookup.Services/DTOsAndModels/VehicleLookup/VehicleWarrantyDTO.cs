@@ -24,4 +24,7 @@ public class VehicleWarrantyDTO
 
     [JsonCustomDateTime("yyyy-MM-dd")]
     public DateTime? ExtendedWarrantyEndDate { get; set; }
+
+    [JsonCustomDateTime("yyyy-MM-dd")]
+    public DateTime? FreeServiceStartDate { get; set; }
 }

@@ -71,50 +71,12 @@ public class VehicleLookupService
             SaleInformation = await new VehicleSaleInformationEvaluator(companyDataAggregate, options, services, lookupCosmosService).Evaluate(languageCode),
         };
 
-        DateTime? freeServiceStartDate = null;
-
-        if (vehicle is not null)
-        {
-            DateTime? warrantyStartDate = null;
-
-            //Normal company Sale
-            if (data.SaleInformation?.Broker is null)
-            {
-                warrantyStartDate = data.SaleInformation?.WarrantyActivationDate;
-
-                warrantyStartDate = companyDataAggregate.VehicleServiceActivations.FirstOrDefault()?.WarrantyActivationDate;
-
-                if (warrantyStartDate is null && options.WarrantyStartDateDefaultsToInvoiceDate)
-                    warrantyStartDate = data.SaleInformation?.InvoiceDate;
-
-                freeServiceStartDate = warrantyStartDate;
-            }
-            else
-            {
-                //Broker Stock
-                if (data.SaleInformation.Broker.InvoiceDate is null)
-                {
-                    if (ignoreBrokerStock)
-                    {
-                        warrantyStartDate = null;
-                        freeServiceStartDate = data.SaleInformation?.WarrantyActivationDate ?? data.SaleInformation?.InvoiceDate;
-                    }
-                }
-                //Normal Broker Sale
-                else
-                {
-                    warrantyStartDate = data.SaleInformation?.Broker?.InvoiceDate;
-                    freeServiceStartDate = data.SaleInformation?.Broker?.InvoiceDate;
-                }
-            }
-
-            // Set Warranty
-            data.Warranty = await GetWarrantyAsync(warrantyStartDate, vehicle.Brand);
-        }
+        data.Warranty = new WarrantyAndFreeServiceDateEvaluator(companyDataAggregate, options)
+            .Evaluate(vehicle, data.SaleInformation, ignoreBrokerStock);
 
         data.ServiceItems = await GetServiceItems(
             vin,
-            freeServiceStartDate,
+            data.Warranty.FreeServiceStartDate,
             vehicle,
             data.SaleInformation,
             companyDataAggregate.PaidServiceInvoices,
@@ -231,36 +193,7 @@ public class VehicleLookupService
 
         return companyLogo;
     }
-
-    private async Task<VehicleWarrantyDTO> GetWarrantyAsync(DateTime? invoiceDate, Brands brand)
-    {
-        VehicleWarrantyDTO result = new();
-
-        var shiftDate = companyDataAggregate.WarrantyDateShifts?.FirstOrDefault();
-        if (shiftDate is not null)
-            invoiceDate = shiftDate.NewDate;
-
-        result.WarrantyStartDate = invoiceDate;
-
-        if (brand == Brands.Lexus)
-            result.WarrantyEndDate = invoiceDate?.AddYears(4);
-        else
-            result.WarrantyEndDate = invoiceDate?.AddYears(3);
-
-
-        // Extended warranty
-        //var extendedWarranty = extendedWarranties?.FirstOrDefault(x => x.ResponseType == "3");
-
-        //if (extendedWarranty is not null)
-        //{
-        //    result.ExtendedWarrantyStartDate = extendedWarranty?.UpdatedDate is null ? null
-        //        : DateOnly.FromDateTime(extendedWarranty.UpdatedDate.Value);
-        //    result.ExtendedWarrantyEndDate = result.ExtendedWarrantyStartDate?.AddYears(2);
-        //}
-
-        return result;
-    }
-
+ 
     private async Task<IEnumerable<VehicleServiceItemDTO>> GetServiceItems(
         string vin,
         DateTime? freeServiceStartDate,
