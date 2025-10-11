@@ -1,5 +1,4 @@
-﻿using ShiftSoftware.ADP.Lookup.Services.Aggregate;
-using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.SSC;
+﻿using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.SSC;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using ShiftSoftware.ADP.Lookup.Services.Evaluators;
 using ShiftSoftware.ADP.Models.Vehicle;
@@ -12,45 +11,35 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services;
 
 public class VehicleLookupService
 {
-    public readonly IVehicleLoockupCosmosService lookupCosmosService;
-    readonly LookupOptions options;
-    readonly IIdentityCosmosService identityCosmosService;
-    private readonly IServiceProvider services;
-    private readonly ILogCosmosService? logCosmosService;
-    CompanyDataAggregateCosmosModel companyDataAggregate = new CompanyDataAggregateCosmosModel();
-
-
-    string languageCode;
-
+    private readonly IVehicleLoockupCosmosService lookupCosmosService;
+    private readonly LookupOptions lookupOptions;
+    private readonly IServiceProvider serviceProvider;
+    private readonly ILogCosmosService logCosmosService;
 
     public VehicleLookupService(
         IVehicleLoockupCosmosService lookupService,
-        IIdentityCosmosService identityCosmosService,
-        IServiceProvider? services = null,
-        ILogCosmosService? logCosmosService = null,
+        IServiceProvider services = null,
+        ILogCosmosService logCosmosService = null,
         LookupOptions options = null)
     {
-        lookupCosmosService = lookupService;
-        this.options = options;
-        this.identityCosmosService = identityCosmosService;
-        this.services = services;
+        this.lookupCosmosService = lookupService;
+        this.lookupOptions = options;
+        this.serviceProvider = services;
         this.logCosmosService = logCosmosService;
     }
 
     public async Task<VehicleLookupDTO> LookupAsync(
         string vin,
-        string regionIntegrationId,
         string languageCode = null,
         bool ignoreBrokerStock = false,
         bool insertSSCLog = false,
-        SSCLogInfo? sscLogInfo = null,
+        SSCLogInfo sscLogInfo = null,
         bool insertCustomerVehcileLookupLog = false,
-        CustomerVehicleLookupLogInfo? customerVehicleLookupLogInfo = null)
+        CustomerVehicleLookupLogInfo customerVehicleLookupLogInfo = null
+    )
     {
-        this.languageCode = languageCode;
-
         // Get all items related to the VIN from the cosmos container
-        companyDataAggregate = await lookupCosmosService.GetAggregatedCompanyData(vin);
+        var companyDataAggregate = await lookupCosmosService.GetAggregatedCompanyData(vin);
 
         VehicleEntryModel vehicle = new VehicleEntryEvaluator(companyDataAggregate).Evaluate();
 
@@ -58,21 +47,21 @@ public class VehicleLookupService
         {
             VIN = vin,
             IsAuthorized = new VehicleAuthorizationEvaluator(companyDataAggregate).Evaluate(),
-            PaintThicknessInspections = await new VehiclePaintThicknessEvaluator(companyDataAggregate, options, services).Evaluate(languageCode),
+            PaintThicknessInspections = await new VehiclePaintThicknessEvaluator(companyDataAggregate, lookupOptions, serviceProvider).Evaluate(languageCode),
             Identifiers = new VehicleIdentifierEvaluator(companyDataAggregate).Evaluate(vehicle),
             VehicleSpecification = await new VehicleSpecificationEvaluator(lookupCosmosService).Evaluate(vehicle),
-            ServiceHistory = await new VehicleServiceHistoryEvaluator(companyDataAggregate, options, this.services).Evaluate(languageCode),
+            ServiceHistory = await new VehicleServiceHistoryEvaluator(companyDataAggregate, lookupOptions, this.serviceProvider).Evaluate(languageCode),
             SSC = new VehicleSSCEvaluator(companyDataAggregate).Evaluate(),
             NextServiceDate = companyDataAggregate.Invoices?.OrderByDescending(x => x.InvoiceDate).FirstOrDefault()?.NextServiceDate,
-            Accessories = await new VehicleAccessoriesEvaluator(companyDataAggregate, options, services).Evaluate(languageCode),
-            SaleInformation = await new VehicleSaleInformationEvaluator(companyDataAggregate, options, services, lookupCosmosService).Evaluate(languageCode),
+            Accessories = await new VehicleAccessoriesEvaluator(companyDataAggregate, lookupOptions, serviceProvider).Evaluate(languageCode),
+            SaleInformation = await new VehicleSaleInformationEvaluator(companyDataAggregate, lookupOptions, serviceProvider, lookupCosmosService).Evaluate(languageCode),
         };
 
-        data.Warranty = new WarrantyAndFreeServiceDateEvaluator(companyDataAggregate, options)
+        data.Warranty = new WarrantyAndFreeServiceDateEvaluator(companyDataAggregate, lookupOptions)
             .Evaluate(vehicle, data.SaleInformation, ignoreBrokerStock);
 
         data.ServiceItems = await new VehicleServiceItemEvaluator(
-            this.lookupCosmosService, this.companyDataAggregate, this.options, this.services
+            this.lookupCosmosService, companyDataAggregate, this.lookupOptions, this.serviceProvider
         ).Evaluate(
             vehicle,
             data.Warranty.FreeServiceStartDate,
