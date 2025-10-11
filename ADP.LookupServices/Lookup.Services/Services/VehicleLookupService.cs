@@ -1,13 +1,9 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using ShiftSoftware.ADP.Lookup.Services.Aggregate;
+﻿using ShiftSoftware.ADP.Lookup.Services.Aggregate;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.SSC;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using ShiftSoftware.ADP.Lookup.Services.Enums;
 using ShiftSoftware.ADP.Lookup.Services.Evaluators;
 using ShiftSoftware.ADP.Models.Enums;
-using ShiftSoftware.ADP.Models.Invoice;
-using ShiftSoftware.ADP.Models.Part;
-using ShiftSoftware.ADP.Models.Service;
 using ShiftSoftware.ADP.Models.Vehicle;
 using ShiftSoftware.ShiftEntity.Model.Dtos;
 using System;
@@ -70,11 +66,10 @@ public class VehicleLookupService
             VehicleSpecification = await new VehicleSpecificationEvaluator(lookupCosmosService).Evaluate(vehicle),
             ServiceHistory = await new VehicleServiceHistoryEvaluator(companyDataAggregate, options, this.services).Evaluate(languageCode),
             SSC = new VehicleSSCEvaluator(companyDataAggregate).Evaluate(),
+            NextServiceDate = companyDataAggregate.Invoices?.OrderByDescending(x => x.InvoiceDate).FirstOrDefault()?.NextServiceDate,
+            Accessories = await GetAccessories(),
 
         };
-
-        // Set NextServiceDate
-        data.NextServiceDate = companyDataAggregate.Invoices?.OrderByDescending(x => x.InvoiceDate).FirstOrDefault()?.NextServiceDate;
 
         DateTime? warrantyStartDate = null;
         DateTime? freeServiceStartDate = null;
@@ -124,27 +119,56 @@ public class VehicleLookupService
 
         data.ServiceItems = await GetServiceItems(
             vin,
-            freeServiceStartDate, 
-            vehicle, 
+            freeServiceStartDate,
+            vehicle,
             data.SaleInformation,
-            companyDataAggregate.PaidServiceInvoices, 
+            companyDataAggregate.PaidServiceInvoices,
             companyDataAggregate.ItemClaims,
             companyDataAggregate.VehicleInspections,
             serviceActivation
         );
 
-        // Set accessories
-        data.Accessories = await GetAccessories();
-
         if (insertSSCLog)
         {
-            var logId = await logCosmosService?.LogSSCLookupAsync(sscLogInfo, data.SSC, vin, data.IsAuthorized, data.Warranty?.HasActiveWarranty ?? false, data.Identifiers?.Brand);
-            data.SSCLogId = logId;
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    data.SSCLogId = await logCosmosService?.LogSSCLookupAsync(
+                        sscLogInfo,
+                        data.SSC,
+                        vin,
+                        data.IsAuthorized,
+                        data.Warranty?.HasActiveWarranty ?? false,
+                        data.Identifiers?.Brand
+                    );
+                }
+                catch
+                {
+
+                }
+            });
         }
 
         if (insertCustomerVehcileLookupLog)
         {
-            await logCosmosService.LogCustomerVehicleLookupAsync(customerVehicleLookupLogInfo, vin, data.IsAuthorized , data.Warranty?.HasActiveWarranty ?? false, data.Identifiers?.Brand);
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await logCosmosService.LogCustomerVehicleLookupAsync(
+                        customerVehicleLookupLogInfo,
+                        vin,
+                        data.IsAuthorized,
+                        data.Warranty?.HasActiveWarranty ?? false,
+                        data.Identifiers?.Brand
+                    );
+                }
+                catch
+                {
+
+                }
+            });
         }
 
         return data;
