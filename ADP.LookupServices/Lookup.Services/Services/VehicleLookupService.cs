@@ -61,13 +61,13 @@ public class VehicleLookupService
         {
             VIN = vin,
             IsAuthorized = new VehicleAuthorizationEvaluator(companyDataAggregate).Evaluate(),
-            PaintThicknessInspections = await GetPaintThickness(),
+            PaintThicknessInspections = GetPaintThickness(),
             Identifiers = new VehicleIdentifierEvaluator(companyDataAggregate).Evaluate(vehicle),
             VehicleSpecification = await new VehicleSpecificationEvaluator(lookupCosmosService).Evaluate(vehicle),
             ServiceHistory = await new VehicleServiceHistoryEvaluator(companyDataAggregate, options, this.services).Evaluate(languageCode),
             SSC = new VehicleSSCEvaluator(companyDataAggregate).Evaluate(),
             NextServiceDate = companyDataAggregate.Invoices?.OrderByDescending(x => x.InvoiceDate).FirstOrDefault()?.NextServiceDate,
-            Accessories = await GetAccessories(),
+            Accessories = await new VehicleAccessoriesEvaluator(companyDataAggregate, options, services).Evaluate(languageCode),
             SaleInformation = await new VehicleSaleInformationEvaluator(companyDataAggregate, options, services, lookupCosmosService).Evaluate(languageCode),
         };
 
@@ -131,34 +131,7 @@ public class VehicleLookupService
         return data;
     }
 
-    private async Task<IEnumerable<AccessoryDTO>> GetAccessories()
-    {
-        var accessories = new List<AccessoryDTO>();
-
-        foreach (var accessory in companyDataAggregate.Accessories)
-        {
-            var accessoryDTO = new AccessoryDTO
-            {
-                PartNumber = accessory.PartNumber,
-                Description = accessory.PartDescription,
-                Image = await GetAccessoryImageFullUrl(accessory.Image)
-            };
-
-            accessories.Add(accessoryDTO);
-        }
-
-        return accessories;
-    }
-
-    private async Task<string> GetAccessoryImageFullUrl(string image)
-    {
-        if (options?.AccessoryImageUrlResolver is not null)
-            return await options.AccessoryImageUrlResolver(new(image,languageCode,services));
-
-        return image;
-    }
-
-    private async Task<IEnumerable<PaintThicknessInspectionDTO>> GetPaintThickness()
+    private IEnumerable<PaintThicknessInspectionDTO> GetPaintThickness()
     {
         if (companyDataAggregate.PaintThicknessInspections is null)
             return null;
