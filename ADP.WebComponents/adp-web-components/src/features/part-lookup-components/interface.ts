@@ -28,6 +28,7 @@ export interface PartLookupComponent {
   getMockData: () => Promise<PartLookupMock>;
   onLoadingChange: (newValue: boolean) => void;
   setErrorMessage: (message: ErrorKeys) => void;
+  onIsDevChange: (isDev: boolean) => Promise<void>;
   setMockData: (newMockData: PartLookupMock) => Promise<void>;
   fetchData: (newData: PartLookupDTO | string, headers?: object) => Promise<void>;
 }

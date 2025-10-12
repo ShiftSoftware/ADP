@@ -9,6 +9,7 @@ import { PartLookupDTO } from '~types/generated/part/part-lookup-dto';
 
 import distributerSchema from '~locales/partLookup/distributor/type';
 
+import { getMockFile } from '~features/mocks';
 import { VehicleInfoLayout, VehicleInfoLayoutInterface } from '~features/vehicle-info-layout';
 import { BlazorInvokable, DotNetObjectReference, smartInvokable, BlazorInvokableFunction } from '~features/blazor-ref';
 import { PartLookupComponent, PartLookupMock, setPartLookupData, setPartLookupErrorState } from '~features/part-lookup-components';
@@ -27,7 +28,7 @@ export class DistributorLookup implements MultiLingual, VehicleInfoLayoutInterfa
   @State() locale: ComponentLocale<typeof distributerSchema> = { sharedLocales: sharedLocalesSchema.getDefault(), ...distributerSchema.getDefault() };
 
   async componentWillLoad() {
-    await this.changeLanguage(this.language);
+    await Promise.all([this.changeLanguage(this.language), this.onIsDevChange(this.isDev)]);
   }
 
   @Watch('language')
@@ -76,6 +77,15 @@ export class DistributorLookup implements MultiLingual, VehicleInfoLayoutInterfa
   @Method()
   async getMockData() {
     return this.mockData;
+  }
+
+  @Watch('isDev')
+  async onIsDevChange(isDev) {
+    if (!isDev) return;
+
+    const mockData = await getMockFile<PartLookupDTO>('part-lookup');
+
+    await this.setMockData(mockData);
   }
 
   @Method()

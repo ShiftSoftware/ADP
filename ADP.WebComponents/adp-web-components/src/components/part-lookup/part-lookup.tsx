@@ -11,7 +11,6 @@ import { ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingua
 
 import { PartLookupDTO } from '~types/generated/part/part-lookup-dto';
 import { DotNetObjectReference } from '~features/blazor-ref';
-import { fakePartLookupData } from '~features/part-lookup-components';
 
 const componentTags = {
   deadStock: 'dead-stock-lookup',
@@ -96,8 +95,6 @@ export class PartLookup implements MultiLingual {
       element.loadingStateChange = this.loadingStateChangingMiddleware;
       element.loadedResponse = newResponse => this.handleLoadData(newResponse, element);
     });
-
-    if (this.isDev) await this.generateMockData(10);
   }
 
   private syncErrorAcrossComponents = (newErrorMessage: ErrorKeys) => {
@@ -155,36 +152,6 @@ export class PartLookup implements MultiLingual {
     const activeElement = this.componentsList[this.activeElement] || null;
     const mockData = await activeElement.getMockData();
     return mockData;
-  }
-
-  @Method()
-  async logMockData() {
-    const mockData = await this.getMockData();
-
-    const tableData = Object.entries(mockData).map(([key, value]: [key: string, value: PartLookupDTO]) => ({
-      key,
-      partNumber: value.partNumber,
-      description: value.partDescription,
-      priceCount: value.prices.length,
-      stockCount: value.stockParts.length,
-      origin: value.origin,
-      hsCode: value.hsCode,
-    }));
-
-    console.table(tableData);
-
-    return mockData;
-  }
-
-  @Method()
-  async generateMockData(count = 5, overrides?: any) {
-    const newMockData = fakePartLookupData(count, overrides);
-
-    Object.values(this.componentsList).forEach(element => {
-      element.setMockData(newMockData);
-    });
-
-    return await this.logMockData();
   }
 
   // #endregion

@@ -47,13 +47,16 @@ export const config: Config = {
       minify: true,
       externalRuntime: false,
       type: 'dist-custom-elements',
-      copy: [{ src: 'locales', dest: 'dist/locales' }],
+      copy: [
+        { src: 'locales', dest: 'dist/locales' },
+        { src: 'features/mocks/data', dest: 'dist/mocks' },
+      ],
       customElementsExportBehavior: 'auto-define-custom-elements',
     },
     {
       type: 'www',
       serviceWorker: null,
-      copy: [{ src: 'index.html' }, { src: 'templates' }, { src: 'locales', dest: 'locales' }],
+      copy: [{ src: 'index.html' }, { src: 'templates' }, { src: 'locales', dest: 'locales' }, { src: 'features/mocks/data', dest: 'mocks' }],
     },
   ],
   devServer: {

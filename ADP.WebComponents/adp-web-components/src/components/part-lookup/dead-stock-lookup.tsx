@@ -2,6 +2,7 @@ import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stenci
 
 import deadStockSchema from '~locales/partLookup/deadStock/type';
 
+import { getMockFile } from '~features/mocks';
 import { VehicleInfoLayout, VehicleInfoLayoutInterface } from '~features/vehicle-info-layout';
 import { BlazorInvokable, DotNetObjectReference, smartInvokable, BlazorInvokableFunction } from '~features/blazor-ref';
 import { PartLookupComponent, PartLookupMock, setPartLookupData, setPartLookupErrorState } from '~features/part-lookup-components';
@@ -27,7 +28,7 @@ export class DeadStockLookup implements MultiLingual, VehicleInfoLayoutInterface
   @State() locale: ComponentLocale<typeof deadStockSchema> = { sharedLocales: sharedLocalesSchema.getDefault(), ...deadStockSchema.getDefault() };
 
   async componentWillLoad() {
-    await this.changeLanguage(this.language);
+    await Promise.all([this.changeLanguage(this.language), this.onIsDevChange(this.isDev)]);
   }
 
   @Watch('language')
@@ -85,6 +86,15 @@ export class DeadStockLookup implements MultiLingual, VehicleInfoLayoutInterface
   @Method()
   async getMockData() {
     return this.mockData;
+  }
+
+  @Watch('isDev')
+  async onIsDevChange(isDev) {
+    if (!isDev) return;
+
+    const mockData = await getMockFile<PartLookupDTO>('part-lookup');
+
+    await this.setMockData(mockData);
   }
 
   @Method()

@@ -30,7 +30,6 @@
 
     <script nomodule src="/build/shift-components.js"></script>
     <script type="module" src="/build/shift-components.esm.js"></script>
-    <script src="./mock-data.js"></script>
 
     <!-- <script type="module" src="../../../dist/shift-components/shift-components.esm.js"></script> -->
 
@@ -206,7 +205,6 @@
             <!-- Tab panes -->
             <div class="tab-content" style="background: white; border: 1px solid #dddddd; padding: 25px; border-radius: 10px">
               <part-lookup
-                is-dev="true"
                 language="ku"
                 id="part-lookup"
                 active-element="dead-stock-lookup"
@@ -250,14 +248,19 @@
         isDev = this.checked;
         partLookup.isDev = isDev;
 
-        const newMock = await partLookup.generateMockData(5);
-
         const container = document.querySelector('.mock-items');
 
         container.innerHTML = '';
 
         if (isDev) {
-          Object.keys(newMock).forEach(itemKey => {
+          let mockData;
+          let tries = 0;
+          while (!mockData && tries++ < 10) {
+            mockData = await partLookup.getMockData();
+            await new Promise(r => setTimeout(r, 1000));
+          }
+
+          Object.keys(mockData).forEach(itemKey => {
             const button = document.createElement('button');
             button.className = 'sample-button';
             button.textContent = itemKey;

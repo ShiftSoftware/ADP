@@ -36,6 +36,15 @@
     return this.mockData;
   }
 
+  @Watch('isDev')
+  async onIsDevChange(isDev) {
+    if (!isDev) return;
+
+    const mockData = await getMockFile<PartLookupDTO>('part-lookup');
+
+    await this.setMockData(mockData);
+  }
+
   @Method()
   async fetchData(newData: PartLookupDTO | string, headers: any = {}) {
     await setPartLookupData(this, newData, headers);
