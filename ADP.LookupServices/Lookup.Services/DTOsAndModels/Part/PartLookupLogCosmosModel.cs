@@ -1,9 +1,13 @@
 ﻿using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Shared;
+using ShiftSoftware.ShiftEntity.Model.Flags;
 using System;
 
 namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Part;
 
-public class PartLookupLogCosmosModel
+public class PartLookupLogCosmosModel : 
+    IEntityHasCompany<PartLookupLogCosmosModel>,
+    IEntityHasCompanyBranch<PartLookupLogCosmosModel>,
+    IEntityHasCity<PartLookupLogCosmosModel>
 {
     public Guid id { get; set; }
     public string PartNumber { get; set; } = default!;

@@ -12,11 +12,11 @@ public class VehicleAuthorizationEvaluator
         CompanyDataAggregate = companyDataAggregate;
     }
 
-    public bool Evaluate(string vin)
+    public bool Evaluate()
     {
         return
-            CompanyDataAggregate?.InitialOfficialVINs?.Any(x => x.VIN.Equals(vin, System.StringComparison.InvariantCultureIgnoreCase)) == true ||
-            CompanyDataAggregate?.VehicleEntries?.Any(x => x.VIN.Equals(vin, System.StringComparison.InvariantCultureIgnoreCase)) == true ||
-            CompanyDataAggregate?.SSCAffectedVINs?.Any(x => x.VIN.Equals(vin, System.StringComparison.InvariantCultureIgnoreCase)) == true;
+            CompanyDataAggregate?.InitialOfficialVINs?.Any() == true ||
+            CompanyDataAggregate?.VehicleEntries?.Any() == true ||
+            CompanyDataAggregate?.SSCAffectedVINs?.Any() == true;
     }
 }
