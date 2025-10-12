@@ -74,6 +74,11 @@ export class DistributorLookup implements MultiLingual, VehicleInfoLayoutInterfa
   }
 
   @Method()
+  async getMockData() {
+    return this.mockData;
+  }
+
+  @Method()
   async fetchData(newData: PartLookupDTO | string, headers: any = {}) {
     await setPartLookupData(this, newData, headers);
   }

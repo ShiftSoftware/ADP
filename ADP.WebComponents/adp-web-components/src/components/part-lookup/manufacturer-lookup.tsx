@@ -71,6 +71,11 @@ export class ManufacturerLookup implements MultiLingual, VehicleInfoLayoutInterf
   }
 
   @Method()
+  async getMockData() {
+    return this.mockData;
+  }
+
+  @Method()
   async fetchData(newData: PartLookupDTO | string, headers: any = {}) {
     await setPartLookupData(this, newData, headers);
   }

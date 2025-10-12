@@ -25,6 +25,7 @@ export interface PartLookupComponent {
   loadingStateChange?: BlazorInvokableFunction<(isLoading: boolean) => void>;
   loadedResponse?: BlazorInvokableFunction<(response: PartLookupDTO) => void>;
 
+  getMockData: () => Promise<PartLookupMock>;
   onLoadingChange: (newValue: boolean) => void;
   setErrorMessage: (message: ErrorKeys) => void;
   setMockData: (newMockData: PartLookupMock) => Promise<void>;

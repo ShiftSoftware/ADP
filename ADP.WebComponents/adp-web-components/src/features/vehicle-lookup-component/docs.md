@@ -31,6 +31,11 @@
   }
 
   @Method()
+  async getMockData() {
+    return this.mockData
+  }
+
+  @Method()
   async fetchData(newData: VehicleLookupDTO | string, headers: any = {}) {
     await setVehicleLookupData(this, newData, headers);
   }
