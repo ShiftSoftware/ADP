@@ -17,7 +17,7 @@ public class CompanyDeadStockPartModel : IPartitionedItem, ICompanyProps, IBranc
     public string BranchHashID { get; set; }
 
     /// <summary>
-    /// Catalog Part does not actually have a location. But it is used in the partition key on the database
+    /// Usually a combination between Company & Branch ID: {companyId-branchId}
     /// </summary>
     [DocIgnore]
     public string Location { get; set; } = default!;
@@ -30,5 +30,5 @@ public class CompanyDeadStockPartModel : IPartitionedItem, ICompanyProps, IBranc
     /// <summary>
     /// The current on-hand quantity of the part in the stock
     /// </summary>
-    public decimal? OnHandQuantity { get; set; }
+    public decimal OnHandQuantity { get; set; }
 }

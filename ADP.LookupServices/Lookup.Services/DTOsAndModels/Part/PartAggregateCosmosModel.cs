@@ -7,4 +7,5 @@ public class PartAggregateCosmosModel
 {
     public IEnumerable<StockPartModel> StockParts { get; set; }
     public IEnumerable<CatalogPartModel> CatalogParts { get; set; }
+    public IEnumerable<CompanyDeadStockPartModel> CompanyDeadStockParts { get; set; }
 }

@@ -1,4 +1,5 @@
 ﻿using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Part;
+using ShiftSoftware.ShiftEntity.Model.HashIds;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -43,6 +44,7 @@ public class PartLookupService
         var cosmosPartCatalog = data.CatalogParts.FirstOrDefault();
 
         List<StockPartDTO> stockParts = new();
+        List<DeadStockDTO> deadStockParts = new();
 
         foreach (var item in data.StockParts)
         {
@@ -64,7 +66,36 @@ public class PartLookupService
             stockParts.Add(stock);
         }
 
-        if(options?.PartLookupStocksResolver is not null)
+        foreach (var item in data.CompanyDeadStockParts.GroupBy(x => x.CompanyID))
+        {
+            var deadStock = new DeadStockDTO
+            {
+                BranchDeadStock = item.Select(x => new BranchDeadStockDTO
+                {
+                    CompanyBranchHashID = x.BranchHashID,
+                    Quantity = x.OnHandQuantity,
+                }).ToList()
+            };
+
+            if (options?.CompanyNameResolver is not null)
+                deadStock.CompanyName = await options.CompanyNameResolver(new LookupOptionResolverModel<long?>(item.Key, language, services));
+
+            if (options?.CompanyBranchNameResolver is not null)
+            {
+                foreach (var deadStockItem in deadStock.BranchDeadStock)
+                {
+                    var branchId = ShiftEntityHashIdService.Decode(deadStockItem.CompanyBranchHashID, new CompanyBranchHashIdConverter());
+
+                    var branchName = await options.CompanyBranchNameResolver(new LookupOptionResolverModel<long?>(branchId, language, services));
+
+                    deadStockItem.CompanyBranchName = branchName;
+                }
+            }
+
+            deadStockParts.Add(deadStock);
+        }
+
+        if (options?.PartLookupStocksResolver is not null)
             stockParts = (await options.PartLookupStocksResolver(new(stockParts, language, services))).ToList();
 
         List<PartPriceDTO> prices = new();
@@ -141,7 +172,7 @@ public class PartLookupService
             PNC = cosmosPartCatalog?.PNC,
             DistributorPurchasePrice = distributorPurchasePrice,
             HSCodes = null,
-            DeadStock = null,
+            DeadStock = deadStockParts,
             LogId = null,
             StockParts = stockParts,
             Prices = resolvedPrices,
