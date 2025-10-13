@@ -5,23 +5,27 @@ import { MockFileName, MockFiles } from './types';
 
 const cachedMocks = {};
 
-export async function getMockFile<T>(mockFileName: MockFileName): Promise<Record<string, T>> {
+export async function getMockFile<T>(mockFileName: MockFileName, externalUrl: string = ''): Promise<Record<string, T>> {
   const fileName = MockFiles[mockFileName];
 
   if (!fileName || !fileName.length) throw new Error(`Mock file not found for: ${mockFileName}`);
 
-  const response = await requestMockFile(fileName);
+  const response = await requestMockFile(fileName, externalUrl);
 
   return response;
 }
 
-async function requestMockFile(mockFile: string) {
+async function requestMockFile(mockFile: string, externalUrl: string) {
   if (cachedMocks[mockFile]) return await cachedMocks[mockFile];
 
   try {
-    const fetchPromise = (
-      Build.isDev ? fetch('http://localhost:3000/mocks/' + mockFile) : fetch(`https://cdn.jsdelivr.net/npm/adp-web-components@${version}/dist/mocks/${mockFile}`)
-    ).then(res => {
+    let fetchUrl;
+
+    if (!!externalUrl && !!externalUrl.trim().length) fetchUrl = externalUrl;
+    else if (Build.isDev) fetchUrl = 'http://localhost:3000/mocks/' + mockFile;
+    else fetchUrl = `https://cdn.jsdelivr.net/npm/adp-web-components@${version}/dist/mocks/${mockFile}`;
+
+    const fetchPromise = fetch(fetchUrl).then(res => {
       if (!res.ok) delete cachedMocks[mockFile];
       return res.json();
     });

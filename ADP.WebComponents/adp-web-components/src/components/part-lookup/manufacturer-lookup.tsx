@@ -44,6 +44,7 @@ export class ManufacturerLookup implements MultiLingual, VehicleInfoLayoutInterf
 
   // #region Part Lookup Component Shared Logic
 
+  @Prop() mockUrl = '';
   @Prop() isDev: boolean;
   @Prop() baseUrl: string;
   @Prop() headers: object = {};
@@ -80,7 +81,7 @@ export class ManufacturerLookup implements MultiLingual, VehicleInfoLayoutInterf
   async onIsDevChange(isDev) {
     if (!isDev) return;
 
-    const mockData = await getMockFile<PartLookupDTO>('part-lookup');
+    const mockData = await getMockFile<PartLookupDTO>('part-lookup', this.mockUrl);
 
     await this.setMockData(mockData);
   }

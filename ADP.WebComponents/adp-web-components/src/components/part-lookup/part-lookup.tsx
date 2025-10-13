@@ -54,6 +54,7 @@ export class PartLookup implements MultiLingual {
 
   @Prop() activeElement?: ActiveElement = '';
 
+  @Prop() mockUrl = '';
   @Prop() baseUrl: string = '';
   @Prop() isDev: boolean = false;
   @Prop() queryString: string = '';
@@ -181,13 +182,37 @@ export class PartLookup implements MultiLingual {
 
     const componentList: Partial<Record<ActiveElement, Node>> = {
       'dead-stock-lookup': (
-        <dead-stock-lookup coreOnly isDev={this.isDev} base-url={this.baseUrl} language={this.language} query-string={this.queryString} {...props[componentTags.deadStock]} />
+        <dead-stock-lookup
+          coreOnly
+          isDev={this.isDev}
+          mock-url={this.mockUrl}
+          base-url={this.baseUrl}
+          language={this.language}
+          query-string={this.queryString}
+          {...props[componentTags.deadStock]}
+        />
       ),
       'distributor-lookup': (
-        <distributor-lookup coreOnly isDev={this.isDev} base-url={this.baseUrl} language={this.language} query-string={this.queryString} {...props[componentTags.distributor]} />
+        <distributor-lookup
+          coreOnly
+          isDev={this.isDev}
+          mock-url={this.mockUrl}
+          base-url={this.baseUrl}
+          language={this.language}
+          query-string={this.queryString}
+          {...props[componentTags.distributor]}
+        />
       ),
       'manufacturer-lookup': (
-        <manufacturer-lookup coreOnly isDev={this.isDev} base-url={this.baseUrl} language={this.language} query-string={this.queryString} {...props[componentTags.manufacturer]} />
+        <manufacturer-lookup
+          coreOnly
+          isDev={this.isDev}
+          mock-url={this.mockUrl}
+          base-url={this.baseUrl}
+          language={this.language}
+          query-string={this.queryString}
+          {...props[componentTags.manufacturer]}
+        />
       ),
     };
     return (

@@ -8,6 +8,7 @@ export interface PartLookupComponent {
   isDev: boolean;
   baseUrl: string;
   headers: object;
+  mockUrl: string;
   isError: boolean;
   isLoading: boolean;
   queryString: string;

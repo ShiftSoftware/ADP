@@ -4,7 +4,8 @@
 
   // #region Part Lookup Component Shared Logic
 
- @Prop() isDev: boolean;
+  @Prop() mockUrl = '';
+  @Prop() isDev: boolean;
   @Prop() baseUrl: string;
   @Prop() headers: object = {};
   @Prop() queryString: string = '';
@@ -40,7 +41,7 @@
   async onIsDevChange(isDev) {
     if (!isDev) return;
 
-    const mockData = await getMockFile<PartLookupDTO>('part-lookup');
+    const mockData = await getMockFile<PartLookupDTO>('part-lookup', this.mockUrl);
 
     await this.setMockData(mockData);
   }
