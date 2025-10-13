@@ -5,6 +5,9 @@ public static class ModelTypes
     public static readonly PartitionedItemType CatalogPart = new("CatalogPart");
     public static readonly PartitionedItemType StockPart = new("StockPart");
     public static readonly PartitionedItemType InvoicePartLine = new("OrderPartLine");
+    public static readonly PartitionedItemType CompanyDeadStockPart = new("CompanyDeadStockPart");
+
+
     public static readonly PartitionedItemType InvoiceLaborLine = new("OrderLaborLine");
     public static readonly PartitionedItemType Invoice = new("Invoice");
     public static readonly PartitionedItemType BrokerInitialVehicle = new("BrokerInitialVehicle");
