@@ -1,5 +1,6 @@
 {
   "info": "Info",
+  "TMCStock": "TMC Stock",
   "distributorStock": "Distributor Stock",
   "availability": "Availability",
   "notAvailable": "Not Available",
@@ -12,5 +13,10 @@
   "dealerPurchasePrice": "Dealer Purchase price",
   "recommendedRetailPrice": "Recommended Retail price",
   "supersededFrom": "Superseded From",
-  "supersessions": "Supersessions"
+  "supersessions": "Supersessions",
+  "This field is required.": "This field is required.",
+  "orderType": "Order Type",
+  "Part Number": "Part Number",
+  "submit": "Submit",
+  "quantity": "Quantity"
 }

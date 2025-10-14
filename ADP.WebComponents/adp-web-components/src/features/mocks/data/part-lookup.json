@@ -2,6 +2,7 @@
   "SU00302474": {
     "partNumber": "SU00302474",
     "partDescription": "CLAMP",
+    "showTMCPartLookup": true,
     "localDescription": "Неприменимо",
     "productGroup": "F",
     "pnc": "",

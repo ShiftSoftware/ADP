@@ -35,6 +35,7 @@ export class FormSelect implements FormElement {
   @Prop() defaultValue: string;
   @Prop() language: LanguageKeys = 'en';
   @Prop() fetcher: FormSelectFetcher<any>;
+  @Prop() forceOpenUpwards?: boolean = false;
 
   @State() searchValue = '';
   @State() isFetching: boolean;
@@ -89,7 +90,7 @@ export class FormSelect implements FormElement {
 
       const spaceBelow = window.innerHeight - rect.bottom - 20; // 20 is padding
 
-      this.openUpwards = spaceBelow < selectContainer.getBoundingClientRect().height;
+      this.openUpwards = spaceBelow < selectContainer.getBoundingClientRect().height || this.forceOpenUpwards;
 
       setTimeout(() => {
         this.isOpen = true;
@@ -223,8 +224,8 @@ export class FormSelect implements FormElement {
             <div
               part={`${this.name}-select-container form-select-container`}
               class={cn('form-select-container', {
-                upwards: this.openUpwards,
-                downwards: !this.openUpwards,
+                upwards: this.openUpwards || this.forceOpenUpwards,
+                downwards: !this.openUpwards && !this.forceOpenUpwards,
               })}
             >
               {!!filteredOptions.length &&
@@ -245,12 +246,12 @@ export class FormSelect implements FormElement {
                 ))}
               {!filteredOptions.length && (
                 <div part={`${this.name}-select-empty-container form-select-empty-container`} class={cn('form-select-empty-container', { error: this.fetchingErrorMessage })}>
-                  {this.fetchingErrorMessage && (getNestedValue(locale, this.fetchingErrorMessage) || this.fetchingErrorMessage || locale.sharedFormLocales.errors.wildCard)}
+                  {this.fetchingErrorMessage && (getNestedValue(locale, this.fetchingErrorMessage) || this.fetchingErrorMessage || locale?.sharedFormLocales?.errors?.wildCard)}
                   {!this.fetchingErrorMessage &&
                     (this.isFetching ? (
                       <img part={`${this.name}-select-spinner form-select-spinner`} class="form-select-spinner" src={Loader} />
                     ) : (
-                      locale.sharedFormLocales.noSelectOptions
+                      locale?.sharedFormLocales?.noSelectOptions
                     ))}
                 </div>
               )}

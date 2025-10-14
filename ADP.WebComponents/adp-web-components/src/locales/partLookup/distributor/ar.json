@@ -1,5 +1,6 @@
 {
   "info": "معلومات",
+  "TMCStock": "موزع TMC",
   "distributorStock": "موزع الأسهم",
   "availability": "التوفر",
   "notAvailable": "غير متوفر",
@@ -12,5 +13,10 @@
   "dealerPurchasePrice": "سعر شراء التاجر",
   "recommendedRetailPrice": "سعر التجزئة الموصى به",
   "supersededFrom": "تم استبداله من",
-  "supersessions": "البدائل"
+  "supersessions": "البدائل",
+  "This field is required.": "هذه الحقل مطلوب.",
+  "orderType": "نوع الطلب",
+  "Part Number": "رقم القطعة",
+  "quantity": "الكمية",
+  "submit": "إرسال"
 }

@@ -113,7 +113,7 @@
                   <div>
                     <p class="font_f_o_b f16 mb10 error_bg text-center">Part number <span class="required">*Required</span></p>
                   </div>
-                  <input value="T5245160030" class="shift-form-field" style="width: 100%" autocomplete="off" id="vinInput" />
+                  <input value="SU00302474" class="shift-form-field" style="width: 100%" autocomplete="off" id="vinInput" />
                   <div class="ltc-ferrari-red error-message error text-center"></div>
                 </div>
               </div>
@@ -191,10 +191,10 @@
           <div class="well" style="background: white; margin-top: 30px; border-radius: 10px">
             <!-- Nav tabs -->
             <ul class="nav nav-tabs" role="tablist" id="vehicle-info-tab" style="display: flex; justify-content: center; border-bottom: none">
-              <li role="presentation" onclick="changeLookup('dead-stock-lookup')" class="active">
+              <li role="presentation" onclick="changeLookup('dead-stock-lookup')">
                 <a class="disable-auto-scroll" href="#deadStock" aria-controls="deadStock" role="tab" data-toggle="tab"><span>DeadStock</span></a>
               </li>
-              <li role="presentation" onclick="changeLookup('distributor-lookup')">
+              <li role="presentation" onclick="changeLookup('distributor-lookup')" class="active">
                 <a class="disable-auto-scroll" href="#distributor" aria-controls="distributor" role="tab" data-toggle="tab"><span>Distributor</span></a>
               </li>
               <li role="presentation" onclick="changeLookup('manufacturer-lookup')">
@@ -205,9 +205,10 @@
             <!-- Tab panes -->
             <div class="tab-content" style="background: white; border: 1px solid #dddddd; padding: 25px; border-radius: 10px">
               <part-lookup
-                language="ku"
+                language="en"
+                is-dev="true"
                 id="part-lookup"
-                active-element="dead-stock-lookup"
+                active-element="distributor-lookup"
                 children-props='{"manufacturer-lookup":{"headerTitle":"kodo"}}'
                 base-url="https://vehicles-functions-adp.azurewebsites.net/api/secure-part-lookup/"
               ></part-lookup>

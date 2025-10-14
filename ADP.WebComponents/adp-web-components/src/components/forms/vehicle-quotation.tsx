@@ -7,8 +7,7 @@ import vehicleQuotationSchema from '~locales/forms/vehicleQuotation/type';
 import { vehicleQuotationElementNames, vehicleQuotationElements } from './vehicle-quotation/element-mapper';
 import { VehicleQuotation, VehicleQuotationFormLocale, vehicleQuotationInputsValidation } from './vehicle-quotation/validations';
 
-import { FormHook } from '~features/form-hook/form-hook';
-import { FormHookInterface, FormElementStructure, gistLoader } from '~features/form-hook';
+import { FormHook, FormHookInterface, FormElementStructure, gistLoader } from '~features/form-hook';
 import { getLocaleLanguage, getSharedFormLocal, LanguageKeys, MultiLingual, sharedFormLocalesSchema } from '~features/multi-lingual';
 import getLanguageFromUrl from '~lib/get-language-from-url';
 import { fetchJson } from '~lib/fetch-json';

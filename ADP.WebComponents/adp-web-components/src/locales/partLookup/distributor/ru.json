@@ -1,5 +1,6 @@
 {
   "info": "Информация",
+  "TMCStock": "Доступность у Дистрибьютора",
   "distributorStock": "Доступность у Дистрибьютора",
   "availability": "Наличие",
   "notAvailable": "Нет в наличии",
@@ -12,5 +13,10 @@
   "dealerPurchasePrice": "Цена закупки для дилера",
   "recommendedRetailPrice": "Рекомендуемая розничная цена",
   "supersededFrom": "Заменен от",
-  "supersessions": "Замена запчасти"
+  "supersessions": "Замена запчасти",
+  "This field is required.": "Это поле обязательно к заполнению.",
+  "orderType": "Тип заказа",
+  "Part Number": "Номер детали",
+  "quantity": "Количество",
+  "submit": "Отправить"
 }

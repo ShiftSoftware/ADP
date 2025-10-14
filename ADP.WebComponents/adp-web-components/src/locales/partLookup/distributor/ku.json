@@ -1,6 +1,7 @@
 {
   "info": "زانیاری",
   "distributorStock": "کۆگا",
+  "TMCStock": "کۆگای TMC",
   "availability": "بەردەست بوون",
   "notAvailable": "بەردەست نییە",
   "partiallyAvailable": "بەشێکی بەردەستە",
@@ -12,5 +13,10 @@
   "dealerPurchasePrice": "نرخی کڕین لای بریکار",
   "recommendedRetailPrice": "نرخی پێشنیارکراوی فرۆشتنی تاکەکەسی",
   "supersededFrom": "گۆڕدراوە لە",
-  "supersessions": "پارچەی هاوشێوە"
+  "supersessions": "پارچەی هاوشێوە",
+  "This field is required.": "ئەم بەشە پێویستە",
+  "orderType": "جۆری داواکاری",
+  "Part Number": "ژمارەی پارچە",
+  "quantity": "بڕ",
+  "submit": "ناردن"
 }

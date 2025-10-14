@@ -216,7 +216,8 @@ export class FormHook<T> {
   rerender = ({ inputName, rerenderAll, rerenderForm }: { inputName?: string; rerenderForm?: boolean; rerenderAll?: boolean }) => {
     if (rerenderForm) {
       forceUpdate(this.context);
-      forceUpdate(this?.formStructure);
+
+      if (this?.formStructure) forceUpdate(this?.formStructure);
     }
 
     if (rerenderAll) {
@@ -238,7 +239,7 @@ export class FormHook<T> {
 
     if (strict) {
       if (this.haltValidation) return;
-      if (!this.isSubmitted && this.validationType !== 'always' && !this.subscribedFields[name].continuousValidation) return;
+      if (!this.isSubmitted && this.validationType !== 'always' && !this.subscribedFields[name]?.continuousValidation) return;
     }
 
     const wasError = this.subscribedFields[name].isError;
@@ -256,7 +257,9 @@ export class FormHook<T> {
         return { isError: true, errorMessage: error.message };
       }
     } finally {
-      this.subscribedFields[name].continuousValidation = true;
+      try {
+        this.subscribedFields[name].continuousValidation = true;
+      } catch (error) {}
     }
   };
 }
