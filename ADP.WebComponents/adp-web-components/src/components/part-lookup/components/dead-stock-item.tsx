@@ -47,7 +47,11 @@ export const DeadStockItem: FunctionalComponent<DeadStockItemProps> = ({ isOpene
 
           <tbody>
             {item?.branchDeadStock?.map(branchDeadStock => (
-              <tr class="dead-stock-table-row" key={branchDeadStock?.companyBranchIntegrationID}>
+              <tr
+                class="dead-stock-table-row"
+                // @ts-ignore
+                key={branchDeadStock?.companyBranchIntegrationID}
+              >
                 <td>
                   <span class="shift-skeleton">{branchDeadStock?.companyBranchName}</span>
                 </td>
