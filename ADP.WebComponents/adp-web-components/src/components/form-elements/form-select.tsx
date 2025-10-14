@@ -70,7 +70,7 @@ export class FormSelect implements FormElement {
   }
 
   async disconnectedCallback() {
-    this.abortController.abort();
+    this.abortController?.abort();
     this.form.unsubscribe(this.name);
     document.removeEventListener('click', this.closeDropdown);
     document.removeEventListener('keydown', this.handleKeyDown.bind(this));

@@ -369,7 +369,7 @@ export class VinExtractor {
 
   closeScanner = () => {
     this.isCameraReady = false;
-    this.abortController.abort();
+    this.abortController?.abort();
     clearTimeout(this.frameCaptureTimeoutRef);
     if (this.codeReader) this.codeReader.reset();
     if (document) document.body.style.overflow = 'auto';

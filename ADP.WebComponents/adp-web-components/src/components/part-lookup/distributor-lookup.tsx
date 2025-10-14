@@ -330,7 +330,7 @@ export class DistributorLookup implements MultiLingual, VehicleInfoLayoutInterfa
                   <form class="relative tmc-form flex justify-between items-end pt-[8px] pb-[16px]" dir={this.locale.sharedLocales.direction} {...formController}>
                     <div class="flex gap-2">
                       {this.showPartNumber && <form-input name="quantity" isLoading={this.isLoading} key={this.locale.sharedLocales.lang} form={this.form} />}
-                      {this.showPartNumber && <form-input name="partNumber" isLoading={this.isLoading} key={this.locale.sharedLocales.lang} form={this.form} />}
+                      {this.showQuantity && <form-input name="partNumber" isLoading={this.isLoading} key={this.locale.sharedLocales.lang} form={this.form} />}
                       <form-select
                         clearable
                         forceOpenUpwards
