@@ -15,5 +15,7 @@ public class VehicleIdentifiersDTO
 
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public Brands? Brand { get; set; } = default!;
-    //public string BrandID { get; set; } = default!;
+
+    [ShiftSoftware.ShiftEntity.Model.HashIds.BrandHashIdConverter]
+    public string BrandID { get; set; } = default!;
 }

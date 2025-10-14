@@ -1,5 +1,5 @@
 export type BranchDeadStockDTO = {
-    companyBranchIntegrationID: string;
+    companyBranchHashID: string;
     companyBranchName: string;
     quantity: number;
 };
