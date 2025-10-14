@@ -11,6 +11,9 @@ export const setPartLookupData = async (
   headers: any = {},
   { beforeAssignment }: { beforeAssignment?: (partLookup: PartLookupDTO, extra: { scopedTimeoutRef: ReturnType<typeof setTimeout> }) => Promise<PartLookupDTO> } = {},
 ) => {
+  // @ts-ignore
+  const loadingKey = context?.localLoadingName ? context?.localLoadingName : 'isLoading';
+
   if (newData === null || newData === undefined) newData = context?.searchString || '';
 
   // clears network timeoutRef which serves as await for animation
@@ -30,13 +33,13 @@ export const setPartLookupData = async (
   try {
     if (!searchString || searchString.trim().length === 0) {
       context.isError = false;
-      context.isLoading = false;
+      context[loadingKey] = false;
       context.searchString = '';
       context.partLookup = undefined;
       return;
     }
 
-    context.isLoading = true;
+    context[loadingKey] = true;
 
     await new Promise(r => {
       scopedTimeoutRef = setTimeout(r, 1000);
@@ -54,7 +57,7 @@ export const setPartLookupData = async (
     }
 
     context.errorMessage = null;
-    context.isLoading = false;
+    context[loadingKey] = false;
     context.isError = false;
   } catch (error) {
     if (error && error?.name === 'AbortError') return;
@@ -65,8 +68,11 @@ export const setPartLookupData = async (
 };
 
 export const setPartLookupErrorState = (context: PartLookupComponent, message: ErrorKeys) => {
+  // @ts-ignore
+  const loadingKey = context?.localLoadingName ? context?.localLoadingName : 'isLoading';
+
   context.isError = true;
-  context.isLoading = false;
+  context[loadingKey] = false;
   context.errorMessage = message;
   context.partLookup = undefined;
 };

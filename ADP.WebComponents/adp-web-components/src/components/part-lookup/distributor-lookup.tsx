@@ -136,6 +136,7 @@ export class DistributorLookup implements MultiLingual, VehicleInfoLayoutInterfa
 
   // ===== Start Component Logic
 
+  public localLoadingName = 'distributorLoading';
   @Prop() tmcHeaders?: string;
   @Prop() tmcPayloads?: string;
   @Prop() showQuantity?: boolean;
@@ -176,14 +177,19 @@ export class DistributorLookup implements MultiLingual, VehicleInfoLayoutInterfa
   formSubmit = async (data: { partNumber: string; quantity: string; orderType: string }) => {
     let externalHeaders = {};
 
+    console.log(this.tmcHeaders);
+
     try {
-      externalHeaders = JSON.parse(this.tmcHeaders);
+      if (typeof this.tmcHeaders === 'object') externalHeaders = this.tmcHeaders;
+      else externalHeaders = JSON.parse(this.tmcHeaders);
     } catch (error) {}
 
     let externalPayload = {};
+    console.log(this.tmcPayloads);
 
     try {
-      externalPayload = JSON.parse(this.tmcPayloads);
+      if (typeof this.tmcPayloads === 'object') externalPayload = this.tmcPayloads;
+      else externalPayload = JSON.parse(this.tmcPayloads);
     } catch (error) {}
 
     console.log({ ...data, externalPartNumber: this.externalPartNumber, externalQuantity: this.externalQuantity });
@@ -329,8 +335,8 @@ export class DistributorLookup implements MultiLingual, VehicleInfoLayoutInterfa
                   <div class="flex items-center mb-[12px] justify-center px-[16px] font-bold text-[18px]">{this.locale.TMCStock}</div>
                   <form class="relative tmc-form flex justify-between items-end pt-[8px] pb-[16px]" dir={this.locale.sharedLocales.direction} {...formController}>
                     <div class="flex gap-2">
-                      {this.showPartNumber && <form-input name="quantity" isLoading={this.isLoading} key={this.locale.sharedLocales.lang} form={this.form} />}
-                      {this.showQuantity && <form-input name="partNumber" isLoading={this.isLoading} key={this.locale.sharedLocales.lang} form={this.form} />}
+                      {this.showQuantity && <form-input name="quantity" isLoading={this.isLoading} key={this.locale.sharedLocales.lang} form={this.form} />}
+                      {this.showPartNumber && <form-input name="partNumber" isLoading={this.isLoading} key={this.locale.sharedLocales.lang} form={this.form} />}
                       <form-select
                         clearable
                         forceOpenUpwards
