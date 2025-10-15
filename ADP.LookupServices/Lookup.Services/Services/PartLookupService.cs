@@ -68,28 +68,23 @@ public class PartLookupService
 
         foreach (var item in data.CompanyDeadStockParts.GroupBy(x => x.CompanyID))
         {
-            var deadStock = new DeadStockDTO
-            {
-                BranchDeadStock = item.Select(x => new BranchDeadStockDTO
-                {
-                    CompanyBranchHashID = x.BranchHashID,
-                    Quantity = x.AvailableQuantity,
-                }).ToList()
-            };
+            var deadStock = new DeadStockDTO();
 
             if (options?.CompanyNameResolver is not null)
                 deadStock.CompanyName = await options.CompanyNameResolver(new LookupOptionResolverModel<long?>(item.Key, language, services));
 
-            if (options?.CompanyBranchNameResolver is not null)
+            foreach(var i in item)
             {
-                foreach (var deadStockItem in deadStock.BranchDeadStock)
+                var branchDeadStock = new BranchDeadStockDTO
                 {
-                    var branchId = ShiftEntityHashIdService.Decode(deadStockItem.CompanyBranchHashID, new CompanyBranchHashIdConverter());
+                    CompanyBranchHashID = i.BranchHashID,
+                    Quantity = i.AvailableQuantity,
+                };
 
-                    var branchName = await options.CompanyBranchNameResolver(new LookupOptionResolverModel<long?>(branchId, language, services));
+                if (options?.CompanyBranchNameResolver is not null)
+                    branchDeadStock.CompanyBranchName = await options.CompanyBranchNameResolver(new LookupOptionResolverModel<long?>(i.BranchID, language, services));
 
-                    deadStockItem.CompanyBranchName = branchName;
-                }
+                deadStock.BranchDeadStock = deadStock.BranchDeadStock.Append(branchDeadStock);
             }
 
             deadStockParts.Add(deadStock);
