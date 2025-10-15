@@ -28,7 +28,7 @@ public class CompanyDeadStockPartModel : IPartitionedItem, ICompanyProps, IBranc
     public string PartNumber { get; set; } = default!;
 
     /// <summary>
-    /// The current on-hand quantity of the part in the stock
+    /// The current AvailableQuantity of the part in the stock.
     /// </summary>
-    public decimal OnHandQuantity { get; set; }
+    public decimal AvailableQuantity { get; set; }
 }

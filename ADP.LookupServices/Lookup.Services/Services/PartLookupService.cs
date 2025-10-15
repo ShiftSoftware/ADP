@@ -73,7 +73,7 @@ public class PartLookupService
                 BranchDeadStock = item.Select(x => new BranchDeadStockDTO
                 {
                     CompanyBranchHashID = x.BranchHashID,
-                    Quantity = x.OnHandQuantity,
+                    Quantity = x.AvailableQuantity,
                 }).ToList()
             };
 
