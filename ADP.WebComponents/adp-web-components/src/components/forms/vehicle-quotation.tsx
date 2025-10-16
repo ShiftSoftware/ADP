@@ -143,7 +143,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
         headers['Recaptcha-Token'] = token;
       }
 
-      const response = await fetch(this.structure.data?.requestUrl, {
+      const response = await fetch(requestEndpoint, {
         headers,
         method: 'POST',
         body: JSON.stringify(payload),
