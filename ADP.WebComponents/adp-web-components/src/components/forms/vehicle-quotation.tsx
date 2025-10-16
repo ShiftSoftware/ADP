@@ -66,6 +66,11 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
   setSuccessCallback(data: any) {
     if (this.successCallback) this.successCallback(data, this.locale['Form submitted successfully.'] || '');
     else this.form.openDialog();
+    const formDom = this.el.shadowRoot || this.el;
+
+    let targetElement = formDom instanceof ShadowRoot ? formDom.firstElementChild : formDom;
+
+    targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   async componentWillLoad() {

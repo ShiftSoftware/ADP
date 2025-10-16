@@ -46,10 +46,11 @@ export class FormHook<T> {
 
     this.signal({ isError: false, disabled: false });
 
-    this.rerender({ rerenderAll: true, rerenderForm: true });
-
     setTimeout(() => {
       this.haltValidation = false;
+      setTimeout(() => {
+        this.rerender({ rerenderForm: true, rerenderAll: true });
+      }, 50);
     }, 50);
   }
 

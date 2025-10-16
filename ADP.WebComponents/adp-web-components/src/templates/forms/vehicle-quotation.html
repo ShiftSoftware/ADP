@@ -18,6 +18,27 @@
     <a href="#" onclick="history.back()" style="color: blue; display: block; margin-bottom: 16px">Back</a>
     <h1>Vehicle Quotation Form</h1>
 
-    <vehicle-quotation-form structure-url="https://tiqappstorage.blob.core.windows.net/template-files/tiq-vehicle-quotation-form-structure.json"></vehicle-quotation-form>
+    <!-- is-mobile-form="true" -->
+    <vehicle-quotation-form
+      id="vehicle-quotation"
+      structure-url="https://tiqappstorage.blob.core.windows.net/template-files/tiq-vehicle-quotation-form-structure.json"
+    ></vehicle-quotation-form>
+
+    <script>
+      let vehicleQuotation;
+      let language = 'en';
+
+      document.addEventListener('DOMContentLoaded', () => {
+        vehicleQuotation = document.getElementById('vehicle-quotation');
+        console.log(vehicleQuotation);
+
+        // vehicleQuotation.getMobileToken = async () => {
+        //   const token = await getToken();
+        //   return token;
+        // };
+      });
+
+      // getToken = () => '';
+    </script>
   </body>
 </html>
