@@ -44,9 +44,9 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
 
   @Prop() gistId?: string;
   @Prop() structureUrl?: string;
-  @Prop() successCallback: (data: any) => void;
   @Prop() loadingChanges: (loading: boolean) => void;
   @Prop() errorCallback: (error: any, message: string) => void;
+  @Prop() successCallback: (data: any, message?: string) => void;
   @Prop({ mutable: true }) structure: FormElementStructure<vehicleQuotationElementNames> | undefined;
 
   @Element() el: HTMLElement;
@@ -64,7 +64,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
   }
 
   setSuccessCallback(data: any) {
-    if (this.successCallback) this.successCallback(data);
+    if (this.successCallback) this.successCallback(data, this.locale['Form submitted successfully.'] || '');
     else this.form.openDialog();
   }
 
@@ -126,9 +126,19 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
         'Content-Type': 'application/json',
       };
 
-      if (this.bearerToken) {
-        headers['Authorization'] = this.getBearerToken();
+      let requestEndpoint = '';
+      if (this.isMobileForm) {
+        const token = await this.getMobileToken();
+
+        if (token.toLowerCase().startsWith('bearer')) {
+          headers['Authorization'] = token;
+          requestEndpoint = this.structure.data?.requestAppUrl;
+        } else {
+          headers['verification-token'] = token;
+          requestEndpoint = this.structure.data?.requestAppCheckUrl;
+        }
       } else {
+        requestEndpoint = this.structure.data?.requestUrl;
         const token = await grecaptcha.execute(this.structure.data?.recaptchaKey, { action: 'submit' });
         headers['Recaptcha-Token'] = token;
       }
@@ -163,7 +173,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
 
   // #region Component Logic
   async componentDidLoad() {
-    if (this.bearerToken) return;
+    if (this.isMobileForm) return;
     try {
       const key = this.structure.data?.recaptchaKey;
       if (key) {
@@ -179,8 +189,8 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
     }
   }
 
-  @Prop() bearerToken: boolean;
-  @Prop() getBearerToken?: () => string;
+  @Prop() isMobileForm: boolean = false;
+  @Prop() getMobileToken?: () => string;
 
   form = new FormHook(this, vehicleQuotationInputsValidation);
 
