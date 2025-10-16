@@ -125,7 +125,11 @@ export class FormHook<T> {
         return 0; // They are the same
       });
 
-      if (sortedDomElements[0]) sortedDomElements[0].focus();
+      if (sortedDomElements[0]) {
+        if (sortedDomElements[0].hidden) {
+          sortedDomElements[0].parentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else sortedDomElements[0].focus();
+      }
     }
   };
 
