@@ -13,9 +13,9 @@ public class ServiceCampaignModel
     public DateTime StartDate { get; set; }
     public DateTime ExpireDate { get; set; }
     public IEnumerable<Brands> Brands { get; set; }
-    public IEnumerable<string> BrandIDs { get; set; }
-    public IEnumerable<string> CountryIDs { get; set; }
-    public IEnumerable<string> CompanyIDs { get; set; }
+    public IEnumerable<long?> BrandIDs { get; set; }
+    public IEnumerable<long?> CountryIDs { get; set; }
+    public IEnumerable<long?> CompanyIDs { get; set; }
     public ClaimableItemCampaignActivationTrigger ActivationTrigger { get; set; }
     public ClaimableItemCampaignActivationTypes ActivationType { get; set; }
 }
