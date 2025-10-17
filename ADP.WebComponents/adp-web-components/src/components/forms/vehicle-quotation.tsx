@@ -11,6 +11,8 @@ import { FormHook, FormHookInterface, FormElementStructure, gistLoader } from '~
 import { getLocaleLanguage, getSharedFormLocal, LanguageKeys, MultiLingual, sharedFormLocalesSchema } from '~features/multi-lingual';
 import getLanguageFromUrl from '~lib/get-language-from-url';
 import { fetchJson } from '~lib/fetch-json';
+import cn from '~lib/cn';
+import { LoaderIcon } from '~assets/loader-icon';
 
 declare const grecaptcha: Grecaptcha;
 
@@ -33,7 +35,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
 
     this.localeLanguage = newLanguage;
 
-    this.form.rerender({ rerenderAll: true });
+    this.form?.rerender({ rerenderAll: true });
   }
   // #endregion
 
@@ -75,20 +77,6 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
 
   async componentWillLoad() {
     if (!this.language) this.language = getLanguageFromUrl();
-
-    if (this.structure) {
-      await this.changeLanguage(this.language);
-    } else {
-      if (this.gistId) {
-        const [newGistStructure] = await Promise.all([gistLoader(this.gistId), this.changeLanguage(this.language)]);
-        this.structure = newGistStructure as FormElementStructure<vehicleQuotationElementNames>;
-      } else if (this.structureUrl) {
-        await this.changeLanguage(this.language);
-        const [newGistStructure] = await Promise.all([fetchJson<FormElementStructure<vehicleQuotationElementNames>>(this.structureUrl), this.changeLanguage(this.language)]);
-        this.structure = newGistStructure;
-      }
-    }
-    this.localeLanguage = this.language;
   }
 
   async formSubmit(formValues: VehicleQuotation) {
@@ -192,30 +180,65 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
     } catch (error) {
       console.log(error);
     }
+
+    if (this.structure) {
+      await this.changeLanguage(this.language);
+    } else {
+      if (this.gistId) {
+        const [newGistStructure] = await Promise.all([gistLoader(this.gistId), this.changeLanguage(this.language)]);
+        this.structure = newGistStructure as FormElementStructure<vehicleQuotationElementNames>;
+      } else if (this.structureUrl) {
+        await this.changeLanguage(this.language);
+        const [newGistStructure] = await Promise.all([fetchJson<FormElementStructure<vehicleQuotationElementNames>>(this.structureUrl), this.changeLanguage(this.language)]);
+        this.structure = newGistStructure;
+      }
+    }
+    this.localeLanguage = this.language;
+
+    this.form = new FormHook(this, vehicleQuotationInputsValidation);
   }
 
   @Prop() isMobileForm: boolean = false;
   @Prop() getMobileToken?: () => string;
 
-  form = new FormHook(this, vehicleQuotationInputsValidation);
+  @State() form: FormHook<VehicleQuotation>;
+
+  @State() structureRendered = false;
 
   // #endregion
   render() {
     return (
       <Host>
         <div part={`vehicle-quotation-${this.structure?.data?.theme}`}>
-          <form-structure
-            form={this.form}
-            formLocale={this.locale}
-            structure={this.structure}
-            isLoading={this.isLoading}
-            language={this.localeLanguage}
-            errorMessage={this.errorMessage}
-            formElementMapper={vehicleQuotationElements}
-            successMessage={this.locale['Form submitted successfully.']}
-          >
-            <slot></slot>
-          </form-structure>
+          <div part="form-container" class="relative min-h-[200px]">
+            <div
+              part="form-loader-container"
+              class={cn(
+                'form-loader-container absolute top-0 left-0 w-full h-[200px] pointer-events-none bg-red-400 flex justify-center items-center transition-opacity duration-500',
+                {
+                  'opacity-0': this.structureRendered,
+                },
+              )}
+            >
+              <LoaderIcon part="form-loader-icon" class="img" />
+            </div>
+            <flexible-container onlyForMounting isOpened={this.structureRendered}>
+              {!!this.form && (
+                <form-structure
+                  form={this.form}
+                  formLocale={this.locale}
+                  structure={this.structure}
+                  isLoading={this.isLoading}
+                  language={this.localeLanguage}
+                  errorMessage={this.errorMessage}
+                  formElementMapper={vehicleQuotationElements}
+                  successMessage={this.locale['Form submitted successfully.']}
+                >
+                  <slot></slot>
+                </form-structure>
+              )}
+            </flexible-container>
+          </div>
         </div>
       </Host>
     );

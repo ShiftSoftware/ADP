@@ -31,6 +31,7 @@ export interface FormHookInterface<T> {
   errorMessage: string;
   language: LanguageKeys;
   structure: FormElementStructure<any>;
+  structureRendered?: boolean;
   formSubmit: (formValues: T) => void;
   setErrorCallback: (error: any) => void;
   setSuccessCallback: (data: any) => void;

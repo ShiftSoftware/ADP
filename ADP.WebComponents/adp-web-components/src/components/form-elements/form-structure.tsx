@@ -40,6 +40,12 @@ export class FormStructure {
 
   @State() formContent;
 
+  async componentDidLoad() {
+    setTimeout(() => {
+      if (typeof this.form.context?.structureRendered === 'boolean') this.form.context.structureRendered = true;
+    }, 50);
+  }
+
   render() {
     const [locale] = this.form.getFormLocale();
 

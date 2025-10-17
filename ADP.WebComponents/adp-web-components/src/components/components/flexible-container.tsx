@@ -15,6 +15,9 @@ export class FlexibleContainer {
   @Prop() isOpened?: boolean = true;
   @Prop() stopAnimation?: boolean = false;
   @Prop() height?: number | 'auto' = 'auto';
+  @Prop() onlyForMounting = false;
+
+  @State() stopWorking = false;
 
   content: HTMLDivElement;
   container: HTMLDivElement;
@@ -35,7 +38,7 @@ export class FlexibleContainer {
     this.container = this.el.querySelector('.flexible-container');
     this.content = this.el.querySelector('.flexible-container-content');
 
-    const mustUpdate = () => this.handleChildUpdates();
+    const mustUpdate = () => this.isOpened && this.handleChildUpdates();
 
     this.mutationObserver = new MutationObserver(mustUpdate);
 
@@ -97,6 +100,10 @@ export class FlexibleContainer {
     clearTimeout(this.ChildUpdatesActionTimeout);
     this.ChildUpdatesActionTimeout = setTimeout(() => {
       this.startTransition(staticHeight);
+
+      setTimeout(() => {
+        if (this.isOpened && this.onlyForMounting) this.stopWorking = true;
+      }, 600);
     }, 50);
   };
 
@@ -134,8 +141,12 @@ export class FlexibleContainer {
       <div
         style={this.initialStyle}
         class={cn(
-          'flexible-container w-full min-w-full transition-all overflow-hidden duration-500',
-          { '!h-auto !duration-0 !transition-none': this.stopAnimation || !!this.childrenAnimatingList.length },
+          'flexible-container w-full min-w-full',
+
+          {
+            'transition-all overflow-hidden duration-500': !this.stopWorking,
+            '!h-auto !duration-0 !transition-none': this.stopWorking || this.stopAnimation || !!this.childrenAnimatingList.length,
+          },
           this.containerClasses,
         )}
       >
