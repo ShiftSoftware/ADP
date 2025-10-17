@@ -7,37 +7,20 @@ import { MaterialCard, MaterialCardChildren } from '../components/material-card'
 
 import { PartLookupDTO } from '~types/generated/part/part-lookup-dto';
 
-import distributerSchema from '~locales/partLookup/distributor/type';
-
 import { getMockFile } from '~features/mocks';
 import { VehicleInfoLayout, VehicleInfoLayoutInterface } from '~features/vehicle-info-layout';
 import { BlazorInvokable, DotNetObjectReference, smartInvokable, BlazorInvokableFunction } from '~features/blazor-ref';
 import { PartLookupComponent, PartLookupMock, setPartLookupData, setPartLookupErrorState } from '~features/part-lookup-components';
 import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, sharedLocalesSchema } from '~features/multi-lingual';
-import { FormHook, FormHookInterface, FormInputMeta, FormSelectFetcher, FormSelectItem } from '~features/form-hook';
-import { object, string } from 'yup';
-
-const tmcOrderTypesFetcher: FormSelectFetcher<any> = async ({}): Promise<FormSelectItem[]> => {
-  return [
-    {
-      value: 'V',
-      label: 'V',
-    },
-    {
-      value: 'A',
-      label: 'A ',
-    },
-  ] as FormSelectItem[];
-};
-
-const params = new URLSearchParams(window.location.search);
+import distributerSchema from '~locales/partLookup/distributor/type';
+import { EndPoint } from '~types/components';
 
 @Component({
   shadow: true,
   tag: 'distributor-lookup',
   styleUrl: 'distributor-lookup.css',
 })
-export class DistributorLookup implements MultiLingual, VehicleInfoLayoutInterface, PartLookupComponent, BlazorInvokable, FormHookInterface<any> {
+export class DistributorLookup implements MultiLingual, VehicleInfoLayoutInterface, PartLookupComponent, BlazorInvokable {
   // #region Localization
 
   @Prop() language: LanguageKeys = 'en';
@@ -46,7 +29,6 @@ export class DistributorLookup implements MultiLingual, VehicleInfoLayoutInterfa
 
   async componentWillLoad() {
     await Promise.all([this.changeLanguage(this.language), this.onIsDevChange(this.isDev)]);
-    this.setupTmcForm();
   }
 
   @Watch('language')
@@ -80,7 +62,7 @@ export class DistributorLookup implements MultiLingual, VehicleInfoLayoutInterfa
   @State() isError: boolean = false;
   @State() errorMessage?: ErrorKeys;
   @State() partLookup?: PartLookupDTO;
-  @State() distributorLoading: boolean = false;
+  @State() isLoading: boolean = false;
 
   @Element() el: HTMLElement;
 
@@ -118,7 +100,7 @@ export class DistributorLookup implements MultiLingual, VehicleInfoLayoutInterfa
     setPartLookupErrorState(this, message);
   }
 
-  @Watch('distributorLoading')
+  @Watch('isLoading')
   onLoadingChange(newValue: boolean) {
     smartInvokable.bind(this)(this.loadingStateChange, newValue);
   }
@@ -136,77 +118,9 @@ export class DistributorLookup implements MultiLingual, VehicleInfoLayoutInterfa
 
   // ===== Start Component Logic
 
-  public localLoadingName = 'distributorLoading';
-  @Prop() tmcHeaders?: string;
-  @Prop() tmcPayloads?: string;
-  @Prop() showQuantity?: boolean;
-  @Prop() showPartNumber?: boolean;
-  @Prop() externalQuantity?: string;
-  @Prop() externalPartNumber?: string;
   @Prop() hiddenFields?: string = '';
   @Prop() localizationName?: string = '';
-  @State() tmcResponse = {
-    isSuccess: true,
-    message: '',
-  };
-
-  @State() isLoading: boolean = false;
-
-  form;
-  setupTmcForm = () => {
-    let partNumber = string().meta({ label: 'Part Number', placeholder: 'Part Number' } as FormInputMeta);
-    if (this.showPartNumber) partNumber = partNumber.required('This field is required.');
-
-    let quantity = string().meta({ label: 'quantity', placeholder: 'quantity' } as FormInputMeta);
-    if (this.showQuantity) quantity = quantity.required('This field is required.');
-
-    const orderType = string()
-      .meta({ label: 'Order Type', placeholder: 'Order Type' } as FormInputMeta)
-      .required('This field is required.');
-
-    const tmcLookupValidation = object({
-      orderType,
-      quantity,
-      partNumber,
-    });
-
-    // @ts-ignore
-    this.form = new FormHook(this, tmcLookupValidation);
-  };
-
-  formSubmit = async (data: { partNumber: string; quantity: string; orderType: string }) => {
-    let externalHeaders = {};
-
-    console.log(this.tmcHeaders);
-
-    try {
-      if (typeof this.tmcHeaders === 'object') externalHeaders = this.tmcHeaders;
-      else externalHeaders = JSON.parse(this.tmcHeaders);
-    } catch (error) {}
-
-    let externalPayload = {};
-    console.log(this.tmcPayloads);
-
-    try {
-      if (typeof this.tmcPayloads === 'object') externalPayload = this.tmcPayloads;
-      else externalPayload = JSON.parse(this.tmcPayloads);
-    } catch (error) {}
-
-    console.log({ ...data, externalPartNumber: this.externalPartNumber, externalQuantity: this.externalQuantity });
-    console.log({ externalHeaders, externalPayload });
-
-    await new Promise(r => setTimeout(r, 2000));
-
-    const success = Math.random() > 0.5;
-
-    this.form.reset();
-
-    this.tmcResponse = {
-      isSuccess: success,
-      message: success ? '✅ Request submitted successfully!' : '❌ Failed to submit. Please try again.',
-    };
-  };
-
+  @Prop() tmcLookupEndpoint: EndPoint | string;
   // #endregion
   render() {
     const localName = this.partLookup ? this.localizationName || 'russian' : 'russian';
@@ -278,85 +192,50 @@ export class DistributorLookup implements MultiLingual, VehicleInfoLayoutInterfa
           ),
         }))
       : [];
-    const { formController } = this.form;
 
     return (
       <Host>
         <VehicleInfoLayout
           isError={this.isError}
           coreOnly={this.coreOnly}
-          isLoading={this.distributorLoading}
+          isLoading={this.isLoading}
           header={this.partLookup?.partNumber}
           direction={this.locale.sharedLocales.direction}
           errorMessage={this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard}
         >
           <div class="p-[16px]">
-            {!(params.get('tmcLookupOnly') === 'true') && (
-              <div>
-                <flexible-container>
-                  <div class="flex [&>div]:grow overflow-auto gap-[16px] items-stretch justify-center md:justify-between flex-wrap">
-                    {displayedFields.map(({ label, value, values }) =>
-                      values ? (
-                        <MaterialCard title={label} minWidth="250px">
-                          <MaterialCardChildren class="flex flex-wrap gap-[8px] p-[2px]">
-                            {values
-                              .filter(x => x.body)
-                              .map(x => (
-                                <span class="inline-flex items-center bg-red-50 text-red-800 font-medium px-3 text-[16px] py-1 me-1 mt-2 rounded-lg border border-red-300">
-                                  {x.header && <span class="font-semibold">{x.header}:</span>}
-                                  <span class="ml-1">{x.body}</span>
-                                </span>
-                              ))}
-                          </MaterialCardChildren>
-                        </MaterialCard>
-                      ) : (
-                        <MaterialCard desc={value?.toString() || ''} title={label} minWidth="250px" />
-                      ),
-                    )}
-                  </div>
-                </flexible-container>
+            <div>
+              <flexible-container>
+                <div class="flex [&>div]:grow overflow-auto gap-[16px] items-stretch justify-center md:justify-between flex-wrap">
+                  {displayedFields.map(({ label, value, values }) =>
+                    values ? (
+                      <MaterialCard title={label} minWidth="250px">
+                        <MaterialCardChildren class="flex flex-wrap gap-[8px] p-[2px]">
+                          {values
+                            .filter(x => x.body)
+                            .map(x => (
+                              <span class="inline-flex items-center bg-red-50 text-red-800 font-medium px-3 text-[16px] py-1 me-2 mt-2 rounded-lg border border-red-300">
+                                {x.header && <span class="font-semibold">{x.header}:</span>}
+                                <span class="ml-1">{x.body}</span>
+                              </span>
+                            ))}
+                        </MaterialCardChildren>
+                      </MaterialCard>
+                    ) : (
+                      <MaterialCard desc={value?.toString() || ''} title={label} minWidth="250px" />
+                    ),
+                  )}
+                </div>
+              </flexible-container>
 
-                <div class="mt-[32px] mx-auto w-fit max-w-full">
-                  <div class="bg-[#f6f6f6] h-[50px] flex items-center justify-center px-[16px] font-bold text-[18px]">{this.locale.distributorStock}</div>
-                  <div class="overflow-x-auto">
-                    <information-table isLoading={this.distributorLoading} rows={rows} headers={tableHeaders} />
-                  </div>
+              <div class="mt-[32px] mx-auto w-fit max-w-full">
+                <div class="bg-[#f6f6f6] h-[50px] flex items-center justify-center px-[16px] font-bold text-[18px]">{this.locale.distributorStock}</div>
+                <div class="overflow-x-auto">
+                  <information-table isLoading={this.isLoading} rows={rows} headers={tableHeaders} />
                 </div>
               </div>
-            )}
-
-            <flexible-container
-              // TODO: delete Tts ignore when showTMCPartLookup is added
-              // @ts-ignore
-              isOpened={(!!this?.partLookup?.showTMCPartLookup && !this.distributorLoading) || params.get('tmcLookupOnly') === 'true'}
-            >
-              <div class="w-full max-w-[1000px] mx-auto pt-[32px]">
-                <div class="bg-[#f6f6f6] rounded-md p-[16px]">
-                  <div class="flex items-center mb-[12px] justify-center px-[16px] font-bold text-[18px]">{this.locale.TMCStock}</div>
-                  <form class="relative tmc-form flex justify-between items-end pt-[8px] pb-[16px]" dir={this.locale.sharedLocales.direction} {...formController}>
-                    <div class="flex gap-2">
-                      {this.showQuantity && <form-input name="quantity" isLoading={this.isLoading} key={this.locale.sharedLocales.lang} form={this.form} />}
-                      {this.showPartNumber && <form-input name="partNumber" isLoading={this.isLoading} key={this.locale.sharedLocales.lang} form={this.form} />}
-                      <form-select
-                        clearable
-                        forceOpenUpwards
-                        form={this.form}
-                        name="orderType"
-                        isLoading={this.isLoading}
-                        fetcher={tmcOrderTypesFetcher}
-                        key={this.locale.sharedLocales.lang}
-                        language={this.locale.sharedLocales.language as LanguageKeys}
-                      />
-                    </div>
-                    <form-submit key={this.locale.sharedLocales.lang} isLoading={this.isLoading} form={this.form} />
-                  </form>
-
-                  <flexible-container isOpened={!!this.tmcResponse.message && !this.isLoading}>
-                    <div class="text-center font-semibold py-[12px]">{this.tmcResponse.message}</div>
-                  </flexible-container>
-                </div>
-              </div>
-            </flexible-container>
+            </div>
+            <tmc-lookup standAlone={false} isDev={this.isDev} tmcLookupEndpoint={this.tmcLookupEndpoint} closeTmcLookup={this.isLoading} partLookup={this.partLookup} />
           </div>
         </VehicleInfoLayout>
       </Host>

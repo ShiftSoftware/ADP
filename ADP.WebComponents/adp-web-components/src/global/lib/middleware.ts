@@ -1,4 +1,13 @@
 (async function () {
+  const href = 'https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@100..900&family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap';
+  if (!document.querySelector(`link[href="${href}"]`)) {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = href;
+    document.head.appendChild(link);
+    console.log('✅ Noto Kufi Arabic and Nunito Fonts loaded globally.');
+  }
+
   if (!window['blazorInvoke']) {
     window['blazorInvoke'] = async function (selector, functionName, ...args) {
       const element = document.querySelector(selector);

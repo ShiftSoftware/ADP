@@ -30,15 +30,16 @@ export type FormElementStructure<T> = {
 export interface FormHookInterface<T> {
   gistId?: string;
   el: HTMLElement;
+  locale?: any;
   isLoading: boolean;
-  errorMessage: string;
-  language: LanguageKeys;
-  structure: FormElementStructure<any>;
+  errorMessage?: string;
+  language?: LanguageKeys;
   structureRendered?: boolean;
+  structure?: FormElementStructure<any>;
   formSubmit: (formValues: T) => void;
-  setErrorCallback: (error: any) => void;
-  setSuccessCallback: (data: any) => void;
-  setIsLoading: (loading: boolean) => void;
+  setErrorCallback?: (error: any) => void;
+  setSuccessCallback?: (data: any) => void;
+  setIsLoading?: (loading: boolean) => void;
   loadingChanges?: (loading: boolean) => void;
   errorCallback?: (error: any, message?: string) => void;
   successCallback?: (data: any, message?: string) => void;

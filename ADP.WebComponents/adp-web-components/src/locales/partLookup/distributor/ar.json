@@ -1,6 +1,6 @@
 {
   "info": "معلومات",
-  "TMCStock": "موزع TMC",
+  "TMCLookup": "ابحث في TMC",
   "distributorStock": "موزع الأسهم",
   "availability": "التوفر",
   "notAvailable": "غير متوفر",
@@ -18,5 +18,9 @@
   "orderType": "نوع الطلب",
   "Part Number": "رقم القطعة",
   "quantity": "الكمية",
-  "submit": "إرسال"
+  "submit": "إرسال",
+  "Available": "القطعة المطلوبة متوفرة.",
+  "NotAvailable": "القطعة المطلوبة غير متوفرة.",
+  "PartiallyAvailable": "القطعة المطلوبة متوفرة جزئياً.",
+  "RequestFailed": "فشل طلب البحث عن القطعة. يرجى المحاولة لاحقاً."
 }

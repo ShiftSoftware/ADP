@@ -147,7 +147,7 @@ export class FormSelect implements FormElement {
         options = await this.fetcher({ language: this.language, signal: this.abortController.signal, locale: this.form.getFormLocale()[0] });
       }
 
-      forceUpdate(this.form.formStructure);
+      if (this.form?.formStructure || this.form?.context) forceUpdate(this.form?.formStructure || this.form?.context);
 
       this.form.context[this.name + 'List'] = options;
 

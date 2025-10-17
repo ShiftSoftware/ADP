@@ -3,8 +3,6 @@ import { LanguageKeys } from '~features/multi-lingual';
 export default function getLanguageFromUrl(): LanguageKeys {
   const url = document.URL.toLocaleLowerCase();
 
-  console.log(url);
-
   if (url.includes('/en') || url.includes('/english')) return 'en';
 
   if (url.includes('/ar') || url.includes('/arabic')) return 'ar';

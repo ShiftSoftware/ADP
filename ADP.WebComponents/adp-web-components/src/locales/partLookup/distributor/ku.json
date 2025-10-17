@@ -1,7 +1,7 @@
 {
   "info": "زانیاری",
   "distributorStock": "کۆگا",
-  "TMCStock": "کۆگای TMC",
+  "TMCLookup": "گەڕان لە کۆگاکانی TMC",
   "availability": "بەردەست بوون",
   "notAvailable": "بەردەست نییە",
   "partiallyAvailable": "بەشێکی بەردەستە",
@@ -18,5 +18,9 @@
   "orderType": "جۆری داواکاری",
   "Part Number": "ژمارەی پارچە",
   "quantity": "بڕ",
-  "submit": "ناردن"
+  "submit": "ناردن",
+  "Available": "پارشەی داواکراو بەردەستە.",
+  "NotAvailable": "پارشەی داواکراو بەردەست نییە.",
+  "PartiallyAvailable": "پارشەی داواکراو بەشێوەیەکی بەشدار بەردەستە.",
+  "RequestFailed": "داواکاریی پەرت لۆکاپ شکستی هێنا، تکایە دووبارە هەوڵ بدە."
 }

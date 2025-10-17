@@ -1,7 +1,7 @@
 import { forceUpdate } from '@stencil/core';
 import { AnyObjectSchema, SchemaDescription } from 'yup';
 
-import { LanguageKeys, MultiLingual, SharedFormLocales } from '~features/multi-lingual';
+import { LanguageKeys, SharedFormLocales } from '~features/multi-lingual';
 
 import { Field, FormElement, FormHookInterface, FormStateOptions, Subscribers, ValidationType, WatchCallback, Watchers } from './interface';
 
@@ -22,9 +22,9 @@ export class FormHook<T> {
   formController;
   formStructure?: FormStructure;
   openDialog: () => void = () => {};
-  context: FormHookInterface<T> & MultiLingual;
+  context: FormHookInterface<T>;
 
-  constructor(context: FormHookInterface<T> & MultiLingual, schemaObject: AnyObjectSchema, formStateOptions?: FormStateOptions) {
+  constructor(context: FormHookInterface<T>, schemaObject: AnyObjectSchema, formStateOptions?: FormStateOptions) {
     this.context = context;
     this.schemaObject = schemaObject;
     this.formController = { onSubmit: this.onSubmit, onInput: this.onInput };
@@ -107,7 +107,14 @@ export class FormHook<T> {
     if (!form) return {} as T;
 
     const formData = new FormData(form);
-    const formObject = Object.fromEntries(formData.entries() as Iterable<[string, FormDataEntryValue]>);
+
+    const formObject = Object.fromEntries(formData.entries());
+    for (const el of form.querySelectorAll('[disabled][name]')) {
+      // @ts-ignore
+      formObject[el.name] = (el as HTMLInputElement).value;
+    }
+
+    // const formObject = Object.fromEntries(formData.entries() as Iterable<[string, FormDataEntryValue]>);
 
     return { ...this.cachedValues, ...formObject } as T;
   };

@@ -1,6 +1,3 @@
-@import '../style/shift-skeleton.css';
-@import '../../features/vehicle-info-layout/vehicle-info-layout.css';
-
 :host {
   display: block;
   all: initial !important;

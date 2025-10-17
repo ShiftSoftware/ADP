@@ -1,4 +1,4 @@
-import { Component, Element, Host, Prop, State, h } from '@stencil/core';
+import { Component, Element, Host, Prop, State, Watch, h } from '@stencil/core';
 
 import cn from '~lib/cn';
 import { getNestedValue } from '~lib/get-nested-value';
@@ -23,9 +23,10 @@ export class FormInput implements FormElement {
   @Prop() isLoading?: boolean;
   @Prop() form: FormHook<any>;
   @Prop() inputPrefix: string;
-  @Prop() defaultValue: string;
   @Prop() wrapperClass: string;
-  @Prop() type: string = 'text';
+  @Prop() staticValue?: string;
+  @Prop() inputProps?: any = {};
+  @Prop({ mutable: true }) defaultValue: string;
 
   @State() prefixWidth: number = 0;
 
@@ -35,6 +36,18 @@ export class FormInput implements FormElement {
 
   async componentWillLoad() {
     this.form.subscribe(this.name, this);
+    this.onStaticValueChange(this.staticValue, false);
+  }
+
+  @Watch('staticValue')
+  async onStaticValueChange(newStaticValue?: string, notInitialLoad = true) {
+    if (!!newStaticValue) {
+      this.defaultValue = newStaticValue;
+      this.inputRef.value = newStaticValue;
+    } else if (notInitialLoad) {
+      this.defaultValue = '';
+      this.inputRef.value = '';
+    }
   }
 
   async componentDidLoad() {
@@ -63,18 +76,22 @@ export class FormInput implements FormElement {
     const label = getNestedValue(locale, meta?.label) || meta?.label;
     const placeholder = getNestedValue(locale, meta?.placeholder);
 
+    const isDisabled = disabled || this.isLoading || !!this.staticValue;
+
+    // @ts-ignore
+    if (this.name === 'partNumber') window.aa = this.inputRef;
     return (
       <Host>
-        <label part={this.name} id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, { disabled: this.isLoading })}>
+        <label part={this.name} id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, { disabled: isDisabled })}>
           <FormInputLabel isRequired={isRequired} label={label} />
 
           <div part={`${this.name}-container form-input-container`} class="form-input-container">
             <FormInputPrefix name={this.name} direction={locale?.sharedFormLocales?.direction} prefix={this.inputPrefix} />
             <input
-              type={this.type}
+              {...this.inputProps}
               name={this.name}
+              disabled={isDisabled}
               defaultValue={this.defaultValue}
-              disabled={disabled || this.isLoading}
               part={`${this.name}-input form-input`}
               placeholder={placeholder || meta?.placeholder}
               style={{ ...(this.prefixWidth ? { [locale?.sharedFormLocales?.direction === 'rtl' ? 'paddingRight' : 'paddingLeft']: `${this.prefixWidth}px` } : {}) }}
