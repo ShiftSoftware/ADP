@@ -72,7 +72,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
 
     let targetElement = formDom instanceof ShadowRoot ? formDom.firstElementChild : formDom;
 
-    targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   async componentWillLoad() {
