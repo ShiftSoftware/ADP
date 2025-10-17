@@ -1,4 +1,4 @@
-import { Component, Element, Host, Prop, State, Watch, h } from '@stencil/core';
+import { Component, Element, Host, Prop, State, Watch, forceUpdate, h } from '@stencil/core';
 
 import cn from '~lib/cn';
 import { getNestedValue } from '~lib/get-nested-value';
@@ -25,17 +25,19 @@ export class FormSelect implements FormElement {
   @Prop() resetKey: any;
   @Prop() fetcherKey: any;
   @Prop() wrapperId: string;
-  @Prop() clearable = false;
+  @Prop() isHidden: boolean;
   @Prop() isLoading: boolean;
   @Prop() form: FormHook<any>;
   @Prop() searchable: boolean;
   @Prop() isRequired: boolean;
   @Prop() isDisabled: boolean;
   @Prop() wrapperClass: string;
-  @Prop() defaultValue: string;
+  @Prop() staticValue?: FormSelectItem;
   @Prop() language: LanguageKeys = 'en';
   @Prop() fetcher: FormSelectFetcher<any>;
   @Prop() forceOpenUpwards?: boolean = false;
+  @Prop({ mutable: true }) clearable = false;
+  @Prop({ mutable: true }) defaultValue: string;
 
   @State() searchValue = '';
   @State() isFetching: boolean;
@@ -66,6 +68,10 @@ export class FormSelect implements FormElement {
 
   async componentWillLoad() {
     this.form.subscribe(this.name, this);
+    if (this.staticValue) {
+      this.defaultValue = this.staticValue.value;
+      this.clearable = false;
+    }
     this.selectedValue = this.defaultValue;
   }
 
@@ -130,9 +136,20 @@ export class FormSelect implements FormElement {
 
       if (this.abortController) this.abortController.abort();
 
-      this.abortController = new AbortController();
+      let options: FormSelectItem[];
+      if (!!this.staticValue) {
+        const localizedStaticValue = this.staticValue[this.language];
+        if (localizedStaticValue && localizedStaticValue?.value && localizedStaticValue?.label) options = [localizedStaticValue];
+        else options = [this.staticValue];
+      } else {
+        this.abortController = new AbortController();
 
-      const options = await this.fetcher({ language: this.language, signal: this.abortController.signal, locale: this.form.getFormLocale()[0] });
+        options = await this.fetcher({ language: this.language, signal: this.abortController.signal, locale: this.form.getFormLocale()[0] });
+      }
+
+      forceUpdate(this.form.formStructure);
+
+      this.form.context[this.name + 'List'] = options;
 
       this.fetchingErrorMessage = null;
       this.options = options;
@@ -189,7 +206,14 @@ export class FormSelect implements FormElement {
 
     const filteredOptions = selectedItem ? this.options : this.options.filter(option => option.label.toLowerCase().includes(this.searchValue.toLowerCase()));
 
-    const disableInput = disabled || this.isDisabled || this.isLoading;
+    const disableInput = disabled || this.isDisabled || this.isLoading || !!this.staticValue;
+
+    if (this.isHidden)
+      return (
+        <Host style={{ display: this.isHidden ? 'none' : 'block' }}>
+          <form-shadow-input name={this.name} form={this.form} value={this.selectedValue} />
+        </Host>
+      );
 
     return (
       <Host>

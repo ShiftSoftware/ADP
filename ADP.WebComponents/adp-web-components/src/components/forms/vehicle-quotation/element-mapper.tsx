@@ -1,4 +1,4 @@
-import { forceUpdate, h } from '@stencil/core';
+import { h } from '@stencil/core';
 
 import { FormElementMapper, FormSelectFetcher, FormSelectItem } from '~features/form-hook';
 
@@ -20,15 +20,25 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Vehic
 
       const response = await fetch(vehicleEndpoint, { signal, headers: { 'Accept-Language': language } });
 
-      form.context['vehicleList'] = await response.json();
+      if (form.context.structure?.data?.vehiclesApiStrapiFormat) {
+        const res = await response.json();
 
-      forceUpdate(form.formStructure);
+        let options = res.data;
 
-      return form.context['vehicleList'].map(vehicle => ({
-        label: vehicle.Title,
-        value: `${vehicle.ID}`,
-        meta: { image: vehicle.Image },
-      })) as FormSelectItem[];
+        return options.map(vehicle => ({
+          label: vehicle.attributes.GradeName,
+          value: `${vehicle.id}`,
+          meta: { ...vehicle, image: vehicle.attributes.Cover.data.attributes.url },
+        })) as FormSelectItem[];
+      } else {
+        const options = await response.json();
+
+        return options.map(vehicle => ({
+          label: vehicle.Title,
+          value: `${vehicle.ID}`,
+          meta: { ...vehicle, image: vehicle.Image },
+        })) as FormSelectItem[];
+      }
     };
 
     const params = new URLSearchParams(window.location.search);
@@ -44,12 +54,13 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Vehic
 
       const response = await fetch(dealerEndpoint, { signal, headers: { 'Accept-Language': language } });
 
-      form.context['dealerList'] = (await response.json()).map(dealer => ({
+      const options = (await response.json()).map(dealer => ({
         label: dealer.Name,
         value: `${dealer.ID}`,
+        meta: { ...dealer },
       })) as FormSelectItem[];
 
-      return form.context['dealerList'];
+      return options;
     };
 
     return <form-select {...props} clearable searchable fetcher={fetcher} language={language} />;
@@ -123,12 +134,13 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Vehic
 
       const response = await fetch(currentVehiclesEndpoint, { signal, headers: { 'Accept-Language': 'en' } });
 
-      form.context['currentVehiclesList'] = (await response.json()).filter(vehicle => vehicle.name !== 'Other');
+      const options = (await response.json()).filter(vehicle => vehicle.name !== 'Other');
 
       return [
-        ...form.context['currentVehiclesList'].map(vehicle => ({
+        ...options.map(vehicle => ({
           label: vehicle.name,
           value: `${vehicle.id}`,
+          meta: { ...vehicle },
         })),
         {
           value: 'Other',
@@ -150,7 +162,7 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Vehic
     const fetcher: FormSelectFetcher<VehicleQuotationFormLocale> = async ({}): Promise<FormSelectItem[]> => {
       if (!currentVehicleBrand) return [];
 
-      const selectedBrand = form.context['currentVehiclesList']?.find(vehicle => `${vehicle?.id}` === currentVehicleBrand);
+      const selectedBrand = form.context['currentVehicleBrandList']?.find(vehicle => vehicle.value === currentVehicleBrand)?.meta;
 
       if (!selectedBrand) return [];
 

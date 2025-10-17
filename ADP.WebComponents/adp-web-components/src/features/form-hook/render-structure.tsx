@@ -20,14 +20,24 @@ export function renderStructure(
 
       return (
         <Tag {...props} part={cn(props?.id, props?.class, `element-${tag}`, tag)}>
-          {Array.isArray(children) && children.map(child => renderStructure(child, elementMapper, generaProps))}
+          {Array.isArray(children) && children.map(child => renderStructure(child, elementMapper, { ...generaProps }))}
         </Tag>
       );
     }
 
-    generaProps.props = { wrapperId: props?.id, wrapperClass: props?.class, isLoading: generaProps.isLoading, form: generaProps.form };
+    const newProps = {
+      ...generaProps,
+      props: {
+        ...props,
+        name,
+        wrapperId: props?.id,
+        form: generaProps.form,
+        wrapperClass: props?.class,
+        isLoading: generaProps.isLoading,
+      },
+    };
 
-    if (typeof name === 'string' && name && elementMapper[name]) return elementMapper[name](generaProps);
+    if (typeof name === 'string' && name && elementMapper[name]) return elementMapper[name](newProps);
   }
 
   return false;

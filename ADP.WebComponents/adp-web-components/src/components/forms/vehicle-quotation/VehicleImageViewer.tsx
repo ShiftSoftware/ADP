@@ -38,13 +38,13 @@ export const VehicleImageViewer: FunctionalComponent<VehicleImageViewerProps> = 
 
   let openContainer = !!vehicleId;
 
-  const selectedVehicle = form.context['vehicleList']?.find(vehicle => `${vehicle?.ID}` === vehicleId);
+  const selectedVehicle = form.context['vehicleList']?.find(vehicle => vehicle.value === vehicleId);
 
   let imSrc;
 
   if (selectedVehicle) {
-    imSrc = selectedVehicle?.Image;
-    vehicleId = selectedVehicle.ID;
+    imSrc = selectedVehicle?.meta?.image;
+    vehicleId = selectedVehicle.value;
   } else if (form.context['vehicleList'] && form.context['vehicleList'][0]) {
     imSrc = form.context['vehicleList'][0]?.meta?.image;
     vehicleId = form.context['vehicleList'][0].value;

@@ -8,6 +8,9 @@ import { LanguageKeys } from '~features/multi-lingual';
 export type FormElementStructureComponents<T> = {
   id?: string;
   class?: string;
+  staticValue?: any;
+  isHidden?: boolean;
+  isDisabled?: boolean;
   children?: (FormElementStructureComponents<T> | T)[];
 } & (
   | {

@@ -43,7 +43,7 @@ export class FormStructure {
   async componentDidLoad() {
     setTimeout(() => {
       if (typeof this.form.context?.structureRendered === 'boolean') this.form.context.structureRendered = true;
-    }, 50);
+    }, 300);
   }
 
   render() {

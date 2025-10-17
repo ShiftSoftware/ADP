@@ -83,21 +83,21 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
     try {
       this.setIsLoading(true);
 
-      const nameContactedVehicles = this.structure.data?.nameContactedVehicles;
+      const nameContactedVehicles = this.structure?.data?.nameContactedVehicles;
 
       const payload: any = {
         name: formValues.name,
         phone: formValues.phone,
         companyBranchId: formValues.dealer,
-        vehicleQuotationType: this.structure.data?.quotationType,
+        vehicleQuotationType: this.structure?.data?.quotationType,
         preferredContactTime: formValues?.contactTime || 'NotSpecified',
         preferredPaymentMethod: formValues?.paymentType || 'Flexible',
       };
 
       if (nameContactedVehicles) {
-        payload.vehicle = this['vehicleList'].find(vehicle => `${vehicle.ID}` === formValues.vehicle)?.Title || '';
+        payload.vehicle = this['vehicleList'].find(vehicle => vehicle.value === formValues.vehicle)?.label || '';
         if (formValues?.ownVehicle === 'yes') {
-          const currentBrand = this['currentVehiclesList'].find(brand => `${brand.id}` === formValues.currentVehicleBrand) || false;
+          const currentBrand = this['currentVehicleBrandList'].find(brand => brand.value === formValues.currentVehicleBrand)?.meta || false;
           let currentModel;
 
           if (currentBrand) currentModel = currentBrand.models.find(model => `${model.id}` === formValues.currentVehicleModel) || false;
@@ -114,7 +114,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
         }
       }
       const headers = {
-        'Brand': this.structure.data?.brandId,
+        'Brand': this.structure?.data?.brandId,
         'Accept-Language': this.localeLanguage || 'en',
         'Content-Type': 'application/json',
       };
@@ -125,14 +125,14 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
 
         if (token.toLowerCase().startsWith('bearer')) {
           headers['Authorization'] = token;
-          requestEndpoint = this.structure.data?.requestAppUrl;
+          requestEndpoint = this.structure?.data?.requestAppUrl;
         } else {
           headers['verification-token'] = token;
-          requestEndpoint = this.structure.data?.requestAppCheckUrl;
+          requestEndpoint = this.structure?.data?.requestAppCheckUrl;
         }
       } else {
-        requestEndpoint = this.structure.data?.requestUrl;
-        const token = await grecaptcha.execute(this.structure.data?.recaptchaKey, { action: 'submit' });
+        requestEndpoint = this.structure?.data?.requestUrl;
+        const token = await grecaptcha.execute(this.structure?.data?.recaptchaKey, { action: 'submit' });
         headers['Recaptcha-Token'] = token;
       }
 
@@ -167,19 +167,6 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
   // #region Component Logic
   async componentDidLoad() {
     if (this.isMobileForm) return;
-    try {
-      const key = this.structure.data?.recaptchaKey;
-      if (key) {
-        const script = document.createElement('script');
-        script.src = `https://www.google.com/recaptcha/api.js?render=${key}&hl=${this.language}`;
-        script.async = true;
-        script.defer = true;
-
-        document.head.appendChild(script);
-      }
-    } catch (error) {
-      console.log(error);
-    }
 
     if (this.structure) {
       await this.changeLanguage(this.language);
@@ -194,6 +181,20 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
       }
     }
     this.localeLanguage = this.language;
+
+    try {
+      const key = this.structure?.data?.recaptchaKey;
+      if (key) {
+        const script = document.createElement('script');
+        script.src = `https://www.google.com/recaptcha/api.js?render=${key}&hl=${this.language}`;
+        script.async = true;
+        script.defer = true;
+
+        document.head.appendChild(script);
+      }
+    } catch (error) {
+      console.log(error);
+    }
 
     this.form = new FormHook(this, vehicleQuotationInputsValidation);
   }
@@ -213,12 +214,9 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
           <div part="form-container" class="relative min-h-[200px]">
             <div
               part="form-loader-container"
-              class={cn(
-                'form-loader-container absolute top-0 left-0 w-full h-[200px] pointer-events-none bg-red-400 flex justify-center items-center transition-opacity duration-500',
-                {
-                  'opacity-0': this.structureRendered,
-                },
-              )}
+              class={cn('form-loader-container absolute top-0 left-0 w-full h-[200px] pointer-events-none flex justify-center items-center transition-opacity duration-500', {
+                'opacity-0': this.structureRendered,
+              })}
             >
               <LoaderIcon part="form-loader-icon" class="img" />
             </div>
