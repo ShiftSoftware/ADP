@@ -72,7 +72,10 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
 
     let targetElement = formDom instanceof ShadowRoot ? formDom.firstElementChild : formDom;
 
-    targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const yOffset = -100;
+    const y = targetElement.getBoundingClientRect().top + window.pageYOffset + yOffset;
+
+    window.scrollTo({ top: Math.max(y, 0), behavior: 'smooth' });
   }
 
   async componentWillLoad() {
