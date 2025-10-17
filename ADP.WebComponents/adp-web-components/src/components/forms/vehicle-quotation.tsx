@@ -169,8 +169,6 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
 
   // #region Component Logic
   async componentDidLoad() {
-    if (this.isMobileForm) return;
-
     if (this.structure) {
       await this.changeLanguage(this.language);
     } else {
@@ -185,18 +183,20 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
     }
     this.localeLanguage = this.language;
 
-    try {
-      const key = this.structure?.data?.recaptchaKey;
-      if (key) {
-        const script = document.createElement('script');
-        script.src = `https://www.google.com/recaptcha/api.js?render=${key}&hl=${this.language}`;
-        script.async = true;
-        script.defer = true;
+    if (!this.isMobileForm) {
+      try {
+        const key = this.structure?.data?.recaptchaKey;
+        if (key) {
+          const script = document.createElement('script');
+          script.src = `https://www.google.com/recaptcha/api.js?render=${key}&hl=${this.language}`;
+          script.async = true;
+          script.defer = true;
 
-        document.head.appendChild(script);
+          document.head.appendChild(script);
+        }
+      } catch (error) {
+        console.log(error);
       }
-    } catch (error) {
-      console.log(error);
     }
 
     this.form = new FormHook(this, vehicleQuotationInputsValidation);
