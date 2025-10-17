@@ -61,7 +61,7 @@ public class VehicleLookupService
             this.lookupCosmosService, companyDataAggregate, this.lookupOptions, this.serviceProvider
         ).Evaluate(
             vehicle,
-            data.Warranty.FreeServiceStartDate,
+            data.Warranty?.FreeServiceStartDate,
             data.SaleInformation,
             requestOptions.LanguageCode
         );
