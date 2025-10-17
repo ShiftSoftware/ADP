@@ -43,6 +43,7 @@ public class NoSQLConstants
         {
             public const string Level1 = "/" + nameof(VehicleEntryModel.VIN);
             public const string Level2 = "/" + nameof(VehicleEntryModel.ItemType);
+            public const string Level3 = "/" + nameof(VehicleEntryModel.CompanyID);
         }
 
         public class Parts

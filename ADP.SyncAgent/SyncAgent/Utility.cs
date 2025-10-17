@@ -152,9 +152,14 @@ public class Utility
             "/id"
         ));
 
-        await companyDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
+        await companyDatabase.CreateContainerIfNotExistsAsync(
+            new ContainerProperties(
             Models.Constants.NoSQLConstants.Containers.Vehicles,
-            [Models.Constants.NoSQLConstants.PartitionKeys.Vehicles.Level1, Models.Constants.NoSQLConstants.PartitionKeys.Vehicles.Level2]
+            [
+                Models.Constants.NoSQLConstants.PartitionKeys.Vehicles.Level1, 
+                Models.Constants.NoSQLConstants.PartitionKeys.Vehicles.Level2,
+                Models.Constants.NoSQLConstants.PartitionKeys.Vehicles.Level3,
+            ]
         ));
 
         await companyDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
