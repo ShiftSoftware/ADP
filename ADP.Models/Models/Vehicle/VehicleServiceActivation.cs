@@ -3,7 +3,7 @@ using System;
 
 namespace ShiftSoftware.ADP.Models.Vehicle;
 
-public class VehicleServiceActivation : IPartitionedItem
+public class VehicleServiceActivation : IPartitionedItem, ICompanyProps
 {
     public string id { get; set; }
     public string VIN { get; set; }
@@ -20,4 +20,6 @@ public class VehicleServiceActivation : IPartitionedItem
     public Genders CustomerGender { get; set; }
     public bool IsDeleted { get; set; }
     public string ItemType => ModelTypes.VehicleServiceActivation;
+    public long? CompanyID { get; set; }
+    public string CompanyHashID { get; set; }
 }

@@ -3,7 +3,7 @@ using System;
 
 namespace ShiftSoftware.ADP.Models.Vehicle;
 
-public class VehicleInspectionModel : IPartitionedItem
+public class VehicleInspectionModel : IPartitionedItem, ICompanyProps
 {
     public string id { get; set; }
     public long VehicleInspectionTypeID { get; set; }
@@ -29,4 +29,6 @@ public class VehicleInspectionModel : IPartitionedItem
     public Genders CustomerGender { get; set; }
     public bool IsDeleted { get; set; }
     public string ItemType => ModelTypes.VehicleInspection;
+    public long? CompanyID { get; set; }
+    public string CompanyHashID { get; set; }
 }
