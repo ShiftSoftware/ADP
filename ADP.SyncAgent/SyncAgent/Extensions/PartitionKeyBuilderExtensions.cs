@@ -1,4 +1,5 @@
 ﻿using Microsoft.Azure.Cosmos;
+using Newtonsoft.Json.Linq;
 
 namespace ShiftSoftware.ADP.SyncAgent.Extensions;
 
@@ -10,7 +11,9 @@ public static class PartitionKeyBuilderExtensions
         if (partitionKeyDetail == null)
             return builder;
 
-        if (partitionKeyDetail.Value.type == typeof(string))
+        if (partitionKeyDetail.Value.value is null)
+            builder.AddNullValue();
+        else if (partitionKeyDetail.Value.type == typeof(string))
             builder.Add(partitionKeyDetail.Value.value is not null ? Convert.ToString(partitionKeyDetail.Value.value) : (string?)null);
         else if (partitionKeyDetail.Value.type.IsNumericType() || partitionKeyDetail.Value.type.IsEnum)
             builder.Add(Convert.ToDouble(partitionKeyDetail.Value.value));
