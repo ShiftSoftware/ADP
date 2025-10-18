@@ -68,7 +68,10 @@ public class PartLookupService
 
         foreach (var item in data.CompanyDeadStockParts.GroupBy(x => x.CompanyID))
         {
-            var deadStock = new DeadStockDTO();
+            var deadStock = new DeadStockDTO
+            {
+                CompanyIntegrationID = item.FirstOrDefault()?.CompanyHashID,
+            };
 
             if (options?.CompanyNameResolver is not null)
                 deadStock.CompanyName = await options.CompanyNameResolver(new LookupOptionResolverModel<long?>(item.Key, language, services));
