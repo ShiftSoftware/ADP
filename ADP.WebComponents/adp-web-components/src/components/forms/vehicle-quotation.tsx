@@ -147,7 +147,19 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
 
       if (response.ok) {
         const result = await response?.json();
-        // console.log(99, result);
+
+        const eventHolder = this.structure?.data?.pushAnalyticsEventTo as string | undefined;
+
+        if (eventHolder) {
+          window[eventHolder] = window[eventHolder] || [];
+          window[eventHolder].push({
+            event: 'get_a_quote',
+            phone: formValues.phone,
+            fullname: formValues.name,
+            dealer: this['dealerList'].find(d => d.value === formValues.dealer)?.label,
+            vehicle: this['vehicleList'].find(v => v.value === formValues.vehicle)?.label,
+          });
+        }
 
         this.setSuccessCallback(result);
 
