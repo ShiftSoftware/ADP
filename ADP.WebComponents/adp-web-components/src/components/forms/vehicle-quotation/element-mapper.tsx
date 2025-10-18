@@ -34,9 +34,9 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Vehic
         const options = await response.json();
 
         return options.map(vehicle => ({
-          label: vehicle.Title,
-          value: `${vehicle.ID}`,
-          meta: { ...vehicle, image: vehicle.Image },
+          label: vehicle.title,
+          value: `${vehicle.id}`,
+          meta: { ...vehicle, image: vehicle.image },
         })) as FormSelectItem[];
       }
     };

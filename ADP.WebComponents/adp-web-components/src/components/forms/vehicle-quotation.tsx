@@ -147,6 +147,8 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
 
       if (response.ok) {
         const result = await response?.json();
+        // console.log(99, result);
+
         this.setSuccessCallback(result);
 
         setTimeout(() => {

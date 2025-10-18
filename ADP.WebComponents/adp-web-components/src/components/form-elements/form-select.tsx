@@ -204,7 +204,7 @@ export class FormSelect implements FormElement {
       this.selectedValue = '';
     }
 
-    const filteredOptions = selectedItem ? this.options : this.options.filter(option => option.label.toLowerCase().includes(this.searchValue.toLowerCase()));
+    const filteredOptions = selectedItem ? this.options : this.options.filter(option => option?.label?.toLowerCase().includes(this.searchValue?.toLowerCase()));
 
     const disableInput = disabled || this.isDisabled || this.isLoading || !!this.staticValue;
 
