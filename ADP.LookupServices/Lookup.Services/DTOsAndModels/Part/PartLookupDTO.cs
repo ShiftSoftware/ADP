@@ -25,6 +25,7 @@ public class PartLookupDTO
     public string HSCode { get; set; }
     public string Origin { get; set; }
     public IEnumerable<string> SupersededTo { get; set; }
+    public IEnumerable<string> SupersededFrom { get; set; }
     public IEnumerable<StockPartDTO> StockParts { get; set; }
     public IEnumerable<PartPriceDTO> Prices { get; set; }
     public IEnumerable<HSCodeDTO> HSCodes { get; set; }

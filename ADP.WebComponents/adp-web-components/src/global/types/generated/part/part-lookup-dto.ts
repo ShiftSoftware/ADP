@@ -19,6 +19,7 @@ export type PartLookupDTO = {
     hsCode: string;
     origin: string;
     supersededTo: string[];
+    supersededFrom: string[];
     stockParts: StockPartDTO[];
     prices: PartPriceDTO[];
     hsCodes: HSCodeDTO[];

@@ -174,7 +174,8 @@ public class PartLookupService
             LogId = null,
             StockParts = stockParts,
             Prices = resolvedPrices,
-            SupersededTo = cosmosPartCatalog?.SupersededTo?.Select(x=> x.PartNumber)
+            SupersededTo = cosmosPartCatalog?.SupersededTo?.Select(x=> x.PartNumber),
+            SupersededFrom = cosmosPartCatalog?.SupersededFrom?.Select(x=> x.PartNumber),
         };
 
         if (!skipLogging)
