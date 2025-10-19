@@ -1,6 +1,6 @@
 export type PriceDTO = {
     value?: number;
-    currecntySymbol: string;
+    currencySymbol: string;
     cultureName: string;
     formattedValue: string;
 };

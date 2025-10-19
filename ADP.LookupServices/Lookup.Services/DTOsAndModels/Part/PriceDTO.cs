@@ -8,7 +8,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Part;
 public class PriceDTO
 {
     public decimal? Value { get; set; }
-    public string CurrecntySymbol { get; set; }
+    public string CurrencySymbol { get; set; }
     public string CultureName { get; set; }
 
     [JsonIgnore]

@@ -70,7 +70,7 @@ public class PartLookupService
         {
             var deadStock = new DeadStockDTO
             {
-                CompanyIntegrationID = item.FirstOrDefault()?.CompanyHashID,
+                CompanyHashID = item.FirstOrDefault()?.CompanyHashID,
             };
 
             if (options?.CompanyNameResolver is not null)
