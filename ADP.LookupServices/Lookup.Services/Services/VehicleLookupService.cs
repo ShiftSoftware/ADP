@@ -35,6 +35,9 @@ public class VehicleLookupService
 
     public async Task<VehicleLookupDTO> LookupAsync(string vin, VehicleLookupRequestOptions requestOptions)
     {
+        if (requestOptions is null)
+            requestOptions = new VehicleLookupRequestOptions();
+
         // Get all items related to the VIN from the cosmos container
         var companyDataAggregate = await lookupCosmosService.GetAggregatedCompanyData(vin);
 
