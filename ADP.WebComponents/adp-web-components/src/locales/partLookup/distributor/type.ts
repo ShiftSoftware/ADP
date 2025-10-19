@@ -21,9 +21,6 @@ const distributerSchema = yupTypeMapper([
   'Part Number',
   'quantity',
   'submit',
-  'Available',
-  'NotAvailable',
-  'PartiallyAvailable',
   'RequestFailed',
 ]);
 

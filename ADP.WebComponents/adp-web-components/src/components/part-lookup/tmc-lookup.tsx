@@ -1,17 +1,13 @@
 import { Component, Element, Host, Prop, State, Watch, h } from '@stencil/core';
 
 import distributerSchema from '~locales/partLookup/distributor/type';
-
 import { ComponentLocale, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, sharedLocalesSchema } from '~features/multi-lingual';
 import { FormHook, FormHookInterface, FormInputMeta, FormSelectFetcher, FormSelectItem } from '~features/form-hook';
 import { InferType, number, object, string } from 'yup';
 import { PartLookupDTO } from '~types/generated/part/part-lookup-dto';
 import { EndPoint } from '~types/components';
 import getLanguageFromUrl from '~lib/get-language-from-url';
-import { CloudAlertIcon } from '~assets/cloud-alert-icon';
-import { InfoIcon } from '~assets/info-icon';
-import { LaptopMinimalCheckIcon } from '~assets/laptop-minimal-check';
-import { OctagonXIcon } from '~assets/octagon-x';
+import cn from '~lib/cn';
 
 const tmcOrderTypesFetcher: FormSelectFetcher<any> = async ({}): Promise<FormSelectItem[]> => {
   return [
@@ -43,10 +39,6 @@ const tmcLookupValidation = object({
 export type TmcLookupValidation = InferType<typeof tmcLookupValidation>;
 
 export type Locale = ComponentLocale<typeof distributerSchema>;
-
-const tmcResponses = ['Available', 'NotAvailable', 'PartiallyAvailable', 'RequestFailed'] as const;
-
-export type TmcResponseMessage = (typeof tmcResponses)[number];
 
 @Component({
   shadow: true,
@@ -82,7 +74,20 @@ export class TmcLookup implements MultiLingual, FormHookInterface<TmcLookupValid
     try {
       if (this.isDev) {
         await new Promise(r => setTimeout(r, 2000));
-        this.tmcResponse = tmcResponses[Math.floor(Math.random() * tmcResponses.length)];
+        if (0.5 < Math.random()) {
+          if (0.5 < Math.random()) this.tmcResponse = { isSuccess: true, data: 'This is sample success message' };
+          else this.tmcResponse = { isSuccess: false, data: '' };
+        } else {
+          this.tmcResponse = {
+            isSuccess: true,
+            data: {
+              'item 1': Math.floor(Math.random() * 100),
+              'item 2': 'Available',
+              'item 3': Math.floor(Math.random() * 100),
+              'item 4': 'Not Available',
+            },
+          };
+        }
         this.form.reset();
         return;
       }
@@ -90,8 +95,9 @@ export class TmcLookup implements MultiLingual, FormHookInterface<TmcLookupValid
       let tmcEndpoint: EndPoint = typeof this.tmcLookupEndpoint === 'string' ? JSON.parse(this.tmcLookupEndpoint) : this.tmcLookupEndpoint;
 
       const defaultHeaders: Record<string, string> = {
-        'Content-Type': 'application/json',
         'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Accept-Language': this.language || 'en',
       };
 
       const config: RequestInit = {
@@ -106,14 +112,14 @@ export class TmcLookup implements MultiLingual, FormHookInterface<TmcLookupValid
         throw new Error(`Request failed with status ${response.status}`);
       }
 
-      const responseType = (await response.json()) as TmcResponseMessage; // 'Available' | 'NotAvailable' | 'PartiallyAvailable' | 'RequestFailed'
+      const responseType = (await response.json()) as (typeof this.tmcResponse)['data'];
 
       this.form.reset();
 
-      this.tmcResponse = responseType;
+      this.tmcResponse = { isSuccess: true, data: responseType };
     } catch (error) {
       console.error('❌ TMC Lookup request failed:', error);
-      this.tmcResponse = 'RequestFailed';
+      this.tmcResponse = { isSuccess: false, data: '' };
     }
   };
   // #endregion
@@ -127,7 +133,10 @@ export class TmcLookup implements MultiLingual, FormHookInterface<TmcLookupValid
   @Prop() closeTmcLookup?: boolean;
   @Prop() tmcLookupEndpoint: EndPoint | string;
 
-  @State() tmcResponse?: TmcResponseMessage;
+  @State() tmcResponse?: {
+    isSuccess: boolean;
+    data: Record<string, string | number> | string;
+  };
 
   form = new FormHook(this, tmcLookupValidation);
 
@@ -136,12 +145,12 @@ export class TmcLookup implements MultiLingual, FormHookInterface<TmcLookupValid
   render() {
     const { formController } = this.form;
 
+    // @ts-ignore
+    const isComponentOpened = (!!this?.partLookup?.showTMCPartLookup && !this.closeTmcLookup) || this.standAlone;
+
     return (
       <Host>
-        <flexible-container
-          // @ts-ignore
-          isOpened={(!!this?.partLookup?.showTMCPartLookup && !this.closeTmcLookup) || this.standAlone}
-        >
+        <flexible-container isOpened={isComponentOpened}>
           <div class="w-full max-w-[96vw] mx-auto pt-[32px]">
             <div class="bg-[#f6f6f6] rounded-md p-[16px]">
               <div class="flex items-center mb-[12px] justify-center px-[16px] font-bold text-[18px]">{this.locale.TMCLookup}</div>
@@ -157,7 +166,6 @@ export class TmcLookup implements MultiLingual, FormHookInterface<TmcLookupValid
                   <form-input inputProps={{ type: 'number', min: 1 }} name="quantity" isLoading={this.isLoading} key={this.locale.sharedLocales.lang} form={this.form} />
                   <form-select
                     clearable
-                    forceOpenUpwards
                     form={this.form}
                     name="orderType"
                     isLoading={this.isLoading}
@@ -170,13 +178,25 @@ export class TmcLookup implements MultiLingual, FormHookInterface<TmcLookupValid
               </form>
 
               <flexible-container isOpened={!!this.tmcResponse && !this.isLoading}>
-                <div class="flex flex-col items-center pt-[22px]">
-                  {this.tmcResponse === 'Available' && <LaptopMinimalCheckIcon class="size-[100px] fill-transparent stroke-green-600" />}
-                  {this.tmcResponse === 'PartiallyAvailable' && <InfoIcon class="size-[100px] fill-transparent stroke-blue-600" />}
-                  {this.tmcResponse === 'NotAvailable' && <OctagonXIcon class="size-[100px] fill-transparent stroke-yellow-600" />}
-                  {!['Available', 'NotAvailable', 'PartiallyAvailable'].includes(this.tmcResponse || '') && <CloudAlertIcon class="size-[100px] fill-transparent stroke-red-600" />}
-
-                  <div class="text-center text-[20px] font-semibold py-[12px]">{this.locale[this.tmcResponse] || this.tmcResponse}</div>
+                <div class="flex flex-col items-center pt-[12px]">
+                  <div
+                    class={cn('text-center text-[20px] font-semibold py-[12px]', {
+                      'text-green-600': this.tmcResponse?.isSuccess && typeof this.tmcResponse?.data === 'string',
+                      'text-red-600': !this.tmcResponse?.isSuccess,
+                    })}
+                  >
+                    {typeof this.tmcResponse?.data === 'string' && (this.tmcResponse?.data || this.locale.RequestFailed)}
+                    {typeof this.tmcResponse?.data === 'object' && (
+                      <div class="bg-white rounded-lg border w-[500px]">
+                        {Object.entries(this.tmcResponse?.data).map(([key, value]) => (
+                          <div key={`${key}-${value}`} class="flex even:bg-slate-100 hover:bg-sky-100/50 border-b w-full text-xl text-center">
+                            <div class="text-center flex items-center flex-1 max-w-[250px] shrink-0 justify-center py-[10px] px-[16px] border-r">{key}</div>
+                            <div class="text-center flex items-center flex-1 shrink-0 justify-center py-[10px] px-[16px] border-l">{value}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </flexible-container>
             </div>

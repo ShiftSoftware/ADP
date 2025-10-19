@@ -19,8 +19,5 @@
   "Part Number": "Part Number",
   "submit": "Submit",
   "quantity": "Quantity",
-  "Available": "Requested part lookup is available.",
-  "NotAvailable": "Requested part lookup is not available.",
-  "PartiallyAvailable": "Requested part lookup is partially available.",
   "RequestFailed": "Part lookup request failed. Please try again later."
 }

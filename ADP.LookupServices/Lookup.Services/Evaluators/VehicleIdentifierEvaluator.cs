@@ -26,7 +26,7 @@ public class VehicleIdentifierEvaluator
             Color = vehicle.ExteriorColorCode,
             Trim = vehicle.InteriorColorCode,
             Brand = vehicle.Brand,
-            //BrandID = vehicle.BrandID
+            BrandID = vehicle.BrandID.ToString()
         };
     }
 }
