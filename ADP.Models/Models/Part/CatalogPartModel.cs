@@ -125,12 +125,12 @@ public class CatalogPartModel :
     /// <summary>
     /// A list of all the <see cref="PartSupersessionModel">Supersessions</see> that the part has.
     /// </summary>
-    public IEnumerable<PartSupersessionModel> SupersededTo { get; set; }
+    public IEnumerable<PartSupersessionModel> SupersededTo { get; set; } = [];
 
     /// <summary>
     /// A list of all <see cref="PartSupersessionModel">Supersessions</see> Where this part is the superseding part.
     /// </summary>
-    public IEnumerable<PartSupersessionModel> SupersededFrom { get; set; }
+    public IEnumerable<PartSupersessionModel> SupersededFrom { get; set; } = [];
 
     /// <summary>
     /// The localized description of the part.
@@ -145,7 +145,7 @@ public class CatalogPartModel :
     /// <summary>
     /// <see cref="PartCountryDataModel">Per Country</see> data for the part.
     /// </summary>
-    public IEnumerable<PartCountryDataModel> CountryData { get; set; }
+    public IEnumerable<PartCountryDataModel> CountryData { get; set; } = [];
 
     [DocIgnore]
     public string ItemType => ModelTypes.CatalogPart;

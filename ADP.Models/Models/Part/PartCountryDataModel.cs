@@ -26,5 +26,5 @@ public class PartCountryDataModel : ICountryProps
     /// <summary>
     /// <see cref="RegionPriceModel">Region</see>-specific price information for the part.
     /// </summary>
-    public IEnumerable<RegionPriceModel> RegionPrices { get; set; }
+    public IEnumerable<RegionPriceModel> RegionPrices { get; set; } = [];
 }
