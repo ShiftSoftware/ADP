@@ -1,6 +1,7 @@
 ﻿using Reqnroll;
 using ShiftSoftware.ADP.Lookup.Services.Aggregate;
 using ShiftSoftware.ADP.Models.Vehicle;
+using Xunit;
 
 namespace LookupServices.BDD.StepDefinitions;
 
@@ -89,5 +90,56 @@ public class SharedStepDefinitions
     public void WhenChecking(string vin)
     {
         this._companyDataAggregate.VIN = vin;
+    }
+
+    [Then("The Vehicle is in VehicleEntries")]
+    public void TheVehicleIsInVehicleEntries()
+    {
+        Assert.Contains(
+            this._companyDataAggregate.VehicleEntries,
+            x => x.VIN == this._companyDataAggregate.VIN
+        );
+
+        this.AssertEntireDataSet();
+    }
+
+    [Then("The Vehicle is in SSCAffectedVINs")]
+    public void TheVehicleIsInSSCAffectedVINs()
+    {
+        Assert.Contains(
+            this._companyDataAggregate.SSCAffectedVINs,
+            x => x.VIN == this._companyDataAggregate.VIN
+        );
+
+        this.AssertEntireDataSet();
+    }
+
+    [Then("The Vehicle is in InitialOfficialVINs")]
+    public void TheVehicleIsInInitialOfficialVINs()
+    {
+        Assert.Contains(
+            this._companyDataAggregate.InitialOfficialVINs,
+            x => x.VIN == this._companyDataAggregate.VIN
+        );
+
+        this.AssertEntireDataSet();
+    }
+
+    private void AssertEntireDataSet()
+    {
+        Assert.Contains(
+            this._companyDataAggregate.VehicleEntries,
+            x => x.VIN == "5TDJK3DC1BS013795"
+        );
+
+        Assert.Contains(
+            this._companyDataAggregate.SSCAffectedVINs,
+            x => x.VIN == "1N4AL11D65N937700"
+        );
+
+        Assert.Contains(
+            this._companyDataAggregate.InitialOfficialVINs,
+            x => x.VIN == "1G1AP87H2DL161084"
+        );
     }
 }

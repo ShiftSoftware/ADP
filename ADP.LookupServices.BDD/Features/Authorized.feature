@@ -28,6 +28,15 @@ Scenario: Authorized From SSC
 
 
 Scenario: Unauthorized
+	Given a dealer with the following vehicles in their dealer stock (coming from their DMS):
+		| VIN               |
+		| 2C3CCAGG1DH549029 |
+	And a dealer with the following vehicles in official SSC Vehciles (Provided by the vehicle manufacturer):
+		| VIN               |
+		| 1HGCD5630TA078763 |
+	And a dealer with the following vehicles as initial stock:
+		| VIN               |
+		| 1FDKF37G8VEB34451 |
 	When Checking "WMWZB3C55BWM46667"
 	Then The Vehicle is considered Unauthroized
 	When Checking "1FMYU60EXYUA30399"
