@@ -8,8 +8,9 @@ import { PartLookupDTO } from '~types/generated/part/part-lookup-dto';
 import { EndPoint } from '~types/components';
 import getLanguageFromUrl from '~lib/get-language-from-url';
 import cn from '~lib/cn';
+import { ManufacturerPartLookupDTO } from '~types/generated/part/manufacturer-part-lookup-dto';
 
-const tmcOrderTypesFetcher: FormSelectFetcher<any> = async ({}): Promise<FormSelectItem[]> => {
+const manufacturerOrderTypesFetcher: FormSelectFetcher<any> = async ({}): Promise<FormSelectItem[]> => {
   return [
     {
       value: 'V',
@@ -22,7 +23,7 @@ const tmcOrderTypesFetcher: FormSelectFetcher<any> = async ({}): Promise<FormSel
   ] as FormSelectItem[];
 };
 
-const tmcLookupValidation = object({
+const manufacturerPartLookupValidation = object({
   orderType: string()
     .meta({ label: 'Order Type', placeholder: 'Order Type' } as FormInputMeta)
     .required('This field is required.'),
@@ -36,16 +37,16 @@ const tmcLookupValidation = object({
     .required('This field is required.'),
 });
 
-export type TmcLookupValidation = InferType<typeof tmcLookupValidation>;
+export type ManufacturerPartLookupValidation = InferType<typeof manufacturerPartLookupValidation>;
 
 export type Locale = ComponentLocale<typeof distributerSchema>;
 
 @Component({
   shadow: true,
-  tag: 'tmc-lookup',
-  styleUrl: 'tmc-lookup.css',
+  tag: 'manufacturer-part-lookup',
+  styleUrl: 'manufacturer-part-lookup.css',
 })
-export class TmcLookup implements MultiLingual, FormHookInterface<TmcLookupValidation> {
+export class ManufacturerPartLookup implements MultiLingual, FormHookInterface<ManufacturerPartLookupValidation> {
   // #region Localization
 
   @Prop({ mutable: true }) language: LanguageKeys;
@@ -70,29 +71,32 @@ export class TmcLookup implements MultiLingual, FormHookInterface<TmcLookupValid
 
   @Element() el: HTMLElement;
 
-  formSubmit = async (payload: TmcLookupValidation) => {
+  formSubmit = async (payload: ManufacturerPartLookupValidation) => {
     try {
       if (this.isDev) {
         await new Promise(r => setTimeout(r, 2000));
         if (0.5 < Math.random()) {
-          if (0.5 < Math.random()) this.tmcResponse = { isSuccess: true, data: 'This is sample success message' };
-          else this.tmcResponse = { isSuccess: false, data: '' };
+          if (0.5 < Math.random()) this.manufacturerResponse = { isSuccess: true, message: 'This is sample f success message' };
+          else this.manufacturerResponse = { isSuccess: false, message: 'This is sample of failed message' };
         } else {
-          this.tmcResponse = {
+          this.manufacturerResponse = {
             isSuccess: true,
-            data: {
-              'item 1': Math.floor(Math.random() * 100),
-              'item 2': 'Available',
-              'item 3': Math.floor(Math.random() * 100),
-              'item 4': 'Not Available',
-            },
+
+            data: [
+              { fieldName: 'item 1', fieldValue: `${Math.floor(Math.random() * 100)}` },
+              { fieldName: 'item 2', fieldValue: 'Available' },
+              { fieldName: 'item 3', fieldValue: `${Math.floor(Math.random() * 100)}` },
+              { fieldName: 'item 4', fieldValue: 'Not Available' },
+            ],
           };
         }
+
         this.form.reset();
         return;
       }
 
-      let tmcEndpoint: EndPoint = typeof this.tmcLookupEndpoint === 'string' ? JSON.parse(this.tmcLookupEndpoint) : this.tmcLookupEndpoint;
+      let manufacturerEndpoint: EndPoint =
+        typeof this.manufacturerPartLookupEndpoint === 'string' ? JSON.parse(this.manufacturerPartLookupEndpoint) : this.manufacturerPartLookupEndpoint;
 
       const defaultHeaders: Record<string, string> = {
         'Accept': 'application/json',
@@ -101,25 +105,25 @@ export class TmcLookup implements MultiLingual, FormHookInterface<TmcLookupValid
       };
 
       const config: RequestInit = {
-        method: tmcEndpoint?.method || 'POST',
-        headers: { ...defaultHeaders, ...(tmcEndpoint?.headers || {}) },
-        body: JSON.stringify({ ...payload, ...(tmcEndpoint?.body || {}) }),
+        method: manufacturerEndpoint?.method || 'POST',
+        headers: { ...defaultHeaders, ...(manufacturerEndpoint?.headers || {}) },
+        body: JSON.stringify({ ...payload, ...(manufacturerEndpoint?.body || {}) }),
       };
 
-      const response = await fetch(tmcEndpoint.url, config);
+      const response = await fetch(manufacturerEndpoint.url, config);
 
       if (!response.ok) {
         throw new Error(`Request failed with status ${response.status}`);
       }
 
-      const responseType = (await response.json()) as (typeof this.tmcResponse)['data'];
+      const responseType = (await response.json()) as (typeof this.manufacturerResponse)['data'];
 
       this.form.reset();
 
-      this.tmcResponse = { isSuccess: true, data: responseType };
+      this.manufacturerResponse = { isSuccess: true, data: responseType };
     } catch (error) {
-      console.error('❌ TMC Lookup request failed:', error);
-      this.tmcResponse = { isSuccess: false, data: '' };
+      console.error('❌ Manufacturer Lookup request failed:', error);
+      this.manufacturerResponse = { isSuccess: false, message: ' Manufacturer Lookup request failed' };
     }
   };
   // #endregion
@@ -129,32 +133,29 @@ export class TmcLookup implements MultiLingual, FormHookInterface<TmcLookupValid
   @Prop() isDev?: boolean;
   @Prop() standAlone?: boolean = true;
   @Prop() partLookup?: PartLookupDTO;
+  @Prop() manufacturerPartLookupTitle?: string = 'Manufacture lookup';
 
-  @Prop() closeTmcLookup?: boolean;
-  @Prop() tmcLookupEndpoint: EndPoint | string;
+  @Prop() closeManufacturerPartLookup?: boolean;
+  @Prop() manufacturerPartLookupEndpoint: EndPoint | string;
 
-  @State() tmcResponse?: {
-    isSuccess: boolean;
-    data: Record<string, string | number> | string;
-  };
+  @State() manufacturerResponse?: ManufacturerPartLookupDTO;
 
-  form = new FormHook(this, tmcLookupValidation);
+  form = new FormHook(this, manufacturerPartLookupValidation);
 
   // #endregion
 
   render() {
     const { formController } = this.form;
 
-    // @ts-ignore
-    const isComponentOpened = (!!this?.partLookup?.showTMCPartLookup && !this.closeTmcLookup) || this.standAlone;
+    const isComponentOpened = (!!this?.partLookup?.showManufacturerPartLookup && !this.closeManufacturerPartLookup) || this.standAlone;
 
     return (
       <Host>
         <flexible-container isOpened={isComponentOpened}>
           <div class="w-full max-w-[96vw] mx-auto pt-[32px]">
             <div class="bg-[#f6f6f6] rounded-md p-[16px]">
-              <div class="flex items-center mb-[12px] justify-center px-[16px] font-bold text-[18px]">{this.locale.TMCLookup}</div>
-              <form class="relative tmc-form flex flex-col items-center gap-[32px] pt-[8px] pb-[16px]" dir={this.locale.sharedLocales.direction} {...formController}>
+              <div class="flex items-center mb-[12px] justify-center px-[16px] font-bold text-[18px]">{this.manufacturerPartLookupTitle}</div>
+              <form class="relative manufacturer-form flex flex-col items-center gap-[32px] pt-[8px] pb-[16px]" dir={this.locale.sharedLocales.direction} {...formController}>
                 <div class="flex gap-2">
                   <form-input
                     form={this.form}
@@ -169,7 +170,7 @@ export class TmcLookup implements MultiLingual, FormHookInterface<TmcLookupValid
                     form={this.form}
                     name="orderType"
                     isLoading={this.isLoading}
-                    fetcher={tmcOrderTypesFetcher}
+                    fetcher={manufacturerOrderTypesFetcher}
                     key={this.locale.sharedLocales.lang}
                     language={this.locale.sharedLocales.language as LanguageKeys}
                   />
@@ -177,21 +178,21 @@ export class TmcLookup implements MultiLingual, FormHookInterface<TmcLookupValid
                 <form-submit key={this.locale.sharedLocales.lang} isLoading={this.isLoading} form={this.form} />
               </form>
 
-              <flexible-container isOpened={!!this.tmcResponse && !this.isLoading}>
+              <flexible-container isOpened={!!this.manufacturerResponse && !this.isLoading}>
                 <div class="flex flex-col items-center pt-[12px]">
                   <div
                     class={cn('text-center text-[20px] font-semibold py-[12px]', {
-                      'text-green-600': this.tmcResponse?.isSuccess && typeof this.tmcResponse?.data === 'string',
-                      'text-red-600': !this.tmcResponse?.isSuccess,
+                      'text-green-600': this.manufacturerResponse?.isSuccess && !this.manufacturerResponse?.data?.length,
+                      'text-red-600': !this.manufacturerResponse?.isSuccess,
                     })}
                   >
-                    {typeof this.tmcResponse?.data === 'string' && (this.tmcResponse?.data || this.locale.RequestFailed)}
-                    {typeof this.tmcResponse?.data === 'object' && (
+                    {!this.manufacturerResponse?.data?.length && (this.manufacturerResponse?.message || this.locale.RequestFailed)}
+                    {!!this.manufacturerResponse?.data?.length && (
                       <div class="bg-white rounded-lg border w-[500px]">
-                        {Object.entries(this.tmcResponse?.data).map(([key, value]) => (
-                          <div key={`${key}-${value}`} class="flex even:bg-slate-100 hover:bg-sky-100/50 border-b w-full text-xl text-center">
-                            <div class="text-center flex items-center flex-1 max-w-[250px] shrink-0 justify-center py-[10px] px-[16px] border-r">{key}</div>
-                            <div class="text-center flex items-center flex-1 shrink-0 justify-center py-[10px] px-[16px] border-l">{value}</div>
+                        {this.manufacturerResponse?.data.map(({ fieldName, fieldValue }) => (
+                          <div key={`${fieldName}-${fieldValue}`} class="flex even:bg-slate-100 hover:bg-sky-100/50 border-b w-full text-xl text-center">
+                            <div class="text-center flex items-center flex-1 max-w-[250px] shrink-0 justify-center py-[10px] px-[16px] border-r">{fieldName}</div>
+                            <div class="text-center flex items-center flex-1 shrink-0 justify-center py-[10px] px-[16px] border-l">{fieldValue}</div>
                           </div>
                         ))}
                       </div>

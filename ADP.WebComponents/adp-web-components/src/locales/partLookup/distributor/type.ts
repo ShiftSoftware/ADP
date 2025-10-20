@@ -3,7 +3,6 @@ import yupTypeMapper from '~lib/yup-type-mapper';
 const distributerSchema = yupTypeMapper([
   'info',
   'distributorStock',
-  'TMCLookup',
   'availability',
   'notAvailable',
   'partiallyAvailable',

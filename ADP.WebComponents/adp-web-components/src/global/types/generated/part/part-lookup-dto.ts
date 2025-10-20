@@ -9,6 +9,7 @@ export type PartLookupDTO = {
     productGroup: string;
     pnc: string;
     binType: string;
+    showManufacturerPartLookup: boolean;
     distributorPurchasePrice?: number;
     length?: number;
     width?: number;

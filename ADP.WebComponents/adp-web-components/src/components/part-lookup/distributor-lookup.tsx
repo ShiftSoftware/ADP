@@ -120,7 +120,8 @@ export class DistributorLookup implements MultiLingual, VehicleInfoLayoutInterfa
 
   @Prop() hiddenFields?: string = '';
   @Prop() localizationName?: string = '';
-  @Prop() tmcLookupEndpoint: EndPoint | string;
+  @Prop() manufacturerPartLookupTitle?: string;
+  @Prop() manufacturerPartLookupEndpoint: EndPoint | string;
   // #endregion
   render() {
     const localName = this.partLookup ? this.localizationName || 'russian' : 'russian';
@@ -235,7 +236,14 @@ export class DistributorLookup implements MultiLingual, VehicleInfoLayoutInterfa
                 </div>
               </div>
             </div>
-            <tmc-lookup standAlone={false} isDev={this.isDev} tmcLookupEndpoint={this.tmcLookupEndpoint} closeTmcLookup={this.isLoading} partLookup={this.partLookup} />
+            <manufacturer-part-lookup
+              standAlone={false}
+              isDev={this.isDev}
+              partLookup={this.partLookup}
+              closeManufacturerPartLookup={this.isLoading}
+              manufacturerPartLookupTitle={this.manufacturerPartLookupTitle}
+              manufacturerPartLookupEndpoint={this.manufacturerPartLookupEndpoint}
+            />
           </div>
         </VehicleInfoLayout>
       </Host>
