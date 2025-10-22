@@ -71,10 +71,10 @@ public class VehicleLookupService
 
         if (requestOptions.InsertSSCLog)
         {
-            _ = Task.Run(async () =>
-            {
-                try
-                {
+            //_ = Task.Run(async () =>
+            //{
+            //    try
+            //    {
                     data.SSCLogId = await logCosmosService?.LogSSCLookupAsync(
                         requestOptions.SSCLogInfo,
                         data.SSC,
@@ -83,18 +83,18 @@ public class VehicleLookupService
                         data.Warranty?.HasActiveWarranty ?? false,
                         data.Identifiers?.Brand
                     );
-                }
-                catch
-                {
+            //    }
+            //    catch
+            //    {
 
-                }
-            });
+            //    }
+            //});
         }
 
         if (requestOptions.InsertCustomerVehcileLookupLog)
         {
-            _ = Task.Run(async () =>
-            {
+            //_ = Task.Run(async () =>
+            //{
                 try
                 {
                     await logCosmosService.LogCustomerVehicleLookupAsync(
@@ -109,7 +109,7 @@ public class VehicleLookupService
                 {
 
                 }
-            });
+            //});
         }
 
         return data;
