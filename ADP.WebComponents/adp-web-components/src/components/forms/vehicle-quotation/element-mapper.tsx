@@ -138,8 +138,8 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Vehic
 
       return [
         ...options.map(vehicle => ({
-          label: vehicle.name,
-          value: `${vehicle.id}`,
+          label: vehicle.Name,
+          value: `${vehicle.ID}`,
           meta: { ...vehicle },
         })),
         {
@@ -167,7 +167,7 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Vehic
       if (!selectedBrand) return [];
 
       return [
-        ...selectedBrand?.models.map(model => ({ label: model.name, value: `${model.id}` })),
+        ...selectedBrand?.Models.map(model => ({ label: model.Name, value: `${model.ID}` })),
         {
           value: 'Other',
           label: locale.Other,
