@@ -140,7 +140,9 @@ export class VehicleWarrantyDetails implements MultiLingual, VehicleInfoLayoutIn
   @State() showRecaptcha: boolean = false;
   @State() unInvoicedByBrokerName?: string = null;
   @State() checkingUnauthorizedSSC: boolean = false;
-  @State() recaptchaRes: { hasSSC: boolean; message: 'noPendingSSC' | 'pendingSSC' } | null = null;
+  @State() recaptchaRes: {
+    status: 'noRecall' | 'recallExists' | 'noApplicableVehicleFound'
+  } | null = null;
 
   private recaptchaIntervalRef: ReturnType<typeof setInterval>;
 
@@ -162,11 +164,13 @@ export class VehicleWarrantyDetails implements MultiLingual, VehicleInfoLayoutIn
 
             this.checkingUnauthorizedSSC = false;
 
-            const hasPendingSSC = Math.random() < 0.5 ? false : true;
+            var randomValue = Math.random();
 
             this.recaptchaRes = {
-              hasSSC: hasPendingSSC,
-              message: hasPendingSSC ? 'pendingSSC' : 'noPendingSSC',
+              status:
+                randomValue < 0.33 ? 'noRecall' :
+                  (randomValue > 0.33 && randomValue < 0.66) ? 'noApplicableVehicleFound' :
+                    'recallExists'
             };
           } else {
             this.checkingUnauthorizedSSC = true;
@@ -186,11 +190,10 @@ export class VehicleWarrantyDetails implements MultiLingual, VehicleInfoLayoutIn
             if (vinResponse && this.networkTimeoutRef === scopedTimeoutRef) {
               this.checkingUnauthorizedSSC = false;
 
-              const hasPendingSSC = vinResponse.sscLookupStatus === 1;
-
               this.recaptchaRes = {
-                hasSSC: hasPendingSSC,
-                message: hasPendingSSC ? 'pendingSSC' : 'noPendingSSC',
+                status: vinResponse.sscLookupStatus === 0 ? 'noRecall' :
+                  vinResponse.sscLookupStatus === 1 ? 'recallExists' :
+                  vinResponse.sscLookupStatus === 2 ? 'noApplicableVehicleFound' : null
               };
             } else throw new Error('wrongResponseFormat');
           }
@@ -315,7 +318,7 @@ export class VehicleWarrantyDetails implements MultiLingual, VehicleInfoLayoutIn
               </div>
 
               {this.recaptchaRes && (
-                <div class={cn('recaptcha-response', !this.recaptchaRes?.hasSSC ? 'success-card' : 'reject-card ')}>{this.locale[this.recaptchaRes?.message]}</div>
+                <div class={cn('recaptcha-response', this.recaptchaRes?.status === 'recallExists' ? 'reject-card ' : (this.recaptchaRes?.status === 'noRecall' ? 'success-card ' : 'warning-card '))}>{this.locale[this.recaptchaRes?.status]}</div>
               )}
             </flexible-container>
           </div>

@@ -10,6 +10,9 @@ public enum SSCLookupStatuses
     [Description("Recall Exists")]
     RecallExists = 1,
 
+    [Description("Vehicle not Found")]
+    NoApplicableVehicleFound = 2,
+
     [Description("TMC Error")]
     TmcErrorResponse = 3,
 
