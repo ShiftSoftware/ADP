@@ -14,7 +14,7 @@ type Props = {
   fromDesc?: string;
   className?: string;
   isLoading?: boolean;
-  state?: 'idle' | 'warning' | 'success' | 'reject';
+  state?: 'idle' | 'warning' | 'success' | 'reject' | 'info';
 };
 
 export default function StatusCard({ isLoading = false, opened = true, desc, className, fromDesc, toDesc, from, to, state = 'idle', icon = true }: Props) {

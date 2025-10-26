@@ -28,4 +28,5 @@ public class CompanyDataAggregateCosmosModel
     public List<WarrantyDateShiftModel> WarrantyDateShifts { get; set; }  = new();
     public IEnumerable<PaintThicknessInspectionModel> PaintThicknessInspections { get; set; }
     public List<VehicleAccessoryModel> Accessories { get; set; } = new();
+    public List<ExtendedWarrantyModel> ExtendedWarrantyEntries { get; set; } = new();
 }

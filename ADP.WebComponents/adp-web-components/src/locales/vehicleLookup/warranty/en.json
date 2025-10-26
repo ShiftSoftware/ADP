@@ -7,6 +7,10 @@
   "notInvoiced": "Warranty is not Active because this Vehicle is not Invoiced by the following Trusted Business Partner: ",
   "from": "Form",
   "to": "To",
+
+  "extendedWarrantyFrom": "Extended Warranty (Start)",
+  "extendedWarrantyTo": "Extended Warranty (End)",
+
   "recallExists": "This Vehicle has a Pending SSC",
   "noRecall": "No Pending SSC",
   "noApplicableVehicleFound": "Vehicle not Found",

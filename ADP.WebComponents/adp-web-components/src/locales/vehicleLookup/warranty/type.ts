@@ -9,6 +9,8 @@ const warrantySchema = yupTypeMapper([
   'notInvoiced',
   'from',
   'to',
+  'extendedWarrantyFrom',
+  'extendedWarrantyTo',
   'pendingSSC',
   'noPendingSSC',
   'checkingTMC',

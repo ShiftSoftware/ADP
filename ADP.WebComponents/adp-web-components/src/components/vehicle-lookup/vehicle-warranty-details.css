@@ -122,6 +122,12 @@
   border-color: #a2d0bb !important;
 }
 
+.info-card {
+  color: #0D47A1 !important;
+  background: #BBDEFB !important;
+  border-color: rgb(137 202 255) !important;
+}
+
 .reject-card {
   color: #58151c !important;
   background: #f7d7d8 !important;

@@ -74,6 +74,24 @@ export default function CardsContainer({ isLoading, vehicleInformation, isAuthor
           opened={!!vehicleInformation?.warranty?.warrantyEndDate || !vehicleInformation}
           state={!!vehicleInformation ? (vehicleInformation?.warranty?.hasActiveWarranty ? 'success' : 'reject') : 'idle'}
         />
+
+        <StatusCard
+          from
+          icon={false}
+          fromDesc={warrantyLocale.extendedWarrantyFrom}
+          desc={vehicleInformation?.warranty?.extendedWarrantyStartDate || ''}
+          opened={(!!vehicleInformation && !!vehicleInformation?.warranty?.extendedWarrantyStartDate)}
+          state={(vehicleInformation?.warranty?.hasExtendedWarranty ? 'info' : 'reject')}
+        />
+
+        <StatusCard
+          to
+          icon={false}
+          toDesc={warrantyLocale.extendedWarrantyTo}
+          desc={vehicleInformation?.warranty?.extendedWarrantyEndDate || ''}
+          opened={(!!vehicleInformation && !!vehicleInformation?.warranty?.extendedWarrantyEndDate)}
+          state={(vehicleInformation?.warranty?.hasExtendedWarranty ? 'info' : 'reject')}
+        />
       </div>
     </div>
   );

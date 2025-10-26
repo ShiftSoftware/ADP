@@ -171,6 +171,10 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         companyData.Accessories = items.Where(x => x.ItemType.ToString() == ModelTypes.VehicleAccessory)
             .Select(x => ((JObject)x).ToObject<VehicleAccessoryModel>()).ToList();
 
+        companyData.ExtendedWarrantyEntries = items.Where(x => x.ItemType.ToString() == ModelTypes.ExtendedWarranty)
+            .Select(x => ((JObject)x).ToObject<ExtendedWarrantyModel>())
+            .Where(x => !(x?.IsDeleted ?? false) && (x?.IsActive ?? false)).ToList();
+
         return companyData;
     }
 

@@ -71,15 +71,17 @@ public class WarrantyAndFreeServiceDateEvaluator
             result.WarrantyEndDate = warrantyStartDate?.AddYears(3);
 
 
-        // Extended warranty
-        //var extendedWarranty = extendedWarranties?.FirstOrDefault(x => x.ResponseType == "3");
+        //Extended Warranty
+        var lastExtendedWarrantyEntry = CompanyDataAggregate
+            .ExtendedWarrantyEntries?
+            .OrderByDescending(x => x.EndDate)?
+            .FirstOrDefault();
 
-        //if (extendedWarranty is not null)
-        //{
-        //    result.ExtendedWarrantyStartDate = extendedWarranty?.UpdatedDate is null ? null
-        //        : DateOnly.FromDateTime(extendedWarranty.UpdatedDate.Value);
-        //    result.ExtendedWarrantyEndDate = result.ExtendedWarrantyStartDate?.AddYears(2);
-        //}
+        if (lastExtendedWarrantyEntry is not null)
+        {
+            result.ExtendedWarrantyStartDate = lastExtendedWarrantyEntry.StartDate;
+            result.ExtendedWarrantyEndDate = lastExtendedWarrantyEntry.EndDate;
+        }
 
         result.FreeServiceStartDate = freeServiceStartDate;
 
