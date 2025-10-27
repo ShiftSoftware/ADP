@@ -8,5 +8,9 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
     {
         Task<IEnumerable<CompanyModel>> GetCompaniesAsync();
         Task<IEnumerable<CompanyBranchModel>> GetCompanyBranchesAsync();
+        Task<CompanyModel> GetCompanyAsync(long? id);
+        Task<CompanyBranchModel> GetCompanyBranchAsync(long? id);
+        Task<CountryModel> GetCountryAsync(long? id);
+        Task<RegionModel> GetRegionAsync(long? id);
     }
 }
