@@ -59,4 +59,14 @@ public class PartLookupCosmosService
 
         return result;
     }
+
+    public async Task InsertManufacturerPartLookup(ManufacturerPartLookupModel model)
+    {
+        var container = client.GetContainer(
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.Logs,
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.ManufacturerPartLookupLogs
+        );
+
+        await container.CreateItemAsync(model, new PartitionKey(model.PartNumber));
+    }
 }

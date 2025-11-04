@@ -1,6 +1,5 @@
 ﻿using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Part;
-using ShiftSoftware.ADP.Lookup.Services.Enums;
-using ShiftSoftware.ShiftEntity.Model.HashIds;
+using ShiftSoftware.ADP.Models.Part;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -188,6 +187,24 @@ public class PartLookupService
         }
 
         return result;
+    }
+
+    public async Task ManufacturerPartLookupRequestAsync(ManufacturerPartLookupRequestDTO dto, long userId, long? companyId = null, long? companyBranchId = null, long? cityId = null)
+    {
+        var model = new ManufacturerPartLookupModel
+        {
+            PartNumber = dto.PartNumber?.Trim(),
+            Quantity = dto.Quantity,
+            CityID = cityId,
+            CompanyBranchID = companyBranchId,
+            CompanyID = companyId,
+            id = Guid.NewGuid().ToString(),
+            LogId = dto.LogId,
+            OrderType = dto.OrderType,
+            UserID = userId,
+        };
+
+        await partLookupCosmosService.InsertManufacturerPartLookup(model);
     }
 
     private bool CalculateShowManufacturerPartLookup(int? requestedQuantity, decimal availableQuantity, bool exceedsThreshold)

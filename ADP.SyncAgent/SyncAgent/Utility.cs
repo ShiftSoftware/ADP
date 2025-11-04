@@ -188,6 +188,11 @@ public class Utility
         ));
 
         await logsDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
+            Models.Constants.NoSQLConstants.Containers.ManufacturerPartLookupLogs,
+            [Models.Constants.NoSQLConstants.PartitionKeys.ManufacturerPartLookupLogs.Level1]
+        ));
+
+        await logsDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
             Models.Constants.NoSQLConstants.Containers.CSVUpload,
             "/id"
         ));
