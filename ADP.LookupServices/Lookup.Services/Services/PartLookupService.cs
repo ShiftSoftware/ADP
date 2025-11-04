@@ -1,4 +1,5 @@
 ﻿using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Part;
+using ShiftSoftware.ADP.Lookup.Services.Enums;
 using ShiftSoftware.ShiftEntity.Model.HashIds;
 using System;
 using System.Collections.Generic;
@@ -176,6 +177,7 @@ public class PartLookupService
             Prices = resolvedPrices,
             SupersededTo = cosmosPartCatalog?.SupersededTo?.Select(x=> x.PartNumber),
             SupersededFrom = cosmosPartCatalog?.SupersededFrom?.Select(x=> x.PartNumber),
+            ShowManufacturerPartLookup = CalculateShowManufacturerPartLookup(distributorStockLookupQuantity, data.StockParts?.Sum(x=> x.AvailableQuantity)??0, distributorStockLookupQuantity >= 10)
         };
 
         if (!skipLogging)
@@ -186,5 +188,19 @@ public class PartLookupService
         }
 
         return result;
+    }
+
+    private bool CalculateShowManufacturerPartLookup(int? requestedQuantity, decimal availableQuantity, bool exceedsThreshold)
+    {
+        if (exceedsThreshold)
+            return false;
+
+        if (requestedQuantity is null)
+            return false;
+
+        if(requestedQuantity > availableQuantity)
+            return true;
+
+        return false;
     }
 }
