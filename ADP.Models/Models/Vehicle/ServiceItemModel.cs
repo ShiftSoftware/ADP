@@ -42,4 +42,6 @@ public class ServiceItemModel
     public ClaimableItemValidityMode ValidityMode { get; set; }
     public ClaimableItemClaimingMethod ClaimingMethod { get; set; }
     public ClaimableItemAttachmentFieldBehavior AttachmentFieldBehavior { get; set; }
+
+    public long? VehicleInspectionTypeID { get; set; }
 }

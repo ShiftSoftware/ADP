@@ -18,4 +18,6 @@ public class ServiceCampaignModel
     public IEnumerable<long?> CompanyIDs { get; set; }
     public ClaimableItemCampaignActivationTrigger ActivationTrigger { get; set; }
     public ClaimableItemCampaignActivationTypes ActivationType { get; set; }
+
+    public long? VehicleInspectionTypeID { get; set; }
 }

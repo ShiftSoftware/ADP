@@ -635,7 +635,7 @@ public class CSVSyncService<TCSV, TCosmos> : IDisposable
                 this.UpdateProgress(cosmosTask, false);
                 if (syncProgressIndicator is not null)
                     await syncProgressIndicator.LogWarningAsync(
-                        cosmosTask, 
+                        cosmosTask,
                         string.Format("Failed Processing the Current Cosmos Operation (Step {0} of {1}). Starting Retry {2} of {3}.\r\n\r\n", cosmosTask.CurrentStep + 1, cosmosTask.TotalStep, retry, retryCount));
             }
         }

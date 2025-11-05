@@ -73,8 +73,13 @@ public class VehicleServiceItemEvaluator
 
             // Expiry
             eligibleServiceItems = eligibleServiceItems.Where(x =>
-                x.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.WarrantyActivation ? (freeServiceStartDate >= x.CampaignStartDate && freeServiceStartDate <= x.CampaignEndDate) :
-                x.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.VehicleInspection ? (vehicleInspections?.Where(i => i.InspectionDate >= x.CampaignStartDate && i.InspectionDate <= x.CampaignEndDate).Count() > 0) :
+
+                x.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.WarrantyActivation ?
+                (freeServiceStartDate >= x.CampaignStartDate && freeServiceStartDate <= x.CampaignEndDate) :
+
+                x.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.VehicleInspection ?
+                (vehicleInspections?.Where(i => i.VehicleInspectionTypeID == x.VehicleInspectionTypeID && i.InspectionDate >= x.CampaignStartDate && i.InspectionDate <= x.CampaignEndDate).Count() > 0) :
+
                 false
             );
 
@@ -149,6 +154,8 @@ public class VehicleServiceItemEvaluator
 
                         ShowDocumentUploader = item.AttachmentFieldBehavior != ClaimableItemAttachmentFieldBehavior.Hidden,
                         DocumentUploaderIsRequired = item.AttachmentFieldBehavior == ClaimableItemAttachmentFieldBehavior.Required,
+
+                        VehicleInspectionTypeID = item.VehicleInspectionTypeID.ToString()
                     };
 
                     if (item.ValidityMode == ClaimableItemValidityMode.FixedDateRange)
@@ -192,6 +199,7 @@ public class VehicleServiceItemEvaluator
                             PackageCode = item.MenuCode,
 
                             ClaimingMethodEnum = item.ServiceItem.ClaimingMethod,
+                            VehicleInspectionTypeID = item.ServiceItem.VehicleInspectionTypeID?.ToString(),
                         };
 
                         result.Add(itemResult);
@@ -319,9 +327,12 @@ public class VehicleServiceItemEvaluator
 
         foreach (var item in serviceItems)
         {
+            var filteredVehicleInspections = vehicleInspections
+                .Where(x => x.VehicleInspectionTypeID.ToString() == item.VehicleInspectionTypeID);
+
             if (item.CampaignActivationType == ClaimableItemCampaignActivationTypes.EveryTrigger)
             {
-                foreach (var vehicleInspection in vehicleInspections)
+                foreach (var vehicleInspection in filteredVehicleInspections)
                 {
                     var cloned = item.Clone();
 
@@ -341,10 +352,10 @@ public class VehicleServiceItemEvaluator
                 VehicleInspectionModel vehicleInspection = null;
 
                 if (item.CampaignActivationType == ClaimableItemCampaignActivationTypes.FirstTriggerOnly)
-                    vehicleInspection = vehicleInspections.OrderBy(x => x.InspectionDate).First();
+                    vehicleInspection = filteredVehicleInspections.OrderBy(x => x.InspectionDate).First();
 
                 else if (item.CampaignActivationType == ClaimableItemCampaignActivationTypes.ExtendOnEachTrigger)
-                    vehicleInspection = vehicleInspections.OrderByDescending(x => x.InspectionDate).First();
+                    vehicleInspection = filteredVehicleInspections.OrderByDescending(x => x.InspectionDate).First();
 
                 var cloned = item.Clone();
 

@@ -94,6 +94,9 @@ public class VehicleServiceItemDTO
     public ClaimableItemClaimingMethod ClaimingMethodEnum { get; set; }
 
     public string VehicleInspectionID { get; set; }
+
+    public string VehicleInspectionTypeID { get; set; }
+
     public string Signature { get; set; }
     public DateTime SignatureExpiry { get; set; }
 
