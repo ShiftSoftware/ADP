@@ -206,7 +206,12 @@ public class PartLookupService
             BotStatus = ManufacturerPartLookupBotStatus.Pendding
         };
 
-        await partLookupCosmosService.InsertManufacturerPartLookup(model);
+        await partLookupCosmosService.InsertManufacturerPartLookupAsync(model);
+    }
+
+    public async Task UpdateManufacturerPartLookupBotStatusAsync(string id, string partNumber, ManufacturerPartLookupBotStatus botStatus, Dictionary<string, string>? lookupResult = null)
+    {
+        await partLookupCosmosService.UpdateManufacturerPartLookupBotStatusAsync(id, partNumber, botStatus, lookupResult);
     }
 
     private bool CalculateShowManufacturerPartLookup(int? requestedQuantity, decimal availableQuantity, bool exceedsThreshold)
