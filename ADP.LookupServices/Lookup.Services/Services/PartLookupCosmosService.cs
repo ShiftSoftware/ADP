@@ -84,7 +84,7 @@ public class PartLookupCosmosService
         });
     }
 
-    public async Task UpdateManufacturerPartLookupBotStatusAsync(string id, string partNumber, ManufacturerPartLookupBotStatus botStatus, Dictionary<string, string>? lookupResult = null)
+    public async Task UpdateManufacturerPartLookupStatusAsync(string id, string partNumber, ManufacturerPartLookupStatus botStatus, Dictionary<string, string>? lookupResult = null)
     {
         var manufacturerLookupcontainer = client.GetContainer(
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.Logs,
@@ -94,7 +94,7 @@ public class PartLookupCosmosService
         // Patch bot status and lookup result
         await manufacturerLookupcontainer.PatchItemAsync<ManufacturerPartLookupModel>(id, new PartitionKey(partNumber), new[]
         {
-            PatchOperation.Set($"/{nameof(ManufacturerPartLookupModel.BotStatus)}", botStatus),
+            PatchOperation.Set($"/{nameof(ManufacturerPartLookupModel.Status)}", botStatus),
             PatchOperation.Set($"/{nameof(ManufacturerPartLookupModel.LookupResult)}", lookupResult),
         });
 
@@ -113,7 +113,7 @@ public class PartLookupCosmosService
         });
     }
 
-    public async Task<IEnumerable<ManufacturerPartLookupModel>> GetManufacturerPartLookupsByBotStatusAsync(ManufacturerPartLookupBotStatus botStatus)
+    public async Task<IEnumerable<ManufacturerPartLookupModel>> GetManufacturerPartLookupsByStatusAsync(ManufacturerPartLookupStatus botStatus)
     {
         var container = client.GetContainer(
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.Logs,
@@ -121,7 +121,7 @@ public class PartLookupCosmosService
         );
 
         var query = container.GetItemLinqQueryable<ManufacturerPartLookupModel>(true)
-            .Where(x=> x.BotStatus == botStatus);
+            .Where(x=> x.Status == botStatus);
 
         var items = new List<ManufacturerPartLookupModel>();
 
@@ -132,7 +132,7 @@ public class PartLookupCosmosService
         return items;
     }
 
-    public async Task<ManufacturerPartLookupModel> GetManufacturerPartLookupByBotStatusAsync(ManufacturerPartLookupBotStatus botStatus)
+    public async Task<ManufacturerPartLookupModel> GetManufacturerPartLookupByStatusAsync(ManufacturerPartLookupStatus botStatus)
     {
         var container = client.GetContainer(
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.Logs,
@@ -140,7 +140,7 @@ public class PartLookupCosmosService
         );
 
         var query = container.GetItemLinqQueryable<ManufacturerPartLookupModel>(true)
-            .Where(x => x.BotStatus == botStatus)
+            .Where(x => x.Status == botStatus)
             .Take(1);
 
         var iterator = query.ToFeedIterator();

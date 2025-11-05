@@ -190,53 +190,52 @@ public class PartLookupService
         return result;
     }
 
-    public async Task ManufacturerPartLookupRequestAsync(ManufacturerPartLookupRequestDTO dto, long userId, long? companyId = null, long? companyBranchId = null, long? cityId = null)
+    public async Task ManufacturerPartLookupRequestAsync(ManufacturerPartLookupRequestDTO dto, long userId, long? companyId = null, long? companyBranchId = null)
     {
         var model = new ManufacturerPartLookupModel
         {
             PartNumber = dto.PartNumber?.Trim(),
             Quantity = dto.Quantity,
-            CityID = cityId,
-            CompanyBranchID = companyBranchId,
+            BranchID = companyBranchId,
             CompanyID = companyId,
             id = Guid.NewGuid().ToString(),
             LogId = dto.LogId,
             OrderType = dto.OrderType,
             UserID = userId,
-            BotStatus = ManufacturerPartLookupBotStatus.Pendding
+            Status = ManufacturerPartLookupStatus.Pendding
         };
 
         await partLookupCosmosService.InsertManufacturerPartLookupAsync(model);
     }
 
-    public async Task UpdateManufacturerPartLookupBotStatusAsync(string id, string partNumber, ManufacturerPartLookupBotStatus botStatus, Dictionary<string, string>? lookupResult = null)
+    public async Task UpdateManufacturerPartLookupStatusAsync(string id, string partNumber, ManufacturerPartLookupStatus status, Dictionary<string, string>? lookupResult = null)
     {
-        await partLookupCosmosService.UpdateManufacturerPartLookupBotStatusAsync(id, partNumber, botStatus, lookupResult);
+        await partLookupCosmosService.UpdateManufacturerPartLookupStatusAsync(id, partNumber, status, lookupResult);
     }
 
-    public async Task<IEnumerable<ManufacturerPartLookupBotResponseDTO>> GetManufacturerPartLookupsByBotStatusAsync(ManufacturerPartLookupBotStatus botStatus)
+    public async Task<IEnumerable<ManufacturerPartLookupResponseDTO>> GetManufacturerPartLookupsByStatusAsync(ManufacturerPartLookupStatus status)
     {
-        return (await partLookupCosmosService.GetManufacturerPartLookupsByBotStatusAsync(botStatus))
-            .Select(x => new ManufacturerPartLookupBotResponseDTO
+        return (await partLookupCosmosService.GetManufacturerPartLookupsByStatusAsync(status))
+            .Select(x => new ManufacturerPartLookupResponseDTO
             {
                 id = x.id,
                 PartNumber = x.PartNumber,
                 OrderType = x.OrderType,
-                BotStatus = x.BotStatus
+                Status = x.Status
             });
     }
 
-    public async Task<ManufacturerPartLookupBotResponseDTO?> GetManufacturerPartLookupByBotStatusAsync(ManufacturerPartLookupBotStatus botStatus)
+    public async Task<ManufacturerPartLookupResponseDTO?> GetManufacturerPartLookupByStatusAsync(ManufacturerPartLookupStatus status)
     {
-        var model = await partLookupCosmosService.GetManufacturerPartLookupByBotStatusAsync(botStatus);
+        var model = await partLookupCosmosService.GetManufacturerPartLookupByStatusAsync(status);
         if (model is null) return null;
 
-        return new ManufacturerPartLookupBotResponseDTO
+        return new ManufacturerPartLookupResponseDTO
         {
             id = model.id,
             PartNumber = model.PartNumber,
             OrderType = model.OrderType,
-            BotStatus = model.BotStatus
+            Status = model.Status
         };
     }
 

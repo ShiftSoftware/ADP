@@ -1,20 +1,19 @@
 ﻿using ShiftSoftware.ADP.Models.Enums;
-using ShiftSoftware.ShiftEntity.Model.Flags;
 using System.Collections.Generic;
 
 namespace ShiftSoftware.ADP.Models.Part;
 
 [Docable]
 public class ManufacturerPartLookupModel:
-    IEntityHasCompany<ManufacturerPartLookupModel>,
-    IEntityHasCompanyBranch<ManufacturerPartLookupModel>,
-    IEntityHasCity<ManufacturerPartLookupModel>
+    ICompanyProps,
+    IBranchProps
 {
     [DocIgnore]
     public string id { get; set; } = default!;
-    public long? CompanyBranchID { get; set; }
+    public long? BranchID { get; set; }
+    public string BranchHashID { get; set; }
     public long? CompanyID { get; set; }
-    public long? CityID { get; set; }
+    public string CompanyHashID { get; set; }
     public long? UserID { get; set; }
 
     public string PartNumber { get; set; }
@@ -22,7 +21,7 @@ public class ManufacturerPartLookupModel:
     public ManufacturerOrderType OrderType { get; set; }
     public string? LogId { get; set; }
 
-    public ManufacturerPartLookupBotStatus BotStatus { get; set; }
+    public ManufacturerPartLookupStatus Status { get; set; }
 
     public Dictionary<string, string> LookupResult { get; set; }
 }

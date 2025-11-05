@@ -1,6 +1,6 @@
 ﻿namespace ShiftSoftware.ADP.Models.Enums;
 
-public enum ManufacturerPartLookupBotStatus
+public enum ManufacturerPartLookupStatus
 {
     Pendding = 0,
     Resolved = 1,

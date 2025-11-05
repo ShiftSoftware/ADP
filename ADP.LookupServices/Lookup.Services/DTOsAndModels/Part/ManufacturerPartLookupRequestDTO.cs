@@ -1,8 +1,5 @@
 ﻿using ShiftSoftware.ADP.Models;
 using ShiftSoftware.ADP.Models.Enums;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Part;
 

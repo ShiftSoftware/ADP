@@ -82,7 +82,7 @@ export class ManufacturerPartLookup implements MultiLingual, FormHookInterface<M
           this.manufacturerResponse = {
             isSuccess: true,
 
-            data: [
+            manufacturerResult: [
               { fieldName: 'item 1', fieldValue: `${Math.floor(Math.random() * 100)}` },
               { fieldName: 'item 2', fieldValue: 'Available' },
               { fieldName: 'item 3', fieldValue: `${Math.floor(Math.random() * 100)}` },
@@ -116,11 +116,11 @@ export class ManufacturerPartLookup implements MultiLingual, FormHookInterface<M
         throw new Error(`Request failed with status ${response.status}`);
       }
 
-      const responseType = (await response.json()) as (typeof this.manufacturerResponse)['data'];
+      const responseType = (await response.json()) as (typeof this.manufacturerResponse)['manufacturerResult'];
 
       this.form.reset();
 
-      this.manufacturerResponse = { isSuccess: true, data: responseType };
+      this.manufacturerResponse = { isSuccess: true, manufacturerResult: responseType };
     } catch (error) {
       console.error('❌ Manufacturer Lookup request failed:', error);
       this.manufacturerResponse = { isSuccess: false, message: ' Manufacturer Lookup request failed' };
@@ -182,14 +182,14 @@ export class ManufacturerPartLookup implements MultiLingual, FormHookInterface<M
                 <div class="flex flex-col items-center pt-[12px]">
                   <div
                     class={cn('text-center text-[20px] font-semibold py-[12px]', {
-                      'text-green-600': this.manufacturerResponse?.isSuccess && !this.manufacturerResponse?.data?.length,
+                      'text-green-600': this.manufacturerResponse?.isSuccess && !this.manufacturerResponse?.manufacturerResult?.length,
                       'text-red-600': !this.manufacturerResponse?.isSuccess,
                     })}
                   >
-                    {!this.manufacturerResponse?.data?.length && (this.manufacturerResponse?.message || this.locale.RequestFailed)}
-                    {!!this.manufacturerResponse?.data?.length && (
+                    {!this.manufacturerResponse?.manufacturerResult?.length && (this.manufacturerResponse?.message || this.locale.RequestFailed)}
+                    {!!this.manufacturerResponse?.manufacturerResult?.length && (
                       <div class="bg-white rounded-lg border w-[500px]">
-                        {this.manufacturerResponse?.data.map(({ fieldName, fieldValue }) => (
+                        {this.manufacturerResponse?.manufacturerResult.map(({ fieldName, fieldValue }) => (
                           <div key={`${fieldName}-${fieldValue}`} class="flex even:bg-slate-100 hover:bg-sky-100/50 border-b w-full text-xl text-center">
                             <div class="text-center flex items-center flex-1 max-w-[250px] shrink-0 justify-center py-[10px] px-[16px] border-r">{fieldName}</div>
                             <div class="text-center flex items-center flex-1 shrink-0 justify-center py-[10px] px-[16px] border-l">{fieldValue}</div>
