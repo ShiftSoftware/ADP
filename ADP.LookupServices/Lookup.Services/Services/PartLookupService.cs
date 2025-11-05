@@ -190,15 +190,17 @@ public class PartLookupService
         return result;
     }
 
-    public async Task ManufacturerPartLookupRequestAsync(ManufacturerPartLookupRequestDTO dto, long userId, long? companyId = null, long? companyBranchId = null)
+    public async Task<string> ManufacturerPartLookupRequestAsync(ManufacturerPartLookupRequestDTO dto, long userId, long? companyId = null, long? companyBranchId = null)
     {
+        var id = Guid.NewGuid().ToString();
+
         var model = new ManufacturerPartLookupModel
         {
             PartNumber = dto.PartNumber?.Trim(),
             Quantity = dto.Quantity,
             BranchID = companyBranchId,
             CompanyID = companyId,
-            id = Guid.NewGuid().ToString(),
+            id = id,
             LogId = dto.LogId,
             OrderType = dto.OrderType,
             UserID = userId,
@@ -206,6 +208,8 @@ public class PartLookupService
         };
 
         await partLookupCosmosService.InsertManufacturerPartLookupAsync(model);
+
+        return id;
     }
 
     public async Task UpdateManufacturerPartLookupStatusAsync(string id, string partNumber, ManufacturerPartLookupStatus status, Dictionary<string, string>? lookupResult = null)
@@ -236,6 +240,21 @@ public class PartLookupService
             PartNumber = model.PartNumber,
             OrderType = model.OrderType,
             Status = model.Status
+        };
+    }
+
+    public async Task<ManufacturerPartLookupResponseDTO?> GetManufacturerPartLookupAsync(string id, string partNumber)
+    {
+        var model = await partLookupCosmosService.GetManufacturerPartLookupAsync(id, partNumber);
+        if (model is null) return null;
+
+        return new ManufacturerPartLookupResponseDTO
+        {
+            id = model.id,
+            PartNumber = model.PartNumber,
+            OrderType = model.OrderType,
+            Status = model.Status,
+            ManufacturerResult = model.ManufacturerResult
         };
     }
 
