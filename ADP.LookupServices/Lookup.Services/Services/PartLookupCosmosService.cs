@@ -1,4 +1,5 @@
 ﻿using Microsoft.Azure.Cosmos;
+using Microsoft.Azure.Cosmos.Linq;
 using Newtonsoft.Json.Linq;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Part;
 using ShiftSoftware.ADP.Models.Enums;
@@ -110,5 +111,45 @@ public class PartLookupCosmosService
         {
             PatchOperation.Set($"/{nameof(PartLookupLogCosmosModel.ManufacturerLookup)}", manufacturerPartLookupResponse.Resource),
         });
+    }
+
+    public async Task<IEnumerable<ManufacturerPartLookupModel>> GetManufacturerPartLookupsByBotStatusAsync(ManufacturerPartLookupBotStatus botStatus)
+    {
+        var container = client.GetContainer(
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.Logs,
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.ManufacturerPartLookupLogs
+        );
+
+        var query = container.GetItemLinqQueryable<ManufacturerPartLookupModel>(true)
+            .Where(x=> x.BotStatus == botStatus);
+
+        var items = new List<ManufacturerPartLookupModel>();
+
+        var iterator = query.ToFeedIterator();
+        while (iterator.HasMoreResults)
+            items.AddRange(await iterator.ReadNextAsync());
+
+        return items;
+    }
+
+    public async Task<ManufacturerPartLookupModel> GetManufacturerPartLookupByBotStatusAsync(ManufacturerPartLookupBotStatus botStatus)
+    {
+        var container = client.GetContainer(
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.Logs,
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.ManufacturerPartLookupLogs
+        );
+
+        var query = container.GetItemLinqQueryable<ManufacturerPartLookupModel>(true)
+            .Where(x => x.BotStatus == botStatus)
+            .Take(1);
+
+        var iterator = query.ToFeedIterator();
+        if (iterator.HasMoreResults)
+        {
+            var response = await iterator.ReadNextAsync();
+            return response.FirstOrDefault();
+        }
+
+        return null;
     }
 }

@@ -214,6 +214,32 @@ public class PartLookupService
         await partLookupCosmosService.UpdateManufacturerPartLookupBotStatusAsync(id, partNumber, botStatus, lookupResult);
     }
 
+    public async Task<IEnumerable<ManufacturerPartLookupBotResponseDTO>> GetManufacturerPartLookupsByBotStatusAsync(ManufacturerPartLookupBotStatus botStatus)
+    {
+        return (await partLookupCosmosService.GetManufacturerPartLookupsByBotStatusAsync(botStatus))
+            .Select(x => new ManufacturerPartLookupBotResponseDTO
+            {
+                id = x.id,
+                PartNumber = x.PartNumber,
+                OrderType = x.OrderType,
+                BotStatus = x.BotStatus
+            });
+    }
+
+    public async Task<ManufacturerPartLookupBotResponseDTO?> GetManufacturerPartLookupByBotStatusAsync(ManufacturerPartLookupBotStatus botStatus)
+    {
+        var model = await partLookupCosmosService.GetManufacturerPartLookupByBotStatusAsync(botStatus);
+        if (model is null) return null;
+
+        return new ManufacturerPartLookupBotResponseDTO
+        {
+            id = model.id,
+            PartNumber = model.PartNumber,
+            OrderType = model.OrderType,
+            BotStatus = model.BotStatus
+        };
+    }
+
     private bool CalculateShowManufacturerPartLookup(int? requestedQuantity, decimal availableQuantity, bool exceedsThreshold)
     {
         if (exceedsThreshold)
