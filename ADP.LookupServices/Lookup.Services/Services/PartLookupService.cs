@@ -1,4 +1,5 @@
 ﻿using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Part;
+using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ADP.Models.Part;
 using System;
 using System.Collections.Generic;
@@ -202,6 +203,7 @@ public class PartLookupService
             LogId = dto.LogId,
             OrderType = dto.OrderType,
             UserID = userId,
+            BotStatus = ManufacturerPartLookupBotStatus.Pendding
         };
 
         await partLookupCosmosService.InsertManufacturerPartLookup(model);

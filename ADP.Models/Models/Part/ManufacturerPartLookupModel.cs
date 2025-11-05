@@ -1,5 +1,6 @@
 ﻿using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ShiftEntity.Model.Flags;
+using System.Collections.Generic;
 
 namespace ShiftSoftware.ADP.Models.Part;
 
@@ -20,4 +21,8 @@ public class ManufacturerPartLookupModel:
     public decimal Quantity { get; set; }
     public ManufacturerOrderType OrderType { get; set; }
     public string? LogId { get; set; }
+
+    public ManufacturerPartLookupBotStatus BotStatus { get; set; }
+
+    public Dictionary<string, string> LookupResult { get; set; }
 }

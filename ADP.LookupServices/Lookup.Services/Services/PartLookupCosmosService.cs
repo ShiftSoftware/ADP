@@ -62,11 +62,22 @@ public class PartLookupCosmosService
 
     public async Task InsertManufacturerPartLookup(ManufacturerPartLookupModel model)
     {
-        var container = client.GetContainer(
+        var manufacturerLookupcontainer = client.GetContainer(
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.Logs,
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.ManufacturerPartLookupLogs
         );
 
-        await container.CreateItemAsync(model, new PartitionKey(model.PartNumber));
+        await manufacturerLookupcontainer.CreateItemAsync(model, new PartitionKey(model.PartNumber));
+
+        // Update the log to store the manufacturer lookup
+        var partLookupLogContainer = client.GetContainer(
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.Logs,
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.PartLookupLogs
+        );
+
+        await partLookupLogContainer.PatchItemAsync<PartLookupLogCosmosModel>(model.LogId, new PartitionKey(model.PartNumber), new[]
+        {
+            PatchOperation.Set($"/{nameof(PartLookupLogCosmosModel.ManufacturerLookup)}", model),
+        });
     }
 }

@@ -1,4 +1,5 @@
 ﻿using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Shared;
+using ShiftSoftware.ADP.Models.Part;
 using ShiftSoftware.ShiftEntity.Model.Flags;
 using System;
 
@@ -26,4 +27,6 @@ public class PartLookupLogCosmosModel :
     public string CompanyIntegrationID { get; set; }
     public string CompanyBranchIntegrationID { get; set; }
     public string PortalUserID { get; set; }
+
+    public ManufacturerPartLookupModel? ManufacturerLookup { get; set; }
 }
