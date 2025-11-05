@@ -8,5 +8,5 @@ public class ManufacturerPartLookupDTO
 {
     public bool IsSuccess { get; set; }
     public string? Message { get; set; }
-    public IEnumerable<ManufacturerDataDTO>? ManufacturerResult { get; set; }
+    public IEnumerable<ManufacturerResultDTO>? ManufacturerResult { get; set; }
 }

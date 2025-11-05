@@ -1,6 +1,6 @@
-import type { ManufacturerDataDTO } from './manufacturer-data-dto';
+import type { ManufacturerResultDTO } from './manufacturer-result-dto';
 export type ManufacturerPartLookupDTO = {
     isSuccess: boolean;
     message?: string;
-    manufacturerResult?: ManufacturerDataDTO[];
+    manufacturerResult?: ManufacturerResultDTO[];
 };
