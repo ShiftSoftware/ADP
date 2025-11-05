@@ -14,4 +14,4 @@ hide:
 | OrderType <div><strong>``ManufacturerOrderType``</strong></div> |  |
 | LogId <div><strong>``string?``</strong></div> |  |
 | Status <div><strong>``ManufacturerPartLookupStatus``</strong></div> |  |
-| LookupResult <div><strong>``Dictionary<string, string>``</strong></div> |  |
+| ManufacturerResult <div><strong>``Dictionary<string, string>``</strong></div> |  |

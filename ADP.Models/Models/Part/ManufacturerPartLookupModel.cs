@@ -23,5 +23,5 @@ public class ManufacturerPartLookupModel:
 
     public ManufacturerPartLookupStatus Status { get; set; }
 
-    public Dictionary<string, string> LookupResult { get; set; }
+    public Dictionary<string, string> ManufacturerResult { get; set; }
 }

@@ -95,7 +95,7 @@ public class PartLookupCosmosService
         await manufacturerLookupcontainer.PatchItemAsync<ManufacturerPartLookupModel>(id, new PartitionKey(partNumber), new[]
         {
             PatchOperation.Set($"/{nameof(ManufacturerPartLookupModel.Status)}", botStatus),
-            PatchOperation.Set($"/{nameof(ManufacturerPartLookupModel.LookupResult)}", lookupResult),
+            PatchOperation.Set($"/{nameof(ManufacturerPartLookupModel.ManufacturerResult)}", lookupResult),
         });
 
         // Get the ManufacturerPartLookupModel
@@ -151,5 +151,22 @@ public class PartLookupCosmosService
         }
 
         return null;
+    }
+
+    public async Task<ManufacturerPartLookupModel> GetManufacturerPartLookupAsync(string id, string partNumber)
+    {
+        try
+        {
+            var container = client.GetContainer(
+                ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.Logs,
+                ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.ManufacturerPartLookupLogs
+            );
+            var response = await container.ReadItemAsync<ManufacturerPartLookupModel>(id, new PartitionKey(partNumber));
+            return response.Resource;
+        }
+        catch (System.Exception)
+        {
+            return null;
+        }
     }
 }
