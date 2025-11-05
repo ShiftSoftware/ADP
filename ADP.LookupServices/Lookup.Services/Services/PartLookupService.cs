@@ -1,4 +1,5 @@
 ﻿using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Part;
+using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Shared;
 using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ADP.Models.Part;
 using System;
@@ -212,7 +213,7 @@ public class PartLookupService
         return id;
     }
 
-    public async Task UpdateManufacturerPartLookupStatusAsync(string id, string partNumber, ManufacturerPartLookupStatus status, Dictionary<string, string>? lookupResult = null)
+    public async Task UpdateManufacturerPartLookupStatusAsync(string id, string partNumber, ManufacturerPartLookupStatus status, IEnumerable<KeyValuePair<string, string>>? lookupResult = null)
     {
         await partLookupCosmosService.UpdateManufacturerPartLookupStatusAsync(id, partNumber, status, lookupResult);
     }
@@ -254,7 +255,11 @@ public class PartLookupService
             PartNumber = model.PartNumber,
             OrderType = model.OrderType,
             Status = model.Status,
-            ManufacturerResult = model.ManufacturerResult
+            ManufacturerResult = model.ManufacturerResult.Select(x => new KeyValuePairDTO
+            {
+                Key = x.Key,
+                Value = x.Value
+            })
         };
     }
 

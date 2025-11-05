@@ -84,7 +84,7 @@ public class PartLookupCosmosService
         });
     }
 
-    public async Task UpdateManufacturerPartLookupStatusAsync(string id, string partNumber, ManufacturerPartLookupStatus botStatus, Dictionary<string, string>? lookupResult = null)
+    public async Task UpdateManufacturerPartLookupStatusAsync(string id, string partNumber, ManufacturerPartLookupStatus botStatus, IEnumerable<KeyValuePair<string, string>>? lookupResult = null)
     {
         var manufacturerLookupcontainer = client.GetContainer(
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.Logs,

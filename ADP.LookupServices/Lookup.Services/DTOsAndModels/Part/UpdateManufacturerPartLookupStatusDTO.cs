@@ -8,5 +8,5 @@ public class UpdateManufacturerPartLookupStatusDTO
     public string id { get; set; }
     public string PartNumber { get; set; }
     public ManufacturerPartLookupStatus Status { get; set; }
-    public Dictionary<string, string> ManufacturerResult { get; set; }
+    public IEnumerable<KeyValuePairDTO>? ManufacturerResult { get; set; }
 }

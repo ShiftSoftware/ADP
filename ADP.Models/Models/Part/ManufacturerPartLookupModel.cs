@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace ShiftSoftware.ADP.Models.Part;
 
 [Docable]
-public class ManufacturerPartLookupModel:
+public class ManufacturerPartLookupModel :
     ICompanyProps,
     IBranchProps
 {
@@ -23,5 +23,5 @@ public class ManufacturerPartLookupModel:
 
     public ManufacturerPartLookupStatus Status { get; set; }
 
-    public Dictionary<string, string> ManufacturerResult { get; set; }
+    public IEnumerable<KeyValuePair<string, string>>? ManufacturerResult { get; set; } = [];
 }
