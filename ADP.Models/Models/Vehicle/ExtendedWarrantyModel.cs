@@ -2,7 +2,7 @@
 
 namespace ShiftSoftware.ADP.Models.Vehicle;
 
-public class ExtendedWarrantyModel : IPartitionedItem, ICompanyProps
+public class ExtendedWarrantyModel : IPartitionedItem, ICompanyProps, IBranchProps
 {
     public string id { get; set; }
     public string VIN { get; set; }
@@ -18,4 +18,7 @@ public class ExtendedWarrantyModel : IPartitionedItem, ICompanyProps
     public long? CompanyID { get; set; }
     public string CompanyHashID { get; set; }
     public string ItemType => ModelTypes.ExtendedWarranty;
+
+    public long? BranchID { get; set; }
+    public string BranchHashID { get; set; }
 }
