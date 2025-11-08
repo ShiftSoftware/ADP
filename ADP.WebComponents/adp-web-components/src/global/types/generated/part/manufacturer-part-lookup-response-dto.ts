@@ -6,4 +6,5 @@ export type ManufacturerPartLookupResponseDTO = {
     status: 'Pending' | 'Resolved' | 'UnResolved';
     manufacturerResult?: KeyValuePairDTO[];
     message?: string;
+    quantity: number;
 };

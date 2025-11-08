@@ -13,4 +13,5 @@ public class ManufacturerPartLookupResponseDTO
     public ManufacturerPartLookupStatus Status { get; set; }
     public IEnumerable<KeyValuePairDTO>? ManufacturerResult { get; set; }
     public string? Message { get; set; }
+    public decimal Quantity { get; set; }
 }

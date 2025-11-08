@@ -226,7 +226,8 @@ public class PartLookupService
                 id = x.id,
                 PartNumber = x.PartNumber,
                 OrderType = x.OrderType,
-                Status = x.Status
+                Status = x.Status,
+                Quantity= x.Quantity
             });
     }
 
@@ -240,7 +241,8 @@ public class PartLookupService
             id = model.id,
             PartNumber = model.PartNumber,
             OrderType = model.OrderType,
-            Status = model.Status
+            Status = model.Status,
+            Quantity = model.Quantity
         };
     }
 
@@ -255,11 +257,12 @@ public class PartLookupService
             PartNumber = model.PartNumber,
             OrderType = model.OrderType,
             Status = model.Status,
+            Quantity = model.Quantity,
             ManufacturerResult = model.ManufacturerResult.Select(x => new KeyValuePairDTO
             {
                 Key = x.Key,
                 Value = x.Value
-            })
+            }),
         };
     }
 
