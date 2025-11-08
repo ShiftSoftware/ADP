@@ -3,7 +3,7 @@ export type ManufacturerPartLookupResponseDTO = {
     id: string;
     partNumber: string;
     orderType: 'Sea' | 'Airplane';
-    status: 'Pendding' | 'Resolved' | 'UnResolved';
+    status: 'Pending' | 'Resolved' | 'UnResolved';
     manufacturerResult?: KeyValuePairDTO[];
     message?: string;
 };

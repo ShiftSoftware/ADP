@@ -205,7 +205,7 @@ public class PartLookupService
             LogId = dto.LogId,
             OrderType = dto.OrderType,
             UserID = userId,
-            Status = ManufacturerPartLookupStatus.Pendding
+            Status = ManufacturerPartLookupStatus.Pending
         };
 
         await partLookupCosmosService.InsertManufacturerPartLookupAsync(model);

@@ -2,7 +2,7 @@
 
 public enum ManufacturerPartLookupStatus
 {
-    Pendding = 0,
+    Pending = 0,
     Resolved = 1,
     UnResolved = 2,
 }
