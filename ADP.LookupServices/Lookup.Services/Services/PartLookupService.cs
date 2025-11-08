@@ -191,7 +191,7 @@ public class PartLookupService
         return result;
     }
 
-    public async Task<string> ManufacturerPartLookupRequestAsync(ManufacturerPartLookupRequestDTO dto, long userId, long? companyId = null, long? companyBranchId = null)
+    public async Task<string> ManufacturerPartLookupRequestAsync(ManufacturerPartLookupRequestDTO dto, long? userId, long? companyId = null, long? companyBranchId = null)
     {
         var id = Guid.NewGuid().ToString();
 
