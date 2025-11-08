@@ -14,11 +14,11 @@ import { ManufacturerPartLookupResponseDTO } from '~types/generated/part/manufac
 const manufacturerOrderTypesFetcher: FormSelectFetcher<any> = async ({}): Promise<FormSelectItem[]> => {
   return [
     {
-      value: 'Sea',
+      value: '0',
       label: 'V',
     },
     {
-      value: 'Airplane',
+      value: '1',
       label: 'A ',
     },
   ] as FormSelectItem[];
@@ -104,7 +104,8 @@ export class ManufacturerPartLookup implements MultiLingual, FormHookInterface<M
       const requestPayload: ManufacturerPartLookupRequestDTO = {
         quantity: +payload.quantity,
         partNumber: payload.partNumber,
-        orderType: ['Sea', 'Airplane'].includes(payload.orderType) ? (payload.orderType as 'Sea' | 'Airplane') : 'Sea',
+        // @ts-ignore
+        orderType: +payload.orderType as 'Sea' | 'Airplane',
       };
       const response = await fetchFrom(this.manufacturerPartLookupEndpoint, { language: this.language, body: requestPayload, method: 'POST' });
 
