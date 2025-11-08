@@ -132,7 +132,7 @@ public class VehicleServiceItemEvaluator
 
                     var serviceItem = new VehicleServiceItemDTO
                     {
-                        ServiceItemID = item.ID,
+                        ServiceItemID = item.IntegrationID,
                         Name = Utility.GetLocalizedText(item.Name, languageCode),
                         Description = Utility.GetLocalizedText(item.PrintoutDescription, languageCode),
                         Title = Utility.GetLocalizedText(item.PrintoutTitle, languageCode),
@@ -185,7 +185,7 @@ public class VehicleServiceItemEvaluator
                         var itemResult = new VehicleServiceItemDTO
                         {
                             ServiceItemID = item.ServiceItemID,
-                            PaidServiceInvoiceLineID = item.ID,
+                            PaidServiceInvoiceLineID = item.IntegrationID,
                             ActivatedAt = paidService.InvoiceDate,
                             CampaignUniqueReference = item.ServiceItem?.CampaignUniqueReference,
                             Description = Utility.GetLocalizedText(item.ServiceItem?.PrintoutDescription, languageCode),
@@ -196,7 +196,7 @@ public class VehicleServiceItemEvaluator
                             Type = "paid",
                             MaximumMileage = item.ServiceItem?.MaximumMileage,
                             TypeEnum = VehcileServiceItemTypes.Paid,
-                            PackageCode = item.MenuCode,
+                            PackageCode = item.PackageCode,
 
                             ClaimingMethodEnum = item.ServiceItem.ClaimingMethod,
                             VehicleInspectionTypeID = item.ServiceItem.VehicleInspectionTypeID?.ToString(),
@@ -465,17 +465,17 @@ public class VehicleServiceItemEvaluator
             .Select(x => x?.ServiceItemID)
             .Where(x => !(existingServiceItemIds?.Any(s => s == x) ?? false));
 
-        foreach (var item in availableServiceItems.Where(x => claimedItems?.Any(a => a == x.ID.ToString()) ?? false))
+        foreach (var item in availableServiceItems.Where(x => claimedItems?.Any(a => a == x.IntegrationID) ?? false))
         {
             //var modelCost = GetModelCost(item.ModelCosts, katashiki, variant);
 
             var claimLine = companyDataAggregate
                 .ItemClaims?
-                .FirstOrDefault(t => t.ServiceItemID == item.ID.ToString());
+                .FirstOrDefault(t => t.ServiceItemID == item.IntegrationID);
 
             var serviceItem = new VehicleServiceItemDTO
             {
-                ServiceItemID = item.ID,
+                ServiceItemID = item.IntegrationID,
                 Name = Utility.GetLocalizedText(item.Name, languageCode),
                 Description = Utility.GetLocalizedText(item.PrintoutDescription, languageCode),
                 Title = Utility.GetLocalizedText(item.PrintoutTitle, languageCode),

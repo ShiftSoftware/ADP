@@ -13,7 +13,7 @@ public class WarrantyClaimModel : IPartitionedItem, IBrandProps, ICompanyProps
     public ClaimStatus ClaimStatus { get; set; }
     public WarrantyManufacturerClaimStatus ManufacturerStatus { get; set; }
     public string DistributorComment { get; set; }
-    public string LaborOperationNoMain { get; set; }
+    public string LaborOperationNumberMain { get; set; }
     public string ItemType => ModelTypes.WarrantyClaim;
     public string ClaimNumber { get; set; }
     public string InvoiceNumber { get; set; }
@@ -26,7 +26,7 @@ public class WarrantyClaimModel : IPartitionedItem, IBrandProps, ICompanyProps
     public DateTime? DeliveryDate { get; set; }
     public DateTime? RepairCompletionDate { get; set; }
     public int? Odometer { get; set; }
-    public string RepairOrderNo { get; set; } = default!;
+    public string RepairOrderNumber { get; set; } = default!;
     public DateTime? ProcessDate { get; set; }
     public DateTime? DistributorProcessDate { get; set; }
     public long? CompanyID { get; set; }

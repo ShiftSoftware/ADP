@@ -2,13 +2,12 @@
 
 namespace ShiftSoftware.ADP.Models.Vehicle;
 
-public class PaidServiceInvoiceLineModel
+public class PaidServiceInvoiceLineModel : IIntegrationProps
 {
-    public long ID { get; set; }
-    public long PaidServiceInvoiceID { get; set; }
-    public long ServiceItemID { get; set; }
+    public string ServiceItemID { get; set; }
     public decimal Cost { get; set; }
     public DateTime? ExpireDate { get; set; }
-    public string MenuCode { get; set; }
+    public string PackageCode { get; set; }
     public ServiceItemModel ServiceItem { get; set; }
+    public string IntegrationID { get; set; }
 }

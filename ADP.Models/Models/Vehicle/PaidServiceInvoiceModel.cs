@@ -4,10 +4,9 @@ using System.Collections.Generic;
 
 namespace ShiftSoftware.ADP.Models.Vehicle;
 
-public class PaidServiceInvoiceModel : IPartitionedItem, IBrandProps, ICompanyProps
+public class PaidServiceInvoiceModel : IPartitionedItem, IBrandProps, ICompanyProps, IIntegrationProps
 {
     public string id { get; set; } = default!;
-    public long ID { get; set; }
     public DateTime InvoiceDate { get; set; }
     public DateTime StartDate { get; set; }
     public long InvoiceNumber { get; set; }
@@ -20,4 +19,5 @@ public class PaidServiceInvoiceModel : IPartitionedItem, IBrandProps, ICompanyPr
     public string ItemType => ModelTypes.PaidServiceInvoice;
     public long? CompanyID { get; set; }
     public string CompanyHashID { get; set; }
+    public string IntegrationID { get; set; }
 }

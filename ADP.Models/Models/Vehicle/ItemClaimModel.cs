@@ -18,6 +18,5 @@ public class ItemClaimModel : IPartitionedItem, ICompanyProps, IBranchProps
     public string PackageCode { get; set; }
     public string JobNumber { get; set; }
     public string InvoiceNumber { get; set; }
-    public string QRCode { get; set; }
     public string ItemType => ModelTypes.ItemClaim;
 }

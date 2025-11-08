@@ -57,8 +57,8 @@ public class VehicleServiceItemDTO
     public decimal? Cost { get; set; }
     public DateTimeOffset? ClaimDate { get; set; }
     public long? ModelCostID { get; set; }
-    public long ServiceItemID { get; set; }
-    public long? PaidServiceInvoiceLineID { get; set; }
+    public string ServiceItemID { get; set; }
+    public string? PaidServiceInvoiceLineID { get; set; }
     //public string CompanyID { get; set; }
 
     [JsonConverter(typeof(LocalizedTextJsonConverter))]

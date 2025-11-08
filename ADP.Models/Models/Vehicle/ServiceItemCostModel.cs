@@ -7,5 +7,9 @@ public class ServiceItemCostModel
     public string Variant { get; set; }
     public string Katashiki { get; set; }
     public string PackageCode { get; set; }
+
+    /// <summary>
+    /// Cost in dollars
+    /// </summary>
     public decimal? Cost { get; set; }
 }

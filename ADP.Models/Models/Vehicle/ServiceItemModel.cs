@@ -4,10 +4,9 @@ using System.Collections.Generic;
 
 namespace ShiftSoftware.ADP.Models.Vehicle;
 
-public class ServiceItemModel
+public class ServiceItemModel : IIntegrationProps
 {
     public string id { get; set; } = default!;
-    public long ID { get; set; }
     public Dictionary<string, string> Name { get; set; }
     public Dictionary<string, string> Photo { get; set; }
     public bool IsDeleted { get; set; }
@@ -44,4 +43,5 @@ public class ServiceItemModel
     public ClaimableItemAttachmentFieldBehavior AttachmentFieldBehavior { get; set; }
 
     public long? VehicleInspectionTypeID { get; set; }
+    public string IntegrationID { get; set; }
 }
