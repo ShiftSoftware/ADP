@@ -72,16 +72,25 @@ public class PartLookupCosmosService
 
         await manufacturerLookupcontainer.CreateItemAsync(model, new PartitionKey(model.PartNumber));
 
-        // Update the log to store the manufacturer lookup
-        var partLookupLogContainer = client.GetContainer(
-            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.Logs,
-            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.PartLookupLogs
-        );
-
-        await partLookupLogContainer.PatchItemAsync<PartLookupLogCosmosModel>(model.LogId, new PartitionKey(model.PartNumber), new[]
+        try
         {
-            PatchOperation.Set($"/{nameof(PartLookupLogCosmosModel.ManufacturerLookup)}", model),
-        });
+            if(model.LogId is not null)
+            {
+                // Update the log to store the manufacturer lookup
+                var partLookupLogContainer = client.GetContainer(
+                    ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.Logs,
+                    ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.PartLookupLogs
+                );
+
+                await partLookupLogContainer.PatchItemAsync<PartLookupLogCosmosModel>(model.LogId, new PartitionKey(model.PartNumber), new[]
+                {
+                    PatchOperation.Set($"/{nameof(PartLookupLogCosmosModel.ManufacturerLookup)}", model),
+                });
+            }
+        }
+        catch (System.Exception)
+        {
+        }
     }
 
     public async Task UpdateManufacturerPartLookupStatusAsync(string id, string partNumber, ManufacturerPartLookupStatus botStatus, IEnumerable<KeyValuePair<string, string>>? lookupResult = null)
@@ -98,19 +107,29 @@ public class PartLookupCosmosService
             PatchOperation.Set($"/{nameof(ManufacturerPartLookupModel.ManufacturerResult)}", lookupResult),
         });
 
-        // Get the ManufacturerPartLookupModel
-        var manufacturerPartLookupResponse = await manufacturerLookupcontainer.ReadItemAsync<ManufacturerPartLookupModel>(id, new PartitionKey(partNumber));
-
-        // Update the log to store the updated manufacturer lookup
-        var partLookupLogContainer = client.GetContainer(
-            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.Logs,
-            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.PartLookupLogs
-        );
-
-        await partLookupLogContainer.PatchItemAsync<PartLookupLogCosmosModel>(manufacturerPartLookupResponse.Resource.LogId, new PartitionKey(partNumber), new[]
+        try
         {
-            PatchOperation.Set($"/{nameof(PartLookupLogCosmosModel.ManufacturerLookup)}", manufacturerPartLookupResponse.Resource),
-        });
+            // Get the ManufacturerPartLookupModel
+            var manufacturerPartLookupResponse = await manufacturerLookupcontainer.ReadItemAsync<ManufacturerPartLookupModel>(id, new PartitionKey(partNumber));
+
+            if (manufacturerPartLookupResponse?.Resource?.LogId is not null)
+            {
+                // Update the log to store the updated manufacturer lookup
+                var partLookupLogContainer = client.GetContainer(
+                    ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.Logs,
+                    ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.PartLookupLogs
+                );
+
+                await partLookupLogContainer.PatchItemAsync<PartLookupLogCosmosModel>(manufacturerPartLookupResponse.Resource.LogId, new PartitionKey(partNumber), new[]
+                {
+                    PatchOperation.Set($"/{nameof(PartLookupLogCosmosModel.ManufacturerLookup)}", manufacturerPartLookupResponse.Resource),
+                });
+            }
+        }
+        catch (System.Exception)
+        {
+
+        }
     }
 
     public async Task<IEnumerable<ManufacturerPartLookupModel>> GetManufacturerPartLookupsByStatusAsync(ManufacturerPartLookupStatus botStatus)
