@@ -5,10 +5,9 @@ import { ComponentLocale, getLocaleLanguage, getSharedLocal, LanguageKeys, Multi
 import { FormHook, FormHookInterface, FormInputMeta, FormSelectFetcher, FormSelectItem } from '~features/form-hook';
 import { InferType, number, object, string } from 'yup';
 import { PartLookupDTO } from '~types/generated/part/part-lookup-dto';
-import { EndPoint } from '~types/components';
 import getLanguageFromUrl from '~lib/get-language-from-url';
 import cn from '~lib/cn';
-import { ManufacturerPartLookupDTO } from '~types/generated/part/manufacturer-part-lookup-dto';
+import { Endpoint, fetchFrom } from '~lib/fetch-from';
 
 const manufacturerOrderTypesFetcher: FormSelectFetcher<any> = async ({}): Promise<FormSelectItem[]> => {
   return [
@@ -95,22 +94,7 @@ export class ManufacturerPartLookup implements MultiLingual, FormHookInterface<M
         return;
       }
 
-      let manufacturerEndpoint: EndPoint =
-        typeof this.manufacturerPartLookupEndpoint === 'string' ? JSON.parse(this.manufacturerPartLookupEndpoint) : this.manufacturerPartLookupEndpoint;
-
-      const defaultHeaders: Record<string, string> = {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Accept-Language': this.language || 'en',
-      };
-
-      const config: RequestInit = {
-        method: manufacturerEndpoint?.method || 'POST',
-        headers: { ...defaultHeaders, ...(manufacturerEndpoint?.headers || {}) },
-        body: JSON.stringify({ ...payload, ...(manufacturerEndpoint?.body || {}) }),
-      };
-
-      const response = await fetch(manufacturerEndpoint.url, config);
+      const response = await fetchFrom(this.manufacturerPartLookupEndpoint, { language: this.language, body: payload });
 
       if (!response.ok) {
         throw new Error(`Request failed with status ${response.status}`);
@@ -136,9 +120,9 @@ export class ManufacturerPartLookup implements MultiLingual, FormHookInterface<M
   @Prop() manufacturerPartLookupTitle?: string = 'Manufacture lookup';
 
   @Prop() closeManufacturerPartLookup?: boolean;
-  @Prop() manufacturerPartLookupEndpoint: EndPoint | string;
+  @Prop() manufacturerPartLookupEndpoint: Endpoint;
 
-  @State() manufacturerResponse?: ManufacturerPartLookupDTO;
+  @State() manufacturerResponse?: any;
 
   form = new FormHook(this, manufacturerPartLookupValidation);
 

@@ -13,7 +13,7 @@ import { BlazorInvokable, DotNetObjectReference, smartInvokable, BlazorInvokable
 import { PartLookupComponent, PartLookupMock, setPartLookupData, setPartLookupErrorState } from '~features/part-lookup-components';
 import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, sharedLocalesSchema } from '~features/multi-lingual';
 import distributerSchema from '~locales/partLookup/distributor/type';
-import { EndPoint } from '~types/components';
+import { Endpoint } from '~lib/fetch-from';
 
 @Component({
   shadow: true,
@@ -49,14 +49,12 @@ export class DistributorLookup implements MultiLingual, VehicleInfoLayoutInterfa
 
   @Prop() mockUrl = '';
   @Prop() isDev: boolean;
-  @Prop() baseUrl: string;
-  @Prop() headers: object = {};
-  @Prop() queryString: string = '';
+  @Prop() endpoint: Endpoint;
 
-  // @ts-ignore
-  @Prop() errorCallback?: BlazorInvokableFunction<(errorMessage: ErrorKeys) => void>;
-  @Prop() loadingStateChange?: BlazorInvokableFunction<(isLoading: boolean) => void>;
-  @Prop() loadedResponse?: BlazorInvokableFunction<(response: PartLookupDTO) => void>;
+  @Prop({ mutable: true }) loadedMockDatas?: BlazorInvokableFunction<(response: any) => void>;
+  @Prop({ mutable: true }) errorCallback?: BlazorInvokableFunction<(errorMessage: ErrorKeys) => void>;
+  @Prop({ mutable: true }) loadingStateChange?: BlazorInvokableFunction<(isLoading: boolean) => void>;
+  @Prop({ mutable: true }) loadedResponse?: BlazorInvokableFunction<(response: PartLookupDTO) => void>;
 
   @State() searchString: string;
   @State() isError: boolean = false;
@@ -74,6 +72,7 @@ export class DistributorLookup implements MultiLingual, VehicleInfoLayoutInterfa
   @Method()
   async setMockData(newMockData: PartLookupMock) {
     this.mockData = newMockData;
+    smartInvokable.bind(this)(this.loadedMockDatas, newMockData);
   }
 
   @Method()
@@ -91,8 +90,8 @@ export class DistributorLookup implements MultiLingual, VehicleInfoLayoutInterfa
   }
 
   @Method()
-  async fetchData(newData: PartLookupDTO | string, headers: any = {}) {
-    await setPartLookupData(this, newData, headers);
+  async fetchData(newData: PartLookupDTO | string) {
+    await setPartLookupData(this, newData);
   }
 
   @Method()
@@ -121,7 +120,7 @@ export class DistributorLookup implements MultiLingual, VehicleInfoLayoutInterfa
   @Prop() hiddenFields?: string = '';
   @Prop() localizationName?: string = '';
   @Prop() manufacturerPartLookupTitle?: string;
-  @Prop() manufacturerPartLookupEndpoint: EndPoint | string;
+  @Prop() manufacturerPartLookupEndpoint: Endpoint;
   // #endregion
   render() {
     const localName = this.partLookup ? this.localizationName || 'russian' : 'russian';

@@ -1,5 +1,5 @@
 {
-  "noBaseUrl": "Укажите базовый URL",
+  "noBaseUrl": "Укажите базовый endpoint",
   "noPartsFound": "Запчасти не найдены",
   "invalidVin": "Недействительный VIN",
   "vinNumberRequired": "Требуется VIN",

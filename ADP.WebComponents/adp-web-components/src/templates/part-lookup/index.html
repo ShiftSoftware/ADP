@@ -1,27 +1,31 @@
 <!doctype html>
-<html dir="ltr" lang="en">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0" />
-    <title>Parts lookup</title>
-  </head>
-  <body>
-    <a href="#" onclick="history.back()" style="color: blue; display: block; margin-bottom: 16px">Back</a>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Parts Lookup Demos</title>
 
-    <h1>Parts lookup Demo List</h1>
-    <ul>
-      <li>
-        <a href="./part-lookup.html">Parts Lookup</a>
-      </li>
-      <li>
-        <a href="./distributor-lookup.html">Parts - Distributor Lookup</a>
-      </li>
-      <li>
-        <a href="./dead-stock-lookup.html">Parts - Dead Stock Lookup</a>
-      </li>
-      <li>
-        <a href="./manufacturer-lookup.html">Parts - Manufacturer Lookup</a>
-      </li>
-    </ul>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  </head>
+
+  <body class="min-h-screen bg-base-200 flex flex-col items-center justify-center font-sans p-6">
+    <div class="card w-full max-w-lg bg-base-100 shadow-xl">
+      <div class="card-body items-center text-center">
+        <h1 class="card-title text-3xl mb-4">🧩 Parts Lookup Demos</h1>
+        <p class="text-sm text-base-content/70 mb-6">Select a demo below to open its page:</p>
+
+        <ul class="menu bg-base-100 rounded-box w-full">
+          <li><a href="./part-lookup.html" class="text-lg font-medium">Parts Lookup</a></li>
+          <li><a href="./distributor-lookup.html" class="text-lg font-medium">Distributor Lookup</a></li>
+          <li><a href="./dead-stock-lookup.html" class="text-lg font-medium">Dead Stock Lookup</a></li>
+          <li><a href="./manufacturer-lookup.html" class="text-lg font-medium">Manufacturer Lookup</a></li>
+        </ul>
+
+        <div class="mt-6">
+          <a href="#" onclick="history.back()" class="btn btn-outline btn-sm">← Back</a>
+        </div>
+      </div>
+    </div>
   </body>
 </html>

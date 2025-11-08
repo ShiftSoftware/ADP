@@ -4,11 +4,11 @@ import { ErrorKeys } from '~features/multi-lingual';
 import { BlazorInvokable, smartInvokable } from '~features/blazor-ref';
 
 import { PartLookupDTO } from '~types/generated/part/part-lookup-dto';
+import { fetchFrom, FetchFromProps } from '~lib/fetch-from';
 
 export const setPartLookupData = async (
   context: PartLookupComponent & BlazorInvokable,
   newData: PartLookupDTO | string,
-  headers: any = {},
   { beforeAssignment }: { beforeAssignment?: (partLookup: PartLookupDTO, extra: { scopedTimeoutRef: ReturnType<typeof setTimeout> }) => Promise<PartLookupDTO> } = {},
 ) => {
   // @ts-ignore
@@ -48,7 +48,7 @@ export const setPartLookupData = async (
 
     context.searchString = searchString;
 
-    const partResponse = isSearchRequest ? await getPartLookup(context, { scopedTimeoutRef }, headers) : (newData as PartLookupDTO);
+    const partResponse = isSearchRequest ? await getPartLookup(context, { scopedTimeoutRef }) : (newData as PartLookupDTO);
 
     if (context.networkTimeoutRef === scopedTimeoutRef) {
       if (!partResponse) throw new Error('wrongResponseFormat');
@@ -81,7 +81,7 @@ type GetPartLookupProps = {
   scopedTimeoutRef: ReturnType<typeof setTimeout>;
 };
 
-export async function getPartLookup(context: PartLookupComponent, generalProps: GetPartLookupProps, headers: any = {}): Promise<PartLookupDTO> {
+export async function getPartLookup(context: PartLookupComponent, generalProps: GetPartLookupProps): Promise<PartLookupDTO> {
   const { scopedTimeoutRef } = generalProps;
 
   const handleResult = (newPartLookup: PartLookupDTO): PartLookupDTO => {
@@ -98,11 +98,15 @@ export async function getPartLookup(context: PartLookupComponent, generalProps: 
 
     return handleResult(newData);
   } else {
-    if (!context?.baseUrl) throw new Error('noBaseUrl');
+    if (!context?.endpoint) throw new Error('noBaseUrl');
 
-    const response = await fetch(`${context?.baseUrl}${context?.searchString}?${context?.queryString}`, { signal: context?.abortController.signal, headers: headers });
+    const fetchConfig: FetchFromProps = { signal: context?.abortController.signal, additionalPath: '/' + context.searchString };
+
+    const response = await fetchFrom(context.endpoint, fetchConfig);
 
     if (response.status === 204) throw new Error('noPartsFound');
+
+    if (!response.ok) throw new Error('wildCard');
 
     const newData = (await response.json()) as PartLookupDTO;
 

@@ -1,6 +1,6 @@
 {
   "invalidVin": "ژمارەی شانسی نادروستە",
-  "noBaseUrl": "تکایە base-url دابین بکە",
+  "noBaseUrl": "تکایە endpoint دابین بکە",
   "vinNumberRequired": "ژمارەی شانسی پێویستە",
   "partNumberRequired": "ژمارەی پارچە پێویستە",
   "noPartsFound": "هیچ پارچەیەک نەدۆزراوەتەوە",

@@ -1,7 +1,7 @@
 {
   "invalidVin": "Invalid VIN",
   "noPartsFound": "No parts found",
-  "noBaseUrl": "Please provide base-url",
+  "noBaseUrl": "Please provide a endpoint",
   "vinNumberRequired": "VIN is required",
   "noServiceAvailable": "No Service Available",
   "wrongResponseFormat": "Wrong response format",

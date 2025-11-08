@@ -1,311 +1,153 @@
 <!doctype html>
-
-<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<html lang="en" x-data="lookupPage()" x-init="init()">
   <head>
-    <title>Vehicle Lookup</title>
-    <!-- Latest compiled and minified CSS -->
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css"
-      integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu"
-      crossorigin="anonymous"
-    />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vehicle Part Lookup</title>
 
-    <!-- Optional theme -->
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap-theme.min.css"
-      integrity="sha384-6pzBo3FDv/PJ8r2KRkGHifhEocL+1X2rVCTTkUfGk7/0pbek5mMa1upzvWbrUbOZ"
-      crossorigin="anonymous"
-    />
-
-    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
-    <script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha384-nvAa0+6Qg9clwYCGGPpDQLVpLNn0fRaROjHqs13t4Ggj3Ez50XnGQqc/r8MhnRDZ" crossorigin="anonymous"></script>
-    <!-- Include all compiled plugins (below), or include individual files as needed -->
-    <script
-      src="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/js/bootstrap.min.js"
-      integrity="sha384-aJ21OjlMXNL5UyIl/XNwTMqvzeRMZH2w8c5cRVpzpU8Y5bApTppSuUkhZXN0VxHd"
-      crossorigin="anonymous"
-    ></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 
     <script nomodule src="/build/shift-components.js"></script>
     <script type="module" src="/build/shift-components.esm.js"></script>
-
-    <!-- <script type="module" src="../../../dist/shift-components/shift-components.esm.js"></script> -->
-
-    <style>
-      body {
-        background: #f7f7f7;
-        padding: 25px;
-      }
-
-      #vehicle-info-tab a {
-        color: black;
-        font-size: 18px;
-        transition: 0.3s;
-        user-select: none;
-      }
-
-      #vehicle-info-tab li.active a {
-        font-weight: bold;
-        background: #425368;
-        color: white;
-      }
-
-      input.disabled {
-        background: #e0e0e0;
-      }
-
-      .nav-tabs li.disabled {
-        background: #e0e0e0;
-        opacity: 0.5;
-        pointer-events: none;
-      }
-
-      .switch {
-        position: relative;
-        display: inline-block;
-        width: 60px;
-        height: 34px;
-      }
-      .switch input {
-        opacity: 0;
-        width: 0;
-        height: 0;
-      }
-      .slider {
-        position: absolute;
-        cursor: pointer;
-        inset: 0;
-        background-color: #ccc;
-        transition: 0.4s;
-        border-radius: 34px;
-      }
-      .slider::before {
-        position: absolute;
-        content: '';
-        height: 26px;
-        width: 26px;
-        left: 4px;
-        bottom: 4px;
-        background-color: white;
-        transition: 0.4s;
-        border-radius: 50%;
-      }
-      input:checked + .slider {
-        background-color: #4caf50;
-      }
-      input:checked + .slider::before {
-        transform: translateX(26px);
-      }
-    </style>
   </head>
-  <body>
-    <a href="#" onclick="history.back()" style="color: blue; display: block; margin-bottom: 16px">Back</a>
 
-    <div class="section_inner" style="width: 90%; margin: auto">
-      <div>
-        <div class="container-fluid">
-          <div class="row" runat="server" id="rowSubmitForm">
-            <div class="col-sm-12">
-              <div class="row">
-                <div class="col-lg-offset-3 col-lg-6" runat="server" id="colCustomerName">
-                  <div>
-                    <p class="font_f_o_b f16 mb10 error_bg text-center">Part number <span class="required">*Required</span></p>
-                  </div>
-                  <input value="SU00302474" class="shift-form-field" style="width: 100%" autocomplete="off" id="vinInput" />
-                  <div class="ltc-ferrari-red error-message error text-center"></div>
-                </div>
-              </div>
-            </div>
+  <body class="min-h-screen bg-base-200 flex flex-col items-center py-10 px-4 font-sans">
+    <div class="w-full max-w-[1600px] bg-base-100 shadow-xl rounded-2xl p-8">
+      <div class="flex items-center justify-between mb-6">
+        <a href="#" onclick="history.back()" class="btn btn-ghost text-blue-600 hover:bg-blue-50">← Back</a>
+        <h1 class="text-3xl font-extrabold text-gray-800">Vehicle Part Lookup</h1>
+        <div class="w-[80px]"></div>
+      </div>
 
-            <div class="col-sm-12 text-center btn_list clearfix" style="margin-top: 20px">
-              <button onclick="fetchData()" id="searchButton" type="button" class="btn_type_5 f14 font_f_o_b">
-                <i id="search-icon" class="fa fa-search"></i>
-                <i id="spinner-icon" class="fa fa-spin fa-spinner" style="display: none"></i>
-                <span id="search-text">Search</span>
-              </button>
-            </div>
+      <div class="flex flex-col items-center gap-6 mb-8">
+        <div class="w-fit gap-4 items-center flex text-center">
+          <h2 class="text-lg font-semibold shrink-0 text-gray-700 mb-2">Part Number <span class="text-red-500">*</span></h2>
+          <input x-model="inputValue" type="text" class="input input-bordered w-80 text-center" placeholder="Enter part number..." />
+          <p x-text="errorMessage" class="text-red-500 absolute mt-2 h-5"></p>
+          <button class="btn btn-primary w-40" @click="fetchData()">
+            <span x-show="!isLoading"><i class="fa-solid fa-magnifying-glass"></i> Search</span>
+            <span x-show="isLoading" class="flex items-center gap-2"> <span class="loading loading-spinner"></span> Searching... </span>
+          </button>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl shadow-sm">
+          <h2 class="text-lg font-semibold text-gray-700 flex items-center gap-2">
+            <span>🧭</span> Mode:
+            <span class="font-bold text-indigo-600" x-text="isDev ? 'Development' : 'Production'"></span>
+          </h2>
+          <label class="cursor-pointer">
+            <input type="checkbox" x-on:click="switchEnvironment" class="toggle toggle-primary ml-3" />
+          </label>
+        </div>
+
+        <div class="text-center flex gap-3 items-center">
+          <h2 class="text-lg font-semibold text-gray-700">🌐 Language:</h2>
+          <div class="flex flex-wrap justify-center gap-3">
+            <template x-for="lang in languages" :key="lang">
+              <button class="btn btn-outline btn-sm" @click="updateLang(lang)" x-text="lang.toUpperCase()"></button>
+            </template>
           </div>
+        </div>
 
-          <div class="button-container">
-            <button class="sample-button" onclick="updateLang('en')">En</button>
-            <button class="sample-button" onclick="updateLang('ku')">Ku</button>
-            <button class="sample-button" onclick="updateLang('ar')">Ar</button>
-            <button class="sample-button" onclick="updateLang('ru')">Ru</button>
-          </div>
-
-          <div class="button-container">
-            <button class="sample-button" onclick="fetchData()">reload</button>
-            <button class="sample-button" onclick="fetchData('error')">Error</button>
-            <button class="sample-button" onclick="fetchData('')">Empty (close)</button>
-            <button class="sample-button" onclick="fetchData('T5245160030')">T5245160030</button>
-            <button class="sample-button" onclick="fetchData('T5245160030/1')">T5245160030/1</button>
-            <button class="sample-button" onclick="fetchData('T5245160030/11')">T5245160030/11</button>
-            <button class="sample-button" onclick="fetchData('MR0AX8CDXP4446478')">MR0AX8CDXP4446478</button>
-          </div>
-
-          <style>
-            .button-container {
-              margin-top: 50px;
-              border: 1px solid #e1e1e1;
-              padding: 20px;
-              display: flex;
-              flex-wrap: wrap;
-              align-content: center;
-              justify-content: center;
-              gap: 10px;
-            }
-            .sample-button {
-              background-color: #428bca;
-              padding: 10px 15px;
-            }
-
-            .sample-button:hover {
-              background-color: #3071a9;
-            }
-
-            .mock-items {
-              gap: 16px;
-              display: flex;
-              flex-wrap: wrap;
-              justify-content: center;
-            }
-          </style>
-
-          <div class="button-container button-container-part-numbers">
-            <div style="display: flex; align-items: center; gap: 16px">
-              <label for="toggleSwitch">is development</label>
-              <label class="switch">
-                <input type="checkbox" id="toggleSwitch" />
-                <span class="slider"></span>
-              </label>
-            </div>
-
-            <button class="sample-button" onclick="searchStaticVin()">reload</button>
-            <button class="sample-button" onclick="searchStaticVin('')">Empty (close)</button>
-            <button class="sample-button" onclick="searchStaticVin('error')">Error</button>
-            <div class="mock-items"></div>
-          </div>
-
-          <div class="well" style="background: white; margin-top: 30px; border-radius: 10px">
-            <!-- Nav tabs -->
-            <ul class="nav nav-tabs" role="tablist" id="vehicle-info-tab" style="display: flex; justify-content: center; border-bottom: none">
-              <li role="presentation" onclick="changeLookup('dead-stock-lookup')">
-                <a class="disable-auto-scroll" href="#deadStock" aria-controls="deadStock" role="tab" data-toggle="tab"><span>DeadStock</span></a>
-              </li>
-              <li role="presentation" onclick="changeLookup('distributor-lookup')" class="active">
-                <a class="disable-auto-scroll" href="#distributor" aria-controls="distributor" role="tab" data-toggle="tab"><span>Distributor</span></a>
-              </li>
-              <li role="presentation" onclick="changeLookup('manufacturer-lookup')">
-                <a class="disable-auto-scroll" href="#manufacturer" aria-controls="manufacturer" role="tab" data-toggle="tab"><span>Manufacturer</span></a>
-              </li>
-            </ul>
-
-            <!-- Tab panes -->
-            <div class="tab-content" style="background: white; border: 1px solid #dddddd; padding: 25px; border-radius: 10px">
-              <part-lookup
-                language="en"
-                is-dev="true"
-                id="part-lookup"
-                active-element="distributor-lookup"
-                children-props='{"manufacturer-lookup":{"headerTitle":"kodo"}}'
-                base-url="https://vehicles-functions-adp.azurewebsites.net/api/secure-part-lookup/"
-              ></part-lookup>
+        <div class="text-center flex gap-3 items-center w-fit">
+          <h2 class="text-lg font-semibold text-gray-700">Lookups:</h2>
+          <div class="flex flex-wrap justify-center w-fit mx-auto gap-3 card-xs shadow-sm card">
+            <div class="card-body !flex !flex-row">
+              <template x-for="item in lookups" :key="item.label">
+                <button x-text="item.label" @click="fetchData(item.value)" class="btn btn-dash btn-sm"></button>
+              </template>
             </div>
           </div>
         </div>
       </div>
+
+      <div role="tablist" class="tabs mb-4 tabs-lg w-fit mx-auto tabs-center tabs-box">
+        <a role="tab" class="tab" :class="activeTab === 'dead-stock-lookup' ? 'tab-active' : ''" @click="changeLookup('dead-stock-lookup')">Dead Stock</a>
+        <a role="tab" class="tab" :class="activeTab === 'distributor-lookup' ? 'tab-active' : ''" @click="changeLookup('distributor-lookup')">Distributor</a>
+        <a role="tab" class="tab" :class="activeTab === 'manufacturer-lookup' ? 'tab-active' : ''" @click="changeLookup('manufacturer-lookup')">Manufacturer</a>
+      </div>
+
+      <part-lookup is-dev="false" id="custom-component" :active-element="activeTab"></part-lookup>
     </div>
 
     <script>
-      let partLookup;
-      let searching = false;
+      const staticLookups = [
+        { label: 'Reload', value: undefined },
+        { label: 'Empty', value: '' },
+        { label: 'Error', value: 'error' },
+      ];
 
-      const searchIcon = document.getElementById('search-icon');
-      const searchText = document.getElementById('search-text');
-      const spinnerIcon = document.getElementById('spinner-icon');
-      const errorMessage = document.getElementsByClassName('error-message')[0];
+      const prodLookups = [
+        { label: 'T110715002102', value: 'T110715002102' },
+        { label: 'T1118850010/1', value: 'T1118850010/1' },
+        { label: 'T1112375020/11', value: 'T1112375020/11' },
+      ];
 
-      const input = document.getElementById('vinInput');
+      function lookupPage() {
+        return {
+          isDev: false,
+          isLoading: false,
+          errorMessage: '',
+          componentRef: null,
+          inputValue: 'SU00302474',
+          activeTab: 'distributor-lookup',
+          languages: ['en', 'ku', 'ar', 'ru'],
+          lookups: [...staticLookups, ...prodLookups],
 
-      function updateLang(newLang) {
-        partLookup.language = newLang;
-      }
+          init() {
+            this.componentRef = document.getElementById('custom-component');
 
-      function changeLookup(newIndex) {
-        partLookup.activeElement = newIndex;
-      }
+            this.componentRef.endpoint = {
+              url: 'https://tiq-part-lookup.azurewebsites.net/api/secure-part-lookup',
+              query: { code: '' },
+            };
 
-      function fetchData(vin, quantity = '') {
-        partLookup.fetchData(vin || input.value, quantity);
-      }
+            this.componentRef.loadedResponse = newResponse => console.log('response:', newResponse);
+            this.componentRef.loadingStateChange = isLoading => {
+              console.log('isLoading:', isLoading);
+              this.isLoading = isLoading;
+            };
+            this.componentRef.loadedMockDatas = mockData => {
+              console.log('new mock data:', mockData);
+              this.generateMockItems(mockData);
+            };
+          },
 
-      const toggle = document.getElementById('toggleSwitch');
+          generateMockItems(mockData) {
+            const mockItem = Object.keys(mockData).map(key => ({ label: key, value: key }));
+            this.lookups = [...staticLookups, ...mockItem];
+          },
 
-      let isDev = false;
+          switchEnvironment() {
+            this.isDev = !this.isDev;
+            this.lookups = this.isDev ? [] : [...staticLookups, ...prodLookups];
+            this.componentRef.isDev = this.isDev;
+          },
 
-      toggle.addEventListener('change', async function () {
-        isDev = this.checked;
-        partLookup.isDev = isDev;
+          updateLang(lang) {
+            if (this.componentRef) this.componentRef.language = lang;
+          },
 
-        const container = document.querySelector('.mock-items');
+          changeLookup(tab) {
+            this.activeTab = tab;
+            this.componentRef.activeElement = tab;
+          },
 
-        container.innerHTML = '';
+          async fetchData(value) {
+            if (this.isLoading) return;
+            try {
+              await this.componentRef.fetchData(value || this.inputValue);
+            } catch (err) {
+              console.log(err);
 
-        if (isDev) {
-          let mockData;
-          let tries = 0;
-          while (!mockData && tries++ < 10) {
-            mockData = await partLookup.getMockData();
-            await new Promise(r => setTimeout(r, 1000));
-          }
-
-          Object.keys(mockData).forEach(itemKey => {
-            const button = document.createElement('button');
-            button.className = 'sample-button';
-            button.textContent = itemKey;
-            const itemParts = itemKey.split('/');
-
-            button.onclick = () => fetchData(itemParts[0], itemParts.length > 1 ? itemParts[1] : '');
-            container.appendChild(button);
-          });
-        }
-      });
-
-      document.addEventListener('DOMContentLoaded', async function () {
-        partLookup = document.getElementById('part-lookup');
-
-        partLookup.errorStateListener = async function errorStateListener(error) {
-          if (error) {
-            input.classList.add('error_bg');
-            errorMessage.innerHTML = error;
-          } else {
-            input.classList.remove('error_bg');
-            errorMessage.innerHTML = '';
-          }
+              this.errorMessage = 'Error loading data.';
+            }
+          },
         };
-
-        partLookup.onLoadingStateChanged = function onLoadingStateChanged(isLoading) {
-          if (isLoading) {
-            $("li:not('.active')").addClass('disabled');
-            searching = true;
-            searchIcon.style.display = 'none';
-            spinnerIcon.style.display = 'inline-block';
-            searchText.innerHTML = 'Searching...';
-            input.readOnly = true;
-            input.classList.add('disabled');
-          } else {
-            $("li:not('.active')").removeClass('disabled');
-            searchIcon.style.display = 'inline-block';
-            spinnerIcon.style.display = 'none';
-            searchText.innerHTML = 'Search';
-            input.readOnly = false;
-            input.classList.remove('disabled');
-            searching = false;
-          }
-        };
-      });
+      }
     </script>
   </body>
 </html>

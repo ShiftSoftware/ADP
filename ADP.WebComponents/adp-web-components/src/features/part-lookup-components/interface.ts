@@ -4,14 +4,14 @@ import { BlazorInvokableFunction } from '~features/blazor-ref';
 import { PartLookupMock } from './types';
 import { PartLookupDTO } from '~types/generated/part/part-lookup-dto';
 
+import { Endpoint } from '~lib/fetch-from';
+
 export interface PartLookupComponent {
   isDev: boolean;
-  baseUrl: string;
-  headers: object;
   mockUrl: string;
   isError: boolean;
   isLoading: boolean;
-  queryString: string;
+  endpoint: Endpoint;
   searchString: string;
   errorMessage?: ErrorKeys;
   mockData: PartLookupMock;

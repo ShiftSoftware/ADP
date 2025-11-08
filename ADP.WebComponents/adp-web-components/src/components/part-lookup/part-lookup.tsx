@@ -10,7 +10,8 @@ import { VehicleInfoLayout } from '~features/vehicle-info-layout';
 import { ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, SharedLocales, sharedLocalesSchema } from '~features/multi-lingual';
 
 import { PartLookupDTO } from '~types/generated/part/part-lookup-dto';
-import { DotNetObjectReference } from '~features/blazor-ref';
+import { BlazorInvokableFunction, DotNetObjectReference, smartInvokable } from '~features/blazor-ref';
+import { Endpoint } from '~lib/fetch-from';
 
 const componentTags = {
   deadStock: 'dead-stock-lookup',
@@ -27,7 +28,7 @@ export type ComponentMap = {
 export type ActiveElement = (typeof componentTags)[keyof typeof componentTags] | '';
 
 @Component({
-  shadow: false,
+  shadow: true,
   tag: 'part-lookup',
   styleUrl: 'part-lookup.css',
 })
@@ -55,16 +56,14 @@ export class PartLookup implements MultiLingual {
   @Prop() activeElement?: ActiveElement = '';
 
   @Prop() mockUrl = '';
-  @Prop() baseUrl: string = '';
+  @Prop() endpoint: Endpoint;
   @Prop() isDev: boolean = false;
-  @Prop() queryString: string = '';
   @Prop() childrenProps?: string | Object;
 
-  @Prop() blazorErrorStateListener = '';
-  @Prop() errorStateListener?: (newError: string) => void;
-
-  @Prop() blazorOnLoadingStateChange = '';
-  @Prop() loadingStateChanged?: (isLoading: boolean) => void;
+  @Prop({ mutable: true }) loadedMockDatas?: BlazorInvokableFunction<(response: any) => void>;
+  @Prop({ mutable: true }) errorCallback?: BlazorInvokableFunction<(errorMessage: ErrorKeys) => void>;
+  @Prop({ mutable: true }) loadingStateChange?: BlazorInvokableFunction<(isLoading: boolean) => void>;
+  @Prop({ mutable: true }) loadedResponse?: BlazorInvokableFunction<(response: PartLookupDTO) => void>;
 
   @State() errorKey: ErrorKeys;
   @State() wrapperErrorState = '';
@@ -79,9 +78,9 @@ export class PartLookup implements MultiLingual {
   private componentsList: ComponentMap;
 
   async componentDidLoad() {
-    const deadStockLookup = this.el.getElementsByTagName('dead-stock-lookup')[0] as unknown as DeadStockLookup;
-    const distributerLookup = this.el.getElementsByTagName('distributor-lookup')[0] as unknown as DistributorLookup;
-    const manufacturerLookup = this.el.getElementsByTagName('manufacturer-lookup')[0] as unknown as ManufacturerLookup;
+    const deadStockLookup = this.el.shadowRoot.getElementById(componentTags.deadStock) as unknown as DeadStockLookup;
+    const distributerLookup = this.el.shadowRoot.getElementById(componentTags.distributor) as unknown as DistributorLookup;
+    const manufacturerLookup = this.el.shadowRoot.getElementById(componentTags.manufacturer) as unknown as ManufacturerLookup;
 
     this.componentsList = {
       [componentTags.deadStock]: deadStockLookup,
@@ -92,6 +91,7 @@ export class PartLookup implements MultiLingual {
     Object.values(this.componentsList).forEach(element => {
       if (!element) return;
 
+      element.loadedMockDatas = this.onMockDataSetMiddleware;
       element.errorCallback = this.syncErrorAcrossComponents;
       element.loadingStateChange = this.loadingStateChangingMiddleware;
       element.loadedResponse = newResponse => this.handleLoadData(newResponse, element);
@@ -101,6 +101,7 @@ export class PartLookup implements MultiLingual {
   private syncErrorAcrossComponents = (newErrorMessage: ErrorKeys) => {
     this.isError = true;
     this.errorKey = newErrorMessage;
+    smartInvokable.bind(this)(this.errorCallback, newErrorMessage);
     Object.values(this.componentsList).forEach(element => {
       if (element) element.setErrorMessage(newErrorMessage);
     });
@@ -110,6 +111,7 @@ export class PartLookup implements MultiLingual {
   handleLoadData(newResponse: PartLookupDTO, activeElement) {
     this.isError = false;
     this.header = newResponse?.partNumber || '';
+    smartInvokable.bind(this)(this.loadedResponse, newResponse);
     Object.values(this.componentsList).forEach(element => {
       // @ts-ignore
       if (element !== null && element !== activeElement && newResponse) element.fetchData(newResponse);
@@ -118,14 +120,16 @@ export class PartLookup implements MultiLingual {
 
   private loadingStateChangingMiddleware = (newState: boolean) => {
     this.isLoading = newState;
-    if (this.loadingStateChanged) this.loadingStateChanged(newState);
-    if (this.blazorRef && this.blazorOnLoadingStateChange) this.blazorRef.invokeMethodAsync(this.blazorOnLoadingStateChange, newState);
+    smartInvokable.bind(this)(this.loadingStateChange, newState);
+  };
+
+  private onMockDataSetMiddleware = (newMockData: any) => {
+    smartInvokable.bind(this)(this.loadedMockDatas, newMockData);
   };
 
   @Watch('wrapperErrorState')
   async errorListener(newState) {
-    if (this.errorStateListener) this.errorStateListener(newState);
-    if (this.blazorRef && this.blazorErrorStateListener) this.blazorRef.invokeMethodAsync(this.blazorErrorStateListener, newState);
+    smartInvokable.bind(this)(this.errorCallback, newState);
   }
 
   @Method()
@@ -134,7 +138,7 @@ export class PartLookup implements MultiLingual {
   }
 
   @Method()
-  async fetchData(partNumber: string, quantity: string = '', headers: any = {}) {
+  async fetchData(partNumber: string, quantity: string = '') {
     const activeElement = this.componentsList[this.activeElement] || null;
 
     this.wrapperErrorState = '';
@@ -145,7 +149,7 @@ export class PartLookup implements MultiLingual {
 
     const searchingText = quantity.trim() || quantity.trim() === '0' ? `${partNumber.trim()}/${quantity.trim()}` : partNumber.trim();
 
-    activeElement.fetchData(searchingText, headers);
+    activeElement.fetchData(searchingText);
   }
 
   @Method()
@@ -186,9 +190,9 @@ export class PartLookup implements MultiLingual {
           coreOnly
           isDev={this.isDev}
           mock-url={this.mockUrl}
-          base-url={this.baseUrl}
           language={this.language}
-          query-string={this.queryString}
+          endpoint={this.endpoint}
+          id={componentTags.deadStock}
           {...props[componentTags.deadStock]}
         />
       ),
@@ -197,9 +201,9 @@ export class PartLookup implements MultiLingual {
           coreOnly
           isDev={this.isDev}
           mock-url={this.mockUrl}
-          base-url={this.baseUrl}
           language={this.language}
-          query-string={this.queryString}
+          endpoint={this.endpoint}
+          id={componentTags.distributor}
           {...props[componentTags.distributor]}
         />
       ),
@@ -208,9 +212,9 @@ export class PartLookup implements MultiLingual {
           coreOnly
           isDev={this.isDev}
           mock-url={this.mockUrl}
-          base-url={this.baseUrl}
           language={this.language}
-          query-string={this.queryString}
+          endpoint={this.endpoint}
+          id={componentTags.manufacturer}
           {...props[componentTags.manufacturer]}
         />
       ),

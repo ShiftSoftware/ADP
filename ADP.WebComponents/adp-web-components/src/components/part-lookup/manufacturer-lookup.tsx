@@ -12,6 +12,8 @@ import { BlazorInvokable, DotNetObjectReference, smartInvokable, BlazorInvokable
 import { PartLookupComponent, PartLookupMock, setPartLookupData, setPartLookupErrorState } from '~features/part-lookup-components';
 import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, sharedLocalesSchema } from '~features/multi-lingual';
 
+import { Endpoint } from '~lib/fetch-from';
+
 @Component({
   shadow: true,
   tag: 'manufacturer-lookup',
@@ -46,13 +48,12 @@ export class ManufacturerLookup implements MultiLingual, VehicleInfoLayoutInterf
 
   @Prop() mockUrl = '';
   @Prop() isDev: boolean;
-  @Prop() baseUrl: string;
-  @Prop() headers: object = {};
-  @Prop() queryString: string = '';
+  @Prop() endpoint: Endpoint;
 
-  @Prop() errorCallback?: BlazorInvokableFunction<(errorMessage: ErrorKeys) => void>;
-  @Prop() loadingStateChange?: BlazorInvokableFunction<(isLoading: boolean) => void>;
-  @Prop() loadedResponse?: BlazorInvokableFunction<(response: PartLookupDTO) => void>;
+  @Prop({ mutable: true }) loadedMockDatas?: BlazorInvokableFunction<(response: any) => void>;
+  @Prop({ mutable: true }) errorCallback?: BlazorInvokableFunction<(errorMessage: ErrorKeys) => void>;
+  @Prop({ mutable: true }) loadingStateChange?: BlazorInvokableFunction<(isLoading: boolean) => void>;
+  @Prop({ mutable: true }) loadedResponse?: BlazorInvokableFunction<(response: PartLookupDTO) => void>;
 
   @State() searchString: string;
   @State() isError: boolean = false;
@@ -70,6 +71,7 @@ export class ManufacturerLookup implements MultiLingual, VehicleInfoLayoutInterf
   @Method()
   async setMockData(newMockData: PartLookupMock) {
     this.mockData = newMockData;
+    smartInvokable.bind(this)(this.loadedMockDatas, newMockData);
   }
 
   @Method()
@@ -87,8 +89,8 @@ export class ManufacturerLookup implements MultiLingual, VehicleInfoLayoutInterf
   }
 
   @Method()
-  async fetchData(newData: PartLookupDTO | string, headers: any = {}) {
-    await setPartLookupData(this, newData, headers);
+  async fetchData(newData: PartLookupDTO | string) {
+    await setPartLookupData(this, newData);
   }
 
   @Method()
