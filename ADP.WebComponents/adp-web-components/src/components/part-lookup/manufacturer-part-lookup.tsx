@@ -8,15 +8,17 @@ import { PartLookupDTO } from '~types/generated/part/part-lookup-dto';
 import getLanguageFromUrl from '~lib/get-language-from-url';
 import cn from '~lib/cn';
 import { Endpoint, fetchFrom } from '~lib/fetch-from';
+import { ManufacturerPartLookupRequestDTO } from '~types/generated/part/manufacturer-part-lookup-request-dto';
+import { ManufacturerPartLookupResponseDTO } from '~types/generated/part/manufacturer-part-lookup-response-dto';
 
 const manufacturerOrderTypesFetcher: FormSelectFetcher<any> = async ({}): Promise<FormSelectItem[]> => {
   return [
     {
-      value: 'V',
+      value: 'Sea',
       label: 'V',
     },
     {
-      value: 'A',
+      value: 'Airplane',
       label: 'A ',
     },
   ] as FormSelectItem[];
@@ -75,17 +77,22 @@ export class ManufacturerPartLookup implements MultiLingual, FormHookInterface<M
       if (this.isDev) {
         await new Promise(r => setTimeout(r, 2000));
         if (0.5 < Math.random()) {
-          if (0.5 < Math.random()) this.manufacturerResponse = { isSuccess: true, message: 'This is sample f success message' };
-          else this.manufacturerResponse = { isSuccess: false, message: 'This is sample of failed message' };
+          if (0.5 < Math.random())
+            this.manufacturerResponse = { message: '', quantity: 2, id: '2', orderType: 'Airplane', partNumber: 'T110715002102', status: 'Pending', manufacturerResult: [] };
+          else this.manufacturerResponse = { message: '', quantity: 2, id: '2', orderType: 'Airplane', partNumber: 'T110715002102', status: 'UnResolved', manufacturerResult: [] };
         } else {
           this.manufacturerResponse = {
-            isSuccess: true,
-
+            id: '2',
+            message: '',
+            quantity: 2,
+            orderType: 'Airplane',
+            partNumber: 'T110715002102',
+            status: 'Pending',
             manufacturerResult: [
-              { fieldName: 'item 1', fieldValue: `${Math.floor(Math.random() * 100)}` },
-              { fieldName: 'item 2', fieldValue: 'Available' },
-              { fieldName: 'item 3', fieldValue: `${Math.floor(Math.random() * 100)}` },
-              { fieldName: 'item 4', fieldValue: 'Not Available' },
+              { key: 'item 1', value: `${Math.floor(Math.random() * 100)}` },
+              { key: 'item 2', value: 'Available' },
+              { key: 'item 3', value: `${Math.floor(Math.random() * 100)}` },
+              { key: 'item 4', value: 'Not Available' },
             ],
           };
         }
@@ -94,20 +101,25 @@ export class ManufacturerPartLookup implements MultiLingual, FormHookInterface<M
         return;
       }
 
-      const response = await fetchFrom(this.manufacturerPartLookupEndpoint, { language: this.language, body: payload });
+      const requestPayload: ManufacturerPartLookupRequestDTO = {
+        quantity: +payload.quantity,
+        partNumber: payload.partNumber,
+        orderType: ['Sea', 'Airplane'].includes(payload.orderType) ? (payload.orderType as 'Sea' | 'Airplane') : 'Sea',
+      };
+      const response = await fetchFrom(this.manufacturerPartLookupEndpoint, { language: this.language, body: requestPayload, method: 'POST' });
 
       if (!response.ok) {
         throw new Error(`Request failed with status ${response.status}`);
       }
 
-      const responseType = (await response.json()) as (typeof this.manufacturerResponse)['manufacturerResult'];
+      const responseType = (await response.json()) as typeof this.manufacturerResponse;
 
       this.form.reset();
 
-      this.manufacturerResponse = { isSuccess: true, manufacturerResult: responseType };
+      this.manufacturerResponse = responseType;
     } catch (error) {
       console.error('❌ Manufacturer Lookup request failed:', error);
-      this.manufacturerResponse = { isSuccess: false, message: ' Manufacturer Lookup request failed' };
+      this.manufacturerResponse = undefined;
     }
   };
   // #endregion
@@ -122,7 +134,7 @@ export class ManufacturerPartLookup implements MultiLingual, FormHookInterface<M
   @Prop() closeManufacturerPartLookup?: boolean;
   @Prop() manufacturerPartLookupEndpoint: Endpoint;
 
-  @State() manufacturerResponse?: any;
+  @State() manufacturerResponse?: ManufacturerPartLookupResponseDTO;
 
   form = new FormHook(this, manufacturerPartLookupValidation);
 
@@ -164,19 +176,14 @@ export class ManufacturerPartLookup implements MultiLingual, FormHookInterface<M
 
               <flexible-container isOpened={!!this.manufacturerResponse && !this.isLoading}>
                 <div class="flex flex-col items-center pt-[12px]">
-                  <div
-                    class={cn('text-center text-[20px] font-semibold py-[12px]', {
-                      'text-green-600': this.manufacturerResponse?.isSuccess && !this.manufacturerResponse?.manufacturerResult?.length,
-                      'text-red-600': !this.manufacturerResponse?.isSuccess,
-                    })}
-                  >
+                  <div class={cn('text-center text-[20px] font-semibold py-[12px]')}>
                     {!this.manufacturerResponse?.manufacturerResult?.length && (this.manufacturerResponse?.message || this.locale.RequestFailed)}
                     {!!this.manufacturerResponse?.manufacturerResult?.length && (
                       <div class="bg-white rounded-lg border w-[500px]">
-                        {this.manufacturerResponse?.manufacturerResult.map(({ fieldName, fieldValue }) => (
-                          <div key={`${fieldName}-${fieldValue}`} class="flex even:bg-slate-100 hover:bg-sky-100/50 border-b w-full text-xl text-center">
-                            <div class="text-center flex items-center flex-1 max-w-[250px] shrink-0 justify-center py-[10px] px-[16px] border-r">{fieldName}</div>
-                            <div class="text-center flex items-center flex-1 shrink-0 justify-center py-[10px] px-[16px] border-l">{fieldValue}</div>
+                        {this.manufacturerResponse?.manufacturerResult.map(({ key, value }) => (
+                          <div key={`${key}-${value}`} class="flex even:bg-slate-100 hover:bg-sky-100/50 border-b w-full text-xl text-center">
+                            <div class="text-center flex items-center flex-1 max-w-[250px] shrink-0 justify-center py-[10px] px-[16px] border-r">{key}</div>
+                            <div class="text-center flex items-center flex-1 shrink-0 justify-center py-[10px] px-[16px] border-l">{value}</div>
                           </div>
                         ))}
                       </div>

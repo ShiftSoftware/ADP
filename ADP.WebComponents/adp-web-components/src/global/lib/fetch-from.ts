@@ -59,7 +59,7 @@ export function fetchFrom(endpoint: Endpoint, props: FetchFromProps = {}) {
 
   const queryString = query ? `?${query}` : '';
 
-  const method: RequestInit['method'] = endpointObject?.method || props?.method || 'GET';
+  const method: FetchFromProps['method'] = (endpointObject?.method || props?.method || 'GET') as FetchFromProps['method'];
 
   const config: RequestInit = {
     method,
