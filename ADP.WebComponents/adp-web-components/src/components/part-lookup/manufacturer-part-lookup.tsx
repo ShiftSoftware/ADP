@@ -102,6 +102,7 @@ export class ManufacturerPartLookup implements MultiLingual, FormHookInterface<M
       }
 
       const requestPayload: ManufacturerPartLookupRequestDTO = {
+        logId: this.logId,
         quantity: +payload.quantity,
         partNumber: payload.partNumber,
         // @ts-ignore
@@ -120,7 +121,8 @@ export class ManufacturerPartLookup implements MultiLingual, FormHookInterface<M
       this.manufacturerResponse = responseType;
     } catch (error) {
       console.error('❌ Manufacturer Lookup request failed:', error);
-      this.manufacturerResponse = undefined;
+      // @ts-ignore
+      this.manufacturerResponse = { message: this.locale.RequestFailed };
     }
   };
   // #endregion
@@ -128,8 +130,9 @@ export class ManufacturerPartLookup implements MultiLingual, FormHookInterface<M
   // ===== Start Component Logic
 
   @Prop() isDev?: boolean;
-  @Prop() standAlone?: boolean = true;
+  @Prop() logId?: string = '';
   @Prop() partLookup?: PartLookupDTO;
+  @Prop() standAlone?: boolean = true;
   @Prop() manufacturerPartLookupTitle?: string = 'Manufacture lookup';
 
   @Prop() closeManufacturerPartLookup?: boolean;

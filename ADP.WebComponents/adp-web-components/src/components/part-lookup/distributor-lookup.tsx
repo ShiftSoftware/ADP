@@ -239,6 +239,7 @@ export class DistributorLookup implements MultiLingual, VehicleInfoLayoutInterfa
               standAlone={false}
               isDev={this.isDev}
               partLookup={this.partLookup}
+              logId={this.partLookup?.logId}
               closeManufacturerPartLookup={this.isLoading}
               manufacturerPartLookupTitle={this.manufacturerPartLookupTitle}
               manufacturerPartLookupEndpoint={this.manufacturerPartLookupEndpoint}
