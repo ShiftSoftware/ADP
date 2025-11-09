@@ -15,6 +15,7 @@ public class ManufacturerPartLookupModel :
     public long? CompanyID { get; set; }
     public string CompanyHashID { get; set; }
     public long? UserID { get; set; }
+    public string? UserEmail { get; set; }
 
     public string PartNumber { get; set; }
     public decimal Quantity { get; set; }

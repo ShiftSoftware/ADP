@@ -191,7 +191,7 @@ public class PartLookupService
         return result;
     }
 
-    public async Task<string> ManufacturerPartLookupRequestAsync(ManufacturerPartLookupRequestDTO dto, long? userId, long? companyId = null, long? companyBranchId = null)
+    public async Task<string> ManufacturerPartLookupRequestAsync(ManufacturerPartLookupRequestDTO dto, long? userId, string? userEmail, long? companyId = null, long? companyBranchId = null)
     {
         var id = Guid.NewGuid().ToString();
 
@@ -205,7 +205,8 @@ public class PartLookupService
             LogId = dto.LogId,
             OrderType = dto.OrderType,
             UserID = userId,
-            Status = ManufacturerPartLookupStatus.Pending
+            Status = ManufacturerPartLookupStatus.Pending,
+            UserEmail = userEmail,
         };
 
         await partLookupCosmosService.InsertManufacturerPartLookupAsync(model);

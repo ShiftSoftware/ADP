@@ -9,6 +9,7 @@ hide:
 | CompanyID <div><strong>``long?``</strong></div> |  |
 | CompanyHashID <div><strong>``string``</strong></div> |  |
 | UserID <div><strong>``long?``</strong></div> |  |
+| UserEmail <div><strong>``string?``</strong></div> |  |
 | PartNumber <div><strong>``string``</strong></div> |  |
 | Quantity <div><strong>``decimal``</strong></div> |  |
 | OrderType <div><strong>``ManufacturerOrderType``</strong></div> |  |
