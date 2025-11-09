@@ -71,5 +71,5 @@ export function fetchFrom(endpoint: Endpoint, props: FetchFromProps = {}) {
 
   const url = `${endpointObject.url + (props?.additionalPath || '')}${queryString}`;
 
-  return fetch(url.replace('//', '/'), config);
+  return fetch(url, config);
 }
