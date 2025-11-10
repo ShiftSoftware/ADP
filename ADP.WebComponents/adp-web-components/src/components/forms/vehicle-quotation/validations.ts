@@ -23,7 +23,8 @@ export const vehicleQuotationInputsValidation = object({
     .meta({ label: 'Dealer', placeholder: 'Select a dealer' } as FormInputMeta)
     .required('Dealer is required'),
   city: string()
-    .meta({ label: 'City', placeholder: 'Select a City' } as FormInputMeta),
+    .meta({ label: 'City', placeholder: 'Select a City' } as FormInputMeta)
+    .required('Select a City'),
   paymentType: string().meta({ label: 'Preferred purchasing method', placeholder: 'Select the purchasing method' } as FormInputMeta),
   contactTime: string().meta({ label: 'Preferred contact time', placeholder: 'Please select a time' } as FormInputMeta),
   ownVehicle: string().meta({ label: 'Do you own a vehicle?', placeholder: 'Do you own a vehicle?' } as FormInputMeta),
