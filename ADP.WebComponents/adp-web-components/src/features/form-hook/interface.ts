@@ -34,6 +34,7 @@ export interface FormHookInterface<T> {
   isLoading: boolean;
   errorMessage?: string;
   language?: LanguageKeys;
+  renderedFields?: string[];
   structureRendered?: boolean;
   structure?: FormElementStructure<any>;
   formSubmit: (formValues: T) => void;

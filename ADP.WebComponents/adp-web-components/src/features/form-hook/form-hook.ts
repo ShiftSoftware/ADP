@@ -141,6 +141,22 @@ export class FormHook<T> {
     }
   };
 
+  hasItemInStructure = (target, structure = this.context.structure) => {
+    if (typeof structure === 'string') {
+      return structure === target;
+    }
+
+    const { tag, name, children, isHidden } = structure;
+
+    if ((tag === target || name === target) && !isHidden) return true;
+
+    if (Array.isArray(children)) {
+      return children.some(child => this.hasItemInStructure(target, child));
+    }
+
+    return false;
+  };
+
   onSubmit = (formEvent: SubmitEvent) => {
     formEvent.preventDefault();
     (async () => {
@@ -159,7 +175,9 @@ export class FormHook<T> {
             formObject[name] = typeof formObject[name] === 'string' && formObject[name] === 'true';
           });
 
-        const values = await this.schemaObject.validate(formObject, { abortEarly: false });
+        const excludedFields = Object.keys(this.schemaObject.fields).filter(key => !this.hasItemInStructure(key));
+
+        const values = await (this.schemaObject.omit(excludedFields) as AnyObjectSchema).validate(formObject, { abortEarly: false });
 
         await this.context.formSubmit(values);
       } catch (error) {
