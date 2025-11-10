@@ -92,6 +92,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
         name: formValues.name,
         phone: formValues.phone,
         companyBranchId: formValues.dealer,
+        cityId: formValues.city,
         vehicleQuotationType: this.structure?.data?.quotationType,
         preferredContactTime: formValues?.contactTime || 'NotSpecified',
         preferredPaymentMethod: formValues?.paymentType || 'Flexible',

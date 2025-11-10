@@ -193,6 +193,24 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Vehic
   'choose': ({ locale }) => <h1 part="section-title">{locale.Choose}</h1>,
   'current car': ({ locale }) => <h1 part="section-title">{locale['Your current car']}</h1>,
   'contact information': ({ locale }) => <h1 part="section-title">{locale['Contact Information']}</h1>,
+
+  'city': ({ form, language, props }) => {
+    const fetcher: FormSelectFetcher<VehicleQuotationFormLocale> = async ({ signal }): Promise<FormSelectItem[]> => {
+      const cityEndpoint = form.context.structure?.data.cityApi as string;
+
+      const response = await fetch(cityEndpoint, { signal, headers: { 'Accept-Language': language } });
+
+      const options = (await response.json()).map(city => ({
+        label: city.Name,
+        value: `${city.ID}`,
+        meta: { ...city },
+      })) as FormSelectItem[];
+
+      return options;
+    };
+
+    return <form-select {...props} clearable searchable fetcher={fetcher} language={language} />;
+  },
 } as const;
 
 export type vehicleQuotationElementNames = keyof typeof vehicleQuotationElements;

@@ -12,6 +12,8 @@
   "Phone number format invalid": "تنسيق رقم الهاتف غير صالح.",
   "Dealer": "الوكيل",
   "Select a dealer": "الرجاء تحديد الوكيل",
+  "City": "المدينة",
+  "Select a City": "اختر مدينة",
   "Dealer is required": "مطلوب تاجر.",
   "Preferred purchasing method": "طريقة الشراء التي تفضلها",
   "Select the purchasing method": "الرجاء تحديد طريقة الشراء",
