@@ -37,6 +37,8 @@ const vehicleQuotation = object({}).concat(
     'Noon',
     'Afternoon',
     'Installments',
+    'Select a City',
+    'City',
   ]),
 );
 

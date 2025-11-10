@@ -11,8 +11,6 @@ const warrantySchema = yupTypeMapper([
   'to',
   'extendedWarrantyFrom',
   'extendedWarrantyTo',
-  'pendingSSC',
-  'noPendingSSC',
   'checkingTMC',
   'sscCampings',
   'sscTableCode',
