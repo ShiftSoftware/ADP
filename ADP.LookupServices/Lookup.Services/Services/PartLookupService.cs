@@ -1,5 +1,6 @@
 ﻿using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Part;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Shared;
+using ShiftSoftware.ADP.Lookup.Services.Evaluators;
 using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ADP.Models.Part;
 using System;
@@ -45,28 +46,7 @@ public class PartLookupService
 
         var cosmosPartCatalog = data.CatalogParts.FirstOrDefault();
 
-        List<StockPartDTO> stockParts = new();
         List<DeadStockDTO> deadStockParts = new();
-
-        foreach (var item in data.StockParts)
-        {
-            var stock = new StockPartDTO
-            {
-                QuantityLookUpResult =
-                                        distributorStockLookupQuantity is null ? Enums.QuantityLookUpResults.LookupIsSkipped :
-                                        distributorStockLookupQuantity >= 10 || distributorStockLookupQuantity == 0 ? Enums.QuantityLookUpResults.QuantityNotWithinLookupThreshold :
-                                        item.AvailableQuantity <= 0 ? Enums.QuantityLookUpResults.NotAvailable :
-                                        item.AvailableQuantity >= distributorStockLookupQuantity ? Enums.QuantityLookUpResults.Available :
-                                        Enums.QuantityLookUpResults.PartiallyAvailable,
-                LocationID = item.Location,
-            };
-
-            if (options?.PartLocationNameResolver is not null)
-                stock.LocationName = await options.PartLocationNameResolver(
-                    new(new(item.PartNumber, item.ItemType, item.Location), language, services));
-
-            stockParts.Add(stock);
-        }
 
         foreach (var item in data.CompanyDeadStockParts.GroupBy(x => x.CompanyID))
         {
@@ -94,9 +74,6 @@ public class PartLookupService
 
             deadStockParts.Add(deadStock);
         }
-
-        if (options?.PartLookupStocksResolver is not null)
-            stockParts = (await options.PartLookupStocksResolver(new(stockParts, language, services))).ToList();
 
         List<PartPriceDTO> prices = new();
 
@@ -174,7 +151,7 @@ public class PartLookupService
             HSCodes = null,
             DeadStock = deadStockParts,
             LogId = null,
-            StockParts = stockParts,
+            StockParts = await new PartStockEvaluator(data, options, services).Evaluate(distributorStockLookupQuantity, 10, language),
             Prices = resolvedPrices,
             SupersededTo = cosmosPartCatalog?.SupersededTo?.Select(x=> x.PartNumber),
             SupersededFrom = cosmosPartCatalog?.SupersededFrom?.Select(x=> x.PartNumber),
