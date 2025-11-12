@@ -151,7 +151,7 @@ public class PartLookupService
             HSCodes = null,
             DeadStock = deadStockParts,
             LogId = null,
-            StockParts = await new PartStockEvaluator(data, options, services).Evaluate(distributorStockLookupQuantity, 10, language),
+            StockParts = await new PartStockEvaluator(data, options, services).Evaluate(distributorStockLookupQuantity, language),
             Prices = resolvedPrices,
             SupersededTo = cosmosPartCatalog?.SupersededTo?.Select(x=> x.PartNumber),
             SupersededFrom = cosmosPartCatalog?.SupersededFrom?.Select(x=> x.PartNumber),

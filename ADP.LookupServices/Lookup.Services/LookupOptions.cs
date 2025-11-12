@@ -30,6 +30,8 @@ public class LookupOptions
     public string ServiceActivationPreClaimVoucherPrintingURL { get; set; }
     public string VehicleInspectionPreClaimVoucherPrintingURL { get; set; }
     public List<VehicleItemWarning> StandardItemClaimWarnings { get; set; }
+
+    public int? DistributorStockPartLookupQuantityThreshold { get; set; }
 }
 
 public class PartLocationNameResolverModel

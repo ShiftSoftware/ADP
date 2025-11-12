@@ -20,7 +20,7 @@ public class PartStockEvaluator
         this.services = services;
     }
 
-    public async Task<IEnumerable<StockPartDTO>> Evaluate(int? distributorStockLookupQuantity, int? distributorStockLookupQuantityThreshold, string language = "en")
+    public async Task<IEnumerable<StockPartDTO>> Evaluate(int? distributorStockLookupQuantity, string language = "en")
     {
         List<StockPartDTO> stockParts = new();
 
@@ -30,7 +30,7 @@ public class PartStockEvaluator
             {
                 QuantityLookUpResult =
                                         distributorStockLookupQuantity is null ? Enums.QuantityLookUpResults.LookupIsSkipped :
-                                        distributorStockLookupQuantity >= distributorStockLookupQuantityThreshold.GetValueOrDefault() || distributorStockLookupQuantity == 0 ? Enums.QuantityLookUpResults.QuantityNotWithinLookupThreshold :
+                                        distributorStockLookupQuantity >= options.DistributorStockPartLookupQuantityThreshold.GetValueOrDefault() || distributorStockLookupQuantity == 0 ? Enums.QuantityLookUpResults.QuantityNotWithinLookupThreshold :
                                         item.AvailableQuantity <= 0 ? Enums.QuantityLookUpResults.NotAvailable :
                                         item.AvailableQuantity >= distributorStockLookupQuantity ? Enums.QuantityLookUpResults.Available :
                                         Enums.QuantityLookUpResults.PartiallyAvailable,
