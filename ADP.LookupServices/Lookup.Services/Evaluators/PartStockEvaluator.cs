@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace ShiftSoftware.ADP.Lookup.Services.Evaluators;
 
-public class PartStockEvaluator
+internal class PartStockEvaluator
 {
     private readonly PartAggregateCosmosModel partDataAggregate;
     private readonly LookupOptions options;

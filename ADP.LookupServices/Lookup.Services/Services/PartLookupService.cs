@@ -46,35 +46,6 @@ public class PartLookupService
 
         var cosmosPartCatalog = data.CatalogParts.FirstOrDefault();
 
-        List<DeadStockDTO> deadStockParts = new();
-
-        foreach (var item in data.CompanyDeadStockParts.GroupBy(x => x.CompanyID))
-        {
-            var deadStock = new DeadStockDTO
-            {
-                CompanyHashID = item.FirstOrDefault()?.CompanyHashID,
-            };
-
-            if (options?.CompanyNameResolver is not null)
-                deadStock.CompanyName = await options.CompanyNameResolver(new LookupOptionResolverModel<long?>(item.Key, language, services));
-
-            foreach(var i in item)
-            {
-                var branchDeadStock = new BranchDeadStockDTO
-                {
-                    CompanyBranchHashID = i.BranchHashID,
-                    Quantity = i.AvailableQuantity,
-                };
-
-                if (options?.CompanyBranchNameResolver is not null)
-                    branchDeadStock.CompanyBranchName = await options.CompanyBranchNameResolver(new LookupOptionResolverModel<long?>(i.BranchID, language, services));
-
-                deadStock.BranchDeadStock = deadStock.BranchDeadStock.Append(branchDeadStock);
-            }
-
-            deadStockParts.Add(deadStock);
-        }
-
         List<PartPriceDTO> prices = new();
 
         if (cosmosPartCatalog?.CountryData is not null)
@@ -149,13 +120,13 @@ public class PartLookupService
             PNC = cosmosPartCatalog?.PNC,
             DistributorPurchasePrice = distributorPurchasePrice,
             HSCodes = null,
-            DeadStock = deadStockParts,
             LogId = null,
-            StockParts = await new PartStockEvaluator(data, options, services).Evaluate(distributorStockLookupQuantity, language),
             Prices = resolvedPrices,
             SupersededTo = cosmosPartCatalog?.SupersededTo?.Select(x=> x.PartNumber),
             SupersededFrom = cosmosPartCatalog?.SupersededFrom?.Select(x=> x.PartNumber),
-            ShowManufacturerPartLookup = CalculateShowManufacturerPartLookup(distributorStockLookupQuantity, data.StockParts?.Sum(x=> x.AvailableQuantity)??0, distributorStockLookupQuantity >= 10)
+            ShowManufacturerPartLookup = CalculateShowManufacturerPartLookup(distributorStockLookupQuantity, data.StockParts?.Sum(x=> x.AvailableQuantity)??0, distributorStockLookupQuantity >= 10),
+            DeadStock = await new PartDeadStockEvaluator(data, options, services).Evaluate(language),
+            StockParts = await new PartStockEvaluator(data, options, services).Evaluate(distributorStockLookupQuantity, language),
         };
 
         if (!skipLogging)

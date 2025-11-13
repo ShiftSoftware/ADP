@@ -89,16 +89,16 @@ public class CatalogPartModel :
 
 
     [DocIgnore]
-    [Obsolete("Changed to Length bu kept for compatibility.")]
+    [Obsolete("Changed to Length but kept for compatibility.")]
     public decimal? Dimension1 { get; set; }
     
     [DocIgnore]
-    [Obsolete("Changed to Width bu kept for compatibility.")]
+    [Obsolete("Changed to Width but kept for compatibility.")]
     public decimal? Dimension2 { get; set; }
 
 
     [DocIgnore]
-    [Obsolete("Changed to Height bu kept for compatibility.")]
+    [Obsolete("Changed to Height but kept for compatibility.")]
     public decimal? Dimension3 { get; set; }
 
 
