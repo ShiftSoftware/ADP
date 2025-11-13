@@ -11,4 +11,5 @@ public class StockPartDTO
     public QuantityLookUpResults QuantityLookUpResult { get; set; }
     public string LocationID { get; set; }
     public string LocationName { get; set; }
+    public decimal? AvailableQuantity { get; set; }
 }

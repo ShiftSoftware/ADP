@@ -32,6 +32,7 @@ public class LookupOptions
     public List<VehicleItemWarning> StandardItemClaimWarnings { get; set; }
 
     public int? DistributorStockPartLookupQuantityThreshold { get; set; }
+    public bool ShowPartLookupStockQauntity { get; set; } = false;
 }
 
 public class PartLocationNameResolverModel

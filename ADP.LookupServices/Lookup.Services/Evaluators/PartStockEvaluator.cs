@@ -35,6 +35,7 @@ public class PartStockEvaluator
                                         item.AvailableQuantity >= distributorStockLookupQuantity ? Enums.QuantityLookUpResults.Available :
                                         Enums.QuantityLookUpResults.PartiallyAvailable,
                 LocationID = item.Location,
+                AvailableQuantity = options.ShowPartLookupStockQauntity ? item.AvailableQuantity : null,
             };
 
             if (options?.PartLocationNameResolver is not null)
