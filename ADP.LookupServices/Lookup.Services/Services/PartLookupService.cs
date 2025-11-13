@@ -46,61 +46,7 @@ public class PartLookupService
 
         var cosmosPartCatalog = data.CatalogParts.FirstOrDefault();
 
-        List<PartPriceDTO> prices = new();
-
-        if (cosmosPartCatalog?.CountryData is not null)
-        {
-            foreach (var countryPrice in cosmosPartCatalog?.CountryData)
-            {
-                string? countryName = null;
-                if (options?.CountryNameResolver is not null)
-                {
-                    countryName = await options.CountryNameResolver(new LookupOptionResolverModel<long?>
-                    {
-                        Services = services,
-                        Value = countryPrice.CountryID,
-                        Language = language,
-                    });
-                }
-
-                foreach (var price in countryPrice.RegionPrices)
-                {
-                    string regionName = null;
-                    if (options?.RegionNameResolver is not null)
-                    {
-                        regionName = await options.RegionNameResolver(new LookupOptionResolverModel<long?>
-                        {
-                            Services = services,
-                            Value = price.RegionID,
-                            Language = language,
-                        });
-                    }
-
-                    prices.Add(new PartPriceDTO
-                    {
-                        CountryID = countryPrice.CountryID.ToString(),
-                        CountryName = countryName,
-                        RegionID = price.RegionID.ToString(),
-                        RegionName = regionName,
-                        PurchasePrice = new(price.PurchasePrice),
-                        RetailPrice = new(price.RetailPrice),
-                        WarrantyPrice = new(price.WarrantyPrice)
-                    });
-                }
-            }
-        }
-
-        IEnumerable<PartPriceDTO> resolvedPrices = new List<PartPriceDTO>();
-        decimal? distributorPurchasePrice = null;
-
-
-        if (options.PartLookupPriceResolver is not null)
-        {
-            var resolvedResult = await options.PartLookupPriceResolver(new(new(cosmosPartCatalog?.DistributorPurchasePrice, prices, source), language, services));
-
-            distributorPurchasePrice = resolvedResult.distributorPurchasePrice;
-            resolvedPrices = resolvedResult.prices;
-        }
+        var priceEvaluation = await new PartPriceEvaluator(data, options, services).Evaluate(source, language);
 
         var result = new PartLookupDTO
         {
@@ -118,13 +64,13 @@ public class PartLookupService
             NetWeight = cosmosPartCatalog?.NetWeight,
             Origin = cosmosPartCatalog?.Origin,
             PNC = cosmosPartCatalog?.PNC,
-            DistributorPurchasePrice = distributorPurchasePrice,
             HSCodes = null,
             LogId = null,
-            Prices = resolvedPrices,
             SupersededTo = cosmosPartCatalog?.SupersededTo?.Select(x=> x.PartNumber),
             SupersededFrom = cosmosPartCatalog?.SupersededFrom?.Select(x=> x.PartNumber),
             ShowManufacturerPartLookup = CalculateShowManufacturerPartLookup(distributorStockLookupQuantity, data.StockParts?.Sum(x=> x.AvailableQuantity)??0, distributorStockLookupQuantity >= 10),
+            DistributorPurchasePrice = priceEvaluation.distributorPurchasePrice,
+            Prices = priceEvaluation.prices,
             DeadStock = await new PartDeadStockEvaluator(data, options, services).Evaluate(language),
             StockParts = await new PartStockEvaluator(data, options, services).Evaluate(distributorStockLookupQuantity, language),
         };
