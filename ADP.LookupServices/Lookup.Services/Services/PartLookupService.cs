@@ -68,7 +68,7 @@ public class PartLookupService
             LogId = null,
             SupersededTo = cosmosPartCatalog?.SupersededTo?.Select(x=> x.PartNumber),
             SupersededFrom = cosmosPartCatalog?.SupersededFrom?.Select(x=> x.PartNumber),
-            ShowManufacturerPartLookup = CalculateShowManufacturerPartLookup(distributorStockLookupQuantity, data.StockParts?.Sum(x=> x.AvailableQuantity)??0, distributorStockLookupQuantity >= 10),
+            ShowManufacturerPartLookup = CalculateShowManufacturerPartLookup(distributorStockLookupQuantity, data.StockParts?.Sum(x=> x.AvailableQuantity)??0),
             DistributorPurchasePrice = priceEvaluation.distributorPurchasePrice,
             Prices = priceEvaluation.prices,
             DeadStock = await new PartDeadStockEvaluator(data, options, services).Evaluate(language),
@@ -161,9 +161,10 @@ public class PartLookupService
         };
     }
 
-    private bool CalculateShowManufacturerPartLookup(int? requestedQuantity, decimal availableQuantity, bool exceedsThreshold)
+    private bool CalculateShowManufacturerPartLookup(int? requestedQuantity, decimal availableQuantity)
     {
-        if (exceedsThreshold)
+        // If it already exceeds threshold, no need to show manufacturer lookup
+        if ((requestedQuantity >= options.DistributorStockPartLookupQuantityThreshold.GetValueOrDefault() && !options.ShowPartLookupStockQauntity))
             return false;
 
         if (requestedQuantity is null)
