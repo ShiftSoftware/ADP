@@ -140,7 +140,8 @@ public class PartLookupCosmosService
         );
 
         var query = container.GetItemLinqQueryable<ManufacturerPartLookupModel>(true)
-            .Where(x=> x.Status == botStatus);
+            .Where(x=> x.Status == botStatus)
+            .OrderBy(x => x.CreateDate);
 
         var items = new List<ManufacturerPartLookupModel>();
 
@@ -160,6 +161,7 @@ public class PartLookupCosmosService
 
         var query = container.GetItemLinqQueryable<ManufacturerPartLookupModel>(true)
             .Where(x => x.Status == botStatus)
+            .OrderBy(x => x.CreateDate)
             .Take(1);
 
         var iterator = query.ToFeedIterator();

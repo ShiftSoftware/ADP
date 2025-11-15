@@ -1,4 +1,5 @@
 ﻿using ShiftSoftware.ADP.Models.Enums;
+using System;
 using System.Collections.Generic;
 
 namespace ShiftSoftware.ADP.Models.Part;
@@ -23,6 +24,9 @@ public class ManufacturerPartLookupModel :
     public string? LogId { get; set; }
 
     public ManufacturerPartLookupStatus Status { get; set; }
+
+    [DocIgnore]
+    public DateTimeOffset CreateDate { get; set; }
 
     public IEnumerable<KeyValuePair<string, string>>? ManufacturerResult { get; set; } = [];
 }

@@ -101,6 +101,7 @@ public class PartLookupService
             UserID = userId,
             Status = ManufacturerPartLookupStatus.Pending,
             UserEmail = userEmail,
+            CreateDate = DateTimeOffset.UtcNow
         };
 
         await partLookupCosmosService.InsertManufacturerPartLookupAsync(model);
