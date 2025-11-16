@@ -37,6 +37,22 @@
 
       document.addEventListener('DOMContentLoaded', () => {
         vehicleQuotation = document.getElementById('vehicle-quotation');
+
+        vehicleQuotation.fields = {
+          name: {
+            isDisabled: false,
+            defaultValue: 'Test Form',
+            // staticValue: 'Test Form',
+          },
+          phone: {
+            // defaultValue: '+9647501111111',
+            staticValue: '+9647501111111', // static value is auto disabled
+          },
+          vehicle: {
+            isDisabled: true,
+            defaultValue: '52739',
+          },
+        };
         // console.log(vehicleQuotation);
 
         // vehicleQuotation.getMobileToken = async () => {

@@ -64,7 +64,9 @@ export class FormTextArea implements FormElement {
               class={cn('form-input-style form-input-textarea-style', {
                 'form-input-error-style': isError,
               })}
-            />
+            >
+              {this.defaultValue}
+            </textarea>
           </div>
           <FormErrorMessage name={this.name} isError={isError} errorMessage={locale[errorMessage] || errorMessage} />
         </label>

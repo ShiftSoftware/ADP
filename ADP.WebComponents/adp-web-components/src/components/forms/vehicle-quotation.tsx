@@ -50,6 +50,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
   @Prop() errorCallback: (error: any, message: string) => void;
   @Prop() successCallback: (data: any, message?: string) => void;
   @Prop({ mutable: true }) structure: FormElementStructure<vehicleQuotationElementNames> | undefined;
+  @Prop({ mutable: true }) fields?: object;
 
   @Element() el: HTMLElement;
 
@@ -242,6 +243,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
               {!!this.form && (
                 <form-structure
                   form={this.form}
+                  fields={this.fields}
                   formLocale={this.locale}
                   structure={this.structure}
                   isLoading={this.isLoading}

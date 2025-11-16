@@ -6,11 +6,14 @@ export function renderStructure(
   structure: FormElementStructure<any> | string,
   elementMapper: FormElementMapper<any, any>,
   generaProps: FormElementMapperFunctionProps<any>,
+  fields?: object,
 ): JSX.Element | false {
   if (typeof structure === 'string') {
     if (typeof structure === 'string' && structure && elementMapper[structure]) {
       generaProps.props['name'] = structure;
-      return elementMapper[structure](generaProps);
+      generaProps.props = { ...generaProps.props, ...(fields && fields[structure] ? fields[structure] : {}) };
+
+      return elementMapper[structure]({ ...generaProps, ...(fields && fields[structure] ? fields[structure] : {}) });
     }
   } else {
     const { tag, name, children, data, ...props } = structure;
@@ -20,7 +23,7 @@ export function renderStructure(
 
       return (
         <Tag {...props} part={cn(props?.id, props?.class, `element-${tag}`, tag)}>
-          {Array.isArray(children) && children.map(child => renderStructure(child, elementMapper, { ...generaProps }))}
+          {Array.isArray(children) && children.map(child => renderStructure(child, elementMapper, { ...generaProps }, fields))}
         </Tag>
       );
     }
@@ -29,6 +32,7 @@ export function renderStructure(
       ...generaProps,
       props: {
         ...props,
+        ...(fields && fields[name] ? fields[name] : {}),
         name,
         wrapperId: props?.id,
         form: generaProps.form,

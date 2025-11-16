@@ -1,5 +1,5 @@
 import { AsYouType } from 'libphonenumber-js';
-import { Component, Element, Host, Prop, State, h } from '@stencil/core';
+import { Component, Element, Host, Prop, State, Watch, h } from '@stencil/core';
 
 import cn from '~lib/cn';
 import { getNestedValue } from '~lib/get-nested-value';
@@ -29,6 +29,8 @@ export class FormPhoneNumber implements FormElement {
   @Prop() defaultValue: string;
   @Prop() type: string = 'text';
   @Prop() validator: AsYouType;
+  @Prop() isDisabled?: boolean;
+  @Prop() staticValue?: string;
 
   @State() prefixWidth: number = 0;
 
@@ -37,7 +39,28 @@ export class FormPhoneNumber implements FormElement {
   private inputRef: HTMLInputElement;
 
   async componentWillLoad() {
+    this.onDefaultValueChange();
     this.form.subscribe(this.name, this);
+    this.onStaticValueChange(this.staticValue, false);
+  }
+
+  @Watch('defaultValue')
+  async onDefaultValueChange() {
+    if (this.defaultValue) {
+      this.validator.reset();
+      this.defaultValue = this.validator.input(this.defaultValue || '');
+    }
+  }
+
+  @Watch('staticValue')
+  async onStaticValueChange(newStaticValue?: string, notInitialLoad = true) {
+    if (!!newStaticValue) {
+      this.defaultValue = newStaticValue;
+      this.inputRef.value = newStaticValue;
+    } else if (notInitialLoad) {
+      this.defaultValue = '';
+      this.inputRef.value = '';
+    }
   }
 
   async componentDidLoad() {
@@ -75,9 +98,11 @@ export class FormPhoneNumber implements FormElement {
     const label = getNestedValue(locale, meta?.label) || meta?.label;
     const placeholder = getNestedValue(locale, meta?.placeholder);
 
+    const isDisabled = disabled || this.isLoading || !!this.staticValue || this.isDisabled;
+
     return (
       <Host>
-        <label part={this.name} id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, { disabled: this.isLoading })}>
+        <label part={this.name} id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, { disabled: isDisabled })}>
           <FormInputLabel name={this.name} isRequired={isRequired} label={label} />
 
           <div dir="ltr" part={`${this.name}-container form-input-container`} class="form-input-container">
@@ -86,9 +111,9 @@ export class FormPhoneNumber implements FormElement {
             <input
               type={this.type}
               name={this.name}
+              disabled={isDisabled}
               onInput={this.onInputChange}
               defaultValue={this.defaultValue}
-              disabled={disabled || this.isLoading}
               part={`${this.name}-input form-input`}
               placeholder={placeholder || meta?.placeholder}
               style={{ ...(this.prefixWidth ? { [locale.sharedFormLocales.direction === 'rtl' ? 'paddingRight' : 'paddingLeft']: `${this.prefixWidth}px` } : {}) }}

@@ -35,6 +35,7 @@ export class FormStructure {
   @Prop() form: FormHook<any>;
   @Prop() errorMessage: string;
   @Prop() successMessage: string;
+  @Prop({ mutable: true }) fields?: object;
   @Prop() structure: FormElementStructure<any>;
   @Prop() formElementMapper: FormElementMapper<any, any>;
 
@@ -82,7 +83,7 @@ export class FormStructure {
               {this.successMessage}
             </div>
           </form-dialog>
-          <div>{renderStructure(this.structure, this.formElementMapper, generalProps)}</div>
+          <div>{renderStructure(this.structure, this.formElementMapper, generalProps, this.fields)}</div>
         </form>
       </Host>
     );

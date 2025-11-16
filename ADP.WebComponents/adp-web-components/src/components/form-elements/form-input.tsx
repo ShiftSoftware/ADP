@@ -21,6 +21,7 @@ export class FormInput implements FormElement {
   @Prop() name: string;
   @Prop() wrapperId: string;
   @Prop() isLoading?: boolean;
+  @Prop() isDisabled?: boolean;
   @Prop() form: FormHook<any>;
   @Prop() inputPrefix: string;
   @Prop() wrapperClass: string;
@@ -76,7 +77,7 @@ export class FormInput implements FormElement {
     const label = getNestedValue(locale, meta?.label) || meta?.label;
     const placeholder = getNestedValue(locale, meta?.placeholder);
 
-    const isDisabled = disabled || this.isLoading || !!this.staticValue;
+    const isDisabled = disabled || this.isLoading || !!this.staticValue || this.isDisabled;
 
     // @ts-ignore
     if (this.name === 'partNumber') window.aa = this.inputRef;

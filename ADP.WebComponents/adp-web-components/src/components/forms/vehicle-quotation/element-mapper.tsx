@@ -10,9 +10,11 @@ type AdditionalFields = 'vehicleImage' | 'submit' | 'choose' | 'contact informat
 export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, VehicleQuotationFormLocale, AdditionalFields> = {
   'submit': ({ props }) => <form-submit {...props} />,
 
-  'name': ({ props }) => <form-input {...props} />,
+  'name': ({ props }) => {
+    return <form-input {...props} />;
+  },
 
-  'phone': ({ props, isLoading }) => <form-phone-number {...props} isLoading={isLoading} defaultValue={phoneValidator.default} validator={phoneValidator} />,
+  'phone': ({ props, isLoading }) => <form-phone-number defaultValue={phoneValidator.default} {...props} isLoading={isLoading} validator={phoneValidator} />,
 
   'vehicle': ({ form, language, props }) => {
     const fetcher: FormSelectFetcher<VehicleQuotationFormLocale> = async ({ signal }): Promise<FormSelectItem[]> => {
@@ -41,9 +43,15 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Vehic
       }
     };
 
-    const params = new URLSearchParams(window.location.search);
+    let defaultValue;
 
-    const defaultValue = params.get(form.context.structure.data?.vehicleIdQueryParam);
+    if (!props.defaultValue) {
+      const params = new URLSearchParams(window.location.search);
+
+      defaultValue = params.get(form.context.structure.data?.vehicleIdQueryParam);
+    } else {
+      defaultValue = props.defaultValue;
+    }
 
     return <form-select {...props} defaultValue={defaultValue} searchable fetcher={fetcher} language={language} />;
   },
