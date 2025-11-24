@@ -19,13 +19,7 @@ import { FormSubmitSVG } from '~assets/form-submit-svg';
 import { ActivationIcon } from '~assets/activation-icon';
 import { PrintIcon } from '~assets/print-icon';
 import Eye from '~assets/eye.svg';
-
-export type ClaimFormPayload = {
-  qrCode?: string;
-  invoice?: string;
-  jobNumber?: string;
-  documents?: File[];
-};
+import { ItemClaimDTO } from '../../global/types/generated/vehicle-lookup/item-claim-dto';
 
 @Component({
   shadow: true,
@@ -62,7 +56,7 @@ export class VehicleItemClaimForm implements ImageViewerInterface {
   @Prop() uploadMultipleDocuments?: boolean = true;
   @Prop() loadingStateChange?: (isLoading: boolean) => void;
   @Prop() locale: { sharedLocales: SharedLocales } & ClaimFormType;
-  @Prop() handleClaiming?: (payload: ClaimFormPayload) => Promise<void>;
+  @Prop() handleClaiming?: (documents: File[], payload: ItemClaimDTO) => Promise<void>;
 
   @State() uploadProgress = 0;
   @State() isOpened: boolean = false;
@@ -214,13 +208,13 @@ export class VehicleItemClaimForm implements ImageViewerInterface {
 
     this.isLoading = true;
 
-    if (this.handleClaiming)
-      await this.handleClaiming({
+    if (this.handleClaiming) {
+      await this.handleClaiming(this.inputs?.documents, {
         qrCode: this.inputs?.qrCode,
         invoice: this.inputs?.invoice,
-        documents: this.inputs?.documents,
         jobNumber: this.inputs?.jobNumber,
-      } as ClaimFormPayload);
+      } as ItemClaimDTO);
+    }
 
     this.close(true);
   };

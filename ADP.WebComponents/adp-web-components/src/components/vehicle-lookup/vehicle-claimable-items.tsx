@@ -13,7 +13,7 @@ import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, Language
 
 import { ClaimableItem } from './components/claimable-item';
 import { ClaimableItemPopover } from './components/claimable-item-popover';
-import { ClaimFormPayload, VehicleItemClaimForm } from './vehicle-item-claim-form';
+import { VehicleItemClaimForm } from './vehicle-item-claim-form';
 
 import dynamicClaimSchema from '~locales/vehicleLookup/claimableItems/type';
 
@@ -21,6 +21,7 @@ import { PrintIcon } from '~assets/print-icon';
 import { ActivationIcon } from '~assets/activation-icon';
 import { EmptyTableIcon } from '~assets/empty-table-icon';
 import { VehicleLookupMock } from '~features/vehicle-lookup-component/types';
+import { ItemClaimDTO } from '../../global/types/generated/vehicle-lookup/item-claim-dto';
 
 @Component({
   shadow: true,
@@ -323,18 +324,18 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
     this.lastSuccessfulClaimResponse = response;
   }
 
-  handleClaim = async ({ documents, ...payload }: ClaimFormPayload) => {
+  handleClaim = async (documents: File[], payload: ItemClaimDTO) => {
     try {
       const formData = new FormData();
-      formData.append(
-        'payload',
-        JSON.stringify({
-          ...payload,
-          vin: this.vehicleLookup.vin,
-          serviceItem: this.claimForm.item,
-          saleInformation: this.vehicleLookup.saleInformation,
-        }),
-      );
+
+      payload.vin = this.vehicleLookup.vin;
+      payload.saleInformation = this.vehicleLookup.saleInformation;
+      payload.serviceItem = this.claimForm.item;
+      payload.identifiers = this.vehicleLookup.identifiers;
+      payload.vehicleVariantInfo = this.vehicleLookup.vehicleVariantInfo;
+      payload.vehicleSpecification = this.vehicleLookup.vehicleSpecification;
+
+      formData.append('payload', JSON.stringify(payload));
 
       if (documents && documents.length > 0) {
         documents.forEach(doc => {
@@ -395,7 +396,7 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
     }
   };
 
-  handleDevClaim = async ({ documents }: ClaimFormPayload) => {
+  handleDevClaim = async (documents: File[]) => {
     if (documents && documents.length > 0) {
       this.claimForm.setFileUploadProgression(0);
       let uploadChunks = 20;
