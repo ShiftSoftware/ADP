@@ -29,7 +29,7 @@
 }
 
 .dialog-drop-container {
-  @apply fixed pointer-events-none flex items-center justify-center top-0 left-0 z-[9999999999] w-[100dvw] h-[100dvh] transition !duration-300;
+  @apply fixed pointer-events-none flex items-center justify-center top-0 left-0 z-[9999999999] w-[100%] h-[100%] transition !duration-300;
 }
 
 .opened-dialog-drop-container {

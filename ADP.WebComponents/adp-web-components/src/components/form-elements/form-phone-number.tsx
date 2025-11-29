@@ -79,6 +79,8 @@ export class FormPhoneNumber implements FormElement {
 
     this.inputRef.value = value;
     this.validator.reset();
+
+    if (value) this.validator.input(value);
   }
 
   onInputChange = (event: InputEvent) => {
