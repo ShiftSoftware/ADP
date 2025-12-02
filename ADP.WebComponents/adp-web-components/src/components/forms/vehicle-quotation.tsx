@@ -141,6 +141,8 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
         headers['Recaptcha-Token'] = token;
       }
 
+      if (this.isDev) requestEndpoint = requestEndpoint.replaceAll('production=true', 'production=false');
+
       const response = await fetch(requestEndpoint, {
         headers,
         method: 'POST',
@@ -220,6 +222,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
 
   @Prop() isMobileForm: boolean = false;
   @Prop() getMobileToken?: () => string;
+  @Prop() isDev?: boolean = false;
 
   @State() form: FormHook<VehicleQuotation>;
 

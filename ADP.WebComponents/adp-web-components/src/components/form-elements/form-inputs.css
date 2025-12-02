@@ -49,7 +49,7 @@
 }
 
 .dialog-content {
-  @apply text-justify;
+  @apply text-start;
 }
 
 .dialog-close-button {

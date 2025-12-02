@@ -47,9 +47,6 @@ export class FormInput {
   render() {
     const [locale] = this.form.getFormLocale();
 
-    // @ts-ignore
-    window["form-dialog"] = this;
-
     return (
       <Host>
         <div

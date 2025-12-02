@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en" x-data="tradeIn()" x-init="init()">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lexus Trade in Form Form</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+
+    <script nomodule src="/build/shift-components.js"></script>
+    <script type="module" src="/build/shift-components.esm.js"></script>
+
+    <!-- <link rel="stylesheet" href="https://tiqappstorage.blob.core.windows.net/template-files/vehicle-quotation-lexus-trade-in.css" /> -->
+    <link rel="stylesheet" href="https://tiq-standard-appstorage-byazfecba4bjd4cn.a02.azurefd.net/template-files/vehicle-quotation-lexus-trade-in.css" />
+  </head>
+
+  <body class="min-h-screen bg-base-200 flex flex-col items-center py-10 px-4 font-sans">
+    <!-- Floating setting -->
+    <div class="fixed bottom-4 right-4 z-50 group">
+      <button
+        type="button"
+        class="flex items-center justify-center w-11 h-11 rounded-full shadow-lg bg-white text-gray-600 border border-gray-200 group-hover:bg-indigo-500 group-hover:text-white transition-colors duration-200"
+        x-text="isDev ? '🧪' : '💻'"
+      ></button>
+
+      <div
+        class="absolute bottom-10 pb-4 right-0 w-[min(90vw,420px)] opacity-0 scale-95 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:scale-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-200 origin-bottom-right"
+      >
+        <div class="bg-white border border-gray-200 rounded-2xl shadow-xl p-4 space-y-4">
+          <div class="w-full flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl">
+            <h2 class="text-sm sm:text-base font-semibold text-gray-700 flex items-center gap-2">
+              <span>🧭</span> Mode:
+              <span class="font-bold text-indigo-600" x-text="isDev ? 'Development' : 'Production'"></span>
+            </h2>
+            <label class="cursor-pointer flex items-center">
+              <input type="checkbox" x-on:click="switchEnvironment" class="toggle toggle-primary ml-3" />
+            </label>
+          </div>
+
+          <div class="flex flex-col items-center gap-3">
+            <div class="text-center gap-3 flex items-center">
+              <h2 class="text-sm sm:text-base font-semibold text-gray-700">🌐 Language:</h2>
+              <div class="flex flex-wrap justify-center gap-2">
+                <template x-for="lang in languages" :key="lang">
+                  <button class="btn btn-outline btn-xs sm:btn-sm" @click="updateLang(lang)" x-text="lang.toUpperCase()"></button>
+                </template>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="w-full max-w-[800px] bg-base-100 shadow-xl rounded-2xl p-8">
+      <div class="flex items-center justify-between mb-4">
+        <a href="#" onclick="history.back()" class="btn btn-ghost text-blue-600 hover:bg-blue-50">← Back</a>
+        <h1 class="text-3xl font-extrabold text-gray-800">Lexus Trade in Form</h1>
+        <div class="w-[80px]"></div>
+      </div>
+
+      <!-- structure-url="https://tiqappstorage.blob.core.windows.net/template-files/lexus-vehicle-quotation-trade-in-form-structure.json" -->
+      <!-- structure-url="https://tiq-standard-appstorage-byazfecba4bjd4cn.a02.azurefd.net/template-files/lexus-trade-in-vehicle-quotation-form-structure.json" -->
+      <vehicle-quotation-form
+        language="en"
+        :is-dev="isDev"
+        id="custom-component"
+        structure-url="https://tiq-standard-appstorage-byazfecba4bjd4cn.a02.azurefd.net/template-files/lexus-trade-in-vehicle-quotation-form-structure.json"
+      ></vehicle-quotation-form>
+    </div>
+
+    <script>
+      function tradeIn() {
+        return {
+          isDev: true,
+          componentRef: null,
+          languages: ['en', 'ku', 'ar', 'ru'],
+
+          init() {
+            this.componentRef = document.getElementById('custom-component');
+
+            // this.componentRef.loadingChanges = this.loadingChanges;
+
+            // this.componentRef.successCallback = this.successCallback;
+
+            // this.componentRef.errorCallback = this.errorCallback;
+          },
+
+          updateLang(lang) {
+            if (this.componentRef) this.componentRef.language = lang;
+          },
+
+          switchEnvironment() {
+            this.isDev = !this.isDev;
+          },
+
+          //   loadingChanges(loading) {
+          //     console.log('loading', loading);
+          //   },
+
+          //   successCallback(values) {
+          //     console.log('success callback', values);
+          //   },
+
+          //   errorCallback(error) {
+          //     console.log('error callback', error);
+          //   },
+        };
+      }
+    </script>
+  </body>
+</html>

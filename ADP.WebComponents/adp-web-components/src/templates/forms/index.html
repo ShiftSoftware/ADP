@@ -2,23 +2,30 @@
 <html dir="ltr" lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Forms</title>
-  </head>
-  <body>
-    <a href="#" onclick="history.back()" style="color: blue; display: block; margin-bottom: 16px">Back</a>
 
-    <h1>Forms Demo List</h1>
-    <ul>
-      <li>
-        <a href="./demo-form.html">Demo form</a>
-      </li>
-<li>
-  <a href="./vehicle-quotation.html">Vehicle Quotation form</a>
-</li>
-<li>
-  <a href="./test-drive-demo.html">Test Drive-demo form</a>
-</li>
-    </ul>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  </head>
+
+  <body class="min-h-screen bg-base-200 flex flex-col items-center justify-center font-sans p-6">
+    <div class="card w-full max-w-lg bg-base-100 shadow-xl">
+      <div class="card-body items-center text-center">
+        <h1 class="card-title text-3xl mb-4">📝 Webcomponent Forms</h1>
+        <p class="text-sm text-base-content/70 mb-6">Select a form below to open its page:</p>
+
+        <ul class="menu bg-base-100 rounded-box w-full">
+          <li><a href="./demo-form.html" class="text-lg font-medium">Demo Form</a></li>
+          <li><a href="./tiq-lead.html" class="text-lg font-medium">TIQ Lead (Vehicle Quotation)</a></li>
+          <li><a href="./tiq-lead-mobile.html" class="text-lg font-medium">TIQ Lead Mobile (Vehicle Quotation)</a></li>
+          <li><a href="./lexus-trade-in.html" class="text-lg font-medium">Lexus Trade in (Vehicle Quotation)</a></li>
+        </ul>
+
+        <div class="mt-6">
+          <a href="#" onclick="history.back()" class="btn btn-outline btn-sm">← Back</a>
+        </div>
+      </div>
+    </div>
   </body>
 </html>
