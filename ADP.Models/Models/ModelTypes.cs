@@ -4,6 +4,7 @@ public static class ModelTypes
 {
     public static readonly PartitionedItemType CatalogPart = new("CatalogPart");
     public static readonly PartitionedItemType StockPart = new("StockPart");
+    public static readonly PartitionedItemType StockPartFirstReceiveDate = new("StockPartFirstReceiveDate");
     public static readonly PartitionedItemType InvoicePartLine = new("OrderPartLine");
     public static readonly PartitionedItemType CompanyDeadStockPart = new("CompanyDeadStockPart");
 
