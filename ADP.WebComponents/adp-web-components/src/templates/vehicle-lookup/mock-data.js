@@ -4402,7 +4402,9 @@ const mockData = {
     },
     saleInformation: null,
     isAuthorized: false,
-    warranty: null,
+    warranty: {
+      activationIsRequired: true
+    },
     nextServiceDate: '2023-12-12',
     serviceHistory: [],
     ssc: null,

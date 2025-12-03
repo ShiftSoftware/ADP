@@ -16,6 +16,9 @@ public class VehicleWarrantyDTO
     [JsonCustomDateTime("yyyy-MM-dd")]
     public DateTime? WarrantyEndDate { get; set; }
 
+
+    public bool ActivationIsRequired { get; set; }
+
     public bool HasExtendedWarranty =>
         ExtendedWarrantyEndDate.HasValue && ExtendedWarrantyEndDate.Value >= DateTime.UtcNow;
 

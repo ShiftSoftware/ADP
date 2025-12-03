@@ -26,7 +26,7 @@ public class VehicleServiceItemEvaluator
         this.services = services;
     }
 
-    public async Task<IEnumerable<VehicleServiceItemDTO>> Evaluate(
+    public async Task<(IEnumerable<VehicleServiceItemDTO> serviceItems, bool activationRequired)> Evaluate(
         VehicleEntryModel vehicle,
         DateTime? freeServiceStartDate,
         VehicleSaleInformation vehicleSaleInformation,
@@ -113,9 +113,6 @@ public class VehicleServiceItemEvaluator
 
             return x || modelCodeMatch;
         });
-
-        if (companyDataAggregate.FreeServiceItemExcludedVINs.Any())
-            eligibleServiceItems = eligibleServiceItems.Where(x => x.CampaignActivationTrigger != ClaimableItemCampaignActivationTrigger.WarrantyActivation);
 
         if (eligibleServiceItems?.Count() > 0)
         {
@@ -227,6 +224,11 @@ public class VehicleServiceItemEvaluator
 
         await CalulateServiceItemStatus(result, showingInactivatedItems, languageCode);
 
+        var activationRequired = result.Any(x => x.StatusEnum == VehcileServiceItemStatuses.ActivationRequired);
+
+        if (companyDataAggregate.FreeServiceItemExcludedVINs.Any())
+            result = result.Where(x => x.CampaignActivationTrigger != ClaimableItemCampaignActivationTrigger.WarrantyActivation).ToList();
+
         foreach (var item in result)
         {
             if (item.StatusEnum == VehcileServiceItemStatuses.Pending)
@@ -278,7 +280,7 @@ public class VehicleServiceItemEvaluator
             item.Warnings = options.StandardItemClaimWarnings;
         }
 
-        return result;
+        return (result, activationRequired);
     }
 
     private ServiceItemCostModel GetModelCost(

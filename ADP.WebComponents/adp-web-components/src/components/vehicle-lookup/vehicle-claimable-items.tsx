@@ -436,7 +436,7 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
 
     const tabs = this.tabs.map(group => group.name);
 
-    const hasInactiveItems = serviceItems.filter(x => x.status === 'activationRequired').length > 0;
+    const hasInactiveItems = this.vehicleLookup?.warranty?.activationIsRequired ?? false;
 
     return (
       <Host>

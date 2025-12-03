@@ -60,7 +60,7 @@ public class VehicleLookupService
         data.Warranty = new WarrantyAndFreeServiceDateEvaluator(companyDataAggregate, lookupOptions)
             .Evaluate(vehicle, data.SaleInformation, requestOptions.IgnoreBrokerStock);
 
-        data.ServiceItems = await new VehicleServiceItemEvaluator(
+        (data.ServiceItems, data.Warranty.ActivationIsRequired) = await new VehicleServiceItemEvaluator(
             this.lookupCosmosService, companyDataAggregate, this.lookupOptions, this.serviceProvider
         ).Evaluate(
             vehicle,
