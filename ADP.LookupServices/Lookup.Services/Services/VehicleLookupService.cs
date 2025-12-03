@@ -60,7 +60,7 @@ public class VehicleLookupService
         data.Warranty = new WarrantyAndFreeServiceDateEvaluator(companyDataAggregate, lookupOptions)
             .Evaluate(vehicle, data.SaleInformation, requestOptions.IgnoreBrokerStock);
 
-        (data.ServiceItems, data.Warranty.ActivationIsRequired) = await new VehicleServiceItemEvaluator(
+        var serviceItemsResult = await new VehicleServiceItemEvaluator(
             this.lookupCosmosService, companyDataAggregate, this.lookupOptions, this.serviceProvider
         ).Evaluate(
             vehicle,
@@ -68,6 +68,11 @@ public class VehicleLookupService
             data.SaleInformation,
             requestOptions.LanguageCode
         );
+
+        data.ServiceItems = serviceItemsResult.serviceItems;
+
+        if (data.Warranty is not null)
+            data.Warranty.ActivationIsRequired = serviceItemsResult.activationRequired;
 
         if (requestOptions.InsertSSCLog)
         {
