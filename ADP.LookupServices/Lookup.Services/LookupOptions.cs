@@ -33,6 +33,7 @@ public class LookupOptions
 
     public int? DistributorStockPartLookupQuantityThreshold { get; set; }
     public bool ShowPartLookupStockQauntity { get; set; } = false;
+    public bool EnableManufacturerLookup { get; set; }
 }
 
 public class PartLocationNameResolverModel

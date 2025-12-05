@@ -66,9 +66,9 @@ public class PartLookupService
             PNC = cosmosPartCatalog?.PNC,
             HSCodes = null,
             LogId = null,
-            SupersededTo = cosmosPartCatalog?.SupersededTo?.Select(x=> x.PartNumber),
-            SupersededFrom = cosmosPartCatalog?.SupersededFrom?.Select(x=> x.PartNumber),
-            ShowManufacturerPartLookup = CalculateShowManufacturerPartLookup(distributorStockLookupQuantity, data.StockParts?.Sum(x=> x.AvailableQuantity)??0),
+            SupersededTo = cosmosPartCatalog?.SupersededTo?.Select(x => x.PartNumber),
+            SupersededFrom = cosmosPartCatalog?.SupersededFrom?.Select(x => x.PartNumber),
+            ShowManufacturerPartLookup = !(options?.EnableManufacturerLookup ?? false) ? false : CalculateShowManufacturerPartLookup(distributorStockLookupQuantity, data.StockParts?.Sum(x => x.AvailableQuantity) ?? 0),
             DistributorPurchasePrice = priceEvaluation.distributorPurchasePrice,
             Prices = priceEvaluation.prices,
             DeadStock = await new PartDeadStockEvaluator(data, options, services).Evaluate(language),
@@ -123,7 +123,7 @@ public class PartLookupService
                 PartNumber = x.PartNumber,
                 OrderType = x.OrderType,
                 Status = x.Status,
-                Quantity= x.Quantity
+                Quantity = x.Quantity
             });
     }
 
@@ -171,7 +171,7 @@ public class PartLookupService
         if (requestedQuantity is null)
             return false;
 
-        if(requestedQuantity > availableQuantity)
+        if (requestedQuantity > availableQuantity)
             return true;
 
         return false;
