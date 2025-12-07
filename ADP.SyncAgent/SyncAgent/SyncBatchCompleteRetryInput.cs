@@ -7,9 +7,9 @@ public class SyncBatchCompleteRetryInput<TSource, TDestination>
     public IEnumerable<TSource?>? SourceItems { get; private set; }
     public SyncStoreDataResult<TDestination>? StoreDataResult { get; private set; }
     public SyncActionStatus Status { get; private set; }
-    public Exception? Exception { get; set; }
+    public Exception? Exception { get; private set; }
 
-    public SyncBatchCompleteRetryInput(
+    internal SyncBatchCompleteRetryInput(
         IEnumerable<TSource?>? sourceItems,
         SyncStoreDataResult<TDestination>? storeDataResult,
         SyncActionStatus status,

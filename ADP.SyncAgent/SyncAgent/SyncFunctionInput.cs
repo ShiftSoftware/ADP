@@ -4,7 +4,7 @@ public class SyncFunctionInput<T> : SyncFunctionInput
 {
     public T Input { get; private set; }
 
-    public SyncFunctionInput(CancellationToken cancellationToken, T input) : base(cancellationToken)
+    internal SyncFunctionInput(CancellationToken cancellationToken, T input) : base(cancellationToken)
     {
         Input = input;
     }
@@ -14,7 +14,7 @@ public class SyncFunctionInput
 {
     public CancellationToken CancellationToken { get; private set; }
 
-    public SyncFunctionInput(CancellationToken cancellationToken)
+    internal SyncFunctionInput(CancellationToken cancellationToken)
     {
         CancellationToken = cancellationToken;
     }

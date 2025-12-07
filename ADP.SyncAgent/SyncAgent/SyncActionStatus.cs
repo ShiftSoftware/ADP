@@ -6,11 +6,11 @@ public class SyncActionStatus
     public long? TotalSteps { get; private set; }
     public long BatchSize { get; private set; }
     public long? TotalCount { get; private set; }
-    public long CurrentRetryCount { get; set; }
-    public long MaxRetryCount { get; set; }
+    public long CurrentRetryCount { get; private set; }
+    public long MaxRetryCount { get; private set; }
     public SyncActionType ActionType { get; private set; }
 
-    public SyncActionStatus(
+    internal SyncActionStatus(
         long currentStep,
         long? totalSteps,
         long batchSize,

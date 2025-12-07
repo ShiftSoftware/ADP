@@ -11,7 +11,7 @@ public class SyncMappingInput<TSource, TDestination> where TSource : class where
     public IEnumerable<TDestination?>? PreviousMappedItem { get; private set; }
     public SyncActionStatus Status { get; private set; }
 
-    public SyncMappingInput(
+    internal SyncMappingInput(
         IEnumerable<TSource?>? sourceItems,
         IEnumerable<TDestination?>? previousMappedItem,
         SyncActionStatus status)

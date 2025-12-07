@@ -11,7 +11,7 @@ public class SyncStoreDataInput<T> where T : class
     public SyncStoreDataResult<T>? PreviousResult { get; private set; }
     public SyncActionStatus Status { get; private set; }
 
-    public SyncStoreDataInput(
+    internal SyncStoreDataInput(
         IEnumerable<T?>? items,
         SyncStoreDataResult<T>? previousResult,
         SyncActionStatus status)
