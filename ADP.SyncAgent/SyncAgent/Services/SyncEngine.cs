@@ -64,7 +64,7 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
         this.services = services;
     }
 
-    public ISyncEngine<TSource, TDestination> AddSyncProgressIndicator(ISyncProgressIndicator2 syncProgressIndicator)
+    public ISyncEngine<TSource, TDestination> RegisterSyncProgressIndicator(ISyncProgressIndicator2 syncProgressIndicator)
     {
         this.syncProgressIndicators = this.syncProgressIndicators.Append(syncProgressIndicator);
         return this;
@@ -205,7 +205,7 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
             // Preparing
             var preparingResult = SyncPreparingResponseAction.Succeeded;
             if (this.Preparing is not null)
-                preparingResult = await this.Preparing!(new SyncFunctionInput(this.GetCancellationToken(), await this.GetSyncProgressIndicators(new(SyncOperationType.Preparing))));
+                preparingResult = await this.Preparing!(new SyncFunctionInput(this.GetCancellationToken(), await this.GetSyncProgressIndicators(new(SyncOperationType.Preparing), true)));
 
             if (preparingResult == SyncPreparingResponseAction.Succeeded)
             {
@@ -223,20 +223,20 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
             }
 
             if ((result || preparingResult == SyncPreparingResponseAction.Skiped) && this.Succeeded is not null)
-                await this.Succeeded!(new(GetCancellationToken(), await this.GetSyncProgressIndicators(new(SyncOperationType.Succeeded))));
+                await this.Succeeded!(new(GetCancellationToken(), await this.GetSyncProgressIndicators(new(SyncOperationType.Succeeded), true)));
             else if (!result && this.Failed is not null)
-                await this.Failed!(new(GetCancellationToken(), null, await this.GetSyncProgressIndicators(new(SyncOperationType.Failed))));
+                await this.Failed!(new(GetCancellationToken(), null, await this.GetSyncProgressIndicators(new(SyncOperationType.Failed), true)));
         }
         catch (Exception ex)
         {
             if(this.Failed is not null)
-                await this.Failed!(new(GetCancellationToken(), ex, await this.GetSyncProgressIndicators(new(SyncOperationType.Failed))));
+                await this.Failed!(new(GetCancellationToken(), ex, await this.GetSyncProgressIndicators(new(SyncOperationType.Failed), true)));
 
             result = false;
         }
 
         if(this.Finished is not null)
-            await this.Finished!(new(GetCancellationToken(), await this.GetSyncProgressIndicators(new(SyncOperationType.Finished))));
+            await this.Finished!(new(GetCancellationToken(), await this.GetSyncProgressIndicators(new(SyncOperationType.Finished), true)));
 
         return result;
     }
@@ -249,7 +249,7 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
 
         if (this.ActionStarted is not null)
             actionStartedResult = await this.ActionStarted!(new(this.GetCancellationToken(), actionType,
-                await this.GetSyncProgressIndicators(new(SyncOperationType.ActionStarted, actionType))));
+                await this.GetSyncProgressIndicators(new(SyncOperationType.ActionStarted, actionType), true)));
 
         if (actionStartedResult)
         {
@@ -257,7 +257,7 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
             long? totalItemCount = null;
             if (this.SourceTotalItemCount is not null)
                 totalItemCount = await this.SourceTotalItemCount!(new SyncFunctionInput<SyncActionType>(this.GetCancellationToken(), actionType,
-                    await this.GetSyncProgressIndicators(new(SyncOperationType.SourceTotalItemCount, actionType))));
+                    await this.GetSyncProgressIndicators(new(SyncOperationType.SourceTotalItemCount, actionType), true)));
 
             // Prepare batch informations
             var batchSize = (this.Configurations!.BatchSize ?? totalItemCount) ?? 0;
@@ -288,7 +288,7 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
                     {
                         var batchStartedResult = await this.BatchStarted!(new SyncFunctionInput<SyncActionStatus>(this.GetCancellationToken(), 
                             new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType),
-                            await this.GetSyncProgressIndicators(new(SyncOperationType.BatchStarted, actionType, currentStep, totalSteps, batchSize, retryCount, maxRetryCount))));
+                            await this.GetSyncProgressIndicators(new(SyncOperationType.BatchStarted, actionType, currentStep, totalSteps, batchSize, retryCount, maxRetryCount), false)));
 
                         if (!batchStartedResult)
                             break;
@@ -299,7 +299,7 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
                         // Get current batch data from the source
                         sourceItems = await this.GetSourceBatchItems!(new SyncFunctionInput<SyncGetBatchDataInput<TSource>>(this.GetCancellationToken(),
                             new SyncGetBatchDataInput<TSource>(sourceItems, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType)),
-                            await this.GetSyncProgressIndicators(new(SyncOperationType.GetSourceBatchItems, actionType, currentStep, totalSteps,batchSize, retryCount, maxRetryCount))));
+                            await this.GetSyncProgressIndicators(new(SyncOperationType.GetSourceBatchItems, actionType, currentStep, totalSteps,batchSize, retryCount, maxRetryCount), false)));
 
                         // If no data is returned and total item count not provided, then stop the operation
                         if (!(sourceItems?.Any() ?? false) && totalItemCount is null)
@@ -311,12 +311,12 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
                         // Map the source data to destination data
                         destinationItems = await this.Mapping!(new SyncFunctionInput<SyncMappingInput<TSource, TDestination>>(this.GetCancellationToken(),
                             new SyncMappingInput<TSource, TDestination>(sourceItems, destinationItems, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType)),
-                            await this.GetSyncProgressIndicators(new(SyncOperationType.Mapping, actionType, currentStep, totalSteps, batchSize, retryCount, maxRetryCount))));
+                            await this.GetSyncProgressIndicators(new(SyncOperationType.Mapping, actionType, currentStep, totalSteps, batchSize, retryCount, maxRetryCount), false)));
 
                         // Store the mapped data to the destination
                         storeResult = await this.StoreBatchData!(new SyncFunctionInput<SyncStoreDataInput<TDestination>>(this.GetCancellationToken(),
                             new SyncStoreDataInput<TDestination>(destinationItems, storeResult, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType)),
-                            await this.GetSyncProgressIndicators(new(SyncOperationType.StoreBatchData, actionType, currentStep, totalSteps, batchSize, retryCount, maxRetryCount))));
+                            await this.GetSyncProgressIndicators(new(SyncOperationType.StoreBatchData, actionType, currentStep, totalSteps, batchSize, retryCount, maxRetryCount), false)));
 
                         // Check if retry required
                         if (storeResult.NeedRetry)
@@ -327,7 +327,7 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
                         {
                             var batchCompletedResult = await this.BatchCompleted!(new SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>(this.GetCancellationToken(), 
                                 new SyncBatchCompleteRetryInput<TSource, TDestination>(sourceItems, storeResult, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType), null),
-                                await this.GetSyncProgressIndicators(new(SyncOperationType.BatchCompleted, actionType, currentStep, totalSteps, batchSize, retryCount, maxRetryCount))));
+                                await this.GetSyncProgressIndicators(new(SyncOperationType.BatchCompleted, actionType, currentStep, totalSteps, batchSize, retryCount, maxRetryCount), true)));
 
                             if (!batchCompletedResult)
                                 throw new Exception("Need retry.");
@@ -345,7 +345,7 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
                         if (this.BatchRetry is not null)
                             retryResult = await this.BatchRetry!(new SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>(this.GetCancellationToken(),
                                 new SyncBatchCompleteRetryInput<TSource, TDestination>(sourceItems, storeResult, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType), ex),
-                                await this.GetSyncProgressIndicators(new(SyncOperationType.BatchRetry, actionType, currentStep, totalSteps, batchSize, retryCount, maxRetryCount))));
+                                await this.GetSyncProgressIndicators(new(SyncOperationType.BatchRetry, actionType, currentStep, totalSteps, batchSize, retryCount, maxRetryCount), false)));
 
                         // Do action based on the retry result
                         if (retryResult == RetryAction.RetryAndContinueAfterLastRetry)
@@ -359,7 +359,7 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
                                 {
                                     var batchCompletedResult = await this.BatchCompleted!(new SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>(this.GetCancellationToken(),
                                         new SyncBatchCompleteRetryInput<TSource, TDestination>(sourceItems, storeResult, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType), ex),
-                                        await this.GetSyncProgressIndicators(new(SyncOperationType.BatchCompleted, actionType, currentStep, totalSteps, batchSize, retryCount, maxRetryCount))));
+                                        await this.GetSyncProgressIndicators(new(SyncOperationType.BatchCompleted, actionType, currentStep, totalSteps, batchSize, retryCount, maxRetryCount), true)));
 
                                     if (!batchCompletedResult)
                                     {
@@ -382,7 +382,7 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
                             {
                                 var batchCompletedResult = await this.BatchCompleted!(new SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>(this.GetCancellationToken(), 
                                     new SyncBatchCompleteRetryInput<TSource, TDestination>(sourceItems, storeResult, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType), ex),
-                                    await this.GetSyncProgressIndicators(new(SyncOperationType.BatchCompleted, actionType, currentStep, totalSteps, batchSize, retryCount, maxRetryCount))));
+                                    await this.GetSyncProgressIndicators(new(SyncOperationType.BatchCompleted, actionType, currentStep, totalSteps, batchSize, retryCount, maxRetryCount), true)));
 
                                 if (!batchCompletedResult)
                                 {
@@ -424,7 +424,7 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
         // Run operation completed function
         if (this.ActionCompleted is not null)
             result = await this.ActionCompleted!(new SyncFunctionInput<SyncActionCompletedInput>(this.GetCancellationToken(), new(actionType, result),
-                await this.GetSyncProgressIndicators(new(SyncOperationType.ActionCompleted, actionType))));
+                await this.GetSyncProgressIndicators(new(SyncOperationType.ActionCompleted, actionType), true)));
 
         return result;
     }
@@ -507,12 +507,12 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
         return dataAdapter;
     }
 
-    private async Task<IEnumerable<ISyncProgressIndicator2>> GetSyncProgressIndicators(SyncTaskStatus2 syncTaskStatus)
+    private async Task<IEnumerable<ISyncProgressIndicator2>> GetSyncProgressIndicators(SyncTaskStatus2 syncTaskStatus, bool incrementStep)
     {
         IEnumerable<ISyncProgressIndicator2> indicators = [];
 
         foreach (var indicator in this.syncProgressIndicators ?? [])
-            indicators = indicators.Append(await indicator.SetSyncTaskStatus(syncTaskStatus));
+            indicators = indicators.Append(await indicator.SetSyncTaskStatus(syncTaskStatus.UpdateProgress(incrementStep)));
 
         return indicators;
     }

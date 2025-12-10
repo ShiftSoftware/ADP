@@ -46,6 +46,8 @@ public interface ISyncEngine<TSource, TDestination> : IAsyncDisposable
 
     Func<SyncFunctionInput, ValueTask>? Finished { get; }
 
+    ISyncEngine<TSource, TDestination> RegisterSyncProgressIndicator(ISyncProgressIndicator2 syncProgressIndicator);
+
     ISyncEngine<TSource, TDestination> Configure(
         long? batchSize = null,
         long maxRetryCount = 0,

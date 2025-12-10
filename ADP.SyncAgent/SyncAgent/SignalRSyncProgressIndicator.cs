@@ -1,7 +1,4 @@
-﻿
-using Microsoft.Extensions.Logging;
-
-namespace ShiftSoftware.ADP.SyncAgent;
+﻿namespace ShiftSoftware.ADP.SyncAgent;
 
 public class SignalRSyncProgressIndicator : ISyncProgressIndicator2
 {
@@ -38,17 +35,22 @@ public class SignalRSyncProgressIndicator : ISyncProgressIndicator2
         throw new NotImplementedException();
     }
 
-    public ValueTask LogErrorAsync(SyncTaskStatus2 syncTask, string message)
+    public ValueTask LogError(string? message, params object?[] args)
     {
         throw new NotImplementedException();
     }
 
-    public ValueTask LogInformationAsync(SyncTaskStatus2 syncTask, string message)
+    public ValueTask LogError(Exception? exception, string? message, params object?[] args)
     {
         throw new NotImplementedException();
     }
 
-    public ValueTask LogWarningAsync(SyncTaskStatus2 syncTask, string message)
+    public ValueTask LogInformation(string? message, params object?[] args)
+    {
+        throw new NotImplementedException();
+    }
+
+    public ValueTask LogWarning(string? message, params object?[] args)
     {
         throw new NotImplementedException();
     }

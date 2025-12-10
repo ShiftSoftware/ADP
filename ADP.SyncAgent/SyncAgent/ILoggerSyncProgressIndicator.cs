@@ -34,21 +34,27 @@ public class ILoggerSyncProgressIndicator : ISyncProgressIndicator2
         return ValueTask.CompletedTask;
     }
 
-    public ValueTask LogErrorAsync(SyncTaskStatus2 syncTask, string message)
+    public ValueTask LogError(string? message, params object?[] args)
     {
-        this.logger.LogError(message);
+        this.logger.LogError(message, args);
         return ValueTask.CompletedTask;
     }
 
-    public ValueTask LogInformationAsync(SyncTaskStatus2 syncTask, string message)
+    public ValueTask LogError(Exception? exception, string? message, params object?[] args)
     {
-        this.logger.LogInformation(message);
+        this.logger.LogError(exception, message, args);
         return ValueTask.CompletedTask;
     }
 
-    public ValueTask LogWarningAsync(SyncTaskStatus2 syncTask, string message)
+    public ValueTask LogInformation(string? message, params object?[] args)
     {
-        this.logger.LogWarning(message);
+        this.logger.LogInformation(message, args);
+        return ValueTask.CompletedTask;
+    }
+
+    public ValueTask LogWarning(string? message, params object?[] args)
+    {
+        this.logger.LogWarning(message, args);
         return ValueTask.CompletedTask;
     }
 }

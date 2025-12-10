@@ -17,9 +17,10 @@ public interface ISyncProgressIndicator2
     public string? SyncID { get;}
 
     ValueTask<ISyncProgressIndicator2> SetSyncTaskStatus(SyncTaskStatus2 syncTaskStatus);
-    ValueTask LogInformationAsync(SyncTaskStatus2 syncTask, string message);
-    ValueTask LogErrorAsync(SyncTaskStatus2 syncTask, string message);
-    ValueTask LogWarningAsync(SyncTaskStatus2 syncTask, string message);
+    ValueTask LogInformation(string? message, params object?[] args);
+    ValueTask LogError(string? message, params object?[] args);
+    ValueTask LogError(Exception? exception, string? message, params object?[] args);
+    ValueTask LogWarning(string? message, params object?[] args);
     ValueTask FailAllRunningTasks();
     ValueTask CompleteAllRunningTasks();
 }
