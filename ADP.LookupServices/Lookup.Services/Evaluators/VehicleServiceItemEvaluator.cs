@@ -270,12 +270,18 @@ public class VehicleServiceItemEvaluator
 
             item.Signature = item.GenerateSignature(companyDataAggregate.VIN, this.options.SigningSecreteKey);
 
-            if (options.VehicleInspectionPreClaimVoucherPrintingURL is not null && item.VehicleInspectionID is not null)
-                item.PrintUrl = $"{options.VehicleInspectionPreClaimVoucherPrintingURL}{item.VehicleInspectionID}/{item.ServiceItemID}";
+            //if (options.VehicleInspectionPreClaimVoucherPrintingURL is not null && item.VehicleInspectionID is not null)
+            //    item.PrintUrl = $"{options.VehicleInspectionPreClaimVoucherPrintingURL}{item.VehicleInspectionID}/{item.ServiceItemID}";
+
+            if (options.VehicleInspectionPreClaimVoucherPrintingURLResolver is not null && item.VehicleInspectionID is not null)
+                item.PrintUrl = await options.VehicleInspectionPreClaimVoucherPrintingURLResolver(new(new(item.VehicleInspectionID, item.ServiceItemID), languageCode, this.services));
 
             //Service Activation takes priority and overrides PrintURL if applicable
-            if (options.ServiceActivationPreClaimVoucherPrintingURL is not null && serviceActivation is not null)
-                item.PrintUrl = $"{options.ServiceActivationPreClaimVoucherPrintingURL}{serviceActivation.id}/{item.ServiceItemID}";
+            //if (options.ServiceActivationPreClaimVoucherPrintingURL is not null && serviceActivation is not null)
+            //    item.PrintUrl = $"{options.ServiceActivationPreClaimVoucherPrintingURL}{serviceActivation.id}/{item.ServiceItemID}";
+
+            if (options.ServiceActivationPreClaimVoucherPrintingURLResolver is not null && serviceActivation is not null)
+                item.PrintUrl = await options.ServiceActivationPreClaimVoucherPrintingURLResolver(new (new (serviceActivation.id, item.ServiceItemID), languageCode, this.services));
 
             item.Warnings = options.StandardItemClaimWarnings;
         }

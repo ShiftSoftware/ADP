@@ -27,8 +27,12 @@ public class LookupOptions
     public bool WarrantyStartDateDefaultsToInvoiceDate { get; set; } = true;
     public string SigningSecreteKey { get; set; }
     public TimeSpan SignatureValidityDuration { get; set; }
-    public string ServiceActivationPreClaimVoucherPrintingURL { get; set; }
-    public string VehicleInspectionPreClaimVoucherPrintingURL { get; set; }
+    //public string ServiceActivationPreClaimVoucherPrintingURL { get; set; }
+    //public string VehicleInspectionPreClaimVoucherPrintingURL { get; set; }
+
+    public Func<LookupOptionResolverModel<(string VehicleInspectionID, string ServiceItemID)>, ValueTask<string?>>? VehicleInspectionPreClaimVoucherPrintingURLResolver { get; set; }
+    public Func<LookupOptionResolverModel<(string ServiceActivationID, string ServiceItemID)>, ValueTask<string?>>? ServiceActivationPreClaimVoucherPrintingURLResolver { get; set; }
+
     public List<VehicleItemWarning> StandardItemClaimWarnings { get; set; }
 
     public int? DistributorStockPartLookupQuantityThreshold { get; set; }
