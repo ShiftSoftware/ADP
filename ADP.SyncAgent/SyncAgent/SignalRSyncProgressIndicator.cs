@@ -2,6 +2,8 @@
 
 public class SignalRSyncProgressIndicator : ISyncProgressIndicator2
 {
+    private readonly ISyncProgressIndicator syncProgressIndicator;
+
     public IEnumerable<SyncTaskStatus2> SyncTaskStatuses { get; private set; } = [];
 
     public SyncTaskStatus2? CurrentSyncTaskStatus { get; private set; }
@@ -11,7 +13,13 @@ public class SignalRSyncProgressIndicator : ISyncProgressIndicator2
     public long? OperationTimeoutInSeconds { get; private set; }
     public DateTime OperationStart { get; private set; }
 
-    public SignalRSyncProgressIndicator(string? id = null, string? syncID = null)
+    public SignalRSyncProgressIndicator(ISyncProgressIndicator syncProgressIndicator)
+    {
+        this.syncProgressIndicator = syncProgressIndicator;
+        Setup();
+    }
+
+    public void Setup(string? id = null, string? syncID = null)
     {
         ID = id ?? Guid.NewGuid().ToString();
         SyncID = syncID;
@@ -39,33 +47,54 @@ public class SignalRSyncProgressIndicator : ISyncProgressIndicator2
         return new(this);
     }
 
-    public ValueTask CompleteAllRunningTasks()
+    public async ValueTask CompleteAllRunningTasks()
     {
-        throw new NotImplementedException();
+        await syncProgressIndicator.CompleteAllRunningTasks();
     }
 
-    public ValueTask FailAllRunningTasks()
+    public async ValueTask FailAllRunningTasks()
     {
-        throw new NotImplementedException();
+        await syncProgressIndicator.FailAllRunningTasks();
     }
 
-    public ValueTask LogError(string? message, params object?[] args)
+    public async ValueTask LogError(string? message, params object?[] args)
     {
-        throw new NotImplementedException();
+        await syncProgressIndicator.LogErrorAsync(MapTask(CurrentSyncTaskStatus!), message!);
     }
 
-    public ValueTask LogError(Exception? exception, string? message, params object?[] args)
+    public async ValueTask LogError(Exception? exception, string? message, params object?[] args)
     {
-        throw new NotImplementedException();
+        await syncProgressIndicator.LogErrorAsync(MapTask(CurrentSyncTaskStatus!), message!);
     }
 
-    public ValueTask LogInformation(string? message, params object?[] args)
+    public async ValueTask LogInformation(string? message, params object?[] args)
     {
-        throw new NotImplementedException();
+        await syncProgressIndicator.LogInformationAsync(MapTask(CurrentSyncTaskStatus!), message!);
     }
 
-    public ValueTask LogWarning(string? message, params object?[] args)
+    public async ValueTask LogWarning(string? message, params object?[] args)
     {
-        throw new NotImplementedException();
+        await syncProgressIndicator.LogWarningAsync(MapTask(CurrentSyncTaskStatus!), message!);
+    }
+
+    private SyncTaskStatus MapTask(SyncTaskStatus2 task)
+    {
+        return new SyncTaskStatus
+        {
+            ID = ID,
+            SyncID = SyncID,
+            TaskDescription = task.TaskDescription,
+            Progress = task.Progress,
+            CurrentStep = (int)task.CurrentStep,
+            TotalStep = (int)(task.TotalStep ?? 0),
+            Elapsed = task.Elapsed,
+            RemainingTimeToShutdown = task.RemainingTimeToShutdown,
+            Completed = task.Completed,
+            Failed = task.Failed,
+            Sort = task.Sort,
+            OperationStart = OperationStart,
+            OperationTimeoutInSeconds = (int)(OperationTimeoutInSeconds ?? 0),
+            OperationType = task.OperationType,
+        };
     }
 }

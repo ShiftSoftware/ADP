@@ -68,11 +68,11 @@ public class SyncTaskStatus2
     }
 
    
-    internal SyncTaskStatus2(SyncOperationType operationType, SyncActionType actionType) : this(operationType, actionType, 1, 1, null, null, null, null)
+    internal SyncTaskStatus2(SyncOperationType operationType, SyncActionType actionType) : this(operationType, actionType, 0, 1, null, null, null, null)
     {
     }
 
-    internal SyncTaskStatus2(SyncOperationType operationType) : this(operationType, null, 1, 1, null, null, null, null)
+    internal SyncTaskStatus2(SyncOperationType operationType) : this(operationType, null, 0, 1, null, null, null, null)
     {
     }
 
