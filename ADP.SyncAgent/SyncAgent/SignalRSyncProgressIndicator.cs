@@ -2,7 +2,7 @@
 
 public class SignalRSyncProgressIndicator : ISyncProgressIndicator2
 {
-    public IEnumerable<SyncTaskStatus2> CurrentSyncTaskStatuses { get; private set; } = [];
+    public IEnumerable<SyncTaskStatus2> SyncTaskStatuses { get; private set; } = [];
 
     public SyncTaskStatus2? CurrentSyncTaskStatus { get; private set; }
 
@@ -31,8 +31,8 @@ public class SignalRSyncProgressIndicator : ISyncProgressIndicator2
 
     public ValueTask<ISyncProgressIndicator2> SetSyncTaskStatus(SyncTaskStatus2 syncTaskStatus)
     {
-        if (CurrentSyncTaskStatus is not null)
-            this.CurrentSyncTaskStatuses = this.CurrentSyncTaskStatuses.Append(CurrentSyncTaskStatus);
+        if (!this.SyncTaskStatuses.Contains(syncTaskStatus))
+            this.SyncTaskStatuses = this.SyncTaskStatuses?.Append(syncTaskStatus!) ?? [];
 
         this.CurrentSyncTaskStatus = syncTaskStatus;
 

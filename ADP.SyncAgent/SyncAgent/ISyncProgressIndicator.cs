@@ -11,7 +11,7 @@ public interface ISyncProgressIndicator
 
 public interface ISyncProgressIndicator2
 {
-    public IEnumerable<SyncTaskStatus2> CurrentSyncTaskStatuses { get; }
+    public IEnumerable<SyncTaskStatus2> SyncTaskStatuses { get; }
     public SyncTaskStatus2? CurrentSyncTaskStatus { get; }
     public string ID { get; }
     public string? SyncID { get;}

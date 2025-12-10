@@ -7,7 +7,7 @@ public class ILoggerSyncProgressIndicator : ISyncProgressIndicator2
 {
     private readonly ILogger logger;
 
-    public IEnumerable<SyncTaskStatus2> CurrentSyncTaskStatuses { get; private set; } = [];
+    public IEnumerable<SyncTaskStatus2> SyncTaskStatuses { get; private set; } = [];
 
     public SyncTaskStatus2? CurrentSyncTaskStatus { get; private set; }
     public string ID { get; private set; }
