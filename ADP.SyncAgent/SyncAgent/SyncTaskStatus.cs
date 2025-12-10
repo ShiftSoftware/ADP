@@ -52,9 +52,6 @@ public class SyncTaskStatus2
     public bool Failed { get; private set; }
     public int Sort { get; private set; }
 
-    internal DateTime OperationStart { get; private set; }
-    internal int OperationTimeoutInSeconds { get; private set; }
-
     public SyncActionType? ActionType { get; private set; }
     public SyncOperationType OperationType { get; private set; }
 
@@ -68,7 +65,6 @@ public class SyncTaskStatus2
         CurrentRetryCount = currentRetryCount;
         MaxRetryCount = maxRetryCount;
         TotalCount = totalCount;
-        UpdateProgress(false);
     }
 
    
@@ -80,14 +76,14 @@ public class SyncTaskStatus2
     {
     }
 
-    public SyncTaskStatus2 UpdateProgress(bool incrementStep = true)
+    public SyncTaskStatus2 UpdateProgress(DateTime operationStart, long? operationTimeoutInSeconds, bool incrementStep = true)
     {
         if (incrementStep)
             CurrentStep++;
 
         Progress = TotalStep.GetValueOrDefault() == 0 ? 0 : (double)(CurrentStep) / TotalStep.GetValueOrDefault();
-        Elapsed = DateTime.UtcNow - OperationStart;
-        RemainingTimeToShutdown = OperationStart.AddSeconds(OperationTimeoutInSeconds) - DateTime.UtcNow;
+        Elapsed = DateTime.UtcNow - operationStart;
+        RemainingTimeToShutdown = operationStart.AddSeconds(operationTimeoutInSeconds.GetValueOrDefault()) - DateTime.UtcNow;
 
         return this;
     }

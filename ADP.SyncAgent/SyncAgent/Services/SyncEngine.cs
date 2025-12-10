@@ -66,7 +66,7 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
 
     public ISyncEngine<TSource, TDestination> RegisterSyncProgressIndicator(ISyncProgressIndicator2 syncProgressIndicator)
     {
-        this.syncProgressIndicators = this.syncProgressIndicators.Append(syncProgressIndicator);
+        this.syncProgressIndicators = this.syncProgressIndicators.Append(syncProgressIndicator.SetOperationTimeoutInSeconds(this.Configurations?.OperationTimeoutInSeconds));
         return this;
     }
 
@@ -205,7 +205,7 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
             // Preparing
             var preparingResult = SyncPreparingResponseAction.Succeeded;
             if (this.Preparing is not null)
-                preparingResult = await this.Preparing!(new SyncFunctionInput(this.GetCancellationToken(), await this.GetSyncProgressIndicators(new(SyncOperationType.Preparing), true)));
+                preparingResult = await this.Preparing!(new SyncFunctionInput(this.GetCancellationToken(), await this.GetSyncProgressIndicators(new(SyncOperationType.Preparing), true, true)));
 
             if (preparingResult == SyncPreparingResponseAction.Succeeded)
             {
@@ -507,13 +507,19 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
         return dataAdapter;
     }
 
-    private async Task<IEnumerable<ISyncProgressIndicator2>> GetSyncProgressIndicators(SyncTaskStatus2 syncTaskStatus, bool incrementStep)
+    private async Task<IEnumerable<ISyncProgressIndicator2>> GetSyncProgressIndicators(SyncTaskStatus2 syncTaskStatus, bool incrementStep, bool setSartDate = false)
     {
         IEnumerable<ISyncProgressIndicator2> indicators = [];
+        var now = DateTime.UtcNow;
 
         foreach (var indicator in this.syncProgressIndicators ?? [])
-            indicators = indicators.Append(await indicator.SetSyncTaskStatus(syncTaskStatus.UpdateProgress(incrementStep)));
+        {
+            if (setSartDate)
+                indicator.SetOperationStart(now);
 
-        return indicators;
+            await indicator.SetSyncTaskStatus(syncTaskStatus.UpdateProgress(indicator.OperationStart, indicator.OperationTimeoutInSeconds, incrementStep));
+        }
+
+        return this.syncProgressIndicators ?? [];
     }
 }

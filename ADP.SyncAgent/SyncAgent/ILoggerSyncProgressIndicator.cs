@@ -12,10 +12,24 @@ public class ILoggerSyncProgressIndicator : ISyncProgressIndicator2
     public SyncTaskStatus2? CurrentSyncTaskStatus { get; private set; }
     public string ID { get; private set; }
     public string? SyncID { get; private set; }
+    public long? OperationTimeoutInSeconds { get; private set; }
+    public DateTime OperationStart { get; private set; }
 
     public ILoggerSyncProgressIndicator(ILogger logger)
     {
         this.logger = logger;
+    }
+
+    public ISyncProgressIndicator2 SetOperationTimeoutInSeconds(long? seconds)
+    {
+        this.OperationTimeoutInSeconds = seconds;
+        return this;
+    }
+
+    public ISyncProgressIndicator2 SetOperationStart(DateTime startDate)
+    {
+        this.OperationStart = startDate;
+        return this;
     }
 
     public ValueTask<ISyncProgressIndicator2> SetSyncTaskStatus(SyncTaskStatus2 syncTaskStatus)
