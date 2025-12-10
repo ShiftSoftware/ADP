@@ -39,6 +39,8 @@ public class SyncTaskStatus2
     public long CurrentStep { get; private set; }
     public long? TotalStep { get; private set; }
 
+    public long? TotalCount { get; private set; }
+
     public long? BatchSize { get; private set; }
 
     public long? CurrentRetryCount { get; private set; }
@@ -56,7 +58,7 @@ public class SyncTaskStatus2
     public SyncActionType? ActionType { get; private set; }
     public SyncOperationType OperationType { get; private set; }
 
-    internal SyncTaskStatus2(SyncOperationType operationType, SyncActionType? syncActionType, long currentStep, long? totalSteps, long? batchSize, long? currentRetryCount, long? maxRetryCount)
+    internal SyncTaskStatus2(SyncOperationType operationType, SyncActionType? syncActionType, long currentStep, long? totalSteps, long? batchSize, long? currentRetryCount, long? maxRetryCount, long? totalCount)
     {
         OperationType = operationType;
         ActionType = syncActionType;
@@ -65,15 +67,16 @@ public class SyncTaskStatus2
         BatchSize = batchSize;
         CurrentRetryCount = currentRetryCount;
         MaxRetryCount = maxRetryCount;
+        TotalCount = totalCount;
         UpdateProgress(false);
     }
 
    
-    internal SyncTaskStatus2(SyncOperationType operationType, SyncActionType actionType) : this(operationType, actionType, 1, 1, null, null, null)
+    internal SyncTaskStatus2(SyncOperationType operationType, SyncActionType actionType) : this(operationType, actionType, 1, 1, null, null, null, null)
     {
     }
 
-    internal SyncTaskStatus2(SyncOperationType operationType) : this(operationType, null, 1, 1, null, null, null)
+    internal SyncTaskStatus2(SyncOperationType operationType) : this(operationType, null, 1, 1, null, null, null, null)
     {
     }
 

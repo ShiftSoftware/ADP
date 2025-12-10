@@ -288,7 +288,7 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
                     {
                         var batchStartedResult = await this.BatchStarted!(new SyncFunctionInput<SyncActionStatus>(this.GetCancellationToken(), 
                             new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType),
-                            await this.GetSyncProgressIndicators(new(SyncOperationType.BatchStarted, actionType, currentStep, totalSteps, batchSize, retryCount, maxRetryCount), false)));
+                            await this.GetSyncProgressIndicators(new(SyncOperationType.BatchStarted, actionType, currentStep, totalSteps, batchSize, retryCount, maxRetryCount, totalItemCount), false)));
 
                         if (!batchStartedResult)
                             break;
@@ -299,7 +299,7 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
                         // Get current batch data from the source
                         sourceItems = await this.GetSourceBatchItems!(new SyncFunctionInput<SyncGetBatchDataInput<TSource>>(this.GetCancellationToken(),
                             new SyncGetBatchDataInput<TSource>(sourceItems, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType)),
-                            await this.GetSyncProgressIndicators(new(SyncOperationType.GetSourceBatchItems, actionType, currentStep, totalSteps,batchSize, retryCount, maxRetryCount), false)));
+                            await this.GetSyncProgressIndicators(new(SyncOperationType.GetSourceBatchItems, actionType, currentStep, totalSteps,batchSize, retryCount, maxRetryCount, totalItemCount), false)));
 
                         // If no data is returned and total item count not provided, then stop the operation
                         if (!(sourceItems?.Any() ?? false) && totalItemCount is null)
@@ -311,12 +311,12 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
                         // Map the source data to destination data
                         destinationItems = await this.Mapping!(new SyncFunctionInput<SyncMappingInput<TSource, TDestination>>(this.GetCancellationToken(),
                             new SyncMappingInput<TSource, TDestination>(sourceItems, destinationItems, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType)),
-                            await this.GetSyncProgressIndicators(new(SyncOperationType.Mapping, actionType, currentStep, totalSteps, batchSize, retryCount, maxRetryCount), false)));
+                            await this.GetSyncProgressIndicators(new(SyncOperationType.Mapping, actionType, currentStep, totalSteps, batchSize, retryCount, maxRetryCount, totalItemCount), false)));
 
                         // Store the mapped data to the destination
                         storeResult = await this.StoreBatchData!(new SyncFunctionInput<SyncStoreDataInput<TDestination>>(this.GetCancellationToken(),
                             new SyncStoreDataInput<TDestination>(destinationItems, storeResult, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType)),
-                            await this.GetSyncProgressIndicators(new(SyncOperationType.StoreBatchData, actionType, currentStep, totalSteps, batchSize, retryCount, maxRetryCount), false)));
+                            await this.GetSyncProgressIndicators(new(SyncOperationType.StoreBatchData, actionType, currentStep, totalSteps, batchSize, retryCount, maxRetryCount, totalItemCount), false)));
 
                         // Check if retry required
                         if (storeResult.NeedRetry)
@@ -327,7 +327,7 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
                         {
                             var batchCompletedResult = await this.BatchCompleted!(new SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>(this.GetCancellationToken(), 
                                 new SyncBatchCompleteRetryInput<TSource, TDestination>(sourceItems, storeResult, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType), null),
-                                await this.GetSyncProgressIndicators(new(SyncOperationType.BatchCompleted, actionType, currentStep, totalSteps, batchSize, retryCount, maxRetryCount), true)));
+                                await this.GetSyncProgressIndicators(new(SyncOperationType.BatchCompleted, actionType, currentStep, totalSteps, batchSize, retryCount, maxRetryCount, totalItemCount), true)));
 
                             if (!batchCompletedResult)
                                 throw new Exception("Need retry.");
@@ -345,7 +345,7 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
                         if (this.BatchRetry is not null)
                             retryResult = await this.BatchRetry!(new SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>(this.GetCancellationToken(),
                                 new SyncBatchCompleteRetryInput<TSource, TDestination>(sourceItems, storeResult, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType), ex),
-                                await this.GetSyncProgressIndicators(new(SyncOperationType.BatchRetry, actionType, currentStep, totalSteps, batchSize, retryCount, maxRetryCount), false)));
+                                await this.GetSyncProgressIndicators(new(SyncOperationType.BatchRetry, actionType, currentStep, totalSteps, batchSize, retryCount, maxRetryCount, totalItemCount), false)));
 
                         // Do action based on the retry result
                         if (retryResult == RetryAction.RetryAndContinueAfterLastRetry)
@@ -359,7 +359,7 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
                                 {
                                     var batchCompletedResult = await this.BatchCompleted!(new SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>(this.GetCancellationToken(),
                                         new SyncBatchCompleteRetryInput<TSource, TDestination>(sourceItems, storeResult, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType), ex),
-                                        await this.GetSyncProgressIndicators(new(SyncOperationType.BatchCompleted, actionType, currentStep, totalSteps, batchSize, retryCount, maxRetryCount), true)));
+                                        await this.GetSyncProgressIndicators(new(SyncOperationType.BatchCompleted, actionType, currentStep, totalSteps, batchSize, retryCount, maxRetryCount, totalItemCount), true)));
 
                                     if (!batchCompletedResult)
                                     {
@@ -382,7 +382,7 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
                             {
                                 var batchCompletedResult = await this.BatchCompleted!(new SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>(this.GetCancellationToken(), 
                                     new SyncBatchCompleteRetryInput<TSource, TDestination>(sourceItems, storeResult, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType), ex),
-                                    await this.GetSyncProgressIndicators(new(SyncOperationType.BatchCompleted, actionType, currentStep, totalSteps, batchSize, retryCount, maxRetryCount), true)));
+                                    await this.GetSyncProgressIndicators(new(SyncOperationType.BatchCompleted, actionType, currentStep, totalSteps, batchSize, retryCount, maxRetryCount, totalItemCount), true)));
 
                                 if (!batchCompletedResult)
                                 {
