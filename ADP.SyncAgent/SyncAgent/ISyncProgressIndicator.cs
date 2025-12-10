@@ -11,13 +11,15 @@ public interface ISyncProgressIndicator
 
 public interface ISyncProgressIndicator2
 {
-    public IEnumerable<SyncTaskStatus> CurrentSyncTaskStatuses { get; }
-    public SyncTaskStatus? CurrentSyncTaskStatus { get; }
+    public IEnumerable<SyncTaskStatus2> CurrentSyncTaskStatuses { get; }
+    public SyncTaskStatus2? CurrentSyncTaskStatus { get; }
+    public string ID { get; }
+    public string? SyncID { get;}
 
-    ValueTask SetSyncTaskStatus(SyncTaskStatus syncTaskStatus);
-    ValueTask LogInformationAsync(SyncTaskStatus syncTask, string message);
-    ValueTask LogErrorAsync(SyncTaskStatus syncTask, string message);
-    ValueTask LogWarningAsync(SyncTaskStatus syncTask, string message);
+    ValueTask<ISyncProgressIndicator2> SetSyncTaskStatus(SyncTaskStatus2 syncTaskStatus);
+    ValueTask LogInformationAsync(SyncTaskStatus2 syncTask, string message);
+    ValueTask LogErrorAsync(SyncTaskStatus2 syncTask, string message);
+    ValueTask LogWarningAsync(SyncTaskStatus2 syncTask, string message);
     ValueTask FailAllRunningTasks();
     ValueTask CompleteAllRunningTasks();
 }

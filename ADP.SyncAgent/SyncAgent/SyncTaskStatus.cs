@@ -34,8 +34,6 @@ public class SyncTaskStatus
 
 public class SyncTaskStatus2
 {
-    public string ID { get; private set; } = Guid.NewGuid().ToString();
-    public string? SyncID { get; private set; }
     public string TaskDescription { get; private set; } = default!;
     public double Progress { get; private set; }
     public long CurrentStep { get; private set; }
@@ -58,15 +56,25 @@ public class SyncTaskStatus2
     public SyncActionType? ActionType { get; private set; }
     public SyncOperationType OperationType { get; private set; }
 
-    internal SyncTaskStatus2(SyncOperationType operationType, long currentStep, long? totalSteps, long? batchSize, long? currentRetryCount, long? maxRetryCount, double progress)
+    internal SyncTaskStatus2(SyncOperationType operationType, SyncActionType? syncActionType, long currentStep, long? totalSteps, long? batchSize, long? currentRetryCount, long? maxRetryCount)
     {
         OperationType = operationType;
+        ActionType = syncActionType;
         CurrentStep = currentStep;
         TotalStep = totalSteps;
         BatchSize = batchSize;
         CurrentRetryCount = currentRetryCount;
         MaxRetryCount = maxRetryCount;
-        Progress = progress;
+        UpdateProgress(false);
+    }
+
+   
+    internal SyncTaskStatus2(SyncOperationType operationType, SyncActionType actionType) : this(operationType, actionType, 1, 1, null, null, null)
+    {
+    }
+
+    internal SyncTaskStatus2(SyncOperationType operationType) : this(operationType, null, 1, 1, null, null, null)
+    {
     }
 
     public SyncTaskStatus2 UpdateProgress(bool incrementStep = true)

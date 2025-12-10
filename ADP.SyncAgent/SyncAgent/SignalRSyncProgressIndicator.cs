@@ -5,26 +5,27 @@ namespace ShiftSoftware.ADP.SyncAgent;
 
 public class SignalRSyncProgressIndicator : ISyncProgressIndicator2
 {
-    public IEnumerable<SyncTaskStatus> CurrentSyncTaskStatuses { get; private set; } = [];
+    public IEnumerable<SyncTaskStatus2> CurrentSyncTaskStatuses { get; private set; } = [];
 
-    public SyncTaskStatus? CurrentSyncTaskStatus { get; private set; }
+    public SyncTaskStatus2? CurrentSyncTaskStatus { get; private set; }
 
-    public SignalRSyncProgressIndicator(string? syncID = null)
+    public string ID { get; private set; }
+    public string? SyncID { get; private set; }
+
+    public SignalRSyncProgressIndicator(string? id = null, string? syncID = null)
     {
-        this.SetSyncTaskStatus(new SyncTaskStatus
-        {
-            SyncID = syncID
-        });
+        ID = id ?? Guid.NewGuid().ToString();
+        SyncID = syncID;
     }
 
-    public ValueTask SetSyncTaskStatus(SyncTaskStatus syncTaskStatus)
+    public ValueTask<ISyncProgressIndicator2> SetSyncTaskStatus(SyncTaskStatus2 syncTaskStatus)
     {
         if (CurrentSyncTaskStatus is not null)
             this.CurrentSyncTaskStatuses = this.CurrentSyncTaskStatuses.Append(CurrentSyncTaskStatus);
 
         this.CurrentSyncTaskStatus = syncTaskStatus;
 
-        return ValueTask.CompletedTask;
+        return new(this);
     }
 
     public ValueTask CompleteAllRunningTasks()
@@ -37,17 +38,17 @@ public class SignalRSyncProgressIndicator : ISyncProgressIndicator2
         throw new NotImplementedException();
     }
 
-    public ValueTask LogErrorAsync(SyncTaskStatus syncTask, string message)
+    public ValueTask LogErrorAsync(SyncTaskStatus2 syncTask, string message)
     {
         throw new NotImplementedException();
     }
 
-    public ValueTask LogInformationAsync(SyncTaskStatus syncTask, string message)
+    public ValueTask LogInformationAsync(SyncTaskStatus2 syncTask, string message)
     {
         throw new NotImplementedException();
     }
 
-    public ValueTask LogWarningAsync(SyncTaskStatus syncTask, string message)
+    public ValueTask LogWarningAsync(SyncTaskStatus2 syncTask, string message)
     {
         throw new NotImplementedException();
     }

@@ -7,18 +7,21 @@ public class ILoggerSyncProgressIndicator : ISyncProgressIndicator2
 {
     private readonly ILogger logger;
 
-    public IEnumerable<SyncTaskStatus> CurrentSyncTaskStatuses { get; private set; } = [];
+    public IEnumerable<SyncTaskStatus2> CurrentSyncTaskStatuses { get; private set; } = [];
 
-    public SyncTaskStatus? CurrentSyncTaskStatus { get; private set; }
+    public SyncTaskStatus2? CurrentSyncTaskStatus { get; private set; }
+    public string ID { get; private set; }
+    public string? SyncID { get; private set; }
 
     public ILoggerSyncProgressIndicator(ILogger logger)
     {
         this.logger = logger;
     }
 
-    public ValueTask SetSyncTaskStatus(SyncTaskStatus syncTaskStatus)
+    public ValueTask<ISyncProgressIndicator2> SetSyncTaskStatus(SyncTaskStatus2 syncTaskStatus)
     {
-        return ValueTask.CompletedTask;
+        this.CurrentSyncTaskStatus = syncTaskStatus;
+        return new(this);
     }
 
     public ValueTask CompleteAllRunningTasks()
@@ -31,19 +34,19 @@ public class ILoggerSyncProgressIndicator : ISyncProgressIndicator2
         return ValueTask.CompletedTask;
     }
 
-    public ValueTask LogErrorAsync(SyncTaskStatus syncTask, string message)
+    public ValueTask LogErrorAsync(SyncTaskStatus2 syncTask, string message)
     {
         this.logger.LogError(message);
         return ValueTask.CompletedTask;
     }
 
-    public ValueTask LogInformationAsync(SyncTaskStatus syncTask, string message)
+    public ValueTask LogInformationAsync(SyncTaskStatus2 syncTask, string message)
     {
         this.logger.LogInformation(message);
         return ValueTask.CompletedTask;
     }
 
-    public ValueTask LogWarningAsync(SyncTaskStatus syncTask, string message)
+    public ValueTask LogWarningAsync(SyncTaskStatus2 syncTask, string message)
     {
         this.logger.LogWarning(message);
         return ValueTask.CompletedTask;
