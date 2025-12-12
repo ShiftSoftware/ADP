@@ -22,7 +22,7 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
 {
     public virtual SyncConfigurations? Configurations { get; private set; }
 
-    private IEnumerable<ISyncProgressIndicator2> syncProgressIndicators = [];
+    private IEnumerable<ISyncEngineLogger> syncEngineLoggers = [];
 
     public virtual Func<SyncFunctionInput, ValueTask<SyncPreparingResponseAction>>? Preparing { get; private set; }
 
@@ -64,9 +64,9 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
         this.services = services;
     }
 
-    public ISyncEngine<TSource, TDestination> RegisterSyncProgressIndicator(ISyncProgressIndicator2 syncProgressIndicator)
+    public ISyncEngine<TSource, TDestination> RegisterLogger(ISyncEngineLogger syncProgressIndicator)
     {
-        this.syncProgressIndicators = this.syncProgressIndicators.Append(syncProgressIndicator.SetOperationTimeoutInSeconds(this.Configurations?.OperationTimeoutInSeconds));
+        this.syncEngineLoggers = this.syncEngineLoggers.Append(syncProgressIndicator.SetOperationTimeoutInSeconds(this.Configurations?.OperationTimeoutInSeconds));
         return this;
     }
 
@@ -507,12 +507,12 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
         return dataAdapter;
     }
 
-    private async Task<IEnumerable<ISyncProgressIndicator2>> GetSyncProgressIndicators(SyncTaskStatus2 syncTaskStatus, bool incrementStep, bool setSartDate = false)
+    private async Task<IEnumerable<ISyncEngineLogger>> GetSyncProgressIndicators(SyncEngineLoggerStatus syncTaskStatus, bool incrementStep, bool setSartDate = false)
     {
-        IEnumerable<ISyncProgressIndicator2> indicators = [];
+        IEnumerable<ISyncEngineLogger> indicators = [];
         var now = DateTime.UtcNow;
 
-        foreach (var indicator in this.syncProgressIndicators ?? [])
+        foreach (var indicator in this.syncEngineLoggers ?? [])
         {
             if (setSartDate)
                 indicator.SetOperationStart(now);
@@ -520,6 +520,6 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
             await indicator.SetSyncTaskStatus(syncTaskStatus.UpdateProgress(indicator.OperationStart, indicator.OperationTimeoutInSeconds, incrementStep));
         }
 
-        return this.syncProgressIndicators ?? [];
+        return this.syncEngineLoggers ?? [];
     }
 }

@@ -247,13 +247,13 @@ public static class ISyncEngineExtensions
         return syncService;
     }
 
-    public static ISyncEngine<TSource, TDestination> AddLoggerSyncProgressIndicator<TSource, TDestination>(
+    public static ISyncEngine<TSource, TDestination> AddLogger<TSource, TDestination>(
         this ISyncEngine<TSource, TDestination> syncService,
-        ILoggerSyncProgressIndicator logger)
+        SyncEngineILogger logger)
         where TSource : class, new()
         where TDestination : class, new()
     {
-        syncService.RegisterSyncProgressIndicator(logger);
+        syncService.RegisterLogger(logger);
 
         if (syncService.Preparing is not null)
         {
@@ -469,13 +469,13 @@ public static class ISyncEngineExtensions
         return syncService;
     }
 
-    public static ISyncEngine<TSource, TDestination> AddSignalRSyncProgressIndicator<TSource, TDestination>(
+    public static ISyncEngine<TSource, TDestination> AddSyncProgressIndicator<TSource, TDestination>(
         this ISyncEngine<TSource, TDestination> syncService,
-        SignalRSyncProgressIndicator logger)
+        SyncProgressIndicatorLogger logger)
         where TSource : class, new()
         where TDestination : class, new()
     {
-        syncService.RegisterSyncProgressIndicator(logger);
+        syncService.RegisterLogger(logger);
 
         if (syncService.Preparing is not null)
         {

@@ -1,19 +1,19 @@
 ﻿namespace ShiftSoftware.ADP.SyncAgent;
 
-public class SignalRSyncProgressIndicator : ISyncProgressIndicator2
+public class SyncProgressIndicatorLogger : ISyncEngineLogger
 {
     private readonly ISyncProgressIndicator syncProgressIndicator;
 
-    public IEnumerable<SyncTaskStatus2> SyncTaskStatuses { get; private set; } = [];
+    public IEnumerable<SyncEngineLoggerStatus> SyncTaskStatuses { get; private set; } = [];
 
-    public SyncTaskStatus2? CurrentSyncTaskStatus { get; private set; }
+    public SyncEngineLoggerStatus? CurrentSyncTaskStatus { get; private set; }
 
     public string ID { get; private set; }
     public string? SyncID { get; private set; }
     public long? OperationTimeoutInSeconds { get; private set; }
     public DateTime OperationStart { get; private set; }
 
-    public SignalRSyncProgressIndicator(ISyncProgressIndicator syncProgressIndicator)
+    public SyncProgressIndicatorLogger(ISyncProgressIndicator syncProgressIndicator)
     {
         this.syncProgressIndicator = syncProgressIndicator;
         Setup();
@@ -25,23 +25,20 @@ public class SignalRSyncProgressIndicator : ISyncProgressIndicator2
         SyncID = syncID;
     }
 
-    public ISyncProgressIndicator2 SetOperationTimeoutInSeconds(long? seconds)
+    public ISyncEngineLogger SetOperationTimeoutInSeconds(long? seconds)
     {
         this.OperationTimeoutInSeconds = seconds;
         return this;
     }
 
-    public ISyncProgressIndicator2 SetOperationStart(DateTime startDate)
+    public ISyncEngineLogger SetOperationStart(DateTime startDate)
     {
         this.OperationStart = startDate;
         return this;
     }
 
-    public ValueTask<ISyncProgressIndicator2> SetSyncTaskStatus(SyncTaskStatus2 syncTaskStatus)
+    public ValueTask<ISyncEngineLogger> SetSyncTaskStatus(SyncEngineLoggerStatus syncTaskStatus)
     {
-        if (!this.SyncTaskStatuses.Contains(syncTaskStatus))
-            this.SyncTaskStatuses = this.SyncTaskStatuses?.Append(syncTaskStatus!) ?? [];
-
         this.CurrentSyncTaskStatus = syncTaskStatus;
 
         return new(this);
@@ -77,7 +74,7 @@ public class SignalRSyncProgressIndicator : ISyncProgressIndicator2
         await syncProgressIndicator.LogWarningAsync(MapTask(CurrentSyncTaskStatus!), message!);
     }
 
-    private SyncTaskStatus MapTask(SyncTaskStatus2 task)
+    private SyncTaskStatus MapTask(SyncEngineLoggerStatus task)
     {
         return new SyncTaskStatus
         {
