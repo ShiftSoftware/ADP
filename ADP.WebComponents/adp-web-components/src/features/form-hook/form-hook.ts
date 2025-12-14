@@ -142,6 +142,8 @@ export class FormHook<T> {
   };
 
   hasItemInStructure = (target, structure = this.context.structure) => {
+    if (!structure) return true;
+
     if (typeof structure === 'string') {
       return structure === target;
     }
