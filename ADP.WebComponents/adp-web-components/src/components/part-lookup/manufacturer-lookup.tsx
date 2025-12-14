@@ -121,7 +121,7 @@ export class ManufacturerLookup implements MultiLingual, VehicleInfoLayoutInterf
 
   // #endregion
   render() {
-    const localName = this.partLookup ? this.localizationName || 'russian' : 'russian';
+    const localName = this.localizationName || '';
 
     const hiddenFields = this.hiddenFields?.split(',').map(field => field?.trim()) || [];
 
