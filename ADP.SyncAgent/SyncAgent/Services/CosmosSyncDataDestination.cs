@@ -357,14 +357,15 @@ public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosCl
                                     {
                                         var type = mappedItem!.GetType();
                                         var id = (string?)type.GetProperty("id")?.GetValue(mappedItem!);
+
                                         await container.DeleteItemAsync<TDestination>(id, partitionKey);
+
+                                        innerSucceededItems.Add(mappedItem!);
                                     }
                                     catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
                                     {
                                         innerSucceededItems.Add(mappedItem!); // Item not found, but we consider it as succeeded
                                     }
-
-                                    innerSucceededItems.Add(mappedItem!);
                                 }, cancellationToken);
                             }
                             catch (Exception)

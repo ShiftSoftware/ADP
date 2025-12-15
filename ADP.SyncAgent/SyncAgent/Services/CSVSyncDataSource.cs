@@ -10,7 +10,8 @@ namespace ShiftSoftware.ADP.SyncAgent.Services;
 /// </summary>
 /// <typeparam name="TCSV"></typeparam>
 /// <typeparam name="TDestination"></typeparam>
-public abstract class CsvSyncDataSource: IAsyncDisposable
+public abstract class CsvSyncDataSource<T> : IAsyncDisposable
+    where T : class
 {
     private readonly CSVSyncDataSourceOptions options;
     private readonly IStorageService storageService;
@@ -22,8 +23,9 @@ public abstract class CsvSyncDataSource: IAsyncDisposable
     protected SyncPreparingResponseAction? prepareResult;
     private int numberOfHeaderLines = 0;
     private IEnumerable<string> headers = [];
+    private Func<string, ValueTask>? proccessSourceData;
 
-    public CSVSyncDataSourceConfigurations? Configurations { get; private set; } = default!;
+    public CSVSyncDataSourceConfigurations<T>? Configurations { get; private set; } = default!;
 
     public CsvSyncDataSource(CSVSyncDataSourceOptions options, IStorageService storageService)
     {
@@ -31,11 +33,12 @@ public abstract class CsvSyncDataSource: IAsyncDisposable
         this.options = options;
     }
 
-    public void Configure(CSVSyncDataSourceConfigurations configurations, IEnumerable<string>? headers)
+    public void Configure(CSVSyncDataSourceConfigurations<T> configurations, IEnumerable<string>? headers, Func<string, ValueTask>? proccessSourceData)
     {
         this.Configurations = configurations;
         this.numberOfHeaderLines = headers?.Count() ?? 0;
         this.headers = headers ?? [];
+        this.proccessSourceData = proccessSourceData;
     }
 
     public async ValueTask<SyncPreparingResponseAction> Preparing(SyncFunctionInput input)
@@ -60,6 +63,9 @@ public abstract class CsvSyncDataSource: IAsyncDisposable
                 this.numberOfHeaderLines,
                 this.Configurations.SourceContainerOrShareName,
                 input.CancellationToken);
+
+            if (proccessSourceData is not null)
+                await proccessSourceData(Path.Combine(this.workingDirectory.FullName, "file.csv"));
 
             // Exute git diff to get the added and deleted lines
             var comparision = CompareVersionsAndGetDiff();
@@ -241,12 +247,12 @@ public abstract class CsvSyncDataSource: IAsyncDisposable
     }
 
     protected void ConfigureSyncService<TCSV, TDestination, TDataAdapter>(
-        CSVSyncDataSourceConfigurations configurations,
-        ISyncDataAdapter<TCSV, TDestination, CSVSyncDataSourceConfigurations, TDataAdapter> dataAdapter
+        CSVSyncDataSourceConfigurations<TCSV> configurations,
+        ISyncDataAdapter<TCSV, TDestination, CSVSyncDataSourceConfigurations<TCSV>, TDataAdapter> dataAdapter
     )
         where TCSV : class
         where TDestination : class
-        where TDataAdapter : ISyncDataAdapter<TCSV, TDestination, CSVSyncDataSourceConfigurations, TDataAdapter>
+        where TDataAdapter : ISyncDataAdapter<TCSV, TDestination, CSVSyncDataSourceConfigurations<TCSV>, TDataAdapter>
     {
         var previousPreparing = dataAdapter.SyncService.Preparing;
         var previousSucceeded = dataAdapter.SyncService.Succeeded;

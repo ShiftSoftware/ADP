@@ -221,6 +221,10 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
 
                 result = actionResult;
             }
+            else if (preparingResult == SyncPreparingResponseAction.Skiped)
+            {
+                result = true;
+            }
 
             if ((result || preparingResult == SyncPreparingResponseAction.Skiped) && this.Succeeded is not null)
                 await this.Succeeded!(new(GetCancellationToken(), await this.GetSyncProgressIndicators(new(SyncOperationType.Succeeded), true)));

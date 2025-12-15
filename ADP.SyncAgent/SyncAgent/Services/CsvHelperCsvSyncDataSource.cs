@@ -1,11 +1,13 @@
 ﻿using CsvHelper;
 using ShiftSoftware.ADP.SyncAgent.Configurations;
 using ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
+using System.Collections;
 using System.Globalization;
+using System.Text;
 
 namespace ShiftSoftware.ADP.SyncAgent.Services;
 
-public class CsvHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource, ISyncDataAdapter<TCSV, TDestination, CSVSyncDataSourceConfigurations, CsvHelperCsvSyncDataSource<TCSV, TDestination>>
+public class CsvHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource<TCSV>, ISyncDataAdapter<TCSV, TDestination, CSVSyncDataSourceConfigurations<TCSV>, CsvHelperCsvSyncDataSource<TCSV, TDestination>>
     where TCSV : class, new()
     where TDestination : class
 {
@@ -14,7 +16,7 @@ public class CsvHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource,
 
     public ISyncEngine<TCSV, TDestination> SyncService { get; private set; } = default!;
 
-    public CSVSyncDataSourceConfigurations? Configurations { get; private set; } = default!;
+    public CSVSyncDataSourceConfigurations<TCSV>? Configurations { get; private set; } = default!;
 
     public CsvHelperCsvSyncDataSource(CSVSyncDataSourceOptions options, IStorageService storageService) : base(options, storageService)
     {
@@ -35,9 +37,9 @@ public class CsvHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource,
     /// then you may be configure SyncEngine by your self
     /// </param>
     /// <returns></returns>
-    public ISyncEngine<TCSV, TDestination> Configure(CSVSyncDataSourceConfigurations configurations, bool configureSyncService = true)
+    public ISyncEngine<TCSV, TDestination> Configure(CSVSyncDataSourceConfigurations<TCSV> configurations, bool configureSyncService = true)
     {
-        base.Configure(configurations, configurations.HasHeaderRecord ? [""] : []);
+        base.Configure(configurations, configurations.HasHeaderRecord ? [""] : [], ProccessSourceData);
 
         this.Configurations = configurations;
 
@@ -47,6 +49,33 @@ public class CsvHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource,
         return this.SyncService;
     }
 
+    private async ValueTask ProccessSourceData(string path)
+    {
+        if (this.Configurations?.ProccessSourceData is null)
+            return;
+
+        IEnumerable<TCSV> records = [];
+        using (var reader = new StreamReader(path))
+        using (var csvReader = new CsvReader(reader, new CsvHelper.Configuration.CsvConfiguration(CultureInfo.InvariantCulture)
+        {
+            HasHeaderRecord = Configurations!.HasHeaderRecord
+        }))
+        {
+            await foreach (var record in csvReader.GetRecordsAsync<TCSV>())
+                records = records.Append(record);
+        }
+
+        var processedRecords = await Configurations.ProccessSourceData(records);
+
+        using (var writer = new StreamWriter(path, false, new UTF8Encoding(false)))
+        using (var csvWriter = new CsvWriter(writer, new CsvHelper.Configuration.CsvConfiguration(CultureInfo.InvariantCulture)
+        {
+            HasHeaderRecord = false // Do not write headers
+        }))
+        {
+            await csvWriter.WriteRecordsAsync(processedRecords);
+        }
+    }
     public new ValueTask<SyncPreparingResponseAction> Preparing(SyncFunctionInput input)
     {
         return base.Preparing(input);

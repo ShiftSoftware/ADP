@@ -1,6 +1,6 @@
 ﻿namespace ShiftSoftware.ADP.SyncAgent.Configurations;
 
-public class CSVSyncDataSourceConfigurations
+public class CSVSyncDataSourceConfigurations<T> where T : class
 {
     public required string CSVFileName { get; set; }
     public string? SourceContainerOrShareName { get; set; }
@@ -8,6 +8,7 @@ public class CSVSyncDataSourceConfigurations
     public string? DestinationContainerOrShareName { get; set; }
     public string? DestinationDirectory { get; set; }
     public bool SkipReorderedLines { get; set; }
+    public Func<IEnumerable<T>, ValueTask<IEnumerable<T>>>? ProccessSourceData { get; set; }
 
     /// <summary>
     /// Default is true.

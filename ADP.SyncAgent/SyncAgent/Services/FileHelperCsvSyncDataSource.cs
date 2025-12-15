@@ -10,15 +10,15 @@ namespace ShiftSoftware.ADP.SyncAgent.Services;
 /// </summary>
 /// <typeparam name="TCSV"></typeparam>
 /// <typeparam name="TDestination"></typeparam>
-public class FileHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource, ISyncDataAdapter<TCSV, TDestination, CSVSyncDataSourceConfigurations, FileHelperCsvSyncDataSource<TCSV, TDestination>>
+public class FileHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource<TCSV>, ISyncDataAdapter<TCSV, TDestination, CSVSyncDataSourceConfigurations<TCSV>, FileHelperCsvSyncDataSource<TCSV, TDestination>>
     where TCSV : CacheableCSV
     where TDestination : class
 {
     private CacheableCSVAsyncEngine<TCSV>? engine = new();
-
+    
     public ISyncEngine<TCSV, TDestination> SyncService { get; private set; } = default!;
 
-    public CSVSyncDataSourceConfigurations? Configurations { get; private set; } = default!;
+    public CSVSyncDataSourceConfigurations<TCSV>? Configurations { get; private set; } = default!;
 
     public FileHelperCsvSyncDataSource(CSVSyncDataSourceOptions options, IStorageService storageService) : base(options, storageService)
     {
@@ -39,9 +39,9 @@ public class FileHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource
     /// then you may be configure SyncEngine by your self
     /// </param>
     /// <returns></returns>
-    public ISyncEngine<TCSV, TDestination> Configure(CSVSyncDataSourceConfigurations configurations, bool configureSyncService = true)
+    public ISyncEngine<TCSV, TDestination> Configure(CSVSyncDataSourceConfigurations<TCSV> configurations, bool configureSyncService = true)
     {
-        base.Configure(configurations, [engine!.GetFileHeader()]);
+        base.Configure(configurations, [engine!.GetFileHeader()], ProccessSourceData);
 
         this.Configurations = configurations;
 
@@ -49,6 +49,18 @@ public class FileHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource
             base.ConfigureSyncService(configurations, this);
 
         return this.SyncService;
+    }
+
+    private async ValueTask ProccessSourceData(string path)
+    {
+        if (this.Configurations?.ProccessSourceData is null)
+            return;
+
+        CacheableCSVEngine<TCSV> engine = new();
+        var records = engine.ReadFile(path);
+        var prooceesedRecords = await Configurations.ProccessSourceData(records);
+        engine.Encoding = new UTF8Encoding(false);
+        engine.WriteFile(path, prooceesedRecords);
     }
 
     public new ValueTask<SyncPreparingResponseAction> Preparing(SyncFunctionInput input)
