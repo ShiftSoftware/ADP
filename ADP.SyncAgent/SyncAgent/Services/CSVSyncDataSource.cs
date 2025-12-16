@@ -23,9 +23,6 @@ public abstract class CsvSyncDataSource<T> : IAsyncDisposable
     protected SyncPreparingResponseAction? prepareResult;
     private int numberOfHeaderLines = 0;
     private IEnumerable<string> headers = [];
-    private Func<string, ValueTask>? proccessSourceData;
-    private Func<IEnumerable<T>, IEnumerable<T>, ValueTask<IEnumerable<T>>>? proccessAddedItems;
-    private Func<IEnumerable<T>, IEnumerable<T>, ValueTask<IEnumerable<T>>>? proccessDeletedItems;
 
     public CSVSyncDataSourceConfigurations<T>? Configurations { get; private set; } = default!;
 
@@ -37,17 +34,11 @@ public abstract class CsvSyncDataSource<T> : IAsyncDisposable
 
     public void Configure(
         CSVSyncDataSourceConfigurations<T> configurations, 
-        IEnumerable<string>? headers, 
-        Func<string, ValueTask>? proccessSourceData,
-        Func<IEnumerable<T>, IEnumerable<T>, ValueTask<IEnumerable<T>>>? proccessAddedItems = null,
-        Func<IEnumerable<T>, IEnumerable<T>, ValueTask<IEnumerable<T>>>? proccessDeletedItems = null)
+        IEnumerable<string>? headers)
     {
         this.Configurations = configurations;
         this.numberOfHeaderLines = headers?.Count() ?? 0;
         this.headers = headers ?? [];
-        this.proccessSourceData = proccessSourceData;
-        this.proccessAddedItems = proccessAddedItems;
-        this.proccessDeletedItems = proccessDeletedItems;
     }
 
     public async ValueTask<SyncPreparingResponseAction> Preparing(SyncFunctionInput input)
@@ -73,8 +64,7 @@ public abstract class CsvSyncDataSource<T> : IAsyncDisposable
                 this.Configurations.SourceContainerOrShareName,
                 input.CancellationToken);
 
-            if (proccessSourceData is not null)
-                await proccessSourceData(Path.Combine(this.workingDirectory.FullName, "file.csv"));
+            await ProccessSourceData(Path.Combine(this.workingDirectory.FullName, "file.csv"));
 
             // Exute git diff to get the added and deleted lines
             var comparision = CompareVersionsAndGetDiff();
@@ -131,9 +121,19 @@ public abstract class CsvSyncDataSource<T> : IAsyncDisposable
     protected abstract ValueTask<IEnumerable<T>> ReadCsvFile(string path, bool hasHeader);
     protected abstract ValueTask WriteCsvFile(string path, IEnumerable<T> items, bool hasHeader);
 
+    private async ValueTask ProccessSourceData(string path)
+    {
+        if(this.Configurations?.ProccessSourceData is null)
+            return;
+
+        var items = await ReadCsvFile(path, this.Configurations.HasHeaderRecord);
+        var processedItems = await this.Configurations.ProccessSourceData(items);
+        await WriteCsvFile(path, processedItems, false);
+    }
+
     private async ValueTask ProccessAddedAndDeletedItems()
     {
-        if (this.proccessAddedItems is null && this.proccessDeletedItems is null)
+        if (this.Configurations?.ProccessAddedItems is null && this.Configurations?.ProccessDeletedItems is null)
             return;
 
         // Parse CSV files once and reuse for both functions
@@ -141,16 +141,16 @@ public abstract class CsvSyncDataSource<T> : IAsyncDisposable
         IEnumerable<T> deletedItems = await ReadCsvFile(toDeleteFilePath!, this.Configurations?.HasHeaderRecord ?? false);
 
         // Process added items if the function is provided
-        if (this.proccessAddedItems is not null)
+        if (this.Configurations?.ProccessAddedItems is not null)
         {
-            var processedAddedItems = await this.proccessAddedItems(addedItems, deletedItems);
+            var processedAddedItems = await this.Configurations.ProccessAddedItems(addedItems, deletedItems);
             await WriteCsvFile(toInsertFilePath!, processedAddedItems, this.Configurations?.HasHeaderRecord ?? false);
         }
 
         // Process deleted items if the function is provided
-        if (this.proccessDeletedItems is not null)
+        if (this.Configurations?.ProccessDeletedItems is not null)
         {
-            var processedDeletedItems = await this.proccessDeletedItems(addedItems, deletedItems);
+            var processedDeletedItems = await this.Configurations.ProccessDeletedItems(addedItems, deletedItems);
             await WriteCsvFile(toDeleteFilePath!, processedDeletedItems, this.Configurations?.HasHeaderRecord ?? false);
         }
     }

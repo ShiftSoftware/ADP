@@ -41,10 +41,7 @@ public class CsvHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource<
     {
         base.Configure(
             configurations, 
-            configurations.HasHeaderRecord ? [""] : [], 
-            ProccessSourceData,
-            configurations.ProccessAddedItems,
-            configurations.ProccessDeletedItems);
+            configurations.HasHeaderRecord ? [""] : []);
 
         this.Configurations = configurations;
 
@@ -52,34 +49,6 @@ public class CsvHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource<
             base.ConfigureSyncService(configurations, this);
 
         return this.SyncService;
-    }
-
-    private async ValueTask ProccessSourceData(string path)
-    {
-        if (this.Configurations?.ProccessSourceData is null)
-            return;
-
-        IEnumerable<TCSV> records = [];
-        using (var reader = new StreamReader(path))
-        using (var csvReader = new CsvReader(reader, new CsvHelper.Configuration.CsvConfiguration(CultureInfo.InvariantCulture)
-        {
-            HasHeaderRecord = Configurations!.HasHeaderRecord
-        }))
-        {
-            await foreach (var record in csvReader.GetRecordsAsync<TCSV>())
-                records = records.Append(record);
-        }
-
-        var processedRecords = await Configurations.ProccessSourceData(records);
-
-        using (var writer = new StreamWriter(path, false, new UTF8Encoding(false)))
-        using (var csvWriter = new CsvWriter(writer, new CsvHelper.Configuration.CsvConfiguration(CultureInfo.InvariantCulture)
-        {
-            HasHeaderRecord = false // Do not write headers
-        }))
-        {
-            await csvWriter.WriteRecordsAsync(processedRecords);
-        }
     }
 
     protected override async ValueTask<IEnumerable<TCSV>> ReadCsvFile(string path, bool hasHeader)

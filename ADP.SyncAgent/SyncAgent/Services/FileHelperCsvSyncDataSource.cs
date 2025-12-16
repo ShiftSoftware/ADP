@@ -43,10 +43,7 @@ public class FileHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource
     {
         base.Configure(
             configurations, 
-            [engine!.GetFileHeader()], 
-            ProccessSourceData,
-            configurations.ProccessAddedItems,
-            configurations.ProccessDeletedItems);
+            [engine!.GetFileHeader()]);
 
         this.Configurations = configurations;
 
@@ -54,18 +51,6 @@ public class FileHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource
             base.ConfigureSyncService(configurations, this);
 
         return this.SyncService;
-    }
-
-    private async ValueTask ProccessSourceData(string path)
-    {
-        if (this.Configurations?.ProccessSourceData is null)
-            return;
-
-        CacheableCSVEngine<TCSV> engine = new();
-        var records = engine.ReadFile(path);
-        var prooceesedRecords = await Configurations.ProccessSourceData(records);
-        engine.Encoding = new UTF8Encoding(false);
-        engine.WriteFile(path, prooceesedRecords);
     }
 
     protected override ValueTask<IEnumerable<TCSV>> ReadCsvFile(string path, bool hasHeader)
