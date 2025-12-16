@@ -9,6 +9,8 @@ public class CSVSyncDataSourceConfigurations<T> where T : class
     public string? DestinationDirectory { get; set; }
     public bool SkipReorderedLines { get; set; }
     public Func<IEnumerable<T>, ValueTask<IEnumerable<T>>>? ProccessSourceData { get; set; }
+    public Func<IEnumerable<T>, IEnumerable<T>, ValueTask<IEnumerable<T>>>? ProccessAddedItems { get; set; }
+    public Func<IEnumerable<T>, IEnumerable<T>, ValueTask<IEnumerable<T>>>? ProccessDeletedItems { get; set; }
 
     /// <summary>
     /// Default is true.

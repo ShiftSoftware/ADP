@@ -24,6 +24,8 @@ public abstract class CsvSyncDataSource<T> : IAsyncDisposable
     private int numberOfHeaderLines = 0;
     private IEnumerable<string> headers = [];
     private Func<string, ValueTask>? proccessSourceData;
+    private Func<IEnumerable<T>, IEnumerable<T>, ValueTask<IEnumerable<T>>>? proccessAddedItems;
+    private Func<IEnumerable<T>, IEnumerable<T>, ValueTask<IEnumerable<T>>>? proccessDeletedItems;
 
     public CSVSyncDataSourceConfigurations<T>? Configurations { get; private set; } = default!;
 
@@ -33,12 +35,19 @@ public abstract class CsvSyncDataSource<T> : IAsyncDisposable
         this.options = options;
     }
 
-    public void Configure(CSVSyncDataSourceConfigurations<T> configurations, IEnumerable<string>? headers, Func<string, ValueTask>? proccessSourceData)
+    public void Configure(
+        CSVSyncDataSourceConfigurations<T> configurations, 
+        IEnumerable<string>? headers, 
+        Func<string, ValueTask>? proccessSourceData,
+        Func<IEnumerable<T>, IEnumerable<T>, ValueTask<IEnumerable<T>>>? proccessAddedItems = null,
+        Func<IEnumerable<T>, IEnumerable<T>, ValueTask<IEnumerable<T>>>? proccessDeletedItems = null)
     {
         this.Configurations = configurations;
         this.numberOfHeaderLines = headers?.Count() ?? 0;
         this.headers = headers ?? [];
         this.proccessSourceData = proccessSourceData;
+        this.proccessAddedItems = proccessAddedItems;
+        this.proccessDeletedItems = proccessDeletedItems;
     }
 
     public async ValueTask<SyncPreparingResponseAction> Preparing(SyncFunctionInput input)
@@ -107,6 +116,9 @@ public abstract class CsvSyncDataSource<T> : IAsyncDisposable
             comparision.Added = null;
             comparision.Deleted = null;
             GarbageCollection();
+
+            // Process added and deleted items if any of the process functions is not null
+            await ProccessAddedAndDeletedItems();
         }
         catch (Exception)
         {
@@ -114,6 +126,33 @@ public abstract class CsvSyncDataSource<T> : IAsyncDisposable
         }
 
         return SyncPreparingResponseAction.Succeeded;
+    }
+
+    protected abstract ValueTask<IEnumerable<T>> ReadCsvFile(string path, bool hasHeader);
+    protected abstract ValueTask WriteCsvFile(string path, IEnumerable<T> items, bool hasHeader);
+
+    private async ValueTask ProccessAddedAndDeletedItems()
+    {
+        if (this.proccessAddedItems is null && this.proccessDeletedItems is null)
+            return;
+
+        // Parse CSV files once and reuse for both functions
+        IEnumerable<T> addedItems = await ReadCsvFile(toInsertFilePath!, this.Configurations?.HasHeaderRecord ?? false);
+        IEnumerable<T> deletedItems = await ReadCsvFile(toDeleteFilePath!, this.Configurations?.HasHeaderRecord ?? false);
+
+        // Process added items if the function is provided
+        if (this.proccessAddedItems is not null)
+        {
+            var processedAddedItems = await this.proccessAddedItems(addedItems, deletedItems);
+            await WriteCsvFile(toInsertFilePath!, processedAddedItems, this.Configurations?.HasHeaderRecord ?? false);
+        }
+
+        // Process deleted items if the function is provided
+        if (this.proccessDeletedItems is not null)
+        {
+            var processedDeletedItems = await this.proccessDeletedItems(addedItems, deletedItems);
+            await WriteCsvFile(toDeleteFilePath!, processedDeletedItems, this.Configurations?.HasHeaderRecord ?? false);
+        }
     }
 
     public async ValueTask Succeeded(SyncFunctionInput input)

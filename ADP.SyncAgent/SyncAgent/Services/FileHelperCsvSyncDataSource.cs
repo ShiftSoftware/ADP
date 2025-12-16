@@ -41,7 +41,12 @@ public class FileHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource
     /// <returns></returns>
     public ISyncEngine<TCSV, TDestination> Configure(CSVSyncDataSourceConfigurations<TCSV> configurations, bool configureSyncService = true)
     {
-        base.Configure(configurations, [engine!.GetFileHeader()], ProccessSourceData);
+        base.Configure(
+            configurations, 
+            [engine!.GetFileHeader()], 
+            ProccessSourceData,
+            configurations.ProccessAddedItems,
+            configurations.ProccessDeletedItems);
 
         this.Configurations = configurations;
 
@@ -61,6 +66,24 @@ public class FileHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource
         var prooceesedRecords = await Configurations.ProccessSourceData(records);
         engine.Encoding = new UTF8Encoding(false);
         engine.WriteFile(path, prooceesedRecords);
+    }
+
+    protected override ValueTask<IEnumerable<TCSV>> ReadCsvFile(string path, bool hasHeader)
+    {
+        CacheableCSVEngine<TCSV> csvEngine = new();
+        return new ValueTask<IEnumerable<TCSV>>(csvEngine.ReadFile(path));
+    }
+
+    protected override ValueTask WriteCsvFile(string path, IEnumerable<TCSV> items, bool hasHeader)
+    {
+        CacheableCSVEngine<TCSV> csvEngine = new();
+        csvEngine.Encoding = new UTF8Encoding(false);
+
+        if(hasHeader)
+            csvEngine.HeaderText = csvEngine.GetFileHeader();
+
+        csvEngine.WriteFile(path, items);
+        return ValueTask.CompletedTask;
     }
 
     public new ValueTask<SyncPreparingResponseAction> Preparing(SyncFunctionInput input)
