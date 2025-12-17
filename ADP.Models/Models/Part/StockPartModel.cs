@@ -80,4 +80,10 @@ public class StockPartModel:
     /// A boolean flag indicating the completion of system to system Integration
     /// </summary>
     public bool IntegrationSuccessStatus { get; set; }
+
+
+    /// <summary>
+    /// Catalog part associated with this stock part
+    /// </summary>
+    public CatalogPartModel CatalogPart { get; set; }
 }
