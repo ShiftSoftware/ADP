@@ -71,7 +71,7 @@ public class VehicleLookupService
 
         data.ServiceItems = serviceItemsResult.serviceItems;
 
-        if (data.Warranty is not null)
+        if (data.Warranty is not null && data.Warranty.WarrantyStartDate is not null)
             data.Warranty.ActivationIsRequired = serviceItemsResult.activationRequired;
 
         if (requestOptions.InsertSSCLog)
@@ -80,14 +80,14 @@ public class VehicleLookupService
             //{
             //    try
             //    {
-                    data.SSCLogId = await logCosmosService?.LogSSCLookupAsync(
-                        requestOptions.SSCLogInfo,
-                        data.SSC,
-                        vin,
-                        data.IsAuthorized,
-                        data.Warranty?.HasActiveWarranty ?? false,
-                        data.Identifiers?.Brand
-                    );
+            data.SSCLogId = await logCosmosService?.LogSSCLookupAsync(
+                requestOptions.SSCLogInfo,
+                data.SSC,
+                vin,
+                data.IsAuthorized,
+                data.Warranty?.HasActiveWarranty ?? false,
+                data.Identifiers?.Brand
+            );
             //    }
             //    catch
             //    {
@@ -100,20 +100,20 @@ public class VehicleLookupService
         {
             //_ = Task.Run(async () =>
             //{
-                try
-                {
-                    await logCosmosService.LogCustomerVehicleLookupAsync(
-                        requestOptions.CustomerVehicleLookupLogInfo,
-                        vin,
-                        data.IsAuthorized,
-                        data.Warranty?.HasActiveWarranty ?? false,
-                        data.Identifiers?.Brand
-                    );
-                }
-                catch
-                {
+            try
+            {
+                await logCosmosService.LogCustomerVehicleLookupAsync(
+                    requestOptions.CustomerVehicleLookupLogInfo,
+                    vin,
+                    data.IsAuthorized,
+                    data.Warranty?.HasActiveWarranty ?? false,
+                    data.Identifiers?.Brand
+                );
+            }
+            catch
+            {
 
-                }
+            }
             //});
         }
 

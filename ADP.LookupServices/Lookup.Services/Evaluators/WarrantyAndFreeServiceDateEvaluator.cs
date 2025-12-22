@@ -20,9 +20,6 @@ public class WarrantyAndFreeServiceDateEvaluator
 
     public VehicleWarrantyDTO Evaluate(VehicleEntryModel vehicle, VehicleSaleInformation saleInformation, bool ignoreBrokerStock)
     {
-        if (vehicle is null)
-            return null;
-
         DateTime? warrantyStartDate = null;
         DateTime? freeServiceStartDate = null;
 
@@ -60,16 +57,19 @@ public class WarrantyAndFreeServiceDateEvaluator
         VehicleWarrantyDTO result = new();
 
         var shiftDate = CompanyDataAggregate.WarrantyDateShifts?.FirstOrDefault();
+
         if (shiftDate is not null)
             warrantyStartDate = shiftDate.NewDate;
 
-        result.WarrantyStartDate = warrantyStartDate;
+        if (warrantyStartDate is not null)
+        {
+            result.WarrantyStartDate = warrantyStartDate;
 
-        if (vehicle.Brand == Brands.Lexus)
-            result.WarrantyEndDate = warrantyStartDate?.AddYears(4);
-        else
-            result.WarrantyEndDate = warrantyStartDate?.AddYears(3);
-
+            if (vehicle.Brand == Brands.Lexus)
+                result.WarrantyEndDate = warrantyStartDate?.AddYears(4);
+            else
+                result.WarrantyEndDate = warrantyStartDate?.AddYears(3);
+        }
 
         //Extended Warranty
         var lastExtendedWarrantyEntry = CompanyDataAggregate
