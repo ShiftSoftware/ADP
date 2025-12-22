@@ -28,11 +28,11 @@
 		<PackageReference Include="EFCore.BulkExtensions.SqlServer" Version="9.0.2" />
 		<PackageReference Include="LibGit2Sharp" Version="0.31.0" />
 		<PackageReference Include="Microsoft.Azure.Cosmos" Version="3.56.0" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.0" />
-		<PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.0" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.1" />
+		<PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.1" />
 		<PackageReference Include="Polly" Version="8.6.5" />
 		<PackageReference Include="ShiftSoftware.ADP.Models" Version="$(ADPVersion)" Condition="!Exists('..\..\ADP.Models\Models\Models.csproj')" />
-		<PackageReference Include="ShiftSoftware.ShiftEntity.Model" Version="2025.12.5.1" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.Model" Version="2025.12.22.2" />
 	</ItemGroup>
 
 	<ItemGroup>
