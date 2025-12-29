@@ -13,7 +13,7 @@ namespace ShiftSoftware.ADP.SyncAgent.Services;
 public abstract class CsvSyncDataSource<T> : IAsyncDisposable
     where T : class
 {
-    private readonly CSVSyncDataSourceOptions options;
+    private readonly FileSystemStorageOptions options;
     private readonly IStorageService storageService;
 
     private DirectoryInfo? workingDirectory;
@@ -26,7 +26,7 @@ public abstract class CsvSyncDataSource<T> : IAsyncDisposable
 
     public CSVSyncDataSourceConfigurations<T>? Configurations { get; private set; } = default!;
 
-    public CsvSyncDataSource(CSVSyncDataSourceOptions options, IStorageService storageService)
+    public CsvSyncDataSource(FileSystemStorageOptions options, IStorageService storageService)
     {
         this.storageService = storageService;
         this.options = options;
@@ -191,7 +191,7 @@ public abstract class CsvSyncDataSource<T> : IAsyncDisposable
     private void SetupWorkingDirectory()
     {
         var tempFolder = Guid.NewGuid().ToString();
-        workingDirectory = new DirectoryInfo(Path.Combine(options.CSVCompareWorkingDirectory, tempFolder));
+        workingDirectory = new DirectoryInfo(Path.Combine(options.CompareWorkingDirectory, tempFolder));
         workingDirectory.Create();
 
         toInsertFilePath = Path.Combine(workingDirectory.FullName, "to-insert.csv");

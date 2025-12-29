@@ -1,5 +1,4 @@
-﻿using Microsoft.Azure.Cosmos;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using ShiftSoftware.ADP.SyncAgent.Configurations;
 using ShiftSoftware.ADP.SyncAgent.Services;
 using ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
@@ -23,7 +22,7 @@ public static class IServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddCSVSyncDataSource(this IServiceCollection services, CSVSyncDataSourceOptions options)
+    public static IServiceCollection AddCSVSyncDataSource(this IServiceCollection services, FileSystemStorageOptions options)
     {
         services.AddScoped(x => options);
         services.AddTransient(typeof(FileHelperCsvSyncDataSource<,>));
@@ -32,16 +31,16 @@ public static class IServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddCSVSyncDataSource(this IServiceCollection services, Action<CSVSyncDataSourceOptions> optionsProvider)
+    public static IServiceCollection AddCSVSyncDataSource(this IServiceCollection services, Action<FileSystemStorageOptions> optionsProvider)
     {
-        var options = new CSVSyncDataSourceOptions();
+        var options = new FileSystemStorageOptions();
         optionsProvider(options);
         services.AddCSVSyncDataSource(options);
 
         return services;
     }
 
-    public static IServiceCollection AddCSVSyncDataSource<TStorageService>(this IServiceCollection services, CSVSyncDataSourceOptions options)
+    public static IServiceCollection AddCSVSyncDataSource<TStorageService>(this IServiceCollection services, FileSystemStorageOptions options)
         where TStorageService : class, IStorageService
     {
         services.AddCSVSyncDataSource(options);
@@ -50,10 +49,10 @@ public static class IServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddCSVSyncDataSource<TStorageService>(this IServiceCollection services, Action<CSVSyncDataSourceOptions> optionsProvider)
+    public static IServiceCollection AddCSVSyncDataSource<TStorageService>(this IServiceCollection services, Action<FileSystemStorageOptions> optionsProvider)
         where TStorageService : class, IStorageService
     {
-        var options = new CSVSyncDataSourceOptions();
+        var options = new FileSystemStorageOptions();
         optionsProvider(options);
         services.AddCSVSyncDataSource<TStorageService>(options);
 

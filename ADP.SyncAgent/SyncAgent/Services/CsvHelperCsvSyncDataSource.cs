@@ -1,7 +1,6 @@
 ﻿using CsvHelper;
 using ShiftSoftware.ADP.SyncAgent.Configurations;
 using ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
-using System.Collections;
 using System.Globalization;
 using System.Text;
 
@@ -18,7 +17,7 @@ public class CsvHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource<
 
     public CSVSyncDataSourceConfigurations<TCSV>? Configurations { get; private set; } = default!;
 
-    public CsvHelperCsvSyncDataSource(CSVSyncDataSourceOptions options, IStorageService storageService) : base(options, storageService)
+    public CsvHelperCsvSyncDataSource(FileSystemStorageOptions options, IStorageService storageService) : base(options, storageService)
     {
     }
 

@@ -1,5 +1,6 @@
 ﻿using Polly;
 using Polly.Retry;
+using ShiftSoftware.ADP.SyncAgent.Configurations;
 using ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
 
 namespace ShiftSoftware.ADP.SyncAgent.Services;
@@ -11,7 +12,7 @@ public class FileSystemStorageService : IStorageService
     private readonly string sourceBasePath;
     private readonly string destinationBasePath;
 
-    public FileSystemStorageService(SyncAgentOptions syncAgentOptions)
+    public FileSystemStorageService(FileSystemStorageOptions syncAgentOptions)
     {
         ResiliencePipeline = new ResiliencePipelineBuilder()
             .AddRetry(new RetryStrategyOptions()) // Upsert retry using the default options

@@ -73,7 +73,7 @@ public static class ISyncEngineExtensions
 
                 var result = await previousSourceTotalItemCount(x);
 
-                logger.LogInformation($"Getting source total item count finished for {x.Input}");
+                logger.LogInformation($"Getting source total item count finished for {x.Input}, count is {result}");
 
                 return result;
             });
@@ -295,7 +295,7 @@ public static class ISyncEngineExtensions
 
                 var result = await previousSourceTotalItemCount(x);
 
-                await logger.LogInformation($"Getting source total item count finished for {x.Input}");
+                await logger.LogInformation($"Getting source total item count finished for {x.Input}, count is {result}");
 
                 return result;
             });
@@ -517,7 +517,7 @@ public static class ISyncEngineExtensions
 
                 var result = await previousSourceTotalItemCount(x);
 
-                await logger.LogInformation($"Getting source total item count finished for {x.Input}");
+                await logger.LogInformation($"Getting source total item count finished for {x.Input}, count is {result}");
 
                 return result;
             });

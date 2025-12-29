@@ -20,7 +20,7 @@ public class FileHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource
 
     public CSVSyncDataSourceConfigurations<TCSV>? Configurations { get; private set; } = default!;
 
-    public FileHelperCsvSyncDataSource(CSVSyncDataSourceOptions options, IStorageService storageService) : base(options, storageService)
+    public FileHelperCsvSyncDataSource(FileSystemStorageOptions options, IStorageService storageService) : base(options, storageService)
     {
     }
 

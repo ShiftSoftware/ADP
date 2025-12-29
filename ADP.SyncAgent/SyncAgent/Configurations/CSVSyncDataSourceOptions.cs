@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace ShiftSoftware.ADP.SyncAgent.Configurations;
 
-namespace ShiftSoftware.ADP.SyncAgent.Configurations;
-
-public class CSVSyncDataSourceOptions
+public class FileSystemStorageOptions
 {
-    public string CSVCompareWorkingDirectory { get; set; } = default!;
+    public string CompareWorkingDirectory { get; set; } = default!;
+    public string SourceBasePath { get; set; } = default!;
+    public string DestinationBasePath { get; set; } = default!;
 }
