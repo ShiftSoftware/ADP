@@ -114,16 +114,21 @@ public class PartLookupService
         await partLookupCosmosService.UpdateManufacturerPartLookupStatusAsync(id, partNumber, status, lookupResult);
     }
 
-    public async Task<IEnumerable<ManufacturerPartLookupResponseDTO>> GetManufacturerPartLookupsByStatusAsync(ManufacturerPartLookupStatus status)
+    public async Task<IEnumerable<ManufacturerPartLookupResponseDTO>> GetManufacturerPartLookupsByStatusAsync(ManufacturerPartLookupStatus status, int top = 10)
     {
-        return (await partLookupCosmosService.GetManufacturerPartLookupsByStatusAsync(status))
+        return (await partLookupCosmosService.GetManufacturerPartLookupsByStatusAsync(status, top))
             .Select(x => new ManufacturerPartLookupResponseDTO
             {
                 id = x.id,
                 PartNumber = x.PartNumber,
                 OrderType = x.OrderType,
                 Status = x.Status,
-                Quantity = x.Quantity
+                Quantity = x.Quantity,
+                ManufacturerResult = x.ManufacturerResult.Select(y => new KeyValuePairDTO
+                {
+                    Key = y.Key,
+                    Value = y.Value
+                })
             });
     }
 

@@ -132,7 +132,7 @@ public class PartLookupCosmosService
         }
     }
 
-    public async Task<IEnumerable<ManufacturerPartLookupModel>> GetManufacturerPartLookupsByStatusAsync(ManufacturerPartLookupStatus botStatus)
+    public async Task<IEnumerable<ManufacturerPartLookupModel>> GetManufacturerPartLookupsByStatusAsync(ManufacturerPartLookupStatus botStatus, int top)
     {
         var container = client.GetContainer(
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.Logs,
@@ -140,8 +140,9 @@ public class PartLookupCosmosService
         );
 
         var query = container.GetItemLinqQueryable<ManufacturerPartLookupModel>(true)
-            .Where(x=> x.Status == botStatus)
-            .OrderBy(x => x.CreateDate);
+            .Where(x => x.Status == botStatus)
+            .OrderByDescending(x => x.CreateDate)
+            .Take(top);
 
         var items = new List<ManufacturerPartLookupModel>();
 
