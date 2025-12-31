@@ -252,8 +252,29 @@ public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosCl
                             {
                                 await this.resiliencePipeline.ExecuteAsync(async token =>
                                 {
-                                    await container.UpsertItemAsync(mappedItem, partitionKey,
-                                        new ItemRequestOptions { EnableContentResponseOnWrite = false }, cancellationToken);
+                                    if(!this.Configurations.UsePatch)
+                                    {
+                                        await container.UpsertItemAsync(mappedItem, partitionKey, new ItemRequestOptions { EnableContentResponseOnWrite = false }, cancellationToken);
+                                    }
+                                    else
+                                    {
+                                        try
+                                        {
+                                            // Build patch operations using the helper class
+                                            var patchOperations = CosmosPatchOperationHelper.BuildPatchOperations(mappedItem, this.Configurations.PropertiesToPatch);
+
+                                            // Get the id of the item
+                                            var type = mappedItem!.GetType();
+                                            var id = (string?)type.GetProperty("id")?.GetValue(mappedItem!);
+
+                                            await container.PatchItemAsync<TCosmos>(id, partitionKey, patchOperations, new PatchItemRequestOptions { EnableContentResponseOnWrite = false }, cancellationToken);
+                                        }
+                                        catch (Exception)
+                                        {
+                                            // Item doesn't exist, create it
+                                            await container.CreateItemAsync(mappedItem, partitionKey, new ItemRequestOptions { EnableContentResponseOnWrite = false }, cancellationToken);
+                                        }
+                                    }
 
                                     innerSucceededItems.Add(mappedItem!);
                                 }, cancellationToken);

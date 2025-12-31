@@ -18,4 +18,7 @@ public class CosmosSyncDataDestinationConfigurations<TDestination, TCosmos>
     public Expression<Func<TCosmos, object>>? PartitionKeyLevel2Expression { get; set; }
     public Expression<Func<TCosmos, object>>? PartitionKeyLevel3Expression { get; set; }
     public Func<SyncCosmosAction<TDestination, TCosmos>, ValueTask<SyncCosmosAction<TDestination, TCosmos>?>>? CosmosAction { get; set; }
+
+    public bool UsePatch { get; set; }
+    public Expression<Func<TCosmos, object?>>[]? PropertiesToPatch { get; set; }
 }
