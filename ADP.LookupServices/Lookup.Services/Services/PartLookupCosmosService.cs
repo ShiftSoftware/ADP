@@ -6,20 +6,12 @@ using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ADP.Models.Part;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
 
 namespace ShiftSoftware.ADP.Lookup.Services.Services;
 
-public class PartLookupCosmosService
+public class PartLookupCosmosService(CosmosClient client, LookupOptions lookupOptions)
 {
-    private readonly CosmosClient client;
-
-    public PartLookupCosmosService(CosmosClient client)
-    {
-        this.client = client;
-    }
-
     private async Task<List<dynamic>> GetLookupItemsAsync(string partNumber)
     {
         if (string.IsNullOrWhiteSpace(partNumber))
@@ -50,15 +42,35 @@ public class PartLookupCosmosService
         if (!items.Any())
             return null;
 
-        var result = new PartAggregateCosmosModel
+        var result = new PartAggregateCosmosModel();
+
+        result.StockParts = items
+            .Where(x => x.ItemType.ToString() == new StockPartModel().ItemType)
+            .Select(x => ((JObject)x)
+            .ToObject<StockPartModel>())
+            .ToList();
+
+        if (lookupOptions.CatalogPartShouldComeFromStock)
         {
-            StockParts = items.Where(x => x.ItemType.ToString() == new StockPartModel().ItemType)
-                .Select(x => ((JObject)x).ToObject<StockPartModel>()).ToList(),
-            CatalogParts = items.Where(x => x.ItemType.ToString() == new CatalogPartModel().ItemType)
-                .Select(x => ((JObject)x).ToObject<CatalogPartModel>()).ToList(),
-            CompanyDeadStockParts = items.Where(x => x.ItemType.ToString() == new CompanyDeadStockPartModel().ItemType)
-                .Select(x => ((JObject)x).ToObject<CompanyDeadStockPartModel>()).ToList(),
-        };
+            result.CatalogParts = result
+                .StockParts
+                .Select(x => x.CatalogPart)
+                .ToList();
+        }
+        else
+        {
+            result.CatalogParts = items
+                .Where(x => x.ItemType.ToString() == new CatalogPartModel().ItemType)
+                .Select(x => ((JObject)x)
+                .ToObject<CatalogPartModel>())
+                .ToList();
+        }
+
+        result.CompanyDeadStockParts = items
+            .Where(x => x.ItemType.ToString() == new CompanyDeadStockPartModel().ItemType)
+            .Select(x => ((JObject)x)
+            .ToObject<CompanyDeadStockPartModel>())
+            .ToList();
 
         return result;
     }
@@ -74,7 +86,7 @@ public class PartLookupCosmosService
 
         try
         {
-            if(model.LogId is not null)
+            if (model.LogId is not null)
             {
                 // Update the log to store the manufacturer lookup
                 var partLookupLogContainer = client.GetContainer(

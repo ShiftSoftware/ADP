@@ -19,7 +19,7 @@ public static class IServiceCollectionExtensions
         services.AddScoped<IIdentityCosmosService>(x => new IdentityCosmosService(x.GetRequiredService<T>()));
         services.AddScoped<IVehicleLoockupCosmosService>(x => new VehicleLoockupCosmosService(x.GetRequiredService<T>()));
         services.AddScoped<ILogCosmosService>(x => new LogCosmosService(x.GetRequiredService<T>()));
-        services.AddScoped(x => new PartLookupCosmosService(x.GetRequiredService<T>()));
+        services.AddScoped(x => new PartLookupCosmosService(x.GetRequiredService<T>(), options));
         //services.AddScoped(x => new TBPCosmosService(x.GetRequiredService<T>()));
         services.AddScoped(x => new ServiceCosmosService(x.GetRequiredService<T>()));
 
