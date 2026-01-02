@@ -94,12 +94,12 @@ public class EFCoreSyncDataDestination<TSource, TDestination, TEntity, TDbContex
             await db.BulkInsertOrUpdateAsync(items, this.Configurations?.BulkConfig, cancellationToken: input.CancellationToken);
             await db.BulkSaveChangesAsync(this.bulkConfig);
 
-            return new SyncStoreDataResult<TDestination>(items, null, null, false);
+            return new SyncStoreDataResult<TDestination>(items, null, null, null);
         }
         catch (Exception ex)
         {
             this.logger?.LogError(ex.Message);
-            return new SyncStoreDataResult<TDestination>(null, null, items, true);
+            return new SyncStoreDataResult<TDestination>(null, null, items, new RetryException(ex));
         }
     }
 

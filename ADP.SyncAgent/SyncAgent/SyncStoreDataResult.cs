@@ -1,16 +1,20 @@
 ﻿namespace ShiftSoftware.ADP.SyncAgent;
 
+public class RetryException(Exception ex) : Exception
+{
+    public override string ToString()
+    {
+        return $"Retry Required: {ex.ToString()}";
+    }
+}
+
 public class SyncStoreDataResult<T> where T : class
 {
     public IEnumerable<T?>? SucceededItems { get; set; }
     public IEnumerable<T?>? FailedItems { get; set; }
     public IEnumerable<T?>? SkippedItems { get; set; }
 
-    /// <summary>
-    /// Set true to trigger retry proccess, false to skip the retry process
-    /// </summary>
-    public bool NeedRetry { get; set; }
-
+    
     public SyncStoreDataResultType ResultType =>
         (SucceededItems, FailedItems, SkippedItems) switch
         {
@@ -35,21 +39,26 @@ public class SyncStoreDataResult<T> where T : class
             _ => SyncStoreDataResultType.Failed
         };
 
-    public SyncStoreDataResult(IEnumerable<T?>? succededItems, IEnumerable<T?>? failedItems, IEnumerable<T?>? skippedItems, bool retry) : this(retry)
+    public SyncStoreDataResult(IEnumerable<T?>? succededItems, IEnumerable<T?>? failedItems, IEnumerable<T?>? skippedItems, RetryException retry) : this(retry)
     {
         this.FailedItems = failedItems;
         this.SucceededItems = succededItems;
         this.SkippedItems = skippedItems;
     }
 
-    public SyncStoreDataResult(bool retry)
+    /// <summary>
+    /// Set true to trigger retry proccess, null to skip the retry process
+    /// </summary>
+    public RetryException? RetryException { get; set; }
+
+    public SyncStoreDataResult(RetryException retryException)
     {
-        this.NeedRetry = retry;
+        this.RetryException = retryException;
     }
 
     public SyncStoreDataResult()
     {
-        
+
     }
 
     public bool IsEligibleToUseItAsRetryInput(long? expectedCount)

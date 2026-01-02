@@ -2,6 +2,6 @@
 	<PropertyGroup>
 		<DefineConstants>adpDevelopmentMode;anotherSampleVariable</DefineConstants>
 		<ImportADPPackagesViaProjectReference>true</ImportADPPackagesViaProjectReference>
-		<ADPVersion>1.4.6</ADPVersion>
+		<ADPVersion>1.4.7</ADPVersion>
 	</PropertyGroup>
 </Project>

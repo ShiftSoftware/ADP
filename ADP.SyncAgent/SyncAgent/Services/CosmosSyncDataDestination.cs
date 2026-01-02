@@ -179,15 +179,15 @@ public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosCl
             };
 
             if (result.ResultType == SyncStoreDataResultType.Failed || result.ResultType == SyncStoreDataResultType.Partial)
-                result.NeedRetry = true;
+                result.RetryException = new RetryException(new Exception("Incomplete Sync."));
             else
-                result.NeedRetry = false;
+                result.RetryException = null;
 
             return result;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return new SyncStoreDataResult<TDestination>(true);
+            return new SyncStoreDataResult<TDestination>(new RetryException(ex));
         }
     }
 

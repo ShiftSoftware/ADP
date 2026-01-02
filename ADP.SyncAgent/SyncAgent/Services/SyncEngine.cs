@@ -323,8 +323,8 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
                             await this.GetSyncProgressIndicators(new(SyncOperationType.StoreBatchData, actionType, currentStep, totalSteps, batchSize, retryCount, maxRetryCount, totalItemCount), false)));
 
                         // Check if retry required
-                        if (storeResult.NeedRetry)
-                            throw new Exception("Need retry.");
+                        if (storeResult.RetryException is not null)
+                            throw storeResult.RetryException;
 
                         // Run batch completed function
                         if (this.BatchCompleted is not null)
@@ -334,7 +334,7 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
                                 await this.GetSyncProgressIndicators(new(SyncOperationType.BatchCompleted, actionType, currentStep, totalSteps, batchSize, retryCount, maxRetryCount, totalItemCount), true)));
 
                             if (!batchCompletedResult)
-                                throw new Exception("Need retry.");
+                                throw new RetryException(new Exception($"{nameof(this.BatchCompleted)} Failed"));
                         }
 
                         currentStep++;
@@ -384,7 +384,7 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
                             // Run batch completed function
                             if (this.BatchCompleted is not null)
                             {
-                                var batchCompletedResult = await this.BatchCompleted!(new SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>(this.GetCancellationToken(), 
+                                var batchCompletedResult = await this.BatchCompleted!(new SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>>(this.GetCancellationToken(),
                                     new SyncBatchCompleteRetryInput<TSource, TDestination>(sourceItems, storeResult, new SyncActionStatus(currentStep, totalSteps, batchSize, totalItemCount, maxRetryCount, retryCount, actionType), ex),
                                     await this.GetSyncProgressIndicators(new(SyncOperationType.BatchCompleted, actionType, currentStep, totalSteps, batchSize, retryCount, maxRetryCount, totalItemCount), true)));
 
