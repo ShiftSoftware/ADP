@@ -41,4 +41,19 @@ public class OrderLaborLineModel :
     public decimal? ExtendedPrice { get; set; }
     public string ItemStatus { get; set; }
     public string OrderStatus { get; set; }
+
+    /// <summary>
+    /// The description of the parent job associated with this labor line.
+    /// </summary>
+    public string JobDescription { get; set; }
+
+    /// <summary>
+    /// The date for the next scheduled service of the vehicle associated with this labor line.
+    /// </summary>
+    public DateTime? NextServiceDate { get; set; }
+
+    /// <summary>
+    /// The number of corresponding part lines associated with the parent order of this line.
+    /// </summary>
+    public int NumberOfPartLines { get; set; }
 }
