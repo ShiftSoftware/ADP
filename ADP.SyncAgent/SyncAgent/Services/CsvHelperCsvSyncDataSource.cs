@@ -39,7 +39,7 @@ public class CsvHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource<
     public ISyncEngine<TCSV, TDestination> Configure(CSVSyncDataSourceConfigurations<TCSV> configurations, bool configureSyncService = true)
     {
         base.Configure(
-            configurations, 
+            configurations,
             configurations.HasHeaderRecord ? [""] : []);
 
         this.Configurations = configurations;
@@ -56,12 +56,13 @@ public class CsvHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource<
         using var reader = new StreamReader(path);
         using var csvReader = new CsvReader(reader, new CsvHelper.Configuration.CsvConfiguration(CultureInfo.InvariantCulture)
         {
-            HasHeaderRecord = hasHeader
+            HasHeaderRecord = hasHeader,
+            IgnoreBlankLines = false,
         });
-        
+
         await foreach (var record in csvReader.GetRecordsAsync<TCSV>())
             records = records.Append(record);
-        
+
         return records;
     }
 
@@ -91,7 +92,8 @@ public class CsvHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource<
 
             this.csvReader = new CsvReader(this.streamReader!, new CsvHelper.Configuration.CsvConfiguration(CultureInfo.InvariantCulture)
             {
-                HasHeaderRecord = Configurations!.HasHeaderRecord
+                HasHeaderRecord = Configurations!.HasHeaderRecord,
+                IgnoreBlankLines = false,
             });
 
             return new(true);
@@ -118,7 +120,8 @@ public class CsvHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource<
         using var reader = new StreamReader(filePath);
         using var csv = new CsvReader(reader, new CsvHelper.Configuration.CsvConfiguration(CultureInfo.InvariantCulture)
         {
-            HasHeaderRecord = Configurations!.HasHeaderRecord
+            HasHeaderRecord = Configurations!.HasHeaderRecord,
+            IgnoreBlankLines = false,
         });
 
         await foreach (var record in csv.EnumerateRecordsAsync(new TCSV()))
@@ -148,16 +151,18 @@ public class CsvHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource<
 
     private async Task<IEnumerable<TCSV?>> ReadNextsAsync(long batchSize)
     {
-        IEnumerable<TCSV?> records = [];
+        var records = new List<TCSV?>((int)batchSize);
         long count = 0;
 
         await foreach (var record in this.csvReader!.GetRecordsAsync<TCSV>())
         {
-            if (count >= batchSize) break;
-            records = records.Append(record);
+            records.Add(record);
+
             count++;
+
+            if (count == batchSize) break;
         }
-        
+
         return records;
     }
 
