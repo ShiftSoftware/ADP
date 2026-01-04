@@ -1,4 +1,5 @@
 ﻿using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.SSC;
+using ShiftSoftware.ADP.Lookup.Services.Enums;
 
 namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 
@@ -10,4 +11,5 @@ public class VehicleLookupRequestOptions
     public SSCLogInfo SSCLogInfo { get; set; }
     public bool InsertCustomerVehcileLookupLog { get; set; }
     public CustomerVehicleLookupLogInfo CustomerVehicleLookupLogInfo { get; set; }
+    public ConsistencyLevels VehicleServiceHistoryConsistencyLevel { get; set; } = ConsistencyLevels.Strong;
 }

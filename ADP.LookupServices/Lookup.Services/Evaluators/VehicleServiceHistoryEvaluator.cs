@@ -1,5 +1,6 @@
 ﻿using ShiftSoftware.ADP.Lookup.Services.Aggregate;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
+using ShiftSoftware.ADP.Lookup.Services.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,66 +22,103 @@ public class VehicleServiceHistoryEvaluator
         this.ServiceProvider = serviceProvider;
     }
 
-    public async Task<IEnumerable<VehicleServiceHistoryDTO>> Evaluate(string languageCode)
+    public async Task<IEnumerable<VehicleServiceHistoryDTO>> Evaluate(string languageCode, ConsistencyLevels consistencyLevel)
     {
-        var invoices = CompanyDataAggregate.Invoices;
         var labors = CompanyDataAggregate.LaborLines;
         var parts = CompanyDataAggregate.PartLines;
 
+        var groupedLaborLines = labors?
+            .GroupBy(l => new
+            {
+                l.CompanyID,
+                l.BranchID,
+                l.InvoiceNumber,
+                l.OrderDocumentNumber
+            });
+
+        var groupedPartLines = parts?
+           .GroupBy(l => new
+           {
+               l.CompanyID,
+               l.BranchID,
+               l.InvoiceNumber,
+               l.OrderDocumentNumber
+           });
+
+        var joinedInvoices = groupedLaborLines?
+            .Select(x => x.Key)
+            .Concat(groupedPartLines?.Select(x => x.Key))
+            .Distinct();
+
         var serviceHistory = new List<VehicleServiceHistoryDTO>();
 
-        if (invoices != null)
+        foreach (var invoice in joinedInvoices)
         {
-            foreach (var x in invoices.OrderByDescending(x => x.InvoiceDate))
+            var laborLines = groupedLaborLines?
+                .Where(x => x.Key.CompanyID == invoice.CompanyID)
+                .Where(x => x.Key.BranchID == invoice.BranchID)
+                .Where(x => x.Key.InvoiceNumber == invoice.InvoiceNumber)
+                .Where(x => x.Key.OrderDocumentNumber == invoice.OrderDocumentNumber)
+                .FirstOrDefault()?
+                .ToList();
+
+            var partLines = groupedPartLines?
+                .Where(x => x.Key.CompanyID == invoice.CompanyID)
+                .Where(x => x.Key.BranchID == invoice.BranchID)
+                .Where(x => x.Key.InvoiceNumber == invoice.InvoiceNumber)
+                .Where(x => x.Key.OrderDocumentNumber == invoice.OrderDocumentNumber)
+                .FirstOrDefault()?
+                .ToList();
+
+            var numberOfPartLinesAccordingToLaborRecords = laborLines?
+                .Select(x => x.NumberOfPartLines)?
+                .FirstOrDefault();
+
+            var numberOfLaborLinesAccordingToPartRecords = partLines?
+                .Select(x => x.NumberOfLaborLines)?
+                .FirstOrDefault();
+
+            if (consistencyLevel == ConsistencyLevels.Strong)
             {
-                // Remove the branch id from the service type
-                var serviceType = x.ServiceDetails;
-                var slashIndex = serviceType.IndexOf("/");
-                if (slashIndex > 0)
-                {
-                    var branchId = serviceType.Substring(0, slashIndex);
-                    if (int.TryParse(branchId, out _))
-                        serviceType = serviceType.Substring(slashIndex + 1);
-                }
-
-                var result = new VehicleServiceHistoryDTO
-                {
-                    ServiceType = serviceType,
-                    ServiceDate = x.InvoiceDate,
-                    Mileage = x.Mileage,
-                    //CompanyID = x.CompanyID,
-                    //BranchID = x.BranchID,
-                    AccountNumber = x.AccountNumber,
-                    InvoiceNumber = x.InvoiceNumber,
-                    JobNumber = x.OrderDocumentNumber,
-                    LaborLines = labors?.Where(l => l.OrderDocumentNumber == x.OrderDocumentNumber && l.InvoiceNumber == x.InvoiceNumber &&
-                        l.CompanyID == x.CompanyID)
-                            .Select(l => new VehicleLaborDTO
-                            {
-                                Description = l.ServiceDescription,
-                                MenuCode = l.MenuCode,
-                                RTSCode = l.LaborCode,
-                                ServiceCode = l.ServiceCode
-                            }),
-                    PartLines = parts?.Where(p => p.OrderDocumentNumber == x.OrderDocumentNumber && p.InvoiceNumber == x.InvoiceNumber &&
-                        p.CompanyID == x.CompanyID)
-                            .Select(p => new VehiclePartDTO
-                            {
-                                MenuCode = p.MenuCode,
-                                PartNumber = p.PartNumber,
-                                QTY = p.SoldQuantity,
-                            })
-                };
-
-                if (Options.CompanyNameResolver is not null)
-                    result.CompanyName = await Options.CompanyNameResolver(new(x.CompanyID, languageCode, ServiceProvider));
-
-                if (Options.CompanyBranchNameResolver is not null)
-                    result.BranchName = await Options.CompanyBranchNameResolver(
-                        new(x.BranchID, languageCode, ServiceProvider));
-
-                serviceHistory.Add(result);
+                if (numberOfPartLinesAccordingToLaborRecords != partLines?.Count() || numberOfLaborLinesAccordingToPartRecords != laborLines?.Count())
+                    continue; // Inconsistent data, skip this entry
             }
+
+            var serviceHistoryEntry = new VehicleServiceHistoryDTO
+            {
+                InvoiceNumber = invoice.InvoiceNumber,
+                JobNumber = invoice.OrderDocumentNumber,
+                AccountNumber = laborLines?.Select(x => x.AccountNumber).FirstOrDefault() ?? partLines?.Select(x => x.AccountNumber).FirstOrDefault(),
+                CompanyName = null,
+                BranchName = null,
+                ServiceDate = new[] { laborLines?.Max(x => x.InvoiceDate), partLines?.Max(x => x.InvoiceDate) }.Max(),
+
+                Mileage = null,
+                ServiceType = null,
+
+                LaborLines = laborLines?.Select(l => new VehicleLaborDTO
+                {
+                    RTSCode = l.LaborCode,
+                    ServiceCode = l.ServiceCode,
+                    Description = l.ServiceDescription,
+                    MenuCode = l.MenuCode,
+                }),
+                PartLines = partLines?.Select(p => new VehiclePartDTO
+                {
+                    PartNumber = p.PartNumber,
+                    PartDescription = null,
+                    MenuCode = p.MenuCode,
+                    QTY = p.SoldQuantity,
+                })
+            };
+
+            if (this.Options.CompanyNameResolver is not null)
+                serviceHistoryEntry.CompanyName = await this.Options.CompanyNameResolver(new LookupOptionResolverModel<long?>(invoice.CompanyID, languageCode, this.ServiceProvider));
+
+            if (this.Options.CompanyBranchNameResolver is not null)
+                serviceHistoryEntry.BranchName = await this.Options.CompanyBranchNameResolver(new LookupOptionResolverModel<long?>(invoice.BranchID, languageCode, this.ServiceProvider));
+
+            serviceHistory.Add(serviceHistoryEntry);
         }
 
         return serviceHistory;

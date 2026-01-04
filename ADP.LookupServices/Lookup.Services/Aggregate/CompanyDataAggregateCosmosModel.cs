@@ -1,5 +1,4 @@
-﻿using ShiftSoftware.ADP.Models.Invoice;
-using ShiftSoftware.ADP.Models.Part;
+﻿using ShiftSoftware.ADP.Models.Part;
 using ShiftSoftware.ADP.Models.Service;
 using ShiftSoftware.ADP.Models.TBP;
 using ShiftSoftware.ADP.Models.Vehicle;
@@ -14,7 +13,6 @@ public class CompanyDataAggregateCosmosModel
     public List<VehicleServiceActivation> VehicleServiceActivations { get; set; } = new();
     public List<VehicleInspectionModel> VehicleInspections { get; set; }  = new();
     public List<InitialOfficialVINModel> InitialOfficialVINs { get; set; }  = new();
-    public List<InvoiceModel> Invoices { get; set; }  = new();
     public List<OrderLaborLineModel> LaborLines { get; set; }  = new();
     public List<OrderPartLineModel> PartLines { get; set; }  = new();
     public List<SSCAffectedVINModel> SSCAffectedVINs { get; set; }  = new();

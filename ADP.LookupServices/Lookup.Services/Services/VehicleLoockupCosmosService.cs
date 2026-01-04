@@ -4,7 +4,6 @@ using Newtonsoft.Json.Linq;
 using ShiftSoftware.ADP.Lookup.Services.Aggregate;
 using ShiftSoftware.ADP.Models;
 using ShiftSoftware.ADP.Models.Enums;
-using ShiftSoftware.ADP.Models.Invoice;
 using ShiftSoftware.ADP.Models.Part;
 using ShiftSoftware.ADP.Models.Service;
 using ShiftSoftware.ADP.Models.TBP;
@@ -120,9 +119,6 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
 
         companyData.InitialOfficialVINs = items.Where(x => x.ItemType.ToString() == ModelTypes.InitialOfficialVIN)
             .Select(x => ((JObject)x).ToObject<InitialOfficialVINModel>()).ToList();
-
-        companyData.Invoices = items.Where(x => x.ItemType.ToString() == ModelTypes.Invoice)
-            .Select(x => ((JObject)x).ToObject<InvoiceModel>()).ToList();
 
         companyData.LaborLines = items.Where(x => x.ItemType.ToString() == ModelTypes.InvoiceLaborLine)
             .Select(x => ((JObject)x).ToObject<OrderLaborLineModel>()).ToList();
