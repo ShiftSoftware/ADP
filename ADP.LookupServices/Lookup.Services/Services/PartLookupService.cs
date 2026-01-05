@@ -109,9 +109,9 @@ public class PartLookupService
         return id;
     }
 
-    public async Task UpdateManufacturerPartLookupStatusAsync(string id, string partNumber, ManufacturerPartLookupStatus status, IEnumerable<KeyValuePair<string, string>>? lookupResult = null)
+    public async Task<ManufacturerPartLookupModel> UpdateManufacturerPartLookupStatusAsync(string id, string partNumber, ManufacturerPartLookupStatus status, IEnumerable<KeyValuePair<string, string>>? lookupResult = null)
     {
-        await partLookupCosmosService.UpdateManufacturerPartLookupStatusAsync(id, partNumber, status, lookupResult);
+        return await partLookupCosmosService.UpdateManufacturerPartLookupStatusAsync(id, partNumber, status, lookupResult);
     }
 
     public async Task<IEnumerable<ManufacturerPartLookupResponseDTO>> GetManufacturerPartLookupsByStatusAsync(ManufacturerPartLookupStatus status, int top = 10)

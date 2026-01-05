@@ -105,7 +105,7 @@ public class PartLookupCosmosService(CosmosClient client, LookupOptions lookupOp
         }
     }
 
-    public async Task UpdateManufacturerPartLookupStatusAsync(string id, string partNumber, ManufacturerPartLookupStatus botStatus, IEnumerable<KeyValuePair<string, string>>? lookupResult = null)
+    public async Task<ManufacturerPartLookupModel> UpdateManufacturerPartLookupStatusAsync(string id, string partNumber, ManufacturerPartLookupStatus botStatus, IEnumerable<KeyValuePair<string, string>>? lookupResult = null)
     {
         var manufacturerLookupcontainer = client.GetContainer(
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.Logs,
@@ -113,7 +113,7 @@ public class PartLookupCosmosService(CosmosClient client, LookupOptions lookupOp
         );
 
         // Patch bot status and lookup result
-        await manufacturerLookupcontainer.PatchItemAsync<ManufacturerPartLookupModel>(id, new PartitionKey(partNumber), new[]
+        var patched = await manufacturerLookupcontainer.PatchItemAsync<ManufacturerPartLookupModel>(id, new PartitionKey(partNumber), new[]
         {
             PatchOperation.Set($"/{nameof(ManufacturerPartLookupModel.Status)}", botStatus),
             PatchOperation.Set($"/{nameof(ManufacturerPartLookupModel.ManufacturerResult)}", lookupResult),
@@ -142,6 +142,8 @@ public class PartLookupCosmosService(CosmosClient client, LookupOptions lookupOp
         {
 
         }
+
+        return patched;
     }
 
     public async Task<IEnumerable<ManufacturerPartLookupModel>> GetManufacturerPartLookupsByStatusAsync(ManufacturerPartLookupStatus botStatus, int top)
