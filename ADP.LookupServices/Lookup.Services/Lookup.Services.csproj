@@ -31,7 +31,6 @@
 		<PackageReference Include="Microsoft.Azure.Cosmos" Version="3.56.0" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.1" />
 		<PackageReference Include="ShiftSoftware.ADP.Models" Version="$(ADPVersion)" Condition="!Exists('..\..\ADP.Models\Models\Models.csproj')" />
-		<PackageReference Include="ShiftSoftware.ShiftEntity.Model" Version="2025.12.22.2" />
 		<PackageReference Include="System.Text.Json" Version="10.0.1" />
 		<PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
 	</ItemGroup>
