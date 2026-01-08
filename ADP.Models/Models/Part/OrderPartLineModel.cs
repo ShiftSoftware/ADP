@@ -15,7 +15,8 @@ public class OrderPartLineModel:
     IOrderDocumentProps, 
     IOrderLineProps,
     ICustomerProps,
-    IIntegrationProps
+    IIntegrationProps,
+    IGenuinePartProps
 {
     [DocIgnore]
     public string id { get; set; } = default!;
@@ -81,6 +82,12 @@ public class OrderPartLineModel:
     /// The uniqe Part Number of the <see cref="CatalogPartModel">Catalog Part</see>.
     /// </summary>
     public string PartNumber { get; set; }
+
+    /// <summary>
+    /// Indicates whether the part is a Genuine Part Number
+    /// </summary>
+    public bool GenuinePartNumber { get; set; }
+
 
     /// <summary>
     /// The Warehouse/Location Identifier where the transaction happens.

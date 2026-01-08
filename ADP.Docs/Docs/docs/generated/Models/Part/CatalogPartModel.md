@@ -9,6 +9,7 @@ Catalog Part refers to a specific part in the Parts Catalog.
 |----------|---------|
 | ID <div><strong>``string``</strong></div> | The unique identifier for the catalog part. If an ID is not available, then the part number should be used as the ID. |
 | PartNumber <div><strong>``string``</strong></div> | Each part has a unique part number that is used to identify it in the catalog and other related documents/systems. |
+| GenuinePartNumber <div><strong>``bool``</strong></div> | Indicates whether the part is a Genuine Part Number |
 | PartName <div><strong>``string``</strong></div> | The name of the part as it appears in the catalog. |
 | ProductGroup <div><strong>``string``</strong></div> | The product group code to which the part belongs. |
 | ProductGroupDescription <div><strong>``string``</strong></div> | The description of the product group to which the part belongs. |

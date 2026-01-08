@@ -7,6 +7,7 @@ Refers to a Part in a Stock (Warehouse)
 | Property | Summary |
 |----------|---------|
 | PartNumber <div><strong>``string``</strong></div> | The Unique Part Number |
+| GenuinePartNumber <div><strong>``bool``</strong></div> | Indicates whether the part is a Genuine Part Number |
 | Location <div><strong>``string``</strong></div> | The Warehouse/Location Identifier where the part is stored. |
 | AvailableQuantity <div><strong>``decimal?``</strong></div> | The current AvailableQuantity of the part in the stock. |
 | OnHandQuantity <div><strong>``decimal?``</strong></div> | The current on-hand quantity of the part in the stock |

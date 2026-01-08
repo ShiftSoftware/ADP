@@ -9,7 +9,7 @@ namespace ShiftSoftware.ADP.Models.Part;
 /// </summary>
 [Docable]
 public class CatalogPartModel : 
-    IPartitionedItem
+    IPartitionedItem, IGenuinePartProps
 {
     /// <summary>
     /// The ADP ID of the part. This is a unique identifier that ADP generates for each part.
@@ -33,6 +33,11 @@ public class CatalogPartModel :
     /// Each part has a unique part number that is used to identify it in the catalog and other related documents/systems.
     /// </summary>
     public string PartNumber { get; set; } = default!;
+
+    /// <summary>
+    /// Indicates whether the part is a Genuine Part Number
+    /// </summary>
+    public bool GenuinePartNumber { get; set; }
 
     /// <summary>
     /// The name of the part as it appears in the catalog.

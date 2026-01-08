@@ -9,7 +9,8 @@ namespace ShiftSoftware.ADP.Models.Part;
 public class StockPartFirstReceiveDateModel :
     IPartitionedItem,
     ICompanyProps,
-    IIntegrationProps
+    IIntegrationProps,
+    IGenuinePartProps
 {
     [DocIgnore]
     public string id { get; set; } = default!;
@@ -18,6 +19,12 @@ public class StockPartFirstReceiveDateModel :
     /// The Unique Part Number
     /// </summary>
     public string PartNumber { get; set; }
+
+
+    /// <summary>
+    /// Indicates whether the part is a Genuine Part Number
+    /// </summary>
+    public bool GenuinePartNumber { get; set; }
 
     /// <summary>
     /// The Warehouse/Location Identifier where the part is stored.

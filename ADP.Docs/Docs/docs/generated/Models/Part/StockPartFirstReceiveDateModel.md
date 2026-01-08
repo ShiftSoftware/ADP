@@ -7,6 +7,7 @@ Refers to a first receive date Part in a Stock (Warehouse), if provided separate
 | Property | Summary |
 |----------|---------|
 | PartNumber <div><strong>``string``</strong></div> | The Unique Part Number |
+| GenuinePartNumber <div><strong>``bool``</strong></div> | Indicates whether the part is a Genuine Part Number |
 | Location <div><strong>``string``</strong></div> | The Warehouse/Location Identifier where the part is stored. |
 | FirstReceivedDate <div><strong>``DateTimeOffset?``</strong></div> |  |
 | CompanyHashID <div><strong>``string``</strong></div> | The Company Hash ID from the Identity System. |
