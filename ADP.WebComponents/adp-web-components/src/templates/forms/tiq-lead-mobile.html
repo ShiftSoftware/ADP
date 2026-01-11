@@ -76,7 +76,6 @@
       <!-- structure-url="https://tiqappstorage.blob.core.windows.net/template-files/tiq-vehicle-quotation-form-structure.json" -->
       <!-- structure-url="https://tiq-standard-appstorage-byazfecba4bjd4cn.a02.azurefd.net/template-files/tiq-vehicle-quotation-form-structure.json" -->
       <vehicle-quotation-form
-        language="en"
         :is-dev="isDev"
         is-mobile-form="true"
         id="custom-component"
@@ -124,7 +123,15 @@
           },
 
           updateLang(lang) {
-            if (this.componentRef) this.componentRef.language = lang;
+            if (this.componentRef) {
+              this.componentRef.language = lang;
+
+              const url = new URL(window.location.href);
+
+              url.searchParams.set('lang', lang);
+
+              window.history.replaceState({}, '', url.toString());
+            }
           },
 
           switchEnvironment() {

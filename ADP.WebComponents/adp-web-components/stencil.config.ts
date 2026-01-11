@@ -1,5 +1,6 @@
 import { Config } from '@stencil/core';
 import alias from '@rollup/plugin-alias';
+// @ts-ignore
 import path from 'path';
 import { sass } from '@stencil/sass';
 import tailwind, { tailwindHMR, setPluginConfigurationDefaults } from 'stencil-tailwind-plugin';
@@ -62,8 +63,5 @@ export const config: Config = {
   devServer: {
     port: 3000,
     reloadStrategy: 'pageReload',
-  },
-  testing: {
-    browserHeadless: 'new',
   },
 };

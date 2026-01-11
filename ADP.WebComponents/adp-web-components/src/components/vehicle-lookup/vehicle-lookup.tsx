@@ -136,7 +136,7 @@ export class VehicleLookup implements MultiLingual {
   };
 
   @Method()
-  handleLoadData(newResponse: VehicleLookupDTO, activeElement) {
+  async handleLoadData(newResponse: VehicleLookupDTO, activeElement) {
     this.isError = false;
     this.currentVin = newResponse.vin || '';
     Object.values(this.componentsList).forEach(element => {

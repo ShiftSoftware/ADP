@@ -32,9 +32,9 @@ export class FormSelect implements FormElement {
   @Prop() isRequired: boolean;
   @Prop() isDisabled: boolean;
   @Prop() wrapperClass: string;
+  @Prop() fetcher: FormSelectFetcher;
   @Prop() staticValue?: FormSelectItem;
   @Prop() language: LanguageKeys = 'en';
-  @Prop() fetcher: FormSelectFetcher<any>;
   @Prop() forceOpenUpwards?: boolean = false;
   @Prop({ mutable: true }) clearable = false;
   @Prop({ mutable: true }) defaultValue: string;

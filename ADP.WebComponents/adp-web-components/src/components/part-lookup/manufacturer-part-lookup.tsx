@@ -11,7 +11,7 @@ import { Endpoint, fetchFrom } from '~lib/fetch-from';
 import { ManufacturerPartLookupRequestDTO } from '~types/generated/part/manufacturer-part-lookup-request-dto';
 import { ManufacturerPartLookupResponseDTO } from '~types/generated/part/manufacturer-part-lookup-response-dto';
 
-const manufacturerOrderTypesFetcher: FormSelectFetcher<any> = async ({}): Promise<FormSelectItem[]> => {
+const manufacturerOrderTypesFetcher: FormSelectFetcher = async ({}): Promise<FormSelectItem[]> => {
   return [
     {
       value: '0',

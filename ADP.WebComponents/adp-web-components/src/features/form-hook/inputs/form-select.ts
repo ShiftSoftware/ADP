@@ -4,10 +4,10 @@ export type FormSelectItem = {
   meta?: Record<string, string>;
 };
 
-type FormSelectFetcherProps<T> = {
-  locale: T;
+type FormSelectFetcherProps = {
   language: string;
   signal: AbortSignal;
+  locale: Record<string, any>;
 };
 
-export type FormSelectFetcher<T> = (props: FormSelectFetcherProps<T>) => Promise<FormSelectItem[]>;
+export type FormSelectFetcher = (props: FormSelectFetcherProps) => Promise<FormSelectItem[]>;

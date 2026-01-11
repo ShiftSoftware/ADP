@@ -1,9 +1,6 @@
 import { InferType, object, string } from 'yup';
 
-import { FormLocale } from '~features/multi-lingual';
 import { FormInputMeta, getPhoneValidator } from '~features/form-hook';
-
-import vehicleQuotationSchema from '~locales/forms/vehicleQuotation/type';
 
 export const phoneValidator = getPhoneValidator();
 
@@ -45,5 +42,3 @@ export const vehicleQuotationInputsValidation = object({
 });
 
 export type VehicleQuotation = InferType<typeof vehicleQuotationInputsValidation>;
-
-export type VehicleQuotationFormLocale = FormLocale<typeof vehicleQuotationSchema>;

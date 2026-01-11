@@ -125,12 +125,12 @@ export class FlexibleContainer {
   }
 
   @Method()
-  addChildrenAnimation(child: FlexibleContainer) {
+  async addChildrenAnimation(child: FlexibleContainer) {
     this.childrenAnimatingList = [...this.childrenAnimatingList, child];
   }
 
   @Method()
-  removeChildrenAnimation(child: FlexibleContainer) {
+  async removeChildrenAnimation(child: FlexibleContainer) {
     this.childrenAnimatingList = this.childrenAnimatingList.filter(x => x !== child);
   }
 
@@ -141,10 +141,10 @@ export class FlexibleContainer {
       <div
         style={this.initialStyle}
         class={cn(
-          'flexible-container w-full min-w-full',
+          'flexible-container duration-500 w-full min-w-full',
 
           {
-            'transition-all overflow-hidden duration-500': !this.stopWorking,
+            'transition-all overflow-hidden !duration-500': !this.stopWorking,
             '!h-auto !duration-0 !transition-none': this.stopWorking || this.stopAnimation || !!this.childrenAnimatingList.length,
           },
           this.containerClasses,

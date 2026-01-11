@@ -64,7 +64,6 @@
       <!-- structure-url="https://tiqappstorage.blob.core.windows.net/template-files/lexus-vehicle-quotation-trade-in-form-structure.json" -->
       <!-- structure-url="https://tiq-standard-appstorage-byazfecba4bjd4cn.a02.azurefd.net/template-files/lexus-trade-in-vehicle-quotation-form-structure.json" -->
       <vehicle-quotation-form
-        language="en"
         :is-dev="isDev"
         id="custom-component"
         structure-url="https://tiq-standard-appstorage-byazfecba4bjd4cn.a02.azurefd.net/template-files/lexus-trade-in-vehicle-quotation-form-structure.json"
@@ -89,7 +88,15 @@
           },
 
           updateLang(lang) {
-            if (this.componentRef) this.componentRef.language = lang;
+            if (this.componentRef) {
+              this.componentRef.language = lang;
+
+              const url = new URL(window.location.href);
+
+              url.searchParams.set('lang', lang);
+
+              window.history.replaceState({}, '', url.toString());
+            }
           },
 
           switchEnvironment() {

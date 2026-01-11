@@ -108,7 +108,7 @@ export class PartLookup implements MultiLingual {
   };
 
   @Method()
-  handleLoadData(newResponse: PartLookupDTO, activeElement) {
+  async handleLoadData(newResponse: PartLookupDTO, activeElement) {
     this.isError = false;
     this.header = newResponse?.partNumber || '';
     smartInvokable.bind(this)(this.loadedResponse, newResponse);

@@ -24,6 +24,8 @@ export const sharedFormLocalesSchema = object({}).concat(globalSchema).concat(fo
 
 export type SharedFormLocales = InferType<typeof sharedFormLocalesSchema>;
 
+export type GeneralFormLocal = { sharedFormLocales: SharedFormLocales } & Record<string, any>;
+
 export type FormLocale<T extends AnyObjectSchema> = {
   sharedFormLocales?: SharedFormLocales;
 } & InferType<T>;

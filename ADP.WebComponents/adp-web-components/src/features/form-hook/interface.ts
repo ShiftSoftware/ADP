@@ -1,7 +1,6 @@
 import { JSX } from '@stencil/core/internal';
 
 import { FormHook } from '~features/form-hook/form-hook';
-import formWrapperSchema from '~locales/forms/wrapper-type';
 
 import { LanguageKeys } from '~features/multi-lingual';
 
@@ -64,7 +63,7 @@ export interface FormStateOptions {
   validationType?: ValidationType;
 }
 
-export type LocaleFormKeys = keyof typeof formWrapperSchema.fields;
+export type LocaleFormKeys = string;
 
 export type Params = {
   [key: string]: any;
@@ -87,8 +86,8 @@ export type FormElementMapperFunctionProps<T> = { form: FormHook<any>; isLoading
 
 type FormElementMapperFunction<T> = (ElementContext: FormElementMapperFunctionProps<T>) => JSX.Element;
 
-export type FormElementMapper<T, FORM_LOCALE, Extra extends string = never> = {
-  [K in keyof T]: FormElementMapperFunction<FORM_LOCALE>;
+export type FormElementMapper<T, Extra extends string = never> = {
+  [K in keyof T]: FormElementMapperFunction<any>;
 } & {
-  [K in Extra]: FormElementMapperFunction<FORM_LOCALE>;
+  [K in Extra]: FormElementMapperFunction<any>;
 };

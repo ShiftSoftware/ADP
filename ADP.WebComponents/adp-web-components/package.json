@@ -39,7 +39,6 @@
     "build": "stencil build -- --prod",
     "start": "stencil build --dev --watch --serve",
     "test.watch": "stencil test --spec --watchAll",
-    "create:form": "node ./automation/generate-form.mjs",
     "create:type": "node ./automation/generate-type.mjs",
     "update:locale": "node ./automation/update-locale.mjs",
     "delete:locale": "node ./automation/delete-locale.mjs",

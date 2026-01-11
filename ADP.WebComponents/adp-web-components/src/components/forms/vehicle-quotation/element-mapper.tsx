@@ -2,12 +2,12 @@ import { h } from '@stencil/core';
 
 import { FormElementMapper, FormSelectFetcher, FormSelectItem } from '~features/form-hook';
 
-import { VehicleQuotation, VehicleQuotationFormLocale, phoneValidator } from './validations';
+import { VehicleQuotation, phoneValidator } from './validations';
 import { VehicleImageViewer } from './VehicleImageViewer';
 
 type AdditionalFields = 'vehicleImage' | 'submit' | 'choose' | 'contact information' | 'current car';
 
-export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, VehicleQuotationFormLocale, AdditionalFields> = {
+export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, AdditionalFields> = {
   'submit': ({ props }) => <form-submit {...props} />,
 
   'name': ({ props }) => {
@@ -17,7 +17,7 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Vehic
   'phone': ({ props, isLoading }) => <form-phone-number defaultValue={phoneValidator.default} {...props} isLoading={isLoading} validator={phoneValidator} />,
 
   'vehicle': ({ form, language, props }) => {
-    const fetcher: FormSelectFetcher<VehicleQuotationFormLocale> = async ({ signal }): Promise<FormSelectItem[]> => {
+    const fetcher: FormSelectFetcher = async ({ signal }): Promise<FormSelectItem[]> => {
       const vehicleEndpoint = form.context.structure?.data.vehicleApi as string;
 
       const response = await fetch(vehicleEndpoint, { signal, headers: { 'Accept-Language': language } });
@@ -57,7 +57,7 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Vehic
   },
 
   'dealer': ({ form, language, props }) => {
-    const fetcher: FormSelectFetcher<VehicleQuotationFormLocale> = async ({ signal }): Promise<FormSelectItem[]> => {
+    const fetcher: FormSelectFetcher = async ({ signal }): Promise<FormSelectItem[]> => {
       const dealerEndpoint = form.context.structure?.data.dealerApi as string;
 
       const response = await fetch(dealerEndpoint, { signal, headers: { 'Accept-Language': language } });
@@ -75,7 +75,7 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Vehic
   },
 
   'paymentType': ({ language, props, locale }) => {
-    const fetcher: FormSelectFetcher<VehicleQuotationFormLocale> = async ({}): Promise<FormSelectItem[]> => {
+    const fetcher: FormSelectFetcher = async ({}): Promise<FormSelectItem[]> => {
       return [
         {
           value: 'Cash',
@@ -96,7 +96,7 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Vehic
   },
 
   'contactTime': ({ language, props, locale }) => {
-    const fetcher: FormSelectFetcher<VehicleQuotationFormLocale> = async ({}): Promise<FormSelectItem[]> => {
+    const fetcher: FormSelectFetcher = async ({}): Promise<FormSelectItem[]> => {
       return [
         {
           value: 'Morning',
@@ -117,7 +117,7 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Vehic
   },
 
   'ownVehicle': ({ language, props, locale }) => {
-    const fetcher: FormSelectFetcher<VehicleQuotationFormLocale> = async ({}): Promise<FormSelectItem[]> => {
+    const fetcher: FormSelectFetcher = async ({}): Promise<FormSelectItem[]> => {
       return [
         {
           value: 'yes',
@@ -137,7 +137,7 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Vehic
     form.addWatcher('ownVehicle');
     const ownVehicle = form.getValue<VehicleQuotation>('ownVehicle') === 'yes';
 
-    const fetcher: FormSelectFetcher<VehicleQuotationFormLocale> = async ({ signal }): Promise<FormSelectItem[]> => {
+    const fetcher: FormSelectFetcher = async ({ signal }): Promise<FormSelectItem[]> => {
       const currentVehiclesEndpoint = form.context.structure?.data.currentVehiclesApi as string;
 
       const response = await fetch(currentVehiclesEndpoint, { signal, headers: { 'Accept-Language': 'en' } });
@@ -167,7 +167,7 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Vehic
     const ownVehicle = form.getValue<VehicleQuotation>('ownVehicle') === 'yes';
     const currentVehicleBrand = form.getValue<VehicleQuotation>('currentVehicleBrand');
 
-    const fetcher: FormSelectFetcher<VehicleQuotationFormLocale> = async ({}): Promise<FormSelectItem[]> => {
+    const fetcher: FormSelectFetcher = async ({}): Promise<FormSelectItem[]> => {
       if (!currentVehicleBrand) return [];
 
       const selectedBrand = form.context['currentVehicleBrandList']?.find(vehicle => vehicle.value === currentVehicleBrand)?.meta;
@@ -203,7 +203,7 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Vehic
   'contact information': ({ locale }) => <h1 part="section-title">{locale['Contact Information']}</h1>,
 
   'city': ({ form, language, props }) => {
-    const fetcher: FormSelectFetcher<VehicleQuotationFormLocale> = async ({ signal }): Promise<FormSelectItem[]> => {
+    const fetcher: FormSelectFetcher = async ({ signal }): Promise<FormSelectItem[]> => {
       const cityEndpoint = form.context.structure?.data.cityApi as string;
 
       const response = await fetch(cityEndpoint, { signal, headers: { 'Accept-Language': language } });

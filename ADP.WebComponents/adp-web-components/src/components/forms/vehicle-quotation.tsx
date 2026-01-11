@@ -2,13 +2,11 @@ import { Component, Element, Host, Prop, State, Watch, h } from '@stencil/core';
 
 import { Grecaptcha } from '~lib/recaptcha';
 
-import vehicleQuotationSchema from '~locales/forms/vehicleQuotation/type';
-
 import { vehicleQuotationElementNames, vehicleQuotationElements } from './vehicle-quotation/element-mapper';
-import { VehicleQuotation, VehicleQuotationFormLocale, vehicleQuotationInputsValidation } from './vehicle-quotation/validations';
+import { VehicleQuotation, vehicleQuotationInputsValidation } from './vehicle-quotation/validations';
 
 import { FormHook, FormHookInterface, FormElementStructure, gistLoader } from '~features/form-hook';
-import { getLocaleLanguage, getSharedFormLocal, LanguageKeys, MultiLingual, sharedFormLocalesSchema } from '~features/multi-lingual';
+import { GeneralFormLocal, getSharedFormLocal, LanguageKeys, MultiLingual, sharedFormLocalesSchema } from '~features/multi-lingual';
 import getLanguageFromUrl from '~lib/get-language-from-url';
 import { fetchJson } from '~lib/fetch-json';
 import cn from '~lib/cn';
@@ -25,13 +23,16 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
   // #region Localization
   @Prop({ mutable: true, reflect: true }) language: LanguageKeys;
 
-  @State() locale: VehicleQuotationFormLocale = { sharedFormLocales: sharedFormLocalesSchema.getDefault(), ...vehicleQuotationSchema.getDefault() };
+  @State() locale: GeneralFormLocal = { sharedFormLocales: sharedFormLocalesSchema.getDefault() };
 
   @Watch('language')
   async changeLanguage(newLanguage: LanguageKeys) {
-    const [sharedLocales, locale] = await Promise.all([getSharedFormLocal(newLanguage), getLocaleLanguage(newLanguage, 'forms.vehicleQuotation', vehicleQuotationSchema)]);
+    const sharedLocales = await getSharedFormLocal(newLanguage);
 
-    this.locale = { sharedFormLocales: sharedLocales, ...locale };
+    const LS = this.structure?.data?.localization;
+    const structureLocalization = typeof LS === 'object' ? (LS?.[newLanguage] ?? LS?.en ?? {}) : {};
+
+    this.locale = { ...structureLocalization, sharedFormLocales: { ...sharedLocales, ...structureLocalization?.sharedFormLocales } };
 
     this.localeLanguage = newLanguage;
 
@@ -69,14 +70,17 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
   setSuccessCallback(data: any) {
     if (this.successCallback) this.successCallback(data, this.locale['Form submitted successfully.'] || '');
     else this.form.openDialog();
-    const formDom = this.el.shadowRoot || this.el;
 
-    let targetElement = formDom instanceof ShadowRoot ? formDom.firstElementChild : formDom;
+    if (!this.disableScrollToTop) {
+      const formDom = this.el.shadowRoot || this.el;
 
-    const yOffset = -100;
-    const y = targetElement.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      let targetElement = formDom instanceof ShadowRoot ? formDom.firstElementChild : formDom;
 
-    window.scrollTo({ top: Math.max(y, 0), behavior: 'smooth' });
+      const yOffset = -100;
+      const y = targetElement.getBoundingClientRect().top + window.pageYOffset + yOffset;
+
+      window.scrollTo({ top: Math.max(y, 0), behavior: 'smooth' });
+    }
   }
 
   async componentWillLoad() {
@@ -187,19 +191,18 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
 
   // #region Component Logic
   async componentDidLoad() {
-    if (this.structure) {
-      await this.changeLanguage(this.language);
-    } else {
+    if (!this.structure) {
       if (this.gistId) {
         const [newGistStructure] = await Promise.all([gistLoader(this.gistId), this.changeLanguage(this.language)]);
         this.structure = newGistStructure as FormElementStructure<vehicleQuotationElementNames>;
       } else if (this.structureUrl) {
-        await this.changeLanguage(this.language);
         const [newGistStructure] = await Promise.all([fetchJson<FormElementStructure<vehicleQuotationElementNames>>(this.structureUrl), this.changeLanguage(this.language)]);
         this.structure = newGistStructure;
       }
     }
     this.localeLanguage = this.language;
+
+    await this.changeLanguage(this.language);
 
     if (!this.isMobileForm) {
       try {
@@ -220,6 +223,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
     this.form = new FormHook(this, vehicleQuotationInputsValidation);
   }
 
+  @Prop() disableScrollToTop?: boolean;
   @Prop() isMobileForm: boolean = false;
   @Prop() getMobileToken?: () => string;
   @Prop() isDev?: boolean = false;
