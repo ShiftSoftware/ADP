@@ -1,5 +1,4 @@
 ﻿using ShiftSoftware.ADP.Lookup.Services.Aggregate;
-using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ADP.Models.TBP;
 using ShiftSoftware.ADP.Models.Vehicle;
 using System.Collections.Generic;
@@ -14,9 +13,9 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
         Task<CompanyDataAggregateCosmosModel> GetAggregatedCompanyData(string vin);
         Task<CompanyDataAggregateCosmosModel> GetAggregatedCompanyData(IEnumerable<string> vins, IEnumerable<string> itemTypes);
         //Task<IEnumerable<StockPartModel>> GetStockItemsAsync(IEnumerable<string> partNumbers);
-        Task<ColorModel> GetExteriorColorsAsync(string colorCode, Brands? brand);
-        Task<VehicleModelModel> GetVehicleModelsAsync(string variant, Brands? brand);
-        Task<ColorModel> GetInteriorColorsAsync(string trimCode, Brands? brand);
+        Task<ColorModel> GetExteriorColorsAsync(string colorCode, long? brand);
+        Task<VehicleModelModel> GetVehicleModelsAsync(string variant, long? brand);
+        Task<ColorModel> GetInteriorColorsAsync(string trimCode, long? brand);
         Task SaveChangesAsync();
         void UpdateVSDataModel(VehicleEntryModel item, VehicleModelModel model);
         void UpdateVSDataColor(VehicleEntryModel item, ColorModel color);

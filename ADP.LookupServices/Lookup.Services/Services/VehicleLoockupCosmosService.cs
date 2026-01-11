@@ -3,7 +3,6 @@ using Microsoft.Azure.Cosmos.Linq;
 using Newtonsoft.Json.Linq;
 using ShiftSoftware.ADP.Lookup.Services.Aggregate;
 using ShiftSoftware.ADP.Models;
-using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ADP.Models.Part;
 using ShiftSoftware.ADP.Models.Service;
 using ShiftSoftware.ADP.Models.TBP;
@@ -174,7 +173,7 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         return companyData;
     }
 
-    public async Task<VehicleModelModel> GetVehicleModelsAsync(string variant, Brands? brand)
+    public async Task<VehicleModelModel> GetVehicleModelsAsync(string variant, long? brand)
     {
         if (string.IsNullOrWhiteSpace(variant))
             return null;
@@ -194,7 +193,7 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         return null;
     }
 
-    public async Task<ColorModel> GetExteriorColorsAsync(string colorCode, Brands? brand)
+    public async Task<ColorModel> GetExteriorColorsAsync(string colorCode, long? brand)
     {
         if (string.IsNullOrWhiteSpace(colorCode))
             return null;
@@ -214,7 +213,7 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         return null;
     }
 
-    public async Task<ColorModel> GetInteriorColorsAsync(string trimCode, Brands? brand)
+    public async Task<ColorModel> GetInteriorColorsAsync(string trimCode, long? brand)
     {
         if (string.IsNullOrWhiteSpace(trimCode))
             return null;

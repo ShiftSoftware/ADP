@@ -10,6 +10,7 @@ namespace ShiftSoftware.ADP.Lookup.Services;
 public class LookupOptions
 {
     public Func<LookupOptionResolverModel<Dictionary<string,string>>, ValueTask<string?>>? ServiceItemImageUrlResolver { get; set; }
+    public Dictionary<long?, int> BrandStandardWarrantyPeriodsInYears { get; set; } = new Dictionary<long?, int>();
     public Func<LookupOptionResolverModel<string>,ValueTask<string?>>? PaintThickneesImageUrlResolver { get; set; }
     public Func<LookupOptionResolverModel<string>, ValueTask<string?>>? AccessoryImageUrlResolver { get; set; }
     public Func<LookupOptionResolverModel<List<ShiftFileDTO>?>, ValueTask<List<ShiftFileDTO>?>>? CompanyLogoImageResolver { get; set; }

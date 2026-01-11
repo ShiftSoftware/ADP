@@ -25,7 +25,6 @@ public class VehicleIdentifierEvaluator
             Katashiki = vehicle.Katashiki,
             Color = vehicle.ExteriorColorCode,
             Trim = vehicle.InteriorColorCode,
-            Brand = vehicle.Brand,
             BrandID = vehicle.BrandID.ToString()
         };
     }

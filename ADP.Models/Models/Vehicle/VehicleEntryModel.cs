@@ -15,7 +15,6 @@ public class VehicleEntryModel :
     IOrderLineProps
 {
     public string id { get; set; }
-    public Brands Brand { get; set; }
     public long? BrandID { get; set; }
     public string BrandHashID { get; set; }
     public DateTime? ProductionDate { get; set; }

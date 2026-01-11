@@ -21,7 +21,7 @@ public class VehicleSpecificationEvaluator
 
         if (vehicleModel is null)
         {
-            vehicleModel = await VehicleLoockupCosmos.GetVehicleModelsAsync(vehicle?.VariantCode, vehicle?.Brand);
+            vehicleModel = await VehicleLoockupCosmos.GetVehicleModelsAsync(vehicle?.VariantCode, vehicle?.BrandID);
 
             if (vehicleModel is not null)
                 VehicleLoockupCosmos.UpdateVSDataModel(vehicle, vehicleModel);
@@ -56,7 +56,7 @@ public class VehicleSpecificationEvaluator
 
         if (vehicle?.ExteriorColor is null)
         {
-            var color = await VehicleLoockupCosmos.GetExteriorColorsAsync(vehicle?.ExteriorColorCode, vehicle?.Brand);
+            var color = await VehicleLoockupCosmos.GetExteriorColorsAsync(vehicle?.ExteriorColorCode, vehicle?.BrandID);
             if (color is not null)
             {
                 result.ExteriorColor = color?.Description;
@@ -66,7 +66,7 @@ public class VehicleSpecificationEvaluator
 
         if (vehicle?.InteriorColor is null)
         {
-            var trim = await VehicleLoockupCosmos.GetInteriorColorsAsync(vehicle?.InteriorColorCode, vehicle?.Brand);
+            var trim = await VehicleLoockupCosmos.GetInteriorColorsAsync(vehicle?.InteriorColorCode, vehicle?.BrandID);
             if (trim is not null)
             {
                 result.InteriorColor = trim?.Description;

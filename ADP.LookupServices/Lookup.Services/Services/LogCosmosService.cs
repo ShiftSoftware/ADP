@@ -2,7 +2,6 @@
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Part;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.SSC;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
-using ShiftSoftware.ADP.Models.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -61,7 +60,7 @@ public class LogCosmosService : ILogCosmosService
         string vin,
         bool isAuthorized, 
         bool hasActiveWarranty,
-        Brands? brand)
+        long? brand)
     {
         var container = client.GetContainer("Logs", "SSC");
 
@@ -74,7 +73,7 @@ public class LogCosmosService : ILogCosmosService
             LookupDate = DateTimeOffset.UtcNow,
             Authorized = isAuthorized,
             HasActiveWarranty = hasActiveWarranty,
-            OfficialVehicleBrand = brand,
+            BrandID = brand,
             CityID = sscLogInfo?.CityID,
             CompanyID = sscLogInfo?.CompanyID,
             CompanyBranchID = sscLogInfo?.CompanyBranchID,
@@ -86,7 +85,7 @@ public class LogCosmosService : ILogCosmosService
             Name = sscLogInfo?.Name,
             Phone = sscLogInfo?.Phone,
             Email = sscLogInfo?.Email,
-            LookupBrand = sscLogInfo?.LookupBrand,
+            LookupBrandID = sscLogInfo?.LookupBrandID,
             TicketID = sscLogInfo?.TicketID,
             TicketHashID = sscLogInfo?.TicketHashID,
             TMCSaRIIResponse = sscLogInfo?.TMCSaRIIResponse,
@@ -109,7 +108,7 @@ public class LogCosmosService : ILogCosmosService
         string vin,
         bool isAuthorized,
         bool hasActiveWarranty,
-        Brands? brand)
+        long? brand)
     {
         var container = client.GetContainer("Logs", "CustomerVehicleLookup");
 
@@ -121,11 +120,11 @@ public class LogCosmosService : ILogCosmosService
             CityID = logInfo.CityID,
             Name = logInfo.Name,
             Phone = logInfo.Phone,
-            LookupBrand = logInfo.LookupBrand,
+            LookupBrandID = logInfo.LookupBrandID,
             VehicleLookupSource = logInfo.VehicleLookupSource,
             Authorized = isAuthorized,
             HasActiveWarranty = hasActiveWarranty,
-            OfficialVehicleBrand = brand
+            BrandID = brand
         };
 
         await container.CreateItemAsync(log, requestOptions: new ItemRequestOptions

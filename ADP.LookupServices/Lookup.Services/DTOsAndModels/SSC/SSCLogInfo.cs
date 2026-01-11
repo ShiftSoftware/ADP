@@ -1,5 +1,4 @@
 ﻿using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Shared;
-using ShiftSoftware.ADP.Models.Enums;
 
 namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.SSC;
 
@@ -13,7 +12,7 @@ public class SSCLogInfo
     /// <summary>
     /// The Brand that the user made the lookup for
     /// </summary>
-    public Brands? LookupBrand { get; set; }
+    public long? LookupBrandID { get; set; }
     public long? CityID { get; set; }
     public long? CompanyID { get; set; }
     public long? CompanyBranchID { get; set; }

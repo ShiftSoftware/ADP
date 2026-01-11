@@ -1,5 +1,4 @@
-﻿using ShiftSoftware.ADP.Models.Enums;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Service;
 
@@ -15,5 +14,6 @@ public class FlatRateDTO
 
     public string WMI { get; set; }
 
-    public Brands? Brand { get; set; }
+    [ShiftSoftware.ShiftEntity.Model.HashIds.BrandHashIdConverter]
+    public string BrandID { get; set; }
 }

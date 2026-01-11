@@ -16,7 +16,6 @@ public class ServiceItemModel : IIntegrationProps
     public DateTime? ValidTo { get; set; }
     public Dictionary<string, string> PrintoutTitle { get; set; }
     public Dictionary<string, string> PrintoutDescription { get; set; }
-    public IEnumerable<Brands> Brands { get; set; }
     public IEnumerable<long?> BrandIDs { get; set; }
     public IEnumerable<long?> CountryIDs { get; set; }
     public IEnumerable<long?> CompanyIDs { get; set; }

@@ -24,7 +24,7 @@ public class ServiceLookupService
             VDS = x.VDS,
             Times = x.Times,
             WMI = x.WMI,
-            Brand = x.Brand
+            BrandID = x.BrandID.ToString(),
         });
 
         if (items.Any(x => x.WMI == wmi?.ToUpper()))
