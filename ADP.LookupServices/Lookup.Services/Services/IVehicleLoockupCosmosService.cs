@@ -16,10 +16,6 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
         Task<ColorModel> GetExteriorColorsAsync(string colorCode, long? brand);
         Task<VehicleModelModel> GetVehicleModelsAsync(string variant, long? brand);
         Task<ColorModel> GetInteriorColorsAsync(string trimCode, long? brand);
-        Task SaveChangesAsync();
-        void UpdateVSDataModel(VehicleEntryModel item, VehicleModelModel model);
-        void UpdateVSDataColor(VehicleEntryModel item, ColorModel color);
-        void UpdateVSDataTrim(VehicleEntryModel item, ColorModel trim);
         Task<IEnumerable<ServiceItemModel>> GetServiceItemsAsync();
         Task<IEnumerable<VehicleModelModel>> GetAllVehicleModelsAsync();
         Task<IEnumerable<VehicleModelModel>> GetVehicleModelsByKatashikiAsync(string katashiki);

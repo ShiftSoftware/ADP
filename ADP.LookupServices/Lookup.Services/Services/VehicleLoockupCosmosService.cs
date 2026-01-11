@@ -277,68 +277,6 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         return items.FirstOrDefault();
     }
 
-    public void UpdateVSDataColor(VehicleEntryModel item, ColorModel color)
-    {
-        var container = client.GetContainer(
-            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
-            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.Vehicles
-        );
-
-        var pb = new PartitionKeyBuilder();
-        pb.Add(item.VIN).Add("VS");
-
-        tasks.Add(
-            container.PatchItemAsync<ColorModel>(item.id, pb.Build(),
-                new List<PatchOperation>
-                {
-                PatchOperation.Set("/VTColor", color)
-                })
-        );
-    }
-
-    public void UpdateVSDataTrim(VehicleEntryModel item, ColorModel trim)
-    {
-        var container = client.GetContainer(
-            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
-            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.Vehicles
-        );
-
-        var pb = new PartitionKeyBuilder();
-        pb.Add(item.VIN).Add("VS");
-
-        tasks.Add(
-            container.PatchItemAsync<ColorModel>(item.id, pb.Build(),
-                new List<PatchOperation>
-                {
-                    PatchOperation.Set("/VTTrim", trim)
-                })
-        );
-    }
-
-    public void UpdateVSDataModel(VehicleEntryModel item, VehicleModelModel model)
-    {
-        var container = client.GetContainer(
-            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
-            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.Vehicles
-        );
-
-        var pb = new PartitionKeyBuilder();
-        pb.Add(item.VIN).Add("VS");
-
-        tasks.Add(
-            container.PatchItemAsync<VehicleModelModel>(item.id, pb.Build(),
-                new List<PatchOperation>
-                {
-                PatchOperation.Set("/VTModel", model)
-                })
-        );
-    }
-
-    public async Task SaveChangesAsync()
-    {
-        await Task.WhenAll(tasks);
-    }
-
     public async Task<IEnumerable<ServiceItemModel>> GetServiceItemsAsync()
     {
         //if (invoiceDate is null)
@@ -444,9 +382,6 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
 
         if (vsIterator.HasMoreResults)
             vs = (await vsIterator.ReadNextAsync()).FirstOrDefault();
-
-        if (vs.VehicleModel is not null)
-            return new List<VehicleModelModel> { vs.VehicleModel };
 
         return await GetVehicleModelsByVariantAsync(vs.VariantCode);
     }
