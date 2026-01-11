@@ -22,7 +22,6 @@ public class WarrantyClaimModel : IPartitionedItem, IBrandProps, ICompanyProps
     public string WarrantyType { get; set; }
     public long? BrandID { get; set; }
     public string BrandHashID { get; set; }
-    public Brands Brand { get; set; }
     public DateTime? DeliveryDate { get; set; }
     public DateTime? RepairCompletionDate { get; set; }
     public int? Odometer { get; set; }

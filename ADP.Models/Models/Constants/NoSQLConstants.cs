@@ -57,19 +57,19 @@ public class NoSQLConstants
         public class ExteriorColors
         {
             public const string Level1 = "/" + nameof(ColorModel.Code);
-            public const string Level2 = "/" + nameof(ColorModel.Brand);
+            public const string Level2 = "/" + nameof(ColorModel.BrandID);
         }
 
         public class InteriorColors
         {
             public const string Level1 = "/" + nameof(ColorModel.Code);
-            public const string Level2 = "/" + nameof(ColorModel.Brand);
+            public const string Level2 = "/" + nameof(ColorModel.BrandID);
         }
 
         public class VehicleModels
         {
             public const string Level1 = "/" + nameof(VehicleModelModel.VariantCode);
-            public const string Level2 = "/" + nameof(VehicleModelModel.Brand);
+            public const string Level2 = "/" + nameof(VehicleModelModel.BrandID);
         }
 
         //public class Stock

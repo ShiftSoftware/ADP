@@ -86,7 +86,7 @@ public class VehicleLookupService
                 vin,
                 data.IsAuthorized,
                 data.Warranty?.HasActiveWarranty ?? false,
-                data.Identifiers?.Brand
+                data.Identifiers?.BrandID.ToLong()
             );
             //    }
             //    catch
@@ -107,7 +107,7 @@ public class VehicleLookupService
                     vin,
                     data.IsAuthorized,
                     data.Warranty?.HasActiveWarranty ?? false,
-                    data.Identifiers?.Brand
+                    data.Identifiers?.BrandID.ToLong()
                 );
             }
             catch

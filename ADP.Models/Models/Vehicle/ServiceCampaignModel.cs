@@ -12,7 +12,6 @@ public class ServiceCampaignModel
     public string UniqueReference { get; set; }
     public DateTime StartDate { get; set; }
     public DateTime ExpireDate { get; set; }
-    public IEnumerable<Brands> Brands { get; set; }
     public IEnumerable<long?> BrandIDs { get; set; }
     public IEnumerable<long?> CountryIDs { get; set; }
     public IEnumerable<long?> CompanyIDs { get; set; }

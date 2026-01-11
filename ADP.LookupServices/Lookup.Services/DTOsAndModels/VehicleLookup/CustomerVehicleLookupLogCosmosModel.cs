@@ -1,5 +1,4 @@
 ﻿using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Shared;
-using ShiftSoftware.ADP.Models.Enums;
 using System;
 
 namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
@@ -18,11 +17,11 @@ public class CustomerVehicleLookupLogCosmosModel
     /// <summary>
     /// The Brand that the user made the lookup for
     /// </summary>
-    public Brands? LookupBrand { get; set; }
+    public long? LookupBrandID { get; set; }
 
     /// <summary>
     /// The Actual Vehicle Brand if it was found in the lookup service
     /// </summary>
-    public Brands? OfficialVehicleBrand { get; set; }
+    public long? BrandID { get; set; }
     public long? CityID { get; set; }
 }

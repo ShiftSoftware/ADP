@@ -65,10 +65,14 @@ public class WarrantyAndFreeServiceDateEvaluator
         {
             result.WarrantyStartDate = warrantyStartDate;
 
-            if (vehicle.Brand == Brands.Lexus)
-                result.WarrantyEndDate = warrantyStartDate?.AddYears(4);
+            if (Options.BrandStandardWarrantyPeriodsInYears.TryGetValue(vehicle.BrandID ?? 0, out var brandStandardWarrantyPeriodsInYears))
+            {
+                result.WarrantyEndDate = warrantyStartDate?.AddYears(brandStandardWarrantyPeriodsInYears);
+            }
             else
+            {
                 result.WarrantyEndDate = warrantyStartDate?.AddYears(3);
+            }
         }
 
         //Extended Warranty

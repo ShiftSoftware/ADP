@@ -4,6 +4,5 @@ export type VehicleIdentifiersDTO = {
     katashiki: string;
     color: string;
     trim: string;
-    brand?: 'Toyota' | 'Lexus' | 'Hino' | 'Other' | 'NA';
     brandID: string;
 };

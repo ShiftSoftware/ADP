@@ -3,7 +3,6 @@ using Microsoft.Azure.Cosmos.Linq;
 using Newtonsoft.Json.Linq;
 using ShiftSoftware.ADP.Lookup.Services.Aggregate;
 using ShiftSoftware.ADP.Models;
-using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ADP.Models.Part;
 using ShiftSoftware.ADP.Models.Service;
 using ShiftSoftware.ADP.Models.TBP;
@@ -174,7 +173,7 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         return companyData;
     }
 
-    public async Task<VehicleModelModel> GetVehicleModelsAsync(string variant, Brands? brand)
+    public async Task<VehicleModelModel> GetVehicleModelsAsync(string variant, long? brand)
     {
         if (string.IsNullOrWhiteSpace(variant))
             return null;
@@ -194,7 +193,7 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         return null;
     }
 
-    public async Task<ColorModel> GetExteriorColorsAsync(string colorCode, Brands? brand)
+    public async Task<ColorModel> GetExteriorColorsAsync(string colorCode, long? brand)
     {
         if (string.IsNullOrWhiteSpace(colorCode))
             return null;
@@ -214,7 +213,7 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         return null;
     }
 
-    public async Task<ColorModel> GetInteriorColorsAsync(string trimCode, Brands? brand)
+    public async Task<ColorModel> GetInteriorColorsAsync(string trimCode, long? brand)
     {
         if (string.IsNullOrWhiteSpace(trimCode))
             return null;
@@ -276,68 +275,6 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         }
 
         return items.FirstOrDefault();
-    }
-
-    public void UpdateVSDataColor(VehicleEntryModel item, ColorModel color)
-    {
-        var container = client.GetContainer(
-            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
-            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.Vehicles
-        );
-
-        var pb = new PartitionKeyBuilder();
-        pb.Add(item.VIN).Add("VS");
-
-        tasks.Add(
-            container.PatchItemAsync<ColorModel>(item.id, pb.Build(),
-                new List<PatchOperation>
-                {
-                PatchOperation.Set("/VTColor", color)
-                })
-        );
-    }
-
-    public void UpdateVSDataTrim(VehicleEntryModel item, ColorModel trim)
-    {
-        var container = client.GetContainer(
-            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
-            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.Vehicles
-        );
-
-        var pb = new PartitionKeyBuilder();
-        pb.Add(item.VIN).Add("VS");
-
-        tasks.Add(
-            container.PatchItemAsync<ColorModel>(item.id, pb.Build(),
-                new List<PatchOperation>
-                {
-                    PatchOperation.Set("/VTTrim", trim)
-                })
-        );
-    }
-
-    public void UpdateVSDataModel(VehicleEntryModel item, VehicleModelModel model)
-    {
-        var container = client.GetContainer(
-            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
-            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.Vehicles
-        );
-
-        var pb = new PartitionKeyBuilder();
-        pb.Add(item.VIN).Add("VS");
-
-        tasks.Add(
-            container.PatchItemAsync<VehicleModelModel>(item.id, pb.Build(),
-                new List<PatchOperation>
-                {
-                PatchOperation.Set("/VTModel", model)
-                })
-        );
-    }
-
-    public async Task SaveChangesAsync()
-    {
-        await Task.WhenAll(tasks);
     }
 
     public async Task<IEnumerable<ServiceItemModel>> GetServiceItemsAsync()
@@ -445,9 +382,6 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
 
         if (vsIterator.HasMoreResults)
             vs = (await vsIterator.ReadNextAsync()).FirstOrDefault();
-
-        if (vs.VehicleModel is not null)
-            return new List<VehicleModelModel> { vs.VehicleModel };
 
         return await GetVehicleModelsByVariantAsync(vs.VariantCode);
     }

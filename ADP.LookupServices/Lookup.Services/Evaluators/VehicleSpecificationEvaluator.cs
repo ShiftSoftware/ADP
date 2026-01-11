@@ -17,15 +17,9 @@ public class VehicleSpecificationEvaluator
     {
         VehicleSpecificationDTO result = new();
 
-        var vehicleModel = vehicle?.VehicleModel;
-
-        if (vehicleModel is null)
-        {
-            vehicleModel = await VehicleLoockupCosmos.GetVehicleModelsAsync(vehicle?.VariantCode, vehicle?.Brand);
-
-            if (vehicleModel is not null)
-                VehicleLoockupCosmos.UpdateVSDataModel(vehicle, vehicleModel);
-        }
+        var vehicleModel = await VehicleLoockupCosmos.GetVehicleModelsAsync(vehicle?.VariantCode, vehicle?.BrandID);
+        var exteriorColor = await VehicleLoockupCosmos.GetExteriorColorsAsync(vehicle?.ExteriorColorCode, vehicle?.BrandID);
+        var interiorColor = await VehicleLoockupCosmos.GetInteriorColorsAsync(vehicle?.InteriorColorCode, vehicle?.BrandID);
 
         //if (vtModel is not null)
         {
@@ -49,32 +43,10 @@ public class VehicleSpecificationEvaluator
                 TankCap = vehicleModel?.TankCap,
                 Transmission = vehicleModel?.Transmission,
                 VariantDescription = vehicleModel?.VariantDescription,
-                ExteriorColor = vehicle?.ExteriorColor?.Description,
-                InteriorColor = vehicle?.InteriorColor?.Description
+                ExteriorColor = exteriorColor?.Description,
+                InteriorColor = interiorColor?.Description
             };
         }
-
-        if (vehicle?.ExteriorColor is null)
-        {
-            var color = await VehicleLoockupCosmos.GetExteriorColorsAsync(vehicle?.ExteriorColorCode, vehicle?.Brand);
-            if (color is not null)
-            {
-                result.ExteriorColor = color?.Description;
-                VehicleLoockupCosmos.UpdateVSDataColor(vehicle, color);
-            }
-        }
-
-        if (vehicle?.InteriorColor is null)
-        {
-            var trim = await VehicleLoockupCosmos.GetInteriorColorsAsync(vehicle?.InteriorColorCode, vehicle?.Brand);
-            if (trim is not null)
-            {
-                result.InteriorColor = trim?.Description;
-                VehicleLoockupCosmos.UpdateVSDataTrim(vehicle, trim);
-            }
-        }
-
-        await VehicleLoockupCosmos.SaveChangesAsync();
 
         return result;
     }

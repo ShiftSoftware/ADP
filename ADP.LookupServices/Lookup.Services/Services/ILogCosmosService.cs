@@ -1,7 +1,6 @@
 ﻿using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Part;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.SSC;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
-using ShiftSoftware.ADP.Models.Enums;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -17,12 +16,12 @@ public interface ILogCosmosService
         string vin,
         bool isAuthorized,
         bool hasActiveWarranty,
-        Brands? brand);
+        long? brand);
 
     Task<Guid> LogCustomerVehicleLookupAsync(
         CustomerVehicleLookupLogInfo logInfo,
         string vin,
         bool isAuthorized,
         bool hasActiveWarranty,
-        Brands? brand);
+        long? brand);
 }
