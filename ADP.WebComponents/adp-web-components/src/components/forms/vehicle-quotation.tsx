@@ -5,10 +5,18 @@ import { Grecaptcha } from '~lib/recaptcha';
 import { vehicleQuotationElementNames, vehicleQuotationElements } from './vehicle-quotation/element-mapper';
 import { VehicleQuotation, vehicleQuotationInputsValidation } from './vehicle-quotation/validations';
 
-import { FormHook, FormHookInterface, FormElementStructure, gistLoader } from '~features/form-hook';
-import { GeneralFormLocal, getSharedFormLocal, LanguageKeys, MultiLingual, sharedFormLocalesSchema } from '~features/multi-lingual';
+import {
+  FormHook,
+  FormHookInterface,
+  FormElementStructure,
+  formLanguageChange,
+  formErrorHandler,
+  formLoadingHandler,
+  formSuccessHandler,
+  formDidLoadHandler,
+} from '~features/form-hook';
+import { GeneralFormLocal, LanguageKeys, MultiLingual, sharedFormLocalesSchema } from '~features/multi-lingual';
 import getLanguageFromUrl from '~lib/get-language-from-url';
-import { fetchJson } from '~lib/fetch-json';
 import cn from '~lib/cn';
 import { LoaderIcon } from '~assets/loader-icon';
 
@@ -27,16 +35,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
 
   @Watch('language')
   async changeLanguage(newLanguage: LanguageKeys) {
-    const sharedLocales = await getSharedFormLocal(newLanguage);
-
-    const LS = this.structure?.data?.localization;
-    const structureLocalization = typeof LS === 'object' ? (LS?.[newLanguage] ?? LS?.en ?? {}) : {};
-
-    this.locale = { ...structureLocalization, sharedFormLocales: { ...sharedLocales, ...structureLocalization?.sharedFormLocales } };
-
-    this.localeLanguage = newLanguage;
-
-    this.form?.rerender({ rerenderAll: true });
+    await formLanguageChange(this, newLanguage);
   }
   // #endregion
 
@@ -56,31 +55,15 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
   @Element() el: HTMLElement;
 
   setIsLoading(isLoading: boolean) {
-    this.isLoading = isLoading;
-    if (this.loadingChanges) this.loadingChanges(true);
+    formLoadingHandler(this, isLoading);
   }
 
   setErrorCallback(error: any) {
-    const message = error.message || this.locale?.sharedFormLocales?.errors?.wildCard || '';
-
-    if (this.errorCallback) this.errorCallback(error, message);
-    else this.errorMessage = message;
+    formErrorHandler(this, error);
   }
 
   setSuccessCallback(data: any) {
-    if (this.successCallback) this.successCallback(data, this.locale['Form submitted successfully.'] || '');
-    else this.form.openDialog();
-
-    if (!this.disableScrollToTop) {
-      const formDom = this.el.shadowRoot || this.el;
-
-      let targetElement = formDom instanceof ShadowRoot ? formDom.firstElementChild : formDom;
-
-      const yOffset = -100;
-      const y = targetElement.getBoundingClientRect().top + window.pageYOffset + yOffset;
-
-      window.scrollTo({ top: Math.max(y, 0), behavior: 'smooth' });
-    }
+    formSuccessHandler(this, data);
   }
 
   async componentWillLoad() {
@@ -191,42 +174,14 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
 
   // #region Component Logic
   async componentDidLoad() {
-    if (!this.structure) {
-      if (this.gistId) {
-        const [newGistStructure] = await Promise.all([gistLoader(this.gistId), this.changeLanguage(this.language)]);
-        this.structure = newGistStructure as FormElementStructure<vehicleQuotationElementNames>;
-      } else if (this.structureUrl) {
-        const [newGistStructure] = await Promise.all([fetchJson<FormElementStructure<vehicleQuotationElementNames>>(this.structureUrl), this.changeLanguage(this.language)]);
-        this.structure = newGistStructure;
-      }
-    }
-    this.localeLanguage = this.language;
-
-    await this.changeLanguage(this.language);
-
-    if (!this.isMobileForm) {
-      try {
-        const key = this.structure?.data?.recaptchaKey;
-        if (key) {
-          const script = document.createElement('script');
-          script.src = `https://www.google.com/recaptcha/api.js?render=${key}&hl=${this.language}`;
-          script.async = true;
-          script.defer = true;
-
-          document.head.appendChild(script);
-        }
-      } catch (error) {
-        console.log(error);
-      }
-    }
-
-    this.form = new FormHook(this, vehicleQuotationInputsValidation);
+    await formDidLoadHandler<vehicleQuotationElementNames, VehicleQuotation>(this, vehicleQuotationInputsValidation);
   }
 
+  @Prop() formId?: string;
+  @Prop() isDev?: boolean = false;
   @Prop() disableScrollToTop?: boolean;
   @Prop() isMobileForm: boolean = false;
   @Prop() getMobileToken?: () => string;
-  @Prop() isDev?: boolean = false;
 
   @State() form: FormHook<VehicleQuotation>;
 
@@ -237,7 +192,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
     return (
       <Host>
         <div part={`vehicle-quotation-${this.structure?.data?.theme}`}>
-          <div part="form-container" class="relative min-h-[200px]">
+          <div part="form-container" class="relative min-h-[150px]">
             <div
               part="form-loader-container"
               class={cn('form-loader-container absolute top-0 left-0 w-full h-[200px] pointer-events-none flex justify-center items-center transition-opacity duration-500', {
@@ -251,6 +206,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
                 <form-structure
                   form={this.form}
                   fields={this.fields}
+                  formId={this.formId}
                   formLocale={this.locale}
                   structure={this.structure}
                   isLoading={this.isLoading}

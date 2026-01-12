@@ -1,4 +1,5 @@
 export * from './form-hook';
+export * from './functions';
 export * from './interface';
 export * from './gist-loader';
 export * from './phone-validator';

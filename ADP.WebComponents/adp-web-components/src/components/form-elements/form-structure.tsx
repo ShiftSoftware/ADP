@@ -31,6 +31,7 @@ export class FormStructure {
 
   // #endregion
 
+  @Prop() formId?: string;
   @Prop() isLoading: boolean;
   @Prop() form: FormHook<any>;
   @Prop() errorMessage: string;
@@ -64,7 +65,7 @@ export class FormStructure {
 
     return (
       <Host>
-        <form class="relative" dir={this.locale.sharedLocales.direction} {...formController}>
+        <form id={this.formId} class="relative" dir={this.locale.sharedLocales.direction} {...formController}>
           <form-dialog dialogClosed={resetFormErrorMessage} isError={!!this.errorMessage} closeText={locale?.sharedFormLocales?.close} form={this.form} message={this.errorMessage}>
             <div class="form-success-container">
               <svg
@@ -84,6 +85,7 @@ export class FormStructure {
             </div>
           </form-dialog>
           <div>{renderStructure(this.structure, this.formElementMapper, generalProps, this.fields)}</div>
+          <button formnovalidate type="submit" class="hidden" />
         </form>
       </Host>
     );
