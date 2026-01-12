@@ -1,10 +1,9 @@
-import { AsYouType } from 'libphonenumber-js';
 import { Component, Element, Host, Prop, State, Watch, h } from '@stencil/core';
 
 import cn from '~lib/cn';
 import { getNestedValue } from '~lib/get-nested-value';
 
-import { FormInputMeta } from '~features/form-hook';
+import { FormInputMeta, PhoneValidator } from '~features/form-hook';
 import { FormHook } from '~features/form-hook/form-hook';
 import { FormElement } from '~features/form-hook/interface';
 
@@ -28,9 +27,9 @@ export class FormPhoneNumber implements FormElement {
   @Prop() wrapperClass: string;
   @Prop() defaultValue: string;
   @Prop() type: string = 'text';
-  @Prop() validator: AsYouType;
   @Prop() isDisabled?: boolean;
   @Prop() staticValue?: string;
+  @Prop() validator: PhoneValidator;
 
   @State() prefixWidth: number = 0;
 

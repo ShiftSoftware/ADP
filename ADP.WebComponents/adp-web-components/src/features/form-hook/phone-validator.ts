@@ -1,17 +1,38 @@
-import { AsYouType } from 'libphonenumber-js';
+import { AsYouType, CountryCode, isValidPhoneNumber } from 'libphonenumber-js';
 
-export const getPhoneValidator = (useDefault = true) => {
-  const phoneValidator = new AsYouType('IQ') as AsYouType & {
-    default: string;
-    metadata: {
-      numberingPlan: { metadata: [string] };
-    };
+export type PhoneValidator = AsYouType & {
+  default: string;
+  formattedOutput: string;
+  metadata: {
+    numberingPlan: { metadata: [string] };
   };
+  geIsValidPhoneNumber: () => boolean;
+};
 
-  if (useDefault) {
-    phoneValidator.default = '+' + phoneValidator.metadata.numberingPlan.metadata[0];
+export const getPhoneValidator = (countryCode?: CountryCode | CountryCode[]): PhoneValidator => {
+  const phoneValidator = new AsYouType(Array.isArray(countryCode) ? undefined : countryCode) as PhoneValidator;
 
-    phoneValidator.input(phoneValidator.default);
+  if (Array.isArray(countryCode)) {
+    phoneValidator.geIsValidPhoneNumber = () => {
+      for (const country of countryCode) {
+        if (isValidPhoneNumber(phoneValidator?.formattedOutput, country)) {
+          return true;
+        }
+      }
+      return false;
+    };
+  } else if (countryCode) {
+    try {
+      phoneValidator.default = '+' + phoneValidator.metadata.numberingPlan.metadata[0];
+      phoneValidator.input(phoneValidator.default);
+    } catch (error) {
+      // If metadata is not available, set empty default
+      phoneValidator.default = '';
+    }
+    phoneValidator.geIsValidPhoneNumber = () => phoneValidator?.isValid();
+  } else {
+    phoneValidator.default = '';
+    phoneValidator.geIsValidPhoneNumber = () => phoneValidator?.formattedOutput.length > 7;
   }
 
   return phoneValidator;

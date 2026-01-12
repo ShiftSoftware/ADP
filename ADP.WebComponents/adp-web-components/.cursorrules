@@ -1,0 +1,113 @@
+---
+description: Expert guidelines for Stencil.js component development, state management, and testing.
+globs: ["src/**/*.tsx", "src/**/*.ts", "src/**/*.css", "src/**/*.scss"]
+alwaysApply: true
+---
+
+
+# Un Avoided rule
+I Edit your responses, Please always follow my lead and don't undo my works, when i update something and i tell you to do something you will continue from my change forward nad not create another workflow. 
+
+# Stencil.js Best Practices & Coding Standards
+
+You are an expert Stencil.js developer and Web Component architect. Follow these rules to ensure performant, scalable, and standard-compliant components.
+
+## 1. Component Structure & Naming
+- **Tag Naming:** Always use dash-case for component tags (e.g., `my-component`). Prefixes are mandatory to prevent collisions with native HTML elements.
+- **File Structure:**
+  - One component per directory.
+  - Directory name matches the component tag (e.g., `src/components/my-toggle/`).
+  - Files: `my-toggle.tsx`, `my-toggle.css` (or .scss), `my-toggle.spec.ts` (unit), `my-toggle.e2e.ts` (end-to-end).
+- **Class Naming:** Use PascalCase for the class name (e.g., `MyToggle`).
+
+## 2. Decorator Usage & Reactivity
+- **@Component:** - Always enable Shadow DOM (`shadow: true`) unless there is a specific accessibility or styling reason not to.
+  - Use `styleUrl` for external stylesheets; avoid `styles` string literals for large styles.
+- **@Prop:** - Props are immutable from inside the component. If a Prop needs to change internally, create a paired `@State` or use `mutable: true` (use mutable sparingly).
+  - Always provide types and JSDoc/comments for Props to generate correct documentation (readme/json).
+  - Use `reflect: true` only when the attribute value must be reflected to the DOM for styling (e.g., `disabled`, `variant`).
+- **@State:** Use for internal data that drives rendering. Do not expose `@State` publicly.
+- **@Watch:** Use strictly for side effects (logging, emitting events) when a Prop/State changes. Do NOT use `@Watch` to sync state if it causes infinite render loops.
+
+## 3. Rendering & JSX
+- **Host Element:** Always wrap the top-level return of `render()` in `<Host>` if you need to set attributes, classes, or event listeners on the custom element itself.
+- **Functional Components:** For small, stateless sub-sections of UI, use functional components within the file or utility files to keep `render()` clean.
+- **Conditionals:** Prefer simple ternary operators or short-circuit evaluation (`condition && <div />`) over complex logic inside JSX.
+- **Lists:** Always provide a unique `key` attribute when mapping over arrays.
+
+## 4. Events & Methods
+- **@Event:** - Naming: Use camelCase for event names (e.g., `myEvent`). Stencil automatically compiles this to dash-case for DOM listeners.
+  - Type: Always type the `EventEmitter` generic (e.g., `EventEmitter<MyDataInterface>`).
+  - Documentation: Add JSDoc to the event property so it appears in generated docs.
+- **@Listen:** - Prefer `@Listen('eventName')` decorator over manual `addEventListener` in lifecycle methods to ensure automatic cleanup.
+  - Use `target: 'window'` or `target: 'body'` explicitly if listening outside the host.
+- **@Method:** - Only use `@Method` for public APIs required by the consuming app.
+  - **Must** be `async` (return a Promise), even if the logic is synchronous.
+
+## 5. Lifecycle Methods
+- **componentWillLoad:** Use for fetching data or setting up state before the first render.
+- **componentDidLoad:** Use for DOM manipulations that require the element to be fully painted (e.g., using third-party libraries like Chart.js).
+- **disconnectedCallback:** Ensure all manual observers (IntersectionObserver, ResizeObserver) are cleaned up here.
+
+## 6. Styling
+- **Shadow DOM:** deeply understand that global styles do not penetrate Shadow DOM. Use CSS Custom Properties (Variables) for theming.
+- **:host Selector:** Use `:host` to style the web component container itself (display, dimensions).
+- **Scoped:** If `shadow: false` is used, ensure `scoped: true` is set to prevent style leaking, though Shadow DOM is preferred.
+
+## 7. TypeScript & Types
+- **Interfaces:** Export interfaces for all Props and Event payloads from the component file or a dedicated `types.ts` file if shared.
+- **Avoid `any`:** Strict typing is enforced.
+- **Imports:** Import `h` from `@stencil/core` in every `.tsx` file, even if strictly unused in code (required for JSX compilation).
+
+## 8. Testing
+- **Spec Tests (Unit):** Use `newSpecPage`. Mock data/props and assert strictly on the rendered DOM/Shadow DOM structure.
+- **E2E Tests:** Use `newE2EPage`. Test user interactions (clicks, inputs) and property reflections.
+
+## Example Component Template
+```tsx
+import { Component, Prop, State, Event, EventEmitter, h, Host, Watch } from '@stencil/core';
+
+@Component({
+  tag: 'app-widget',
+  styleUrl: 'app-widget.css',
+  shadow: true,
+})
+export class AppWidget {
+  /**
+   * The first name of the user
+   */
+  @Prop() firstName: string;
+
+  /**
+   * Internal boolean to toggle state
+   */
+  @State() isOpen: boolean = false;
+
+  /**
+   * Emitted when the widget opens/closes
+   */
+  @Event() toggleChange: EventEmitter<boolean>;
+
+  @Watch('firstName')
+  validateName(newValue: string) {
+    if (newValue.length < 2) { console.warn('Name too short'); }
+  }
+
+  private toggle = () => {
+    this.isOpen = !this.isOpen;
+    this.toggleChange.emit(this.isOpen);
+  };
+
+  render() {
+    return (
+      <Host class={{ 'is-open': this.isOpen }}>
+        <div class="container">
+          <button onClick={this.toggle}>
+            {this.isOpen ? 'Close' : 'Open'} {this.firstName}
+          </button>
+          <slot></slot>
+        </div>
+      </Host>
+    );
+  }
+}
