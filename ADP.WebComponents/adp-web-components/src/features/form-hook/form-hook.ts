@@ -159,57 +159,67 @@ export class FormHook<T> {
     return false;
   };
 
+  private submitForm = async () => {
+    try {
+      this.isSubmitted = true;
+      this.context.isLoading = true;
+      this.signal({ isError: false, disabled: true });
+      const formObject = { ...this.cachedValues, ...this.getValues<T>() };
+
+      const description = this.schemaObject.describe();
+
+      Object.entries(description.fields)
+        .filter(([_, desc]) => desc.type === 'boolean')
+        .forEach(([name]) => {
+          // @ts-ignore
+          formObject[name] = typeof formObject[name] === 'string' && formObject[name] === 'true';
+        });
+
+      const excludedFields = Object.keys(this.schemaObject.fields).filter(key => !this.hasItemInStructure(key));
+
+      const values = await (this.schemaObject.omit(excludedFields) as AnyObjectSchema).validate(formObject, { abortEarly: false });
+
+      await this.context.formSubmit(values);
+    } catch (error) {
+      if (error.name === 'ValidationError') {
+        this.formErrors = {};
+        const errorFields: Partial<Field<any>>[] = [];
+
+        error.inner.forEach((element: { path: string; message: string }) => {
+          if (element.path) {
+            this.formErrors[element.path] = element.message;
+            if (!errorFields.find(field => field.name === element.path)) {
+              errorFields.push({
+                isError: true,
+                name: element.path,
+                errorMessage: element.message,
+              });
+            }
+          }
+        });
+
+        console.log(this.formErrors);
+        this.signal(errorFields);
+        this.focusFirstInput(errorFields);
+        this.rerender({ rerenderAll: true, rerenderForm: true });
+      } else console.error('Unexpected Error:', error);
+    } finally {
+      this.signal({ disabled: false });
+      this.context.isLoading = false;
+    }
+  };
+
   onSubmit = (formEvent: SubmitEvent) => {
     formEvent.preventDefault();
-    (async () => {
-      try {
-        this.isSubmitted = true;
-        this.context.isLoading = true;
-        this.signal({ isError: false, disabled: true });
-        const formObject = { ...this.cachedValues, ...this.getValues<T>() };
+    this.submitForm();
+  };
 
-        const description = this.schemaObject.describe();
-
-        Object.entries(description.fields)
-          .filter(([_, desc]) => desc.type === 'boolean')
-          .forEach(([name]) => {
-            // @ts-ignore
-            formObject[name] = typeof formObject[name] === 'string' && formObject[name] === 'true';
-          });
-
-        const excludedFields = Object.keys(this.schemaObject.fields).filter(key => !this.hasItemInStructure(key));
-
-        const values = await (this.schemaObject.omit(excludedFields) as AnyObjectSchema).validate(formObject, { abortEarly: false });
-
-        await this.context.formSubmit(values);
-      } catch (error) {
-        if (error.name === 'ValidationError') {
-          this.formErrors = {};
-          const errorFields: Partial<Field<any>>[] = [];
-
-          error.inner.forEach((element: { path: string; message: string }) => {
-            if (element.path) {
-              this.formErrors[element.path] = element.message;
-              if (!errorFields.find(field => field.name === element.path)) {
-                errorFields.push({
-                  isError: true,
-                  name: element.path,
-                  errorMessage: element.message,
-                });
-              }
-            }
-          });
-
-          console.log(this.formErrors);
-          this.signal(errorFields);
-          this.focusFirstInput(errorFields);
-          this.rerender({ rerenderAll: true, rerenderForm: true });
-        } else console.error('Unexpected Error:', error);
-      } finally {
-        this.signal({ disabled: false });
-        this.context.isLoading = false;
-      }
-    })();
+  /**
+   * Manually trigger form submission programmatically.
+   * Works the same as clicking the submit button or pressing Enter.
+   */
+  submit = () => {
+    this.submitForm();
   };
 
   getInputState = <MetaType>(name: string): Field<MetaType> => {

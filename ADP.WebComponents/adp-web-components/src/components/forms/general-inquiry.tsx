@@ -2,8 +2,9 @@ import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stenci
 
 import { Grecaptcha } from '~lib/recaptcha';
 
-import { vehicleQuotationElementNames, vehicleQuotationElements } from './vehicle-quotation/element-mapper';
-import { VehicleQuotation, vehicleQuotationInputsValidation } from './vehicle-quotation/validations';
+import { generalInquiryElements } from './general-inquiry/element-mapper';
+import { GeneralInquiry, generalInquiryInputsValidation } from './general-inquiry/validations';
+import type { generalInquiryElementNames } from './general-inquiry/element-mapper';
 
 import {
   FormHook,
@@ -20,6 +21,7 @@ import {
 } from '~features/form-hook';
 import { GeneralFormLocal, LanguageKeys, MultiLingual, sharedFormLocalesSchema } from '~features/multi-lingual';
 import getLanguageFromUrl from '~lib/get-language-from-url';
+
 import cn from '~lib/cn';
 import { LoaderIcon } from '~assets/loader-icon';
 
@@ -27,10 +29,10 @@ declare const grecaptcha: Grecaptcha;
 
 @Component({
   shadow: true,
-  tag: 'vehicle-quotation-form',
-  styleUrl: 'vehicle-quotation/themes.css',
+  tag: 'general-inquiry-form',
+  styleUrl: 'general-inquiry/themes.css',
 })
-export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>, MultiLingual {
+export class GeneralInquiryForm implements FormHookInterface<GeneralInquiry>, MultiLingual {
   // #region Localization
   @Prop({ mutable: true, reflect: true }) language: LanguageKeys;
 
@@ -52,7 +54,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
   @Prop() loadingChanges: (loading: boolean) => void;
   @Prop() errorCallback: (error: any, message: string) => void;
   @Prop() successCallback: (data: any, message?: string) => void;
-  @Prop({ mutable: true }) structure: FormElementStructure<vehicleQuotationElementNames> | undefined;
+  @Prop({ mutable: true }) structure: FormElementStructure<generalInquiryElementNames> | undefined;
   @Prop({ mutable: true }) fields?: object;
 
   @Element() el: HTMLElement;
@@ -73,65 +75,31 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
     if (!this.language) this.language = getLanguageFromUrl();
   }
 
-  async formSubmit(formValues: VehicleQuotation) {
+  async formSubmit(formValues: GeneralInquiry) {
     try {
       this.setIsLoading(true);
 
-      const nameContactedVehicles = this.structure?.data?.nameContactedVehicles;
+      let payload: any = { ...formValues };
 
-      const payload: any = {
-        name: formValues.name,
-        phone: formValues.phone,
-        companyBranchId: formValues.dealer,
-        cityId: formValues?.city,
-        vehicleQuotationType: this.structure?.data?.quotationType,
-        preferredContactTime: formValues?.contactTime || 'NotSpecified',
-        preferredPaymentMethod: formValues?.paymentType || 'Flexible',
-      };
+      if (this.structure?.data?.extraPayload) payload = { ...payload, ...this.structure?.data?.extraPayload };
 
-      if (nameContactedVehicles) {
-        payload.vehicle = this['vehicleList'].find(vehicle => vehicle.value === formValues.vehicle)?.label || '';
-        if (formValues?.ownVehicle === 'yes') {
-          const currentBrand = this['currentVehicleBrandList'].find(brand => brand.value === formValues.currentVehicleBrand)?.meta || false;
-          let currentModel;
-
-          if (currentBrand) currentModel = currentBrand.Models.find(model => `${model.ID}` === formValues.currentVehicleModel) || false;
-          payload.currentOrTradeInVehicle = `${currentBrand?.Name || this.locale.Other} - ${currentModel?.Name || this.locale.Other}`;
-        }
-      } else {
-        payload.vehicle = formValues.vehicle;
-        payload.additionalData = {
-          DoYouOwnAVehicle: formValues?.ownVehicle === 'yes',
-        };
-        if (formValues?.ownVehicle === 'yes') {
-          payload.additionalData.yourCurrentVehicle = formValues?.currentVehicleBrand || this.locale.Other;
-          payload.additionalData.vehicleModel = formValues?.currentVehicleModel || this.locale.Other;
-        }
-      }
       const headers = {
+        'Content-Type': 'application/json',
         'Brand': this.structure?.data?.brandId,
         'Accept-Language': this.localeLanguage || 'en',
-        'Content-Type': 'application/json',
       };
 
-      let requestEndpoint = '';
-      if (this.isMobileForm) {
-        const token = await this.getMobileToken();
+      let requestEndpoint = this.structure?.data?.requestUrl;
+      const token = await grecaptcha.execute(this.structure?.data?.recaptchaKey, { action: 'submit' });
+      headers['Recaptcha-Token'] = token;
 
-        if (token.toLowerCase().startsWith('bearer')) {
-          headers['Authorization'] = token;
-          requestEndpoint = this.structure?.data?.requestAppUrl;
-        } else {
-          headers['verification-token'] = token;
-          requestEndpoint = this.structure?.data?.requestAppCheckUrl;
-        }
-      } else {
-        requestEndpoint = this.structure?.data?.requestUrl;
-        const token = await grecaptcha.execute(this.structure?.data?.recaptchaKey, { action: 'submit' });
-        headers['Recaptcha-Token'] = token;
+      if (this.isDev && requestEndpoint) {
+        requestEndpoint = requestEndpoint.replaceAll('production=true', 'production=false');
       }
 
-      if (this.isDev) requestEndpoint = requestEndpoint.replaceAll('production=true', 'production=false');
+      if (!requestEndpoint) {
+        throw new Error('Request endpoint is not configured');
+      }
 
       const response = await fetch(requestEndpoint, {
         headers,
@@ -147,11 +115,9 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
         if (eventHolder) {
           window[eventHolder] = window[eventHolder] || [];
           window[eventHolder].push({
-            event: 'get_a_quote',
+            name: formValues.name,
             phone: formValues.phone,
-            fullname: formValues.name,
-            dealer: this['dealerList'].find(d => d.value === formValues.dealer)?.label,
-            vehicle: this['vehicleList'].find(v => v.value === formValues.vehicle)?.label,
+            event: this.structure?.data?.analyticEventKey || 'general_inquiry',
           });
         }
 
@@ -177,7 +143,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
 
   // #region Component Logic
   async componentDidLoad() {
-    await formDidLoadHandler<vehicleQuotationElementNames, VehicleQuotation>(this, vehicleQuotationInputsValidation);
+    await formDidLoadHandler<generalInquiryElementNames, GeneralInquiry>(this, generalInquiryInputsValidation);
   }
 
   @Method()
@@ -198,19 +164,22 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
     await formStructureRenderedHandler(this, isRendered);
   }
 
+  @Prop() theme?: string;
   @Prop() formId?: string;
   @Prop() isDev?: boolean = false;
   @Prop() disableScrollToTop?: boolean;
-  @Prop() isMobileForm: boolean = false;
   @Prop() getMobileToken?: () => string;
+  @Prop() isMobileForm: boolean = false;
 
-  @State() form: FormHook<VehicleQuotation>;
+  @State() form: FormHook<GeneralInquiry>;
 
   // #endregion
   render() {
+    const formPart = `general-inquiry${this?.theme ? `-${this.theme}` : ''}`;
+
     return (
       <Host>
-        <div part={`vehicle-quotation-${this.structure?.data?.theme}`}>
+        <div part={formPart}>
           <div part="form-container" class="relative min-h-[150px]">
             <div
               part="form-loader-container"
@@ -231,7 +200,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
                   isLoading={this.isLoading}
                   language={this.localeLanguage}
                   errorMessage={this.errorMessage}
-                  formElementMapper={vehicleQuotationElements}
+                  formElementMapper={generalInquiryElements}
                   successMessage={this.locale['Form submitted successfully.']}
                 >
                   <slot></slot>

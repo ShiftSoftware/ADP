@@ -117,3 +117,27 @@ export const formDidLoadHandler = async <T, B>(formContext: FormDidLoadHandler<B
 
   formContext.form = new FormHook<B>(formContext, validator);
 };
+
+export type FormGetFormHandler = {
+  form: FormHook<any>;
+};
+
+export const formGetFormHandler = async (formContext: FormGetFormHandler) => {
+  if (formContext.form) return formContext.form;
+};
+
+export type FormSubmitHandler = {
+  form: FormHook<any>;
+};
+
+export const formSubmitHandler = async (formContext: FormSubmitHandler) => {
+  if (formContext.form) return formContext.form.submit();
+};
+
+export type FormStructureRenderedHandler = {
+  formReadyCallback?: () => void;
+};
+
+export const formStructureRenderedHandler = async (formContext: FormStructureRenderedHandler, isRendered: boolean) => {
+  if (isRendered) formContext.formReadyCallback?.();
+};
