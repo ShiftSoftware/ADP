@@ -11,7 +11,7 @@ import { FormInputLabel } from './components/form-input-label';
 import { FormInputPrefix } from './components/form-input-prefix';
 import { FormErrorMessage } from './components/form-error-message';
 
-const partKeyPrefix = 'form-input-';
+const partKeyPrefix = 'form-vin-input-';
 @Component({
   shadow: false,
   tag: 'form-vin-input',
@@ -68,10 +68,6 @@ export class FormVinInput implements FormElement {
     this.inputRef.value = value;
   }
 
-  async onVinExtract(newVin: string) {
-    this.inputRef.value = newVin;
-  }
-
   render() {
     const { disabled, isRequired, meta, isError, errorMessage } = this.form.getInputState<FormInputMeta>(this.name);
     const [locale] = this.form.getFormLocale();
@@ -117,7 +113,7 @@ export class FormVinInput implements FormElement {
             manualCapture
             title={extractorTitle}
             skipValidation={false}
-            onExtract={this.onVinExtract}
+            onExtract={newVin => (this.inputRef.value = newVin)}
             ocrEndpoint={this.form?.context?.structure?.data?.ocrEndpoint}
           />
         </div>
