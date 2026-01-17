@@ -83,6 +83,8 @@ export class FormVinInput implements FormElement {
 
     const isDisabled = disabled || this.isLoading || !!this.staticValue || this.isDisabled;
 
+    const extractorTitle = this.form?.context?.structure?.data?.localization?.[this.form.context?.language]?.['Scan Your VIN'] || 'Scan Your VIN';
+
     return (
       <Host>
         <label part={this.name} id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, { disabled: isDisabled })}>
@@ -113,10 +115,10 @@ export class FormVinInput implements FormElement {
             useOcr
             verbose
             manualCapture
+            title={extractorTitle}
             skipValidation={false}
             onExtract={this.onVinExtract}
             ocrEndpoint={this.form?.context?.structure?.data?.ocrEndpoint}
-            title={this.form?.context?.structure?.data?.localization?.['Scan Your VIN'] || 'Scan Your VIN'}
           />
         </div>
       </Host>
