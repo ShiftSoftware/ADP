@@ -14,10 +14,10 @@ import { FormErrorMessage } from './components/form-error-message';
 const partKeyPrefix = 'form-input-';
 @Component({
   shadow: false,
-  tag: 'form-input',
+  tag: 'form-vin-input',
   styleUrl: 'form-inputs.css',
 })
-export class FormInput implements FormElement {
+export class FormVinInput implements FormElement {
   @Prop() name: string;
   @Prop() wrapperId: string;
   @Prop() isLoading?: boolean;
@@ -68,6 +68,10 @@ export class FormInput implements FormElement {
     this.inputRef.value = value;
   }
 
+  async onVinExtract(newVin: string) {
+    this.inputRef.value = newVin;
+  }
+
   render() {
     const { disabled, isRequired, meta, isError, errorMessage } = this.form.getInputState<FormInputMeta>(this.name);
     const [locale] = this.form.getFormLocale();
@@ -98,9 +102,23 @@ export class FormInput implements FormElement {
                 'form-input-error-style': isError,
               })}
             />
+            <button onClick={() => this?.el.getElementsByTagName('vin-extractor')[0]?.open()} type="button">
+              test
+            </button>
           </div>
           <FormErrorMessage name={this.name} isError={isError} errorMessage={locale[errorMessage] || errorMessage} />
         </label>
+        <div class="absolute">
+          <vin-extractor
+            useOcr
+            verbose
+            manualCapture
+            skipValidation={false}
+            onExtract={this.onVinExtract}
+            ocrEndpoint={this.form?.context?.structure?.data?.ocrEndpoint}
+            title={this.form?.context?.structure?.data?.localization?.['Scan Your VIN'] || 'Scan Your VIN'}
+          />
+        </div>
       </Host>
     );
   }

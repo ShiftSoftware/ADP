@@ -2,10 +2,6 @@ import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stenci
 
 import { Grecaptcha } from '~lib/recaptcha';
 
-import { generalInquiryElements } from './general-inquiry/element-mapper';
-import { GeneralInquiry, generalInquiryInputsValidation } from './general-inquiry/validations';
-import type { generalInquiryElementNames } from './general-inquiry/element-mapper';
-
 import {
   FormHook,
   FormHookInterface,
@@ -24,15 +20,17 @@ import getLanguageFromUrl from '~lib/get-language-from-url';
 
 import cn from '~lib/cn';
 import { LoaderIcon } from '~assets/loader-icon';
+import { SSCLookup, SSCLookupInputsValidation } from './ssc-lookup/validations';
+import { SSCLookupElementNames, SSCLookupElements } from './ssc-lookup/element-mapper';
 
 declare const grecaptcha: Grecaptcha;
 
 @Component({
   shadow: true,
-  tag: 'general-inquiry-form',
-  styleUrl: 'general-inquiry/themes.css',
+  tag: 'ssc-lookup-form',
+  styleUrl: './default-theme.css',
 })
-export class GeneralInquiryForm implements FormHookInterface<GeneralInquiry>, MultiLingual {
+export class SSCLookupForm implements FormHookInterface<SSCLookup>, MultiLingual {
   // #region Localization
   @Prop({ mutable: true, reflect: true }) language: LanguageKeys;
 
@@ -54,7 +52,7 @@ export class GeneralInquiryForm implements FormHookInterface<GeneralInquiry>, Mu
   @Prop() loadingChanges: (loading: boolean) => void;
   @Prop() errorCallback: (error: any, message: string) => void;
   @Prop() successCallback: (data: any, message?: string) => void;
-  @Prop({ mutable: true }) structure: FormElementStructure<generalInquiryElementNames> | undefined;
+  @Prop({ mutable: true }) structure: FormElementStructure<SSCLookupElementNames> | undefined;
   @Prop({ mutable: true }) fields?: object;
 
   @Element() el: HTMLElement;
@@ -75,7 +73,7 @@ export class GeneralInquiryForm implements FormHookInterface<GeneralInquiry>, Mu
     if (!this.language) this.language = getLanguageFromUrl();
   }
 
-  async formSubmit(formValues: GeneralInquiry) {
+  async formSubmit(formValues: SSCLookup) {
     try {
       this.setIsLoading(true);
 
@@ -143,7 +141,7 @@ export class GeneralInquiryForm implements FormHookInterface<GeneralInquiry>, Mu
 
   // #region Component Logic
   async componentDidLoad() {
-    await formDidLoadHandler<generalInquiryElementNames, GeneralInquiry>(this, generalInquiryInputsValidation);
+    await formDidLoadHandler<SSCLookupElementNames, SSCLookup>(this, SSCLookupInputsValidation);
   }
 
   @Method()
@@ -171,11 +169,11 @@ export class GeneralInquiryForm implements FormHookInterface<GeneralInquiry>, Mu
   @Prop() getMobileToken?: () => string;
   @Prop() isMobileForm: boolean = false;
 
-  @State() form: FormHook<GeneralInquiry>;
+  @State() form: FormHook<SSCLookup>;
 
   // #endregion
   render() {
-    const formPart = `general-inquiry${this?.theme ? `-${this.theme}` : ''}`;
+    const formPart = `ssc-lookup${this?.theme ? `-${this.theme}` : ''}`;
 
     return (
       <Host>
@@ -200,7 +198,7 @@ export class GeneralInquiryForm implements FormHookInterface<GeneralInquiry>, Mu
                   isLoading={this.isLoading}
                   language={this.localeLanguage}
                   errorMessage={this.errorMessage}
-                  formElementMapper={generalInquiryElements}
+                  formElementMapper={SSCLookupElements}
                   successMessage={this.locale['Form submitted successfully.'] || 'Form submitted successfully.'}
                 >
                   <slot></slot>
