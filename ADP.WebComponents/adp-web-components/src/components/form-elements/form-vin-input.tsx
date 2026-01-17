@@ -113,7 +113,10 @@ export class FormVinInput implements FormElement {
             manualCapture
             title={extractorTitle}
             skipValidation={false}
-            onExtract={newVin => (this.inputRef.value = newVin)}
+            onExtract={newVin => {
+              this.inputRef.value = newVin;
+              this?.el.getElementsByTagName('vin-extractor')[0]?.close();
+            }}
             ocrEndpoint={this.form?.context?.structure?.data?.ocrEndpoint}
           />
         </div>
