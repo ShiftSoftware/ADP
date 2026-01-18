@@ -10,6 +10,7 @@ import { FormElement } from '~features/form-hook/interface';
 import { FormInputLabel } from './components/form-input-label';
 import { FormInputPrefix } from './components/form-input-prefix';
 import { FormErrorMessage } from './components/form-error-message';
+import { CameraIcon } from '~assets/add-icon copy';
 
 const partKeyPrefix = 'form-vin-input-';
 @Component({
@@ -96,12 +97,18 @@ export class FormVinInput implements FormElement {
               part={`${this.name}-input form-input`}
               placeholder={placeholder || meta?.placeholder}
               style={{ ...(this.prefixWidth ? { [locale?.sharedFormLocales?.direction === 'rtl' ? 'paddingRight' : 'paddingLeft']: `${this.prefixWidth}px` } : {}) }}
-              class={cn('form-input-style', part, {
+              class={cn('form-input-style !uppercase', part, {
                 'form-input-error-style': isError,
               })}
             />
-            <button onClick={() => this?.el.getElementsByTagName('vin-extractor')[0]?.open()} type="button">
-              test
+            <button
+              type="button"
+              disabled={isDisabled}
+              part={cn('vin-validator', part + '-vin')}
+              onClick={() => this?.el.getElementsByTagName('vin-extractor')[0]?.open()}
+              class="absolute transition-all duration-500 disabled:!pointer-events-none disabled:!opacity-0 flex justify-center items-center right-2 text-black/50 hover:text-black/85 aspect-square h-[80%] top-1/2 -translate-y-1/2"
+            >
+              <CameraIcon class="size-[90%] text-inherit" />
             </button>
           </div>
           <FormErrorMessage name={this.name} isError={isError} errorMessage={locale[errorMessage] || errorMessage} />
@@ -115,6 +122,7 @@ export class FormVinInput implements FormElement {
             skipValidation={false}
             onExtract={newVin => {
               this.inputRef.value = newVin;
+              this.form?.validateInput(this?.name);
               this?.el.getElementsByTagName('vin-extractor')[0]?.close();
             }}
             ocrEndpoint={this.form?.context?.structure?.data?.ocrEndpoint}

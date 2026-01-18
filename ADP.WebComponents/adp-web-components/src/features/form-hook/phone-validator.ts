@@ -1,4 +1,4 @@
-import { AsYouType, CountryCode, isValidPhoneNumber } from 'libphonenumber-js';
+import { AsYouType, CountryCode } from 'libphonenumber-js';
 
 export type PhoneValidator = AsYouType & {
   default: string;
@@ -14,10 +14,16 @@ export const getPhoneValidator = (countryCode?: CountryCode | CountryCode[]): Ph
 
   if (Array.isArray(countryCode)) {
     phoneValidator.geIsValidPhoneNumber = () => {
+      const raw = phoneValidator?.formattedOutput || '';
+
+      if (!raw.trim()) return false;
+
       for (const country of countryCode) {
-        if (isValidPhoneNumber(phoneValidator?.formattedOutput, country)) {
-          return true;
-        }
+        try {
+          const phone = new AsYouType(country);
+          phone?.input(raw);
+          if (phone?.isValid()) return true;
+        } catch {}
       }
       return false;
     };

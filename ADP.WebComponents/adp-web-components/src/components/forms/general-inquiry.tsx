@@ -128,7 +128,10 @@ export class GeneralInquiryForm implements FormHookInterface<GeneralInquiry>, Mu
           this.form.rerender({ rerenderForm: true, rerenderAll: true });
         }, 100);
       } else {
-        const errorText = await response?.text();
+        const contentType = response.headers.get('content-type');
+
+        const errorText = contentType?.includes('application/json') ? (await response.json())?.message?.body : await response.text();
+
         throw new Error(errorText);
       }
     } catch (error) {

@@ -16,7 +16,7 @@ export const SSCLookupInputsValidation = object({
   vin: string()
     .meta({ label: 'VIN / Frame No.', placeholder: 'VIN / Frame No.' } as FormInputMeta)
     .required('Vin is required')
-    .test('vin-validation', 'Vin is invalid', a => validateVin(a)),
+    .test('vin-validation', 'Vin is invalid', a => validateVin(a?.toUpperCase())),
 });
 
 export type SSCLookup = InferType<typeof SSCLookupInputsValidation>;

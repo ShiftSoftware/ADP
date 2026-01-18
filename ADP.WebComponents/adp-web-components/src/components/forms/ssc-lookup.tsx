@@ -82,14 +82,17 @@ export class SSCLookupForm implements FormHookInterface<SSCLookup>, MultiLingual
       if (this.structure?.data?.extraPayload) payload = { ...payload, ...this.structure?.data?.extraPayload };
 
       const headers = {
-        'Content-Type': 'application/json',
-        'Brand': this.structure?.data?.brandId,
         'Accept-Language': this.localeLanguage || 'en',
+        'Customer-Name': encodeURIComponent(formValues.name),
+        'Customer-Phone': encodeURIComponent(formValues.phone),
       };
 
-      let requestEndpoint = this.structure?.data?.requestUrl;
-      const token = await grecaptcha.execute(this.structure?.data?.recaptchaKey, { action: 'submit' });
-      headers['Recaptcha-Token'] = token;
+      let requestEndpoint = this.structure?.data?.requestUrl.replace('${vin}', formValues.vin?.toUpperCase());
+
+      if (this.structure?.data?.recaptchaKey) {
+        const token = await grecaptcha.execute(this.structure?.data?.recaptchaKey, { action: 'submit' });
+        headers['Recaptcha-Token'] = token;
+      }
 
       if (this.isDev && requestEndpoint) {
         requestEndpoint = requestEndpoint.replaceAll('production=true', 'production=false');
@@ -101,23 +104,10 @@ export class SSCLookupForm implements FormHookInterface<SSCLookup>, MultiLingual
 
       const response = await fetch(requestEndpoint, {
         headers,
-        method: 'POST',
-        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
         const result = await response?.json();
-
-        const eventHolder = this.structure?.data?.pushAnalyticsEventTo as string | undefined;
-
-        if (eventHolder) {
-          window[eventHolder] = window[eventHolder] || [];
-          window[eventHolder].push({
-            name: formValues.name,
-            phone: formValues.phone,
-            event: this.structure?.data?.analyticEventKey || 'general_inquiry',
-          });
-        }
 
         this.setSuccessCallback(result);
 
@@ -126,7 +116,10 @@ export class SSCLookupForm implements FormHookInterface<SSCLookup>, MultiLingual
           this.form.rerender({ rerenderForm: true, rerenderAll: true });
         }, 100);
       } else {
-        const errorText = await response?.text();
+        const contentType = response.headers.get('content-type');
+
+        const errorText = contentType?.includes('application/json') ? (await response.json())?.message?.body : await response.text();
+
         throw new Error(errorText);
       }
     } catch (error) {
