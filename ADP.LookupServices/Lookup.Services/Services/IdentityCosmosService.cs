@@ -68,48 +68,62 @@ public class IdentityCosmosService : IIdentityCosmosService
 
     public async Task<RegionModel> GetRegionAsync(long? id)
     {
-        // Get region form catch if exists
-        if (regions.TryGetValue(id, out var region))
-            return region;
+        try
+        {
+            // Get region form catch if exists
+            if (regions.TryGetValue(id, out var region))
+                return region;
 
-        var container = client.GetContainer(
-            IdentityDatabaseAndContainerNames.DatabaseName,
-            IdentityDatabaseAndContainerNames.CountryContainerName
-        );
+            var container = client.GetContainer(
+                IdentityDatabaseAndContainerNames.DatabaseName,
+                IdentityDatabaseAndContainerNames.CountryContainerName
+            );
 
-        var query = container.GetItemLinqQueryable<RegionModel>(true)
-            .Where(x => x.RegionID == id && x.ItemType == CountryContainerItemTypes.Region);
+            var query = container.GetItemLinqQueryable<RegionModel>(true)
+                .Where(x => x.RegionID == id && x.ItemType == CountryContainerItemTypes.Region);
 
-        var iterator = query.ToFeedIterator();
+            var iterator = query.ToFeedIterator();
 
-        // Store the region into catch
-        var result = (await iterator.ReadNextAsync()).FirstOrDefault();
-        regions[id] = result;
+            // Store the region into catch
+            var result = (await iterator.ReadNextAsync()).FirstOrDefault();
+            regions[id] = result;
 
-        return result;
+            return result;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     public async Task<CountryModel> GetCountryAsync(long? id)
     {
-        // Get the country from catch if exists
-        if (countries.TryGetValue(id, out var country))
-            return country;
+        try
+        {
+            // Get the country from catch if exists
+            if (countries.TryGetValue(id, out var country))
+                return country;
 
-        var container = client.GetContainer(
-            IdentityDatabaseAndContainerNames.DatabaseName,
-            IdentityDatabaseAndContainerNames.CountryContainerName
-        );
+            var container = client.GetContainer(
+                IdentityDatabaseAndContainerNames.DatabaseName,
+                IdentityDatabaseAndContainerNames.CountryContainerName
+            );
 
-        var query = container.GetItemLinqQueryable<CountryModel>(true)
-            .Where(x => x.CountryID == id && x.ItemType == CountryContainerItemTypes.Country);
+            var query = container.GetItemLinqQueryable<CountryModel>(true)
+                .Where(x => x.CountryID == id && x.ItemType == CountryContainerItemTypes.Country);
 
-        var iterator = query.ToFeedIterator();
+            var iterator = query.ToFeedIterator();
 
-        // Store the country into catch
-        var result = (await iterator.ReadNextAsync()).FirstOrDefault();
-        countries[id] = result;
+            // Store the country into catch
+            var result = (await iterator.ReadNextAsync()).FirstOrDefault();
+            countries[id] = result;
 
-        return result;
+            return result;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     public async Task<CompanyModel> GetCompanyAsync(long? id)
@@ -126,15 +140,22 @@ public class IdentityCosmosService : IIdentityCosmosService
             IdentityDatabaseAndContainerNames.CompanyContainerName
         );
 
-        var response = await container.ReadItemAsync<CompanyModel>(id!.ToString(), new PartitionKey(id.ToString()));
+        try
+        {
+            var response = await container.ReadItemAsync<CompanyModel>(id!.ToString(), new PartitionKey(id.ToString()));
 
-        if (response.StatusCode != System.Net.HttpStatusCode.OK)
+            if (response.StatusCode != System.Net.HttpStatusCode.OK)
+                return null;
+
+            var result = response.Resource;
+            companies[id] = result;
+
+            return result;
+        }
+        catch
+        {
             return null;
-
-        var result = response.Resource;
-        companies[id] = result;
-
-        return result;
+        }
     }
 
     public async Task<CompanyBranchModel> GetCompanyBranchAsync(long? id)
@@ -151,15 +172,22 @@ public class IdentityCosmosService : IIdentityCosmosService
             IdentityDatabaseAndContainerNames.CompanyBranchContainerName
         );
 
-        var pb = new PartitionKeyBuilder().Add(id.ToString()).Add(CompanyBranchContainerItemTypes.Branch);
-        var response = await container.ReadItemAsync<CompanyBranchModel>(id!.ToString(), pb.Build());
+        try
+        {
+            var pb = new PartitionKeyBuilder().Add(id.ToString()).Add(CompanyBranchContainerItemTypes.Branch);
+            var response = await container.ReadItemAsync<CompanyBranchModel>(id!.ToString(), pb.Build());
 
-        if (response.StatusCode != System.Net.HttpStatusCode.OK)
+            if (response.StatusCode != System.Net.HttpStatusCode.OK)
+                return null;
+
+            var result = response.Resource;
+            companiesBranch[id] = result;
+
+            return result;
+        }
+        catch
+        {
             return null;
-
-        var result = response.Resource;
-        companiesBranch[id] = result;
-
-        return result;
+        }
     }
 }
