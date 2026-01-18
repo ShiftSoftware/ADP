@@ -47,6 +47,13 @@ public class OrderPartLineModel:
     /// </summary>
     public string InvoiceNumber { get; set; }
 
+
+    /// <summary>
+    /// The Parent Invoice Number associated with this part line. (In case of Credit Notes or Debit Notes)
+    /// </summary>
+    public string ParentInvoiceNumber { get; set; }
+
+
     /// <summary>
     /// The Invoice <see cref="Currencies">Currency</see>
     /// </summary>

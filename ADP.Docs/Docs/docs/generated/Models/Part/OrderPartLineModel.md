@@ -13,6 +13,7 @@ Refers to a Part Line on an Order (This might be a Job Card on Workshop Module, 
 | InvoiceDate <div><strong>``DateTime?``</strong></div> | The date at which this line was invoiced. |
 | OrderDocumentNumber <div><strong>``string``</strong></div> | The Order Number associated with this line. (Job Card Number, Counter Sale Order Number) |
 | InvoiceNumber <div><strong>``string``</strong></div> | The Invoice Number associated with this part line. |
+| ParentInvoiceNumber <div><strong>``string``</strong></div> | The Parent Invoice Number associated with this part line. (In case of Credit Notes or Debit Notes) |
 | InvoiceCurrency <div><strong>``Currencies?``</strong></div> | The Invoice [Currency](/generated/Models/Enums/Currencies.html) |
 | SoldQuantity <div><strong>``decimal?``</strong></div> | The quantity of the part line that sold. |
 | OrderQuantity <div><strong>``decimal?``</strong></div> | The quantity of the part line that ordered. |

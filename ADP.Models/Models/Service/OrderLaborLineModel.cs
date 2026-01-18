@@ -17,6 +17,7 @@ public class OrderLaborLineModel :
     public DateTime? InvoiceDate { get; set; }
     public string OrderDocumentNumber { get; set; }
     public string InvoiceNumber { get; set; }
+    public string ParentInvoiceNumber { get; set; }
     public Currencies? InvoiceCurrency { get; set; }
     public string SaleType { get; set; }
     public string AccountNumber { get; set; }
