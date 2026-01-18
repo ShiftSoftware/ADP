@@ -25,6 +25,7 @@ public class VehicleServiceHistoryDTO
     //public string BranchID { get; set; }
     public string AccountNumber { get; set; } = default!;
     public string InvoiceNumber { get; set; }
+    public string ParentInvoiceNumber { get; set; }
     public string JobNumber { get; set; }
     public IEnumerable<VehicleLaborDTO> LaborLines { get; set; }
     public IEnumerable<VehiclePartDTO> PartLines { get; set; }

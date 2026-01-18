@@ -8,6 +8,7 @@ export type VehicleServiceHistoryDTO = {
     branchName: string;
     accountNumber: string;
     invoiceNumber: string;
+    parentInvoiceNumber: string;
     jobNumber: string;
     laborLines: VehicleLaborDTO[];
     partLines: VehiclePartDTO[];

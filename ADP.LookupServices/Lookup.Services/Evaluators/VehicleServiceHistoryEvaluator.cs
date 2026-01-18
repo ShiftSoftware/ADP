@@ -66,6 +66,7 @@ public class VehicleServiceHistoryEvaluator
             var serviceHistoryEntry = new VehicleServiceHistoryDTO
             {
                 InvoiceNumber = invoice.InvoiceNumber,
+                ParentInvoiceNumber = laborLines?.FirstOrDefault()?.ParentInvoiceNumber ?? partLines?.FirstOrDefault()?.ParentInvoiceNumber,
                 JobNumber = invoice.OrderDocumentNumber,
                 AccountNumber = laborLines?.FirstOrDefault()?.AccountNumber ?? partLines?.FirstOrDefault()?.AccountNumber,
                 CompanyName = null,
