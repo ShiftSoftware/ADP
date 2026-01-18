@@ -90,3 +90,17 @@
     box-shadow: 0px;
   }
 }
+
+.animate-spin {
+  animation: spin-v 1s linear infinite;
+}
+
+.animate-spin-v {
+  animation: spin-v 1s linear infinite;
+}
+
+@keyframes spin-v {
+  to {
+    transform: rotate(360deg);
+  }
+}
