@@ -15,6 +15,18 @@ export const generalInquiryElements: FormElementMapper<GeneralInquiry, Additiona
     return <form-input {...props} />;
   },
 
+  lastName: ({ props }) => {
+    return <form-input {...props} />;
+  },
+
+  email: ({ props }) => {
+    return <form-input type="email" {...props} />;
+  },
+
+  message: ({ props }) => {
+    return <form-text-area {...props} />;
+  },
+
   phone: ({ props, isLoading }) => {
     if (!phoneValidator) {
       phoneValidator = getPhoneValidator(props?.countryCode || '');

@@ -8,6 +8,17 @@ export const generalInquiryInputsValidation = object({
     .meta({ label: 'Full name', placeholder: 'Full name' } as FormInputMeta)
     .required('Full name is required')
     .min(3, 'Proper Name is required'),
+  lastName: string()
+    .meta({ label: 'Last name', placeholder: 'Last name' } as FormInputMeta)
+    .required('Last name is required')
+    .min(3, 'Proper Last name is required'),
+  message: string()
+    .meta({ label: 'Message', placeholder: 'Please enter a message' } as FormInputMeta)
+    .min(3, 'Must be 10 characters or more'),
+  email: string()
+    .optional()
+    .meta({ label: 'Email', placeholder: 'YourName@example.com' } as FormInputMeta)
+    .email('Must be a valid email'),
   phone: string()
     .meta({ label: 'Phone number', placeholder: 'Phone number' } as FormInputMeta)
     .required('Phone number is required')

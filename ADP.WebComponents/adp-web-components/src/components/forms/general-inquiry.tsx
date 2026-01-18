@@ -79,9 +79,23 @@ export class GeneralInquiryForm implements FormHookInterface<GeneralInquiry>, Mu
     try {
       this.setIsLoading(true);
 
+      const hasAdditionalData = !!this.structure?.data?.truncatedFields && !!Object.keys(this.structure?.data?.truncatedFields)?.length;
+
+      let additionalData: Record<string, string> = {};
+
+      if (hasAdditionalData) {
+        Object.entries(this.structure?.data?.truncatedFields as Record<string, string>).forEach(([oldKey, newKey]) => {
+          if (formValues[oldKey]) additionalData[newKey] = formValues[oldKey];
+
+          delete formValues[oldKey];
+        });
+      }
+
       let payload: any = { ...formValues };
 
       if (this.structure?.data?.extraPayload) payload = { ...payload, ...this.structure?.data?.extraPayload };
+
+      if (hasAdditionalData) payload.additionalData = additionalData;
 
       const headers = {
         'Content-Type': 'application/json',

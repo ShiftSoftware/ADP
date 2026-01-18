@@ -27,6 +27,7 @@ export class FormInput implements FormElement {
   @Prop() wrapperClass: string;
   @Prop() staticValue?: string;
   @Prop() inputProps?: any = {};
+  @Prop() type?: HTMLInputElement['type'];
   @Prop({ mutable: true }) defaultValue: string;
 
   @State() prefixWidth: number = 0;
@@ -89,6 +90,7 @@ export class FormInput implements FormElement {
             <input
               {...this.inputProps}
               name={this.name}
+              type={this?.type}
               disabled={isDisabled}
               defaultValue={this.defaultValue}
               part={`${this.name}-input form-input`}

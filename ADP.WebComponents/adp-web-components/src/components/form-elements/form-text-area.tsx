@@ -61,14 +61,16 @@ export class FormTextArea implements FormElement {
               name={this.name}
               placeholder={placeholder}
               part={`${this.name}-textarea form-input-textarea`}
-              class={cn('form-input-style form-input-textarea-style', {
+              class={cn('form-input-style form-input-textarea-style', partKeyPrefix + this.name, {
                 'form-input-error-style': isError,
               })}
             >
               {this.defaultValue}
             </textarea>
           </div>
-          <FormErrorMessage name={this.name} isError={isError} errorMessage={locale[errorMessage] || errorMessage} />
+          <div class="-mt-1">
+            <FormErrorMessage name={this.name} isError={isError} errorMessage={locale[errorMessage] || errorMessage} />
+          </div>
         </label>
       </Host>
     );
