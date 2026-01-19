@@ -23,6 +23,10 @@ export const generalInquiryInputsValidation = object({
     .meta({ label: 'Phone number', placeholder: 'Phone number' } as FormInputMeta)
     .required('Phone number is required')
     .test('phone-validation', 'Phone number format invalid', () => phoneValidator?.geIsValidPhoneNumber()),
+  companyBranchId: string()
+    .optional()
+    .meta({ label: 'Branch', placeholder: 'Please select a branch' } as FormInputMeta)
+    .required('Branch is required'),
 });
 
 export type GeneralInquiry = InferType<typeof generalInquiryInputsValidation>;

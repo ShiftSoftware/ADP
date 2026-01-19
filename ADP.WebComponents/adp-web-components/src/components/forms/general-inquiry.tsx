@@ -97,6 +97,8 @@ export class GeneralInquiryForm implements FormHookInterface<GeneralInquiry>, Mu
 
       if (hasAdditionalData) payload.additionalData = additionalData;
 
+      if (!!this?.branchId) payload.companyBranchId = this.branchId;
+
       const headers = {
         'Content-Type': 'application/json',
         'Brand': this.structure?.data?.brandId,
@@ -183,12 +185,17 @@ export class GeneralInquiryForm implements FormHookInterface<GeneralInquiry>, Mu
 
   @Prop() theme?: string;
   @Prop() formId?: string;
+  @Prop() branchId?: string;
   @Prop() isDev?: boolean = false;
   @Prop() disableScrollToTop?: boolean;
   @Prop() getMobileToken?: () => string;
   @Prop() isMobileForm: boolean = false;
 
   @State() form: FormHook<GeneralInquiry>;
+
+  getBranchId() {
+    return this?.branchId;
+  }
 
   // #endregion
   render() {

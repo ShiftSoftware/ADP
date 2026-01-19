@@ -1,6 +1,6 @@
 import { h } from '@stencil/core';
 
-import { FormElementMapper, getPhoneValidator, PhoneValidator } from '~features/form-hook';
+import { FormElementMapper, FormSelectFetcher, FormSelectItem, getPhoneValidator, PhoneValidator } from '~features/form-hook';
 
 import { GeneralInquiry } from './validations';
 
@@ -33,6 +33,27 @@ export const generalInquiryElements: FormElementMapper<GeneralInquiry, Additiona
     }
 
     return <form-phone-number defaultValue={phoneValidator.default} {...props} isLoading={isLoading} validator={phoneValidator} />;
+  },
+
+  companyBranchId: ({ form, language, props }) => {
+    // @ts-ignore
+    const externalBranch = form?.context?.getBranchId();
+
+    if (!!externalBranch) return;
+
+    const fetcher: FormSelectFetcher = async ({ signal }): Promise<FormSelectItem[]> => {
+      const branchEndpoint = form.context.structure?.data.branchApi as string;
+
+      const response = await fetch(branchEndpoint, { signal, headers: { 'Accept-Language': language } });
+
+      const branches = (await response.json()) as { ID?: string; Name?: string }[];
+
+      const parsedOptions = branches.map(branch => ({ label: branch?.Name, value: branch?.ID })) as FormSelectItem[];
+
+      return [...parsedOptions, ...parsedOptions, ...parsedOptions];
+    };
+
+    return <form-select {...props} searchable fetcher={fetcher} language={language} />;
   },
 };
 

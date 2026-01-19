@@ -241,7 +241,7 @@ export class FormSelect implements FormElement {
               {(selectedItem || this.searchValue) && this.clearable ? (
                 <AddIcon part={`${this.name}-cross-icon`} onClick={this.clearInput} class="form-input-select-icon cross" />
               ) : (
-                <ArrowUpIcon part={`${this.name}-arrow-icon`} class="form-input-select-icon arrow" />
+                <ArrowUpIcon part={`${this.name}-arrow-icon select-arrow`} class="form-input-select-icon arrow" />
               )}
             </div>
 
@@ -256,7 +256,7 @@ export class FormSelect implements FormElement {
                 filteredOptions.map(option => (
                   <button
                     type="button"
-                    part={`${this.name}-select-option form-select-option`}
+                    part={cn(`${this.name}-select-option form-select-option`, { 'form-select-option-selected': this.selectedValue === option.value })}
                     onClick={() => this.handleSelection(option)}
                     class={cn('form-select-option', {
                       selected: this.selectedValue === option.value,
