@@ -99,6 +99,8 @@ export class GeneralInquiryForm implements FormHookInterface<GeneralInquiry>, Mu
 
       if (!!this?.branchId) payload.companyBranchId = this.branchId;
 
+      if (!!this.customMessage) payload.message = this.customMessage;
+
       const headers = {
         'Content-Type': 'application/json',
         'Brand': this.structure?.data?.brandId,
@@ -186,7 +188,9 @@ export class GeneralInquiryForm implements FormHookInterface<GeneralInquiry>, Mu
   @Prop() theme?: string;
   @Prop() formId?: string;
   @Prop() branchId?: string;
+  @Prop() customMessage?: string;
   @Prop() isDev?: boolean = false;
+  @Prop() hideBranch: boolean = false;
   @Prop() disableScrollToTop?: boolean;
   @Prop() getMobileToken?: () => string;
   @Prop() isMobileForm: boolean = false;
@@ -195,6 +199,10 @@ export class GeneralInquiryForm implements FormHookInterface<GeneralInquiry>, Mu
 
   getBranchId() {
     return this?.branchId;
+  }
+
+  getHideBranch() {
+    return !!this?.hideBranch;
   }
 
   // #endregion

@@ -37,7 +37,7 @@ export const generalInquiryElements: FormElementMapper<GeneralInquiry, Additiona
 
   companyBranchId: ({ form, language, props }) => {
     // @ts-ignore
-    const externalBranch = form?.context?.getBranchId();
+    const externalBranch = !!form?.context?.getBranchId() || !!form?.context?.getHideBranch();
 
     if (!!externalBranch) return;
 
@@ -50,7 +50,7 @@ export const generalInquiryElements: FormElementMapper<GeneralInquiry, Additiona
 
       const parsedOptions = branches.map(branch => ({ label: branch?.Name, value: branch?.ID })) as FormSelectItem[];
 
-      return [...parsedOptions, ...parsedOptions, ...parsedOptions];
+      return parsedOptions;
     };
 
     return <form-select {...props} searchable fetcher={fetcher} language={language} />;
