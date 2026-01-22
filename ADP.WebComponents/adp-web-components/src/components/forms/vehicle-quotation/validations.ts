@@ -21,8 +21,20 @@ export const vehicleQuotationInputsValidation = object({
   city: string()
     .meta({ label: 'City', placeholder: 'Select a City' } as FormInputMeta)
     .required('This field is required.'),
-  paymentType: string().meta({ label: 'Preferred purchasing method', placeholder: 'Select the purchasing method' } as FormInputMeta),
-  contactTime: string().meta({ label: 'Preferred contact time', placeholder: 'Please select a time' } as FormInputMeta),
+  paymentType: string()
+    .meta({ label: 'Preferred purchasing method', placeholder: 'Select the purchasing method' } as FormInputMeta)
+    .when('$paymentTypeRequired', {
+      is: true,
+      otherwise: schema => schema.optional(),
+      then: schema => schema.required('This field is required.'),
+    }),
+  contactTime: string()
+    .meta({ label: 'Preferred contact time', placeholder: 'Please select a time' } as FormInputMeta)
+    .when('$contactTimeRequired', {
+      is: true,
+      otherwise: schema => schema.optional(),
+      then: schema => schema.required('This field is required.'),
+    }),
   ownVehicle: string().meta({ label: 'Do you own a vehicle?', placeholder: 'Do you own a vehicle?' } as FormInputMeta),
   currentVehicleBrand: string()
     .meta({ label: 'Your current vehicle', placeholder: 'Your current vehicle' } as FormInputMeta)

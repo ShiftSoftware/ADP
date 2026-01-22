@@ -15,6 +15,7 @@ export class FormHook<T> {
   private subscribers: Subscribers = [];
   private schemaObject: AnyObjectSchema;
   private onValuesUpdate: (formValues: T) => void;
+  private requiredContext: Record<string, boolean>;
   private validationType: ValidationType = 'onSubmit';
   private subscribedFields: { [key: string]: Field<any> } = {};
   formErrors: { [key: string]: string } = {};
@@ -29,6 +30,7 @@ export class FormHook<T> {
     this.schemaObject = schemaObject;
     this.formController = { onSubmit: this.onSubmit, onInput: this.onInput };
     if (formStateOptions?.validationType) this.validationType = formStateOptions.validationType;
+    this.requiredContext = this.getRequiredContext();
   }
 
   subscribe = (formName: string, formElement: FormElement) => this.subscribers.push({ name: formName, context: formElement });
@@ -177,7 +179,7 @@ export class FormHook<T> {
 
       const excludedFields = Object.keys(this.schemaObject.fields).filter(key => !this.hasItemInStructure(key));
 
-      const values = await (this.schemaObject.omit(excludedFields) as AnyObjectSchema).validate(formObject, { abortEarly: false });
+      const values = await (this.schemaObject.omit(excludedFields) as AnyObjectSchema).validate(formObject, { abortEarly: false, context: this.requiredContext });
 
       await this.context.formSubmit(values);
     } catch (error) {
@@ -222,18 +224,46 @@ export class FormHook<T> {
     this.submitForm();
   };
 
+  getRequiredContext = (): Record<string, boolean> => {
+    const tempObject = {};
+    try {
+      if (this.context.structure?.requiredContext) {
+        Object.entries(this.context.structure?.requiredContext).forEach(([key, value]) => {
+          tempObject[`${key}Required`] = value;
+        });
+        return tempObject;
+      }
+
+      return tempObject;
+    } catch (error) {
+      return tempObject;
+    }
+  };
+
   getInputState = <MetaType>(name: string): Field<MetaType> => {
-    const validationDescription = this.schemaObject.describe().fields[name] as SchemaDescription;
+    const resolvedSchema = this.schemaObject.resolve({
+      context: this.requiredContext,
+    });
+
+    const validationDescription = resolvedSchema.describe().fields[name] as SchemaDescription;
+
+    let isRequired = false;
+
+    try {
+      resolvedSchema.validateSyncAt(name, { [name]: undefined }, { context: this.requiredContext });
+    } catch (error) {
+      isRequired = true;
+    }
 
     if (!this.subscribedFields[name])
       this.subscribedFields[name] = {
         name,
+        isRequired,
         isError: false,
         disabled: false,
         errorMessage: '',
         continuousValidation: false,
         meta: validationDescription?.meta as MetaType,
-        isRequired: validationDescription?.tests.some(test => test.name === 'required'),
       };
 
     return this.subscribedFields[name];
@@ -288,7 +318,7 @@ export class FormHook<T> {
 
     try {
       // @ts-ignore
-      this.schemaObject.fields[name].validateSync(value);
+      this.schemaObject.fields[name].validateSync(value, { context: this.requiredContext });
       this.signal([{ name, isError: false }]);
       if (wasError !== false) this.rerender({ inputName: name || '', rerenderForm: true });
       return { isError: false, errorMessage: '' };

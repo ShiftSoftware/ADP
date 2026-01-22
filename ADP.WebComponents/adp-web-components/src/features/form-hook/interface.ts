@@ -24,6 +24,7 @@ export type FormElementStructureComponents<T> = {
 
 export type FormElementStructure<T> = {
   data?: Record<string, any>;
+  requiredContext?: Record<string, boolean>;
 } & FormElementStructureComponents<T>;
 
 export interface FormHookInterface<T> {
