@@ -35,7 +35,13 @@ export const vehicleQuotationInputsValidation = object({
       otherwise: schema => schema.optional(),
       then: schema => schema.required('This field is required.'),
     }),
-  ownVehicle: string().meta({ label: 'Do you own a vehicle?', placeholder: 'Do you own a vehicle?' } as FormInputMeta),
+  ownVehicle: string()
+    .meta({ label: 'Do you own a vehicle?', placeholder: 'Do you own a vehicle?' } as FormInputMeta)
+    .when('$ownVehicleRequired', {
+      is: true,
+      otherwise: schema => schema.optional(),
+      then: schema => schema.required('This field is required.'),
+    }),
   currentVehicleBrand: string()
     .meta({ label: 'Your current vehicle', placeholder: 'Your current vehicle' } as FormInputMeta)
     .when('ownVehicle', {
