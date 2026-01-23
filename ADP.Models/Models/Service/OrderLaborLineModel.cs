@@ -21,7 +21,7 @@ public class OrderLaborLineModel :
     public Currencies? InvoiceCurrency { get; set; }
     public string SaleType { get; set; }
     public string AccountNumber { get; set; }
-    public string MenuCode { get; set; }
+    public string PackageCode { get; set; }
     public string CustomerID { get; set; }
     public string CustomerAccountNumber { get; set; }
     public string ServiceCode { get; set; }

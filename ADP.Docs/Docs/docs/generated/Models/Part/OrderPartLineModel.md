@@ -18,7 +18,7 @@ Refers to a Part Line on an Order (This might be a Job Card on Workshop Module, 
 | SoldQuantity <div><strong>``decimal?``</strong></div> | The quantity of the part line that sold. |
 | OrderQuantity <div><strong>``decimal?``</strong></div> | The quantity of the part line that ordered. |
 | SaleType <div><strong>``string``</strong></div> | The type of sale. (e.g. Internal, Bulk, Retail, etc.) |
-| MenuCode <div><strong>``string``</strong></div> | The Menu Code in case this part line is a menu item. |
+| PackageCode <div><strong>``string``</strong></div> | The Package Code in case this part line is a package item. |
 | ExtendedPrice <div><strong>``decimal?``</strong></div> | The final price of this line item after accounting for quantity, discounts, and any applicable taxes or additional charges |
 | PartNumber <div><strong>``string``</strong></div> | The uniqe Part Number of the [Catalog Part](/generated/Models/Part/CatalogPartModel.html). |
 | GenuinePartNumber <div><strong>``bool``</strong></div> | Indicates whether the part is a Genuine Part Number |

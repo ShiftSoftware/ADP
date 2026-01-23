@@ -76,16 +76,16 @@ public class VehicleServiceHistoryEvaluator
                 ServiceType = null,
                 LaborLines = laborLines?.Select(l => new VehicleLaborDTO
                 {
-                    RTSCode = l.LaborCode,
+                    LaborCode = l.LaborCode,
                     ServiceCode = l.ServiceCode,
-                    Description = l.ServiceDescription,
-                    MenuCode = l.MenuCode,
+                    ServiceDescription = l.ServiceDescription,
+                    PackageCode = l.PackageCode,
                 }) ?? Enumerable.Empty<VehicleLaborDTO>(),
                 PartLines = partLines?.Select(p => new VehiclePartDTO
                 {
                     PartNumber = p.PartNumber,
                     PartDescription = null,
-                    MenuCode = p.MenuCode,
+                    PackageCode = p.PackageCode,
                     QTY = p.SoldQuantity,
                 }) ?? Enumerable.Empty<VehiclePartDTO>()
             };

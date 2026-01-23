@@ -1,6 +1,6 @@
 export type VehicleLaborDTO = {
-    rtsCode: string;
-    menuCode: string;
+    laborCode: string;
+    packageCode: string;
     serviceCode: string;
-    description: string;
+    serviceDescription: string;
 };

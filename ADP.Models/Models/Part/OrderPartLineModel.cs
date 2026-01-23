@@ -76,9 +76,9 @@ public class OrderPartLineModel:
 
 
     /// <summary>   
-    /// The Menu Code in case this part line is a menu item.
+    /// The Package Code in case this part line is a package item.
     /// </summary>
-    public string MenuCode { get; set; }
+    public string PackageCode { get; set; }
 
     /// <summary>
     /// The final price of this line item after accounting for quantity, discounts, and any applicable taxes or additional charges
