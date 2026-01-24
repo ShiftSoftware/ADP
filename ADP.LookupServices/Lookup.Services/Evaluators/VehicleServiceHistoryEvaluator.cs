@@ -23,13 +23,13 @@ public class VehicleServiceHistoryEvaluator
         this.ServiceProvider = serviceProvider;
     }
 
-    public async Task<IEnumerable<VehicleServiceHistoryDTO>> Evaluate(string languageCode, ConsistencyLevels consistencyLevel)
+    public static IEnumerable<VehicleServiceHistoryInvoice> GetInvoices(CompanyDataAggregateCosmosModel companyDataAggregate, ConsistencyLevels consistencyLevel)
     {
-        var labors = CompanyDataAggregate.LaborLines ?? new List<OrderLaborLineModel>();
-        var parts = CompanyDataAggregate.PartLines ?? new List<OrderPartLineModel>();
+        var labors = companyDataAggregate.LaborLines ?? new List<OrderLaborLineModel>();
+        var parts = companyDataAggregate.PartLines ?? new List<OrderPartLineModel>();
 
         if (!labors.Any() && !parts.Any())
-            return Enumerable.Empty<VehicleServiceHistoryDTO>();
+            return Enumerable.Empty<VehicleServiceHistoryInvoice>();
 
         var invoiceKeyComparer = new InvoiceKeyEqualityComparer();
 
@@ -41,14 +41,14 @@ public class VehicleServiceHistoryEvaluator
             .GroupBy(p => new VehicleServiceHistoryInvoice(p.CompanyID, p.BranchID, p.InvoiceNumber, p.OrderDocumentNumber), invoiceKeyComparer)
             .ToDictionary(g => g.Key, g => g.ToList(), invoiceKeyComparer);
 
-        var allInvoices = groupedLaborLines
+        var allInvoiceKeys = groupedLaborLines
             .Keys
             .Union(groupedPartLines.Keys, invoiceKeyComparer)
             .ToList();
 
-        var serviceHistory = new List<VehicleServiceHistoryDTO>();
+        var invoices = new List<VehicleServiceHistoryInvoice>();
 
-        foreach (var invoice in allInvoices)
+        foreach (var invoice in allInvoiceKeys)
         {
             if (groupedLaborLines.TryGetValue(invoice, out var laborLines))
                 invoice.LaborLines = laborLines;
@@ -68,6 +68,20 @@ public class VehicleServiceHistoryEvaluator
                     continue;
             }
 
+            invoices.Add(invoice);
+        }
+
+        return invoices;
+    }
+
+    public async Task<IEnumerable<VehicleServiceHistoryDTO>> Evaluate(string languageCode, ConsistencyLevels consistencyLevel)
+    {
+        var allInvoices = GetInvoices(this.CompanyDataAggregate, consistencyLevel);
+
+        var serviceHistory = new List<VehicleServiceHistoryDTO>();
+
+        foreach (var invoice in allInvoices)
+        {
             var serviceHistoryEntry = new VehicleServiceHistoryDTO
             {
                 InvoiceNumber = invoice.InvoiceNumber,
