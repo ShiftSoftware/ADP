@@ -92,11 +92,18 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         return aggregate;
     }
 
-    public async Task<CompanyDataAggregateCosmosModel> GetAggregatedCompanyData(IEnumerable<string> vins, IEnumerable<string> itemTypes)
+    public async Task<IEnumerable<CompanyDataAggregateCosmosModel>> GetAggregatedCompanyData(IEnumerable<string> vins, IEnumerable<string> itemTypes)
     {
         var items = await GetLookupItems(vins, itemTypes);
 
-        return ConvertDynamicListItemsToCompanyData(items);
+        var groupedItems = items.GroupBy(x => x.VIN.ToString().Trim().ToUpper());
+
+        return groupedItems.Select(g =>
+        {
+            var aggregate = ConvertDynamicListItemsToCompanyData(g.ToList());
+            aggregate.VIN = g.Key;
+            return aggregate;
+        });
     }
 
     internal static CompanyDataAggregateCosmosModel ConvertDynamicListItemsToCompanyData(List<dynamic> items)

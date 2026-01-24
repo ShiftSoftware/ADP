@@ -11,7 +11,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
         Task<BrokerModel> GetBrokerAsync(string accountNumber, long? companyID);
         Task<BrokerModel> GetBrokerAsync(long id);
         Task<CompanyDataAggregateCosmosModel> GetAggregatedCompanyData(string vin);
-        Task<CompanyDataAggregateCosmosModel> GetAggregatedCompanyData(IEnumerable<string> vins, IEnumerable<string> itemTypes);
+        Task<IEnumerable<CompanyDataAggregateCosmosModel>> GetAggregatedCompanyData(IEnumerable<string> vins, IEnumerable<string> itemTypes);
         //Task<IEnumerable<StockPartModel>> GetStockItemsAsync(IEnumerable<string> partNumbers);
         Task<ColorModel> GetExteriorColorsAsync(string colorCode, long? brand);
         Task<VehicleModelModel> GetVehicleModelsAsync(string variant, long? brand);

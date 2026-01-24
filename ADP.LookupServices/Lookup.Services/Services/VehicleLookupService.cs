@@ -1,4 +1,5 @@
-﻿using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
+﻿using ShiftSoftware.ADP.Lookup.Services.Aggregate;
+using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using ShiftSoftware.ADP.Lookup.Services.Evaluators;
 using ShiftSoftware.ADP.Models.Vehicle;
 using System;
@@ -26,6 +27,16 @@ public class VehicleLookupService
         this.lookupOptions = options;
         this.serviceProvider = services;
         this.logCosmosService = logCosmosService;
+    }
+
+    public async Task<CompanyDataAggregateCosmosModel> GetAggregatedCompanyDataAsync(string vin)
+    {
+        return await lookupCosmosService.GetAggregatedCompanyData(vin);
+    }
+
+    public async Task<IEnumerable<CompanyDataAggregateCosmosModel>> GetAggregatedCompanyDataAsync(IEnumerable<string> vins, IEnumerable<string> itemTypes)
+    {
+        return await lookupCosmosService.GetAggregatedCompanyData(vins, itemTypes);
     }
 
     public async Task<VehicleLookupDTO> LookupAsync(string vin)
