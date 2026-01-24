@@ -1,6 +1,8 @@
 ﻿using ShiftSoftware.ADP.Lookup.Services.Aggregate;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using ShiftSoftware.ADP.Lookup.Services.Enums;
+using ShiftSoftware.ADP.Models.Part;
+using ShiftSoftware.ADP.Models.Service;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,8 +25,8 @@ public class VehicleServiceHistoryEvaluator
 
     public async Task<IEnumerable<VehicleServiceHistoryDTO>> Evaluate(string languageCode, ConsistencyLevels consistencyLevel)
     {
-        var labors = CompanyDataAggregate.LaborLines ?? new List<Models.Service.OrderLaborLineModel>();
-        var parts = CompanyDataAggregate.PartLines ?? new List<Models.Part.OrderPartLineModel>();
+        var labors = CompanyDataAggregate.LaborLines ?? new List<OrderLaborLineModel>();
+        var parts = CompanyDataAggregate.PartLines ?? new List<OrderPartLineModel>();
 
         if (!labors.Any() && !parts.Any())
             return Enumerable.Empty<VehicleServiceHistoryDTO>();
@@ -32,31 +34,34 @@ public class VehicleServiceHistoryEvaluator
         var invoiceKeyComparer = new InvoiceKeyEqualityComparer();
 
         var groupedLaborLines = labors
-            .GroupBy(l => new InvoiceKey(l.CompanyID, l.BranchID, l.InvoiceNumber, l.OrderDocumentNumber), invoiceKeyComparer)
+            .GroupBy(l => new VehicleServiceHistoryInvoice(l.CompanyID, l.BranchID, l.InvoiceNumber, l.OrderDocumentNumber), invoiceKeyComparer)
             .ToDictionary(g => g.Key, g => g.ToList(), invoiceKeyComparer);
 
         var groupedPartLines = parts
-            .GroupBy(p => new InvoiceKey(p.CompanyID, p.BranchID, p.InvoiceNumber, p.OrderDocumentNumber), invoiceKeyComparer)
+            .GroupBy(p => new VehicleServiceHistoryInvoice(p.CompanyID, p.BranchID, p.InvoiceNumber, p.OrderDocumentNumber), invoiceKeyComparer)
             .ToDictionary(g => g.Key, g => g.ToList(), invoiceKeyComparer);
 
-        var allInvoiceKeys = groupedLaborLines
+        var allInvoices = groupedLaborLines
             .Keys
             .Union(groupedPartLines.Keys, invoiceKeyComparer)
             .ToList();
 
         var serviceHistory = new List<VehicleServiceHistoryDTO>();
 
-        foreach (var invoice in allInvoiceKeys)
+        foreach (var invoice in allInvoices)
         {
-            groupedLaborLines.TryGetValue(invoice, out var laborLines);
-            groupedPartLines.TryGetValue(invoice, out var partLines);
+            if (groupedLaborLines.TryGetValue(invoice, out var laborLines))
+                invoice.LaborLines = laborLines;
+
+            if (groupedPartLines.TryGetValue(invoice, out var partLines))
+                invoice.PartLines = partLines;
 
             if (consistencyLevel == ConsistencyLevels.Strong)
             {
-                var numberOfPartLinesAccordingToLaborRecords = laborLines?.FirstOrDefault()?.NumberOfPartLines ?? 0;
-                var numberOfLaborLinesAccordingToPartRecords = partLines?.FirstOrDefault()?.NumberOfLaborLines ?? 0;
-                var actualPartCount = partLines?.Count ?? 0;
-                var actualLaborCount = laborLines?.Count ?? 0;
+                var numberOfPartLinesAccordingToLaborRecords = invoice.LaborLines?.FirstOrDefault()?.NumberOfPartLines ?? 0;
+                var numberOfLaborLinesAccordingToPartRecords = invoice.PartLines?.FirstOrDefault()?.NumberOfLaborLines ?? 0;
+                var actualPartCount = invoice.PartLines?.Count ?? 0;
+                var actualLaborCount = invoice.LaborLines?.Count ?? 0;
 
                 if (numberOfPartLinesAccordingToLaborRecords != actualPartCount ||
                     numberOfLaborLinesAccordingToPartRecords != actualLaborCount)
@@ -66,22 +71,22 @@ public class VehicleServiceHistoryEvaluator
             var serviceHistoryEntry = new VehicleServiceHistoryDTO
             {
                 InvoiceNumber = invoice.InvoiceNumber,
-                ParentInvoiceNumber = laborLines?.FirstOrDefault()?.ParentInvoiceNumber ?? partLines?.FirstOrDefault()?.ParentInvoiceNumber,
+                ParentInvoiceNumber = invoice.LaborLines?.FirstOrDefault()?.ParentInvoiceNumber ?? invoice.PartLines?.FirstOrDefault()?.ParentInvoiceNumber,
                 JobNumber = invoice.OrderDocumentNumber,
-                AccountNumber = laborLines?.FirstOrDefault()?.AccountNumber ?? partLines?.FirstOrDefault()?.AccountNumber,
+                AccountNumber = invoice.LaborLines?.FirstOrDefault()?.AccountNumber ?? invoice.PartLines?.FirstOrDefault()?.AccountNumber,
                 CompanyName = null,
                 BranchName = null,
-                ServiceDate = GetMaxServiceDate(laborLines, partLines),
+                ServiceDate = GetMaxServiceDate(invoice.LaborLines, invoice.PartLines),
                 Mileage = null,
                 ServiceType = null,
-                LaborLines = laborLines?.Select(l => new VehicleLaborDTO
+                LaborLines = invoice.LaborLines?.Select(l => new VehicleLaborDTO
                 {
                     LaborCode = l.LaborCode,
                     ServiceCode = l.ServiceCode,
                     ServiceDescription = l.ServiceDescription,
                     PackageCode = l.PackageCode,
                 }) ?? Enumerable.Empty<VehicleLaborDTO>(),
-                PartLines = partLines?.Select(p => new VehiclePartDTO
+                PartLines = invoice.PartLines?.Select(p => new VehiclePartDTO
                 {
                     PartNumber = p.PartNumber,
                     PartDescription = null,
@@ -103,8 +108,9 @@ public class VehicleServiceHistoryEvaluator
     }
 
     private static DateTime? GetMaxServiceDate(
-        List<Models.Service.OrderLaborLineModel> laborLines,
-        List<Models.Part.OrderPartLineModel> partLines)
+        List<OrderLaborLineModel> laborLines,
+        List<OrderPartLineModel> partLines
+    )
     {
         var laborDate = laborLines?.Max(x => x.InvoiceDate);
         var partDate = partLines?.Max(x => x.InvoiceDate);
@@ -115,14 +121,18 @@ public class VehicleServiceHistoryEvaluator
         return laborDate ?? partDate;
     }
 
-    private class InvoiceKey
+    public class VehicleServiceHistoryInvoice
     {
         public long? CompanyID { get; }
         public long? BranchID { get; }
         public string InvoiceNumber { get; }
         public string OrderDocumentNumber { get; }
 
-        public InvoiceKey(long? companyID, long? branchID, string invoiceNumber, string orderDocumentNumber)
+        public List<OrderLaborLineModel> LaborLines { get; set; } = new List<OrderLaborLineModel>();
+
+        public List<OrderPartLineModel> PartLines { get; set; } = new List<OrderPartLineModel>();
+
+        public VehicleServiceHistoryInvoice(long? companyID, long? branchID, string invoiceNumber, string orderDocumentNumber)
         {
             CompanyID = companyID;
             BranchID = branchID;
@@ -131,9 +141,9 @@ public class VehicleServiceHistoryEvaluator
         }
     }
 
-    private class InvoiceKeyEqualityComparer : IEqualityComparer<InvoiceKey>
+    private class InvoiceKeyEqualityComparer : IEqualityComparer<VehicleServiceHistoryInvoice>
     {
-        public bool Equals(InvoiceKey x, InvoiceKey y)
+        public bool Equals(VehicleServiceHistoryInvoice x, VehicleServiceHistoryInvoice y)
         {
             if (ReferenceEquals(x, y)) return true;
             if (x is null || y is null) return false;
@@ -144,7 +154,7 @@ public class VehicleServiceHistoryEvaluator
                    x.OrderDocumentNumber == y.OrderDocumentNumber;
         }
 
-        public int GetHashCode(InvoiceKey obj)
+        public int GetHashCode(VehicleServiceHistoryInvoice obj)
         {
             if (obj is null) return 0;
 
