@@ -12,7 +12,9 @@ public class VehicleEntryModel :
     IBranchProps, 
     IOrderDocumentProps, 
     IInvoiceProps,
-    IOrderLineProps
+    IOrderLineProps,
+    ICompanyIntegrationProps,
+    IBranchIntegrationProps
 {
     public string id { get; set; }
     public long? BrandID { get; set; }
@@ -60,4 +62,6 @@ public class VehicleEntryModel :
     public decimal? ExtendedPrice { get; set; }
     public string ItemStatus { get; set; }
     public string InvoiceStatus { get; set; }
+    public string CompanyIntegrationID { get; set; }
+    public string BranchIntegrationID { get; set; }
 }

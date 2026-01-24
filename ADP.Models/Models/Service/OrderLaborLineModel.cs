@@ -9,7 +9,9 @@ public class OrderLaborLineModel :
     ICompanyProps,
     IInvoiceProps,
     IOrderDocumentProps,
-    IOrderLineProps
+    IOrderLineProps,
+    ICompanyIntegrationProps,
+    IBranchIntegrationProps
 {
     public string id { get; set; } = default!;
     public string VIN { get; set; }
@@ -57,4 +59,16 @@ public class OrderLaborLineModel :
     /// The number of corresponding part lines associated with the parent order of this line.
     /// </summary>
     public int NumberOfPartLines { get; set; }
+
+
+    /// <summary>
+    /// An External Identifier that can be used for system to system Integration
+    /// </summary>
+    public string CompanyIntegrationID { get; set; }
+
+
+    /// <summary>
+    /// An External Identifier that can be used for system to system Integration
+    /// </summary>
+    public string BranchIntegrationID { get; set; }
 }

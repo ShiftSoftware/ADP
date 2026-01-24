@@ -16,7 +16,9 @@ public class OrderPartLineModel:
     IOrderLineProps,
     ICustomerProps,
     IIntegrationProps,
-    IGenuinePartProps
+    IGenuinePartProps,
+    ICompanyIntegrationProps,
+    IBranchIntegrationProps
 {
     [DocIgnore]
     public string id { get; set; } = default!;
@@ -187,4 +189,14 @@ public class OrderPartLineModel:
     /// The number of corresponding labor lines associated with the parent order of this line.
     /// </summary>
     public int NumberOfLaborLines { get; set; }
+
+    /// <summary>
+    /// An External Identifier that can be used for system to system Integration
+    /// </summary>
+    public string CompanyIntegrationID { get; set; }
+
+    /// <summary>
+    /// An External Identifier that can be used for system to system Integration
+    /// </summary>
+    public string BranchIntegrationID { get; set; }
 }
