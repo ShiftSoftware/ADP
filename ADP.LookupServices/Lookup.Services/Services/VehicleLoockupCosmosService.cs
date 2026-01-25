@@ -185,17 +185,24 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         if (string.IsNullOrWhiteSpace(variant))
             return null;
 
-        var container = client.GetContainer(
+        try
+        {
+            var container = client.GetContainer(
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.VehicleModels
         );
 
-        var pb = new PartitionKeyBuilder();
-        pb.Add(variant).Add((int)brand);
-        var response = await container.ReadItemAsync<VehicleModelModel>(variant, pb.Build());
+            var pb = new PartitionKeyBuilder();
+            pb.Add(variant).Add((int)brand);
+            var response = await container.ReadItemAsync<VehicleModelModel>(variant, pb.Build());
 
-        if(response.StatusCode == System.Net.HttpStatusCode.OK)
-            return response.Resource;
+            if (response.StatusCode == System.Net.HttpStatusCode.OK)
+                return response.Resource;
+        }
+        catch
+        {
+
+        }
 
         return null;
     }
@@ -205,17 +212,23 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         if (string.IsNullOrWhiteSpace(colorCode))
             return null;
 
-        var container = client.GetContainer(
+        try
+        {
+            var container = client.GetContainer(
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.ExteriorColors
         );
 
-        var pb = new PartitionKeyBuilder();
-        pb.Add(colorCode).Add((int)brand);
-        var response = await container.ReadItemAsync<ColorModel>(colorCode, pb.Build());
+            var pb = new PartitionKeyBuilder();
+            pb.Add(colorCode).Add((int)brand);
+            var response = await container.ReadItemAsync<ColorModel>(colorCode, pb.Build());
 
-        if (response.StatusCode == System.Net.HttpStatusCode.OK)
-            return response.Resource;
+            if (response.StatusCode == System.Net.HttpStatusCode.OK)
+                return response.Resource;
+        }
+        catch
+        {
+        }
 
         return null;
     }
@@ -225,17 +238,23 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         if (string.IsNullOrWhiteSpace(trimCode))
             return null;
 
-        var container = client.GetContainer(
+        try
+        {
+            var container = client.GetContainer(
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.InteriorColors
         );
 
-        var pb = new PartitionKeyBuilder();
-        pb.Add(trimCode).Add((int)brand);
-        var response = await container.ReadItemAsync<ColorModel>(trimCode, pb.Build());
+            var pb = new PartitionKeyBuilder();
+            pb.Add(trimCode).Add((int)brand);
+            var response = await container.ReadItemAsync<ColorModel>(trimCode, pb.Build());
 
-        if (response.StatusCode == System.Net.HttpStatusCode.OK)
-            return response.Resource;
+            if (response.StatusCode == System.Net.HttpStatusCode.OK)
+                return response.Resource;
+        }
+        catch
+        {
+        }
 
         return null;
     }
