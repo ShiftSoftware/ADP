@@ -91,7 +91,7 @@ public class VehicleSaleInformationEvaluator
         if (Options.CompanyLogoResolver is not null)
             companyLogo = await Options.CompanyLogoResolver(new(vehicle.CompanyID, languageCode, ServiceProvider));
 
-        //if (Options.LookupBrokerStock)
+        if (Options.LookupBrokerStock)
         {
             var brokerStockEntries = await this.LookupCosmosService.GetBrokerStockAsync(
                 vehicle.BrandID,

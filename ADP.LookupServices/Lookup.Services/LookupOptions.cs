@@ -40,6 +40,7 @@ public class LookupOptions
     public bool ShowPartLookupStockQauntity { get; set; } = false;
     public bool EnableManufacturerLookup { get; set; }
     public bool CatalogPartShouldComeFromStock { get; set; }
+    public bool LookupBrokerStock { get; set; }
 }
 
 public class PartLocationNameResolverModel

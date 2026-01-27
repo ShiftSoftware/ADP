@@ -26,9 +26,10 @@ public class WarrantyAndFreeServiceDateEvaluator
         //Normal company Sale
         if (saleInformation?.Broker is null)
         {
-            warrantyStartDate = saleInformation?.WarrantyActivationDate;
-
             warrantyStartDate = CompanyDataAggregate.VehicleServiceActivations.FirstOrDefault()?.WarrantyActivationDate;
+
+            if (warrantyStartDate is null)
+                warrantyStartDate = saleInformation?.WarrantyActivationDate;
 
             if (warrantyStartDate is null && Options.WarrantyStartDateDefaultsToInvoiceDate)
                 warrantyStartDate = saleInformation?.InvoiceDate;
@@ -43,7 +44,14 @@ public class WarrantyAndFreeServiceDateEvaluator
                 if (ignoreBrokerStock)
                 {
                     warrantyStartDate = null;
-                    freeServiceStartDate = saleInformation?.WarrantyActivationDate ?? saleInformation?.InvoiceDate;
+
+                    freeServiceStartDate = CompanyDataAggregate.VehicleServiceActivations.FirstOrDefault()?.WarrantyActivationDate;
+
+                    if (freeServiceStartDate is null)
+                        freeServiceStartDate = saleInformation?.WarrantyActivationDate;
+
+                    if (freeServiceStartDate is null && Options.WarrantyStartDateDefaultsToInvoiceDate)
+                        freeServiceStartDate = saleInformation?.InvoiceDate;
                 }
             }
             //Normal Broker Sale
@@ -86,6 +94,11 @@ public class WarrantyAndFreeServiceDateEvaluator
             result.ExtendedWarrantyStartDate = lastExtendedWarrantyEntry.StartDate;
             result.ExtendedWarrantyEndDate = lastExtendedWarrantyEntry.EndDate;
         }
+
+        var freeServiceShiftDate = CompanyDataAggregate.FreeServiceItemDateShifts?.FirstOrDefault();
+
+        if (freeServiceShiftDate is not null)
+            freeServiceStartDate = freeServiceShiftDate.NewDate;
 
         result.FreeServiceStartDate = freeServiceStartDate;
 
