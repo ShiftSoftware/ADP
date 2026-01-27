@@ -61,13 +61,13 @@ public class VehicleServiceItemEvaluator
         var eligibleServiceItems = serviceItems.Where(x => !(x.IsDeleted));
 
         // Brand
-        eligibleServiceItems = eligibleServiceItems.Where(x => vehicle is null || x.BrandIDs.Any(a => a == vehicle.BrandID));
+        eligibleServiceItems = eligibleServiceItems.Where(x => vehicle is null || x.BrandIDs is null || x.BrandIDs.Where(a => a == vehicle.BrandID).Count() > 0);
 
         // Company
-        eligibleServiceItems = eligibleServiceItems.Where(x => x.CompanyIDs is null || x.CompanyIDs.Count() == 0 || vehicle is null || x.CompanyIDs.Any(a => a == vehicle?.CompanyID));
+        eligibleServiceItems = eligibleServiceItems.Where(x => x.CompanyIDs is null || x.CompanyIDs.Count() == 0 || vehicle is null || x.CompanyIDs.Where(a => a == vehicle?.CompanyID).Count() > 0);
 
         // Country
-        eligibleServiceItems = eligibleServiceItems.Where(x => x.CountryIDs is null || x.CountryIDs.Count() == 0 || vehicle is null || x.CountryIDs.Any(a => a == vehicleSaleInformation?.CountryID?.ToLong()));
+        eligibleServiceItems = eligibleServiceItems.Where(x => x.CountryIDs is null || x.CountryIDs.Count() == 0 || vehicle is null || x.CountryIDs.Where(a => a == vehicleSaleInformation?.CountryID?.ToLong()).Count() > 0);
 
         // Expiry
         eligibleServiceItems = eligibleServiceItems.Where(x =>
