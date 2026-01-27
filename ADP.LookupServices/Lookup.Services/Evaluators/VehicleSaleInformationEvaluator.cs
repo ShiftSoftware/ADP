@@ -86,47 +86,89 @@ public class VehicleSaleInformationEvaluator
             result.BranchName = await Options.CompanyBranchNameResolver(
                 new(vehicle.BranchID, languageCode, ServiceProvider));
 
-        string? companyLogo = null;
+        string companyLogo = null;
 
         if (Options.CompanyLogoResolver is not null)
             companyLogo = await Options.CompanyLogoResolver(new(vehicle.CompanyID, languageCode, ServiceProvider));
 
-        //if(!string.IsNullOrWhiteSpace(companyLogo))
-        //    try
-        //    {
-        //        result.CompanyLogo = await GetCompanyLogo(JsonSerializer.Deserialize<List<ShiftFileDTO>>(companyLogo));
-        //    }
-        //    catch (Exception){}
-
-        if (CompanyDataAggregate.BrokerInvoices?.Any() ?? false)
+        //if (Options.LookupBrokerStock)
         {
-            var brokerInvoice = CompanyDataAggregate.BrokerInvoices.FirstOrDefault();
-            var broker = await LookupCosmosService.GetBrokerAsync(brokerInvoice.ID);
+            var brokerStockEntries = await this.LookupCosmosService.GetBrokerStockAsync(
+                vehicle.BrandID,
+                CompanyDataAggregate.VIN
+            );
 
-            result.Broker = new VehicleBrokerSaleInformation
+            if (brokerStockEntries?.Any() ?? false)
             {
-                BrokerID = brokerInvoice.ID,
-                BrokerName = broker?.Name,
-                CustomerID = (brokerInvoice.BrokerCustomerID ?? brokerInvoice.NonOfficialBrokerCustomerID) ?? 0,
-                InvoiceDate = brokerInvoice.InvoiceDate,
-                InvoiceNumber = brokerInvoice.InvoiceNumber,
-            };
-        }
-        else
-        {
-            var broker = await LookupCosmosService.GetBrokerAsync(vehicle?.CustomerAccountNumber, vehicle?.CompanyID);
+                var currentBrokerStock = brokerStockEntries
+                    .Where(x => x.IsAtStock)
+                    .FirstOrDefault();
 
-            // If vehicle sold to broker and the broker is terminated, then make vsdata as start date.
-            // If vehicle sold to broker before start date and it is not exists in broker intial vehicles,
-            // then make vsdata as start date.
-            if (broker is not null)
-                if (!broker.TerminationDate.HasValue && (broker.AccountStartDate <= vehicle?.InvoiceDate || CompanyDataAggregate.BrokerInitialVehicles?.Count(x => x?.BrokerID == broker.ID) > 0))
+                if (currentBrokerStock is not null)
+                {
                     result.Broker = new VehicleBrokerSaleInformation
                     {
-                        BrokerID = broker.ID,
-                        BrokerName = broker.Name
+                        BrokerID = currentBrokerStock.BrokerID,
+                        BrokerName = currentBrokerStock.Broker.Name,
                     };
+                }
+                else
+                {
+                    if (brokerStockEntries.Where(x => x.Invoices is not null).SelectMany(x => x.Invoices).Count() > 0)
+                    {
+                        var lastBrokerStock = brokerStockEntries
+                            .OrderByDescending(x => x.Invoices.Max(x => x.InvoiceDate))
+                            .FirstOrDefault();
+
+                        if (lastBrokerStock is not null)
+                        {
+                            var lastBrokerInvoice = lastBrokerStock
+                                .Invoices?
+                                .OrderByDescending(x => x.InvoiceDate)
+                                .FirstOrDefault();
+
+                            result.Broker = new VehicleBrokerSaleInformation
+                            {
+                                BrokerID = lastBrokerStock.BrokerID,
+                                BrokerName = lastBrokerStock.Broker.Name,
+                                InvoiceDate = lastBrokerInvoice.InvoiceDate.ToUniversalTime().Date,
+                                InvoiceNumber = lastBrokerInvoice.ID,
+                            };
+                        }
+                    }
+                }
+            }
         }
+
+        //if (CompanyDataAggregate.BrokerInvoices?.Any() ?? false)
+        //{
+        //    var brokerInvoice = CompanyDataAggregate.BrokerInvoices.FirstOrDefault();
+        //    var broker = await LookupCosmosService.GetBrokerAsync(brokerInvoice.ID);
+
+        //    result.Broker = new VehicleBrokerSaleInformation
+        //    {
+        //        BrokerID = brokerInvoice.ID,
+        //        BrokerName = broker?.Name,
+        //        CustomerID = (brokerInvoice.BrokerCustomerID ?? brokerInvoice.NonOfficialBrokerCustomerID) ?? 0,
+        //        InvoiceDate = brokerInvoice.InvoiceDate,
+        //        InvoiceNumber = brokerInvoice.InvoiceNumber,
+        //    };
+        //}
+        //else
+        //{
+        //    var broker = await LookupCosmosService.GetBrokerAsync(vehicle?.CustomerAccountNumber, vehicle?.CompanyID);
+
+        //    // If vehicle sold to broker and the broker is terminated, then make vsdata as start date.
+        //    // If vehicle sold to broker before start date and it is not exists in broker intial vehicles,
+        //    // then make vsdata as start date.
+        //    if (broker is not null)
+        //        if (!broker.TerminationDate.HasValue && (broker.AccountStartDate <= vehicle?.InvoiceDate || CompanyDataAggregate.BrokerInitialVehicles?.Count(x => x?.BrokerID == broker.ID) > 0))
+        //            result.Broker = new VehicleBrokerSaleInformation
+        //            {
+        //                BrokerID = broker.ID,
+        //                BrokerName = broker.Name
+        //            };
+        //}
 
         return result;
     }

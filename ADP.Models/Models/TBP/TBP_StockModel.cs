@@ -1,5 +1,4 @@
-﻿using ShiftSoftware.ADP.Models.Enums;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -32,6 +31,16 @@ public class TBP_StockModel
     public IEnumerable<TBP_VehicleTransferModel> Transfers { get; set; }
     public IEnumerable<TBP_Invoice> Invoices { get; set; }
     public IEnumerable<TBP_VehicleEntryModel> VehilceEntries { get; set; }
+
+    [Newtonsoft.Json.JsonIgnore]
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool IsAtStock
+    {
+        get
+        {
+            return Quantity > 0;
+        }
+    }
 
     public void CalculateQuantity()
     {

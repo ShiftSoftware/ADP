@@ -303,6 +303,32 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         return items.FirstOrDefault();
     }
 
+    public async Task<IEnumerable<TBP_StockModel>> GetBrokerStockAsync(long? brandId, string vin)
+    {
+        var container = client.GetContainer(
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.TBP,
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.TBP_BrokerStock
+        );
+
+        var queryable = container.GetItemLinqQueryable<TBP_StockModel>(true)
+            .Where(x => x.VIN == vin);
+
+        if (brandId is not null)
+            queryable = queryable.Where(x => x.BrandID == brandId);
+
+        var iterator = queryable.ToFeedIterator();
+        
+        var items = new List<TBP_StockModel>();
+
+        while (iterator.HasMoreResults)
+        {
+            var response = await iterator.ReadNextAsync();
+            items.AddRange(response);
+        }
+
+        return items;
+    }
+
     public async Task<IEnumerable<ServiceItemModel>> GetServiceItemsAsync()
     {
         //if (invoiceDate is null)

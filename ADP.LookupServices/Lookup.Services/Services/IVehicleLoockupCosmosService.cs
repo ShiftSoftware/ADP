@@ -21,5 +21,6 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
         Task<IEnumerable<VehicleModelModel>> GetVehicleModelsByKatashikiAsync(string katashiki);
         Task<IEnumerable<VehicleModelModel>> GetVehicleModelsByVariantAsync(string variant);
         Task<IEnumerable<VehicleModelModel>> GetVehicleModelsByVinAsync(string vin);
+        Task<IEnumerable<TBP_StockModel>> GetBrokerStockAsync(long? brandId, string vin);
     }
 }
