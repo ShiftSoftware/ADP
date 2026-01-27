@@ -1,6 +1,10 @@
-﻿namespace ShiftSoftware.ADP.Models.Vehicle;
+﻿using ShiftSoftware.ADP.Models.Content;
+using ShiftSoftware.ShiftEntity.Model.Enums;
+using System.Collections.Generic;
 
-public class VehicleModelModel: IBrandProps
+namespace ShiftSoftware.ADP.Models.Vehicle;
+
+public class VehicleModelModel: IBrandProps, IContentProps
 {
     public string id { get; set; }
     public long? BrandID { get; set; }
@@ -24,4 +28,7 @@ public class VehicleModelModel: IBrandProps
     public string EngineType { get; set; }
     public string TankCap { get; set; }
     public string Style { get; set; }
+    public string DisplayName { get; set; }
+    public IEnumerable<PublishTarget> PublishTargets { get; set; } = new HashSet<PublishTarget>();
+    public long ContentID { get; set; }
 }
