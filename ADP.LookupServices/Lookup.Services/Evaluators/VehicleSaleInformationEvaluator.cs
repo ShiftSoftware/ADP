@@ -23,9 +23,11 @@ public class VehicleSaleInformationEvaluator
         this.LookupCosmosService = lookupCosmosService;
     }
 
-    public async Task<VehicleSaleInformation> Evaluate(string languageCode)
+    public async Task<VehicleSaleInformation> Evaluate(VehicleLookupRequestOptions requestOptions)
     {
         VehicleSaleInformation result = new();
+
+        string languageCode = requestOptions.LanguageCode;
 
         var vehicles = CompanyDataAggregate.VehicleEntries;
 
@@ -138,6 +140,17 @@ public class VehicleSaleInformationEvaluator
                     }
                 }
             }
+        }
+
+        if (requestOptions.LookupEndCustomer)
+        {
+            result.EndCustomer = new VehicleSaleEndCustomerInformationDTO
+            {
+                ID = "1",
+                Name = "Full Customer Name",
+                Phone = "+964 750 222 1212",
+                IDNumber = "193828293842849"
+            };
         }
 
         //if (CompanyDataAggregate.BrokerInvoices?.Any() ?? false)

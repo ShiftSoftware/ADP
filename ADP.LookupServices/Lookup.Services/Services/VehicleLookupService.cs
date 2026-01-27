@@ -65,7 +65,7 @@ public class VehicleLookupService
             SSC = new VehicleSSCEvaluator(companyDataAggregate).Evaluate(),
             NextServiceDate = companyDataAggregate.LaborLines?.Max(x => x.NextServiceDate),
             Accessories = await new VehicleAccessoriesEvaluator(companyDataAggregate, lookupOptions, serviceProvider).Evaluate(requestOptions.LanguageCode),
-            SaleInformation = await new VehicleSaleInformationEvaluator(companyDataAggregate, lookupOptions, serviceProvider, lookupCosmosService).Evaluate(requestOptions.LanguageCode),
+            SaleInformation = await new VehicleSaleInformationEvaluator(companyDataAggregate, lookupOptions, serviceProvider, lookupCosmosService).Evaluate(requestOptions),
         };
 
         data.Warranty = new WarrantyAndFreeServiceDateEvaluator(companyDataAggregate, lookupOptions)

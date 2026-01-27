@@ -61,4 +61,5 @@ public class VehicleSaleInformation
 
     [ShiftSoftware.ShiftEntity.Model.HashIds.RegionHashIdConverter]
     public string RegionID { get; set; }
+    public VehicleSaleEndCustomerInformationDTO EndCustomer { get; set; }
 }

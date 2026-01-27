@@ -12,4 +12,5 @@ public class VehicleLookupRequestOptions
     public bool InsertCustomerVehcileLookupLog { get; set; }
     public CustomerVehicleLookupLogInfo CustomerVehicleLookupLogInfo { get; set; }
     public ConsistencyLevels VehicleServiceHistoryConsistencyLevel { get; set; } = ConsistencyLevels.Strong;
+    public bool LookupEndCustomer { get; set; }
 }

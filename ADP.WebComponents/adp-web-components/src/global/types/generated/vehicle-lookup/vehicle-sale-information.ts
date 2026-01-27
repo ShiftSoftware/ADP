@@ -1,4 +1,5 @@
 import type { VehicleBrokerSaleInformation } from './vehicle-broker-sale-information';
+import type { VehicleSaleEndCustomerInformationDTO } from './vehicle-sale-end-customer-information-dto';
 export type VehicleSaleInformation = {
     countryID: string;
     countryName: string;
@@ -13,4 +14,5 @@ export type VehicleSaleInformation = {
     invoiceNumber: string;
     broker: VehicleBrokerSaleInformation;
     regionID: string;
+    endCustomer: VehicleSaleEndCustomerInformationDTO;
 };
