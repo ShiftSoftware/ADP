@@ -9,7 +9,6 @@ public class VehicleBrokerSaleInformation
 {
     public long BrokerID { get; set; }
     public string BrokerName { get; set; }
-    public long? CustomerID { get; set; }
     public long? InvoiceNumber { get; set; }
 
     [JsonCustomDateTime("yyyy-MM-dd")]

@@ -43,9 +43,9 @@
 
 	<ItemGroup>
 		<PackageReference Include="FileHelpers" Version="3.5.2" />
-		<PackageReference Include="libphonenumber-csharp" Version="9.0.21" />
+		<PackageReference Include="libphonenumber-csharp" Version="9.0.22" />
 		<PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
-		<PackageReference Include="ShiftSoftware.ShiftEntity.Model" Version="2026.1.7.1" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.Model" Version="2026.1.28.1" />
 	</ItemGroup>
 
 	<ItemGroup>

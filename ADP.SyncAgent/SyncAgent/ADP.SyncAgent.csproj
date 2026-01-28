@@ -22,14 +22,14 @@
 
 	<ItemGroup>
 		<PackageReference Include="AutoMapper" Version="14.0.0" />
-		<PackageReference Include="Azure.Storage.Blobs" Version="12.26.0" />
-		<PackageReference Include="Azure.Storage.Files.Shares" Version="12.24.0" />
+		<PackageReference Include="Azure.Storage.Blobs" Version="12.27.0" />
+		<PackageReference Include="Azure.Storage.Files.Shares" Version="12.25.0" />
 		<PackageReference Include="CsvHelper" Version="33.1.0" />
-		<PackageReference Include="EFCore.BulkExtensions.SqlServer" Version="9.0.2" />
+		<PackageReference Include="EFCore.BulkExtensions.SqlServer" Version="10.0.0" />
 		<PackageReference Include="LibGit2Sharp" Version="0.31.0" />
-		<PackageReference Include="Microsoft.Azure.Cosmos" Version="3.56.0" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.1" />
-		<PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.1" />
+		<PackageReference Include="Microsoft.Azure.Cosmos" Version="3.57.0" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.2" />
+		<PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.2" />
 		<PackageReference Include="Polly" Version="8.6.5" />
 		<PackageReference Include="ShiftSoftware.ADP.Models" Version="$(ADPVersion)" Condition="!Exists('..\..\ADP.Models\Models\Models.csproj')" />
 	</ItemGroup>

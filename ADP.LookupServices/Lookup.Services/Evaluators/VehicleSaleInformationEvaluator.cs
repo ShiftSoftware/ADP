@@ -1,4 +1,5 @@
-﻿using ShiftSoftware.ADP.Lookup.Services.Aggregate;
+﻿using Microsoft.Azure.Cosmos.Linq;
+using ShiftSoftware.ADP.Lookup.Services.Aggregate;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using ShiftSoftware.ADP.Lookup.Services.Services;
 using ShiftSoftware.ADP.Models.Vehicle;
@@ -100,12 +101,13 @@ public class VehicleSaleInformationEvaluator
                 CompanyDataAggregate.VIN
             );
 
-            if (brokerStockEntries?.Any() ?? false)
+            if (brokerStockEntries is not null && brokerStockEntries.Count() > 0)
             {
                 var currentBrokerStock = brokerStockEntries
                     .Where(x => x.IsAtStock)
                     .FirstOrDefault();
 
+                //At Broker Stock
                 if (currentBrokerStock is not null)
                 {
                     result.Broker = new VehicleBrokerSaleInformation
@@ -114,18 +116,20 @@ public class VehicleSaleInformationEvaluator
                         BrokerName = currentBrokerStock.Broker.Name,
                     };
                 }
+                //Not at Broker Stock
                 else
                 {
-                    if (brokerStockEntries.Where(x => x.Invoices is not null).SelectMany(x => x.Invoices).Count() > 0)
+                    if (brokerStockEntries.Where(x => x.Invoices is not null).SelectMany(x => x.Invoices).Where(x => !x.IsDeleted).Count() > 0)
                     {
                         var lastBrokerStock = brokerStockEntries
-                            .OrderByDescending(x => x.Invoices.Max(x => x.InvoiceDate))
+                            .OrderByDescending(x => x.Invoices.Where(x => !x.IsDeleted).Max(x => x.InvoiceDate))
                             .FirstOrDefault();
 
                         if (lastBrokerStock is not null)
                         {
                             var lastBrokerInvoice = lastBrokerStock
                                 .Invoices?
+                                .Where(x => !x.IsDeleted)
                                 .OrderByDescending(x => x.InvoiceDate)
                                 .FirstOrDefault();
 
@@ -134,22 +138,33 @@ public class VehicleSaleInformationEvaluator
                                 BrokerID = lastBrokerStock.BrokerID,
                                 BrokerName = lastBrokerStock.Broker.Name,
                                 InvoiceDate = lastBrokerInvoice.InvoiceDate.ToUniversalTime().Date,
-                                InvoiceNumber = lastBrokerInvoice.ID,
+                                InvoiceNumber = lastBrokerInvoice.InvoiceNumber,
                             };
+
+                            if (requestOptions.LookupEndCustomer && lastBrokerInvoice.IsCompleted)
+                            {
+                                result.EndCustomer = new VehicleSaleEndCustomerInformationDTO
+                                {
+                                    Name = lastBrokerInvoice.CustomerName,
+                                    Phone = lastBrokerInvoice.CustomerPhone,
+                                    IDNumber = lastBrokerInvoice.CustomerIDNumber
+                                };
+                            }
                         }
                     }
                 }
             }
         }
 
-        if (requestOptions.LookupEndCustomer)
+        //Load Customer from Customer Databse
+        if (requestOptions.LookupEndCustomer && result.Broker is null)
         {
             result.EndCustomer = new VehicleSaleEndCustomerInformationDTO
             {
-                ID = "1",
-                Name = "Full Customer Name",
-                Phone = "+964 750 222 1212",
-                IDNumber = "193828293842849"
+                ID = vehicle.CustomerID,
+                Name = $"Name for: {vehicle.CustomerID}",
+                Phone = $"Phone for: {vehicle.CustomerID}",
+                IDNumber = $"ID Number for: {vehicle.CustomerID}"
             };
         }
 
