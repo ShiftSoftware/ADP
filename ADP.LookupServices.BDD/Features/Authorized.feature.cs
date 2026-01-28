@@ -17,10 +17,12 @@ namespace LookupServices.BDD.Features
     
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Reqnroll", "3.0.0.0")]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    public partial class AuthorizedVehiclesFeature : object, global::Xunit.IClassFixture<AuthorizedVehiclesFeature.FixtureData>, global::Xunit.IAsyncLifetime
+    public partial class AuthorizedVehiclesFeature : object, Xunit.IClassFixture<AuthorizedVehiclesFeature.FixtureData>, Xunit.IAsyncLifetime
     {
         
         private global::Reqnroll.ITestRunner testRunner;
+        
+        private Xunit.ITestOutputHelper _testOutputHelper;
         
         private static string[] featureTags = ((string[])(null));
         
@@ -28,12 +30,10 @@ namespace LookupServices.BDD.Features
 	A car is considered ""Authorized"" or ""Official"" if it is imported by the official distributor for a specific geographic region.
 	In contrast, cars not imported by the official distributor are considered ""Unauthorized"", ""Unofficial"", or ""Grey Imports"".", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
-        private global::Xunit.Abstractions.ITestOutputHelper _testOutputHelper;
-        
 #line 1 "Authorized.feature"
 #line hidden
         
-        public AuthorizedVehiclesFeature(AuthorizedVehiclesFeature.FixtureData fixtureData, global::Xunit.Abstractions.ITestOutputHelper testOutputHelper)
+        public AuthorizedVehiclesFeature(AuthorizedVehiclesFeature.FixtureData fixtureData, Xunit.ITestOutputHelper testOutputHelper)
         {
             this._testOutputHelper = testOutputHelper;
         }
@@ -92,7 +92,7 @@ namespace LookupServices.BDD.Features
         public void ScenarioInitialize(global::Reqnroll.ScenarioInfo scenarioInfo, global::Reqnroll.RuleInfo ruleInfo)
         {
             testRunner.OnScenarioInitialize(scenarioInfo, ruleInfo);
-            testRunner.ScenarioContext.ScenarioContainer.RegisterInstanceAs<global::Xunit.Abstractions.ITestOutputHelper>(_testOutputHelper);
+            testRunner.ScenarioContext.ScenarioContainer.RegisterInstanceAs<Xunit.ITestOutputHelper>(_testOutputHelper);
         }
         
         public async global::System.Threading.Tasks.Task ScenarioStartAsync()
@@ -110,7 +110,7 @@ namespace LookupServices.BDD.Features
             return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/Authorized.feature.ndjson", 6);
         }
         
-        async global::System.Threading.Tasks.Task global::Xunit.IAsyncLifetime.InitializeAsync()
+        async System.Threading.Tasks.ValueTask Xunit.IAsyncLifetime.InitializeAsync()
         {
             try
             {
@@ -120,7 +120,7 @@ namespace LookupServices.BDD.Features
             {
                 try
                 {
-                    ((global::Xunit.IAsyncLifetime)(this)).DisposeAsync();
+                    ((Xunit.IAsyncLifetime)(this)).DisposeAsync();
                 }
                 catch (System.Exception e2)
                 {
@@ -130,12 +130,12 @@ namespace LookupServices.BDD.Features
             }
         }
         
-        async global::System.Threading.Tasks.Task global::Xunit.IAsyncLifetime.DisposeAsync()
+        async System.Threading.Tasks.ValueTask System.IAsyncDisposable.DisposeAsync()
         {
             await this.TestTearDownAsync();
         }
         
-        [global::Xunit.SkippableFactAttribute(DisplayName="Authorized From Initial Stock")]
+        [global::Xunit.FactAttribute(DisplayName="Authorized From Initial Stock")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Authorized Vehicles")]
         [global::Xunit.TraitAttribute("Description", "Authorized From Initial Stock")]
         public async global::System.Threading.Tasks.Task AuthorizedFromInitialStock()
@@ -175,7 +175,7 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.SkippableFactAttribute(DisplayName="Authorized From Dealer Stock (Dealer DMS)")]
+        [global::Xunit.FactAttribute(DisplayName="Authorized From Dealer Stock (Dealer DMS)")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Authorized Vehicles")]
         [global::Xunit.TraitAttribute("Description", "Authorized From Dealer Stock (Dealer DMS)")]
         public async global::System.Threading.Tasks.Task AuthorizedFromDealerStockDealerDMS()
@@ -216,7 +216,7 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.SkippableFactAttribute(DisplayName="Authorized From SSC")]
+        [global::Xunit.FactAttribute(DisplayName="Authorized From SSC")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Authorized Vehicles")]
         [global::Xunit.TraitAttribute("Description", "Authorized From SSC")]
         public async global::System.Threading.Tasks.Task AuthorizedFromSSC()
@@ -255,7 +255,7 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.SkippableFactAttribute(DisplayName="Unauthorized")]
+        [global::Xunit.FactAttribute(DisplayName="Unauthorized")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Authorized Vehicles")]
         [global::Xunit.TraitAttribute("Description", "Unauthorized")]
         public async global::System.Threading.Tasks.Task Unauthorized()
@@ -329,15 +329,15 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
         
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Reqnroll", "3.0.0.0")]
         [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-        public class FixtureData : object, global::Xunit.IAsyncLifetime
+        public class FixtureData : object, Xunit.IAsyncLifetime
         {
             
-            async global::System.Threading.Tasks.Task global::Xunit.IAsyncLifetime.InitializeAsync()
+            async System.Threading.Tasks.ValueTask Xunit.IAsyncLifetime.InitializeAsync()
             {
                 await AuthorizedVehiclesFeature.FeatureSetupAsync();
             }
             
-            async global::System.Threading.Tasks.Task global::Xunit.IAsyncLifetime.DisposeAsync()
+            async System.Threading.Tasks.ValueTask System.IAsyncDisposable.DisposeAsync()
             {
                 await AuthorizedVehiclesFeature.FeatureTearDownAsync();
             }
