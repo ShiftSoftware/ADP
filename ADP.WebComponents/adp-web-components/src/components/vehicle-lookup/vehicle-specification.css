@@ -2,10 +2,13 @@
 @import '../../features/vehicle-info-layout/vehicle-info-layout.css';
 
 :host {
-  all: initial !important;
   display: block;
+  all: initial !important;
+  font-family: inherit !important;
+  font-family: 'Noto Kufi Arabic', 'Nunito', Roboto, Arial, sans-serif !important;
 }
 
-* {
-  font-family: Arial;
+*,
+:host * {
+  font-family: inherit !important;
 }

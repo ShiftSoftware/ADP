@@ -28,6 +28,27 @@ const groupFive = {
 
 const mockData = {
   'JTMHX01J8L4198293': {
+    saleInformation: {
+      countryID: null,
+      countryName: null,
+      companyID: null,
+      companyName: 'SAS',
+      branchID: null,
+      branchName: 'SAS | Erbil - Showroom',
+      customerAccountNumber: 'R02599',
+      customerID: '129345',
+      invoiceDate: '2025-09-30',
+      warrantyActivationDate: null,
+      invoiceNumber: '70003949',
+      broker: {
+        brokerID: 825,
+        brokerName: 'Nwekar Auto',
+        invoiceNumber: null,
+        invoiceDate: '2025-10-29',
+      },
+      regionID: null,
+      endCustomer: null,
+    },
     accessories: [
       {
         image: '',
@@ -45,7 +66,7 @@ const mockData = {
       brand: 0,
       brandIntegrationID: null,
     },
-    saleInformation: null,
+
     isAuthorized: false,
     warranty: null,
     nextServiceDate: '2023-12-12',
@@ -260,6 +281,27 @@ const mockData = {
     basicModelCode: null,
   },
   'JTMHX01J8L4198294': {
+    saleInformation: {
+      countryID: null,
+      countryName: null,
+      companyID: null,
+      companyName: 'SAS',
+      branchID: null,
+      branchName: 'SAS | Erbil - Showroom',
+      customerAccountNumber: 'R00003',
+      customerID: '1180',
+      invoiceDate: '2013-03-06',
+      warrantyActivationDate: null,
+      invoiceNumber: '11100040',
+      broker: null,
+      regionID: null,
+      endCustomer: {
+        id: '1180',
+        name: 'Name for: 1180',
+        phone: 'Phone for: 1180',
+        idNumber: 'ID Number for: 1180',
+      },
+    },
     accessories: [],
     paintThickness: {},
     vin: 'JTMHX01J8L4198294',
@@ -272,7 +314,7 @@ const mockData = {
       brand: 0,
       brandIntegrationID: null,
     },
-    saleInformation: null,
+
     isAuthorized: false,
     warranty: null,
     nextServiceDate: '2023-12-12',
@@ -487,6 +529,27 @@ const mockData = {
     basicModelCode: null,
   },
   'JTMHX01J8L4198295': {
+    saleInformation: {
+      countryID: null,
+      countryName: null,
+      companyID: null,
+      companyName: 'SAS',
+      branchID: null,
+      branchName: 'SAS | Erbil - Showroom',
+      customerAccountNumber: 'R02599',
+      customerID: '129345',
+      invoiceDate: '2025-09-30',
+      warrantyActivationDate: null,
+      invoiceNumber: '70003949',
+      broker: {
+        brokerID: 825,
+        brokerName: 'Nwekar Auto',
+        invoiceNumber: null,
+        invoiceDate: '2025-10-29',
+      },
+      regionID: null,
+      endCustomer: null,
+    },
     accessories: null,
     paintThickness: {
       parts: [],
@@ -501,7 +564,7 @@ const mockData = {
       brand: 0,
       brandIntegrationID: null,
     },
-    saleInformation: null,
+
     isAuthorized: false,
     warranty: null,
     nextServiceDate: '2023-12-12',
@@ -768,6 +831,27 @@ const mockData = {
     basicModelCode: null,
   },
   'JTMHX01J8L4198296': {
+    saleInformation: {
+      countryID: null,
+      countryName: null,
+      companyID: null,
+      companyName: 'SAS',
+      branchID: null,
+      branchName: 'SAS | Erbil - Showroom',
+      customerAccountNumber: 'R00003',
+      customerID: '1180',
+      invoiceDate: '2013-03-06',
+      warrantyActivationDate: null,
+      invoiceNumber: '11100040',
+      broker: null,
+      regionID: null,
+      endCustomer: {
+        id: '1180',
+        name: 'Name for: 1180',
+        phone: 'Phone for: 1180',
+        idNumber: 'ID Number for: 1180',
+      },
+    },
     accessories: [
       {
         partNumber: 'yakam',
@@ -789,7 +873,7 @@ const mockData = {
       brand: 0,
       brandIntegrationID: null,
     },
-    saleInformation: null,
+
     isAuthorized: false,
     warranty: {
       hasActiveWarranty: true,
@@ -1058,6 +1142,27 @@ const mockData = {
     basicModelCode: null,
   },
   'MR0BX8CD3P2791075': {
+    saleInformation: {
+      countryID: null,
+      countryName: null,
+      companyID: null,
+      companyName: 'SAS',
+      branchID: null,
+      branchName: 'SAS | Erbil - Showroom',
+      customerAccountNumber: 'R02599',
+      customerID: '129345',
+      invoiceDate: '2025-09-30',
+      warrantyActivationDate: null,
+      invoiceNumber: '70003949',
+      broker: {
+        brokerID: 825,
+        brokerName: 'Nwekar Auto',
+        invoiceNumber: null,
+        invoiceDate: '2025-10-29',
+      },
+      regionID: null,
+      endCustomer: null,
+    },
     accessories: [
       {
         partNumber: 'yakam',
@@ -1800,6 +1905,27 @@ const mockData = {
     basicModelCode: 'TGN126',
   },
   'JTMHX01J8L4198299': {
+    saleInformation: {
+      countryID: null,
+      countryName: null,
+      companyID: null,
+      companyName: 'SAS',
+      branchID: null,
+      branchName: 'SAS | Erbil - Showroom',
+      customerAccountNumber: 'R00003',
+      customerID: '1180',
+      invoiceDate: '2013-03-06',
+      warrantyActivationDate: null,
+      invoiceNumber: '11100040',
+      broker: null,
+      regionID: null,
+      endCustomer: {
+        id: '1180',
+        name: 'Name for: 1180',
+        phone: 'Phone for: 1180',
+        idNumber: 'ID Number for: 1180',
+      },
+    },
     accessories: [
       {
         partNumber: 'yakam2',
@@ -1884,7 +2010,7 @@ const mockData = {
       brand: 0,
       brandIntegrationID: null,
     },
-    saleInformation: null,
+
     isAuthorized: false,
     warranty: {
       hasActiveWarranty: false,
@@ -2126,6 +2252,27 @@ const mockData = {
     basicModelCode: null,
   },
   'JTMABBBJ9P4099243': {
+    saleInformation: {
+      countryID: null,
+      countryName: null,
+      companyID: null,
+      companyName: 'SAS',
+      branchID: null,
+      branchName: 'SAS | Erbil - Showroom',
+      customerAccountNumber: 'R02599',
+      customerID: '129345',
+      invoiceDate: '2025-09-30',
+      warrantyActivationDate: null,
+      invoiceNumber: '70003949',
+      broker: {
+        brokerID: 825,
+        brokerName: 'Nwekar Auto',
+        invoiceNumber: null,
+        invoiceDate: '2025-10-29',
+      },
+      regionID: null,
+      endCustomer: null,
+    },
     accessories: [
       {
         partNumber: 'yakam',
@@ -2820,6 +2967,28 @@ const mockData = {
     basicModelCode: 'VJA300',
   },
   'JTMHU09J6E4100543': {
+    koso: 99,
+    saleInformation: {
+      countryID: null,
+      countryName: null,
+      companyID: null,
+      companyName: 'SAS',
+      branchID: null,
+      branchName: 'SAS | Erbil - Showroom',
+      customerAccountNumber: 'R00003',
+      customerID: '1180',
+      invoiceDate: '2013-03-06',
+      warrantyActivationDate: null,
+      invoiceNumber: '11100040',
+      broker: null,
+      regionID: null,
+      endCustomer: {
+        id: '1180',
+        name: 'Name for: 1180',
+        phone: 'Phone for: 1180',
+        idNumber: 'ID Number for: 1180',
+      },
+    },
     paintThickness: {
       parts: [
         {
@@ -2882,7 +3051,7 @@ const mockData = {
       brand: 0,
       brandIntegrationID: null,
     },
-    saleInformation: null,
+
     isAuthorized: false,
     warranty: null,
     nextServiceDate: '2025-02-19',
@@ -3307,6 +3476,27 @@ const mockData = {
     basicModelCode: null,
   },
   'JTMABBBJ9P4099200': {
+    saleInformation: {
+      countryID: null,
+      countryName: null,
+      companyID: null,
+      companyName: 'SAS',
+      branchID: null,
+      branchName: 'SAS | Erbil - Showroom',
+      customerAccountNumber: 'R02599',
+      customerID: '129345',
+      invoiceDate: '2025-09-30',
+      warrantyActivationDate: null,
+      invoiceNumber: '70003949',
+      broker: {
+        brokerID: 825,
+        brokerName: 'Nwekar Auto',
+        invoiceNumber: null,
+        invoiceDate: '2025-10-29',
+      },
+      regionID: null,
+      endCustomer: null,
+    },
     paintThickness: {
       parts: [
         {
@@ -3825,6 +4015,27 @@ const mockData = {
     basicModelCode: 'VJA300',
   },
   'JTMABBBJ9P4099201': {
+    saleInformation: {
+      countryID: null,
+      countryName: null,
+      companyID: null,
+      companyName: 'SAS',
+      branchID: null,
+      branchName: 'SAS | Erbil - Showroom',
+      customerAccountNumber: 'R00003',
+      customerID: '1180',
+      invoiceDate: '2013-03-06',
+      warrantyActivationDate: null,
+      invoiceNumber: '11100040',
+      broker: null,
+      regionID: null,
+      endCustomer: {
+        id: '1180',
+        name: 'Name for: 1180',
+        phone: 'Phone for: 1180',
+        idNumber: 'ID Number for: 1180',
+      },
+    },
     accessories: [
       {
         partNumber: 'yakam',
@@ -4386,6 +4597,27 @@ const mockData = {
     basicModelCode: 'VJA300',
   },
   '1G8ZY1275YZ188208': {
+    saleInformation: {
+      countryID: null,
+      countryName: null,
+      companyID: null,
+      companyName: 'SAS',
+      branchID: null,
+      branchName: 'SAS | Erbil - Showroom',
+      customerAccountNumber: 'R02599',
+      customerID: '129345',
+      invoiceDate: '2025-09-30',
+      warrantyActivationDate: null,
+      invoiceNumber: '70003949',
+      broker: {
+        brokerID: 825,
+        brokerName: 'Nwekar Auto',
+        invoiceNumber: null,
+        invoiceDate: '2025-10-29',
+      },
+      regionID: null,
+      endCustomer: null,
+    },
     accessories: null,
     paintThickness: {
       parts: [],
@@ -4400,10 +4632,9 @@ const mockData = {
       brand: 0,
       brandIntegrationID: null,
     },
-    saleInformation: null,
     isAuthorized: false,
     warranty: {
-      activationIsRequired: true
+      activationIsRequired: true,
     },
     nextServiceDate: '2023-12-12',
     serviceHistory: [],

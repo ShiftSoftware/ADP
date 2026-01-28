@@ -1,6 +1,5 @@
 import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
-import validateVin from '~lib/validate-vin';
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
 import vehicleLookupWrapperSchema from '~locales/vehicleLookup/wrapper-type';
@@ -11,6 +10,7 @@ import { VehicleClaimableItems } from './vehicle-claimable-items';
 import { VehiclePaintThickness } from './vehicle-paint-thickness';
 import { VehicleServiceHistory } from './vehicle-service-history';
 import { VehicleWarrantyDetails } from './vehicle-warranty-details';
+import { VehicleSaleInformation } from './vehicle-sale-information';
 
 import { DotNetObjectReference } from '~features/blazor-ref';
 import { VehicleInfoLayout } from '~features/vehicle-info-layout/vehicle-info-layout';
@@ -22,6 +22,7 @@ const componentTags = {
   vehiclePaintThickness: 'vehicle-paint-thickness',
   vehicleServiceHistory: 'vehicle-service-history',
   vehicleClaimableItems: 'vehicle-claimable-items',
+  vehicleSaleInformation: 'vehicle-sale-information',
   vehicleWarrantyDetails: 'vehicle-warranty-details',
 } as const;
 
@@ -31,13 +32,14 @@ export type ComponentMap = {
   [componentTags.vehicleServiceHistory]: VehicleServiceHistory;
   [componentTags.vehiclePaintThickness]: VehiclePaintThickness;
   [componentTags.vehicleClaimableItems]: VehicleClaimableItems;
+  [componentTags.vehicleSaleInformation]: VehicleSaleInformation;
   [componentTags.vehicleWarrantyDetails]: VehicleWarrantyDetails;
 };
 
 export type ActiveElement = (typeof componentTags)[keyof typeof componentTags] | '';
 
 @Component({
-  shadow: false,
+  shadow: true,
   tag: 'vehicle-lookup',
   styleUrl: 'vehicle-lookup.css',
 })
@@ -78,8 +80,7 @@ export class VehicleLookup implements MultiLingual {
   @Prop() dynamicClaimActivate?: (vehicleInformation: VehicleLookupDTO) => void;
   @Prop() blazorDynamicClaimActivate = '';
 
-  @State() errorKey: ErrorKeys;
-  @State() wrapperErrorState = '';
+  @State() errorMessage?: string;
   @State() currentVin: string = '';
   @State() isError: boolean = false;
   @State() isLoading: boolean = false;
@@ -90,12 +91,13 @@ export class VehicleLookup implements MultiLingual {
   private componentsList: ComponentMap;
 
   async componentDidLoad() {
-    const vehicleAccessories = this.el.getElementsByTagName('vehicle-accessories')[0] as unknown as VehicleAccessories;
-    const vehicleClaim = this.el.getElementsByTagName('vehicle-claimable-items')[0] as unknown as VehicleClaimableItems;
-    const vehicleHistory = this.el.getElementsByTagName('vehicle-service-history')[0] as unknown as VehicleServiceHistory;
-    const vehicleDetails = this.el.getElementsByTagName('vehicle-warranty-details')[0] as unknown as VehicleWarrantyDetails;
-    const vehicleThickness = this.el.getElementsByTagName('vehicle-paint-thickness')[0] as unknown as VehiclePaintThickness;
-    const vehicleSpecification = this.el.getElementsByTagName('vehicle-specification')[0] as unknown as VehicleSpecification;
+    const vehicleAccessories = this.el.shadowRoot.getElementById('vehicle-accessories') as unknown as VehicleAccessories;
+    const vehicleClaim = this.el.shadowRoot.getElementById('vehicle-claimable-items') as unknown as VehicleClaimableItems;
+    const vehicleHistory = this.el.shadowRoot.getElementById('vehicle-service-history') as unknown as VehicleServiceHistory;
+    const vehicleDetails = this.el.shadowRoot.getElementById('vehicle-warranty-details') as unknown as VehicleWarrantyDetails;
+    const vehicleThickness = this.el.shadowRoot.getElementById('vehicle-paint-thickness') as unknown as VehiclePaintThickness;
+    const vehicleSpecification = this.el.shadowRoot.getElementById('vehicle-specification') as unknown as VehicleSpecification;
+    const vehicleSaleInformation = this.el.shadowRoot.getElementById('vehicle-sale-information') as unknown as VehicleSaleInformation;
 
     this.componentsList = {
       [componentTags.vehicleClaimableItems]: vehicleClaim,
@@ -104,6 +106,7 @@ export class VehicleLookup implements MultiLingual {
       [componentTags.vehicleAccessories]: vehicleAccessories,
       [componentTags.vehiclePaintThickness]: vehicleThickness,
       [componentTags.vehicleSpecification]: vehicleSpecification,
+      [componentTags.vehicleSaleInformation]: vehicleSaleInformation,
     } as const;
 
     Object.values(this.componentsList).forEach(element => {
@@ -129,7 +132,8 @@ export class VehicleLookup implements MultiLingual {
 
   private syncErrorAcrossComponents = (newErrorMessage: ErrorKeys) => {
     this.isError = true;
-    this.errorKey = newErrorMessage;
+    this.errorMessage = this.locale?.errors?.[newErrorMessage] || this.locale.errors.wildCard;
+
     Object.values(this.componentsList).forEach(element => {
       if (element) element.setErrorMessage(newErrorMessage);
     });
@@ -138,6 +142,7 @@ export class VehicleLookup implements MultiLingual {
   @Method()
   async handleLoadData(newResponse: VehicleLookupDTO, activeElement) {
     this.isError = false;
+    this.errorMessage = '';
     this.currentVin = newResponse.vin || '';
     Object.values(this.componentsList).forEach(element => {
       if (element !== null && element !== activeElement && newResponse) element.fetchData(newResponse);
@@ -150,7 +155,7 @@ export class VehicleLookup implements MultiLingual {
     if (this.blazorRef && this.blazorOnLoadingStateChange) this.blazorRef.invokeMethodAsync(this.blazorOnLoadingStateChange, newState);
   };
 
-  @Watch('wrapperErrorState')
+  @Watch('errorMessage')
   async errorListener(newState) {
     if (this.errorStateListener) this.errorStateListener(newState);
     if (this.blazorRef && this.blazorErrorStateListener) this.blazorRef.invokeMethodAsync(this.blazorErrorStateListener, newState);
@@ -165,15 +170,9 @@ export class VehicleLookup implements MultiLingual {
   async fetchVin(vin: string, headers: any = {}) {
     const activeElement = this.componentsList[this.activeElement] || null;
 
-    this.wrapperErrorState = '';
-
     this.componentsList[componentTags.vehicleClaimableItems].headers = headers;
 
     if (!activeElement) return;
-
-    if (vin == '') return (this.wrapperErrorState = this.locale.errors.vinNumberRequired);
-
-    if (!validateVin(vin)) return (this.wrapperErrorState = this.locale.errors.invalidVin);
 
     activeElement.fetchData(vin, headers);
   }
@@ -186,6 +185,7 @@ export class VehicleLookup implements MultiLingual {
       [componentTags.vehiclePaintThickness]: {},
       [componentTags.vehicleServiceHistory]: {},
       [componentTags.vehicleWarrantyDetails]: {},
+      [componentTags.vehicleSaleInformation]: {},
     };
 
     try {
@@ -213,6 +213,7 @@ export class VehicleLookup implements MultiLingual {
           base-url={this.baseUrl}
           language={this.language}
           query-string={this.queryString}
+          id={componentTags.vehicleSpecification}
           {...props[componentTags.vehicleSpecification]}
         />
       ),
@@ -223,7 +224,19 @@ export class VehicleLookup implements MultiLingual {
           base-url={this.baseUrl}
           language={this.language}
           query-string={this.queryString}
+          id={componentTags.vehicleAccessories}
           {...props[componentTags.vehicleAccessories]}
+        />
+      ),
+      'vehicle-sale-information': (
+        <vehicle-sale-information
+          coreOnly
+          isDev={this.isDev}
+          base-url={this.baseUrl}
+          language={this.language}
+          query-string={this.queryString}
+          id={componentTags.vehicleSaleInformation}
+          {...props[componentTags.vehicleSaleInformation]}
         />
       ),
       'vehicle-warranty-details': (
@@ -235,6 +248,7 @@ export class VehicleLookup implements MultiLingual {
           base-url={this.baseUrl}
           language={this.language}
           query-string={this.queryString}
+          id={componentTags.vehicleWarrantyDetails}
           {...props[componentTags.vehicleWarrantyDetails]}
         >
           <slot></slot>
@@ -247,6 +261,7 @@ export class VehicleLookup implements MultiLingual {
           base-url={this.baseUrl}
           language={this.language}
           query-string={this.queryString}
+          id={componentTags.vehicleServiceHistory}
           {...props[componentTags.vehicleServiceHistory]}
         />
       ),
@@ -257,6 +272,7 @@ export class VehicleLookup implements MultiLingual {
           base-url={this.baseUrl}
           language={this.language}
           query-string={this.queryString}
+          id={componentTags.vehiclePaintThickness}
           {...props[componentTags.vehiclePaintThickness]}
         />
       ),
@@ -267,6 +283,7 @@ export class VehicleLookup implements MultiLingual {
           base-url={this.baseUrl}
           language={this.language}
           query-string={this.queryString}
+          id={componentTags.vehicleClaimableItems}
           {...props[componentTags.vehicleClaimableItems]}
         />
       ),
@@ -279,7 +296,7 @@ export class VehicleLookup implements MultiLingual {
           header={this.currentVin}
           isLoading={this.isLoading}
           direction={this.locale.direction}
-          errorMessage={this.locale.errors[this.errorKey] || this.locale.errors.wildCard}
+          errorMessage={this.errorMessage || this.locale.errors.wildCard}
         >
           <shift-tab-content components={componentList} activeComponent={this.activeElement}></shift-tab-content>
         </VehicleInfoLayout>

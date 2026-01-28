@@ -177,6 +177,9 @@
               <li role="presentation" onclick="changeLookup('vehicle-specification')" class="active">
                 <a class="disable-auto-scroll" href="#specification" aria-controls="specification" role="tab" data-toggle="tab"><span>Specification</span></a>
               </li>
+              <li role="presentation" onclick="changeLookup('vehicle-sale-information')">
+                <a class="disable-auto-scroll" href="#sale-information" aria-controls="sale-information" role="tab" data-toggle="tab"><span>Sale Information</span></a>
+              </li>
               <li role="presentation" onclick="changeLookup('vehicle-accessories')">
                 <a class="disable-auto-scroll" href="#accessories" aria-controls="accessories" role="tab" data-toggle="tab"><span>Accessories</span></a>
               </li>
@@ -202,9 +205,9 @@
                 language="en"
                 id="vehicle-lookup"
                 active-element="vehicle-specification"
+                base-url="https://tiq-vehicle-lookup.azurewebsites.net/api/secure-vehicle-lookup/"
                 query-string=""
                 children-props='{"dynamic-claim":{"claimEndPoint":"http://localhost:5015/api/vehicle/service-claim","claim-via-barcode-scanner":"false"}}'
-                base-url="https://tiq-vehicles-functions.azurewebsites.net/api/secure-vehicle-lookup/"
               ></vehicle-lookup>
             </div>
           </div>

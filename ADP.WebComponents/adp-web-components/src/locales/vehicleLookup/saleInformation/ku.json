@@ -1,0 +1,19 @@
+{
+  "vehicleSaleInformation": "زانیاری فرۆشتنی ئۆتۆمبیل",
+  "noData": "هیچ داتایەک بەردەست نییە.",
+  "countryName": "وڵات",
+  "companyName": "کۆمپانیا",
+  "branchName": "لق",
+  "customerAccountNumber": "ژمارەی هەژماری کڕیار",
+  "invoiceNumber": "ژمارەی پسووڵە",
+  "invoiceDate": "بەرواری پسووڵە",
+  "warrantyActivationDate": "بەرواری چالاککردنی گەرەنتی",
+  "brokerName": "ناوی دەڵاڵ",
+  "brokerInvoiceNumber": "ژمارەی پسووڵەی دەڵاڵ",
+  "brokerInvoiceDate": "بەرواری پسووڵەی دەڵاڵ",
+  "endCustomerName": "ناوی کڕیار",
+  "endCustomerPhone": "تەلەفۆنی کڕیار",
+  "endCustomerIdNumber": "ژمارەی ناسنامەی کڕیار",
+  "customerID": "ناسنامەی کڕیار",
+  "Vehicle has no end customer.": "ئۆتۆمبێل هیچ کڕیارێکی نییە."
+}

@@ -3,8 +3,13 @@
 
 :host {
   display: block;
+  all: initial !important;
+  font-family: inherit !important;
+  font-family: 'Noto Kufi Arabic', 'Nunito', Roboto, Arial, sans-serif !important;
 }
 
-* {
-  font-family: Arial;
+.part-lookup,
+.part-lookup * {
+  font-family: 'Noto Kufi Arabic', 'Nunito', Roboto, Arial, sans-serif !important;
 }
+ 

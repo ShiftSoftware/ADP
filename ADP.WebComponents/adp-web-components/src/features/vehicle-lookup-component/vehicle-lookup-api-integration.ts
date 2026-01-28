@@ -5,6 +5,7 @@ import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup
 
 import { vehicleRequestHeaders } from './types';
 import { VehicleLookupComponent } from './interface';
+import validateVin from '~lib/validate-vin';
 
 export const setVehicleLookupData = async (
   context: VehicleLookupComponent & BlazorInvokable,
@@ -29,19 +30,21 @@ export const setVehicleLookupData = async (
   const vin = typeof newData === 'string' ? newData : newData?.vin;
 
   try {
-    if (!vin || vin.trim().length === 0) {
-      context.isError = false;
-      context.isLoading = false;
-      context.vehicleLookup = undefined;
-      return;
-    }
-
     context.isLoading = true;
 
     await new Promise(r => {
       scopedTimeoutRef = setTimeout(r, 1000);
       context.networkTimeoutRef = scopedTimeoutRef;
     });
+
+    if ((!vin || vin.trim().length === 0) && !context?.isDev) {
+      context.isError = false;
+      context.isLoading = false;
+      context.vehicleLookup = undefined;
+      throw new Error('vinNumberRequired');
+    }
+
+    if (!validateVin(vin) && !context?.isDev) throw new Error('invalidVin');
 
     const vehicleResponse = isVinRequest ? await getVehicleLookup(context, { scopedTimeoutRef, vin }, headers) : (newData as VehicleLookupDTO);
 
@@ -59,6 +62,7 @@ export const setVehicleLookupData = async (
     smartInvokable.bind(context)(context?.errorCallback, error.message);
     console.error(error);
     context.setErrorMessage(error.message);
+    context.isLoading = false;
   }
 };
 

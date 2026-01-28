@@ -1,0 +1,19 @@
+{
+  "vehicleSaleInformation": "Информация о продаже транспортного средства",
+  "noData": "Данные отсутствуют.",
+  "countryName": "Страна",
+  "companyName": "Компания",
+  "branchName": "Филиал",
+  "customerAccountNumber": "Номер счета клиента",
+  "invoiceNumber": "Номер счета",
+  "invoiceDate": "Дата счета",
+  "warrantyActivationDate": "Дата активации гарантии",
+  "brokerName": "Брокер",
+  "brokerInvoiceNumber": "Номер счета брокера",
+  "brokerInvoiceDate": "Дата счета брокера",
+  "endCustomerName": "Номер клиента",
+  "endCustomerPhone": "Телефон клиента",
+  "endCustomerIdNumber": "Идентификационный номер клиента",
+  "customerID": "Клиент ID",
+  "Vehicle has no end customer.": "У транспортного средства нет потребителя."
+}

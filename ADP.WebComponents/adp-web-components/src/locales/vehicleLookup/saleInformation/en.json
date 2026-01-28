@@ -1,0 +1,19 @@
+{
+  "vehicleSaleInformation": "Vehicle sale information",
+  "noData": "No data is available.",
+  "countryName": "Country",
+  "companyName": "Company",
+  "branchName": "Branch",
+  "customerAccountNumber": "Customer account number",
+  "invoiceNumber": "Invoice number",
+  "invoiceDate": "Invoice date",
+  "warrantyActivationDate": "Warranty activation date",
+  "brokerName": "Broker",
+  "brokerInvoiceNumber": "Broker invoice number",
+  "brokerInvoiceDate": "Broker invoice date",
+  "endCustomerName": "Customer number",
+  "endCustomerPhone": "Customer phone",
+  "endCustomerIdNumber": "Customer ID number",
+  "customerID": "Customer ID",
+  "Vehicle has no end customer.": "Vehicle has no customer."
+}

@@ -1,0 +1,19 @@
+{
+  "vehicleSaleInformation": "معلومات بيع المركبة",
+  "noData": "لا توجد بيانات متاحة.",
+  "countryName": "الدولة",
+  "companyName": "الشركة",
+  "branchName": "الفرع",
+  "customerAccountNumber": "رقم حساب العميل",
+  "invoiceNumber": "رقم الفاتورة",
+  "invoiceDate": "تاريخ الفاتورة",
+  "warrantyActivationDate": "تاريخ تفعيل الضمان",
+  "brokerName": "الوسيط",
+  "brokerInvoiceNumber": "رقم فاتورة الوسيط",
+  "brokerInvoiceDate": "تاريخ فاتورة الوسيط",
+  "endCustomerName": " اسم العميل",
+  "endCustomerPhone": "رقم هاتف العميل",
+  "endCustomerIdNumber": "رقم هوية العميل",
+  "customerID": "معرف العميل",
+  "Vehicle has no end customer.": "ليس للمركبة مستهلك."
+}
