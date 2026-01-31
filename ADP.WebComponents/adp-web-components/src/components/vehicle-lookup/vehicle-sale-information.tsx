@@ -129,7 +129,7 @@ export class VehicleSaleInformation implements MultiLingual, VehicleInfoLayoutIn
     const getText = (v?: unknown) => (v ?? '').toString().trim();
 
     // Manual toggle for UI testing (do not add logic yet)
-    const hasEndCustomer = true;
+    const hasEndCustomer = !!this.vehicleLookup && !!this.vehicleLookup?.saleInformation?.endCustomer;
 
     const END_CUSTOMER_FIELDS: { fieldName: string; title: string; value: string; Icon: FunctionalComponent<EndCustomerIconProps> }[] = [
       {
@@ -220,24 +220,22 @@ export class VehicleSaleInformation implements MultiLingual, VehicleInfoLayoutIn
           errorMessage={this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard}
         >
           <flexible-container>
-            <flexible-container classes={cn({ loading: this.isLoading })}>
+            <flexible-container classes={cn({ loading: this.isLoading || this.isError || !this.vehicleLookup })} isOpened={!!this.vehicleLookup && !this.isError}>
               <div class="p-[16px] mx-auto !pb-0 max-w-[520px]">
                 <div class={cn('relative shift-skeleton !rounded-[12px] shift-card', { 'shift-card-warning': !hasEndCustomer })}>
                   <div
                     class={cn(
-                      'absolute flex items-center justify-center p-[12px] transition-opacity',
+                      'absolute flex size-full left-0 top-0 px-[12px] items-center justify-center p-[12px] transition-opacity',
                       !hasEndCustomer ? 'opacity-100' : 'opacity-0 pointer-events-none select-none',
                     )}
                   >
-                    <div class="w-full max-w-[460px] rounded-[14px] border border-amber-200/70 bg-amber-50/70 px-[14px] py-[12px] shadow-sm backdrop-blur-[2px]">
-                      <div class="flex gap-[12px] items-start">
-                        <span class="shift-card-icon !border-amber-300/60 !bg-amber-200/40 !text-amber-950" aria-hidden="true">
+                    <div class="w-full max-w-[460px] rounded-[14px] px-[14px] py-[12px]">
+                      <div class="size-full flex flex-col justify-start gap-[12px] items-center">
+                        <span class="shift-card-icon" aria-hidden="true">
                           <TriangleAlertIcon />
                         </span>
-                        <div class="min-w-0">
-                          <div class="text-[14px] font-[800] text-amber-950 leading-[1.2]">{texts.customerInformation}</div>
-                          <p class="mt-[4px] text-[13.5px] text-amber-900/90 leading-[1.35]">{texts['Vehicle has no end customer.'] || ''}</p>
-                        </div>
+
+                        <p class="mt-[4px] text-[13.5px] text-amber-900/90 leading-[1.35]">{texts['Vehicle has no end customer.'] || ''}</p>
                       </div>
                     </div>
                   </div>

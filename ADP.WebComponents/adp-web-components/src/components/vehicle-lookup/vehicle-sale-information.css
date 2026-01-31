@@ -21,7 +21,7 @@
   padding: 8px 12px;
   border: 1px solid;
   align-items: center;
-  border-radius: 6px;
+  border-radius: 12px;
   @apply text-slate-900 border-slate-300 bg-slate-100;
 }
 

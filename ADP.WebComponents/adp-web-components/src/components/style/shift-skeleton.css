@@ -1,17 +1,18 @@
 .shift-skeleton {
-  @apply !relative !rounded-[4px];
+  @apply !relative rounded-[4px];
 }
 
 .loading.shift-skeleton,
 .loading .shift-skeleton {
-  @apply !relative !overflow-hidden !pointer-events-none;
+  @apply !relative !overflow-hidden !pointer-events-none !border-none;
 }
 
 .shift-skeleton::after {
   content: '';
-  @apply absolute !rounded-[4px] left-0 top-0 z-10 opacity-0 origin-left transition-all duration-500 pointer-events-none;
+  @apply absolute left-0 top-0 z-10 opacity-0 origin-left transition-all duration-500 pointer-events-none;
   width: 100%;
   height: 100%;
+  border-radius: inherit !important;
   background: linear-gradient(-45deg, #d4d8de, #e2e5e9, #d4d8de);
   background-size: 300% 300%;
 }
