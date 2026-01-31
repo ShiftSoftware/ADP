@@ -11,6 +11,7 @@
   "brokerName": "Broker",
   "brokerInvoiceNumber": "Broker invoice number",
   "brokerInvoiceDate": "Broker invoice date",
+  "customerInformation": "Customer information",
   "endCustomerName": "Customer number",
   "endCustomerPhone": "Customer phone",
   "endCustomerIdNumber": "Customer ID number",

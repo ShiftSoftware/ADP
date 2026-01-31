@@ -11,6 +11,7 @@
   "brokerName": "Брокер",
   "brokerInvoiceNumber": "Номер счета брокера",
   "brokerInvoiceDate": "Дата счета брокера",
+  "customerInformation": "Информация о клиенте",
   "endCustomerName": "Номер клиента",
   "endCustomerPhone": "Телефон клиента",
   "endCustomerIdNumber": "Идентификационный номер клиента",

@@ -13,11 +13,12 @@ const saleInformationSchema = yupTypeMapper([
   'brokerName',
   'brokerInvoiceNumber',
   'brokerInvoiceDate',
+  'customerInformation',
   'endCustomerName',
   'endCustomerPhone',
   'endCustomerIdNumber',
   'customerID',
-  'Vehicle has no end customer.'
+  'Vehicle has no end customer.',
 ]);
 
 export default saleInformationSchema;

@@ -11,6 +11,7 @@
   "brokerName": "الوسيط",
   "brokerInvoiceNumber": "رقم فاتورة الوسيط",
   "brokerInvoiceDate": "تاريخ فاتورة الوسيط",
+  "customerInformation": "معلومات العميل",
   "endCustomerName": " اسم العميل",
   "endCustomerPhone": "رقم هاتف العميل",
   "endCustomerIdNumber": "رقم هوية العميل",

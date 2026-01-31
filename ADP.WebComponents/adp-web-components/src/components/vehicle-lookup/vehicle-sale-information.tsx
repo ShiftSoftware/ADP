@@ -1,4 +1,4 @@
-import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stencil/core';
+import { Component, Element, FunctionalComponent, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
@@ -14,6 +14,11 @@ import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, Language
 import type { VehicleSaleInformation as VehicleSaleInformationType } from '~types/generated/vehicle-lookup/vehicle-sale-information';
 import cn from '~lib/cn';
 import { TriangleAlertIcon } from '~assets/triangle-alert';
+import { UserIcon } from '~assets/user-icon';
+import { PhoneIcon } from '~assets/phone-icon';
+import { IdCardIcon } from '~assets/id-card-icon';
+
+type EndCustomerIconProps = { class?: string };
 
 @Component({
   shadow: true,
@@ -123,7 +128,29 @@ export class VehicleSaleInformation implements MultiLingual, VehicleInfoLayoutIn
 
     const getText = (v?: unknown) => (v ?? '').toString().trim();
 
-    const hasEndCustomerInfo = !!sale?.endCustomer || !this.vehicleLookup;
+    // Manual toggle for UI testing (do not add logic yet)
+    const hasEndCustomer = true;
+
+    const END_CUSTOMER_FIELDS: { fieldName: string; title: string; value: string; Icon: FunctionalComponent<EndCustomerIconProps> }[] = [
+      {
+        fieldName: 'endCustomerName',
+        title: texts.endCustomerName,
+        value: getText(sale?.endCustomer?.name),
+        Icon: UserIcon,
+      },
+      {
+        fieldName: 'endCustomerPhone',
+        title: texts.endCustomerPhone,
+        value: getText(sale?.endCustomer?.phone),
+        Icon: PhoneIcon,
+      },
+      {
+        fieldName: 'endCustomerIdNumber',
+        title: texts.endCustomerIdNumber,
+        value: getText(sale?.endCustomer?.idNumber),
+        Icon: IdCardIcon,
+      },
+    ];
 
     const FIELDS: { fieldName: string; title: string; value: string }[] = [
       {
@@ -135,22 +162,6 @@ export class VehicleSaleInformation implements MultiLingual, VehicleInfoLayoutIn
         fieldName: 'branchName',
         title: texts.branchName,
         value: getText(sale?.branchName),
-      },
-      // End customer
-      {
-        fieldName: 'endCustomerName',
-        title: texts.endCustomerName,
-        value: getText(sale?.endCustomer?.name),
-      },
-      {
-        fieldName: 'endCustomerPhone',
-        title: texts.endCustomerPhone,
-        value: getText(sale?.endCustomer?.phone),
-      },
-      {
-        fieldName: 'endCustomerIdNumber',
-        title: texts.endCustomerIdNumber,
-        value: getText(sale?.endCustomer?.idNumber),
       },
       {
         fieldName: 'customerAccountNumber',
@@ -196,6 +207,7 @@ export class VehicleSaleInformation implements MultiLingual, VehicleInfoLayoutIn
     ];
 
     const filteredFields = FIELDS.filter(field => !hiddenFields.includes(field.fieldName));
+    const filteredEndCustomerFields = END_CUSTOMER_FIELDS.filter(field => !hiddenFields.includes(field.fieldName));
 
     return (
       <Host>
@@ -208,13 +220,47 @@ export class VehicleSaleInformation implements MultiLingual, VehicleInfoLayoutIn
           errorMessage={this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard}
         >
           <flexible-container>
-            <flexible-container classes={cn({ loading: this.isLoading })} isOpened={!hasEndCustomerInfo}>
-              <div class="p-[16px] mx-auto !pb-0 max-w-[400px]">
-                <div class="shift-skeleton">
-                  <div class="card warning-card">
-                    <TriangleAlertIcon class="size-[22px]" />
+            <flexible-container classes={cn({ loading: this.isLoading })}>
+              <div class="p-[16px] mx-auto !pb-0 max-w-[520px]">
+                <div class={cn('relative shift-skeleton !rounded-[12px] shift-card', { 'shift-card-warning': !hasEndCustomer })}>
+                  <div
+                    class={cn(
+                      'absolute flex items-center justify-center p-[12px] transition-opacity',
+                      !hasEndCustomer ? 'opacity-100' : 'opacity-0 pointer-events-none select-none',
+                    )}
+                  >
+                    <div class="w-full max-w-[460px] rounded-[14px] border border-amber-200/70 bg-amber-50/70 px-[14px] py-[12px] shadow-sm backdrop-blur-[2px]">
+                      <div class="flex gap-[12px] items-start">
+                        <span class="shift-card-icon !border-amber-300/60 !bg-amber-200/40 !text-amber-950" aria-hidden="true">
+                          <TriangleAlertIcon />
+                        </span>
+                        <div class="min-w-0">
+                          <div class="text-[14px] font-[800] text-amber-950 leading-[1.2]">{texts.customerInformation}</div>
+                          <p class="mt-[4px] text-[13.5px] text-amber-900/90 leading-[1.35]">{texts['Vehicle has no end customer.'] || ''}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
 
-                    <p class="ps-">{texts['Vehicle has no end customer.'] || ''}</p>
+                  <div class={cn('transition-opacity', !hasEndCustomer ? 'opacity-0 pointer-events-none select-none' : 'opacity-100')}>
+                    <h2 class="shift-card-header">{texts.customerInformation}</h2>
+                    <div class="flex flex-col gap-[2px]">
+                      {filteredEndCustomerFields.map(field => {
+                        const value = field.value || '';
+                        const Icon = field.Icon;
+                        return (
+                          <div class="flex gap-[12px] items-start">
+                            <span class="shift-card-icon" aria-hidden="true">
+                              <Icon />
+                            </span>
+                            <div class="flex flex-col translate-y-[-4px]">
+                              <div class="shift-card-seconary-text">{field.title}:</div>
+                              <div class={cn('shift-card-primary-text translate-y-[-4px]', { 'shift-card-empty-text': !value })}>{value || '—'}</div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>

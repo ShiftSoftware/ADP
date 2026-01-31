@@ -1,3 +1,4 @@
+@import '../style/shift-card.css';
 @import '../style/shift-skeleton.css';
 @import '../../features/vehicle-info-layout/vehicle-info-layout.css';
 
@@ -48,4 +49,3 @@
   background: #fcf8e3;
   border-color: #faebcc !important;
 }
-
