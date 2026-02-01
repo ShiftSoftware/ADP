@@ -208,15 +208,21 @@ export class VehicleItemClaimForm implements ImageViewerInterface {
 
     this.isLoading = true;
 
-    if (this.handleClaiming) {
-      await this.handleClaiming(this.inputs?.documents, {
-        qrCode: this.inputs?.qrCode,
-        invoice: this.inputs?.invoice,
-        jobNumber: this.inputs?.jobNumber,
-      } as ItemClaimDTO);
-    }
+    try {
+      if (this.handleClaiming) {
+        await this.handleClaiming(this.inputs?.documents, {
+          qrCode: this.inputs?.qrCode,
+          invoice: this.inputs?.invoice,
+          jobNumber: this.inputs?.jobNumber,
+        } as ItemClaimDTO);
+      }
 
-    this.close(true);
+      this.close(true);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      this.isLoading = false;
+    }
   };
 
   private onConfirmCheckboxChange = (confirmationName: string) => (event: Event) => {

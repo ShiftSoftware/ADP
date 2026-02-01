@@ -391,27 +391,32 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
         xhr.send(formData);
       });
     } catch (error) {
-      console.error(error);
       alert(this.locale.sharedLocales.errors.requestFailedPleaseTryAgainLater);
+      throw new Error(error);
     }
   };
 
   handleDevClaim = async (documents: File[]) => {
-    if (documents && documents.length > 0) {
-      this.claimForm.setFileUploadProgression(0);
-      let uploadChunks = 20;
-      for (let index = 0; index < uploadChunks; index++) {
-        const uploadPercentage = Math.round(((index + 1) / uploadChunks) * 100);
+    try {
+      if (documents && documents.length > 0) {
+        this.claimForm.setFileUploadProgression(0);
+        let uploadChunks = 20;
+        for (let index = 0; index < uploadChunks; index++) {
+          const uploadPercentage = Math.round(((index + 1) / uploadChunks) * 100);
 
-        await new Promise(r => setTimeout(r, 200));
+          await new Promise(r => setTimeout(r, 200));
 
-        this.claimForm.setFileUploadProgression(uploadPercentage);
+          this.claimForm.setFileUploadProgression(uploadPercentage);
+        }
       }
+
+      await new Promise(r => setTimeout(r, 1000));
+
+      this.completeClaim({ Success: true, ID: '11223344', PrintURL: 'http://localhost/test/print/1122' });
+    } catch (error) {
+      alert(this.locale.sharedLocales.errors.requestFailedPleaseTryAgainLater);
+      throw new Error(error);
     }
-
-    await new Promise(r => setTimeout(r, 1000));
-
-    this.completeClaim({ Success: true, ID: '11223344', PrintURL: 'http://localhost/test/print/1122' });
   };
 
   @Method()
