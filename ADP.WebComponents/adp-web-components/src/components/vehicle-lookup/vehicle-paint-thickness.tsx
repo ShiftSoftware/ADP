@@ -111,10 +111,10 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
   render() {
     const texts = this.locale;
 
-    // const { imageGroups, parts } = this?.vehicleLookup?.paintThickness ? this?.vehicleLookup?.paintThickness : { imageGroups: [], parts: [] };
+    const { imageGroups, parts } = this?.vehicleLookup?.paintThickness ? this?.vehicleLookup?.paintThickness : { imageGroups: [], parts: [] };
     // TODO: fix this BE changes later
-    const { imageGroups, parts } = { imageGroups: [], parts: [] };
 
+    
     const tableHeaders: InformationTableColumn[] = [
       {
         width: 250,

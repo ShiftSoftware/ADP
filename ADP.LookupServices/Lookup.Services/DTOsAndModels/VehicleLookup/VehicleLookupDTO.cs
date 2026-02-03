@@ -19,6 +19,9 @@ public class VehicleLookupDTO
 
     public IEnumerable<PaintThicknessInspectionDTO> PaintThicknessInspections { get; set; }
 
+    [Obsolete("This property is deprecated. Use PaintThicknessInspections instead.")]
+    public LegacyPaintThicknessDTO PaintThickness { get; set; }
+
     public bool IsAuthorized { get; set; }
 
     public VehicleWarrantyDTO Warranty { get; set; }

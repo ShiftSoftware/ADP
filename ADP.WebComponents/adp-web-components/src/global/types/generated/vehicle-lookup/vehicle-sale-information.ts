@@ -11,7 +11,7 @@ export type VehicleSaleInformation = {
     customerID: string;
     invoiceDate?: string;
     warrantyActivationDate?: string;
-    invoiceNumber: string; 
+    invoiceNumber: string;
     broker: VehicleBrokerSaleInformation;
     regionID: string;
     endCustomer: VehicleSaleEndCustomerInformationDTO;
