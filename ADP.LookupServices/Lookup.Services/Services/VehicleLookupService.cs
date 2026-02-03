@@ -68,6 +68,31 @@ public class VehicleLookupService
             SaleInformation = await new VehicleSaleInformationEvaluator(companyDataAggregate, lookupOptions, serviceProvider, lookupCosmosService).Evaluate(requestOptions),
         };
 
+        if (requestOptions.LegacyPaintThickness)
+        {
+            var paintThickness = data.PaintThicknessInspections
+                ?.Where(x => x.Source == "PDI")
+                ?.FirstOrDefault();
+
+            if (paintThickness is not null)
+            {
+                data.PaintThickness = new LegacyPaintThicknessDTO
+                {
+                    Parts = paintThickness.Panels.GroupBy(x => new { x.PanelType, x.PanelPosition }).Select(x => new LegacyPaintThicknessPartDTO
+                    {
+                        Part = $"{x.Key.PanelType.Describe()} ({x.Key.PanelPosition.Describe()})",
+                        Left = x.FirstOrDefault(x => x.PanelSide is null || x.PanelSide == Models.Enums.VehiclePanelSide.Left)?.MeasuredThickness.ToString(),
+                        Right = x.FirstOrDefault(x => x.PanelSide == Models.Enums.VehiclePanelSide.Right)?.MeasuredThickness.ToString(),
+                    }),
+                    ImageGroups = paintThickness.Panels.Where(x => x.Images.Count() > 0).Select(x => new LegacyPaintThicknessImageGroupDTO
+                    {
+                        Name = $"{x.PanelType.Describe()} ({x.PanelPosition.Describe()} {x.PanelSide.Describe()})",
+                        Images = x.Images.ToList()
+                    })
+                };
+            }
+        }
+
         data.Warranty = new WarrantyAndFreeServiceDateEvaluator(companyDataAggregate, lookupOptions)
             .Evaluate(vehicle, data.SaleInformation, requestOptions.IgnoreBrokerStock);
 
