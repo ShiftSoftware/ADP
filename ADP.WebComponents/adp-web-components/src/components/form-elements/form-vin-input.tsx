@@ -10,7 +10,7 @@ import { FormElement } from '~features/form-hook/interface';
 import { FormInputLabel } from './components/form-input-label';
 import { FormInputPrefix } from './components/form-input-prefix';
 import { FormErrorMessage } from './components/form-error-message';
-import { CameraIcon } from '~assets/add-icon copy';
+import { QrCodeScanIcon } from '~assets/qr-code-scan';
 
 const partKeyPrefix = 'form-vin-input-';
 @Component({
@@ -106,9 +106,9 @@ export class FormVinInput implements FormElement {
               disabled={isDisabled}
               part={cn('vin-validator', part + '-vin')}
               onClick={() => this?.el.getElementsByTagName('vin-extractor')[0]?.open()}
-              class="absolute transition-all duration-500 disabled:!pointer-events-none disabled:!opacity-0 flex justify-center items-center right-2 text-black/50 hover:text-black/85 aspect-square h-[80%] top-1/2 -translate-y-1/2"
+              class="absolute transition-all duration-500 disabled:!pointer-events-none disabled:!opacity-0 flex justify-center items-center right-3.5 !text-[#576675] enabled:hover:!text-black/85 aspect-square h-[70%] top-1/2 -translate-y-1/2"
             >
-              <CameraIcon class="size-[90%] text-inherit" />
+              <QrCodeScanIcon class="size-[90%] text-inherit" />
             </button>
           </div>
           <FormErrorMessage name={this.name} isError={isError} errorMessage={locale[errorMessage] || errorMessage} />
