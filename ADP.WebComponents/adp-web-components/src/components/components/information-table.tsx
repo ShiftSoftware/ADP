@@ -6,7 +6,7 @@ import { ArrowIcon } from '~assets/arrow-icon';
 export type InformationTableColumn = {
   key: string;
   label: string;
-  width: number;
+  width?: number;
   centeredVertically?: boolean;
   centeredHorizontally?: boolean;
   styles?: JSXBase.HTMLAttributes<HTMLDivElement>['style'];
@@ -22,8 +22,12 @@ export class InformationTable {
   @Prop() templateRow: object = {};
   @Prop() isLoading: boolean = false;
   @Prop() showHeader: boolean = true;
+  @Prop() isRaw: boolean = false;
   @Prop() customSkeleton: boolean = false;
   @Prop() headers: InformationTableColumn[];
+
+  @Prop() size: 'default' | 'small' = 'default';
+  @Prop() allowAutoWidth: boolean = false;
 
   @Prop() expandColumnWidth: number = 48;
   @Prop() subRowRenderer?: (row: any) => any;
@@ -35,7 +39,8 @@ export class InformationTable {
   @Element() el: HTMLElement;
 
   private getTableWidth = () => {
-    const headersWidth = this.headers?.reduce((sum, h) => sum + (h?.width || 0), 0) || 0;
+    if (this.allowAutoWidth) return 0;
+    const headersWidth = this.headers?.reduce((sum, h) => sum + (typeof h?.width === 'number' ? h.width : 0), 0) || 0;
     return headersWidth + (this.subRowRenderer ? this.expandColumnWidth : 0);
   };
 
@@ -58,6 +63,7 @@ export class InformationTable {
 
     if (staticTableRowHeight) this.tableRowHeight = staticTableRowHeight;
     if (this.isLoading) {
+      this.expandedRowIndexes = [];
     } else this.tableRowHeight = 'auto';
   }
 
@@ -74,10 +80,13 @@ export class InformationTable {
 
     const rowBg = rowIndex >= 0 && rowIndex % 2 === 1 ? 'bg-slate-100' : '';
 
+    const expandCellPaddingClass = this.size === 'small' ? 'px-[6px] py-[10px]' : 'px-[8px] py-[16px]';
+    const expandPlaceholderSizeClass = this.size === 'small' ? 'size-[28px]' : 'size-[32px]';
+
     const expandCell = !this.subRowRenderer ? (
       false
     ) : expandable ? (
-      <div style={{ width: `${this.expandColumnWidth}px` }} class={cn('px-[8px] py-[16px] grid place-items-center')}>
+      <div style={{ width: `${this.expandColumnWidth}px` }} class={cn('grid place-items-center', expandCellPaddingClass)}>
         <button
           type="button"
           aria-expanded={expanded ? 'true' : 'false'}
@@ -91,20 +100,29 @@ export class InformationTable {
         </button>
       </div>
     ) : (
-      <div style={{ width: `${this.expandColumnWidth}px` }} class={cn('px-[8px] py-[16px] grid place-items-center')}>
-        {!this.customSkeleton && <div class="shift-skeleton size-full" />}
+      <div style={{ width: `${this.expandColumnWidth}px` }} class={cn('grid place-items-center', expandCellPaddingClass)}>
+        {!this.customSkeleton && <div class={cn('shift-skeleton', expandPlaceholderSizeClass)} />}
       </div>
     );
+
+    const cellPaddingClass = this.size === 'small' ? 'px-[12px] py-[10px]' : 'px-[16px] py-[16px]';
+    const cellTextClass = this.size === 'small' ? 'text-[13px]' : '';
 
     return (
       <div class={cn('information-table-row flex hover:bg-sky-100/50 transition duration-300', rowBg)}>
         {expandCell}
         {this.headers.map(({ key, label, width, centeredHorizontally = true, centeredVertically = true, styles = {} }, idx) => {
+          const hasWidth = typeof width === 'number' && width > 0;
+
           return (
             <div
               key={key + label + idx}
-              style={{ width: `${width}px`, ...styles }}
-              class={cn('px-[16px] py-[16px]', { 'text-center': centeredHorizontally, 'my-auto': centeredVertically })}
+              style={{ ...(this.allowAutoWidth && !hasWidth ? {} : { width: hasWidth ? `${width}px` : undefined }), ...styles }}
+              class={cn(cellPaddingClass, cellTextClass, {
+                'text-center': centeredHorizontally,
+                'my-auto': centeredVertically,
+                'flex-1 min-w-0': this.allowAutoWidth && !hasWidth,
+              })}
             >
               <div class={cn({ 'shift-skeleton': !this.customSkeleton })}>{this.renderCellContent(data[key])}</div>
             </div>
@@ -128,28 +146,56 @@ export class InformationTable {
 
   render() {
     return (
-      <div class={cn('information-table-wrapper mx-auto w-fit', { loading: this.isLoading })}>
+      <div class={cn('information-table-wrapper mx-auto', this.allowAutoWidth ? 'w-full' : 'w-fit', { loading: this.isLoading })}>
         {this.showHeader && (
           <div class="flex">
-            {!!this.subRowRenderer && <div style={{ width: `${this.expandColumnWidth}px` }} class={cn('py-[16px] px-[8px] border-b')} />}
-            {this.headers.map(({ label, width, centeredHorizontally = true, styles = {} }, idx) => (
-              <div key={label + idx} style={{ width: `${width}px`, ...styles }} class={cn('py-[16px] px-[16px] font-semibold border-b', { 'text-center': centeredHorizontally })}>
-                {label}
-              </div>
-            ))}
+            {!!this.subRowRenderer && (
+              <div style={{ width: `${this.expandColumnWidth}px` }} class={cn('border-b', this.size === 'small' ? 'py-[10px] px-[6px]' : 'py-[16px] px-[8px]')} />
+            )}
+            {this.headers.map(({ label, width, centeredHorizontally = true, styles = {} }, idx) => {
+              const hasWidth = typeof width === 'number' && width > 0;
+
+              return (
+                <div
+                  key={label + idx}
+                  style={{ ...(this.allowAutoWidth && !hasWidth ? {} : { width: hasWidth ? `${width}px` : undefined }), ...styles }}
+                  class={cn('font-semibold border-b', this.size === 'small' ? 'py-[10px] px-[12px] text-[13px]' : 'py-[16px] px-[16px]', {
+                    'text-center': centeredHorizontally,
+                    'flex-1 min-w-0': this.allowAutoWidth && !hasWidth,
+                  })}
+                >
+                  {label}
+                </div>
+              );
+            })}
           </div>
         )}
-        <flexible-container height={this.tableRowHeight}>
-          {!this.rows?.length && <div class={cn('border-b last:border-b-0')}>{this.renderRow(this.templateRow)}</div>}
-          {!!this.rows?.length &&
-            !this.subRowRenderer &&
-            this.rows.map((row, idx) => (
-              <div key={String(idx)} class={cn('border-b last:border-b-0')}>
-                {this.renderRow(row, idx)}
-              </div>
-            ))}
-          {!!this.rows?.length && !!this.subRowRenderer && this.rows.map((row, idx) => this.renderExpandableRow(row, idx))}
-        </flexible-container>
+
+        {this.isRaw ? (
+          <div style={{ height: `${this.tableRowHeight}px` }}>
+            {!this.rows?.length && <div class={cn('border-b last:border-b-0')}>{this.renderRow(this.templateRow)}</div>}
+            {!!this.rows?.length &&
+              !this.subRowRenderer &&
+              this.rows.map((row, idx) => (
+                <div key={String(idx)} class={cn('border-b last:border-b-0')}>
+                  {this.renderRow(row, idx)}
+                </div>
+              ))}
+            {!!this.rows?.length && !!this.subRowRenderer && this.rows.map((row, idx) => this.renderExpandableRow(row, idx))}
+          </div>
+        ) : (
+          <flexible-container height={this.tableRowHeight}>
+            {!this.rows?.length && <div class={cn('border-b last:border-b-0')}>{this.renderRow(this.templateRow)}</div>}
+            {!!this.rows?.length &&
+              !this.subRowRenderer &&
+              this.rows.map((row, idx) => (
+                <div key={String(idx)} class={cn('border-b last:border-b-0')}>
+                  {this.renderRow(row, idx)}
+                </div>
+              ))}
+            {!!this.rows?.length && !!this.subRowRenderer && this.rows.map((row, idx) => this.renderExpandableRow(row, idx))}
+          </flexible-container>
+        )}
       </div>
     );
   }

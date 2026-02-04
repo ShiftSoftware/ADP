@@ -6,6 +6,8 @@ import ServiceHistorySchema from '~locales/vehicleLookup/serviceHistory/type';
 
 import { InformationTableColumn } from '../components/information-table';
 
+import { ServiceHistorySubRow } from './components/service-history-sub-row';
+
 import { VehicleInfoLayout, VehicleInfoLayoutInterface } from '~features/vehicle-info-layout';
 import { VehicleLookupComponent, VehicleLookupMock } from '~features/vehicle-lookup-component';
 import { BlazorInvokable, DotNetObjectReference, smartInvokable, BlazorInvokableFunction } from '~features/blazor-ref';
@@ -145,12 +147,7 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
               headers={tableHeaders}
               isLoading={this.isLoading}
               rows={this.vehicleLookup?.serviceHistory || []}
-              subRowRenderer={(_row: any) => (
-                <div class="bg-slates-300 p-4">
-                  <h1>Test</h1>
-                  <div class="p-2 bg-sred-300">lol</div>
-                </div>
-              )}
+              subRowRenderer={(row: any) => <ServiceHistorySubRow row={row} locale={this.locale} />}
             />
           </div>
         </VehicleInfoLayout>

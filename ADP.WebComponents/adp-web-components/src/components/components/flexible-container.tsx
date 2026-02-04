@@ -10,7 +10,6 @@ import { parentsWithTag } from '~lib/parents-with-tag';
 })
 export class FlexibleContainer {
   @Prop() classes?: string;
-  @Prop() alwaysStrict?: boolean;
   @Prop() containerClasses?: string;
   @Prop() isOpened?: boolean = true;
   @Prop() stopAnimation?: boolean = false;

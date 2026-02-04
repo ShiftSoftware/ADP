@@ -12,3 +12,35 @@
 :host * {
   font-family: inherit !important;
 }
+
+.service-history-scroll {
+  @apply overflow-x-auto;
+}
+
+.service-history-subrow {
+  @apply border-t border-slate-200 flex flex-col gap-[16px] bg-slate-50 pb-10 pt-4 px-3.5;
+}
+
+.service-history-subsection {
+  @apply border border-slate-200 bg-white rounded-[10px] overflow-hidden shadow-[0_1px_0_rgba(17,24,39,0.02),0_8px_15px_rgba(17,24,39,0.06)];
+}
+
+.service-history-subsection-header {
+  @apply flex items-center justify-between gap-2.5 py-2.5 px-3 bg-slate-50 border-b border-slate-200;
+}
+
+.service-history-subsection-title {
+  @apply text-[12px] font-bold tracking-[0.02em] text-slate-900;
+}
+
+.service-history-subsection-meta {
+  @apply text-[12px] !aspect-square flex items-center font-bold text-slate-700 bg-indigo-50 border border-indigo-100 rounded-full px-2;
+}
+
+.service-history-subsection-table {
+  @apply max-w-full overflow-auto;
+}
+
+.service-history-empty {
+  @apply py-3.5 px-3 text-slate-500 text-[12px] bg-white;
+}
