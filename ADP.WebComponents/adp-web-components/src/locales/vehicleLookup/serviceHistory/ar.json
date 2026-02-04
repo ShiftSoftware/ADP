@@ -6,5 +6,17 @@
   "invoiceNumber": "رقم الفاتورة",
   "date": "تاريخ",
   "serviceType": "نوع الخدمة",
-  "odometer": "عداد المسافات"
+  "odometer": "عداد المسافات",
+
+  "laborLines": "بنود العمالة",
+  "partLines": "بنود القطع",
+
+  "laborCode": "كود العمالة",
+  "packageCode": "كود الحزمة",
+  "serviceCode": "كود الخدمة",
+  "serviceDescription": "وصف الخدمة",
+
+  "partNumber": "رقم القطعة",
+  "qty": "الكمية",
+  "partDescription": "وصف القطعة"
 }

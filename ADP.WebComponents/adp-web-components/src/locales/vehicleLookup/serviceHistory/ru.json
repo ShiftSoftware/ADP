@@ -6,5 +6,17 @@
   "invoiceNumber": "Номер Счета",
   "date": "Дата",
   "serviceType": "Тип услуги",
-  "odometer": "Одометр"
+  "odometer": "Одометр",
+
+  "laborLines": "Строки работ",
+  "partLines": "Строки запчастей",
+
+  "laborCode": "Код работы",
+  "packageCode": "Код пакета",
+  "serviceCode": "Код услуги",
+  "serviceDescription": "Описание услуги",
+
+  "partNumber": "Номер детали",
+  "qty": "Кол-во",
+  "partDescription": "Описание детали"
 }

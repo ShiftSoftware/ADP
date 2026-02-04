@@ -141,7 +141,17 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
           errorMessage={this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard}
         >
           <div class="overflow-x-auto">
-            <information-table rows={this.vehicleLookup?.serviceHistory || []} headers={tableHeaders} isLoading={this.isLoading}></information-table>
+            <information-table
+              headers={tableHeaders}
+              isLoading={this.isLoading}
+              rows={this.vehicleLookup?.serviceHistory || []}
+              subRowRenderer={(_row: any) => (
+                <div class="bg-slates-300 p-4">
+                  <h1>Test</h1>
+                  <div class="p-2 bg-sred-300">lol</div>
+                </div>
+              )}
+            />
           </div>
         </VehicleInfoLayout>
       </Host>
