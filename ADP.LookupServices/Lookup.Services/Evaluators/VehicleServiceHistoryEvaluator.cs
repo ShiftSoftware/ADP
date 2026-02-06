@@ -91,8 +91,8 @@ public class VehicleServiceHistoryEvaluator
                 CompanyName = null,
                 BranchName = null,
                 ServiceDate = GetMaxServiceDate(invoice.LaborLines, invoice.PartLines),
-                Mileage = null,
-                ServiceType = null,
+                Mileage = invoice.LaborLines?.Max(x => x.Odometer),
+                ServiceType = invoice.LaborLines.Where(x => x.JobDescription is not null)?.FirstOrDefault()?.JobDescription,
                 LaborLines = invoice.LaborLines?.Select(l => new VehicleLaborDTO
                 {
                     LaborCode = l.LaborCode,

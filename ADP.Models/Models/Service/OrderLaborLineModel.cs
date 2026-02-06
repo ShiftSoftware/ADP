@@ -36,6 +36,11 @@ public class OrderLaborLineModel :
     public string OrderDocumentNumber { get; set; }
 
     /// <summary>
+    /// A general description of the parent order/job associated with this labor line.
+    /// </summary>
+    public string JobDescription { get; set; }
+
+    /// <summary>
     /// The Invoice Number associated with this labor line.
     /// </summary>
     public string InvoiceNumber { get; set; }
@@ -78,18 +83,18 @@ public class OrderLaborLineModel :
     public decimal? ExtendedPrice { get; set; }
 
     /// <summary>
-    /// The uniqe Labor/Operation Code
+    /// The unique Labor/Operation Code. Typically from the Manufacturer's Service Catalog.
     /// </summary>
     public string LaborCode { get; set; }
 
     /// <summary>
-    /// The service code of the parent job associated with this labor line.
+    /// The service code associated with this line. Typically a distributor level code.
     /// </summary>
     public string ServiceCode { get; set; }
 
 
     /// <summary>
-    /// The description of the parent job associated with this labor line.
+    /// The description associated with this line. Typically a free text or a distributor/dealer level description of the labor operation performed.
     /// </summary>
     public string ServiceDescription { get; set; }
 
@@ -182,4 +187,10 @@ public class OrderLaborLineModel :
     /// An External Identifier that can be used for system to system Integration
     /// </summary>
     public string BranchIntegrationID { get; set; }
+
+
+    /// <summary>
+    /// The odometer reading of the vehicle at the time this job was opened.
+    /// </summary>
+    public int Odometer { get; set; }
 }
