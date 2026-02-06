@@ -55,7 +55,10 @@ nav:
           - Part Country Data: generated/Models/Part/PartCountryDataModel.md
           - Per Region Price: generated/Models/Part/RegionPriceModel.md
           - Stock Part: generated/Models/Part/StockPartModel.md
-          - Order Part Line: generated/Models/Part/OrderPartLineModel.md
+          - Order Part Line: generated/Models/Part/OrderPartLineModel.md  
+      - Labor:
+          - Order Labor Line: generated/Models/Service/OrderLaborLineModel.md
+  
   - Web Components:
       - Introduction: web-components/introduction.md
       - Installation: web-components/installation.md

@@ -3,6 +3,10 @@ using System;
 
 namespace ShiftSoftware.ADP.Models.Service;
 
+/// <summary>
+/// Refers to a Labor Line on an Order (Typically a Job Card on Workshop Module).
+/// </summary>
+[Docable]
 public class OrderLaborLineModel : 
     IPartitionedItem, 
     IBranchProps, 
@@ -13,42 +17,149 @@ public class OrderLaborLineModel :
     ICompanyIntegrationProps,
     IBranchIntegrationProps
 {
+    [DocIgnore]
     public string id { get; set; } = default!;
-    public string VIN { get; set; }
-    public string LaborCode { get; set; }
-    public DateTime? InvoiceDate { get; set; }
-    public string OrderDocumentNumber { get; set; }
-    public string InvoiceNumber { get; set; }
-    public string ParentInvoiceNumber { get; set; }
-    public Currencies? InvoiceCurrency { get; set; }
-    public string SaleType { get; set; }
-    public string AccountNumber { get; set; }
-    public string PackageCode { get; set; }
-    public string CustomerID { get; set; }
-    public string CustomerAccountNumber { get; set; }
-    public string ServiceCode { get; set; }
-    public string ServiceDescription { get; set; }
-    public string Department { get; set; }
-    public string LineID { get; set; }
-    public DateTime? LoadDate { get; set; }
-    public DateTime? PostDate { get; set; }
-    public long? CompanyID { get; set; }
-    public string CompanyHashID { get; set; }
-    public long? BranchID { get; set; }
-    public string BranchHashID { get; set; }
-    public string ItemType => ModelTypes.InvoiceLaborLine;
 
-    public string InvoiceStatus { get; set; }
+    /// <summary>
+    /// The unique identifier of the Labor Line.
+    /// </summary>
+    public string LineID { get; set; }
+
+    /// <summary>
+    /// The date at which this line was invoiced.
+    /// </summary>
+    public DateTime? InvoiceDate { get; set; }
+
+    /// <summary>
+    /// The Order Number associated with this line. (Job Card Number, Counter Sale Order Number)
+    /// </summary>
+    public string OrderDocumentNumber { get; set; }
+
+    /// <summary>
+    /// The Invoice Number associated with this labor line.
+    /// </summary>
+    public string InvoiceNumber { get; set; }
+
+    /// <summary>
+    /// The Parent Invoice Number associated with this labor line. (In case of Credit Notes or Debit Notes)
+    /// </summary>
+    public string ParentInvoiceNumber { get; set; }
+
+    /// <summary>
+    /// The Invoice <see cref="Currencies">Currency</see>
+    /// </summary>
+    public Currencies? InvoiceCurrency { get; set; }
+
+    /// <summary>
+    /// The quantity of the labor line that ordered.
+    /// </summary>
     public decimal? OrderQuantity { get; set; }
+
+
+    /// <summary>
+    /// The quantity of the labor line that sold.
+    /// </summary>
     public decimal? SoldQuantity { get; set; }
+
+    /// <summary>
+    /// The type of sale. (e.g. Internal, Bulk, Retail, etc.)
+    /// </summary>
+    public string SaleType { get; set; }
+
+    /// <summary>   
+    /// The Package Code in case this labor line is a package item.
+    /// </summary>
+    public string PackageCode { get; set; }
+
+
+    /// <summary>
+    /// The final price of this line item after accounting for quantity, discounts, and any applicable taxes or additional charges
+    /// </summary>
     public decimal? ExtendedPrice { get; set; }
-    public string ItemStatus { get; set; }
-    public string OrderStatus { get; set; }
+
+    /// <summary>
+    /// The uniqe Labor/Operation Code
+    /// </summary>
+    public string LaborCode { get; set; }
+
+    /// <summary>
+    /// The service code of the parent job associated with this labor line.
+    /// </summary>
+    public string ServiceCode { get; set; }
+
 
     /// <summary>
     /// The description of the parent job associated with this labor line.
     /// </summary>
-    public string JobDescription { get; set; }
+    public string ServiceDescription { get; set; }
+
+    /// <summary>
+    /// The Account Number from the Accounting System.
+    /// </summary>
+    public string AccountNumber { get; set; }
+
+    /// <summary>
+    /// The Customer Account Number from the Accounting System.
+    /// </summary>
+    public string CustomerAccountNumber { get; set; }
+
+    /// <summary>
+    /// The Company Specific Customer ID.
+    /// </summary>
+    public string CustomerID { get; set; }
+
+    /// <summary>
+    /// The Centralized unique Golden Customer ID.
+    /// </summary>
+    public string GoldenCustomerID { get; set; }
+
+
+    /// <summary>
+    /// The Department Code/ID.
+    /// </summary>
+    public string Department { get; set; }
+
+    /// <summary>
+    /// The Vehicle Identification Number (VIN) of the vehicle associated with this labor line.
+    /// </summary>
+    public string VIN { get; set; }
+
+    /// <summary>
+    /// The date at which this line was loaded into the Order Document.
+    /// </summary>
+    public DateTime? LoadDate { get; set; }
+
+    /// <summary>
+    /// The date at which this line was posted. This could mean (Job Completed, Part Dispatched, Vehicle Allocated, etc. based on the type of the Order Document).
+    /// </summary>
+    public DateTime? PostDate { get; set; }
+
+
+    [DocIgnore]
+    public long? CompanyID { get; set; }
+
+
+    /// <summary>
+    /// The Company Hash ID from the Identity System.
+    /// </summary>
+    public string CompanyHashID { get; set; }
+
+
+    [DocIgnore]
+    public long? BranchID { get; set; }
+
+    /// <summary>
+    /// The Branch Hash ID from the Identity System.
+    /// </summary>
+    public string BranchHashID { get; set; }
+
+    [DocIgnore]
+    public string ItemType => ModelTypes.InvoiceLaborLine;
+
+    public string InvoiceStatus { get; set; }
+    public string ItemStatus { get; set; }
+    public string OrderStatus { get; set; }
+
 
     /// <summary>
     /// The date for the next scheduled service of the vehicle associated with this labor line.
