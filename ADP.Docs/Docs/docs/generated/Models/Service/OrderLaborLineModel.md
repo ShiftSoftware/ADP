@@ -38,4 +38,4 @@ Refers to a Labor Line on an Order (Typically a Job Card on Workshop Module).
 | NumberOfPartLines <div><strong>``int``</strong></div> | The number of corresponding part lines associated with the parent order of this line. |
 | CompanyIntegrationID <div><strong>``string``</strong></div> | An External Identifier that can be used for system to system Integration |
 | BranchIntegrationID <div><strong>``string``</strong></div> | An External Identifier that can be used for system to system Integration |
-| Odometer <div><strong>``int``</strong></div> | The odometer reading of the vehicle at the time this job was opened. |
+| Odometer <div><strong>``int?``</strong></div> | The odometer reading of the vehicle at the time this job was opened. |

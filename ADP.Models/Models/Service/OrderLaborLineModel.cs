@@ -192,5 +192,5 @@ public class OrderLaborLineModel :
     /// <summary>
     /// The odometer reading of the vehicle at the time this job was opened.
     /// </summary>
-    public int Odometer { get; set; }
+    public int? Odometer { get; set; }
 }
