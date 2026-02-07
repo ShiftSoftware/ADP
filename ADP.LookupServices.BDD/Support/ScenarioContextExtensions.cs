@@ -5,9 +5,9 @@ namespace LookupServices.BDD;
 
 public static class ScenarioContextExtensions
 {
-    public static CompanyDataAggregateCosmosModel? GetCompanyDataAggregate(this ScenarioContext scenarioContext)
+    public static CompanyDataAggregateModel? GetCompanyDataAggregate(this ScenarioContext scenarioContext)
     {
-        CompanyDataAggregateCosmosModel? _companyDataAggregate = null;
+        CompanyDataAggregateModel? _companyDataAggregate = null;
 
         scenarioContext.TryGetValue("companyData", out _companyDataAggregate);
 

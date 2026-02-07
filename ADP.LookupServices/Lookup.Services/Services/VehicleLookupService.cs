@@ -11,32 +11,32 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services;
 
 public class VehicleLookupService
 {
-    private readonly IVehicleLoockupCosmosService lookupCosmosService;
+    private readonly IVehicleLoockupStorageService vehicleLoockupStorageService;
     private readonly LookupOptions lookupOptions;
     private readonly IServiceProvider serviceProvider;
     private readonly ILogCosmosService logCosmosService;
 
     public VehicleLookupService(
-        IVehicleLoockupCosmosService lookupService,
+        IVehicleLoockupStorageService vehicleLoockupStorageService,
         IServiceProvider services = null,
         ILogCosmosService logCosmosService = null,
         LookupOptions options = null
     )
     {
-        this.lookupCosmosService = lookupService;
+        this.vehicleLoockupStorageService = vehicleLoockupStorageService;
         this.lookupOptions = options;
         this.serviceProvider = services;
         this.logCosmosService = logCosmosService;
     }
 
-    public async Task<CompanyDataAggregateCosmosModel> GetAggregatedCompanyDataAsync(string vin)
+    public async Task<CompanyDataAggregateModel> GetAggregatedCompanyDataAsync(string vin)
     {
-        return await lookupCosmosService.GetAggregatedCompanyData(vin);
+        return await vehicleLoockupStorageService.GetAggregatedCompanyData(vin);
     }
 
-    public async Task<IEnumerable<CompanyDataAggregateCosmosModel>> GetAggregatedCompanyDataAsync(IEnumerable<string> vins, IEnumerable<string> itemTypes)
+    public async Task<IEnumerable<CompanyDataAggregateModel>> GetAggregatedCompanyDataAsync(IEnumerable<string> vins, IEnumerable<string> itemTypes)
     {
-        return await lookupCosmosService.GetAggregatedCompanyData(vins, itemTypes);
+        return await vehicleLoockupStorageService.GetAggregatedCompanyData(vins, itemTypes);
     }
 
     public async Task<VehicleLookupDTO> LookupAsync(string vin)
@@ -50,7 +50,7 @@ public class VehicleLookupService
             requestOptions = new VehicleLookupRequestOptions();
 
         // Get all items related to the VIN from the cosmos container
-        var companyDataAggregate = await lookupCosmosService.GetAggregatedCompanyData(vin);
+        var companyDataAggregate = await vehicleLoockupStorageService.GetAggregatedCompanyData(vin);
 
         VehicleEntryModel vehicle = new VehicleEntryEvaluator(companyDataAggregate).Evaluate();
 
@@ -60,12 +60,12 @@ public class VehicleLookupService
             IsAuthorized = new VehicleAuthorizationEvaluator(companyDataAggregate).Evaluate(),
             PaintThicknessInspections = await new VehiclePaintThicknessEvaluator(companyDataAggregate, lookupOptions, serviceProvider).Evaluate(requestOptions.LanguageCode),
             Identifiers = new VehicleIdentifierEvaluator(companyDataAggregate).Evaluate(vehicle),
-            VehicleSpecification = await new VehicleSpecificationEvaluator(lookupCosmosService).Evaluate(vehicle),
+            VehicleSpecification = await new VehicleSpecificationEvaluator(vehicleLoockupStorageService).Evaluate(vehicle),
             ServiceHistory = await new VehicleServiceHistoryEvaluator(companyDataAggregate, lookupOptions, this.serviceProvider).Evaluate(requestOptions.LanguageCode, requestOptions.VehicleServiceHistoryConsistencyLevel),
             SSC = new VehicleSSCEvaluator(companyDataAggregate).Evaluate(),
             NextServiceDate = companyDataAggregate.LaborLines?.Max(x => x.NextServiceDate),
             Accessories = await new VehicleAccessoriesEvaluator(companyDataAggregate, lookupOptions, serviceProvider).Evaluate(requestOptions.LanguageCode),
-            SaleInformation = await new VehicleSaleInformationEvaluator(companyDataAggregate, lookupOptions, serviceProvider, lookupCosmosService).Evaluate(requestOptions),
+            SaleInformation = await new VehicleSaleInformationEvaluator(companyDataAggregate, lookupOptions, serviceProvider, vehicleLoockupStorageService).Evaluate(requestOptions),
         };
 
         if (requestOptions.LegacyPaintThickness)
@@ -97,7 +97,7 @@ public class VehicleLookupService
             .Evaluate(vehicle, data.SaleInformation, requestOptions.IgnoreBrokerStock);
 
         var serviceItemsResult = await new VehicleServiceItemEvaluator(
-            this.lookupCosmosService, companyDataAggregate, this.lookupOptions, this.serviceProvider
+            this.vehicleLoockupStorageService, companyDataAggregate, this.lookupOptions, this.serviceProvider
         ).Evaluate(
             vehicle,
             data.Warranty?.FreeServiceStartDate,
@@ -158,21 +158,21 @@ public class VehicleLookupService
 
     public async Task<IEnumerable<VehicleModelModel>> GetAllVehicleModelsAsync()
     {
-        return await lookupCosmosService.GetAllVehicleModelsAsync();
+        return await vehicleLoockupStorageService.GetAllVehicleModelsAsync();
     }
 
     public async Task<IEnumerable<VehicleModelModel>> GetVehicleModelsByKatashikiAsync(string katashiki)
     {
-        return await lookupCosmosService.GetVehicleModelsByKatashikiAsync(katashiki);
+        return await vehicleLoockupStorageService.GetVehicleModelsByKatashikiAsync(katashiki);
     }
 
     public async Task<IEnumerable<VehicleModelModel>> GetVehicleModelsByVariantAsync(string variant)
     {
-        return await lookupCosmosService.GetVehicleModelsByVariantAsync(variant);
+        return await vehicleLoockupStorageService.GetVehicleModelsByVariantAsync(variant);
     }
 
     public async Task<IEnumerable<VehicleModelModel>> GetVehicleModelsByVinAsync(string vin)
     {
-        return await lookupCosmosService.GetVehicleModelsByVinAsync(vin);
+        return await vehicleLoockupStorageService.GetVehicleModelsByVinAsync(vin);
     }
 }

@@ -1,5 +1,6 @@
 ﻿using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Part;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
+using ShiftSoftware.ADP.Lookup.Services.Enums;
 using ShiftSoftware.ShiftEntity.Model.Dtos;
 using System;
 using System.Collections.Generic;
@@ -41,6 +42,8 @@ public class LookupOptions
     public bool EnableManufacturerLookup { get; set; }
     public bool CatalogPartShouldComeFromStock { get; set; }
     public bool LookupBrokerStock { get; set; }
+    public StorageSources VehicleLookupStorageSource { get; set; }
+    public string VehicleLookupDuckDBConnection { get; set; }
 }
 
 public class PartLocationNameResolverModel

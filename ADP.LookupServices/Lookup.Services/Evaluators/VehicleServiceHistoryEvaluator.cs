@@ -12,18 +12,18 @@ namespace ShiftSoftware.ADP.Lookup.Services.Evaluators;
 
 public class VehicleServiceHistoryEvaluator
 {
-    private readonly CompanyDataAggregateCosmosModel CompanyDataAggregate;
+    private readonly CompanyDataAggregateModel CompanyDataAggregate;
     private readonly LookupOptions Options;
     private readonly IServiceProvider ServiceProvider;
 
-    public VehicleServiceHistoryEvaluator(CompanyDataAggregateCosmosModel companyDataAggregate, LookupOptions options, IServiceProvider serviceProvider)
+    public VehicleServiceHistoryEvaluator(CompanyDataAggregateModel companyDataAggregate, LookupOptions options, IServiceProvider serviceProvider)
     {
         this.CompanyDataAggregate = companyDataAggregate;
         this.Options = options;
         this.ServiceProvider = serviceProvider;
     }
 
-    public static IEnumerable<VehicleServiceHistoryInvoice> GetInvoices(CompanyDataAggregateCosmosModel companyDataAggregate, ConsistencyLevels consistencyLevel)
+    public static IEnumerable<VehicleServiceHistoryInvoice> GetInvoices(CompanyDataAggregateModel companyDataAggregate, ConsistencyLevels consistencyLevel)
     {
         var labors = companyDataAggregate.LaborLines ?? new List<OrderLaborLineModel>();
         var parts = companyDataAggregate.PartLines ?? new List<OrderPartLineModel>();

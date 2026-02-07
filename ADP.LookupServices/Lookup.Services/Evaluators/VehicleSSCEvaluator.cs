@@ -9,9 +9,9 @@ namespace ShiftSoftware.ADP.Lookup.Services.Evaluators;
 
 public class VehicleSSCEvaluator
 {
-    private readonly CompanyDataAggregateCosmosModel CompanyDataAggregateCosmosModel;
+    private readonly CompanyDataAggregateModel CompanyDataAggregateCosmosModel;
 
-    public VehicleSSCEvaluator(CompanyDataAggregateCosmosModel companyDataAggregateCosmosModel)
+    public VehicleSSCEvaluator(CompanyDataAggregateModel companyDataAggregateCosmosModel)
     {
         this.CompanyDataAggregateCosmosModel = companyDataAggregateCosmosModel;
     }

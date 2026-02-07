@@ -9,13 +9,13 @@ namespace LookupServices.BDD.StepDefinitions;
 public class SharedStepDefinitions
 {
     private readonly ScenarioContext scenarioContext;
-    private readonly CompanyDataAggregateCosmosModel _companyDataAggregate;
+    private readonly CompanyDataAggregateModel _companyDataAggregate;
 
     public SharedStepDefinitions(ScenarioContext scenarioContext)
     {
         this.scenarioContext = scenarioContext;
 
-        this._companyDataAggregate = new CompanyDataAggregateCosmosModel();
+        this._companyDataAggregate = new CompanyDataAggregateModel();
 
         this.scenarioContext["companyData"] = _companyDataAggregate;
     }

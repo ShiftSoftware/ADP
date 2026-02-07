@@ -9,7 +9,7 @@ namespace LookupServices.BDD.StepDefinitions;
 public class AuthorizedStepDefinitions
 {
     private readonly ScenarioContext _scenarioContext;
-    private readonly CompanyDataAggregateCosmosModel? CompanyDataAggregate;
+    private readonly CompanyDataAggregateModel? CompanyDataAggregate;
 
     public AuthorizedStepDefinitions(ScenarioContext scenarioContext)
     {

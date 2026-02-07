@@ -7,8 +7,8 @@ namespace ShiftSoftware.ADP.Lookup.Services.Evaluators;
 
 public class VehicleSpecificationEvaluator
 {
-    private readonly IVehicleLoockupCosmosService VehicleLoockupCosmos;
-    public VehicleSpecificationEvaluator(IVehicleLoockupCosmosService vehicleLoockupCosmos)
+    private readonly IVehicleLoockupStorageService VehicleLoockupCosmos;
+    public VehicleSpecificationEvaluator(IVehicleLoockupStorageService vehicleLoockupCosmos)
     {
         this.VehicleLoockupCosmos = vehicleLoockupCosmos;
     }

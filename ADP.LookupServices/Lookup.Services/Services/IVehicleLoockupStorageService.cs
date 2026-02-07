@@ -6,12 +6,12 @@ using System.Threading.Tasks;
 
 namespace ShiftSoftware.ADP.Lookup.Services.Services
 {
-    public interface IVehicleLoockupCosmosService
+    public interface IVehicleLoockupStorageService
     {
         Task<BrokerModel> GetBrokerAsync(string accountNumber, long? companyID);
         Task<BrokerModel> GetBrokerAsync(long id);
-        Task<CompanyDataAggregateCosmosModel> GetAggregatedCompanyData(string vin);
-        Task<IEnumerable<CompanyDataAggregateCosmosModel>> GetAggregatedCompanyData(IEnumerable<string> vins, IEnumerable<string> itemTypes);
+        Task<CompanyDataAggregateModel> GetAggregatedCompanyData(string vin);
+        Task<IEnumerable<CompanyDataAggregateModel>> GetAggregatedCompanyData(IEnumerable<string> vins, IEnumerable<string> itemTypes);
         //Task<IEnumerable<StockPartModel>> GetStockItemsAsync(IEnumerable<string> partNumbers);
         Task<ColorModel> GetExteriorColorsAsync(string colorCode, long? brand);
         Task<VehicleModelModel> GetVehicleModelsAsync(string variant, long? brand);
