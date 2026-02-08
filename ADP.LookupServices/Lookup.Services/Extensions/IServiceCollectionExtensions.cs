@@ -24,9 +24,7 @@ public static class IServiceCollectionExtensions
         }
         else if (options.VehicleLookupStorageSource == Enums.StorageSources.DuckDB)
         {
-            var conn = new DuckDBConnection(options.VehicleLookupDuckDBConnection);
-            conn.Open();
-            services.AddScoped<IVehicleLoockupStorageService>(x => new DuckDBVehicleLoockupStorageService(conn));
+            services.AddScoped<IVehicleLoockupStorageService>(x => new DuckDBVehicleLoockupStorageService(x.GetRequiredService<DuckDBConnection>()));
         }
 
         services.AddScoped<ILogCosmosService>(x => new LogCosmosService(x.GetRequiredService<CosmosClient>()));

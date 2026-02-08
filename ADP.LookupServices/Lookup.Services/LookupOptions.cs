@@ -43,7 +43,6 @@ public class LookupOptions
     public bool CatalogPartShouldComeFromStock { get; set; }
     public bool LookupBrokerStock { get; set; }
     public StorageSources VehicleLookupStorageSource { get; set; }
-    public string VehicleLookupDuckDBConnection { get; set; }
 }
 
 public class PartLocationNameResolverModel
