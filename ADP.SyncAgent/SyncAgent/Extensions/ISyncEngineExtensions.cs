@@ -271,6 +271,8 @@ public static class ISyncEngineExtensions
                 else if (result == SyncPreparingResponseAction.Skiped)
                     await logger.LogWarning("Preparing skipped.");
 
+                await logger.LogInformation(" ");
+
                 return result;
             });
         }
@@ -417,7 +419,7 @@ public static class ISyncEngineExtensions
                     (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}" : ""));
 
             await logger.LogInformation("----------------------------------------------------");
-            await logger.LogInformation("");
+            await logger.LogInformation(" ");
 
             return result;
         });
@@ -433,6 +435,8 @@ public static class ISyncEngineExtensions
                 await logger.LogInformation($"Action {x.Input.ActionType} is completed successfully");
             else
                 await logger.LogError($"Action {x.Input.ActionType} is failed");
+
+            await logger.LogInformation(" ");
 
             return result;
         });
