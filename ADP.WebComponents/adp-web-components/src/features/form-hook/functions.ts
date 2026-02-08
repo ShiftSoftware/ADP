@@ -1,9 +1,10 @@
 import { FormHook } from './form-hook';
-import { getSharedFormLocal, LanguageKeys } from '~features/multi-lingual';
+import { getSharedFormLocal, LanguageKeys, MultiLingual } from '~features/multi-lingual';
 import { FormElementStructure, FormHookInterface } from './interface';
 import { gistLoader } from './gist-loader';
 import { fetchJson } from '~lib/fetch-json';
 import { AnyObjectSchema } from 'yup';
+import { Grecaptcha } from '~lib/recaptcha';
 
 export type FormLanguageChange = {
   form: FormHook<any>;
@@ -140,4 +141,124 @@ export type FormStructureRenderedHandler = {
 
 export const formStructureRenderedHandler = async (formContext: FormStructureRenderedHandler, isRendered: boolean) => {
   if (isRendered) formContext.formReadyCallback?.();
+};
+
+declare const grecaptcha: Grecaptcha;
+
+export type FormSubmittHandler<T> = {
+  formValues: T;
+  afterSuccess?: (payload: object, header: object) => void;
+  context: FormHookInterface<T> & MultiLingual & { form: FormHook<any> };
+  middleware?: (payload: object, header: object, url: string) => { header: object; payload: object; url: string };
+};
+
+export const formSubmittHandler = async <T>({ context, formValues, middleware, afterSuccess }: FormSubmittHandler<T>) => {
+  try {
+    context.setIsLoading(true);
+
+    const hasAdditionalData = !!context.structure?.data?.truncatedFields && !!Object.keys(context.structure?.data?.truncatedFields)?.length;
+
+    let additionalData: Record<string, string> = {};
+
+    if (hasAdditionalData) {
+      Object.entries(context.structure?.data?.truncatedFields as Record<string, string>).forEach(([oldKey, newKey]) => {
+        if (formValues[oldKey]) additionalData[newKey] = formValues[oldKey];
+
+        delete formValues[oldKey];
+      });
+    }
+
+    let payload: Record<string, any> = { ...formValues };
+
+    if (context.structure?.data?.extraPayload) payload = { ...payload, ...context.structure?.data?.extraPayload };
+
+    if (hasAdditionalData) payload.additionalData = additionalData;
+
+    if (!!context?.extraPayload) payload = { ...payload, ...context?.extraPayload };
+
+    let header: Record<string, any> = {
+      'Content-Type': 'application/json',
+      'Accept-Language': context.localeLanguage || 'en',
+    };
+
+    if (!!context?.extraHeader) header = { ...header, ...context?.extraHeader };
+
+    if (!!context.structure?.data?.extraHeader) header = { ...header, ...context.structure?.data?.extraHeader };
+
+    let requestEndpoint = '';
+    if (context.isMobileForm) {
+      const token = await context.getMobileToken();
+
+      if (token.toLowerCase().startsWith('bearer')) {
+        header['Authorization'] = token;
+        requestEndpoint = context.structure?.data?.requestAppUrl;
+      } else {
+        header['verification-token'] = token;
+        requestEndpoint = context.structure?.data?.requestAppCheckUrl;
+      }
+    } else {
+      requestEndpoint = context.structure?.data?.requestUrl;
+      if (context.structure?.data?.recaptchaKey) {
+        const token = await grecaptcha.execute(context.structure?.data?.recaptchaKey, { action: 'submit' });
+        header['Recaptcha-Token'] = token;
+      }
+    }
+
+    if (context.isDev) requestEndpoint = requestEndpoint.replaceAll('production=true', 'production=false');
+
+    if (!requestEndpoint) {
+      throw new Error('Request endpoint is not configured');
+    }
+
+    if (middleware) {
+      const middlewareRes = middleware(payload, header, requestEndpoint);
+      payload = { ...middlewareRes.payload };
+      header = { ...middlewareRes.header };
+      requestEndpoint = middlewareRes.url;
+    }
+
+    const response = await fetch(requestEndpoint, {
+      headers: header,
+      method: context.structure?.data?.requestMethod || 'POST',
+
+      ...(context.structure?.data?.requestMethod?.toLowerCase() === 'get' ? {} : { body: JSON.stringify(payload) }),
+    });
+
+    if (response.ok) {
+      const result = await response?.json();
+
+      if (afterSuccess) await afterSuccess(payload, header);
+
+      context.setSuccessCallback(result);
+
+      setTimeout(() => {
+        context.form.reset();
+        context.form.rerender({ rerenderForm: true, rerenderAll: true });
+      }, 100);
+    } else {
+      const contentType = response.headers.get('content-type');
+
+      const errorText = contentType?.includes('application/json') ? (await response.json())?.message?.body : await response.text();
+
+      throw new Error(errorText);
+    }
+  } catch (error) {
+    console.error(error);
+
+    context.setErrorCallback(error);
+  } finally {
+    context.setIsLoading(false);
+  }
+};
+
+export const functionHooks = {
+  formLanguageChange,
+  formErrorHandler,
+  formSubmitHandler,
+  formLoadingHandler,
+  formSuccessHandler,
+  formDidLoadHandler,
+  formGetFormHandler,
+  formSubmittHandler,
+  formStructureRenderedHandler,
 };

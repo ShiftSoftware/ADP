@@ -48,6 +48,8 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
   @State() localeLanguage: LanguageKeys;
 
   @Prop() gistId?: string;
+  @Prop() extraHeader: object;
+  @Prop() extraPayload: object;
   @Prop() structureUrl?: string;
   @Prop() loadingChanges: (loading: boolean) => void;
   @Prop() errorCallback: (error: any, message: string) => void;

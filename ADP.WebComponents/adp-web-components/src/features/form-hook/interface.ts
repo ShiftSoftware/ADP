@@ -28,14 +28,20 @@ export type FormElementStructure<T> = {
 } & FormElementStructureComponents<T>;
 
 export interface FormHookInterface<T> {
+  locale?: any;
   gistId?: string;
   el: HTMLElement;
-  locale?: any;
+  isDev?: boolean;
   isLoading: boolean;
+  extraHeader?: object;
   errorMessage?: string;
+  extraPayload?: object;
+  isMobileForm?: boolean;
+  localeLanguage?: string;
   language?: LanguageKeys;
   renderedFields?: string[];
   structureRendered?: boolean;
+  getMobileToken?: () => string;
   structure?: FormElementStructure<any>;
   formSubmit: (formValues: T) => void;
   setErrorCallback?: (error: any) => void;

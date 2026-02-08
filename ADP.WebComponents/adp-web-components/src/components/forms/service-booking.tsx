@@ -1,55 +1,33 @@
 import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
-import { FormElementMapper, FormElementStructure, FormHook, FormHookInterface, FormInputMeta, FormSelectFetcher, FormSelectItem, functionHooks } from '~features/form-hook';
+import { serviceBookingElementNames, serviceBookingElements } from './service-booking/element-mapper';
+import { ServiceBooking, serviceBookingInputsValidation } from './service-booking/validations';
+
+import {
+  FormHook,
+  FormHookInterface,
+  FormElementStructure,
+  formLanguageChange,
+  formErrorHandler,
+  formLoadingHandler,
+  formSuccessHandler,
+  formDidLoadHandler,
+  formGetFormHandler,
+  formSubmitHandler,
+  formSubmittHandler,
+  formStructureRenderedHandler,
+} from '~features/form-hook';
 import { GeneralFormLocal, LanguageKeys, MultiLingual, sharedFormLocalesSchema } from '~features/multi-lingual';
 import getLanguageFromUrl from '~lib/get-language-from-url';
 import cn from '~lib/cn';
 import { LoaderIcon } from '~assets/loader-icon';
-import { object, string } from 'yup';
-import { getDefaultValidaations, y } from './defaults/validation';
-import { getDefaultMappers } from './defaults/mappers';
-import { getDefaultStateObject } from './defaults/state-object';
-
-let stateObject = getDefaultStateObject();
-
-const validation = object({
-  ...getDefaultValidaations(stateObject),
-
-  companyBranchId: string()
-    .meta({ label: y.label('companyBranchId'), placeholder: y.placeholder('companyBranchId') } as FormInputMeta)
-    .when(y.condition('companyBranchId'), {
-      is: true,
-      otherwise: schema => schema.optional(),
-      then: schema => schema.required(y.require('companyBranchId')),
-    }),
-});
-
-const elementMapper: FormElementMapper<any, any> = {
-  ...getDefaultMappers(stateObject),
-
-  companyBranchId: ({ form, language, props }) => {
-    const fetcher: FormSelectFetcher = async ({ signal }): Promise<FormSelectItem[]> => {
-      const branchEndpoint = form.context.structure?.data.branchApi as string;
-
-      const response = await fetch(branchEndpoint, { signal, headers: { 'Accept-Language': language } });
-
-      const branches = (await response.json()) as { ID?: string; Name?: string }[];
-
-      const parsedOptions = branches.map(branch => ({ label: branch?.Name, value: branch?.ID })) as FormSelectItem[];
-
-      return parsedOptions;
-    };
-
-    return <form-select {...props} searchable fetcher={fetcher} language={language} />;
-  },
-};
 
 @Component({
   shadow: true,
-  tag: 'general-inquiry-form',
-  styleUrl: './defaults/theme.css',
+  tag: 'service-booking-form',
+  styleUrl: 'service-booking/themes.css',
 })
-export class GeneralInquiryForm implements FormHookInterface<any>, MultiLingual {
+export class ServiceBookingForm implements FormHookInterface<ServiceBooking>, MultiLingual {
   // #region Localization
   @Prop({ mutable: true, reflect: true }) language: LanguageKeys;
 
@@ -57,7 +35,7 @@ export class GeneralInquiryForm implements FormHookInterface<any>, MultiLingual 
 
   @Watch('language')
   async changeLanguage(newLanguage: LanguageKeys) {
-    await functionHooks.formLanguageChange(this, newLanguage);
+    await formLanguageChange(this, newLanguage);
   }
   // #endregion
 
@@ -73,45 +51,45 @@ export class GeneralInquiryForm implements FormHookInterface<any>, MultiLingual 
   @Prop() loadingChanges: (loading: boolean) => void;
   @Prop() errorCallback: (error: any, message: string) => void;
   @Prop() successCallback: (data: any, message?: string) => void;
-  @Prop({ mutable: true }) structure: FormElementStructure<any> | undefined;
+  @Prop({ mutable: true }) structure: FormElementStructure<serviceBookingElementNames> | undefined;
   @Prop({ mutable: true }) fields?: object;
 
   @Element() el: HTMLElement;
 
   setIsLoading(isLoading: boolean) {
-    functionHooks.formLoadingHandler(this, isLoading);
+    formLoadingHandler(this, isLoading);
   }
 
   setErrorCallback(error: any) {
-    functionHooks.formErrorHandler(this, error);
+    formErrorHandler(this, error);
   }
 
   setSuccessCallback(data: any) {
-    functionHooks.formSuccessHandler(this, data);
+    formSuccessHandler(this, data);
   }
 
   async componentWillLoad() {
     if (!this.language) this.language = getLanguageFromUrl();
   }
 
-  async formSubmit(formValues: any) {
-    await functionHooks.formSubmittHandler<any>({ context: this, formValues });
+  async formSubmit(formValues: ServiceBooking) {
+    await formSubmittHandler<ServiceBooking>({ context: this, formValues });
   }
   // #endregion
 
   // #region Component Logic
   async componentDidLoad() {
-    await functionHooks.formDidLoadHandler<any, any>(this, validation);
+    await formDidLoadHandler<serviceBookingElementNames, ServiceBooking>(this, serviceBookingInputsValidation);
   }
 
   @Method()
   async getForm() {
-    return await functionHooks.formGetFormHandler(this);
+    return await formGetFormHandler(this);
   }
 
   @Method()
   async submit() {
-    await functionHooks.formSubmitHandler(this);
+    await formSubmitHandler(this);
   }
 
   @State() structureRendered = false;
@@ -119,7 +97,7 @@ export class GeneralInquiryForm implements FormHookInterface<any>, MultiLingual 
 
   @Watch('structureRendered')
   async structureChanged(isRendered: boolean) {
-    await functionHooks.formStructureRenderedHandler(this, isRendered);
+    await formStructureRenderedHandler(this, isRendered);
   }
 
   @Prop() theme?: string;
@@ -129,7 +107,7 @@ export class GeneralInquiryForm implements FormHookInterface<any>, MultiLingual 
   @Prop() isMobileForm: boolean = false;
   @Prop() getMobileToken?: () => string;
 
-  @State() form: FormHook<any>;
+  @State() form: FormHook<ServiceBooking>;
 
   // #endregion
   render() {
@@ -156,7 +134,7 @@ export class GeneralInquiryForm implements FormHookInterface<any>, MultiLingual 
                   isLoading={this.isLoading}
                   language={this.localeLanguage}
                   errorMessage={this.errorMessage}
-                  formElementMapper={elementMapper}
+                  formElementMapper={serviceBookingElements}
                   successMessage={this.locale['Form submitted successfully.'] || 'Form submitted successfully.'}
                 >
                   <slot></slot>

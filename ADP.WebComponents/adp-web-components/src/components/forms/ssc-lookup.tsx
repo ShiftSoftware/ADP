@@ -1,36 +1,31 @@
 import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
-import { Grecaptcha } from '~lib/recaptcha';
-
-import {
-  FormHook,
-  FormHookInterface,
-  FormElementStructure,
-  formLanguageChange,
-  formErrorHandler,
-  formLoadingHandler,
-  formSuccessHandler,
-  formDidLoadHandler,
-  formGetFormHandler,
-  formSubmitHandler,
-  formStructureRenderedHandler,
-} from '~features/form-hook';
+import { FormElementMapper, FormElementStructure, FormHook, FormHookInterface, functionHooks } from '~features/form-hook';
 import { GeneralFormLocal, LanguageKeys, MultiLingual, sharedFormLocalesSchema } from '~features/multi-lingual';
 import getLanguageFromUrl from '~lib/get-language-from-url';
-
 import cn from '~lib/cn';
 import { LoaderIcon } from '~assets/loader-icon';
-import { SSCLookup, SSCLookupInputsValidation } from './ssc-lookup/validations';
-import { SSCLookupElementNames, SSCLookupElements } from './ssc-lookup/element-mapper';
+import { object } from 'yup';
+import { getDefaultValidaations } from './defaults/validation';
+import { getDefaultMappers } from './defaults/mappers';
+import { getDefaultStateObject } from './defaults/state-object';
 
-declare const grecaptcha: Grecaptcha;
+let stateObject = getDefaultStateObject();
+
+const validation = object({
+  ...getDefaultValidaations(stateObject),
+});
+
+const elementMapper: FormElementMapper<any, any> = {
+  ...getDefaultMappers(stateObject),
+};
 
 @Component({
   shadow: true,
   tag: 'ssc-lookup-form',
-  styleUrl: './default-theme.css',
+  styleUrl: './defaults/theme.css',
 })
-export class SSCLookupForm implements FormHookInterface<SSCLookup>, MultiLingual {
+export class SSCLookupForm implements FormHookInterface<any>, MultiLingual {
   // #region Localization
   @Prop({ mutable: true, reflect: true }) language: LanguageKeys;
 
@@ -38,7 +33,7 @@ export class SSCLookupForm implements FormHookInterface<SSCLookup>, MultiLingual
 
   @Watch('language')
   async changeLanguage(newLanguage: LanguageKeys) {
-    await formLanguageChange(this, newLanguage);
+    await functionHooks.formLanguageChange(this, newLanguage);
   }
   // #endregion
 
@@ -48,103 +43,61 @@ export class SSCLookupForm implements FormHookInterface<SSCLookup>, MultiLingual
   @State() localeLanguage: LanguageKeys;
 
   @Prop() gistId?: string;
+  @Prop() extraHeader: object;
+  @Prop() extraPayload: object;
   @Prop() structureUrl?: string;
   @Prop() loadingChanges: (loading: boolean) => void;
   @Prop() errorCallback: (error: any, message: string) => void;
   @Prop() successCallback: (data: any, message?: string) => void;
-  @Prop({ mutable: true }) structure: FormElementStructure<SSCLookupElementNames> | undefined;
+  @Prop({ mutable: true }) structure: FormElementStructure<any> | undefined;
   @Prop({ mutable: true }) fields?: object;
 
   @Element() el: HTMLElement;
 
   setIsLoading(isLoading: boolean) {
-    formLoadingHandler(this, isLoading);
+    functionHooks.formLoadingHandler(this, isLoading);
   }
 
   setErrorCallback(error: any) {
-    formErrorHandler(this, error);
+    functionHooks.formErrorHandler(this, error);
   }
 
   setSuccessCallback(data: any) {
-    formSuccessHandler(this, data);
+    functionHooks.formSuccessHandler(this, data);
   }
 
   async componentWillLoad() {
     if (!this.language) this.language = getLanguageFromUrl();
   }
 
-  async formSubmit(formValues: SSCLookup) {
-    try {
-      this.setIsLoading(true);
-
-      let payload: any = { ...formValues };
-
-      if (this.structure?.data?.extraPayload) payload = { ...payload, ...this.structure?.data?.extraPayload };
-
-      const headers = {
-        'Accept-Language': this.localeLanguage || 'en',
-        'Customer-Name': encodeURIComponent(formValues.name),
-        'Customer-Phone': encodeURIComponent(formValues.phone),
-      };
-
-      let requestEndpoint = this.structure?.data?.requestUrl.replace('${vin}', formValues.vin?.toUpperCase());
-
-      if (this.structure?.data?.recaptchaKey) {
-        const token = await grecaptcha.execute(this.structure?.data?.recaptchaKey, { action: 'submit' });
-        headers['Recaptcha-Token'] = token;
-      }
-
-      if (this.isDev && requestEndpoint) {
-        requestEndpoint = requestEndpoint.replaceAll('production=true', 'production=false');
-      }
-
-      if (!requestEndpoint) {
-        throw new Error('Request endpoint is not configured');
-      }
-
-      const response = await fetch(requestEndpoint, {
-        headers,
-      });
-
-      if (response.ok) {
-        const result = await response?.json();
-
-        this.setSuccessCallback(result);
-
-        setTimeout(() => {
-          this.form.reset();
-          this.form.rerender({ rerenderForm: true, rerenderAll: true });
-        }, 100);
-      } else {
-        const contentType = response.headers.get('content-type');
-
-        const errorText = contentType?.includes('application/json') ? (await response.json())?.message?.body : await response.text();
-
-        throw new Error(errorText);
-      }
-    } catch (error) {
-      console.error(error);
-
-      this.setErrorCallback(error);
-    } finally {
-      this.setIsLoading(false);
-    }
+  async formSubmit(formValues: any) {
+    await functionHooks.formSubmittHandler<any>({
+      context: this,
+      formValues,
+      middleware(payload: any, header, url: string) {
+        return {
+          payload: {},
+          url: url.replace('${vin}', payload.vin?.toUpperCase()),
+          header: { ...header, 'Customer-Name': encodeURIComponent(payload.name), 'Customer-Phone': encodeURIComponent(payload.phone) },
+        };
+      },
+    });
   }
   // #endregion
 
   // #region Component Logic
   async componentDidLoad() {
-    await formDidLoadHandler<SSCLookupElementNames, SSCLookup>(this, SSCLookupInputsValidation);
+    await functionHooks.formDidLoadHandler<any, any>(this, validation);
   }
 
   @Method()
   async getForm() {
-    return await formGetFormHandler(this);
+    return await functionHooks.formGetFormHandler(this);
   }
 
   @Method()
   async submit() {
-    await formSubmitHandler(this);
+    await functionHooks.formSubmitHandler(this);
   }
 
   @State() structureRendered = false;
@@ -152,25 +105,23 @@ export class SSCLookupForm implements FormHookInterface<SSCLookup>, MultiLingual
 
   @Watch('structureRendered')
   async structureChanged(isRendered: boolean) {
-    await formStructureRenderedHandler(this, isRendered);
+    await functionHooks.formStructureRenderedHandler(this, isRendered);
   }
 
   @Prop() theme?: string;
   @Prop() formId?: string;
   @Prop() isDev?: boolean = false;
   @Prop() disableScrollToTop?: boolean;
-  @Prop() getMobileToken?: () => string;
   @Prop() isMobileForm: boolean = false;
+  @Prop() getMobileToken?: () => string;
 
-  @State() form: FormHook<SSCLookup>;
+  @State() form: FormHook<any>;
 
   // #endregion
   render() {
-    const formPart = `ssc-lookup${this?.theme ? `-${this.theme}` : ''}`;
-
     return (
       <Host>
-        <div part={formPart}>
+        <div part={cn(this.structure?.data?.theme, this.theme)}>
           <div part="form-container" class="relative min-h-[150px]">
             <div
               part="form-loader-container"
@@ -191,7 +142,7 @@ export class SSCLookupForm implements FormHookInterface<SSCLookup>, MultiLingual
                   isLoading={this.isLoading}
                   language={this.localeLanguage}
                   errorMessage={this.errorMessage}
-                  formElementMapper={SSCLookupElements}
+                  formElementMapper={elementMapper}
                   successMessage={this.locale['Form submitted successfully.'] || 'Form submitted successfully.'}
                 >
                   <slot></slot>

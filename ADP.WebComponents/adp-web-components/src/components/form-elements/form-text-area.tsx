@@ -1,4 +1,4 @@
-import { Component, Element, Host, Prop, h } from '@stencil/core';
+import { Component, Element, Host, Prop, Watch, h } from '@stencil/core';
 
 import cn from '~lib/cn';
 import { getNestedValue } from '~lib/get-nested-value';
@@ -19,8 +19,11 @@ export class FormTextArea implements FormElement {
   @Prop() name: string;
   @Prop() wrapperId: string;
   @Prop() form: FormHook<any>;
+  @Prop() isLoading?: boolean;
   @Prop() defaultValue: string;
   @Prop() wrapperClass: string;
+  @Prop() staticValue?: string;
+  @Prop() isDisabled?: boolean;
 
   @Element() el!: HTMLElement;
 
@@ -28,6 +31,18 @@ export class FormTextArea implements FormElement {
 
   async componentWillLoad() {
     this.form.subscribe(this.name, this);
+    this.onStaticValueChange(this.staticValue, false);
+  }
+
+  @Watch('staticValue')
+  async onStaticValueChange(newStaticValue?: string, notInitialLoad = true) {
+    if (!!newStaticValue) {
+      this.defaultValue = newStaticValue;
+      this.inputRef.value = newStaticValue;
+    } else if (notInitialLoad) {
+      this.defaultValue = '';
+      this.inputRef.value = '';
+    }
   }
 
   async componentDidLoad() {
@@ -51,14 +66,17 @@ export class FormTextArea implements FormElement {
     const label = getNestedValue(locale, meta?.label) || meta?.label;
     const placeholder = getNestedValue(locale, meta?.placeholder);
 
+    const isDisabled = disabled || this.isLoading || !!this.staticValue || this.isDisabled;
+
     return (
       <Host>
-        <label part={`${this.name}`} id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, disabled)}>
+        <label part={`${this.name}`} id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, { disabled: isDisabled })}>
           <FormInputLabel name={this.name} isRequired={isRequired} label={label} />
 
           <div part={`${this.name}-container form-input-container`} class="form-input-container">
             <textarea
               name={this.name}
+              disabled={isDisabled}
               placeholder={placeholder}
               part={`${this.name}-textarea form-input-textarea`}
               class={cn('form-input-style form-input-textarea-style', partKeyPrefix + this.name, {

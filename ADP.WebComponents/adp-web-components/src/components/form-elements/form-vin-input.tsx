@@ -30,6 +30,10 @@ export class FormVinInput implements FormElement {
   @Prop() inputProps?: any = {};
   @Prop({ mutable: true }) defaultValue: string;
 
+  @Prop() useOcr?: boolean;
+  @Prop() readSticker?: boolean;
+  @Prop() scannerIcon?: '' | 'qr-code' = '';
+
   @State() prefixWidth: number = 0;
 
   @Element() el: HTMLElement;
@@ -80,7 +84,7 @@ export class FormVinInput implements FormElement {
 
     const isDisabled = disabled || this.isLoading || !!this.staticValue || this.isDisabled;
 
-    const extractorTitle = this.form?.context?.structure?.data?.localization?.[this.form.context?.language]?.['Scan Your VIN'] || 'Scan Your VIN';
+    const extractorTitle = this.form?.context?.structure?.data?.localization?.[this.form.context?.language]?.['vin-scan'] || 'Scan Your VIN';
 
     return (
       <Host>
@@ -101,33 +105,38 @@ export class FormVinInput implements FormElement {
                 'form-input-error-style': isError,
               })}
             />
-            <button
-              type="button"
-              disabled={isDisabled}
-              part={cn('vin-validator', part + '-vin')}
-              onClick={() => this?.el.getElementsByTagName('vin-extractor')[0]?.open()}
-              class="absolute transition-all duration-500 disabled:!pointer-events-none disabled:!opacity-0 flex justify-center items-center right-3.5 !text-[#576675] enabled:hover:!text-black/85 aspect-square h-[70%] top-1/2 -translate-y-1/2"
-            >
-              <QrCodeScanIcon class="size-[90%] text-inherit" />
-            </button>
+            {!!this.scannerIcon && (this.useOcr || this.readSticker) && (
+              <button
+                type="button"
+                disabled={isDisabled}
+                part={cn('vin-validator', part + '-vin')}
+                onClick={() => this?.el.getElementsByTagName('vin-extractor')[0]?.open()}
+                class="absolute transition-all duration-500 disabled:!pointer-events-none disabled:!opacity-0 flex justify-center items-center right-3.5 !text-[#576675] enabled:hover:!text-black/85 aspect-square h-[70%] top-1/2 -translate-y-1/2"
+              >
+                {this.scannerIcon === 'qr-code' && <QrCodeScanIcon class="size-[90%] text-inherit" />}
+              </button>
+            )}
           </div>
           <FormErrorMessage name={this.name} isError={isError} errorMessage={locale[errorMessage] || errorMessage} />
         </label>
-        <div class="absolute">
-          <vin-extractor
-            useOcr
-            verbose
-            manualCapture
-            title={extractorTitle}
-            skipValidation={false}
-            onExtract={newVin => {
-              this.inputRef.value = newVin;
-              this.form?.validateInput(this?.name);
-              this?.el.getElementsByTagName('vin-extractor')[0]?.close();
-            }}
-            ocrEndpoint={this.form?.context?.structure?.data?.ocrEndpoint}
-          />
-        </div>
+        {(this.useOcr || this.readSticker) && (
+          <div class="absolute">
+            <vin-extractor
+              verbose
+              manualCapture
+              useOcr={this.useOcr}
+              title={extractorTitle}
+              skipValidation={false}
+              readSticker={this.readSticker}
+              onExtract={newVin => {
+                this.inputRef.value = newVin;
+                this.form?.validateInput(this?.name);
+                this?.el.getElementsByTagName('vin-extractor')[0]?.close();
+              }}
+              ocrEndpoint={this.form?.context?.structure?.data?.ocrEndpoint}
+            />
+          </div>
+        )}
       </Host>
     );
   }
