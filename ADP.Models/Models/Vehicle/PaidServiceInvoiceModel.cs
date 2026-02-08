@@ -3,7 +3,12 @@ using System.Collections.Generic;
 
 namespace ShiftSoftware.ADP.Models.Vehicle;
 
-public class PaidServiceInvoiceModel : IPartitionedItem, IBrandProps, ICompanyProps, IIntegrationProps
+public class PaidServiceInvoiceModel : 
+    IPartitionedItem, 
+    IBrandProps, 
+    ICompanyProps, 
+    IBranchProps,
+    IIntegrationProps
 {
     public string id { get; set; } = default!;
     public DateTime InvoiceDate { get; set; }
@@ -17,5 +22,7 @@ public class PaidServiceInvoiceModel : IPartitionedItem, IBrandProps, ICompanyPr
     public string ItemType => ModelTypes.PaidServiceInvoice;
     public long? CompanyID { get; set; }
     public string CompanyHashID { get; set; }
+    public long? BranchID { get; set; }
+    public string BranchHashID { get; set; }
     public string IntegrationID { get; set; }
 }

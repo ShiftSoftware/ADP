@@ -1,5 +1,6 @@
 ﻿using LibGit2Sharp;
 using ShiftSoftware.ADP.SyncAgent.Configurations;
+using ShiftSoftware.ADP.SyncAgent.Extensions;
 using ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
 using System.Text;
 
@@ -47,6 +48,8 @@ public abstract class CsvSyncDataSource<T> : IAsyncDisposable
         {
             SetupWorkingDirectory();
 
+            await input.SyncProgressIndicators.LogInformation("Loading the last synced version of the CSV file and comparing it with the new version to find the changes.");
+
             // Load the last CSV file that was synced successfully
             await storageService.LoadOriginalFileAsync(
                 Path.Combine(this.Configurations!.DestinationDirectory ?? "", this.Configurations.CSVFileName!),
@@ -56,6 +59,8 @@ public abstract class CsvSyncDataSource<T> : IAsyncDisposable
 
             StageAndCommit();
 
+            await input.SyncProgressIndicators.LogInformation("The last synced version of the CSV file is loaded. Now loading the new version of the CSV file to find the changes.");
+
             // Load the new CSV file from the source
             await storageService.LoadNewVersionAsync(
                 Path.Combine(this.Configurations.SourceDirectory ?? "", this.Configurations.CSVFileName!),
@@ -64,7 +69,9 @@ public abstract class CsvSyncDataSource<T> : IAsyncDisposable
                 this.Configurations.SourceContainerOrShareName,
                 input.CancellationToken);
 
-            await ProccessSourceData(Path.Combine(this.workingDirectory.FullName, "file.csv"));
+            await ProccessSourceData(Path.Combine(this.workingDirectory.FullName, "file.csv"), input.SyncProgressIndicators);
+
+            await input.SyncProgressIndicators.LogInformation("Now comparing the versions.");
 
             // Exute git diff to get the added and deleted lines
             var comparision = CompareVersionsAndGetDiff();
@@ -102,39 +109,46 @@ public abstract class CsvSyncDataSource<T> : IAsyncDisposable
                     await textWriter.WriteAsync(new StringBuilder(line), input.CancellationToken);
             }
 
+            // Log the counts of added and deleted lines
+            await input.SyncProgressIndicators.LogInformation($"Found {comparision.Added.Count()} added lines and {comparision.Deleted.Count()} deleted lines.");
+
             //Cleanup some memory usage
             comparision.Added = null;
             comparision.Deleted = null;
             GarbageCollection();
 
             // Process added and deleted items if any of the process functions is not null
-            await ProccessAddedAndDeletedItems();
+            await ProccessAddedAndDeletedItems(input.SyncProgressIndicators);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            await input.SyncProgressIndicators.LogError(ex, "An error occurred while preparing the CSV data for synchronization.");
             return SyncPreparingResponseAction.Failed;
         }
-
         return SyncPreparingResponseAction.Succeeded;
     }
 
     protected abstract ValueTask<IEnumerable<T>> ReadCsvFile(string path, bool hasHeader);
     protected abstract ValueTask WriteCsvFile(string path, IEnumerable<T> items, bool hasHeader);
 
-    private async ValueTask ProccessSourceData(string path)
+    private async ValueTask ProccessSourceData(string path, IEnumerable<ISyncEngineLogger> syncProgressIndicators)
     {
         if(this.Configurations?.ProccessSourceData is null)
             return;
+
+        await syncProgressIndicators.LogInformation("Processing the source data with the provided function to make it ready for comparison.");
 
         var items = await ReadCsvFile(path, this.Configurations.HasHeaderRecord);
         var processedItems = await this.Configurations.ProccessSourceData(items);
         await WriteCsvFile(path, processedItems, false);
     }
 
-    private async ValueTask ProccessAddedAndDeletedItems()
+    private async ValueTask ProccessAddedAndDeletedItems(IEnumerable<ISyncEngineLogger> syncProgressIndicators)
     {
         if (this.Configurations?.ProccessAddedItems is null && this.Configurations?.ProccessDeletedItems is null)
             return;
+
+        await syncProgressIndicators.LogInformation("Processing the added and deleted items with the provided functions if any to make them ready for the next steps like transformation or loading.");
 
         // Parse CSV files once and reuse for both functions
         IEnumerable<T> addedItems = await ReadCsvFile(toInsertFilePath!, this.Configurations?.HasHeaderRecord ?? false);
@@ -145,6 +159,9 @@ public abstract class CsvSyncDataSource<T> : IAsyncDisposable
         {
             var processedAddedItems = await this.Configurations.ProccessAddedItems(addedItems, deletedItems);
             await WriteCsvFile(toInsertFilePath!, processedAddedItems, this.Configurations?.HasHeaderRecord ?? false);
+
+            // Log the count of processed added items
+            await syncProgressIndicators.LogInformation($"Processed {processedAddedItems.Count()} added items with the provided function.");
         }
 
         // Process deleted items if the function is provided
@@ -152,6 +169,9 @@ public abstract class CsvSyncDataSource<T> : IAsyncDisposable
         {
             var processedDeletedItems = await this.Configurations.ProccessDeletedItems(addedItems, deletedItems);
             await WriteCsvFile(toDeleteFilePath!, processedDeletedItems, this.Configurations?.HasHeaderRecord ?? false);
+
+            // Log the count of processed deleted items
+            await syncProgressIndicators.LogInformation($"Processed {processedDeletedItems.Count()} deleted items with the provided function.");
         }
     }
 

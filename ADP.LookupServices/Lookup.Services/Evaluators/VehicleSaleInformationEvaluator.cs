@@ -11,12 +11,12 @@ namespace ShiftSoftware.ADP.Lookup.Services.Evaluators;
 
 public class VehicleSaleInformationEvaluator
 {
-    private readonly CompanyDataAggregateCosmosModel CompanyDataAggregate;
+    private readonly CompanyDataAggregateModel CompanyDataAggregate;
     private readonly LookupOptions Options;
     private readonly IServiceProvider ServiceProvider;
-    private readonly IVehicleLoockupCosmosService LookupCosmosService;
+    private readonly IVehicleLoockupStorageService LookupCosmosService;
 
-    public VehicleSaleInformationEvaluator(CompanyDataAggregateCosmosModel companyDataAggregate, LookupOptions options, IServiceProvider serviceProvider, IVehicleLoockupCosmosService lookupCosmosService)
+    public VehicleSaleInformationEvaluator(CompanyDataAggregateModel companyDataAggregate, LookupOptions options, IServiceProvider serviceProvider, IVehicleLoockupStorageService lookupCosmosService)
     {
         this.CompanyDataAggregate = companyDataAggregate;
         this.Options = options;

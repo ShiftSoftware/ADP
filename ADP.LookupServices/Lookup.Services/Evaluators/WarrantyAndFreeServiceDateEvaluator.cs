@@ -9,10 +9,10 @@ namespace ShiftSoftware.ADP.Lookup.Services.Evaluators;
 
 public class WarrantyAndFreeServiceDateEvaluator
 {
-    private readonly CompanyDataAggregateCosmosModel CompanyDataAggregate;
+    private readonly CompanyDataAggregateModel CompanyDataAggregate;
     private readonly LookupOptions Options;
 
-    public WarrantyAndFreeServiceDateEvaluator(CompanyDataAggregateCosmosModel companyDataAggregate, LookupOptions options)
+    public WarrantyAndFreeServiceDateEvaluator(CompanyDataAggregateModel companyDataAggregate, LookupOptions options)
     {
         this.CompanyDataAggregate = companyDataAggregate;
         this.Options = options;

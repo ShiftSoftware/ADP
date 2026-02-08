@@ -5,9 +5,9 @@ namespace ShiftSoftware.ADP.Lookup.Services.Evaluators;
 
 public class VehicleAuthorizationEvaluator
 {
-    private readonly CompanyDataAggregateCosmosModel CompanyDataAggregate;
+    private readonly CompanyDataAggregateModel CompanyDataAggregate;
 
-    public VehicleAuthorizationEvaluator(CompanyDataAggregateCosmosModel companyDataAggregate)
+    public VehicleAuthorizationEvaluator(CompanyDataAggregateModel companyDataAggregate)
     {
         CompanyDataAggregate = companyDataAggregate;
     }

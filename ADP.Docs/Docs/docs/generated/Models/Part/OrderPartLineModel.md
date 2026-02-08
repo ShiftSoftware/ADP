@@ -15,8 +15,8 @@ Refers to a Part Line on an Order (This might be a Job Card on Workshop Module, 
 | InvoiceNumber <div><strong>``string``</strong></div> | The Invoice Number associated with this part line. |
 | ParentInvoiceNumber <div><strong>``string``</strong></div> | The Parent Invoice Number associated with this part line. (In case of Credit Notes or Debit Notes) |
 | InvoiceCurrency <div><strong>``Currencies?``</strong></div> | The Invoice [Currency](/generated/Models/Enums/Currencies.html) |
-| SoldQuantity <div><strong>``decimal?``</strong></div> | The quantity of the part line that sold. |
 | OrderQuantity <div><strong>``decimal?``</strong></div> | The quantity of the part line that ordered. |
+| SoldQuantity <div><strong>``decimal?``</strong></div> | The quantity of the part line that sold. |
 | SaleType <div><strong>``string``</strong></div> | The type of sale. (e.g. Internal, Bulk, Retail, etc.) |
 | PackageCode <div><strong>``string``</strong></div> | The Package Code in case this part line is a package item. |
 | ExtendedPrice <div><strong>``decimal?``</strong></div> | The final price of this line item after accounting for quantity, discounts, and any applicable taxes or additional charges |

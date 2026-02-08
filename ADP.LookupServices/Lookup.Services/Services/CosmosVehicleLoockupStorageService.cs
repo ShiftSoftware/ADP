@@ -14,12 +14,12 @@ using System.Threading.Tasks;
 
 namespace ShiftSoftware.ADP.Lookup.Services.Services;
 
-public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
+public class CosmosVehicleLoockupStorageService : IVehicleLoockupStorageService
 {
     private readonly CosmosClient client;
     private readonly List<Task> tasks = new List<Task>();
 
-    public VehicleLoockupCosmosService(CosmosClient client)
+    public CosmosVehicleLoockupStorageService(CosmosClient client)
     {
         this.client = client;
     }
@@ -79,7 +79,7 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         return items;
     }
 
-    public async Task<CompanyDataAggregateCosmosModel> GetAggregatedCompanyData(string vin)
+    public async Task<CompanyDataAggregateModel> GetAggregatedCompanyData(string vin)
     {
         vin = vin?.Trim()?.ToUpper();
 
@@ -92,7 +92,7 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         return aggregate;
     }
 
-    public async Task<IEnumerable<CompanyDataAggregateCosmosModel>> GetAggregatedCompanyData(IEnumerable<string> vins, IEnumerable<string> itemTypes)
+    public async Task<IEnumerable<CompanyDataAggregateModel>> GetAggregatedCompanyData(IEnumerable<string> vins, IEnumerable<string> itemTypes)
     {
         var items = await GetLookupItems(vins, itemTypes);
 
@@ -106,9 +106,9 @@ public class VehicleLoockupCosmosService : IVehicleLoockupCosmosService
         });
     }
 
-    internal static CompanyDataAggregateCosmosModel ConvertDynamicListItemsToCompanyData(List<dynamic> items)
+    internal static CompanyDataAggregateModel ConvertDynamicListItemsToCompanyData(List<dynamic> items)
     {
-        var companyData = new CompanyDataAggregateCosmosModel();
+        var companyData = new CompanyDataAggregateModel();
 
         companyData.VehicleInspections = items.Where(x => x.ItemType.ToString() == ModelTypes.VehicleInspection)
             .Select(x => ((JObject)x).ToObject<VehicleInspectionModel>())

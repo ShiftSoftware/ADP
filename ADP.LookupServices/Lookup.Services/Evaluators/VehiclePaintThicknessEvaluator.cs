@@ -9,10 +9,10 @@ namespace ShiftSoftware.ADP.Lookup.Services.Evaluators;
 
 public class VehiclePaintThicknessEvaluator
 {
-    private readonly CompanyDataAggregateCosmosModel CompanyDataAggregate;
+    private readonly CompanyDataAggregateModel CompanyDataAggregate;
     private readonly LookupOptions Options;
     private readonly IServiceProvider ServiceProvider;
-    public VehiclePaintThicknessEvaluator(CompanyDataAggregateCosmosModel companyDataAggregate, LookupOptions options, IServiceProvider ServiceProvider)
+    public VehiclePaintThicknessEvaluator(CompanyDataAggregateModel companyDataAggregate, LookupOptions options, IServiceProvider ServiceProvider)
     {
         this.CompanyDataAggregate = companyDataAggregate;
         this.Options = options;
