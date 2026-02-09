@@ -25,7 +25,7 @@ import { LoaderIcon } from '~assets/loader-icon';
 @Component({
   shadow: true,
   tag: 'service-booking-form',
-  styleUrl: 'style.css',
+  styleUrl: './defaults/styles/service-booking.css',
 })
 export class ServiceBookingForm implements FormHookInterface<ServiceBooking>, MultiLingual {
   // #region Localization
