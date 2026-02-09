@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Polly;
 using Polly.Retry;
 using ShiftSoftware.ADP.SyncAgent.Configurations;
+using ShiftSoftware.ADP.SyncAgent.Extensions;
 using ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
 using System.Collections.Concurrent;
 using System.Text;
@@ -165,13 +166,15 @@ public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosCl
                 actionItems?.Where(x => x.ActionType == SyncActionType.Delete) ?? [],
                 input!.Input!.Status.CurrentRetryCount,
                 input.Input.Status.ActionType,
-                input!.CancellationToken);
+                input!.CancellationToken,
+                input);
 
             var upsertResult = await UpsertToCosmosAsync(
                 actionItems?.Where(x => x.ActionType == SyncActionType.Update || x.ActionType == SyncActionType.Add) ?? [],
                 input!.Input.Status.CurrentRetryCount,
                 input.Input.Status.ActionType,
-                input!.CancellationToken);
+                input!.CancellationToken,
+                input);
 
             var result = new SyncStoreDataResult<TDestination>
             {
@@ -197,7 +200,8 @@ public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosCl
             IEnumerable<SyncCosmosAction<TDestination, TCosmos>?>? items,
             long retryCount,
             SyncActionType originalActionType,
-            CancellationToken cancellationToken
+            CancellationToken cancellationToken,
+            SyncFunctionInput<SyncStoreDataInput<TDestination>> input
         )
     {
         IEnumerable<Task>? tasks = [];
@@ -256,6 +260,7 @@ public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosCl
 
                             if (!IsValidCosmosId(id))
                             {
+                                await input.SyncProgressIndicators.LogWarning($"Item with invalid id was skipped. Id: {id}");
                                 innerSkippedItems.Add(mappedItem);
                                 return;
                             }
@@ -328,7 +333,8 @@ public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosCl
             IEnumerable<SyncCosmosAction<TDestination, TCosmos>?>? items,
             long retryCount,
             SyncActionType originalActionType,
-            CancellationToken cancellationToken
+            CancellationToken cancellationToken,
+            SyncFunctionInput<SyncStoreDataInput<TDestination>> input
         )
     {
         IEnumerable<Task>? tasks = [];
@@ -386,6 +392,7 @@ public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosCl
 
                             if (!IsValidCosmosId(id))
                             {
+                                await input.SyncProgressIndicators.LogWarning($"Item with invalid id was skipped. Id: {id}");
                                 innerSkippedItems.Add(mappedItem);
                                 return;
                             }
