@@ -5,6 +5,8 @@ using Polly.Retry;
 using ShiftSoftware.ADP.SyncAgent.Configurations;
 using ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
 using System.Collections.Concurrent;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace ShiftSoftware.ADP.SyncAgent.Services;
 
@@ -214,6 +216,8 @@ public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosCl
             {
                 ConcurrentBag<TCosmos> innerSucceededItems = new();
                 ConcurrentBag<TCosmos> innerFailedItems = new();
+                ConcurrentBag<TCosmos> innerSkippedItems = new();
+
 
                 IEnumerable<TCosmos?>? mappedItems = [];
 
@@ -247,6 +251,14 @@ public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosCl
                         innerTasks = innerTasks.Append(Task.Run(async () =>
                         {
                             var partitionKey = Utility.GetPartitionKey(mappedItem!, this.Configurations!.PartitionKeyLevel1Expression, this.Configurations!.PartitionKeyLevel2Expression, this.Configurations!.PartitionKeyLevel3Expression);
+                            var type = mappedItem!.GetType();
+                            var id = (string?)type.GetProperty("id")?.GetValue(mappedItem!);
+
+                            if (!IsValidCosmosId(id))
+                            {
+                                innerSkippedItems.Add(mappedItem);
+                                return;
+                            }
 
                             try
                             {
@@ -262,10 +274,6 @@ public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosCl
                                         {
                                             // Build patch operations using the helper class
                                             var patchOperations = CosmosPatchOperationHelper.BuildPatchOperations(mappedItem, this.Configurations.PropertiesToPatch);
-
-                                            // Get the id of the item
-                                            var type = mappedItem!.GetType();
-                                            var id = (string?)type.GetProperty("id")?.GetValue(mappedItem!);
 
                                             await container.PatchItemAsync<TCosmos>(id, partitionKey, patchOperations, new PatchItemRequestOptions { EnableContentResponseOnWrite = false }, cancellationToken);
                                         }
@@ -289,10 +297,13 @@ public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosCl
                     // Wait for all inner tasks to complete
                     await Task.WhenAll(innerTasks);
 
-                    var cosmosActionResult = new CosmosActionResult<TCosmos>(innerSucceededItems, innerFailedItems);
+                    var cosmosActionResult = new CosmosActionResult<TCosmos>(innerSucceededItems, innerFailedItems, innerSkippedItems);
 
-                    if(cosmosActionResult.IsSuccessful(mappedItems?.LongCount()??-1))
+                    var cosmosActionResultStatus = cosmosActionResult.IsSuccessful(mappedItems?.LongCount() ?? -1);
+                    if (cosmosActionResultStatus == CosmosActionResultStatus.Succeeded)
                         succeededItems.Add(item!.Item!);
+                    else if(cosmosActionResultStatus == CosmosActionResultStatus.Skipped)
+                        skippedItems.Add(item!.Item!);
                     else
                         failedItems.Add(item!.Item!);
 
@@ -336,6 +347,7 @@ public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosCl
             {
                 ConcurrentBag<TCosmos> innerSucceededItems = new();
                 ConcurrentBag<TCosmos> innerFailedItems = new();
+                ConcurrentBag<TCosmos> innerSkippedItems = new();
 
                 IEnumerable<TCosmos?>? mappedItems = null;
 
@@ -369,6 +381,14 @@ public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosCl
                         innerTasks = innerTasks.Append(Task.Run(async () =>
                         {
                             var partitionKey = Utility.GetPartitionKey(mappedItem!, this.Configurations!.PartitionKeyLevel1Expression, this.Configurations!.PartitionKeyLevel2Expression, this.Configurations!.PartitionKeyLevel3Expression);
+                            var type = mappedItem!.GetType();
+                            var id = (string?)type.GetProperty("id")?.GetValue(mappedItem!);
+
+                            if (!IsValidCosmosId(id))
+                            {
+                                innerSkippedItems.Add(mappedItem);
+                                return;
+                            }
 
                             try
                             {
@@ -376,9 +396,6 @@ public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosCl
                                 {
                                     try
                                     {
-                                        var type = mappedItem!.GetType();
-                                        var id = (string?)type.GetProperty("id")?.GetValue(mappedItem!);
-
                                         await container.DeleteItemAsync<TDestination>(id, partitionKey);
 
                                         innerSucceededItems.Add(mappedItem!);
@@ -399,10 +416,13 @@ public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosCl
                     // Wait for all inner tasks to complete
                     await Task.WhenAll(innerTasks);
 
-                    var cosmosActionResult = new CosmosActionResult<TCosmos>(innerSucceededItems, innerFailedItems);
+                    var cosmosActionResult = new CosmosActionResult<TCosmos>(innerSucceededItems, innerFailedItems, innerSkippedItems);
+                    var cosmosActionResultStatus = cosmosActionResult.IsSuccessful(mappedItems?.LongCount() ?? -1);
 
-                    if(cosmosActionResult.IsSuccessful(mappedItems.LongCount()))
+                    if (cosmosActionResultStatus == CosmosActionResultStatus.Succeeded)
                         succeededItems.Add(item!.Item!);
+                    else if(cosmosActionResultStatus == CosmosActionResultStatus.Skipped)
+                        skippedItems.Add(item!.Item!);
                     else
                         failedItems.Add(item!.Item!);
 
@@ -496,6 +516,23 @@ public class CosmosSyncDataDestination<TSource, TDestination, TCosmos, TCosmosCl
     {
         throw new NotImplementedException();
     }
+
+    private static bool IsValidCosmosId(string id)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+            return false;
+
+        if (Encoding.UTF8.GetByteCount(id) > 1023)
+            return false;
+
+        if (Regex.IsMatch(id, @"[\/\\\?#]"))
+            return false;
+
+        if (id.Any(char.IsControl))
+            return false;
+
+        return true;
+    }
     #endregion
 }
 
@@ -504,24 +541,36 @@ internal class CosmosActionResult<T>
 {
     public IEnumerable<T>? SucceededItems { get; set; } = [];
     public IEnumerable<T>? FailedItems { get; set; } = [];
+    public IEnumerable<T>? SkippedItems { get; set; } = [];
     public bool EligibleToUseItAsRetryInput { get; private set; } = false;
 
     public CosmosActionResult() { }
 
-    public CosmosActionResult(IEnumerable<T>? succeededItems, IEnumerable<T>? failedItems)
+    public CosmosActionResult(IEnumerable<T>? succeededItems, IEnumerable<T>? failedItems, IEnumerable<T>? skippedItems)
     {
         SucceededItems = succeededItems;
         FailedItems = failedItems;
+        SkippedItems = skippedItems;
     }
 
-    public bool IsSuccessful(long expectedCount)
+    public CosmosActionResultStatus IsSuccessful(long expectedCount)
     {
-        var totalCount = (SucceededItems?.LongCount() ?? 0) + (FailedItems?.LongCount() ?? 0);
+        var totalCount = (SucceededItems?.LongCount() ?? 0) + (FailedItems?.LongCount() ?? 0) + (SkippedItems?.LongCount() ?? 0);
         EligibleToUseItAsRetryInput = totalCount == expectedCount;
 
-        if (!(FailedItems?.Any() ?? false) && SucceededItems?.LongCount() == expectedCount)
-            return true;
+        if (!(FailedItems?.Any() ?? false) && (SkippedItems?.LongCount() ?? 0) == expectedCount)
+            return CosmosActionResultStatus.Skipped;
 
-        return false;
+        if (!(FailedItems?.Any() ?? false) && ((SucceededItems?.LongCount() ?? 0) + (SkippedItems?.LongCount() ?? 0)) == expectedCount)
+            return CosmosActionResultStatus.Succeeded;
+
+        return CosmosActionResultStatus.Failed;
     }
+}
+
+internal enum CosmosActionResultStatus
+{
+    Succeeded,
+    Failed,
+    Skipped
 }
