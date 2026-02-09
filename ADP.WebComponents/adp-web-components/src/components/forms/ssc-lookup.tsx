@@ -23,7 +23,7 @@ const elementMapper: FormElementMapper<any, any> = {
 @Component({
   shadow: true,
   tag: 'ssc-lookup-form',
-  styleUrl: './defaults/styles/ssc-lookup.css',
+  styleUrl: './defaults/style.css',
 })
 export class SSCLookupForm implements FormHookInterface<any>, MultiLingual {
   // #region Localization

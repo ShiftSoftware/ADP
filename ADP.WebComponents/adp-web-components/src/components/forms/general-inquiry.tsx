@@ -47,7 +47,7 @@ const elementMapper: FormElementMapper<any, any> = {
 @Component({
   shadow: true,
   tag: 'general-inquiry-form',
-  styleUrl: './defaults/styles/general-inquiry.css',
+  styleUrl: './defaults/style.css',
 })
 export class GeneralInquiryForm implements FormHookInterface<any>, MultiLingual {
   // #region Localization
