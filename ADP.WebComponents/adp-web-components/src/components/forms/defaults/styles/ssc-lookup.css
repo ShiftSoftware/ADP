@@ -4,14 +4,14 @@
   font-family: inherit !important;
 }
 
-@keyframes spin {
+@keyframes form-loading-spin {
   to {
     transform: rotate(360deg);
   }
 }
 
 .form-loader-container .img {
-  animation: spin 2s linear infinite;
+  animation: form-loading-spin 2s linear infinite;
   width: 32px;
   height: 32px;
 }
