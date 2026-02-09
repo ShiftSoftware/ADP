@@ -105,7 +105,7 @@ public static class ISyncEngineExtensions
                 var result = await previousGetSourceBatchItems(x);
 
                 logger.LogInformation($"Getting source batch items finished for {x.Input.Status.ActionType}, step {x.Input.Status.CurrentStep + 1}" +
-                    (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}, Item Count is: {result.Count()}" : ""));
+                    (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}, Item Count is: {result?.Count()}" : ""));
 
                 return result;
             });
