@@ -23,7 +23,7 @@ const elementMapper: FormElementMapper<any, any> = {
 @Component({
   shadow: true,
   tag: 'test-drive-form',
-  styleUrl: './defaults/theme.css',
+  styleUrl: 'style.css',
 })
 export class TestDriveForm implements FormHookInterface<any>, MultiLingual {
   // #region Localization
