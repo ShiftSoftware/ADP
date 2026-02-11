@@ -1,7 +1,7 @@
 {
   "noBaseUrl": "من فضلك قدم endpoint",
-  "invalidVin": "رقم الشانسی غير صالح",
-  "vinNumberRequired": "رقم الشانسی مطلوب",
+  "invalidVin": "رقم الشاصي غير صالح",
+  "vinNumberRequired": "رقم الشاصي مطلوب",
   "partNumberRequired": "رقم القطعة مطلوب",
   "wrongResponseFormat": "تنسيق الرد خاطئ",
   "noPartsFound": "لم يتم العثور على أجزاء",
