@@ -74,9 +74,9 @@ export class VehicleSaleInformation implements MultiLingual, VehicleInfoLayoutIn
 
   @State() isError: boolean = false;
   @State() errorMessage?: ErrorKeys;
-  @Prop() hiddenFields: string = '';
   @State() isLoading: boolean = false;
   @State() vehicleLookup?: VehicleLookupDTO;
+  @Prop() hiddenFields: string = 'customerAccountNumber,customerID,brokerInvoiceNumber,brokerInvoiceDate,warrantyActivationDate,invoiceDate,invoiceNumber';
 
   @Element() el: HTMLElement;
 
