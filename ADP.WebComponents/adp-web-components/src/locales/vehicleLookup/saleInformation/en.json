@@ -16,5 +16,5 @@
   "endCustomerPhone": "Customer phone",
   "endCustomerIdNumber": "Customer ID number",
   "customerID": "Customer ID",
-  "Vehicle has no end customer.": "Vehicle has no customer."
+  "Vehicle has no end customer.": "The vehicle is in the possession of the authorized dealer/trader."
 }

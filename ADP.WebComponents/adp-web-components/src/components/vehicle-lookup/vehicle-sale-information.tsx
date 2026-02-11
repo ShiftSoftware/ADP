@@ -235,7 +235,7 @@ export class VehicleSaleInformation implements MultiLingual, VehicleInfoLayoutIn
                           <TriangleAlertIcon />
                         </span>
 
-                        <p class="mt-[4px] text-[13.5px] text-amber-900/90 leading-[1.35]">{texts['Vehicle has no end customer.'] || ''}</p>
+                        <p class="mt-[4px] text-[13.5px] text-center text-amber-900/90 leading-[1.35]">{texts['Vehicle has no end customer.'] || ''}</p>
                       </div>
                     </div>
                   </div>

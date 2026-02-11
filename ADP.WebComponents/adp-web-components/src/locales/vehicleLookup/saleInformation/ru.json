@@ -16,5 +16,5 @@
   "endCustomerPhone": "Телефон клиента",
   "endCustomerIdNumber": "Идентификационный номер клиента",
   "customerID": "Клиент ID",
-  "Vehicle has no end customer.": "У транспортного средства нет потребителя."
+  "Vehicle has no end customer.": "Автомобиль находится во владении авторизованного дилера/торговца."
 }
