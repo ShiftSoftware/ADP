@@ -1,6 +1,7 @@
 ﻿using ShiftSoftware.ADP.Models.Customer;
 using ShiftSoftware.ADP.Models.Part;
 using ShiftSoftware.ADP.Models.Service;
+using ShiftSoftware.ADP.Models.TBP;
 using ShiftSoftware.ADP.Models.Vehicle;
 
 namespace ShiftSoftware.ADP.Models.Constants;
@@ -13,12 +14,12 @@ public class NoSQLConstants
         public const string Logs = "Logs";
         public const string Services = "Services";
         public const string TBP = "TBP";
+        public const string Customers = "Customers";
     }
 
     public class Containers
     {
         public const string Brokers = "Brokers";
-        public const string Customers = "Customers";
         public const string Vehicles = "Vehicles";
         public const string Parts = "Parts";
         //public const string Stock = "Stock";
@@ -36,6 +37,8 @@ public class NoSQLConstants
         public const string FlatRate = "FlatRate";
 
         public const string TBP_BrokerStock = "BrokerStock";
+
+        public const string Customers_Customers = "Customers";
     }
 
     public class PartitionKeys
@@ -101,9 +104,16 @@ public class NoSQLConstants
 
         public class Customers
         {
-            public const string Level1 = "/" + nameof(CustomerModel.GoldenCustomerID);
-            public const string Level2 = "/" + nameof(CustomerModel.CustomerID);
+            public const string Level1 = "/" + nameof(CustomerModel.CustomerID);
+            public const string Level2 = "/" + nameof(CustomerModel.CompanyID);
             public const string Level3 = "/" + nameof(CustomerModel.ItemType);
+        }
+
+        public class TBPBrokerStock
+        {
+            public const string Level1 = "/" + nameof(TBP_StockModel.BrandID);
+            public const string Level2 = "/" + nameof(TBP_StockModel.BrokerID);
+            public const string Level3 = "/" + nameof(TBP_StockModel.VIN);
         }
     }
 }

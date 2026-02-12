@@ -1,4 +1,8 @@
-﻿namespace ShiftSoftware.ADP.Models.Customer;
+﻿using ShiftSoftware.ADP.Models.Enums;
+using System;
+using System.Collections.Generic;
+
+namespace ShiftSoftware.ADP.Models.Customer;
 
 
 public class CustomerModel : 
@@ -12,6 +16,11 @@ public class CustomerModel :
     public string ItemType => ModelTypes.DealerCustomer;
     public long? CompanyID { get; set; }
     public string CompanyHashID { get; set; }
+    public string FullName { get; set; }
+    public IEnumerable<string> PhoneNumbers { get; set; } = [];
+    public IEnumerable<string> Address { get; set; } = [];
+    public Genders? Gender { get; set; }
+    public DateTime? DateOfBirth { get; set; }
 }
 
 /// https://dataladder.com/guide-to-data-survivorship-how-to-build-the-golden-record/
