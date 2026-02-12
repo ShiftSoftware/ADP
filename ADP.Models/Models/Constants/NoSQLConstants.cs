@@ -104,8 +104,8 @@ public class NoSQLConstants
 
         public class Customers
         {
-            public const string Level1 = "/" + nameof(CustomerModel.CustomerID);
-            public const string Level2 = "/" + nameof(CustomerModel.CompanyID);
+            public const string Level1 = "/" + nameof(CustomerModel.CompanyID);
+            public const string Level2 = "/" + nameof(CustomerModel.CustomerID);
             public const string Level3 = "/" + nameof(CustomerModel.ItemType);
         }
 

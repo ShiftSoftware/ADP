@@ -19,7 +19,7 @@ public class CustomerModel :
     public string FullName { get; set; }
     public IEnumerable<string> PhoneNumbers { get; set; } = [];
     public IEnumerable<string> Address { get; set; } = [];
-    public Genders? Gender { get; set; }
+    public Genders Gender { get; set; }
     public DateTime? DateOfBirth { get; set; }
 }
 
