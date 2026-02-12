@@ -128,17 +128,17 @@ public class Utility
     {
         var companyDatabaseResponse = await client.CreateDatabaseIfNotExistsAsync(
         Models.Constants.NoSQLConstants.Databases.CompanyData,
-            ThroughputProperties.CreateManualThroughput(1000)
+            ThroughputProperties.CreateManualThroughput(25000)
         );
 
         var logsDatabaseResponse = await client.CreateDatabaseIfNotExistsAsync(
             Models.Constants.NoSQLConstants.Databases.Logs,
-            ThroughputProperties.CreateManualThroughput(1000)
+            ThroughputProperties.CreateManualThroughput(25000)
         );
 
         var serviceDatabaseResponse = await client.CreateDatabaseIfNotExistsAsync(
             Models.Constants.NoSQLConstants.Databases.Services,
-            ThroughputProperties.CreateManualThroughput(1000)
+            ThroughputProperties.CreateManualThroughput(25000)
         );
 
         var companyDatabase = companyDatabaseResponse.Database;
