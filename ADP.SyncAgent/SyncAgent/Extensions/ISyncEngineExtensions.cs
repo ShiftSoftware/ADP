@@ -365,6 +365,18 @@ public static class ISyncEngineExtensions
                 await logger.LogInformation($"Storing batch data finished for {x.Input.Status.ActionType}, step {x.Input.Status.CurrentStep + 1}" +
                     (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}" : ""));
 
+                // Log number of succeded and failed and skipped items in the batch
+                if(result is not null)
+                {
+                    var succeededCount = result.SucceededItems?.Count();
+                    var failedCount = result.FailedItems?.Count();
+                    var skippedCount = result.SkippedItems?.Count();
+    
+                    await logger.LogInformation($"Batch data store result for {x.Input.Status.ActionType}, step {x.Input.Status.CurrentStep + 1}" +
+                        (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}" : "") +
+                        $": Succeeded: {succeededCount}, Failed: {failedCount}, Skipped: {skippedCount}");
+                }
+
                 return result;
             });
         }
@@ -588,6 +600,18 @@ public static class ISyncEngineExtensions
 
                 await logger.LogInformation($"Storing batch data finished for {x.Input.Status.ActionType}, step {x.Input.Status.CurrentStep + 1}" +
                     (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}" : ""));
+
+                // Log number of succeded and failed and skipped items in the batch
+                if (result is not null)
+                {
+                    var succeededCount = result.SucceededItems?.Count();
+                    var failedCount = result.FailedItems?.Count();
+                    var skippedCount = result.SkippedItems?.Count();
+
+                    await logger.LogInformation($"Batch data store result for {x.Input.Status.ActionType}, step {x.Input.Status.CurrentStep + 1}" +
+                        (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}" : "") +
+                        $": Succeeded: {succeededCount}, Failed: {failedCount}, Skipped: {skippedCount}");
+                }
 
                 return result;
             });
