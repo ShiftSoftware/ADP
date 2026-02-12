@@ -253,6 +253,10 @@ public static class ISyncEngineExtensions
         where TSource : class, new()
         where TDestination : class, new()
     {
+        int totalSucceeded = 0;
+        int totalFailed = 0;
+        int totalSkipped = 0;
+
         syncService.RegisterLogger(logger);
 
         if (syncService.Preparing is not null)
@@ -280,6 +284,9 @@ public static class ISyncEngineExtensions
         var previousActionStarted = syncService.ActionStarted;
         syncService.SetupActionStarted(async (x) =>
         {
+            totalSucceeded = 0;
+            totalFailed = 0;
+            totalSkipped = 0;
             await logger.LogInformation($"Action {x.Input} is started.");
 
             if (previousActionStarted is not null)
@@ -365,13 +372,17 @@ public static class ISyncEngineExtensions
                 await logger.LogInformation($"Storing batch data finished for {x.Input.Status.ActionType}, step {x.Input.Status.CurrentStep + 1}" +
                     (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}" : ""));
 
-                // Log number of succeded and failed and skipped items in the batch
+                // Log number of succeded and failed and skipped items in the batch and sum to totals
                 if(result is not null)
                 {
-                    var succeededCount = result.SucceededItems?.Count();
-                    var failedCount = result.FailedItems?.Count();
-                    var skippedCount = result.SkippedItems?.Count();
-    
+                    var succeededCount = result.SucceededItems?.Count() ?? 0;
+                    var failedCount = result.FailedItems?.Count() ?? 0;
+                    var skippedCount = result.SkippedItems?.Count() ?? 0;
+
+                    totalSucceeded += succeededCount;
+                    totalFailed += failedCount;
+                    totalSkipped += skippedCount;
+
                     await logger.LogInformation($"Batch data store result for {x.Input.Status.ActionType}, step {x.Input.Status.CurrentStep + 1}" +
                         (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}" : "") +
                         $": Succeeded: {succeededCount}, Failed: {failedCount}, Skipped: {skippedCount}");
@@ -443,6 +454,9 @@ public static class ISyncEngineExtensions
             if (previousActionCompleted is not null)
                 result = await previousActionCompleted(x);
 
+            // Log totals for the action
+            await logger.LogInformation($"Action {x.Input.ActionType} summary: Succeeded: {totalSucceeded}, Failed: {totalFailed}, Skipped: {totalSkipped}");
+
             if (result)
                 await logger.LogInformation($"Action {x.Input.ActionType} is completed successfully");
             else
@@ -491,6 +505,10 @@ public static class ISyncEngineExtensions
         where TSource : class, new()
         where TDestination : class, new()
     {
+        int totalSucceeded = 0;
+        int totalFailed = 0;
+        int totalSkipped = 0;
+
         syncService.RegisterLogger(logger);
 
         if (syncService.Preparing is not null)
@@ -516,6 +534,9 @@ public static class ISyncEngineExtensions
         var previousActionStarted = syncService.ActionStarted;
         syncService.SetupActionStarted(async (x) =>
         {
+            totalSucceeded = 0;
+            totalFailed = 0;
+            totalSkipped = 0;
             await logger.LogInformation($"Action {x.Input} is started.");
 
             if (previousActionStarted is not null)
@@ -601,12 +622,16 @@ public static class ISyncEngineExtensions
                 await logger.LogInformation($"Storing batch data finished for {x.Input.Status.ActionType}, step {x.Input.Status.CurrentStep + 1}" +
                     (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}" : ""));
 
-                // Log number of succeded and failed and skipped items in the batch
+                // Log number of succeded and failed and skipped items in the batch and sum to totals
                 if (result is not null)
                 {
-                    var succeededCount = result.SucceededItems?.Count();
-                    var failedCount = result.FailedItems?.Count();
-                    var skippedCount = result.SkippedItems?.Count();
+                    var succeededCount = result.SucceededItems?.Count() ?? 0;
+                    var failedCount = result.FailedItems?.Count() ?? 0;
+                    var skippedCount = result.SkippedItems?.Count() ?? 0;
+
+                    totalSucceeded += succeededCount;
+                    totalFailed += failedCount;
+                    totalSkipped += skippedCount;
 
                     await logger.LogInformation($"Batch data store result for {x.Input.Status.ActionType}, step {x.Input.Status.CurrentStep + 1}" +
                         (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}" : "") +
@@ -678,6 +703,9 @@ public static class ISyncEngineExtensions
             bool result = x.Input.Succeeded;
             if (previousActionCompleted is not null)
                 result = await previousActionCompleted(x);
+
+            // Log totals for the action
+            await logger.LogInformation($"Action {x.Input.ActionType} summary: Succeeded: {totalSucceeded}, Failed: {totalFailed}, Skipped: {totalSkipped}");
 
             if (result)
                 await logger.LogInformation($"Action {x.Input.ActionType} is completed successfully");
