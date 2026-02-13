@@ -159,7 +159,7 @@ public class EFCoreSyncDataSource<TEntity, TSource, TDestination, TDbContext>
             case long lastLong:
                 return query.Where(x => EF.Property<long>(x, keyName) > lastLong);
             case Guid lastGuid:
-                return query.Where(x => EF.Property<Guid>(x, keyName) != lastGuid); // Use '>' if your logic requires ordering
+                return query.Where(x => EF.Property<Guid>(x, keyName) > lastGuid); // Use '>' if your logic requires ordering
             case string lastString:
                 return query.Where(x => string.Compare(EF.Property<string>(x, keyName), lastString) > 0);
             default:
