@@ -169,6 +169,9 @@ public class EFCoreSyncDataSource<TEntity, TSource, TDestination, TDbContext>
 
     public virtual async ValueTask<bool> BatchCompleted(SyncFunctionInput<SyncBatchCompleteRetryInput<TSource, TDestination>> input)
     {
+        if(this.Configurations?.UpdateTimeStampFilter is null && this.Configurations?.SyncTimestamp is null)
+            return true;
+
         var queryable = dbSet.AsQueryable().AsNoTracking();
 
         try
