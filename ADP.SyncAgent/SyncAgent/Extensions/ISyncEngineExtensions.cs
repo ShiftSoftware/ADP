@@ -249,7 +249,7 @@ public static class ISyncEngineExtensions
 
     public static ISyncEngine<TSource, TDestination> AddLogger<TSource, TDestination>(
         this ISyncEngine<TSource, TDestination> syncService,
-        SyncEngineILogger logger)
+        ISyncEngineLogger logger)
         where TSource : class, new()
         where TDestination : class, new()
     {
