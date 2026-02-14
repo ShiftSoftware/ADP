@@ -1,6 +1,7 @@
 ﻿using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
+using System.Text.Json;
 using DuckDB.NET.Data;
 using ShiftSoftware.ADP.SyncAgent.Configurations;
 using ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
@@ -174,8 +175,16 @@ public class DuckDBSyncDataDestination<TSource, TDestination, DuckDB>
             _ when underlyingType == typeof(Guid) => "UUID",
             _ when underlyingType == typeof(byte[]) => "BLOB",
             _ when underlyingType.IsEnum => "INTEGER",
+            _ when IsComplexType(underlyingType) => "JSON",
             _ => "VARCHAR"
         };
+    }
+
+    private static bool IsComplexType(Type type)
+    {
+        return type.IsClass && type != typeof(string) && type != typeof(byte[])
+            || type.IsInterface
+            || (type.IsValueType && !type.IsPrimitive && !type.IsEnum && type.Namespace != "System");
     }
 
     public ValueTask<SyncStoreDataResult<TDestination>> StoreBatchData(SyncFunctionInput<SyncStoreDataInput<TDestination>> input)
@@ -288,6 +297,12 @@ public class DuckDBSyncDataDestination<TSource, TDestination, DuckDB>
         if (underlyingType.IsEnum)
         {
             row.AppendValue(Convert.ToInt32(value));
+            return;
+        }
+
+        if (IsComplexType(underlyingType))
+        {
+            row.AppendValue(JsonSerializer.Serialize(value, underlyingType));
             return;
         }
 
