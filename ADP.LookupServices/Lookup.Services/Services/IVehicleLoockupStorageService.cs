@@ -1,4 +1,5 @@
 ﻿using ShiftSoftware.ADP.Lookup.Services.Aggregate;
+    using ShiftSoftware.ADP.Models.Customer;
 using ShiftSoftware.ADP.Models.TBP;
 using ShiftSoftware.ADP.Models.Vehicle;
 using System.Collections.Generic;
@@ -22,5 +23,6 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
         Task<IEnumerable<VehicleModelModel>> GetVehicleModelsByVariantAsync(string variant);
         Task<IEnumerable<VehicleModelModel>> GetVehicleModelsByVinAsync(string vin);
         Task<IEnumerable<TBP_StockModel>> GetBrokerStockAsync(long? brandId, string vin);
+        Task<CustomerModel> GetCustomerAsync(string customerID, long? companyID);
     }
 }

@@ -21,6 +21,12 @@ public class CustomerModel :
     public IEnumerable<string> Address { get; set; } = [];
     public Genders Gender { get; set; }
     public DateTime? DateOfBirth { get; set; }
+
+
+    /// <summary>
+    /// Social ID, Driver License Number, Passport Number, or any other government-issued ID number that can be used to uniquely identify a customer across different systems.
+    /// </summary>
+    public string IDNumber { get; set; }
 }
 
 /// https://dataladder.com/guide-to-data-survivorship-how-to-build-the-golden-record/

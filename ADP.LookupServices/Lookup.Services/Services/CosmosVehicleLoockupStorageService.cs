@@ -3,6 +3,7 @@ using Microsoft.Azure.Cosmos.Linq;
 using Newtonsoft.Json.Linq;
 using ShiftSoftware.ADP.Lookup.Services.Aggregate;
 using ShiftSoftware.ADP.Models;
+using ShiftSoftware.ADP.Models.Customer;
 using ShiftSoftware.ADP.Models.Part;
 using ShiftSoftware.ADP.Models.Service;
 using ShiftSoftware.ADP.Models.TBP;
@@ -436,5 +437,30 @@ public class CosmosVehicleLoockupStorageService : IVehicleLoockupStorageService
             vs = (await vsIterator.ReadNextAsync()).FirstOrDefault();
 
         return await GetVehicleModelsByVariantAsync(vs.VariantCode);
+    }
+
+    public async Task<CustomerModel> GetCustomerAsync(string customerID, long? companyID)
+    {
+        if (string.IsNullOrWhiteSpace(customerID))
+            return null;
+
+        var container = client.GetContainer(
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.Customers,
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.Customers_Customers
+        );
+
+        var queryable = container.GetItemLinqQueryable<CustomerModel>(true)
+            .Where(x => x.CustomerID == customerID && x.CompanyID == companyID && x.ItemType == ModelTypes.DealerCustomer);
+
+        var iterator = queryable.ToFeedIterator();
+        var items = new List<CustomerModel>();
+
+        while (iterator.HasMoreResults)
+        {
+            var response = await iterator.ReadNextAsync();
+            items.AddRange(response);
+        }
+
+        return items.FirstOrDefault();
     }
 }
