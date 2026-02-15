@@ -125,117 +125,141 @@ public class Utility
             builder.Add(bool.Parse(value));
     }
 
-    public static async Task CreateDatabasesAndContainersIfNotExistsAsync(CosmosClient client)
+    public static async Task CreateDatabasesAndContainersIfNotExistsAsync(
+        CosmosClient client,
+        int? companyDatabaseThroughput = 25_000,
+        int? logsDatabaseThroughput = 25_000,
+        int? serviceDatabaseThroughput = 25_000,
+        int? customerDatabaseThroughput = 25_000,
+        int? tbpDatabaseThroughput = 25_000)
     {
-        var companyDatabaseResponse = await client.CreateDatabaseIfNotExistsAsync(
-        NoSQLConstants.Databases.CompanyData,
-            ThroughputProperties.CreateManualThroughput(25000)
-        );
+        if (companyDatabaseThroughput is not null)
+        {
+            var companyDatabaseResponse = await client.CreateDatabaseIfNotExistsAsync(
+                NoSQLConstants.Databases.CompanyData,
+                ThroughputProperties.CreateManualThroughput(companyDatabaseThroughput.Value)
+            );
+            var companyDatabase = companyDatabaseResponse.Database;
 
-        var logsDatabaseResponse = await client.CreateDatabaseIfNotExistsAsync(
-            NoSQLConstants.Databases.Logs,
-            ThroughputProperties.CreateManualThroughput(25000)
-        );
+            await companyDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
+                NoSQLConstants.Containers.Brokers,
+                "/id"
+            ));
 
-        var serviceDatabaseResponse = await client.CreateDatabaseIfNotExistsAsync(
-            NoSQLConstants.Databases.Services,
-            ThroughputProperties.CreateManualThroughput(25000)
-        );
+            await companyDatabase.CreateContainerIfNotExistsAsync(
+                new ContainerProperties(
+                NoSQLConstants.Containers.Vehicles,
+                [
+                    NoSQLConstants.PartitionKeys.Vehicles.Level1,
+                    NoSQLConstants.PartitionKeys.Vehicles.Level2,
+                    NoSQLConstants.PartitionKeys.Vehicles.Level3,
+                ]
+            ));
 
-        var customerDatabaseResponse = await client.CreateDatabaseIfNotExistsAsync(
-            NoSQLConstants.Databases.Customers,
-            ThroughputProperties.CreateManualThroughput(25000)
-        );
+            await companyDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
+                NoSQLConstants.Containers.Parts,
+                [NoSQLConstants.PartitionKeys.Parts.Level1, NoSQLConstants.PartitionKeys.Parts.Level2, NoSQLConstants.PartitionKeys.Parts.Level3]
+            ));
 
-        var tbpDatabaseResponse = await client.CreateDatabaseIfNotExistsAsync(
-            NoSQLConstants.Databases.TBP,
-            ThroughputProperties.CreateManualThroughput(25000)
-        );
+            await companyDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
+                NoSQLConstants.Containers.ExteriorColors,
+                [NoSQLConstants.PartitionKeys.ExteriorColors.Level1, NoSQLConstants.PartitionKeys.ExteriorColors.Level2]
+            ));
 
-        var companyDatabase = companyDatabaseResponse.Database;
-        var logsDatabase = logsDatabaseResponse.Database;
-        var serviceDatabase = serviceDatabaseResponse.Database;
-        var customerDatabase = customerDatabaseResponse.Database;
-        var tbpDatabase = tbpDatabaseResponse.Database;
+            await companyDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
+                NoSQLConstants.Containers.InteriorColors,
+                [NoSQLConstants.PartitionKeys.InteriorColors.Level1, NoSQLConstants.PartitionKeys.InteriorColors.Level2]
+            ));
 
-        await companyDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
-            NoSQLConstants.Containers.Brokers,
-            "/id"
-        ));
+            await companyDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
+                NoSQLConstants.Containers.VehicleModels,
+                [NoSQLConstants.PartitionKeys.VehicleModels.Level1, NoSQLConstants.PartitionKeys.VehicleModels.Level2]
+            ));
+        }
 
-        await companyDatabase.CreateContainerIfNotExistsAsync(
-            new ContainerProperties(
-            NoSQLConstants.Containers.Vehicles,
-            [
-                NoSQLConstants.PartitionKeys.Vehicles.Level1, 
-                NoSQLConstants.PartitionKeys.Vehicles.Level2,
-                NoSQLConstants.PartitionKeys.Vehicles.Level3,
-            ]
-        ));
+        if (logsDatabaseThroughput is not null)
+        {
+            var logsDatabaseResponse = await client.CreateDatabaseIfNotExistsAsync(
+                NoSQLConstants.Databases.Logs,
+                ThroughputProperties.CreateManualThroughput(logsDatabaseThroughput.Value)
+            );
 
-        await companyDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
-            NoSQLConstants.Containers.Parts,
-            [NoSQLConstants.PartitionKeys.Parts.Level1, NoSQLConstants.PartitionKeys.Parts.Level2, NoSQLConstants.PartitionKeys.Parts.Level3]
-        ));
+            var logsDatabase = logsDatabaseResponse.Database;
 
-        await companyDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
-            NoSQLConstants.Containers.ExteriorColors,
-            [NoSQLConstants.PartitionKeys.ExteriorColors.Level1, NoSQLConstants.PartitionKeys.ExteriorColors.Level2]
-        ));
+            await logsDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
+                NoSQLConstants.Containers.PartLookupLogs,
+                [NoSQLConstants.PartitionKeys.PartLookupLogs.Level1]
+            ));
 
-        await companyDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
-            NoSQLConstants.Containers.InteriorColors,
-            [NoSQLConstants.PartitionKeys.InteriorColors.Level1, NoSQLConstants.PartitionKeys.InteriorColors.Level2]
-        ));
+            await logsDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
+                NoSQLConstants.Containers.ManufacturerPartLookupLogs,
+                [NoSQLConstants.PartitionKeys.ManufacturerPartLookupLogs.Level1]
+            ));
 
-        await companyDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
-            NoSQLConstants.Containers.VehicleModels,
-            [NoSQLConstants.PartitionKeys.VehicleModels.Level1, NoSQLConstants.PartitionKeys.VehicleModels.Level2]
-        ));
+            await logsDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
+                NoSQLConstants.Containers.CSVUpload,
+                "/id"
+            ));
 
-        await logsDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
-            NoSQLConstants.Containers.PartLookupLogs,
-            [NoSQLConstants.PartitionKeys.PartLookupLogs.Level1]
-        ));
+            await logsDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
+                NoSQLConstants.Containers.SSCLogs,
+                [NoSQLConstants.PartitionKeys.SSCLogs.Level1]
+            ));
+        }
 
-        await logsDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
-            NoSQLConstants.Containers.ManufacturerPartLookupLogs,
-            [NoSQLConstants.PartitionKeys.ManufacturerPartLookupLogs.Level1]
-        ));
+        if (serviceDatabaseThroughput is not null)
+        {
+            var serviceDatabaseResponse = await client.CreateDatabaseIfNotExistsAsync(
+                NoSQLConstants.Databases.Services,
+                ThroughputProperties.CreateManualThroughput(serviceDatabaseThroughput.Value)
+            );
 
-        await logsDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
-            NoSQLConstants.Containers.CSVUpload,
-            "/id"
-        ));
+            var serviceDatabase = serviceDatabaseResponse.Database;
 
-        await logsDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
-            NoSQLConstants.Containers.SSCLogs,
-            [NoSQLConstants.PartitionKeys.SSCLogs.Level1]
-        ));
+            await serviceDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
+                NoSQLConstants.Containers.FlatRate,
+                [NoSQLConstants.PartitionKeys.FlatRate.Level1, NoSQLConstants.PartitionKeys.FlatRate.Level2]
+            ));
 
-        await serviceDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
-            NoSQLConstants.Containers.FlatRate,
-            [NoSQLConstants.PartitionKeys.FlatRate.Level1, NoSQLConstants.PartitionKeys.FlatRate.Level2]
-        ));
+            await serviceDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
+                NoSQLConstants.Containers.ServiceItems,
+                "/id"
+            ));
 
-        await serviceDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
-            NoSQLConstants.Containers.ServiceItems,
-            "/id"
-        ));
+            await serviceDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
+                NoSQLConstants.Containers.ClaimableItemCampaigns,
+                "/id"
+            ));
+        }
 
-        await serviceDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
-            NoSQLConstants.Containers.ClaimableItemCampaigns,
-            "/id"
-        ));
+        if (customerDatabaseThroughput is not null)
+        {
+            var customerDatabaseResponse = await client.CreateDatabaseIfNotExistsAsync(
+                NoSQLConstants.Databases.Customers,
+                ThroughputProperties.CreateManualThroughput(customerDatabaseThroughput.Value)
+            );
 
-        await customerDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
-            NoSQLConstants.Containers.Customers_Customers,
-            [NoSQLConstants.PartitionKeys.Customers.Level1, NoSQLConstants.PartitionKeys.Customers.Level2, NoSQLConstants.PartitionKeys.Customers.Level3]
-        ));
+            var customerDatabase = customerDatabaseResponse.Database;
 
-        await tbpDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
-            NoSQLConstants.Containers.TBP_BrokerStock,
-            [NoSQLConstants.PartitionKeys.TBPBrokerStock.Level1, NoSQLConstants.PartitionKeys.TBPBrokerStock.Level2, NoSQLConstants.PartitionKeys.TBPBrokerStock.Level3]
-        ));
+            await customerDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
+                NoSQLConstants.Containers.Customers_Customers,
+                [NoSQLConstants.PartitionKeys.Customers.Level1, NoSQLConstants.PartitionKeys.Customers.Level2, NoSQLConstants.PartitionKeys.Customers.Level3]
+            ));
+        }
+
+        if (tbpDatabaseThroughput is not null)
+        {
+            var tbpDatabaseResponse = await client.CreateDatabaseIfNotExistsAsync(
+                NoSQLConstants.Databases.TBP,
+                ThroughputProperties.CreateManualThroughput(tbpDatabaseThroughput.Value)
+            );
+
+            var tbpDatabase = tbpDatabaseResponse.Database;
+
+            await tbpDatabase.CreateContainerIfNotExistsAsync(new ContainerProperties(
+                NoSQLConstants.Containers.TBP_BrokerStock,
+                [NoSQLConstants.PartitionKeys.TBPBrokerStock.Level1, NoSQLConstants.PartitionKeys.TBPBrokerStock.Level2, NoSQLConstants.PartitionKeys.TBPBrokerStock.Level3]
+            ));
+        }
     }
 }
