@@ -66,7 +66,7 @@ internal class PartPriceEvaluator
             }
         }
 
-        if (options.PartLookupPriceResolver is not null)
+        if (options?.PartLookupPriceResolver is not null)
         {
             var resolvedResult = await options.PartLookupPriceResolver(new(new(cosmosPartCatalog?.DistributorPurchasePrice, prices, source), language, services));
             return resolvedResult;
