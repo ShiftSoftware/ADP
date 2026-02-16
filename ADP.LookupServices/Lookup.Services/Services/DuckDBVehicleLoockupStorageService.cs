@@ -1,4 +1,5 @@
 ﻿using ShiftSoftware.ADP.Lookup.Services.Aggregate;
+using ShiftSoftware.ADP.Models.Customer;
 using ShiftSoftware.ADP.Models.TBP;
 using ShiftSoftware.ADP.Models.Vehicle;
 using ShiftSoftware.ShiftEntity.Model.HashIds;
@@ -145,5 +146,10 @@ public class DuckDBVehicleLoockupStorageService (DuckDB.NET.Data.DuckDBConnectio
     public async Task<IEnumerable<VehicleModelModel>> GetVehicleModelsByVinAsync(string vin)
     {
         return [];
+    }
+
+    public async Task<CustomerModel> GetCustomerAsync(string customerID, long? companyID)
+    {
+        return null;
     }
 }

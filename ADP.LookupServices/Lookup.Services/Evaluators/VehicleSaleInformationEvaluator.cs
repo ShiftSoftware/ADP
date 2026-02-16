@@ -156,16 +156,21 @@ public class VehicleSaleInformationEvaluator
             }
         }
 
-        //Load Customer from Customer Databse
+        //Load Customer from Customer Database
         if (requestOptions.LookupEndCustomer && result.Broker is null)
         {
-            result.EndCustomer = new VehicleSaleEndCustomerInformationDTO
+            var customer = await this.LookupCosmosService.GetCustomerAsync(vehicle.CustomerID, vehicle.CompanyID);
+
+            if (customer is not null)
             {
-                ID = vehicle.CustomerID,
-                Name = $"Name for: {vehicle.CustomerID}",
-                Phone = $"Phone for: {vehicle.CustomerID}",
-                IDNumber = $"ID Number for: {vehicle.CustomerID}"
-            };
+                result.EndCustomer = new VehicleSaleEndCustomerInformationDTO
+                {
+                    ID = vehicle.CustomerID,
+                    Name = customer.FullName,
+                    Phone = customer.PhoneNumbers?.FirstOrDefault(),
+                    IDNumber = customer.IDNumber
+                };
+            }
         }
 
         //if (CompanyDataAggregate.BrokerInvoices?.Any() ?? false)
