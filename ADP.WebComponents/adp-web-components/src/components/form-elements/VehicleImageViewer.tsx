@@ -1,11 +1,10 @@
 import { FunctionalComponent, h } from '@stencil/core';
 import { FormHook } from '~features/form-hook';
-import { VehicleQuotation } from './validations';
 import { LoaderIcon } from '~assets/loader-icon';
 import cn from '~lib/cn';
 
 interface VehicleImageViewerProps {
-  form: FormHook<VehicleQuotation>;
+  form: FormHook<any>;
 }
 
 const cachedImages: Record<string, any> = {};
@@ -34,7 +33,7 @@ let imageSrcBase64 = '';
 export const VehicleImageViewer: FunctionalComponent<VehicleImageViewerProps> = ({ form }) => {
   form.addWatcher('vehicle');
 
-  let vehicleId = form.getValue<VehicleQuotation>('vehicle');
+  let vehicleId = form.getValue<any>('vehicle');
 
   let openContainer = !!vehicleId;
 
@@ -62,8 +61,11 @@ export const VehicleImageViewer: FunctionalComponent<VehicleImageViewerProps> = 
   return (
     <flexible-container isOpened={openContainer}>
       <div style={{ 'min-height': '60px' }} part="vehicle-image-wrapper" class={cn('vehicle-image-wrapper', { loading: isLoading })}>
-        <div part={cn('vehicle-image-loading-wrapper', { 'vehicle-image-active-loading-wrapper': isLoading })} class="loading-wrapper">
-          <LoaderIcon part="vehicle-image-loader-icon" class="img" />
+        <div
+          part={cn('vehicle-image-loading-wrapper', { 'vehicle-image-active-loading-wrapper': isLoading })}
+          class={cn('loading-wrapper vehicle-image-loading-wrapper', { 'vehicle-image-active-loading-wrapper': isLoading })}
+        >
+          <LoaderIcon part="vehicle-image-loader-icon" class="img vehicle-image-loader-icon" />
         </div>
         <img
           alt="vehicle image"

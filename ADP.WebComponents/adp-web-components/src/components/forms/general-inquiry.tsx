@@ -6,14 +6,14 @@ import getLanguageFromUrl from '~lib/get-language-from-url';
 import cn from '~lib/cn';
 import { LoaderIcon } from '~assets/loader-icon';
 import { object, string } from 'yup';
-import { getDefaultValidaations, y } from './defaults/validation';
+import { getDefaultValidations, y } from './defaults/validation';
 import { getDefaultMappers } from './defaults/mappers';
 import { getDefaultStateObject } from './defaults/state-object';
 
 let stateObject = getDefaultStateObject();
 
 const validation = object({
-  ...getDefaultValidaations(stateObject),
+  ...getDefaultValidations(stateObject),
 
   companyBranchId: string()
     .meta({ label: y.label('companyBranchId'), placeholder: y.placeholder('companyBranchId') } as FormInputMeta)
@@ -95,7 +95,7 @@ export class GeneralInquiryForm implements FormHookInterface<any>, MultiLingual 
   }
 
   async formSubmit(formValues: any) {
-    await functionHooks.formSubmittHandler<any>({ context: this, formValues });
+    await functionHooks.onFormSubmit<any>({ context: this, formValues });
   }
   // #endregion
 
@@ -111,7 +111,7 @@ export class GeneralInquiryForm implements FormHookInterface<any>, MultiLingual 
 
   @Method()
   async submit() {
-    await functionHooks.formSubmitHandler(this);
+    await functionHooks.handleFormSubmit(this);
   }
 
   @State() structureRendered = false;
@@ -135,7 +135,7 @@ export class GeneralInquiryForm implements FormHookInterface<any>, MultiLingual 
   render() {
     return (
       <Host>
-        <div part={cn(this.structure?.data?.theme, this.theme)}>
+        <div part={cn('shift-form', this.structure?.data?.theme, this.theme)}>
           <div part="form-container" class="relative min-h-[150px]">
             <div
               part="form-loader-container"

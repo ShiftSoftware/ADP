@@ -7,14 +7,14 @@
   backdrop-filter: blur(1.5px) !important;
 }
 
-@keyframes spin {
+@keyframes spin-animation {
   to {
     transform: rotate(360deg);
   }
 }
 
 .spin-slow {
-  animation: spin 2s linear infinite;
+  animation: spin-animation 2s linear infinite;
 }
 
 .error-message-container {
@@ -104,6 +104,39 @@
   @apply border border-slate-300 appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none disabled:bg-white flex-1 py-[6px] px-[12px] transition !duration-300 rounded-md outline-none enabled:focus:border-slate-600 enabled:focus:shadow-[0_0_0_0.2rem_rgba(71,85,105,0.25)] w-full;
 }
 
+.form-input-style::-webkit-calendar-picker-indicator {
+  @apply !hidden;
+}
+
+.form-input-picker-text {
+  @apply !text-transparent caret-transparent select-none;
+}
+
+.form-input-display-overlay {
+  @apply absolute inset-0 flex items-center px-[14px] pointer-events-none truncate;
+  direction: ltr;
+}
+
+.form-input-display-placeholder {
+  @apply text-slate-400;
+}
+
+.form-input-icon {
+  @apply transition-colors !duration-300 absolute top-1/2 -translate-y-1/2 flex items-center justify-center size-[24px] text-[#576675] pointer-events-none;
+}
+
+.form-input-icon-end {
+  @apply end-3;
+}
+
+.form-input-icon-start {
+  @apply start-3;
+}
+
+.form-input-icon-interactive {
+  @apply pointer-events-auto cursor-pointer;
+}
+
 .form-input-textarea-style {
   @apply resize-none h-[200px] py-[6px] px-[12px];
 }
@@ -161,7 +194,7 @@
 }
 
 .form-select-option {
-  @apply flex justify-between text-start px-4 py-2 hover:bg-slate-100;
+  @apply flex justify-between items-center text-start px-4 py-2 hover:bg-slate-100;
 }
 
 .form-select-option.selected {
@@ -185,7 +218,7 @@
 }
 
 .form-select-spinner {
-  animation: spin 2s linear infinite;
+  animation: spin-animation 2s linear infinite;
   @apply !size-[22px];
 }
 
@@ -226,6 +259,127 @@
 }
 
 .form-submit-loading-icon {
-  animation: spin 2s linear infinite;
+  animation: spin-animation 2s linear infinite;
   @apply size-[22px];
+}
+
+/* Shared Picker Dropdown */
+
+.form-picker-dropdown {
+  @apply z-[10] absolute w-full bg-white border rounded-md shadow opacity-0 pointer-events-none transition-opacity !duration-300;
+}
+
+.form-input-container.open .form-picker-dropdown {
+  @apply opacity-100 pointer-events-auto;
+}
+
+.form-picker-dropdown.upwards {
+  @apply top-0 -mt-[8px] -translate-y-full;
+}
+
+.form-picker-dropdown.downwards {
+  @apply top-0 mt-[8px] translate-y-[38px];
+}
+
+/* Date Picker */
+
+.form-date-picker-header {
+  @apply flex items-center justify-between px-3 pt-3 pb-1;
+}
+
+.form-date-picker-nav {
+  @apply size-8 flex items-center justify-center rounded enabled:hover:bg-slate-100 enabled:cursor-pointer transition-colors !duration-200 text-slate-600 disabled:opacity-30;
+}
+
+.form-date-picker-title {
+  @apply text-sm font-medium select-none;
+}
+
+.form-date-picker-grid {
+  @apply grid grid-cols-7 px-3 pb-3;
+}
+
+.form-date-picker-weekday {
+  @apply text-xs text-center text-slate-400 py-1.5 font-medium select-none;
+}
+
+.form-date-picker-day {
+  @apply text-sm text-center py-1.5 rounded cursor-pointer enabled:hover:bg-slate-100 transition-colors !duration-150;
+}
+
+.form-date-picker-day.selected {
+  @apply !bg-slate-700 !text-white enabled:hover:!bg-slate-800;
+}
+
+.form-date-picker-day.today {
+  @apply font-bold text-slate-900;
+}
+
+.form-date-picker-day.outside {
+  @apply !text-slate-300 pointer-events-none;
+}
+
+.form-date-picker-day:disabled:not(.outside) {
+  @apply !text-slate-300 !cursor-not-allowed line-through;
+}
+
+/* Time Picker */
+
+.form-time-picker-columns {
+  @apply flex divide-x max-h-[200px];
+}
+
+.form-time-picker-column {
+  @apply flex-1 overflow-y-auto flex flex-col;
+}
+
+.form-time-picker-column-header {
+  @apply text-xs text-center text-slate-400 font-medium py-1.5 sticky top-0 bg-white border-b select-none;
+}
+
+.form-time-picker-option {
+  @apply text-sm text-center py-2 cursor-pointer enabled:hover:bg-slate-100 transition-colors !duration-150;
+}
+
+.form-time-picker-option.selected {
+  @apply !bg-slate-700 !text-white enabled:hover:!bg-slate-800;
+}
+
+.form-time-picker-option:disabled {
+  @apply !text-slate-300 !cursor-not-allowed;
+}
+
+.vehicle-image-loading-wrapper {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition-property: all;
+  transition-duration: 100ms;
+  color: rgb(15 23 42);
+}
+
+.vehicle-image-active-loading-wrapper {
+  opacity: 1;
+}
+
+.vehicle-image-loader-icon {
+  animation: spin-animation 2s linear infinite;
+  width: 32px;
+  height: 32px;
+}
+
+.vehicle-image-wrapper {
+  display: flex;
+  padding-left: 20px;
+  padding-right: 20px;
+  justify-content: center;
+  position: relative;
 }

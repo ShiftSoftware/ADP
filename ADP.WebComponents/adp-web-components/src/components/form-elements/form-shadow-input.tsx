@@ -11,6 +11,7 @@ export class FormInput {
   @Prop() name: string;
   @Prop() value: string;
   @Prop() form: FormHook<any>;
+  @Prop() type?: string = 'string';
 
   @Watch('name')
   async handleNameChange(newName: string) {
@@ -25,6 +26,6 @@ export class FormInput {
   }
 
   render() {
-    return <input hidden name={this.name} type="string" value={this.value} />;
+    return <input class="shadow-input" type={this.type} hidden name={this.name} value={this.value} />;
   }
 }

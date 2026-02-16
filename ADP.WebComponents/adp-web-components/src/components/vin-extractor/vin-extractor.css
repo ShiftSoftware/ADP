@@ -1,10 +1,12 @@
 :host {
   all: initial !important;
   display: block;
+  font-family: 'Noto Kufi Arabic', 'Nunito', Roboto, Arial, sans-serif !important;
 }
 
-* {
-  font-family: Arial;
+*,
+:host * {
+  font-family: inherit !important;
 }
 
 @keyframes slideIn {
@@ -74,7 +76,7 @@
 }
 
 @media (min-width: 768px) {
-  .vin-extractor-background[aria-expanded='true'] {
+  .vin-extractor-background[aria-hidden='false'] {
     pointer-events: auto !important;
     backdrop-filter: blur(1.5px);
     background: rgb(0 0 0 / 0.4);

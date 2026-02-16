@@ -1,33 +1,33 @@
 import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
-import { serviceBookingElementNames, serviceBookingElements } from './service-booking/element-mapper';
-import { ServiceBooking, serviceBookingInputsValidation } from './service-booking/validations';
-
-import {
-  FormHook,
-  FormHookInterface,
-  FormElementStructure,
-  formLanguageChange,
-  formErrorHandler,
-  formLoadingHandler,
-  formSuccessHandler,
-  formDidLoadHandler,
-  formGetFormHandler,
-  formSubmitHandler,
-  formSubmittHandler,
-  formStructureRenderedHandler,
-} from '~features/form-hook';
+import { FormElementMapper, FormElementStructure, FormHook, FormHookInterface, functionHooks } from '~features/form-hook';
 import { GeneralFormLocal, LanguageKeys, MultiLingual, sharedFormLocalesSchema } from '~features/multi-lingual';
 import getLanguageFromUrl from '~lib/get-language-from-url';
 import cn from '~lib/cn';
 import { LoaderIcon } from '~assets/loader-icon';
+import { object } from 'yup';
+import { getDefaultValidations } from './defaults/validation';
+import { getDefaultMappers } from './defaults/mappers';
+import { getDefaultStateObject } from './defaults/state-object';
+
+let stateObject = getDefaultStateObject();
+
+const validation = object({
+  ...getDefaultValidations(stateObject),
+});
+
+const elementMapper: FormElementMapper<any, any> = {
+  ...getDefaultMappers(stateObject),
+  'choose': ({ locale }) => <h1 part="section-title">{locale.choose}</h1>,
+  'contact information': ({ locale }) => <h1 part="section-title">{locale['contact information']}</h1>,
+};
 
 @Component({
   shadow: true,
   tag: 'service-booking-form',
   styleUrl: './defaults/style.css',
 })
-export class ServiceBookingForm implements FormHookInterface<ServiceBooking>, MultiLingual {
+export class ServiceBookingForm implements FormHookInterface<any>, MultiLingual {
   // #region Localization
   @Prop({ mutable: true, reflect: true }) language: LanguageKeys;
 
@@ -35,7 +35,7 @@ export class ServiceBookingForm implements FormHookInterface<ServiceBooking>, Mu
 
   @Watch('language')
   async changeLanguage(newLanguage: LanguageKeys) {
-    await formLanguageChange(this, newLanguage);
+    await functionHooks.formLanguageChange(this, newLanguage);
   }
   // #endregion
 
@@ -51,45 +51,45 @@ export class ServiceBookingForm implements FormHookInterface<ServiceBooking>, Mu
   @Prop() loadingChanges: (loading: boolean) => void;
   @Prop() errorCallback: (error: any, message: string) => void;
   @Prop() successCallback: (data: any, message?: string) => void;
-  @Prop({ mutable: true }) structure: FormElementStructure<serviceBookingElementNames> | undefined;
+  @Prop({ mutable: true }) structure: FormElementStructure<any> | undefined;
   @Prop({ mutable: true }) fields?: object;
 
   @Element() el: HTMLElement;
 
   setIsLoading(isLoading: boolean) {
-    formLoadingHandler(this, isLoading);
+    functionHooks.formLoadingHandler(this, isLoading);
   }
 
   setErrorCallback(error: any) {
-    formErrorHandler(this, error);
+    functionHooks.formErrorHandler(this, error);
   }
 
   setSuccessCallback(data: any) {
-    formSuccessHandler(this, data);
+    functionHooks.formSuccessHandler(this, data);
   }
 
   async componentWillLoad() {
     if (!this.language) this.language = getLanguageFromUrl();
   }
 
-  async formSubmit(formValues: ServiceBooking) {
-    await formSubmittHandler<ServiceBooking>({ context: this, formValues });
+  async formSubmit(formValues: any) {
+    await functionHooks.onFormSubmit<any>({ context: this, formValues });
   }
   // #endregion
 
   // #region Component Logic
   async componentDidLoad() {
-    await formDidLoadHandler<serviceBookingElementNames, ServiceBooking>(this, serviceBookingInputsValidation);
+    await functionHooks.formDidLoadHandler<any, any>(this, validation);
   }
 
   @Method()
   async getForm() {
-    return await formGetFormHandler(this);
+    return await functionHooks.formGetFormHandler(this);
   }
 
   @Method()
   async submit() {
-    await formSubmitHandler(this);
+    await functionHooks.handleFormSubmit(this);
   }
 
   @State() structureRendered = false;
@@ -97,7 +97,7 @@ export class ServiceBookingForm implements FormHookInterface<ServiceBooking>, Mu
 
   @Watch('structureRendered')
   async structureChanged(isRendered: boolean) {
-    await formStructureRenderedHandler(this, isRendered);
+    await functionHooks.formStructureRenderedHandler(this, isRendered);
   }
 
   @Prop() theme?: string;
@@ -107,13 +107,13 @@ export class ServiceBookingForm implements FormHookInterface<ServiceBooking>, Mu
   @Prop() isMobileForm: boolean = false;
   @Prop() getMobileToken?: () => string;
 
-  @State() form: FormHook<ServiceBooking>;
+  @State() form: FormHook<any>;
 
   // #endregion
   render() {
     return (
       <Host>
-        <div part={cn(this.structure?.data?.theme, this.theme)}>
+        <div part={cn('shift-form', this.structure?.data?.theme, this.theme)}>
           <div part="form-container" class="relative min-h-[150px]">
             <div
               part="form-loader-container"
@@ -134,7 +134,7 @@ export class ServiceBookingForm implements FormHookInterface<ServiceBooking>, Mu
                   isLoading={this.isLoading}
                   language={this.localeLanguage}
                   errorMessage={this.errorMessage}
-                  formElementMapper={serviceBookingElements}
+                  formElementMapper={elementMapper}
                   successMessage={this.locale['Form submitted successfully.'] || 'Form submitted successfully.'}
                 >
                   <slot></slot>

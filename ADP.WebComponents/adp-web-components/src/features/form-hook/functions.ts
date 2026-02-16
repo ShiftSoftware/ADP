@@ -5,6 +5,7 @@ import { gistLoader } from './gist-loader';
 import { fetchJson } from '~lib/fetch-json';
 import { AnyObjectSchema } from 'yup';
 import { Grecaptcha } from '~lib/recaptcha';
+import { formatISO, parse } from 'date-fns';
 
 export type FormLanguageChange = {
   form: FormHook<any>;
@@ -127,11 +128,11 @@ export const formGetFormHandler = async (formContext: FormGetFormHandler) => {
   if (formContext.form) return formContext.form;
 };
 
-export type FormSubmitHandler = {
+export type HandleFormSubmit = {
   form: FormHook<any>;
 };
 
-export const formSubmitHandler = async (formContext: FormSubmitHandler) => {
+export const handleFormSubmit = async (formContext: HandleFormSubmit) => {
   if (formContext.form) return formContext.form.submit();
 };
 
@@ -145,28 +146,26 @@ export const formStructureRenderedHandler = async (formContext: FormStructureRen
 
 declare const grecaptcha: Grecaptcha;
 
-export type FormSubmittHandler<T> = {
+export type OnFormSubmit<T> = {
   formValues: T;
   afterSuccess?: (payload: object, header: object) => void;
   context: FormHookInterface<T> & MultiLingual & { form: FormHook<any> };
   middleware?: (payload: object, header: object, url: string) => { header: object; payload: object; url: string };
 };
 
-export const formSubmittHandler = async <T>({ context, formValues, middleware, afterSuccess }: FormSubmittHandler<T>) => {
+export const onFormSubmit = async <T>({ context, formValues, middleware, afterSuccess }: OnFormSubmit<T>) => {
   try {
     context.setIsLoading(true);
+
+    Object.keys(formValues).forEach(key => {
+      if (context[`${key}-format`]) {
+        formValues[key] = context[`${key}-format`];
+      }
+    });
 
     const hasAdditionalData = !!context.structure?.data?.truncatedFields && !!Object.keys(context.structure?.data?.truncatedFields)?.length;
 
     let additionalData: Record<string, string> = {};
-
-    if (hasAdditionalData) {
-      Object.entries(context.structure?.data?.truncatedFields as Record<string, string>).forEach(([oldKey, newKey]) => {
-        if (formValues[oldKey]) additionalData[newKey] = formValues[oldKey];
-
-        delete formValues[oldKey];
-      });
-    }
 
     let payload: Record<string, any> = { ...formValues };
 
@@ -175,6 +174,31 @@ export const formSubmittHandler = async <T>({ context, formValues, middleware, a
     if (hasAdditionalData) payload.additionalData = additionalData;
 
     if (!!context?.extraPayload) payload = { ...payload, ...context?.extraPayload };
+
+    if (hasAdditionalData) {
+      Object.entries(context.structure?.data?.truncatedFields as Record<string, string | string[]>).forEach(([oldKey, truncateValue]) => {
+        if (Array.isArray(truncateValue)) {
+          let constructNewValue: string = '';
+
+          truncateValue.forEach(key => {
+            constructNewValue += payload[key.toString()] || key.toString();
+          });
+
+          payload = { ...payload, [oldKey]: constructNewValue };
+        } else if (typeof truncateValue === 'string' && truncateValue) {
+          if (oldKey.startsWith('parse date: ')) {
+            let tempKey = oldKey.replaceAll('parse date: ', '');
+            payload[tempKey] = parse(payload[tempKey], truncateValue, new Date());
+          } else if (oldKey.startsWith('format date: ')) {
+            let tempKey = oldKey.replaceAll('format date: ', '');
+            payload[tempKey] = formatISO(payload[tempKey]);
+          } else {
+            additionalData[truncateValue] = payload[oldKey];
+            delete payload[oldKey];
+          }
+        }
+      });
+    }
 
     let header: Record<string, any> = {
       'Content-Type': 'application/json',
@@ -254,11 +278,11 @@ export const formSubmittHandler = async <T>({ context, formValues, middleware, a
 export const functionHooks = {
   formLanguageChange,
   formErrorHandler,
-  formSubmitHandler,
+  handleFormSubmit,
   formLoadingHandler,
   formSuccessHandler,
   formDidLoadHandler,
   formGetFormHandler,
-  formSubmittHandler,
+  onFormSubmit,
   formStructureRenderedHandler,
 };

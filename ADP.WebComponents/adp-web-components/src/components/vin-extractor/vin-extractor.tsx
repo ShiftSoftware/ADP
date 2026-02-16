@@ -422,15 +422,19 @@ export class VinExtractor {
     return (
       <Host>
         <slot />
-        <input class="vin-extractor-input" type="file" accept="image/*" {...(this.captureEnvironment ? { capture: 'environment' } : {})} hidden />
-        <canvas class="video-canvas hidden"></canvas>
+        <input class="vin-extractor-input" type="file" accept="image/*" aria-label="Upload VIN image" {...(this.captureEnvironment ? { capture: 'environment' } : {})} hidden />
+        <canvas class="video-canvas hidden" aria-hidden="true"></canvas>
         {!this.uploaderButtonId && (
           <div
             onClick={() => (this.isOpen = false)}
-            aria-expanded={ariaExpanded.toString()}
+            role="dialog"
+            aria-modal={ariaExpanded.toString()}
+            aria-label={this.title || 'VIN Scanner'}
+            aria-hidden={(!ariaExpanded).toString()}
             class="vin-extractor-background md:transition-all md:duration-300 fixed flex items-center justify-center w-[100dvw] h-[100dvh] top-0 left-0 z-[9999]"
           >
             <div
+              role="document"
               onClick={e => e.stopPropagation()}
               aria-expanded={ariaExpanded.toString()}
               onAnimationEnd={() => (this.isAnimating = false)}
@@ -444,6 +448,7 @@ export class VinExtractor {
                 {this.videoInputs.length > 1 ? (
                   <button
                     type="button"
+                    aria-label="Switch camera"
                     onClick={this.switchCamera}
                     class="size-[32px] md:border-none md:bg-white md:hover:bg-slate-100 bg-slate-100 rounded-lg p-1 hover:text-slate-700 border transition-colors duration-300 hover:bg-slate-300 border-slate-600 text-slate-600 hover:border-slate-700"
                   >
@@ -452,6 +457,7 @@ export class VinExtractor {
                       height="24"
                       fill="none"
                       stroke-width="2"
+                      aria-hidden="true"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
                       stroke-linecap="round"
@@ -467,11 +473,14 @@ export class VinExtractor {
                     </svg>
                   </button>
                 ) : (
-                  <div class="size-8" />
+                  <div class="size-8" aria-hidden="true" />
                 )}
-                <h1 class="text-center md:text-3xl md:text-black text-slate-100 text-xl">{this.title}</h1>
+                <h1 class="text-center text-[18px] md:text-[24px] md:text-black text-slate-100 form-input-label" part="form-input-label">
+                  {this.title}
+                </h1>
                 <button
                   type="button"
+                  aria-label="Close scanner"
                   onClick={() => (this.isOpen = false)}
                   class="size-[32px] md:border-none md:bg-white md:hover:bg-slate-100 bg-slate-100 rounded-lg p-1 hover:text-slate-700 border transition-colors duration-300 hover:bg-slate-300 border-slate-600 text-slate-600 hover:border-slate-700"
                 >
@@ -479,6 +488,7 @@ export class VinExtractor {
                     fill="none"
                     stroke-width="2"
                     class="size-full"
+                    aria-hidden="true"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
                     stroke-linecap="round"
@@ -495,12 +505,14 @@ export class VinExtractor {
                   type="button"
                   disabled={this.manualCaptureLoading}
                   onClick={this.captureFrame.bind(this, true)}
+                  aria-label={this.manualCaptureLoading ? 'Capturing...' : 'Capture VIN'}
                   class="absolute disabled:bg-white/75 outline-none cursor-pointer left-1/2 -translate-x-1/2 flex justify-center items-center h-[60px] py-[10px] w-[100px] rounded-full shadow-lg border border-slate-500 text-slate-500 z-10 bg-white bottom-4"
                 >
                   {this.manualCaptureLoading ? (
                     <svg
                       fill="none"
                       stroke-width="2"
+                      aria-hidden="true"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
                       stroke-linecap="round"
@@ -515,6 +527,7 @@ export class VinExtractor {
                       fill="none"
                       stroke-width="2"
                       class="size-full"
+                      aria-hidden="true"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
                       stroke-linecap="round"
@@ -527,7 +540,13 @@ export class VinExtractor {
                   )}
                 </button>
               )}
-              <video id="video" autoPlay playsInline class="video-player md:aspect-auto bg-black min-w-full min-h-full object-cover object-center"></video>
+              <video
+                autoPlay
+                id="video"
+                playsInline
+                aria-label="Camera preview"
+                class="video-player aspect-video bg-black min-w-full min-h-full object-cover object-center"
+              ></video>
             </div>
           </div>
         )}

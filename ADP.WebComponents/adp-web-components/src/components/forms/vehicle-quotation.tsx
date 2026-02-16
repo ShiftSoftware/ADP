@@ -15,7 +15,7 @@ import {
   formSuccessHandler,
   formDidLoadHandler,
   formGetFormHandler,
-  formSubmitHandler,
+  handleFormSubmit,
   formStructureRenderedHandler,
 } from '~features/form-hook';
 import { GeneralFormLocal, LanguageKeys, MultiLingual, sharedFormLocalesSchema } from '~features/multi-lingual';
@@ -189,7 +189,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
 
   @Method()
   async submit() {
-    await formSubmitHandler(this);
+    await handleFormSubmit(this);
   }
 
   @State() structureRendered = false;
