@@ -1,4 +1,4 @@
-import { string } from 'yup';
+import { date, string } from 'yup';
 import { FormInputMeta } from '~features/form-hook';
 import validateVin from '~lib/validate-vin';
 
@@ -11,7 +11,7 @@ export const condition = (name: string) => `$${name}Required`;
 
 export const y = { label, format, require, condition, placeholder };
 
-export const getDefaultValidaations = (stateObject: Record<string, any>) => ({
+export const getDefaultValidations = (stateObject: Record<string, any>) => ({
   name: string()
     .meta({ label: label('name'), placeholder: placeholder('name') } as FormInputMeta)
     .when(condition('name'), {
@@ -59,5 +59,37 @@ export const getDefaultValidaations = (stateObject: Record<string, any>) => ({
       is: true,
       otherwise: schema => schema.optional(),
       then: schema => schema.required(require('phone')).test(format('phone'), format('phone'), () => stateObject?.phoneValidator?.geIsValidPhoneNumber()),
+    }),
+
+  vehicle: string()
+    .meta({ label: y.label('vehicle'), placeholder: y.placeholder('vehicle') } as FormInputMeta)
+    .when(y.condition('vehicle'), {
+      is: true,
+      otherwise: schema => schema.optional(),
+      then: schema => schema.required(y.require('vehicle')),
+    }),
+
+  companyBranchId: string()
+    .meta({ label: y.label('companyBranchId'), placeholder: y.placeholder('companyBranchId') } as FormInputMeta)
+    .when(y.condition('companyBranchId'), {
+      is: true,
+      otherwise: schema => schema.optional(),
+      then: schema => schema.required(y.require('companyBranchId')),
+    }),
+
+  date: string()
+    .meta({ label: label('date'), placeholder: placeholder('date') } as FormInputMeta)
+    .when(condition('date'), {
+      is: true,
+      otherwise: schema => schema.optional(),
+      then: schema => schema.required(require('date')),
+    }),
+
+  time: string()
+    .meta({ label: label('time'), placeholder: placeholder('time') } as FormInputMeta)
+    .when(condition('time'), {
+      is: true,
+      otherwise: schema => schema.optional(),
+      then: schema => schema.required(require('time')),
     }),
 });

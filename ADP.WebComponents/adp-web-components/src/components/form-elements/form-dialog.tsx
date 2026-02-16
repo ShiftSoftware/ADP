@@ -63,7 +63,7 @@ export class FormInput {
               'opened-dialog-wrapper': this.isOpened,
             })}
           >
-            <button part="dialog-close-icon-button" onClick={this.closeDialog} type="button" class="dialog-close-icon-button">
+            <button aria-label="Close the dialog" part="dialog-close-icon-button" onClick={this.closeDialog} type="button" class="dialog-close-icon-button">
               <AddIcon />
             </button>
             <div part="dialog-content" class="dialog-content">
