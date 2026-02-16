@@ -31,7 +31,7 @@ public class WarrantyAndFreeServiceDateEvaluator
             if (warrantyStartDate is null)
                 warrantyStartDate = saleInformation?.WarrantyActivationDate;
 
-            if (warrantyStartDate is null && Options.WarrantyStartDateDefaultsToInvoiceDate)
+            if (warrantyStartDate is null && (Options?.WarrantyStartDateDefaultsToInvoiceDate ?? false))
                 warrantyStartDate = saleInformation?.InvoiceDate;
 
             freeServiceStartDate = warrantyStartDate;

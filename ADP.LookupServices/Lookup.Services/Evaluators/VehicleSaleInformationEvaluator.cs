@@ -71,7 +71,7 @@ public class VehicleSaleInformationEvaluator
         result.CustomerID = vehicle?.CustomerID;
         result.CustomerAccountNumber = vehicle?.CustomerAccountNumber;
 
-        if (Options.CountryFromBranchIDResolver is not null)
+        if (Options?.CountryFromBranchIDResolver is not null)
         {
             var countryResult = await Options.CountryFromBranchIDResolver(new(vehicle.BranchID, languageCode, ServiceProvider));
 
@@ -82,19 +82,19 @@ public class VehicleSaleInformationEvaluator
             }
         }
 
-        if (Options.CompanyNameResolver is not null)
+        if (Options?.CompanyNameResolver is not null)
             result.CompanyName = await Options.CompanyNameResolver(new(vehicle.CompanyID, languageCode, ServiceProvider));
 
-        if (Options.CompanyBranchNameResolver is not null)
+        if (Options?.CompanyBranchNameResolver is not null)
             result.BranchName = await Options.CompanyBranchNameResolver(
                 new(vehicle.BranchID, languageCode, ServiceProvider));
 
         string companyLogo = null;
 
-        if (Options.CompanyLogoResolver is not null)
+        if (Options?.CompanyLogoResolver is not null)
             companyLogo = await Options.CompanyLogoResolver(new(vehicle.CompanyID, languageCode, ServiceProvider));
 
-        if (Options.LookupBrokerStock)
+        if (Options?.LookupBrokerStock ?? false)
         {
             var brokerStockEntries = await this.LookupCosmosService.GetBrokerStockAsync(
                 vehicle.BrandID,

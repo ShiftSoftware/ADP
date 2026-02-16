@@ -51,7 +51,7 @@ public class VehicleServiceItemEvaluator
         var showingInactivatedItems = false;
 
         //Allow showing free service items as 'Activation Required'
-        if (options.IncludeInactivatedFreeServiceItems && freeServiceStartDate is null)
+        if ((options?.IncludeInactivatedFreeServiceItems ?? false) && freeServiceStartDate is null)
         {
             freeServiceStartDate = DateTime.Now.Date;
             showingInactivatedItems = true;
