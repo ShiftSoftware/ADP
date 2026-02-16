@@ -25,7 +25,7 @@ public class Utility
             else
                 shorLanguage = language.Substring(0, 2).ToLower();
 
-            if (!multiLingualText.TryGetValue(shorLanguage, out result))
+            if (!(multiLingualText?.TryGetValue(shorLanguage, out result) ?? false))
                 result = multiLingualText?.FirstOrDefault(x => x.Key.ToLower() == "en").Value;
         }
 
