@@ -38,11 +38,11 @@ public class VehicleSSCEvaluator
             DateTime? repairDate = x.RepairDate;
 
             var warrantyClaim = warrantyClaims?
-                .Where(w => new List<ClaimStatus> { ClaimStatus.Accepted, ClaimStatus.Certified, ClaimStatus.Invoiced }.Contains(w?.ClaimStatus ?? 0))
-                .OrderByDescending(w => w.RepairCompletionDate)
+                .Where(w => new List<ClaimStatus> { ClaimStatus.Accepted, ClaimStatus.Certified, ClaimStatus.Invoiced }.Contains(w?.ClaimStatus ?? 0))?
+                .OrderByDescending(w => w.RepairCompletionDate)?
                 .FirstOrDefault(w => (
                     w.DistributorComment?.Contains(x.CampaignCode) ?? false) ||
-                    (w.LaborLines.Any(y => new[] { x.LaborCode1, x.LaborCode2, x.LaborCode3 }.Contains(y.LaborCode)))
+                    (w.LaborLines?.Any(y => new[] { x.LaborCode1, x.LaborCode2, x.LaborCode3 }.Contains(y.LaborCode)) ?? false)
                 );
 
             if (warrantyClaim is not null)
