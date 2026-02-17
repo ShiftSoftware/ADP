@@ -92,7 +92,6 @@ public class EFCoreSyncDataSource<TEntity, TSource, TDestination, TDbContext>
 
         if (configureSyncService)
             SyncService
-                .SetupSourceTotalItemCount(SourceTotalItemCount)
                 .SetupBatchStarted(async (x) =>
                 {
                     if (previousBatchStarted is not null)
@@ -110,11 +109,6 @@ public class EFCoreSyncDataSource<TEntity, TSource, TDestination, TDbContext>
                 });
 
         return SyncService;
-    }
-
-    public virtual ValueTask<long?> SourceTotalItemCount(SyncFunctionInput<SyncActionType> input)
-    {
-        return new((long?)null);
     }
 
     public virtual ValueTask<bool> BatchStarted(SyncFunctionInput<SyncActionStatus> input)
@@ -288,6 +282,12 @@ public class EFCoreSyncDataSource<TEntity, TSource, TDestination, TDbContext>
     }
 
     #region Not Implemented
+
+    public virtual ValueTask<long?> SourceTotalItemCount(SyncFunctionInput<SyncActionType> input)
+    {
+        throw new NotImplementedException();
+    }
+
     public virtual ValueTask<SyncStoreDataResult<TDestination>> StoreBatchData(SyncFunctionInput<SyncStoreDataInput<TDestination>> input)
     {
         throw new NotImplementedException();
