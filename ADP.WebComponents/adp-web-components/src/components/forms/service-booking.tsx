@@ -18,8 +18,6 @@ const validation = object({
 
 const elementMapper: FormElementMapper<any, any> = {
   ...getDefaultMappers(stateObject),
-  'choose': ({ locale }) => <h1 part="section-title">{locale.choose}</h1>,
-  'contact information': ({ locale }) => <h1 part="section-title">{locale['contact information']}</h1>,
 };
 
 @Component({

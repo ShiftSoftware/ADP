@@ -29,6 +29,7 @@ export class FormVinInput implements FormElement {
   @Prop() wrapperClass: string;
   @Prop() staticValue?: string;
   @Prop() inputProps?: any = {};
+  @Prop() ocrEndpoint?: string;
   @Prop({ mutable: true }) defaultValue: string;
 
   @Prop() useOcr?: boolean;
@@ -130,12 +131,12 @@ export class FormVinInput implements FormElement {
               title={extractorTitle}
               skipValidation={false}
               readSticker={this.readSticker}
+              ocrEndpoint={this.ocrEndpoint}
               onExtract={newVin => {
                 this.inputRef.value = newVin;
                 this.form?.validateInput(this?.name);
                 this?.el.getElementsByTagName('vin-extractor')[0]?.close();
               }}
-              ocrEndpoint={this.form?.context?.structure?.data?.ocrEndpoint}
             />
           </div>
         )}

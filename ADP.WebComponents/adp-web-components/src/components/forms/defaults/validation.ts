@@ -1,4 +1,4 @@
-import { date, string } from 'yup';
+import { string } from 'yup';
 import { FormInputMeta } from '~features/form-hook';
 import validateVin from '~lib/validate-vin';
 
@@ -75,6 +75,14 @@ export const getDefaultValidations = (stateObject: Record<string, any>) => ({
       is: true,
       otherwise: schema => schema.optional(),
       then: schema => schema.required(y.require('companyBranchId')),
+    }),
+
+  cityId: string()
+    .meta({ label: y.label('cityId'), placeholder: y.placeholder('cityId') } as FormInputMeta)
+    .when(y.condition('cityId'), {
+      is: true,
+      otherwise: schema => schema.optional(),
+      then: schema => schema.required(y.require('cityId')),
     }),
 
   date: string()

@@ -24,6 +24,8 @@ export function renderStructure(
       return (
         <Tag {...props} part={cn(props?.id, props?.class, `element-${tag}`, tag)}>
           {Array.isArray(children) && children.map(child => renderStructure(child, elementMapper, { ...generaProps }, fields))}
+
+          {typeof children === 'object' && !Array.isArray(children) && children !== null && children?.[generaProps?.language]}
         </Tag>
       );
     }

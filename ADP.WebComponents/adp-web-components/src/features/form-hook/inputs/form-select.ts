@@ -1,3 +1,5 @@
+import { FormSelect } from '../../../components/form-elements/form-select';
+
 export type FormSelectItem = {
   value: string;
   label: string;
@@ -7,6 +9,7 @@ export type FormSelectItem = {
 type FormSelectFetcherProps = {
   language: string;
   signal: AbortSignal;
+  context: FormSelect;
   locale: Record<string, any>;
 };
 

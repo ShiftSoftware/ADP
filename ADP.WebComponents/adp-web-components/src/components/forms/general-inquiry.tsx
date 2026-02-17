@@ -14,33 +14,25 @@ let stateObject = getDefaultStateObject();
 
 const validation = object({
   ...getDefaultValidations(stateObject),
-
-  companyBranchId: string()
-    .meta({ label: y.label('companyBranchId'), placeholder: y.placeholder('companyBranchId') } as FormInputMeta)
-    .when(y.condition('companyBranchId'), {
+  generalTicketType: string()
+    .meta({ label: y.label('generalTicketType'), placeholder: y.placeholder('generalTicketType') } as FormInputMeta)
+    .when(y.condition('generalTicketType'), {
       is: true,
       otherwise: schema => schema.optional(),
-      then: schema => schema.required(y.require('companyBranchId')),
+      then: schema => schema.required(y.require('generalTicketType')),
     }),
 });
 
 const elementMapper: FormElementMapper<any, any> = {
   ...getDefaultMappers(stateObject),
+  generalTicketType: ({ language, props }) => {
+    const fetcher: FormSelectFetcher = async ({}): Promise<FormSelectItem[]> => {
+      const options = Array.isArray(props?.options) ? props?.options : [];
 
-  companyBranchId: ({ form, language, props }) => {
-    const fetcher: FormSelectFetcher = async ({ signal }): Promise<FormSelectItem[]> => {
-      const branchEndpoint = form.context.structure?.data.branchApi as string;
-
-      const response = await fetch(branchEndpoint, { signal, headers: { 'Accept-Language': language } });
-
-      const branches = (await response.json()) as { ID?: string; Name?: string }[];
-
-      const parsedOptions = branches.map(branch => ({ label: branch?.Name, value: branch?.ID })) as FormSelectItem[];
-
-      return parsedOptions;
+      return options.map(option => ({ value: option?.value || '', label: option?.[language] || '' })) as FormSelectItem[];
     };
 
-    return <form-select {...props} searchable fetcher={fetcher} language={language} />;
+    return <form-select {...props} clearable fetcher={fetcher} language={language} />;
   },
 };
 

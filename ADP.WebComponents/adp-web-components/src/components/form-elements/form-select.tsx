@@ -144,7 +144,7 @@ export class FormSelect implements FormElement {
       } else {
         this.abortController = new AbortController();
 
-        options = await this.fetcher({ language: this.language, signal: this.abortController.signal, locale: this.form.getFormLocale()[0] });
+        options = await this.fetcher({ language: this.language, signal: this.abortController.signal, locale: this.form.getFormLocale()[0], context: this });
       }
 
       if (this.form?.formStructure || this.form?.context) forceUpdate(this.form?.formStructure || this.form?.context);
