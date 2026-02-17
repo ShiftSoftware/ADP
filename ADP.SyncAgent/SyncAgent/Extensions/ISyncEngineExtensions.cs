@@ -106,7 +106,8 @@ public static class ISyncEngineExtensions
                 var result = await previousGetSourceBatchItems(x);
 
                 logger.LogInformation($"Getting source batch items finished for {x.Input.Status.ActionType}, step {x.Input.Status.CurrentStep + 1}" +
-                    (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}, Item Count is: {result?.Count()}" : ""));
+                    (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}" : "") +
+                    $". Item count: {result?.Count()}");
 
                 return result;
             });
@@ -123,7 +124,8 @@ public static class ISyncEngineExtensions
                 var result = await previousMapping(x);
 
                 logger.LogInformation($"Mapping finished for {x.Input.Status.ActionType}, step {x.Input.Status.CurrentStep + 1}" +
-                    (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}" : ""));
+                    (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}" : "") +
+                    $". Item count: {result?.Count()}");
 
                 return result;
             });
@@ -140,7 +142,8 @@ public static class ISyncEngineExtensions
                 var result = await previousStoreBatchData(x);
 
                 logger.LogInformation($"Storing batch data finished for {x.Input.Status.ActionType}, step {x.Input.Status.CurrentStep + 1}" +
-                    (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}" : ""));
+                    (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}" : "") +
+                    $". Succeeded: {result?.SucceededItems?.Count() ?? 0}, Failed: {result?.FailedItems?.Count() ?? 0}, Skipped: {result?.SkippedItems?.Count() ?? 0}");
 
                 return result;
             });
@@ -345,7 +348,8 @@ public static class ISyncEngineExtensions
                 var result = await previousGetSourceBatchItems(x);
 
                 await logger.LogInformation($"Getting source batch items finished for {x.Input.Status.ActionType}, step {x.Input.Status.CurrentStep + 1}" +
-                    (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}, Item Count is: {result?.Count()}" : ""));
+                    (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}" : "") +
+                    $". Item count: {result?.Count()}");
 
                 return result;
             });
@@ -362,7 +366,8 @@ public static class ISyncEngineExtensions
                 var result = await previousMapping(x);
 
                 await logger.LogInformation($"Mapping finished for {x.Input.Status.ActionType}, step {x.Input.Status.CurrentStep + 1}" +
-                    (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}" : ""));
+                    (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}" : "") +
+                    $". Item count: {result?.Count()}");
 
                 return result;
             });
@@ -378,24 +383,17 @@ public static class ISyncEngineExtensions
 
                 var result = await previousStoreBatchData(x);
 
+                var succeededCount = result?.SucceededItems?.Count() ?? 0;
+                var failedCount = result?.FailedItems?.Count() ?? 0;
+                var skippedCount = result?.SkippedItems?.Count() ?? 0;
+
+                totalSucceeded += succeededCount;
+                totalFailed += failedCount;
+                totalSkipped += skippedCount;
+
                 await logger.LogInformation($"Storing batch data finished for {x.Input.Status.ActionType}, step {x.Input.Status.CurrentStep + 1}" +
-                    (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}" : ""));
-
-                // Log number of succeded and failed and skipped items in the batch and sum to totals
-                if(result is not null)
-                {
-                    var succeededCount = result.SucceededItems?.Count() ?? 0;
-                    var failedCount = result.FailedItems?.Count() ?? 0;
-                    var skippedCount = result.SkippedItems?.Count() ?? 0;
-
-                    totalSucceeded += succeededCount;
-                    totalFailed += failedCount;
-                    totalSkipped += skippedCount;
-
-                    await logger.LogInformation($"Batch data store result for {x.Input.Status.ActionType}, step {x.Input.Status.CurrentStep + 1}" +
-                        (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}" : "") +
-                        $": Succeeded: {succeededCount}, Failed: {failedCount}, Skipped: {skippedCount}");
-                }
+                    (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}" : "") +
+                    $". Succeeded: {succeededCount}, Failed: {failedCount}, Skipped: {skippedCount}");
 
                 return result;
             });
@@ -603,7 +601,8 @@ public static class ISyncEngineExtensions
                 var result = await previousGetSourceBatchItems(x);
 
                 await logger.LogInformation($"Getting source batch items finished for {x.Input.Status.ActionType}, step {x.Input.Status.CurrentStep + 1}" +
-                    (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}" : ""));
+                    (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}" : "") +
+                    $". Item count: {result?.Count()}");
 
                 return result;
             });
@@ -620,7 +619,8 @@ public static class ISyncEngineExtensions
                 var result = await previousMapping(x);
 
                 await logger.LogInformation($"Mapping finished for {x.Input.Status.ActionType}, step {x.Input.Status.CurrentStep + 1}" +
-                    (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}" : ""));
+                    (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}" : "") +
+                    $". Item count: {result?.Count()}");
 
                 return result;
             });
@@ -636,24 +636,17 @@ public static class ISyncEngineExtensions
 
                 var result = await previousStoreBatchData(x);
 
+                var succeededCount = result?.SucceededItems?.Count() ?? 0;
+                var failedCount = result?.FailedItems?.Count() ?? 0;
+                var skippedCount = result?.SkippedItems?.Count() ?? 0;
+
+                totalSucceeded += succeededCount;
+                totalFailed += failedCount;
+                totalSkipped += skippedCount;
+
                 await logger.LogInformation($"Storing batch data finished for {x.Input.Status.ActionType}, step {x.Input.Status.CurrentStep + 1}" +
-                    (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}" : ""));
-
-                // Log number of succeded and failed and skipped items in the batch and sum to totals
-                if (result is not null)
-                {
-                    var succeededCount = result.SucceededItems?.Count() ?? 0;
-                    var failedCount = result.FailedItems?.Count() ?? 0;
-                    var skippedCount = result.SkippedItems?.Count() ?? 0;
-
-                    totalSucceeded += succeededCount;
-                    totalFailed += failedCount;
-                    totalSkipped += skippedCount;
-
-                    await logger.LogInformation($"Batch data store result for {x.Input.Status.ActionType}, step {x.Input.Status.CurrentStep + 1}" +
-                        (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}" : "") +
-                        $": Succeeded: {succeededCount}, Failed: {failedCount}, Skipped: {skippedCount}");
-                }
+                    (x.Input.Status.TotalSteps.HasValue ? $" of {x.Input.Status.TotalSteps}" : "") +
+                    $". Succeeded: {succeededCount}, Failed: {failedCount}, Skipped: {skippedCount}");
 
                 return result;
             });
