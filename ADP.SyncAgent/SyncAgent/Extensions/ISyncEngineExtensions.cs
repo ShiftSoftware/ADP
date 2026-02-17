@@ -26,6 +26,7 @@ public static class ISyncEngineExtensions
     /// <param name="syncService"></param>
     /// <param name="logger"></param>
     /// <returns></returns>
+    [Obsolete("This overload is legacy. Use AddLogger with ISyncEngineLogger instead for better async support and extensibility.")]
     public static ISyncEngine<TSource, TDestination> AddLogger<TSource, TDestination>(
         this ISyncEngine<TSource, TDestination> syncService,
         ILogger logger)
@@ -247,6 +248,14 @@ public static class ISyncEngineExtensions
         return syncService;
     }
 
+    /// <summary>
+    /// Please add this after all other configurations, to avoid unexpected behaviors.
+    /// </summary>
+    /// <typeparam name="TSource"></typeparam>
+    /// <typeparam name="TDestination"></typeparam>
+    /// <param name="syncService"></param>
+    /// <param name="logger"></param>
+    /// <returns></returns>
     public static ISyncEngine<TSource, TDestination> AddLogger<TSource, TDestination>(
         this ISyncEngine<TSource, TDestination> syncService,
         ISyncEngineLogger logger)
@@ -499,6 +508,14 @@ public static class ISyncEngineExtensions
         return syncService;
     }
 
+    /// <summary>
+    /// Please add this after all other configurations, to avoid unexpected behaviors.
+    /// </summary>
+    /// <typeparam name="TSource"></typeparam>
+    /// <typeparam name="TDestination"></typeparam>
+    /// <param name="syncService"></param>
+    /// <param name="logger"></param>
+    /// <returns></returns>
     public static ISyncEngine<TSource, TDestination> AddSyncProgressIndicator<TSource, TDestination>(
         this ISyncEngine<TSource, TDestination> syncService,
         SyncProgressIndicatorLogger logger)
