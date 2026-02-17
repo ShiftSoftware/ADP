@@ -501,7 +501,7 @@ public class VehicleServiceItemEvaluator
                 MaximumMileage = item.MaximumMileage
             };
 
-            if (claimLine.CompanyID != null && claimLine.CompanyID != 0 && options?.CompanyNameResolver is not null)
+            if (claimLine.CompanyID != null && claimLine.CompanyID != 0 && options.CompanyNameResolver is not null)
                 serviceItem.CompanyName = await options.CompanyNameResolver(new(claimLine?.CompanyID, languageCode, services));
 
             result.Add(serviceItem);
