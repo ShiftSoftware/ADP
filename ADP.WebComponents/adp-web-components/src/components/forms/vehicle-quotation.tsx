@@ -81,7 +81,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
 
       const nameContactedVehicles = this.structure?.data?.nameContactedVehicles;
 
-      const payload: any = {
+      let payload: any = {
         name: formValues.name,
         phone: formValues.phone,
         companyBranchId: formValues.dealer,
@@ -134,6 +134,8 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
       }
 
       if (this.isDev) requestEndpoint = requestEndpoint.replaceAll('production=true', 'production=false');
+
+      if (this.structure?.data?.extraPayload) payload = { ...payload, ...this.structure?.data?.extraPayload };
 
       const response = await fetch(requestEndpoint, {
         headers,
