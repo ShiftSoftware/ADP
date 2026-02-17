@@ -100,7 +100,7 @@ public class VehicleServiceItemDTO
     public string Signature { get; set; }
     public DateTime SignatureExpiry { get; set; }
 
-    public string GenerateSignature(string vin, string? secretKey)
+    public string GenerateSignature(string vin, string secretKey)
     {
         string stringToSign = string.Join(
             ",",
@@ -120,7 +120,7 @@ public class VehicleServiceItemDTO
             this.CampaignID
         );
 
-        var keyBytes = Encoding.UTF8.GetBytes(secretKey ?? string.Empty);
+        var keyBytes = Encoding.UTF8.GetBytes(secretKey);
 
         var messageBytes = Encoding.UTF8.GetBytes(stringToSign);
 
