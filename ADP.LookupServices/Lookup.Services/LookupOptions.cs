@@ -27,7 +27,7 @@ public class LookupOptions
     public bool IncludeInactivatedFreeServiceItems { get; set; }
     public bool PerVehicleEligibilitySupport { get; set; }
     public bool WarrantyStartDateDefaultsToInvoiceDate { get; set; } = true;
-    public string SigningSecreteKey { get; set; }
+    public string SigningSecreteKey { get; set; } = string.Empty;
     public TimeSpan SignatureValidityDuration { get; set; }
     //public string ServiceActivationPreClaimVoucherPrintingURL { get; set; }
     //public string VehicleInspectionPreClaimVoucherPrintingURL { get; set; }
