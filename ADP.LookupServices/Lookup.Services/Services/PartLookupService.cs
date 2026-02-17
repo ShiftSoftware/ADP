@@ -170,7 +170,7 @@ public class PartLookupService
     private bool CalculateShowManufacturerPartLookup(int? requestedQuantity, decimal availableQuantity)
     {
         // If it already exceeds threshold, no need to show manufacturer lookup
-        if ((requestedQuantity >= options?.DistributorStockPartLookupQuantityThreshold.GetValueOrDefault() && !(options?.ShowPartLookupStockQauntity ?? false)))
+        if ((requestedQuantity >= options.DistributorStockPartLookupQuantityThreshold.GetValueOrDefault() && !options.ShowPartLookupStockQauntity))
             return false;
 
         if (requestedQuantity is null)

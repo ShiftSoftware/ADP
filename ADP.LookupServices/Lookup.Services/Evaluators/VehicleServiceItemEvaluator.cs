@@ -96,7 +96,7 @@ public class VehicleServiceItemEvaluator
             //Per vehicle is only applicable for warranty activated (official) items
             if (
                 item.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.WarrantyActivation &&
-                (options?.PerVehicleEligibilitySupport ?? false)
+                options.PerVehicleEligibilitySupport
             )
             {
                 x = vehicle?.EligibleServiceItemUniqueReferences is not null &&
@@ -420,7 +420,7 @@ public class VehicleServiceItemEvaluator
             //item.CompanyID = statusResult.companyID;
             item.PackageCode = statusResult.packageCode ?? item.PackageCode;
 
-            if (statusResult.companyID != null && statusResult.companyID != 0 && options?.CompanyNameResolver is not null)
+            if (statusResult.companyID != null && statusResult.companyID != 0 && options.CompanyNameResolver is not null)
                 item.CompanyName = await options.CompanyNameResolver(new(statusResult.companyID, languageCode, services));
         }
     }

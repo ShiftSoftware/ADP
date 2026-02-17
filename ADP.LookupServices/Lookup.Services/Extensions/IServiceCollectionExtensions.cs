@@ -18,11 +18,11 @@ public static class IServiceCollectionExtensions
         services.AddScoped<ServiceLookupService>();
         services.AddScoped<IIdentityCosmosService>(x => new IdentityCosmosService(x.GetRequiredService<CosmosClient>()));
 
-        if (options?.VehicleLookupStorageSource == Enums.StorageSources.CosmosDB)
+        if (options.VehicleLookupStorageSource == Enums.StorageSources.CosmosDB)
         {
             services.AddScoped<IVehicleLoockupStorageService>(x => new CosmosVehicleLoockupStorageService(x.GetRequiredService<CosmosClient>()));
         }
-        else if (options?.VehicleLookupStorageSource == Enums.StorageSources.DuckDB)
+        else if (options.VehicleLookupStorageSource == Enums.StorageSources.DuckDB)
         {
             services.AddScoped<IVehicleLoockupStorageService>(x => new DuckDBVehicleLoockupStorageService(x.GetRequiredService<DuckDBConnection>()));
         }

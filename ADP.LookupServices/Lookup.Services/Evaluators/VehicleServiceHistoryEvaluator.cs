@@ -109,10 +109,10 @@ public class VehicleServiceHistoryEvaluator
                 }) ?? Enumerable.Empty<VehiclePartDTO>()
             };
 
-            if (this.Options?.CompanyNameResolver is not null)
+            if (this.Options.CompanyNameResolver is not null)
                 serviceHistoryEntry.CompanyName = await this.Options.CompanyNameResolver(new LookupOptionResolverModel<long?>(invoice.CompanyID, languageCode, this.ServiceProvider));
 
-            if (this.Options?.CompanyBranchNameResolver is not null)
+            if (this.Options.CompanyBranchNameResolver is not null)
                 serviceHistoryEntry.BranchName = await this.Options.CompanyBranchNameResolver(new LookupOptionResolverModel<long?>(invoice.BranchID, languageCode, this.ServiceProvider));
 
             serviceHistory.Add(serviceHistoryEntry);

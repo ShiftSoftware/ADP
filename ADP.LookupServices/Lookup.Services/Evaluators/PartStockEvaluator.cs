@@ -30,12 +30,12 @@ internal class PartStockEvaluator
             {
                 QuantityLookUpResult =
                                         distributorStockLookupQuantity is null ? Enums.QuantityLookUpResults.LookupIsSkipped :
-                                        distributorStockLookupQuantity >= options?.DistributorStockPartLookupQuantityThreshold.GetValueOrDefault() || distributorStockLookupQuantity == 0 ? Enums.QuantityLookUpResults.QuantityNotWithinLookupThreshold :
+                                        distributorStockLookupQuantity >= options.DistributorStockPartLookupQuantityThreshold.GetValueOrDefault() || distributorStockLookupQuantity == 0 ? Enums.QuantityLookUpResults.QuantityNotWithinLookupThreshold :
                                         item.AvailableQuantity <= 0 ? Enums.QuantityLookUpResults.NotAvailable :
                                         item.AvailableQuantity >= distributorStockLookupQuantity ? Enums.QuantityLookUpResults.Available :
                                         Enums.QuantityLookUpResults.PartiallyAvailable,
                 LocationID = item.Location,
-                AvailableQuantity = (options?.ShowPartLookupStockQauntity ?? false) ? item.AvailableQuantity : null,
+                AvailableQuantity = options.ShowPartLookupStockQauntity ? item.AvailableQuantity : null,
             };
 
             if (options?.PartLocationNameResolver is not null)

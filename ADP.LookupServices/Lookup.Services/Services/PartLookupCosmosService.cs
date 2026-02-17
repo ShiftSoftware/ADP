@@ -50,7 +50,7 @@ public class PartLookupCosmosService(CosmosClient client, LookupOptions lookupOp
             .ToObject<StockPartModel>())
             .ToList();
 
-        if (lookupOptions?.CatalogPartShouldComeFromStock ?? false)
+        if (lookupOptions.CatalogPartShouldComeFromStock)
         {
             result.CatalogParts = result
                 .StockParts

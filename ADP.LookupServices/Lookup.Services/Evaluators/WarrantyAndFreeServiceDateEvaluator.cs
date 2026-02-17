@@ -31,7 +31,7 @@ public class WarrantyAndFreeServiceDateEvaluator
             if (warrantyStartDate is null)
                 warrantyStartDate = saleInformation?.WarrantyActivationDate;
 
-            if (warrantyStartDate is null && (Options?.WarrantyStartDateDefaultsToInvoiceDate ?? true))
+            if (warrantyStartDate is null && (Options?.WarrantyStartDateDefaultsToInvoiceDate ?? false))
                 warrantyStartDate = saleInformation?.InvoiceDate;
 
             freeServiceStartDate = warrantyStartDate;
@@ -50,7 +50,7 @@ public class WarrantyAndFreeServiceDateEvaluator
                     if (freeServiceStartDate is null)
                         freeServiceStartDate = saleInformation?.WarrantyActivationDate;
 
-                    if (freeServiceStartDate is null && (Options?.WarrantyStartDateDefaultsToInvoiceDate ?? true))
+                    if (freeServiceStartDate is null && Options.WarrantyStartDateDefaultsToInvoiceDate)
                         freeServiceStartDate = saleInformation?.InvoiceDate;
                 }
             }
@@ -73,7 +73,7 @@ public class WarrantyAndFreeServiceDateEvaluator
         {
             result.WarrantyStartDate = warrantyStartDate;
 
-            if (Options?.BrandStandardWarrantyPeriodsInYears.TryGetValue(vehicle.BrandID ?? 0, out var brandStandardWarrantyPeriodsInYears) ?? false)
+            if (Options.BrandStandardWarrantyPeriodsInYears.TryGetValue(vehicle.BrandID ?? 0, out var brandStandardWarrantyPeriodsInYears))
             {
                 result.WarrantyEndDate = warrantyStartDate?.AddYears(brandStandardWarrantyPeriodsInYears);
             }
