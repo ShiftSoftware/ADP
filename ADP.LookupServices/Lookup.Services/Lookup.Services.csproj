@@ -28,11 +28,11 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="DuckDB.NET.Data.Full" Version="1.4.3" />
+		<PackageReference Include="DuckDB.NET.Data.Full" Version="1.4.4" />
 		<PackageReference Include="Microsoft.Azure.Cosmos" Version="3.57.0" />
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.2" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.3" />
 		<PackageReference Include="ShiftSoftware.ADP.Models" Version="$(ADPVersion)" Condition="!Exists('..\..\ADP.Models\Models\Models.csproj')" />
-		<PackageReference Include="System.Text.Json" Version="10.0.2" />
+		<PackageReference Include="System.Text.Json" Version="10.0.3" />
 		<PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
 	</ItemGroup>
 
