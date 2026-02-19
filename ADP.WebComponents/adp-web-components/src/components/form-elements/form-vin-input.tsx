@@ -1,9 +1,8 @@
 import { Component, Element, Host, Prop, State, Watch, h } from '@stencil/core';
 
 import cn from '~lib/cn';
-import { getNestedValue } from '~lib/get-nested-value';
 
-import { FormInputMeta } from '~features/form-hook';
+import { FormInputLocalization, FormInputMeta, getInputLocalization } from '~features/form-hook';
 import { FormHook } from '~features/form-hook/form-hook';
 import { FormElement } from '~features/form-hook/interface';
 
@@ -31,6 +30,7 @@ export class FormVinInput implements FormElement {
   @Prop() inputProps?: any = {};
   @Prop() ocrEndpoint?: string;
   @Prop({ mutable: true }) defaultValue: string;
+  @Prop() localization?: FormInputLocalization<{ scan: string }> = {};
 
   @Prop() useOcr?: boolean;
   @Prop() readSticker?: boolean;
@@ -77,16 +77,15 @@ export class FormVinInput implements FormElement {
 
   render() {
     const { disabled, isRequired, meta, isError, errorMessage } = this.form.getInputState<FormInputMeta>(this.name);
-    const [locale] = this.form.getFormLocale();
+    const [locale, language] = this.form.getFormLocale();
 
     const part = partKeyPrefix + this.name;
 
-    const label = getNestedValue(locale, meta?.label) || meta?.label;
-    const placeholder = getNestedValue(locale, meta?.placeholder);
+    const { label, placeholder, errorTextMessage } = getInputLocalization(this, meta, errorMessage);
 
     const isDisabled = disabled || this.isLoading || !!this.staticValue || this.isDisabled;
 
-    const extractorTitle = this.form?.context?.structure?.data?.localization?.[this.form.context?.language]?.['vin-scan'] || 'Scan Your VIN';
+    const extractorTitle = this.localization?.[language]?.scan || this.form?.context?.structure?.data?.localization?.[this.form.context?.language]?.['vin-scan'] || 'Scan Your VIN';
 
     return (
       <Host>
@@ -120,7 +119,7 @@ export class FormVinInput implements FormElement {
               </button>
             )}
           </div>
-          <FormErrorMessage name={this.name} isError={isError} errorMessage={locale[errorMessage] || errorMessage} />
+          <FormErrorMessage name={this.name} isError={isError} errorMessage={errorTextMessage} />
         </label>
         {(this.useOcr || this.readSticker) && (
           <div class="absolute">

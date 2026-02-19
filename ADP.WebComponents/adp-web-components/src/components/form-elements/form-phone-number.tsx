@@ -1,9 +1,8 @@
 import { Component, Element, Host, Prop, State, Watch, h } from '@stencil/core';
 
 import cn from '~lib/cn';
-import { getNestedValue } from '~lib/get-nested-value';
 
-import { FormInputMeta, PhoneValidator } from '~features/form-hook';
+import { FormInputMeta, PhoneValidator, FormInputLocalization, getInputLocalization } from '~features/form-hook';
 import { FormHook } from '~features/form-hook/form-hook';
 import { FormElement } from '~features/form-hook/interface';
 
@@ -30,6 +29,7 @@ export class FormPhoneNumber implements FormElement {
   @Prop() isDisabled?: boolean;
   @Prop() staticValue?: string;
   @Prop() validator: PhoneValidator;
+  @Prop() localization?: FormInputLocalization = {};
 
   @State() prefixWidth: number = 0;
 
@@ -96,8 +96,7 @@ export class FormPhoneNumber implements FormElement {
 
     const part = partKeyPrefix + this.name;
 
-    const label = getNestedValue(locale, meta?.label) || meta?.label;
-    const placeholder = getNestedValue(locale, meta?.placeholder);
+    const { label, placeholder, errorTextMessage } = getInputLocalization(this, meta, errorMessage);
 
     const isDisabled = disabled || this.isLoading || !!this.staticValue || this.isDisabled;
 
@@ -123,7 +122,7 @@ export class FormPhoneNumber implements FormElement {
               })}
             />
           </div>
-          <FormErrorMessage name={this.name} isError={isError} errorMessage={locale[errorMessage] || errorMessage} />
+          <FormErrorMessage name={this.name} isError={isError} errorMessage={errorTextMessage} />
         </label>
       </Host>
     );

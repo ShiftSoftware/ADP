@@ -1,9 +1,8 @@
 import { Component, Element, Host, Prop, State, Watch, h } from '@stencil/core';
 
 import cn from '~lib/cn';
-import { getNestedValue } from '~lib/get-nested-value';
 
-import { FormInputMeta } from '~features/form-hook';
+import { FormInputLocalization, FormInputMeta, getInputLocalization } from '~features/form-hook';
 import { FormHook } from '~features/form-hook/form-hook';
 import { FormElement } from '~features/form-hook/interface';
 
@@ -30,6 +29,7 @@ export class FormInput implements FormElement {
   @Prop() type?: HTMLInputElement['type'];
   @Prop({ mutable: true }) defaultValue: string;
   @Prop() formatter?: (value: string) => string;
+  @Prop() localization?: FormInputLocalization = {};
 
   @Prop() icon?: any;
   @Prop() iconAction?: () => void;
@@ -86,9 +86,6 @@ export class FormInput implements FormElement {
 
     const part = partKeyPrefix + this.name;
 
-    const label = getNestedValue(locale, meta?.label) || meta?.label;
-    const placeholder = getNestedValue(locale, meta?.placeholder);
-
     const isDisabled = disabled || this.isLoading || !!this.staticValue || this.isDisabled;
 
     const isRtl = locale?.sharedFormLocales?.direction === 'rtl';
@@ -112,6 +109,8 @@ export class FormInput implements FormElement {
           {this.icon}
         </span>
       );
+
+    const { label, placeholder, errorTextMessage } = getInputLocalization(this, meta, errorMessage);
 
     return (
       <Host>
@@ -139,7 +138,7 @@ export class FormInput implements FormElement {
             />
             {this.icon && renderIcon()}
           </div>
-          <FormErrorMessage name={this.name} isError={isError} errorMessage={locale[errorMessage] || errorMessage} />
+          <FormErrorMessage name={this.name} isError={isError} errorMessage={errorTextMessage} />
         </label>
       </Host>
     );

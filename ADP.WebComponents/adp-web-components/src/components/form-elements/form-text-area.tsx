@@ -1,10 +1,9 @@
 import { Component, Element, Host, Prop, Watch, h } from '@stencil/core';
 
 import cn from '~lib/cn';
-import { getNestedValue } from '~lib/get-nested-value';
 
 import { FormElement } from '~features/form-hook/interface';
-import { FormHook, FormInputMeta } from '~features/form-hook';
+import { FormHook, FormInputMeta, FormInputLocalization, getInputLocalization } from '~features/form-hook';
 
 import { FormInputLabel } from './components/form-input-label';
 import { FormErrorMessage } from './components/form-error-message';
@@ -24,6 +23,7 @@ export class FormTextArea implements FormElement {
   @Prop() wrapperClass: string;
   @Prop() staticValue?: string;
   @Prop() isDisabled?: boolean;
+  @Prop() localization?: FormInputLocalization = {};
 
   @Element() el!: HTMLElement;
 
@@ -61,10 +61,8 @@ export class FormTextArea implements FormElement {
 
   render() {
     const { disabled, isRequired, meta, isError, errorMessage } = this.form.getInputState<FormInputMeta>(this.name);
-    const [locale] = this.form.getFormLocale();
 
-    const label = getNestedValue(locale, meta?.label) || meta?.label;
-    const placeholder = getNestedValue(locale, meta?.placeholder);
+    const { label, placeholder, errorTextMessage } = getInputLocalization(this, meta, errorMessage);
 
     const isDisabled = disabled || this.isLoading || !!this.staticValue || this.isDisabled;
 
@@ -87,7 +85,7 @@ export class FormTextArea implements FormElement {
             </textarea>
           </div>
           <div class="-mt-1">
-            <FormErrorMessage name={this.name} isError={isError} errorMessage={locale[errorMessage] || errorMessage} />
+            <FormErrorMessage name={this.name} isError={isError} errorMessage={errorTextMessage} />
           </div>
         </label>
       </Host>

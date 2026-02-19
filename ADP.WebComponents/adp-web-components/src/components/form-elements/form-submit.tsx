@@ -3,7 +3,7 @@ import { Component, Prop, h } from '@stencil/core';
 import cn from '~lib/cn';
 import { getNestedValue } from '~lib/get-nested-value';
 
-import { FormElement, FormHook } from '~features/form-hook';
+import { FormElement, FormHook, FormInputLocalization } from '~features/form-hook';
 
 import Loader from '~assets/white-loader.svg';
 
@@ -20,6 +20,7 @@ export class FormSubmit implements FormElement {
   @Prop() form: FormHook<any>;
   @Prop() wrapperClass: string;
   @Prop() submitTextKey?: string = 'submit';
+  @Prop() localization?: FormInputLocalization = {};
 
   async componentWillLoad() {
     this.form.subscribe(buttonSubscriberKey, this);
@@ -32,9 +33,9 @@ export class FormSubmit implements FormElement {
   reset() {}
 
   render() {
-    const [locale] = this.form.getFormLocale();
+    const [locale, language] = this.form.getFormLocale();
 
-    const submitText = getNestedValue(locale, this.submitTextKey) || getNestedValue(locale, 'sharedFormLocales.submit') || 'Submit';
+    const submitText = this.localization?.[language]?.label || getNestedValue(locale, this.submitTextKey) || getNestedValue(locale, 'sharedFormLocales.submit') || 'Submit';
     return (
       <button
         type="submit"

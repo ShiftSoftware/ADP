@@ -4,8 +4,7 @@ import cn from '~lib/cn';
 
 import { ShiftCheckbox } from '../components/shift-checkbox';
 
-import { FormElement, FormHook, FormInputMeta } from '~features/form-hook';
-import { getNestedValue } from '~lib/get-nested-value';
+import { FormElement, FormHook, FormInputMeta, FormInputLocalization, getInputLocalization } from '~features/form-hook';
 import { FormErrorMessage } from './components/form-error-message';
 
 @Component({
@@ -21,6 +20,7 @@ export class FormSwitch implements FormElement {
   @Prop() wrapperClass: string;
   @Prop() type: string = 'text';
   @Prop() defaultChecked: boolean;
+  @Prop() localization?: FormInputLocalization = {};
 
   @Element() el: HTMLElement;
 
@@ -47,9 +47,8 @@ export class FormSwitch implements FormElement {
 
   render() {
     const { disabled, meta, errorMessage, isError } = this.form.getInputState<FormInputMeta>(this.name);
-    const [locale] = this.form.getFormLocale();
 
-    const label = getNestedValue(locale, meta?.label) || meta?.label;
+    const { label, errorTextMessage } = getInputLocalization(this, meta, errorMessage);
 
     return (
       <Host>
@@ -57,7 +56,7 @@ export class FormSwitch implements FormElement {
           <div part={`${this.name}-container form-input-container`} class="form-input-container">
             <shift-switch name={this.name} label={label} class="form-switch" />
           </div>
-          <FormErrorMessage name={this.name} isError={isError} errorMessage={locale[errorMessage] || errorMessage} />
+          <FormErrorMessage name={this.name} isError={isError} errorMessage={errorTextMessage} />
         </div>
       </Host>
     );

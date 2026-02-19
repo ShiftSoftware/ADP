@@ -5,7 +5,7 @@ import { getNestedValue } from '~lib/get-nested-value';
 
 import { FormHook } from '~features/form-hook/form-hook';
 import { ErrorKeys, LanguageKeys } from '~features/multi-lingual';
-import { FormElement, FormInputMeta, FormSelectFetcher, FormSelectItem } from '~features/form-hook/';
+import { FormElement, FormInputMeta, FormSelectFetcher, FormSelectItem, FormInputLocalization, getInputLocalization } from '~features/form-hook/';
 
 import Loader from '~assets/loader.svg';
 import { TickIcon } from '~assets/tick-icon';
@@ -38,6 +38,7 @@ export class FormSelect implements FormElement {
   @Prop() forceOpenUpwards?: boolean = false;
   @Prop({ mutable: true }) clearable = false;
   @Prop({ mutable: true }) defaultValue: string;
+  @Prop() localization?: FormInputLocalization = {};
 
   @State() searchValue = '';
   @State() isFetching: boolean;
@@ -195,8 +196,7 @@ export class FormSelect implements FormElement {
     const { disabled, isRequired, meta, isError, errorMessage } = this.form.getInputState<FormInputMeta>(this.name);
     const [locale] = this.form.getFormLocale();
 
-    const label = getNestedValue(locale, meta?.label) || meta?.label;
-    const placeholder = getNestedValue(locale, meta?.placeholder) || 'Select an option';
+    const { label, placeholder, errorTextMessage } = getInputLocalization(this, meta, errorMessage);
 
     const selectedItem = this.options.find(item => this.selectedValue === item.value);
 
@@ -281,7 +281,7 @@ export class FormSelect implements FormElement {
               )}
             </div>
           </div>
-          <FormErrorMessage name={this.name} isError={isError} errorMessage={locale[errorMessage] || errorMessage} />
+          <FormErrorMessage name={this.name} isError={isError} errorMessage={errorTextMessage} />
         </label>
       </Host>
     );

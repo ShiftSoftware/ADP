@@ -1,21 +1,20 @@
 import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
-import { FormElementMapper, FormElementStructure, FormHook, FormHookInterface, FormInputMeta, FormSelectFetcher, FormSelectItem, functionHooks } from '~features/form-hook';
+import { FormElementMapper, FormElementStructure, FormHook, FormHookInterface, FormSelectFetcher, FormSelectItem, functionHooks } from '~features/form-hook';
 import { GeneralFormLocal, LanguageKeys, MultiLingual, sharedFormLocalesSchema } from '~features/multi-lingual';
 import getLanguageFromUrl from '~lib/get-language-from-url';
 import cn from '~lib/cn';
 import { LoaderIcon } from '~assets/loader-icon';
-import { object, string } from 'yup';
-import { getDefaultValidations, y } from './defaults/validation';
-import { getDefaultMappers } from './defaults/mappers';
+import { string } from 'yup';
+import { getFormValidations, y } from './defaults/validation';
+import { getFormMappers } from './defaults/mappers';
 import { getDefaultStateObject } from './defaults/state-object';
 
 let stateObject = getDefaultStateObject();
 
-const validation = object({
-  ...getDefaultValidations(stateObject),
+const validation = getFormValidations(stateObject, {
   generalTicketType: string()
-    .meta({ label: y.label('generalTicketType'), placeholder: y.placeholder('generalTicketType') } as FormInputMeta)
+    .meta(y.meta('generalTicketType'))
     .when(y.condition('generalTicketType'), {
       is: true,
       otherwise: schema => schema.optional(),
@@ -23,8 +22,7 @@ const validation = object({
     }),
 });
 
-const elementMapper: FormElementMapper<any, any> = {
-  ...getDefaultMappers(stateObject),
+const elementMapper: FormElementMapper<any, any> = getFormMappers(stateObject, {
   generalTicketType: ({ language, props }) => {
     const fetcher: FormSelectFetcher = async ({}): Promise<FormSelectItem[]> => {
       const options = Array.isArray(props?.options) ? props?.options : [];
@@ -34,7 +32,7 @@ const elementMapper: FormElementMapper<any, any> = {
 
     return <form-select {...props} clearable fetcher={fetcher} language={language} />;
   },
-};
+});
 
 @Component({
   shadow: true,

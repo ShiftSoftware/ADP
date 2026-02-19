@@ -5,20 +5,15 @@ import { GeneralFormLocal, LanguageKeys, MultiLingual, sharedFormLocalesSchema }
 import getLanguageFromUrl from '~lib/get-language-from-url';
 import cn from '~lib/cn';
 import { LoaderIcon } from '~assets/loader-icon';
-import { object } from 'yup';
-import { getDefaultValidations } from './defaults/validation';
-import { getDefaultMappers } from './defaults/mappers';
+import { getFormValidations } from './defaults/validation';
+import { getFormMappers } from './defaults/mappers';
 import { getDefaultStateObject } from './defaults/state-object';
 
 let stateObject = getDefaultStateObject();
 
-const validation = object({
-  ...getDefaultValidations(stateObject),
-});
+const validation = getFormValidations(stateObject);
 
-const elementMapper: FormElementMapper<any, any> = {
-  ...getDefaultMappers(stateObject),
-};
+const elementMapper: FormElementMapper<any, any> = getFormMappers(stateObject);
 
 @Component({
   shadow: true,

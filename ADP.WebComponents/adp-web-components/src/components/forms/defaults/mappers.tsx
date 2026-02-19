@@ -5,7 +5,7 @@ import { CalendarDaysIcon } from '~assets/calendar-days-icon';
 import { format, isBefore, isEqual } from 'date-fns';
 import { decodeTimeOffset } from '~lib/decode-time-offset';
 
-export const getDefaultMappers = (stateObject: Record<string, any>) => ({
+export const getFormMappers = (stateObject: Record<string, any>, extraMappers: Record<string, (prop: any) => any> = {}) => ({
   submit: ({ props }) => <form-submit {...props} />,
 
   name: ({ props }) => <form-input {...props} />,
@@ -68,8 +68,6 @@ export const getDefaultMappers = (stateObject: Record<string, any>) => ({
           };
         }) as FormSelectItem[];
       }
-
-      console.log(99, defaultIndex);
 
       if (!props?.defaultValue) {
         if (defaultIndex > -1) context.defaultValue = options[defaultIndex]?.value;
@@ -143,4 +141,6 @@ export const getDefaultMappers = (stateObject: Record<string, any>) => ({
 
     return <form-select {...props} clearable fetcher={fetcher} language={language} />;
   },
+
+  ...extraMappers,
 });
