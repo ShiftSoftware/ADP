@@ -1,0 +1,3174 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="architecture.html">
+      
+      
+        <link rel="next" href="configuration.html">
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.11">
+    
+    
+      
+        <title>Data Adapters - Auto Distributor Platform</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.4af4bdda.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../overrides/css/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#data-adapters" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../index.html" title="Auto Distributor Platform" class="md-header__button md-logo" aria-label="Auto Distributor Platform" data-md-component="logo">
+      
+  <img src="../../assets/images/ADP.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Auto Distributor Platform
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Data Adapters
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../index.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Introduction
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../components/intro.html" class="md-tabs__link">
+          
+  
+  
+  Components
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../architecture/stack.html" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../intro.html" class="md-tabs__link">
+          
+  
+  
+  Integrations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../web-components/introduction.html" class="md-tabs__link">
+          
+  
+  
+  Web Components
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../index.html" title="Auto Distributor Platform" class="md-nav__button md-logo" aria-label="Auto Distributor Platform" data-md-component="logo">
+      
+  <img src="../../assets/images/ADP.svg" alt="logo">
+
+    </a>
+    Auto Distributor Platform
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../index.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Introduction
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Components
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Components
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/intro.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Intro
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_2" id="__nav_2_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Identity
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            Identity
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/identity.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Identity System
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_3" id="__nav_2_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Parts
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_3">
+            <span class="md-nav__icon md-icon"></span>
+            Parts
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/parts.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Parts Database
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_4" id="__nav_2_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Vehicles
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4">
+            <span class="md-nav__icon md-icon"></span>
+            Vehicles
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/vehicles.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Vehicle Database
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_4_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_4_2" id="__nav_2_4_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Vehicle Information
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_4_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4_2">
+            <span class="md-nav__icon md-icon"></span>
+            Vehicle Information
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/vehicle-information/identifiers.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Identifiers
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/vehicle-information/authorized.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Authorized (Official)
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/vehicle-information/warranty.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Warranty
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/vehicle-information/safety-recalls.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Safety Recalls
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/vehicle-information/service-history.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Service History
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/vehicle-information/item-claim.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Item Claim
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_5" id="__nav_2_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Services
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_5">
+            <span class="md-nav__icon md-icon"></span>
+            Services
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/services/intro.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Service Database
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_5_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_5_2" id="__nav_2_5_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Warranty System
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_5_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_5_2">
+            <span class="md-nav__icon md-icon"></span>
+            Warranty System
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/services/warranty/warranty.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Intro
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/services/claimable-items.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Claimable Items
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_6" id="__nav_2_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    CRM
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_6">
+            <span class="md-nav__icon md-icon"></span>
+            CRM
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/tickets.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Support Ticket System
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/customers.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Customer Database
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Architecture
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Architecture
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/stack.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Stack
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/deployment-pipelines.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Deployment Pipelines
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Integrations
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Integrations
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../intro.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Intro
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Sync Agent
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4_2">
+            <span class="md-nav__icon md-icon"></span>
+            Sync Agent
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="index.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Overview
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="architecture.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Architecture
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Data Adapters
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="data-adapters.html" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Data Adapters
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#source-adapters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Source Adapters
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Source Adapters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#csv-source-adapters" class="md-nav__link">
+    <span class="md-ellipsis">
+      CSV Source Adapters
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CSV Source Adapters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#csvhelpercsvsyncdatasource" class="md-nav__link">
+    <span class="md-ellipsis">
+      CsvHelperCsvSyncDataSource
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#filehelpercsvsyncdatasource" class="md-nav__link">
+    <span class="md-ellipsis">
+      FileHelperCsvSyncDataSource
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#csv-source-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      CSV Source Configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#storage-backends" class="md-nav__link">
+    <span class="md-ellipsis">
+      Storage Backends
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ef-core-source-adapter" class="md-nav__link">
+    <span class="md-ellipsis">
+      EF Core Source Adapter
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="EF Core Source Adapter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ef-core-source-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      EF Core Source Configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#generic-overloads" class="md-nav__link">
+    <span class="md-ellipsis">
+      Generic Overloads
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#destination-adapters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Destination Adapters
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Destination Adapters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cosmos-db-destination-adapter" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cosmos DB Destination Adapter
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Cosmos DB Destination Adapter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cosmos-db-destination-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cosmos DB Destination Configuration
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ef-core-destination-adapter" class="md-nav__link">
+    <span class="md-ellipsis">
+      EF Core Destination Adapter
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="EF Core Destination Adapter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ef-core-destination-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      EF Core Destination Configuration
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#duckdb-destination-adapter" class="md-nav__link">
+    <span class="md-ellipsis">
+      DuckDB Destination Adapter
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="DuckDB Destination Adapter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#duckdb-destination-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      DuckDB Destination Configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#duckdb-type-mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      DuckDB Type Mapping
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-adapters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Custom Adapters
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="configuration.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Configuration
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="resilience.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Resilience & Fault Tolerance
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="logging.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Logging & Monitoring
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="getting-started.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Getting Started
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Parts
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_3">
+            <span class="md-nav__icon md-icon"></span>
+            Parts
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../parts.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Parts Integration
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generated/Models/Part/CatalogPartModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Catalog Part
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generated/Models/Part/PartSupersessionModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Part Supersession
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generated/Models/Part/PartCountryDataModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Part Country Data
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generated/Models/Part/RegionPriceModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Per Region Price
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generated/Models/Part/StockPartModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Stock Part
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generated/Models/Part/OrderPartLineModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Order Part Line
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Labor
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4">
+            <span class="md-nav__icon md-icon"></span>
+            Labor
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generated/Models/Service/OrderLaborLineModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Order Labor Line
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Web Components
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Web Components
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../web-components/introduction.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Introduction
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../web-components/installation.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Installation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../web-components/theming.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Theming
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_4" id="__nav_5_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Components
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_4">
+            <span class="md-nav__icon md-icon"></span>
+            Components
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../web-components/components/components-list.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Components List
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../web-components/components/vehicle-lookup.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Vehicle Lookup Wrapper
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../web-components/components/vehicle-specification.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Vehicle Specification
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../web-components/components/vehicle-accessories.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Vehicle Accessories
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../web-components/components/warranty-details.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Warranty Details
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../web-components/components/service-history.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Service History
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../web-components/components/paint-thickness.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Paint Thickness
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../web-components/components/swift-claim.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Swift Claim
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../web-components/components/dead-stock-lookup.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Dead Stock Lookup
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../web-components/components/distributor-lookup.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Distributor Lookup
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../web-components/components/manufacturer-lookup.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Manufacturer Lookup
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#source-adapters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Source Adapters
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Source Adapters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#csv-source-adapters" class="md-nav__link">
+    <span class="md-ellipsis">
+      CSV Source Adapters
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CSV Source Adapters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#csvhelpercsvsyncdatasource" class="md-nav__link">
+    <span class="md-ellipsis">
+      CsvHelperCsvSyncDataSource
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#filehelpercsvsyncdatasource" class="md-nav__link">
+    <span class="md-ellipsis">
+      FileHelperCsvSyncDataSource
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#csv-source-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      CSV Source Configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#storage-backends" class="md-nav__link">
+    <span class="md-ellipsis">
+      Storage Backends
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ef-core-source-adapter" class="md-nav__link">
+    <span class="md-ellipsis">
+      EF Core Source Adapter
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="EF Core Source Adapter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ef-core-source-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      EF Core Source Configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#generic-overloads" class="md-nav__link">
+    <span class="md-ellipsis">
+      Generic Overloads
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#destination-adapters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Destination Adapters
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Destination Adapters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cosmos-db-destination-adapter" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cosmos DB Destination Adapter
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Cosmos DB Destination Adapter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cosmos-db-destination-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cosmos DB Destination Configuration
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ef-core-destination-adapter" class="md-nav__link">
+    <span class="md-ellipsis">
+      EF Core Destination Adapter
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="EF Core Destination Adapter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ef-core-destination-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      EF Core Destination Configuration
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#duckdb-destination-adapter" class="md-nav__link">
+    <span class="md-ellipsis">
+      DuckDB Destination Adapter
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="DuckDB Destination Adapter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#duckdb-destination-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      DuckDB Destination Configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#duckdb-type-mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      DuckDB Type Mapping
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-adapters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Custom Adapters
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="data-adapters">Data Adapters<a class="headerlink" href="#data-adapters" title="Permanent link">&para;</a></h1>
+<p>Data Adapters are the building blocks of every ADP Sync Agent pipeline. They encapsulate the logic for reading from a data source or writing to a data destination, and they automatically wire themselves into the Sync Engine lifecycle.</p>
+<p>The Sync Agent ships with built-in adapters for the most common enterprise data systems. When a built-in adapter doesn't fit, you can implement the <code>ISyncDataAdapter</code> interface to create your own.</p>
+<h2 id="source-adapters">Source Adapters<a class="headerlink" href="#source-adapters" title="Permanent link">&para;</a></h2>
+<p>Source adapters are responsible for reading data from the origin system and feeding it to the Sync Engine in batches.</p>
+<hr />
+<h3 id="csv-source-adapters">CSV Source Adapters<a class="headerlink" href="#csv-source-adapters" title="Permanent link">&para;</a></h3>
+<p>The CSV source adapters are designed for file-based data integration — a common scenario when dealer management systems export data as flat files.</p>
+<p>Rather than naively re-processing the entire file on every run, the CSV adapters use a <strong>git-based diff strategy</strong>:</p>
+<ol>
+<li><strong>Load the previously synced version</strong> of the CSV file from a content repository.</li>
+<li><strong>Load the new version</strong> from the source location.</li>
+<li><strong>Compare the two versions</strong> using a git diff to identify only the added and deleted lines.</li>
+<li><strong>Feed only the changes</strong> into the pipeline as Add and Delete actions.</li>
+</ol>
+<p>This approach dramatically reduces processing volume and ensures that only actual changes are synced.</p>
+<div class="admonition info">
+<p class="admonition-title">Reordered Lines</p>
+<p>CSV files from external systems may contain the same data in a different order between exports. The <code>SkipReorderedLines</code> option detects lines that appear in both the added and deleted sets (i.e., they moved but didn't change) and excludes them from processing.</p>
+</div>
+<p>The Sync Agent provides two CSV adapter implementations:</p>
+<h4 id="csvhelpercsvsyncdatasource">CsvHelperCsvSyncDataSource<a class="headerlink" href="#csvhelpercsvsyncdatasource" title="Permanent link">&para;</a></h4>
+<p>Uses the <a href="https://joshclose.github.io/CsvHelper/">CsvHelper</a> library for CSV parsing. This is the recommended adapter for most scenarios — it supports header-based mapping, flexible configuration, and culture-aware parsing.</p>
+<div class="highlight"><pre><span></span><code><span class="c1">// Register in DI</span>
+<span class="n">services</span><span class="p">.</span><span class="n">AddCSVSyncDataSource</span><span class="o">&lt;</span><span class="n">FileSystemStorageService</span><span class="o">&gt;</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">CompareWorkingDirectory</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">@&quot;C:\temp\csv-compare&quot;</span><span class="p">;</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">SourceBasePath</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">@&quot;C:\data\incoming&quot;</span><span class="p">;</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">DestinationBasePath</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">@&quot;C:\data\synced&quot;</span><span class="p">;</span>
+<span class="p">});</span>
+</code></pre></div>
+<h4 id="filehelpercsvsyncdatasource">FileHelperCsvSyncDataSource<a class="headerlink" href="#filehelpercsvsyncdatasource" title="Permanent link">&para;</a></h4>
+<p>Uses the <a href="https://www.filehelpers.net/">FileHelpers</a> library for CSV parsing. This adapter requires your CSV model class to inherit from <code>CacheableCSV</code>, which provides an auto-computed <code>id</code> field (SHA512 hash of the raw CSV line).</p>
+<div class="highlight"><pre><span></span><code><span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">PartRecord</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">CacheableCSV</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">PartNumber</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="k">set</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">Description</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="k">set</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="kt">decimal</span><span class="w"> </span><span class="n">Price</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="k">set</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<h4 id="csv-source-configuration">CSV Source Configuration<a class="headerlink" href="#csv-source-configuration" title="Permanent link">&para;</a></h4>
+<p>Both CSV adapters are configured with <code>CSVSyncDataSourceConfigurations&lt;T&gt;</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CSVFileName</code></td>
+<td><code>string</code></td>
+<td><strong>Required.</strong> Name of the CSV file to sync.</td>
+</tr>
+<tr>
+<td><code>SourceContainerOrShareName</code></td>
+<td><code>string?</code></td>
+<td>Container or file share name for the source (Azure Storage).</td>
+</tr>
+<tr>
+<td><code>SourceDirectory</code></td>
+<td><code>string?</code></td>
+<td>Directory path within the source container.</td>
+</tr>
+<tr>
+<td><code>DestinationContainerOrShareName</code></td>
+<td><code>string?</code></td>
+<td>Container or file share name for the synced copy.</td>
+</tr>
+<tr>
+<td><code>DestinationDirectory</code></td>
+<td><code>string?</code></td>
+<td>Directory path within the destination container.</td>
+</tr>
+<tr>
+<td><code>SkipReorderedLines</code></td>
+<td><code>bool</code></td>
+<td>When <code>true</code>, lines that appear in both added and deleted sets are excluded.</td>
+</tr>
+<tr>
+<td><code>HasHeaderRecord</code></td>
+<td><code>bool</code></td>
+<td>Whether the CSV file has a header row. Default: <code>true</code>.</td>
+</tr>
+<tr>
+<td><code>ProccessSourceData</code></td>
+<td><code>Func&lt;...&gt;?</code></td>
+<td>Optional function to pre-process source data before comparison.</td>
+</tr>
+<tr>
+<td><code>ProccessAddedItems</code></td>
+<td><code>Func&lt;...&gt;?</code></td>
+<td>Optional function to post-process added items after diffing.</td>
+</tr>
+<tr>
+<td><code>ProccessDeletedItems</code></td>
+<td><code>Func&lt;...&gt;?</code></td>
+<td>Optional function to post-process deleted items after diffing.</td>
+</tr>
+</tbody>
+</table>
+<h4 id="storage-backends">Storage Backends<a class="headerlink" href="#storage-backends" title="Permanent link">&para;</a></h4>
+<p>The CSV adapters rely on an <code>IStorageService</code> to load and store CSV files. The built-in <code>FileSystemStorageService</code> works with local or network file paths. For Azure Blob Storage or Azure File Share, implement a custom <code>IStorageService</code>.</p>
+<hr />
+<h3 id="ef-core-source-adapter">EF Core Source Adapter<a class="headerlink" href="#ef-core-source-adapter" title="Permanent link">&para;</a></h3>
+<p>The <code>EFCoreSyncDataSource</code> reads data from a SQL Server database (or any EF Core-compatible provider) and feeds it to the pipeline in batches.</p>
+<p>Key features:</p>
+<ul>
+<li><strong>Automatic batching</strong> by primary key with ordered, keyset-based pagination.</li>
+<li><strong>Sync timestamp tracking</strong> — after a successful batch, updates a <code>LastSynced</code> or equivalent timestamp column on processed records to avoid re-syncing.</li>
+<li><strong>Custom queries</strong> — filter and project data using LINQ before it enters the pipeline.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="kt">var</span><span class="w"> </span><span class="n">source</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">engine</span><span class="p">.</span><span class="n">SetDataAddapter</span><span class="o">&lt;</span><span class="n">EFCoreSyncDataSource</span><span class="o">&lt;</span><span class="n">PartEntity</span><span class="p">,</span><span class="w"> </span><span class="n">AppDbContext</span><span class="o">&gt;&gt;</span><span class="p">(</span><span class="n">services</span><span class="p">);</span>
+
+<span class="n">source</span><span class="p">.</span><span class="n">Configure</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">EFCoreSyncDataSourceConfigurations</span><span class="o">&lt;</span><span class="n">PartEntity</span><span class="o">&gt;</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">Query</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">query</span><span class="p">,</span><span class="w"> </span><span class="n">actionType</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">query</span><span class="p">.</span><span class="n">Where</span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">LastModified</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">lastSync</span><span class="p">),</span>
+<span class="w">    </span><span class="n">EntityKey</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">Id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">SyncTimestamp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">LastSyncedAt</span><span class="p">,</span>
+<span class="p">});</span>
+</code></pre></div>
+<h4 id="ef-core-source-configuration">EF Core Source Configuration<a class="headerlink" href="#ef-core-source-configuration" title="Permanent link">&para;</a></h4>
+<p><code>EFCoreSyncDataSourceConfigurations&lt;TEntity, TSource, TDestination&gt;</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Query</code></td>
+<td><code>Func&lt;IQueryable&lt;TEntity&gt;, SyncActionType, IQueryable&lt;TSource&gt;&gt;</code></td>
+<td><strong>Required.</strong> LINQ query to filter and project source data. Receives the action type for conditional filtering.</td>
+</tr>
+<tr>
+<td><code>EntityKey</code></td>
+<td><code>Expression&lt;Func&lt;TEntity, object&gt;&gt;?</code></td>
+<td>Primary key expression used for keyset-based batching.</td>
+</tr>
+<tr>
+<td><code>SourceKey</code></td>
+<td><code>Expression&lt;Func&lt;TSource, object&gt;&gt;?</code></td>
+<td>Key expression on the source projection type.</td>
+</tr>
+<tr>
+<td><code>DestinationKey</code></td>
+<td><code>Expression&lt;Func&lt;TDestination, object&gt;&gt;?</code></td>
+<td>Key expression on the destination type — used to match items when updating sync timestamps.</td>
+</tr>
+<tr>
+<td><code>SyncTimestamp</code></td>
+<td><code>Expression&lt;Func&lt;TEntity, DateTimeOffset?&gt;&gt;?</code></td>
+<td>Property to update with the sync timestamp after each successful batch.</td>
+</tr>
+<tr>
+<td><code>UpdateSyncTimeStampForSkippedItems</code></td>
+<td><code>bool</code></td>
+<td>If <code>true</code>, also updates the sync timestamp for items that were skipped during storage. Default: <code>false</code>.</td>
+</tr>
+<tr>
+<td><code>UpdateTimeStampFilter</code></td>
+<td><code>Func&lt;...&gt;?</code></td>
+<td>Custom filter for selecting which entity records to update with the sync timestamp.</td>
+</tr>
+</tbody>
+</table>
+<h4 id="generic-overloads">Generic Overloads<a class="headerlink" href="#generic-overloads" title="Permanent link">&para;</a></h4>
+<p>The EF Core source adapter comes in three generic overloads to handle different scenarios:</p>
+<table>
+<thead>
+<tr>
+<th>Overload</th>
+<th>Use Case</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>EFCoreSyncDataSource&lt;T, TDbContext&gt;</code></td>
+<td>Entity, source, and destination are the same type.</td>
+</tr>
+<tr>
+<td><code>EFCoreSyncDataSource&lt;TSource, TDestination, TDbContext&gt;</code></td>
+<td>Entity and source are the same; destination differs.</td>
+</tr>
+<tr>
+<td><code>EFCoreSyncDataSource&lt;TEntity, TSource, TDestination, TDbContext&gt;</code></td>
+<td>All three types are different (e.g., entity → DTO → Cosmos document).</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="destination-adapters">Destination Adapters<a class="headerlink" href="#destination-adapters" title="Permanent link">&para;</a></h2>
+<p>Destination adapters are responsible for writing transformed data to the target system.</p>
+<hr />
+<h3 id="cosmos-db-destination-adapter">Cosmos DB Destination Adapter<a class="headerlink" href="#cosmos-db-destination-adapter" title="Permanent link">&para;</a></h3>
+<p>The <code>CosmosSyncDataDestination</code> writes data to Azure Cosmos DB containers. It treats Add and Update actions as <strong>upsert</strong> operations and supports Delete actions natively.</p>
+<p>Key features:</p>
+<ul>
+<li><strong>Parallel upserts</strong> with concurrency control.</li>
+<li><strong>Built-in Polly retry pipeline</strong> for transient Cosmos DB failures.</li>
+<li><strong>Partition key support</strong> — up to 3 levels of hierarchical partition keys via expressions.</li>
+<li><strong>Patch operations</strong> — optionally use Cosmos DB partial updates instead of full document replacement.</li>
+<li><strong>Custom Cosmos actions</strong> — override the default upsert/delete behavior per item (e.g., change a delete to an upsert with a soft-delete flag).</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="kt">var</span><span class="w"> </span><span class="n">destination</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">engine</span><span class="p">.</span><span class="n">SetDataAddapter</span><span class="o">&lt;</span><span class="n">CosmosSyncDataDestination</span><span class="o">&lt;</span><span class="n">PartDoc</span><span class="p">,</span><span class="w"> </span><span class="n">CosmosClient</span><span class="o">&gt;&gt;</span><span class="p">(</span><span class="n">services</span><span class="p">);</span>
+
+<span class="n">destination</span><span class="p">.</span><span class="n">Configure</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">CosmosSyncDataDestinationConfigurations</span><span class="o">&lt;</span><span class="n">PartDoc</span><span class="o">&gt;</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">DatabaseId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;PartsDB&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">ContainerId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;Parts&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">PartitionKeyLevel1Expression</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">x</span><span class="p">.</span><span class="n">Region</span><span class="p">,</span>
+<span class="p">});</span>
+</code></pre></div>
+<h4 id="cosmos-db-destination-configuration">Cosmos DB Destination Configuration<a class="headerlink" href="#cosmos-db-destination-configuration" title="Permanent link">&para;</a></h4>
+<p><code>CosmosSyncDataDestinationConfigurations&lt;TDestination, TCosmos&gt;</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DatabaseId</code></td>
+<td><code>string</code></td>
+<td><strong>Required.</strong> Cosmos DB database ID.</td>
+</tr>
+<tr>
+<td><code>ContainerId</code></td>
+<td><code>string</code></td>
+<td><strong>Required.</strong> Cosmos DB container ID.</td>
+</tr>
+<tr>
+<td><code>PartitionKeyLevel1Expression</code></td>
+<td><code>Expression&lt;...&gt;</code></td>
+<td><strong>Required.</strong> Expression for the first level of the partition key.</td>
+</tr>
+<tr>
+<td><code>PartitionKeyLevel2Expression</code></td>
+<td><code>Expression&lt;...&gt;?</code></td>
+<td>Second level of a hierarchical partition key.</td>
+</tr>
+<tr>
+<td><code>PartitionKeyLevel3Expression</code></td>
+<td><code>Expression&lt;...&gt;?</code></td>
+<td>Third level of a hierarchical partition key.</td>
+</tr>
+<tr>
+<td><code>CosmosAction</code></td>
+<td><code>Func&lt;...&gt;?</code></td>
+<td>Custom function to override the default action (upsert/delete) per item.</td>
+</tr>
+<tr>
+<td><code>UsePatch</code></td>
+<td><code>bool</code></td>
+<td>Use Cosmos DB patch (partial update) instead of full document replace.</td>
+</tr>
+<tr>
+<td><code>PropertiesToPatch</code></td>
+<td><code>Expression&lt;...&gt;[]?</code></td>
+<td>Specific properties to patch. If empty and <code>UsePatch</code> is <code>true</code>, all properties are patched.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="ef-core-destination-adapter">EF Core Destination Adapter<a class="headerlink" href="#ef-core-destination-adapter" title="Permanent link">&para;</a></h3>
+<p>The <code>EFCoreSyncDataDestination</code> writes data to a SQL Server database (or any EF Core-compatible provider) using bulk operations powered by <a href="https://github.com/borisdj/EFCore.BulkExtensions">EFCore.BulkExtensions</a>.</p>
+<p>Key features:</p>
+<ul>
+<li><strong>Bulk insert or update</strong> — uses <code>BulkInsertOrUpdateAsync</code> for high-performance writes.</li>
+<li><strong>Configurable BulkConfig</strong> — full access to the underlying BulkExtensions configuration.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="kt">var</span><span class="w"> </span><span class="n">destination</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">engine</span><span class="p">.</span><span class="n">SetDataAddapter</span><span class="o">&lt;</span><span class="n">EFCoreSyncDataDestination</span><span class="o">&lt;</span><span class="n">PartEntity</span><span class="p">,</span><span class="w"> </span><span class="n">AppDbContext</span><span class="o">&gt;&gt;</span><span class="p">(</span><span class="n">services</span><span class="p">);</span>
+
+<span class="n">destination</span><span class="p">.</span><span class="n">Configure</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">EFCoreSyncDataDestinationConfigurations</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">BulkConfig</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">BulkConfig</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">SetOutputIdentity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">true</span><span class="w"> </span><span class="p">}</span>
+<span class="p">});</span>
+</code></pre></div>
+<h4 id="ef-core-destination-configuration">EF Core Destination Configuration<a class="headerlink" href="#ef-core-destination-configuration" title="Permanent link">&para;</a></h4>
+<p><code>EFCoreSyncDataDestinationConfigurations</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>BulkConfig</code></td>
+<td><code>BulkConfig</code></td>
+<td>Configuration for EFCore.BulkExtensions (batch size, identity handling, etc.).</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="duckdb-destination-adapter">DuckDB Destination Adapter<a class="headerlink" href="#duckdb-destination-adapter" title="Permanent link">&para;</a></h3>
+<p>The <code>DuckDBSyncDataDestination</code> writes data to a <a href="https://duckdb.org/">DuckDB</a> database — an in-process analytical database that's ideal for reporting, analytics, and data warehousing scenarios.</p>
+<p>Key features:</p>
+<ul>
+<li><strong>Automatic table creation</strong> from the destination model's properties with correct DuckDB type mapping.</li>
+<li><strong>Staging table pattern</strong> — data is first bulk-loaded into a temporary staging table, then upserted into the main table for atomicity.</li>
+<li><strong>Primary key support</strong> — configurable primary key for upsert behavior.</li>
+<li><strong>Complex type handling</strong> — nested objects are stored as JSON columns.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="kt">var</span><span class="w"> </span><span class="n">destination</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">engine</span><span class="p">.</span><span class="n">SetDataAddapter</span><span class="o">&lt;</span><span class="n">DuckDBSyncDataDestination</span><span class="o">&lt;</span><span class="n">SourceModel</span><span class="p">,</span><span class="w"> </span><span class="n">DestModel</span><span class="p">,</span><span class="w"> </span><span class="n">DuckDBConnection</span><span class="o">&gt;&gt;</span><span class="p">(</span><span class="n">services</span><span class="p">);</span>
+
+<span class="n">destination</span><span class="p">.</span><span class="n">Configure</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">DuckDBSyncDataDestinationConfigurations</span><span class="o">&lt;</span><span class="n">SourceModel</span><span class="p">,</span><span class="w"> </span><span class="n">DestModel</span><span class="o">&gt;</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">TableName</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;Parts&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">PrimaryKey</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">x</span><span class="p">.</span><span class="n">PartNumber</span><span class="p">,</span>
+<span class="w">    </span><span class="n">ContinueAfterFail</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
+<span class="p">});</span>
+</code></pre></div>
+<h4 id="duckdb-destination-configuration">DuckDB Destination Configuration<a class="headerlink" href="#duckdb-destination-configuration" title="Permanent link">&para;</a></h4>
+<p><code>DuckDBSyncDataDestinationConfigurations&lt;TSource, TDestination&gt;</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>TableName</code></td>
+<td><code>string</code></td>
+<td><strong>Required.</strong> Name of the DuckDB table.</td>
+</tr>
+<tr>
+<td><code>PrimaryKey</code></td>
+<td><code>Expression&lt;...&gt;?</code></td>
+<td>Expression for the primary key column (enables upsert).</td>
+</tr>
+<tr>
+<td><code>ContinueAfterFail</code></td>
+<td><code>bool</code></td>
+<td>If <code>true</code>, continue processing remaining items after a row fails. Default: <code>false</code>.</td>
+</tr>
+</tbody>
+</table>
+<h4 id="duckdb-type-mapping">DuckDB Type Mapping<a class="headerlink" href="#duckdb-type-mapping" title="Permanent link">&para;</a></h4>
+<p>The adapter automatically maps C# types to DuckDB column types:</p>
+<table>
+<thead>
+<tr>
+<th>C# Type</th>
+<th>DuckDB Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>bool</code></td>
+<td><code>BOOLEAN</code></td>
+</tr>
+<tr>
+<td><code>int</code></td>
+<td><code>INTEGER</code></td>
+</tr>
+<tr>
+<td><code>long</code></td>
+<td><code>BIGINT</code></td>
+</tr>
+<tr>
+<td><code>double</code></td>
+<td><code>DOUBLE</code></td>
+</tr>
+<tr>
+<td><code>decimal</code></td>
+<td><code>DECIMAL(38, 10)</code></td>
+</tr>
+<tr>
+<td><code>string</code></td>
+<td><code>VARCHAR</code></td>
+</tr>
+<tr>
+<td><code>DateTime</code></td>
+<td><code>TIMESTAMP</code></td>
+</tr>
+<tr>
+<td><code>DateTimeOffset</code></td>
+<td><code>TIMESTAMPTZ</code></td>
+</tr>
+<tr>
+<td><code>Guid</code></td>
+<td><code>UUID</code></td>
+</tr>
+<tr>
+<td><code>enum</code></td>
+<td><code>INTEGER</code></td>
+</tr>
+<tr>
+<td>Complex types</td>
+<td><code>JSON</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="custom-adapters">Custom Adapters<a class="headerlink" href="#custom-adapters" title="Permanent link">&para;</a></h2>
+<p>When the built-in adapters don't cover your use case, you can implement the <code>ISyncDataAdapter</code> interface to create a custom adapter for any data system.</p>
+<p>A custom adapter must implement:</p>
+<ul>
+<li><code>SetSyncService</code> — Store a reference to the Sync Engine.</li>
+<li><code>Configure</code> — Wire up the adapter's logic into the engine's lifecycle stages.</li>
+<li>The relevant lifecycle methods (<code>Preparing</code>, <code>GetSourceBatchItems</code>, <code>StoreBatchData</code>, etc.).</li>
+</ul>
+<p>Methods that are not relevant to your adapter can throw <code>NotImplementedException</code> — only the methods you wire into the engine via <code>Configure</code> will be called.</p>
+<div class="highlight"><pre><span></span><code><span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">MyCustomSource</span><span class="o">&lt;</span><span class="n">TSource</span><span class="p">,</span><span class="w"> </span><span class="n">TDestination</span><span class="o">&gt;</span><span class="w"> </span>
+<span class="w">    </span><span class="p">:</span><span class="w"> </span><span class="n">ISyncDataAdapter</span><span class="o">&lt;</span><span class="n">TSource</span><span class="p">,</span><span class="w"> </span><span class="n">TDestination</span><span class="p">,</span><span class="w"> </span><span class="n">MyConfig</span><span class="p">,</span><span class="w"> </span><span class="n">MyCustomSource</span><span class="o">&lt;</span><span class="n">TSource</span><span class="p">,</span><span class="w"> </span><span class="n">TDestination</span><span class="o">&gt;&gt;</span>
+<span class="w">    </span><span class="k">where</span><span class="w"> </span><span class="n">TSource</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="k">class</span>
+<span class="w">    </span><span class="nc">where</span><span class="w"> </span><span class="n">TDestination</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="k">class</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">ISyncEngine</span><span class="o">&lt;</span><span class="n">TSource</span><span class="p">,</span><span class="w"> </span><span class="n">TDestination</span><span class="o">&gt;</span><span class="w"> </span><span class="n">SyncService</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="k">private</span><span class="w"> </span><span class="k">set</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">MyConfig</span><span class="o">?</span><span class="w"> </span><span class="n">Configurations</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="k">private</span><span class="w"> </span><span class="k">set</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">MyCustomSource</span><span class="o">&lt;</span><span class="n">TSource</span><span class="p">,</span><span class="w"> </span><span class="n">TDestination</span><span class="o">&gt;</span><span class="w"> </span><span class="n">SetSyncService</span><span class="p">(</span><span class="n">ISyncEngine</span><span class="o">&lt;</span><span class="n">TSource</span><span class="p">,</span><span class="w"> </span><span class="n">TDestination</span><span class="o">&gt;</span><span class="w"> </span><span class="n">syncService</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">SyncService</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">syncService</span><span class="p">;</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">ISyncEngine</span><span class="o">&lt;</span><span class="n">TSource</span><span class="p">,</span><span class="w"> </span><span class="n">TDestination</span><span class="o">&gt;</span><span class="w"> </span><span class="n">Configure</span><span class="p">(</span><span class="n">MyConfig</span><span class="w"> </span><span class="n">configurations</span><span class="p">,</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">configureSyncService</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">true</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">Configurations</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">configurations</span><span class="p">;</span>
+
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">configureSyncService</span><span class="p">)</span>
+<span class="w">            </span><span class="n">SyncService</span>
+<span class="w">                </span><span class="p">.</span><span class="n">SetupGetSourceBatchItems</span><span class="p">(</span><span class="n">GetSourceBatchItems</span><span class="p">)</span>
+<span class="w">                </span><span class="p">.</span><span class="n">SetupSourceTotalItemCount</span><span class="p">(</span><span class="n">SourceTotalItemCount</span><span class="p">);</span>
+
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">SyncService</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="c1">// Implement the methods you need...</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>See <a href="architecture.html">Architecture</a> for details on each lifecycle stage and when it's called.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tracking", "navigation.tabs", "navigation.sections", "content.code.copy", "navigation.collapse"], "search": "../../assets/javascripts/workers/search.f8cc74c7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c8b220af.min.js"></script>
+      
+    
+  </body>
+</html>

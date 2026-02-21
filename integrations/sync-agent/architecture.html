@@ -1,0 +1,2919 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="index.html">
+      
+      
+        <link rel="next" href="data-adapters.html">
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.11">
+    
+    
+      
+        <title>Architecture - Auto Distributor Platform</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.4af4bdda.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../overrides/css/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#architecture" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../index.html" title="Auto Distributor Platform" class="md-header__button md-logo" aria-label="Auto Distributor Platform" data-md-component="logo">
+      
+  <img src="../../assets/images/ADP.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Auto Distributor Platform
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Architecture
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../index.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Introduction
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../components/intro.html" class="md-tabs__link">
+          
+  
+  
+  Components
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../architecture/stack.html" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../intro.html" class="md-tabs__link">
+          
+  
+  
+  Integrations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../web-components/introduction.html" class="md-tabs__link">
+          
+  
+  
+  Web Components
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../index.html" title="Auto Distributor Platform" class="md-nav__button md-logo" aria-label="Auto Distributor Platform" data-md-component="logo">
+      
+  <img src="../../assets/images/ADP.svg" alt="logo">
+
+    </a>
+    Auto Distributor Platform
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../index.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Introduction
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Components
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Components
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/intro.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Intro
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_2" id="__nav_2_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Identity
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            Identity
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/identity.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Identity System
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_3" id="__nav_2_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Parts
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_3">
+            <span class="md-nav__icon md-icon"></span>
+            Parts
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/parts.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Parts Database
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_4" id="__nav_2_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Vehicles
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4">
+            <span class="md-nav__icon md-icon"></span>
+            Vehicles
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/vehicles.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Vehicle Database
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_4_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_4_2" id="__nav_2_4_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Vehicle Information
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_4_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4_2">
+            <span class="md-nav__icon md-icon"></span>
+            Vehicle Information
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/vehicle-information/identifiers.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Identifiers
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/vehicle-information/authorized.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Authorized (Official)
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/vehicle-information/warranty.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Warranty
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/vehicle-information/safety-recalls.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Safety Recalls
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/vehicle-information/service-history.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Service History
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/vehicle-information/item-claim.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Item Claim
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_5" id="__nav_2_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Services
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_5">
+            <span class="md-nav__icon md-icon"></span>
+            Services
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/services/intro.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Service Database
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_5_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_5_2" id="__nav_2_5_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Warranty System
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_5_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_5_2">
+            <span class="md-nav__icon md-icon"></span>
+            Warranty System
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/services/warranty/warranty.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Intro
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/services/claimable-items.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Claimable Items
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_6" id="__nav_2_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    CRM
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_6">
+            <span class="md-nav__icon md-icon"></span>
+            CRM
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/tickets.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Support Ticket System
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/customers.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Customer Database
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Architecture
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Architecture
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/stack.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Stack
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/deployment-pipelines.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Deployment Pipelines
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Integrations
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Integrations
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../intro.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Intro
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Sync Agent
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4_2">
+            <span class="md-nav__icon md-icon"></span>
+            Sync Agent
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="index.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Overview
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Architecture
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="architecture.html" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Architecture
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#pipeline-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pipeline Lifecycle
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stages-in-detail" class="md-nav__link">
+    <span class="md-ellipsis">
+      Stages in Detail
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Stages in Detail">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#preparing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Preparing
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#action-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      Action Loop
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#actionstarted" class="md-nav__link">
+    <span class="md-ellipsis">
+      ActionStarted
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sourcetotalitemcount" class="md-nav__link">
+    <span class="md-ellipsis">
+      SourceTotalItemCount
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#batch-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      Batch Loop
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Batch Loop">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#batchstarted" class="md-nav__link">
+    <span class="md-ellipsis">
+      BatchStarted
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#getsourcebatchitems" class="md-nav__link">
+    <span class="md-ellipsis">
+      GetSourceBatchItems
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      Mapping
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#storebatchdata" class="md-nav__link">
+    <span class="md-ellipsis">
+      StoreBatchData
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#batchretry" class="md-nav__link">
+    <span class="md-ellipsis">
+      BatchRetry
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#batchcompleted" class="md-nav__link">
+    <span class="md-ellipsis">
+      BatchCompleted
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#actioncompleted" class="md-nav__link">
+    <span class="md-ellipsis">
+      ActionCompleted
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#succeeded-failed" class="md-nav__link">
+    <span class="md-ellipsis">
+      Succeeded / Failed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#finished" class="md-nav__link">
+    <span class="md-ellipsis">
+      Finished
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cancellation-timeouts" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cancellation &amp; Timeouts
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#single-type-vs-dual-type-pipelines" class="md-nav__link">
+    <span class="md-ellipsis">
+      Single-Type vs. Dual-Type Pipelines
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fluent-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fluent Configuration
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-adapter-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      Data Adapter Model
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="data-adapters.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Data Adapters
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="configuration.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Configuration
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="resilience.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Resilience & Fault Tolerance
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="logging.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Logging & Monitoring
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="getting-started.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Getting Started
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Parts
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_3">
+            <span class="md-nav__icon md-icon"></span>
+            Parts
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../parts.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Parts Integration
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generated/Models/Part/CatalogPartModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Catalog Part
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generated/Models/Part/PartSupersessionModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Part Supersession
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generated/Models/Part/PartCountryDataModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Part Country Data
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generated/Models/Part/RegionPriceModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Per Region Price
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generated/Models/Part/StockPartModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Stock Part
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generated/Models/Part/OrderPartLineModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Order Part Line
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Labor
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4">
+            <span class="md-nav__icon md-icon"></span>
+            Labor
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generated/Models/Service/OrderLaborLineModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Order Labor Line
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Web Components
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Web Components
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../web-components/introduction.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Introduction
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../web-components/installation.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Installation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../web-components/theming.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Theming
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_4" id="__nav_5_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Components
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_4">
+            <span class="md-nav__icon md-icon"></span>
+            Components
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../web-components/components/components-list.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Components List
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../web-components/components/vehicle-lookup.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Vehicle Lookup Wrapper
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../web-components/components/vehicle-specification.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Vehicle Specification
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../web-components/components/vehicle-accessories.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Vehicle Accessories
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../web-components/components/warranty-details.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Warranty Details
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../web-components/components/service-history.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Service History
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../web-components/components/paint-thickness.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Paint Thickness
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../web-components/components/swift-claim.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Swift Claim
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../web-components/components/dead-stock-lookup.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Dead Stock Lookup
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../web-components/components/distributor-lookup.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Distributor Lookup
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../web-components/components/manufacturer-lookup.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Manufacturer Lookup
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#pipeline-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pipeline Lifecycle
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stages-in-detail" class="md-nav__link">
+    <span class="md-ellipsis">
+      Stages in Detail
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Stages in Detail">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#preparing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Preparing
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#action-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      Action Loop
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#actionstarted" class="md-nav__link">
+    <span class="md-ellipsis">
+      ActionStarted
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sourcetotalitemcount" class="md-nav__link">
+    <span class="md-ellipsis">
+      SourceTotalItemCount
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#batch-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      Batch Loop
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Batch Loop">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#batchstarted" class="md-nav__link">
+    <span class="md-ellipsis">
+      BatchStarted
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#getsourcebatchitems" class="md-nav__link">
+    <span class="md-ellipsis">
+      GetSourceBatchItems
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      Mapping
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#storebatchdata" class="md-nav__link">
+    <span class="md-ellipsis">
+      StoreBatchData
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#batchretry" class="md-nav__link">
+    <span class="md-ellipsis">
+      BatchRetry
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#batchcompleted" class="md-nav__link">
+    <span class="md-ellipsis">
+      BatchCompleted
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#actioncompleted" class="md-nav__link">
+    <span class="md-ellipsis">
+      ActionCompleted
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#succeeded-failed" class="md-nav__link">
+    <span class="md-ellipsis">
+      Succeeded / Failed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#finished" class="md-nav__link">
+    <span class="md-ellipsis">
+      Finished
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cancellation-timeouts" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cancellation &amp; Timeouts
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#single-type-vs-dual-type-pipelines" class="md-nav__link">
+    <span class="md-ellipsis">
+      Single-Type vs. Dual-Type Pipelines
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fluent-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fluent Configuration
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-adapter-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      Data Adapter Model
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h1>
+<p>The Sync Engine is the core orchestrator of every data synchronization pipeline in the ADP Sync Agent. It manages the full lifecycle of a sync operation — from preparation through batch processing to completion — with built-in support for retries, cancellation, and progress tracking.</p>
+<h2 id="pipeline-lifecycle">Pipeline Lifecycle<a class="headerlink" href="#pipeline-lifecycle" title="Permanent link">&para;</a></h2>
+<p>Every pipeline execution follows a well-defined sequence of stages. Understanding this lifecycle is key to building reliable and predictable sync pipelines.</p>
+<pre class="mermaid"><code>flowchart TD
+    A[Preparing] --&gt;|Succeeded| B[Action Loop]
+    A --&gt;|Skipped| S[Succeeded]
+    A --&gt;|Failed| F[Failed]
+
+    B --&gt; C[ActionStarted]
+    C --&gt;|Continue| D[SourceTotalItemCount]
+    C --&gt;|Stop| AC[ActionCompleted]
+    D --&gt; E[Batch Loop]
+
+    E --&gt; BS[BatchStarted]
+    BS --&gt; G[GetSourceBatchItems]
+    G --&gt; H[Mapping]
+    H --&gt; I[StoreBatchData]
+    I --&gt;|Success| BC[BatchCompleted]
+    I --&gt;|Failure| BR[BatchRetry]
+    BR --&gt;|Retry| G
+    BR --&gt;|Skip| BC
+    BR --&gt;|Stop| AC
+    BC --&gt;|Next Batch| E
+    BC --&gt;|All Batches Done| AC
+
+    AC --&gt;|Next Action| B
+    AC --&gt;|All Actions Done| S
+
+    S --&gt; FN[Finished]
+    F --&gt; FN</code></pre>
+<h2 id="stages-in-detail">Stages in Detail<a class="headerlink" href="#stages-in-detail" title="Permanent link">&para;</a></h2>
+<h3 id="preparing">Preparing<a class="headerlink" href="#preparing" title="Permanent link">&para;</a></h3>
+<p>The first stage of the pipeline. This is where adapters perform initialization work — such as loading and comparing CSV files or setting up database connections.</p>
+<p>The preparing stage can return one of three results:</p>
+<table>
+<thead>
+<tr>
+<th>Result</th>
+<th>Behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Succeeded</code></td>
+<td>Continue to the action loop.</td>
+</tr>
+<tr>
+<td><code>Skipped</code></td>
+<td>Mark the pipeline as successful without processing any data (e.g., no changes detected).</td>
+</tr>
+<tr>
+<td><code>Failed</code></td>
+<td>Mark the pipeline as failed immediately.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="action-loop">Action Loop<a class="headerlink" href="#action-loop" title="Permanent link">&para;</a></h3>
+<p>A sync pipeline processes data through one or more <strong>actions</strong>. Each action represents a category of data operation. The default action execution order is:</p>
+<ol>
+<li><strong>Delete</strong> — Remove obsolete records from the destination.</li>
+<li><strong>Update</strong> — Modify existing records in the destination.</li>
+<li><strong>Add</strong> — Insert new records into the destination.</li>
+</ol>
+<p>This order is configurable. The available action types are:</p>
+<table>
+<thead>
+<tr>
+<th>Action Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Add</code></td>
+<td>Insert new records.</td>
+</tr>
+<tr>
+<td><code>Update</code></td>
+<td>Update existing records.</td>
+</tr>
+<tr>
+<td><code>Delete</code></td>
+<td>Remove records.</td>
+</tr>
+<tr>
+<td><code>Upsert</code></td>
+<td>Insert or update (used by Cosmos DB adapter).</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition info">
+<p class="admonition-title">Action Execution Order</p>
+<p>The default order (Delete → Update → Add) ensures that stale data is cleaned up before new data arrives, reducing the risk of conflicts. You can customize this order via the <code>Configure</code> method.</p>
+</div>
+<h3 id="actionstarted">ActionStarted<a class="headerlink" href="#actionstarted" title="Permanent link">&para;</a></h3>
+<p>Called at the beginning of each action. Return <code>true</code> to proceed with the action, or <code>false</code> to skip it entirely.</p>
+<p>This is a good place for adapters to open file readers, prepare queries, or perform action-specific initialization.</p>
+<h3 id="sourcetotalitemcount">SourceTotalItemCount<a class="headerlink" href="#sourcetotalitemcount" title="Permanent link">&para;</a></h3>
+<p>An optional stage where the source adapter can report the total number of items to be processed for the current action. This enables:</p>
+<ul>
+<li>Accurate batch count calculation.</li>
+<li>Progress percentage tracking.</li>
+<li>Estimated time remaining.</li>
+</ul>
+<p>If not provided, the engine runs in <strong>streaming mode</strong> — processing batches until the source returns no more items.</p>
+<h3 id="batch-loop">Batch Loop<a class="headerlink" href="#batch-loop" title="Permanent link">&para;</a></h3>
+<p>The core of the pipeline. Data is processed in configurable batches to manage memory and enable granular retry.</p>
+<p>Each batch goes through the following stages:</p>
+<h4 id="batchstarted">BatchStarted<a class="headerlink" href="#batchstarted" title="Permanent link">&para;</a></h4>
+<p>Called before each batch. Return <code>true</code> to process the batch, or <code>false</code> to stop the pipeline.</p>
+<h4 id="getsourcebatchitems">GetSourceBatchItems<a class="headerlink" href="#getsourcebatchitems" title="Permanent link">&para;</a></h4>
+<p>Retrieves the next batch of items from the data source. On retry, the engine passes the previous batch items to avoid re-reading from the source.</p>
+<h4 id="mapping">Mapping<a class="headerlink" href="#mapping" title="Permanent link">&para;</a></h4>
+<p>Transforms source items into destination items. Two mapping modes are available:</p>
+<ul>
+<li><strong>Simple Mapping</strong> — A function that receives source items and the action type, returns destination items. On retry, previously mapped items are reused automatically.</li>
+<li><strong>Advanced Mapping</strong> — Full access to the <code>SyncMappingInput</code> including previous mapped items and retry status, giving the developer complete control.</li>
+</ul>
+<h4 id="storebatchdata">StoreBatchData<a class="headerlink" href="#storebatchdata" title="Permanent link">&para;</a></h4>
+<p>Writes the mapped items to the destination. Returns a <code>SyncStoreDataResult</code> that categorizes items as:</p>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SucceededItems</code></td>
+<td>Items that were written successfully.</td>
+</tr>
+<tr>
+<td><code>FailedItems</code></td>
+<td>Items that failed to write.</td>
+</tr>
+<tr>
+<td><code>SkippedItems</code></td>
+<td>Items that were intentionally skipped.</td>
+</tr>
+</tbody>
+</table>
+<p>If the result contains failed items, a <code>RetryException</code> can be set to trigger the retry mechanism.</p>
+<h4 id="batchretry">BatchRetry<a class="headerlink" href="#batchretry" title="Permanent link">&para;</a></h4>
+<p>Called when a batch fails. The developer can choose a retry strategy:</p>
+<table>
+<thead>
+<tr>
+<th>Strategy</th>
+<th>Behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>RetryAndStopAfterLastRetry</code></td>
+<td>Retry up to <code>MaxRetryCount</code>, then stop the entire action. <strong>(Default)</strong></td>
+</tr>
+<tr>
+<td><code>RetryAndContinueAfterLastRetry</code></td>
+<td>Retry up to <code>MaxRetryCount</code>, then skip the failed batch and continue.</td>
+</tr>
+<tr>
+<td><code>Skip</code></td>
+<td>Skip the failed batch immediately and continue to the next.</td>
+</tr>
+<tr>
+<td><code>Stop</code></td>
+<td>Stop the entire action immediately.</td>
+</tr>
+</tbody>
+</table>
+<h4 id="batchcompleted">BatchCompleted<a class="headerlink" href="#batchcompleted" title="Permanent link">&para;</a></h4>
+<p>Called after a batch is successfully stored (or after the last retry with <code>RetryAndContinueAfterLastRetry</code>). Return <code>true</code> to continue, or <code>false</code> to trigger a retry.</p>
+<p>This is where source adapters typically mark data as synced — for example, updating a <code>LastSynced</code> timestamp on processed records.</p>
+<h3 id="actioncompleted">ActionCompleted<a class="headerlink" href="#actioncompleted" title="Permanent link">&para;</a></h3>
+<p>Called after all batches for an action are processed. Return <code>true</code> to mark the action as successful, or <code>false</code> to mark it as failed.</p>
+<h3 id="succeeded-failed">Succeeded / Failed<a class="headerlink" href="#succeeded-failed" title="Permanent link">&para;</a></h3>
+<p>Called after all actions complete. <code>Succeeded</code> is invoked if all actions passed. <code>Failed</code> is invoked if any action failed or an unhandled exception occurred.</p>
+<h3 id="finished">Finished<a class="headerlink" href="#finished" title="Permanent link">&para;</a></h3>
+<p>Always called at the end of a pipeline execution, regardless of outcome. This is the place for cleanup — closing file handles, disposing resources, or deleting temporary directories.</p>
+<h2 id="cancellation-timeouts">Cancellation &amp; Timeouts<a class="headerlink" href="#cancellation-timeouts" title="Permanent link">&para;</a></h2>
+<p>Every pipeline execution is governed by an <code>OperationTimeoutInSeconds</code> (default: 300 seconds). A <code>CancellationToken</code> is automatically created and passed to every stage. When the timeout expires, the pipeline raises an <code>OperationCanceledException</code>.</p>
+<p>The cancellation token is available to all adapters and custom functions via <code>SyncFunctionInput.CancellationToken</code>.</p>
+<h2 id="single-type-vs-dual-type-pipelines">Single-Type vs. Dual-Type Pipelines<a class="headerlink" href="#single-type-vs-dual-type-pipelines" title="Permanent link">&para;</a></h2>
+<p>The Sync Engine supports two generic patterns:</p>
+<ul>
+<li><strong><code>SyncEngine&lt;T&gt;</code></strong> — Source and destination share the same type. Useful when the data shape is identical (e.g., syncing between two databases with the same schema).</li>
+<li><strong><code>SyncEngine&lt;TSource, TDestination&gt;</code></strong> — Source and destination use different types. This is the common case when transformation is required.</li>
+</ul>
+<h2 id="fluent-configuration">Fluent Configuration<a class="headerlink" href="#fluent-configuration" title="Permanent link">&para;</a></h2>
+<p>The Sync Engine uses a fluent API for setup:</p>
+<div class="highlight"><pre><span></span><code><span class="kt">var</span><span class="w"> </span><span class="n">engine</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">SyncEngine</span><span class="o">&lt;</span><span class="n">SourceModel</span><span class="p">,</span><span class="w"> </span><span class="n">DestModel</span><span class="o">&gt;</span><span class="p">();</span>
+
+<span class="n">engine</span>
+<span class="w">    </span><span class="p">.</span><span class="n">Configure</span><span class="p">(</span><span class="n">batchSize</span><span class="p">:</span><span class="w"> </span><span class="mi">500</span><span class="p">,</span><span class="w"> </span><span class="n">maxRetryCount</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">operationTimeoutInSeconds</span><span class="p">:</span><span class="w"> </span><span class="mi">600</span><span class="p">)</span>
+<span class="w">    </span><span class="p">.</span><span class="n">SetupPreparing</span><span class="p">(</span><span class="k">async</span><span class="w"> </span><span class="n">input</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">SyncPreparingResponseAction</span><span class="p">.</span><span class="n">Succeeded</span><span class="p">)</span>
+<span class="w">    </span><span class="p">.</span><span class="n">SetupGetSourceBatchItems</span><span class="p">(</span><span class="k">async</span><span class="w"> </span><span class="n">input</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="cm">/* fetch batch */</span><span class="p">)</span>
+<span class="w">    </span><span class="p">.</span><span class="n">SetupMapping</span><span class="p">(</span><span class="k">async</span><span class="w"> </span><span class="p">(</span><span class="n">items</span><span class="p">,</span><span class="w"> </span><span class="n">actionType</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="cm">/* transform */</span><span class="p">)</span>
+<span class="w">    </span><span class="p">.</span><span class="n">SetupStoreBatchData</span><span class="p">(</span><span class="k">async</span><span class="w"> </span><span class="n">input</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="cm">/* write to destination */</span><span class="p">)</span>
+<span class="w">    </span><span class="p">.</span><span class="n">SetupBatchCompleted</span><span class="p">(</span><span class="k">async</span><span class="w"> </span><span class="n">input</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="k">true</span><span class="p">);</span>
+
+<span class="kt">var</span><span class="w"> </span><span class="n">success</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">engine</span><span class="p">.</span><span class="n">RunAsync</span><span class="p">();</span>
+</code></pre></div>
+<h2 id="data-adapter-model">Data Adapter Model<a class="headerlink" href="#data-adapter-model" title="Permanent link">&para;</a></h2>
+<p>Rather than wiring up every stage manually, the Sync Agent provides <strong>Data Adapters</strong> — pre-built components that encapsulate the logic for common data systems.</p>
+<p>A Data Adapter implements the <code>ISyncDataAdapter</code> interface and automatically configures the relevant stages of the Sync Engine when its <code>Configure</code> method is called.</p>
+<p>This means a typical pipeline setup is as simple as:</p>
+<ol>
+<li>Create a <code>SyncEngine</code>.</li>
+<li>Attach a <strong>source adapter</strong> (e.g., CSV, EF Core).</li>
+<li>Attach a <strong>destination adapter</strong> (e.g., Cosmos DB, EF Core, DuckDB).</li>
+<li>Provide a mapping function.</li>
+<li>Call <code>RunAsync()</code>.</li>
+</ol>
+<p>See <a href="data-adapters.html">Data Adapters</a> for details on each built-in adapter and <a href="getting-started.html">Getting Started</a> for end-to-end examples.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tracking", "navigation.tabs", "navigation.sections", "content.code.copy", "navigation.collapse"], "search": "../../assets/javascripts/workers/search.f8cc74c7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c8b220af.min.js"></script>
+      
+    
+  </body>
+</html>
