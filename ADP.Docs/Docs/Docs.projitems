@@ -9,7 +9,6 @@
     <Import_RootNamespace>Docs</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="$(MSBuildThisFileDirectory)azure-pipelines.yml" />
     <None Include="$(MSBuildThisFileDirectory)docs\architecture\deployment-pipelines.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\architecture\stack.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\assets\imgs\deployment-pipelines-production.svg" />
