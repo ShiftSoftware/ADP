@@ -42,7 +42,7 @@ public class VehicleServiceItemEvaluator
         IEnumerable<ServiceItemModel> serviceItems = new List<ServiceItemModel>();
 
         //if (vehicle is not null)
-        serviceItems = await lookupCosmosService.GetServiceItemsAsync();
+        serviceItems = await lookupCosmosService.GetServiceItemsAsync(useCache: true);
 
         var shiftDay = companyDataAggregate.FreeServiceItemDateShifts?.FirstOrDefault(x => x.VIN == vehicle.VIN);
         if (shiftDay is not null)
