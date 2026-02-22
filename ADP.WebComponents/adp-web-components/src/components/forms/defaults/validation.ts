@@ -1,4 +1,4 @@
-import { object, Schema, string } from 'yup';
+import { number, object, Schema, string } from 'yup';
 import { FormInputMeta } from '~features/form-hook';
 import validateVin from '~lib/validate-vin';
 
@@ -103,7 +103,50 @@ export const getFormValidations = (stateObject: Record<string, any>, extraFields
         otherwise: schema => schema.optional(),
         then: schema => schema.required(require('time')),
       }),
+    currentVehicleBrand: string()
+      .meta(meta('currentVehicleBrand'))
+      .when('ownVehicle', {
+        is: (val: string) => val === 'yes',
+        then: schema => schema.required(require('currentVehicleBrand')),
+        otherwise: schema => schema.optional(),
+      }),
+    currentVehicleModel: string()
+      .meta(meta('currentVehicleModel'))
+      .when(['ownVehicle', 'currentVehicleBrand'], {
+        is: (ownVehicle: string, brand: string) => ownVehicle === 'yes' && brand !== 'Other',
+        then: schema => schema.required(require('currentVehicleModel')),
+        otherwise: schema => schema.optional(),
+      }),
 
+    ownVehicle: string()
+      .meta(meta('ownVehicle'))
+      .when(condition('ownVehicle'), {
+        is: true,
+        otherwise: schema => schema.optional(),
+        then: schema => schema.required(require('ownVehicle')),
+      }),
+    conditionalCurrentVehicleBrand: string()
+      .meta(meta('currentVehicleBrand'))
+      .when('ownVehicle', {
+        is: (val: string) => val === 'yes',
+        then: schema => schema.required(require('currentVehicleBrand')),
+        otherwise: schema => schema.optional(),
+      }),
+    conditionalCurrentVehicleModel: string()
+      .meta(meta('currentVehicleModel'))
+      .when(['ownVehicle', 'conditionalCurrentVehicleBrand'], {
+        is: (ownVehicle: string, brand: string) => ownVehicle === 'yes' && brand !== 'Other',
+        then: schema => schema.required(require('currentVehicleModel')),
+        otherwise: schema => schema.optional(),
+      }),
+
+    gender: number()
+      .meta(meta('gender'))
+      .when(condition('gender'), {
+        is: true,
+        otherwise: schema => schema.optional(),
+        then: schema => schema.required(require('gender')),
+      }),
     ...extraFields,
   });
 };

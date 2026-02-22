@@ -142,5 +142,145 @@ export const getFormMappers = (stateObject: Record<string, any>, extraMappers: R
     return <form-select {...props} clearable fetcher={fetcher} language={language} />;
   },
 
+  currentVehicleBrand: ({ form, language, props, locale }) => {
+    const fetcher: FormSelectFetcher = async ({ signal }): Promise<FormSelectItem[]> => {
+      const currentVehiclesEndpoint = form.context.structure?.data.currentVehiclesApi as string;
+
+      const response = await fetch(currentVehiclesEndpoint, { signal, headers: { 'Accept-Language': 'en' } });
+
+      const options = (await response.json()).filter(vehicle => vehicle.name !== 'Other');
+
+      return [
+        ...options.map(vehicle => ({
+          label: vehicle.Name,
+          value: `${vehicle.ID}`,
+          meta: { ...vehicle },
+        })),
+        {
+          value: 'Other',
+          label: locale.Other,
+        },
+      ] as FormSelectItem[];
+    };
+
+    return <form-select {...props} searchable fetcher={fetcher} language={language} />;
+  },
+
+  currentVehicleModel: ({ form, language, props, locale }) => {
+    form.addWatcher('currentVehicleBrand');
+
+    const currentVehicleBrand = form?.getValue('currentVehicleBrand');
+
+    const fetcher: FormSelectFetcher = async ({}): Promise<FormSelectItem[]> => {
+      if (!currentVehicleBrand) return [];
+
+      const selectedBrand = form.context['currentVehicleBrandList']?.find(vehicle => vehicle.value === currentVehicleBrand)?.meta;
+
+      if (!selectedBrand) return [];
+
+      return [
+        ...selectedBrand?.Models.map(model => ({ label: model.Name, value: `${model.ID}` })),
+        {
+          value: 'Other',
+          label: locale.Other,
+        },
+      ] as FormSelectItem[];
+    };
+
+    return (
+      <form-select
+        {...props}
+        searchable
+        fetcher={fetcher}
+        language={language}
+        resetKey={currentVehicleBrand}
+        fetcherKey={currentVehicleBrand}
+        isRequired={currentVehicleBrand !== 'Other'}
+        isDisabled={!currentVehicleBrand || currentVehicleBrand === 'Other'}
+      />
+    );
+  },
+
+  ownVehicle: ({ language, props }) => {
+    const fetcher: FormSelectFetcher = async ({}): Promise<FormSelectItem[]> => {
+      return [
+        {
+          value: 'yes',
+          label: props?.localization?.[language]?.yes,
+        },
+        {
+          value: 'no',
+          label: props?.localization?.[language]?.no,
+        },
+      ] as FormSelectItem[];
+    };
+
+    return <form-select {...props} fetcher={fetcher} language={language} />;
+  },
+
+  conditionalCurrentVehicleBrand: ({ form, language, props, locale }) => {
+    form.addWatcher('ownVehicle');
+    const ownVehicle = form?.getValue('ownVehicle') === 'yes';
+
+    const fetcher: FormSelectFetcher = async ({ signal }): Promise<FormSelectItem[]> => {
+      const currentVehiclesEndpoint = props?.brandApi as string;
+
+      const response = await fetch(currentVehiclesEndpoint, { signal, headers: { 'Accept-Language': 'en' } });
+
+      const options = (await response.json()).filter(vehicle => vehicle.name !== 'Other');
+
+      return [
+        ...options.map(vehicle => ({
+          label: vehicle.Name,
+          value: props?.useNamedValue ? vehicle.Name : `${vehicle.ID}`,
+          meta: { ...vehicle },
+        })),
+        {
+          value: 'Other',
+          label: locale.Other,
+        },
+      ] as FormSelectItem[];
+    };
+
+    return <form-select {...props} searchable fetcher={fetcher} language={language} resetKey={ownVehicle} isRequired={ownVehicle} isDisabled={!ownVehicle} />;
+  },
+
+  conditionalCurrentVehicleModel: ({ form, language, props, locale }) => {
+    form.addWatcher('ownVehicle');
+    form.addWatcher('conditionalCurrentVehicleBrand');
+
+    const ownVehicle = form?.getValue('ownVehicle') === 'yes';
+    const currentVehicleBrand = form?.getValue('conditionalCurrentVehicleBrand');
+
+    const fetcher: FormSelectFetcher = async ({}): Promise<FormSelectItem[]> => {
+      if (!currentVehicleBrand) return [];
+
+      const selectedBrand = form.context['conditionalCurrentVehicleBrandList']?.find(vehicle => vehicle.value === currentVehicleBrand)?.meta;
+
+      if (!selectedBrand) return [];
+
+      return [
+        ...selectedBrand?.Models.map(model => ({ label: model.Name, value: props?.useNamedValue ? model.Name : `${model.ID}` })),
+        {
+          value: 'Other',
+          label: locale.Other,
+        },
+      ] as FormSelectItem[];
+    };
+
+    return (
+      <form-select
+        {...props}
+        searchable
+        fetcher={fetcher}
+        language={language}
+        resetKey={currentVehicleBrand}
+        fetcherKey={currentVehicleBrand}
+        isRequired={ownVehicle && currentVehicleBrand !== 'Other'}
+        isDisabled={!currentVehicleBrand || currentVehicleBrand === 'Other'}
+      />
+    );
+  },
+
   ...extraMappers,
 });

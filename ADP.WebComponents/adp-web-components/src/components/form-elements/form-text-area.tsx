@@ -68,7 +68,7 @@ export class FormTextArea implements FormElement {
 
     return (
       <Host>
-        <label part={`${this.name}`} id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, { disabled: isDisabled })}>
+        <label part={`form-textarea ${this.name}`} id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, { disabled: isDisabled })}>
           <FormInputLabel name={this.name} isRequired={isRequired} label={label} />
 
           <div part={`${this.name}-container form-input-container`} class="form-input-container">
