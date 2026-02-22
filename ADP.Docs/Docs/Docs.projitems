@@ -9,7 +9,6 @@
     <Import_RootNamespace>Docs</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="$(MSBuildThisFileDirectory)azure-pipelines.yml" />
     <None Include="$(MSBuildThisFileDirectory)docs\architecture\deployment-pipelines.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\architecture\stack.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\assets\imgs\deployment-pipelines-production.svg" />
@@ -33,9 +32,15 @@
     <None Include="$(MSBuildThisFileDirectory)docs\components\vehicles.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\components\services\warranty\warranty.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\index.md" />
-    <None Include="$(MSBuildThisFileDirectory)docs\integrations\adp-sync-agent.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\integrations\intro.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\integrations\parts.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\integrations\sync-agent\architecture.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\integrations\sync-agent\configuration.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\integrations\sync-agent\data-adapters.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\integrations\sync-agent\getting-started.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\integrations\sync-agent\index.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\integrations\sync-agent\logging.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\integrations\sync-agent\resilience.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\overrides\assets\images\spinner.svg" />
     <None Include="$(MSBuildThisFileDirectory)mkdocs.yml" />
   </ItemGroup>

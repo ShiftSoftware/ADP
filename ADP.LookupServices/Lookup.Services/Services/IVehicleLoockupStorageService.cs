@@ -13,11 +13,12 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
         Task<BrokerModel> GetBrokerAsync(long id);
         Task<CompanyDataAggregateModel> GetAggregatedCompanyData(string vin);
         Task<IEnumerable<CompanyDataAggregateModel>> GetAggregatedCompanyData(IEnumerable<string> vins, IEnumerable<string> itemTypes);
+        Task<IEnumerable<CompanyDataAggregateModel>> GetAggregatedCompanyDataForBulkLookupAsync(IEnumerable<string> vins);
         //Task<IEnumerable<StockPartModel>> GetStockItemsAsync(IEnumerable<string> partNumbers);
         Task<ColorModel> GetExteriorColorsAsync(string colorCode, long? brand);
         Task<VehicleModelModel> GetVehicleModelsAsync(string variant, long? brand);
         Task<ColorModel> GetInteriorColorsAsync(string trimCode, long? brand);
-        Task<IEnumerable<ServiceItemModel>> GetServiceItemsAsync();
+        Task<IEnumerable<ServiceItemModel>> GetServiceItemsAsync(bool useCache = true);
         Task<IEnumerable<VehicleModelModel>> GetAllVehicleModelsAsync();
         Task<IEnumerable<VehicleModelModel>> GetVehicleModelsByKatashikiAsync(string katashiki);
         Task<IEnumerable<VehicleModelModel>> GetVehicleModelsByVariantAsync(string variant);

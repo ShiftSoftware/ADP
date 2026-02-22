@@ -44,6 +44,49 @@ public class VehicleLookupService
         return await this.LookupAsync(vin, new VehicleLookupRequestOptions());
     }
 
+    public async Task<IEnumerable<VehicleLookupDTO>> LookupAsync(IEnumerable<string> vins)
+    {
+        return await this.LookupAsync(vins, new VehicleLookupRequestOptions());
+    }
+
+    public async Task<IEnumerable<VehicleLookupDTO>> LookupAsync(IEnumerable<string> vins, VehicleLookupRequestOptions requestOptions)
+    {
+        if (requestOptions is null)
+            requestOptions = new VehicleLookupRequestOptions();
+
+        if (vins is null)
+            return Enumerable.Empty<VehicleLookupDTO>();
+
+        var normalizedInputOrder = vins
+            .Select(NormalizeVin)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        if (normalizedInputOrder.Count == 0)
+            return Enumerable.Empty<VehicleLookupDTO>();
+
+        var aggregates = await vehicleLoockupStorageService.GetAggregatedCompanyDataForBulkLookupAsync(normalizedInputOrder);
+
+        var aggregateMap = aggregates?
+            .Where(x => !string.IsNullOrWhiteSpace(x?.VIN))
+            .GroupBy(x => NormalizeVin(x.VIN), StringComparer.Ordinal)
+            .ToDictionary(x => x.Key, x => x.First(), StringComparer.Ordinal)
+            ?? new Dictionary<string, CompanyDataAggregateModel>(StringComparer.Ordinal);
+
+        var result = new List<VehicleLookupDTO>(normalizedInputOrder.Count);
+
+        foreach (var vinKey in normalizedInputOrder)
+        {
+            if (!aggregateMap.TryGetValue(vinKey, out var aggregate))
+                aggregate = new CompanyDataAggregateModel { VIN = vinKey };
+
+            result.Add(await LookupFromAggregateAsync(vinKey, aggregate, requestOptions, disableLogs: true));
+        }
+
+        return result;
+    }
+
     public async Task<VehicleLookupDTO> LookupAsync(string vin, VehicleLookupRequestOptions requestOptions)
     {
         if (requestOptions is null)
@@ -51,6 +94,17 @@ public class VehicleLookupService
 
         // Get all items related to the VIN from the cosmos container
         var companyDataAggregate = await vehicleLoockupStorageService.GetAggregatedCompanyData(vin);
+        return await LookupFromAggregateAsync(vin, companyDataAggregate, requestOptions, disableLogs: false);
+    }
+
+    private async Task<VehicleLookupDTO> LookupFromAggregateAsync(
+        string vin,
+        CompanyDataAggregateModel companyDataAggregate,
+        VehicleLookupRequestOptions requestOptions,
+        bool disableLogs)
+    {
+        if (requestOptions is null)
+            requestOptions = new VehicleLookupRequestOptions();
 
         VehicleEntryModel vehicle = new VehicleEntryEvaluator(companyDataAggregate).Evaluate();
 
@@ -110,7 +164,7 @@ public class VehicleLookupService
         if (data.Warranty is not null && data.Warranty.WarrantyStartDate is not null)
             data.Warranty.ActivationIsRequired = serviceItemsResult.activationRequired;
 
-        if (requestOptions.InsertSSCLog)
+        if (!disableLogs && requestOptions.InsertSSCLog)
         {
             //_ = Task.Run(async () =>
             //{
@@ -132,7 +186,7 @@ public class VehicleLookupService
             //});
         }
 
-        if (requestOptions.InsertCustomerVehcileLookupLog)
+        if (!disableLogs && requestOptions.InsertCustomerVehcileLookupLog)
         {
             //_ = Task.Run(async () =>
             //{
@@ -154,6 +208,11 @@ public class VehicleLookupService
         }
 
         return data;
+    }
+
+    private static string NormalizeVin(string vin)
+    {
+        return vin?.Trim()?.ToUpperInvariant();
     }
 
     public async Task<IEnumerable<VehicleModelModel>> GetAllVehicleModelsAsync()

@@ -107,6 +107,11 @@ public class CosmosVehicleLoockupStorageService : IVehicleLoockupStorageService
         });
     }
 
+    public Task<IEnumerable<CompanyDataAggregateModel>> GetAggregatedCompanyDataForBulkLookupAsync(IEnumerable<string> vins)
+    {
+        throw new NotImplementedException("Bulk VIN aggregate prefetch is implemented only for DuckDB storage.");
+    }
+
     internal static CompanyDataAggregateModel ConvertDynamicListItemsToCompanyData(List<dynamic> items)
     {
         var companyData = new CompanyDataAggregateModel();
@@ -330,7 +335,7 @@ public class CosmosVehicleLoockupStorageService : IVehicleLoockupStorageService
         return items;
     }
 
-    public async Task<IEnumerable<ServiceItemModel>> GetServiceItemsAsync()
+    public async Task<IEnumerable<ServiceItemModel>> GetServiceItemsAsync(bool useCache = true)
     {
         //if (invoiceDate is null)
         //    return null;

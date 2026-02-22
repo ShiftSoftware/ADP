@@ -45,7 +45,14 @@ nav:
       - Deployment Pipelines: architecture/deployment-pipelines.md
   - Integrations:
       - Intro: integrations/intro.md
-      - Sync Agent: integrations/adp-sync-agent.md
+      - Sync Agent:
+          - Overview: integrations/sync-agent/index.md
+          - Architecture: integrations/sync-agent/architecture.md
+          - Data Adapters: integrations/sync-agent/data-adapters.md
+          - Configuration: integrations/sync-agent/configuration.md
+          - Resilience & Fault Tolerance: integrations/sync-agent/resilience.md
+          - Logging & Monitoring: integrations/sync-agent/logging.md
+          - Getting Started: integrations/sync-agent/getting-started.md
       # - Invoices:
       #     - Invoice: generated/Models/Invoice/InvoiceModel.md
       - Parts:
