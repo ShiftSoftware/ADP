@@ -195,8 +195,8 @@ public class VehicleServiceItemEvaluator
                             TypeEnum = VehcileServiceItemTypes.Paid,
                             PackageCode = item.PackageCode,
 
-                            ClaimingMethodEnum = item.ServiceItem.ClaimingMethod,
-                            VehicleInspectionTypeID = item.ServiceItem.VehicleInspectionTypeID?.ToString(),
+                            ClaimingMethodEnum = item.ServiceItem?.ClaimingMethod ?? ClaimableItemClaimingMethod.ClaimByEnteringInvoiceAndJobNumber,
+                            VehicleInspectionTypeID = item.ServiceItem?.VehicleInspectionTypeID?.ToString(),
                         };
 
                         result.Add(itemResult);
