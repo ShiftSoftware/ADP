@@ -4,6 +4,7 @@ import { VehicleImageViewer } from '../../form-elements/VehicleImageViewer';
 import { CalendarDaysIcon } from '~assets/calendar-days-icon';
 import { format, isBefore, isEqual } from 'date-fns';
 import { decodeTimeOffset } from '~lib/decode-time-offset';
+import { populateItems } from '~lib/populate-items';
 
 export const getFormMappers = (stateObject: Record<string, any>, extraMappers: Record<string, (prop: any) => any> = {}) => ({
   submit: ({ props }) => <form-submit {...props} />,
@@ -41,7 +42,14 @@ export const getFormMappers = (stateObject: Record<string, any>, extraMappers: R
       let options;
       let defaultIndex = -1;
 
-      if (props?.vehiclesApiStrapiFormat) {
+      if (props?.dynamic) {
+        const res = await response.json();
+        options = populateItems(res, props, true) as FormSelectItem[];
+
+        options.forEach((vehicle: FormSelectItem, idx) => {
+          if (!props.defaultValue && paramValue && (vehicle?.label?.toLowerCase() === paramValue || `${vehicle.value}`?.toLowerCase() === paramValue)) defaultIndex = idx;
+        });
+      } else if (props?.vehiclesApiStrapiFormat) {
         const res = await response.json();
 
         options = res.data;
