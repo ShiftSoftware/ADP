@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Lexus Trade in Form Form</title>
+    <title>lexus service booking</title>
 
     <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
     <link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" type="text/css" />
@@ -13,7 +13,12 @@
     <script nomodule src="/build/shift-components.js"></script>
     <script type="module" src="/build/shift-components.esm.js"></script>
 
-    <link rel="stylesheet" href="https://tiqappstorage.blob.core.windows.net/template-files/lexus/vehicle-quotation/ramadan-campaign.css" />
+    <!-- Fonts: Noto Kufi Arabic + Nunito -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@100..900&family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap" rel="stylesheet" />
+
+    <link rel="stylesheet" href="https://tiqappstorage.blob.core.windows.net/template-files/lexus/service-booking/general.css" />
   </head>
 
   <body class="min-h-screen bg-base-200 flex flex-col items-center py-10 px-4 font-sans">
@@ -56,17 +61,16 @@
     <div class="w-full max-w-[800px] bg-base-100 shadow-xl rounded-2xl p-8">
       <div class="flex items-center justify-between mb-4">
         <a href="#" onclick="history.back()" class="btn btn-ghost text-blue-600 hover:bg-blue-50">← Back</a>
-        <h1 class="text-3xl font-extrabold text-gray-800">Lexus Trade in Form</h1>
+        <h1 class="text-3xl font-extrabold text-gray-800">lexus service booking</h1>
         <div class="w-[80px]"></div>
       </div>
 
-      <!-- structure-url="https://tiqappstorage.blob.core.windows.net/template-files/lexus-vehicle-quotation-trade-in-form-structure.json" -->
-      <!-- structure-url="https://tiq-standard-appstorage-byazfecba4bjd4cn.a02.azurefd.net/template-files/lexus-trade-in-vehicle-quotation-form-structure.json" -->
-      <vehicle-quotation-form
+      <service-booking-form
         :is-dev="isDev"
         id="custom-component"
-        structure-url="https://tiqappstorage.blob.core.windows.net/template-files/lexus/vehicle-quotation/ramadan-campaign.json"
-      ></vehicle-quotation-form>
+        disable-scroll-to-top="true"
+        structure-url="https://tiqappstorage.blob.core.windows.net/template-files/lexus/service-booking/general.json"
+      ></service-booking-form>
     </div>
 
     <script>
@@ -78,6 +82,22 @@
 
           init() {
             this.componentRef = document.getElementById('custom-component');
+
+            // this.componentRef.fields = {
+            //   name: {
+            //     isDisabled: false,
+            //     defaultValue: 'Test Form',
+            //     // staticValue: 'Test Form',
+            //   },
+            //   phone: {
+            //     // defaultValue: '+9647501111111',
+            //     staticValue: '+9647501111111', // static value is auto disabled
+            //   },
+            //   vehicle: {
+            //     isDisabled: true,
+            //     defaultValue: '52739',
+            //   },
+            // };
 
             // this.componentRef.loadingChanges = this.loadingChanges;
 

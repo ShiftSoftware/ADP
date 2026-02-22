@@ -205,6 +205,7 @@ export const onFormSubmit = async <T>({ context, formValues, middleware, afterSu
 
     let header: Record<string, any> = {
       'Content-Type': 'application/json',
+      'Brand': context.structure?.data?.brandId,
       'Accept-Language': context.localeLanguage || 'en',
     };
 

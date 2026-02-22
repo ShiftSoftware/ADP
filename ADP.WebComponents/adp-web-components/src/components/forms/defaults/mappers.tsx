@@ -51,7 +51,7 @@ export const getFormMappers = (stateObject: Record<string, any>, extraMappers: R
 
           return {
             label: vehicle.attributes.GradeName,
-            value: props?.useNamedValue ? `${vehicle.GradeName}` : `${vehicle.id}`,
+            value: props?.useNamedValue ? `${vehicle?.attributes?.GradeName}` : `${vehicle.id}`,
             meta: { ...vehicle, image: vehicle.attributes.Cover.data.attributes.url },
           };
         }) as FormSelectItem[];
