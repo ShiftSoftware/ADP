@@ -106,8 +106,31 @@ export class FormPickerInput implements FormElement {
     this.updateDisplayValue();
   };
 
-  onInputClick = () => {
-    this.inputRef?.showPicker();
+  onInputClick = (event: MouseEvent) => {
+    event.preventDefault();
+
+    if (this.inputRef) {
+      // Try showPicker first (works on Chrome, Firefox, modern Safari)
+      if (typeof this.inputRef.showPicker === 'function') {
+        try {
+          this.inputRef.showPicker();
+          return;
+        } catch (e) {
+          // Fall through to alternative methods
+        }
+      }
+
+      // Fallback for iOS and older browsers
+      this.inputRef.focus();
+      this.inputRef.click();
+    }
+  };
+
+  onInputBlur = () => {
+    // Ensure picker closes on blur for Safari
+    if (this.inputRef) {
+      this.inputRef.blur();
+    }
   };
 
   render() {
@@ -151,15 +174,18 @@ export class FormPickerInput implements FormElement {
             <FormInputPrefix name={this.name} direction={locale?.sharedFormLocales?.direction} prefix={this.inputPrefix} />
             <input
               type="text"
-              onInput={() => {}}
+              readonly
+              tabIndex={-1}
               part={`form-input`}
               disabled={isDisabled}
               value={this.displayedValue}
               onClick={this.onInputClick}
+              onKeyDown={e => e.preventDefault()}
               placeholder={placeholder || meta?.placeholder}
               style={{
                 ...(this.prefixWidth ? { [isRtl ? 'paddingRight' : 'paddingLeft']: `${this.prefixWidth}px` } : {}),
                 ...(this.icon ? { [iconPaddingSide]: '40px' } : {}),
+                pointerEvents: 'none',
               }}
               class={cn('form-input-style enabled:cursor-pointer', {
                 'form-input-error-style': isError,
@@ -169,9 +195,11 @@ export class FormPickerInput implements FormElement {
               type={this.type}
               name={this.name}
               {...this.inputProps}
+              onBlur={this.onInputBlur}
+              onClick={this.onInputClick}
               onInput={this.onInputChange}
               part={`${this.name}-input ${part}`}
-              class={cn('shadow-input size-full absolute top-0 left-0 opacity-0 -z-[99]', part)}
+              class={cn('shadow-input size-full absolute top-0 left-0 opacity-0 cursor-pointer', part)}
               min={Array.isArray(this.min) ? decodeTimeOffset({ offsets: this.min, type: this.type }) : this.min}
               max={Array.isArray(this.max) ? decodeTimeOffset({ offsets: this.max, type: this.type }) : this.max}
             />
