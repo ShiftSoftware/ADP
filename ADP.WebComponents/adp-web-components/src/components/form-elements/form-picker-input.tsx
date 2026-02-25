@@ -10,7 +10,8 @@ import { FormInputLabel } from './components/form-input-label';
 import { FormInputPrefix } from './components/form-input-prefix';
 import { FormErrorMessage } from './components/form-error-message';
 import { DateTypes, decodeTimeOffset } from '~lib/decode-time-offset';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
+import { AnyObjectSchema } from 'yup';
 
 const partKeyPrefix = 'form-picker-';
 
@@ -131,6 +132,82 @@ export class FormPickerInput implements FormElement {
     if (this.inputRef) {
       this.inputRef.blur();
     }
+  };
+
+  parseToDate = (v: string | Date): Date | false => {
+    if (!v) return false;
+
+    if (typeof v !== 'string') return v;
+
+    if (this.format) {
+      return parse(v, this.format, new Date());
+    }
+
+    return new Date(v);
+  };
+
+  fmt = (value?: Date | string) => {
+    if (!value) return '';
+    const dateValue = value instanceof Date ? value : (this.parseToDate(value) as Date);
+    return this.format ? format(dateValue, this.format) : dateValue.toISOString();
+  };
+
+  withSlots = (template?: any) => {
+    const resolvedMin = Array.isArray(this.min) ? (decodeTimeOffset({ offsets: this.min, type: this.type }) as string) : this.min;
+    const resolvedMax = Array.isArray(this.max) ? (decodeTimeOffset({ offsets: this.max, type: this.type }) as string) : this.max;
+
+    const minDate = this.parseToDate(resolvedMin);
+    const maxDate = this.parseToDate(resolvedMax);
+
+    let base = typeof template === 'string' ? template : '';
+
+    if (minDate) base = base.replace('$minDate$', this.fmt(minDate));
+    if (maxDate) base = base.replace('$maxDate$', this.fmt(maxDate));
+
+    return base;
+  };
+
+  partialValidation = (v: AnyObjectSchema) => {
+    const resolvedMin = Array.isArray(this.min) ? (decodeTimeOffset({ offsets: this.min, type: this.type }) as string) : this.min;
+    const resolvedMax = Array.isArray(this.max) ? (decodeTimeOffset({ offsets: this.max, type: this.type }) as string) : this.max;
+
+    const minDate = this.parseToDate(resolvedMin);
+    const maxDate = this.parseToDate(resolvedMax);
+
+    const allowEmpty = (value: any) => value === null || value === undefined || value === '';
+
+    // Only min
+    if (minDate && !maxDate) {
+      v = v.test('min-date', 'minMessage', (value?: any) => {
+        if (allowEmpty(value)) return true;
+        const current = this.parseToDate(value);
+        if (!current || Number.isNaN(current.getTime())) return false;
+        return current.getTime() >= minDate.getTime();
+      });
+    }
+
+    // Only max
+    if (!minDate && maxDate) {
+      v = v.test('max-date', 'maxMessage', (value?: any) => {
+        if (allowEmpty(value)) return true;
+        const current = this.parseToDate(value);
+        if (!current || Number.isNaN(current.getTime())) return false;
+        return current.getTime() <= maxDate.getTime();
+      });
+    }
+
+    // Between
+    if (minDate && maxDate) {
+      v = v.test('between-date', 'betweenMessage', (value?: any) => {
+        if (allowEmpty(value)) return true;
+        const current = this.parseToDate(value);
+        if (!current || Number.isNaN(current.getTime())) return false;
+        const time = current.getTime();
+        return time >= minDate.getTime() && time <= maxDate.getTime();
+      });
+    }
+
+    return v;
   };
 
   render() {

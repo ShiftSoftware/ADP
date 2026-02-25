@@ -1,4 +1,5 @@
 import { JSX } from '@stencil/core/internal';
+import { AnyObjectSchema } from 'yup';
 
 import { FormHook } from '~features/form-hook/form-hook';
 
@@ -80,7 +81,9 @@ export type Params = {
 export type FormFieldParams = Record<string, Params>;
 
 export interface FormElement {
+  validate?: () => AnyObjectSchema;
   reset: (newValue?: unknown) => void;
+  partialValidation?: (validation: AnyObjectSchema) => AnyObjectSchema;
 }
 
 export type Subscribers = { name: string; context: FormElement }[];

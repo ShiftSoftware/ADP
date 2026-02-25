@@ -14,6 +14,7 @@ export class FormHook<T> {
   private cachedValues: Partial<T> = {};
   private subscribers: Subscribers = [];
   private schemaObject: AnyObjectSchema;
+  private basicSchemaObject: AnyObjectSchema;
   private onValuesUpdate: (formValues: T) => void;
   private requiredContext: Record<string, boolean>;
   private validationType: ValidationType = 'onSubmit';
@@ -28,14 +29,41 @@ export class FormHook<T> {
   constructor(context: FormHookInterface<T>, schemaObject: AnyObjectSchema, formStateOptions?: FormStateOptions) {
     this.context = context;
     this.schemaObject = schemaObject;
+    this.basicSchemaObject = schemaObject;
     this.formController = { onSubmit: this.onSubmit, onInput: this.onInput };
     if (formStateOptions?.validationType) this.validationType = formStateOptions.validationType;
     this.requiredContext = this.getRequiredContext();
   }
 
-  subscribe = (formName: string, formElement: FormElement) => this.subscribers.push({ name: formName, context: formElement });
+  subscribe = (formName: string, formElement: FormElement) => {
+    this.subscribers.push({ name: formName, context: formElement });
 
-  unsubscribe = (formName: string) => (this.subscribers = this.subscribers.filter(({ name }) => name !== formName));
+    if (formElement?.partialValidation) {
+      const baseField = (this.schemaObject?.fields?.[formName] || this.basicSchemaObject?.fields?.[formName]) as AnyObjectSchema;
+      if (baseField) {
+        const nextField = formElement.partialValidation(baseField);
+        if (nextField) {
+          this.schemaObject = this.schemaObject.shape({
+            [formName]: nextField,
+          });
+        }
+      }
+    }
+
+    if (formElement?.validate) {
+      this.schemaObject = this.schemaObject.shape({
+        [formName]: formElement?.validate(),
+      });
+    }
+  };
+
+  unsubscribe = (formName: string) => {
+    this.schemaObject = this.schemaObject.shape({
+      [formName]: this.basicSchemaObject?.fields[formName] ? this.basicSchemaObject?.fields[formName] : undefined,
+    });
+
+    this.subscribers = this.subscribers.filter(({ name }) => name !== formName);
+  };
 
   reset() {
     this.haltValidation = true;
