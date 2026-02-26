@@ -1,9 +1,11 @@
 {
   "paintThickness": "Paint Thickness",
   "noData": "No data is available.",
-  "part": "Part",
+  "panel": "Panel",
+  "position": "Position",
   "left": "Left",
   "right": "Right",
+  "inspectionDate": "Inspection Date",
   "noImageGroups": "No image groups are available.",
   "expand": "Expand"
 }

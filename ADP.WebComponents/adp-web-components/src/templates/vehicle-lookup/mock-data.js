@@ -26,6 +26,147 @@ const groupFive = {
   tabOrder: 3,
 };
 
+const sampleInspections = [
+  {
+    source: 'PDI',
+    inspectionDate: '2025-10-12T13:01:21.653',
+    panels: [
+      {
+        panelType: 'Fender',
+        measuredThickness: 130,
+        panelSide: 'Left',
+        panelPosition: 'Front',
+        images: [
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Left_Front_Fender_1.jpg',
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Left_Front_Fender_2.jpg',
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Left_Front_Fender_3.jpg',
+        ],
+      },
+      {
+        panelType: 'Fender',
+        measuredThickness: 140,
+        panelSide: 'Right',
+        panelPosition: 'Front',
+        images: [
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Right_Front_Fender_1.jpg',
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Right_Front_Fender_2.jpg',
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Right_Front_Fender_3.jpg',
+        ],
+      },
+      {
+        panelType: 'Door',
+        measuredThickness: 130,
+        panelSide: 'Left',
+        panelPosition: 'Front',
+        images: [
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Left_Front_Door_1.jpg',
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Left_Front_Door_2.jpg',
+        ],
+      },
+      {
+        panelType: 'Door',
+        measuredThickness: 130,
+        panelSide: 'Right',
+        panelPosition: 'Front',
+        images: [
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Right_Front_Door_1.jpg',
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Right_Front_Door_2.jpg',
+        ],
+      },
+      {
+        panelType: 'Door',
+        measuredThickness: 120,
+        panelSide: 'Left',
+        panelPosition: 'Rear',
+        images: [
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Left_Rear_Door_1.jpg',
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Left_Rear_Door_2.jpg',
+        ],
+      },
+      {
+        panelType: 'Door',
+        measuredThickness: 120,
+        panelSide: 'Right',
+        panelPosition: 'Rear',
+        images: [
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Right_Rear_Door_1.jpg',
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Right_Rear_Door_2.jpg',
+        ],
+      },
+      {
+        panelType: 'Fender',
+        measuredThickness: 130,
+        panelSide: 'Left',
+        panelPosition: 'Rear',
+        images: [],
+      },
+      {
+        panelType: 'Fender',
+        measuredThickness: 120,
+        panelSide: 'Right',
+        panelPosition: 'Rear',
+        images: [],
+      },
+      {
+        panelType: 'TailGate',
+        measuredThickness: 110,
+        panelSide: null,
+        panelPosition: 'Rear',
+        images: [
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Tail_Gate_1.jpg',
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Tail_Gate_2.jpg',
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Tail_Gate_3.jpg',
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Tail_Gate_4.jpg',
+        ],
+      },
+      {
+        panelType: 'Roof',
+        measuredThickness: 110,
+        panelSide: null,
+        panelPosition: 'Middle',
+        images: [],
+      },
+      {
+        panelType: 'Hood',
+        measuredThickness: 120,
+        panelSide: null,
+        panelPosition: 'Front',
+        images: [
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Hood_1.jpg',
+          'https://tiqappstorage.blob.core.windows.net/paint-app/Uploads/paintThickness/MR0BU8CD7S0135877%232025-10-12%2304-01-18/Hood_2.jpg',
+        ],
+      },
+    ],
+  },
+  {
+    source: 'Third Party',
+    inspectionDate: '2024-03-15',
+    panels: [
+      { panelType: 'Fender', measuredThickness: 95, panelSide: 'Left', panelPosition: 'Front', images: [] },
+      { panelType: 'Fender', measuredThickness: 100, panelSide: 'Right', panelPosition: 'Front', images: [] },
+      { panelType: 'Door', measuredThickness: 90, panelSide: 'Left', panelPosition: 'Front', images: [] },
+      { panelType: 'Door', measuredThickness: 90, panelSide: 'Right', panelPosition: 'Front', images: [] },
+      { panelType: 'Hood', measuredThickness: 95, panelSide: null, panelPosition: 'Front', images: [] },
+      { panelType: 'Roof', measuredThickness: 88, panelSide: null, panelPosition: 'Middle', images: [] },
+    ],
+  },
+];
+
+const singleInspection = [
+  {
+    source: 'PDI',
+    inspectionDate: '2025-10-12T13:01:21.653',
+    panels: [
+      { panelType: 'Fender', measuredThickness: 130, panelSide: 'Left', panelPosition: 'Front', images: [] },
+      { panelType: 'Fender', measuredThickness: 140, panelSide: 'Right', panelPosition: 'Front', images: [] },
+      { panelType: 'Door', measuredThickness: 130, panelSide: 'Left', panelPosition: 'Front', images: [] },
+      { panelType: 'Door', measuredThickness: 130, panelSide: 'Right', panelPosition: 'Front', images: [] },
+      { panelType: 'Hood', measuredThickness: 120, panelSide: null, panelPosition: 'Front', images: [] },
+      { panelType: 'Roof', measuredThickness: 110, panelSide: null, panelPosition: 'Middle', images: [] },
+    ],
+  },
+];
+
 const mockData = {
   'JTMHX01J8L4198293': {
     saleInformation: {
@@ -304,6 +445,7 @@ const mockData = {
     },
     accessories: [],
     paintThickness: {},
+    paintThicknessInspections: [],
     vin: 'JTMHX01J8L4198294',
     identifiers: {
       vin: 'JTMHX01J8L4198294',
@@ -554,6 +696,7 @@ const mockData = {
     paintThickness: {
       parts: [],
     },
+    paintThicknessInspections: [],
     vin: 'JTMHX01J8L4198295',
     identifiers: {
       vin: 'JTMHX01J8L4198295',
@@ -863,6 +1006,7 @@ const mockData = {
       parts: [],
       imageGroups: [],
     },
+    paintThicknessInspections: [],
     vin: 'JTMHX01J8L4198296',
     identifiers: {
       vin: 'JTMHX01J8L4198295',
@@ -1247,6 +1391,7 @@ const mockData = {
         },
       ],
     },
+    paintThicknessInspections: sampleInspections,
     vin: 'MR0BX8CD3P2791075',
     identifiers: {
       vin: 'MR0BX8CD3P2791075',
@@ -2000,6 +2145,7 @@ const mockData = {
         },
       ],
     },
+    paintThicknessInspections: sampleInspections,
     vin: 'JTMHX01J8L4198299',
     identifiers: {
       vin: 'JTMHX01J8L4198295',
@@ -2332,6 +2478,7 @@ const mockData = {
         },
       ],
     },
+    paintThicknessInspections: sampleInspections,
     vin: 'JTMABBBJ9P4099243',
     identifiers: {
       vin: 'JTMABBBJ9P4099243',
@@ -3041,6 +3188,7 @@ const mockData = {
         },
       ],
     },
+    paintThicknessInspections: sampleInspections,
     vin: 'JTMHU09J6E4100543',
     identifiers: {
       vin: 'JTMHU09J6E4100543',
@@ -3522,6 +3670,7 @@ const mockData = {
       ],
       imageGroups: [],
     },
+    paintThicknessInspections: singleInspection,
     vin: 'JTMABBBJ9P4099200',
     identifiers: {
       vin: 'JTMABBBJ9P4099243',
@@ -4110,6 +4259,7 @@ const mockData = {
         },
       ],
     },
+    paintThicknessInspections: sampleInspections,
     vin: 'JTMABBBJ9P4099201',
     identifiers: {
       vin: 'JTMABBBJ9P4099201',
@@ -4622,6 +4772,7 @@ const mockData = {
     paintThickness: {
       parts: [],
     },
+    paintThicknessInspections: [],
     vin: '1G8ZY1275YZ188208',
     identifiers: {
       vin: '1G8ZY1275YZ188208',

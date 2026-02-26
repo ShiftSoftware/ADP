@@ -5,10 +5,11 @@ import cn from '~lib/cn';
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
 import Eye from '~assets/eye.svg';
+import { CalendarDaysIcon } from '~assets/calendar-days-icon';
 
 import paintThicknessSchema from '~locales/vehicleLookup/paintThickness/type';
 
-import { InformationTableColumn } from '../components/information-table';
+import { PaintThicknessInspectionPanelDTO } from '~types/generated/vehicle-lookup/paint-thickness-inspection-panel-dto';
 
 import { VehicleInfoLayout, VehicleInfoLayoutInterface } from '~features/vehicle-info-layout';
 import { closeImageViewer, ImageViewer, ImageViewerInterface, openImageViewer } from '~features/image-viewer';
@@ -108,30 +109,64 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
 
   // #endregion
 
+  // #region Tab Logic
+
+  @State() activeTabIndex: number = 0;
+
+  @Watch('vehicleLookup')
+  onVehicleLookupChange() {
+    this.activeTabIndex = 0;
+  }
+
+  private onActiveTabChange = ({ idx }: { label: string; idx: number }) => {
+    this.activeTabIndex = idx;
+  };
+
+  // #endregion
+
+  private groupPanels = (panels: PaintThicknessInspectionPanelDTO[]) => {
+    const groups = new Map<string, { panel: string; position: string; left?: number; right?: number; center?: number }>();
+
+    for (const p of panels) {
+      const key = `${p.panelType}|${p.panelPosition || ''}`;
+
+      if (!groups.has(key)) {
+        groups.set(key, { panel: p.panelType, position: p.panelPosition || '' });
+      }
+
+      const row = groups.get(key)!;
+
+      if (p.panelSide === 'Left') row.left = p.measuredThickness;
+      else if (p.panelSide === 'Right') row.right = p.measuredThickness;
+      else row.center = p.measuredThickness;
+    }
+
+    return Array.from(groups.values());
+  };
+
   render() {
     const texts = this.locale;
 
-    const { imageGroups, parts } = this?.vehicleLookup?.paintThickness ? this?.vehicleLookup?.paintThickness : { imageGroups: [], parts: [] };
-    // TODO: fix this BE changes later
+    const inspections = this.vehicleLookup?.paintThicknessInspections || [];
+    const tabs = inspections.map((inspection, idx) => {
+      const isDuplicate = inspections.some((other, otherIdx) => otherIdx !== idx && other.source === inspection.source);
+      return isDuplicate && inspection.inspectionDate ? `${inspection.source} (${inspection.inspectionDate})` : inspection.source;
+    });
+    const hideTabs = this.isLoading || this.isError;
 
-    
-    const tableHeaders: InformationTableColumn[] = [
-      {
-        width: 250,
-        key: 'part',
-        label: texts.part,
-      },
-      {
-        width: 250,
-        key: 'left',
-        label: texts.left,
-      },
-      {
-        width: 250,
-        key: 'right',
-        label: texts.right,
-      },
-    ];
+    const activeInspection = inspections[this.activeTabIndex] || inspections[0];
+    const panels = activeInspection?.panels || [];
+
+    const groupedRows = this.groupPanels(panels);
+
+    const imageGroups = panels
+      .filter(panel => panel.images?.length)
+      .map(panel => ({
+        name: [panel.panelPosition, panel.panelSide, panel.panelType].filter(Boolean).join(' '),
+        images: panel.images,
+      }));
+
+    const colWidths = { panel: 200, position: 200, side: 150 };
 
     return (
       <Host>
@@ -145,8 +180,84 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
           direction={this.locale.sharedLocales.direction}
           errorMessage={this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard}
         >
+          <div class={cn('duration-300', 'py-[15px]', { hidden: hideTabs })}>
+            <shift-tabs activeTabIndex={this.activeTabIndex} changeActiveTab={this.onActiveTabChange} tabs={tabs}></shift-tabs>
+          </div>
+
+          <flexible-container isOpened={!this.isLoading && !!activeInspection?.inspectionDate}>
+            <div class="flex items-center justify-center gap-[6px] border-b border-slate-200 px-[16px] py-[10px] text-[16px] text-slate-700">
+              <CalendarDaysIcon class="size-[18px] shrink-0" />
+              <span class="font-semibold">{texts.inspectionDate}:</span>
+              <span class="shift-skeleton">{activeInspection?.inspectionDate}</span>
+            </div>
+          </flexible-container>
+
           <div class="overflow-x-auto">
-            <information-table rows={parts} headers={tableHeaders} isLoading={this.isLoading}></information-table>
+            <div class={cn('mx-auto w-fit', { loading: this.isLoading })}>
+              {/* Header */}
+              <div class="flex">
+                <div class="font-semibold border-b py-[16px] px-[16px] text-center" style={{ width: `${colWidths.panel}px` }}>
+                  {texts.panel}
+                </div>
+                <div class="font-semibold border-b py-[16px] px-[16px] text-center" style={{ width: `${colWidths.position}px` }}>
+                  {texts.position}
+                </div>
+                <div class="font-semibold border-b py-[16px] px-[16px] text-center" style={{ width: `${colWidths.side}px` }}>
+                  {texts.left}
+                </div>
+                <div class="font-semibold border-b py-[16px] px-[16px] text-center" style={{ width: `${colWidths.side}px` }}>
+                  {texts.right}
+                </div>
+              </div>
+
+              {/* Rows */}
+              <flexible-container height="auto">
+                {!groupedRows.length && (
+                  <div class="border-b">
+                    <div class="flex">
+                      <div class="px-[16px] py-[16px] text-center my-auto" style={{ width: `${colWidths.panel}px` }}>
+                        <div class="shift-skeleton">&nbsp;</div>
+                      </div>
+                      <div class="px-[16px] py-[16px] text-center my-auto" style={{ width: `${colWidths.position}px` }}>
+                        <div class="shift-skeleton">&nbsp;</div>
+                      </div>
+                      <div class="px-[16px] py-[16px] text-center my-auto" style={{ width: `${colWidths.side}px` }}>
+                        <div class="shift-skeleton">&nbsp;</div>
+                      </div>
+                      <div class="px-[16px] py-[16px] text-center my-auto" style={{ width: `${colWidths.side}px` }}>
+                        <div class="shift-skeleton">&nbsp;</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {groupedRows.map((row, idx) => (
+                  <div key={row.panel + row.position + idx} class="border-b last:border-b-0">
+                    <div class={cn('flex hover:bg-sky-100/50 transition duration-300', { 'bg-slate-100': idx % 2 === 1 })}>
+                      <div class="px-[16px] py-[16px] text-center my-auto" style={{ width: `${colWidths.panel}px` }}>
+                        <div class="shift-skeleton">{row.panel}</div>
+                      </div>
+                      <div class="px-[16px] py-[16px] text-center my-auto" style={{ width: `${colWidths.position}px` }}>
+                        <div class="shift-skeleton">{row.position || '\u00A0'}</div>
+                      </div>
+                      {row.center !== undefined ? (
+                        <div class="px-[16px] py-[16px] text-center my-auto" style={{ width: `${colWidths.side * 2}px` }}>
+                          <div class="shift-skeleton">{row.center}</div>
+                        </div>
+                      ) : (
+                        [
+                          <div class="px-[16px] py-[16px] text-center my-auto" style={{ width: `${colWidths.side}px` }}>
+                            <div class="shift-skeleton">{row.left !== undefined ? row.left : '\u00A0'}</div>
+                          </div>,
+                          <div class="px-[16px] py-[16px] text-center my-auto" style={{ width: `${colWidths.side}px` }}>
+                            <div class="shift-skeleton">{row.right !== undefined ? row.right : '\u00A0'}</div>
+                          </div>,
+                        ]
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </flexible-container>
+            </div>
           </div>
 
           <flexible-container isOpened={!this.isLoading && !!imageGroups?.length}>

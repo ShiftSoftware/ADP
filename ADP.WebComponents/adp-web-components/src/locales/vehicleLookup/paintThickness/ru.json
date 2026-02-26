@@ -1,9 +1,11 @@
 {
   "paintThickness": "Толщина краски",
   "noData": "Данных нет.",
-  "part": "Запчасть",
+  "panel": "Панель",
+  "position": "Позиция",
   "left": "Левый",
   "right": "Правый",
+  "inspectionDate": "Дата осмотра",
   "noImageGroups": "Изображения не доступны.",
   "expand": "Раскрыть"
 }

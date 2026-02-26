@@ -1,9 +1,11 @@
 {
   "paintThickness": "سمك الطلاء",
   "noData": "لا توجد بيانات متاحة.",
-  "part": "جزء",
+  "panel": "لوحة",
+  "position": "الموقع",
   "left": "يسار",
   "right": "يمين",
+  "inspectionDate": "تاريخ الفحص",
   "noImageGroups": "لا تتوفر مجموعات صور.",
   "expand": "تکبیر"
 }
