@@ -191,6 +191,67 @@ public class DuckDBVehicleReportService(
         return rows.Count;
     }
 
+    public async Task<IEnumerable<VehicleLookupTopLevelReportModel>> GetVehicleLookupTopLevelReportAsync(
+        IEnumerable<string> vins = null,
+        int? distinctVinCount = null)
+    {
+        var normalizedVins = vins?
+            .Select(NormalizeVin)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.Ordinal)
+            .ToList()
+            ?? (await GetDistinctVinsAsync(distinctVinCount)).ToList();
+
+        if (normalizedVins.Count == 0)
+            return Enumerable.Empty<VehicleLookupTopLevelReportModel>();
+
+        var rows = new List<VehicleLookupTopLevelReportModel>();
+        var batchCount = (normalizedVins.Count + LookupBatchSize - 1) / LookupBatchSize;
+
+        for (var batchIndex = 0; batchIndex < batchCount; batchIndex++)
+        {
+            var batch = normalizedVins
+                .Skip(batchIndex * LookupBatchSize)
+                .Take(LookupBatchSize)
+                .ToList();
+
+            var lookups = await vehicleLookupService.LookupAsync(batch);
+
+            foreach (var lookup in lookups)
+            {
+                var vin = NormalizeVin(lookup?.VIN);
+                if (string.IsNullOrWhiteSpace(vin))
+                    continue;
+
+                rows.Add(CreateVehicleLookupTopLevelRow(vin, lookup));
+            }
+        }
+
+        return rows;
+    }
+
+    public async Task<int> ExportVehicleLookupTopLevelReportToCsvAsync(
+        string fileFullPath,
+        IEnumerable<string> vins = null,
+        int? distinctVinCount = null)
+    {
+        if (string.IsNullOrWhiteSpace(fileFullPath))
+            throw new ArgumentException("CSV output file path is required.", nameof(fileFullPath));
+
+        var rows = (await GetVehicleLookupTopLevelReportAsync(vins, distinctVinCount)).ToList();
+
+        var outputDirectory = Path.GetDirectoryName(fileFullPath);
+        if (!string.IsNullOrWhiteSpace(outputDirectory))
+            Directory.CreateDirectory(outputDirectory);
+
+        using var writer = new StreamWriter(fileFullPath, false);
+        using var csvWriter = new CsvWriter(writer, CultureInfo.InvariantCulture);
+        csvWriter.Context.RegisterClassMap<VehicleLookupTopLevelReportModelCsvMap>();
+        await csvWriter.WriteRecordsAsync(rows);
+
+        return rows.Count;
+    }
+
     public async Task<(List<VehicleServiceHistoryLaborReportModel> LaborReports, List<VehicleServiceHistoryPartReportModel> PartReports)> GetVehicleServiceHistoryReportsAsync(
         IEnumerable<string> vins = null,
         int? distinctVinCount = null)
@@ -549,6 +610,90 @@ public class DuckDBVehicleReportService(
         };
     }
 
+    private static VehicleLookupTopLevelReportModel CreateVehicleLookupTopLevelRow(string vin, VehicleLookupDTO lookup)
+    {
+        var identifiers = lookup?.Identifiers;
+        var sale = lookup?.SaleInformation;
+        var broker = sale?.Broker;
+        var endCustomer = sale?.EndCustomer;
+        var warranty = lookup?.Warranty;
+        var variantInfo = lookup?.VehicleVariantInfo;
+        var vehicleSpecification = lookup?.VehicleSpecification;
+
+        return new VehicleLookupTopLevelReportModel
+        {
+            VIN = vin ?? string.Empty,
+            IsAuthorized = lookup?.IsAuthorized ?? false,
+            NextServiceDate = lookup?.NextServiceDate,
+            SSCLogId = lookup?.SSCLogId,
+            BasicModelCode = lookup?.BasicModelCode ?? string.Empty,
+
+            IdentifiersVin = identifiers?.VIN ?? string.Empty,
+            IdentifiersVariant = identifiers?.Variant ?? string.Empty,
+            IdentifiersKatashiki = identifiers?.Katashiki ?? string.Empty,
+            IdentifiersColor = identifiers?.Color ?? string.Empty,
+            IdentifiersTrim = identifiers?.Trim ?? string.Empty,
+            IdentifiersBrandId = identifiers?.BrandID ?? string.Empty,
+
+            SaleCountryId = sale?.CountryID ?? string.Empty,
+            SaleCountryName = sale?.CountryName ?? string.Empty,
+            SaleCompanyId = sale?.CompanyID ?? string.Empty,
+            SaleCompanyName = sale?.CompanyName ?? string.Empty,
+            SaleBranchId = sale?.BranchID ?? string.Empty,
+            SaleBranchName = sale?.BranchName ?? string.Empty,
+            SaleCustomerAccountNumber = sale?.CustomerAccountNumber ?? string.Empty,
+            SaleCustomerId = sale?.CustomerID ?? string.Empty,
+            SaleInvoiceDate = sale?.InvoiceDate,
+            SaleWarrantyActivationDate = sale?.WarrantyActivationDate,
+            SaleInvoiceNumber = sale?.InvoiceNumber ?? string.Empty,
+            SaleRegionId = sale?.RegionID ?? string.Empty,
+
+            SaleBrokerId = broker?.BrokerID,
+            SaleBrokerName = broker?.BrokerName ?? string.Empty,
+            SaleBrokerInvoiceNumber = broker?.InvoiceNumber,
+            SaleBrokerInvoiceDate = broker?.InvoiceDate,
+
+            SaleEndCustomerId = endCustomer?.ID ?? string.Empty,
+            SaleEndCustomerName = endCustomer?.Name ?? string.Empty,
+            SaleEndCustomerPhone = endCustomer?.Phone ?? string.Empty,
+            SaleEndCustomerIdNumber = endCustomer?.IDNumber ?? string.Empty,
+
+            WarrantyHasActiveWarranty = warranty?.HasActiveWarranty ?? false,
+            WarrantyStartDate = warranty?.WarrantyStartDate,
+            WarrantyEndDate = warranty?.WarrantyEndDate,
+            WarrantyActivationIsRequired = warranty?.ActivationIsRequired ?? false,
+            WarrantyHasExtendedWarranty = warranty?.HasExtendedWarranty ?? false,
+            WarrantyExtendedStartDate = warranty?.ExtendedWarrantyStartDate,
+            WarrantyExtendedEndDate = warranty?.ExtendedWarrantyEndDate,
+            WarrantyFreeServiceStartDate = warranty?.FreeServiceStartDate,
+
+            VariantInfoModelCode = variantInfo?.ModelCode ?? string.Empty,
+            VariantInfoSfx = variantInfo?.SFX ?? string.Empty,
+            VariantInfoModelYear = variantInfo?.ModelYear,
+
+            VehicleSpecModelCode = vehicleSpecification?.ModelCode ?? string.Empty,
+            VehicleSpecModelYear = vehicleSpecification?.ModelYear,
+            VehicleSpecProductionDate = vehicleSpecification?.ProductionDate,
+            VehicleSpecModelDescription = vehicleSpecification?.ModelDescription ?? string.Empty,
+            VehicleSpecVariantDescription = vehicleSpecification?.VariantDescription ?? string.Empty,
+            VehicleSpecClass = vehicleSpecification?.Class ?? string.Empty,
+            VehicleSpecBodyType = vehicleSpecification?.BodyType ?? string.Empty,
+            VehicleSpecEngine = vehicleSpecification?.Engine ?? string.Empty,
+            VehicleSpecCylinders = vehicleSpecification?.Cylinders ?? string.Empty,
+            VehicleSpecLightHeavyType = vehicleSpecification?.LightHeavyType ?? string.Empty,
+            VehicleSpecDoors = vehicleSpecification?.Doors ?? string.Empty,
+            VehicleSpecFuel = vehicleSpecification?.Fuel ?? string.Empty,
+            VehicleSpecTransmission = vehicleSpecification?.Transmission ?? string.Empty,
+            VehicleSpecSide = vehicleSpecification?.Side ?? string.Empty,
+            VehicleSpecEngineType = vehicleSpecification?.EngineType ?? string.Empty,
+            VehicleSpecTankCap = vehicleSpecification?.TankCap ?? string.Empty,
+            VehicleSpecStyle = vehicleSpecification?.Style ?? string.Empty,
+            VehicleSpecFuelLiter = vehicleSpecification?.FuelLiter,
+            VehicleSpecExteriorColor = vehicleSpecification?.ExteriorColor ?? string.Empty,
+            VehicleSpecInteriorColor = vehicleSpecification?.InteriorColor ?? string.Empty,
+        };
+    }
+
     private static Dictionary<string, VehicleServiceItemDTO> BuildBestItemsByServiceId(IEnumerable<VehicleServiceItemDTO> items)
     {
         return (items ?? Enumerable.Empty<VehicleServiceItemDTO>())
@@ -640,6 +785,82 @@ public class DuckDBVehicleReportService(
             Map(x => x.PartNumber3).Index(20);
             Map(x => x.PartDescription3).Index(21);
             Map(x => x.PartIsAvailable3).Index(22);
+        }
+    }
+
+    private sealed class VehicleLookupTopLevelReportModelCsvMap : ClassMap<VehicleLookupTopLevelReportModel>
+    {
+        public VehicleLookupTopLevelReportModelCsvMap()
+        {
+            Map(x => x.VIN).Index(0);
+            Map(x => x.IsAuthorized).Index(1);
+            Map(x => x.NextServiceDate).Index(2);
+            Map(x => x.SSCLogId).Index(3);
+            Map(x => x.BasicModelCode).Index(4);
+
+            Map(x => x.IdentifiersVin).Index(5);
+            Map(x => x.IdentifiersVariant).Index(6);
+            Map(x => x.IdentifiersKatashiki).Index(7);
+            Map(x => x.IdentifiersColor).Index(8);
+            Map(x => x.IdentifiersTrim).Index(9);
+            Map(x => x.IdentifiersBrandId).Index(10);
+
+            Map(x => x.SaleCountryId).Index(11);
+            Map(x => x.SaleCountryName).Index(12);
+            Map(x => x.SaleCompanyId).Index(13);
+            Map(x => x.SaleCompanyName).Index(14);
+            Map(x => x.SaleBranchId).Index(15);
+            Map(x => x.SaleBranchName).Index(16);
+            Map(x => x.SaleCustomerAccountNumber).Index(17);
+            Map(x => x.SaleCustomerId).Index(18);
+            Map(x => x.SaleInvoiceDate).Index(19);
+            Map(x => x.SaleWarrantyActivationDate).Index(20);
+            Map(x => x.SaleInvoiceNumber).Index(21);
+            Map(x => x.SaleRegionId).Index(22);
+
+            Map(x => x.SaleBrokerId).Index(23);
+            Map(x => x.SaleBrokerName).Index(24);
+            Map(x => x.SaleBrokerInvoiceNumber).Index(25);
+            Map(x => x.SaleBrokerInvoiceDate).Index(26);
+
+            Map(x => x.SaleEndCustomerId).Index(27);
+            Map(x => x.SaleEndCustomerName).Index(28);
+            Map(x => x.SaleEndCustomerPhone).Index(29);
+            Map(x => x.SaleEndCustomerIdNumber).Index(30);
+
+            Map(x => x.WarrantyHasActiveWarranty).Index(31);
+            Map(x => x.WarrantyStartDate).Index(32);
+            Map(x => x.WarrantyEndDate).Index(33);
+            Map(x => x.WarrantyActivationIsRequired).Index(34);
+            Map(x => x.WarrantyHasExtendedWarranty).Index(35);
+            Map(x => x.WarrantyExtendedStartDate).Index(36);
+            Map(x => x.WarrantyExtendedEndDate).Index(37);
+            Map(x => x.WarrantyFreeServiceStartDate).Index(38);
+
+            Map(x => x.VariantInfoModelCode).Index(39);
+            Map(x => x.VariantInfoSfx).Index(40);
+            Map(x => x.VariantInfoModelYear).Index(41);
+
+            Map(x => x.VehicleSpecModelCode).Index(42);
+            Map(x => x.VehicleSpecModelYear).Index(43);
+            Map(x => x.VehicleSpecProductionDate).Index(44);
+            Map(x => x.VehicleSpecModelDescription).Index(45);
+            Map(x => x.VehicleSpecVariantDescription).Index(46);
+            Map(x => x.VehicleSpecClass).Index(47);
+            Map(x => x.VehicleSpecBodyType).Index(48);
+            Map(x => x.VehicleSpecEngine).Index(49);
+            Map(x => x.VehicleSpecCylinders).Index(50);
+            Map(x => x.VehicleSpecLightHeavyType).Index(51);
+            Map(x => x.VehicleSpecDoors).Index(52);
+            Map(x => x.VehicleSpecFuel).Index(53);
+            Map(x => x.VehicleSpecTransmission).Index(54);
+            Map(x => x.VehicleSpecSide).Index(55);
+            Map(x => x.VehicleSpecEngineType).Index(56);
+            Map(x => x.VehicleSpecTankCap).Index(57);
+            Map(x => x.VehicleSpecStyle).Index(58);
+            Map(x => x.VehicleSpecFuelLiter).Index(59);
+            Map(x => x.VehicleSpecExteriorColor).Index(60);
+            Map(x => x.VehicleSpecInteriorColor).Index(61);
         }
     }
 

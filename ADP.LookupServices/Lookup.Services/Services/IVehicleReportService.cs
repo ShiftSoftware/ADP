@@ -11,6 +11,8 @@ public interface IVehicleReportService
     Task<int> ExportVehicleServiceItemsReportToCsvAsync(string fileFullPath, IEnumerable<string> vins = null, int? distinctVinCount = null);
     Task<IEnumerable<VehicleSscReportModel>> GetVehicleSscReportAsync(IEnumerable<string> vins = null, int? distinctVinCount = null);
     Task<int> ExportVehicleSscReportToCsvAsync(string fileFullPath, IEnumerable<string> vins = null, int? distinctVinCount = null);
+    Task<IEnumerable<VehicleLookupTopLevelReportModel>> GetVehicleLookupTopLevelReportAsync(IEnumerable<string> vins = null, int? distinctVinCount = null);
+    Task<int> ExportVehicleLookupTopLevelReportToCsvAsync(string fileFullPath, IEnumerable<string> vins = null, int? distinctVinCount = null);
     Task<(List<VehicleServiceHistoryLaborReportModel> LaborReports, List<VehicleServiceHistoryPartReportModel> PartReports)> GetVehicleServiceHistoryReportsAsync(IEnumerable<string> vins = null, int? distinctVinCount = null);
     Task<(int LaborRowCount, int PartRowCount)> ExportVehicleServiceHistoryReportsToCsvAsync(string laborFileFullPath, string partFileFullPath, IEnumerable<string> vins = null, int? distinctVinCount = null);
     Task<IEnumerable<VehicleServiceHistoryLaborReportModel>> GetVehicleServiceHistoryLaborReportAsync(IEnumerable<string> vins = null, int? distinctVinCount = null);
