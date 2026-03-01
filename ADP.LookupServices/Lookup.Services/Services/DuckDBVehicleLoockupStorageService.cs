@@ -1,5 +1,8 @@
 ﻿using ShiftSoftware.ADP.Lookup.Services.Aggregate;
+using ShiftSoftware.ADP.Models;
 using ShiftSoftware.ADP.Models.Customer;
+using ShiftSoftware.ADP.Models.Part;
+using ShiftSoftware.ADP.Models.Service;
 using ShiftSoftware.ADP.Models.TBP;
 using ShiftSoftware.ADP.Models.Vehicle;
 using ShiftSoftware.ShiftEntity.Model.HashIds;
@@ -67,6 +70,7 @@ public class DuckDBVehicleLoockupStorageService(DuckDB.NET.Data.DuckDBConnection
             .ToList();
 
         var timer = Stopwatch.StartNew();
+        var requestedItemTypes = NormalizeItemTypes(itemTypes);
         var aggregateMap = normalizedDistinctVins.ToDictionary(
             vinKey => vinKey,
             vinKey => new CompanyDataAggregateModel { VIN = vinKey },
@@ -76,17 +80,59 @@ public class DuckDBVehicleLoockupStorageService(DuckDB.NET.Data.DuckDBConnection
         {
             var inClause = BuildVinInClause(vinChunk);
 
-            AssignItemsByVin(await GetVehicleEntriesByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.VehicleEntries = items);
-            AssignItemsByVin(await GetInitialOfficialVINsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.InitialOfficialVINs = items);
-            AssignItemsByVin(await GetSSCAffectedVINsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.SSCAffectedVINs = items);
-            AssignItemsByVin(await GetWarrantyClaimsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.WarrantyClaims = items);
-            AssignItemsByVin(await GetItemClaimsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.ItemClaims = items);
-            AssignItemsByVin(await GetPaidServiceInvoicesByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.PaidServiceInvoices = items);
-            AssignItemsByVin(await GetExtendedWarrantiesByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.ExtendedWarrantyEntries = items);
-            AssignItemsByVin(await GetPaintThicknessInspectionsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.PaintThicknessInspections = items);
-            AssignItemsByVin(await GetFreeServiceItemDateShiftsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.FreeServiceItemDateShifts = items);
-            AssignItemsByVin(await GetFreeServiceItemExcludedVINsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.FreeServiceItemExcludedVINs = items);
-            AssignItemsByVin(await GetWarrantyDateShiftsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.WarrantyDateShifts = items);
+            if (ShouldInclude(requestedItemTypes, ModelTypes.VehicleEntry))
+                AssignItemsByVin(await GetVehicleEntriesByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.VehicleEntries = items);
+
+            if (ShouldInclude(requestedItemTypes, ModelTypes.InitialOfficialVIN))
+                AssignItemsByVin(await GetInitialOfficialVINsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.InitialOfficialVINs = items);
+
+            if (ShouldInclude(requestedItemTypes, ModelTypes.InvoiceLaborLine))
+                AssignItemsByVin(await GetOrderLaborLinesByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.LaborLines = items);
+
+            if (ShouldInclude(requestedItemTypes, ModelTypes.InvoicePartLine))
+                AssignItemsByVin(await GetOrderPartLinesByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.PartLines = items);
+
+            if (ShouldInclude(requestedItemTypes, ModelTypes.SSCAffectedVIN))
+                AssignItemsByVin(await GetSSCAffectedVINsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.SSCAffectedVINs = items);
+
+            if (ShouldInclude(requestedItemTypes, ModelTypes.WarrantyClaim))
+                AssignItemsByVin(await GetWarrantyClaimsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.WarrantyClaims = items);
+
+            if (ShouldInclude(requestedItemTypes, ModelTypes.BrokerInitialVehicle))
+                AssignItemsByVin(await GetBrokerInitialVehiclesByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.BrokerInitialVehicles = items);
+
+            if (ShouldInclude(requestedItemTypes, ModelTypes.BrokerInvoice))
+                AssignItemsByVin(await GetBrokerInvoicesByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.BrokerInvoices = items);
+
+            if (ShouldInclude(requestedItemTypes, ModelTypes.PaidServiceInvoice))
+                AssignItemsByVin(await GetPaidServiceInvoicesByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.PaidServiceInvoices = items);
+
+            if (ShouldInclude(requestedItemTypes, ModelTypes.ItemClaim))
+                AssignItemsByVin(await GetItemClaimsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.ItemClaims = items);
+
+            if (ShouldInclude(requestedItemTypes, ModelTypes.FreeServiceItemDateShift))
+                AssignItemsByVin(await GetFreeServiceItemDateShiftsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.FreeServiceItemDateShifts = items);
+
+            if (ShouldInclude(requestedItemTypes, ModelTypes.FreeServiceItemExcludedVIN))
+                AssignItemsByVin(await GetFreeServiceItemExcludedVINsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.FreeServiceItemExcludedVINs = items);
+
+            if (ShouldInclude(requestedItemTypes, ModelTypes.WarrantyDateShift))
+                AssignItemsByVin(await GetWarrantyDateShiftsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.WarrantyDateShifts = items);
+
+            if (ShouldInclude(requestedItemTypes, ModelTypes.PaintThicknessInspection))
+                AssignItemsByVin(await GetPaintThicknessInspectionsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.PaintThicknessInspections = items);
+
+            if (ShouldInclude(requestedItemTypes, ModelTypes.VehicleAccessory))
+                AssignItemsByVin(await GetVehicleAccessoriesByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.Accessories = items);
+
+            if (ShouldInclude(requestedItemTypes, ModelTypes.ExtendedWarranty))
+                AssignItemsByVin(await GetExtendedWarrantiesByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.ExtendedWarrantyEntries = items);
+
+            if (ShouldInclude(requestedItemTypes, ModelTypes.VehicleInspection))
+                AssignItemsByVin(await GetVehicleInspectionsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.VehicleInspections = items);
+
+            if (ShouldInclude(requestedItemTypes, ModelTypes.VehicleServiceActivation))
+                AssignItemsByVin(await GetVehicleServiceActivationsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.VehicleServiceActivations = items);
         }
 
         timer.Stop();
@@ -125,12 +171,19 @@ public class DuckDBVehicleLoockupStorageService(DuckDB.NET.Data.DuckDBConnection
 
         AssignItemsByVin(await GetVehicleEntriesByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.VehicleEntries = items);
         AssignItemsByVin(await GetInitialOfficialVINsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.InitialOfficialVINs = items);
+        AssignItemsByVin(await GetOrderLaborLinesByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.LaborLines = items);
+        AssignItemsByVin(await GetOrderPartLinesByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.PartLines = items);
         AssignItemsByVin(await GetSSCAffectedVINsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.SSCAffectedVINs = items);
+        AssignItemsByVin(await GetBrokerInitialVehiclesByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.BrokerInitialVehicles = items);
+        AssignItemsByVin(await GetBrokerInvoicesByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.BrokerInvoices = items);
         AssignItemsByVin(await GetWarrantyClaimsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.WarrantyClaims = items);
         AssignItemsByVin(await GetItemClaimsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.ItemClaims = items);
         AssignItemsByVin(await GetPaidServiceInvoicesByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.PaidServiceInvoices = items);
         AssignItemsByVin(await GetExtendedWarrantiesByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.ExtendedWarrantyEntries = items);
         AssignItemsByVin(await GetPaintThicknessInspectionsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.PaintThicknessInspections = items);
+        AssignItemsByVin(await GetVehicleAccessoriesByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.Accessories = items);
+        AssignItemsByVin(await GetVehicleInspectionsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.VehicleInspections = items);
+        AssignItemsByVin(await GetVehicleServiceActivationsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.VehicleServiceActivations = items);
         AssignItemsByVin(await GetFreeServiceItemDateShiftsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.FreeServiceItemDateShifts = items);
         AssignItemsByVin(await GetFreeServiceItemExcludedVINsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.FreeServiceItemExcludedVINs = items);
         AssignItemsByVin(await GetWarrantyDateShiftsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.WarrantyDateShifts = items);
@@ -142,6 +195,26 @@ public class DuckDBVehicleLoockupStorageService(DuckDB.NET.Data.DuckDBConnection
             .Distinct(StringComparer.Ordinal)
             .Select(vinKey => aggregateMap[vinKey])
             .ToList();
+    }
+
+    #endregion
+
+    #region Labor Line
+
+    private async Task<List<OrderLaborLineModel>> GetOrderLaborLinesByVinsAsync(string vinInClause)
+    {
+        return await ExecuteQueryAsync<OrderLaborLineModel>(
+            $"SELECT * FROM OrderLaborLine WHERE VIN IN ({vinInClause})");
+    }
+
+    #endregion
+
+    #region Part Line
+
+    private async Task<List<OrderPartLineModel>> GetOrderPartLinesByVinsAsync(string vinInClause)
+    {
+        return await ExecuteQueryAsync<OrderPartLineModel>(
+            $"SELECT * FROM OrderPartLine WHERE VIN IN ({vinInClause})");
     }
 
     #endregion
@@ -291,6 +364,36 @@ public class DuckDBVehicleLoockupStorageService(DuckDB.NET.Data.DuckDBConnection
 
     #endregion
 
+    #region Vehicle Accessory
+
+    private async Task<List<VehicleAccessoryModel>> GetVehicleAccessoriesByVinsAsync(string vinInClause)
+    {
+        return await ExecuteQueryAsync<VehicleAccessoryModel>(
+            $"SELECT * FROM VehicleAccessory WHERE VIN IN ({vinInClause})");
+    }
+
+    #endregion
+
+    #region Vehicle Inspection
+
+    private async Task<List<VehicleInspectionModel>> GetVehicleInspectionsByVinsAsync(string vinInClause)
+    {
+        return await ExecuteQueryAsync<VehicleInspectionModel>(
+            $"SELECT * FROM VehicleInspection WHERE VIN IN ({vinInClause}) AND IsDeleted = false");
+    }
+
+    #endregion
+
+    #region Vehicle Service Activation
+
+    private async Task<List<VehicleServiceActivation>> GetVehicleServiceActivationsByVinsAsync(string vinInClause)
+    {
+        return await ExecuteQueryAsync<VehicleServiceActivation>(
+            $"SELECT * FROM VehicleServiceActivation WHERE VIN IN ({vinInClause}) AND IsDeleted = false");
+    }
+
+    #endregion
+
     #region Free Service Item Date Shift
 
     private async Task<List<FreeServiceItemDateShiftModel>> GetFreeServiceItemDateShiftsAsync(string vin)
@@ -335,6 +438,26 @@ public class DuckDBVehicleLoockupStorageService(DuckDB.NET.Data.DuckDBConnection
     {
         return await ExecuteQueryAsync<WarrantyDateShiftModel>(
             $"SELECT * FROM VehicleWarrantyShiftDate WHERE VIN IN ({vinInClause}) AND IsDeleted = false");
+    }
+
+    #endregion
+
+    #region Broker Initial Vehicle
+
+    private async Task<List<BrokerInitialVehicleModel>> GetBrokerInitialVehiclesByVinsAsync(string vinInClause)
+    {
+        return await ExecuteQueryAsync<BrokerInitialVehicleModel>(
+            $"SELECT * FROM BrokerInitialVehicle WHERE VIN IN ({vinInClause}) AND Deleted = false");
+    }
+
+    #endregion
+
+    #region Broker Invoice
+
+    private async Task<List<BrokerInvoiceModel>> GetBrokerInvoicesByVinsAsync(string vinInClause)
+    {
+        return await ExecuteQueryAsync<BrokerInvoiceModel>(
+            $"SELECT * FROM BrokerInvoice WHERE VIN IN ({vinInClause}) AND IsDeleted = false");
     }
 
     #endregion
@@ -541,9 +664,39 @@ public class DuckDBVehicleLoockupStorageService(DuckDB.NET.Data.DuckDBConnection
 
     #region Batch Helpers
 
+    private static HashSet<string>? NormalizeItemTypes(IEnumerable<string> itemTypes)
+    {
+        if (itemTypes is null)
+            return null;
+
+        var normalizedValues = itemTypes
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x.Trim())
+            .ToList();
+
+        var normalized = new HashSet<string>(normalizedValues, StringComparer.OrdinalIgnoreCase);
+
+        return normalized.Count == 0 ? null : normalized;
+    }
+
+    private static bool ShouldInclude(HashSet<string>? requestedItemTypes, string itemType)
+    {
+        if (requestedItemTypes is null)
+            return true;
+
+        return requestedItemTypes.Contains(itemType);
+    }
+
     private static string NormalizeVin(string vin)
     {
-        return vin?.Trim()?.ToUpper();
+        if (string.IsNullOrWhiteSpace(vin))
+            return null;
+
+        return new string(vin
+            .Trim()
+            .Where(ch => !char.IsWhiteSpace(ch))
+            .ToArray())
+            .ToUpperInvariant();
     }
 
     private static IEnumerable<List<string>> Chunk(IReadOnlyList<string> items, int size)
