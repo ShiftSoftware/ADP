@@ -374,8 +374,9 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
           } else {
             try {
               const responseData = JSON.parse(xhr.responseText);
-
-              alert(responseData.Message);
+              const error = new Error(responseData.Message);
+              (error as any).serverMessage = responseData.Message;
+              reject(error);
             } catch {
               reject(new Error(`Upload failed with status ${xhr.status}`));
             }
@@ -391,7 +392,7 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
         xhr.send(formData);
       });
     } catch (error) {
-      alert(this.locale.sharedLocales.errors.requestFailedPleaseTryAgainLater);
+      alert(error?.serverMessage || this.locale.sharedLocales.errors.requestFailedPleaseTryAgainLater);
       throw new Error(error);
     }
   };
