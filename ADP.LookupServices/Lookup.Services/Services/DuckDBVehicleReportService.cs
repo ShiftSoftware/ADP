@@ -191,6 +191,33 @@ public class DuckDBVehicleReportService(
         return rows.Count;
     }
 
+    public async Task<(List<VehicleServiceHistoryLaborReportModel> LaborReports, List<VehicleServiceHistoryPartReportModel> PartReports)> GetVehicleServiceHistoryReportsAsync(
+        IEnumerable<string> vins = null,
+        int? distinctVinCount = null)
+    {
+        return await BuildServiceHistoryReportsAsync(vins, distinctVinCount);
+    }
+
+    public async Task<(int LaborRowCount, int PartRowCount)> ExportVehicleServiceHistoryReportsToCsvAsync(
+        string laborFileFullPath,
+        string partFileFullPath,
+        IEnumerable<string> vins = null,
+        int? distinctVinCount = null)
+    {
+        if (string.IsNullOrWhiteSpace(laborFileFullPath))
+            throw new ArgumentException("Labor CSV output file path is required.", nameof(laborFileFullPath));
+
+        if (string.IsNullOrWhiteSpace(partFileFullPath))
+            throw new ArgumentException("Part CSV output file path is required.", nameof(partFileFullPath));
+
+        var (laborReports, partReports) = await BuildServiceHistoryReportsAsync(vins, distinctVinCount);
+
+        await WriteCsvAsync(laborFileFullPath, laborReports, new VehicleServiceHistoryLaborReportModelCsvMap());
+        await WriteCsvAsync(partFileFullPath, partReports, new VehicleServiceHistoryPartReportModelCsvMap());
+
+        return (laborReports.Count, partReports.Count);
+    }
+
     public async Task<IEnumerable<VehicleServiceHistoryLaborReportModel>> GetVehicleServiceHistoryLaborReportAsync(
         IEnumerable<string> vins = null,
         int? distinctVinCount = null)
@@ -325,6 +352,70 @@ public class DuckDBVehicleReportService(
         await csvWriter.WriteRecordsAsync(rows);
 
         return rows.Count;
+    }
+
+    private async Task<(List<VehicleServiceHistoryLaborReportModel> LaborReports, List<VehicleServiceHistoryPartReportModel> PartReports)> BuildServiceHistoryReportsAsync(
+        IEnumerable<string> vins,
+        int? distinctVinCount)
+    {
+        var normalizedVins = vins?
+            .Select(NormalizeVin)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.Ordinal)
+            .ToList()
+            ?? (await GetDistinctVinsAsync(distinctVinCount)).ToList();
+
+        var laborReports = new List<VehicleServiceHistoryLaborReportModel>();
+        var partReports = new List<VehicleServiceHistoryPartReportModel>();
+
+        if (normalizedVins.Count == 0)
+            return (laborReports, partReports);
+
+        var batchCount = (normalizedVins.Count + LookupBatchSize - 1) / LookupBatchSize;
+
+        for (var batchIndex = 0; batchIndex < batchCount; batchIndex++)
+        {
+            var batch = normalizedVins
+                .Skip(batchIndex * LookupBatchSize)
+                .Take(LookupBatchSize)
+                .ToList();
+
+            var lookups = await vehicleLookupService.LookupAsync(batch);
+
+            foreach (var lookup in lookups)
+            {
+                var vin = NormalizeVin(lookup?.VIN);
+                if (string.IsNullOrWhiteSpace(vin))
+                    continue;
+
+                foreach (var serviceHistoryEntry in lookup.ServiceHistory ?? Enumerable.Empty<VehicleServiceHistoryDTO>())
+                {
+                    foreach (var labor in serviceHistoryEntry?.LaborLines ?? Enumerable.Empty<VehicleLaborDTO>())
+                    {
+                        laborReports.Add(CreateServiceHistoryLaborRow(vin, serviceHistoryEntry, labor));
+                    }
+
+                    foreach (var part in serviceHistoryEntry?.PartLines ?? Enumerable.Empty<VehiclePartDTO>())
+                    {
+                        partReports.Add(CreateServiceHistoryPartRow(vin, serviceHistoryEntry, part));
+                    }
+                }
+            }
+        }
+
+        return (laborReports, partReports);
+    }
+
+    private static async Task WriteCsvAsync<TModel>(string fileFullPath, IEnumerable<TModel> rows, ClassMap<TModel> classMap)
+    {
+        var outputDirectory = Path.GetDirectoryName(fileFullPath);
+        if (!string.IsNullOrWhiteSpace(outputDirectory))
+            Directory.CreateDirectory(outputDirectory);
+
+        using var writer = new StreamWriter(fileFullPath, false);
+        using var csvWriter = new CsvWriter(writer, CultureInfo.InvariantCulture);
+        csvWriter.Context.RegisterClassMap(classMap);
+        await csvWriter.WriteRecordsAsync(rows);
     }
 
     private static VehicleServiceItemReportModel CreateRow(string vin, VehicleServiceItemDTO item)
