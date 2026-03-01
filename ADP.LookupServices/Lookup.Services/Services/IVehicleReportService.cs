@@ -9,4 +9,6 @@ public interface IVehicleReportService
     Task<IEnumerable<string>> GetDistinctVinsAsync(int? count = null);
     Task<IEnumerable<VehicleServiceItemReportModel>> GetVehicleServiceItemsReportAsync(IEnumerable<string> vins = null, int? distinctVinCount = null);
     Task<int> ExportVehicleServiceItemsReportToCsvAsync(string fileFullPath, IEnumerable<string> vins = null, int? distinctVinCount = null);
+    Task<IEnumerable<VehicleSscReportModel>> GetVehicleSscReportAsync(IEnumerable<string> vins = null, int? distinctVinCount = null);
+    Task<int> ExportVehicleSscReportToCsvAsync(string fileFullPath, IEnumerable<string> vins = null, int? distinctVinCount = null);
 }

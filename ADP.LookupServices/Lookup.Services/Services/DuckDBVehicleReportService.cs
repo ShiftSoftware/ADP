@@ -16,6 +16,7 @@ public class DuckDBVehicleReportService(
     VehicleLookupService vehicleLookupService) : IVehicleReportService
 {
     private const int LookupBatchSize = 500;
+    private const int QueryVinChunkSize = 500;
 
     public async Task<IEnumerable<string>> GetDistinctVinsAsync(int? count = null)
     {
@@ -125,6 +126,71 @@ public class DuckDBVehicleReportService(
         return rows.Count;
     }
 
+    public async Task<IEnumerable<VehicleSscReportModel>> GetVehicleSscReportAsync(
+        IEnumerable<string> vins = null,
+        int? distinctVinCount = null)
+    {
+        var normalizedVins = vins?
+            .Select(NormalizeVin)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.Ordinal)
+            .ToList()
+            ?? (await GetDistinctVinsAsync(distinctVinCount)).ToList();
+
+        if (normalizedVins.Count == 0)
+            return Enumerable.Empty<VehicleSscReportModel>();
+
+        var rows = new List<VehicleSscReportModel>();
+
+        var batchCount = (normalizedVins.Count + LookupBatchSize - 1) / LookupBatchSize;
+
+        for (var batchIndex = 0; batchIndex < batchCount; batchIndex++)
+        {
+            var batch = normalizedVins
+                .Skip(batchIndex * LookupBatchSize)
+                .Take(LookupBatchSize)
+                .ToList();
+
+            var lookups = await vehicleLookupService.LookupAsync(batch);
+
+            foreach (var lookup in lookups)
+            {
+                var vin = NormalizeVin(lookup?.VIN);
+                if (string.IsNullOrWhiteSpace(vin))
+                    continue;
+
+                foreach (var ssc in lookup.SSC ?? Enumerable.Empty<SscDTO>())
+                {
+                    rows.Add(CreateSscRow(vin, ssc));
+                }
+            }
+        }
+
+        return rows;
+    }
+
+    public async Task<int> ExportVehicleSscReportToCsvAsync(
+        string fileFullPath,
+        IEnumerable<string> vins = null,
+        int? distinctVinCount = null)
+    {
+        if (string.IsNullOrWhiteSpace(fileFullPath))
+            throw new ArgumentException("CSV output file path is required.", nameof(fileFullPath));
+
+        var rows = (await GetVehicleSscReportAsync(vins, distinctVinCount)).ToList();
+
+        var outputDirectory = Path.GetDirectoryName(fileFullPath);
+        if (!string.IsNullOrWhiteSpace(outputDirectory))
+            Directory.CreateDirectory(outputDirectory);
+
+        using var writer = new StreamWriter(fileFullPath, false);
+        using var csvWriter = new CsvWriter(writer, CultureInfo.InvariantCulture);
+        csvWriter.Context.RegisterClassMap<VehicleSscReportModelCsvMap>();
+        await csvWriter.WriteRecordsAsync(rows);
+
+        return rows.Count;
+    }
+
     private static VehicleServiceItemReportModel CreateRow(string vin, VehicleServiceItemDTO item)
     {
         return new VehicleServiceItemReportModel
@@ -163,6 +229,53 @@ public class DuckDBVehicleReportService(
     private static string NormalizeVin(string vin)
     {
         return vin?.Trim()?.ToUpperInvariant();
+    }
+
+    private static VehicleSscReportModel CreateSscRow(string vin, SscDTO ssc)
+    {
+        var labors = (ssc?.Labors ?? Enumerable.Empty<SSCLaborDTO>()).Take(3).ToList();
+        var parts = (ssc?.Parts ?? Enumerable.Empty<SSCPartDTO>()).Take(3).ToList();
+
+        var labor1 = labors.Count > 0 ? labors[0] : null;
+        var labor2 = labors.Count > 1 ? labors[1] : null;
+        var labor3 = labors.Count > 2 ? labors[2] : null;
+
+        var part1 = parts.Count > 0 ? parts[0] : null;
+        var part2 = parts.Count > 1 ? parts[1] : null;
+        var part3 = parts.Count > 2 ? parts[2] : null;
+
+        return new VehicleSscReportModel
+        {
+            VIN = vin ?? string.Empty,
+            SSCCode = ssc?.SSCCode ?? string.Empty,
+            Description = ssc?.Description ?? string.Empty,
+            Repaired = ssc?.Repaired ?? false,
+            RepairDate = ssc?.RepairDate,
+
+            LaborCode1 = labor1?.LaborCode ?? string.Empty,
+            LaborDescription1 = labor1?.LaborDescription ?? string.Empty,
+            LaborAllowedTime1 = labor1?.AllowedTime,
+
+            LaborCode2 = labor2?.LaborCode ?? string.Empty,
+            LaborDescription2 = labor2?.LaborDescription ?? string.Empty,
+            LaborAllowedTime2 = labor2?.AllowedTime,
+
+            LaborCode3 = labor3?.LaborCode ?? string.Empty,
+            LaborDescription3 = labor3?.LaborDescription ?? string.Empty,
+            LaborAllowedTime3 = labor3?.AllowedTime,
+
+            PartNumber1 = part1?.PartNumber ?? string.Empty,
+            PartDescription1 = part1?.PartDescription ?? string.Empty,
+            PartIsAvailable1 = part1?.IsAvailable,
+
+            PartNumber2 = part2?.PartNumber ?? string.Empty,
+            PartDescription2 = part2?.PartDescription ?? string.Empty,
+            PartIsAvailable2 = part2?.IsAvailable,
+
+            PartNumber3 = part3?.PartNumber ?? string.Empty,
+            PartDescription3 = part3?.PartDescription ?? string.Empty,
+            PartIsAvailable3 = part3?.IsAvailable,
+        };
     }
 
     private static Dictionary<string, VehicleServiceItemDTO> BuildBestItemsByServiceId(IEnumerable<VehicleServiceItemDTO> items)
@@ -220,6 +333,42 @@ public class DuckDBVehicleReportService(
             Map(x => x.ClaimingMethod).Index(25);
             Map(x => x.VehicleInspectionId).Index(26);
             Map(x => x.VehicleInspectionTypeId).Index(27);
+        }
+    }
+
+    private sealed class VehicleSscReportModelCsvMap : ClassMap<VehicleSscReportModel>
+    {
+        public VehicleSscReportModelCsvMap()
+        {
+            Map(x => x.VIN).Index(0);
+            Map(x => x.SSCCode).Index(1);
+            Map(x => x.Description).Index(2);
+            Map(x => x.Repaired).Index(3);
+            Map(x => x.RepairDate).Index(4);
+
+            Map(x => x.LaborCode1).Index(5);
+            Map(x => x.LaborDescription1).Index(6);
+            Map(x => x.LaborAllowedTime1).Index(7);
+
+            Map(x => x.LaborCode2).Index(8);
+            Map(x => x.LaborDescription2).Index(9);
+            Map(x => x.LaborAllowedTime2).Index(10);
+
+            Map(x => x.LaborCode3).Index(11);
+            Map(x => x.LaborDescription3).Index(12);
+            Map(x => x.LaborAllowedTime3).Index(13);
+
+            Map(x => x.PartNumber1).Index(14);
+            Map(x => x.PartDescription1).Index(15);
+            Map(x => x.PartIsAvailable1).Index(16);
+
+            Map(x => x.PartNumber2).Index(17);
+            Map(x => x.PartDescription2).Index(18);
+            Map(x => x.PartIsAvailable2).Index(19);
+
+            Map(x => x.PartNumber3).Index(20);
+            Map(x => x.PartDescription3).Index(21);
+            Map(x => x.PartIsAvailable3).Index(22);
         }
     }
 }
