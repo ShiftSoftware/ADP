@@ -191,6 +191,142 @@ public class DuckDBVehicleReportService(
         return rows.Count;
     }
 
+    public async Task<IEnumerable<VehicleServiceHistoryLaborReportModel>> GetVehicleServiceHistoryLaborReportAsync(
+        IEnumerable<string> vins = null,
+        int? distinctVinCount = null)
+    {
+        var normalizedVins = vins?
+            .Select(NormalizeVin)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.Ordinal)
+            .ToList()
+            ?? (await GetDistinctVinsAsync(distinctVinCount)).ToList();
+
+        if (normalizedVins.Count == 0)
+            return Enumerable.Empty<VehicleServiceHistoryLaborReportModel>();
+
+        var rows = new List<VehicleServiceHistoryLaborReportModel>();
+
+        var batchCount = (normalizedVins.Count + LookupBatchSize - 1) / LookupBatchSize;
+
+        for (var batchIndex = 0; batchIndex < batchCount; batchIndex++)
+        {
+            var batch = normalizedVins
+                .Skip(batchIndex * LookupBatchSize)
+                .Take(LookupBatchSize)
+                .ToList();
+
+            var lookups = await vehicleLookupService.LookupAsync(batch);
+
+            foreach (var lookup in lookups)
+            {
+                var vin = NormalizeVin(lookup?.VIN);
+                if (string.IsNullOrWhiteSpace(vin))
+                    continue;
+
+                foreach (var serviceHistoryEntry in lookup.ServiceHistory ?? Enumerable.Empty<VehicleServiceHistoryDTO>())
+                {
+                    foreach (var labor in serviceHistoryEntry?.LaborLines ?? Enumerable.Empty<VehicleLaborDTO>())
+                    {
+                        rows.Add(CreateServiceHistoryLaborRow(vin, serviceHistoryEntry, labor));
+                    }
+                }
+            }
+        }
+
+        return rows;
+    }
+
+    public async Task<int> ExportVehicleServiceHistoryLaborReportToCsvAsync(
+        string fileFullPath,
+        IEnumerable<string> vins = null,
+        int? distinctVinCount = null)
+    {
+        if (string.IsNullOrWhiteSpace(fileFullPath))
+            throw new ArgumentException("CSV output file path is required.", nameof(fileFullPath));
+
+        var rows = (await GetVehicleServiceHistoryLaborReportAsync(vins, distinctVinCount)).ToList();
+
+        var outputDirectory = Path.GetDirectoryName(fileFullPath);
+        if (!string.IsNullOrWhiteSpace(outputDirectory))
+            Directory.CreateDirectory(outputDirectory);
+
+        using var writer = new StreamWriter(fileFullPath, false);
+        using var csvWriter = new CsvWriter(writer, CultureInfo.InvariantCulture);
+        csvWriter.Context.RegisterClassMap<VehicleServiceHistoryLaborReportModelCsvMap>();
+        await csvWriter.WriteRecordsAsync(rows);
+
+        return rows.Count;
+    }
+
+    public async Task<IEnumerable<VehicleServiceHistoryPartReportModel>> GetVehicleServiceHistoryPartReportAsync(
+        IEnumerable<string> vins = null,
+        int? distinctVinCount = null)
+    {
+        var normalizedVins = vins?
+            .Select(NormalizeVin)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.Ordinal)
+            .ToList()
+            ?? (await GetDistinctVinsAsync(distinctVinCount)).ToList();
+
+        if (normalizedVins.Count == 0)
+            return Enumerable.Empty<VehicleServiceHistoryPartReportModel>();
+
+        var rows = new List<VehicleServiceHistoryPartReportModel>();
+
+        var batchCount = (normalizedVins.Count + LookupBatchSize - 1) / LookupBatchSize;
+
+        for (var batchIndex = 0; batchIndex < batchCount; batchIndex++)
+        {
+            var batch = normalizedVins
+                .Skip(batchIndex * LookupBatchSize)
+                .Take(LookupBatchSize)
+                .ToList();
+
+            var lookups = await vehicleLookupService.LookupAsync(batch);
+
+            foreach (var lookup in lookups)
+            {
+                var vin = NormalizeVin(lookup?.VIN);
+                if (string.IsNullOrWhiteSpace(vin))
+                    continue;
+
+                foreach (var serviceHistoryEntry in lookup.ServiceHistory ?? Enumerable.Empty<VehicleServiceHistoryDTO>())
+                {
+                    foreach (var part in serviceHistoryEntry?.PartLines ?? Enumerable.Empty<VehiclePartDTO>())
+                    {
+                        rows.Add(CreateServiceHistoryPartRow(vin, serviceHistoryEntry, part));
+                    }
+                }
+            }
+        }
+
+        return rows;
+    }
+
+    public async Task<int> ExportVehicleServiceHistoryPartReportToCsvAsync(
+        string fileFullPath,
+        IEnumerable<string> vins = null,
+        int? distinctVinCount = null)
+    {
+        if (string.IsNullOrWhiteSpace(fileFullPath))
+            throw new ArgumentException("CSV output file path is required.", nameof(fileFullPath));
+
+        var rows = (await GetVehicleServiceHistoryPartReportAsync(vins, distinctVinCount)).ToList();
+
+        var outputDirectory = Path.GetDirectoryName(fileFullPath);
+        if (!string.IsNullOrWhiteSpace(outputDirectory))
+            Directory.CreateDirectory(outputDirectory);
+
+        using var writer = new StreamWriter(fileFullPath, false);
+        using var csvWriter = new CsvWriter(writer, CultureInfo.InvariantCulture);
+        csvWriter.Context.RegisterClassMap<VehicleServiceHistoryPartReportModelCsvMap>();
+        await csvWriter.WriteRecordsAsync(rows);
+
+        return rows.Count;
+    }
+
     private static VehicleServiceItemReportModel CreateRow(string vin, VehicleServiceItemDTO item)
     {
         return new VehicleServiceItemReportModel
@@ -275,6 +411,50 @@ public class DuckDBVehicleReportService(
             PartNumber3 = part3?.PartNumber ?? string.Empty,
             PartDescription3 = part3?.PartDescription ?? string.Empty,
             PartIsAvailable3 = part3?.IsAvailable,
+        };
+    }
+
+    private static VehicleServiceHistoryLaborReportModel CreateServiceHistoryLaborRow(string vin, VehicleServiceHistoryDTO serviceHistoryEntry, VehicleLaborDTO labor)
+    {
+        return new VehicleServiceHistoryLaborReportModel
+        {
+            VIN = vin ?? string.Empty,
+            ServiceType = serviceHistoryEntry?.ServiceType ?? string.Empty,
+            ServiceDate = serviceHistoryEntry?.ServiceDate,
+            Mileage = serviceHistoryEntry?.Mileage,
+            CompanyName = serviceHistoryEntry?.CompanyName ?? string.Empty,
+            BranchName = serviceHistoryEntry?.BranchName ?? string.Empty,
+            AccountNumber = serviceHistoryEntry?.AccountNumber ?? string.Empty,
+            InvoiceNumber = serviceHistoryEntry?.InvoiceNumber ?? string.Empty,
+            ParentInvoiceNumber = serviceHistoryEntry?.ParentInvoiceNumber ?? string.Empty,
+            JobNumber = serviceHistoryEntry?.JobNumber ?? string.Empty,
+
+            LaborCode = labor?.LaborCode ?? string.Empty,
+            LaborPackageCode = labor?.PackageCode ?? string.Empty,
+            LaborServiceCode = labor?.ServiceCode ?? string.Empty,
+            LaborServiceDescription = labor?.ServiceDescription ?? string.Empty,
+        };
+    }
+
+    private static VehicleServiceHistoryPartReportModel CreateServiceHistoryPartRow(string vin, VehicleServiceHistoryDTO serviceHistoryEntry, VehiclePartDTO part)
+    {
+        return new VehicleServiceHistoryPartReportModel
+        {
+            VIN = vin ?? string.Empty,
+            ServiceType = serviceHistoryEntry?.ServiceType ?? string.Empty,
+            ServiceDate = serviceHistoryEntry?.ServiceDate,
+            Mileage = serviceHistoryEntry?.Mileage,
+            CompanyName = serviceHistoryEntry?.CompanyName ?? string.Empty,
+            BranchName = serviceHistoryEntry?.BranchName ?? string.Empty,
+            AccountNumber = serviceHistoryEntry?.AccountNumber ?? string.Empty,
+            InvoiceNumber = serviceHistoryEntry?.InvoiceNumber ?? string.Empty,
+            ParentInvoiceNumber = serviceHistoryEntry?.ParentInvoiceNumber ?? string.Empty,
+            JobNumber = serviceHistoryEntry?.JobNumber ?? string.Empty,
+
+            PartNumber = part?.PartNumber ?? string.Empty,
+            PartQty = part?.QTY,
+            PartPackageCode = part?.PackageCode ?? string.Empty,
+            PartDescription = part?.PartDescription ?? string.Empty,
         };
     }
 
@@ -369,6 +549,50 @@ public class DuckDBVehicleReportService(
             Map(x => x.PartNumber3).Index(20);
             Map(x => x.PartDescription3).Index(21);
             Map(x => x.PartIsAvailable3).Index(22);
+        }
+    }
+
+    private sealed class VehicleServiceHistoryLaborReportModelCsvMap : ClassMap<VehicleServiceHistoryLaborReportModel>
+    {
+        public VehicleServiceHistoryLaborReportModelCsvMap()
+        {
+            Map(x => x.VIN).Index(0);
+            Map(x => x.ServiceType).Index(1);
+            Map(x => x.ServiceDate).Index(2);
+            Map(x => x.Mileage).Index(3);
+            Map(x => x.CompanyName).Index(4);
+            Map(x => x.BranchName).Index(5);
+            Map(x => x.AccountNumber).Index(6);
+            Map(x => x.InvoiceNumber).Index(7);
+            Map(x => x.ParentInvoiceNumber).Index(8);
+            Map(x => x.JobNumber).Index(9);
+
+            Map(x => x.LaborCode).Index(10);
+            Map(x => x.LaborPackageCode).Index(11);
+            Map(x => x.LaborServiceCode).Index(12);
+            Map(x => x.LaborServiceDescription).Index(13);
+        }
+    }
+
+    private sealed class VehicleServiceHistoryPartReportModelCsvMap : ClassMap<VehicleServiceHistoryPartReportModel>
+    {
+        public VehicleServiceHistoryPartReportModelCsvMap()
+        {
+            Map(x => x.VIN).Index(0);
+            Map(x => x.ServiceType).Index(1);
+            Map(x => x.ServiceDate).Index(2);
+            Map(x => x.Mileage).Index(3);
+            Map(x => x.CompanyName).Index(4);
+            Map(x => x.BranchName).Index(5);
+            Map(x => x.AccountNumber).Index(6);
+            Map(x => x.InvoiceNumber).Index(7);
+            Map(x => x.ParentInvoiceNumber).Index(8);
+            Map(x => x.JobNumber).Index(9);
+
+            Map(x => x.PartNumber).Index(10);
+            Map(x => x.PartQty).Index(11);
+            Map(x => x.PartPackageCode).Index(12);
+            Map(x => x.PartDescription).Index(13);
         }
     }
 }
