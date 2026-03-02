@@ -18,15 +18,15 @@
 }
 
 .service-history-subrow {
-  @apply border-t border-slate-200 items-start overflow-x-auto flex gap-3 bg-gray-50 py-3 px-3;
+  @apply border-t border-slate-200 items-start overflow-x-auto flex gap-[12px] bg-gray-50 py-[12px] px-[12px];
 }
 
 .service-history-subsection {
-  @apply border border-slate-200 min-w-fit flex-1 shrink-0 bg-white rounded-[6px] overflow-hidden shadow-[0_1px_0_rgba(17,24,39,0.02),0_8px_15px_rgba(17,24,39,0.06)];
+  @apply border border-slate-200 min-w-fit flex-1 shrink-0 bg-white rounded-[6px] overflow-hidden;
 }
 
 .service-history-subsection-header {
-  @apply flex items-center gap-2.5 py-2 px-2 ps-4 bg-slate-100 border-b border-slate-200;
+  @apply flex items-center gap-[10px] py-[8px] px-[8px] ps-[16px] bg-slate-100 border-b border-slate-200;
 }
 
 .service-history-subsection-title {
@@ -34,7 +34,7 @@
 }
 
 .service-history-subsection-meta {
-  @apply text-[12px] !aspect-square flex items-center font-bold text-slate-700 bg-white border border-indigo-100 rounded-full px-2;
+  @apply text-[12px] px-[8px] min-w-[16px] shrink-0 flex items-center font-bold text-slate-700 bg-white border border-indigo-100 rounded-full;
 }
 
 .service-history-subsection-table {
@@ -42,10 +42,10 @@
 }
 
 .service-history-empty {
-  @apply py-2 px-1.5 text-slate-500 text-[12px] bg-red-500;
+  @apply py-[8px] px-[8px] ps-[16px] text-slate-500 text-[14px] bg-white;
 }
 
 .service-history-subrow .table-header-cell,
 .service-history-subrow .table-body-cell {
-  @apply !p-1.5;
+  @apply !p-[6px];
 }
