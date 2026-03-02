@@ -23,6 +23,7 @@ export class InformationTable {
   @Prop() isLoading: boolean = false;
   @Prop() showHeader: boolean = true;
   @Prop() isRaw: boolean = false;
+  @Prop() stripCells: boolean = true;
   @Prop() customSkeleton: boolean = false;
   @Prop() headers: InformationTableColumn[];
 
@@ -31,7 +32,8 @@ export class InformationTable {
 
   @Prop() expandColumnWidth: number = 48;
   @Prop() subRowRenderer?: (row: any) => any;
-  @Prop() allowMultipleExpanded: boolean = true;
+  @Prop() expandUsingEntireRow: boolean = false;
+  @Prop() allowMultipleExpanded: boolean = false;
 
   @State() tableRowHeight: number | 'auto' = 'auto';
   @State() expandedRowIndexes: number[] = [];
@@ -78,7 +80,7 @@ export class InformationTable {
     const expandable = !!this.subRowRenderer && rowIndex >= 0;
     const expanded = expandable ? this.isExpanded(rowIndex) : false;
 
-    const rowBg = rowIndex >= 0 && rowIndex % 2 === 1 ? 'bg-slate-100' : '';
+    const rowBg = rowIndex >= 0 && rowIndex % 2 === 1 && this.stripCells ? 'bg-slate-100' : '';
 
     const expandCellPaddingClass = this.size === 'small' ? 'px-[6px] py-[10px]' : 'px-[8px] py-[16px]';
     const expandPlaceholderSizeClass = this.size === 'small' ? 'size-[28px]' : 'size-[32px]';
@@ -89,11 +91,13 @@ export class InformationTable {
       <div style={{ width: `${this.expandColumnWidth}px` }} class={cn('grid place-items-center', expandCellPaddingClass)}>
         <button
           type="button"
+          disabled={this.expandUsingEntireRow}
           aria-expanded={expanded ? 'true' : 'false'}
           onClick={() => this.toggleExpanded(rowIndex)}
           class={cn('size-full grid place-items-center shift-skeleton rounded transition duration-500', {
             'hover:bg-slate-200/70': !expanded,
             'bg-sky-100 hover:bg-sky-200': expanded,
+            '!pointer-events-none': this.expandUsingEntireRow,
           })}
         >
           <ArrowIcon class={cn('text-slate-700 transition-transform duration-500', { 'rotate-180': expanded })} />
@@ -109,7 +113,10 @@ export class InformationTable {
     const cellTextClass = this.size === 'small' ? 'text-[13px]' : '';
 
     return (
-      <div class={cn('information-table-row flex hover:bg-sky-100/50 transition duration-300', rowBg)}>
+      <div
+        onClick={this.expandUsingEntireRow && (() => this.toggleExpanded(rowIndex))}
+        class={cn('information-table-row flex hover:bg-sky-100/50 transition duration-300', rowBg, { 'hover:cursor-pointer': this.expandUsingEntireRow })}
+      >
         {expandCell}
         {this.headers.map(({ key, label, width, centeredHorizontally = true, centeredVertically = true, styles = {} }, idx) => {
           const hasWidth = typeof width === 'number' && width > 0;
@@ -118,7 +125,7 @@ export class InformationTable {
             <div
               key={key + label + idx}
               style={{ ...(this.allowAutoWidth && !hasWidth ? {} : { width: hasWidth ? `${width}px` : undefined }), ...styles }}
-              class={cn(cellPaddingClass, cellTextClass, {
+              class={cn('table-body-cell', cellPaddingClass, cellTextClass, {
                 'text-center': centeredHorizontally,
                 'my-auto': centeredVertically,
                 'flex-1 min-w-0': this.allowAutoWidth && !hasWidth,
@@ -159,7 +166,7 @@ export class InformationTable {
                 <div
                   key={label + idx}
                   style={{ ...(this.allowAutoWidth && !hasWidth ? {} : { width: hasWidth ? `${width}px` : undefined }), ...styles }}
-                  class={cn('font-semibold border-b', this.size === 'small' ? 'py-[10px] px-[12px] text-[13px]' : 'py-[16px] px-[16px]', {
+                  class={cn('font-semibold table-header-cell border-b', this.size === 'small' ? 'py-[10px] px-[12px] text-[13px]' : 'py-[16px] px-[16px]', {
                     'text-center': centeredHorizontally,
                     'flex-1 min-w-0': this.allowAutoWidth && !hasWidth,
                   })}

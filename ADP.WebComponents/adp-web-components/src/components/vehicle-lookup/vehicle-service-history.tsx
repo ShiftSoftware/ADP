@@ -144,6 +144,7 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
         >
           <div class="overflow-x-auto">
             <information-table
+              expandUsingEntireRow
               headers={tableHeaders}
               isLoading={this.isLoading}
               rows={this.vehicleLookup?.serviceHistory || []}

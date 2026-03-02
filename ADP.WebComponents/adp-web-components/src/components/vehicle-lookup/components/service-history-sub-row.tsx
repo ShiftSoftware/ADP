@@ -32,7 +32,7 @@ export const ServiceHistorySubRow = ({ locale, row }: Props) => {
   ];
 
   return (
-    <div class="service-history-subrow [&_.information-table-wrapper]:!w-fsull [&_.information-table-wrapper]:!mx-0" dir={locale.sharedLocales.direction}>
+    <div class="service-history-subrow" dir={locale.sharedLocales.direction}>
       <section class="service-history-subsection">
         <div class="service-history-subsection-header">
           <div class="service-history-subsection-title">{locale.laborLines}</div>
@@ -41,7 +41,7 @@ export const ServiceHistorySubRow = ({ locale, row }: Props) => {
 
         {laborLines.length ? (
           <div class="service-history-subsection-table">
-            <information-table isRaw headers={laborHeaders} rows={laborLines} size="small" allowAutoWidth />
+            <information-table isRaw headers={laborHeaders} rows={laborLines} size="small" allowAutoWidth stripCells={false} />
           </div>
         ) : (
           <div class="service-history-empty">{locale.noData}</div>
@@ -56,7 +56,7 @@ export const ServiceHistorySubRow = ({ locale, row }: Props) => {
 
         {partLines.length ? (
           <div class="service-history-subsection-table">
-            <information-table isRaw headers={partHeaders} rows={partLines} size="small" allowAutoWidth />
+            <information-table isRaw headers={partHeaders} rows={partLines} size="small" allowAutoWidth stripCells={false} />
           </div>
         ) : (
           <div class="service-history-empty">{locale.noData}</div>
