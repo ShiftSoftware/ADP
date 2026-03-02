@@ -251,7 +251,6 @@ export class VehicleLookup implements MultiLingual {
           id={componentTags.vehicleWarrantyDetails}
           {...props[componentTags.vehicleWarrantyDetails]}
         >
-          <slot></slot>
         </vehicle-warranty-details>
       ),
       'vehicle-service-history': (

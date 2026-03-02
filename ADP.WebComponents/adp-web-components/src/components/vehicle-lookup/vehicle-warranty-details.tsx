@@ -82,6 +82,7 @@ export class VehicleWarrantyDetails implements MultiLingual, VehicleInfoLayoutIn
   @Method()
   async fetchData(newData: VehicleLookupDTO | string, headers: any = {}) {
     this.recaptchaRes = null;
+    this.showRecaptcha = false;
     clearInterval(this.recaptchaIntervalRef);
     await setVehicleLookupData(this, newData, headers, {
       beforeAssignment: async (response, { scopedTimeoutRef }) => {
@@ -145,13 +146,19 @@ export class VehicleWarrantyDetails implements MultiLingual, VehicleInfoLayoutIn
   } | null = null;
 
   private recaptchaIntervalRef: ReturnType<typeof setInterval>;
+  private recaptchaWidgetId: number | undefined;
+  private recaptchaPortalEl: HTMLDivElement;
+  private recaptchaPlaceholderRef: HTMLDivElement;
+  private positionRAF: number;
 
   private async handleInitializingRecaptcha(newVehicleLookup: VehicleLookupDTO, scopedTimeoutRef) {
     if (newVehicleLookup?.isAuthorized === false && this.showSsc && this.recaptchaKey !== '') {
-      grecaptcha.reset();
+      if (this.recaptchaWidgetId !== undefined) {
+        grecaptcha.reset(this.recaptchaWidgetId);
+      }
       // await new Promise(r => setTimeout(r, 400));
       this.recaptchaIntervalRef = setInterval(async () => {
-        const recaptchaResponse = grecaptcha.getResponse();
+        const recaptchaResponse = grecaptcha.getResponse(this.recaptchaWidgetId);
         if (recaptchaResponse) {
           clearInterval(this.recaptchaIntervalRef);
 
@@ -207,15 +214,67 @@ export class VehicleWarrantyDetails implements MultiLingual, VehicleInfoLayoutIn
 
   async componentDidLoad() {
     if (this.recaptchaKey !== '') {
+      this.recaptchaPortalEl = document.createElement('div');
+      this.recaptchaPortalEl.style.cssText = 'position: fixed; z-index: 10000; display: none;';
+      document.body.appendChild(this.recaptchaPortalEl);
+
       const script = document.createElement('script');
 
-      script.src = 'https://www.google.com/recaptcha/api.js';
+      script.src = 'https://www.google.com/recaptcha/api.js?render=explicit';
       script.async = true;
       script.defer = true;
-      script.onload = () => console.log('reCAPTCHA script loaded');
+      script.onload = () => {
+        grecaptcha.ready(() => {
+          this.recaptchaWidgetId = grecaptcha.render(this.recaptchaPortalEl, { sitekey: this.recaptchaKey });
+        });
+      };
 
       document.head.appendChild(script);
     }
+  }
+
+  disconnectedCallback() {
+    cancelAnimationFrame(this.positionRAF);
+    clearInterval(this.recaptchaIntervalRef);
+    if (this.recaptchaPortalEl) {
+      this.recaptchaPortalEl.remove();
+    }
+  }
+
+  @Watch('showRecaptcha')
+  onShowRecaptchaChange(show: boolean) {
+    if (!this.recaptchaPortalEl) return;
+    if (show) {
+      this.recaptchaPortalEl.style.display = 'block';
+      this.syncRecaptchaPosition();
+    } else {
+      this.recaptchaPortalEl.style.display = 'none';
+      cancelAnimationFrame(this.positionRAF);
+    }
+  }
+
+  private syncRecaptchaPosition = () => {
+    if (!this.recaptchaPlaceholderRef || !this.showRecaptcha) return;
+
+    const rect = this.recaptchaPlaceholderRef.getBoundingClientRect();
+    this.recaptchaPortalEl.style.top = `${rect.top}px`;
+    this.recaptchaPortalEl.style.left = `${rect.left}px`;
+
+    const opacity = this.getAncestorOpacity();
+    this.recaptchaPortalEl.style.opacity = String(opacity);
+    this.recaptchaPortalEl.style.pointerEvents = opacity < 0.1 ? 'none' : 'auto';
+
+    this.positionRAF = requestAnimationFrame(this.syncRecaptchaPosition);
+  };
+
+  private getAncestorOpacity(): number {
+    let el = this.el.parentElement;
+    while (el && el !== document.body) {
+      const opacity = parseFloat(getComputedStyle(el).opacity);
+      if (opacity < 1) return opacity;
+      el = el.parentElement;
+    }
+    return 1;
   }
 
   // #endregion
@@ -314,8 +373,9 @@ export class VehicleWarrantyDetails implements MultiLingual, VehicleInfoLayoutIn
 
             <flexible-container isOpened={this.showRecaptcha} classes={cn('w-fit mx-auto shift-skeleton', { loading: !this.showRecaptcha || this.isLoading })}>
               <div style={{ height: 'auto' }} class="recaptcha-container">
-                <slot></slot>
+                <div ref={el => (this.recaptchaPlaceholderRef = el)} style={{ minWidth: '302px', minHeight: '76px' }}></div>
               </div>
+
 
               {this.recaptchaRes && (
                 <div class={cn('recaptcha-response', this.recaptchaRes?.status === 'recallExists' ? 'reject-card ' : (this.recaptchaRes?.status === 'noRecall' ? 'success-card ' : 'warning-card '))}>{this.locale[this.recaptchaRes?.status]}</div>

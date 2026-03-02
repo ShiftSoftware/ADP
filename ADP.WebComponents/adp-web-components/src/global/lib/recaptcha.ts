@@ -1,7 +1,7 @@
 import { LanguageKeys } from '~features/multi-lingual';
 
 export type Grecaptcha = {
-  getResponse(): string;
+  getResponse(widgetId?: number): string;
   reset(widgetId?: number): void;
   ready(callback: () => void): void;
   execute(siteKey: string, options: { action: string }): Promise<string>;
