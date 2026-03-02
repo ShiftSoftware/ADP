@@ -63,8 +63,8 @@ public class VehicleServiceHistoryEvaluator
                 var actualPartCount = invoice.PartLines?.Count ?? 0;
                 var actualLaborCount = invoice.LaborLines?.Count ?? 0;
 
-                if (numberOfPartLinesAccordingToLaborRecords != actualPartCount ||
-                    numberOfLaborLinesAccordingToPartRecords != actualLaborCount)
+                if ((actualLaborCount > 0 && numberOfPartLinesAccordingToLaborRecords != actualPartCount) ||
+                    (actualPartCount > 0 && numberOfLaborLinesAccordingToPartRecords != actualLaborCount))
                     continue;
             }
 
