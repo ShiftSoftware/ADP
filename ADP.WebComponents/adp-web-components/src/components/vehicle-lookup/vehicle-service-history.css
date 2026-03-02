@@ -47,5 +47,5 @@
 
 .service-history-subrow .table-header-cell,
 .service-history-subrow .table-body-cell {
-  @apply !p-[6px];
+  @apply !p-[6px] leading-[16px];
 }
