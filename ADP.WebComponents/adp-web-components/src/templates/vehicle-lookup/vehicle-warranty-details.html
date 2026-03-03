@@ -60,6 +60,8 @@
         };
 
         warranty.loadedResponse = newResponse => console.log(newResponse);
+
+        warranty.unauthorizedSscLookupResponse = sscLookupStatus => console.log(sscLookupStatus);
       });
 
       function fetchVin(newVin) {
