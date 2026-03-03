@@ -215,7 +215,7 @@ export class VehicleWarrantyDetails implements MultiLingual, VehicleInfoLayoutIn
   async componentDidLoad() {
     if (this.recaptchaKey !== '') {
       this.recaptchaPortalEl = document.createElement('div');
-      this.recaptchaPortalEl.style.cssText = 'position: fixed; z-index: 10000; display: none;';
+      this.recaptchaPortalEl.style.cssText = 'position: fixed; z-index: 1; display: none;';
       document.body.appendChild(this.recaptchaPortalEl);
 
       const script = document.createElement('script');
