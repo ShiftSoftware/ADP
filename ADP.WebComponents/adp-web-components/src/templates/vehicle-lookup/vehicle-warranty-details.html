@@ -35,16 +35,16 @@
     </div>
 
     <div class="button-container">
-      <button class="sample-button" onclick="fetchData('')">Empty</button>
-      <button class="sample-button" onclick="fetchData('error')">Error</button>
-      <button class="sample-button" onclick="fetchData('JTMHX01J8L4198295')">JTMHX01J8L4198295</button>
-      <button class="sample-button" onclick="fetchData('JTMHX01J8L4198296')">JTMHX01J8L4198296</button>
-      <button class="sample-button" onclick="fetchData('MR0BX8CD3P2791075')">MR0BX8CD3P2791075</button>
-      <button class="sample-button" onclick="fetchData('JTMHX01J8L4198299')">JTMHX01J8L4198299</button>
-      <button class="sample-button" onclick="fetchData('JTMABBBJ9P4099243')">JTMABBBJ9P4099243</button>
-      <button class="sample-button" onclick="fetchData('JTMHU09J6E4100543')">JTMHU09J6E4100543</button>
-      <button class="sample-button" onclick="fetchData('JTMABBBJ9P4099200')">JTMABBBJ9P4099200</button>
-      <button class="sample-button" onclick="fetchData('JTMABBBJ9P4099294')">JTMABBBJ9P4099294 (Broker Stock)</button>
+      <button class="sample-button" onclick="fetchVin('')">Empty</button>
+      <button class="sample-button" onclick="fetchVin('error')">Error</button>
+      <button class="sample-button" onclick="fetchVin('JTMHX01J8L4198295')">JTMHX01J8L4198295</button>
+      <button class="sample-button" onclick="fetchVin('JTMHX01J8L4198296')">JTMHX01J8L4198296</button>
+      <button class="sample-button" onclick="fetchVin('MR0BX8CD3P2791075')">MR0BX8CD3P2791075</button>
+      <button class="sample-button" onclick="fetchVin('JTMHX01J8L4198299')">JTMHX01J8L4198299</button>
+      <button class="sample-button" onclick="fetchVin('JTMABBBJ9P4099243')">JTMABBBJ9P4099243</button>
+      <button class="sample-button" onclick="fetchVin('JTMHU09J6E4100543')">JTMHU09J6E4100543</button>
+      <button class="sample-button" onclick="fetchVin('JTMABBBJ9P4099200')">JTMABBBJ9P4099200</button>
+      <button class="sample-button" onclick="fetchVin('JTMABBBJ9P4099294')">JTMABBBJ9P4099294 (Broker Stock)</button>
     </div>
 
     <script>
@@ -62,8 +62,8 @@
         warranty.loadedResponse = newResponse => console.log(newResponse);
       });
 
-      function fetchData(newVin) {
-        warranty.fetchData(newVin);
+      function fetchVin(newVin) {
+        warranty.fetchVin(newVin);
       }
 
       function updateLang(newLang) {

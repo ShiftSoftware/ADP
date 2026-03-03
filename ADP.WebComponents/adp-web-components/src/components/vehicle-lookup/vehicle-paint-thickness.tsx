@@ -93,7 +93,7 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
   }
 
   @Method()
-  async fetchData(newData: VehicleLookupDTO | string, headers: any = {}) {
+  async fetchVin(newData: VehicleLookupDTO | string, headers: any = {}) {
     await setVehicleLookupData(this, newData, headers);
   }
 

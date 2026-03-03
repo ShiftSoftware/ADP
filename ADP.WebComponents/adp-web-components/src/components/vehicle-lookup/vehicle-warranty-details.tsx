@@ -80,7 +80,7 @@ export class VehicleWarrantyDetails implements MultiLingual, VehicleInfoLayoutIn
   }
 
   @Method()
-  async fetchData(newData: VehicleLookupDTO | string, headers: any = {}) {
+  async fetchVin(newData: VehicleLookupDTO | string, headers: any = {}) {
     this.recaptchaRes = null;
     this.showRecaptcha = false;
     clearInterval(this.recaptchaIntervalRef);
