@@ -61,6 +61,7 @@ export class VehicleWarrantyDetails implements MultiLingual, VehicleInfoLayoutIn
   @Prop() errorCallback?: BlazorInvokableFunction<(errorMessage: ErrorKeys) => void>;
   @Prop() loadingStateChange?: BlazorInvokableFunction<(isLoading: boolean) => void>;
   @Prop() loadedResponse?: BlazorInvokableFunction<(response: VehicleLookupDTO) => void>;
+  @Prop() unauthorizedSscLookupResponse?: BlazorInvokableFunction<(sscLookupStatus: number) => void>;
 
   @State() isError: boolean = false;
   @State() errorMessage?: ErrorKeys;
@@ -173,12 +174,16 @@ export class VehicleWarrantyDetails implements MultiLingual, VehicleInfoLayoutIn
 
             var randomValue = Math.random();
 
+            var devSscLookupStatus = randomValue < 0.33 ? 0 : (randomValue > 0.33 && randomValue < 0.66) ? 2 : 1;
+
             this.recaptchaRes = {
               status:
-                randomValue < 0.33 ? 'noRecall' :
-                  (randomValue > 0.33 && randomValue < 0.66) ? 'noApplicableVehicleFound' :
+                devSscLookupStatus === 0 ? 'noRecall' :
+                  devSscLookupStatus === 2 ? 'noApplicableVehicleFound' :
                     'recallExists'
             };
+
+            smartInvokable.bind(this)(this.unauthorizedSscLookupResponse, devSscLookupStatus);
           } else {
             this.checkingUnauthorizedSSC = true;
 
@@ -202,6 +207,8 @@ export class VehicleWarrantyDetails implements MultiLingual, VehicleInfoLayoutIn
                   vinResponse.sscLookupStatus === 1 ? 'recallExists' :
                   vinResponse.sscLookupStatus === 2 ? 'noApplicableVehicleFound' : null
               };
+
+              smartInvokable.bind(this)(this.unauthorizedSscLookupResponse, vinResponse.sscLookupStatus);
             } else throw new Error('wrongResponseFormat');
           }
         }
