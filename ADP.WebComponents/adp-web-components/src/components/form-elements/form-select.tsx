@@ -246,7 +246,10 @@ export class FormSelect implements FormElement {
             </div>
 
             <div
-              part={`${this.name}-select-container form-select-container`}
+              part={cn(`${this.name}-select-container form-select-container`, {
+                'form-select-container-upwards': this.openUpwards || this.forceOpenUpwards,
+                'form-select-container-downwards': !this.openUpwards && !this.forceOpenUpwards,
+              })}
               class={cn('form-select-container', {
                 upwards: this.openUpwards || this.forceOpenUpwards,
                 downwards: !this.openUpwards && !this.forceOpenUpwards,
