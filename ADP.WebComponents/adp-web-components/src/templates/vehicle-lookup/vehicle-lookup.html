@@ -212,9 +212,9 @@
                 language="en"
                 id="vehicle-lookup"
                 active-element="vehicle-specification"
-                base-url="https://tiq-vehicle-lookup.azurewebsites.net/api/secure-vehicle-lookup/"
+                base-url="http://localhost:7204/api/secure-vehicle-lookup/"
                 query-string=""
-                children-props='{"dynamic-claim":{"claimEndPoint":"http://localhost:5015/api/vehicle/service-claim","claim-via-barcode-scanner":"false"}}'
+                children-props='{"vehicle-warranty-details":{"showSsc":true,"recaptchaKey":"6LetFoYqAAAAAE0fg-070Qtm3z-DG24sMJ8wzY1f"},"dynamic-claim":{"claimEndPoint":"http://localhost:5015/api/vehicle/service-claim","claim-via-barcode-scanner":"false"}}'
               ></vehicle-lookup>
             </div>
           </div>

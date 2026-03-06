@@ -91,7 +91,7 @@ export class VehicleSaleInformation implements MultiLingual, VehicleInfoLayoutIn
   }
 
   @Method()
-  async fetchData(newData: VehicleLookupDTO | string, headers: any = {}) {
+  async fetchVin(newData: VehicleLookupDTO | string, headers: any = {}) {
     await setVehicleLookupData(this, newData, headers);
   }
 

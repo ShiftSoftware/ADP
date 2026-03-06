@@ -145,7 +145,7 @@ export class VehicleLookup implements MultiLingual {
     this.errorMessage = '';
     this.currentVin = newResponse.vin || '';
     Object.values(this.componentsList).forEach(element => {
-      if (element !== null && element !== activeElement && newResponse) element.fetchData(newResponse);
+      if (element !== null && element !== activeElement && newResponse) element.fetchVin(newResponse);
     });
   }
 
@@ -174,7 +174,7 @@ export class VehicleLookup implements MultiLingual {
 
     if (!activeElement) return;
 
-    activeElement.fetchData(vin, headers);
+    activeElement.fetchVin(vin, headers);
   }
   // #endregion
   render() {
@@ -251,7 +251,6 @@ export class VehicleLookup implements MultiLingual {
           id={componentTags.vehicleWarrantyDetails}
           {...props[componentTags.vehicleWarrantyDetails]}
         >
-          <slot></slot>
         </vehicle-warranty-details>
       ),
       'vehicle-service-history': (
