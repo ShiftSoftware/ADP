@@ -36,9 +36,9 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Addit
         let options = res.data;
 
         return options.map(vehicle => ({
-          label: vehicle.attributes.GradeName,
+          label: vehicle?.GradeName || vehicle?.attributes?.GradeName,
           value: `${vehicle.id}`,
-          meta: { ...vehicle, image: vehicle.attributes.Cover.data.attributes.url },
+          meta: { ...vehicle, image: vehicle?.Cover?.url || vehicle?.attributes?.Cover?.data?.attributes?.url },
         })) as FormSelectItem[];
       } else {
         const options = await response.json();
