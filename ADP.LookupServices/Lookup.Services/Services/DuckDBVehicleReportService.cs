@@ -15,8 +15,7 @@ public class DuckDBVehicleReportService(
     DuckDB.NET.Data.DuckDBConnection connection,
     VehicleLookupService vehicleLookupService) : IVehicleReportService
 {
-    private const int LookupBatchSize = 500;
-    private const int QueryVinChunkSize = 500;
+    private const int LookupBatchSize = 1_000_000;
 
     public async Task<IEnumerable<string>> GetDistinctVinsAsync(int? count = null)
     {
