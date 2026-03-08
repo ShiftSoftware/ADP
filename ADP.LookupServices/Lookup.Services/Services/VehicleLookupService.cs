@@ -60,26 +60,20 @@ public class VehicleLookupService
         var normalizedInputOrder = vins
             .Select(NormalizeVin)
             .Where(x => !string.IsNullOrWhiteSpace(x))
-            .Distinct(StringComparer.Ordinal)
-            .ToList();
+            .Distinct(StringComparer.Ordinal) ?? [];
 
-        if (normalizedInputOrder.Count == 0)
+        if (!normalizedInputOrder.Any())
             return Enumerable.Empty<VehicleLookupDTO>();
 
         var aggregates = await vehicleLoockupStorageService.GetAggregatedCompanyDataForBulkLookupAsync(normalizedInputOrder);
 
-        var aggregateMap = aggregates?
-            .Where(x => !string.IsNullOrWhiteSpace(x?.VIN))
-            .GroupBy(x => NormalizeVin(x.VIN), StringComparer.Ordinal)
-            .ToDictionary(x => x.Key, x => x.First(), StringComparer.Ordinal)
-            ?? new Dictionary<string, CompanyDataAggregateModel>(StringComparer.Ordinal);
+        var result = new List<VehicleLookupDTO>();
 
-        var result = new List<VehicleLookupDTO>(normalizedInputOrder.Count);
-
-        foreach (var vinKey in normalizedInputOrder)
+        foreach (var aggregate in aggregates ?? Enumerable.Empty<CompanyDataAggregateModel>())
         {
-            if (!aggregateMap.TryGetValue(vinKey, out var aggregate))
-                aggregate = new CompanyDataAggregateModel { VIN = vinKey };
+            var vinKey = NormalizeVin(aggregate?.VIN);
+            if (string.IsNullOrWhiteSpace(vinKey) || aggregate is null)
+                continue;
 
             result.Add(await LookupFromAggregateAsync(vinKey, aggregate, requestOptions, disableLogs: true));
         }
