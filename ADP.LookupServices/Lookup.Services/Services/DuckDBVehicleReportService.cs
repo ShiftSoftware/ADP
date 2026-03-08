@@ -1,11 +1,14 @@
 using CsvHelper;
 using CsvHelper.Configuration;
+using Parquet.Serialization;
+using Parquet.Schema;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -125,6 +128,20 @@ public class DuckDBVehicleReportService(
         return rows.Count;
     }
 
+    public async Task<int> ExportVehicleServiceItemsReportToParquetAsync(
+        string fileFullPath,
+        IEnumerable<string> vins = null,
+        int? distinctVinCount = null)
+    {
+        if (string.IsNullOrWhiteSpace(fileFullPath))
+            throw new ArgumentException("Parquet output file path is required.", nameof(fileFullPath));
+
+        var rows = (await GetVehicleServiceItemsReportAsync(vins, distinctVinCount)).ToList();
+        await WriteParquetAsync(fileFullPath, rows);
+
+        return rows.Count;
+    }
+
     public async Task<IEnumerable<VehicleSscReportModel>> GetVehicleSscReportAsync(
         IEnumerable<string> vins = null,
         int? distinctVinCount = null)
@@ -190,6 +207,20 @@ public class DuckDBVehicleReportService(
         return rows.Count;
     }
 
+    public async Task<int> ExportVehicleSscReportToParquetAsync(
+        string fileFullPath,
+        IEnumerable<string> vins = null,
+        int? distinctVinCount = null)
+    {
+        if (string.IsNullOrWhiteSpace(fileFullPath))
+            throw new ArgumentException("Parquet output file path is required.", nameof(fileFullPath));
+
+        var rows = (await GetVehicleSscReportAsync(vins, distinctVinCount)).ToList();
+        await WriteParquetAsync(fileFullPath, rows);
+
+        return rows.Count;
+    }
+
     public async Task<IEnumerable<VehicleLookupTopLevelReportModel>> GetVehicleLookupTopLevelReportAsync(
         IEnumerable<string> vins = null,
         int? distinctVinCount = null)
@@ -251,6 +282,20 @@ public class DuckDBVehicleReportService(
         return rows.Count;
     }
 
+    public async Task<int> ExportVehicleLookupTopLevelReportToParquetAsync(
+        string fileFullPath,
+        IEnumerable<string> vins = null,
+        int? distinctVinCount = null)
+    {
+        if (string.IsNullOrWhiteSpace(fileFullPath))
+            throw new ArgumentException("Parquet output file path is required.", nameof(fileFullPath));
+
+        var rows = (await GetVehicleLookupTopLevelReportAsync(vins, distinctVinCount)).ToList();
+        await WriteParquetAsync(fileFullPath, rows);
+
+        return rows.Count;
+    }
+
     public async Task<(List<VehicleServiceHistoryLaborReportModel> LaborReports, List<VehicleServiceHistoryPartReportModel> PartReports)> GetVehicleServiceHistoryReportsAsync(
         IEnumerable<string> vins = null,
         int? distinctVinCount = null)
@@ -274,6 +319,26 @@ public class DuckDBVehicleReportService(
 
         await WriteCsvAsync(laborFileFullPath, laborReports, new VehicleServiceHistoryLaborReportModelCsvMap());
         await WriteCsvAsync(partFileFullPath, partReports, new VehicleServiceHistoryPartReportModelCsvMap());
+
+        return (laborReports.Count, partReports.Count);
+    }
+
+    public async Task<(int LaborRowCount, int PartRowCount)> ExportVehicleServiceHistoryReportsToParquetAsync(
+        string laborFileFullPath,
+        string partFileFullPath,
+        IEnumerable<string> vins = null,
+        int? distinctVinCount = null)
+    {
+        if (string.IsNullOrWhiteSpace(laborFileFullPath))
+            throw new ArgumentException("Labor Parquet output file path is required.", nameof(laborFileFullPath));
+
+        if (string.IsNullOrWhiteSpace(partFileFullPath))
+            throw new ArgumentException("Part Parquet output file path is required.", nameof(partFileFullPath));
+
+        var (laborReports, partReports) = await BuildServiceHistoryReportsAsync(vins, distinctVinCount);
+
+        await WriteParquetAsync(laborFileFullPath, laborReports);
+        await WriteParquetAsync(partFileFullPath, partReports);
 
         return (laborReports.Count, partReports.Count);
     }
@@ -346,6 +411,20 @@ public class DuckDBVehicleReportService(
         return rows.Count;
     }
 
+    public async Task<int> ExportVehicleServiceHistoryLaborReportToParquetAsync(
+        string fileFullPath,
+        IEnumerable<string> vins = null,
+        int? distinctVinCount = null)
+    {
+        if (string.IsNullOrWhiteSpace(fileFullPath))
+            throw new ArgumentException("Parquet output file path is required.", nameof(fileFullPath));
+
+        var rows = (await GetVehicleServiceHistoryLaborReportAsync(vins, distinctVinCount)).ToList();
+        await WriteParquetAsync(fileFullPath, rows);
+
+        return rows.Count;
+    }
+
     public async Task<IEnumerable<VehicleServiceHistoryPartReportModel>> GetVehicleServiceHistoryPartReportAsync(
         IEnumerable<string> vins = null,
         int? distinctVinCount = null)
@@ -414,6 +493,20 @@ public class DuckDBVehicleReportService(
         return rows.Count;
     }
 
+    public async Task<int> ExportVehicleServiceHistoryPartReportToParquetAsync(
+        string fileFullPath,
+        IEnumerable<string> vins = null,
+        int? distinctVinCount = null)
+    {
+        if (string.IsNullOrWhiteSpace(fileFullPath))
+            throw new ArgumentException("Parquet output file path is required.", nameof(fileFullPath));
+
+        var rows = (await GetVehicleServiceHistoryPartReportAsync(vins, distinctVinCount)).ToList();
+        await WriteParquetAsync(fileFullPath, rows);
+
+        return rows.Count;
+    }
+
     private async Task<(List<VehicleServiceHistoryLaborReportModel> LaborReports, List<VehicleServiceHistoryPartReportModel> PartReports)> BuildServiceHistoryReportsAsync(
         IEnumerable<string> vins,
         int? distinctVinCount)
@@ -476,6 +569,124 @@ public class DuckDBVehicleReportService(
         using var csvWriter = new CsvWriter(writer, CultureInfo.InvariantCulture);
         csvWriter.Context.RegisterClassMap(classMap);
         await csvWriter.WriteRecordsAsync(rows);
+    }
+
+    private static async Task WriteParquetAsync<TModel>(string fileFullPath, IEnumerable<TModel> rows)
+    {
+        var outputDirectory = Path.GetDirectoryName(fileFullPath);
+        if (!string.IsNullOrWhiteSpace(outputDirectory))
+            Directory.CreateDirectory(outputDirectory);
+
+        var rowList = rows?.ToList() ?? new List<TModel>();
+        var propertyMappings = new List<ParquetPropertyMapping>();
+        foreach (var property in typeof(TModel).GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(p => p.CanRead))
+        {
+            if (!TryGetParquetType(property.PropertyType, out var parquetType, out var isNullable, out var isEnum, out var isDateTimeOffset))
+                continue;
+
+            var fieldType = typeof(DataField<>).MakeGenericType(parquetType);
+            var field = (Field)Activator.CreateInstance(fieldType, property.Name, (bool?)isNullable);
+            propertyMappings.Add(new ParquetPropertyMapping(property, field, parquetType, isEnum, isDateTimeOffset));
+        }
+
+        var schema = new ParquetSchema(propertyMappings.Select(x => x.Field).ToArray());
+        var records = new List<IDictionary<string, object>>(rowList.Count);
+
+        foreach (var row in rowList)
+        {
+            var record = new Dictionary<string, object>(propertyMappings.Count, StringComparer.Ordinal);
+
+            foreach (var mapping in propertyMappings)
+            {
+                var value = mapping.Property.GetValue(row);
+                if (value is not null && mapping.IsEnum)
+                    value = Convert.ChangeType(value, mapping.ParquetType, CultureInfo.InvariantCulture);
+                else if (value is not null && mapping.IsDateTimeOffset)
+                    value = ((DateTimeOffset)value).UtcDateTime;
+
+                record[mapping.Property.Name] = value;
+            }
+
+            records.Add(record);
+        }
+
+        using var stream = File.Create(fileFullPath);
+        await ParquetSerializer.SerializeAsync(schema, records, stream, new ParquetSerializerOptions());
+    }
+
+    private static bool TryGetParquetType(Type propertyType, out Type parquetType, out bool isNullable, out bool isEnum, out bool isDateTimeOffset)
+    {
+        parquetType = propertyType;
+        isNullable = false;
+        isEnum = false;
+        isDateTimeOffset = false;
+
+        var underlying = Nullable.GetUnderlyingType(propertyType);
+        if (underlying is not null)
+        {
+            propertyType = underlying;
+            isNullable = true;
+        }
+        else if (!propertyType.IsValueType)
+        {
+            isNullable = true;
+        }
+
+        if (propertyType.IsEnum)
+        {
+            parquetType = Enum.GetUnderlyingType(propertyType);
+            isEnum = true;
+            return true;
+        }
+
+        if (propertyType == typeof(DateTimeOffset))
+        {
+            parquetType = typeof(DateTime);
+            isDateTimeOffset = true;
+            return true;
+        }
+
+        if (propertyType == typeof(string) ||
+            propertyType == typeof(bool) ||
+            propertyType == typeof(byte) ||
+            propertyType == typeof(sbyte) ||
+            propertyType == typeof(short) ||
+            propertyType == typeof(ushort) ||
+            propertyType == typeof(int) ||
+            propertyType == typeof(uint) ||
+            propertyType == typeof(long) ||
+            propertyType == typeof(ulong) ||
+            propertyType == typeof(float) ||
+            propertyType == typeof(double) ||
+            propertyType == typeof(decimal) ||
+            propertyType == typeof(DateTime) ||
+            propertyType == typeof(DateTimeOffset) ||
+            propertyType == typeof(Guid) ||
+            propertyType == typeof(byte[]))
+        {
+            parquetType = propertyType;
+            return true;
+        }
+
+        return false;
+    }
+
+    private sealed class ParquetPropertyMapping
+    {
+        public ParquetPropertyMapping(PropertyInfo property, Field field, Type parquetType, bool isEnum, bool isDateTimeOffset)
+        {
+            Property = property;
+            Field = field;
+            ParquetType = parquetType;
+            IsEnum = isEnum;
+            IsDateTimeOffset = isDateTimeOffset;
+        }
+
+        public PropertyInfo Property { get; }
+        public Field Field { get; }
+        public Type ParquetType { get; }
+        public bool IsEnum { get; }
+        public bool IsDateTimeOffset { get; }
     }
 
     private static VehicleServiceItemReportModel CreateRow(string vin, VehicleServiceItemDTO item)
