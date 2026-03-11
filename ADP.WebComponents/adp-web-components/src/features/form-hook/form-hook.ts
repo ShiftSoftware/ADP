@@ -3,13 +3,14 @@ import { AnyObjectSchema, SchemaDescription } from 'yup';
 
 import { LanguageKeys, SharedFormLocales } from '~features/multi-lingual';
 
-import { Field, FormElement, FormHookInterface, FormStateOptions, Subscribers, ValidationType, WatchCallback, Watchers } from './interface';
+import { Field, FormElement, FormHookInterface, FormStateOptions, Step, Subscribers, ValidationType, WatchCallback, Watchers } from './interface';
 
 import { FormStructure } from '../../components/form-elements/form-structure';
 
 export class FormHook<T> {
   haltValidation: boolean = false;
   private isSubmitted = false;
+  private stepFormValues: any = {};
   private watchers: Watchers = {};
   private cachedValues: Partial<T> = {};
   private subscribers: Subscribers = [];
@@ -63,6 +64,24 @@ export class FormHook<T> {
     });
 
     this.subscribers = this.subscribers.filter(({ name }) => name !== formName);
+  };
+
+  getStepLabels = (language: LanguageKeys = 'en', selectedStep?: number): Step => {
+    if (!selectedStep) selectedStep = this.formStructure?.currentStep;
+
+    let step: Step = {
+      back: '',
+      title: '',
+      stepCell: '',
+      stepTitle: '',
+      submitButton: '',
+    };
+
+    try {
+      step = this.context.structure?.steps?.[selectedStep - 1]?.[language] as Step;
+    } catch (error) {}
+
+    return step;
   };
 
   reset() {
@@ -178,7 +197,9 @@ export class FormHook<T> {
       return structure === target;
     }
 
-    const { tag, name, children, isHidden } = structure;
+    const { tag, name, children, isHidden, step } = structure;
+
+    if (!!step && step != this.formStructure?.currentStep) return false;
 
     if ((tag === target || name === target) && !isHidden) return true;
 
@@ -209,7 +230,12 @@ export class FormHook<T> {
 
       const values = await (this.schemaObject.omit(excludedFields) as AnyObjectSchema).validate(formObject, { abortEarly: false, context: this.requiredContext });
 
-      await this.context.formSubmit(values);
+      if (this.context?.structure?.steps) {
+        this.stepFormValues = { ...this?.stepFormValues, ...values };
+
+        if (this.context?.structure?.steps?.length === this.formStructure?.currentStep - 1) await this.context.formSubmit(this.stepFormValues);
+        else this.formStructure.currentStep += 1;
+      } else await this.context.formSubmit(values);
     } catch (error) {
       if (error.name === 'ValidationError') {
         this.formErrors = {};

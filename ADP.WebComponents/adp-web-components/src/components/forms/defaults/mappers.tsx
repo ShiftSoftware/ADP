@@ -7,17 +7,19 @@ import { decodeTimeOffset } from '~lib/decode-time-offset';
 import { populateItems } from '~lib/populate-items';
 
 export const getFormMappers = (stateObject: Record<string, any>, extraMappers: Record<string, (prop: any) => any> = {}) => ({
-  submit: ({ props }) => <form-submit {...props} />,
+  submit: ({ props }) => <form-submit key={props?.name} {...props} />,
 
-  name: ({ props }) => <form-input {...props} />,
+  stepperSubmit: ({ props }) => <form-stepper-submit key={props?.step || props?.name} {...props} />,
 
-  lastName: ({ props }) => <form-input {...props} />,
+  name: ({ props }) => <form-input key={props?.name} {...props} />,
 
-  email: ({ props }) => <form-input type="email" {...props} />,
+  lastName: ({ props }) => <form-input key={props?.name} {...props} />,
 
-  message: ({ props }) => <form-text-area {...props} />,
+  email: ({ props }) => <form-input key={props?.name} type="email" {...props} />,
 
-  vin: ({ props }) => <form-vin-input {...props} />,
+  message: ({ props }) => <form-text-area key={props?.name} {...props} />,
+
+  vin: ({ props }) => <form-vin-input key={props?.name} {...props} />,
 
   vehicleImage: ({ form }) => <VehicleImageViewer form={form} />,
 
@@ -26,7 +28,7 @@ export const getFormMappers = (stateObject: Record<string, any>, extraMappers: R
       stateObject.phoneValidator = getPhoneValidator(props?.countryCode || '');
     }
 
-    return <form-phone-number defaultValue={stateObject.phoneValidator.default} {...props} isLoading={isLoading} validator={stateObject.phoneValidator} />;
+    return <form-phone-number key={props?.name} defaultValue={stateObject.phoneValidator.default} {...props} isLoading={isLoading} validator={stateObject.phoneValidator} />;
   },
 
   vehicle: ({ language, props }) => {
@@ -85,7 +87,7 @@ export const getFormMappers = (stateObject: Record<string, any>, extraMappers: R
       return options;
     };
 
-    return <form-select {...props} searchable fetcher={fetcher} language={language} />;
+    return <form-select key={props?.name} {...props} searchable fetcher={fetcher} language={language} />;
   },
 
   companyBranchId: ({ language, props }) => {
@@ -103,7 +105,7 @@ export const getFormMappers = (stateObject: Record<string, any>, extraMappers: R
       return options;
     };
 
-    return <form-select {...props} clearable searchable fetcher={fetcher} language={language} />;
+    return <form-select key={props?.name} {...props} clearable searchable fetcher={fetcher} language={language} />;
   },
 
   cityId: ({ language, props }) => {
@@ -121,7 +123,7 @@ export const getFormMappers = (stateObject: Record<string, any>, extraMappers: R
       return options;
     };
 
-    return <form-select {...props} clearable searchable fetcher={fetcher} language={language} />;
+    return <form-select key={props?.name} {...props} clearable searchable fetcher={fetcher} language={language} />;
   },
 
   date: ({ props }) => <form-picker-input type="date" {...props} icon={<CalendarDaysIcon />} />,
@@ -147,7 +149,7 @@ export const getFormMappers = (stateObject: Record<string, any>, extraMappers: R
       return options;
     };
 
-    return <form-select {...props} clearable fetcher={fetcher} language={language} />;
+    return <form-select key={props?.name} {...props} clearable fetcher={fetcher} language={language} />;
   },
 
   currentVehicleBrand: ({ form, language, props, locale }) => {
@@ -171,7 +173,7 @@ export const getFormMappers = (stateObject: Record<string, any>, extraMappers: R
       ] as FormSelectItem[];
     };
 
-    return <form-select {...props} searchable fetcher={fetcher} language={language} />;
+    return <form-select key={props?.name} {...props} searchable fetcher={fetcher} language={language} />;
   },
 
   currentVehicleModel: ({ form, language, props, locale }) => {
@@ -199,6 +201,7 @@ export const getFormMappers = (stateObject: Record<string, any>, extraMappers: R
       <form-select
         {...props}
         searchable
+        key={props?.name}
         fetcher={fetcher}
         language={language}
         resetKey={currentVehicleBrand}
@@ -223,7 +226,7 @@ export const getFormMappers = (stateObject: Record<string, any>, extraMappers: R
       ] as FormSelectItem[];
     };
 
-    return <form-select {...props} fetcher={fetcher} language={language} />;
+    return <form-select key={props?.name} {...props} fetcher={fetcher} language={language} />;
   },
 
   conditionalCurrentVehicleBrand: ({ form, language, props, locale }) => {
@@ -250,7 +253,7 @@ export const getFormMappers = (stateObject: Record<string, any>, extraMappers: R
       ] as FormSelectItem[];
     };
 
-    return <form-select {...props} searchable fetcher={fetcher} language={language} resetKey={ownVehicle} isRequired={ownVehicle} isDisabled={!ownVehicle} />;
+    return <form-select key={props?.name} {...props} searchable fetcher={fetcher} language={language} resetKey={ownVehicle} isRequired={ownVehicle} isDisabled={!ownVehicle} />;
   },
 
   conditionalCurrentVehicleModel: ({ form, language, props, locale }) => {
@@ -281,6 +284,7 @@ export const getFormMappers = (stateObject: Record<string, any>, extraMappers: R
         {...props}
         searchable
         fetcher={fetcher}
+        key={props?.name}
         language={language}
         resetKey={currentVehicleBrand}
         fetcherKey={currentVehicleBrand}

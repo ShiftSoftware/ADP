@@ -4,6 +4,7 @@ import generalSchema from '~locales/general/type';
 
 import { ComponentLocale, getLocaleLanguage, getSharedLocal, LanguageKeys, sharedLocalesSchema } from '~features/multi-lingual';
 import { FormHook, FormElementMapper, FormElementMapperFunctionProps, FormElementStructure, renderStructure } from '~features/form-hook';
+import cn from '~lib/cn';
 
 @Component({
   shadow: false,
@@ -41,6 +42,7 @@ export class FormStructure {
   @Prop() formElementMapper: FormElementMapper<any, any>;
 
   @State() formContent;
+  @State() currentStep?: number = 1;
 
   async componentDidLoad() {
     setTimeout(() => {
@@ -84,7 +86,25 @@ export class FormStructure {
               {this.successMessage}
             </div>
           </form-dialog>
-          <div>{renderStructure(this.structure, this.formElementMapper, generalProps, this.fields)}</div>
+          <div class="relative overflow-hidden grid grid-cols-1 grid-rows-1">
+            {!this?.structure?.steps && renderStructure(this.structure, this.formElementMapper, generalProps, this.fields, this.currentStep)}
+
+            {/* {!!this?.structure?.steps && renderStructure(this.structure, this.formElementMapper, generalProps, this.fields, -1)} */}
+
+            {!!this?.structure?.steps &&
+              this?.structure?.steps.map((_, i) => (
+                <div
+                  class={cn('col-start-1 row-start-1 transition-all !duration-700', {
+                    'pointer-events-none! *:pointer-events-none!': this.currentStep !== i + 1,
+                    'translate-x-full rtl:-translate-x-full opacity-0': this.currentStep < i + 1,
+                    'translate-x-0 opacity-100': this.currentStep === i + 1,
+                    '-translate-x-full rtl:translate-x-full  opacity-0': this.currentStep > i + 1,
+                  })}
+                >
+                  {renderStructure(this.structure, this.formElementMapper, generalProps, this.fields, i + 1)}
+                </div>
+              ))}
+          </div>
           <button formnovalidate type="submit" class="hidden" />
         </form>
       </Host>

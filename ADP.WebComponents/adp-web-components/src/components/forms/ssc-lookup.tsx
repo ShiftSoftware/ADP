@@ -44,6 +44,7 @@ export class SSCLookupForm implements FormHookInterface<any>, MultiLingual {
   @Prop() loadingChanges: (loading: boolean) => void;
   @Prop() errorCallback: (error: any, message: string) => void;
   @Prop() successCallback: (data: any, message?: string) => void;
+  @Prop() stepChangeCallback?: (step: number, currentForm?: any) => void;
   @Prop({ mutable: true }) structure: FormElementStructure<any> | undefined;
   @Prop({ mutable: true }) fields?: object;
 

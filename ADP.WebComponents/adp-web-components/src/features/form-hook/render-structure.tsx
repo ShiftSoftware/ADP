@@ -6,8 +6,12 @@ export function renderStructure(
   structure: FormElementStructure<any> | string,
   elementMapper: FormElementMapper<any, any>,
   generaProps: FormElementMapperFunctionProps<any>,
-  fields?: object,
+  fields: object,
+  currentStep: number,
 ): JSX.Element | false {
+  // @ts-ignore
+  if (!!structure?.step && structure?.step !== currentStep) return false;
+
   if (typeof structure === 'string') {
     if (typeof structure === 'string' && structure && elementMapper[structure]) {
       generaProps.props['name'] = structure;
@@ -16,14 +20,14 @@ export function renderStructure(
       return elementMapper[structure]({ ...generaProps, ...(fields && fields[structure] ? fields[structure] : {}) });
     }
   } else {
-    const { tag, name, children, data, ...props } = structure;
+    const { tag, name, children, data, type, ...props } = structure;
 
     if (tag) {
       const Tag = tag as any;
 
       return (
         <Tag {...props} part={cn(props?.id, props?.class, `element-${tag}`, tag)}>
-          {Array.isArray(children) && children.map(child => renderStructure(child, elementMapper, { ...generaProps }, fields))}
+          {Array.isArray(children) && children.map(child => renderStructure(child, elementMapper, { ...generaProps }, fields, currentStep))}
 
           {typeof children === 'object' && !Array.isArray(children) && children !== null && children?.[generaProps?.language]}
         </Tag>
@@ -43,7 +47,7 @@ export function renderStructure(
       },
     };
 
-    if (typeof name === 'string' && name && elementMapper[name]) return elementMapper[name](newProps);
+    if (((typeof name === 'string' && name) || (typeof type === 'string' && type)) && elementMapper[type || name]) return elementMapper[type || name](newProps);
   }
 
   return false;

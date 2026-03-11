@@ -7,6 +7,8 @@ import { LanguageKeys } from '~features/multi-lingual';
 
 export type FormElementStructureComponents<T> = {
   id?: string;
+  step?: number;
+  type?: string;
   class?: string;
   staticValue?: any;
   isHidden?: boolean;
@@ -23,7 +25,16 @@ export type FormElementStructureComponents<T> = {
     }
 );
 
+export type Step = {
+  back?: string;
+  title: string;
+  stepCell?: string;
+  stepTitle?: string;
+  submitButton?: string;
+};
+
 export type FormElementStructure<T> = {
+  steps?: Record<LanguageKeys, Step>[];
   data?: Record<string, any>;
   requiredContext?: Record<string, boolean>;
 } & FormElementStructureComponents<T>;
@@ -51,6 +62,7 @@ export interface FormHookInterface<T> {
   loadingChanges?: (loading: boolean) => void;
   errorCallback?: (error: any, message?: string) => void;
   successCallback?: (data: any, message?: string) => void;
+  stepChangeCallback?: (step: number, currentForm?: any) => void;
 }
 
 export type ValidationType = 'onSubmit' | 'always';
