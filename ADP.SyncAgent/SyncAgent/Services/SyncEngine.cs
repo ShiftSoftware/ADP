@@ -458,6 +458,7 @@ public class SyncEngine<TSource, TDestination> : ISyncEngine<TSource, TDestinati
 
     public virtual ValueTask Reset()
     {
+        this.syncEngineLoggers = [];
         this.Configurations = null;
         this.Preparing = null;
         this.SourceTotalItemCount = null;
