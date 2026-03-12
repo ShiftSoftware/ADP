@@ -36,7 +36,6 @@ export class VehicleItemClaimForm implements ImageViewerInterface {
   @Watch('expandedImage')
   onImageViewerToggles(newValue: string | null) {
     window.removeEventListener('keydown', this.closeModalListenerRef);
-    console.log(newValue);
 
     if (newValue === null) {
       setTimeout(() => {

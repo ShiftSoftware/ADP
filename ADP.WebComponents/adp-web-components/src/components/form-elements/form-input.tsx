@@ -120,7 +120,6 @@ export class FormInput implements FormElement {
           <div part={`${this.name}-container form-input-container`} class="form-input-container">
             <FormInputPrefix name={this.name} direction={locale?.sharedFormLocales?.direction} prefix={this.inputPrefix} />
             <input
-              {...this.inputProps}
               name={this.name}
               type={this?.type}
               disabled={isDisabled}
@@ -135,6 +134,7 @@ export class FormInput implements FormElement {
               class={cn('form-input-style', part, {
                 'form-input-error-style': isError,
               })}
+              {...this.inputProps}
             />
             {this.icon && renderIcon()}
           </div>

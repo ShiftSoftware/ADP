@@ -10,7 +10,13 @@ export function renderStructure(
   currentStep: number,
 ): JSX.Element | false {
   // @ts-ignore
-  if (!!structure?.step && structure?.step !== currentStep) return false;
+  if (currentStep !== -2 || structure?.step !== undefined) {
+    if (currentStep === -1) {
+      // @ts-ignore
+      if (structure?.step !== undefined && structure?.step !== -1) return false;
+      // @ts-ignore
+    } else if (!!structure?.step && structure?.step !== currentStep) return false;
+  }
 
   if (typeof structure === 'string') {
     if (typeof structure === 'string' && structure && elementMapper[structure]) {

@@ -22,6 +22,8 @@ export class FormHook<T> {
   private subscribedFields: { [key: string]: Field<any> } = {};
   formErrors: { [key: string]: string } = {};
 
+  backButtonContexts: any[] = [];
+
   formController;
   formStructure?: FormStructure;
   openDialog: () => void = () => {};
@@ -87,8 +89,10 @@ export class FormHook<T> {
   reset() {
     this.haltValidation = true;
 
+    this.updateStep(1, true);
+    this.stepFormValues = {};
     this.subscribers.forEach(subscriber => {
-      subscriber.context.reset();
+      subscriber.context?.reset();
     });
 
     this.isSubmitted = false;
@@ -210,6 +214,21 @@ export class FormHook<T> {
     return false;
   };
 
+  updateStep = (newStep: number, replace = false) => {
+    let tempStep = this.formStructure.currentStep;
+
+    if (replace) tempStep = newStep;
+    else tempStep += newStep;
+
+    if (tempStep < 1) tempStep = 1;
+    if (tempStep > this.context?.structure?.steps?.length) newStep = this.context?.structure?.steps?.length;
+
+    this.formStructure.currentStep = tempStep;
+
+    this.backButtonContexts.forEach(backButton => forceUpdate(backButton));
+    this.rerender({ rerenderAll: true });
+  };
+
   private submitForm = async () => {
     try {
       this.isSubmitted = true;
@@ -233,8 +252,12 @@ export class FormHook<T> {
       if (this.context?.structure?.steps) {
         this.stepFormValues = { ...this?.stepFormValues, ...values };
 
-        if (this.context?.structure?.steps?.length === this.formStructure?.currentStep - 1) await this.context.formSubmit(this.stepFormValues);
-        else this.formStructure.currentStep += 1;
+        console.log(this.context?.structure?.steps?.length);
+        console.log(this.formStructure?.currentStep);
+        console.log(this.context?.structure?.steps?.length === this.formStructure?.currentStep);
+
+        if (this.context?.structure?.steps?.length === this.formStructure?.currentStep) await this.context.formSubmit(this.stepFormValues);
+        else this.updateStep(1);
       } else await this.context.formSubmit(values);
     } catch (error) {
       if (error.name === 'ValidationError') {

@@ -120,19 +120,19 @@
               steps: [
                 {
                   en: {
-                    title: 'SELECT A MODEL',
+                    back: 'SELECT A MODEL',
                     stepCell: '1',
                     stepTitle: 'Selecting a vehicle',
                     submitButton: 'CONTINUE',
                   },
                   ku: {
-                    title: 'مۆدێلەک هەلبژێره',
+                    back: 'مۆدێلەک هەلبژێره',
                     stepCell: '1',
                     stepTitle: 'هەڵبژاردنی ئۆتۆمبێلێک',
                     submitButton: 'بەرەوامبوون',
                   },
                   ar: {
-                    title: 'اختر سيارة',
+                    back: 'اختر سيارة',
                     stepCell: '1',
                     stepTitle: 'اختيار السيارة',
                     submitButton: 'استمر',
@@ -140,19 +140,19 @@
                 },
                 {
                   en: {
-                    title: 'DATE & TIME',
+                    back: 'DATE & TIME',
                     stepCell: '2',
                     stepTitle: 'Booking Details',
                     submitButton: 'CONTINUE',
                   },
                   ku: {
-                    title: 'بەروار و کات',
+                    back: 'بەروار و کات',
                     stepCell: '2',
                     stepTitle: 'وردەکارییەکانی تۆمارکردن',
                     submitButton: 'بەرەوامبوون',
                   },
                   ar: {
-                    title: 'التاريخ و الوقت',
+                    back: 'التاريخ و الوقت',
                     stepCell: '2',
                     stepTitle: 'تفاصيل الحجز',
                     submitButton: 'استمر',
@@ -160,19 +160,19 @@
                 },
                 {
                   en: {
-                    title: 'PERSONAL INFO',
+                    back: 'PERSONAL INFO',
                     stepCell: '3',
                     stepTitle: 'Filling Your Details',
                     submitButton: 'CONTINUE',
                   },
                   ku: {
-                    title: 'زانیاری کەسی',
+                    back: 'زانیاری کەسی',
                     stepCell: '3',
                     stepTitle: 'پڕکردنەوەی زانیاریەکانت',
                     submitButton: 'بەرەوامبوون',
                   },
                   ar: {
-                    title: 'معلومات شخصية',
+                    back: 'معلومات شخصية',
                     stepCell: '3',
                     stepTitle: 'املأ بياناتك',
                     submitButton: 'استمر',
@@ -180,25 +180,26 @@
                 },
                 {
                   en: {
-                    title: 'CONFIRMATION',
+                    back: 'CONFIRMATION',
                     stepCell: '4',
                     stepTitle: 'Confirming Booking',
                     submitButton: 'CONFIRM',
                   },
                   ku: {
-                    title: 'تأكيد',
+                    back: 'تأكيد',
                     stepCell: '4',
                     stepTitle: 'پشتڕاستکردنەوەی حجزکردن',
                     submitButton: 'دڵنیابوون',
                   },
                   ar: {
-                    title: 'پشتڕاستکردنەوە',
+                    back: 'پشتڕاستکردنەوە',
                     stepCell: '4',
                     stepTitle: 'تأكيد الحجز',
                     submitButton: 'ثبت',
                   },
                 },
               ],
+
               requiredContext: {
                 vehicle: true,
                 name: true,
@@ -208,269 +209,365 @@
                 time: true,
               },
               tag: 'div',
-              id: 'container',
               children: [
                 {
                   tag: 'div',
-                  id: 'inputs_wrapper',
+                  step: -1,
+                  children: ['formStepper', 'back'],
+                },
+                {
+                  tag: 'div',
+                  id: 'container',
                   children: [
                     {
-                      step: 3,
-                      name: 'name',
-                      localization: {
-                        ku: {
-                          label: 'ناوی تەواو',
-                          placeholder: 'ناوی تەواو',
-                          require: 'ناوی تەواو پێویستە.',
-                          format: 'ناوی تەواو دەبێت ٣ پیت یان زیاتر بێت.',
+                      tag: 'div',
+                      id: 'inputs_wrapper',
+                      children: [
+                        {
+                          step: 3,
+                          name: 'name',
+                          localization: {
+                            ku: {
+                              label: 'ناوی تەواو',
+                              placeholder: 'ناوی تەواو',
+                              require: 'ناوی تەواو پێویستە.',
+                              format: 'ناوی تەواو دەبێت ٣ پیت یان زیاتر بێت.',
+                            },
+                            ar: {
+                              label: 'الاسم الكامل',
+                              placeholder: 'الاسم الكامل',
+                              require: 'الاسم الكامل مطلوب.',
+                              format: 'الاسم الكامل يجب أن يتكون من 3 أحرف أو أكثر.',
+                            },
+                            en: {
+                              label: 'Full name',
+                              placeholder: 'Full name',
+                              require: 'Full name is required.',
+                              format: 'Full Name must be 3 characters or more.',
+                            },
+                          },
                         },
+                        {
+                          step: 3,
+                          step: 3,
+                          name: 'phone',
+                          countryCode: 'IQ',
+                          localization: {
+                            ku: {
+                              label: 'ژمارەی مۆبایل',
+                              placeholder: 'ژمارەی مۆبایل',
+                              require: 'ژمارەی مۆبایل پێویستە.',
+                              format: 'فۆرماتی ژمارەی تەلەفۆن نادروستە.',
+                            },
+                            ar: {
+                              label: 'رقم الهاتف',
+                              placeholder: 'رقم الهاتف',
+                              require: 'رقم الهاتف مطلوب.',
+                              format: 'تنسيق رقم الهاتف غير صالح.',
+                            },
+                            en: {
+                              label: 'Phone number',
+                              placeholder: 'Phone number',
+                              require: 'Phone number is Required.',
+                              format: 'Phone number format is invalid.',
+                            },
+                          },
+                        },
+                        {
+                          step: 3,
+                          name: 'email',
+                          localization: {
+                            ku: {
+                              label: 'ئیمەیڵ',
+                              placeholder: 'ئیمەیڵ',
+                              require: 'ئیمەیڵ پێویستە.',
+                              format: 'فۆرماتی ئیمەیڵ هەڵەیە.',
+                            },
+                            ar: {
+                              label: 'البريد الإلكتروني',
+                              placeholder: 'عنوان البريد الإلكتروني',
+                              require: 'البريد الإلكتروني مطلوب.',
+                              format: 'تنسيق البريد الإلكتروني غير صالح.',
+                            },
+                            en: {
+                              label: 'Email',
+                              placeholder: 'Email address',
+                              require: 'Email is Required.',
+                              format: 'Email format is invalid.',
+                            },
+                          },
+                        },
+                        {
+                          step: 2,
+                          name: 'companyBranchId',
+                          branchApi: 'https://tiq-identity-server.azurewebsites.net/api/public/company-branch?brands=LUX&services=test-drive',
+                          localization: {
+                            ku: {
+                              label: 'سەنتەری خزمەتگوزاری',
+                              placeholder: 'سەنتەری خزمەتگوزاری',
+                              require: 'سەنتەری خزمەتگوزاری پێویستە.',
+                            },
+                            ar: {
+                              label: 'اختر مركز الخدمة',
+                              placeholder: 'اختر مركز الخدمة',
+                              require: 'مركز الخدمة.',
+                            },
+                            en: {
+                              label: 'Service centre',
+                              placeholder: 'Choose a service centre',
+                              require: 'Service centre is Required.',
+                            },
+                          },
+                        },
+                        {
+                          'step': 1,
+                          'name': 'vehicle',
+                          'useNamedValue': true,
+                          'vehiclesApiStrapiFormat': true,
+                          'dynamic': true,
+                          'item-value': ['id'],
+                          'item-label': ['Name'],
+                          'items': ['data.attributes.Models', 'data.Models'],
+                          'vehicleApi': 'https://lexus-strapi-v4.azurewebsites.net/api/book-a-service-model?locale=en&populate[Models][fields][0]=Name',
+                          'localization': {
+                            ku: {
+                              label: 'مۆدێل',
+                              placeholder: 'تکایە مۆدێلێک هەڵبژێرە',
+                              require: 'ئەم بەشە پێویستە',
+                            },
+                            ar: {
+                              label: 'طراز السيارة',
+                              placeholder: 'الرجاء اختيار طراز السيارة',
+                              require: 'هذه الحقل مطلوب.',
+                            },
+                            en: {
+                              label: 'Model',
+                              placeholder: 'Please select a Model',
+                              require: 'This field is required.',
+                            },
+                          },
+                        },
+                        {
+                          step: 3,
+                          name: 'vin',
+                          useOcr: true,
+                          scannerIcon: 'camera',
+                          ocrEndpoint: 'https://tiq-vehicles-functions.azurewebsites.net/api/vehicle-lookup/ocr',
+                          localization: {
+                            ku: {
+                              label: 'ژمارەی شاسی',
+                              placeholder: 'ژمارەی شاسی',
+                              require: 'ژمارەی شاسی پێویستە',
+                              format: 'ژمارەی شاسی نادروستە',
+                              scan: 'سکانەری ژمارەی شاسی',
+                            },
+                            ar: {
+                              label: 'رقم الشاصي',
+                              placeholder: 'رقم الشاصي',
+                              require: 'رقم الشاصي مطلوب',
+                              format: 'رقم الشاصي غير صالح',
+                              scan: 'ماسح رقم الشاصي',
+                            },
+                            en: {
+                              label: 'VIN',
+                              placeholder: 'VIN number',
+                              require: 'Vin is required',
+                              format: 'Vin is invalid',
+                              scan: 'Scan Your VIN',
+                            },
+                          },
+                        },
+                        {
+                          step: 2,
+                          name: 'date',
+                          format: 'yyyy-MM-dd',
+                          min: [0],
+                          max: [0, 1],
+                          localization: {
+                            ku: {
+                              label: 'بەرواری دیاریکراو',
+                              placeholder: 'بەرواری دیاریکراو',
+                              require: 'بەرواری دیاریکراو پێویستە.',
+                              minMessage: 'کەمترین بەروار $minDate$ ـە',
+                              maxMessage: 'زۆرترین بەروار $maxDate$ ـە',
+                              betweenMessage: 'دەبێت لەنێوان $minDate$ و $maxDate$ بێت',
+                            },
+                            ar: {
+                              label: 'التاريخ المفضل',
+                              placeholder: 'التاريخ المفضل',
+                              require: 'التاريخ المفضل مطلوب.',
+                              minMessage: 'أقل تاريخ هو $minDate$',
+                              maxMessage: 'أقصى تاريخ هو $maxDate$',
+                              betweenMessage: 'يجب أن يكون بين $minDate$ و $maxDate$',
+                            },
+                            en: {
+                              label: 'Preferred date',
+                              placeholder: 'Preferred date',
+                              require: 'Preferred date is required',
+                              minMessage: 'Min date is $minDate$',
+                              maxMessage: 'Max date is $maxDate$',
+                              betweenMessage: 'Must be between $minDate$ and $maxDate$',
+                            },
+                          },
+                        },
+                        {
+                          step: 2,
+                          name: 'time',
+                          format: 'HH:mm',
+                          min: [0, 0, 0, 9],
+                          max: [0, 0, 0, 17],
+                          span: [0, 0, 0, 0, 30],
+                          localization: {
+                            ku: {
+                              label: 'کاتی دیاریکراو',
+                              placeholder: 'کاتی دیاریکراو',
+                              require: 'کاتی دیاریکراو پێویستە.',
+                            },
+                            ar: {
+                              label: 'الوقت المفضل',
+                              placeholder: 'الوقت المفضل',
+                              require: 'الوقت المفضل مطلوب.',
+                            },
+                            en: {
+                              label: 'Preferred time',
+                              placeholder: 'Preferred time',
+                              require: 'Preferred time is required',
+                            },
+                          },
+                        },
+                        {
+                          step: 4,
+                          tag: 'div',
+                          class: 'confirmation-title',
+                          children: {
+                            ku: 'تکایە زانیارییەکانی خوارەوە پشتڕاست بکەنەوە',
+                            ar: 'يرجى تأكيد التفاصيل أدناه',
+                            en: 'Please confirm the details below',
+                          },
+                        },
+                        {
+                          step: 4,
+                          tag: 'div',
+                          children: {
+                            ku: '',
+                            ar: '',
+                            en: '',
+                          },
+                        },
+                        {
+                          step: 4,
+                          name: 'vehicle',
+                          type: 'inputPreview',
+                          localization: {
+                            en: {
+                              label: 'Vehicle',
+                              value: 'Lexus - ${vehicle}',
+                            },
+                            ku: {
+                              label: 'ئۆتۆمبێل',
+                              value: 'Lexus - ${vehicle}',
+                            },
+                            ar: {
+                              label: 'مركبة',
+                              value: 'Lexus - ${vehicle}',
+                            },
+                          },
+                        },
+                        {
+                          step: 4,
+                          name: 'date',
+                          type: 'inputPreview',
+                          localization: {
+                            en: {
+                              label: 'Service Date',
+                              value: '${date}',
+                            },
+                            ku: {
+                              label: 'بەرواری خزمەتگوزاری',
+                              value: '${date}',
+                            },
+                            ar: {
+                              label: 'تاريخ الخدمة',
+                              value: '${date}',
+                            },
+                          },
+                        },
+                        {
+                          step: 4,
+                          name: 'time',
+                          type: 'inputPreview',
+                          localization: {
+                            en: {
+                              label: 'Service Time',
+                              value: '${time}',
+                            },
+                            ku: {
+                              label: 'کاتی خزمەتگوزاری',
+                              value: '${time}',
+                            },
+                            ar: {
+                              label: 'وقت الخدمة',
+                              value: '${time}',
+                            },
+                          },
+                        },
+                      ],
+                    },
+                    {
+                      step: 3,
+                      name: 'message',
+                      localization: {
                         ar: {
-                          label: 'الاسم الكامل',
-                          placeholder: 'الاسم الكامل',
-                          require: 'الاسم الكامل مطلوب.',
-                          format: 'الاسم الكامل يجب أن يتكون من 3 أحرف أو أكثر.',
+                          label: 'تعليق إضافي',
+                          placeholder: 'تعليق إضافي',
+                          require: 'تعليق إضافي مطلوبة.',
+                          format: 'يجب أن تتكون تعليق إضافي من ١٠ أحرف على الأقل.',
+                        },
+                        ku: {
+                          label: 'سەرنج',
+                          placeholder: 'سەرنج',
+                          require: 'سەرنج پێویستە.',
+                          format: 'سەرنج دەبێت لانیکەم ١٠ پیت بێت.',
                         },
                         en: {
-                          label: 'Full name',
-                          placeholder: 'Full name',
-                          require: 'Full name is required.',
-                          format: 'Full Name must be 3 characters or more.',
+                          label: 'Comments',
+                          placeholder: 'Comments',
+                          require: 'Comments is required.',
+                          format: 'Comments must be 10 characters or more.',
                         },
                       },
                     },
                     {
-                      step: 3,
-                      step: 3,
-                      name: 'phone',
-                      countryCode: 'IQ',
-                      localization: {
-                        ku: {
-                          label: 'ژمارەی مۆبایل',
-                          placeholder: 'ژمارەی مۆبایل',
-                          require: 'ژمارەی مۆبایل پێویستە.',
-                          format: 'فۆرماتی ژمارەی تەلەفۆن نادروستە.',
-                        },
-                        ar: {
-                          label: 'رقم الهاتف',
-                          placeholder: 'رقم الهاتف',
-                          require: 'رقم الهاتف مطلوب.',
-                          format: 'تنسيق رقم الهاتف غير صالح.',
-                        },
-                        en: {
-                          label: 'Phone number',
-                          placeholder: 'Phone number',
-                          require: 'Phone number is Required.',
-                          format: 'Phone number format is invalid.',
-                        },
-                      },
-                    },
-                    {
-                      step: 3,
-                      name: 'email',
-                      localization: {
-                        ku: {
-                          label: 'ئیمەیڵ',
-                          placeholder: 'ئیمەیڵ',
-                          require: 'ئیمەیڵ پێویستە.',
-                          format: 'فۆرماتی ئیمەیڵ هەڵەیە.',
-                        },
-                        ar: {
-                          label: 'البريد الإلكتروني',
-                          placeholder: 'عنوان البريد الإلكتروني',
-                          require: 'البريد الإلكتروني مطلوب.',
-                          format: 'تنسيق البريد الإلكتروني غير صالح.',
-                        },
-                        en: {
-                          label: 'Email',
-                          placeholder: 'Email address',
-                          require: 'Email is Required.',
-                          format: 'Email format is invalid.',
-                        },
-                      },
+                      step: 1,
+                      id: 'Submit',
+                      name: 'stepperSubmit',
                     },
                     {
                       step: 2,
-                      name: 'companyBranchId',
-                      branchApi: 'https://tiq-identity-server.azurewebsites.net/api/public/company-branch?brands=LUX&services=test-drive',
-                      localization: {
-                        ku: {
-                          label: 'سەنتەری خزمەتگوزاری',
-                          placeholder: 'سەنتەری خزمەتگوزاری',
-                          require: 'سەنتەری خزمەتگوزاری پێویستە.',
-                        },
-                        ar: {
-                          label: 'اختر مركز الخدمة',
-                          placeholder: 'اختر مركز الخدمة',
-                          require: 'مركز الخدمة.',
-                        },
-                        en: {
-                          label: 'Service centre',
-                          placeholder: 'Choose a service centre',
-                          require: 'Service centre is Required.',
-                        },
-                      },
-                    },
-                    {
-                      'step': 1,
-                      'name': 'vehicle',
-                      'useNamedValue': true,
-                      'vehiclesApiStrapiFormat': true,
-                      'dynamic': true,
-                      'item-value': ['id'],
-                      'item-label': ['Name'],
-                      'items': ['data.attributes.Models', 'data.Models'],
-                      'vehicleApi': 'https://lexus-strapi-v4.azurewebsites.net/api/book-a-service-model?locale=en&populate[Models][fields][0]=Name',
-                      'localization': {
-                        ku: {
-                          label: 'مۆدێل',
-                          placeholder: 'تکایە مۆدێلێک هەڵبژێرە',
-                          require: 'ئەم بەشە پێویستە',
-                        },
-                        ar: {
-                          label: 'طراز السيارة',
-                          placeholder: 'الرجاء اختيار طراز السيارة',
-                          require: 'هذه الحقل مطلوب.',
-                        },
-                        en: {
-                          label: 'Model',
-                          placeholder: 'Please select a Model',
-                          require: 'This field is required.',
-                        },
-                      },
+                      id: 'Submit',
+                      name: 'stepperSubmit',
                     },
                     {
                       step: 3,
-                      name: 'vin',
-                      useOcr: true,
-                      scannerIcon: 'camera',
-                      ocrEndpoint: 'https://tiq-vehicles-functions.azurewebsites.net/api/vehicle-lookup/ocr',
-                      localization: {
-                        ku: {
-                          label: 'ژمارەی شاسی',
-                          placeholder: 'ژمارەی شاسی',
-                          require: 'ژمارەی شاسی پێویستە',
-                          format: 'ژمارەی شاسی نادروستە',
-                          scan: 'سکانەری ژمارەی شاسی',
-                        },
-                        ar: {
-                          label: 'رقم الشاصي',
-                          placeholder: 'رقم الشاصي',
-                          require: 'رقم الشاصي مطلوب',
-                          format: 'رقم الشاصي غير صالح',
-                          scan: 'ماسح رقم الشاصي',
-                        },
-                        en: {
-                          label: 'VIN',
-                          placeholder: 'VIN number',
-                          require: 'Vin is required',
-                          format: 'Vin is invalid',
-                          scan: 'Scan Your VIN',
-                        },
-                      },
+                      id: 'Submit',
+                      name: 'stepperSubmit',
                     },
                     {
-                      step: 2,
-                      name: 'date',
-                      format: 'yyyy-MM-dd',
-                      min: [0],
-                      max: [0, 1],
-                      localization: {
-                        ku: {
-                          label: 'بەرواری دیاریکراو',
-                          placeholder: 'بەرواری دیاریکراو',
-                          require: 'بەرواری دیاریکراو پێویستە.',
-                          minMessage: 'کەمترین بەروار $minDate$ ـە',
-                          maxMessage: 'زۆرترین بەروار $maxDate$ ـە',
-                          betweenMessage: 'دەبێت لەنێوان $minDate$ و $maxDate$ بێت',
-                        },
-                        ar: {
-                          label: 'التاريخ المفضل',
-                          placeholder: 'التاريخ المفضل',
-                          require: 'التاريخ المفضل مطلوب.',
-                          minMessage: 'أقل تاريخ هو $minDate$',
-                          maxMessage: 'أقصى تاريخ هو $maxDate$',
-                          betweenMessage: 'يجب أن يكون بين $minDate$ و $maxDate$',
-                        },
-                        en: {
-                          label: 'Preferred date',
-                          placeholder: 'Preferred date',
-                          require: 'Preferred date is required',
-                          minMessage: 'Min date is $minDate$',
-                          maxMessage: 'Max date is $maxDate$',
-                          betweenMessage: 'Must be between $minDate$ and $maxDate$',
-                        },
-                      },
+                      step: 4,
+                      id: 'Submit',
+                      name: 'stepperSubmit',
                     },
                     {
-                      step: 2,
-                      name: 'time',
-                      format: 'HH:mm',
-                      min: [0, 0, 0, 9],
-                      max: [0, 0, 0, 17],
-                      span: [0, 0, 0, 0, 30],
-                      localization: {
-                        ku: {
-                          label: 'کاتی دیاریکراو',
-                          placeholder: 'کاتی دیاریکراو',
-                          require: 'کاتی دیاریکراو پێویستە.',
-                        },
-                        ar: {
-                          label: 'الوقت المفضل',
-                          placeholder: 'الوقت المفضل',
-                          require: 'الوقت المفضل مطلوب.',
-                        },
-                        en: {
-                          label: 'Preferred time',
-                          placeholder: 'Preferred time',
-                          require: 'Preferred time is required',
-                        },
+                      step: 4,
+                      tag: 'div',
+                      class: 'confirmation-policy',
+                      children: {
+                        ku: 'مەرج و ڕێساکان پەیڕەو دەکرێت.',
+                        ar: 'تطبق الشروط و الاحكام.',
+                        en: 'Terms and Conditions Apply.',
                       },
                     },
                   ],
-                },
-                {
-                  step: 3,
-                  name: 'message',
-                  localization: {
-                    ar: {
-                      label: 'تعليق إضافي',
-                      placeholder: 'تعليق إضافي',
-                      require: 'تعليق إضافي مطلوبة.',
-                      format: 'يجب أن تتكون تعليق إضافي من ١٠ أحرف على الأقل.',
-                    },
-                    ku: {
-                      label: 'سەرنج',
-                      placeholder: 'سەرنج',
-                      require: 'سەرنج پێویستە.',
-                      format: 'سەرنج دەبێت لانیکەم ١٠ پیت بێت.',
-                    },
-                    en: {
-                      label: 'Comments',
-                      placeholder: 'Comments',
-                      require: 'Comments is required.',
-                      format: 'Comments must be 10 characters or more.',
-                    },
-                  },
-                },
-                {
-                  step: 1,
-                  id: 'Submit',
-                  name: 'stepperSubmit',
-                },
-                {
-                  step: 2,
-                  id: 'Submit',
-                  name: 'stepperSubmit',
-                },
-                {
-                  step: 3,
-                  id: 'Submit',
-                  name: 'stepperSubmit',
-                },
-                {
-                  step: 4,
-                  id: 'Submit',
-                  name: 'stepperSubmit',
                 },
               ],
             };

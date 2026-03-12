@@ -9,6 +9,12 @@ import { populateItems } from '~lib/populate-items';
 export const getFormMappers = (stateObject: Record<string, any>, extraMappers: Record<string, (prop: any) => any> = {}) => ({
   submit: ({ props }) => <form-submit key={props?.name} {...props} />,
 
+  inputPreview: ({ props }) => <form-input-preview key={props?.name} {...props} />,
+
+  formStepper: ({ props }) => <form-stepper key={props?.name} {...props} />,
+
+  back: ({ props }) => <form-stepper-control key={props?.name} {...props} />,
+
   stepperSubmit: ({ props }) => <form-stepper-submit key={props?.step || props?.name} {...props} />,
 
   name: ({ props }) => <form-input key={props?.name} {...props} />,
