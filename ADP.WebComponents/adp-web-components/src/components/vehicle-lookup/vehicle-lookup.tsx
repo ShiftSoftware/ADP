@@ -68,6 +68,7 @@ export class VehicleLookup implements MultiLingual {
 
   @Prop() baseUrl: string = '';
   @Prop() isDev: boolean = false;
+  @Prop() disableVinValidation: boolean = false;
   @Prop() queryString: string = '';
   @Prop() childrenProps?: string | Object;
 
@@ -210,6 +211,7 @@ export class VehicleLookup implements MultiLingual {
         <vehicle-specification
           coreOnly
           isDev={this.isDev}
+          disableVinValidation={this.disableVinValidation}
           base-url={this.baseUrl}
           language={this.language}
           query-string={this.queryString}
@@ -221,6 +223,7 @@ export class VehicleLookup implements MultiLingual {
         <vehicle-accessories
           coreOnly
           isDev={this.isDev}
+          disableVinValidation={this.disableVinValidation}
           base-url={this.baseUrl}
           language={this.language}
           query-string={this.queryString}
@@ -232,6 +235,7 @@ export class VehicleLookup implements MultiLingual {
         <vehicle-sale-information
           coreOnly
           isDev={this.isDev}
+          disableVinValidation={this.disableVinValidation}
           base-url={this.baseUrl}
           language={this.language}
           query-string={this.queryString}
@@ -244,6 +248,7 @@ export class VehicleLookup implements MultiLingual {
           coreOnly
           show-ssc="true"
           isDev={this.isDev}
+          disableVinValidation={this.disableVinValidation}
           show-warranty="true"
           base-url={this.baseUrl}
           language={this.language}
@@ -257,6 +262,7 @@ export class VehicleLookup implements MultiLingual {
         <vehicle-service-history
           coreOnly
           isDev={this.isDev}
+          disableVinValidation={this.disableVinValidation}
           base-url={this.baseUrl}
           language={this.language}
           query-string={this.queryString}
@@ -268,6 +274,7 @@ export class VehicleLookup implements MultiLingual {
         <vehicle-paint-thickness
           coreOnly
           isDev={this.isDev}
+          disableVinValidation={this.disableVinValidation}
           base-url={this.baseUrl}
           language={this.language}
           query-string={this.queryString}
@@ -279,6 +286,7 @@ export class VehicleLookup implements MultiLingual {
         <vehicle-claimable-items
           coreOnly
           isDev={this.isDev}
+          disableVinValidation={this.disableVinValidation}
           base-url={this.baseUrl}
           language={this.language}
           query-string={this.queryString}

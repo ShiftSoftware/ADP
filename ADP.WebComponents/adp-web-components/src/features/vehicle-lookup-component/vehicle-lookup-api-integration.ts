@@ -44,7 +44,7 @@ export const setVehicleLookupData = async (
       throw new Error('vinNumberRequired');
     }
 
-    if (!validateVin(vin) && !context?.isDev) throw new Error('invalidVin');
+    if (!validateVin(vin) && !context?.isDev && !context?.disableVinValidation) throw new Error('invalidVin');
 
     const vehicleResponse = isVinRequest ? await getVehicleLookup(context, { scopedTimeoutRef, vin }, headers) : (newData as VehicleLookupDTO);
 

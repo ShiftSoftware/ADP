@@ -79,13 +79,20 @@ public class FileHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource
     public ValueTask<bool> ActionStarted(SyncFunctionInput<SyncActionType> input)
     {
         engine = new();
+        var hasHeaderRecord = Configurations?.HasHeaderRecord ?? true;
+        var filePath = input.Input switch
+        {
+            SyncActionType.Add => toInsertFilePath,
+            SyncActionType.Delete => toDeleteFilePath,
+            _ => null
+        };
+
+        if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath) || IsNoDataFile(filePath, hasHeaderRecord))
+            return new(true);
 
         try
         {
-            if (input.Input == SyncActionType.Add)
-                engine.BeginReadFile(toInsertFilePath!);
-            else if (input.Input== SyncActionType.Delete)
-                engine.BeginReadFile(toDeleteFilePath!);
+            engine.BeginReadFile(filePath);
 
             return new(true);
         }
@@ -97,12 +104,20 @@ public class FileHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource
 
     public ValueTask<long?> SourceTotalItemCount(SyncFunctionInput<SyncActionType> input)
     {
+        var hasHeaderRecord = Configurations?.HasHeaderRecord ?? true;
+        var filePath = input.Input switch
+        {
+            SyncActionType.Add => toInsertFilePath,
+            SyncActionType.Delete => toDeleteFilePath,
+            _ => null
+        };
+
+        if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath) || IsNoDataFile(filePath, hasHeaderRecord))
+            return new(0);
+
         CacheableCSVAsyncEngine<TCSV>? e = new();
 
-        if (input.Input == SyncActionType.Add)
-            e.BeginReadFile(toInsertFilePath!);
-        else if (input.Input == SyncActionType.Delete)
-            e.BeginReadFile(toDeleteFilePath!);
+        e.BeginReadFile(filePath);
 
         if (input.Input == SyncActionType.Add || input.Input == SyncActionType.Delete)
             return new(e!.LongCount());
@@ -158,6 +173,25 @@ public class FileHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource
         await base.DisposeAsync();
         engine?.Dispose();
         engine = null;
+    }
+
+    private static bool IsNoDataFile(string path, bool hasHeaderRecord)
+    {
+        using var lines = File.ReadLines(path).GetEnumerator();
+
+        if (!lines.MoveNext())
+            return true;
+
+        if (!hasHeaderRecord)
+            return string.IsNullOrWhiteSpace(lines.Current);
+
+        while (lines.MoveNext())
+        {
+            if (!string.IsNullOrWhiteSpace(lines.Current))
+                return false;
+        }
+
+        return true;
     }
 
     #region Not Implemented

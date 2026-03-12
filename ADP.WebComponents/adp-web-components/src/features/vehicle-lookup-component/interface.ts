@@ -7,6 +7,7 @@ import { VehicleLookupMock, VehicleRequestHeaders } from './types';
 
 export interface VehicleLookupComponent extends VehicleRequestHeaders {
   isDev: boolean;
+  disableVinValidation?: boolean;
   baseUrl: string;
   headers: object;
   isError: boolean;
