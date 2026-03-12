@@ -54,6 +54,7 @@ export class VehicleWarrantyDetails implements MultiLingual, VehicleInfoLayoutIn
   // #region Vehicle Lookup Component Shared Logic
 
   @Prop() isDev: boolean;
+  @Prop() disableVinValidation: boolean = false;
   @Prop() baseUrl: string;
   @Prop() headers: object = {};
   @Prop() queryString: string = '';

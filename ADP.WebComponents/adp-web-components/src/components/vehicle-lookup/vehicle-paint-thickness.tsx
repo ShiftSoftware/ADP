@@ -67,6 +67,7 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
   // #region Vehicle Lookup Component Shared Logic
 
   @Prop() isDev: boolean;
+  @Prop() disableVinValidation: boolean = false;
   @Prop() baseUrl: string;
   @Prop() headers: object = {};
   @Prop() queryString: string = '';
