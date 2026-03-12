@@ -1,8 +1,8 @@
-import { Component, h, Prop, Host } from '@stencil/core';
+import { Component, h, Prop, Host, Watch, forceUpdate } from '@stencil/core';
 import { FormElement, FormHook } from '~features/form-hook';
 import cn from '~lib/cn';
 
-const formStepperId = 'form-stepper';
+const formStepperId = 'form-stepper-line';
 
 @Component({
   shadow: false,
@@ -41,26 +41,33 @@ export class FormStepper implements FormElement {
     }
   }
 
-  updateLine() {
-    if (!this.container || !this.line) return;
+  @Watch('language')
+  async onLanguageUpdate() {
+    forceUpdate(this);
+    this.line.style.width = `${0}px`;
+    setTimeout(() => this.updateLine(), 100);
+  }
+
+  updateLine = () => {
+    const [locale] = this.form.getFormLocale();
+    const direction = locale?.sharedFormLocales?.direction;
+
+    if (!this.container || !this.line || !direction) return;
 
     const buttons = this.container.querySelectorAll('button');
 
     if (buttons.length < 2) return;
 
-    const first = buttons[0].getBoundingClientRect();
-    const last = buttons[buttons.length - 1].getBoundingClientRect();
-    const parent = this.container.getBoundingClientRect();
+    const firstButton = buttons[0].getBoundingClientRect();
+    const lastButton = buttons[buttons.length - 1].getBoundingClientRect();
 
-    const firstCenter = first.left + first.width / 2;
-    const lastCenter = last.left + last.width / 2;
+    const firstCenter = firstButton.left + firstButton.width / 2;
+    const lastCenter = lastButton.left + lastButton.width / 2;
 
-    const left = firstCenter - parent.left;
-    const width = lastCenter - firstCenter;
+    const width = Math.abs(lastCenter - firstCenter);
 
-    this.line.style.left = `${left}px`;
     this.line.style.width = `${width}px`;
-  }
+  };
 
   render() {
     const [_, language] = this.form.getFormLocale();
@@ -76,7 +83,7 @@ export class FormStepper implements FormElement {
             <div
               part={cn(formStepperId + '-line')}
               ref={el => (this.line = el as HTMLElement)}
-              class="absolute w-full h-[1px] -translate-y-[50%] top-[16px]"
+              class="absolute w-full h-[1px] -translate-y-[50%] -translate-x-[50%] top-[16px] left-[50%]"
               style={{ background: 'repeating-linear-gradient(to right,black 0px,black 12px,transparent 6px,transparent 24px)' }}
             />
             {steps.map((step, i) => (
@@ -99,7 +106,7 @@ export class FormStepper implements FormElement {
                       [formStepperId + '-step-indicator-active']: i + 1 === currentStep,
                       [formStepperId + '-step-indicator-active' + (i + 1)]: i + 1 === currentStep,
                     })}
-                    class="relative z-[10] before:absolute before:inset-0 before:size-full before:origin-center before:bg-black/25 before:transition-all before:duration-500 aria-expanded:before:scale-[1.4] size-[32px] flex bg-black cursor-default items-center justify-center"
+                    class="relative z-[10] before:absolute before:inset-0 before:size-full before:origin-center before:bg-black/15 before:transition-all before:duration-500 aria-expanded:before:scale-[1.5] size-[32px] flex bg-black cursor-default items-center justify-center"
                   >
                     <div
                       class="relative z-10 text-white items-center text-[16px]"
@@ -121,7 +128,7 @@ export class FormStepper implements FormElement {
                       [formStepperId + '-step-title-active']: i + 1 === currentStep,
                       [formStepperId + '-step-title-active' + (i + 1)]: i + 1 === currentStep,
                     })}
-                    class="text-[14px] text-center mt-[8px] text-gray-600"
+                    class="text-[14px] text-center mt-[12px] text-gray-600"
                   >
                     {step?.[language]?.stepTitle}
                   </span>

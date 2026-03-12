@@ -18,7 +18,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@100..900&family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap" rel="stylesheet" />
 
-    <link rel="stylesheet" href="https://tiqappstorage.blob.core.windows.net/template-files/lexus/service-booking/general.css" />
+    <link rel="stylesheet" href="./tmp.css" />
+    <!-- <link rel="stylesheet" href="https://tiqappstorage.blob.core.windows.net/template-files/lexus/service-booking/general.css" /> -->
   </head>
 
   <body class="min-h-screen bg-base-200 flex flex-col items-center py-10 px-4 font-sans">
@@ -214,6 +215,16 @@
                   tag: 'div',
                   step: -1,
                   children: ['formStepper', 'back'],
+                },
+                {
+                  step: 4,
+                  tag: 'div',
+                  class: 'confirmation-title',
+                  children: {
+                    ku: 'تکایە زانیارییەکانی خوارەوە پشتڕاست بکەنەوە',
+                    ar: 'يرجى تأكيد التفاصيل أدناه',
+                    en: 'Please confirm the details below',
+                  },
                 },
                 {
                   tag: 'div',
@@ -433,25 +444,6 @@
                               placeholder: 'Preferred time',
                               require: 'Preferred time is required',
                             },
-                          },
-                        },
-                        {
-                          step: 4,
-                          tag: 'div',
-                          class: 'confirmation-title',
-                          children: {
-                            ku: 'تکایە زانیارییەکانی خوارەوە پشتڕاست بکەنەوە',
-                            ar: 'يرجى تأكيد التفاصيل أدناه',
-                            en: 'Please confirm the details below',
-                          },
-                        },
-                        {
-                          step: 4,
-                          tag: 'div',
-                          children: {
-                            ku: '',
-                            ar: '',
-                            en: '',
                           },
                         },
                         {

@@ -11,7 +11,7 @@ export const getFormMappers = (stateObject: Record<string, any>, extraMappers: R
 
   inputPreview: ({ props }) => <form-input-preview key={props?.name} {...props} />,
 
-  formStepper: ({ props }) => <form-stepper key={props?.name} {...props} />,
+  formStepper: ({ props, language }) => <form-stepper key={props?.name} language={language} {...props} />,
 
   back: ({ props }) => <form-stepper-control key={props?.name} {...props} />,
 

@@ -50,7 +50,7 @@ export class FormStepperControl implements FormElement {
         disabled={this.isLoading}
         onClick={() => this.form.updateStep(-1)}
         part={cn('stepper-control', `stepper-control-${direction}`, buttonSubscriberKey, `stepper-control-step-${currentStep}`)}
-        class={cn('transition-all duration-700 flex gap-1 items-center stepper-control', {
+        class={cn('transition-all duration-700 text-[16px] flex gap-1 items-center stepper-control', {
           'loading': this.isLoading,
           'pointer-events-none': currentStep === 10,
         })}
