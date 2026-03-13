@@ -8,6 +8,7 @@ public class CSVSyncDataSourceConfigurations<T> where T : class
     public string? DestinationContainerOrShareName { get; set; }
     public string? DestinationDirectory { get; set; }
     public bool SkipReorderedLines { get; set; }
+    public bool FullSourceSync { get; set; }
     public Func<IEnumerable<T>, ValueTask<IEnumerable<T>>>? ProccessSourceData { get; set; }
     public Func<IEnumerable<T>, IEnumerable<T>, ValueTask<IEnumerable<T>>>? ProccessAddedItems { get; set; }
     public Func<IEnumerable<T>, IEnumerable<T>, ValueTask<IEnumerable<T>>>? ProccessDeletedItems { get; set; }
@@ -29,6 +30,7 @@ public class CSVSyncDataSourceConfigurations<T> where T : class
         string? destinationContainerOrShareName,
         string? destinationDirectory,
         bool skipReorderedLines,
+        bool fullSourceSync,
         bool hasHeaderRecord = true)
     {
         CSVFileName = csvFileName;
@@ -37,6 +39,7 @@ public class CSVSyncDataSourceConfigurations<T> where T : class
         DestinationContainerOrShareName = destinationContainerOrShareName;
         DestinationDirectory = destinationDirectory;
         SkipReorderedLines = skipReorderedLines;
+        FullSourceSync = fullSourceSync;
         HasHeaderRecord = hasHeaderRecord;
     }
 

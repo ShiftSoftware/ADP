@@ -46,78 +46,88 @@ public abstract class CsvSyncDataSource<T> : IAsyncDisposable
     {
         try
         {
-            SetupWorkingDirectory();
+            var isFullSourceSync = this.Configurations?.FullSourceSync == true;
 
-            await input.SyncProgressIndicators.LogInformation("Loading the last synced version of the CSV file and comparing it with the new version to find the changes.");
+            SetupWorkingDirectory(!isFullSourceSync);
 
-            // Load the last CSV file that was synced successfully
-            await storageService.LoadOriginalFileAsync(
-                Path.Combine(this.Configurations!.DestinationDirectory ?? "", this.Configurations.CSVFileName!),
-                Path.Combine(this.workingDirectory!.FullName, "file.csv"),
-                this.numberOfHeaderLines, this.Configurations.DestinationContainerOrShareName,
-                input.CancellationToken);
+            var compareFilePath = Path.Combine(this.workingDirectory!.FullName, "file.csv");
+            var newVersionDestinationPath = isFullSourceSync ? toInsertFilePath! : compareFilePath;
 
-            StageAndCommit();
+            if (!isFullSourceSync)
+            {
+                await input.SyncProgressIndicators.LogInformation("Loading the last synced version of the CSV file and comparing it with the new version to find the changes.");
 
-            await input.SyncProgressIndicators.LogInformation("The last synced version of the CSV file is loaded. Now loading the new version of the CSV file to find the changes.");
+                await storageService.LoadOriginalFileAsync(
+                    Path.Combine(this.Configurations!.DestinationDirectory ?? "", this.Configurations.CSVFileName!),
+                    compareFilePath,
+                    this.numberOfHeaderLines, this.Configurations.DestinationContainerOrShareName,
+                    input.CancellationToken);
 
-            // Load the new CSV file from the source
+                StageAndCommit();
+
+                await input.SyncProgressIndicators.LogInformation("The last synced version of the CSV file is loaded. Now loading the new version of the CSV file to find the changes.");
+            }
+            else
+            {
+                await input.SyncProgressIndicators.LogInformation("Full source sync mode is enabled. Loading source data directly to insert file.");
+            }
+
             await storageService.LoadNewVersionAsync(
-                Path.Combine(this.Configurations.SourceDirectory ?? "", this.Configurations.CSVFileName!),
-                Path.Combine(this.workingDirectory.FullName, "file.csv"),
-                this.numberOfHeaderLines,
+                Path.Combine(this.Configurations!.SourceDirectory ?? "", this.Configurations.CSVFileName!),
+                newVersionDestinationPath,
+                isFullSourceSync ? 0 : this.numberOfHeaderLines,
                 this.Configurations.SourceContainerOrShareName,
                 input.CancellationToken);
 
-            await ProccessSourceData(Path.Combine(this.workingDirectory.FullName, "file.csv"), input.SyncProgressIndicators);
+            await ProccessSourceData(newVersionDestinationPath, input.SyncProgressIndicators);
 
-            await input.SyncProgressIndicators.LogInformation("Now comparing the versions.");
-
-            // Exute git diff to get the added and deleted lines
-            var comparision = CompareVersionsAndGetDiff();
-
-            // Find and skip reordered lines if the option is set
-            if (this.Configurations.SkipReorderedLines) { 
-                // Find duplicates in Added and Deleted
-                var duplicates = comparision.Added.Intersect(comparision.Deleted);
-
-                // Remove duplicates from both lists
-                comparision.Added = comparision.Added.Except(duplicates);
-                comparision.Deleted = comparision.Deleted.Except(duplicates);
-            }
-
-            if (comparision.Added.Count() == 0 && comparision.Deleted.Count() == 0)
-                return SyncPreparingResponseAction.Skiped;
-
-            // Save the added lines to the toInsertFilePath
-            using (TextWriter textWriter = new StreamWriter(toInsertFilePath, true, Encoding.UTF8))
+            if (isFullSourceSync)
             {
-                foreach (var header in this.headers)
-                    await textWriter.WriteLineAsync(new StringBuilder(header), input.CancellationToken);
+                File.Create(toDeleteFilePath!).Close();
 
-                foreach (var line in comparision.Added)
-                    await textWriter.WriteAsync(new StringBuilder(line), input.CancellationToken);
+                await input.SyncProgressIndicators.LogInformation("Full source sync files are ready. Source data will be sent as Add action only.");
             }
-
-            // Save the deleted lines to the toDeleteFilePath
-            using (TextWriter textWriter = new StreamWriter(toDeleteFilePath, true, Encoding.UTF8))
+            else
             {
-                foreach (var header in this.headers)
-                    await textWriter.WriteLineAsync(new StringBuilder(header), input.CancellationToken);
+                await input.SyncProgressIndicators.LogInformation("Now comparing the versions.");
 
-                foreach (var line in comparision.Deleted)
-                    await textWriter.WriteAsync(new StringBuilder(line), input.CancellationToken);
+                var comparision = CompareVersionsAndGetDiff();
+
+                if (this.Configurations.SkipReorderedLines)
+                {
+                    var duplicates = comparision.Added.Intersect(comparision.Deleted);
+                    comparision.Added = comparision.Added.Except(duplicates);
+                    comparision.Deleted = comparision.Deleted.Except(duplicates);
+                }
+
+                if (comparision.Added.Count() == 0 && comparision.Deleted.Count() == 0)
+                    return SyncPreparingResponseAction.Skiped;
+
+                using (TextWriter textWriter = new StreamWriter(toInsertFilePath, true, Encoding.UTF8))
+                {
+                    foreach (var header in this.headers)
+                        await textWriter.WriteLineAsync(new StringBuilder(header), input.CancellationToken);
+
+                    foreach (var line in comparision.Added)
+                        await textWriter.WriteAsync(new StringBuilder(line), input.CancellationToken);
+                }
+
+                using (TextWriter textWriter = new StreamWriter(toDeleteFilePath, true, Encoding.UTF8))
+                {
+                    foreach (var header in this.headers)
+                        await textWriter.WriteLineAsync(new StringBuilder(header), input.CancellationToken);
+
+                    foreach (var line in comparision.Deleted)
+                        await textWriter.WriteAsync(new StringBuilder(line), input.CancellationToken);
+                }
+
+                await input.SyncProgressIndicators.LogInformation($"Found {comparision.Added.Count()} added lines and {comparision.Deleted.Count()} deleted lines.");
+
+                comparision.Added = null;
+                comparision.Deleted = null;
+                GarbageCollection();
             }
 
-            // Log the counts of added and deleted lines
-            await input.SyncProgressIndicators.LogInformation($"Found {comparision.Added.Count()} added lines and {comparision.Deleted.Count()} deleted lines.");
-
-            //Cleanup some memory usage
-            comparision.Added = null;
-            comparision.Deleted = null;
-            GarbageCollection();
-
-            // Process added and deleted items if any of the process functions is not null
             await ProccessAddedAndDeletedItems(input.SyncProgressIndicators);
         }
         catch (Exception ex)
@@ -177,6 +187,9 @@ public abstract class CsvSyncDataSource<T> : IAsyncDisposable
 
     public async ValueTask Succeeded(SyncFunctionInput input)
     {
+        if (this.Configurations?.FullSourceSync == true)
+            return;
+
         if (this.prepareResult != SyncPreparingResponseAction.Skiped)
         {
             await storageService.StoreNewVersionAsync(Path.Combine(workingDirectory!.FullName, "file.csv"),
@@ -208,7 +221,7 @@ public abstract class CsvSyncDataSource<T> : IAsyncDisposable
         return ValueTask.CompletedTask;
     }
 
-    private void SetupWorkingDirectory()
+    private void SetupWorkingDirectory(bool initializeGitRepository)
     {
         var tempFolder = Guid.NewGuid().ToString();
         workingDirectory = new DirectoryInfo(Path.Combine(options.CompareWorkingDirectory, tempFolder));
@@ -217,7 +230,8 @@ public abstract class CsvSyncDataSource<T> : IAsyncDisposable
         toInsertFilePath = Path.Combine(workingDirectory.FullName, "to-insert.csv");
         toDeleteFilePath = Path.Combine(workingDirectory.FullName, "to-delete.csv");
 
-        Repository.Init(workingDirectory.FullName);
+        if (initializeGitRepository)
+            Repository.Init(workingDirectory.FullName);
     }
 
     private void CleanUp()
