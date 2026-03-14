@@ -86,11 +86,11 @@ export class FormStructure {
               {this.successMessage}
             </div>
           </form-dialog>
-          <div part="form-container">
+          <div part="form-structure-form-container">
             {!this?.structure?.steps && renderStructure(this.structure, this.formElementMapper, generalProps, this.fields, -2)}
 
             {!!this?.structure?.steps && (
-              <div part="form-stepper-container relative" class="overflow-hidden">
+              <div part="form-stepper-container" class="overflow-hidden">
                 {renderStructure(this.structure, this.formElementMapper, generalProps, this.fields, -1)}
 
                 <div class="grid grid-cols-1 grid-rows-1">
