@@ -79,7 +79,11 @@ export class FormStepper implements FormElement {
       <Host>
         <div part={cn(formStepperId, this?.name)} class="w-full" id={this.wrapperId}>
           {/* <div part={cn(formStepperId + '-container', this?.name)} class={cn('flex ')}></div> */}
-          <div ref={el => (this.container = el as HTMLElement)} class="relative flex items-center justify-between px-1 w-full">
+          <div
+            part={cn(formStepperId + 'container', this?.name + 'container')}
+            ref={el => (this.container = el as HTMLElement)}
+            class="relative flex items-center justify-between px-1 w-full"
+          >
             <div
               part={cn(formStepperId + '-line')}
               ref={el => (this.line = el as HTMLElement)}
