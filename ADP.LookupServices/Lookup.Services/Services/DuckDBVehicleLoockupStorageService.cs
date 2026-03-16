@@ -624,7 +624,7 @@ public class DuckDBVehicleLoockupStorageService(DuckDB.NET.Data.DuckDBConnection
         if (brokerStockCache.TryGetValue(cacheKey, out var cachedStock))
             return cachedStock;
 
-        var sql = $"SELECT * FROM BrokerStock WHERE VIN = '{EscapeSql(vin)}'";
+        var sql = $"SELECT * FROM TBP_BrokerStock WHERE VIN = '{EscapeSql(vin)}'";
 
         if (brandId is not null)
             sql += $" AND BrandID = {brandId}";
