@@ -118,9 +118,13 @@ public class VehicleSaleInformationEvaluator
                 //Not at Broker Stock
                 else
                 {
-                    if (brokerStockEntries.Where(x => x.Invoices is not null).SelectMany(x => x.Invoices).Where(x => !x.IsDeleted).Count() > 0)
+                    var stocksWithInvoices = brokerStockEntries
+                        .Where(x => x.Invoices?.Any(i => !i.IsDeleted) == true)
+                        .ToList();
+
+                    if (stocksWithInvoices.Count > 0)
                     {
-                        var lastBrokerStock = brokerStockEntries
+                        var lastBrokerStock = stocksWithInvoices
                             .OrderByDescending(x => x.Invoices.Where(x => !x.IsDeleted).Max(x => x.InvoiceDate))
                             .FirstOrDefault();
 
@@ -131,23 +135,25 @@ public class VehicleSaleInformationEvaluator
                                 .Where(x => !x.IsDeleted)
                                 .OrderByDescending(x => x.InvoiceDate)
                                 .FirstOrDefault();
-
-                            result.Broker = new VehicleBrokerSaleInformation
+                            if (lastBrokerInvoice is not null)
                             {
-                                BrokerID = lastBrokerStock.BrokerID,
-                                BrokerName = lastBrokerStock.Broker.Name,
-                                InvoiceDate = lastBrokerInvoice.InvoiceDate.ToUniversalTime().Date,
-                                InvoiceNumber = lastBrokerInvoice.InvoiceNumber,
-                            };
-
-                            if (requestOptions.LookupEndCustomer && lastBrokerInvoice.IsCompleted)
-                            {
-                                result.EndCustomer = new VehicleSaleEndCustomerInformationDTO
+                                result.Broker = new VehicleBrokerSaleInformation
                                 {
-                                    Name = lastBrokerInvoice.CustomerName,
-                                    Phone = lastBrokerInvoice.CustomerPhone,
-                                    IDNumber = lastBrokerInvoice.CustomerIDNumber
+                                    BrokerID = lastBrokerStock.BrokerID,
+                                    BrokerName = lastBrokerStock.Broker.Name,
+                                    InvoiceDate = lastBrokerInvoice.InvoiceDate.ToUniversalTime().Date,
+                                    InvoiceNumber = lastBrokerInvoice.InvoiceNumber,
                                 };
+
+                                if (requestOptions.LookupEndCustomer && lastBrokerInvoice.IsCompleted)
+                                {
+                                    result.EndCustomer = new VehicleSaleEndCustomerInformationDTO
+                                    {
+                                        Name = lastBrokerInvoice.CustomerName,
+                                        Phone = lastBrokerInvoice.CustomerPhone,
+                                        IDNumber = lastBrokerInvoice.CustomerIDNumber
+                                    };
+                                }
                             }
                         }
                     }

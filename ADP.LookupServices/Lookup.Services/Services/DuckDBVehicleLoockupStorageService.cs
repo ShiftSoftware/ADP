@@ -161,6 +161,9 @@ public class DuckDBVehicleLoockupStorageService(DuckDB.NET.Data.DuckDBConnection
             .Distinct(StringComparer.Ordinal)
             .ToList();
 
+        // Prefetch broker stock for bulk lookup flow so per-VIN sale evaluator calls hit cache.
+        _ = await LoadBrokerStocksByVinsAsync(normalizedDistinctVins);
+
         var timer = Stopwatch.StartNew();
         var aggregateMap = normalizedDistinctVins.ToDictionary(
             vinKey => vinKey,
@@ -619,18 +622,77 @@ public class DuckDBVehicleLoockupStorageService(DuckDB.NET.Data.DuckDBConnection
     public async Task<IEnumerable<TBP_StockModel>> GetBrokerStockAsync(long? brandId, string vin)
     {
         vin = NormalizeVin(vin);
+
+        if (string.IsNullOrWhiteSpace(vin))
+            return Enumerable.Empty<TBP_StockModel>();
+
         var cacheKey = (brandId, vin);
 
         if (brokerStockCache.TryGetValue(cacheKey, out var cachedStock))
             return cachedStock;
 
-        var sql = $"SELECT * FROM TBP_BrokerStock WHERE VIN = '{EscapeSql(vin)}'";
+        if (brokerStockCache.TryGetValue((null, vin), out var cachedByVin))
+        {
+            var cachedFiltered = brandId is null
+                ? cachedByVin
+                : cachedByVin.Where(x => x.BrandID == brandId).ToList();
 
-        if (brandId is not null)
-            sql += $" AND BrandID = {brandId}";
+            brokerStockCache[cacheKey] = cachedFiltered;
+            return cachedFiltered;
+        }
 
-        var result = await ExecuteQueryAsync<TBP_StockModel>(sql);
-        brokerStockCache[cacheKey] = result;
+        var loadedByVin = (await LoadBrokerStocksByVinsAsync([vin])).ToList();
+        var filteredByBrand = brandId is null
+            ? loadedByVin
+            : loadedByVin.Where(x => x.BrandID == brandId).ToList();
+
+        brokerStockCache[cacheKey] = filteredByBrand;
+        return filteredByBrand;
+    }
+
+    private async Task<List<TBP_StockModel>> LoadBrokerStocksByVinsAsync(IEnumerable<string> vins)
+    {
+        if (vins is null)
+            return [];
+
+        var normalizedVins = vins
+            .Select(NormalizeVin)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        if (normalizedVins.Count == 0)
+            return [];
+
+        var missingVins = normalizedVins
+            .Where(vinKey => !brokerStockCache.ContainsKey((null, vinKey)))
+            .ToList();
+
+        if (missingVins.Count > 0)
+        {
+            var inClause = BuildVinInClause(missingVins);
+            var loadedStocks = await ExecuteQueryAsync<TBP_StockModel>($"SELECT * FROM TBP_BrokerStock WHERE VIN IN ({inClause})");
+
+            var grouped = loadedStocks
+                .GroupBy(x => NormalizeVin(x.VIN), StringComparer.Ordinal)
+                .Where(x => !string.IsNullOrWhiteSpace(x.Key))
+                .ToDictionary(x => x.Key!, x => x.ToList(), StringComparer.Ordinal);
+
+            foreach (var vinKey in missingVins)
+            {
+                brokerStockCache[(null, vinKey)] = grouped.TryGetValue(vinKey, out var value)
+                    ? value
+                    : [];
+            }
+        }
+
+        var result = new List<TBP_StockModel>();
+
+        foreach (var vinKey in normalizedVins)
+        {
+            if (brokerStockCache.TryGetValue((null, vinKey), out var cachedByVin))
+                result.AddRange(cachedByVin);
+        }
 
         return result;
     }

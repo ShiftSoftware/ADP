@@ -311,6 +311,11 @@ public class CosmosVehicleLoockupStorageService : IVehicleLoockupStorageService
 
     public async Task<IEnumerable<TBP_StockModel>> GetBrokerStockAsync(long? brandId, string vin)
     {
+        vin = vin?.Trim()?.ToUpperInvariant();
+
+        if (string.IsNullOrWhiteSpace(vin))
+            return Enumerable.Empty<TBP_StockModel>();
+
         var container = client.GetContainer(
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.TBP,
             ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.TBP_BrokerStock
