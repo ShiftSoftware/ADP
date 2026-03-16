@@ -68,6 +68,7 @@ public class DuckDBVehicleReportService(
             return Enumerable.Empty<VehicleServiceItemReportModel>();
 
         var bestItemsByServiceIdByVin = new Dictionary<string, Dictionary<string, VehicleServiceItemDTO>>(StringComparer.Ordinal);
+        var freeServiceItemStartDateByVin = new Dictionary<string, DateTime?>(StringComparer.Ordinal);
         var batchCount = (normalizedVins.Count + LookupBatchSize - 1) / LookupBatchSize;
 
         for (var batchIndex = 0; batchIndex < batchCount; batchIndex++)
@@ -87,6 +88,9 @@ public class DuckDBVehicleReportService(
                 var vinKey = NormalizeVin(lookup.VIN);
                 if (!bestItemsByServiceIdByVin.ContainsKey(vinKey))
                     bestItemsByServiceIdByVin[vinKey] = BuildBestItemsByServiceId(lookup.ServiceItems);
+
+                if (!freeServiceItemStartDateByVin.ContainsKey(vinKey))
+                    freeServiceItemStartDateByVin[vinKey] = lookup.Warranty?.FreeServiceStartDate;
             }
         }
 
@@ -96,10 +100,11 @@ public class DuckDBVehicleReportService(
         {
             bestItemsByServiceIdByVin.TryGetValue(vin, out var bestItemsByServiceId);
             bestItemsByServiceId ??= new Dictionary<string, VehicleServiceItemDTO>(StringComparer.Ordinal);
+            freeServiceItemStartDateByVin.TryGetValue(vin, out var freeServiceItemStartDate);
 
             foreach (var item in bestItemsByServiceId.Values.OrderBy(x => x.ServiceItemID, ServiceItemIdComparer))
             {
-                rows.Add(CreateRow(vin, item));
+                rows.Add(CreateRow(vin, item, freeServiceItemStartDate));
             }
         }
 
@@ -689,11 +694,12 @@ public class DuckDBVehicleReportService(
         public bool IsDateTimeOffset { get; }
     }
 
-    private static VehicleServiceItemReportModel CreateRow(string vin, VehicleServiceItemDTO item)
+    private static VehicleServiceItemReportModel CreateRow(string vin, VehicleServiceItemDTO item, DateTime? freeServiceItemStartDate)
     {
         return new VehicleServiceItemReportModel
         {
             VIN = vin ?? string.Empty,
+            FreeServiceItemStartDate = freeServiceItemStartDate,
             ServiceItemId = item?.ServiceItemID?.Trim() ?? string.Empty,
             ServiceItemName = item?.Name ?? string.Empty,
             GroupName = item?.Group?.Name ?? string.Empty,
@@ -932,33 +938,34 @@ public class DuckDBVehicleReportService(
         public VehicleServiceItemReportModelCsvMap()
         {
             Map(x => x.VIN).Index(0);
-            Map(x => x.ServiceItemId).Index(1);
-            Map(x => x.ServiceItemName).Index(2);
-            Map(x => x.GroupName).Index(3);
-            Map(x => x.GroupTabOrder).Index(4);
-            Map(x => x.GroupIsDefault).Index(5);
-            Map(x => x.GroupIsSequential).Index(6);
-            Map(x => x.Status).Index(7);
-            Map(x => x.StatusEnum).Index(8);
-            Map(x => x.Type).Index(9);
-            Map(x => x.TypeEnum).Index(10);
-            Map(x => x.Price).Index(11);
-            Map(x => x.MenuCode).Index(12);
-            Map(x => x.ActivatedAt).Index(13);
-            Map(x => x.ExpiresAt).Index(14);
-            Map(x => x.ClaimDate).Index(15);
-            Map(x => x.CampaignId).Index(16);
-            Map(x => x.CampaignUniqueReference).Index(17);
-            Map(x => x.ModelCostId).Index(18);
-            Map(x => x.PaidServiceInvoiceLineId).Index(19);
-            Map(x => x.CompanyName).Index(20);
-            Map(x => x.InvoiceNumber).Index(21);
-            Map(x => x.JobNumber).Index(22);
-            Map(x => x.MaximumMileage).Index(23);
-            Map(x => x.Claimable).Index(24);
-            Map(x => x.ClaimingMethod).Index(25);
-            Map(x => x.VehicleInspectionId).Index(26);
-            Map(x => x.VehicleInspectionTypeId).Index(27);
+            Map(x => x.FreeServiceItemStartDate).Index(1);
+            Map(x => x.ServiceItemId).Index(2);
+            Map(x => x.ServiceItemName).Index(3);
+            Map(x => x.GroupName).Index(4);
+            Map(x => x.GroupTabOrder).Index(5);
+            Map(x => x.GroupIsDefault).Index(6);
+            Map(x => x.GroupIsSequential).Index(7);
+            Map(x => x.Status).Index(8);
+            Map(x => x.StatusEnum).Index(9);
+            Map(x => x.Type).Index(10);
+            Map(x => x.TypeEnum).Index(11);
+            Map(x => x.Price).Index(12);
+            Map(x => x.MenuCode).Index(13);
+            Map(x => x.ActivatedAt).Index(14);
+            Map(x => x.ExpiresAt).Index(15);
+            Map(x => x.ClaimDate).Index(16);
+            Map(x => x.CampaignId).Index(17);
+            Map(x => x.CampaignUniqueReference).Index(18);
+            Map(x => x.ModelCostId).Index(19);
+            Map(x => x.PaidServiceInvoiceLineId).Index(20);
+            Map(x => x.CompanyName).Index(21);
+            Map(x => x.InvoiceNumber).Index(22);
+            Map(x => x.JobNumber).Index(23);
+            Map(x => x.MaximumMileage).Index(24);
+            Map(x => x.Claimable).Index(25);
+            Map(x => x.ClaimingMethod).Index(26);
+            Map(x => x.VehicleInspectionId).Index(27);
+            Map(x => x.VehicleInspectionTypeId).Index(28);
         }
     }
 

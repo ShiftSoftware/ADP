@@ -7,6 +7,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 public class VehicleServiceItemReportModel
 {
     public string VIN { get; set; }
+    public DateTime? FreeServiceItemStartDate { get; set; }
     public string ServiceItemId { get; set; }
     public string ServiceItemName { get; set; }
     public string GroupName { get; set; }
