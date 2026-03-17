@@ -81,6 +81,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
       this.setIsLoading(true);
 
       const nameContactedVehicles = this.structure?.data?.nameContactedVehicles;
+      const marketingValues = getMarketingValues(this.structure);
 
       let payload: any = {
         name: formValues.name,
@@ -90,6 +91,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
         vehicleQuotationType: this.structure?.data?.quotationType,
         preferredContactTime: formValues?.contactTime || 'NotSpecified',
         preferredPaymentMethod: formValues?.paymentType || 'Flexible',
+        ...marketingValues,
       };
 
       if (nameContactedVehicles) {
@@ -111,10 +113,6 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
           payload.additionalData.vehicleModel = formValues?.currentVehicleModel || this.locale.Other;
         }
       }
-      const marketingValues = getMarketingValues(this.structure);
-
-      if (!payload?.additionalData) payload.additionalData = { ...marketingValues };
-      else payload.additionalData = { ...payload.additionalData, ...marketingValues };
 
       const headers = {
         'Brand': this.structure?.data?.brandId,

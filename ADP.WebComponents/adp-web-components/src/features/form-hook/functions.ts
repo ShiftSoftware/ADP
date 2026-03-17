@@ -188,11 +188,11 @@ export const onFormSubmit = async <T>({ context, formValues, middleware, afterSu
 
     const marketingValues = getMarketingValues(context?.structure);
 
-    let payload: Record<string, any> = { ...formValues };
+    let payload: Record<string, any> = { ...formValues, ...marketingValues };
 
     if (context.structure?.data?.extraPayload) payload = { ...payload, ...context.structure?.data?.extraPayload };
 
-    if (hasAdditionalData) payload.additionalData = { ...additionalData, ...marketingValues };
+    if (hasAdditionalData) payload.additionalData = { ...additionalData };
 
     if (!!context?.extraPayload) payload = { ...payload, ...context?.extraPayload };
 
@@ -220,8 +220,6 @@ export const onFormSubmit = async <T>({ context, formValues, middleware, afterSu
         }
       });
     }
-
-    if (!payload.additionalData) payload.additionalData = { ...marketingValues };
 
     let header: Record<string, any> = {
       'Content-Type': 'application/json',
