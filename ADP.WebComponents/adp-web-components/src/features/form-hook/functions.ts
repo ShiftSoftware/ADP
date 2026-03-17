@@ -188,7 +188,7 @@ export const onFormSubmit = async <T>({ context, formValues, middleware, afterSu
 
     const marketingValues = getMarketingValues(context?.structure);
 
-    let payload: Record<string, any> = { ...formValues, ...marketingValues };
+    let payload: Record<string, any> = { ...formValues };
 
     if (context.structure?.data?.extraPayload) payload = { ...payload, ...context.structure?.data?.extraPayload };
 
@@ -255,6 +255,11 @@ export const onFormSubmit = async <T>({ context, formValues, middleware, afterSu
     if (!requestEndpoint) {
       throw new Error('Request endpoint is not configured');
     }
+
+    const method = context.structure?.data?.requestMethod || 'POST';
+
+    if (['get', 'head'].includes(method.toLowerCase())) header = { ...header, ...marketingValues };
+    else payload = { ...payload, ...marketingValues };
 
     if (middleware) {
       const middlewareRes = middleware(payload, header, requestEndpoint);
