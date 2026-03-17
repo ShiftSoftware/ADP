@@ -17,6 +17,7 @@ import {
   formGetFormHandler,
   handleFormSubmit,
   formStructureRenderedHandler,
+  getMarketingValues,
 } from '~features/form-hook';
 import { GeneralFormLocal, LanguageKeys, MultiLingual, sharedFormLocalesSchema } from '~features/multi-lingual';
 import getLanguageFromUrl from '~lib/get-language-from-url';
@@ -110,6 +111,11 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
           payload.additionalData.vehicleModel = formValues?.currentVehicleModel || this.locale.Other;
         }
       }
+      const marketingValues = getMarketingValues(this.structure);
+
+      if (!payload?.additionalData) payload.additionalData = { ...marketingValues };
+      else payload.additionalData = { ...payload.additionalData, ...marketingValues };
+
       const headers = {
         'Brand': this.structure?.data?.brandId,
         'Accept-Language': this.localeLanguage || 'en',

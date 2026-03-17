@@ -154,6 +154,22 @@ export type OnFormSubmit<T> = {
   middleware?: (payload: object, header: object, url: string) => { header: object; payload: object; url: string };
 };
 
+const marketingQueryParams = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'fbclid'];
+
+export const getMarketingValues = (structure?: FormHookInterface<any>['structure']): Record<string, any> => {
+  if (structure?.data?.disableUTMLog) return {};
+  const params = new URLSearchParams(window.location.search);
+
+  if (typeof params.get('disable_utm_log') === 'string' && params.get('disable_utm_log') === 'true') return {};
+
+  const marketingValues = {};
+  marketingQueryParams.forEach(param => {
+    if (!!params.get(param)) marketingValues[param] = params.get(param);
+  });
+
+  return marketingValues;
+};
+
 export const onFormSubmit = async <T>({ context, formValues, middleware, afterSuccess }: OnFormSubmit<T>) => {
   try {
     context.setIsLoading(true);
@@ -170,11 +186,13 @@ export const onFormSubmit = async <T>({ context, formValues, middleware, afterSu
 
     let additionalData: Record<string, string> = {};
 
+    const marketingValues = getMarketingValues(context?.structure);
+
     let payload: Record<string, any> = { ...formValues };
 
     if (context.structure?.data?.extraPayload) payload = { ...payload, ...context.structure?.data?.extraPayload };
 
-    if (hasAdditionalData) payload.additionalData = additionalData;
+    if (hasAdditionalData) payload.additionalData = { ...additionalData, ...marketingValues };
 
     if (!!context?.extraPayload) payload = { ...payload, ...context?.extraPayload };
 
@@ -202,6 +220,8 @@ export const onFormSubmit = async <T>({ context, formValues, middleware, afterSu
         }
       });
     }
+
+    if (!payload.additionalData) payload.additionalData = { ...marketingValues };
 
     let header: Record<string, any> = {
       'Content-Type': 'application/json',
