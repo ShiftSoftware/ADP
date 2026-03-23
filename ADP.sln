@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.10.35013.160
+# Visual Studio Version 18
+VisualStudioVersion = 18.4.11612.150 stable
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ADP.Models", "ADP.Models", "{3E72BBF7-55F3-4C3D-82D1-8D5DD0024D68}"
 EndProject
@@ -18,6 +18,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Global", "Global", "{9083B6BE-10E3-43B6-80C5-ACB23642CBFD}"
 	ProjectSection(SolutionItems) = preProject
 		azure-pipeline.yml = azure-pipeline.yml
+		CLAUDE.md = CLAUDE.md
 		GlobalSettings.props = GlobalSettings.props
 	EndProjectSection
 EndProject
