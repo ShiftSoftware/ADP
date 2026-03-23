@@ -30,7 +30,7 @@ namespace LookupServices.BDD.Features
 	A car is considered ""Authorized"" or ""Official"" if it is imported by the official distributor for a specific geographic region.
 	In contrast, cars not imported by the official distributor are considered ""Unauthorized"", ""Unofficial"", or ""Grey Imports"".", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
-#line 1 "Authorized.feature"
+#line 1 "VehicleAuthorization.feature"
 #line hidden
         
         public AuthorizedVehiclesFeature(AuthorizedVehiclesFeature.FixtureData fixtureData, Xunit.ITestOutputHelper testOutputHelper)
@@ -107,7 +107,7 @@ namespace LookupServices.BDD.Features
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/Authorized.feature.ndjson", 6);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/VehicleAuthorization.feature.ndjson", 6);
         }
         
         async System.Threading.Tasks.ValueTask Xunit.IAsyncLifetime.InitializeAsync()
@@ -169,7 +169,7 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
  await testRunner.WhenAsync("Checking \"1FMZU72E12UB00984\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 12
- await testRunner.ThenAsync("The Vehicle is considered Authroized", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+ await testRunner.ThenAsync("The Vehicle is considered Authorized", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -210,7 +210,7 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
  await testRunner.WhenAsync("Checking \"1FDKF37GXVEB34368\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 20
- await testRunner.ThenAsync("The Vehicle is considered Authroized", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+ await testRunner.ThenAsync("The Vehicle is considered Authorized", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -242,14 +242,14 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                 table3.AddRow(new string[] {
                             "1G1ZC5E17BF283048"});
 #line 23
- await testRunner.GivenAsync("a dealer with the following vehicles in official SSC Vehciles (Provided by the ve" +
+ await testRunner.GivenAsync("a dealer with the following vehicles in official SSC Vehicles (Provided by the ve" +
                         "hicle manufacturer):", ((string)(null)), table3, "Given ");
 #line hidden
 #line 26
  await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 27
- await testRunner.ThenAsync("The Vehicle is considered Authroized", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+ await testRunner.ThenAsync("The Vehicle is considered Authorized", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -289,7 +289,7 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                 table5.AddRow(new string[] {
                             "1HGCD5630TA078763"});
 #line 34
- await testRunner.AndAsync("a dealer with the following vehicles in official SSC Vehciles (Provided by the ve" +
+ await testRunner.AndAsync("a dealer with the following vehicles in official SSC Vehicles (Provided by the ve" +
                         "hicle manufacturer):", ((string)(null)), table5, "And ");
 #line hidden
                 global::Reqnroll.Table table6 = new global::Reqnroll.Table(new string[] {
@@ -303,25 +303,25 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
  await testRunner.WhenAsync("Checking \"WMWZB3C55BWM46667\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 41
- await testRunner.ThenAsync("The Vehicle is considered Unauthroized", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+ await testRunner.ThenAsync("The Vehicle is considered Unauthorized", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 42
  await testRunner.WhenAsync("Checking \"1FMYU60EXYUA30399\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 43
- await testRunner.ThenAsync("The Vehicle is considered Unauthroized", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+ await testRunner.ThenAsync("The Vehicle is considered Unauthorized", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 44
  await testRunner.WhenAsync("Checking \"5GAKRBKD5EJ376173\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 45
- await testRunner.ThenAsync("The Vehicle is considered Unauthroized", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+ await testRunner.ThenAsync("The Vehicle is considered Unauthorized", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 46
  await testRunner.WhenAsync("Checking \"3VWCD21Y33M352232\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 47
- await testRunner.ThenAsync("The Vehicle is considered Unauthroized", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+ await testRunner.ThenAsync("The Vehicle is considered Unauthorized", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();

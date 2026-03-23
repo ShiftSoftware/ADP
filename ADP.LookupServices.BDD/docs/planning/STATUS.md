@@ -7,20 +7,20 @@
 
 ## Phase 0: Foundation Refactoring ([01-phase0-foundation.md](01-phase0-foundation.md))
 
-**Status:** Not Started
+**Status:** Part A Complete
 
 ### Part A: BDD Infrastructure Fixes
-- [ ] Delete `SharedSetup.feature`
-- [ ] Remove `AssertEntireDataSet()` and collection-membership Then steps from `SharedStepDefinitions.cs`
-- [ ] Fix typos in `Authorized.feature` (`Authroized`, `Unauthroized`, `Vehciles`)
-- [ ] Fix typos in `AuthorizedStepDefinitions.cs` bindings
-- [ ] Create `Support/TestContext.cs`
-- [ ] Create `Support/Hooks.cs` (Reqnroll DI registration)
-- [ ] Refactor `SharedStepDefinitions.cs` to use `TestContext` instead of `ScenarioContext`
-- [ ] Rename `AuthorizedStepDefinitions.cs` → `VehicleAuthorizationStepDefinitions.cs`, refactor to `TestContext`
-- [ ] Delete `Support/ScenarioContextExtensions.cs`
-- [ ] Rename `Authorized.feature` → `VehicleAuthorization.feature`
-- [ ] Add NSubstitute package to `.csproj`
+- [x] Delete `SharedSetup.feature`
+- [x] Remove `AssertEntireDataSet()` and collection-membership Then steps from `SharedStepDefinitions.cs`
+- [x] Fix typos in `Authorized.feature` (`Authroized`, `Unauthroized`, `Vehciles`)
+- [x] Fix typos in `AuthorizedStepDefinitions.cs` bindings
+- [x] Create `Support/TestContext.cs`
+- [x] Create `Support/Hooks.cs` (Reqnroll DI registration)
+- [x] Refactor `SharedStepDefinitions.cs` to use `TestContext` instead of `ScenarioContext`
+- [x] Rename `AuthorizedStepDefinitions.cs` → `VehicleAuthorizationStepDefinitions.cs`, refactor to `TestContext`
+- [x] Delete `Support/ScenarioContextExtensions.cs`
+- [x] Rename `Authorized.feature` → `VehicleAuthorization.feature`
+- [x] Add NSubstitute package to `.csproj`
 
 ### Part B: Shared Test Data Directory
 - [ ] Create `ADP.TestData/` directory structure at repo root
@@ -35,10 +35,7 @@
 - [ ] Verify all scenarios pass: `dotnet test ADP.LookupServices.BDD`
 
 **Notes:**
-<!--
-Add implementation notes, blockers, or lessons learned here.
-Example: "2026-03-25: TestContext path resolution uses Assembly.Location walking up to repo root."
--->
+2026-03-22: Part A complete. Added `xunit.runner.visualstudio` package to fix `dotnet test` discovery (xunit v3 needed it for VSTest compatibility). Used `Support.TestContext` qualified name in VehicleAuthorizationStepDefinitions to avoid ambiguity with `Xunit.TestContext`. All 4 scenarios pass.
 
 ---
 

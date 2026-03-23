@@ -1,23 +1,17 @@
-﻿using Reqnroll;
-using ShiftSoftware.ADP.Lookup.Services.Aggregate;
+using LookupServices.BDD.Support;
+using Reqnroll;
 using ShiftSoftware.ADP.Models.Vehicle;
-using Xunit;
 
 namespace LookupServices.BDD.StepDefinitions;
 
 [Binding]
 public class SharedStepDefinitions
 {
-    private readonly ScenarioContext scenarioContext;
-    private readonly CompanyDataAggregateModel _companyDataAggregate;
+    private readonly TestContext _context;
 
-    public SharedStepDefinitions(ScenarioContext scenarioContext)
+    public SharedStepDefinitions(TestContext context)
     {
-        this.scenarioContext = scenarioContext;
-
-        this._companyDataAggregate = new CompanyDataAggregateModel();
-
-        this.scenarioContext["companyData"] = _companyDataAggregate;
+        _context = context;
     }
 
     private class FeatureData
@@ -51,7 +45,7 @@ public class SharedStepDefinitions
     {
         var data = this.ParseDataTable(dataTable);
 
-        _companyDataAggregate.InitialOfficialVINs.AddRange(data
+        _context.Aggregate.InitialOfficialVINs.AddRange(data
             .Select(x => new InitialOfficialVINModel
             {
                 VIN = x.VIN
@@ -64,7 +58,7 @@ public class SharedStepDefinitions
     {
         var data = this.ParseDataTable(dataTable);
 
-        _companyDataAggregate.VehicleEntries.AddRange(data
+        _context.Aggregate.VehicleEntries.AddRange(data
             .Select(x => new VehicleEntryModel
             {
                 VIN = x.VIN,
@@ -73,12 +67,12 @@ public class SharedStepDefinitions
     }
 
 
-    [Given("a dealer with the following vehicles in official SSC Vehciles \\(Provided by the vehicle manufacturer):")]
+    [Given("a dealer with the following vehicles in official SSC Vehicles \\(Provided by the vehicle manufacturer):")]
     public void GivenTheFollowingVehiclesInSsc(DataTable dataTable)
     {
         var data = this.ParseDataTable(dataTable);
 
-        _companyDataAggregate.SSCAffectedVINs.AddRange(
+        _context.Aggregate.SSCAffectedVINs.AddRange(
             data.Select(x => new SSCAffectedVINModel
             {
                 VIN = x.VIN
@@ -89,57 +83,6 @@ public class SharedStepDefinitions
     [When("Checking {string}")]
     public void WhenChecking(string vin)
     {
-        this._companyDataAggregate.VIN = vin;
-    }
-
-    [Then("The Vehicle is in VehicleEntries")]
-    public void TheVehicleIsInVehicleEntries()
-    {
-        Assert.Contains(
-            this._companyDataAggregate.VehicleEntries,
-            x => x.VIN == this._companyDataAggregate.VIN
-        );
-
-        this.AssertEntireDataSet();
-    }
-
-    [Then("The Vehicle is in SSCAffectedVINs")]
-    public void TheVehicleIsInSSCAffectedVINs()
-    {
-        Assert.Contains(
-            this._companyDataAggregate.SSCAffectedVINs,
-            x => x.VIN == this._companyDataAggregate.VIN
-        );
-
-        this.AssertEntireDataSet();
-    }
-
-    [Then("The Vehicle is in InitialOfficialVINs")]
-    public void TheVehicleIsInInitialOfficialVINs()
-    {
-        Assert.Contains(
-            this._companyDataAggregate.InitialOfficialVINs,
-            x => x.VIN == this._companyDataAggregate.VIN
-        );
-
-        this.AssertEntireDataSet();
-    }
-
-    private void AssertEntireDataSet()
-    {
-        Assert.Contains(
-            this._companyDataAggregate.VehicleEntries,
-            x => x.VIN == "5TDJK3DC1BS013795"
-        );
-
-        Assert.Contains(
-            this._companyDataAggregate.SSCAffectedVINs,
-            x => x.VIN == "1N4AL11D65N937700"
-        );
-
-        Assert.Contains(
-            this._companyDataAggregate.InitialOfficialVINs,
-            x => x.VIN == "1G1AP87H2DL161084"
-        );
+        _context.Aggregate.VIN = vin;
     }
 }
