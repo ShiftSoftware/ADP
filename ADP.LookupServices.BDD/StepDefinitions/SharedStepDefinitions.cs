@@ -1,3 +1,4 @@
+using System.Text.Json;
 using LookupServices.BDD.Support;
 using Reqnroll;
 using ShiftSoftware.ADP.Models.Vehicle;
@@ -79,6 +80,38 @@ public class SharedStepDefinitions
             }));
     }
 
+
+    [Given("the {string} environment is loaded")]
+    public void GivenTheEnvironmentIsLoaded(string environmentName)
+    {
+        var path = Path.Combine(
+            TestContext.GetTestDataRoot(),
+            "environments", $"{environmentName}.json");
+
+        var json = File.ReadAllText(path);
+        var jsonOptions = new JsonSerializerOptions();
+        jsonOptions.Converters.Add(new NullableLongDictionaryConverter());
+        var environment = JsonSerializer.Deserialize<TestEnvironment>(json, jsonOptions)
+            ?? throw new InvalidOperationException($"Failed to deserialize environment '{environmentName}'");
+
+        _context.Environment = environment;
+        _context.Options = environment.LookupOptions;
+    }
+
+    [Given("loading vehicle {string} from the environment")]
+    public void GivenLoadingVehicleFromEnvironment(string vin)
+    {
+        var environment = _context.Environment
+            ?? throw new InvalidOperationException("No environment loaded. Use 'Given the \"...\" environment is loaded' first.");
+
+        if (!environment.Vehicles.TryGetValue(vin, out var vehicleData))
+            throw new KeyNotFoundException($"VIN '{vin}' not found in loaded environment.");
+
+        vehicleData.VIN = vin;
+        vehicleData.BrokerInitialVehicles.AddRange(environment.BrokerInitialVehicles);
+        vehicleData.BrokerInvoices.AddRange(environment.BrokerInvoices);
+        _context.Aggregate = vehicleData;
+    }
 
     [When("Checking {string}")]
     public void WhenChecking(string vin)

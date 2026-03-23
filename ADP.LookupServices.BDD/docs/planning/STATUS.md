@@ -7,7 +7,7 @@
 
 ## Phase 0: Foundation Refactoring ([01-phase0-foundation.md](01-phase0-foundation.md))
 
-**Status:** Part A Complete
+**Status:** Complete
 
 ### Part A: BDD Infrastructure Fixes
 - [x] Delete `SharedSetup.feature`
@@ -23,19 +23,20 @@
 - [x] Add NSubstitute package to `.csproj`
 
 ### Part B: Shared Test Data Directory
-- [ ] Create `ADP.TestData/` directory structure at repo root
-- [ ] Create `ADP.TestData/environments/standard-dealer/input.json` (initial data)
-- [ ] Create `Support/TestEnvironment.cs` (deserialization model)
-- [ ] Add `Given the "{environment}" environment is loaded` step
-- [ ] Add `Given loading vehicle "{vin}" from the environment` step
-- [ ] Scaffold `ADP.TestData/Generator/` console app (can be empty — just project structure)
+- [x] Create `ADP.TestData/` directory structure at repo root
+- [x] Create `ADP.TestData/environments/standard-dealer.json` (initial data)
+- [x] Create `Support/TestEnvironment.cs` (deserialization model)
+- [x] Add `Given the "{environment}" environment is loaded` step
+- [x] Add `Given loading vehicle "{vin}" from the environment` step
+- [x] Scaffold `ADP.TestData/Generator/` console app (can be empty — just project structure)
 
 ### Part C: Update VehicleAuthorization Feature
-- [ ] Rewrite feature with environment-based and inline scenarios
-- [ ] Verify all scenarios pass: `dotnet test ADP.LookupServices.BDD`
+- [x] Rewrite feature with environment-based and inline scenarios
+- [x] Verify all scenarios pass: `dotnet test ADP.LookupServices.BDD`
 
 **Notes:**
 2026-03-22: Part A complete. Added `xunit.runner.visualstudio` package to fix `dotnet test` discovery (xunit v3 needed it for VSTest compatibility). Used `Support.TestContext` qualified name in VehicleAuthorizationStepDefinitions to avoid ambiguity with `Xunit.TestContext`. All 4 scenarios pass.
+2026-03-23: Parts B & C complete. Uses case-sensitive JSON deserialization (default System.Text.Json) with PascalCase property names matching C# exactly — avoids `id`/`ID` collision in Cosmos DB models and allows copy-pasting real data from Cosmos. Flattened environment path from `environments/standard-dealer/input.json` to `environments/standard-dealer.json`. Path resolution walks up from Assembly.Location to find ADP.TestData/. All 6 scenarios pass (4 inline + 2 environment-based).
 
 ---
 
@@ -182,7 +183,7 @@ These can be done incrementally alongside the phases above.
 - [ ] `edge-cases` environment (as needed for regression scenarios)
 
 ### Output Generator (`ADP.TestData/Generator/`)
-- [ ] Generator console app reads `input.json`, runs evaluators, writes output
+- [ ] Generator console app reads environment JSON files, runs evaluators, writes output
 - [ ] Generated output committed to `adp-web-components/src/features/mocks/data/generated/`
 - [ ] Generated output committed to `ADP.Docs/Docs/docs/web-components/demo-data/`
 
@@ -206,7 +207,7 @@ Track decisions that need to be made during implementation.
 |---|----------|---------|--------|------------|
 | 1 | Vehicle-lookup `mockUrl` prop | (a) Add prop, (b) Update `getMockFile()`, (c) Keep `setMockData()` | Open | |
 | 2 | Broker scenario approach in Phase 2 | (a) Given step for `VehicleSaleInformation`, (b) Defer to Phase 4 | Open | |
-| 3 | Broker data placement in `input.json` | Environment-level (current plan) vs per-VIN | Open | |
+| 3 | Broker data placement in environment JSON | Environment-level (current plan) vs per-VIN | Open | |
 
 ---
 
@@ -215,3 +216,4 @@ Track decisions that need to be made during implementation.
 | Date | Phase | Change |
 |------|-------|--------|
 | 2026-03-22 | — | Plan reviewed, inconsistencies fixed, status tracker created |
+| 2026-03-23 | 0 | Phase 0 complete. Used real framework types (LookupOptions, CompanyDataAggregateModel) instead of custom wrappers. Flattened environment paths. Case-sensitive JSON with PascalCase. |

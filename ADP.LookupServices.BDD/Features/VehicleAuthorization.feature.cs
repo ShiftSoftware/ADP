@@ -17,7 +17,7 @@ namespace LookupServices.BDD.Features
     
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Reqnroll", "3.0.0.0")]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    public partial class AuthorizedVehiclesFeature : object, Xunit.IClassFixture<AuthorizedVehiclesFeature.FixtureData>, Xunit.IAsyncLifetime
+    public partial class VehicleAuthorizationFeature : object, Xunit.IClassFixture<VehicleAuthorizationFeature.FixtureData>, Xunit.IAsyncLifetime
     {
         
         private global::Reqnroll.ITestRunner testRunner;
@@ -26,14 +26,14 @@ namespace LookupServices.BDD.Features
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("en-US"), "Features", "Authorized Vehicles", @"Authorized & Unauthorized Cars
-	A car is considered ""Authorized"" or ""Official"" if it is imported by the official distributor for a specific geographic region.
-	In contrast, cars not imported by the official distributor are considered ""Unauthorized"", ""Unofficial"", or ""Grey Imports"".", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("en-US"), "Features", "Vehicle Authorization", "\tA vehicle is considered \"Authorized\" or \"Official\" if it is imported by\r\n\tthe of" +
+                "ficial distributor. Vehicles not imported by the official distributor\r\n\tare \"Una" +
+                "uthorized\" or \"Grey Imports\".", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
 #line 1 "VehicleAuthorization.feature"
 #line hidden
         
-        public AuthorizedVehiclesFeature(AuthorizedVehiclesFeature.FixtureData fixtureData, Xunit.ITestOutputHelper testOutputHelper)
+        public VehicleAuthorizationFeature(VehicleAuthorizationFeature.FixtureData fixtureData, Xunit.ITestOutputHelper testOutputHelper)
         {
             this._testOutputHelper = testOutputHelper;
         }
@@ -107,7 +107,7 @@ namespace LookupServices.BDD.Features
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/VehicleAuthorization.feature.ndjson", 6);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/VehicleAuthorization.feature.ndjson", 8);
         }
         
         async System.Threading.Tasks.ValueTask Xunit.IAsyncLifetime.InitializeAsync()
@@ -135,18 +135,89 @@ namespace LookupServices.BDD.Features
             await this.TestTearDownAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="Authorized From Initial Stock")]
-        [global::Xunit.TraitAttribute("FeatureTitle", "Authorized Vehicles")]
-        [global::Xunit.TraitAttribute("Description", "Authorized From Initial Stock")]
-        public async global::System.Threading.Tasks.Task AuthorizedFromInitialStock()
+        [global::Xunit.FactAttribute(DisplayName="Authorized from dealer stock (environment)")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Authorization")]
+        [global::Xunit.TraitAttribute("Description", "Authorized from dealer stock (environment)")]
+        public async global::System.Threading.Tasks.Task AuthorizedFromDealerStockEnvironment()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "0";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Authorized From Initial Stock", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Authorized from dealer stock (environment)", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 6
+#line 8
+this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 9
+ await testRunner.GivenAsync("the \"standard-dealer\" environment is loaded", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 10
+ await testRunner.AndAsync("loading vehicle \"JTMHX01J8L4198293\" from the environment", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 11
+ await testRunner.WhenAsync("Checking \"JTMHX01J8L4198293\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 12
+ await testRunner.ThenAsync("The Vehicle is considered Authorized", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.FactAttribute(DisplayName="Unauthorized vehicle not in any source (environment)")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Authorization")]
+        [global::Xunit.TraitAttribute("Description", "Unauthorized vehicle not in any source (environment)")]
+        public async global::System.Threading.Tasks.Task UnauthorizedVehicleNotInAnySourceEnvironment()
+        {
+            string[] tagsOfScenario = ((string[])(null));
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "1";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Unauthorized vehicle not in any source (environment)", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 14
+this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 15
+ await testRunner.GivenAsync("the \"standard-dealer\" environment is loaded", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 16
+ await testRunner.WhenAsync("Checking \"UNKNOWN_VIN_12345\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 17
+ await testRunner.ThenAsync("The Vehicle is considered Unauthorized", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.FactAttribute(DisplayName="Authorized from initial stock")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Authorization")]
+        [global::Xunit.TraitAttribute("Description", "Authorized from initial stock")]
+        public async global::System.Threading.Tasks.Task AuthorizedFromInitialStock()
+        {
+            string[] tagsOfScenario = ((string[])(null));
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "2";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Authorized from initial stock", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 21
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -162,31 +233,31 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "1FMZU72E12UB00984"});
                 table1.AddRow(new string[] {
                             "1FMCU0F73AKB12345"});
-#line 7
+#line 22
  await testRunner.GivenAsync("a dealer with the following vehicles as initial stock:", ((string)(null)), table1, "Given ");
 #line hidden
-#line 11
+#line 26
  await testRunner.WhenAsync("Checking \"1FMZU72E12UB00984\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 12
+#line 27
  await testRunner.ThenAsync("The Vehicle is considered Authorized", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="Authorized From Dealer Stock (Dealer DMS)")]
-        [global::Xunit.TraitAttribute("FeatureTitle", "Authorized Vehicles")]
-        [global::Xunit.TraitAttribute("Description", "Authorized From Dealer Stock (Dealer DMS)")]
-        public async global::System.Threading.Tasks.Task AuthorizedFromDealerStockDealerDMS()
+        [global::Xunit.FactAttribute(DisplayName="Authorized from dealer stock (inline)")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Authorization")]
+        [global::Xunit.TraitAttribute("Description", "Authorized from dealer stock (inline)")]
+        public async global::System.Threading.Tasks.Task AuthorizedFromDealerStockInline()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            string pickleIndex = "1";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Authorized From Dealer Stock (Dealer DMS)", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string pickleIndex = "3";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Authorized from dealer stock (inline)", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 14
+#line 29
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -202,32 +273,32 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "1FDKF37GXVEB34368"});
                 table2.AddRow(new string[] {
                             "1FTFW1EFXEKD12345"});
-#line 15
+#line 30
  await testRunner.GivenAsync("a dealer with the following vehicles in their dealer stock (coming from their DMS" +
                         "):", ((string)(null)), table2, "Given ");
 #line hidden
-#line 19
+#line 34
  await testRunner.WhenAsync("Checking \"1FDKF37GXVEB34368\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 20
+#line 35
  await testRunner.ThenAsync("The Vehicle is considered Authorized", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="Authorized From SSC")]
-        [global::Xunit.TraitAttribute("FeatureTitle", "Authorized Vehicles")]
-        [global::Xunit.TraitAttribute("Description", "Authorized From SSC")]
+        [global::Xunit.FactAttribute(DisplayName="Authorized from SSC")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Authorization")]
+        [global::Xunit.TraitAttribute("Description", "Authorized from SSC")]
         public async global::System.Threading.Tasks.Task AuthorizedFromSSC()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            string pickleIndex = "2";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Authorized From SSC", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string pickleIndex = "4";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Authorized from SSC", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 22
+#line 37
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -241,32 +312,32 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "VIN"});
                 table3.AddRow(new string[] {
                             "1G1ZC5E17BF283048"});
-#line 23
+#line 38
  await testRunner.GivenAsync("a dealer with the following vehicles in official SSC Vehicles (Provided by the ve" +
                         "hicle manufacturer):", ((string)(null)), table3, "Given ");
 #line hidden
-#line 26
+#line 41
  await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 27
+#line 42
  await testRunner.ThenAsync("The Vehicle is considered Authorized", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="Unauthorized")]
-        [global::Xunit.TraitAttribute("FeatureTitle", "Authorized Vehicles")]
-        [global::Xunit.TraitAttribute("Description", "Unauthorized")]
-        public async global::System.Threading.Tasks.Task Unauthorized()
+        [global::Xunit.FactAttribute(DisplayName="Unauthorized vehicle not in any source (inline)")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Authorization")]
+        [global::Xunit.TraitAttribute("Description", "Unauthorized vehicle not in any source (inline)")]
+        public async global::System.Threading.Tasks.Task UnauthorizedVehicleNotInAnySourceInline()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            string pickleIndex = "3";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Unauthorized", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string pickleIndex = "5";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Unauthorized vehicle not in any source (inline)", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 30
+#line 44
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -280,7 +351,7 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "VIN"});
                 table4.AddRow(new string[] {
                             "2C3CCAGG1DH549029"});
-#line 31
+#line 45
  await testRunner.GivenAsync("a dealer with the following vehicles in their dealer stock (coming from their DMS" +
                         "):", ((string)(null)), table4, "Given ");
 #line hidden
@@ -288,7 +359,7 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "VIN"});
                 table5.AddRow(new string[] {
                             "1HGCD5630TA078763"});
-#line 34
+#line 48
  await testRunner.AndAsync("a dealer with the following vehicles in official SSC Vehicles (Provided by the ve" +
                         "hicle manufacturer):", ((string)(null)), table5, "And ");
 #line hidden
@@ -296,31 +367,31 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "VIN"});
                 table6.AddRow(new string[] {
                             "1FDKF37G8VEB34451"});
-#line 37
+#line 51
  await testRunner.AndAsync("a dealer with the following vehicles as initial stock:", ((string)(null)), table6, "And ");
 #line hidden
-#line 40
+#line 54
  await testRunner.WhenAsync("Checking \"WMWZB3C55BWM46667\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 41
+#line 55
  await testRunner.ThenAsync("The Vehicle is considered Unauthorized", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 42
+#line 56
  await testRunner.WhenAsync("Checking \"1FMYU60EXYUA30399\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 43
+#line 57
  await testRunner.ThenAsync("The Vehicle is considered Unauthorized", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 44
+#line 58
  await testRunner.WhenAsync("Checking \"5GAKRBKD5EJ376173\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 45
+#line 59
  await testRunner.ThenAsync("The Vehicle is considered Unauthorized", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 46
+#line 60
  await testRunner.WhenAsync("Checking \"3VWCD21Y33M352232\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 47
+#line 61
  await testRunner.ThenAsync("The Vehicle is considered Unauthorized", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
@@ -334,12 +405,12 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             
             async System.Threading.Tasks.ValueTask Xunit.IAsyncLifetime.InitializeAsync()
             {
-                await AuthorizedVehiclesFeature.FeatureSetupAsync();
+                await VehicleAuthorizationFeature.FeatureSetupAsync();
             }
             
             async System.Threading.Tasks.ValueTask System.IAsyncDisposable.DisposeAsync()
             {
-                await AuthorizedVehiclesFeature.FeatureTearDownAsync();
+                await VehicleAuthorizationFeature.FeatureTearDownAsync();
             }
         }
     }

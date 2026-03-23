@@ -14,13 +14,13 @@ Each consumer gets a **committed copy** of the generated data in its own source 
 ```
 ADP.TestData/                                (canonical source — input only)
 ├── environments/
-│   ├── standard-dealer/input.json
-│   ├── broker-dealer/input.json
-│   └── edge-cases/input.json
+│   ├── standard-dealer.json
+│   ├── broker-dealer.json
+│   └── edge-cases.json
 │
 │         ▼ Output Generator (dotnet run) ▼
 │
-├── Reads input.json, runs evaluators, writes output to each consumer:
+├── Reads environment JSON, runs evaluators, writes output to each consumer:
 │
 │   ┌──────────────────────────────────────────────────────────────────┐
 │   │                                                                  │
@@ -58,12 +58,9 @@ Contains **only input data** — no generated output lives here.
 ```
 ADP.TestData/
 ├── environments/
-│   ├── standard-dealer/
-│   │   └── input.json           (CompanyDataAggregateModel + LookupOptions)
-│   ├── broker-dealer/
-│   │   └── input.json
-│   └── edge-cases/
-│       └── input.json
+│   ├── standard-dealer.json     (CompanyDataAggregateModel + LookupOptions)
+│   ├── broker-dealer.json
+│   └── edge-cases.json
 ├── Generator/                   (.NET console app — runs evaluators, writes output)
 │   ├── Generator.csproj
 │   └── Program.cs
@@ -78,11 +75,11 @@ Each consumer gets output injected into its source tree in a `generated` or dedi
 |----------|--------------------------|------------------|
 | **Web components** | `adp-web-components/src/features/mocks/data/generated/{environment}/` | `vehicle-lookup.json`, `part-lookup.json` |
 | **MkDocs docs** | `ADP.Docs/Docs/docs/web-components/demo-data/{environment}/` | Same JSON files |
-| **BDD tests** | N/A — reads `input.json` directly from `ADP.TestData/` | BDD tests consume input, not output |
+| **BDD tests** | N/A — reads environment JSON directly from `ADP.TestData/environments/` | BDD tests consume input, not output |
 
 ### Why BDD tests don't get a copy
 
-BDD tests verify that evaluators **produce correct output from input**. They read `input.json`, run evaluators, and assert results. They don't need pre-generated output — that would be testing the generator, not the evaluators.
+BDD tests verify that evaluators **produce correct output from input**. They read the environment JSON file, run evaluators, and assert results. They don't need pre-generated output — that would be testing the generator, not the evaluators.
 
 ### Web Components
 
@@ -143,76 +140,76 @@ Documentation pages embed web components pointing at the local demo data:
 
 When running `mkdocs serve` locally, the demo data is served from the local filesystem. When deployed to GitHub Pages, the demo data is deployed alongside the docs — fully self-contained.
 
-## Input Data Format (input.json)
+## Input Data Format (environment JSON)
 
-Each environment's `input.json` contains:
+Each environment JSON file (e.g., `standard-dealer.json`) contains:
 
 ```json
 {
-  "lookupOptions": {
-    "warrantyStartDateDefaultsToInvoiceDate": true,
-    "brandStandardWarrantyPeriodsInYears": { "1": 3, "2": 5 },
-    "includeInactivatedFreeServiceItems": false,
-    "lookupBrokerStock": false
+  "LookupOptions": {
+    "WarrantyStartDateDefaultsToInvoiceDate": true,
+    "BrandStandardWarrantyPeriodsInYears": { "1": 3, "2": 5 },
+    "IncludeInactivatedFreeServiceItems": false,
+    "LookupBrokerStock": false
   },
-  "companies": [
+  "Companies": [
     {
-      "companyId": 1,
-      "companyName": "Toyota Iraq",
-      "branches": [
-        { "branchId": 10, "branchName": "Erbil Showroom" },
-        { "branchId": 20, "branchName": "Baghdad Service Center" }
+      "CompanyId": 1,
+      "CompanyName": "Toyota Iraq",
+      "Branches": [
+        { "BranchId": 10, "BranchName": "Erbil Showroom" },
+        { "BranchId": 20, "BranchName": "Baghdad Service Center" }
       ]
     }
   ],
-  "vehicles": {
+  "Vehicles": {
     "JTMHX01J8L4198293": {
-      "vehicleEntries": [
+      "VehicleEntries": [
         {
-          "vin": "JTMHX01J8L4198293",
-          "invoiceDate": "2024-01-15",
-          "companyID": 1,
-          "branchID": 10,
-          "brandID": 1,
-          "variantCode": "VAR001",
-          "katashiki": "KAT-12345",
-          "exteriorColorCode": "WHT",
-          "interiorColorCode": "BLK"
+          "VIN": "JTMHX01J8L4198293",
+          "InvoiceDate": "2024-01-15",
+          "CompanyID": 1,
+          "BranchID": 10,
+          "BrandID": 1,
+          "VariantCode": "VAR001",
+          "Katashiki": "KAT-12345",
+          "ExteriorColorCode": "WHT",
+          "InteriorColorCode": "BLK"
         }
       ],
-      "initialOfficialVINs": [],
-      "sscAffectedVINs": [
+      "InitialOfficialVINs": [],
+      "SSCAffectedVINs": [
         {
-          "vin": "JTMHX01J8L4198293",
-          "campaignCode": "SSC-2024-001",
-          "description": "Airbag inflator replacement",
-          "laborCode1": "LAB001",
-          "partNumber1": "PRT-AIR-001",
-          "repairDate": null
+          "VIN": "JTMHX01J8L4198293",
+          "CampaignCode": "SSC-2024-001",
+          "Description": "Airbag inflator replacement",
+          "LaborCode1": "LAB001",
+          "PartNumber1": "PRT-AIR-001",
+          "RepairDate": null
         }
       ],
-      "warrantyClaims": [],
-      "laborLines": [],
-      "partLines": [],
-      "vehicleServiceActivations": [],
-      "accessories": [],
-      "paintThicknessInspections": [],
-      "extendedWarrantyEntries": [],
-      "warrantyDateShifts": [],
-      "freeServiceItemDateShifts": [],
-      "itemClaims": [],
-      "paidServiceInvoices": [],
-      "freeServiceItemExcludedVINs": [],
-      "vehicleInspections": []
+      "WarrantyClaims": [],
+      "LaborLines": [],
+      "PartLines": [],
+      "VehicleServiceActivations": [],
+      "Accessories": [],
+      "PaintThicknessInspections": [],
+      "ExtendedWarrantyEntries": [],
+      "WarrantyDateShifts": [],
+      "FreeServiceItemDateShifts": [],
+      "ItemClaims": [],
+      "PaidServiceInvoices": [],
+      "FreeServiceItemExcludedVINs": [],
+      "VehicleInspections": []
     }
   },
-  "brokerInitialVehicles": [],
-  "brokerInvoices": [],
-  "parts": {
+  "BrokerInitialVehicles": [],
+  "BrokerInvoices": [],
+  "Parts": {
     "SU00302474": {
-      "catalogParts": [ ... ],
-      "stockParts": [ ... ],
-      "companyDeadStockParts": [ ... ]
+      "CatalogParts": [ ... ],
+      "StockParts": [ ... ],
+      "CompanyDeadStockParts": [ ... ]
     }
   }
 }
@@ -221,12 +218,12 @@ Each environment's `input.json` contains:
 **Key design decisions:**
 - Vehicle data is organized **per VIN** (mirrors how real lookups work — you look up one VIN at a time)
 - Part data is organized **per part number**
-- `lookupOptions` and `companies` are environment-level configuration
-- `brokerInitialVehicles` and `brokerInvoices` are **environment-level** (not per-VIN) because in production these are looked up from `IVehicleLoockupStorageService` by brand, not by VIN. The generator can map them to the correct VINs.
-- `vehicleInspections` is per-VIN (used by `VehicleServiceItemEvaluator` for mileage-based expiration)
-- Part JSON keys match `PartAggregateCosmosModel` property names: `catalogParts`, `stockParts`, `companyDeadStockParts`
-- All field names use **camelCase** (JSON convention, matches TypeScript types)
-- The .NET deserializer maps camelCase JSON to PascalCase C# properties
+- `LookupOptions` and `Companies` are environment-level configuration
+- `BrokerInitialVehicles` and `BrokerInvoices` are **environment-level** (not per-VIN) because in production these are looked up from `IVehicleLoockupStorageService` by brand, not by VIN. The generator can map them to the correct VINs.
+- `VehicleInspections` is per-VIN (used by `VehicleServiceItemEvaluator` for mileage-based expiration)
+- Part JSON keys match `PartAggregateCosmosModel` property names: `CatalogParts`, `StockParts`, `CompanyDeadStockParts`
+- All field names use **PascalCase** matching C# property names exactly — we use case-sensitive deserialization (default `System.Text.Json` behavior) so JSON property names must match C# property names. This avoids the `id`/`ID` collision in Cosmos DB models and allows copy-pasting real data from Cosmos.
+- The generated TypeScript types use camelCase (handled by the web component output generator, not by the input JSON)
 
 ## Output Data Format (generated JSON)
 
@@ -272,7 +269,7 @@ dotnet run --project ADP.TestData/Generator
 ```
 
 What it does:
-1. Reads each `ADP.TestData/environments/*/input.json`
+1. Reads each `ADP.TestData/environments/*.json`
 2. For each VIN in the environment:
    - Builds `CompanyDataAggregateModel` from the per-VIN input data
    - Configures `LookupOptions` from the environment config
@@ -292,7 +289,7 @@ The generator references `ADP.LookupServices` for the evaluator classes and mode
 
 ### When to re-run the generator
 
-- After changing `input.json` (data changes)
+- After changing environment JSON data
 - After changing evaluator logic (business logic changes)
 - After adding a new environment
 - Commit the regenerated output files alongside the code changes
@@ -334,7 +331,7 @@ Unusual data combinations that have caused or could cause bugs:
 
 ## How BDD Tests Use Environments
 
-BDD tests read `input.json` directly (not generated output). Feature files reference environments by name:
+BDD tests read the environment JSON file directly (not generated output). Feature files reference environments by name:
 
 ```gherkin
 Feature: Vehicle Authorization
@@ -382,7 +379,7 @@ The `docs/web-components/demo-data/` directory is served as static assets by MkD
 ## Development Workflow
 
 ```
-1. Edit input.json           (change test data or add a new environment)
+1. Edit environment JSON      (change test data or add a new environment)
    OR edit evaluator code    (change business logic)
 
 2. dotnet run --project ADP.TestData/Generator
@@ -398,7 +395,7 @@ This mirrors the existing workflow for TypeScript type generation:
 
 ## Migration Path
 
-1. Create `ADP.TestData/` directory with `environments/standard-dealer/input.json`
+1. Create `ADP.TestData/` directory with `environments/standard-dealer.json`
 2. Build the output generator console app (`ADP.TestData/Generator/`)
 3. Create `adp-web-components/src/features/mocks/data/generated/` directory
 4. Create `ADP.Docs/Docs/docs/web-components/demo-data/` directory

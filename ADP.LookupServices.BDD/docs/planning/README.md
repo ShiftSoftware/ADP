@@ -25,9 +25,9 @@ The BDD project is a proof of concept that tests only `VehicleAuthorizationEvalu
 
 ```
 ADP.TestData/environments/                 (canonical source — input only)
-├── standard-dealer/input.json
-├── broker-dealer/input.json
-└── edge-cases/input.json
+├── standard-dealer.json
+├── broker-dealer.json
+└── edge-cases.json
 
          │  Generator (dotnet run) reads input, runs evaluators,
          │  writes generated output INTO each consumer's source tree:
@@ -38,7 +38,7 @@ ADP.TestData/environments/                 (canonical source — input only)
          ├──► ADP.Docs/Docs/docs/web-components/demo-data/
          │    (committed, deployed with docs to GitHub Pages)
          │
-         └──► BDD tests read input.json directly (no generated output needed)
+         └──► BDD tests read environment JSON directly (no generated output needed)
               (verify evaluator logic produces correct results from input)
 ```
 
@@ -64,7 +64,7 @@ Each project is self-contained — `npm start`, `mkdocs serve`, and `dotnet test
 - **Data location:** Dedicated `ADP.TestData/` directory (shared across projects)
 - **Data format:** JSON (input fixtures + generated output DTOs)
 - **Environments:** 2-3 (standard-dealer, broker-dealer, edge-cases)
-- **Data pipeline:** .NET evaluators run on input.json to generate output JSON for web components and docs
+- **Data pipeline:** .NET evaluators run on environment JSON to generate output JSON for web components and docs
 
 ## How to Use These Documents
 

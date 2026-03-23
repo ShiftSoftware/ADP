@@ -38,7 +38,7 @@ Self-contained within the feature file. Best for testing specific evaluator edge
 ## Given Steps
 
 - Use **domain language** for data conditions:
-  - `Given vehicles in dealer stock:` (not `Given VehicleEntries:`)
+  - `Given a dealer with the following vehicles in their dealer stock (coming from their DMS):` (not `Given VehicleEntries:`)
   - `Given warranty claims:` (not `Given WarrantyClaimModels:`)
   - `Given the vehicle was sold through a broker:` (not `Given SaleInformation.Broker is not null`)
 - Use DataTables for tabular data with column headers matching business concepts

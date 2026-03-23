@@ -1,0 +1,50 @@
+{
+  "LookupOptions": {
+    "WarrantyStartDateDefaultsToInvoiceDate": true,
+    "BrandStandardWarrantyPeriodsInYears": { "1": 3 },
+    "LookupBrokerStock": false
+  },
+  "Companies": [
+    {
+      "CompanyId": 1,
+      "CompanyName": "Sample Motors",
+      "Branches": [
+        { "BranchId": 10, "BranchName": "Main Branch" }
+      ]
+    }
+  ],
+  "Vehicles": {
+    "JTMHX01J8L4198293": {
+      "VehicleEntries": [
+        {
+          "VIN": "JTMHX01J8L4198293",
+          "InvoiceDate": "2024-01-15",
+          "CompanyID": 1,
+          "BranchID": 10,
+          "BrandID": 1,
+          "VariantCode": "VAR001",
+          "Katashiki": "KAT-12345",
+          "ExteriorColorCode": "WHT",
+          "InteriorColorCode": "BLK"
+        }
+      ],
+      "InitialOfficialVINs": [],
+      "SSCAffectedVINs": [],
+      "WarrantyClaims": [],
+      "LaborLines": [],
+      "PartLines": [],
+      "VehicleServiceActivations": [],
+      "Accessories": [],
+      "PaintThicknessInspections": [],
+      "ExtendedWarrantyEntries": [],
+      "WarrantyDateShifts": [],
+      "FreeServiceItemDateShifts": [],
+      "ItemClaims": [],
+      "PaidServiceInvoices": [],
+      "FreeServiceItemExcludedVINs": [],
+      "VehicleInspections": []
+    }
+  },
+  "BrokerInitialVehicles": [],
+  "BrokerInvoices": []
+}

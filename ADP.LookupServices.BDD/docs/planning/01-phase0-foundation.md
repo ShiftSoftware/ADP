@@ -103,8 +103,7 @@ Create the shared test data directory at the repo root:
 ```
 ADP.TestData/
 ├── environments/
-│   └── standard-dealer/
-│       └── input.json        (input only — output is generated into consumer source trees)
+│   └── standard-dealer.json  (input only — output is generated into consumer source trees)
 ├── Generator/                (.NET console app — runs evaluators, writes output to consumers)
 │   ├── Generator.csproj
 │   └── Program.cs
@@ -117,60 +116,60 @@ Generated output is committed into each consumer's source tree (not in `ADP.Test
 
 See [shared-data-architecture.md](shared-data-architecture.md) for the full data format specification.
 
-### 9. Create Initial standard-dealer/input.json
+### 9. Create Initial standard-dealer.json
 
 Build the first environment with enough data to cover the existing VehicleAuthorization scenarios:
 
 ```json
 {
-  "lookupOptions": {
-    "warrantyStartDateDefaultsToInvoiceDate": true,
-    "brandStandardWarrantyPeriodsInYears": { "1": 3 },
-    "lookupBrokerStock": false
+  "LookupOptions": {
+    "WarrantyStartDateDefaultsToInvoiceDate": true,
+    "BrandStandardWarrantyPeriodsInYears": { "1": 3 },
+    "LookupBrokerStock": false
   },
-  "companies": [
+  "Companies": [
     {
-      "companyId": 1,
-      "companyName": "Sample Motors",
-      "branches": [
-        { "branchId": 10, "branchName": "Main Branch" }
+      "CompanyId": 1,
+      "CompanyName": "Sample Motors",
+      "Branches": [
+        { "BranchId": 10, "BranchName": "Main Branch" }
       ]
     }
   ],
-  "vehicles": {
+  "Vehicles": {
     "JTMHX01J8L4198293": {
-      "vehicleEntries": [
+      "VehicleEntries": [
         {
-          "vin": "JTMHX01J8L4198293",
-          "invoiceDate": "2024-01-15",
-          "companyID": 1,
-          "branchID": 10,
-          "brandID": 1,
-          "variantCode": "VAR001",
-          "katashiki": "KAT-12345",
-          "exteriorColorCode": "WHT",
-          "interiorColorCode": "BLK"
+          "VIN": "JTMHX01J8L4198293",
+          "InvoiceDate": "2024-01-15",
+          "CompanyID": 1,
+          "BranchID": 10,
+          "BrandID": 1,
+          "VariantCode": "VAR001",
+          "Katashiki": "KAT-12345",
+          "ExteriorColorCode": "WHT",
+          "InteriorColorCode": "BLK"
         }
       ],
-      "initialOfficialVINs": [],
-      "sscAffectedVINs": [],
-      "warrantyClaims": [],
-      "laborLines": [],
-      "partLines": [],
-      "vehicleServiceActivations": [],
-      "accessories": [],
-      "paintThicknessInspections": [],
-      "extendedWarrantyEntries": [],
-      "warrantyDateShifts": [],
-      "freeServiceItemDateShifts": [],
-      "itemClaims": [],
-      "paidServiceInvoices": [],
-      "freeServiceItemExcludedVINs": [],
-      "vehicleInspections": []
+      "InitialOfficialVINs": [],
+      "SSCAffectedVINs": [],
+      "WarrantyClaims": [],
+      "LaborLines": [],
+      "PartLines": [],
+      "VehicleServiceActivations": [],
+      "Accessories": [],
+      "PaintThicknessInspections": [],
+      "ExtendedWarrantyEntries": [],
+      "WarrantyDateShifts": [],
+      "FreeServiceItemDateShifts": [],
+      "ItemClaims": [],
+      "PaidServiceInvoices": [],
+      "FreeServiceItemExcludedVINs": [],
+      "VehicleInspections": []
     }
   },
-  "brokerInitialVehicles": [],
-  "brokerInvoices": []
+  "BrokerInitialVehicles": [],
+  "BrokerInvoices": []
 }
 ```
 
@@ -186,7 +185,7 @@ public void GivenTheEnvironmentIsLoaded(string environmentName)
 {
     var path = Path.Combine(
         TestContext.GetTestDataRoot(),
-        "environments", environmentName, "input.json");
+        "environments", $"{environmentName}.json");
 
     var json = File.ReadAllText(path);
     var environment = JsonSerializer.Deserialize<TestEnvironment>(json);
@@ -209,15 +208,15 @@ public void GivenLoadingVehicleFromEnvironment(string vin)
 
 ### 11. Create TestEnvironment Deserialization Model
 
-Create `Support/TestEnvironment.cs` — a C# POCO matching the `input.json` schema:
+Create `Support/TestEnvironment.cs` — a C# POCO matching the environment JSON schema.
+Uses `LookupOptions` and `CompanyDataAggregateModel` directly (no custom wrappers):
 
 ```csharp
 public class TestEnvironment
 {
-    public TestLookupOptions LookupOptions { get; set; }
+    public LookupOptions LookupOptions { get; set; }
     public List<TestCompany> Companies { get; set; }
-    public Dictionary<string, TestVehicleData> Vehicles { get; set; }
-    public Dictionary<string, TestPartData> Parts { get; set; }
+    public Dictionary<string, CompanyDataAggregateModel> Vehicles { get; set; }
 
     // Environment-level broker data (not per-VIN — in production these are
     // looked up from IVehicleLoockupStorageService by brand)
@@ -225,18 +224,7 @@ public class TestEnvironment
     public List<BrokerInvoiceModel> BrokerInvoices { get; set; }
 }
 
-public class TestLookupOptions { ... }
 public class TestCompany { ... }
-public class TestVehicleData
-{
-    // Per-VIN collections — 16 of the 18 CompanyDataAggregateModel collections.
-    // BrokerInitialVehicles and BrokerInvoices are at environment level (above).
-    public List<VehicleEntryModel> VehicleEntries { get; set; }
-    public List<InitialOfficialVINModel> InitialOfficialVINs { get; set; }
-    public List<SSCAffectedVINModel> SscAffectedVINs { get; set; }
-    public List<VehicleInspectionModel> VehicleInspections { get; set; }
-    // ... remaining collections (see CompanyDataAggregateModel for full list)
-}
 ```
 
 ---
@@ -284,11 +272,11 @@ Both approaches (environment-based and inline DataTable) should coexist. Environ
 | `StepDefinitions/AuthorizedStepDefinitions.cs` | Rename to `VehicleAuthorizationStepDefinitions.cs`, fix typos, refactor to TestContext |
 | `Support/ScenarioContextExtensions.cs` | Delete |
 | `Support/TestContext.cs` | New |
-| `Support/TestEnvironment.cs` | New (deserialization models for input.json) |
+| `Support/TestEnvironment.cs` | New (deserialization model for environment JSON) |
 | `Support/Hooks.cs` | New (Reqnroll DI registration) |
 | `LookupServices.BDD.csproj` | Add NSubstitute |
 | `ADP.TestData/` | New directory at repo root (input data only) |
-| `ADP.TestData/environments/standard-dealer/input.json` | New — initial environment data |
+| `ADP.TestData/environments/standard-dealer.json` | New — initial environment data |
 | `ADP.TestData/Generator/` | New — .NET console app that runs evaluators and writes output |
 | `ADP.TestData/README.md` | New — explains directory structure |
 | `adp-web-components/src/features/mocks/data/generated/` | New — generated output for web components (committed) |
@@ -309,5 +297,5 @@ All VehicleAuthorization scenarios must pass — both environment-loaded and inl
 ## Risks and Considerations
 
 - **Path resolution:** BDD tests need to find `ADP.TestData/` relative to the test project. Use a helper method that walks up from the test assembly directory to find the repo root.
-- **JSON deserialization:** The `input.json` schema must match C# model property names (case-insensitive). Use `System.Text.Json` with `JsonSerializerOptions { PropertyNameCaseInsensitive = true }`.
+- **JSON deserialization:** We use case-sensitive deserialization (default `System.Text.Json` behavior), so JSON property names must match C# property names exactly (PascalCase). This avoids the `id`/`ID` collision in Cosmos DB models and allows copy-pasting real data from Cosmos.
 - **Existing inline Given steps stay:** The inline DataTable Given steps (`"a dealer with the following vehicles..."`) continue to work alongside environment loading. They're useful for focused edge-case scenarios.
