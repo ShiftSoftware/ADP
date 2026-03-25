@@ -42,24 +42,23 @@
 
 ## Phase 1: Simple Evaluators ([02-phase1-simple-evaluators.md](02-phase1-simple-evaluators.md))
 
-**Status:** Not Started
+**Status:** Complete
 **Prerequisite:** Phase 0 complete
 
 ### Given Steps (SharedStepDefinitions.cs)
-- [ ] Enrich SSC Given step with full `SSCAffectedVINModel` columns
-- [ ] Add warranty claims Given step (`WarrantyClaimModel`)
-- [ ] Add labor lines Given step (`OrderLaborLineModel`)
-- [ ] Enrich vehicle entry Given step with additional columns (VariantCode, Katashiki, etc.)
+- [x] Enrich SSC Given step with full `SSCAffectedVINModel` columns
+- [x] Add warranty claims Given step (`WarrantyClaimModel`)
+- [x] Add labor lines Given step (`OrderLaborLineModel`)
+- [x] Enrich vehicle entry Given step with additional columns (VariantCode, Katashiki, etc.)
 
 ### Feature Files & Step Definitions
-- [ ] `VehicleEntry.feature` + `VehicleEntryStepDefinitions.cs`
-- [ ] `VehicleIdentifiers.feature` + `VehicleIdentifierStepDefinitions.cs`
-- [ ] `VehicleSSC.feature` + `VehicleSSCStepDefinitions.cs`
-- [ ] All Phase 0 + Phase 1 scenarios pass
+- [x] `VehicleEntry.feature` + `VehicleEntryStepDefinitions.cs`
+- [x] `VehicleIdentifiers.feature` + `VehicleIdentifierStepDefinitions.cs`
+- [x] `VehicleSSC.feature` + `VehicleSSCStepDefinitions.cs`
+- [x] All Phase 0 + Phase 1 scenarios pass
 
 **Notes:**
-<!--
--->
+2026-03-23: Phase 1 complete. Replaced old `FeatureData`/`ParseDataTable` pattern in SharedStepDefinitions with generic `GetOptionalString`/`GetOptionalDate`/`GetOptionalLong` helpers using `DataTableRow` directly — supports arbitrary optional columns without a fixed DTO. Added second binding aliases (`"vehicles in dealer stock:"`, `"SSC affected vehicles:"`) for shorter Gherkin in Phase 1 features while keeping original verbose bindings for VehicleAuthorization. Warranty claims Given step builds `LaborLines` sub-collection from a single `LaborCode` column. Used `Enum.Parse<ClaimStatus>` for claim status mapping (uses enum member names, not descriptions). Added extra scenario for labor line status "C" beyond what planning doc specified. All 23 scenarios pass (6 Phase 0 + 4 VehicleEntry + 2 VehicleIdentifiers + 11 VehicleSSC).
 
 ---
 
@@ -217,3 +216,4 @@ Track decisions that need to be made during implementation.
 |------|-------|--------|
 | 2026-03-22 | — | Plan reviewed, inconsistencies fixed, status tracker created |
 | 2026-03-23 | 0 | Phase 0 complete. Used real framework types (LookupOptions, CompanyDataAggregateModel) instead of custom wrappers. Flattened environment paths. Case-sensitive JSON with PascalCase. |
+| 2026-03-23 | 1 | Phase 1 complete. 17 new scenarios across 3 feature files. Refactored SharedStepDefinitions to use generic column helpers. |

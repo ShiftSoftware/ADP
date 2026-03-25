@@ -1,6 +1,8 @@
 using System.Text.Json;
 using LookupServices.BDD.Support;
 using Reqnroll;
+using ShiftSoftware.ADP.Models.Enums;
+using ShiftSoftware.ADP.Models.Service;
 using ShiftSoftware.ADP.Models.Vehicle;
 
 namespace LookupServices.BDD.StepDefinitions;
@@ -15,12 +17,6 @@ public class SharedStepDefinitions
         _context = context;
     }
 
-    private class FeatureData
-    {
-        public string? VIN { get; set; }
-        public DateTime? InvoiceDate { get; set; }
-    }
-
     public static DateTime? ConvertSinceYearsAgoToDate(string yearsAgo)
     {
         if (string.IsNullOrWhiteSpace(yearsAgo))
@@ -29,54 +25,142 @@ public class SharedStepDefinitions
         return DateTime.Now.Date.AddYears(-1 * int.Parse(yearsAgo.Split(' ').First()));
     }
 
-    private IEnumerable<FeatureData> ParseDataTable(DataTable dataTable)
+    private static string? GetOptionalString(DataTableRow row, string column)
     {
-        var data = dataTable.Rows.Select(x => new FeatureData
-        {
-            VIN = x.ContainsKey("VIN") ? x["VIN"].ToString() : null,
-            InvoiceDate = x.ContainsKey("Invoiced Since") ? ConvertSinceYearsAgoToDate(x["Invoiced Since"]) : null
-        });
+        if (!row.ContainsKey(column))
+            return null;
 
-        return data;
+        var value = row[column];
+        return string.IsNullOrWhiteSpace(value) ? null : value;
+    }
+
+    private static DateTime? GetOptionalDate(DataTableRow row, string column)
+    {
+        var value = GetOptionalString(row, column);
+        return value is null ? null : DateTime.Parse(value);
+    }
+
+    private static long? GetOptionalLong(DataTableRow row, string column)
+    {
+        var value = GetOptionalString(row, column);
+        return value is null ? null : long.Parse(value);
+    }
+
+    private static double? GetOptionalDouble(DataTableRow row, string column)
+    {
+        var value = GetOptionalString(row, column);
+        return value is null ? null : double.Parse(value);
+    }
+
+    private static decimal? GetOptionalDecimal(DataTableRow row, string column)
+    {
+        var value = GetOptionalString(row, column);
+        return value is null ? null : decimal.Parse(value);
     }
 
 
     [Given("a dealer with the following vehicles as initial stock:")]
     public void GivenADealerWithTheFollowingVehiclesInInitialStock(DataTable dataTable)
     {
-        var data = this.ParseDataTable(dataTable);
-
-        _context.Aggregate.InitialOfficialVINs.AddRange(data
-            .Select(x => new InitialOfficialVINModel
+        _context.Aggregate.InitialOfficialVINs.AddRange(
+            dataTable.Rows.Select(row => new InitialOfficialVINModel
             {
-                VIN = x.VIN
+                VIN = GetOptionalString(row, "VIN")
             }));
     }
 
 
     [Given("a dealer with the following vehicles in their dealer stock \\(coming from their DMS):")]
+    [Given("vehicles in dealer stock:")]
     public void GivenTheFollowingVehiclesInDealerStock(DataTable dataTable)
     {
-        var data = this.ParseDataTable(dataTable);
-
-        _context.Aggregate.VehicleEntries.AddRange(data
-            .Select(x => new VehicleEntryModel
+        _context.Aggregate.VehicleEntries.AddRange(
+            dataTable.Rows.Select(row => new VehicleEntryModel
             {
-                VIN = x.VIN,
-                InvoiceDate = x.InvoiceDate
+                VIN = GetOptionalString(row, "VIN"),
+                InvoiceDate = row.ContainsKey("Invoiced Since")
+                    ? ConvertSinceYearsAgoToDate(row["Invoiced Since"])
+                    : GetOptionalDate(row, "InvoiceDate"),
+                VariantCode = GetOptionalString(row, "VariantCode"),
+                Katashiki = GetOptionalString(row, "Katashiki"),
+                ExteriorColorCode = GetOptionalString(row, "ExteriorColorCode"),
+                InteriorColorCode = GetOptionalString(row, "InteriorColorCode"),
+                BrandID = GetOptionalLong(row, "BrandID"),
+                CompanyID = GetOptionalLong(row, "CompanyID"),
+                BranchID = GetOptionalLong(row, "BranchID"),
             }));
     }
 
 
     [Given("a dealer with the following vehicles in official SSC Vehicles \\(Provided by the vehicle manufacturer):")]
+    [Given("SSC affected vehicles:")]
     public void GivenTheFollowingVehiclesInSsc(DataTable dataTable)
     {
-        var data = this.ParseDataTable(dataTable);
-
         _context.Aggregate.SSCAffectedVINs.AddRange(
-            data.Select(x => new SSCAffectedVINModel
+            dataTable.Rows.Select(row => new SSCAffectedVINModel
             {
-                VIN = x.VIN
+                VIN = GetOptionalString(row, "VIN"),
+                CampaignCode = GetOptionalString(row, "CampaignCode"),
+                Description = GetOptionalString(row, "Description"),
+                LaborCode1 = GetOptionalString(row, "LaborCode1"),
+                LaborCode2 = GetOptionalString(row, "LaborCode2"),
+                LaborCode3 = GetOptionalString(row, "LaborCode3"),
+                LaborHour1 = GetOptionalDouble(row, "LaborHour1"),
+                LaborHour2 = GetOptionalDouble(row, "LaborHour2"),
+                LaborHour3 = GetOptionalDouble(row, "LaborHour3"),
+                PartNumber1 = GetOptionalString(row, "PartNumber1"),
+                PartNumber2 = GetOptionalString(row, "PartNumber2"),
+                PartNumber3 = GetOptionalString(row, "PartNumber3"),
+                RepairDate = GetOptionalDate(row, "RepairDate"),
+                CompanyID = GetOptionalLong(row, "CompanyID"),
+            }));
+    }
+
+
+    [Given("warranty claims:")]
+    public void GivenWarrantyClaims(DataTable dataTable)
+    {
+        _context.Aggregate.WarrantyClaims.AddRange(
+            dataTable.Rows.Select(row => new WarrantyClaimModel
+            {
+                ClaimStatus = row.ContainsKey("ClaimStatus") && !string.IsNullOrWhiteSpace(row["ClaimStatus"])
+                    ? Enum.Parse<ClaimStatus>(row["ClaimStatus"])
+                    : default,
+                RepairCompletionDate = GetOptionalDate(row, "RepairCompletionDate"),
+                DistributorComment = GetOptionalString(row, "DistributorComment"),
+                LaborOperationNumberMain = GetOptionalString(row, "LaborCode"),
+                LaborLines = BuildWarrantyClaimLaborLines(row),
+                VIN = GetOptionalString(row, "VIN"),
+                CompanyID = GetOptionalLong(row, "CompanyID"),
+            }));
+    }
+
+    private static IEnumerable<WarrantyClaimLaborLineModel> BuildWarrantyClaimLaborLines(DataTableRow row)
+    {
+        var laborCode = GetOptionalString(row, "LaborCode");
+        if (laborCode is null)
+            return Enumerable.Empty<WarrantyClaimLaborLineModel>();
+
+        return new[]
+        {
+            new WarrantyClaimLaborLineModel { LaborCode = laborCode }
+        };
+    }
+
+
+    [Given("labor lines:")]
+    public void GivenLaborLines(DataTable dataTable)
+    {
+        _context.Aggregate.LaborLines.AddRange(
+            dataTable.Rows.Select(row => new OrderLaborLineModel
+            {
+                LaborCode = GetOptionalString(row, "LaborCode"),
+                InvoiceDate = GetOptionalDate(row, "InvoiceDate"),
+                InvoiceStatus = GetOptionalString(row, "InvoiceStatus"),
+                CompanyID = GetOptionalLong(row, "CompanyID"),
+                BranchID = GetOptionalLong(row, "BranchID"),
+                InvoiceNumber = GetOptionalString(row, "InvoiceNumber"),
+                VIN = GetOptionalString(row, "VIN"),
             }));
     }
 
