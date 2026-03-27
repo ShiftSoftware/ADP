@@ -23,6 +23,7 @@ export class FormHook<T> {
   formErrors: { [key: string]: string } = {};
 
   backButtonContexts: any[] = [];
+  pendingRequests: Record<string, () => Promise<void>> = {};
 
   formController;
   formStructure?: FormStructure;
@@ -94,6 +95,7 @@ export class FormHook<T> {
     this.subscribers.forEach(subscriber => {
       subscriber.context?.reset();
     });
+    this.pendingRequests = {};
 
     this.isSubmitted = false;
 
@@ -162,10 +164,20 @@ export class FormHook<T> {
     const formData = new FormData(form);
 
     const formObject = Object.fromEntries(formData.entries());
-    for (const el of form.querySelectorAll('[disabled][name]')) {
-      // @ts-ignore
-      formObject[el.name] = (el as HTMLInputElement).value;
-    }
+
+    const elements = form.querySelectorAll('[name]') as NodeListOf<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>;
+
+    elements.forEach(el => {
+      if (el.disabled) {
+        formObject[el.name] = el.value;
+        return;
+      }
+
+      if (el.type === 'file') {
+        // @ts-ignore
+        formObject[el.name] = Array.from(el?.files || []);
+      }
+    });
 
     // const formObject = Object.fromEntries(formData.entries() as Iterable<[string, FormDataEntryValue]>);
 
@@ -346,7 +358,7 @@ export class FormHook<T> {
     return this.subscribedFields[name];
   };
 
-  private signal = (partialSignal: Partial<Field<any>> | Partial<Field<any>>[]) => {
+  signal = (partialSignal: Partial<Field<any>> | Partial<Field<any>>[]) => {
     if (Array.isArray(partialSignal)) {
       partialSignal.forEach(field => {
         if (this.subscribedFields[field.name]) Object.assign(this.subscribedFields[field.name], field);

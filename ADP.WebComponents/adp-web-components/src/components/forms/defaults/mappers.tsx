@@ -11,6 +11,8 @@ export const getFormMappers = (stateObject: Record<string, any>, extraMappers: R
 
   inputPreview: ({ props }) => <form-input-preview key={props?.name} {...props} />,
 
+  fileUploader: ({ props }) => <form-file key={props?.name} {...props} />,
+
   formStepper: ({ props, language }) => <form-stepper key={props?.name} language={language} {...props} />,
 
   back: ({ props }) => <form-stepper-control key={props?.name} {...props} />,
@@ -24,6 +26,8 @@ export const getFormMappers = (stateObject: Record<string, any>, extraMappers: R
   email: ({ props }) => <form-input key={props?.name} type="email" {...props} />,
 
   message: ({ props }) => <form-text-area key={props?.name} {...props} />,
+
+  file: ({ props }) => <form-file key={props?.name} {...props} />,
 
   vin: ({ props }) => <form-vin-input key={props?.name} {...props} />,
 
@@ -104,6 +108,24 @@ export const getFormMappers = (stateObject: Record<string, any>, extraMappers: R
 
       const options = (await response.json()).map(dealer => ({
         label: dealer.Name,
+        value: `${dealer.ID}`,
+        meta: { ...dealer },
+      })) as FormSelectItem[];
+
+      return options;
+    };
+
+    return <form-select key={props?.name} {...props} clearable searchable fetcher={fetcher} language={language} />;
+  },
+
+  vacancyId: ({ language, props }) => {
+    const fetcher: FormSelectFetcher = async ({ signal }): Promise<FormSelectItem[]> => {
+      const dealerEndpoint = props?.vacancyApi as string;
+
+      const response = await fetch(dealerEndpoint, { signal, headers: { 'Accept-Language': language } });
+
+      const options = (await response.json()).map(dealer => ({
+        label: dealer.Title,
         value: `${dealer.ID}`,
         meta: { ...dealer },
       })) as FormSelectItem[];

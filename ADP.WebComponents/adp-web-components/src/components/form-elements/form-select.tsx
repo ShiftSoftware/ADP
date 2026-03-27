@@ -220,9 +220,8 @@ export class FormSelect implements FormElement {
         <label part={`${this.name}`} id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, { disabled: disableInput })}>
           <FormInputLabel name={this.name} isRequired={isRequired || this.isRequired} label={label} />
 
-          <form-shadow-input name={this.name} form={this.form} value={this.selectedValue} />
-
           <div part={`${this.name}-container form-input-container`} class={cn('form-input-container', { open: this.isOpen, disableInput })}>
+            <form-shadow-input name={this.name} form={this.form} value={this.selectedValue} />
             <input
               type="text"
               disabled={disableInput}

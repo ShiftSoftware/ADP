@@ -268,6 +268,14 @@ export const onFormSubmit = async <T>({ context, formValues, middleware, afterSu
       requestEndpoint = middlewareRes.url;
     }
 
+    Object.values(context.form.pendingRequests).forEach(async req => {
+      try {
+        await req();
+      } catch (error) {
+        console.error(error);
+      }
+    });
+
     const response = await fetch(requestEndpoint, {
       headers: header,
       method: context.structure?.data?.requestMethod || 'POST',

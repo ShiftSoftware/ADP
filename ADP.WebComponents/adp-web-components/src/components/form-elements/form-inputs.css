@@ -104,6 +104,51 @@
   @apply border border-slate-300 appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none disabled:bg-white flex-1 py-[6px] px-[12px] transition !duration-300 rounded-md outline-none enabled:focus:border-slate-600 enabled:focus:shadow-[0_0_0_0.2rem_rgba(71,85,105,0.25)] w-full;
 }
 
+.form-file-input {
+  @apply hidden;
+}
+
+.form-file-trigger {
+  @apply bg-white text-slate-800 flex items-center justify-between gap-3 text-start cursor-pointer;
+}
+
+.form-file-trigger:disabled {
+  @apply cursor-not-allowed opacity-75;
+}
+
+.form-file-trigger-loading {
+  @apply opacity-80;
+}
+
+.form-file-icon {
+  @apply flex items-center justify-center text-slate-500;
+}
+
+.form-file-text {
+  @apply truncate;
+}
+
+.form-file-spinner {
+  animation: spin-animation 1s linear infinite;
+  @apply size-[18px];
+}
+
+.form-file-success-icon {
+  @apply size-[18px] text-green-600;
+}
+
+.form-file-status {
+  @apply mt-2 text-sm text-slate-600;
+}
+
+.form-file-status-error {
+  @apply text-red-600;
+}
+
+.form-file-status-success {
+  @apply text-green-700;
+}
+
 .form-input-style::-webkit-calendar-picker-indicator {
   @apply !hidden;
 }

@@ -5,13 +5,15 @@ import validateVin from '~lib/validate-vin';
 export const label = (name: string) => `${name}-label`;
 export const format = (name: string) => `${name}-format`;
 export const require = (name: string) => `${name}-require`;
+export const size = (name: string) => `${name}-size`;
+export const max = (name: string) => `${name}-max`;
 export const placeholder = (name: string) => `${name}-placeholder`;
 
 export const meta = (name): FormInputMeta => ({ label: label(name), placeholder: placeholder(name) });
 
 export const condition = (name: string) => `$${name}Required`;
 
-export const y = { label, format, require, condition, placeholder, meta };
+export const y = { label, format, require, condition, placeholder, meta, size, max };
 
 export const getFormValidations = (stateObject: Record<string, any>, extraFields: Record<string, Schema> = {}) => {
   return object({
@@ -70,6 +72,14 @@ export const getFormValidations = (stateObject: Record<string, any>, extraFields
         is: true,
         otherwise: schema => schema.optional(),
         then: schema => schema.required(y.require('vehicle')),
+      }),
+
+    vacancyId: string()
+      .meta(meta('vacancyId'))
+      .when(y.condition('vacancyId'), {
+        is: true,
+        otherwise: schema => schema.optional(),
+        then: schema => schema.required(y.require('vacancyId')),
       }),
 
     companyBranchId: string()
