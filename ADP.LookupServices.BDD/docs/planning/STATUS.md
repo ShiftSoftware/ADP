@@ -215,7 +215,16 @@ Evaluators are not considered golden — they may have flaws or unnecessary comp
 
 | # | Evaluator | Observation | Spotted During |
 |---|-----------|-------------|----------------|
-| | | | |
+| 1 | VehicleSSCEvaluator | Returns `null` instead of empty collection when SSC list is empty (line 28). Callers must null-check. | Phase 1 review |
+| 2 | VehicleSSCEvaluator | Dead code: `partNumbers` extracted on line 119 but never used. Looks like leftover from an incomplete feature. | Phase 1 review |
+| 3 | VehicleSSCEvaluator | Heavy duplication: LaborCode1/2/3 and PartNumber1/2/3 each handled with copy-pasted if-blocks (lines 76-110). Could loop over an array. Same for labor matching on line 57. | Phase 1 review |
+| 4 | VehicleSSCEvaluator | `new List<ClaimStatus> { ... }` allocated on every SSC × every warranty claim iteration (line 41). Should be a static readonly. | Phase 1 review |
+| 5 | VehicleSSCEvaluator | `s.LaborCode.Equals(...)` and `s.InvoiceStatus.Equals(...)` (lines 57-58) will throw `NullReferenceException` if `LaborCode` or `InvoiceStatus` is null. | Phase 1 review |
+| 6 | VehicleEntryEvaluator | Commented-out code on lines 22-23 (`.Select`/`.Concat` with VehicleServiceActivations). Should be removed or documented. | Phase 0 review |
+| 7 | VehicleEntryEvaluator | When multiple vehicles have null InvoiceDate, `FirstOrDefault` returns whichever is first in the list — non-deterministic. May need a tiebreaker. | Phase 0 review |
+| 8 | WarrantyAndFreeServiceDateEvaluator | Duplicated fallback chain: lines 29-35 (normal sale) and lines 48-54 (broker stock + ignoreBrokerStock) contain identical activation → warranty date → invoice date logic. Could extract to a helper. | Phase 2 review |
+| 9 | WarrantyAndFreeServiceDateEvaluator | `vehicle` parameter is only used for `BrandID` (line 76). The rest of the vehicle data comes through `saleInformation`. Signature could be simplified. | Phase 2 review |
+| 10 | WarrantyAndFreeServiceDateEvaluator | Default warranty period of 3 years is a magic number (line 82). Should be a named constant or come from `LookupOptions`. | Phase 2 review |
 
 ---
 
