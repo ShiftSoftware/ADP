@@ -52,6 +52,8 @@ export class FormFile implements FormElement {
 
   @Element() el!: HTMLElement;
 
+  sasFiles: any[] = [];
+
   private fileInput?: HTMLInputElement;
   private controlsFormLoading = false;
   private wasFormLoading = false;
@@ -190,6 +192,7 @@ export class FormFile implements FormElement {
       };
     });
 
+    this.sasFiles = arr;
     return signedFiles;
   }
 
@@ -238,6 +241,7 @@ export class FormFile implements FormElement {
       limited.forEach(file => dataTransfer.items.add(file));
       target.files = dataTransfer.files;
     } catch (error) {
+      this.sasFiles = [];
       console.error(error);
       target.files = dataTransfer.files;
       const [locale, language] = this.form.getFormLocale();
@@ -280,6 +284,7 @@ export class FormFile implements FormElement {
         if (!value.length) return true;
 
         const maxSizeInBytes = this.maxSize * 1024 * 1024;
+
         return value.every(f => f.size <= maxSizeInBytes);
       });
     }

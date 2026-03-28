@@ -6,6 +6,7 @@ import { LanguageKeys, SharedFormLocales } from '~features/multi-lingual';
 import { Field, FormElement, FormHookInterface, FormStateOptions, Step, Subscribers, ValidationType, WatchCallback, Watchers } from './interface';
 
 import { FormStructure } from '../../components/form-elements/form-structure';
+import { FormFile } from '../../components/form-elements/form-file';
 
 export class FormHook<T> {
   haltValidation: boolean = false;
@@ -175,7 +176,23 @@ export class FormHook<T> {
 
       if (el.type === 'file') {
         // @ts-ignore
-        formObject[el.name] = Array.from(el?.files || []);
+        const files: any[] = Array.from(el?.files || []);
+        const signs = (this.subscribers.find(sub => sub.name === el?.name).context as FormFile).sasFiles;
+
+        const parsed = files.map((file, idx) =>
+          signs?.[idx]
+            ? {
+                name: file.name,
+                size: file.size,
+                type: file.type,
+                lastModified: file.lastModified,
+                ...signs[idx],
+              }
+            : file,
+        );
+
+        // @ts-ignore
+        formObject[el.name] = parsed;
       }
     });
 
