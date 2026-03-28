@@ -206,7 +206,7 @@ Track decisions that need to be made during implementation.
 |---|----------|---------|--------|------------|
 | 1 | Vehicle-lookup `mockUrl` prop | (a) Add prop, (b) Update `getMockFile()`, (c) Keep `setMockData()` | Open | |
 | 2 | Broker scenario approach in Phase 2 | (a) Given step for `VehicleSaleInformation`, (b) Defer to Phase 4 | Open | |
-| 3 | Broker data placement in environment JSON | Environment-level (current plan) vs per-VIN | Open | |
+| 3 | Broker data placement in environment JSON | Environment-level (current plan) vs per-VIN | Resolved | Environment-level. `BrokerInitialVehicles`/`BrokerInvoices` stay at root of environment JSON (matches aggregate). Actual broker stock data (`TBP_StockModel`) comes from `IVehicleLoockupStorageService.GetBrokerStockAsync()` — not part of the aggregate or environment JSON; handled via NSubstitute mocks in Phase 4. |
 
 ---
 
