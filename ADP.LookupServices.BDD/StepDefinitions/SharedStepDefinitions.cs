@@ -88,6 +88,7 @@ public class SharedStepDefinitions
                 BrandID = GetOptionalLong(row, "BrandID"),
                 CompanyID = GetOptionalLong(row, "CompanyID"),
                 BranchID = GetOptionalLong(row, "BranchID"),
+                WarrantyActivationDate = GetOptionalDate(row, "WarrantyActivationDate"),
             }));
     }
 
@@ -161,6 +162,49 @@ public class SharedStepDefinitions
                 BranchID = GetOptionalLong(row, "BranchID"),
                 InvoiceNumber = GetOptionalString(row, "InvoiceNumber"),
                 VIN = GetOptionalString(row, "VIN"),
+            }));
+    }
+
+
+    [Given("vehicle service activations:")]
+    public void GivenVehicleServiceActivations(DataTable dataTable)
+    {
+        _context.Aggregate.VehicleServiceActivations.AddRange(
+            dataTable.Rows.Select(row => new VehicleServiceActivation
+            {
+                WarrantyActivationDate = GetOptionalDate(row, "WarrantyActivationDate"),
+                CompanyID = GetOptionalLong(row, "CompanyID"),
+            }));
+    }
+
+    [Given("warranty date shifts:")]
+    public void GivenWarrantyDateShifts(DataTable dataTable)
+    {
+        _context.Aggregate.WarrantyDateShifts.AddRange(
+            dataTable.Rows.Select(row => new WarrantyDateShiftModel
+            {
+                NewDate = DateTime.Parse(row["NewDate"]),
+            }));
+    }
+
+    [Given("free service item date shifts:")]
+    public void GivenFreeServiceItemDateShifts(DataTable dataTable)
+    {
+        _context.Aggregate.FreeServiceItemDateShifts.AddRange(
+            dataTable.Rows.Select(row => new FreeServiceItemDateShiftModel
+            {
+                NewDate = DateTime.Parse(row["NewDate"]),
+            }));
+    }
+
+    [Given("extended warranty entries:")]
+    public void GivenExtendedWarrantyEntries(DataTable dataTable)
+    {
+        _context.Aggregate.ExtendedWarrantyEntries.AddRange(
+            dataTable.Rows.Select(row => new ExtendedWarrantyModel
+            {
+                StartDate = GetOptionalDate(row, "StartDate"),
+                EndDate = GetOptionalDate(row, "EndDate"),
             }));
     }
 

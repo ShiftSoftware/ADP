@@ -64,25 +64,24 @@
 
 ## Phase 2: Medium Evaluators + LookupOptions ([03-phase2-lookup-options.md](03-phase2-lookup-options.md))
 
-**Status:** Not Started
+**Status:** Complete
 **Prerequisite:** Phase 1 complete
 
 ### Given Steps
-- [ ] Vehicle service activations step (`VehicleServiceActivation`)
-- [ ] Warranty date shifts step (`WarrantyDateShiftModel`)
-- [ ] Free service item date shifts step (`FreeServiceItemDateShiftModel`)
-- [ ] Extended warranty entries step (`ExtendedWarrantyModel`)
-- [ ] Create `LookupOptionsStepDefinitions.cs` (warranty defaults, brand warranty periods)
-- [ ] Sale information Given step (for non-broker scenarios)
+- [x] Vehicle service activations step (`VehicleServiceActivation`)
+- [x] Warranty date shifts step (`WarrantyDateShiftModel`)
+- [x] Free service item date shifts step (`FreeServiceItemDateShiftModel`)
+- [x] Extended warranty entries step (`ExtendedWarrantyModel`)
+- [x] Create `LookupOptionsStepDefinitions.cs` (warranty defaults, brand warranty periods)
+- [x] Add `WarrantyActivationDate` column to "vehicles in dealer stock" Given step
 
 ### Feature Files & Step Definitions
-- [ ] `WarrantyDates.feature` + `WarrantyDateStepDefinitions.cs`
-- [ ] Decide on broker scenario approach (defer to Phase 4, or add Given step for `VehicleSaleInformation`)
-- [ ] All previous + Phase 2 scenarios pass
+- [x] `WarrantyDates.feature` + `WarrantyDateStepDefinitions.cs`
+- [x] Broker scenarios deferred to Phase 4 (requires `IVehicleLoockupStorageService` mocking)
+- [x] All previous + Phase 2 scenarios pass
 
 **Notes:**
-<!--
--->
+2026-03-28: Phase 2 complete. 9 new warranty scenarios. "When evaluating warranty dates" step chains VehicleEntryEvaluator → builds VehicleSaleInformation from selected vehicle entry (mapping InvoiceDate/WarrantyActivationDate) → runs WarrantyAndFreeServiceDateEvaluator. SaleInformation constructed directly from vehicle entry data for non-broker scenarios; broker scenarios deferred to Phase 4 where VehicleSaleInformationEvaluator + storage service mocking are available. LookupOptionsStepDefinitions uses `long` for brandId param which auto-boxes to `long?` dictionary key. All 32 scenarios pass (23 Phase 0+1 + 9 Phase 2).
 
 ---
 
@@ -205,8 +204,18 @@ Track decisions that need to be made during implementation.
 | # | Decision | Options | Status | Resolution |
 |---|----------|---------|--------|------------|
 | 1 | Vehicle-lookup `mockUrl` prop | (a) Add prop, (b) Update `getMockFile()`, (c) Keep `setMockData()` | Open | |
-| 2 | Broker scenario approach in Phase 2 | (a) Given step for `VehicleSaleInformation`, (b) Defer to Phase 4 | Open | |
+| 2 | Broker scenario approach in Phase 2 | (a) Given step for `VehicleSaleInformation`, (b) Defer to Phase 4 | Resolved | Deferred to Phase 4. Broker warranty scenarios require `VehicleSaleInformation.Broker` which comes from `VehicleSaleInformationEvaluator` + `IVehicleLoockupStorageService.GetBrokerStockAsync()`. Testing these properly requires the storage service mocking infrastructure from Phase 4. |
 | 3 | Broker data placement in environment JSON | Environment-level (current plan) vs per-VIN | Resolved | Environment-level. `BrokerInitialVehicles`/`BrokerInvoices` stay at root of environment JSON (matches aggregate). Actual broker stock data (`TBP_StockModel`) comes from `IVehicleLoockupStorageService.GetBrokerStockAsync()` — not part of the aggregate or environment JSON; handled via NSubstitute mocks in Phase 4. |
+
+---
+
+## Evaluator Issues / Refactoring Notes
+
+Evaluators are not considered golden — they may have flaws or unnecessary complexity. Strategy: finish BDD coverage first across all phases, then refactor with tests as a safety net. Log observations here as they come up.
+
+| # | Evaluator | Observation | Spotted During |
+|---|-----------|-------------|----------------|
+| | | | |
 
 ---
 
@@ -217,3 +226,4 @@ Track decisions that need to be made during implementation.
 | 2026-03-22 | — | Plan reviewed, inconsistencies fixed, status tracker created |
 | 2026-03-23 | 0 | Phase 0 complete. Used real framework types (LookupOptions, CompanyDataAggregateModel) instead of custom wrappers. Flattened environment paths. Case-sensitive JSON with PascalCase. |
 | 2026-03-23 | 1 | Phase 1 complete. 17 new scenarios across 3 feature files. Refactored SharedStepDefinitions to use generic column helpers. |
+| 2026-03-28 | 2 | Phase 2 complete. 9 warranty scenarios, LookupOptionsStepDefinitions, WarrantyDateStepDefinitions. Broker scenarios deferred to Phase 4. |
