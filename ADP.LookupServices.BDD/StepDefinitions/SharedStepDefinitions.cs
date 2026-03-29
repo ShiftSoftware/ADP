@@ -2,6 +2,7 @@ using System.Text.Json;
 using LookupServices.BDD.Support;
 using Reqnroll;
 using ShiftSoftware.ADP.Models.Enums;
+using ShiftSoftware.ADP.Models.Part;
 using ShiftSoftware.ADP.Models.Service;
 using ShiftSoftware.ADP.Models.Vehicle;
 
@@ -56,6 +57,12 @@ public class SharedStepDefinitions
     {
         var value = GetOptionalString(row, column);
         return value is null ? null : decimal.Parse(value);
+    }
+
+    private static int? GetOptionalInt(DataTableRow row, string column)
+    {
+        var value = GetOptionalString(row, column);
+        return value is null ? null : int.Parse(value);
     }
 
 
@@ -161,6 +168,15 @@ public class SharedStepDefinitions
                 CompanyID = GetOptionalLong(row, "CompanyID"),
                 BranchID = GetOptionalLong(row, "BranchID"),
                 InvoiceNumber = GetOptionalString(row, "InvoiceNumber"),
+                OrderDocumentNumber = GetOptionalString(row, "OrderDocumentNumber"),
+                ParentInvoiceNumber = GetOptionalString(row, "ParentInvoiceNumber"),
+                ServiceDescription = GetOptionalString(row, "ServiceDescription"),
+                JobDescription = GetOptionalString(row, "JobDescription"),
+                ServiceCode = GetOptionalString(row, "ServiceCode"),
+                PackageCode = GetOptionalString(row, "PackageCode"),
+                AccountNumber = GetOptionalString(row, "AccountNumber"),
+                NumberOfPartLines = GetOptionalInt(row, "NumberOfPartLines") ?? 0,
+                Odometer = GetOptionalInt(row, "Odometer"),
                 VIN = GetOptionalString(row, "VIN"),
             }));
     }
@@ -206,6 +222,81 @@ public class SharedStepDefinitions
                 StartDate = GetOptionalDate(row, "StartDate"),
                 EndDate = GetOptionalDate(row, "EndDate"),
             }));
+    }
+
+
+    [Given("part lines:")]
+    public void GivenPartLines(DataTable dataTable)
+    {
+        _context.Aggregate.PartLines.AddRange(
+            dataTable.Rows.Select(row => new OrderPartLineModel
+            {
+                PartNumber = GetOptionalString(row, "PartNumber"),
+                InvoiceDate = GetOptionalDate(row, "InvoiceDate"),
+                InvoiceStatus = GetOptionalString(row, "InvoiceStatus"),
+                CompanyID = GetOptionalLong(row, "CompanyID"),
+                BranchID = GetOptionalLong(row, "BranchID"),
+                InvoiceNumber = GetOptionalString(row, "InvoiceNumber"),
+                OrderDocumentNumber = GetOptionalString(row, "OrderDocumentNumber"),
+                ParentInvoiceNumber = GetOptionalString(row, "ParentInvoiceNumber"),
+                PackageCode = GetOptionalString(row, "PackageCode"),
+                AccountNumber = GetOptionalString(row, "AccountNumber"),
+                SoldQuantity = GetOptionalDecimal(row, "SoldQuantity"),
+                NumberOfLaborLines = GetOptionalInt(row, "NumberOfLaborLines") ?? 0,
+                VIN = GetOptionalString(row, "VIN"),
+            }));
+    }
+
+    [Given("accessories:")]
+    public void GivenAccessories(DataTable dataTable)
+    {
+        _context.Aggregate.Accessories.AddRange(
+            dataTable.Rows.Select(row => new VehicleAccessoryModel
+            {
+                PartNumber = GetOptionalString(row, "PartNumber"),
+                PartDescription = GetOptionalString(row, "PartDescription"),
+                Image = GetOptionalString(row, "Image"),
+            }));
+    }
+
+    [Given("paint thickness inspections:")]
+    public void GivenPaintThicknessInspections(DataTable dataTable)
+    {
+        var inspections = (_context.Aggregate.PaintThicknessInspections?.ToList())
+            ?? new List<PaintThicknessInspectionModel>();
+
+        inspections.AddRange(
+            dataTable.Rows.Select(row => new PaintThicknessInspectionModel
+            {
+                InspectionDate = GetOptionalDate(row, "InspectionDate"),
+                Source = GetOptionalString(row, "Source"),
+                Panels = new List<PaintThicknessInspectionPanelModel>(),
+            }));
+
+        _context.Aggregate.PaintThicknessInspections = inspections;
+    }
+
+    [Given("paint thickness panels for inspection on {string}:")]
+    public void GivenPaintThicknessPanelsForInspection(string inspectionDate, DataTable dataTable)
+    {
+        var date = DateTime.Parse(inspectionDate);
+        var inspection = _context.Aggregate.PaintThicknessInspections?
+            .FirstOrDefault(i => i.InspectionDate == date)
+            ?? throw new InvalidOperationException($"No paint thickness inspection found for date '{inspectionDate}'");
+
+        var panels = dataTable.Rows.Select(row => new PaintThicknessInspectionPanelModel
+        {
+            PanelType = Enum.Parse<VehiclePanelType>(row["PanelType"]),
+            PanelSide = row.ContainsKey("PanelSide") && !string.IsNullOrWhiteSpace(row["PanelSide"])
+                ? Enum.Parse<VehiclePanelSide>(row["PanelSide"]) : null,
+            PanelPosition = row.ContainsKey("PanelPosition") && !string.IsNullOrWhiteSpace(row["PanelPosition"])
+                ? Enum.Parse<VehiclePanelPosition>(row["PanelPosition"]) : null,
+            MeasuredThickness = decimal.Parse(row["MeasuredThickness"]),
+            Images = row.ContainsKey("Images") && !string.IsNullOrWhiteSpace(row["Images"])
+                ? row["Images"].Split(',', StringSplitOptions.TrimEntries) : [],
+        }).ToList();
+
+        inspection.Panels = panels;
     }
 
 

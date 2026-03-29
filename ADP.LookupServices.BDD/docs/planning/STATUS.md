@@ -87,28 +87,28 @@
 
 ## Phase 3: Async Evaluators + IServiceProvider ([04-phase3-async-evaluators.md](04-phase3-async-evaluators.md))
 
-**Status:** Not Started
+**Status:** Complete
 **Prerequisite:** Phase 2 complete
 
 ### Infrastructure
-- [ ] Create `Support/MockSetup.cs` (resolver delegate helpers)
-- [ ] Extend `LookupOptionsStepDefinitions.cs` with resolver Given steps (image URLs, company/branch names)
+- [x] Resolver mock delegates configured inline in `LookupOptionsStepDefinitions.cs` (no separate MockSetup.cs needed)
+- [x] Extend `LookupOptionsStepDefinitions.cs` with resolver Given steps (image URLs, company/branch names)
 
 ### Given Steps
-- [ ] Accessories step (`VehicleAccessoryModel`)
-- [ ] Paint thickness inspections step (`PaintThicknessInspectionModel`)
-- [ ] Paint thickness panels step (nested data)
-- [ ] Part lines step (`OrderPartLineModel`)
+- [x] Accessories step (`VehicleAccessoryModel`)
+- [x] Paint thickness inspections step (`PaintThicknessInspectionModel`)
+- [x] Paint thickness panels step (nested data, with enum parsing for PanelType/PanelSide/PanelPosition)
+- [x] Part lines step (`OrderPartLineModel`)
+- [x] Enhanced labor lines step with service history columns (OrderDocumentNumber, ServiceDescription, etc.)
 
 ### Feature Files & Step Definitions
-- [ ] `VehicleAccessories.feature` + `VehicleAccessoriesStepDefinitions.cs`
-- [ ] `VehiclePaintThickness.feature` + `VehiclePaintThicknessStepDefinitions.cs`
-- [ ] `VehicleServiceHistory.feature` + `VehicleServiceHistoryStepDefinitions.cs`
-- [ ] All previous + Phase 3 scenarios pass
+- [x] `VehicleAccessories.feature` + `VehicleAccessoriesStepDefinitions.cs` (3 scenarios)
+- [x] `VehiclePaintThickness.feature` + `VehiclePaintThicknessStepDefinitions.cs` (2 scenarios)
+- [x] `VehicleServiceHistory.feature` + `VehicleServiceHistoryStepDefinitions.cs` (4 scenarios)
+- [x] All previous + Phase 3 scenarios pass
 
 **Notes:**
-<!--
--->
+2026-03-29: Phase 3 complete. 9 new scenarios (3 accessories, 2 paint thickness, 4 service history). Resolver delegates configured inline in LookupOptionsStepDefinitions using instance dictionaries — simpler than a separate MockSetup.cs. PaintThicknessInspections on aggregate is `IEnumerable<>` not `List<>`, so Given step converts to list. PanelSide enum is Left/Center/Right (not Front), PanelPosition is Front/Middle/Rear. All 41 scenarios pass (32 Phase 0-2 + 9 Phase 3).
 
 ---
 
@@ -225,6 +225,8 @@ Evaluators are not considered golden — they may have flaws or unnecessary comp
 | 8 | WarrantyAndFreeServiceDateEvaluator | Duplicated fallback chain: lines 29-35 (normal sale) and lines 48-54 (broker stock + ignoreBrokerStock) contain identical activation → warranty date → invoice date logic. Could extract to a helper. | Phase 2 review |
 | 9 | WarrantyAndFreeServiceDateEvaluator | `vehicle` parameter is only used for `BrandID` (line 76). The rest of the vehicle data comes through `saleInformation`. Signature could be simplified. | Phase 2 review |
 | 10 | WarrantyAndFreeServiceDateEvaluator | Default warranty period of 3 years is a magic number (line 82). Should be a named constant or come from `LookupOptions`. | Phase 2 review |
+| 11 | VehiclePaintThicknessEvaluator | Returns `null` instead of empty collection when `PaintThicknessInspections` is null (line 25). Same pattern as SSC evaluator issue #1. | Phase 3 review |
+| 12 | VehicleServiceHistoryEvaluator | `invoice.LaborLines.Where(x => x.JobDescription is not null)?.FirstOrDefault()` (line 95): the `?.` after `.Where()` is unnecessary since `Where` never returns null. Minor but misleading. | Phase 3 review |
 
 ---
 
@@ -236,3 +238,4 @@ Evaluators are not considered golden — they may have flaws or unnecessary comp
 | 2026-03-23 | 0 | Phase 0 complete. Used real framework types (LookupOptions, CompanyDataAggregateModel) instead of custom wrappers. Flattened environment paths. Case-sensitive JSON with PascalCase. |
 | 2026-03-23 | 1 | Phase 1 complete. 17 new scenarios across 3 feature files. Refactored SharedStepDefinitions to use generic column helpers. |
 | 2026-03-28 | 2 | Phase 2 complete. 9 warranty scenarios, LookupOptionsStepDefinitions, WarrantyDateStepDefinitions. Broker scenarios deferred to Phase 4. |
+| 2026-03-29 | 3 | Phase 3 complete. 9 scenarios across 3 async evaluators (accessories, paint thickness, service history). Resolver mocks inline in LookupOptionsStepDefinitions. |

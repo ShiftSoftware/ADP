@@ -17,7 +17,7 @@ namespace LookupServices.BDD.Features
     
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Reqnroll", "3.0.0.0")]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    public partial class VehicleEntrySelectionFeature : object, Xunit.IClassFixture<VehicleEntrySelectionFeature.FixtureData>, Xunit.IAsyncLifetime
+    public partial class VehicleAccessoriesFeature : object, Xunit.IClassFixture<VehicleAccessoriesFeature.FixtureData>, Xunit.IAsyncLifetime
     {
         
         private global::Reqnroll.ITestRunner testRunner;
@@ -26,14 +26,13 @@ namespace LookupServices.BDD.Features
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("en-US"), "Features", "Vehicle Entry Selection", "\tWhen a dealer has multiple entries for the same VIN in their stock,\r\n\tthe system" +
-                " selects the most relevant vehicle entry based on invoice date.\r\n\tVehicles witho" +
-                "ut an invoice date (still in stock, not yet sold) take priority.", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("en-US"), "Features", "Vehicle Accessories", "  Vehicle accessories are listed with their part numbers, descriptions,\r\n  and im" +
+                "ages. Image URLs are resolved through a configurable resolver.", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
-#line 1 "VehicleEntry.feature"
+#line 1 "VehicleAccessories.feature"
 #line hidden
         
-        public VehicleEntrySelectionFeature(VehicleEntrySelectionFeature.FixtureData fixtureData, Xunit.ITestOutputHelper testOutputHelper)
+        public VehicleAccessoriesFeature(VehicleAccessoriesFeature.FixtureData fixtureData, Xunit.ITestOutputHelper testOutputHelper)
         {
             this._testOutputHelper = testOutputHelper;
         }
@@ -107,7 +106,7 @@ namespace LookupServices.BDD.Features
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/VehicleEntry.feature.ndjson", 6);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/VehicleAccessories.feature.ndjson", 5);
         }
         
         async System.Threading.Tasks.ValueTask Xunit.IAsyncLifetime.InitializeAsync()
@@ -135,18 +134,18 @@ namespace LookupServices.BDD.Features
             await this.TestTearDownAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="Vehicle without invoice date takes priority")]
-        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Entry Selection")]
-        [global::Xunit.TraitAttribute("Description", "Vehicle without invoice date takes priority")]
-        public async global::System.Threading.Tasks.Task VehicleWithoutInvoiceDateTakesPriority()
+        [global::Xunit.FactAttribute(DisplayName="Accessories listed with resolved image URLs")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Accessories")]
+        [global::Xunit.TraitAttribute("Description", "Accessories listed with resolved image URLs")]
+        public async global::System.Threading.Tasks.Task AccessoriesListedWithResolvedImageURLs()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "0";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Vehicle without invoice date takes priority", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Accessories listed with resolved image URLs", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 6
+#line 5
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -156,40 +155,57 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table9 = new global::Reqnroll.Table(new string[] {
-                            "VIN",
-                            "InvoiceDate"});
-                table9.AddRow(new string[] {
-                            "1FDKF37GXVEB34368",
-                            ""});
-                table9.AddRow(new string[] {
-                            "1FDKF37GXVEB34368",
-                            "2024-01-15"});
-#line 7
- await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table9, "Given ");
+                global::Reqnroll.Table table1 = new global::Reqnroll.Table(new string[] {
+                            "PartNumber",
+                            "PartDescription",
+                            "Image"});
+                table1.AddRow(new string[] {
+                            "ACC-001",
+                            "Floor mats",
+                            "img001.jpg"});
+                table1.AddRow(new string[] {
+                            "ACC-002",
+                            "Roof rack",
+                            "img002.jpg"});
+#line 6
+  await testRunner.GivenAsync("accessories:", ((string)(null)), table1, "Given ");
+#line hidden
+#line 10
+  await testRunner.AndAsync("the accessory image resolver maps \"img001.jpg\" to \"https://cdn.example.com/img001" +
+                        ".jpg\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 11
- await testRunner.WhenAsync("Checking \"1FDKF37GXVEB34368\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+  await testRunner.AndAsync("the accessory image resolver maps \"img002.jpg\" to \"https://cdn.example.com/img002" +
+                        ".jpg\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 12
- await testRunner.ThenAsync("the selected vehicle has no invoice date", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+  await testRunner.WhenAsync("evaluating accessories with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 13
+  await testRunner.ThenAsync("there are 2 accessories", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 14
+  await testRunner.AndAsync("accessory \"ACC-001\" has image \"https://cdn.example.com/img001.jpg\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 15
+  await testRunner.AndAsync("accessory \"ACC-002\" has image \"https://cdn.example.com/img002.jpg\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="Most recent invoice date selected when all have dates")]
-        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Entry Selection")]
-        [global::Xunit.TraitAttribute("Description", "Most recent invoice date selected when all have dates")]
-        public async global::System.Threading.Tasks.Task MostRecentInvoiceDateSelectedWhenAllHaveDates()
+        [global::Xunit.FactAttribute(DisplayName="Accessories without image resolver return raw image value")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Accessories")]
+        [global::Xunit.TraitAttribute("Description", "Accessories without image resolver return raw image value")]
+        public async global::System.Threading.Tasks.Task AccessoriesWithoutImageResolverReturnRawImageValue()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "1";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Most recent invoice date selected when all have dates", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Accessories without image resolver return raw image value", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 14
+#line 17
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -199,40 +215,39 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table10 = new global::Reqnroll.Table(new string[] {
-                            "VIN",
-                            "InvoiceDate"});
-                table10.AddRow(new string[] {
-                            "1FDKF37GXVEB34368",
-                            "2023-06-01"});
-                table10.AddRow(new string[] {
-                            "1FDKF37GXVEB34368",
-                            "2024-01-15"});
-#line 15
- await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table10, "Given ");
+                global::Reqnroll.Table table2 = new global::Reqnroll.Table(new string[] {
+                            "PartNumber",
+                            "PartDescription",
+                            "Image"});
+                table2.AddRow(new string[] {
+                            "ACC-001",
+                            "Floor mats",
+                            "img001.jpg"});
+#line 18
+  await testRunner.GivenAsync("accessories:", ((string)(null)), table2, "Given ");
 #line hidden
-#line 19
- await testRunner.WhenAsync("Checking \"1FDKF37GXVEB34368\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line 21
+  await testRunner.WhenAsync("evaluating accessories with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 20
- await testRunner.ThenAsync("the selected vehicle has invoice date \"2024-01-15\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line 22
+  await testRunner.ThenAsync("accessory \"ACC-001\" has image \"img001.jpg\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="Single vehicle returned as-is")]
-        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Entry Selection")]
-        [global::Xunit.TraitAttribute("Description", "Single vehicle returned as-is")]
-        public async global::System.Threading.Tasks.Task SingleVehicleReturnedAs_Is()
+        [global::Xunit.FactAttribute(DisplayName="No accessories returns empty list")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Accessories")]
+        [global::Xunit.TraitAttribute("Description", "No accessories returns empty list")]
+        public async global::System.Threading.Tasks.Task NoAccessoriesReturnsEmptyList()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "2";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Single vehicle returned as-is", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("No accessories returns empty list", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 22
+#line 24
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -242,51 +257,11 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table11 = new global::Reqnroll.Table(new string[] {
-                            "VIN",
-                            "InvoiceDate"});
-                table11.AddRow(new string[] {
-                            "1FDKF37GXVEB34368",
-                            "2024-01-15"});
-#line 23
- await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table11, "Given ");
+#line 25
+  await testRunner.WhenAsync("evaluating accessories with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 26
- await testRunner.WhenAsync("Checking \"1FDKF37GXVEB34368\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
-#line hidden
-#line 27
- await testRunner.ThenAsync("the selected vehicle has invoice date \"2024-01-15\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
-#line hidden
-            }
-            await this.ScenarioCleanupAsync();
-        }
-        
-        [global::Xunit.FactAttribute(DisplayName="No vehicles returns null")]
-        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Entry Selection")]
-        [global::Xunit.TraitAttribute("Description", "No vehicles returns null")]
-        public async global::System.Threading.Tasks.Task NoVehiclesReturnsNull()
-        {
-            string[] tagsOfScenario = ((string[])(null));
-            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            string pickleIndex = "3";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("No vehicles returns null", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
-            string[] tagsOfRule = ((string[])(null));
-            global::Reqnroll.RuleInfo ruleInfo = null;
-#line 29
-this.ScenarioInitialize(scenarioInfo, ruleInfo);
-#line hidden
-            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
-            {
-                await testRunner.SkipScenarioAsync();
-            }
-            else
-            {
-                await this.ScenarioStartAsync();
-#line 30
- await testRunner.WhenAsync("Checking \"1FDKF37GXVEB34368\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
-#line hidden
-#line 31
- await testRunner.ThenAsync("no vehicle is selected", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+  await testRunner.ThenAsync("there are 0 accessories", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -299,12 +274,12 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             
             async System.Threading.Tasks.ValueTask Xunit.IAsyncLifetime.InitializeAsync()
             {
-                await VehicleEntrySelectionFeature.FeatureSetupAsync();
+                await VehicleAccessoriesFeature.FeatureSetupAsync();
             }
             
             async System.Threading.Tasks.ValueTask System.IAsyncDisposable.DisposeAsync()
             {
-                await VehicleEntrySelectionFeature.FeatureTearDownAsync();
+                await VehicleAccessoriesFeature.FeatureTearDownAsync();
             }
         }
     }

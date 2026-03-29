@@ -17,7 +17,7 @@ namespace LookupServices.BDD.Features
     
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Reqnroll", "3.0.0.0")]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    public partial class VehicleIdentifiersFeature : object, Xunit.IClassFixture<VehicleIdentifiersFeature.FixtureData>, Xunit.IAsyncLifetime
+    public partial class VehiclePaintThicknessInspectionsFeature : object, Xunit.IClassFixture<VehiclePaintThicknessInspectionsFeature.FixtureData>, Xunit.IAsyncLifetime
     {
         
         private global::Reqnroll.ITestRunner testRunner;
@@ -26,13 +26,13 @@ namespace LookupServices.BDD.Features
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("en-US"), "Features", "Vehicle Identifiers", "\tThe vehicle identifier provides key identification fields (VIN, variant,\r\n\tcolor" +
-                " codes, brand) extracted from the vehicle entry record.", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("en-US"), "Features", "Vehicle Paint Thickness Inspections", "  Paint thickness inspection records show measured thickness values\r\n  per panel," +
+                " along with inspection metadata.", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
-#line 1 "VehicleIdentifiers.feature"
+#line 1 "VehiclePaintThickness.feature"
 #line hidden
         
-        public VehicleIdentifiersFeature(VehicleIdentifiersFeature.FixtureData fixtureData, Xunit.ITestOutputHelper testOutputHelper)
+        public VehiclePaintThicknessInspectionsFeature(VehiclePaintThicknessInspectionsFeature.FixtureData fixtureData, Xunit.ITestOutputHelper testOutputHelper)
         {
             this._testOutputHelper = testOutputHelper;
         }
@@ -106,7 +106,7 @@ namespace LookupServices.BDD.Features
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/VehicleIdentifiers.feature.ndjson", 4);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/VehiclePaintThickness.feature.ndjson", 4);
         }
         
         async System.Threading.Tasks.ValueTask Xunit.IAsyncLifetime.InitializeAsync()
@@ -134,15 +134,15 @@ namespace LookupServices.BDD.Features
             await this.TestTearDownAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="Identifiers populated from vehicle entry")]
-        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Identifiers")]
-        [global::Xunit.TraitAttribute("Description", "Identifiers populated from vehicle entry")]
-        public async global::System.Threading.Tasks.Task IdentifiersPopulatedFromVehicleEntry()
+        [global::Xunit.FactAttribute(DisplayName="Inspection with panels")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Paint Thickness Inspections")]
+        [global::Xunit.TraitAttribute("Description", "Inspection with panels")]
+        public async global::System.Threading.Tasks.Task InspectionWithPanels()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "0";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Identifiers populated from vehicle entry", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Inspection with panels", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
 #line 5
@@ -155,66 +155,58 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table12 = new global::Reqnroll.Table(new string[] {
-                            "VIN",
-                            "VariantCode",
-                            "Katashiki",
-                            "ExteriorColorCode",
-                            "InteriorColorCode",
-                            "BrandID"});
-                table12.AddRow(new string[] {
-                            "1FDKF37GXVEB34368",
-                            "VAR001",
-                            "KAT-123",
-                            "WHT",
-                            "BLK",
-                            "1"});
+                global::Reqnroll.Table table1 = new global::Reqnroll.Table(new string[] {
+                            "InspectionDate",
+                            "Source"});
+                table1.AddRow(new string[] {
+                            "2024-03-15",
+                            "Dealer"});
 #line 6
- await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table12, "Given ");
+  await testRunner.GivenAsync("paint thickness inspections:", ((string)(null)), table1, "Given ");
 #line hidden
+                global::Reqnroll.Table table2 = new global::Reqnroll.Table(new string[] {
+                            "PanelType",
+                            "PanelSide",
+                            "PanelPosition",
+                            "MeasuredThickness"});
+                table2.AddRow(new string[] {
+                            "Hood",
+                            "Center",
+                            "Front",
+                            "120"});
+                table2.AddRow(new string[] {
+                            "Roof",
+                            "Left",
+                            "Middle",
+                            "95"});
 #line 9
- await testRunner.WhenAsync("Checking \"1FDKF37GXVEB34368\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+  await testRunner.AndAsync("paint thickness panels for inspection on \"2024-03-15\":", ((string)(null)), table2, "And ");
 #line hidden
-                global::Reqnroll.Table table13 = new global::Reqnroll.Table(new string[] {
-                            "Field",
-                            "Value"});
-                table13.AddRow(new string[] {
-                            "VIN",
-                            "1FDKF37GXVEB34368"});
-                table13.AddRow(new string[] {
-                            "Variant",
-                            "VAR001"});
-                table13.AddRow(new string[] {
-                            "Katashiki",
-                            "KAT-123"});
-                table13.AddRow(new string[] {
-                            "Color",
-                            "WHT"});
-                table13.AddRow(new string[] {
-                            "Trim",
-                            "BLK"});
-                table13.AddRow(new string[] {
-                            "BrandID",
-                            "1"});
-#line 10
- await testRunner.ThenAsync("the vehicle identifiers are:", ((string)(null)), table13, "Then ");
+#line 13
+  await testRunner.WhenAsync("evaluating paint thickness with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 14
+  await testRunner.ThenAsync("there is 1 paint thickness inspection", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 15
+  await testRunner.AndAsync("the inspection on \"2024-03-15\" has 2 panels", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="No vehicle entry returns VIN only")]
-        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Identifiers")]
-        [global::Xunit.TraitAttribute("Description", "No vehicle entry returns VIN only")]
-        public async global::System.Threading.Tasks.Task NoVehicleEntryReturnsVINOnly()
+        [global::Xunit.FactAttribute(DisplayName="No inspections returns null")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Paint Thickness Inspections")]
+        [global::Xunit.TraitAttribute("Description", "No inspections returns null")]
+        public async global::System.Threading.Tasks.Task NoInspectionsReturnsNull()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "1";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("No vehicle entry returns VIN only", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("No inspections returns null", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 19
+#line 17
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -224,32 +216,11 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-#line 20
- await testRunner.WhenAsync("Checking \"1FDKF37GXVEB34368\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line 18
+  await testRunner.WhenAsync("evaluating paint thickness with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-                global::Reqnroll.Table table14 = new global::Reqnroll.Table(new string[] {
-                            "Field",
-                            "Value"});
-                table14.AddRow(new string[] {
-                            "VIN",
-                            "1FDKF37GXVEB34368"});
-                table14.AddRow(new string[] {
-                            "Variant",
-                            ""});
-                table14.AddRow(new string[] {
-                            "Katashiki",
-                            ""});
-                table14.AddRow(new string[] {
-                            "Color",
-                            ""});
-                table14.AddRow(new string[] {
-                            "Trim",
-                            ""});
-                table14.AddRow(new string[] {
-                            "BrandID",
-                            ""});
-#line 21
- await testRunner.ThenAsync("the vehicle identifiers are:", ((string)(null)), table14, "Then ");
+#line 19
+  await testRunner.ThenAsync("there are no paint thickness inspections", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -262,12 +233,12 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             
             async System.Threading.Tasks.ValueTask Xunit.IAsyncLifetime.InitializeAsync()
             {
-                await VehicleIdentifiersFeature.FeatureSetupAsync();
+                await VehiclePaintThicknessInspectionsFeature.FeatureSetupAsync();
             }
             
             async System.Threading.Tasks.ValueTask System.IAsyncDisposable.DisposeAsync()
             {
-                await VehicleIdentifiersFeature.FeatureTearDownAsync();
+                await VehiclePaintThicknessInspectionsFeature.FeatureTearDownAsync();
             }
         }
     }
