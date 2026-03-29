@@ -133,13 +133,13 @@
 - [x] LookupOptions broker stock lookup enabled step
 
 ### Feature Files & Step Definitions
-- [x] `VehicleSaleInformation.feature` + `VehicleSaleInformationStepDefinitions.cs` (4 scenarios)
+- [x] `VehicleSaleInformation.feature` + `VehicleSaleInformationStepDefinitions.cs` (6 scenarios: direct sale, broker at stock, broker with invoice, end customer from DB, end customer from broker invoice, no vehicles)
 - [x] `VehicleSpecification.feature` + `VehicleSpecificationStepDefinitions.cs` (2 scenarios)
 - [x] `ServiceItems.feature` + `VehicleServiceItemStepDefinitions.cs` (5 scenarios: pending, processed, VIN exclusion, paid items, dynamic cancellation)
 - [x] All previous + Phase 4 scenarios pass
 
 **Notes:**
-2026-03-29: Phase 4 complete. 11 new scenarios. MockStorageStepDefinitions configures NSubstitute mocks on IVehicleLoockupStorageService for broker stock, customer, vehicle model, and service items. Broker invoice DateTimeOffset must use UTC (TimeSpan.Zero) to avoid timezone drift in `.ToUniversalTime().Date`. Service item tests use future-valid dates (2026+) because rolling expiry sets ExpiresAt relative to freeServiceStartDate and checks against DateTime.Now. Items without MaximumMileage in RelativeToActivation mode get ExpiresAt=freeServiceStartDate (immediately expired) — they need MaximumMileage to become sequential and get proper expiry. Service item feature consolidated into single file instead of separate Eligibility/Status/Expiration files. All 52 scenarios pass (41 Phase 0-3 + 11 Phase 4).
+2026-03-29: Phase 4 complete. 13 new scenarios. MockStorageStepDefinitions configures NSubstitute mocks on IVehicleLoockupStorageService for broker stock, customer, vehicle model, and service items. Broker invoice DateTimeOffset must use UTC (TimeSpan.Zero) to avoid timezone drift in `.ToUniversalTime().Date`. Service item tests use future-valid dates (2026+) because rolling expiry sets ExpiresAt relative to freeServiceStartDate and checks against DateTime.Now. Items without MaximumMileage in RelativeToActivation mode get ExpiresAt=freeServiceStartDate (immediately expired) — they need MaximumMileage to become sequential and get proper expiry. Service item feature consolidated into single file instead of separate Eligibility/Status/Expiration files. Added end customer scenarios: direct sale via GetCustomerAsync and broker sale via TBP_Invoice customer fields. All 54 scenarios pass (41 Phase 0-3 + 13 Phase 4).
 
 ---
 

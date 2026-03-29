@@ -106,7 +106,7 @@ namespace LookupServices.BDD.Features
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/VehicleSaleInformation.feature.ndjson", 6);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/VehicleSaleInformation.feature.ndjson", 8);
         }
         
         async System.Threading.Tasks.ValueTask Xunit.IAsyncLifetime.InitializeAsync()
@@ -155,20 +155,20 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table30 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table1 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID",
                             "BranchID",
                             "InvoiceNumber"});
-                table30.AddRow(new string[] {
+                table1.AddRow(new string[] {
                             "1FDKF37GXVEB34368",
                             "2024-01-15",
                             "1",
                             "10",
                             "INV-001"});
 #line 6
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table30, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table1, "Given ");
 #line hidden
 #line 9
   await testRunner.AndAsync("company 1 is named \"Toyota Motors\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -213,31 +213,31 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table31 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table2 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID",
                             "BranchID",
                             "BrandID"});
-                table31.AddRow(new string[] {
+                table2.AddRow(new string[] {
                             "1FDKF37GXVEB34368",
                             "2024-01-15",
                             "1",
                             "10",
                             "1"});
 #line 17
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table31, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table2, "Given ");
 #line hidden
-                global::Reqnroll.Table table32 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table3 = new global::Reqnroll.Table(new string[] {
                             "BrokerID",
                             "BrokerName",
                             "IsAtStock"});
-                table32.AddRow(new string[] {
+                table3.AddRow(new string[] {
                             "100",
                             "ABC Motors",
                             "true"});
 #line 20
-  await testRunner.AndAsync("broker stock for brand 1:", ((string)(null)), table32, "And ");
+  await testRunner.AndAsync("broker stock for brand 1:", ((string)(null)), table3, "And ");
 #line hidden
 #line 23
   await testRunner.AndAsync("LookupOptions has broker stock lookup enabled", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -276,35 +276,35 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table33 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table4 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID",
                             "BranchID",
                             "BrandID"});
-                table33.AddRow(new string[] {
+                table4.AddRow(new string[] {
                             "1FDKF37GXVEB34368",
                             "2024-01-15",
                             "1",
                             "10",
                             "1"});
 #line 29
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table33, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table4, "Given ");
 #line hidden
-                global::Reqnroll.Table table34 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table5 = new global::Reqnroll.Table(new string[] {
                             "BrokerID",
                             "BrokerName",
                             "IsAtStock",
                             "InvoiceDate",
                             "InvoiceNumber"});
-                table34.AddRow(new string[] {
+                table5.AddRow(new string[] {
                             "100",
                             "ABC Motors",
                             "false",
                             "2024-02-01",
                             "5001"});
 #line 32
-  await testRunner.AndAsync("broker stock for brand 1:", ((string)(null)), table34, "And ");
+  await testRunner.AndAsync("broker stock for brand 1:", ((string)(null)), table5, "And ");
 #line hidden
 #line 35
   await testRunner.AndAsync("LookupOptions has broker stock lookup enabled", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -322,15 +322,15 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="No vehicles returns null")]
+        [global::Xunit.FactAttribute(DisplayName="End customer from direct sale via customer database")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Sale Information")]
-        [global::Xunit.TraitAttribute("Description", "No vehicles returns null")]
-        public async global::System.Threading.Tasks.Task NoVehiclesReturnsNull()
+        [global::Xunit.TraitAttribute("Description", "End customer from direct sale via customer database")]
+        public async global::System.Threading.Tasks.Task EndCustomerFromDirectSaleViaCustomerDatabase()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "3";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("No vehicles returns null", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("End customer from direct sale via customer database", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
 #line 40
@@ -343,10 +343,137 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
+                global::Reqnroll.Table table6 = new global::Reqnroll.Table(new string[] {
+                            "VIN",
+                            "InvoiceDate",
+                            "CompanyID",
+                            "BranchID",
+                            "CustomerID"});
+                table6.AddRow(new string[] {
+                            "1FDKF37GXVEB34368",
+                            "2024-01-15",
+                            "1",
+                            "10",
+                            "CUST-001"});
 #line 41
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table6, "Given ");
+#line hidden
+#line 44
+  await testRunner.AndAsync("customer \"CUST-001\" at company 1 has name \"John Doe\" and phone \"+964770000001\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 45
+  await testRunner.WhenAsync("evaluating sale information for \"1FDKF37GXVEB34368\" with language \"en\" and end cu" +
+                        "stomer lookup", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 46
+  await testRunner.ThenAsync("the end customer name is \"John Doe\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 47
+  await testRunner.AndAsync("the end customer phone is \"+964770000001\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.FactAttribute(DisplayName="End customer from broker invoice")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Sale Information")]
+        [global::Xunit.TraitAttribute("Description", "End customer from broker invoice")]
+        public async global::System.Threading.Tasks.Task EndCustomerFromBrokerInvoice()
+        {
+            string[] tagsOfScenario = ((string[])(null));
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "4";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("End customer from broker invoice", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 49
+this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+                global::Reqnroll.Table table7 = new global::Reqnroll.Table(new string[] {
+                            "VIN",
+                            "InvoiceDate",
+                            "CompanyID",
+                            "BranchID",
+                            "BrandID"});
+                table7.AddRow(new string[] {
+                            "1FDKF37GXVEB34368",
+                            "2024-01-15",
+                            "1",
+                            "10",
+                            "1"});
+#line 50
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table7, "Given ");
+#line hidden
+                global::Reqnroll.Table table8 = new global::Reqnroll.Table(new string[] {
+                            "BrokerID",
+                            "BrokerName",
+                            "IsAtStock",
+                            "InvoiceDate",
+                            "InvoiceNumber",
+                            "IsCompleted",
+                            "CustomerName",
+                            "CustomerPhone"});
+                table8.AddRow(new string[] {
+                            "100",
+                            "ABC Motors",
+                            "false",
+                            "2024-02-01",
+                            "5001",
+                            "true",
+                            "Jane Smith",
+                            "+964770000002"});
+#line 53
+  await testRunner.AndAsync("broker stock for brand 1:", ((string)(null)), table8, "And ");
+#line hidden
+#line 56
+  await testRunner.AndAsync("LookupOptions has broker stock lookup enabled", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 57
+  await testRunner.WhenAsync("evaluating sale information for \"1FDKF37GXVEB34368\" with language \"en\" and end cu" +
+                        "stomer lookup", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 58
+  await testRunner.ThenAsync("the end customer name is \"Jane Smith\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 59
+  await testRunner.AndAsync("the end customer phone is \"+964770000002\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.FactAttribute(DisplayName="No vehicles returns null")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Sale Information")]
+        [global::Xunit.TraitAttribute("Description", "No vehicles returns null")]
+        public async global::System.Threading.Tasks.Task NoVehiclesReturnsNull()
+        {
+            string[] tagsOfScenario = ((string[])(null));
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "5";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("No vehicles returns null", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 61
+this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 62
   await testRunner.WhenAsync("evaluating sale information for \"1FDKF37GXVEB34368\" with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 42
+#line 63
   await testRunner.ThenAsync("no sale information is available", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }

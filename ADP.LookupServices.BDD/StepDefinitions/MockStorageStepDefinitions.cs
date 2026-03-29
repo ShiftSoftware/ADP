@@ -57,7 +57,11 @@ public class MockStorageStepDefinitions
                     InvoiceDate = new DateTimeOffset(invoiceDate.Value, TimeSpan.Zero),
                     InvoiceNumber = invoiceNumber,
                     IsDeleted = false,
-                    IsCompleted = true,
+                    IsCompleted = row.ContainsKey("IsCompleted") && !string.IsNullOrWhiteSpace(row["IsCompleted"])
+                        ? bool.Parse(row["IsCompleted"]) : true,
+                    CustomerName = GetOptionalString(row, "CustomerName"),
+                    CustomerPhone = GetOptionalString(row, "CustomerPhone"),
+                    CustomerIDNumber = GetOptionalString(row, "CustomerIDNumber"),
                 });
             }
 

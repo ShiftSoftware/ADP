@@ -96,6 +96,8 @@ public class SharedStepDefinitions
                 CompanyID = GetOptionalLong(row, "CompanyID"),
                 BranchID = GetOptionalLong(row, "BranchID"),
                 WarrantyActivationDate = GetOptionalDate(row, "WarrantyActivationDate"),
+                CustomerID = GetOptionalString(row, "CustomerID"),
+                InvoiceNumber = GetOptionalString(row, "InvoiceNumber"),
             }));
     }
 

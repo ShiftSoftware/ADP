@@ -20,6 +20,17 @@ public class VehicleSaleInformationStepDefinitions
     [When("evaluating sale information for {string} with language {string}")]
     public async Task WhenEvaluatingSaleInformationFor(string vin, string language)
     {
+        await EvaluateSaleInformation(vin, language, lookupEndCustomer: false);
+    }
+
+    [When("evaluating sale information for {string} with language {string} and end customer lookup")]
+    public async Task WhenEvaluatingSaleInformationForWithEndCustomer(string vin, string language)
+    {
+        await EvaluateSaleInformation(vin, language, lookupEndCustomer: true);
+    }
+
+    private async Task EvaluateSaleInformation(string vin, string language, bool lookupEndCustomer)
+    {
         _context.Aggregate.VIN = vin;
 
         var vehicle = new VehicleEntryEvaluator(_context.Aggregate).Evaluate();
@@ -28,7 +39,7 @@ public class VehicleSaleInformationStepDefinitions
         var requestOptions = new VehicleLookupRequestOptions
         {
             LanguageCode = language,
-            LookupEndCustomer = false,
+            LookupEndCustomer = lookupEndCustomer,
         };
 
         var evaluator = new VehicleSaleInformationEvaluator(
@@ -82,6 +93,22 @@ public class VehicleSaleInformationStepDefinitions
         Assert.NotNull(_result);
         Assert.NotNull(_result.Broker);
         Assert.Equal(DateTime.Parse(expectedDate), _result.Broker.InvoiceDate);
+    }
+
+    [Then("the end customer name is {string}")]
+    public void ThenTheEndCustomerNameIs(string expectedName)
+    {
+        Assert.NotNull(_result);
+        Assert.NotNull(_result.EndCustomer);
+        Assert.Equal(expectedName, _result.EndCustomer.Name);
+    }
+
+    [Then("the end customer phone is {string}")]
+    public void ThenTheEndCustomerPhoneIs(string expectedPhone)
+    {
+        Assert.NotNull(_result);
+        Assert.NotNull(_result.EndCustomer);
+        Assert.Equal(expectedPhone, _result.EndCustomer.Phone);
     }
 
     [Then("no sale information is available")]
