@@ -17,7 +17,7 @@ namespace LookupServices.BDD.Features
     
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Reqnroll", "3.0.0.0")]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    public partial class VehicleIdentifiersFeature : object, Xunit.IClassFixture<VehicleIdentifiersFeature.FixtureData>, Xunit.IAsyncLifetime
+    public partial class VehicleSpecificationFeature : object, Xunit.IClassFixture<VehicleSpecificationFeature.FixtureData>, Xunit.IAsyncLifetime
     {
         
         private global::Reqnroll.ITestRunner testRunner;
@@ -26,13 +26,13 @@ namespace LookupServices.BDD.Features
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("en-US"), "Features", "Vehicle Identifiers", "\tThe vehicle identifier provides key identification fields (VIN, variant,\r\n\tcolor" +
-                " codes, brand) extracted from the vehicle entry record.", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("en-US"), "Features", "Vehicle Specification", "  Vehicle specifications (engine, transmission, model details) are\r\n  retrieved f" +
+                "rom the storage service based on the vehicle\'s variant and brand.", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
-#line 1 "VehicleIdentifiers.feature"
+#line 1 "VehicleSpecification.feature"
 #line hidden
         
-        public VehicleIdentifiersFeature(VehicleIdentifiersFeature.FixtureData fixtureData, Xunit.ITestOutputHelper testOutputHelper)
+        public VehicleSpecificationFeature(VehicleSpecificationFeature.FixtureData fixtureData, Xunit.ITestOutputHelper testOutputHelper)
         {
             this._testOutputHelper = testOutputHelper;
         }
@@ -106,7 +106,7 @@ namespace LookupServices.BDD.Features
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/VehicleIdentifiers.feature.ndjson", 4);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/VehicleSpecification.feature.ndjson", 4);
         }
         
         async System.Threading.Tasks.ValueTask Xunit.IAsyncLifetime.InitializeAsync()
@@ -134,15 +134,15 @@ namespace LookupServices.BDD.Features
             await this.TestTearDownAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="Identifiers populated from vehicle entry")]
-        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Identifiers")]
-        [global::Xunit.TraitAttribute("Description", "Identifiers populated from vehicle entry")]
-        public async global::System.Threading.Tasks.Task IdentifiersPopulatedFromVehicleEntry()
+        [global::Xunit.FactAttribute(DisplayName="Specification retrieved for known vehicle")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Specification")]
+        [global::Xunit.TraitAttribute("Description", "Specification retrieved for known vehicle")]
+        public async global::System.Threading.Tasks.Task SpecificationRetrievedForKnownVehicle()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "0";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Identifiers populated from vehicle entry", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Specification retrieved for known vehicle", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
 #line 5
@@ -155,66 +155,61 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table25 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table40 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "VariantCode",
-                            "Katashiki",
-                            "ExteriorColorCode",
-                            "InteriorColorCode",
                             "BrandID"});
-                table25.AddRow(new string[] {
+                table40.AddRow(new string[] {
                             "1FDKF37GXVEB34368",
-                            "VAR001",
-                            "KAT-123",
-                            "WHT",
-                            "BLK",
+                            "VAR-001",
                             "1"});
 #line 6
- await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table25, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table40, "Given ");
 #line hidden
+                global::Reqnroll.Table table41 = new global::Reqnroll.Table(new string[] {
+                            "ModelDescription",
+                            "BodyType",
+                            "Engine",
+                            "Transmission"});
+                table41.AddRow(new string[] {
+                            "Camry 2024",
+                            "Sedan",
+                            "2.5L",
+                            "Automatic"});
 #line 9
- await testRunner.WhenAsync("Checking \"1FDKF37GXVEB34368\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+  await testRunner.AndAsync("vehicle model for variant \"VAR-001\" brand 1:", ((string)(null)), table41, "And ");
 #line hidden
-                global::Reqnroll.Table table26 = new global::Reqnroll.Table(new string[] {
-                            "Field",
-                            "Value"});
-                table26.AddRow(new string[] {
-                            "VIN",
-                            "1FDKF37GXVEB34368"});
-                table26.AddRow(new string[] {
-                            "Variant",
-                            "VAR001"});
-                table26.AddRow(new string[] {
-                            "Katashiki",
-                            "KAT-123"});
-                table26.AddRow(new string[] {
-                            "Color",
-                            "WHT"});
-                table26.AddRow(new string[] {
-                            "Trim",
-                            "BLK"});
-                table26.AddRow(new string[] {
-                            "BrandID",
-                            "1"});
-#line 10
- await testRunner.ThenAsync("the vehicle identifiers are:", ((string)(null)), table26, "Then ");
+#line 12
+  await testRunner.WhenAsync("evaluating specification for \"1FDKF37GXVEB34368\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 13
+  await testRunner.ThenAsync("the specification model is \"Camry 2024\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 14
+  await testRunner.AndAsync("the specification body type is \"Sedan\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 15
+  await testRunner.AndAsync("the specification engine is \"2.5L\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 16
+  await testRunner.AndAsync("the specification transmission is \"Automatic\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="No vehicle entry returns VIN only")]
-        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Identifiers")]
-        [global::Xunit.TraitAttribute("Description", "No vehicle entry returns VIN only")]
-        public async global::System.Threading.Tasks.Task NoVehicleEntryReturnsVINOnly()
+        [global::Xunit.FactAttribute(DisplayName="No specification available returns empty fields")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Specification")]
+        [global::Xunit.TraitAttribute("Description", "No specification available returns empty fields")]
+        public async global::System.Threading.Tasks.Task NoSpecificationAvailableReturnsEmptyFields()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "1";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("No vehicle entry returns VIN only", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("No specification available returns empty fields", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 19
+#line 18
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -224,32 +219,22 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-#line 20
- await testRunner.WhenAsync("Checking \"1FDKF37GXVEB34368\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
-#line hidden
-                global::Reqnroll.Table table27 = new global::Reqnroll.Table(new string[] {
-                            "Field",
-                            "Value"});
-                table27.AddRow(new string[] {
+                global::Reqnroll.Table table42 = new global::Reqnroll.Table(new string[] {
                             "VIN",
-                            "1FDKF37GXVEB34368"});
-                table27.AddRow(new string[] {
-                            "Variant",
-                            ""});
-                table27.AddRow(new string[] {
-                            "Katashiki",
-                            ""});
-                table27.AddRow(new string[] {
-                            "Color",
-                            ""});
-                table27.AddRow(new string[] {
-                            "Trim",
-                            ""});
-                table27.AddRow(new string[] {
-                            "BrandID",
-                            ""});
-#line 21
- await testRunner.ThenAsync("the vehicle identifiers are:", ((string)(null)), table27, "Then ");
+                            "VariantCode",
+                            "BrandID"});
+                table42.AddRow(new string[] {
+                            "1FDKF37GXVEB34368",
+                            "VAR-999",
+                            "1"});
+#line 19
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table42, "Given ");
+#line hidden
+#line 22
+  await testRunner.WhenAsync("evaluating specification for \"1FDKF37GXVEB34368\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 23
+  await testRunner.ThenAsync("the specification model is empty", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -262,12 +247,12 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             
             async System.Threading.Tasks.ValueTask Xunit.IAsyncLifetime.InitializeAsync()
             {
-                await VehicleIdentifiersFeature.FeatureSetupAsync();
+                await VehicleSpecificationFeature.FeatureSetupAsync();
             }
             
             async System.Threading.Tasks.ValueTask System.IAsyncDisposable.DisposeAsync()
             {
-                await VehicleIdentifiersFeature.FeatureTearDownAsync();
+                await VehicleSpecificationFeature.FeatureTearDownAsync();
             }
         }
     }

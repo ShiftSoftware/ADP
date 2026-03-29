@@ -114,33 +114,32 @@
 
 ## Phase 4: Full-Dependency Evaluators + IVehicleLoockupStorageService ([05-phase4-storage-service.md](05-phase4-storage-service.md))
 
-**Status:** Not Started
+**Status:** Complete
 **Prerequisite:** Phase 3 complete
 
 ### Infrastructure
-- [ ] Create `MockStorageStepDefinitions.cs` (NSubstitute `.Returns()` setup for storage service)
+- [x] Create `MockStorageStepDefinitions.cs` (NSubstitute `.Returns()` for broker stock, customer, vehicle model, service items)
 
 ### Given Steps
-- [ ] Broker stock mock setup step
-- [ ] Customer mock setup step
-- [ ] Service items mock setup step
-- [ ] Paid service invoices step (`PaidServiceInvoiceModel`)
-- [ ] Item claims step (`ItemClaimModel`)
-- [ ] Free service item excluded VINs step (`FreeServiceItemExcludedVINModel`)
-- [ ] Vehicle inspections step (`VehicleInspectionModel`)
+- [x] Broker stock mock setup step (`GetBrokerStockAsync`)
+- [x] Customer mock setup step (`GetCustomerAsync`)
+- [x] Vehicle model mock setup step (`GetVehicleModelsAsync`)
+- [x] Service items mock setup step (`GetServiceItemsAsync`)
+- [x] Paid service invoices step (`PaidServiceInvoiceModel`)
+- [x] Item claims step (`ItemClaimModel`)
+- [x] Free service item excluded VINs step (`FreeServiceItemExcludedVINModel`)
+- [x] Vehicle inspections step (`VehicleInspectionModel`)
+- [x] Free service start date Given step (for direct service item evaluation)
+- [x] LookupOptions broker stock lookup enabled step
 
 ### Feature Files & Step Definitions
-- [ ] `VehicleSaleInformation.feature` + `VehicleSaleInformationStepDefinitions.cs`
-- [ ] `VehicleSpecification.feature` + `VehicleSpecificationStepDefinitions.cs`
-- [ ] `ServiceItems/Eligibility.feature` (refine scenarios after reading evaluator source)
-- [ ] `ServiceItems/Status.feature`
-- [ ] `ServiceItems/Expiration.feature`
-- [ ] `VehicleServiceItemStepDefinitions.cs`
-- [ ] All previous + Phase 4 scenarios pass
+- [x] `VehicleSaleInformation.feature` + `VehicleSaleInformationStepDefinitions.cs` (4 scenarios)
+- [x] `VehicleSpecification.feature` + `VehicleSpecificationStepDefinitions.cs` (2 scenarios)
+- [x] `ServiceItems.feature` + `VehicleServiceItemStepDefinitions.cs` (5 scenarios: pending, processed, VIN exclusion, paid items, dynamic cancellation)
+- [x] All previous + Phase 4 scenarios pass
 
 **Notes:**
-<!--
--->
+2026-03-29: Phase 4 complete. 11 new scenarios. MockStorageStepDefinitions configures NSubstitute mocks on IVehicleLoockupStorageService for broker stock, customer, vehicle model, and service items. Broker invoice DateTimeOffset must use UTC (TimeSpan.Zero) to avoid timezone drift in `.ToUniversalTime().Date`. Service item tests use future-valid dates (2026+) because rolling expiry sets ExpiresAt relative to freeServiceStartDate and checks against DateTime.Now. Items without MaximumMileage in RelativeToActivation mode get ExpiresAt=freeServiceStartDate (immediately expired) — they need MaximumMileage to become sequential and get proper expiry. Service item feature consolidated into single file instead of separate Eligibility/Status/Expiration files. All 52 scenarios pass (41 Phase 0-3 + 11 Phase 4).
 
 ---
 
@@ -227,6 +226,10 @@ Evaluators are not considered golden — they may have flaws or unnecessary comp
 | 10 | WarrantyAndFreeServiceDateEvaluator | Default warranty period of 3 years is a magic number (line 82). Should be a named constant or come from `LookupOptions`. | Phase 2 review |
 | 11 | VehiclePaintThicknessEvaluator | Returns `null` instead of empty collection when `PaintThicknessInspections` is null (line 25). Same pattern as SSC evaluator issue #1. | Phase 3 review |
 | 12 | VehicleServiceHistoryEvaluator | `invoice.LaborLines.Where(x => x.JobDescription is not null)?.FirstOrDefault()` (line 95): the `?.` after `.Where()` is unnecessary since `Where` never returns null. Minor but misleading. | Phase 3 review |
+| 13 | VehicleSaleInformationEvaluator | `lastBrokerInvoice.InvoiceDate.ToUniversalTime().Date` (line 144): timezone-sensitive. If `DateTimeOffset` is created with local timezone offset, `.ToUniversalTime()` shifts the date. Callers must ensure UTC. | Phase 4 review |
+| 14 | VehicleServiceItemEvaluator | Rolling expiry for non-sequential items (no MaximumMileage) sets `ExpiresAt = startDate` (line 328) which equals `freeServiceStartDate` if no sequential items exist — effectively immediately expired. Unclear if intentional. | Phase 4 review |
+| 15 | VehicleServiceItemEvaluator | ~530 lines, deeply nested, mixes multiple concerns (eligibility, status, expiration, cancellation, signature). Would benefit from being split into smaller focused methods or separate evaluators. | Phase 4 review |
+| 16 | VehicleSpecificationEvaluator | Commented-out `//if (vtModel is not null)` with braces that still execute (lines 24-49). Dead comment that's misleading about the actual control flow. | Phase 4 review |
 
 ---
 
@@ -239,3 +242,4 @@ Evaluators are not considered golden — they may have flaws or unnecessary comp
 | 2026-03-23 | 1 | Phase 1 complete. 17 new scenarios across 3 feature files. Refactored SharedStepDefinitions to use generic column helpers. |
 | 2026-03-28 | 2 | Phase 2 complete. 9 warranty scenarios, LookupOptionsStepDefinitions, WarrantyDateStepDefinitions. Broker scenarios deferred to Phase 4. |
 | 2026-03-29 | 3 | Phase 3 complete. 9 scenarios across 3 async evaluators (accessories, paint thickness, service history). Resolver mocks inline in LookupOptionsStepDefinitions. |
+| 2026-03-29 | 4 | Phase 4 complete. 11 scenarios across 3 evaluators (sale info, specification, service items). MockStorageStepDefinitions for NSubstitute. Service items consolidated into single feature. |

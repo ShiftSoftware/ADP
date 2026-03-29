@@ -259,6 +259,80 @@ public class SharedStepDefinitions
             }));
     }
 
+    [Given("paid service invoices:")]
+    public void GivenPaidServiceInvoices(DataTable dataTable)
+    {
+        _context.Aggregate.PaidServiceInvoices.AddRange(
+            dataTable.Rows.Select(row => new PaidServiceInvoiceModel
+            {
+                InvoiceDate = DateTime.Parse(row["InvoiceDate"]),
+                InvoiceNumber = long.Parse(row["InvoiceNumber"]),
+                Lines = BuildPaidServiceInvoiceLines(row),
+            }));
+    }
+
+    private static IEnumerable<PaidServiceInvoiceLineModel> BuildPaidServiceInvoiceLines(DataTableRow row)
+    {
+        var serviceItemId = GetOptionalString(row, "ServiceItemID");
+        if (serviceItemId is null)
+            return Enumerable.Empty<PaidServiceInvoiceLineModel>();
+
+        return new[]
+        {
+            new PaidServiceInvoiceLineModel
+            {
+                ServiceItemID = serviceItemId,
+                ExpireDate = GetOptionalDate(row, "ExpireDate"),
+                PackageCode = GetOptionalString(row, "PackageCode"),
+                ServiceItem = new ServiceItemModel
+                {
+                    Name = new Dictionary<string, string> { { "en", GetOptionalString(row, "ServiceItemName") ?? "" } },
+                    MaximumMileage = GetOptionalLong(row, "MaximumMileage"),
+                },
+            }
+        };
+    }
+
+    [Given("item claims:")]
+    public void GivenItemClaims(DataTable dataTable)
+    {
+        _context.Aggregate.ItemClaims.AddRange(
+            dataTable.Rows.Select(row => new ItemClaimModel
+            {
+                ServiceItemID = GetOptionalString(row, "ServiceItemID"),
+                ClaimDate = row.ContainsKey("ClaimDate") && !string.IsNullOrWhiteSpace(row["ClaimDate"])
+                    ? DateTimeOffset.Parse(row["ClaimDate"]) : default,
+                JobNumber = GetOptionalString(row, "JobNumber"),
+                InvoiceNumber = GetOptionalString(row, "InvoiceNumber"),
+                CompanyID = GetOptionalLong(row, "CompanyID"),
+                PackageCode = GetOptionalString(row, "PackageCode"),
+                VehicleInspectionID = GetOptionalString(row, "VehicleInspectionID"),
+            }));
+    }
+
+    [Given("free service item excluded VINs:")]
+    public void GivenFreeServiceItemExcludedVINs(DataTable dataTable)
+    {
+        _context.Aggregate.FreeServiceItemExcludedVINs.AddRange(
+            dataTable.Rows.Select(row => new FreeServiceItemExcludedVINModel
+            {
+                VIN = GetOptionalString(row, "VIN"),
+            }));
+    }
+
+    [Given("vehicle inspections:")]
+    public void GivenVehicleInspections(DataTable dataTable)
+    {
+        _context.Aggregate.VehicleInspections.AddRange(
+            dataTable.Rows.Select(row => new VehicleInspectionModel
+            {
+                id = GetOptionalString(row, "id") ?? Guid.NewGuid().ToString(),
+                InspectionDate = DateTimeOffset.Parse(row["InspectionDate"]),
+                VehicleInspectionTypeID = row.ContainsKey("VehicleInspectionTypeID") && !string.IsNullOrWhiteSpace(row["VehicleInspectionTypeID"])
+                    ? long.Parse(row["VehicleInspectionTypeID"]) : 0,
+            }));
+    }
+
     [Given("paint thickness inspections:")]
     public void GivenPaintThicknessInspections(DataTable dataTable)
     {
