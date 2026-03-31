@@ -89,10 +89,9 @@ The `WebComponentModelGenerator` (C# console app) uses Roslyn to scan C# models 
 - Test files use `.spec.ts` suffix for unit tests and `.e2e.ts` for E2E tests
 - Use `newSpecPage` for unit tests and `newE2EPage` for E2E tests
 
-## BDD Expansion Plan
+## BDD Tests
 
-Active work is tracked in `ADP.LookupServices.BDD/docs/planning/`. When working on BDD phases:
-
-- **Always update `STATUS.md`** after completing any phase or part — check off items, update the status line, and add dated notes for implementation decisions or surprises
-- Read the relevant phase document before starting work
-- Run `dotnet test ADP.LookupServices.BDD` to verify after each phase
+BDD tests use Reqnroll (xUnit) to verify evaluator logic. Run with:
+```bash
+dotnet test ADP.LookupServices.BDD
+```
