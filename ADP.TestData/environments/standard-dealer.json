@@ -2,16 +2,35 @@
   "LookupOptions": {
     "WarrantyStartDateDefaultsToInvoiceDate": true,
     "BrandStandardWarrantyPeriodsInYears": { "1": 3 },
-    "LookupBrokerStock": false
+    "LookupBrokerStock": false,
+    "DistributorStockPartLookupQuantityThreshold": 100,
+    "ShowPartLookupStockQauntity": true
   },
   "Companies": [
     {
       "CompanyId": 1,
       "CompanyName": "Sample Motors",
       "Branches": [
-        { "BranchId": 10, "BranchName": "Main Branch" }
+        { "BranchId": 10, "BranchName": "Main Branch 2" },
+        { "BranchId": 20, "BranchName": "Service Center" }
+      ]
+    },
+    {
+      "CompanyId": 2,
+      "CompanyName": "City Auto",
+      "Branches": [
+        { "BranchId": 30, "BranchName": "Downtown Branch" }
       ]
     }
+  ],
+  "Countries": [
+    { "CountryId": 1, "CountryName": "Iraq" },
+    { "CountryId": 2, "CountryName": "Kuwait" }
+  ],
+  "Regions": [
+    { "RegionId": 10, "RegionName": "Kurdistan" },
+    { "RegionId": 20, "RegionName": "Central Iraq" },
+    { "RegionId": 30, "RegionName": "Kuwait City" }
   ],
   "Vehicles": {
     "JTMHX01J8L4198293": {
@@ -23,11 +42,178 @@
           "BranchID": 10,
           "BrandID": 1,
           "VariantCode": "VAR001",
-          "Katashiki": "KAT-12345",
-          "ExteriorColorCode": "WHT",
-          "InteriorColorCode": "BLK"
+          "Katashiki": "MXAA52L-ANXGP",
+          "ExteriorColorCode": "1G3",
+          "InteriorColorCode": "LA20"
         }
       ],
+      "InitialOfficialVINs": [
+        { "VIN": "JTMHX01J8L4198293", "CompanyID": 1 }
+      ],
+      "SSCAffectedVINs": [
+        {
+          "VIN": "JTMHX01J8L4198293",
+          "CampaignCode": "SSC-2024-001",
+          "Description": "Airbag inflator replacement",
+          "LaborCode1": "LAB-AIR-01",
+          "PartNumber1": "PRT-AIR-001",
+          "RepairDate": null
+        },
+        {
+          "VIN": "JTMHX01J8L4198293",
+          "CampaignCode": "SSC-2023-005",
+          "Description": "Fuel pump relay",
+          "LaborCode1": "LAB-FP-01",
+          "PartNumber1": "PRT-FP-001",
+          "RepairDate": "2024-03-20"
+        }
+      ],
+      "WarrantyClaims": [
+        {
+          "VIN": "JTMHX01J8L4198293",
+          "ClaimStatus": "Accepted",
+          "RepairDate": "2024-03-20",
+          "LaborOperationNumberMain": "LAB-FP-01",
+          "LaborLines": [
+            { "LaborCode": "LAB-FP-01", "InvoiceStatus": "C" }
+          ]
+        }
+      ],
+      "LaborLines": [
+        {
+          "VIN": "JTMHX01J8L4198293",
+          "InvoiceDate": "2024-06-10",
+          "OrderDocumentNumber": "WO-2024-001",
+          "InvoiceNumber": "INV-2024-001",
+          "LaborCode": "LAB-OIL-01",
+          "ServiceDescription": "Engine Oil Change",
+          "JobDescription": "5000km Service - Oil and filter change",
+          "InvoiceStatus": "C",
+          "CompanyID": 1,
+          "BranchID": 10,
+          "NextServiceDate": "2024-12-10",
+          "Odometer": 5200
+        },
+        {
+          "VIN": "JTMHX01J8L4198293",
+          "InvoiceDate": "2024-12-15",
+          "OrderDocumentNumber": "WO-2024-002",
+          "InvoiceNumber": "INV-2024-002",
+          "LaborCode": "LAB-SVC-01",
+          "ServiceDescription": "Periodic Maintenance",
+          "JobDescription": "10000km Service - Full inspection",
+          "InvoiceStatus": "C",
+          "CompanyID": 1,
+          "BranchID": 10,
+          "NextServiceDate": "2025-06-15",
+          "Odometer": 10500
+        }
+      ],
+      "PartLines": [
+        {
+          "VIN": "JTMHX01J8L4198293",
+          "InvoiceDate": "2024-06-10",
+          "OrderDocumentNumber": "WO-2024-001",
+          "InvoiceNumber": "INV-2024-001",
+          "PartNumber": "04152-YZZA1",
+          "SoldQuantity": 1,
+          "InvoiceStatus": "C",
+          "CompanyID": 1,
+          "BranchID": 10,
+          "GenuinePartNumber": true
+        }
+      ],
+      "VehicleServiceActivations": [
+        {
+          "VIN": "JTMHX01J8L4198293",
+          "WarrantyActivationDate": "2024-02-01",
+          "CompanyID": 1
+        }
+      ],
+      "Accessories": [
+        {
+          "VIN": "JTMHX01J8L4198293",
+          "PartNumber": "PZ49E-X2653-ZA",
+          "PartDescription": "Side Steps",
+          "CompanyID": 1,
+          "JobNumber": 1,
+          "InvoiceNumber": 100001
+        },
+        {
+          "VIN": "JTMHX01J8L4198293",
+          "PartNumber": "PZ323-X2651-ZA",
+          "PartDescription": "Roof Rails",
+          "CompanyID": 1,
+          "JobNumber": 2,
+          "InvoiceNumber": 100001
+        }
+      ],
+      "PaintThicknessInspections": [
+        {
+          "VIN": "JTMHX01J8L4198293",
+          "Source": "PDI",
+          "ModelYear": "2024",
+          "ModelDescription": "RAV4",
+          "ColorCode": "1G3",
+          "InspectionDate": "2024-01-10",
+          "CompanyID": 1,
+          "Panels": [
+            { "PanelType": "Hood", "PanelPosition": "Front", "MeasuredThickness": 125.5, "Images": [] },
+            { "PanelType": "Fender", "PanelSide": "Left", "PanelPosition": "Front", "MeasuredThickness": 118.0, "Images": [] },
+            { "PanelType": "Fender", "PanelSide": "Right", "PanelPosition": "Front", "MeasuredThickness": 120.3, "Images": [] },
+            { "PanelType": "Door", "PanelSide": "Left", "PanelPosition": "Front", "MeasuredThickness": 115.0, "Images": [] },
+            { "PanelType": "Door", "PanelSide": "Right", "PanelPosition": "Front", "MeasuredThickness": 116.2, "Images": [] },
+            { "PanelType": "Door", "PanelSide": "Left", "PanelPosition": "Rear", "MeasuredThickness": 122.0, "Images": [] },
+            { "PanelType": "Door", "PanelSide": "Right", "PanelPosition": "Rear", "MeasuredThickness": 121.5, "Images": [] },
+            { "PanelType": "Fender", "PanelSide": "Left", "PanelPosition": "Rear", "MeasuredThickness": 130.0, "Images": [] },
+            { "PanelType": "Fender", "PanelSide": "Right", "PanelPosition": "Rear", "MeasuredThickness": 128.5, "Images": [] },
+            { "PanelType": "TailGate", "PanelPosition": "Rear", "MeasuredThickness": 135.0, "Images": [] },
+            { "PanelType": "Roof", "PanelPosition": "Middle", "MeasuredThickness": 110.0, "Images": [] }
+          ]
+        }
+      ],
+      "ExtendedWarrantyEntries": [],
+      "WarrantyDateShifts": [],
+      "FreeServiceItemDateShifts": [],
+      "ItemClaims": [],
+      "PaidServiceInvoices": [],
+      "FreeServiceItemExcludedVINs": [],
+      "VehicleInspections": []
+    },
+    "JTMW43FV10D123456": {
+      "VehicleEntries": [
+        {
+          "VIN": "JTMW43FV10D123456",
+          "InvoiceDate": "2023-06-20",
+          "CompanyID": 1,
+          "BranchID": 20,
+          "BrandID": 1,
+          "VariantCode": "VAR002",
+          "Katashiki": "AXAH54L-ANXGB",
+          "ExteriorColorCode": "070",
+          "InteriorColorCode": "FB20"
+        }
+      ],
+      "InitialOfficialVINs": [
+        { "VIN": "JTMW43FV10D123456", "CompanyID": 1 }
+      ],
+      "SSCAffectedVINs": [],
+      "WarrantyClaims": [],
+      "LaborLines": [],
+      "PartLines": [],
+      "VehicleServiceActivations": [],
+      "Accessories": [],
+      "PaintThicknessInspections": [],
+      "ExtendedWarrantyEntries": [],
+      "WarrantyDateShifts": [],
+      "FreeServiceItemDateShifts": [],
+      "ItemClaims": [],
+      "PaidServiceInvoices": [],
+      "FreeServiceItemExcludedVINs": [],
+      "VehicleInspections": []
+    },
+    "UNKNOWN_VIN_12345": {
+      "VehicleEntries": [],
       "InitialOfficialVINs": [],
       "SSCAffectedVINs": [],
       "WarrantyClaims": [],
@@ -46,5 +232,148 @@
     }
   },
   "BrokerInitialVehicles": [],
-  "BrokerInvoices": []
+  "BrokerInvoices": [],
+  "VehicleModels": [
+    {
+      "BrandID": 1,
+      "VariantCode": "VAR001",
+      "Katashiki": "MXAA52L-ANXGP",
+      "ModelDescription": "RAV4 2.0L 4WD",
+      "BasicModelCode": "MXAA52L",
+      "BodyType": "SUV",
+      "Engine": "2.0L M20A-FKS",
+      "Fuel": "Petrol",
+      "Transmission": "CVT",
+      "Doors": "5",
+      "Side": "LHD"
+    },
+    {
+      "BrandID": 1,
+      "VariantCode": "VAR002",
+      "Katashiki": "AXAH54L-ANXGB",
+      "ModelDescription": "RAV4 Hybrid 2.5L",
+      "BasicModelCode": "AXAH54L",
+      "BodyType": "SUV",
+      "Engine": "2.5L A25A-FXS Hybrid",
+      "Fuel": "Hybrid",
+      "Transmission": "E-CVT",
+      "Doors": "5",
+      "Side": "LHD"
+    }
+  ],
+  "ServiceItems": [],
+  "Parts": {
+    "SU00302474": {
+      "CatalogParts": [
+        {
+          "PartNumber": "SU00302474",
+          "PartName": "CLAMP",
+          "LocalDescription": "Clamp Assembly",
+          "ProductGroup": "F",
+          "PNC": "90460",
+          "BinType": "A",
+          "DistributorPurchasePrice": 2.50,
+          "Length": 80,
+          "Width": 50,
+          "Height": 15,
+          "NetWeight": 0.25,
+          "CubicMeasure": 0.06,
+          "Origin": "JP",
+          "CountryData": [
+            {
+              "CountryID": 1,
+              "RegionPrices": [
+                {
+                  "RegionID": 10,
+                  "RetailPrice": 5.00,
+                  "PurchasePrice": 3.50,
+                  "WarrantyPrice": 2.80
+                },
+                {
+                  "RegionID": 20,
+                  "RetailPrice": 4.80,
+                  "PurchasePrice": 3.40,
+                  "WarrantyPrice": 2.70
+                }
+              ]
+            },
+            {
+              "CountryID": 2,
+              "RegionPrices": [
+                {
+                  "RegionID": 30,
+                  "RetailPrice": 5.50,
+                  "PurchasePrice": 3.80,
+                  "WarrantyPrice": 3.00
+                }
+              ]
+            }
+          ],
+          "SupersededTo": [
+            { "PartNumber": "SU00302475" }
+          ],
+          "SupersededFrom": []
+        }
+      ],
+      "StockParts": [
+        {
+          "PartNumber": "SU00302474",
+          "Location": "WH-001",
+          "AvailableQuantity": 45,
+          "CompanyID": 1
+        },
+        {
+          "PartNumber": "SU00302474",
+          "Location": "WH-002",
+          "AvailableQuantity": 12,
+          "CompanyID": 1
+        }
+      ],
+      "CompanyDeadStockParts": [
+        {
+          "PartNumber": "SU00302474",
+          "CompanyID": 2,
+          "CompanyHashID": "CH-2",
+          "BranchID": 30,
+          "BranchHashID": "BH-30",
+          "AvailableQuantity": 8
+        }
+      ]
+    },
+    "04152-YZZA1": {
+      "CatalogParts": [
+        {
+          "PartNumber": "04152-YZZA1",
+          "PartName": "OIL FILTER",
+          "ProductGroup": "E",
+          "DistributorPurchasePrice": 4.20,
+          "Origin": "TH",
+          "CountryData": [
+            {
+              "CountryID": 1,
+              "RegionPrices": [
+                {
+                  "RegionID": 10,
+                  "RetailPrice": 8.50,
+                  "PurchasePrice": 6.00,
+                  "WarrantyPrice": 4.50
+                }
+              ]
+            }
+          ],
+          "SupersededTo": [],
+          "SupersededFrom": []
+        }
+      ],
+      "StockParts": [
+        {
+          "PartNumber": "04152-YZZA1",
+          "Location": "WH-001",
+          "AvailableQuantity": 200,
+          "CompanyID": 1
+        }
+      ],
+      "CompanyDeadStockParts": []
+    }
+  }
 }

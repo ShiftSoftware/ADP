@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using LookupServices.BDD.Support;
 using Reqnroll;
 using ShiftSoftware.ADP.Models.Enums;
@@ -386,6 +387,7 @@ public class SharedStepDefinitions
         var json = File.ReadAllText(path);
         var jsonOptions = new JsonSerializerOptions();
         jsonOptions.Converters.Add(new NullableLongDictionaryConverter());
+        jsonOptions.Converters.Add(new JsonStringEnumConverter());
         var environment = JsonSerializer.Deserialize<TestEnvironment>(json, jsonOptions)
             ?? throw new InvalidOperationException($"Failed to deserialize environment '{environmentName}'");
 

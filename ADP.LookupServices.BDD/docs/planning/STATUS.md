@@ -174,14 +174,14 @@
 These can be done incrementally alongside the phases above.
 
 ### Test Data
-- [ ] `standard-dealer` environment: initial data (Phase 0), enriched as phases add evaluators
+- [x] `standard-dealer` environment: enriched with SSCs, warranty claims, service history, accessories, paint thickness, parts, vehicle models
 - [ ] `broker-dealer` environment (Phase 4+)
 - [ ] `edge-cases` environment (as needed for regression scenarios)
 
 ### Output Generator (`ADP.TestData/Generator/`)
-- [ ] Generator console app reads environment JSON files, runs evaluators, writes output
-- [ ] Generated output committed to `adp-web-components/src/features/mocks/data/generated/`
-- [ ] Generated output committed to `ADP.Docs/Docs/docs/web-components/demo-data/`
+- [x] Generator console app reads environment JSON files, runs evaluators, writes output
+- [x] Generated output written to `adp-web-components/src/features/mocks/data/generated/`
+- [x] Generated output written to `ADP.Docs/Docs/docs/web-components/demo-data/`
 
 ### Web Component Integration
 - [ ] Decide on vehicle-lookup `mockUrl` approach (options a/b/c in shared-data-architecture.md)
@@ -247,3 +247,4 @@ Evaluators are not considered golden — they may have flaws or unnecessary comp
 | 2026-03-29 | 3 | Phase 3 complete. 9 scenarios across 3 async evaluators (accessories, paint thickness, service history). Resolver mocks inline in LookupOptionsStepDefinitions. |
 | 2026-03-29 | 4 | Phase 4 complete. 11 scenarios across 3 evaluators (sale info, specification, service items). MockStorageStepDefinitions for NSubstitute. Service items consolidated into single feature. |
 | 2026-03-30 | 5 | Phase 5 complete. 15 scenarios across 3 part evaluators (price, dead stock, stock). PartAggregateCosmosModel + InternalsVisibleTo. Pass-through price resolver pattern. |
+| 2026-03-31 | Cross-cutting | Output Generator implemented. Enriched standard-dealer.json with all evaluator data. Generator reads environments, runs all vehicle/part evaluators with NSubstitute mocks, writes camelCase JSON to web components and docs directories. Added JsonStringEnumConverter to BDD environment deserialization. |

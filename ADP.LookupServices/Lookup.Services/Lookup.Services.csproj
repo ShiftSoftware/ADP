@@ -40,6 +40,7 @@
 	<ItemGroup>
 		<InternalsVisibleTo Include="Lookup.Services.Tests" />
 		<InternalsVisibleTo Include="LookupServices.BDD" />
+		<InternalsVisibleTo Include="Generator" />
 	</ItemGroup>
 
 	<ItemGroup>
