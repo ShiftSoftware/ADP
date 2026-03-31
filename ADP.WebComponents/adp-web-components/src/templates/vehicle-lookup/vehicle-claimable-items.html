@@ -6,6 +6,7 @@
     <title>vehicle-claimable-items</title>
 
     <script src="./mock-data.js"></script>
+    <script src="./mock-loader.js"></script>
 
     <script nomodule src="/build/shift-components.js"></script>
     <script type="module" src="/build/shift-components.esm.js"></script>
@@ -65,7 +66,7 @@
       document.addEventListener('DOMContentLoaded', function () {
         claimableItems = document.getElementById('vehicle-claimable-items');
 
-        claimableItems.setMockData(mockData);
+        loadMockData('vehicle-lookup').then(data => claimableItems.setMockData(data));
 
         claimableItems.loadingStateChange = isLoading => {
           // console.log('isLoading: ' + isLoading);

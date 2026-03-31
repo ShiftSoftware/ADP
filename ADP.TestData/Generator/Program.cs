@@ -14,6 +14,7 @@ using ShiftSoftware.ADP.Models.Vehicle;
 var repoRoot = FindRepoRoot(AppContext.BaseDirectory);
 var environmentsDir = Path.Combine(repoRoot, "ADP.TestData", "environments");
 var webComponentsOutputDir = Path.Combine(repoRoot, "ADP.WebComponents", "adp-web-components", "src", "features", "mocks", "data", "generated");
+var webComponentsDevDir = Path.Combine(repoRoot, "ADP.WebComponents", "adp-web-components", "www", "mocks", "generated");
 var docsOutputDir = Path.Combine(repoRoot, "ADP.Docs", "Docs", "docs", "web-components", "demo-data");
 
 Console.WriteLine($"Repo root: {repoRoot}");
@@ -105,7 +106,10 @@ foreach (var envFile in Directory.GetFiles(environmentsDir, "*.json"))
     }
 
     // === Write Output Files ===
-    var outputDirs = new[] { webComponentsOutputDir, docsOutputDir };
+    // Always write to source dirs; also write to www/ if dev server is running
+    var outputDirs = new List<string> { webComponentsOutputDir, docsOutputDir };
+    if (Directory.Exists(Path.Combine(repoRoot, "ADP.WebComponents", "adp-web-components", "www")))
+        outputDirs.Add(webComponentsDevDir);
 
     foreach (var baseDir in outputDirs)
     {

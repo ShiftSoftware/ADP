@@ -7,6 +7,7 @@
     <script nomodule src="/build/shift-components.js"></script>
     <script type="module" src="/build/shift-components.esm.js"></script>
     <script src="./mock-data.js"></script>
+    <script src="./mock-loader.js"></script>
   </head>
   <body>
     <a href="#" onclick="history.back()" style="color: blue; display: block; margin-bottom: 16px">Back</a>
@@ -62,7 +63,7 @@
       document.addEventListener('DOMContentLoaded', function () {
         vehicleSaleInformation = document.getElementById('vehicle-sale-information');
 
-        vehicleSaleInformation.setMockData(mockData);
+        loadMockData('vehicle-lookup').then(data => vehicleSaleInformation.setMockData(data));
 
         vehicleSaleInformation.setBlazorRef(virtualBlazorRef);
       });

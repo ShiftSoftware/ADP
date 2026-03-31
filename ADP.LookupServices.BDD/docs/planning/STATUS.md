@@ -184,10 +184,11 @@ These can be done incrementally alongside the phases above.
 - [x] Generated output written to `ADP.Docs/Docs/docs/web-components/demo-data/`
 
 ### Web Component Integration
-- [ ] Decide on vehicle-lookup `mockUrl` approach (options a/b/c in shared-data-architecture.md)
-- [ ] Update `MockFiles` registry in `types.ts` to point at generated data
-- [ ] Verify components work with generated data
-- [ ] Remove old hand-crafted mock data (`mock-data.js`, existing `part-lookup.json`)
+- [x] Decide on vehicle-lookup `mockUrl` approach → option (a): added `mockUrl` prop to wrapper
+- [x] Update `MockFiles` registry in `types.ts` to point at generated data
+- [x] Verify components work with generated data (build passes)
+- [x] Remove old hand-crafted `part-lookup.json` from `mocks/data/`
+- _Note: template `mock-data.js` files kept — they serve dev preview HTML templates, not MockFiles_
 
 ### Documentation Site
 - [ ] Embed web component demos in MkDocs pages with generated data
@@ -201,7 +202,7 @@ Track decisions that need to be made during implementation.
 
 | # | Decision | Options | Status | Resolution |
 |---|----------|---------|--------|------------|
-| 1 | Vehicle-lookup `mockUrl` prop | (a) Add prop, (b) Update `getMockFile()`, (c) Keep `setMockData()` | Open | |
+| 1 | Vehicle-lookup `mockUrl` prop | (a) Add prop, (b) Update `getMockFile()`, (c) Keep `setMockData()` | Resolved | Option (a). Added `mockUrl` prop to `vehicle-lookup` wrapper. Wrapper loads mock data via `getMockFile('vehicle-lookup', mockUrl)` when `isDev` is true and distributes to children via `setMockData()`. Mirrors part-lookup pattern. Standalone children still use `setMockData()` directly. |
 | 2 | Broker scenario approach in Phase 2 | (a) Given step for `VehicleSaleInformation`, (b) Defer to Phase 4 | Resolved | Deferred to Phase 4. Broker warranty scenarios require `VehicleSaleInformation.Broker` which comes from `VehicleSaleInformationEvaluator` + `IVehicleLoockupStorageService.GetBrokerStockAsync()`. Testing these properly requires the storage service mocking infrastructure from Phase 4. |
 | 3 | Broker data placement in environment JSON | Environment-level (current plan) vs per-VIN | Resolved | Environment-level. `BrokerInitialVehicles`/`BrokerInvoices` stay at root of environment JSON (matches aggregate). Actual broker stock data (`TBP_StockModel`) comes from `IVehicleLoockupStorageService.GetBrokerStockAsync()` — not part of the aggregate or environment JSON; handled via NSubstitute mocks in Phase 4. |
 
@@ -248,3 +249,4 @@ Evaluators are not considered golden — they may have flaws or unnecessary comp
 | 2026-03-29 | 4 | Phase 4 complete. 11 scenarios across 3 evaluators (sale info, specification, service items). MockStorageStepDefinitions for NSubstitute. Service items consolidated into single feature. |
 | 2026-03-30 | 5 | Phase 5 complete. 15 scenarios across 3 part evaluators (price, dead stock, stock). PartAggregateCosmosModel + InternalsVisibleTo. Pass-through price resolver pattern. |
 | 2026-03-31 | Cross-cutting | Output Generator implemented. Enriched standard-dealer.json with all evaluator data. Generator reads environments, runs all vehicle/part evaluators with NSubstitute mocks, writes camelCase JSON to web components and docs directories. Added JsonStringEnumConverter to BDD environment deserialization. |
+| 2026-03-31 | Cross-cutting | Web component integration. Added `mockUrl` prop to vehicle-lookup wrapper with auto-load via getMockFile. Updated MockFiles registry to generated paths. Removed old part-lookup.json. Build passes. |

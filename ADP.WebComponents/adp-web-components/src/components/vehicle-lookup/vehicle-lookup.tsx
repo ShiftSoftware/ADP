@@ -1,6 +1,7 @@
 import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
+import { getMockFile } from '~features/mocks';
 
 import vehicleLookupWrapperSchema from '~locales/vehicleLookup/wrapper-type';
 
@@ -68,6 +69,7 @@ export class VehicleLookup implements MultiLingual {
 
   @Prop() baseUrl: string = '';
   @Prop() isDev: boolean = false;
+  @Prop() mockUrl: string = '';
   @Prop() disableVinValidation: boolean = false;
   @Prop() queryString: string = '';
   @Prop() childrenProps?: string | Object;
@@ -129,6 +131,21 @@ export class VehicleLookup implements MultiLingual {
         }
       };
     }
+
+    if (this.isDev) await this.loadMockData();
+  }
+
+  @Watch('isDev')
+  async onIsDevChange(isDev: boolean) {
+    if (isDev) await this.loadMockData();
+  }
+
+  private async loadMockData() {
+    if (!this.componentsList) return;
+    const mockData = await getMockFile<VehicleLookupDTO>('vehicle-lookup', this.mockUrl);
+    Object.values(this.componentsList).forEach(element => {
+      if (element) element.setMockData(mockData);
+    });
   }
 
   private syncErrorAcrossComponents = (newErrorMessage: ErrorKeys) => {
