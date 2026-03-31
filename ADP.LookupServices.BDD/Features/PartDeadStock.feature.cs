@@ -17,7 +17,7 @@ namespace LookupServices.BDD.Features
     
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Reqnroll", "3.0.0.0")]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    public partial class VehicleAccessoriesFeature : object, Xunit.IClassFixture<VehicleAccessoriesFeature.FixtureData>, Xunit.IAsyncLifetime
+    public partial class PartDeadStockFeature : object, Xunit.IClassFixture<PartDeadStockFeature.FixtureData>, Xunit.IAsyncLifetime
     {
         
         private global::Reqnroll.ITestRunner testRunner;
@@ -26,13 +26,13 @@ namespace LookupServices.BDD.Features
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("en-US"), "Features", "Vehicle Accessories", "  Vehicle accessories are listed with their part numbers, descriptions,\r\n  and im" +
-                "ages. Image URLs are resolved through a configurable resolver.", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("en-US"), "Features", "Part Dead Stock", "  Dead stock identification groups parts by company and lists\r\n  per-branch dead " +
+                "stock quantities.", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
-#line 1 "VehicleAccessories.feature"
+#line 1 "PartDeadStock.feature"
 #line hidden
         
-        public VehicleAccessoriesFeature(VehicleAccessoriesFeature.FixtureData fixtureData, Xunit.ITestOutputHelper testOutputHelper)
+        public PartDeadStockFeature(PartDeadStockFeature.FixtureData fixtureData, Xunit.ITestOutputHelper testOutputHelper)
         {
             this._testOutputHelper = testOutputHelper;
         }
@@ -106,7 +106,7 @@ namespace LookupServices.BDD.Features
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/VehicleAccessories.feature.ndjson", 5);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/PartDeadStock.feature.ndjson", 5);
         }
         
         async System.Threading.Tasks.ValueTask Xunit.IAsyncLifetime.InitializeAsync()
@@ -134,15 +134,15 @@ namespace LookupServices.BDD.Features
             await this.TestTearDownAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="Accessories listed with resolved image URLs")]
-        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Accessories")]
-        [global::Xunit.TraitAttribute("Description", "Accessories listed with resolved image URLs")]
-        public async global::System.Threading.Tasks.Task AccessoriesListedWithResolvedImageURLs()
+        [global::Xunit.FactAttribute(DisplayName="Dead stock grouped by company with branch details")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Part Dead Stock")]
+        [global::Xunit.TraitAttribute("Description", "Dead stock grouped by company with branch details")]
+        public async global::System.Threading.Tasks.Task DeadStockGroupedByCompanyWithBranchDetails()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "0";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Accessories listed with resolved image URLs", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Dead stock grouped by company with branch details", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
 #line 5
@@ -155,57 +155,67 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table27 = new global::Reqnroll.Table(new string[] {
-                            "PartNumber",
-                            "PartDescription",
-                            "Image"});
-                table27.AddRow(new string[] {
-                            "ACC-001",
-                            "Floor mats",
-                            "img001.jpg"});
-                table27.AddRow(new string[] {
-                            "ACC-002",
-                            "Roof rack",
-                            "img002.jpg"});
 #line 6
-  await testRunner.GivenAsync("accessories:", ((string)(null)), table27, "Given ");
+  await testRunner.GivenAsync("company 1 is named \"Acme Motors\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 10
-  await testRunner.AndAsync("the accessory image resolver maps \"img001.jpg\" to \"https://cdn.example.com/img001" +
-                        ".jpg\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line 7
+  await testRunner.AndAsync("branch 10 is named \"Downtown Branch\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 11
-  await testRunner.AndAsync("the accessory image resolver maps \"img002.jpg\" to \"https://cdn.example.com/img002" +
-                        ".jpg\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line 8
+  await testRunner.AndAsync("branch 20 is named \"Airport Branch\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 12
-  await testRunner.WhenAsync("evaluating accessories with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+                global::Reqnroll.Table table1 = new global::Reqnroll.Table(new string[] {
+                            "CompanyID",
+                            "CompanyHashID",
+                            "BranchID",
+                            "BranchHashID",
+                            "AvailableQuantity"});
+                table1.AddRow(new string[] {
+                            "1",
+                            "C-HASH-1",
+                            "10",
+                            "B-HASH-10",
+                            "5"});
+                table1.AddRow(new string[] {
+                            "1",
+                            "C-HASH-1",
+                            "20",
+                            "B-HASH-20",
+                            "3"});
+#line 9
+  await testRunner.AndAsync("dead stock for part \"PRT-001\":", ((string)(null)), table1, "And ");
 #line hidden
 #line 13
-  await testRunner.ThenAsync("there are 2 accessories", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+  await testRunner.WhenAsync("evaluating dead stock for part \"PRT-001\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 14
-  await testRunner.AndAsync("accessory \"ACC-001\" has image \"https://cdn.example.com/img001.jpg\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+  await testRunner.ThenAsync("there are 1 dead stock companies", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 15
-  await testRunner.AndAsync("accessory \"ACC-002\" has image \"https://cdn.example.com/img002.jpg\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+  await testRunner.AndAsync("dead stock company \"C-HASH-1\" is named \"Acme Motors\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 16
+  await testRunner.AndAsync("dead stock company \"C-HASH-1\" has 2 branches", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 17
+  await testRunner.AndAsync("dead stock company \"C-HASH-1\" branch \"B-HASH-10\" has quantity 5", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="Accessories without image resolver return raw image value")]
-        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Accessories")]
-        [global::Xunit.TraitAttribute("Description", "Accessories without image resolver return raw image value")]
-        public async global::System.Threading.Tasks.Task AccessoriesWithoutImageResolverReturnRawImageValue()
+        [global::Xunit.FactAttribute(DisplayName="Dead stock from multiple companies")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Part Dead Stock")]
+        [global::Xunit.TraitAttribute("Description", "Dead stock from multiple companies")]
+        public async global::System.Threading.Tasks.Task DeadStockFromMultipleCompanies()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "1";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Accessories without image resolver return raw image value", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Dead stock from multiple companies", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 17
+#line 19
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -215,39 +225,49 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table28 = new global::Reqnroll.Table(new string[] {
-                            "PartNumber",
-                            "PartDescription",
-                            "Image"});
-                table28.AddRow(new string[] {
-                            "ACC-001",
-                            "Floor mats",
-                            "img001.jpg"});
-#line 18
-  await testRunner.GivenAsync("accessories:", ((string)(null)), table28, "Given ");
+                global::Reqnroll.Table table2 = new global::Reqnroll.Table(new string[] {
+                            "CompanyID",
+                            "CompanyHashID",
+                            "BranchID",
+                            "BranchHashID",
+                            "AvailableQuantity"});
+                table2.AddRow(new string[] {
+                            "1",
+                            "C-HASH-1",
+                            "10",
+                            "B-HASH-10",
+                            "5"});
+                table2.AddRow(new string[] {
+                            "2",
+                            "C-HASH-2",
+                            "30",
+                            "B-HASH-30",
+                            "8"});
+#line 20
+  await testRunner.GivenAsync("dead stock for part \"PRT-001\":", ((string)(null)), table2, "Given ");
 #line hidden
-#line 21
-  await testRunner.WhenAsync("evaluating accessories with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line 24
+  await testRunner.WhenAsync("evaluating dead stock for part \"PRT-001\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 22
-  await testRunner.ThenAsync("accessory \"ACC-001\" has image \"img001.jpg\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line 25
+  await testRunner.ThenAsync("there are 2 dead stock companies", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="No accessories returns empty list")]
-        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Accessories")]
-        [global::Xunit.TraitAttribute("Description", "No accessories returns empty list")]
-        public async global::System.Threading.Tasks.Task NoAccessoriesReturnsEmptyList()
+        [global::Xunit.FactAttribute(DisplayName="No dead stock entries")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Part Dead Stock")]
+        [global::Xunit.TraitAttribute("Description", "No dead stock entries")]
+        public async global::System.Threading.Tasks.Task NoDeadStockEntries()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "2";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("No accessories returns empty list", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("No dead stock entries", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 24
+#line 27
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -257,11 +277,11 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-#line 25
-  await testRunner.WhenAsync("evaluating accessories with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line 28
+  await testRunner.WhenAsync("evaluating dead stock for part \"PRT-001\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 26
-  await testRunner.ThenAsync("there are 0 accessories", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line 29
+  await testRunner.ThenAsync("there are 0 dead stock companies", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -274,12 +294,12 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             
             async System.Threading.Tasks.ValueTask Xunit.IAsyncLifetime.InitializeAsync()
             {
-                await VehicleAccessoriesFeature.FeatureSetupAsync();
+                await PartDeadStockFeature.FeatureSetupAsync();
             }
             
             async System.Threading.Tasks.ValueTask System.IAsyncDisposable.DisposeAsync()
             {
-                await VehicleAccessoriesFeature.FeatureTearDownAsync();
+                await PartDeadStockFeature.FeatureTearDownAsync();
             }
         }
     }

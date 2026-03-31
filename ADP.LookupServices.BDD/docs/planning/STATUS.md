@@ -145,28 +145,27 @@
 
 ## Phase 5: Part Evaluators ([06-phase5-part-evaluators.md](06-phase5-part-evaluators.md))
 
-**Status:** Not Started
+**Status:** Complete
 **Prerequisite:** Phase 4 complete (can be deprioritized if part lookup is stable)
 
 ### Infrastructure
-- [ ] Add `[assembly: InternalsVisibleTo("LookupServices.BDD")]` to Lookup.Services
-- [ ] Add `PartAggregate` to `TestContext`
-- [ ] Create `PartSetupStepDefinitions.cs`
+- [x] Add `[assembly: InternalsVisibleTo("LookupServices.BDD")]` to Lookup.Services
+- [x] Add `PartAggregate` to `TestContext`
+- [x] Create `PartSetupStepDefinitions.cs`
 
 ### Given Steps
-- [ ] Part catalog data step (`CatalogPartModel`)
-- [ ] Stock for part step (`StockPartModel`)
-- [ ] Dead stock for part step (`CompanyDeadStockPartModel`)
+- [x] Part catalog data step (`CatalogPartModel`)
+- [x] Stock for part step (`StockPartModel`)
+- [x] Dead stock for part step (`CompanyDeadStockPartModel`)
 
 ### Feature Files & Step Definitions
-- [ ] `Parts/PartPrice.feature` + `PartPriceStepDefinitions.cs`
-- [ ] `Parts/PartDeadStock.feature` + `PartDeadStockStepDefinitions.cs`
-- [ ] `Parts/PartStock.feature` + `PartStockStepDefinitions.cs`
-- [ ] All previous + Phase 5 scenarios pass
+- [x] `PartPrice.feature` + `PartPriceStepDefinitions.cs` (4 scenarios)
+- [x] `PartDeadStock.feature` + `PartDeadStockStepDefinitions.cs` (3 scenarios)
+- [x] `PartStock.feature` + `PartStockStepDefinitions.cs` (8 scenarios)
+- [x] All previous + Phase 5 scenarios pass
 
 **Notes:**
-<!--
--->
+2026-03-30: Phase 5 complete. 15 new scenarios (4 part price, 3 dead stock, 8 stock). PartAggregateCosmosModel collections (CatalogParts, StockParts, CompanyDeadStockParts) default to null — initialized to empty arrays in TestContext to avoid NREs. PartPriceEvaluator returns (null, []) when PartLookupPriceResolver is null — prices are built up internally but only returned via the resolver; added "pass-through resolver" Given step for meaningful price testing. DistributorStockPartLookupQuantityThreshold defaults to null (GetValueOrDefault=0), meaning any non-zero lookup quantity ≥ 0 hits QuantityNotWithinLookupThreshold — stock scenarios that test Available/PartiallyAvailable/NotAvailable must set threshold explicitly. Feature files placed in Features/ root (not Parts/ subdirectory) matching existing convention. Added country/region/location name resolver Given steps and threshold/show-quantity LookupOptions steps to LookupOptionsStepDefinitions. All 69 scenarios pass (54 Phase 0-4 + 15 Phase 5).
 
 ---
 
@@ -230,6 +229,10 @@ Evaluators are not considered golden — they may have flaws or unnecessary comp
 | 14 | VehicleServiceItemEvaluator | Rolling expiry for non-sequential items (no MaximumMileage) sets `ExpiresAt = startDate` (line 328) which equals `freeServiceStartDate` if no sequential items exist — effectively immediately expired. Unclear if intentional. | Phase 4 review |
 | 15 | VehicleServiceItemEvaluator | ~530 lines, deeply nested, mixes multiple concerns (eligibility, status, expiration, cancellation, signature). Would benefit from being split into smaller focused methods or separate evaluators. | Phase 4 review |
 | 16 | VehicleSpecificationEvaluator | Commented-out `//if (vtModel is not null)` with braces that still execute (lines 24-49). Dead comment that's misleading about the actual control flow. | Phase 4 review |
+| 17 | PartPriceEvaluator | Returns `(null, [])` when `PartLookupPriceResolver` is null (line 75), discarding all built-up pricing data. The evaluator builds country/region prices but only returns them through the resolver — without one, the entire result is empty. | Phase 5 review |
+| 18 | PartPriceEvaluator | `cosmosPartCatalog?.CountryData` null-conditional on line 29 inside `foreach` is unnecessary — already guarded by `is not null` check on line 27. | Phase 5 review |
+| 19 | PartStockEvaluator | `DistributorStockPartLookupQuantityThreshold.GetValueOrDefault()` returns 0 when null. Combined with `>=`, any non-zero lookup quantity hits `QuantityNotWithinLookupThreshold` when no threshold is configured. Likely should check `HasValue` first. | Phase 5 review |
+| 20 | PartAggregateCosmosModel | Collections (`StockParts`, `CatalogParts`, `CompanyDeadStockParts`) default to null instead of empty. Evaluators iterate directly without null checks, causing NRE on empty aggregate. | Phase 5 review |
 
 ---
 
@@ -243,3 +246,4 @@ Evaluators are not considered golden — they may have flaws or unnecessary comp
 | 2026-03-28 | 2 | Phase 2 complete. 9 warranty scenarios, LookupOptionsStepDefinitions, WarrantyDateStepDefinitions. Broker scenarios deferred to Phase 4. |
 | 2026-03-29 | 3 | Phase 3 complete. 9 scenarios across 3 async evaluators (accessories, paint thickness, service history). Resolver mocks inline in LookupOptionsStepDefinitions. |
 | 2026-03-29 | 4 | Phase 4 complete. 11 scenarios across 3 evaluators (sale info, specification, service items). MockStorageStepDefinitions for NSubstitute. Service items consolidated into single feature. |
+| 2026-03-30 | 5 | Phase 5 complete. 15 scenarios across 3 part evaluators (price, dead stock, stock). PartAggregateCosmosModel + InternalsVisibleTo. Pass-through price resolver pattern. |

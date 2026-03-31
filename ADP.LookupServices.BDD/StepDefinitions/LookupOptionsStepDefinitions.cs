@@ -1,6 +1,7 @@
 using LookupServices.BDD.Support;
 using Reqnroll;
 using ShiftSoftware.ADP.Lookup.Services;
+using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Part;
 
 namespace LookupServices.BDD.StepDefinitions;
 
@@ -11,6 +12,9 @@ public class LookupOptionsStepDefinitions
     private readonly Dictionary<string, string> _accessoryImageMappings = new();
     private readonly Dictionary<long?, string> _companyNames = new();
     private readonly Dictionary<long?, string> _branchNames = new();
+    private readonly Dictionary<long?, string> _countryNames = new();
+    private readonly Dictionary<long?, string> _regionNames = new();
+    private readonly Dictionary<string, string> _locationNames = new();
 
     public LookupOptionsStepDefinitions(TestContext context)
     {
@@ -66,5 +70,60 @@ public class LookupOptionsStepDefinitions
             var resolved = _branchNames.TryGetValue(model.Value, out var n) ? n : null;
             return new ValueTask<string?>(resolved);
         };
+    }
+
+    [Given("country {long} is named {string}")]
+    public void GivenCountryIsNamed(long countryId, string name)
+    {
+        _countryNames[countryId] = name;
+        _context.Options.CountryNameResolver = (model) =>
+        {
+            var resolved = _countryNames.TryGetValue(model.Value, out var n) ? n : null;
+            return new ValueTask<string?>(resolved);
+        };
+    }
+
+    [Given("region {long} is named {string}")]
+    public void GivenRegionIsNamed(long regionId, string name)
+    {
+        _regionNames[regionId] = name;
+        _context.Options.RegionNameResolver = (model) =>
+        {
+            var resolved = _regionNames.TryGetValue(model.Value, out var n) ? n : null;
+            return new ValueTask<string?>(resolved);
+        };
+    }
+
+    [Given("location {string} is named {string}")]
+    public void GivenLocationIsNamed(string locationId, string name)
+    {
+        _locationNames[locationId] = name;
+        _context.Options.PartLocationNameResolver = (model) =>
+        {
+            var resolved = _locationNames.TryGetValue(model.Value.LocationID, out var n) ? n : null;
+            return new ValueTask<string?>(resolved);
+        };
+    }
+
+    [Given("the part price resolver passes through")]
+    public void GivenThePartPriceResolverPassesThrough()
+    {
+        _context.Options.PartLookupPriceResolver = (model) =>
+        {
+            return new ValueTask<(decimal?, IEnumerable<PartPriceDTO>)>(
+                (model.Value.DistributorPurchasePrice, model.Value.Prices));
+        };
+    }
+
+    [Given("LookupOptions distributor stock threshold is {int}")]
+    public void GivenDistributorStockThreshold(int threshold)
+    {
+        _context.Options.DistributorStockPartLookupQuantityThreshold = threshold;
+    }
+
+    [Given("LookupOptions show stock quantity is enabled")]
+    public void GivenShowStockQuantityIsEnabled()
+    {
+        _context.Options.ShowPartLookupStockQauntity = true;
     }
 }

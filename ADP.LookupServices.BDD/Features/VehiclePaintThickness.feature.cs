@@ -155,32 +155,32 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table28 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table41 = new global::Reqnroll.Table(new string[] {
                             "InspectionDate",
                             "Source"});
-                table28.AddRow(new string[] {
+                table41.AddRow(new string[] {
                             "2024-03-15",
                             "Dealer"});
 #line 6
-  await testRunner.GivenAsync("paint thickness inspections:", ((string)(null)), table28, "Given ");
+  await testRunner.GivenAsync("paint thickness inspections:", ((string)(null)), table41, "Given ");
 #line hidden
-                global::Reqnroll.Table table29 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table42 = new global::Reqnroll.Table(new string[] {
                             "PanelType",
                             "PanelSide",
                             "PanelPosition",
                             "MeasuredThickness"});
-                table29.AddRow(new string[] {
+                table42.AddRow(new string[] {
                             "Hood",
                             "Center",
                             "Front",
                             "120"});
-                table29.AddRow(new string[] {
+                table42.AddRow(new string[] {
                             "Roof",
                             "Left",
                             "Middle",
                             "95"});
 #line 9
-  await testRunner.AndAsync("paint thickness panels for inspection on \"2024-03-15\":", ((string)(null)), table29, "And ");
+  await testRunner.AndAsync("paint thickness panels for inspection on \"2024-03-15\":", ((string)(null)), table42, "And ");
 #line hidden
 #line 13
   await testRunner.WhenAsync("evaluating paint thickness with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
