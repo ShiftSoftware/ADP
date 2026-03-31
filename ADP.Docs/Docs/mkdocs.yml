@@ -66,6 +66,26 @@ nav:
       - Labor:
           - Order Labor Line: generated/Models/Service/OrderLaborLineModel.md
   
+  - BDD Specifications:
+      - Vehicle:
+          - Vehicle Entry: generated/Features/VehicleEntry.md
+          - Vehicle Authorization: generated/Features/VehicleAuthorization.md
+          - Vehicle Identifiers: generated/Features/VehicleIdentifiers.md
+          - Vehicle SSC: generated/Features/VehicleSSC.md
+          - Vehicle Specification: generated/Features/VehicleSpecification.md
+          - Vehicle Accessories: generated/Features/VehicleAccessories.md
+          - Vehicle Paint Thickness: generated/Features/VehiclePaintThickness.md
+          - Vehicle Sale Information: generated/Features/VehicleSaleInformation.md
+          - Vehicle Service History: generated/Features/VehicleServiceHistory.md
+      - Parts:
+          - Part Price: generated/Features/PartPrice.md
+          - Part Stock: generated/Features/PartStock.md
+          - Part Dead Stock: generated/Features/PartDeadStock.md
+      - Service:
+          - Service Items: generated/Features/ServiceItems.md
+      - Warranty:
+          - Warranty Dates: generated/Features/WarrantyDates.md
+
   - Web Components:
       - Introduction: web-components/introduction.md
       - Installation: web-components/installation.md

@@ -51,6 +51,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Generator", "Generator", "{
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Generator", "ADP.TestData\Generator\Generator.csproj", "{1B0DC072-239B-6E58-61B5-D821F7EA4DE0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FeatureDocGen", "ADP.Docs\FeatureDocGen\FeatureDocGen.csproj", "{4F13A5A1-5B51-2CB0-6A16-A87760DC2EEF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -93,6 +95,10 @@ Global
 		{1B0DC072-239B-6E58-61B5-D821F7EA4DE0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1B0DC072-239B-6E58-61B5-D821F7EA4DE0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1B0DC072-239B-6E58-61B5-D821F7EA4DE0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4F13A5A1-5B51-2CB0-6A16-A87760DC2EEF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4F13A5A1-5B51-2CB0-6A16-A87760DC2EEF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4F13A5A1-5B51-2CB0-6A16-A87760DC2EEF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4F13A5A1-5B51-2CB0-6A16-A87760DC2EEF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -111,6 +117,7 @@ Global
 		{9037A1A7-3189-49A2-9E97-9D6D3B29A6E6} = {662F7C84-E80A-4E27-92BC-F604844A51EF}
 		{FC35CBA0-500C-427E-850E-4321191BE745} = {662F7C84-E80A-4E27-92BC-F604844A51EF}
 		{1B0DC072-239B-6E58-61B5-D821F7EA4DE0} = {FC35CBA0-500C-427E-850E-4321191BE745}
+		{4F13A5A1-5B51-2CB0-6A16-A87760DC2EEF} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {9C2AF932-542F-4C6B-B4FA-33D955041860}
