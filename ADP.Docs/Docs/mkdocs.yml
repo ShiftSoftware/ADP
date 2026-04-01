@@ -62,9 +62,74 @@ nav:
           - Part Country Data: generated/Models/Part/PartCountryDataModel.md
           - Per Region Price: generated/Models/Part/RegionPriceModel.md
           - Stock Part: generated/Models/Part/StockPartModel.md
-          - Order Part Line: generated/Models/Part/OrderPartLineModel.md  
+          - Stock Part First Receive Date: generated/Models/Part/StockPartFirstReceiveDateModel.md
+          - Company Dead Stock Part: generated/Models/Part/CompanyDeadStockPartModel.md
+          - Order Part Line: generated/Models/Part/OrderPartLineModel.md
+          - Manufacturer Part Lookup: generated/Models/Part/ManufacturerPartLookupModel.md
       - Labor:
           - Order Labor Line: generated/Models/Service/OrderLaborLineModel.md
+          - Flat Rate: generated/Models/Service/FlatRateModel.md
+      - Vehicles:
+          - Vehicle Entry: generated/Models/Vehicle/VehicleEntryModel.md
+          - Vehicle Model: generated/Models/Vehicle/VehicleModelModel.md
+          - Color: generated/Models/Vehicle/ColorModel.md
+          - Vehicle Accessory: generated/Models/Vehicle/VehicleAccessoryModel.md
+          - Vehicle Inspection: generated/Models/Vehicle/VehicleInspectionModel.md
+          - Initial Official VIN: generated/Models/Vehicle/InitialOfficialVINModel.md
+          - Vehicle Service Activation: generated/Models/Vehicle/VehicleServiceActivation.md
+      - Warranty & Service:
+          - Extended Warranty: generated/Models/Vehicle/ExtendedWarrantyModel.md
+          - Warranty Claim: generated/Models/Vehicle/WarrantyClaimModel.md
+          - Warranty Claim Labor Line: generated/Models/Vehicle/WarrantyClaimLaborLineModel.md
+          - Warranty Date Shift: generated/Models/Vehicle/WarrantyDateShiftModel.md
+          - Service Campaign: generated/Models/Vehicle/ServiceCampaignModel.md
+          - Service Item: generated/Models/Vehicle/ServiceItemModel.md
+          - Service Item Cost: generated/Models/Vehicle/ServiceItemCostModel.md
+          - Item Claim: generated/Models/Vehicle/ItemClaimModel.md
+          - Free Service Item Date Shift: generated/Models/Vehicle/FreeServiceItemDateShiftModel.md
+          - Free Service Item Excluded VIN: generated/Models/Vehicle/FreeServiceItemExcludedVINModel.md
+          - Paid Service Invoice: generated/Models/Vehicle/PaidServiceInvoiceModel.md
+          - Paid Service Invoice Line: generated/Models/Vehicle/PaidServiceInvoiceLineModel.md
+      - Safety Recalls:
+          - SSC Affected VIN: generated/Models/Vehicle/SSCAffectedVINModel.md
+      - Paint Thickness:
+          - Inspection: generated/Models/Vehicle/PaintThicknessInspectionModel.md
+          - Inspection Panel: generated/Models/Vehicle/PaintThicknessInspectionPanelModel.md
+      - Customers:
+          - Customer: generated/Models/Customer/CustomerModel.md
+          - Golden Customer: generated/Models/Customer/GoldenCustomerModel.md
+      - Broker (TBP):
+          - Broker Stock: generated/Models/TBP/TBP_StockModel.md
+          - Broker: generated/Models/TBP/TBP_BrokerModel.md
+          - Broker Account Number: generated/Models/TBP/TBP_BrokerAccountNumberModel.md
+          - Broker Brand Access: generated/Models/TBP/TBP_BrokerBrokerBrandAccessModel.md
+          - Broker Invoice (TBP): generated/Models/TBP/TBP_Invoice.md
+          - Broker Vehicle Entry: generated/Models/TBP/TBP_VehicleEntryModel.md
+          - Broker Vehicle Transfer (TBP): generated/Models/TBP/TBP_VehicleTransferModel.md
+          - Broker (Company): generated/Models/TBP/BrokerModel.md
+          - Broker Initial Vehicle: generated/Models/TBP/BrokerInitialVehicleModel.md
+          - Broker Invoice: generated/Models/TBP/BrokerInvoiceModel.md
+          - Broker Vehicle: generated/Models/TBP/BrokerVehicleModel.md
+          - Broker Vehicle Transfer: generated/Models/TBP/BrokerVehicleTransferModel.md
+          - Broker Vehicle Color: generated/Models/TBP/VehicleColorModel.md
+      - Enums:
+          - Currencies: generated/Models/Enums/Currencies.md
+          - Claim Status: generated/Models/Enums/ClaimStatus.md
+          - Warranty Manufacturer Claim Status: generated/Models/Enums/WarrantyManufacturerClaimStatus.md
+          - Claimable Item Attachment Field Behavior: generated/Models/Enums/ClaimableItemAttachmentFieldBehavior.md
+          - Claimable Item Campaign Activation Triggers: generated/Models/Enums/ClaimableItemCampaignActivationTriggers.md
+          - Claimable Item Campaign Activation Types: generated/Models/Enums/ClaimableItemCampaignActivationTypes.md
+          - Claimable Item Claiming Method: generated/Models/Enums/ClaimableItemClaimingMethod.md
+          - Claimable Item Validity Mode: generated/Models/Enums/ClaimableItemValidityMode.md
+          - Customer Types: generated/Models/Enums/CustomerTypes.md
+          - Duration Type: generated/Models/Enums/DurationType.md
+          - Genders: generated/Models/Enums/Genders.md
+          - Languages: generated/Models/Enums/Languages.md
+          - Manufacturer Order Type: generated/Models/Enums/ManufacturerOrderType.md
+          - Manufacturer Part Lookup Status: generated/Models/Enums/ManufacturerPartLookupStatus.md
+          - Vehicle Panel Position: generated/Models/Enums/VehiclePanelPosition.md
+          - Vehicle Panel Side: generated/Models/Enums/VehiclePanelSide.md
+          - Vehicle Panel Type: generated/Models/Enums/VehiclePanelType.md
   
   - BDD Specifications:
       - Vehicle:
