@@ -83,16 +83,24 @@ public class CsvHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource<
 
     public ValueTask<bool> ActionStarted(SyncFunctionInput<SyncActionType> input)
     {
+        var hasHeaderRecord = Configurations?.HasHeaderRecord ?? true;
+        var filePath = input.Input switch
+        {
+            SyncActionType.Add => toInsertFilePath,
+            SyncActionType.Delete => toDeleteFilePath,
+            _ => null
+        };
+
+        if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath) || IsNoDataFile(filePath, hasHeaderRecord))
+            return new(true);
+
         try
         {
-            if (input.Input == SyncActionType.Add)
-                this.streamReader = new StreamReader(toInsertFilePath!);
-            else if (input.Input == SyncActionType.Delete)
-                this.streamReader = new StreamReader(toDeleteFilePath!);
+            this.streamReader = new StreamReader(filePath);
 
             this.csvReader = new CsvReader(this.streamReader!, new CsvHelper.Configuration.CsvConfiguration(CultureInfo.InvariantCulture)
             {
-                HasHeaderRecord = Configurations!.HasHeaderRecord,
+                HasHeaderRecord = hasHeaderRecord,
                 IgnoreBlankLines = false,
             });
 
@@ -100,34 +108,71 @@ public class CsvHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource<
         }
         catch (Exception)
         {
-            return new(false);
+            this.streamReader?.Close();
+            this.streamReader?.Dispose();
+            this.streamReader = null;
+            this.csvReader?.Dispose();
+            this.csvReader = null;
+            return new(true);
         }
     }
 
     public async ValueTask<long?> SourceTotalItemCount(SyncFunctionInput<SyncActionType> input)
     {
-        if (input.Input == SyncActionType.Add)
-            return await GetItemCountAsync(toInsertFilePath!);
-        else if (input.Input == SyncActionType.Delete)
-            return await GetItemCountAsync(toDeleteFilePath!);
+        var hasHeaderRecord = Configurations?.HasHeaderRecord ?? true;
+        var filePath = input.Input switch
+        {
+            SyncActionType.Add => toInsertFilePath,
+            SyncActionType.Delete => toDeleteFilePath,
+            _ => null
+        };
 
-        return 0;
+        if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath) || IsNoDataFile(filePath, hasHeaderRecord))
+            return 0;
+
+        return await GetItemCountAsync(filePath);
+    }
+
+    private static bool IsNoDataFile(string path, bool hasHeaderRecord)
+    {
+        using var lines = File.ReadLines(path).GetEnumerator();
+
+        if (!lines.MoveNext())
+            return true;
+
+        if (!hasHeaderRecord)
+            return string.IsNullOrWhiteSpace(lines.Current);
+
+        while (lines.MoveNext())
+        {
+            if (!string.IsNullOrWhiteSpace(lines.Current))
+                return false;
+        }
+
+        return true;
     }
 
     private async Task<long> GetItemCountAsync(string filePath)
     {
-        long count = 0;
-        using var reader = new StreamReader(filePath);
-        using var csv = new CsvReader(reader, new CsvHelper.Configuration.CsvConfiguration(CultureInfo.InvariantCulture)
+        try
         {
-            HasHeaderRecord = Configurations!.HasHeaderRecord,
-            IgnoreBlankLines = false,
-        });
+            long count = 0;
+            using var reader = new StreamReader(filePath);
+            using var csv = new CsvReader(reader, new CsvHelper.Configuration.CsvConfiguration(CultureInfo.InvariantCulture)
+            {
+                HasHeaderRecord = Configurations!.HasHeaderRecord,
+                IgnoreBlankLines = false,
+            });
 
-        await foreach (var record in csv.EnumerateRecordsAsync(new TCSV()))
-            count++;
+            await foreach (var record in csv.EnumerateRecordsAsync(new TCSV()))
+                count++;
 
-        return count;
+            return count;
+        }
+        catch
+        {
+            return 0;
+        }
     }
 
     public async ValueTask<IEnumerable<TCSV?>?> GetSourceBatchItems(SyncFunctionInput<SyncGetBatchDataInput<TCSV>> input)
@@ -136,6 +181,9 @@ public class CsvHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource<
         {
             if (input.Input.Status.CurrentRetryCount > 0 && input.Input.PreviousItems is not null)
                 return input.Input.PreviousItems;
+
+            if (this.csvReader is null)
+                return [];
 
             if (input.Input.Status.ActionType == SyncActionType.Add || input.Input.Status.ActionType == SyncActionType.Delete)
                 return await ReadNextsAsync(input.Input.Status.BatchSize);
