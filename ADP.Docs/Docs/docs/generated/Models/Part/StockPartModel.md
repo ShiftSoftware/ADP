@@ -11,12 +11,12 @@ Refers to a Part in a Stock (Warehouse)
 | Location <div><strong>``string``</strong></div> | The Warehouse/Location Identifier where the part is stored. |
 | AvailableQuantity <div><strong>``decimal?``</strong></div> | The current AvailableQuantity of the part in the stock. |
 | OnHandQuantity <div><strong>``decimal?``</strong></div> | The current on-hand quantity of the part in the stock |
-| OnOrderQauntity <div><strong>``decimal?``</strong></div> |  |
-| InventoryDate <div><strong>``DateTimeOffset?``</strong></div> |  |
-| LastSoldDate <div><strong>``DateTimeOffset?``</strong></div> |  |
-| LastArrivedDate <div><strong>``DateTimeOffset?``</strong></div> |  |
-| LastPurchasedDate <div><strong>``DateTimeOffset?``</strong></div> |  |
-| FirstReceivedDate <div><strong>``DateTimeOffset?``</strong></div> |  |
+| OnOrderQauntity <div><strong>``decimal?``</strong></div> | The quantity of the part currently on order from the supplier. |
+| InventoryDate <div><strong>``DateTimeOffset?``</strong></div> | The date of the last inventory count for this part at this location. |
+| LastSoldDate <div><strong>``DateTimeOffset?``</strong></div> | The date this part was last sold from this location. |
+| LastArrivedDate <div><strong>``DateTimeOffset?``</strong></div> | The date this part last arrived at this location from a supplier. |
+| LastPurchasedDate <div><strong>``DateTimeOffset?``</strong></div> | The date this part was last purchased/ordered from a supplier. |
+| FirstReceivedDate <div><strong>``DateTimeOffset?``</strong></div> | The date this part was first received at this location. |
 | SaleType <div><strong>``string``</strong></div> | The type of sale. (e.g. Internal, Bulk, Retail, etc.) |
 | CompanyHashID <div><strong>``string``</strong></div> | The Company Hash ID from the Identity System. |
 | IntegrationID <div><strong>``string``</strong></div> | An External Identifier that can be used for system to system Integration |

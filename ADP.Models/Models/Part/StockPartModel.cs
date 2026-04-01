@@ -41,16 +41,34 @@ public class StockPartModel:
     /// </summary>
     public decimal? OnHandQuantity { get; set; }
 
+    /// <summary>
+    /// The quantity of the part currently on order from the supplier.
+    /// </summary>
     public decimal? OnOrderQauntity { get; set; }
 
+    /// <summary>
+    /// The date of the last inventory count for this part at this location.
+    /// </summary>
     public DateTimeOffset? InventoryDate { get; set; }
 
+    /// <summary>
+    /// The date this part was last sold from this location.
+    /// </summary>
     public DateTimeOffset? LastSoldDate { get; set; }
 
+    /// <summary>
+    /// The date this part last arrived at this location from a supplier.
+    /// </summary>
     public DateTimeOffset? LastArrivedDate { get; set; }
 
+    /// <summary>
+    /// The date this part was last purchased/ordered from a supplier.
+    /// </summary>
     public DateTimeOffset? LastPurchasedDate { get; set; }
 
+    /// <summary>
+    /// The date this part was first received at this location.
+    /// </summary>
     public DateTimeOffset? FirstReceivedDate { get; set; }
 
     [DocIgnore]
