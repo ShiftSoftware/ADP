@@ -2,7 +2,7 @@
 hide:
     - toc
 ---
-Represents a claim made against a  for a specific vehicle.
+Represents a claim made against a Service Item for a specific vehicle.
  Tracks the claim details including cost, associated inspection, and job/invoice references.
 
 | Property | Summary |

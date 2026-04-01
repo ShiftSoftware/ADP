@@ -3,7 +3,7 @@ hide:
     - toc
 ---
 Represents a paint thickness inspection performed on a vehicle.
- Paint thickness measurements across multiple  help detect prior bodywork, repainting, or accident damage.
+ Paint thickness measurements across multiple panels help detect prior bodywork, repainting, or accident damage.
 
 | Property | Summary |
 |----------|---------|

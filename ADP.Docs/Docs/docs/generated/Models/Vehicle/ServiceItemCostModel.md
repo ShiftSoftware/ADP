@@ -2,7 +2,7 @@
 hide:
     - toc
 ---
-Represents the cost of a  for a specific vehicle variant or package.
+Represents the cost of a Service Item for a specific vehicle variant or package.
  A service item may have different costs depending on the vehicle's variant, Katashiki, or package code.
 
 | Property | Summary |

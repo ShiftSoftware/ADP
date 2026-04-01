@@ -2,7 +2,7 @@
 hide:
     - toc
 ---
-Represents a single panel measurement from a .
+Represents a single panel measurement from a Paint Thickness Inspection.
  Each panel is identified by its type, side, and position on the vehicle, with a measured thickness value.
 
 | Property | Summary |

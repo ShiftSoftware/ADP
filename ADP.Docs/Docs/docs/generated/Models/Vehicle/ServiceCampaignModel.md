@@ -2,7 +2,7 @@
 hide:
     - toc
 ---
-Represents a service campaign that offers  to vehicles.
+Represents a service campaign that offers Service Items to vehicles.
  Campaigns define the time period, target brands/countries/companies, and activation rules for their service items.
 
 | Property | Summary |

@@ -2,7 +2,7 @@
 hide:
     - toc
 ---
-Represents a Golden Customer record — a unified, deduplicated identity that links multiple  records for the same person across different systems.
+Represents a Golden Customer record — a unified, deduplicated identity that links multiple Dealer Customer records for the same person across different systems.
  The GoldenCustomerID and CustomerID are always the same value on this record.
 
 | Property | Summary |

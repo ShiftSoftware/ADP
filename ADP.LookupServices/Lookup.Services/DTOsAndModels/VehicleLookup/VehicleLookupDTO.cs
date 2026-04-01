@@ -8,36 +8,72 @@ using System.Text.Json.Serialization;
 
 namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 
+/// <summary>
+/// The main result returned by the vehicle lookup service.
+/// Contains all vehicle data including identifiers, sale information, warranty, service history, service items, accessories, and safety recalls.
+/// </summary>
 [TypeScriptModel]
+[Docable]
 public class VehicleLookupDTO
 {
+    /// <summary>
+    /// The Vehicle Identification Number (VIN) that was looked up.
+    /// </summary>
     public string VIN { get; set; } = default!;
 
+    /// <summary>
+    /// The vehicle's <see cref="VehicleIdentifiersDTO">identifiers</see> (VIN, Variant, Katashiki, Color, Trim, Brand).
+    /// </summary>
     public VehicleIdentifiersDTO Identifiers { get; set; }
 
+    /// <summary>
+    /// The vehicle's <see cref="VehicleSaleInformation">sale information</see> including invoice date, dealer, and broker details.
+    /// </summary>
     public VehicleSaleInformation SaleInformation { get; set; }
 
+    /// <summary>
+    /// A list of <see cref="PaintThicknessInspectionDTO">paint thickness inspections</see> performed on this vehicle.
+    /// </summary>
     public IEnumerable<PaintThicknessInspectionDTO> PaintThicknessInspections { get; set; }
 
+    [DocIgnore]
     [Obsolete("This property is deprecated. Use PaintThicknessInspections instead.")]
     public LegacyPaintThicknessDTO PaintThickness { get; set; }
 
+    /// <summary>
+    /// Indicates whether the vehicle is authorized (has official VIN entries or SSC records).
+    /// </summary>
     public bool IsAuthorized { get; set; }
 
+    /// <summary>
+    /// The vehicle's <see cref="VehicleWarrantyDTO">warranty information</see> including start/end dates and extended warranty.
+    /// </summary>
     public VehicleWarrantyDTO Warranty { get; set; }
 
+    /// <summary>
+    /// The next scheduled service date for this vehicle.
+    /// </summary>
     [JsonCustomDateTime("yyyy-MM-dd")]
     public DateTime? NextServiceDate { get; set; }
 
+    /// <summary>
+    /// The vehicle's <see cref="VehicleServiceHistoryDTO">service history</see> — a list of past service invoices with labor and part lines.
+    /// </summary>
     public IEnumerable<VehicleServiceHistoryDTO> ServiceHistory { get; set; }
 
-
+    [DocIgnore]
     [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
     [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public Guid? SSCLogId { get; set; }
 
+    /// <summary>
+    /// A list of <see cref="SscDTO">Special Service Campaigns (SSC)</see> / safety recalls affecting this vehicle.
+    /// </summary>
     public IEnumerable<SscDTO> SSC { get; set; }
 
+    /// <summary>
+    /// Parsed <see cref="VehicleVariantInfoDTO">variant information</see> (ModelCode, SFX, ModelYear) derived from the Variant string.
+    /// </summary>
     public VehicleVariantInfoDTO VehicleVariantInfo
     {
         get
@@ -76,11 +112,24 @@ public class VehicleLookupDTO
         }
     }
 
+    /// <summary>
+    /// The vehicle's <see cref="VehicleSpecificationDTO">technical specifications</see> (model, body, engine, transmission, colors).
+    /// </summary>
     public VehicleSpecificationDTO VehicleSpecification { get; set; }
 
+    /// <summary>
+    /// The <see cref="VehicleServiceItemDTO">service items</see> available for this vehicle (free and paid).
+    /// </summary>
     public IEnumerable<VehicleServiceItemDTO> ServiceItems { get; set; }
+
+    /// <summary>
+    /// The <see cref="AccessoryDTO">accessories</see> installed on this vehicle.
+    /// </summary>
     public IEnumerable<AccessoryDTO> Accessories { get; set; }
 
+    /// <summary>
+    /// The basic model code extracted from the Katashiki (first segment before the hyphen, with trailing L/R removed).
+    /// </summary>
     public string BasicModelCode
     {
         get

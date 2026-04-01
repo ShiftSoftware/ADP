@@ -3,7 +3,7 @@ hide:
     - toc
 ---
 Represents an invoice for paid service work performed on a vehicle.
- Contains the invoice metadata and a collection of  detailing the services performed.
+ Contains the invoice metadata and a collection of line items detailing the services performed.
 
 | Property | Summary |
 |----------|---------|

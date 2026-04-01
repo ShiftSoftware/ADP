@@ -3,7 +3,7 @@ hide:
     - toc
 ---
 Represents a customer record from a dealer's system.
- Each dealer may have its own customer record for the same person. The  links these into a unified identity.
+ Each dealer may have its own customer record for the same person. The Golden Customer links these into a unified identity.
 
 | Property | Summary |
 |----------|---------|

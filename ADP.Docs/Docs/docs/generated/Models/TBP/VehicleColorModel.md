@@ -3,7 +3,7 @@ hide:
     - toc
 ---
 Represents a vehicle color in the broker system, with a code and description.
- Used for both exterior and interior colors on .
+ Used for both exterior and interior colors on broker vehicles.
 
 | Property | Summary |
 |----------|---------|

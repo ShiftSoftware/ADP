@@ -2,7 +2,7 @@
 hide:
     - toc
 ---
-Represents a claimable service item offered through a .
+Represents a claimable service item offered through a Service Campaign.
  Service items define what services are available to vehicles, including validity periods, costs (fixed or per-model), and campaign activation rules.
 
 | Property | Summary |

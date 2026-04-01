@@ -1,13 +1,17 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using ShiftSoftware.ADP.Lookup.Services;
 using ShiftSoftware.ADP.Models;
 using System.Text;
 
 var baseDir = AppContext.BaseDirectory;
 var modelFiles = Directory.GetFiles(Path.Combine(Path.GetFullPath(Path.Combine(baseDir, "../../../../../ADP.Models"))), "*.cs", SearchOption.AllDirectories);
+var lookupServiceFiles = Directory.GetFiles(Path.Combine(Path.GetFullPath(Path.Combine(baseDir, "../../../../../ADP.LookupServices"))), "*.cs", SearchOption.AllDirectories);
 
-foreach (var file in modelFiles)
+var allFiles = modelFiles.Concat(lookupServiceFiles);
+
+foreach (var file in allFiles)
 {
     var source = File.ReadAllText(file);
     var tree = CSharpSyntaxTree.ParseText(source);
@@ -19,10 +23,22 @@ foreach (var file in modelFiles)
             MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(DocableAttribute).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(System.Runtime.GCSettings).Assembly.Location),
-            MetadataReference.CreateFromFile(typeof(DocIgnoreAttribute).Assembly.Location)
+            MetadataReference.CreateFromFile(typeof(DocIgnoreAttribute).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(LookupOptions).Assembly.Location)
         );
 
-    var destinationPath = file.Contains("") ? file.Substring(file.IndexOf(@"\ADP.Models") + 12) : ""; // Handle Later
+    string destinationPath;
+    if (file.Contains(@"\ADP.LookupServices"))
+    {
+        // e.g., Lookup.Services\DTOsAndModels\VehicleLookup\VehicleLookupDTO.cs -> LookupServices\DTOsAndModels\VehicleLookup\VehicleLookupDTO.cs
+        destinationPath = file.Substring(file.IndexOf(@"\ADP.LookupServices") + @"\ADP.LookupServices\".Length);
+        if (destinationPath.StartsWith(@"Lookup.Services"))
+            destinationPath = "LookupServices" + destinationPath.Substring("Lookup.Services".Length);
+    }
+    else
+    {
+        destinationPath = file.Contains("") ? file.Substring(file.IndexOf(@"\ADP.Models") + 12) : "";
+    }
 
     var sb = new StringBuilder();
 
@@ -155,7 +171,20 @@ static string GetSummary(SyntaxNode node, SemanticModel semanticModel)
                         {
                             // Use full name with namespace
                             var fullName = typeSymbol.ToDisplayString(); // e.g., "ShiftSoftware.ADP.Models.Part.CountryDataModel"
-                            var markdownLink = fullName.Substring(fullName.IndexOf(@"ADP.Models") + 4).Replace('.', '/') + ".html";
+                            string markdownLink;
+                            if (fullName.Contains("ADP.Lookup.Services"))
+                            {
+                                // ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.X -> LookupServices/DTOsAndModels/X.html
+                                markdownLink = "LookupServices/" + fullName.Substring(fullName.IndexOf("ADP.Lookup.Services.") + "ADP.Lookup.Services.".Length).Replace('.', '/') + ".html";
+                            }
+                            else if (fullName.Contains("ADP.Models"))
+                            {
+                                markdownLink = fullName.Substring(fullName.IndexOf(@"ADP.Models") + 4).Replace('.', '/') + ".html";
+                            }
+                            else
+                            {
+                                markdownLink = fullName.Replace('.', '/') + ".html";
+                            }
                             sb.Append($"[{linkText}](/generated/{markdownLink})");
                         }
                     }
@@ -182,13 +211,23 @@ string? GetSyntaxNodeSummary(SyntaxNode node)
 
             if (summaryElement != null)
             {
-                // Extract only the text content from the summary
-                var text = string.Concat(summaryElement.Content
-                    .OfType<XmlTextSyntax>()
-                    .SelectMany(t => t.TextTokens)
-                    .Select(t => t.Text));
+                var sb2 = new StringBuilder();
 
-                return text.Trim();
+                foreach (var c in summaryElement.Content)
+                {
+                    if (c is XmlTextSyntax text)
+                    {
+                        sb2.Append(string.Concat(text.TextTokens.Select(t => t.Text)));
+                    }
+                    else if (c is XmlElementSyntax element && element.StartTag.Name.ToString() == "see")
+                    {
+                        // Extract the display text from inside the <see> element
+                        var linkText = string.Concat(element.Content.Select(e => e.ToFullString())).Trim();
+                        sb2.Append(linkText);
+                    }
+                }
+
+                return sb2.ToString().Trim();
             }
         }
     }

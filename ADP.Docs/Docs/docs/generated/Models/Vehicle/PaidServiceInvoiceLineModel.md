@@ -2,8 +2,8 @@
 hide:
     - toc
 ---
-Represents a line item within a .
- Each line corresponds to a specific  that was performed and paid for.
+Represents a line item within a Paid Service Invoice.
+ Each line corresponds to a specific Service Item that was performed and paid for.
 
 | Property | Summary |
 |----------|---------|

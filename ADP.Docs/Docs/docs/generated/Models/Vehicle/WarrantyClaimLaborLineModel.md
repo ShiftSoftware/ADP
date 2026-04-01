@@ -2,7 +2,7 @@
 hide:
     - toc
 ---
-Represents a labor line item within a .
+Represents a labor line item within a Warranty Claim.
  Each line captures a specific labor operation performed during the warranty repair.
 
 | Property | Summary |
