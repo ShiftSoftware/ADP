@@ -94,7 +94,7 @@ export class FormHook<T> {
     this.updateStep(1, true);
     this.stepFormValues = {};
     this.subscribers.forEach(subscriber => {
-      subscriber.context?.reset();
+      if (subscriber.context?.reset) subscriber.context?.reset();
     });
     this.pendingRequests = {};
 

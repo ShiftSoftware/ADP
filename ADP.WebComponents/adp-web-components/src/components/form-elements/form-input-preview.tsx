@@ -24,17 +24,23 @@ export class FormStepper implements FormElement {
     this.form.unsubscribe(formStepperId);
   }
 
+  private parseTemplate(template?: string) {
+    if (!template) return '';
+
+    return template.replace(/\$\{(.*?)\}/g, (_, fieldName: string) => {
+      const value = this.form?.getValue(fieldName?.trim());
+      return value != null ? String(value) : '';
+    });
+  }
+
   render() {
     const [_, language] = this.form.getFormLocale();
 
-    return (
-      <form-input
-        key={this?.name}
-        form={this.form}
-        {...this?.props}
-        localization={this?.localization}
-        inputProps={{ readOnly: true, value: this?.localization?.[language]?.value?.replaceAll('${' + this?.name + '}', (this.form?.getValue(this?.name) || '') as string) }}
-      />
-    );
+    const rawValue = this?.localization?.[language]?.value;
+    const parsedValue = this.parseTemplate(rawValue);
+
+    // @ts-ignore
+    window?.ss = this.form;
+    return <form-input key={this?.name} form={this.form} {...this?.props} localization={this?.localization} inputProps={{ readOnly: true, value: parsedValue }} />;
   }
 }

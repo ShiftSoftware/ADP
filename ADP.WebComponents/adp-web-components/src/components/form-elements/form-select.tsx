@@ -35,6 +35,7 @@ export class FormSelect implements FormElement {
   @Prop() fetcher: FormSelectFetcher;
   @Prop() staticValue?: FormSelectItem;
   @Prop() language: LanguageKeys = 'en';
+  @Prop() reverseOptions?: boolean = false;
   @Prop() forceOpenUpwards?: boolean = false;
   @Prop({ mutable: true }) clearable = false;
   @Prop({ mutable: true }) defaultValue: string;
@@ -255,7 +256,7 @@ export class FormSelect implements FormElement {
               })}
             >
               {!!filteredOptions.length &&
-                filteredOptions.map(option => (
+                (this.reverseOptions ? [...filteredOptions].reverse() : filteredOptions).map(option => (
                   <button
                     type="button"
                     part={cn(`${this.name}-select-option form-select-option`, { 'form-select-option-selected': this.selectedValue === option.value })}
