@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 namespace ShiftSoftware.ADP.Lookup.Services.Services;
 
 public class DuckDBVehicleReportService(
-    DuckDB.NET.Data.DuckDBConnection connection,
+    global::DuckDB.NET.Data.DuckDBConnection connection,
     VehicleLookupService vehicleLookupService) : IVehicleReportService
 {
     private const int LookupBatchSize = 1_000_000;

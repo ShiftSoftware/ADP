@@ -1,5 +1,4 @@
-﻿using DuckDB.NET.Data;
-using Microsoft.Azure.Cosmos;
+﻿using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.DependencyInjection;
 using ShiftSoftware.ADP.Lookup.Services.Services;
 using System;
@@ -21,11 +20,6 @@ public static class IServiceCollectionExtensions
         if (options.VehicleLookupStorageSource == Enums.StorageSources.CosmosDB)
         {
             services.AddScoped<IVehicleLoockupStorageService>(x => new CosmosVehicleLoockupStorageService(x.GetRequiredService<CosmosClient>()));
-        }
-        else if (options.VehicleLookupStorageSource == Enums.StorageSources.DuckDB)
-        {
-            services.AddScoped<IVehicleLoockupStorageService>(x => new DuckDBVehicleLoockupStorageService(x.GetRequiredService<DuckDBConnection>()));
-            services.AddScoped<IVehicleReportService, DuckDBVehicleReportService>();
         }
 
         services.AddScoped<ILogCosmosService>(x => new LogCosmosService(x.GetRequiredService<CosmosClient>()));
