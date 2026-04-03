@@ -106,7 +106,7 @@ export class GeneralForm implements FormHookInterface<any>, MultiLingual {
   // #endregion
   render() {
     return (
-      <Host>
+      <Host translate="no">
         <div part={cn('shift-form', this.structure?.data?.theme, this.theme)}>
           <div part="form-container" class="relative min-h-[150px]">
             <div

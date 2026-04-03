@@ -170,7 +170,7 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
     const colWidths = { panel: 200, position: 200, side: 150 };
 
     return (
-      <Host>
+      <Host translate="no">
         <ImageViewer closeImageViewer={() => closeImageViewer.bind(this)()} expandedImage={this.expandedImage} />
 
         <VehicleInfoLayout

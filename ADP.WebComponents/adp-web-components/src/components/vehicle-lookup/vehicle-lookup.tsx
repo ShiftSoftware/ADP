@@ -324,7 +324,7 @@ export class VehicleLookup implements MultiLingual {
     };
 
     return (
-      <Host>
+      <Host translate="no">
         <VehicleInfoLayout
           isError={this.isError}
           header={this.currentVin}

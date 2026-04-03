@@ -446,7 +446,7 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
     const hasInactiveItems = this.vehicleLookup?.warranty?.activationIsRequired ?? false;
 
     return (
-      <Host>
+      <Host translate="no">
         <vehicle-item-claim-form
           class="vehicle-item-claim-form"
           maximumDocumentFileSizeInMb={this.maximumDocumentFileSizeInMb}

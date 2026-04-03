@@ -113,7 +113,7 @@ export class FormInput implements FormElement {
     const { label, placeholder, errorTextMessage } = getInputLocalization(this, meta, errorMessage);
 
     return (
-      <Host>
+      <Host translate="no">
         <label part={this.name} id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, { disabled: isDisabled })}>
           <FormInputLabel isRequired={isRequired} label={label} />
 

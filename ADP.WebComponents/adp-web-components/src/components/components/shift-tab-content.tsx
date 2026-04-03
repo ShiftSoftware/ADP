@@ -40,7 +40,7 @@ export class ShiftTabContent {
 
   render() {
     return (
-      <Host>
+      <Host translate="no">
         <flexible-container>
           {Object.entries(this.components).map(([componentName, component]) => (
             <div

@@ -134,7 +134,7 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
     ];
 
     return (
-      <Host>
+      <Host translate="no">
         <VehicleInfoLayout
           isError={this.isError}
           coreOnly={this.coreOnly}

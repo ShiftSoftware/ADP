@@ -229,7 +229,7 @@ export class PartLookup implements MultiLingual {
       ),
     };
     return (
-      <Host class="part-lookup">
+      <Host class="part-lookup" translate="no">
         <VehicleInfoLayout
           isError={this.isError}
           header={this.header}

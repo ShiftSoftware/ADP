@@ -36,7 +36,7 @@ export class ShiftSwitch {
 
   render() {
     return (
-      <Host>
+      <Host translate="no">
         <label part="shift-checkbox" class={cn('relative flex items-center cursor-pointer select-none', { 'opacity-75 cursor-default': this.disabled })}>
           <input type="checkbox" value="true" name={this.name} checked={this.checked} disabled={this.disabled} onChange={this.onChange} class="shift-checkbox peer hidden" />
           <div class="relative w-[50px] h-[24px] rounded-full border-2 border-blue-300 bg-blue-100 peer-checked:bg-blue-500 peer-checked:[&_div]:translate-x-[28px] peer-checked:border-blue-500 transition-colors duration-300">

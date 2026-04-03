@@ -299,7 +299,7 @@ export class VehicleItemClaimForm implements ImageViewerInterface {
     const isFormValid = this.getIsFormValid();
 
     return (
-      <Host>
+      <Host translate="no">
         <ImageViewer
           style={{ 'z-index': '99999999' }}
           expandedImage={this.expandedImage}

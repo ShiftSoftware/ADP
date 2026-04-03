@@ -211,13 +211,13 @@ export class FormSelect implements FormElement {
 
     if (this.isHidden)
       return (
-        <Host style={{ display: this.isHidden ? 'none' : 'block' }}>
+        <Host translate="no" style={{ display: this.isHidden ? 'none' : 'block' }}>
           <form-shadow-input name={this.name} form={this.form} value={this.selectedValue} />
         </Host>
       );
 
     return (
-      <Host>
+      <Host translate="no">
         <label part={`${this.name}`} id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, { disabled: disableInput })}>
           <FormInputLabel name={this.name} isRequired={isRequired || this.isRequired} label={label} />
 

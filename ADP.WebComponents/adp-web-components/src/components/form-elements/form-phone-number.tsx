@@ -101,7 +101,7 @@ export class FormPhoneNumber implements FormElement {
     const isDisabled = disabled || this.isLoading || !!this.staticValue || this.isDisabled;
 
     return (
-      <Host>
+      <Host translate="no">
         <label part={this.name} id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, { disabled: isDisabled })}>
           <FormInputLabel name={this.name} isRequired={isRequired} label={label} />
 

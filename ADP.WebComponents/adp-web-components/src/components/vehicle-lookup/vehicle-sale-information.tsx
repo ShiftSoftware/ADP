@@ -211,7 +211,7 @@ export class VehicleSaleInformation implements MultiLingual, VehicleInfoLayoutIn
     const filteredEndCustomerFields = END_CUSTOMER_FIELDS.filter(field => !hiddenFields.includes(field.fieldName));
 
     return (
-      <Host>
+      <Host translate="no">
         <VehicleInfoLayout
           isError={this.isError}
           coreOnly={this.coreOnly}

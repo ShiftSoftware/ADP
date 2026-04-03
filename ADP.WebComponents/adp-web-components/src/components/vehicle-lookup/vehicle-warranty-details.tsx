@@ -357,7 +357,7 @@ export class VehicleWarrantyDetails implements MultiLingual, VehicleInfoLayoutIn
     };
 
     return (
-      <Host>
+      <Host translate="no">
         <VehicleInfoLayout
           isError={this.isError}
           coreOnly={this.coreOnly}

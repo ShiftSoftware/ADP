@@ -116,7 +116,7 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
     }
 
     return (
-      <Host>
+      <Host translate="no">
         <VehicleInfoLayout
           isError={this.isError}
           coreOnly={this.coreOnly}

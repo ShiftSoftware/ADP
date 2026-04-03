@@ -153,7 +153,7 @@ export class VehicleAccessories implements MultiLingual, VehicleInfoLayoutInterf
     };
 
     return (
-      <Host>
+      <Host translate="no">
         <ImageViewer closeImageViewer={() => closeImageViewer.bind(this)()} expandedImage={this.expandedImage} />
 
         <VehicleInfoLayout

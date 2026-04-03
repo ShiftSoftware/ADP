@@ -48,7 +48,7 @@ export class FormInput {
     const [locale] = this.form.getFormLocale();
 
     return (
-      <Host>
+      <Host translate="no">
         <div
           part="form-dialog-modal"
           dir={locale.sharedFormLocales.direction}
