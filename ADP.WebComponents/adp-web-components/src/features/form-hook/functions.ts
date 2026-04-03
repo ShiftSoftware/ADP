@@ -6,7 +6,7 @@ import { fetchJson } from '~lib/fetch-json';
 import { AnyObjectSchema } from 'yup';
 import { Grecaptcha } from '~lib/recaptcha';
 import { formatISO, parse } from 'date-fns';
-import { isValidPhoneNumber } from 'libphonenumber-js';
+//import { isValidPhoneNumber } from 'libphonenumber-js';
 
 export type FormLanguageChange = {
   form: FormHook<any>;

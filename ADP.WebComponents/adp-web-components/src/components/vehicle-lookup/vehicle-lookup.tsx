@@ -87,6 +87,9 @@ export class VehicleLookup implements MultiLingual {
   @State() currentVin: string = '';
   @State() isError: boolean = false;
   @State() isLoading: boolean = false;
+
+  private searchGeneration = 0;
+
   @State() blazorRef?: DotNetObjectReference;
 
   @Element() el: HTMLElement;
@@ -159,9 +162,14 @@ export class VehicleLookup implements MultiLingual {
 
   @Method()
   async handleLoadData(newResponse: VehicleLookupDTO, activeElement) {
+    const generation = this.searchGeneration;
     this.isError = false;
     this.errorMessage = '';
     this.currentVin = newResponse.vin || '';
+
+    // Skip distributing to non-active components if a new search has started
+    if (generation !== this.searchGeneration) return;
+
     Object.values(this.componentsList).forEach(element => {
       if (element !== null && element !== activeElement && newResponse) element.fetchVin(newResponse);
     });
@@ -191,6 +199,8 @@ export class VehicleLookup implements MultiLingual {
     this.componentsList[componentTags.vehicleClaimableItems].headers = headers;
 
     if (!activeElement) return;
+
+    this.searchGeneration++;
 
     activeElement.fetchVin(vin, headers);
   }
