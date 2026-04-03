@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 	<Import Project="..\..\GlobalSettings.props" />
 
 	<PropertyGroup>
@@ -15,7 +15,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="CsvHelper" Version="33.1.0" />
-		<PackageReference Include="DuckDB.NET.Data.Full" Version="1.4.4" />
+		<PackageReference Include="DuckDB.NET.Data.Full" Version="1.5.0" />
 		<PackageReference Include="Parquet.Net" Version="5.5.0" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.5" />
 		<PackageReference Include="ShiftSoftware.ADP.Lookup.Services" Version="$(ADPVersion)" Condition="!Exists('..\Lookup.Services\Lookup.Services.csproj')" />
