@@ -1,19 +1,14 @@
 import { Component, Element, Host, Prop, State, Watch, forceUpdate, h } from '@stencil/core';
 
 import cn from '~lib/cn';
-import { getNestedValue } from '~lib/get-nested-value';
 
 import { FormHook } from '~features/form-hook/form-hook';
 import { ErrorKeys, LanguageKeys } from '~features/multi-lingual';
 import { FormElement, FormInputMeta, FormSelectFetcher, FormSelectItem, FormInputLocalization, getInputLocalization } from '~features/form-hook/';
 
-import Loader from '~assets/loader.svg';
-import { TickIcon } from '~assets/tick-icon';
-import { ArrowUpIcon } from '~assets/arrow-up-icon';
-
 import { FormInputLabel } from './components/form-input-label';
 import { FormErrorMessage } from './components/form-error-message';
-import { AddIcon } from '~assets/add-icon';
+import { getNestedValue } from '~lib/get-nested-value';
 
 @Component({
   shadow: false,
@@ -42,15 +37,16 @@ export class FormSelect implements FormElement {
   @Prop() localization?: FormInputLocalization = {};
 
   @State() searchValue = '';
-  @State() isFetching: boolean;
   @State() isOpen: boolean = false;
   @State() selectedValue: string = '';
-  @State() openUpwards: boolean = false;
-  @State() options: FormSelectItem[] = [];
 
+  @State() isFetching: boolean;
+
+  @State() options: FormSelectItem[] = [];
   @State() fetchingErrorMessage?: ErrorKeys = null;
 
   @Element() el!: HTMLElement;
+
   private abortController: AbortController;
 
   @Watch('language')
@@ -70,55 +66,23 @@ export class FormSelect implements FormElement {
 
   async componentWillLoad() {
     this.form.subscribe(this.name, this);
+
     if (this.staticValue) {
       this.defaultValue = this.staticValue.value;
       this.clearable = false;
     }
-    this.selectedValue = this.defaultValue;
   }
 
   async disconnectedCallback() {
     this.abortController?.abort();
     this.form.unsubscribe(this.name);
-    document.removeEventListener('click', this.closeDropdown);
-    document.removeEventListener('keydown', this.handleKeyDown.bind(this));
   }
 
-  toggleDropdown = () => {
-    if (this.isOpen && !this.searchable) this.isOpen = false;
-    else this.adjustDropdownPosition();
-  };
-
-  adjustDropdownPosition() {
-    requestAnimationFrame(() => {
-      const selectButton = this.el.getElementsByClassName('form-input-select')[0] as HTMLDivElement;
-      const selectContainer = this.el.getElementsByClassName('form-select-container')[0] as HTMLDivElement;
-
-      const rect = selectButton.getBoundingClientRect();
-
-      const spaceBelow = window.innerHeight - rect.bottom - 20; // 20 is padding
-
-      this.openUpwards = spaceBelow < selectContainer.getBoundingClientRect().height || this.forceOpenUpwards;
-
-      setTimeout(() => {
-        this.isOpen = true;
-      }, 10);
-    });
-  }
-
-  handleSelection(option: FormSelectItem) {
+  handleSelection = (option: FormSelectItem) => {
     this.selectedValue = option.value;
     this.searchValue = option.label;
     this.isOpen = false;
-  }
-
-  handleKeyDown(event: KeyboardEvent) {
-    if (!this.isOpen) return;
-
-    if (event.key === 'Escape') {
-      this.isOpen = false;
-    }
-  }
+  };
 
   reset = (newValue: string = '') => {
     const defaultOption = this.options.find(opt => opt.value === newValue || opt.value === this.defaultValue) || { value: newValue, label: '' };
@@ -126,10 +90,10 @@ export class FormSelect implements FormElement {
     this.handleSelection(defaultOption);
   };
 
-  closeDropdown = (event: MouseEvent) => {
-    if (!this.el.contains(event.target as Node)) {
-      this.isOpen = false;
-    }
+  updateShiftSelectContext = (newValues: Record<string, any>) => {
+    Object.entries(newValues).forEach(([key, value]) => {
+      this[key] = value;
+    });
   };
 
   async fetch() {
@@ -170,27 +134,8 @@ export class FormSelect implements FormElement {
     }
   }
 
-  onSearchInput = (event: InputEvent) => {
-    const target = event.target as HTMLInputElement;
-
-    this.searchValue = target.value;
-    this.selectedValue = '';
-  };
-
-  clearInput = () => {
-    this.searchValue = '';
-    this.selectedValue = '';
-
-    const selectButton = this.el.getElementsByClassName('form-input-select')[0] as HTMLDivElement;
-
-    selectButton.focus();
-    if (!this.isOpen) this.adjustDropdownPosition();
-  };
-
   async componentDidLoad() {
     this.fetch();
-    document.addEventListener('click', this.closeDropdown);
-    document.addEventListener('keydown', this.handleKeyDown.bind(this));
   }
 
   render() {
@@ -221,69 +166,29 @@ export class FormSelect implements FormElement {
         <label part={`${this.name}`} id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, { disabled: disableInput })}>
           <FormInputLabel name={this.name} isRequired={isRequired || this.isRequired} label={label} />
 
-          <div part={`${this.name}-container form-input-container`} class={cn('form-input-container', { open: this.isOpen, disableInput })}>
-            <form-shadow-input name={this.name} form={this.form} value={this.selectedValue} />
-            <input
-              type="text"
-              disabled={disableInput}
-              part={`${this.name}-input-select form-input-select`}
-              value={this.searchable ? this.searchValue : selectedItem?.label || ''}
-              readOnly={!this.searchable}
-              onInput={this.onSearchInput}
-              onClick={this.toggleDropdown}
-              placeholder={placeholder || meta?.placeholder}
-              class={cn('form-input-style form-input-select', {
-                'form-input-error-style': isError,
-              })}
-            />
+          <form-shadow-input name={this.name} form={this.form} value={this.selectedValue} />
+          <shift-select
+            name={this.name}
+            isError={isError}
+            isOpen={this.isOpen}
+            options={filteredOptions}
+            clearable={this.clearable}
+            isLoading={this.isFetching}
+            disableInput={disableInput}
+            searchable={this.searchable}
+            searchValue={this.searchValue}
+            selectedValue={this.selectedValue}
+            reverseOptions={this.reverseOptions}
+            handleSelection={this.handleSelection}
+            forceOpenUpwards={this.forceOpenUpwards}
+            updateContext={this.updateShiftSelectContext}
+            placeholder={placeholder || meta?.placeholder}
+            noSelectionText={locale?.sharedFormLocales?.noSelectOptions}
+            fetchingErrorText={
+              !this.fetchingErrorMessage ? '' : getNestedValue(locale, this.fetchingErrorMessage) || this.fetchingErrorMessage || locale?.sharedFormLocales?.errors?.wildCard
+            }
+          ></shift-select>
 
-            <div part={`${this.name}-select-icon-container form-input-select-icon-container`} class="form-input-select-icon-container">
-              {(selectedItem || this.searchValue) && this.clearable ? (
-                <AddIcon part={`${this.name}-cross-icon`} onClick={this.clearInput} class="form-input-select-icon cross" />
-              ) : (
-                <ArrowUpIcon part={`${this.name}-arrow-icon select-arrow`} class="form-input-select-icon arrow" />
-              )}
-            </div>
-
-            <div
-              part={cn(`${this.name}-select-container form-select-container`, {
-                'form-select-container-upwards': this.openUpwards || this.forceOpenUpwards,
-                'form-select-container-downwards': !this.openUpwards && !this.forceOpenUpwards,
-              })}
-              class={cn('form-select-container', {
-                upwards: this.openUpwards || this.forceOpenUpwards,
-                downwards: !this.openUpwards && !this.forceOpenUpwards,
-              })}
-            >
-              {!!filteredOptions.length &&
-                (this.reverseOptions ? [...filteredOptions].reverse() : filteredOptions).map(option => (
-                  <button
-                    type="button"
-                    part={cn(`${this.name}-select-option form-select-option`, { 'form-select-option-selected': this.selectedValue === option.value })}
-                    onClick={() => this.handleSelection(option)}
-                    class={cn('form-select-option', {
-                      selected: this.selectedValue === option.value,
-                    })}
-                  >
-                    <div part={`${this.name}-select-option-label form-select-option-label`} class="form-select-option-label">
-                      {option.label}
-                    </div>
-                    <TickIcon part={`${this.name}-tick-icon`} class="form-select-option-tick" />
-                  </button>
-                ))}
-              {!filteredOptions.length && (
-                <div part={`${this.name}-select-empty-container form-select-empty-container`} class={cn('form-select-empty-container', { error: this.fetchingErrorMessage })}>
-                  {this.fetchingErrorMessage && (getNestedValue(locale, this.fetchingErrorMessage) || this.fetchingErrorMessage || locale?.sharedFormLocales?.errors?.wildCard)}
-                  {!this.fetchingErrorMessage &&
-                    (this.isFetching ? (
-                      <img part={`${this.name}-select-spinner form-select-spinner`} class="form-select-spinner" src={Loader} />
-                    ) : (
-                      locale?.sharedFormLocales?.noSelectOptions
-                    ))}
-                </div>
-              )}
-            </div>
-          </div>
           <FormErrorMessage name={this.name} isError={isError} errorMessage={errorTextMessage} />
         </label>
       </Host>

@@ -34,12 +34,13 @@ export class FormPhoneNumber implements FormElement {
   @Prop() staticValue?: string;
   @State() prefixWidth: number = 0;
   @Prop() localization?: FormInputLocalization = {};
-  @Prop() countryCode?: string | { code: string; icon?: string }[] = 'IQ';
+  @Prop() countryCode?: string | string[] | { code: string; icon?: string }[] = 'IQ';
 
   @Element() el: HTMLElement;
 
   @State() validator: PhoneValidator;
   @State() selectedCountryCode: CountryCode;
+  @State() externalRequired: boolean = false;
 
   private inputRef: HTMLInputElement;
 
@@ -117,7 +118,7 @@ export class FormPhoneNumber implements FormElement {
     let v: AnyObjectSchema = string().meta(y.meta(this.name));
 
     v = v.test(y.require(this.name), y.require(this.name), value => {
-      if (!this.required) return true;
+      if (!this.externalRequired && !this.required) return true;
       return !!value.replace(this.inputPrefix, '').trim();
     });
 
@@ -153,7 +154,7 @@ export class FormPhoneNumber implements FormElement {
 
     const isDisabled = disabled || this.isLoading || !!this.staticValue || this.isDisabled || !this.selectedCountryCode;
 
-    this.required = isRequired;
+    this.externalRequired = isRequired;
 
     return (
       <Host translate="no">
