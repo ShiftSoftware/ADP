@@ -90,6 +90,10 @@ export class FormPhoneNumber implements FormElement {
     target.value = this.validator.input(target.value as string);
   };
 
+  getValue = () => {
+    return this.inputRef.value;
+  };
+
   render() {
     const { disabled, isRequired, meta, isError, errorMessage } = this.form.getInputState<FormInputMeta>(this.name);
     const [locale] = this.form.getFormLocale();

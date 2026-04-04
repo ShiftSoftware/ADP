@@ -93,6 +93,7 @@ export type Params = {
 export type FormFieldParams = Record<string, Params>;
 
 export interface FormElement {
+  getValue?: () => any;
   validate?: () => AnyObjectSchema;
   reset: (newValue?: unknown) => void;
   partialValidation?: (validation: AnyObjectSchema) => AnyObjectSchema;

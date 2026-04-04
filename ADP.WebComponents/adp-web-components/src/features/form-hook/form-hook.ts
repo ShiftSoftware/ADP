@@ -169,6 +169,13 @@ export class FormHook<T> {
     const elements = form.querySelectorAll('[name]') as NodeListOf<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>;
 
     elements.forEach(el => {
+      const elementContext = this.subscribers.find(sub => sub.name === el.name)?.context;
+
+      if (elementContext && elementContext?.getValue) {
+        formObject[el.name] = elementContext.getValue();
+        return;
+      }
+
       if (el.disabled) {
         formObject[el.name] = el.value;
         return;
