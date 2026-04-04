@@ -166,7 +166,6 @@ export class FormSelect implements FormElement {
         <label part={`${this.name}`} id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, { disabled: disableInput })}>
           <FormInputLabel name={this.name} isRequired={isRequired || this.isRequired} label={label} />
 
-          <form-shadow-input name={this.name} form={this.form} value={this.selectedValue} />
           <shift-select
             name={this.name}
             isError={isError}
@@ -187,7 +186,9 @@ export class FormSelect implements FormElement {
             fetchingErrorText={
               !this.fetchingErrorMessage ? '' : getNestedValue(locale, this.fetchingErrorMessage) || this.fetchingErrorMessage || locale?.sharedFormLocales?.errors?.wildCard
             }
-          ></shift-select>
+          >
+            <form-shadow-input name={this.name} form={this.form} value={this.selectedValue} />
+          </shift-select>
 
           <FormErrorMessage name={this.name} isError={isError} errorMessage={errorTextMessage} />
         </label>

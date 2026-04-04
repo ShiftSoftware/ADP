@@ -13,6 +13,8 @@ import { AddIcon } from '~assets/add-icon';
 })
 export class ShiftSelect {
   @Prop() name: string;
+  @Prop() hasTick = true;
+  @Prop() hasArrow = true;
   @Prop() searchValue = '';
   @Prop() isError?: boolean;
   @Prop() searchable: boolean;
@@ -29,6 +31,8 @@ export class ShiftSelect {
   @Prop() fetchingErrorText?: string | boolean;
   @Prop() handleSelection: (option: FormSelectItem) => void;
   @Prop() onSelection?: (newSelection: FormSelectItem) => void;
+  @Prop() renderOption?: (option: FormSelectItem, isSelected) => any;
+  @Prop() fullRenderOption?: (option: FormSelectItem, isSelected, handleSelection) => any;
   @Prop() updateContext: (newValues: Partial<{ isOpen: boolean; searchValue: string; selectedValue: string }>) => void;
 
   @State() openUpwards: boolean = false;
@@ -42,6 +46,7 @@ export class ShiftSelect {
   async componentDidLoad() {
     document.addEventListener('click', this.closeDropdown);
     document.addEventListener('keydown', this.handleKeyDown.bind(this));
+    window.addEventListener('resize', this.handleResize);
   }
 
   adjustDropdownPosition() {
@@ -78,7 +83,14 @@ export class ShiftSelect {
   async disconnectedCallback() {
     document.removeEventListener('click', this.closeDropdown);
     document.removeEventListener('keydown', this.handleKeyDown.bind(this));
+    window.removeEventListener('resize', this.handleResize);
   }
+
+  handleResize = () => {
+    if (this.isOpen) {
+      this.adjustDropdownPosition();
+    }
+  };
 
   onSearchInput = (event: InputEvent) => {
     const target = event.target as HTMLInputElement;
@@ -119,11 +131,14 @@ export class ShiftSelect {
             })}
           />
 
-          <div part={`${this.name}-select-icon-container form-input-select-icon-container`} class="form-input-select-icon-container">
+          <div
+            part={`${this.name}-select-icon-container form-input-select-icon-container`}
+            class={cn('form-input-select-icon-container cursor-pointer', { 'pointer-events-none!': !((selectedItem || this.searchValue) && this.clearable) })}
+          >
             {(selectedItem || this.searchValue) && this.clearable ? (
               <AddIcon part={`${this.name}-cross-icon`} onClick={this.clearInput} class="form-input-select-icon cross" />
             ) : (
-              <ArrowUpIcon part={`${this.name}-arrow-icon select-arrow`} class="form-input-select-icon arrow" />
+              this.hasArrow && <ArrowUpIcon part={`${this.name}-arrow-icon select-arrow`} class="cursor-pointer form-input-select-icon pointer-events-none! arrow" />
             )}
           </div>
 
@@ -138,21 +153,29 @@ export class ShiftSelect {
             })}
           >
             {!!this.options.length &&
-              (this.reverseOptions ? [...this.options].reverse() : this.options).map(option => (
-                <button
-                  type="button"
-                  part={cn(`${this.name}-select-option form-select-option`, { 'form-select-option-selected': this.selectedValue === option.value })}
-                  onClick={() => this.handleSelection(option)}
-                  class={cn('form-select-option', {
-                    selected: this.selectedValue === option.value,
-                  })}
-                >
-                  <div part={`${this.name}-select-option-label form-select-option-label`} class="form-select-option-label">
-                    {option.label}
-                  </div>
-                  <TickIcon part={`${this.name}-tick-icon`} class="form-select-option-tick" />
-                </button>
-              ))}
+              (this.reverseOptions ? [...this.options].reverse() : this.options).map(option =>
+                this.fullRenderOption ? (
+                  this.fullRenderOption(option, this.selectedValue === option.value, this.handleSelection)
+                ) : (
+                  <button
+                    type="button"
+                    part={cn(`${this.name}-select-option form-select-option`, { 'form-select-option-selected': this.selectedValue === option.value })}
+                    onClick={() => this.handleSelection(option)}
+                    class={cn('form-select-option', {
+                      selected: this.selectedValue === option.value,
+                    })}
+                  >
+                    {this.renderOption ? (
+                      this.renderOption(option, this.selectedValue === option.value)
+                    ) : (
+                      <div part={`${this.name}-select-option-label form-select-option-label`} class="form-select-option-label">
+                        {option.label}
+                      </div>
+                    )}
+                    {this.hasTick && <TickIcon part={`${this.name}-tick-icon`} class="form-select-option-tick" />}
+                  </button>
+                ),
+              )}
             {!this.options.length && (
               <div part={`${this.name}-select-empty-container form-select-empty-container`} class={cn('form-select-empty-container', { error: this.fetchingErrorText })}>
                 {this.fetchingErrorText}

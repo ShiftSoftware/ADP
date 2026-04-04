@@ -190,9 +190,9 @@
   @apply !border-red-500 enabled:focus:shadow-[0_0_0_0.2rem_rgba(239,68,68,0.25)];
 }
 
-.form-input-select {
+/* .form-input-select {
   @apply pe-[36px];
-}
+} */
 
 .form-input-select[readonly] {
   @apply cursor-pointer;
@@ -427,4 +427,37 @@
   padding-right: 20px;
   justify-content: center;
   position: relative;
+}
+
+.form-input-container-country {
+  width: 100%;
+  display: flex;
+}
+
+.form-input-container-country shift-select .form-input-container input {
+  border-right: none !important;
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+.form-input-container-country .form-input-container-wrapper input {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+}
+
+.form-input-country-selection {
+  width: 100px;
+}
+
+.form-input-container-country .form-input-country-selection {
+  width: 75px;
+}
+
+.form-input-container-country .form-select-container {
+  width: 200px;
+}
+
+.form-phone-container .form-input-prefix {
+  left: 0px !important;
+  right: auto !important;
 }
