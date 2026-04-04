@@ -8,11 +8,8 @@ import { LoaderIcon } from '~assets/loader-icon';
 import { string } from 'yup';
 import { getFormValidations, y } from './defaults/validation';
 import { getFormMappers } from './defaults/mappers';
-import { getDefaultStateObject } from './defaults/state-object';
 
-let stateObject = getDefaultStateObject();
-
-const validation = getFormValidations(stateObject, {
+const validation = getFormValidations({
   generalTicketType: string()
     .meta(y.meta('generalTicketType'))
     .when(y.condition('generalTicketType'), {
@@ -22,7 +19,7 @@ const validation = getFormValidations(stateObject, {
     }),
 });
 
-const elementMapper: FormElementMapper<any, any> = getFormMappers(stateObject, {
+const elementMapper: FormElementMapper<any, any> = getFormMappers({
   generalTicketType: ({ language, props }) => {
     const fetcher: FormSelectFetcher = async ({}): Promise<FormSelectItem[]> => {
       const options = Array.isArray(props?.options) ? props?.options : [];

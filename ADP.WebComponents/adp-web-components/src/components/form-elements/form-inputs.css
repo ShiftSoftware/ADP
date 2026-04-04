@@ -89,7 +89,7 @@
 }
 
 .form-input-prefix {
-  @apply absolute h-[38px] px-2 left-0 top-0 pointer-events-none items-center justify-center flex rtl:left-auto rtl:right-0;
+  @apply absolute h-full opacity-80 px-2 left-0 top-0 pointer-events-none items-center justify-center flex rtl:left-auto rtl:right-0;
 }
 
 .form-input-label-container.disabled * {

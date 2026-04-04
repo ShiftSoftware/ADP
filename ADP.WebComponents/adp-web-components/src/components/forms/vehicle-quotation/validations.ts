@@ -1,7 +1,6 @@
 import { InferType, object, string } from 'yup';
 
 import { FormInputMeta } from '~features/form-hook';
-import { phoneValidator } from './element-mapper';
 
 export const vehicleQuotationInputsValidation = object({
   vehicle: string()
@@ -11,10 +10,7 @@ export const vehicleQuotationInputsValidation = object({
     .meta({ label: 'Full name', placeholder: 'Full name' } as FormInputMeta)
     .required('Full name is required')
     .min(3, 'Full name minimum'),
-  phone: string()
-    .meta({ label: 'Phone number', placeholder: 'Phone number' } as FormInputMeta)
-    .required('Phone number is required')
-    .test('phone-validation', 'Phone number format invalid', () => phoneValidator?.geIsValidPhoneNumber()),
+
   dealer: string()
     .meta({ label: 'Dealer', placeholder: 'Select a dealer' } as FormInputMeta)
     .required('Dealer is required'),
@@ -58,4 +54,4 @@ export const vehicleQuotationInputsValidation = object({
     }),
 });
 
-export type VehicleQuotation = InferType<typeof vehicleQuotationInputsValidation>;
+export type VehicleQuotation = InferType<typeof vehicleQuotationInputsValidation> & { phone?: string };

@@ -13,7 +13,9 @@ export const FormInputPrefix: FunctionalComponent<FormInputPrefixProps> = ({ dir
   return (
     <div
       dir={direction}
-      class="form-input-prefix"
+      class={cn('form-input-prefix', {
+        [`${name}-prefix`]: !!name,
+      })}
       part={cn('form-input-prefix', {
         [`${name}-prefix`]: !!name,
       })}

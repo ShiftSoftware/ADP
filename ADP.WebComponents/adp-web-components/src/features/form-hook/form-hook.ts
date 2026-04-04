@@ -288,10 +288,6 @@ export class FormHook<T> {
       if (this.context?.structure?.steps) {
         this.stepFormValues = { ...this?.stepFormValues, ...values };
 
-        console.log(this.context?.structure?.steps?.length);
-        console.log(this.formStructure?.currentStep);
-        console.log(this.context?.structure?.steps?.length === this.formStructure?.currentStep);
-
         if (this.context?.structure?.steps?.length === this.formStructure?.currentStep) await this.context.formSubmit(this.stepFormValues);
         else this.updateStep(1);
       } else await this.context.formSubmit(values);

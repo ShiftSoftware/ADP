@@ -1,13 +1,11 @@
 import { h } from '@stencil/core';
 
-import { FormElementMapper, FormSelectFetcher, FormSelectItem, getPhoneValidator, PhoneValidator } from '~features/form-hook';
+import { FormElementMapper, FormSelectFetcher, FormSelectItem } from '~features/form-hook';
 
 import { VehicleQuotation } from './validations';
 import { VehicleImageViewer } from './VehicleImageViewer';
 
-export let phoneValidator: PhoneValidator;
-
-type AdditionalFields = 'vehicleImage' | 'submit' | 'choose' | 'contact information' | 'current car';
+type AdditionalFields = 'vehicleImage' | 'submit' | 'choose' | 'contact information' | 'current car' | 'phone';
 
 export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, AdditionalFields> = {
   'submit': ({ props }) => <form-submit {...props} />,
@@ -16,13 +14,7 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Addit
     return <form-input {...props} />;
   },
 
-  'phone': ({ props, isLoading }) => {
-    if (!phoneValidator) {
-      phoneValidator = getPhoneValidator(props?.countryCode || '');
-    }
-
-    return <form-phone-number defaultValue={phoneValidator.default} {...props} isLoading={isLoading} validator={phoneValidator} />;
-  },
+  'phone': ({ props, isLoading }) => <form-phone-number isLoading={isLoading} {...props} />,
 
   'vehicle': ({ form, language, props }) => {
     const fetcher: FormSelectFetcher = async ({ signal }): Promise<FormSelectItem[]> => {

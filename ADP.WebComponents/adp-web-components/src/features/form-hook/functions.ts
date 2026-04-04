@@ -174,8 +174,6 @@ export const onFormSubmit = async <T>({ context, formValues, middleware, afterSu
   try {
     context.setIsLoading(true);
 
-    // if (formValues?.['phone'] && !isValidPhoneNumber(formValues?.['phone'])) delete formValues?.['phone'];
-
     Object.keys(formValues).forEach(key => {
       if (context[`${key}-format`]) {
         formValues[key] = context[`${key}-format`];

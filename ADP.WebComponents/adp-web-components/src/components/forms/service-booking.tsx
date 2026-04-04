@@ -7,13 +7,10 @@ import cn from '~lib/cn';
 import { LoaderIcon } from '~assets/loader-icon';
 import { getFormValidations } from './defaults/validation';
 import { getFormMappers } from './defaults/mappers';
-import { getDefaultStateObject } from './defaults/state-object';
 
-let stateObject = getDefaultStateObject();
+const validation = getFormValidations();
 
-const validation = getFormValidations(stateObject);
-
-const elementMapper: FormElementMapper<any, any> = getFormMappers(stateObject);
+const elementMapper: FormElementMapper<any, any> = getFormMappers();
 
 @Component({
   shadow: true,

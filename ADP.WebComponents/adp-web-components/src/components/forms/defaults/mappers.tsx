@@ -1,12 +1,12 @@
 import { h } from '@stencil/core';
-import { FormSelectFetcher, FormSelectItem, getPhoneValidator } from '~features/form-hook';
+import { FormSelectFetcher, FormSelectItem } from '~features/form-hook';
 import { VehicleImageViewer } from '../../form-elements/VehicleImageViewer';
 import { CalendarDaysIcon } from '~assets/calendar-days-icon';
 import { format, isBefore, isEqual } from 'date-fns';
 import { decodeTimeOffset } from '~lib/decode-time-offset';
 import { populateItems } from '~lib/populate-items';
 
-export const getFormMappers = (stateObject: Record<string, any>, extraMappers: Record<string, (prop: any) => any> = {}) => ({
+export const getFormMappers = (extraMappers: Record<string, (prop: any) => any> = {}) => ({
   submit: ({ props }) => <form-submit key={props?.name} {...props} />,
 
   inputPreview: ({ props }) => <form-input-preview key={props?.name} {...props} />,
@@ -33,13 +33,7 @@ export const getFormMappers = (stateObject: Record<string, any>, extraMappers: R
 
   vehicleImage: ({ form }) => <VehicleImageViewer form={form} />,
 
-  phone: ({ props, isLoading }) => {
-    if (!stateObject.phoneValidator) {
-      stateObject.phoneValidator = getPhoneValidator(props?.countryCode || '');
-    }
-
-    return <form-phone-number key={props?.name} defaultValue={stateObject.phoneValidator.default} {...props} isLoading={isLoading} validator={stateObject.phoneValidator} />;
-  },
+  phone: ({ props, isLoading }) => <form-phone-number key={props?.name} isLoading={isLoading} {...props} />,
 
   vehicle: ({ language, props }) => {
     const fetcher: FormSelectFetcher = async ({ signal, context }): Promise<FormSelectItem[]> => {

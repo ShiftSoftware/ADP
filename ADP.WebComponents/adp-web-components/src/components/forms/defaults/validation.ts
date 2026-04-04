@@ -15,7 +15,7 @@ export const condition = (name: string) => `$${name}Required`;
 
 export const y = { label, format, require, condition, placeholder, meta, size, max };
 
-export const getFormValidations = (stateObject: Record<string, any>, extraFields: Record<string, Schema> = {}) => {
+export const getFormValidations = (extraFields: Record<string, Schema> = {}) => {
   return object({
     name: string()
       .meta(meta('name'))
@@ -56,14 +56,6 @@ export const getFormValidations = (stateObject: Record<string, any>, extraFields
         is: true,
         otherwise: schema => schema.optional(),
         then: schema => schema.required(require('vin')).test(format('vin'), format('vin'), a => validateVin(a?.toUpperCase())),
-      }),
-
-    phone: string()
-      .meta(meta('phone'))
-      .when(condition('phone'), {
-        is: true,
-        otherwise: schema => schema.optional(),
-        then: schema => schema.required(require('phone')).test(format('phone'), format('phone'), () => stateObject?.phoneValidator?.geIsValidPhoneNumber()),
       }),
 
     vehicle: string()
