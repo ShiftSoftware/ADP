@@ -23,7 +23,7 @@ export class FormStructureError {
 
   render() {
     return (
-      <Host>
+      <Host translate="no">
         <div dir={this.sharedLocales.direction} part="form-structure-error-container" class="form-structure-error-container">
           <div part="form-structure-error-content" class="form-structure-error-content">
             {this.sharedLocales.errors.wrongFormStructure}

@@ -150,7 +150,7 @@ export class ManufacturerPartLookup implements MultiLingual, FormHookInterface<M
     const isComponentOpened = (!!this?.partLookup?.showManufacturerPartLookup && !this.closeManufacturerPartLookup) || this.standAlone;
 
     return (
-      <Host>
+      <Host translate="no">
         <flexible-container isOpened={isComponentOpened}>
           <div class="w-full max-w-[96vw] mx-auto pt-[32px]">
             <div class="bg-[#f6f6f6] rounded-md p-[16px]">

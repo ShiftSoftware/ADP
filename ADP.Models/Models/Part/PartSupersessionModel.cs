@@ -13,5 +13,8 @@ public class PartSupersessionModel
     public string PartNumber { get; set; } = default!;
 
 
+    /// <summary>
+    /// The supersession code indicating the type of supersession (e.g., direct replacement, optional alternative).
+    /// </summary>
     public int? SupersessionCode { get; set; } = default!;
 }

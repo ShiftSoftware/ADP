@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Warranty Details</title>
     <script src="./warranty-mock-data.js"></script>
+    <script src="./mock-loader.js"></script>
     <script nomodule src="/build/shift-components.js"></script>
     <script type="module" src="/build/shift-components.esm.js"></script>
   </head>
@@ -53,7 +54,7 @@
       document.addEventListener('DOMContentLoaded', function () {
         warranty = document.getElementById('warranty');
 
-        warranty.setMockData(mockData);
+        loadMockData('vehicle-lookup').then(data => warranty.setMockData(data));
 
         warranty.loadingStateChange = isLoading => {
           console.log('isLoading: ' + isLoading);

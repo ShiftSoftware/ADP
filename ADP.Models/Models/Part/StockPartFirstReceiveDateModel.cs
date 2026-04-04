@@ -31,6 +31,9 @@ public class StockPartFirstReceiveDateModel :
     /// </summary>
     public string Location { get; set; } = default!;
 
+    /// <summary>
+    /// The date this part was first received at this location.
+    /// </summary>
     public DateTimeOffset? FirstReceivedDate { get; set; }
 
     [DocIgnore]

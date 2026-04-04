@@ -62,10 +62,148 @@ nav:
           - Part Country Data: generated/Models/Part/PartCountryDataModel.md
           - Per Region Price: generated/Models/Part/RegionPriceModel.md
           - Stock Part: generated/Models/Part/StockPartModel.md
-          - Order Part Line: generated/Models/Part/OrderPartLineModel.md  
+          - Stock Part First Receive Date: generated/Models/Part/StockPartFirstReceiveDateModel.md
+          - Company Dead Stock Part: generated/Models/Part/CompanyDeadStockPartModel.md
+          - Order Part Line: generated/Models/Part/OrderPartLineModel.md
+          - Manufacturer Part Lookup: generated/Models/Part/ManufacturerPartLookupModel.md
       - Labor:
           - Order Labor Line: generated/Models/Service/OrderLaborLineModel.md
-  
+          - Flat Rate: generated/Models/Service/FlatRateModel.md
+      - Vehicles:
+          - Vehicle Entry: generated/Models/Vehicle/VehicleEntryModel.md
+          - Vehicle Model: generated/Models/Vehicle/VehicleModelModel.md
+          - Color: generated/Models/Vehicle/ColorModel.md
+          - Vehicle Accessory: generated/Models/Vehicle/VehicleAccessoryModel.md
+          - Vehicle Inspection: generated/Models/Vehicle/VehicleInspectionModel.md
+          - Initial Official VIN: generated/Models/Vehicle/InitialOfficialVINModel.md
+          - Vehicle Service Activation: generated/Models/Vehicle/VehicleServiceActivation.md
+      - Warranty & Service:
+          - Extended Warranty: generated/Models/Vehicle/ExtendedWarrantyModel.md
+          - Warranty Claim: generated/Models/Vehicle/WarrantyClaimModel.md
+          - Warranty Claim Labor Line: generated/Models/Vehicle/WarrantyClaimLaborLineModel.md
+          - Warranty Date Shift: generated/Models/Vehicle/WarrantyDateShiftModel.md
+          - Service Campaign: generated/Models/Vehicle/ServiceCampaignModel.md
+          - Service Item: generated/Models/Vehicle/ServiceItemModel.md
+          - Service Item Cost: generated/Models/Vehicle/ServiceItemCostModel.md
+          - Item Claim: generated/Models/Vehicle/ItemClaimModel.md
+          - Free Service Item Date Shift: generated/Models/Vehicle/FreeServiceItemDateShiftModel.md
+          - Free Service Item Excluded VIN: generated/Models/Vehicle/FreeServiceItemExcludedVINModel.md
+          - Paid Service Invoice: generated/Models/Vehicle/PaidServiceInvoiceModel.md
+          - Paid Service Invoice Line: generated/Models/Vehicle/PaidServiceInvoiceLineModel.md
+      - Safety Recalls:
+          - SSC Affected VIN: generated/Models/Vehicle/SSCAffectedVINModel.md
+      - Paint Thickness:
+          - Inspection: generated/Models/Vehicle/PaintThicknessInspectionModel.md
+          - Inspection Panel: generated/Models/Vehicle/PaintThicknessInspectionPanelModel.md
+      - Customers:
+          - Customer: generated/Models/Customer/CustomerModel.md
+          - Golden Customer: generated/Models/Customer/GoldenCustomerModel.md
+      - Broker (TBP):
+          - Broker Stock: generated/Models/TBP/TBP_StockModel.md
+          - Broker: generated/Models/TBP/TBP_BrokerModel.md
+          - Broker Account Number: generated/Models/TBP/TBP_BrokerAccountNumberModel.md
+          - Broker Brand Access: generated/Models/TBP/TBP_BrokerBrokerBrandAccessModel.md
+          - Broker Invoice (TBP): generated/Models/TBP/TBP_Invoice.md
+          - Broker Vehicle Entry: generated/Models/TBP/TBP_VehicleEntryModel.md
+          - Broker Vehicle Transfer (TBP): generated/Models/TBP/TBP_VehicleTransferModel.md
+          - Broker (Company): generated/Models/TBP/BrokerModel.md
+          - Broker Initial Vehicle: generated/Models/TBP/BrokerInitialVehicleModel.md
+          - Broker Invoice: generated/Models/TBP/BrokerInvoiceModel.md
+          - Broker Vehicle: generated/Models/TBP/BrokerVehicleModel.md
+          - Broker Vehicle Transfer: generated/Models/TBP/BrokerVehicleTransferModel.md
+          - Broker Vehicle Color: generated/Models/TBP/VehicleColorModel.md
+      - Enums:
+          - Currencies: generated/Models/Enums/Currencies.md
+          - Claim Status: generated/Models/Enums/ClaimStatus.md
+          - Warranty Manufacturer Claim Status: generated/Models/Enums/WarrantyManufacturerClaimStatus.md
+          - Claimable Item Attachment Field Behavior: generated/Models/Enums/ClaimableItemAttachmentFieldBehavior.md
+          - Claimable Item Campaign Activation Triggers: generated/Models/Enums/ClaimableItemCampaignActivationTriggers.md
+          - Claimable Item Campaign Activation Types: generated/Models/Enums/ClaimableItemCampaignActivationTypes.md
+          - Claimable Item Claiming Method: generated/Models/Enums/ClaimableItemClaimingMethod.md
+          - Claimable Item Validity Mode: generated/Models/Enums/ClaimableItemValidityMode.md
+          - Customer Types: generated/Models/Enums/CustomerTypes.md
+          - Duration Type: generated/Models/Enums/DurationType.md
+          - Genders: generated/Models/Enums/Genders.md
+          - Languages: generated/Models/Enums/Languages.md
+          - Manufacturer Order Type: generated/Models/Enums/ManufacturerOrderType.md
+          - Manufacturer Part Lookup Status: generated/Models/Enums/ManufacturerPartLookupStatus.md
+          - Vehicle Panel Position: generated/Models/Enums/VehiclePanelPosition.md
+          - Vehicle Panel Side: generated/Models/Enums/VehiclePanelSide.md
+          - Vehicle Panel Type: generated/Models/Enums/VehiclePanelType.md
+      - Lookup Services:
+          - Configuration:
+              - Lookup Options: generated/LookupServices/LookupOptions.md
+          - Vehicle Lookup:
+              - Vehicle Lookup Result: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleLookupDTO.md
+              - Vehicle Identifiers: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleIdentifiersDTO.md
+              - Sale Information: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleSaleInformation.md
+              - Broker Sale Information: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleBrokerSaleInformation.md
+              - End Customer Information: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleSaleEndCustomerInformationDTO.md
+              - Warranty: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleWarrantyDTO.md
+              - Specification: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleSpecificationDTO.md
+              - Variant Info: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleVariantInfoDTO.md
+              - Service Item: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleServiceItemDTO.md
+              - Service Item Group: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleServiceItemGroup.md
+              - Item Claim: generated/LookupServices/DTOsAndModels/VehicleLookup/ItemClaimDTO.md
+              - Item Warning: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleItemWarning.md
+              - Service History: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleServiceHistoryDTO.md
+              - Service History Labor: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleLaborDTO.md
+              - Service History Part: generated/LookupServices/DTOsAndModels/VehicleLookup/VehiclePartDTO.md
+              - SSC (Safety Recall): generated/LookupServices/DTOsAndModels/VehicleLookup/SscDTO.md
+              - SSC Labor: generated/LookupServices/DTOsAndModels/VehicleLookup/SSCLaborDTO.md
+              - SSC Part: generated/LookupServices/DTOsAndModels/VehicleLookup/SSCPartDTO.md
+              - Paint Thickness Inspection: generated/LookupServices/DTOsAndModels/VehicleLookup/PaintThicknessInspectionDTO.md
+              - Paint Thickness Panel: generated/LookupServices/DTOsAndModels/VehicleLookup/PaintThicknessInspectionPanelDTO.md
+              - Accessory: generated/LookupServices/DTOsAndModels/VehicleLookup/AccessoryDTO.md
+              - Request Options: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleLookupRequestOptions.md
+          - Part Lookup:
+              - Part Lookup Result: generated/LookupServices/DTOsAndModels/Part/PartLookupDTO.md
+              - Stock Part: generated/LookupServices/DTOsAndModels/Part/StockPartDTO.md
+              - Part Price: generated/LookupServices/DTOsAndModels/Part/PartPriceDTO.md
+              - Price: generated/LookupServices/DTOsAndModels/Part/PriceDTO.md
+              - Dead Stock: generated/LookupServices/DTOsAndModels/Part/DeadStockDTO.md
+              - Branch Dead Stock: generated/LookupServices/DTOsAndModels/Part/BranchDeadStockDTO.md
+              - HS Code: generated/LookupServices/DTOsAndModels/Part/HSCodeDTO.md
+              - Key Value Pair: generated/LookupServices/DTOsAndModels/Part/KeyValuePairDTO.md
+              - Manufacturer Lookup Request: generated/LookupServices/DTOsAndModels/Part/ManufacturerPartLookupRequestDTO.md
+              - Manufacturer Lookup Response: generated/LookupServices/DTOsAndModels/Part/ManufacturerPartLookupResponseDTO.md
+              - Update Manufacturer Lookup Status: generated/LookupServices/DTOsAndModels/Part/UpdateManufacturerPartLookupStatusDTO.md
+          - Service Lookup:
+              - Flat Rate: generated/LookupServices/DTOsAndModels/Service/FlatRateDTO.md
+          - SSC Lookup:
+              - SSC Lookup Statuses: generated/LookupServices/DTOsAndModels/SSC/SSCLookupStatuses.md
+              - TMC SaRII Response: generated/LookupServices/DTOsAndModels/SSC/TMCSaRIIResponse.md
+          - Aggregates:
+              - Company Data Aggregate: generated/LookupServices/Aggregate/CompanyDataAggregateModel.md
+              - Part Aggregate: generated/LookupServices/DTOsAndModels/Part/PartAggregateCosmosModel.md
+          - Enums:
+              - Consistency Levels: generated/LookupServices/Enums/ConsistencyLevels.md
+              - Storage Sources: generated/LookupServices/Enums/StorageSources.md
+              - Quantity Lookup Results: generated/LookupServices/Enums/QuantityLookUpResults.md
+              - Service Item Statuses: generated/LookupServices/Enums/VehcileServiceItemStatuses.md
+              - Service Item Types: generated/LookupServices/Enums/VehcileServiceItemTypes.md
+              - Lookup Sources: generated/LookupServices/DTOsAndModels/Shared/LookupSources.md
+
+  - BDD Specifications:
+      - Vehicle:
+          - Vehicle Entry: generated/Features/VehicleEntry.md
+          - Vehicle Authorization: generated/Features/VehicleAuthorization.md
+          - Vehicle Identifiers: generated/Features/VehicleIdentifiers.md
+          - Vehicle SSC: generated/Features/VehicleSSC.md
+          - Vehicle Specification: generated/Features/VehicleSpecification.md
+          - Vehicle Accessories: generated/Features/VehicleAccessories.md
+          - Vehicle Paint Thickness: generated/Features/VehiclePaintThickness.md
+          - Vehicle Sale Information: generated/Features/VehicleSaleInformation.md
+          - Vehicle Service History: generated/Features/VehicleServiceHistory.md
+      - Parts:
+          - Part Price: generated/Features/PartPrice.md
+          - Part Stock: generated/Features/PartStock.md
+          - Part Dead Stock: generated/Features/PartDeadStock.md
+      - Service:
+          - Service Items: generated/Features/ServiceItems.md
+      - Warranty:
+          - Warranty Dates: generated/Features/WarrantyDates.md
+
   - Web Components:
       - Introduction: web-components/introduction.md
       - Installation: web-components/installation.md

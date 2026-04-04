@@ -217,7 +217,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
   // #endregion
   render() {
     return (
-      <Host>
+      <Host translate="no">
         <div part={`vehicle-quotation-${this.structure?.data?.theme}`}>
           <div part="form-container" class="relative min-h-[150px]">
             <div

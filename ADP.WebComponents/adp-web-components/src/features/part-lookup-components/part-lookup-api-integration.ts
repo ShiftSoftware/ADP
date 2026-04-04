@@ -54,6 +54,12 @@ export const setPartLookupData = async (
       if (!partResponse) throw new Error('wrongResponseFormat');
       if (beforeAssignment) context.partLookup = await beforeAssignment(partResponse, { scopedTimeoutRef });
       else context.partLookup = partResponse;
+
+      // Fire loadedResponse after partLookup is set to ensure consistent state
+      // Only for search requests — DTO distribution should not re-trigger the callback chain
+      if (isSearchRequest) {
+        smartInvokable.bind(context)(context?.loadedResponse, partResponse);
+      }
     }
 
     context.errorMessage = null;
@@ -88,7 +94,6 @@ export async function getPartLookup(context: PartLookupComponent, generalProps: 
     if (context?.networkTimeoutRef === scopedTimeoutRef) {
       if (!newPartLookup && context?.searchString) throw new Error('wrongResponseFormat');
 
-      smartInvokable.bind(context)(context?.loadedResponse, newPartLookup);
       return newPartLookup;
     }
   };

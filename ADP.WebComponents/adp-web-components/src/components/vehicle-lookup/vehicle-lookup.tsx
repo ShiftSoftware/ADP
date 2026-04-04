@@ -1,6 +1,7 @@
 import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
+import { getMockFile } from '~features/mocks';
 
 import vehicleLookupWrapperSchema from '~locales/vehicleLookup/wrapper-type';
 
@@ -68,6 +69,7 @@ export class VehicleLookup implements MultiLingual {
 
   @Prop() baseUrl: string = '';
   @Prop() isDev: boolean = false;
+  @Prop() mockUrl: string = '';
   @Prop() disableVinValidation: boolean = false;
   @Prop() queryString: string = '';
   @Prop() childrenProps?: string | Object;
@@ -85,6 +87,9 @@ export class VehicleLookup implements MultiLingual {
   @State() currentVin: string = '';
   @State() isError: boolean = false;
   @State() isLoading: boolean = false;
+
+  private searchGeneration = 0;
+
   @State() blazorRef?: DotNetObjectReference;
 
   @Element() el: HTMLElement;
@@ -129,6 +134,21 @@ export class VehicleLookup implements MultiLingual {
         }
       };
     }
+
+    if (this.isDev) await this.loadMockData();
+  }
+
+  @Watch('isDev')
+  async onIsDevChange(isDev: boolean) {
+    if (isDev) await this.loadMockData();
+  }
+
+  private async loadMockData() {
+    if (!this.componentsList) return;
+    const mockData = await getMockFile<VehicleLookupDTO>('vehicle-lookup', this.mockUrl);
+    Object.values(this.componentsList).forEach(element => {
+      if (element) element.setMockData(mockData);
+    });
   }
 
   private syncErrorAcrossComponents = (newErrorMessage: ErrorKeys) => {
@@ -142,9 +162,14 @@ export class VehicleLookup implements MultiLingual {
 
   @Method()
   async handleLoadData(newResponse: VehicleLookupDTO, activeElement) {
+    const generation = this.searchGeneration;
     this.isError = false;
     this.errorMessage = '';
     this.currentVin = newResponse.vin || '';
+
+    // Skip distributing to non-active components if a new search has started
+    if (generation !== this.searchGeneration) return;
+
     Object.values(this.componentsList).forEach(element => {
       if (element !== null && element !== activeElement && newResponse) element.fetchVin(newResponse);
     });
@@ -174,6 +199,8 @@ export class VehicleLookup implements MultiLingual {
     this.componentsList[componentTags.vehicleClaimableItems].headers = headers;
 
     if (!activeElement) return;
+
+    this.searchGeneration++;
 
     activeElement.fetchVin(vin, headers);
   }
@@ -297,7 +324,7 @@ export class VehicleLookup implements MultiLingual {
     };
 
     return (
-      <Host>
+      <Host translate="no">
         <VehicleInfoLayout
           isError={this.isError}
           header={this.currentVin}

@@ -246,7 +246,7 @@ export class FormDatePicker implements FormElement {
     const todayStr = this.toDateString(now.getFullYear(), now.getMonth(), now.getDate());
 
     return (
-      <Host>
+      <Host translate="no">
         <label part={this.name} id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, { disabled: isDisabled })}>
           <FormInputLabel isRequired={isRequired} label={label} />
 

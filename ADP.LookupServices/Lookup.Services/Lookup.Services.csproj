@@ -28,10 +28,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="CsvHelper" Version="33.1.0" />
-		<PackageReference Include="DuckDB.NET.Data.Full" Version="1.4.4" />
-		<PackageReference Include="Parquet.Net" Version="5.5.0" />
-		<PackageReference Include="Microsoft.Azure.Cosmos" Version="3.57.1" />
+		<PackageReference Include="Microsoft.Azure.Cosmos" Version="3.58.0" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.5" />
 		<PackageReference Include="ShiftSoftware.ADP.Models" Version="$(ADPVersion)" Condition="!Exists('..\..\ADP.Models\Models\Models.csproj')" />
 		<PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
@@ -39,6 +36,8 @@
 
 	<ItemGroup>
 		<InternalsVisibleTo Include="Lookup.Services.Tests" />
+		<InternalsVisibleTo Include="LookupServices.BDD" />
+		<InternalsVisibleTo Include="Generator" />
 	</ItemGroup>
 
 	<ItemGroup>

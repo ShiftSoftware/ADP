@@ -4,32 +4,70 @@ using System.Linq;
 
 namespace ShiftSoftware.ADP.Models.TBP;
 
+/// <summary>
+/// Represents a broker's stock record for a specific vehicle (VIN) under a specific brand.
+/// Tracks the vehicle's quantity at the broker, service dates, transfers, invoices, and related vehicle entries.
+/// </summary>
+[Docable]
 public class TBP_StockModel
 {
+    [DocIgnore]
     public string id { get; set; }
 
     /// <summary>
-    /// First partition key
+    /// The brand ID (first partition key).
     /// </summary>
+    [DocIgnore]
     public long BrandID { get; set; }
 
     /// <summary>
-    /// Second partition key
+    /// The broker ID (second partition key).
     /// </summary>
     public long BrokerID { get; set; }
 
     /// <summary>
-    /// Third partition key
+    /// The Vehicle Identification Number (third partition key).
     /// </summary>
     public string VIN { get; set; }
 
+    /// <summary>
+    /// The calculated stock quantity for this vehicle at the broker. Derived from vehicle entries, invoices, and transfers.
+    /// </summary>
     public int Quantity { get; set; }
+
+    /// <summary>
+    /// The date of the 1K or 5K service performed on this vehicle.
+    /// </summary>
     public DateTime? OneKOrFiveKServieDate { get; set; }
+
+    /// <summary>
+    /// The date of the first service performed on this vehicle.
+    /// </summary>
     public DateTime? FirstServieDate { get; set; }
+
+    /// <summary>
+    /// The <see cref="TBP_BrokerModel">broker</see> that holds this stock.
+    /// </summary>
     public TBP_BrokerModel? Broker { get; set; }
+
+    /// <summary>
+    /// The <see cref="BrokerVehicleModel">vehicle</see> details for this stock record.
+    /// </summary>
     public BrokerVehicleModel? Vehicle { get; set; }
+
+    /// <summary>
+    /// The <see cref="TBP_VehicleTransferModel">transfers</see> involving this vehicle at this broker.
+    /// </summary>
     public IEnumerable<TBP_VehicleTransferModel> Transfers { get; set; }
+
+    /// <summary>
+    /// The <see cref="TBP_Invoice">invoices</see> for this vehicle at this broker.
+    /// </summary>
     public IEnumerable<TBP_Invoice> Invoices { get; set; }
+
+    /// <summary>
+    /// The <see cref="TBP_VehicleEntryModel">vehicle entries</see> from the dealer system for this vehicle.
+    /// </summary>
     public IEnumerable<TBP_VehicleEntryModel> VehilceEntries { get; set; }
 
     [Newtonsoft.Json.JsonIgnore]

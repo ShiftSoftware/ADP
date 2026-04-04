@@ -37,7 +37,7 @@ export class ShiftCheckbox {
 
   render() {
     return (
-      <Host>
+      <Host translate="no">
         <label part="shift-checkbox" class={cn('relative flex items-center cursor-pointer select-none', { 'opacity-75 cursor-default': this.disabled })}>
           <input type="checkbox" value="true" name={this.name} checked={this.checked} disabled={this.disabled} onChange={this.onChange} class="shift-checkbox peer hidden" />
           <span class="relative size-[22px] rounded-[6px] flex items-center justify-center text-transparent peer-checked:text-white [&_.check-icon]:scale-0 peer-checked:[&_.check-icon]:scale-100 transition bg-transparent !duration-300 border-2 peer-checked:bg-blue-500 border-gray-400 peer-checked:border-blue-500 overflow-hidden">

@@ -51,7 +51,7 @@ export class FormCheckbox implements FormElement {
     const { label, errorTextMessage } = getInputLocalization(this, meta, errorMessage);
 
     return (
-      <Host>
+      <Host translate="no">
         <div part={this.name} id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, disabled)}>
           <div part={`${this.name}-container form-input-container`} class="form-input-container">
             <shift-checkbox name={this.name} label={label} class="form-checkbox" />

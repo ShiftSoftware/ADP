@@ -180,6 +180,36 @@ export const getFormMappers = (stateObject: Record<string, any>, extraMappers: R
     return <form-select key={props?.name} {...props} clearable fetcher={fetcher} language={language} />;
   },
 
+  year: ({ language, props }) => {
+    const minYear = props?.min || new Date().getFullYear() - 20;
+    const maxYear = props?.max || new Date().getFullYear();
+
+    const options: FormSelectItem[] = [];
+
+    for (let year = minYear; year <= maxYear; year++) {
+      options.push({
+        value: `${year}`,
+        label: `${year}`,
+      });
+    }
+
+    const fetcher: FormSelectFetcher = async ({ language }): Promise<FormSelectItem[]> => {
+      let parsedOptions: FormSelectItem[] = [...options];
+
+      if (props?.firstOption) {
+        parsedOptions = [{ label: props?.firstOption?.label?.[language] || '', value: props?.firstOption?.value?.[language] || '' }, ...parsedOptions];
+      }
+
+      if (props?.lastOption) {
+        parsedOptions = [...parsedOptions, { label: props?.lastOption?.label?.[language] || '', value: props?.lastOption?.value?.[language] || '' }];
+      }
+
+      return parsedOptions;
+    };
+
+    return <form-select key={props?.name} {...props} clearable fetcher={fetcher} language={language} />;
+  },
+
   currentVehicleBrand: ({ form, language, props, locale }) => {
     const fetcher: FormSelectFetcher = async ({ signal }): Promise<FormSelectItem[]> => {
       const currentVehiclesEndpoint = form.context.structure?.data.currentVehiclesApi as string;

@@ -31,6 +31,7 @@
     <script nomodule src="/build/shift-components.js"></script>
     <script type="module" src="/build/shift-components.esm.js"></script>
     <script src="./mock-data.js"></script>
+    <script src="./mock-loader.js"></script>
 
     <!-- <script type="module" src="../../../dist/shift-components/shift-components.esm.js"></script> -->
 
@@ -225,6 +226,7 @@
     <script>
       let vehicleLookup;
       let searching = false;
+      let loadedMockData;
 
       const searchIcon = document.getElementById('search-icon');
       const searchText = document.getElementById('search-text');
@@ -233,12 +235,15 @@
 
       const container = document.querySelector('.button-container-vins');
 
-      Object.keys(mockData).forEach(vin => {
-        const button = document.createElement('button');
-        button.className = 'sample-button';
-        button.textContent = vin;
-        button.onclick = () => searchStaticVin(vin);
-        container.appendChild(button);
+      loadMockData('vehicle-lookup').then(data => {
+        loadedMockData = data;
+        Object.keys(data).forEach(vin => {
+          const button = document.createElement('button');
+          button.className = 'sample-button';
+          button.textContent = vin;
+          button.onclick = () => searchStaticVin(vin);
+          container.appendChild(button);
+        });
       });
 
       const input = document.getElementById('vinInput');
@@ -265,7 +270,7 @@
 
       function searchStaticVin(vin) {
         if (!isDev) vehicleLookup.fetchVin(vin, { headers: 'headers-value' });
-        else vehicleLookup.handleLoadData(mockData[vin], null);
+        else vehicleLookup.handleLoadData(loadedMockData[vin], null);
       }
 
       document.addEventListener('DOMContentLoaded', async function () {

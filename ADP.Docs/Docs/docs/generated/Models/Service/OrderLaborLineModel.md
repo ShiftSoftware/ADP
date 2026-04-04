@@ -31,9 +31,9 @@ Refers to a Labor Line on an Order (Typically a Job Card on Workshop Module).
 | PostDate <div><strong>``DateTime?``</strong></div> | The date at which this line was posted. This could mean (Job Completed, Part Dispatched, Vehicle Allocated, etc. based on the type of the Order Document). |
 | CompanyHashID <div><strong>``string``</strong></div> | The Company Hash ID from the Identity System. |
 | BranchHashID <div><strong>``string``</strong></div> | The Branch Hash ID from the Identity System. |
-| InvoiceStatus <div><strong>``string``</strong></div> |  |
-| ItemStatus <div><strong>``string``</strong></div> |  |
-| OrderStatus <div><strong>``string``</strong></div> |  |
+| InvoiceStatus <div><strong>``string``</strong></div> | The status of the invoice (e.g., Paid, Pending). |
+| ItemStatus <div><strong>``string``</strong></div> | The status of this line item (e.g., Open, Closed). |
+| OrderStatus <div><strong>``string``</strong></div> | The status of the parent order (e.g., Open, Completed). |
 | NextServiceDate <div><strong>``DateTime?``</strong></div> | The date for the next scheduled service of the vehicle associated with this labor line. |
 | NumberOfPartLines <div><strong>``int``</strong></div> | The number of corresponding part lines associated with the parent order of this line. |
 | CompanyIntegrationID <div><strong>``string``</strong></div> | An External Identifier that can be used for system to system Integration |

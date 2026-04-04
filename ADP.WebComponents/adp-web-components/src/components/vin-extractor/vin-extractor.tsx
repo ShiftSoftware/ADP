@@ -420,7 +420,7 @@ export class VinExtractor {
     const ariaExpanded = this.isOpen && this.isCameraReady && (this.useOcr || this.readSticker);
 
     return (
-      <Host>
+      <Host translate="no">
         <slot />
         <input class="vin-extractor-input" type="file" accept="image/*" aria-label="Upload VIN image" {...(this.captureEnvironment ? { capture: 'environment' } : {})} hidden />
         <canvas class="video-canvas hidden" aria-hidden="true"></canvas>

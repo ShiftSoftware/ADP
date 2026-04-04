@@ -52,6 +52,12 @@ export const setVehicleLookupData = async (
       if (!vehicleResponse) throw new Error('wrongResponseFormat');
       if (beforeAssignment) context.vehicleLookup = await beforeAssignment(vehicleResponse, { scopedTimeoutRef });
       else context.vehicleLookup = vehicleResponse;
+
+      // Fire loadedResponse after vehicleLookup is set to ensure consistent state
+      // Only for VIN requests — DTO distribution should not re-trigger the callback chain
+      if (isVinRequest) {
+        smartInvokable.bind(context)(context?.loadedResponse, vehicleResponse);
+      }
     }
 
     context.errorMessage = null;
@@ -84,8 +90,6 @@ export const getVehicleLookup = async (context: VehicleLookupComponent, generalP
   const handleResult = (newVehicleInformation: VehicleLookupDTO): VehicleLookupDTO => {
     if (context?.networkTimeoutRef === scopedTimeoutRef) {
       if (!newVehicleInformation && vin) throw new Error('wrongResponseFormat');
-
-      smartInvokable.bind(context)(context?.loadedResponse, newVehicleInformation);
 
       return newVehicleInformation;
     }

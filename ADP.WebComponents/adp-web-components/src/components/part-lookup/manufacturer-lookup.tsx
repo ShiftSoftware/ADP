@@ -152,7 +152,7 @@ export class ManufacturerLookup implements MultiLingual, VehicleInfoLayoutInterf
     const displayedManufacturerData = manufacturerData.filter(part => !hiddenFields.includes(part.key));
 
     return (
-      <Host>
+      <Host translate="no">
         <VehicleInfoLayout
           isError={this.isError}
           coreOnly={this.coreOnly}

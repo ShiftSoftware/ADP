@@ -40,7 +40,7 @@ export class ShiftSlider {
 
   render() {
     return (
-      <Host>
+      <Host translate="no">
         <flexible-container stopAnimation classes="relative">
           {this.components.map((listElement, idx) => (
             <div

@@ -66,7 +66,7 @@ export class FormStructure {
     const { formController, resetFormErrorMessage } = this.form;
 
     return (
-      <Host>
+      <Host translate="no">
         <form id={this.formId} class="relative" dir={this.locale.sharedLocales.direction} {...formController}>
           <form-dialog dialogClosed={resetFormErrorMessage} isError={!!this.errorMessage} closeText={locale?.sharedFormLocales?.close} form={this.form} message={this.errorMessage}>
             <div class="form-success-container">

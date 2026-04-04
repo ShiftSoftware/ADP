@@ -4,6 +4,10 @@ using System.Threading.Tasks;
 
 namespace ShiftSoftware.ADP.Lookup.Services.Services;
 
+/// <summary>
+/// Service interface for generating vehicle reports — service items, SSC, service history, and top-level lookup data.
+/// Supports in-memory retrieval and export to CSV/Parquet formats.
+/// </summary>
 public interface IVehicleReportService
 {
     Task<IEnumerable<string>> GetDistinctVinsAsync(int? count = null);

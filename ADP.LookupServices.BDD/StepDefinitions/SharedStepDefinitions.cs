@@ -1,7 +1,9 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using LookupServices.BDD.Support;
 using Reqnroll;
 using ShiftSoftware.ADP.Models.Enums;
+using ShiftSoftware.ADP.Models.Part;
 using ShiftSoftware.ADP.Models.Service;
 using ShiftSoftware.ADP.Models.Vehicle;
 
@@ -58,6 +60,12 @@ public class SharedStepDefinitions
         return value is null ? null : decimal.Parse(value);
     }
 
+    private static int? GetOptionalInt(DataTableRow row, string column)
+    {
+        var value = GetOptionalString(row, column);
+        return value is null ? null : int.Parse(value);
+    }
+
 
     [Given("a dealer with the following vehicles as initial stock:")]
     public void GivenADealerWithTheFollowingVehiclesInInitialStock(DataTable dataTable)
@@ -88,6 +96,9 @@ public class SharedStepDefinitions
                 BrandID = GetOptionalLong(row, "BrandID"),
                 CompanyID = GetOptionalLong(row, "CompanyID"),
                 BranchID = GetOptionalLong(row, "BranchID"),
+                WarrantyActivationDate = GetOptionalDate(row, "WarrantyActivationDate"),
+                CustomerID = GetOptionalString(row, "CustomerID"),
+                InvoiceNumber = GetOptionalString(row, "InvoiceNumber"),
             }));
     }
 
@@ -160,8 +171,209 @@ public class SharedStepDefinitions
                 CompanyID = GetOptionalLong(row, "CompanyID"),
                 BranchID = GetOptionalLong(row, "BranchID"),
                 InvoiceNumber = GetOptionalString(row, "InvoiceNumber"),
+                OrderDocumentNumber = GetOptionalString(row, "OrderDocumentNumber"),
+                ParentInvoiceNumber = GetOptionalString(row, "ParentInvoiceNumber"),
+                ServiceDescription = GetOptionalString(row, "ServiceDescription"),
+                JobDescription = GetOptionalString(row, "JobDescription"),
+                ServiceCode = GetOptionalString(row, "ServiceCode"),
+                PackageCode = GetOptionalString(row, "PackageCode"),
+                AccountNumber = GetOptionalString(row, "AccountNumber"),
+                NumberOfPartLines = GetOptionalInt(row, "NumberOfPartLines") ?? 0,
+                Odometer = GetOptionalInt(row, "Odometer"),
                 VIN = GetOptionalString(row, "VIN"),
             }));
+    }
+
+
+    [Given("vehicle service activations:")]
+    public void GivenVehicleServiceActivations(DataTable dataTable)
+    {
+        _context.Aggregate.VehicleServiceActivations.AddRange(
+            dataTable.Rows.Select(row => new VehicleServiceActivation
+            {
+                WarrantyActivationDate = GetOptionalDate(row, "WarrantyActivationDate"),
+                CompanyID = GetOptionalLong(row, "CompanyID"),
+            }));
+    }
+
+    [Given("warranty date shifts:")]
+    public void GivenWarrantyDateShifts(DataTable dataTable)
+    {
+        _context.Aggregate.WarrantyDateShifts.AddRange(
+            dataTable.Rows.Select(row => new WarrantyDateShiftModel
+            {
+                NewDate = DateTime.Parse(row["NewDate"]),
+            }));
+    }
+
+    [Given("free service item date shifts:")]
+    public void GivenFreeServiceItemDateShifts(DataTable dataTable)
+    {
+        _context.Aggregate.FreeServiceItemDateShifts.AddRange(
+            dataTable.Rows.Select(row => new FreeServiceItemDateShiftModel
+            {
+                NewDate = DateTime.Parse(row["NewDate"]),
+            }));
+    }
+
+    [Given("extended warranty entries:")]
+    public void GivenExtendedWarrantyEntries(DataTable dataTable)
+    {
+        _context.Aggregate.ExtendedWarrantyEntries.AddRange(
+            dataTable.Rows.Select(row => new ExtendedWarrantyModel
+            {
+                StartDate = GetOptionalDate(row, "StartDate"),
+                EndDate = GetOptionalDate(row, "EndDate"),
+            }));
+    }
+
+
+    [Given("part lines:")]
+    public void GivenPartLines(DataTable dataTable)
+    {
+        _context.Aggregate.PartLines.AddRange(
+            dataTable.Rows.Select(row => new OrderPartLineModel
+            {
+                PartNumber = GetOptionalString(row, "PartNumber"),
+                InvoiceDate = GetOptionalDate(row, "InvoiceDate"),
+                InvoiceStatus = GetOptionalString(row, "InvoiceStatus"),
+                CompanyID = GetOptionalLong(row, "CompanyID"),
+                BranchID = GetOptionalLong(row, "BranchID"),
+                InvoiceNumber = GetOptionalString(row, "InvoiceNumber"),
+                OrderDocumentNumber = GetOptionalString(row, "OrderDocumentNumber"),
+                ParentInvoiceNumber = GetOptionalString(row, "ParentInvoiceNumber"),
+                PackageCode = GetOptionalString(row, "PackageCode"),
+                AccountNumber = GetOptionalString(row, "AccountNumber"),
+                SoldQuantity = GetOptionalDecimal(row, "SoldQuantity"),
+                NumberOfLaborLines = GetOptionalInt(row, "NumberOfLaborLines") ?? 0,
+                VIN = GetOptionalString(row, "VIN"),
+            }));
+    }
+
+    [Given("accessories:")]
+    public void GivenAccessories(DataTable dataTable)
+    {
+        _context.Aggregate.Accessories.AddRange(
+            dataTable.Rows.Select(row => new VehicleAccessoryModel
+            {
+                PartNumber = GetOptionalString(row, "PartNumber"),
+                PartDescription = GetOptionalString(row, "PartDescription"),
+                Image = GetOptionalString(row, "Image"),
+            }));
+    }
+
+    [Given("paid service invoices:")]
+    public void GivenPaidServiceInvoices(DataTable dataTable)
+    {
+        _context.Aggregate.PaidServiceInvoices.AddRange(
+            dataTable.Rows.Select(row => new PaidServiceInvoiceModel
+            {
+                InvoiceDate = DateTime.Parse(row["InvoiceDate"]),
+                InvoiceNumber = long.Parse(row["InvoiceNumber"]),
+                Lines = BuildPaidServiceInvoiceLines(row),
+            }));
+    }
+
+    private static IEnumerable<PaidServiceInvoiceLineModel> BuildPaidServiceInvoiceLines(DataTableRow row)
+    {
+        var serviceItemId = GetOptionalString(row, "ServiceItemID");
+        if (serviceItemId is null)
+            return Enumerable.Empty<PaidServiceInvoiceLineModel>();
+
+        return new[]
+        {
+            new PaidServiceInvoiceLineModel
+            {
+                ServiceItemID = serviceItemId,
+                ExpireDate = GetOptionalDate(row, "ExpireDate"),
+                PackageCode = GetOptionalString(row, "PackageCode"),
+                ServiceItem = new ServiceItemModel
+                {
+                    Name = new Dictionary<string, string> { { "en", GetOptionalString(row, "ServiceItemName") ?? "" } },
+                    MaximumMileage = GetOptionalLong(row, "MaximumMileage"),
+                },
+            }
+        };
+    }
+
+    [Given("item claims:")]
+    public void GivenItemClaims(DataTable dataTable)
+    {
+        _context.Aggregate.ItemClaims.AddRange(
+            dataTable.Rows.Select(row => new ItemClaimModel
+            {
+                ServiceItemID = GetOptionalString(row, "ServiceItemID"),
+                ClaimDate = row.ContainsKey("ClaimDate") && !string.IsNullOrWhiteSpace(row["ClaimDate"])
+                    ? DateTimeOffset.Parse(row["ClaimDate"]) : default,
+                JobNumber = GetOptionalString(row, "JobNumber"),
+                InvoiceNumber = GetOptionalString(row, "InvoiceNumber"),
+                CompanyID = GetOptionalLong(row, "CompanyID"),
+                PackageCode = GetOptionalString(row, "PackageCode"),
+                VehicleInspectionID = GetOptionalString(row, "VehicleInspectionID"),
+            }));
+    }
+
+    [Given("free service item excluded VINs:")]
+    public void GivenFreeServiceItemExcludedVINs(DataTable dataTable)
+    {
+        _context.Aggregate.FreeServiceItemExcludedVINs.AddRange(
+            dataTable.Rows.Select(row => new FreeServiceItemExcludedVINModel
+            {
+                VIN = GetOptionalString(row, "VIN"),
+            }));
+    }
+
+    [Given("vehicle inspections:")]
+    public void GivenVehicleInspections(DataTable dataTable)
+    {
+        _context.Aggregate.VehicleInspections.AddRange(
+            dataTable.Rows.Select(row => new VehicleInspectionModel
+            {
+                id = GetOptionalString(row, "id") ?? Guid.NewGuid().ToString(),
+                InspectionDate = DateTimeOffset.Parse(row["InspectionDate"]),
+                VehicleInspectionTypeID = row.ContainsKey("VehicleInspectionTypeID") && !string.IsNullOrWhiteSpace(row["VehicleInspectionTypeID"])
+                    ? long.Parse(row["VehicleInspectionTypeID"]) : 0,
+            }));
+    }
+
+    [Given("paint thickness inspections:")]
+    public void GivenPaintThicknessInspections(DataTable dataTable)
+    {
+        var inspections = (_context.Aggregate.PaintThicknessInspections?.ToList())
+            ?? new List<PaintThicknessInspectionModel>();
+
+        inspections.AddRange(
+            dataTable.Rows.Select(row => new PaintThicknessInspectionModel
+            {
+                InspectionDate = GetOptionalDate(row, "InspectionDate"),
+                Source = GetOptionalString(row, "Source"),
+                Panels = new List<PaintThicknessInspectionPanelModel>(),
+            }));
+
+        _context.Aggregate.PaintThicknessInspections = inspections;
+    }
+
+    [Given("paint thickness panels for inspection on {string}:")]
+    public void GivenPaintThicknessPanelsForInspection(string inspectionDate, DataTable dataTable)
+    {
+        var date = DateTime.Parse(inspectionDate);
+        var inspection = _context.Aggregate.PaintThicknessInspections?
+            .FirstOrDefault(i => i.InspectionDate == date)
+            ?? throw new InvalidOperationException($"No paint thickness inspection found for date '{inspectionDate}'");
+
+        var panels = dataTable.Rows.Select(row => new PaintThicknessInspectionPanelModel
+        {
+            PanelType = Enum.Parse<VehiclePanelType>(row["PanelType"]),
+            PanelSide = row.ContainsKey("PanelSide") && !string.IsNullOrWhiteSpace(row["PanelSide"])
+                ? Enum.Parse<VehiclePanelSide>(row["PanelSide"]) : null,
+            PanelPosition = row.ContainsKey("PanelPosition") && !string.IsNullOrWhiteSpace(row["PanelPosition"])
+                ? Enum.Parse<VehiclePanelPosition>(row["PanelPosition"]) : null,
+            MeasuredThickness = decimal.Parse(row["MeasuredThickness"]),
+            Images = row.ContainsKey("Images") && !string.IsNullOrWhiteSpace(row["Images"])
+                ? row["Images"].Split(',', StringSplitOptions.TrimEntries) : [],
+        }).ToList();
+
+        inspection.Panels = panels;
     }
 
 
@@ -175,6 +387,7 @@ public class SharedStepDefinitions
         var json = File.ReadAllText(path);
         var jsonOptions = new JsonSerializerOptions();
         jsonOptions.Converters.Add(new NullableLongDictionaryConverter());
+        jsonOptions.Converters.Add(new JsonStringEnumConverter());
         var environment = JsonSerializer.Deserialize<TestEnvironment>(json, jsonOptions)
             ?? throw new InvalidOperationException($"Failed to deserialize environment '{environmentName}'");
 

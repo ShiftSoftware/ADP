@@ -1,5 +1,10 @@
 ﻿namespace ShiftSoftware.ADP.Models.Part;
 
+/// <summary>
+/// Represents a dead stock part held by a specific company/branch.
+/// Dead stock parts are items that have not been sold for a prolonged period and are considered slow-moving or obsolete inventory.
+/// </summary>
+[Docable]
 public class CompanyDeadStockPartModel : IPartitionedItem, ICompanyProps, IBranchProps, IGenuinePartProps
 {
     /// <summary>
@@ -11,9 +16,20 @@ public class CompanyDeadStockPartModel : IPartitionedItem, ICompanyProps, IBranc
     [DocIgnore]
     public string ItemType => ModelTypes.CompanyDeadStockPart;
 
+    [DocIgnore]
     public long? CompanyID { get; set; }
+
+    /// <summary>
+    /// The Company Hash ID from the Identity System.
+    /// </summary>
     public string CompanyHashID { get; set; }
+
+    [DocIgnore]
     public long? BranchID { get; set; }
+
+    /// <summary>
+    /// The Branch Hash ID from the Identity System.
+    /// </summary>
     public string BranchHashID { get; set; }
 
     /// <summary>

@@ -161,8 +161,19 @@ public class OrderLaborLineModel :
     [DocIgnore]
     public string ItemType => ModelTypes.InvoiceLaborLine;
 
+    /// <summary>
+    /// The status of the invoice (e.g., Paid, Pending).
+    /// </summary>
     public string InvoiceStatus { get; set; }
+
+    /// <summary>
+    /// The status of this line item (e.g., Open, Closed).
+    /// </summary>
     public string ItemStatus { get; set; }
+
+    /// <summary>
+    /// The status of the parent order (e.g., Open, Completed).
+    /// </summary>
     public string OrderStatus { get; set; }
 
 

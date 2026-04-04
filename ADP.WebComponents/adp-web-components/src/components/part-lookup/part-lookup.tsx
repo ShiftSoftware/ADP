@@ -71,6 +71,8 @@ export class PartLookup implements MultiLingual {
   @State() header: string = '';
   @State() isLoading: boolean = false;
 
+  private searchGeneration = 0;
+
   @State() blazorRef?: DotNetObjectReference;
 
   @Element() el: HTMLElement;
@@ -109,9 +111,14 @@ export class PartLookup implements MultiLingual {
 
   @Method()
   async handleLoadData(newResponse: PartLookupDTO, activeElement) {
+    const generation = this.searchGeneration;
     this.isError = false;
     this.header = newResponse?.partNumber || '';
     smartInvokable.bind(this)(this.loadedResponse, newResponse);
+
+    // Skip distributing to non-active components if a new search has started
+    if (generation !== this.searchGeneration) return;
+
     Object.values(this.componentsList).forEach(element => {
       // @ts-ignore
       if (element !== null && element !== activeElement && newResponse) element.fetchData(newResponse);
@@ -146,6 +153,8 @@ export class PartLookup implements MultiLingual {
     if (!activeElement) return;
 
     if (partNumber == '') return (this.wrapperErrorState = this.locale.errors.partNumberRequired);
+
+    this.searchGeneration++;
 
     const searchingText = quantity.trim() || quantity.trim() === '0' ? `${partNumber.trim()}/${quantity.trim()}` : partNumber.trim();
 
@@ -220,7 +229,7 @@ export class PartLookup implements MultiLingual {
       ),
     };
     return (
-      <Host class="part-lookup">
+      <Host class="part-lookup" translate="no">
         <VehicleInfoLayout
           isError={this.isError}
           header={this.header}

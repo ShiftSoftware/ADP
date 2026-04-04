@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+using System.Globalization;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
@@ -45,7 +46,7 @@ public class DuckDBSyncDataDestination<TSource, TDestination, DuckDB>
 
                     return await Preparing(x);
                 })
-                .SetupStoreBatchData(async (x) => await this.StoreBatchData(x));
+                .SetupStoreBatchData(async x => await StoreBatchData(x));
 
         return SyncService;
     }
@@ -55,8 +56,8 @@ public class DuckDBSyncDataDestination<TSource, TDestination, DuckDB>
         try
         {
             var tableName = GetTableName();
-            var primaryKeyName = GetPrimaryKeyPropertyName();
-            var createTableSql = GenerateCreateTableSql(tableName, primaryKeyName);
+            var primaryKeyNames = GetPrimaryKeyPropertyNames();
+            var createTableSql = GenerateCreateTableSql(tableName, primaryKeyNames);
 
             using var createTableCmd = db.CreateCommand();
             createTableCmd.CommandText = createTableSql;
@@ -64,7 +65,7 @@ public class DuckDBSyncDataDestination<TSource, TDestination, DuckDB>
 
             return ValueTask.FromResult(SyncPreparingResponseAction.Succeeded);
         }
-        catch (Exception ex)
+        catch
         {
             return ValueTask.FromResult(SyncPreparingResponseAction.Failed);
         }
@@ -72,26 +73,46 @@ public class DuckDBSyncDataDestination<TSource, TDestination, DuckDB>
 
     private string GetTableName()
     {
-        return this.Configurations?.TableName ?? typeof(TDestination).Name;
+        return Configurations?.TableName ?? typeof(TDestination).Name;
     }
 
-    private string? GetPrimaryKeyPropertyName()
+    private IReadOnlyList<string> GetPrimaryKeyPropertyNames()
     {
         if (Configurations?.PrimaryKey is null)
-            return null;
+            return [];
 
-        return GetPropertyNameFromExpression(Configurations.PrimaryKey);
+        return GetPropertyNamesFromExpression(Configurations.PrimaryKey);
     }
 
-    private static string? GetPropertyNameFromExpression(Expression<Func<TDestination, object>> expression)
+    private static IReadOnlyList<string> GetPropertyNamesFromExpression(Expression<Func<TDestination, object>> expression)
     {
-        if (expression.Body is MemberExpression memberExpression)
-            return memberExpression.Member.Name;
+        var members = new List<string>();
+        CollectMemberNames(expression.Body, members);
+        return members;
+    }
 
-        if (expression.Body is UnaryExpression { Operand: MemberExpression unaryMember })
-            return unaryMember.Member.Name;
+    private static void CollectMemberNames(Expression expression, ICollection<string> members)
+    {
+        switch (expression)
+        {
+            case MemberExpression memberExpression:
+                members.Add(memberExpression.Member.Name);
+                return;
 
-        return null;
+            case UnaryExpression { Operand: var unaryOperand }:
+                CollectMemberNames(unaryOperand, members);
+                return;
+
+            case NewExpression newExpression:
+                foreach (var argument in newExpression.Arguments)
+                    CollectMemberNames(argument, members);
+                return;
+
+            case NewArrayExpression newArrayExpression:
+                foreach (var arrayExpression in newArrayExpression.Expressions)
+                    CollectMemberNames(arrayExpression, members);
+                return;
+        }
     }
 
     /// <summary>
@@ -119,9 +140,13 @@ public class DuckDBSyncDataDestination<TSource, TDestination, DuckDB>
         return depth;
     }
 
-    private string GenerateCreateTableSql(string tableName, string? primaryKeyName)
+    private string GenerateCreateTableSql(string tableName, IReadOnlyList<string> primaryKeyNames)
     {
         var properties = GetPropertiesWithChildPriority();
+        var keySet = primaryKeyNames
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
         var sb = new StringBuilder();
 
         sb.AppendLine($"CREATE TABLE IF NOT EXISTS {tableName} (");
@@ -132,13 +157,19 @@ public class DuckDBSyncDataDestination<TSource, TDestination, DuckDB>
         {
             var columnName = property.Name;
             var duckDbType = MapCSharpTypeToDuckDB(property.PropertyType);
-            var isPrimaryKey = string.Equals(columnName, primaryKeyName, StringComparison.OrdinalIgnoreCase);
-
-            var columnDef = isPrimaryKey
-                ? $"    {columnName} {duckDbType} PRIMARY KEY"
-                : $"    {columnName} {duckDbType}";
-
+            var columnDef = $"    {columnName} {duckDbType}";
             columnDefinitions.Add(columnDef);
+        }
+
+        if (keySet.Count > 0)
+        {
+            var keyColumns = properties
+                .Where(p => keySet.Contains(p.Name))
+                .Select(p => p.Name)
+                .ToList();
+
+            if (keyColumns.Count > 0)
+                columnDefinitions.Add($"    PRIMARY KEY ({string.Join(", ", keyColumns)})");
         }
 
         sb.AppendLine(string.Join(",\n", columnDefinitions));
@@ -192,41 +223,61 @@ public class DuckDBSyncDataDestination<TSource, TDestination, DuckDB>
         var result = new SyncStoreDataResult<TDestination>();
         var succeededItems = new List<TDestination?>();
         var failedItems = new List<TDestination?>();
+        var skippedItems = new List<TDestination?>();
 
         var items = input.Input.Items;
+        if (input.Input.Status.CurrentRetryCount > 0 && (input.Input.PreviousResult?.IsEligibleToUseItAsRetryInput(input.Input?.Items?.LongCount()) ?? false))
+            items = input.Input?.PreviousResult?.FailedItems;
+
         if (items is null || !items.Any())
         {
             result.SucceededItems = succeededItems;
             result.FailedItems = failedItems;
+            result.SkippedItems = skippedItems;
             return ValueTask.FromResult(result);
         }
 
         var tableName = GetTableName();
-        var stagingTableName = GenerateStagingTableName(tableName);
-        var properties = GetPropertiesWithChildPriority();
         var continueAfterFail = Configurations?.ContinueAfterFail ?? false;
 
-        try
+        if (input.Input.Status.ActionType == SyncActionType.Delete)
         {
-            CreateStagingTable(tableName, stagingTableName);
-
-            BulkLoadToStagingTable(
-                stagingTableName,
-                properties,
+            ProcessDeleteBatch(
+                tableName,
                 items,
                 succeededItems,
                 failedItems,
+                skippedItems,
                 continueAfterFail);
-
-            UpsertFromStagingTable(tableName, stagingTableName);
         }
-        finally
+        else
         {
-            DropStagingTable(stagingTableName);
+            var stagingTableName = GenerateStagingTableName(tableName);
+            var properties = GetPropertiesWithChildPriority();
+
+            try
+            {
+                CreateStagingTable(tableName, stagingTableName);
+
+                BulkLoadToStagingTable(
+                    stagingTableName,
+                    properties,
+                    items,
+                    succeededItems,
+                    failedItems,
+                    continueAfterFail);
+
+                UpsertFromStagingTable(tableName, stagingTableName);
+            }
+            finally
+            {
+                DropStagingTable(stagingTableName);
+            }
         }
 
         result.SucceededItems = succeededItems;
         result.FailedItems = failedItems;
+        result.SkippedItems = skippedItems;
         return ValueTask.FromResult(result);
     }
 
@@ -234,6 +285,12 @@ public class DuckDBSyncDataDestination<TSource, TDestination, DuckDB>
     {
         var uniqueId = Guid.NewGuid().ToString("N")[..8];
         return $"{tableName}_staging_{uniqueId}";
+    }
+
+    private static string GenerateDeleteKeysTableName(string tableName)
+    {
+        var uniqueId = Guid.NewGuid().ToString("N")[..8];
+        return $"{tableName}_delete_keys_{uniqueId}";
     }
 
     private void CreateStagingTable(string tableName, string stagingTableName)
@@ -282,6 +339,154 @@ public class DuckDBSyncDataDestination<TSource, TDestination, DuckDB>
                     return;
             }
         }
+    }
+
+    private void ProcessDeleteBatch(
+        string tableName,
+        IEnumerable<TDestination?> items,
+        List<TDestination?> succeededItems,
+        List<TDestination?> failedItems,
+        List<TDestination?> skippedItems,
+        bool continueAfterFail)
+    {
+        var keyProperties = GetPrimaryKeyProperties();
+        if (keyProperties.Length == 0)
+            throw new InvalidOperationException("DuckDB delete action requires PrimaryKey configuration.");
+
+        var deleteKeysTableName = GenerateDeleteKeysTableName(tableName);
+        var hasAnyDeleteKey = false;
+
+        try
+        {
+            CreateDeleteKeysTable(tableName, deleteKeysTableName, keyProperties);
+
+            hasAnyDeleteKey = BulkLoadDeleteKeys(
+                deleteKeysTableName,
+                keyProperties,
+                items,
+                succeededItems,
+                failedItems,
+                skippedItems,
+                continueAfterFail);
+
+            if (hasAnyDeleteKey)
+                DeleteFromDeleteKeysTable(tableName, deleteKeysTableName, keyProperties);
+        }
+        finally
+        {
+            DropStagingTable(deleteKeysTableName);
+        }
+    }
+
+    private PropertyInfo[] GetPrimaryKeyProperties()
+    {
+        var properties = GetPropertiesWithChildPriority();
+        var keyNames = GetPrimaryKeyPropertyNames()
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .ToList();
+
+        if (keyNames.Count == 0)
+            return [];
+
+        var resolved = new List<PropertyInfo>();
+        foreach (var keyName in keyNames)
+        {
+            var property = properties.FirstOrDefault(p => string.Equals(p.Name, keyName, StringComparison.OrdinalIgnoreCase));
+            if (property is not null)
+                resolved.Add(property);
+        }
+
+        return resolved.ToArray();
+    }
+
+    private void CreateDeleteKeysTable(string tableName, string deleteKeysTableName, IReadOnlyList<PropertyInfo> keyProperties)
+    {
+        using var cmd = db.CreateCommand();
+        var keyColumns = string.Join(", ", keyProperties.Select(x => x.Name));
+        cmd.CommandText = $"CREATE OR REPLACE TEMP TABLE {deleteKeysTableName} AS SELECT {keyColumns} FROM {tableName} WHERE 1=0";
+        cmd.ExecuteNonQuery();
+    }
+
+    private bool BulkLoadDeleteKeys(
+        string deleteKeysTableName,
+        IReadOnlyList<PropertyInfo> keyProperties,
+        IEnumerable<TDestination?> items,
+        List<TDestination?> succeededItems,
+        List<TDestination?> failedItems,
+        List<TDestination?> skippedItems,
+        bool continueAfterFail)
+    {
+        using var appender = db.CreateAppender(deleteKeysTableName);
+        var uniqueKeySet = new HashSet<string>(StringComparer.Ordinal);
+        var hasAnyDeleteKey = false;
+
+        foreach (var item in items)
+        {
+            if (item is null)
+            {
+                failedItems.Add(item);
+                if (!continueAfterFail)
+                    return hasAnyDeleteKey;
+
+                continue;
+            }
+
+            try
+            {
+                var keyValues = new object?[keyProperties.Count];
+                for (var i = 0; i < keyProperties.Count; i++)
+                    keyValues[i] = keyProperties[i].GetValue(item);
+
+                var dedupeKey = BuildDeleteDedupeKey(keyValues);
+                if (!uniqueKeySet.Add(dedupeKey))
+                {
+                    skippedItems.Add(item);
+                    continue;
+                }
+
+                var row = appender.CreateRow();
+                for (var i = 0; i < keyProperties.Count; i++)
+                    AppendValue(row, keyValues[i], keyProperties[i].PropertyType);
+
+                row.EndRow();
+                succeededItems.Add(item);
+                hasAnyDeleteKey = true;
+            }
+            catch
+            {
+                failedItems.Add(item);
+
+                if (!continueAfterFail)
+                    return hasAnyDeleteKey;
+            }
+        }
+
+        return hasAnyDeleteKey;
+    }
+
+    private static string BuildDeleteDedupeKey(object?[] keyValues)
+    {
+        return string.Join("\u001F", keyValues.Select(ToInvariantKeyPart));
+    }
+
+    private static string ToInvariantKeyPart(object? value)
+    {
+        if (value is null)
+            return "<NULL>";
+
+        if (value is DateTime dateTime)
+            return dateTime.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture);
+
+        if (value is DateTimeOffset dateTimeOffset)
+            return dateTimeOffset.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture);
+
+        if (value is byte[] bytes)
+            return Convert.ToBase64String(bytes);
+
+        if (value is IFormattable formattable)
+            return formattable.ToString(null, CultureInfo.InvariantCulture);
+
+        return value.ToString() ?? string.Empty;
     }
 
     private static void AppendValue(IDuckDBAppenderRow row, object? value, Type propertyType)
@@ -375,6 +580,22 @@ public class DuckDBSyncDataDestination<TSource, TDestination, DuckDB>
                 row.AppendValue(value.ToString());
                 break;
         }
+    }
+
+    private void DeleteFromDeleteKeysTable(string tableName, string deleteKeysTableName, IReadOnlyList<PropertyInfo> keyProperties)
+    {
+        using var cmd = db.CreateCommand();
+
+        var joinPredicate = string.Join(
+            " AND ",
+            keyProperties.Select(x => $"t.{x.Name} IS NOT DISTINCT FROM k.{x.Name}"));
+
+        cmd.CommandText = $@"
+            DELETE FROM {tableName} AS t
+            USING {deleteKeysTableName} AS k
+            WHERE {joinPredicate}";
+
+        cmd.ExecuteNonQuery();
     }
 
     private void UpsertFromStagingTable(string tableName, string stagingTableName)

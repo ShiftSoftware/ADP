@@ -76,7 +76,7 @@ export class FormStepper implements FormElement {
     const currentStep = this.form?.formStructure?.currentStep;
 
     return (
-      <Host>
+      <Host translate="no">
         <div part={cn(formStepperId, this?.name)} class="w-full" id={this.wrapperId}>
           {/* <div part={cn(formStepperId + '-container', this?.name)} class={cn('flex ')}></div> */}
           <div

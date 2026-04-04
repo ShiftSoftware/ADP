@@ -174,7 +174,7 @@ export class FormTimePicker implements FormElement {
     const minutes = Array.from({ length: Math.ceil(60 / step) }, (_, i) => i * step);
 
     return (
-      <Host>
+      <Host translate="no">
         <label part={this.name} id={this.wrapperId} class={cn('form-input-label-container', this.wrapperClass, { disabled: isDisabled })}>
           <FormInputLabel isRequired={isRequired} label={label} />
 

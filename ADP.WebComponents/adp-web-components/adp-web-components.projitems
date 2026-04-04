@@ -15,7 +15,6 @@
     <None Include="$(MSBuildThisFileDirectory)azure-pipelines.yml" />
     <None Include="$(MSBuildThisFileDirectory)automation\**\*" />
     <None Include="$(MSBuildThisFileDirectory)src\components\**\*" />
-    <None Include="$(MSBuildThisFileDirectory)src\features\**\*" />
     <None Include="$(MSBuildThisFileDirectory)src\global\**\*" />
     <None Include="$(MSBuildThisFileDirectory)src\index.ts" />
     <None Include="$(MSBuildThisFileDirectory)src\index.html" />
@@ -30,5 +29,8 @@
     <None Include="$(MSBuildThisFileDirectory)tsconfig.json" />
     <None Include="$(MSBuildThisFileDirectory)package.json" />
   </ItemGroup>
-
+  <ItemGroup>
+    <Content Include="$(MSBuildThisFileDirectory)src\features\mocks\data\generated\standard-dealer\part-lookup.json" />
+    <Content Include="$(MSBuildThisFileDirectory)src\features\mocks\data\generated\standard-dealer\vehicle-lookup.json" />
+  </ItemGroup>
 </Project>

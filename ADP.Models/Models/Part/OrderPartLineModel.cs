@@ -29,8 +29,19 @@ public class OrderPartLineModel:
     /// </summary>
     public string LineID { get; set; }
 
+    /// <summary>
+    /// The status of this line item (e.g., Open, Closed).
+    /// </summary>
     public string ItemStatus { get; set; }
+
+    /// <summary>
+    /// The status of the parent order (e.g., Open, Completed).
+    /// </summary>
     public string OrderStatus { get; set; }
+
+    /// <summary>
+    /// The status of the invoice (e.g., Paid, Pending).
+    /// </summary>
     public string InvoiceStatus { get; set; }
 
     /// <summary>
@@ -171,6 +182,9 @@ public class OrderPartLineModel:
     [DocIgnore]
     public string ItemType => ModelTypes.InvoicePartLine;
 
+    /// <summary>
+    /// An external identifier used for system-to-system integration.
+    /// </summary>
     public string IntegrationID { get; set; }
 
     /// <summary>

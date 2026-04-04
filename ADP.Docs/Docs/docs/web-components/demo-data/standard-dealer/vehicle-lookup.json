@@ -1,0 +1,240 @@
+{
+  "JTMHX01J8L4198293": {
+    "vin": "JTMHX01J8L4198293",
+    "identifiers": {
+      "vin": "JTMHX01J8L4198293",
+      "variant": "VAR001",
+      "katashiki": "MXAA52L-ANXGP",
+      "color": "1G3",
+      "trim": "LA20",
+      "brandID": "1"
+    },
+    "saleInformation": {
+      "companyName": "Sample Motors",
+      "branchName": "Main Branch 2",
+      "invoiceDate": "2024-01-15"
+    },
+    "paintThicknessInspections": [
+      {
+        "source": "PDI",
+        "inspectionDate": "2024-01-10",
+        "panels": [
+          {
+            "panelType": "Hood",
+            "measuredThickness": 125.5,
+            "panelPosition": "Front",
+            "images": []
+          },
+          {
+            "panelType": "Fender",
+            "measuredThickness": 118.0,
+            "panelSide": "Left",
+            "panelPosition": "Front",
+            "images": []
+          },
+          {
+            "panelType": "Fender",
+            "measuredThickness": 120.3,
+            "panelSide": "Right",
+            "panelPosition": "Front",
+            "images": []
+          },
+          {
+            "panelType": "Door",
+            "measuredThickness": 115.0,
+            "panelSide": "Left",
+            "panelPosition": "Front",
+            "images": []
+          },
+          {
+            "panelType": "Door",
+            "measuredThickness": 116.2,
+            "panelSide": "Right",
+            "panelPosition": "Front",
+            "images": []
+          },
+          {
+            "panelType": "Door",
+            "measuredThickness": 122.0,
+            "panelSide": "Left",
+            "panelPosition": "Rear",
+            "images": []
+          },
+          {
+            "panelType": "Door",
+            "measuredThickness": 121.5,
+            "panelSide": "Right",
+            "panelPosition": "Rear",
+            "images": []
+          },
+          {
+            "panelType": "Fender",
+            "measuredThickness": 130.0,
+            "panelSide": "Left",
+            "panelPosition": "Rear",
+            "images": []
+          },
+          {
+            "panelType": "Fender",
+            "measuredThickness": 128.5,
+            "panelSide": "Right",
+            "panelPosition": "Rear",
+            "images": []
+          },
+          {
+            "panelType": "TailGate",
+            "measuredThickness": 135.0,
+            "panelPosition": "Rear",
+            "images": []
+          },
+          {
+            "panelType": "Roof",
+            "measuredThickness": 110.0,
+            "panelPosition": "Middle",
+            "images": []
+          }
+        ]
+      }
+    ],
+    "isAuthorized": true,
+    "warranty": {
+      "hasActiveWarranty": true,
+      "warrantyStartDate": "2024-02-01",
+      "warrantyEndDate": "2027-02-01",
+      "activationIsRequired": false,
+      "hasExtendedWarranty": false,
+      "freeServiceStartDate": "2024-02-01"
+    },
+    "nextServiceDate": "2025-06-15",
+    "serviceHistory": [
+      {
+        "serviceType": "10000km Service - Full inspection",
+        "serviceDate": "2024-12-15",
+        "mileage": 10500,
+        "companyName": "Sample Motors",
+        "branchName": "Main Branch 2",
+        "invoiceNumber": "INV-2024-002",
+        "jobNumber": "WO-2024-002",
+        "laborLines": [
+          {
+            "laborCode": "LAB-SVC-01",
+            "serviceDescription": "Periodic Maintenance"
+          }
+        ],
+        "partLines": []
+      }
+    ],
+    "ssc": [
+      {
+        "sscCode": "SSC-2024-001",
+        "description": "Airbag inflator replacement",
+        "labors": [
+          {
+            "laborCode": "LAB-AIR-01"
+          }
+        ],
+        "repaired": false,
+        "parts": [
+          {
+            "partNumber": "PRT-AIR-001",
+            "isAvailable": false
+          }
+        ]
+      },
+      {
+        "sscCode": "SSC-2023-005",
+        "description": "Fuel pump relay",
+        "labors": [
+          {
+            "laborCode": "LAB-FP-01"
+          }
+        ],
+        "repaired": true,
+        "parts": [
+          {
+            "partNumber": "PRT-FP-001",
+            "isAvailable": false
+          }
+        ]
+      }
+    ],
+    "vehicleSpecification": {
+      "modelDescription": "RAV4 2.0L 4WD",
+      "bodyType": "SUV",
+      "engine": "2.0L M20A-FKS",
+      "doors": "5",
+      "fuel": "Petrol",
+      "transmission": "CVT",
+      "side": "LHD"
+    },
+    "serviceItems": [],
+    "accessories": [
+      {
+        "partNumber": "PZ49E-X2653-ZA",
+        "description": "Side Steps"
+      },
+      {
+        "partNumber": "PZ323-X2651-ZA",
+        "description": "Roof Rails"
+      }
+    ],
+    "basicModelCode": "MXAA52"
+  },
+  "JTMW43FV10D123456": {
+    "vin": "JTMW43FV10D123456",
+    "identifiers": {
+      "vin": "JTMW43FV10D123456",
+      "variant": "VAR002",
+      "katashiki": "AXAH54L-ANXGB",
+      "color": "070",
+      "trim": "FB20",
+      "brandID": "1"
+    },
+    "saleInformation": {
+      "companyName": "Sample Motors",
+      "branchName": "Service Center",
+      "invoiceDate": "2023-06-20"
+    },
+    "paintThicknessInspections": [],
+    "isAuthorized": true,
+    "warranty": {
+      "hasActiveWarranty": true,
+      "warrantyStartDate": "2023-06-20",
+      "warrantyEndDate": "2026-06-20",
+      "activationIsRequired": false,
+      "hasExtendedWarranty": false,
+      "freeServiceStartDate": "2023-06-20"
+    },
+    "serviceHistory": [],
+    "vehicleSpecification": {
+      "modelDescription": "RAV4 Hybrid 2.5L",
+      "bodyType": "SUV",
+      "engine": "2.5L A25A-FXS Hybrid",
+      "doors": "5",
+      "fuel": "Hybrid",
+      "transmission": "E-CVT",
+      "side": "LHD"
+    },
+    "serviceItems": [],
+    "accessories": [],
+    "basicModelCode": "AXAH54"
+  },
+  "UNKNOWN_VIN_12345": {
+    "vin": "UNKNOWN_VIN_12345",
+    "identifiers": {
+      "vin": "UNKNOWN_VIN_12345"
+    },
+    "paintThicknessInspections": [],
+    "isAuthorized": false,
+    "warranty": {
+      "hasActiveWarranty": false,
+      "activationIsRequired": false,
+      "hasExtendedWarranty": false
+    },
+    "serviceHistory": [],
+    "vehicleVariantInfo": {},
+    "vehicleSpecification": {},
+    "serviceItems": [],
+    "accessories": []
+  }
+}

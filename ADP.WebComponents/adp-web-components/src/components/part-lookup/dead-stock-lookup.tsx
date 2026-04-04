@@ -151,7 +151,7 @@ export class DeadStockLookup implements MultiLingual, VehicleInfoLayoutInterface
 
   render() {
     return (
-      <Host>
+      <Host translate="no">
         <VehicleInfoLayout
           isError={this.isError}
           coreOnly={this.coreOnly}

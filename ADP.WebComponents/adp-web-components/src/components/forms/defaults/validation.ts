@@ -105,7 +105,13 @@ export const getFormValidations = (stateObject: Record<string, any>, extraFields
         otherwise: schema => schema.optional(),
         then: schema => schema.required(require('date')),
       }),
-
+    year: string()
+      .meta(meta('year'))
+      .when(condition('year'), {
+        is: true,
+        otherwise: schema => schema.optional(),
+        then: schema => schema.required(require('year')),
+      }),
     time: string()
       .meta(meta('time'))
       .when(condition('time'), {

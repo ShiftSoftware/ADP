@@ -2,6 +2,9 @@
 
 internal interface ICompanyProps
 {
+    /// <summary>
+    /// The internal company ID.
+    /// </summary>
     public long? CompanyID { get; set; }
 
     /// <summary>
