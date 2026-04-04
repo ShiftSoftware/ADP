@@ -2,11 +2,10 @@ This section provided all the components **Full Documentation**, **Demo**, **Com
 
 !!! danger "Important"
 
-     Some components as example of [Vehicle Lookup](vehicle-lookup.md) are only wrappers around other components and doesn't have a shadow dom of their own.
+     Some components (such as Vehicle Lookup) are wrappers around other components and don't have a shadow DOM of their own.
 
 ??? note "Vehicle Lookup"
 
-    - [Vehicle Lookup](vehicle-lookup.md)  **Wrapper**
     - [Vehicle Specification](vehicle-specification.md)
     - [Vehicle Accessories](vehicle-accessories.md)
     - [Warranty Details](warranty-details.md)

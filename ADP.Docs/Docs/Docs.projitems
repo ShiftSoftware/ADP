@@ -168,6 +168,19 @@
     <None Include="$(MSBuildThisFileDirectory)docs\integrations\sync-agent\logging.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\integrations\sync-agent\resilience.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\overrides\assets\images\spinner.svg" />
+    <None Include="$(MSBuildThisFileDirectory)docs\web-components\components\components-list.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\web-components\components\dead-stock-lookup.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\web-components\components\distributor-lookup.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\web-components\components\manufacturer-lookup.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\web-components\components\paint-thickness.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\web-components\components\service-history.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\web-components\components\swift-claim.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\web-components\components\vehicle-accessories.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\web-components\components\vehicle-specification.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\web-components\components\warranty-details.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\web-components\installation.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\web-components\introduction.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\web-components\theming.md" />
     <None Include="$(MSBuildThisFileDirectory)mkdocs.yml" />
   </ItemGroup>
   <ItemGroup>
@@ -178,6 +191,11 @@
     <Content Include="$(MSBuildThisFileDirectory)docs\overrides\assets\images\favicon.png" />
     <Content Include="$(MSBuildThisFileDirectory)docs\overrides\assets\images\logo.png" />
     <Content Include="$(MSBuildThisFileDirectory)docs\overrides\css\extra.css" />
+    <Content Include="$(MSBuildThisFileDirectory)docs\web-components\assets\part-exploring.png" />
+    <Content Include="$(MSBuildThisFileDirectory)docs\web-components\demo-data\broker-dealer\part-lookup.json" />
+    <Content Include="$(MSBuildThisFileDirectory)docs\web-components\demo-data\broker-dealer\vehicle-lookup.json" />
+    <Content Include="$(MSBuildThisFileDirectory)docs\web-components\demo-data\standard-dealer\part-lookup.json" />
+    <Content Include="$(MSBuildThisFileDirectory)docs\web-components\demo-data\standard-dealer\vehicle-lookup.json" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)docs\components\services\" />
