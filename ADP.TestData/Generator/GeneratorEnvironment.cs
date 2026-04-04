@@ -16,6 +16,7 @@ public class GeneratorEnvironment
     public Dictionary<string, CompanyDataAggregateModel> Vehicles { get; set; } = new();
     public List<BrokerInitialVehicleModel> BrokerInitialVehicles { get; set; } = new();
     public List<BrokerInvoiceModel> BrokerInvoices { get; set; } = new();
+    public Dictionary<string, List<TBP_StockModel>> BrokerStocks { get; set; } = new();
     public List<VehicleModelModel> VehicleModels { get; set; } = new();
     public List<ServiceItemModel> ServiceItems { get; set; } = new();
     public Dictionary<string, PartAggregateCosmosModel> Parts { get; set; } = new();

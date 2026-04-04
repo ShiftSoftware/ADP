@@ -44,6 +44,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ADP.TestData", "ADP.TestDat
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "environments", "environments", "{9037A1A7-3189-49A2-9E97-9D6D3B29A6E6}"
 	ProjectSection(SolutionItems) = preProject
+		ADP.TestData\environments\broker-dealer.json = ADP.TestData\environments\broker-dealer.json
 		ADP.TestData\environments\standard-dealer.json = ADP.TestData\environments\standard-dealer.json
 	EndProjectSection
 EndProject

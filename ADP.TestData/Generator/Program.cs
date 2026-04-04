@@ -68,9 +68,15 @@ foreach (var envFile in Directory.GetFiles(environmentsDir, "*.json"))
     storageService.GetServiceItemsAsync(Arg.Any<bool>())
         .Returns(Task.FromResult<IEnumerable<ServiceItemModel>>(env.ServiceItems));
 
-    // Wire up broker stock (returns empty for standard dealer)
+    // Wire up broker stock (looks up from environment data by VIN, falls back to empty)
     storageService.GetBrokerStockAsync(Arg.Any<long?>(), Arg.Any<string>())
-        .Returns(Task.FromResult(Enumerable.Empty<ShiftSoftware.ADP.Models.TBP.TBP_StockModel>()));
+        .Returns(callInfo =>
+        {
+            var vin = callInfo.ArgAt<string>(1);
+            if (vin is not null && env.BrokerStocks.TryGetValue(vin, out var stocks))
+                return Task.FromResult(stocks.AsEnumerable());
+            return Task.FromResult(Enumerable.Empty<ShiftSoftware.ADP.Models.TBP.TBP_StockModel>());
+        });
 
     // === Generate Vehicle Lookup Output ===
     var vehicleLookupOutput = new Dictionary<string, VehicleLookupDTO>();
