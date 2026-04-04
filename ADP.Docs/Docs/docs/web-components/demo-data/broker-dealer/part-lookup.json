@@ -1,0 +1,127 @@
+{
+  "04152-YZZA1": {
+    "partNumber": "04152-YZZA1",
+    "partDescription": "OIL FILTER",
+    "productGroup": "E",
+    "showManufacturerPartLookup": false,
+    "distributorPurchasePrice": 4.20,
+    "origin": "TH",
+    "supersededTo": [],
+    "supersededFrom": [],
+    "stockParts": [
+      {
+        "quantityLookUpResult": "Available",
+        "locationID": "WH-MAIN",
+        "availableQuantity": 150
+      },
+      {
+        "quantityLookUpResult": "Available",
+        "locationID": "WH-SOUTH",
+        "availableQuantity": 75
+      }
+    ],
+    "prices": [
+      {
+        "countryID": "1",
+        "countryName": "Iraq",
+        "regionID": "10",
+        "regionName": "Kurdistan",
+        "retailPrice": {
+          "value": 8.50
+        },
+        "purchasePrice": {
+          "value": 6.00
+        },
+        "warrantyPrice": {
+          "value": 4.50
+        }
+      },
+      {
+        "countryID": "1",
+        "countryName": "Iraq",
+        "regionID": "20",
+        "regionName": "Southern Iraq",
+        "retailPrice": {
+          "value": 8.00
+        },
+        "purchasePrice": {
+          "value": 5.80
+        },
+        "warrantyPrice": {
+          "value": 4.30
+        }
+      }
+    ],
+    "deadStock": []
+  },
+  "90915-YZZD4": {
+    "partNumber": "90915-YZZD4",
+    "partDescription": "OIL FILTER ELEMENT",
+    "localDescription": "Oil Filter Element Assembly",
+    "productGroup": "E",
+    "pnc": "90915",
+    "binType": "B",
+    "showManufacturerPartLookup": false,
+    "distributorPurchasePrice": 3.80,
+    "length": 70,
+    "width": 70,
+    "height": 80,
+    "netWeight": 0.18,
+    "cubicMeasure": 0.39,
+    "origin": "TH",
+    "supersededTo": [],
+    "supersededFrom": [],
+    "stockParts": [
+      {
+        "quantityLookUpResult": "Available",
+        "locationID": "WH-MAIN",
+        "availableQuantity": 200
+      }
+    ],
+    "prices": [
+      {
+        "countryID": "1",
+        "countryName": "Iraq",
+        "regionID": "10",
+        "regionName": "Kurdistan",
+        "retailPrice": {
+          "value": 7.50
+        },
+        "purchasePrice": {
+          "value": 5.20
+        },
+        "warrantyPrice": {
+          "value": 4.00
+        }
+      },
+      {
+        "countryID": "2",
+        "countryName": "Kuwait",
+        "regionID": "30",
+        "regionName": "Kuwait City",
+        "retailPrice": {
+          "value": 8.00
+        },
+        "purchasePrice": {
+          "value": 5.50
+        },
+        "warrantyPrice": {
+          "value": 4.20
+        }
+      }
+    ],
+    "deadStock": [
+      {
+        "companyHashID": "CH-2",
+        "companyName": "Gulf Auto Services",
+        "branchDeadStock": [
+          {
+            "companyBranchHashID": "BH-30",
+            "companyBranchName": "Basra Center",
+            "quantity": 15
+          }
+        ]
+      }
+    ]
+  }
+}

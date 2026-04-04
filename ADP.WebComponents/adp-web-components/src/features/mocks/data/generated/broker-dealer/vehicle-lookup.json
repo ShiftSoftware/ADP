@@ -1,0 +1,275 @@
+{
+  "JTEHF21A0Y0123456": {
+    "vin": "JTEHF21A0Y0123456",
+    "identifiers": {
+      "vin": "JTEHF21A0Y0123456",
+      "variant": "VAR010",
+      "katashiki": "GDJ150L-GKAEY",
+      "color": "040",
+      "trim": "LA60",
+      "brandID": "1"
+    },
+    "saleInformation": {
+      "companyName": "Al-Rashid Motors",
+      "branchName": "Erbil Showroom",
+      "customerAccountNumber": "BRK-ACC-001",
+      "invoiceDate": "2024-03-10",
+      "broker": {
+        "brokerID": 100,
+        "brokerName": "Hawler Auto Broker"
+      }
+    },
+    "paintThicknessInspections": [],
+    "isAuthorized": true,
+    "warranty": {
+      "hasActiveWarranty": false,
+      "activationIsRequired": false,
+      "hasExtendedWarranty": false
+    },
+    "serviceHistory": [],
+    "vehicleSpecification": {
+      "modelDescription": "Land Cruiser Prado 2.8D",
+      "bodyType": "SUV",
+      "engine": "2.8L 1GD-FTV Diesel",
+      "doors": "5",
+      "fuel": "Diesel",
+      "transmission": "Automatic 6-Speed",
+      "side": "LHD"
+    },
+    "serviceItems": [],
+    "accessories": [],
+    "basicModelCode": "GDJ150"
+  },
+  "JTMHF33P5D5012345": {
+    "vin": "JTMHF33P5D5012345",
+    "identifiers": {
+      "vin": "JTMHF33P5D5012345",
+      "variant": "VAR020",
+      "katashiki": "MXAA52L-ANXGP",
+      "color": "1G3",
+      "trim": "LA20",
+      "brandID": "1"
+    },
+    "saleInformation": {
+      "companyName": "Al-Rashid Motors",
+      "branchName": "Erbil Showroom",
+      "customerAccountNumber": "BRK-ACC-002",
+      "invoiceDate": "2023-11-20",
+      "broker": {
+        "brokerID": 200,
+        "brokerName": "Suli Trade Broker",
+        "invoiceNumber": 90001,
+        "invoiceDate": "2024-02-15"
+      }
+    },
+    "paintThicknessInspections": [],
+    "isAuthorized": true,
+    "warranty": {
+      "hasActiveWarranty": true,
+      "warrantyStartDate": "2024-02-15",
+      "warrantyEndDate": "2027-02-15",
+      "activationIsRequired": false,
+      "hasExtendedWarranty": true,
+      "extendedWarrantyStartDate": "2027-02-10",
+      "extendedWarrantyEndDate": "2029-02-10",
+      "freeServiceStartDate": "2024-02-15"
+    },
+    "nextServiceDate": "2024-11-15",
+    "serviceHistory": [],
+    "ssc": [
+      {
+        "sscCode": "SSC-2024-010",
+        "description": "Brake booster inspection",
+        "labors": [
+          {
+            "laborCode": "LAB-BRK-01"
+          }
+        ],
+        "repaired": false,
+        "parts": [
+          {
+            "partNumber": "PRT-BRK-001",
+            "isAvailable": false
+          }
+        ]
+      }
+    ],
+    "vehicleSpecification": {
+      "modelDescription": "RAV4 2.0L 4WD",
+      "bodyType": "SUV",
+      "engine": "2.0L M20A-FKS",
+      "doors": "5",
+      "fuel": "Petrol",
+      "transmission": "CVT",
+      "side": "LHD"
+    },
+    "serviceItems": [],
+    "accessories": [
+      {
+        "partNumber": "PZ49E-X2653-ZA",
+        "description": "Side Steps"
+      }
+    ],
+    "basicModelCode": "MXAA52"
+  },
+  "JTEBU5JR8L5234567": {
+    "vin": "JTEBU5JR8L5234567",
+    "identifiers": {
+      "vin": "JTEBU5JR8L5234567",
+      "variant": "VAR030",
+      "katashiki": "AXAH54L-ANXGB",
+      "color": "070",
+      "trim": "FB20",
+      "brandID": "1"
+    },
+    "saleInformation": {
+      "companyName": "Gulf Auto Services",
+      "branchName": "Basra Center",
+      "invoiceDate": "2024-06-01"
+    },
+    "paintThicknessInspections": [
+      {
+        "source": "PDI",
+        "inspectionDate": "2024-05-28",
+        "panels": [
+          {
+            "panelType": "Hood",
+            "measuredThickness": 120.0,
+            "panelPosition": "Front",
+            "images": []
+          },
+          {
+            "panelType": "Fender",
+            "measuredThickness": 115.5,
+            "panelSide": "Left",
+            "panelPosition": "Front",
+            "images": []
+          },
+          {
+            "panelType": "Fender",
+            "measuredThickness": 117.0,
+            "panelSide": "Right",
+            "panelPosition": "Front",
+            "images": []
+          },
+          {
+            "panelType": "Door",
+            "measuredThickness": 112.0,
+            "panelSide": "Left",
+            "panelPosition": "Front",
+            "images": []
+          },
+          {
+            "panelType": "Door",
+            "measuredThickness": 113.5,
+            "panelSide": "Right",
+            "panelPosition": "Front",
+            "images": []
+          },
+          {
+            "panelType": "Door",
+            "measuredThickness": 119.0,
+            "panelSide": "Left",
+            "panelPosition": "Rear",
+            "images": []
+          },
+          {
+            "panelType": "Door",
+            "measuredThickness": 118.5,
+            "panelSide": "Right",
+            "panelPosition": "Rear",
+            "images": []
+          },
+          {
+            "panelType": "Fender",
+            "measuredThickness": 125.0,
+            "panelSide": "Left",
+            "panelPosition": "Rear",
+            "images": []
+          },
+          {
+            "panelType": "Fender",
+            "measuredThickness": 124.0,
+            "panelSide": "Right",
+            "panelPosition": "Rear",
+            "images": []
+          },
+          {
+            "panelType": "TailGate",
+            "measuredThickness": 130.0,
+            "panelPosition": "Rear",
+            "images": []
+          },
+          {
+            "panelType": "Roof",
+            "measuredThickness": 108.5,
+            "panelPosition": "Middle",
+            "images": []
+          }
+        ]
+      }
+    ],
+    "isAuthorized": true,
+    "warranty": {
+      "hasActiveWarranty": true,
+      "warrantyStartDate": "2024-07-01",
+      "warrantyEndDate": "2027-07-01",
+      "activationIsRequired": false,
+      "hasExtendedWarranty": false,
+      "freeServiceStartDate": "2024-07-01"
+    },
+    "nextServiceDate": "2025-09-25",
+    "serviceHistory": [
+      {
+        "serviceType": "10000km Service - Full inspection",
+        "serviceDate": "2025-03-25",
+        "mileage": 10800,
+        "companyName": "Gulf Auto Services",
+        "branchName": "Basra Center",
+        "invoiceNumber": "INV-DIR-002",
+        "jobNumber": "WO-DIR-002",
+        "laborLines": [
+          {
+            "laborCode": "LAB-SVC-01",
+            "serviceDescription": "Periodic Maintenance"
+          }
+        ],
+        "partLines": []
+      }
+    ],
+    "ssc": [
+      {
+        "sscCode": "SSC-2024-020",
+        "description": "ECU software update",
+        "labors": [
+          {
+            "laborCode": "LAB-ECU-01"
+          }
+        ],
+        "repaired": true,
+        "parts": []
+      }
+    ],
+    "vehicleSpecification": {
+      "modelDescription": "RAV4 Hybrid 2.5L",
+      "bodyType": "SUV",
+      "engine": "2.5L A25A-FXS Hybrid",
+      "doors": "5",
+      "fuel": "Hybrid",
+      "transmission": "E-CVT",
+      "side": "LHD"
+    },
+    "serviceItems": [],
+    "accessories": [
+      {
+        "partNumber": "PZ323-X2651-ZA",
+        "description": "Roof Rails"
+      },
+      {
+        "partNumber": "PZ443-X2650-ZA",
+        "description": "Rubber Floor Mats"
+      }
+    ],
+    "basicModelCode": "AXAH54"
+  }
+}
