@@ -261,7 +261,47 @@
       "Side": "LHD"
     }
   ],
-  "ServiceItems": [],
+  "ServiceItems": [
+    {
+      "IntegrationID": "SI-001",
+      "Name": { "en": "1,000 KM Service" },
+      "IsDeleted": false,
+      "BrandIDs": [1],
+      "CampaignStartDate": "2020-01-01",
+      "CampaignEndDate": "2030-12-31",
+      "CampaignActivationTrigger": "WarrantyActivation",
+      "ValidityMode": "RelativeToActivation",
+      "ActiveFor": 6,
+      "ActiveForDurationType": "Months",
+      "MaximumMileage": 1500
+    },
+    {
+      "IntegrationID": "SI-002",
+      "Name": { "en": "5,000 KM Service" },
+      "IsDeleted": false,
+      "BrandIDs": [1],
+      "CampaignStartDate": "2020-01-01",
+      "CampaignEndDate": "2030-12-31",
+      "CampaignActivationTrigger": "WarrantyActivation",
+      "ValidityMode": "RelativeToActivation",
+      "ActiveFor": 12,
+      "ActiveForDurationType": "Months",
+      "MaximumMileage": 6000
+    },
+    {
+      "IntegrationID": "SI-003",
+      "Name": { "en": "10,000 KM Service" },
+      "IsDeleted": false,
+      "BrandIDs": [1],
+      "CampaignStartDate": "2020-01-01",
+      "CampaignEndDate": "2030-12-31",
+      "CampaignActivationTrigger": "WarrantyActivation",
+      "ValidityMode": "RelativeToActivation",
+      "ActiveFor": 18,
+      "ActiveForDurationType": "Months",
+      "MaximumMileage": 12000
+    }
+  ],
   "Parts": {
     "SU00302474": {
       "CatalogParts": [
