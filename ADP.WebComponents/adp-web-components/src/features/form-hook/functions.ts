@@ -6,7 +6,6 @@ import { fetchJson } from '~lib/fetch-json';
 import { AnyObjectSchema } from 'yup';
 import { Grecaptcha } from '~lib/recaptcha';
 import { formatISO, parse } from 'date-fns';
-//import { isValidPhoneNumber } from 'libphonenumber-js';
 
 export type FormLanguageChange = {
   form: FormHook<any>;
@@ -282,7 +281,7 @@ export const onFormSubmit = async <T>({ context, formValues, middleware, afterSu
     });
 
     if (response.ok) {
-      const result = await response?.json();
+      const result = await response.json().catch(() => ({}));
 
       if (afterSuccess) await afterSuccess(payload, header);
 
@@ -293,9 +292,9 @@ export const onFormSubmit = async <T>({ context, formValues, middleware, afterSu
         context.form.rerender({ rerenderForm: true, rerenderAll: true });
       }, 100);
     } else {
-      const contentType = response.headers.get('content-type');
+      const contentType = response.headers.get('content-type') || '';
 
-      const errorText = contentType?.includes('application/json') ? (await response.json())?.message?.body : await response.text();
+      const errorText = contentType.includes('application/json') ? ((await response.json().catch(() => ({})))?.message?.body ?? '') : await response.text().catch(() => '');
 
       throw new Error(errorText);
     }

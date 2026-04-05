@@ -147,8 +147,8 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
         body: JSON.stringify(payload),
       });
 
-      if (response.ok) {
-        const result = await response?.json();
+      if (response?.ok) {
+        const result = await response?.json().catch(() => ({}));
 
         const eventHolder = this.structure?.data?.pushAnalyticsEventTo as string | undefined;
 
@@ -170,7 +170,10 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
           this.form.rerender({ rerenderForm: true, rerenderAll: true });
         }, 100);
       } else {
-        const errorText = await response?.text();
+        const contentType = response.headers.get('content-type') || '';
+
+        const errorText = contentType.includes('application/json') ? ((await response.json().catch(() => ({})))?.message?.body ?? '') : await response.text().catch(() => '');
+
         throw new Error(errorText);
       }
     } catch (error) {

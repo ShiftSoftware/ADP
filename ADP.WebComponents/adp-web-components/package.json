@@ -1,6 +1,6 @@
 {
   "name": "adp-web-components",
-  "version": "0.1.86",
+  "version": "0.1.87",
   "description": "ADP Platform Web Components",
   "main": "dist/index.cjs.js",
   "module": "dist/index.js",
@@ -44,6 +44,7 @@
     "delete:locale": "node ./automation/delete-locale.mjs",
     "create:locale": "node ./automation/generate-locale.mjs",
     "create:locale-mapper": "node ./automation/generate-locale-mapper.mjs",
+    "purge": "node ./automation/purge-cdn.mjs",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,css,scss,html}\"",
     "prettier": "prettier --check \"src/**/*.{ts,tsx,js,jsx,css,scss,html}\""
   },
