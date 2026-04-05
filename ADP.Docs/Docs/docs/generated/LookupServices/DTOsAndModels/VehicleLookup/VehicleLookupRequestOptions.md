@@ -15,3 +15,4 @@ Options passed to the vehicle lookup service to control lookup behavior, languag
 | VehicleServiceHistoryConsistencyLevel <div><strong>``ConsistencyLevels``</strong></div> | The consistency level for service history queries (defaults to Strong). |
 | LookupEndCustomer <div><strong>``bool``</strong></div> | Whether to look up end customer information for the vehicle. |
 | LegacyPaintThickness <div><strong>``bool``</strong></div> | Whether to include the legacy paint thickness format in the response. |
+| UseKatashikiLookup <div><strong>``bool``</strong></div> | Whether to use Katashiki instead of VariantCode for vehicle model lookup. |

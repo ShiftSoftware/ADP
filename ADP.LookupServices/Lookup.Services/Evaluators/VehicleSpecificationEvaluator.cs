@@ -1,6 +1,7 @@
 ﻿using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using ShiftSoftware.ADP.Lookup.Services.Services;
 using ShiftSoftware.ADP.Models.Vehicle;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace ShiftSoftware.ADP.Lookup.Services.Evaluators;
@@ -13,11 +14,21 @@ public class VehicleSpecificationEvaluator
         this.VehicleLoockupCosmos = vehicleLoockupCosmos;
     }
 
-    public async Task<VehicleSpecificationDTO> Evaluate(VehicleEntryModel vehicle)
+    public async Task<VehicleSpecificationDTO> Evaluate(VehicleEntryModel vehicle, VehicleLookupRequestOptions requestOptions = null)
     {
         VehicleSpecificationDTO result = new();
 
-        var vehicleModel = await VehicleLoockupCosmos.GetVehicleModelsAsync(vehicle?.VariantCode, vehicle?.BrandID);
+        VehicleModelModel vehicleModel;
+
+        if (requestOptions?.UseKatashikiLookup == true && !string.IsNullOrWhiteSpace(vehicle?.Katashiki))
+        {
+            var models = await VehicleLoockupCosmos.GetVehicleModelsByKatashikiAsync(vehicle.Katashiki);
+            vehicleModel = models?.FirstOrDefault();
+        }
+        else
+        {
+            vehicleModel = await VehicleLoockupCosmos.GetVehicleModelsAsync(vehicle?.VariantCode, vehicle?.BrandID);
+        }
         var exteriorColor = await VehicleLoockupCosmos.GetExteriorColorsAsync(vehicle?.ExteriorColorCode, vehicle?.BrandID);
         var interiorColor = await VehicleLoockupCosmos.GetInteriorColorsAsync(vehicle?.InteriorColorCode, vehicle?.BrandID);
 

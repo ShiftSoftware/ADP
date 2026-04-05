@@ -108,7 +108,7 @@ public class VehicleLookupService
             IsAuthorized = new VehicleAuthorizationEvaluator(companyDataAggregate).Evaluate(),
             PaintThicknessInspections = await new VehiclePaintThicknessEvaluator(companyDataAggregate, lookupOptions, serviceProvider).Evaluate(requestOptions.LanguageCode),
             Identifiers = new VehicleIdentifierEvaluator(companyDataAggregate).Evaluate(vehicle),
-            VehicleSpecification = await new VehicleSpecificationEvaluator(vehicleLoockupStorageService).Evaluate(vehicle),
+            VehicleSpecification = await new VehicleSpecificationEvaluator(vehicleLoockupStorageService).Evaluate(vehicle, requestOptions),
             ServiceHistory = await new VehicleServiceHistoryEvaluator(companyDataAggregate, lookupOptions, this.serviceProvider).Evaluate(requestOptions.LanguageCode, requestOptions.VehicleServiceHistoryConsistencyLevel),
             SSC = new VehicleSSCEvaluator(companyDataAggregate).Evaluate(),
             NextServiceDate = companyDataAggregate.LaborLines?.Max(x => x.NextServiceDate),

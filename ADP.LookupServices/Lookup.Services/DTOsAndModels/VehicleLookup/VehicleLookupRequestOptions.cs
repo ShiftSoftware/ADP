@@ -28,4 +28,6 @@ public class VehicleLookupRequestOptions
     public bool LookupEndCustomer { get; set; }
     /// <summary>Whether to include the legacy paint thickness format in the response.</summary>
     public bool LegacyPaintThickness { get; set; }
+    /// <summary>Whether to use Katashiki instead of VariantCode for vehicle model lookup.</summary>
+    public bool UseKatashikiLookup { get; set; }
 }
