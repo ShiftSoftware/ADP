@@ -11,6 +11,7 @@ import { FormErrorMessage } from './components/form-error-message';
 import { FormInputPrefix } from './components/form-input-prefix';
 import { AnyObjectSchema, string } from 'yup';
 import { AsYouType, CountryCode } from 'libphonenumber-js';
+import { getCountryForTimezone } from 'countries-and-timezones';
 import { y } from '../forms/defaults/validation';
 
 const partKeyPrefix = 'form-input-';
@@ -52,11 +53,34 @@ export class FormPhoneNumber implements FormElement {
 
     if (typeof this.countryCode === 'string') {
       this.selectedValue = this.countryCode as CountryCode;
-    } else if (Array.isArray(this.countryCode) && typeof this.countryCode[0] === 'string') {
-      this.selectedValue = this.countryCode[0] as CountryCode;
-    } else if (Array.isArray(this.countryCode) && typeof this.countryCode[0] === 'object') {
-      this.selectedValue = (this.countryCode[0] as { code: string }).code as CountryCode;
+    } else if (Array.isArray(this.countryCode)) {
+      const codes = this.countryCode.map(c => (typeof c === 'string' ? c : c.code).toUpperCase());
+      const detectedCountry = this.detectCountryFromBrowser(codes);
+      const match = detectedCountry;
+
+      this.selectedValue = (match || codes[0]) as CountryCode;
     }
+  }
+
+  private detectCountryFromBrowser(availableCodes: string[]): string | null {
+    // 1. Try timezone → country mapping
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const country = getCountryForTimezone(tz);
+      if (country && availableCodes.includes(country.id)) return country.id;
+    } catch {}
+
+    // 2. Fallback to browser locale
+    const languages = navigator.languages?.length ? navigator.languages : [navigator.language];
+    for (const lang of languages) {
+      const parts = lang?.split('-');
+      if (parts?.length >= 2) {
+        const country = parts[parts.length - 1].toUpperCase();
+        if (country.length === 2 && availableCodes.includes(country)) return country;
+      }
+    }
+
+    return null;
   }
 
   @Watch('selectedValue')
@@ -141,8 +165,8 @@ export class FormPhoneNumber implements FormElement {
   };
 
   getValue = () => {
-    const raw = this.inputRef.value.trim().replace(/^\+/, '');
-    const prefix = this.inputPrefix?.trim().replace(/^\+/, '');
+    const raw = this?.inputRef?.value.trim().replace(/^\+/, '') || '';
+    const prefix = this.inputPrefix?.trim().replace(/^\+/, '') || '';
 
     const stripped = raw.startsWith(prefix) ? raw.slice(prefix.length).trim() : raw;
 

@@ -423,7 +423,7 @@ export class FormHook<T> {
       if (!this.isSubmitted && this.validationType !== 'always' && !this.subscribedFields[name]?.continuousValidation) return;
     }
 
-    const wasError = this.subscribedFields[name].isError;
+    const wasError = this.subscribedFields[name]?.isError;
 
     try {
       // @ts-ignore

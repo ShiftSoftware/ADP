@@ -223,7 +223,8 @@
 }
 
 .form-select-container {
-  @apply z-[10] flex flex-col pointer-events-none absolute w-full bg-white border rounded-md shadow opacity-0 transition-opacity !duration-300 max-h-[250px] overflow-auto;
+  @apply z-[10] flex flex-col pointer-events-none fixed bg-white border rounded-md shadow opacity-0 transition-opacity !duration-300 max-h-[250px] overflow-auto;
+  width: var(--dropdown-width, auto);
 }
 
 .form-input-container.open .form-select-container {
@@ -231,11 +232,10 @@
 }
 
 .form-select-container.upwards {
-  @apply top-0 -mt-[8px] -translate-y-full;
+  @apply -translate-y-full;
 }
 
 .form-select-container.downwards {
-  @apply top-0 mt-[8px] translate-y-[38px];
 }
 
 .form-select-option {

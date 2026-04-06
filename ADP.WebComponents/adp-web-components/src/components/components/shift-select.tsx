@@ -47,6 +47,7 @@ export class ShiftSelect {
     document.addEventListener('click', this.closeDropdown);
     document.addEventListener('keydown', this.handleKeyDown.bind(this));
     window.addEventListener('resize', this.handleResize);
+    window.addEventListener('scroll', this.handleScroll, true);
   }
 
   adjustDropdownPosition() {
@@ -56,9 +57,15 @@ export class ShiftSelect {
 
       const rect = selectButton.getBoundingClientRect();
 
-      const spaceBelow = window.innerHeight - rect.bottom - 20; // 20 is padding
+      // Set width and horizontal position before measuring height
+      selectContainer.style.setProperty('--dropdown-width', `${rect.width}px`);
+      selectContainer.style.left = `${rect.left}px`;
 
-      this.openUpwards = spaceBelow < selectContainer.getBoundingClientRect().height || this.forceOpenUpwards;
+      const spaceBelow = window.innerHeight - rect.bottom - 20; // 20 is padding
+      const openUp = spaceBelow < selectContainer.getBoundingClientRect().height || this.forceOpenUpwards;
+
+      this.openUpwards = openUp;
+      selectContainer.style.top = openUp ? `${rect.top - 8}px` : `${rect.bottom + 8}px`;
 
       setTimeout(() => {
         this.updateContext({ isOpen: true });
@@ -84,12 +91,48 @@ export class ShiftSelect {
     document.removeEventListener('click', this.closeDropdown);
     document.removeEventListener('keydown', this.handleKeyDown.bind(this));
     window.removeEventListener('resize', this.handleResize);
+    window.removeEventListener('scroll', this.handleScroll, true);
   }
 
   handleResize = () => {
     if (this.isOpen) {
-      this.adjustDropdownPosition();
+      this.updateContext({ isOpen: false });
     }
+  };
+
+  private scrollRafId: number | null = null;
+
+  handleScroll = (event: Event) => {
+    if (!this.isOpen) return;
+    const selectContainer = this.el.getElementsByClassName('form-select-container')[0];
+    if (selectContainer && selectContainer.contains(event.target as Node)) return;
+
+    if (this.scrollRafId) return;
+    this.scrollRafId = requestAnimationFrame(() => {
+      this.scrollRafId = null;
+      if (!this.isOpen) return;
+
+      const selectButton = this.el.getElementsByClassName('form-input-select')[0] as HTMLDivElement;
+      if (!selectButton) return;
+
+      const rect = selectButton.getBoundingClientRect();
+      const isVisible = rect.bottom > 0 && rect.top < window.innerHeight && rect.right > 0 && rect.left < window.innerWidth;
+
+      if (!isVisible) {
+        this.updateContext({ isOpen: false });
+        return;
+      }
+
+      const container = this.el.getElementsByClassName('form-select-container')[0] as HTMLDivElement;
+      if (!container) return;
+
+      const spaceBelow = window.innerHeight - rect.bottom - 20;
+      this.openUpwards = spaceBelow < container.getBoundingClientRect().height || this.forceOpenUpwards;
+
+      container.style.left = `${rect.left}px`;
+      container.style.setProperty('--dropdown-width', `${rect.width}px`);
+      container.style.top = this.openUpwards ? `${rect.top - 8}px` : `${rect.bottom + 8}px`;
+    });
   };
 
   onSearchInput = (event: InputEvent) => {
@@ -127,7 +170,7 @@ export class ShiftSelect {
             onClick={this.toggleDropdown}
             placeholder={this.placeholder}
             class={cn('form-input-style form-input-select', {
-              'form-input-error-style': this.isError,
+              'form-input-error-style': this?.isError,
             })}
           />
 
