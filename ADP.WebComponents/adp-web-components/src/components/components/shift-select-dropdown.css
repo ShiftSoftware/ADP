@@ -11,7 +11,7 @@
 }
 
 .shift-select-container {
-  @apply z-[551] flex flex-col pointer-events-none fixed bg-white border rounded-md shadow opacity-0 transition-opacity duration-300 max-h-[250px] overflow-auto;
+  @apply z-[9999999] flex flex-col pointer-events-none fixed bg-white border rounded-md shadow opacity-0 transition-opacity duration-300 max-h-[250px] overflow-auto;
   top: var(--shift-select-top, 0);
   left: var(--shift-select-left, 0);
   width: var(--shift-select-width, auto);
