@@ -197,6 +197,11 @@ export class ShiftSelect {
               this.hasArrow && <ArrowUpIcon part={`${this.name}-arrow-icon select-arrow`} class="cursor-pointer form-input-select-icon pointer-events-none! arrow" />
             )}
           </div>
+
+          {
+            // @ts-ignore
+            false && <shift-select-dropdown />
+          }
           <shift-portal tag="shift-select-dropdown" inheritedClasses={this.dropdownAncestorClasses} componentProps={dropdownProps} />
         </div>
       </Host>
