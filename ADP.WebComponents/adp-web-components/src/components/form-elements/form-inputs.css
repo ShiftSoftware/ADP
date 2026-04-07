@@ -222,6 +222,51 @@
   @apply rotate-0;
 }
 
+.form-select-container {
+  @apply z-[10] flex flex-col pointer-events-none absolute w-full bg-white border rounded-md shadow opacity-0 transition-opacity !duration-300 max-h-[250px] overflow-auto;
+}
+
+.form-input-container.open .form-select-container {
+  @apply opacity-100 pointer-events-auto;
+}
+
+.form-select-container.upwards {
+  @apply top-0 -mt-[8px] -translate-y-full;
+}
+
+.form-select-container.downwards {
+  @apply top-0 mt-[8px] translate-y-[38px];
+}
+
+.form-select-option {
+  @apply flex justify-between items-center text-start px-4 py-2 hover:bg-slate-100;
+}
+
+.form-select-option.selected {
+  @apply bg-slate-200;
+}
+
+.form-select-option-tick {
+  @apply size-5 opacity-0 transition !duration-300;
+}
+
+.form-select-option.selected .form-select-option-tick {
+  @apply opacity-100;
+}
+
+.form-select-empty-container {
+  @apply h-[100px] flex items-center justify-center;
+}
+
+.form-select-empty-container.error {
+  @apply text-red-500;
+}
+
+.form-select-spinner {
+  animation: spin-animation 2s linear infinite;
+  @apply !size-[22px];
+}
+
 .form-structure-error-container {
   @apply py-[16px] min-h-[100px] flex items-center;
 }
@@ -406,6 +451,10 @@
 
 .form-input-container-country .form-input-country-selection {
   width: 75px;
+}
+
+.form-input-container-country .form-select-container {
+  width: 200px;
 }
 
 .form-phone-container .form-input-prefix {
