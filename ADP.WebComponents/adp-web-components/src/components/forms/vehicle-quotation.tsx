@@ -215,13 +215,13 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
   @Prop() isMobileForm: boolean = false;
   @Prop() getMobileToken?: () => string;
 
-  @State() form: FormHook<VehicleQuotation>;
+  @State() form!: FormHook<VehicleQuotation>;
 
   // #endregion
   render() {
     return (
       <Host translate="no">
-        <div part={`vehicle-quotation-${this.structure?.data?.theme}`}>
+        <div part={`shift-form vehicle-quotation-${this.structure?.data?.theme}`}>
           <div part="form-container" class="relative min-h-[150px]">
             <div
               part="form-loader-container"

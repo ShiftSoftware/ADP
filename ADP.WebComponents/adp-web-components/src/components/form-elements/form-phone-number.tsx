@@ -177,6 +177,7 @@ export class FormPhoneNumber implements FormElement {
 
   updateShiftSelectContext = (newValues: Record<string, any>) => {
     Object.entries(newValues).forEach(([key, value]) => {
+      // @ts-ignore
       this[key] = value;
     });
   };
@@ -190,15 +191,23 @@ export class FormPhoneNumber implements FormElement {
 
     const countryNumber = v.metadata?.numberingPlan?.metadata[0] || '';
 
+    const divIdentifier = cn('custom-shift-select-option custom-shift-select-country-option', {
+      'custom-shift-select-option-selected shift-select-option-selected': this.selectedValue === renderOption.value,
+    });
+
+    const labelIdentifier = 'shift-select-country-code-label';
+
+    const numberIdentifier = 'shift-select-country-number';
     return (
-      <div
-        part={cn('custom-form-select-option form-select-option', { 'custom-form-select-option-selected form-select-option-selected': this.selectedValue === renderOption.value })}
-        class={cn('flex gap-2 overflow-hidden')}
-      >
-        <span part="country-code" class="capitalize block min-w-[30px]">
+      <div part={divIdentifier} class={divIdentifier}>
+        <span part={labelIdentifier} class={labelIdentifier}>
           {renderOption?.label}
         </span>
-        {!!countryNumber && <span part="country-number">{'+' + countryNumber}</span>}
+        {!!countryNumber && (
+          <span part={numberIdentifier} class={numberIdentifier}>
+            {'+' + countryNumber}
+          </span>
+        )}
       </div>
     );
   };
