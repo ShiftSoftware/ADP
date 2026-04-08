@@ -16,6 +16,7 @@ export class ShiftSelectDropdown {
   @Prop() isLoading?: boolean;
   @Prop() isOpen: boolean = false;
   @Prop() noSelectionText?: string;
+  @Prop() direction: string = 'ltr';
   @Prop() selectedValue: string = '';
   @Prop() options: FormSelectItem[] = [];
   @Prop() reverseOptions: boolean = false;
@@ -56,11 +57,12 @@ export class ShiftSelectDropdown {
     return (
       <Host>
         <div
+          dir={this.direction}
+          part={containerIdentifiers}
+          class={containerIdentifiers}
           onWheel={e => e.stopPropagation()}
           onTouchMove={e => e.stopPropagation()}
           ref={el => (this.containerEl = el as HTMLElement | null)}
-          part={containerIdentifiers}
-          class={containerIdentifiers}
         >
           {!!this.options.length &&
             (this.reverseOptions ? [...this.options].reverse() : this.options).map(option =>

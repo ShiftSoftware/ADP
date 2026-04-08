@@ -6,19 +6,21 @@ import { AddIcon } from '~assets/add-icon';
 import { FormHook } from '~features/form-hook';
 
 @Component({
-  shadow: false,
+  shadow: true,
   tag: 'form-dialog',
-  styleUrl: 'form-inputs.css',
+  styleUrl: 'form-dialog.css',
 })
 export class FormInput {
-  @Prop() message: string;
-  @Prop() isError: boolean;
-  @Prop() closeText: string;
-  @Prop() form: FormHook<any>;
-  @State() internalMessage: string;
-  @State() isOpened: boolean = false;
+  @Prop() message: string = '';
+  @Prop() form!: FormHook<any>;
+  @Prop() closeText: string = '';
+  @Prop() isError: boolean = false;
+  @Prop() successMessage: string = '';
 
-  @Prop() dialogClosed: () => void;
+  @State() isOpened: boolean = false;
+  @State() internalMessage: string = '';
+
+  @Prop() dialogClosed?: () => void;
 
   async componentWillLoad() {
     this.form.openDialog = () => (this.isOpened = true);
@@ -40,39 +42,63 @@ export class FormInput {
     this.isOpened = false;
     setTimeout(() => {
       this.internalMessage = '';
-      this.dialogClosed();
+      if (this.dialogClosed) this.dialogClosed();
     }, 310);
   };
 
   render() {
     const [locale] = this.form.getFormLocale();
 
+    const dialogContainerIdentifier = cn('form-dialog-modal dialog-drop-container', {
+      'dialog-drop-container-opened': this.isOpened,
+      'dialog-drop-container-error': this.isError,
+    });
+
+    const dialogWrapperIdentifier = cn('dialog-wrapper', {
+      'dialog-wrapper-opened': this.isOpened,
+    });
+
+    const buttonIdentifiers = cn('dialog-close-button', { 'dialog-close-button-error': this.isError });
+
+    const successContainerIdentifier = 'form-success-container';
+
+    const successContainerIdentifierIcon = 'form-success-container-icon';
+
+    const dialogContentIdentifier = cn('dialog-content');
+
+    const closeButtonIdentifier = 'dialog-close-icon-button';
+
+    const closeButtonIdentifierIcon = 'dialog-close-icon-button-icon';
     return (
       <Host translate="no">
-        <div
-          part="form-dialog-modal"
-          dir={locale.sharedFormLocales.direction}
-          class={cn('dialog-drop-container', {
-            'opened-dialog-drop-container dialog-blur': this.isOpened,
-            'error': this.isError,
-          })}
-        >
-          <div
-            part="dialog-wrapper"
-            class={cn('dialog-wrapper', {
-              'opened-dialog-wrapper': this.isOpened,
-            })}
-          >
-            <button aria-label="Close the dialog" part="dialog-close-icon-button" onClick={this.closeDialog} type="button" class="dialog-close-icon-button">
-              <AddIcon />
+        <div part={dialogContainerIdentifier} dir={locale.sharedFormLocales.direction} class={dialogContainerIdentifier}>
+          <div part={dialogWrapperIdentifier} class={dialogWrapperIdentifier}>
+            <button aria-label="Close the dialog" part={closeButtonIdentifier} onClick={this.closeDialog} type="button" class={closeButtonIdentifier}>
+              <AddIcon class={closeButtonIdentifierIcon} part={closeButtonIdentifierIcon} />
             </button>
-            <div part="dialog-content" class="dialog-content">
+            <div part={dialogContentIdentifier} class={dialogContentIdentifier}>
               {this.isError && this.internalMessage}
               <div style={{ display: this.isError ? 'none' : 'block' }}>
-                <slot />
+                <div class={successContainerIdentifier} part={successContainerIdentifier}>
+                  <svg
+                    fill="none"
+                    stroke-width="2"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    xmlns="http://www.w3.org/2000/svg"
+                    part={successContainerIdentifierIcon}
+                    class={successContainerIdentifierIcon}
+                  >
+                    <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
+                    <path d="m9 12 2 2 4-4" />
+                  </svg>
+                  {this.successMessage}
+                </div>
               </div>
             </div>
-            <button part="dialog-close-button" type="button" onClick={this.closeDialog} class="dialog-close-button">
+            <button part={buttonIdentifiers} type="button" onClick={this.closeDialog} class={buttonIdentifiers}>
               {this.closeText}
             </button>
           </div>

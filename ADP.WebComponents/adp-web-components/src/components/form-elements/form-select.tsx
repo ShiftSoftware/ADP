@@ -181,6 +181,7 @@ export class FormSelect implements FormElement {
             handleSelection={this.handleSelection}
             forceOpenUpwards={this.forceOpenUpwards}
             updateContext={this.updateShiftSelectContext}
+            direction={locale.sharedFormLocales.direction}
             placeholder={placeholder || meta?.placeholder}
             noSelectionText={locale?.sharedFormLocales?.noSelectOptions}
             fetchingErrorText={

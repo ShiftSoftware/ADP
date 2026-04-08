@@ -1,0 +1,54 @@
+:host {
+  display: block;
+  all: initial !important;
+  font-family: inherit !important;
+  font-family: 'Noto Kufi Arabic', 'Nunito', Roboto, Arial, sans-serif !important;
+}
+
+*,
+:host * {
+  font-family: inherit !important;
+}
+
+.dialog-drop-container {
+  @apply fixed pointer-events-none flex items-center justify-center top-0 left-0 z-[99999999999] w-[100%] h-[100%] transition !duration-300;
+}
+
+.dialog-drop-container-opened {
+  @apply bg-black/50 pointer-events-auto;
+  backdrop-filter: blur(1.5px) !important;
+}
+
+.dialog-close-button {
+  @apply h-[32px] w-fit relative overflow-hidden px-[14px] transition-colors !duration-300 rounded flex items-center text-white hover:bg-slate-400 bg-slate-500 active:bg-slate-700;
+}
+
+.dialog-close-button-error {
+  @apply text-white hover:bg-red-400 bg-red-500 active:bg-red-700;
+}
+
+.dialog-wrapper {
+  @apply bg-white min-w-[322px] max-w-[80dvw] gap-[16px] flex flex-col transition !duration-300 opacity-0 scale-50 rounded shadow p-[20px];
+}
+
+.dialog-wrapper-opened {
+  @apply scale-100 opacity-100;
+}
+
+.dialog-wrapper .form-success-container {
+  @apply flex flex-col items-center;
+}
+
+.dialog-content {
+  @apply text-start;
+}
+
+.dialog-close-icon-button {
+  @apply float-right -mb-[10px] self-end size-[20px] rotate-45 transition !duration-300 opacity-40 hover:opacity-100;
+}
+
+.form-success-container-icon {
+  width: 70px;
+  height: 70px;
+  stroke: #15803d;
+}

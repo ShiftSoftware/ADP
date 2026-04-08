@@ -1,10 +1,11 @@
-import { Component, Host, Prop, State, Watch, h } from '@stencil/core';
+import { Component, Element, Host, Prop, State, Watch, h } from '@stencil/core';
 
 import generalSchema from '~locales/general/type';
 
 import { ComponentLocale, getLocaleLanguage, getSharedLocal, LanguageKeys, sharedLocalesSchema } from '~features/multi-lingual';
 import { FormHook, FormElementMapper, FormElementMapperFunctionProps, FormElementStructure, renderStructure } from '~features/form-hook';
 import cn from '~lib/cn';
+import getCustomClassesForPortal from '~lib/get-custom-classes-for-portal';
 
 @Component({
   shadow: false,
@@ -33,18 +34,21 @@ export class FormStructure {
   // #endregion
 
   @Prop() formId?: string;
-  @Prop() isLoading: boolean;
-  @Prop() form: FormHook<any>;
-  @Prop() errorMessage: string;
-  @Prop() successMessage: string;
-  @Prop({ mutable: true }) fields?: object;
-  @Prop() structure: FormElementStructure<any>;
-  @Prop() formElementMapper: FormElementMapper<any, any>;
+  @Prop() isLoading: boolean = false;
+  @Prop() form!: FormHook<any>;
+  @Prop() errorMessage: string = '';
+  @Prop() successMessage: string = '';
+  @Prop({ mutable: true }) fields: object = {};
+  @Prop() structure!: FormElementStructure<any>;
+  @Prop() formElementMapper!: FormElementMapper<any, any>;
 
-  @State() formContent;
-  @State() currentStep?: number = 1;
+  @State() currentStep: number = 1;
+  @State() dialogClasses: string = '';
+
+  @Element() el!: HTMLElement;
 
   async componentDidLoad() {
+    this.dialogClasses = getCustomClassesForPortal(this.el);
     setTimeout(() => {
       if (typeof this.form.context?.structureRendered === 'boolean') this.form.context.structureRendered = true;
     }, 300);
@@ -65,27 +69,26 @@ export class FormStructure {
 
     const { formController, resetFormErrorMessage } = this.form;
 
+    const dialogParams = {
+      form: this.form,
+      message: this.errorMessage,
+      isError: !!this.errorMessage,
+      dialogClosed: resetFormErrorMessage,
+      successMessage: this.successMessage,
+      closeText: locale?.sharedFormLocales?.close,
+    };
+
     return (
       <Host translate="no">
-        <form id={this.formId} class="relative" dir={this.locale.sharedLocales.direction} {...formController}>
-          <form-dialog dialogClosed={resetFormErrorMessage} isError={!!this.errorMessage} closeText={locale?.sharedFormLocales?.close} form={this.form} message={this.errorMessage}>
-            <div class="form-success-container">
-              <svg
-                fill="none"
-                stroke-width="2"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                xmlns="http://www.w3.org/2000/svg"
-                class="size-[70px] stroke-green-700"
-              >
-                <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
-                <path d="m9 12 2 2 4-4" />
-              </svg>
-              {this.successMessage}
-            </div>
-          </form-dialog>
+        {/* @ts-ignore */}
+        <form id={this.formId} class="relative" dir={this?.locale?.sharedLocales?.direction} {...formController}>
+          <div class="fixed top-10 left-10 size-20 overflow-hidden translate-x-5 translate-y-7">
+            {
+              // @ts-ignore
+              false && <form-dialog />
+            }
+            <shift-portal tag="form-dialog" inheritedClasses={this.dialogClasses} componentProps={dialogParams} />
+          </div>
           <div part="form-structure-form-container">
             {!this?.structure?.steps && renderStructure(this.structure, this.formElementMapper, generalProps, this.fields, -2)}
 

@@ -23,6 +23,7 @@ export class ShiftSelect {
   @Prop() disableInput?: boolean;
   @Prop() isOpen: boolean = false;
   @Prop() noSelectionText?: string;
+  @Prop() direction?: string = 'ltr';
   @Prop() selectedValue: string = '';
   @Prop() clearable?: boolean = false;
   @Prop() searchable?: boolean = false;
@@ -155,6 +156,7 @@ export class ShiftSelect {
       options: this.options,
       hasTick: this.hasTick,
       hasArrow: this.hasArrow,
+      direction: this.direction,
       isLoading: this.isLoading,
       renderOption: this.renderOption,
       selectedValue: this.selectedValue,

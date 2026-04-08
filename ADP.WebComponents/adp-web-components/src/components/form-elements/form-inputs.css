@@ -3,10 +3,6 @@
   display: block;
 }
 
-.dialog-blur {
-  backdrop-filter: blur(1.5px) !important;
-}
-
 @keyframes spin-animation {
   to {
     transform: rotate(360deg);
@@ -26,46 +22,6 @@
 
 .display-error-message {
   @apply !opacity-100 -translate-y-0;
-}
-
-.dialog-drop-container {
-  @apply fixed pointer-events-none flex items-center justify-center top-0 left-0 z-[9999999999] w-[100%] h-[100%] transition !duration-300;
-}
-
-.opened-dialog-drop-container {
-  @apply bg-black/50 pointer-events-auto;
-}
-
-.dialog-wrapper {
-  @apply bg-white min-w-[322px] max-w-[80dvw] gap-[16px] flex flex-col transition !duration-300 opacity-0 scale-50 rounded shadow p-[20px];
-}
-
-.opened-dialog-wrapper {
-  @apply scale-100 opacity-100;
-}
-
-.dialog-close-icon-button {
-  @apply float-right -mb-[10px] self-end size-[20px] rotate-45 transition !duration-300 opacity-40 hover:opacity-100;
-}
-
-.dialog-content {
-  @apply text-start;
-}
-
-.dialog-close-button {
-  @apply h-[32px] w-fit relative overflow-hidden px-[14px] transition-colors !duration-300 rounded flex items-center;
-}
-
-.dialog-wrapper .dialog-close-button {
-  @apply text-white hover:bg-slate-400 bg-slate-500 active:bg-slate-700;
-}
-
-.dialog-wrapper .form-success-container {
-  @apply flex flex-col items-center;
-}
-
-.dialog-drop-container.error .dialog-close-button {
-  @apply text-white hover:bg-red-400 bg-red-500 active:bg-red-700;
 }
 
 .form-input-label-container {
