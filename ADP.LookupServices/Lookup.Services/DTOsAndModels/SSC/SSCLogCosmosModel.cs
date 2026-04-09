@@ -1,4 +1,4 @@
-﻿using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Shared;
+using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Shared;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using ShiftSoftware.ShiftEntity.Model.Flags;
 using System;
@@ -34,7 +34,6 @@ public class SSCLogCosmosModel :
     public long? PortalUserID { get; set; }
     public long? TicketID { get; set; }
     public string TicketHashID { get; set; }
-
 
     /// <summary>
     /// The Brand that the user made the lookup for

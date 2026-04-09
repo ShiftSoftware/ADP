@@ -1,4 +1,4 @@
-﻿using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Shared;
+using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Shared;
 using System;
 
 namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
