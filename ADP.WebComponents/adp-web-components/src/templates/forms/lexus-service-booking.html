@@ -102,7 +102,7 @@
 
             // this.componentRef.loadingChanges = this.loadingChanges;
 
-            // this.componentRef.successCallback = this.successCallback;
+            this.componentRef.successCallback = this.successCallback;
 
             // this.componentRef.errorCallback = this.errorCallback;
           },
@@ -127,9 +127,10 @@
           //     console.log('loading', loading);
           //   },
 
-          //   successCallback(values) {
-          //     console.log('success callback', values);
-          //   },
+          successCallback(values) {
+            console.log('success callback', values);
+            return true;
+          },
 
           //   errorCallback(error) {
           //     console.log('error callback', error);

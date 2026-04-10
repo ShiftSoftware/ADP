@@ -58,8 +58,8 @@ export class GeneralInquiryForm implements FormHookInterface<any>, MultiLingual 
   @Prop() extraPayload: object;
   @Prop() structureUrl?: string;
   @Prop() loadingChanges: (loading: boolean) => void;
-  @Prop() errorCallback: (error: any, message: string) => void;
-  @Prop() successCallback: (data: any, message?: string) => void;
+  @Prop() errorCallback: (error: any, message: string) => Promise<void | boolean>;
+  @Prop() successCallback: (data: any, message?: string) => Promise<void | boolean>;
   @Prop() stepChangeCallback?: (step: number, currentForm?: any) => void;
   @Prop({ mutable: true }) structure: FormElementStructure<any> | undefined;
   @Prop({ mutable: true }) fields?: object;

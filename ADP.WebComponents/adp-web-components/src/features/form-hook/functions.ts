@@ -30,14 +30,16 @@ export const formLanguageChange = async (formContext: FormLanguageChange, newLan
 export type FormErrorHandler = {
   errorMessage: string;
   locale: Record<string, any>;
-  errorCallback?: (error: any, message: string) => void;
+  errorCallback?: (error: any, message: string) => Promise<void | boolean>;
 };
 
 export const formErrorHandler = async (formContext: FormErrorHandler, error: any) => {
   const message = error.message || formContext.locale?.sharedFormLocales?.errors?.wildCard || '';
 
-  if (formContext?.errorCallback) formContext.errorCallback(error, message);
-  else formContext.errorMessage = message;
+  let openDefaultDialog = true;
+  if (formContext?.errorCallback) openDefaultDialog = !!(await formContext.errorCallback(error, message));
+
+  if (openDefaultDialog) formContext.errorMessage = message;
 };
 
 export type FormLoadingHandler = {
@@ -57,12 +59,14 @@ export type FormSuccessHandler = {
   locale: Record<string, any>;
   disableScrollToTop?: boolean;
   loadingChanges?: (loading: boolean) => void;
-  successCallback?: (data: any, message?: string) => void;
+  successCallback?: (data: any, message?: string) => Promise<void | boolean>;
 };
 
 export const formSuccessHandler = async (formContext: FormSuccessHandler, data: any) => {
-  if (formContext.successCallback) formContext.successCallback(data, formContext.locale['Form submitted successfully.'] || '');
-  else formContext.form.openDialog();
+  let openDefaultDialog = true;
+  if (formContext.successCallback) openDefaultDialog = !!(await formContext.successCallback(data, formContext.locale['Form submitted successfully.'] || ''));
+
+  if (openDefaultDialog) formContext.form.openDialog();
 
   if (!formContext.disableScrollToTop) {
     const formDom = formContext.el.shadowRoot || formContext.el;

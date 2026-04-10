@@ -56,10 +56,10 @@ export interface FormHookInterface<T> {
   getMobileToken?: () => string;
   structure?: FormElementStructure<any>;
   formSubmit: (formValues: T) => void;
-  setErrorCallback?: (error: any) => void;
-  setSuccessCallback?: (data: any) => void;
   setIsLoading?: (loading: boolean) => void;
   loadingChanges?: (loading: boolean) => void;
+  setErrorCallback?: (error: any) => void | boolean;
+  setSuccessCallback?: (data: any) => void | boolean;
   errorCallback?: (error: any, message?: string) => void;
   successCallback?: (data: any, message?: string) => void;
   stepChangeCallback?: (step: number, currentForm?: any) => void;
