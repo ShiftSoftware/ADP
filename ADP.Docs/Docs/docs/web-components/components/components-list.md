@@ -6,6 +6,7 @@ This section provided all the components **Full Documentation**, **Demo**, **Com
 
 ??? note "Vehicle Lookup"
 
+    - [Vehicle Lookup (Wrapper)](vehicle-lookup.md)
     - [Vehicle Specification](vehicle-specification.md)
     - [Vehicle Accessories](vehicle-accessories.md)
     - [Warranty Details](warranty-details.md)

@@ -211,6 +211,7 @@ nav:
 
       - Components:
           - Components List: web-components/components/components-list.md
+          - Vehicle Lookup (Wrapper): web-components/components/vehicle-lookup.md
           - Vehicle Specification: web-components/components/vehicle-specification.md
           - Vehicle Accessories: web-components/components/vehicle-accessories.md
           - Warranty Details: web-components/components/warranty-details.md
