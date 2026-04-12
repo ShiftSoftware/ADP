@@ -65,6 +65,10 @@ public class DuckDBSyncDataDestination<TSource, TDestination, DuckDB>
 
             return ValueTask.FromResult(SyncPreparingResponseAction.Succeeded);
         }
+        catch (IOException)
+        {
+            throw;
+        }
         catch
         {
             return ValueTask.FromResult(SyncPreparingResponseAction.Failed);
