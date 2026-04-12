@@ -25,6 +25,7 @@ const componentTags = {
   vehicleClaimableItems: 'vehicle-claimable-items',
   vehicleSaleInformation: 'vehicle-sale-information',
   vehicleWarrantyDetails: 'vehicle-warranty-details',
+  vehicleSsc: 'vehicle-ssc',
 } as const;
 
 export type ComponentMap = {
@@ -35,6 +36,7 @@ export type ComponentMap = {
   [componentTags.vehicleClaimableItems]: VehicleClaimableItems;
   [componentTags.vehicleSaleInformation]: VehicleSaleInformation;
   [componentTags.vehicleWarrantyDetails]: VehicleWarrantyDetails;
+  [componentTags.vehicleSsc]?: VehicleWarrantyDetails;
 };
 
 export type ActiveElement = (typeof componentTags)[keyof typeof componentTags] | '';
@@ -72,6 +74,8 @@ export class VehicleLookup implements MultiLingual {
   @Prop() mockUrl: string = '';
   @Prop() disableVinValidation: boolean = false;
   @Prop() queryString: string = '';
+  @Prop() sscQueryString: string = '';
+  @Prop() separateSsc: boolean = false;
   @Prop() childrenProps?: string | Object;
 
   @Prop() blazorErrorStateListener = '';
@@ -104,6 +108,7 @@ export class VehicleLookup implements MultiLingual {
     const vehicleThickness = this.el.shadowRoot.getElementById('vehicle-paint-thickness') as unknown as VehiclePaintThickness;
     const vehicleSpecification = this.el.shadowRoot.getElementById('vehicle-specification') as unknown as VehicleSpecification;
     const vehicleSaleInformation = this.el.shadowRoot.getElementById('vehicle-sale-information') as unknown as VehicleSaleInformation;
+    const vehicleSsc = this.separateSsc ? (this.el.shadowRoot.getElementById('vehicle-ssc') as unknown as VehicleWarrantyDetails) : null;
 
     this.componentsList = {
       [componentTags.vehicleClaimableItems]: vehicleClaim,
@@ -113,7 +118,11 @@ export class VehicleLookup implements MultiLingual {
       [componentTags.vehiclePaintThickness]: vehicleThickness,
       [componentTags.vehicleSpecification]: vehicleSpecification,
       [componentTags.vehicleSaleInformation]: vehicleSaleInformation,
-    } as const;
+    };
+
+    if (vehicleSsc) {
+      this.componentsList[componentTags.vehicleSsc] = vehicleSsc;
+    }
 
     Object.values(this.componentsList).forEach(element => {
       if (!element) return;
@@ -160,6 +169,11 @@ export class VehicleLookup implements MultiLingual {
     });
   };
 
+  private getSscElement(): VehicleWarrantyDetails | null {
+    if (this.separateSsc) return this.componentsList[componentTags.vehicleSsc] || null;
+    return this.componentsList[componentTags.vehicleWarrantyDetails] || null;
+  }
+
   @Method()
   async handleLoadData(newResponse: VehicleLookupDTO, activeElement) {
     const generation = this.searchGeneration;
@@ -170,8 +184,28 @@ export class VehicleLookup implements MultiLingual {
     // Skip distributing to non-active components if a new search has started
     if (generation !== this.searchGeneration) return;
 
+    const sscElement = this.sscQueryString ? this.getSscElement() : null;
+    // Only clear SSC when we know the search came from a specific non-SSC tab.
+    // When activeElement is null (programmatic data injection), distribute to all components.
+    const shouldClearSsc = sscElement && activeElement !== null && activeElement !== sscElement;
+
     Object.values(this.componentsList).forEach(element => {
-      if (element !== null && element !== activeElement && newResponse) element.fetchVin(newResponse);
+      if (element === null || element === activeElement || !newResponse) return;
+
+      // When sscQueryString is set, clear SSC data on the SSC-showing component
+      // if the search was triggered from a non-SSC tab (prevents viewing SSC without logging)
+      if (shouldClearSsc && element === sscElement) {
+        if (this.separateSsc) {
+          // SSC-only component: reset to empty state
+          (element as VehicleWarrantyDetails).clearData();
+        } else {
+          // Combined warranty+SSC: distribute data with SSC stripped
+          element.fetchVin({ ...newResponse, ssc: [], sscLogId: null });
+        }
+        return;
+      }
+
+      element.fetchVin(newResponse);
     });
   }
 
@@ -214,6 +248,7 @@ export class VehicleLookup implements MultiLingual {
       [componentTags.vehicleServiceHistory]: {},
       [componentTags.vehicleWarrantyDetails]: {},
       [componentTags.vehicleSaleInformation]: {},
+      [componentTags.vehicleSsc]: {},
     };
 
     try {
@@ -273,18 +308,36 @@ export class VehicleLookup implements MultiLingual {
       'vehicle-warranty-details': (
         <vehicle-warranty-details
           coreOnly
-          show-ssc="true"
+          show-ssc={!this.separateSsc}
           isDev={this.isDev}
           disableVinValidation={this.disableVinValidation}
           show-warranty="true"
           base-url={this.baseUrl}
           language={this.language}
-          query-string={this.queryString}
+          query-string={!this.separateSsc && this.sscQueryString ? [this.queryString, this.sscQueryString].filter(Boolean).join('&') : this.queryString}
           id={componentTags.vehicleWarrantyDetails}
           {...props[componentTags.vehicleWarrantyDetails]}
         >
         </vehicle-warranty-details>
       ),
+      ...(this.separateSsc
+        ? {
+            'vehicle-ssc': (
+              <vehicle-warranty-details
+                coreOnly
+                show-ssc="true"
+                isDev={this.isDev}
+                disableVinValidation={this.disableVinValidation}
+                show-warranty="false"
+                base-url={this.baseUrl}
+                language={this.language}
+                query-string={[this.queryString, this.sscQueryString].filter(Boolean).join('&')}
+                id={componentTags.vehicleSsc}
+                {...props[componentTags.vehicleSsc]}
+              />
+            ),
+          }
+        : {}),
       'vehicle-service-history': (
         <vehicle-service-history
           coreOnly

@@ -104,6 +104,18 @@ export class VehicleWarrantyDetails implements MultiLingual, VehicleInfoLayoutIn
     setVehicleLookupErrorState(this, message);
   }
 
+  @Method()
+  async clearData() {
+    this.vehicleLookup = undefined;
+    this.recaptchaRes = null;
+    this.showRecaptcha = false;
+    this.checkingUnauthorizedSSC = false;
+    this.isError = false;
+    this.errorMessage = undefined;
+    this.isLoading = false;
+    clearInterval(this.recaptchaIntervalRef);
+  }
+
   @Watch('isLoading')
   onLoadingChange(newValue: boolean) {
     smartInvokable.bind(this)(this.loadingStateChange, newValue);
@@ -400,12 +412,14 @@ export class VehicleWarrantyDetails implements MultiLingual, VehicleInfoLayoutIn
               </div>
             </div>
           </flexible-container>
-          <div class="mt-[32px] mx-auto w-fit max-w-full">
-            <div class="bg-[#f6f6f6] h-[50px] flex items-center justify-center px-[16px] font-bold text-[18px]">{this.locale.sscCampings}</div>
-            <div class="overflow-x-auto">
-              <information-table isLoading={this.isLoading} templateRow={templateRow} rows={rows} headers={tableHeaders}></information-table>
+          {this.showSsc && (
+            <div class="mt-[32px] mx-auto w-fit max-w-full">
+              <div class="bg-[#f6f6f6] h-[50px] flex items-center justify-center px-[16px] font-bold text-[18px]">{this.locale.sscCampings}</div>
+              <div class="overflow-x-auto">
+                <information-table isLoading={this.isLoading} templateRow={templateRow} rows={rows} headers={tableHeaders}></information-table>
+              </div>
             </div>
-          </div>
+          )}
         </VehicleInfoLayout>
       </Host>
     );
