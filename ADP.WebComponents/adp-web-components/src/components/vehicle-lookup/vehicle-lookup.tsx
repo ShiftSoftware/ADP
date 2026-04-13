@@ -76,6 +76,7 @@ export class VehicleLookup implements MultiLingual {
   @Prop() queryString: string = '';
   @Prop() sscQueryString: string = '';
   @Prop() separateSsc: boolean = false;
+  @Prop() hiddenTabs: string = '';
   @Prop() childrenProps?: string | Object;
 
   @Prop() blazorErrorStateListener = '';
@@ -265,10 +266,12 @@ export class VehicleLookup implements MultiLingual {
       console.error(error);
     }
 
-    if (!Object.values(componentTags).includes(this.activeElement as any))
+    const hiddenSet = new Set(this.hiddenTabs.split(',').map(t => t.trim()).filter(Boolean));
+
+    if (!Object.values(componentTags).includes(this.activeElement as any) || hiddenSet.has(this.activeElement))
       return <div class="w-full h-[200px] text-[26px] text-red-600 flex items-center justify-center">Invalid tag</div>;
 
-    const componentList: Partial<Record<ActiveElement, Node>> = {
+    const allComponents: Partial<Record<ActiveElement, Node>> = {
       'vehicle-specification': (
         <vehicle-specification
           coreOnly
@@ -375,6 +378,10 @@ export class VehicleLookup implements MultiLingual {
         />
       ),
     };
+
+    const componentList = Object.fromEntries(
+      Object.entries(allComponents).filter(([key]) => !hiddenSet.has(key))
+    ) as Partial<Record<ActiveElement, Node>>;
 
     return (
       <Host translate="no">

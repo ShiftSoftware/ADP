@@ -172,6 +172,14 @@
               </label>
             </div>
 
+            <div style="display: flex; align-items: center; gap: 16px">
+              <label for="toggleSSC">hide SSC tab</label>
+              <label class="switch">
+                <input type="checkbox" id="toggleSSC" />
+                <span class="slider"></span>
+              </label>
+            </div>
+
             <button class="sample-button" onclick="searchStaticVin()">reload</button>
             <button class="sample-button" onclick="searchStaticVin('')">Empty (close)</button>
             <button class="sample-button" onclick="searchStaticVin('error')">Error</button>
@@ -192,7 +200,7 @@
               <li role="presentation" onclick="changeLookup('vehicle-warranty-details')">
                 <a class="disable-auto-scroll" href="#warranty" aria-controls="warranty" role="tab" data-toggle="tab"><span>Warranty</span></a>
               </li>
-              <li role="presentation" onclick="changeLookup('vehicle-ssc')">
+              <li role="presentation" onclick="changeLookup('vehicle-ssc')" id="ssc-tab">
                 <a class="disable-auto-scroll" href="#ssc" aria-controls="ssc" role="tab" data-toggle="tab"><span>SSC</span></a>
               </li>
               <li role="presentation" onclick="changeLookup('vehicle-service-history')">
@@ -218,6 +226,7 @@
                 query-string=""
                 separate-ssc="true"
                 ssc-query-string="InsertSSCLog=True"
+                hidden-tabs=""
                 children-props='{"vehicle-ssc":{"recaptchaKey":"6LetFoYqAAAAAE0fg-070Qtm3z-DG24sMJ8wzY1f","unauthorized-ssc-lookup-base-url":"http://ww.faosid.dfi"},"dynamic-claim":{"claimEndPoint":"http://localhost:5015/api/vehicle/service-claim","claim-via-barcode-scanner":"false"}}'
               ></vehicle-lookup>
             </div>
@@ -269,6 +278,13 @@
       toggle.addEventListener('change', function () {
         isDev = this.checked;
         vehicleLookup.isDev = isDev;
+      });
+
+      const toggleSSC = document.getElementById('toggleSSC');
+      const sscTab = document.getElementById('ssc-tab');
+      toggleSSC.addEventListener('change', function () {
+        vehicleLookup.hiddenTabs = this.checked ? 'vehicle-ssc' : '';
+        sscTab.style.display = this.checked ? 'none' : '';
       });
 
       function searchStaticVin(vin) {
