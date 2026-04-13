@@ -1,7 +1,9 @@
 using CsvHelper;
 using CsvHelper.Configuration;
-using Parquet.Serialization;
+using Parquet;
+using Parquet.Data;
 using Parquet.Schema;
+using Parquet.Serialization;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using System;
 using System.Collections.Generic;
@@ -114,37 +116,31 @@ public class DuckDBVehicleReportService(
     public async Task<int> ExportVehicleServiceItemsReportToCsvAsync(
         string fileFullPath,
         IEnumerable<string> vins = null,
-        int? distinctVinCount = null)
+        int? distinctVinCount = null,
+        int batchSize = 1000)
     {
         if (string.IsNullOrWhiteSpace(fileFullPath))
             throw new ArgumentException("CSV output file path is required.", nameof(fileFullPath));
 
-        var rows = (await GetVehicleServiceItemsReportAsync(vins, distinctVinCount)).ToList();
+        var allVins = await ResolveVinsAsync(vins, distinctVinCount);
+        if (allVins.Count == 0) return 0;
 
-        var outputDirectory = Path.GetDirectoryName(fileFullPath);
-        if (!string.IsNullOrWhiteSpace(outputDirectory))
-            Directory.CreateDirectory(outputDirectory);
-
-        using var writer = new StreamWriter(fileFullPath, false);
-        using var csvWriter = new CsvWriter(writer, CultureInfo.InvariantCulture);
-        csvWriter.Context.RegisterClassMap<VehicleServiceItemReportModelCsvMap>();
-        await csvWriter.WriteRecordsAsync(rows);
-
-        return rows.Count;
+        return await StreamCsvAsync<VehicleServiceItemReportModel, VehicleServiceItemReportModelCsvMap>(fileFullPath, allVins, batchSize, TransformServiceItemLookups);
     }
 
     public async Task<int> ExportVehicleServiceItemsReportToParquetAsync(
         string fileFullPath,
         IEnumerable<string> vins = null,
-        int? distinctVinCount = null)
+        int? distinctVinCount = null,
+        int batchSize = 1000)
     {
         if (string.IsNullOrWhiteSpace(fileFullPath))
             throw new ArgumentException("Parquet output file path is required.", nameof(fileFullPath));
 
-        var rows = (await GetVehicleServiceItemsReportAsync(vins, distinctVinCount)).ToList();
-        await WriteParquetAsync(fileFullPath, rows);
+        var allVins = await ResolveVinsAsync(vins, distinctVinCount);
+        if (allVins.Count == 0) return 0;
 
-        return rows.Count;
+        return await StreamParquetAsync(fileFullPath, allVins, batchSize, TransformServiceItemLookups);
     }
 
     public async Task<IEnumerable<VehicleSscReportModel>> GetVehicleSscReportAsync(
@@ -193,37 +189,31 @@ public class DuckDBVehicleReportService(
     public async Task<int> ExportVehicleSscReportToCsvAsync(
         string fileFullPath,
         IEnumerable<string> vins = null,
-        int? distinctVinCount = null)
+        int? distinctVinCount = null,
+        int batchSize = 1000)
     {
         if (string.IsNullOrWhiteSpace(fileFullPath))
             throw new ArgumentException("CSV output file path is required.", nameof(fileFullPath));
 
-        var rows = (await GetVehicleSscReportAsync(vins, distinctVinCount)).ToList();
+        var allVins = await ResolveVinsAsync(vins, distinctVinCount);
+        if (allVins.Count == 0) return 0;
 
-        var outputDirectory = Path.GetDirectoryName(fileFullPath);
-        if (!string.IsNullOrWhiteSpace(outputDirectory))
-            Directory.CreateDirectory(outputDirectory);
-
-        using var writer = new StreamWriter(fileFullPath, false);
-        using var csvWriter = new CsvWriter(writer, CultureInfo.InvariantCulture);
-        csvWriter.Context.RegisterClassMap<VehicleSscReportModelCsvMap>();
-        await csvWriter.WriteRecordsAsync(rows);
-
-        return rows.Count;
+        return await StreamCsvAsync<VehicleSscReportModel, VehicleSscReportModelCsvMap>(fileFullPath, allVins, batchSize, TransformSscLookups);
     }
 
     public async Task<int> ExportVehicleSscReportToParquetAsync(
         string fileFullPath,
         IEnumerable<string> vins = null,
-        int? distinctVinCount = null)
+        int? distinctVinCount = null,
+        int batchSize = 1000)
     {
         if (string.IsNullOrWhiteSpace(fileFullPath))
             throw new ArgumentException("Parquet output file path is required.", nameof(fileFullPath));
 
-        var rows = (await GetVehicleSscReportAsync(vins, distinctVinCount)).ToList();
-        await WriteParquetAsync(fileFullPath, rows);
+        var allVins = await ResolveVinsAsync(vins, distinctVinCount);
+        if (allVins.Count == 0) return 0;
 
-        return rows.Count;
+        return await StreamParquetAsync(fileFullPath, allVins, batchSize, TransformSscLookups);
     }
 
     public async Task<IEnumerable<VehicleLookupTopLevelReportModel>> GetVehicleLookupTopLevelReportAsync(
@@ -268,37 +258,31 @@ public class DuckDBVehicleReportService(
     public async Task<int> ExportVehicleLookupTopLevelReportToCsvAsync(
         string fileFullPath,
         IEnumerable<string> vins = null,
-        int? distinctVinCount = null)
+        int? distinctVinCount = null,
+        int batchSize = 1000)
     {
         if (string.IsNullOrWhiteSpace(fileFullPath))
             throw new ArgumentException("CSV output file path is required.", nameof(fileFullPath));
 
-        var rows = (await GetVehicleLookupTopLevelReportAsync(vins, distinctVinCount)).ToList();
+        var allVins = await ResolveVinsAsync(vins, distinctVinCount);
+        if (allVins.Count == 0) return 0;
 
-        var outputDirectory = Path.GetDirectoryName(fileFullPath);
-        if (!string.IsNullOrWhiteSpace(outputDirectory))
-            Directory.CreateDirectory(outputDirectory);
-
-        using var writer = new StreamWriter(fileFullPath, false);
-        using var csvWriter = new CsvWriter(writer, CultureInfo.InvariantCulture);
-        csvWriter.Context.RegisterClassMap<VehicleLookupTopLevelReportModelCsvMap>();
-        await csvWriter.WriteRecordsAsync(rows);
-
-        return rows.Count;
+        return await StreamCsvAsync<VehicleLookupTopLevelReportModel, VehicleLookupTopLevelReportModelCsvMap>(fileFullPath, allVins, batchSize, TransformTopLevelLookups);
     }
 
     public async Task<int> ExportVehicleLookupTopLevelReportToParquetAsync(
         string fileFullPath,
         IEnumerable<string> vins = null,
-        int? distinctVinCount = null)
+        int? distinctVinCount = null,
+        int batchSize = 1000)
     {
         if (string.IsNullOrWhiteSpace(fileFullPath))
             throw new ArgumentException("Parquet output file path is required.", nameof(fileFullPath));
 
-        var rows = (await GetVehicleLookupTopLevelReportAsync(vins, distinctVinCount)).ToList();
-        await WriteParquetAsync(fileFullPath, rows);
+        var allVins = await ResolveVinsAsync(vins, distinctVinCount);
+        if (allVins.Count == 0) return 0;
 
-        return rows.Count;
+        return await StreamParquetAsync(fileFullPath, allVins, batchSize, TransformTopLevelLookups);
     }
 
     public async Task<(List<VehicleServiceHistoryLaborReportModel> LaborReports, List<VehicleServiceHistoryPartReportModel> PartReports)> GetVehicleServiceHistoryReportsAsync(
@@ -312,7 +296,8 @@ public class DuckDBVehicleReportService(
         string laborFileFullPath,
         string partFileFullPath,
         IEnumerable<string> vins = null,
-        int? distinctVinCount = null)
+        int? distinctVinCount = null,
+        int batchSize = 1000)
     {
         if (string.IsNullOrWhiteSpace(laborFileFullPath))
             throw new ArgumentException("Labor CSV output file path is required.", nameof(laborFileFullPath));
@@ -320,19 +305,21 @@ public class DuckDBVehicleReportService(
         if (string.IsNullOrWhiteSpace(partFileFullPath))
             throw new ArgumentException("Part CSV output file path is required.", nameof(partFileFullPath));
 
-        var (laborReports, partReports) = await BuildServiceHistoryReportsAsync(vins, distinctVinCount);
+        var allVins = await ResolveVinsAsync(vins, distinctVinCount);
+        if (allVins.Count == 0) return (0, 0);
 
-        await WriteCsvAsync(laborFileFullPath, laborReports, new VehicleServiceHistoryLaborReportModelCsvMap());
-        await WriteCsvAsync(partFileFullPath, partReports, new VehicleServiceHistoryPartReportModelCsvMap());
+        var laborCount = await StreamCsvAsync<VehicleServiceHistoryLaborReportModel, VehicleServiceHistoryLaborReportModelCsvMap>(laborFileFullPath, allVins, batchSize, TransformServiceHistoryLaborLookups);
+        var partCount = await StreamCsvAsync<VehicleServiceHistoryPartReportModel, VehicleServiceHistoryPartReportModelCsvMap>(partFileFullPath, allVins, batchSize, TransformServiceHistoryPartLookups);
 
-        return (laborReports.Count, partReports.Count);
+        return (laborCount, partCount);
     }
 
     public async Task<(int LaborRowCount, int PartRowCount)> ExportVehicleServiceHistoryReportsToParquetAsync(
         string laborFileFullPath,
         string partFileFullPath,
         IEnumerable<string> vins = null,
-        int? distinctVinCount = null)
+        int? distinctVinCount = null,
+        int batchSize = 1000)
     {
         if (string.IsNullOrWhiteSpace(laborFileFullPath))
             throw new ArgumentException("Labor Parquet output file path is required.", nameof(laborFileFullPath));
@@ -340,12 +327,13 @@ public class DuckDBVehicleReportService(
         if (string.IsNullOrWhiteSpace(partFileFullPath))
             throw new ArgumentException("Part Parquet output file path is required.", nameof(partFileFullPath));
 
-        var (laborReports, partReports) = await BuildServiceHistoryReportsAsync(vins, distinctVinCount);
+        var allVins = await ResolveVinsAsync(vins, distinctVinCount);
+        if (allVins.Count == 0) return (0, 0);
 
-        await WriteParquetAsync(laborFileFullPath, laborReports);
-        await WriteParquetAsync(partFileFullPath, partReports);
+        var laborCount = await StreamParquetAsync(laborFileFullPath, allVins, batchSize, TransformServiceHistoryLaborLookups);
+        var partCount = await StreamParquetAsync(partFileFullPath, allVins, batchSize, TransformServiceHistoryPartLookups);
 
-        return (laborReports.Count, partReports.Count);
+        return (laborCount, partCount);
     }
 
     public async Task<IEnumerable<VehicleServiceHistoryLaborReportModel>> GetVehicleServiceHistoryLaborReportAsync(
@@ -397,37 +385,31 @@ public class DuckDBVehicleReportService(
     public async Task<int> ExportVehicleServiceHistoryLaborReportToCsvAsync(
         string fileFullPath,
         IEnumerable<string> vins = null,
-        int? distinctVinCount = null)
+        int? distinctVinCount = null,
+        int batchSize = 1000)
     {
         if (string.IsNullOrWhiteSpace(fileFullPath))
             throw new ArgumentException("CSV output file path is required.", nameof(fileFullPath));
 
-        var rows = (await GetVehicleServiceHistoryLaborReportAsync(vins, distinctVinCount)).ToList();
+        var allVins = await ResolveVinsAsync(vins, distinctVinCount);
+        if (allVins.Count == 0) return 0;
 
-        var outputDirectory = Path.GetDirectoryName(fileFullPath);
-        if (!string.IsNullOrWhiteSpace(outputDirectory))
-            Directory.CreateDirectory(outputDirectory);
-
-        using var writer = new StreamWriter(fileFullPath, false);
-        using var csvWriter = new CsvWriter(writer, CultureInfo.InvariantCulture);
-        csvWriter.Context.RegisterClassMap<VehicleServiceHistoryLaborReportModelCsvMap>();
-        await csvWriter.WriteRecordsAsync(rows);
-
-        return rows.Count;
+        return await StreamCsvAsync<VehicleServiceHistoryLaborReportModel, VehicleServiceHistoryLaborReportModelCsvMap>(fileFullPath, allVins, batchSize, TransformServiceHistoryLaborLookups);
     }
 
     public async Task<int> ExportVehicleServiceHistoryLaborReportToParquetAsync(
         string fileFullPath,
         IEnumerable<string> vins = null,
-        int? distinctVinCount = null)
+        int? distinctVinCount = null,
+        int batchSize = 1000)
     {
         if (string.IsNullOrWhiteSpace(fileFullPath))
             throw new ArgumentException("Parquet output file path is required.", nameof(fileFullPath));
 
-        var rows = (await GetVehicleServiceHistoryLaborReportAsync(vins, distinctVinCount)).ToList();
-        await WriteParquetAsync(fileFullPath, rows);
+        var allVins = await ResolveVinsAsync(vins, distinctVinCount);
+        if (allVins.Count == 0) return 0;
 
-        return rows.Count;
+        return await StreamParquetAsync(fileFullPath, allVins, batchSize, TransformServiceHistoryLaborLookups);
     }
 
     public async Task<IEnumerable<VehicleServiceHistoryPartReportModel>> GetVehicleServiceHistoryPartReportAsync(
@@ -479,37 +461,31 @@ public class DuckDBVehicleReportService(
     public async Task<int> ExportVehicleServiceHistoryPartReportToCsvAsync(
         string fileFullPath,
         IEnumerable<string> vins = null,
-        int? distinctVinCount = null)
+        int? distinctVinCount = null,
+        int batchSize = 1000)
     {
         if (string.IsNullOrWhiteSpace(fileFullPath))
             throw new ArgumentException("CSV output file path is required.", nameof(fileFullPath));
 
-        var rows = (await GetVehicleServiceHistoryPartReportAsync(vins, distinctVinCount)).ToList();
+        var allVins = await ResolveVinsAsync(vins, distinctVinCount);
+        if (allVins.Count == 0) return 0;
 
-        var outputDirectory = Path.GetDirectoryName(fileFullPath);
-        if (!string.IsNullOrWhiteSpace(outputDirectory))
-            Directory.CreateDirectory(outputDirectory);
-
-        using var writer = new StreamWriter(fileFullPath, false);
-        using var csvWriter = new CsvWriter(writer, CultureInfo.InvariantCulture);
-        csvWriter.Context.RegisterClassMap<VehicleServiceHistoryPartReportModelCsvMap>();
-        await csvWriter.WriteRecordsAsync(rows);
-
-        return rows.Count;
+        return await StreamCsvAsync<VehicleServiceHistoryPartReportModel, VehicleServiceHistoryPartReportModelCsvMap>(fileFullPath, allVins, batchSize, TransformServiceHistoryPartLookups);
     }
 
     public async Task<int> ExportVehicleServiceHistoryPartReportToParquetAsync(
         string fileFullPath,
         IEnumerable<string> vins = null,
-        int? distinctVinCount = null)
+        int? distinctVinCount = null,
+        int batchSize = 1000)
     {
         if (string.IsNullOrWhiteSpace(fileFullPath))
             throw new ArgumentException("Parquet output file path is required.", nameof(fileFullPath));
 
-        var rows = (await GetVehicleServiceHistoryPartReportAsync(vins, distinctVinCount)).ToList();
-        await WriteParquetAsync(fileFullPath, rows);
+        var allVins = await ResolveVinsAsync(vins, distinctVinCount);
+        if (allVins.Count == 0) return 0;
 
-        return rows.Count;
+        return await StreamParquetAsync(fileFullPath, allVins, batchSize, TransformServiceHistoryPartLookups);
     }
 
     private async Task<(List<VehicleServiceHistoryLaborReportModel> LaborReports, List<VehicleServiceHistoryPartReportModel> PartReports)> BuildServiceHistoryReportsAsync(
@@ -563,6 +539,244 @@ public class DuckDBVehicleReportService(
 
         return (laborReports, partReports);
     }
+
+    #region Streaming Export Helpers
+
+    private async Task<List<string>> ResolveVinsAsync(IEnumerable<string> vins, int? distinctVinCount)
+    {
+        return (vins?
+            .Select(NormalizeVin)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.Ordinal)
+            .ToList())
+            ?? (await GetDistinctVinsAsync(distinctVinCount)).ToList();
+    }
+
+    private static IEnumerable<List<string>> Chunk(List<string> items, int size)
+    {
+        for (var i = 0; i < items.Count; i += size)
+            yield return items.GetRange(i, Math.Min(size, items.Count - i));
+    }
+
+    private static void EnsureDirectoryExists(string fileFullPath)
+    {
+        var outputDirectory = Path.GetDirectoryName(fileFullPath);
+        if (!string.IsNullOrWhiteSpace(outputDirectory))
+            Directory.CreateDirectory(outputDirectory);
+    }
+
+    private async Task<int> StreamCsvAsync<TModel, TMap>(
+        string fileFullPath,
+        List<string> allVins,
+        int batchSize,
+        Func<List<string>, IEnumerable<VehicleLookupDTO>, List<TModel>> transform)
+        where TMap : ClassMap<TModel>, new()
+    {
+        EnsureDirectoryExists(fileFullPath);
+        using var writer = new StreamWriter(fileFullPath, false);
+        using var csvWriter = new CsvWriter(writer, CultureInfo.InvariantCulture);
+        csvWriter.Context.RegisterClassMap<TMap>();
+
+        int totalRows = 0;
+
+        foreach (var vinChunk in Chunk(allVins, batchSize))
+        {
+            var lookups = await vehicleLookupService.LookupAsync(vinChunk);
+            var rows = transform(vinChunk, lookups);
+            await csvWriter.WriteRecordsAsync(rows);
+            await writer.FlushAsync();
+            totalRows += rows.Count;
+        }
+
+        return totalRows;
+    }
+
+    private async Task<int> StreamParquetAsync<TModel>(
+        string fileFullPath,
+        List<string> allVins,
+        int batchSize,
+        Func<List<string>, IEnumerable<VehicleLookupDTO>, List<TModel>> transform)
+    {
+        EnsureDirectoryExists(fileFullPath);
+
+        var (schema, propertyMappings) = BuildParquetSchema<TModel>();
+
+        int totalRows = 0;
+
+        using var fileStream = File.Create(fileFullPath);
+        using var parquetWriter = await ParquetWriter.CreateAsync(schema, fileStream);
+
+        foreach (var vinChunk in Chunk(allVins, batchSize))
+        {
+            var lookups = await vehicleLookupService.LookupAsync(vinChunk);
+            var rows = transform(vinChunk, lookups);
+
+            if (rows.Count > 0)
+            {
+                var records = ConvertToParquetRecords(rows, propertyMappings);
+                await WriteParquetRowGroupAsync(parquetWriter, schema, records, propertyMappings);
+            }
+
+            totalRows += rows.Count;
+        }
+
+        return totalRows;
+    }
+
+    private static (ParquetSchema Schema, List<ParquetPropertyMapping> Mappings) BuildParquetSchema<TModel>()
+    {
+        var propertyMappings = new List<ParquetPropertyMapping>();
+
+        foreach (var property in typeof(TModel).GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(p => p.CanRead))
+        {
+            if (!TryGetParquetType(property.PropertyType, out var parquetType, out var isNullable, out var isEnum, out var isDateTimeOffset))
+                continue;
+
+            var fieldType = typeof(DataField<>).MakeGenericType(parquetType);
+            var field = (Field)Activator.CreateInstance(fieldType, property.Name, (bool?)isNullable);
+            propertyMappings.Add(new ParquetPropertyMapping(property, field, parquetType, isEnum, isDateTimeOffset));
+        }
+
+        var schema = new ParquetSchema(propertyMappings.Select(x => x.Field).ToArray());
+        return (schema, propertyMappings);
+    }
+
+    private static List<IDictionary<string, object>> ConvertToParquetRecords<TModel>(
+        List<TModel> rows,
+        List<ParquetPropertyMapping> propertyMappings)
+    {
+        var records = new List<IDictionary<string, object>>(rows.Count);
+
+        foreach (var row in rows)
+        {
+            var record = new Dictionary<string, object>(propertyMappings.Count, StringComparer.Ordinal);
+
+            foreach (var mapping in propertyMappings)
+            {
+                var value = mapping.Property.GetValue(row);
+                if (value is not null && mapping.IsEnum)
+                    value = Convert.ChangeType(value, mapping.ParquetType, CultureInfo.InvariantCulture);
+                else if (value is not null && mapping.IsDateTimeOffset)
+                    value = ((DateTimeOffset)value).UtcDateTime;
+
+                record[mapping.Property.Name] = value;
+            }
+
+            records.Add(record);
+        }
+
+        return records;
+    }
+
+    private static async Task WriteParquetRowGroupAsync(
+        ParquetWriter parquetWriter,
+        ParquetSchema schema,
+        List<IDictionary<string, object>> records,
+        List<ParquetPropertyMapping> propertyMappings)
+    {
+        using var rowGroup = parquetWriter.CreateRowGroup();
+
+        for (int colIdx = 0; colIdx < propertyMappings.Count; colIdx++)
+        {
+            var mapping = propertyMappings[colIdx];
+            var dataField = (DataField)mapping.Field;
+            var values = new object[records.Count];
+
+            for (int rowIdx = 0; rowIdx < records.Count; rowIdx++)
+            {
+                records[rowIdx].TryGetValue(mapping.Property.Name, out values[rowIdx]);
+            }
+
+            var column = new DataColumn(dataField, values);
+            await rowGroup.WriteColumnAsync(column);
+        }
+    }
+
+    #endregion
+
+    #region Transform Functions
+
+    private static List<VehicleServiceItemReportModel> TransformServiceItemLookups(List<string> vinChunk, IEnumerable<VehicleLookupDTO> lookups)
+    {
+        var bestItemsByServiceIdByVin = new Dictionary<string, Dictionary<string, VehicleServiceItemDTO>>(StringComparer.Ordinal);
+        var freeServiceItemStartDateByVin = new Dictionary<string, DateTime?>(StringComparer.Ordinal);
+
+        foreach (var lookup in lookups)
+        {
+            if (string.IsNullOrWhiteSpace(lookup?.VIN)) continue;
+            var vinKey = NormalizeVin(lookup.VIN);
+            if (!bestItemsByServiceIdByVin.ContainsKey(vinKey))
+                bestItemsByServiceIdByVin[vinKey] = BuildBestItemsByServiceId(lookup.ServiceItems);
+            if (!freeServiceItemStartDateByVin.ContainsKey(vinKey))
+                freeServiceItemStartDateByVin[vinKey] = lookup.Warranty?.FreeServiceStartDate;
+        }
+
+        var rows = new List<VehicleServiceItemReportModel>();
+        foreach (var vin in vinChunk)
+        {
+            bestItemsByServiceIdByVin.TryGetValue(vin, out var bestItemsByServiceId);
+            bestItemsByServiceId ??= new Dictionary<string, VehicleServiceItemDTO>(StringComparer.Ordinal);
+            freeServiceItemStartDateByVin.TryGetValue(vin, out var freeServiceItemStartDate);
+            foreach (var item in bestItemsByServiceId.Values.OrderBy(x => x.ServiceItemID, ServiceItemIdComparer))
+                rows.Add(CreateRow(vin, item, freeServiceItemStartDate));
+        }
+        return rows;
+    }
+
+    private static List<VehicleSscReportModel> TransformSscLookups(List<string> vinChunk, IEnumerable<VehicleLookupDTO> lookups)
+    {
+        var rows = new List<VehicleSscReportModel>();
+        foreach (var lookup in lookups)
+        {
+            var vin = NormalizeVin(lookup?.VIN);
+            if (string.IsNullOrWhiteSpace(vin)) continue;
+            foreach (var ssc in lookup.SSC ?? Enumerable.Empty<SscDTO>())
+                rows.Add(CreateSscRow(vin, ssc));
+        }
+        return rows;
+    }
+
+    private static List<VehicleLookupTopLevelReportModel> TransformTopLevelLookups(List<string> vinChunk, IEnumerable<VehicleLookupDTO> lookups)
+    {
+        var rows = new List<VehicleLookupTopLevelReportModel>();
+        foreach (var lookup in lookups)
+        {
+            var vin = NormalizeVin(lookup?.VIN);
+            if (string.IsNullOrWhiteSpace(vin)) continue;
+            rows.Add(CreateVehicleLookupTopLevelRow(vin, lookup));
+        }
+        return rows;
+    }
+
+    private static List<VehicleServiceHistoryLaborReportModel> TransformServiceHistoryLaborLookups(List<string> vinChunk, IEnumerable<VehicleLookupDTO> lookups)
+    {
+        var rows = new List<VehicleServiceHistoryLaborReportModel>();
+        foreach (var lookup in lookups)
+        {
+            var vin = NormalizeVin(lookup?.VIN);
+            if (string.IsNullOrWhiteSpace(vin)) continue;
+            foreach (var entry in lookup.ServiceHistory ?? Enumerable.Empty<VehicleServiceHistoryDTO>())
+                foreach (var labor in entry?.LaborLines ?? Enumerable.Empty<VehicleLaborDTO>())
+                    rows.Add(CreateServiceHistoryLaborRow(vin, entry, labor));
+        }
+        return rows;
+    }
+
+    private static List<VehicleServiceHistoryPartReportModel> TransformServiceHistoryPartLookups(List<string> vinChunk, IEnumerable<VehicleLookupDTO> lookups)
+    {
+        var rows = new List<VehicleServiceHistoryPartReportModel>();
+        foreach (var lookup in lookups)
+        {
+            var vin = NormalizeVin(lookup?.VIN);
+            if (string.IsNullOrWhiteSpace(vin)) continue;
+            foreach (var entry in lookup.ServiceHistory ?? Enumerable.Empty<VehicleServiceHistoryDTO>())
+                foreach (var part in entry?.PartLines ?? Enumerable.Empty<VehiclePartDTO>())
+                    rows.Add(CreateServiceHistoryPartRow(vin, entry, part));
+        }
+        return rows;
+    }
+
+    #endregion
 
     private static async Task WriteCsvAsync<TModel>(string fileFullPath, IEnumerable<TModel> rows, ClassMap<TModel> classMap)
     {
