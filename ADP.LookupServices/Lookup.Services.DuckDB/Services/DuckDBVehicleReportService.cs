@@ -680,14 +680,17 @@ public class DuckDBVehicleReportService(
         {
             var mapping = propertyMappings[colIdx];
             var dataField = (DataField)mapping.Field;
-            var values = new object[records.Count];
+
+            // Parquet.Net requires typed arrays, not object[]
+            var typedArray = Array.CreateInstance(dataField.ClrNullableIfHasNullsType ?? dataField.ClrType, records.Count);
 
             for (int rowIdx = 0; rowIdx < records.Count; rowIdx++)
             {
-                records[rowIdx].TryGetValue(mapping.Property.Name, out values[rowIdx]);
+                records[rowIdx].TryGetValue(mapping.Property.Name, out var value);
+                typedArray.SetValue(value, rowIdx);
             }
 
-            var column = new DataColumn(dataField, values);
+            var column = new DataColumn(dataField, typedArray);
             await rowGroup.WriteColumnAsync(column);
         }
     }
