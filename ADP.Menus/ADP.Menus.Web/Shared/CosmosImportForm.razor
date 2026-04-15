@@ -1,0 +1,42 @@
+@using System.Net
+@inject ShiftModal ShiftModal
+@inject HttpClient Http
+@inject MessageService MessageService
+@inject IDialogService DialogService
+
+<ShiftFormBasic Title="Cosmos Import"
+                OnValidSubmit="OnSubmit"
+                T="object">
+    <MudCheckBoxExtended Label="Override Existing VIN"
+                         @bind-Value="overrideExistingVIN"
+                         For="@(() => overrideExistingVIN)" />
+
+    <MudAlert Severity="Severity.Info">
+        Imports data from Cosmos DB (DealerData). if set override it will override exsting VINs, if not it will skip exsiting VINs.
+    </MudAlert>
+</ShiftFormBasic>
+
+@code {
+    private bool overrideExistingVIN;
+
+    [CascadingParameter]
+    public IMudDialogInstance MudDialogInstance { get; set; }
+
+    [Parameter]
+    public string ApiEndpoint { get; set; }
+
+    private async Task OnSubmit()
+    {
+        var url = $"{ApiEndpoint}?overrideExistingVIN={overrideExistingVIN.ToString().ToLower()}";
+        var response = await Http.PostAsync(url, null);
+        if (response.IsSuccessStatusCode)
+        {
+            MessageService.Success($"Cosmos import completed.");
+            ShiftModal.Close(MudDialogInstance, 1);
+        }
+        else
+        {
+            MessageService.Error($"Cosmos import failed.");
+        }
+    }
+}

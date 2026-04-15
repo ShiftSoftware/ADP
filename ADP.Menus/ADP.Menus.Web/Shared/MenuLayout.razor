@@ -1,0 +1,54 @@
+@using ShiftSoftware.ShiftBlazor.Layouts
+@using ShiftSoftware.ShiftBlazor.Components
+@inherits LayoutBase
+@inject ShiftSoftware.ShiftBlazor.Services.SettingManager SettingManager
+
+<MudRTLProvider RightToLeft="SettingManager.GetLanguage().RTL">
+
+    <AddMudProviders />
+
+    <MudLayout>
+
+        @if (App?.HeaderTemplate != null)
+        {
+            <header>
+                @App.HeaderTemplate(App)
+            </header>
+        }
+        else if (App != null)
+        {
+            <MudAppBar>
+                <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@App.ToggleDrawer" />
+                <MudLink Href="/"><MudText Style="color: #fff;">@(App.Title ?? "New App")</MudText></MudLink>
+
+                <MudSpacer />
+
+                @if (App.EnableAutherization == true)
+                {
+                    <AuthorizeView>
+                        <UserAvatar></UserAvatar>
+                    </AuthorizeView>
+                }
+            </MudAppBar>
+        }
+
+        <MudDrawer @bind-Open="@App!.IsDrawerOpen" ClipMode="DrawerClipMode.Docked" Elevation="1" Variant="@DrawerVariant.Mini" Breakpoint="Breakpoint.Lg" OpenMiniOnHover="true">
+            <ShiftSoftware.ADP.Menus.Web.Shared.NavMenu isDrawerOpen="@App.IsDrawerOpen" />
+        </MudDrawer>
+
+        <MudMainContent>
+            <MudContainer MaxWidth="MaxWidth.ExtraLarge" Style="padding-block: 24px;">
+                @Body
+            </MudContainer>
+        </MudMainContent>
+
+        @if (App?.FooterTemplate != null)
+        {
+            <footer>
+                @App.FooterTemplate(App)
+            </footer>
+        }
+
+    </MudLayout>
+
+</MudRTLProvider>

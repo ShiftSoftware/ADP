@@ -1,0 +1,1422 @@
+﻿@attribute [Route($"{MenuRoutes.Prefix}/{nameof(MenuForm)}/{{Key?}}")]
+@using global::ShiftSoftware.ADP.Menus.Shared.DTOs.MenuVariant
+@inject ReplacementItemService ReplacementItemService
+@inject ServiceIntervalGroupService ServiceIntervalGroupService
+@inject ServiceIntervalService ServiceIntervalService
+@inject MenuService MenuService
+@inject MessageService MessageService
+@inject HttpClient Http
+@inject IMenuCountryProvider CountryProvider
+@inject IDialogService DialogService
+@inject MenuWebOptions MenuOptions
+
+@inherits ShiftForm<MenuForm, MenuDTO>
+
+<ShiftEntityForm @bind-Value="TheItem"
+                 @ref="FormContainer"
+                 ModeChanged="ModeChanged"
+                 Endpoint="@($"{MenuOptions.ResolvedRoutePrefix}Menu")"
+                 Title="Menu Group"
+                 T="MenuDTO"
+                 TypeAuthAction="MenuActionTree.Menus"
+                 Context="list"
+                 OnResult="EntityLoaded"
+                 @bind-Key="@Key">
+
+    <div class="menu-layout">
+
+        <!-- Zone 1: fixed group fields -->
+        <div class="menu-header-zone">
+            <MudText Typo="Typo.h6" Class="mb-2">Group</MudText>
+            <div class="menu-group-fields">
+                <ShiftAutocomplete Label="Vehicle Model"
+                                   TEntitySet="VehicleModelListDTO"
+                                   EntitySet="@($"{MenuOptions.ResolvedRoutePrefix}VehicleModel")"
+                                   Value="TheItem.VehicleModel"
+                                   ValueChanged="VehicleModelSelected"
+                                   Disabled="@(Mode != FormModes.Create)"
+                                   For="() => TheItem.VehicleModel" />
+
+                <MudTextFieldExtended Label="Basic Model Code"
+                                      @bind-Value="TheItem.BasicModelCode"
+                                      For="@(() => TheItem.BasicModelCode)" />
+            </div>
+            @if (string.IsNullOrWhiteSpace(TheItem.ID))
+            {
+                <MudAlert Severity="Severity.Info" Dense="true" Class="mt-2">
+                    You can create variants now; they will be saved after saving the menu group.
+                </MudAlert>
+            }
+        </div>
+
+        <!-- Zone 2: variant selector bar -->
+        <div class="menu-variant-bar">
+            <MudText Typo="Typo.subtitle2" Color="Color.Secondary" Class="variant-bar-label">
+                Variants (@workingVariants.Count)
+            </MudText>
+
+            <div class="variant-bar-scroll">
+                <div class="variant-bar-chips">
+                @foreach (var variant in workingVariants)
+                {
+                    <div class="variant-chip-wrapper @GetVariantChipClass(variant)">
+                        @if (ReferenceEquals(renamingVariant, variant))
+                        {
+                            <input type="text"
+                                   class="variant-chip-rename"
+                                   value="@variant.Name"
+                                   @oninput="@(e => variant.Name = e.Value?.ToString())"
+                                   @onblur="StopRenaming"
+                                   @onkeydown="@(e => { if (e.Key == "Enter") StopRenaming(); })"
+                                   autofocus />
+                        }
+                        else
+                        {
+                            <button type="button" class="variant-chip-btn"
+                                    @onclick="@(() => SelectVariant(variant))">
+                                <span class="variant-chip-name">@variant.Name</span>
+                                <span class="variant-chip-sub">@variant.MenuPrefix @variant.MenuPostfix</span>
+                            </button>
+                        }
+                        <div class="variant-chip-actions">
+                            @if (ReferenceEquals(renamingVariant, variant))
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.Check"
+                                               Size="Size.Small"
+                                               Color="Color.Primary"
+                                               OnClick="StopRenaming" />
+                            }
+                            else
+                            {
+                                @if (CanManageVariants)
+                                {
+                                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                                   Size="Size.Small"
+                                                   OnClick="@(() => StartRenaming(variant))" />
+                                }
+                                <MudIconButton Icon="@Icons.Material.Filled.ContentCopy"
+                                               Size="Size.Small"
+                                               Disabled="@(!CanManageVariants)"
+                                               OnClick="@(async () => await CopyVariant(variant))"
+                                               Title="Copy variant" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                               Size="Size.Small"
+                                               Color="Color.Error"
+                                               Disabled="@IsDeleteDisabled(variant)"
+                                               OnClick="@(async () => await DeleteVariant(variant))"
+                                               Title="Delete variant" />
+                            }
+                        </div>
+                    </div>
+                }
+                </div>
+            </div>
+
+            <MudIconButton Icon="@Icons.Material.Filled.Add"
+                           Color="Color.Primary"
+                           Title="New Variant"
+                           Disabled="!CanManageVariants"
+                           OnClick="CreateVariant"
+                           Class="variant-bar-add-btn" />
+        </div>
+
+        <!-- Zone 3: tab content â€” sole scroll zone -->
+        <div class="menu-tab-zone">
+            @if (selectedVariant is null)
+            {
+                <MudAlert Severity="Severity.Warning" Dense="true">Select or create a variant above.</MudAlert>
+            }
+            else
+            {
+                <MudTabs ApplyEffectsToContainer="true" PanelClass="pa-4 mt-2">
+                            <MudTabPanel Text="Parts">
+                                <div class="parts-toolbar">
+                                    <MudCheckBoxExtended Label="Has Standalone Items"
+                                                         @bind-Value="selectedVariant.HasStandaloneItems"
+                                                         Disabled="!CanManageVariants" />
+                                    @if (ShowCountryUi)
+                                    {
+                                        <MudToggleGroup T="long" Value="selectedPartPriceCountryID" ValueChanged="OnSelectedPartPriceCountryChanged"
+                                                        Style="margin-left:auto;" Color="Color.Primary" Rounded="true" CheckMark Dense>
+                                            @foreach (var country in countries)
+                                            {
+                                                <MudToggleItem Value="country.Id"
+                                                               Text="@country.Name" />
+                                            }
+                                        </MudToggleGroup>
+                                    }
+                                </div>
+
+                                <MudDataGrid Items="@selectedVariant.Items"
+                                             T="MenuItemDTO"
+                                             FixedHeader="true"
+                                             SortMode="SortMode.None"
+                                             Loading="loading"
+                                             RowStyleFunc="GetRowStyle">
+                                    <Columns>
+                                        <PropertyColumn Property="x => x.ReplacementItem" Title="Replacement Item">
+                                            <CellTemplate>@context.Item.ReplacementItem.Name</CellTemplate>
+                                        </PropertyColumn>
+                                        <PropertyColumn Property="x => x.Parts" Title="Part Number">
+                                            <CellTemplate>
+                                                <div style="display:flex;flex-direction:column;gap:6px;min-width:170px;">
+                                                    @foreach (var part in context.Item.Parts.Select((x, i) => new { Part = x, Index = i }))
+                                                    {
+                                                        <MudInput T="string"
+                                                                  Value="part.Part.PartNumber"
+                                                                  ValueChanged="@(x=> PartNumberChanged(part.Part, x))"
+                                                                  Disabled="!CanManageVariants" />
+                                                    }
+                                                </div>
+                                            </CellTemplate>
+                                        </PropertyColumn>
+                                        <PropertyColumn Property="x => x.Parts" Title="Periodic Qty">
+                                            <CellTemplate>
+                                                <div style="display:flex;flex-direction:column;gap:6px;min-width:95px;">
+                                                    @foreach (var part in context.Item.Parts.Select((x, i) => new { Part = x, Index = i }))
+                                                    {
+                                                        <MudInput T="decimal?" @bind-Value="part.Part.PeriodicQuantity" Disabled="!CanManageVariants" />
+                                                    }
+                                                </div>
+                                            </CellTemplate>
+                                        </PropertyColumn>
+                                        <PropertyColumn Hidden="!selectedVariant.HasStandaloneItems" Property="x => x.Parts" Title="Standalone Qty">
+                                            <CellTemplate>
+                                                <div style="display:flex;flex-direction:column;gap:6px;min-width:95px;">
+                                                    @foreach (var part in context.Item.Parts.Select((x, i) => new { Part = x, Index = i }))
+                                                    {
+                                                        <MudInput T="decimal?" @bind-Value="part.Part.StandaloneQuantity" Disabled="@(!CanManageVariants || !selectedVariant.HasStandaloneItems)" />
+                                                    }
+                                                </div>
+                                            </CellTemplate>
+                                        </PropertyColumn>
+                                        <PropertyColumn Property="x => x.Parts" Title="Part Price">
+                                            <CellTemplate>
+                                                <div style="display:flex;flex-direction:column;gap:6px;min-width:110px;">
+                                                    @foreach (var part in context.Item.Parts.Select((x, i) => new { Part = x, Index = i }))
+                                                    {
+                                                        <div style="display:flex;align-items:center;gap:4px;">
+                                                            <MudInput T="decimal?"
+                                                                      Value="GetPartPrice(part.Part)"
+                                                                      ValueChanged="@(x => PartPriceChanged(part.Part, x))"
+                                                                      Disabled="!CanManageVariants" />
+                                                            @if (CanManageVariants)
+                                                            {
+                                                                <MudIconButton Icon="@(IsPartPriceRefreshing(part.Part) ? Icons.Material.Filled.Sync : Icons.Material.Filled.Refresh)"
+                                                                               Size="Size.Small"
+                                                                               Color="Color.Info"
+                                                                               Class="@GetPartPriceRefreshButtonClass(part.Part)"
+                                                                               Disabled="@(string.IsNullOrWhiteSpace(part.Part.PartNumber) || IsPartPriceRefreshing(part.Part))"
+                                                                               OnClick="@(async () => await RefreshPartPrice(part.Part))" />
+                                                            }
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </CellTemplate>
+                                        </PropertyColumn>
+                                        <PropertyColumn Property="x => x.Parts" Title="Margin %">
+                                            <CellTemplate>
+                                                <div style="display:flex;flex-direction:column;gap:6px;min-width:95px;">
+                                                    @foreach (var part in context.Item.Parts.Select((x, i) => new { Part = x, Index = i }))
+                                                    {
+                                                        <MudInput T="decimal?"
+                                                                  Value="GetPartMargin(part.Part)"
+                                                                  ValueChanged="@(x => PartMarginChanged(part.Part, x))"
+                                                                  Disabled="!CanManageVariants" />
+                                                    }
+                                                </div>
+                                            </CellTemplate>
+                                        </PropertyColumn>
+                                        <PropertyColumn Property="x => x.Parts" Title="Final Price">
+                                            <CellTemplate>
+                                                <div style="display:flex;flex-direction:column;gap:6px;min-width:110px;">
+                                                    @foreach (var part in context.Item.Parts.Select((x, i) => new { Part = x, Index = i }))
+                                                    {
+                                                        <MudInput T="decimal?"
+                                                                  Value="GetPartFinalPrice(part.Part)"
+                                                                  ValueChanged="@(x => PartFinalPriceChanged(part.Part, x))"
+                                                                  Disabled="!CanManageVariants" />
+                                                    }
+                                                </div>
+                                            </CellTemplate>
+                                        </PropertyColumn>
+                                        <PropertyColumn Property="x => x.Parts" Title="" Hidden="!CanManageVariants">
+                                            <CellTemplate>
+                                                <div style="display:flex;flex-direction:column;gap:6px;min-width:70px;">
+                                                    @foreach (var part in context.Item.Parts.Select((x, i) => new { Part = x, Index = i }))
+                                                    {
+                                                        <div style="display:flex;align-items:center;gap:2px;">
+                                                            @if (context.Item.ReplacementItem.AllowMultiplePartNumbers)
+                                                            {
+                                                                <MudIconButton Icon="@Icons.Material.Outlined.Delete"
+                                                                               Size="Size.Small"
+                                                                               Color="Color.Error"
+                                                                               Disabled="@(context.Item.Parts.Count <= 1)"
+                                                                               OnClick="@(() => RemovePartRow(context.Item, part.Index))" />
+                                                                @if (part.Index == context.Item.Parts.Count - 1)
+                                                                {
+                                                                    <MudIconButton Icon="@Icons.Material.Filled.Add"
+                                                                                   Size="Size.Small"
+                                                                                   Color="Color.Primary"
+                                                                                   OnClick="@(() => AddPartRow(context.Item))" />
+                                                                }
+                                                            }
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </CellTemplate>
+                                        </PropertyColumn>
+                                        <PropertyColumn Hidden="!selectedVariant.HasStandaloneItems" Property="x => x.StandaloneAllowedTime" Title="Standalone Allowed Time">
+                                            <CellTemplate><MudInput T="decimal?" Value="context.Item.StandaloneAllowedTime" ValueChanged="@(x=> SetStandaloneAlloweTime(context.Item, x))" /></CellTemplate>
+                                        </PropertyColumn>
+                                    </Columns>
+                                </MudDataGrid>
+                            </MudTabPanel>
+
+                            <MudTabPanel Text="Labour">
+                                <MudTextFieldExtended Label="Primary Labour Rate In Dollar" @bind-Value="selectedVariant.LabourRate" />
+
+                                @if (ShowCountryUi)
+                                {
+                                    <MudSimpleTable>
+                                        <thead>
+                                            <tr><th>Country</th><th>Labour Rate In Dollar</th></tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var rate in selectedVariant.LabourRates ?? [])
+                                            {
+                                                <tr>
+                                                    <th>@GetLabourRateLabel(rate)</th>
+                                                    <td><MudTextFieldExtended @bind-Value="rate.LabourRate" /></td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </MudSimpleTable>
+                                }
+                                <div style="height: 24px;"></div>
+                                <MudSimpleTable>
+                                    <thead>
+                                        <tr><th></th><th>Allowed Time In Hour</th><th>Consumable In Dollar</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var item in selectedVariant.LabourDetails ?? [])
+                                        {
+                                            <tr>
+                                                <th>@item.Name</th>
+                                                <td><MudTextFieldExtended @bind-Value="item.AllowedTime" /></td>
+                                                <td><MudTextFieldExtended @bind-Value="item.Consumable" /></td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </MudSimpleTable>
+                            </MudTabPanel>
+
+                            <MudTabPanel Text="Service Intervals">
+                                <MudCheckBox ValueChanged="ToggleServiceIntervalSelects" T="bool">Select All</MudCheckBox>
+                                <MudGrid>
+                                    @foreach (var serviceInterval in serviceIntervals)
+                                    {
+                                        <MudItem xs="4" sm="3" md="2" lg="2">
+                                            <MudCheckBox Label="@serviceInterval.Value.Code" @bind-Value="serviceInterval.Value.IsSelected" />
+                                        </MudItem>
+                                    }
+                                </MudGrid>
+                            </MudTabPanel>
+
+                            <MudTabPanel Text="Menu">
+                                <MudTextFieldExtended Label="Menu Prefix" @bind-Value="selectedVariant.MenuPrefix" />
+                                <MudTextFieldExtended Label="Menu Postfix" @bind-Value="selectedVariant.MenuPostfix" />
+                                <MudTextFieldExtended Label="Discount Percentage" @bind-Value="selectedVariant.DiscountPercentage" />
+                            </MudTabPanel>
+                        </MudTabs>
+            }
+        </div>
+
+    </div>
+</ShiftEntityForm>
+
+<style>
+    /* â”€â”€ Layout shell â”€â”€ */
+    .menu-layout {
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 215px);
+        min-height: 460px;
+    }
+
+    /* â”€â”€ Zone 1: group fields â”€â”€ */
+    .menu-header-zone {
+        flex: none;
+        padding-bottom: 12px;
+    }
+
+    .menu-group-fields {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0 16px;
+        align-items: start;
+    }
+
+    @@media (max-width: 959px) {
+        .menu-group-fields {
+            grid-template-columns: 1fr;
+        }
+
+        .variant-chip-actions {
+            max-width: 120px;
+            opacity: 1;
+        }
+    }
+
+    /* â”€â”€ Zone 2: variant bar â”€â”€ */
+    .menu-variant-bar {
+        flex: none;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 0;
+        border-top: 1px solid rgba(0, 0, 0, 0.08);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        margin-bottom: 12px;
+    }
+
+    .variant-bar-scroll {
+        flex: 1;
+        min-width: 0;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-width: thin;
+    }
+
+    .variant-bar-label {
+        flex: none;
+        white-space: nowrap;
+    }
+
+    .variant-bar-chips {
+        display: flex;
+        gap: 6px;
+        flex-wrap: nowrap;
+        align-items: center;
+        flex-shrink: 0;
+    }
+
+    .variant-bar-add-btn {
+        flex: none;
+        margin-left: auto;
+    }
+
+    .variant-chip-wrapper {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        flex-shrink: 0;
+        border: 1px solid rgba(0, 0, 0, 0.18);
+        border-radius: 20px;
+        overflow: hidden;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        background: #fff;
+    }
+
+    .variant-chip-wrapper:hover {
+        border-color: rgba(89, 80, 240, 0.45);
+        box-shadow: 0 2px 8px rgba(89, 80, 240, 0.12);
+    }
+
+    .variant-chip-wrapper.active-variant {
+        border-color: rgba(89, 80, 240, 0.7);
+        background: rgba(89, 80, 240, 0.1);
+        box-shadow: 0 2px 10px rgba(89, 80, 240, 0.2);
+    }
+
+    .variant-chip-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 4px 10px;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        line-height: 1.2;
+        min-width: 70px;
+    }
+
+    .variant-chip-name {
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: rgba(0, 0, 0, 0.87);
+        white-space: nowrap;
+    }
+
+    .variant-chip-sub {
+        font-size: 0.7rem;
+        color: rgba(0, 0, 0, 0.5);
+        white-space: nowrap;
+    }
+
+    .variant-chip-rename {
+        border: none;
+        outline: none;
+        background: transparent;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: rgba(0, 0, 0, 0.87);
+        padding: 6px 10px;
+        width: 100px;
+        min-width: 60px;
+    }
+
+    /* Action buttons: hidden until hover */
+    .variant-chip-actions {
+        display: flex;
+        align-items: center;
+        max-width: 0;
+        overflow: hidden;
+        transition: max-width 0.2s ease, opacity 0.2s ease;
+        opacity: 0;
+    }
+
+    .variant-chip-wrapper:hover .variant-chip-actions {
+        max-width: 120px;
+        opacity: 1;
+    }
+
+    /* â”€â”€ Zone 3: tab content â”€â”€ */
+    .menu-tab-zone {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        padding-right: 6px;
+    }
+
+    .part-price-refresh-button.spinning .mud-icon-root {
+        animation: part-price-spin 0.9s linear infinite;
+    }
+
+    .parts-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 10px;
+        flex-wrap: wrap;
+    }
+
+
+    @@keyframes part-price-spin {
+        from {
+            transform: rotate(0deg);
+        }
+
+        to {
+            transform: rotate(360deg);
+        }
+    }
+</style>
+
+@code {
+    private bool loading;
+    private bool variantSaving;
+    private readonly HashSet<MenuItemPartDTO> refreshingPartPrices = [];
+    private List<MenuVariantDTO> workingVariants = [];
+    private MenuVariantDTO? selectedVariant;
+    private Dictionary<string, ServiceIntervalListSelectableUI>? serviceIntervals = new();
+    private long selectedPartPriceCountryID;
+    private IReadOnlyList<CountryInfo> countries = [];
+    private Dictionary<long, string> countryNames = new();
+    private bool ShowCountryUi => countries.Count > 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        countries = (await CountryProvider.GetSupportedCountriesAsync()) ?? Array.Empty<CountryInfo>();
+        countryNames = countries.ToDictionary(c => c.Id, c => c.Name);
+        selectedPartPriceCountryID = countries.FirstOrDefault()?.Id ?? 0;
+        await LoadServiceIntervals();
+        ToggleServiceIntervalSelects(true);
+    }
+
+    private string GetVariantChipClass(MenuVariantDTO variant)
+    {
+        return ReferenceEquals(selectedVariant, variant) || (!string.IsNullOrWhiteSpace(selectedVariant?.ID) && selectedVariant.ID == variant.ID)
+            ? "active-variant"
+            : string.Empty;
+    }
+
+    private MenuVariantDTO? renamingVariant;
+
+    private void StartRenaming(MenuVariantDTO variant)
+    {
+        renamingVariant = variant;
+    }
+
+    private void StopRenaming()
+    {
+        renamingVariant = null;
+    }
+
+    private bool IsDeleteDisabled(MenuVariantDTO variant)
+    {
+        return workingVariants.Count <= 1 || !CanManageVariants;
+    }
+
+    private bool CanManageVariants => Mode == FormModes.Create || Mode == FormModes.Edit;
+
+    async Task ModeChanged(FormModes mode)
+    {
+        Mode = mode;
+
+        if (mode == FormModes.Create)
+        {
+            selectedVariant = null;
+            workingVariants = [];
+            await LoadServiceIntervals();
+            ToggleServiceIntervalSelects(true);
+        }
+    }
+
+    async Task VehicleModelSelected(ShiftEntitySelectDTO? vehicleModel)
+    {
+        if (vehicleModel is null)
+            return;
+
+        TheItem.VehicleModel = vehicleModel;
+
+        if (selectedVariant is not null)
+            await LoadReplacementItems(vehicleModel.Value, selectedVariant, true, false);
+    }
+
+    async ValueTask<bool> EntityLoaded(ShiftEntityResponse<MenuDTO> response)
+    {
+        if (workingVariants.Any() && !string.IsNullOrWhiteSpace(response?.Entity?.ID) && CanManageVariants)
+        {
+            TheItem.ID = response.Entity.ID;
+            var variantsSaved = await SaveAllVariantsInternal();
+            if (!variantsSaved)
+                return false;
+        }
+
+        var selectedVariantId = selectedVariant?.ID;
+        await LoadVariants(response?.Entity?.ID);
+
+        if (workingVariants.Any())
+        {
+            var variantToSelect = !string.IsNullOrWhiteSpace(selectedVariantId)
+                ? workingVariants.FirstOrDefault(x => x.ID == selectedVariantId)
+                : selectedVariant is not null
+                    ? workingVariants.FirstOrDefault(x => x.Name == selectedVariant.Name && x.MenuPrefix == selectedVariant.MenuPrefix && x.MenuPostfix == selectedVariant.MenuPostfix)
+                    : null;
+
+            await SelectVariant(variantToSelect ?? workingVariants.First());
+        }
+        else
+            selectedVariant = null;
+
+        return true;
+    }
+
+    private async Task LoadVariants(string? menuID = null)
+    {
+        var targetMenuID = menuID ?? TheItem.ID;
+
+        if (string.IsNullOrWhiteSpace(targetMenuID))
+        {
+            workingVariants = [];
+            return;
+        }
+
+        var variantSummaries = (await MenuService.GetVariantsByMenuAsync(targetMenuID)).ToList();
+        var loadedVariants = new List<MenuVariantDTO>();
+
+        foreach (var variant in variantSummaries)
+        {
+            var response = await MenuService.GetVariantByIdAsync(variant.ID!);
+            if (response?.Entity is not null)
+                loadedVariants.Add(response.Entity);
+        }
+
+        workingVariants = loadedVariants;
+    }
+
+    private async Task SelectVariant(MenuVariantDTO variant)
+    {
+        selectedVariant = variant;
+        EnsureVariantLabourRates(selectedVariant);
+        EnsureVariantPartCountryPrices(selectedVariant);
+
+        if (!string.IsNullOrWhiteSpace(TheItem.VehicleModel?.Value))
+            await LoadReplacementItems(TheItem.VehicleModel.Value, selectedVariant);
+
+        await LoadLabourDetails(selectedVariant);
+        await LoadServiceIntervals(selectedVariant.PeriodicAvailabilities.Select(x => x.ID));
+    }
+
+    private async Task CreateVariant()
+    {
+        if (!CanManageVariants)
+            return;
+
+        selectedVariant = new MenuVariantDTO
+        {
+            MenuID = TheItem.ID ?? string.Empty,
+            Name = GetNextDefaultVariantName(),
+            MenuPrefix = "SER",
+            LabourDetails = [],
+            Items = [],
+            PeriodicAvailabilities = []
+        };
+        EnsureVariantLabourRates(selectedVariant);
+        EnsureVariantPartCountryPrices(selectedVariant);
+
+        workingVariants.Add(selectedVariant);
+
+        if (!string.IsNullOrWhiteSpace(TheItem.VehicleModel?.Value))
+            await LoadReplacementItems(TheItem.VehicleModel.Value, selectedVariant, true, true);
+
+        await LoadLabourDetails(selectedVariant);
+        await LoadServiceIntervals();
+        ToggleServiceIntervalSelects(true);
+    }
+
+    private async System.Threading.Tasks.Task CopyVariant(MenuVariantDTO variant)
+    {
+        if (!CanManageVariants)
+            return;
+
+        selectedVariant = CloneVariant(variant);
+        selectedVariant.ID = null;
+        selectedVariant.MenuID = TheItem.ID ?? string.Empty;
+        selectedVariant.Name = GetNextDefaultVariantName();
+        EnsureVariantLabourRates(selectedVariant);
+        EnsureVariantPartCountryPrices(selectedVariant);
+        workingVariants.Add(selectedVariant);
+
+        await LoadLabourDetails(selectedVariant);
+        await LoadServiceIntervals(selectedVariant.PeriodicAvailabilities.Select(x => x.ID));
+    }
+
+    private async Task<bool> SaveVariantInternal(MenuVariantDTO? variant, bool showSuccessMessage = true, bool reloadAfterSave = true)
+    {
+        if (variant is null || string.IsNullOrWhiteSpace(TheItem.ID) || !CanManageVariants)
+            return false;
+
+        variantSaving = true;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(variant.Name))
+                variant.Name = GetNextDefaultVariantName();
+
+            EnsureVariantLabourRates(variant);
+            EnsureVariantPartCountryPrices(variant);
+            variant.MenuID = TheItem.ID!;
+            if (ReferenceEquals(variant, selectedVariant))
+                variant.PeriodicAvailabilities = serviceIntervals?.Where(x => x.Value.IsSelected).Select(x => new ServiceIntervalIDSelectorDTO { ID = x.Key }).ToList() ?? [];
+
+            var response = await MenuService.SaveVariantAsync(variant);
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadFromJsonAsync<ShiftEntityResponse>();
+                MessageService.Error(error?.Message?.Title ?? "Error", error?.Message?.Title, error?.Message?.Body);
+                return false;
+            }
+
+            var entityResponse = await response.Content.ReadFromJsonAsync<ShiftEntityResponse<MenuVariantDTO>>();
+            if (!string.IsNullOrWhiteSpace(entityResponse?.Entity?.ID))
+                variant.ID = entityResponse.Entity.ID;
+
+            if (showSuccessMessage)
+            {
+                MessageService.Success("Variant saved successfully");
+                if (reloadAfterSave)
+                {
+                    await LoadVariants();
+                    if (!string.IsNullOrWhiteSpace(entityResponse?.Entity?.ID))
+                        await SelectVariant(workingVariants.First(x => x.ID == entityResponse.Entity.ID));
+                }
+            }
+
+            return true;
+        }
+        finally
+        {
+            variantSaving = false;
+        }
+    }
+
+    private async Task<bool> SaveAllVariantsInternal()
+    {
+        foreach (var variant in workingVariants.ToList())
+        {
+            var variantToSave = variant;
+
+            if (ReferenceEquals(variant, selectedVariant))
+                variantToSave.PeriodicAvailabilities = serviceIntervals?.Where(x => x.Value.IsSelected).Select(x => new ServiceIntervalIDSelectorDTO { ID = x.Key }).ToList() ?? [];
+
+            var result = await SaveVariantInternal(variantToSave, showSuccessMessage: false, reloadAfterSave: false);
+            if (!result)
+                return false;
+        }
+
+        return true;
+    }
+
+    private async Task DeleteVariant(MenuVariantDTO variant)
+    {
+        if (!CanManageVariants)
+            return;
+
+        if (string.IsNullOrWhiteSpace(variant.ID))
+        {
+            workingVariants.Remove(variant);
+            if (ReferenceEquals(selectedVariant, variant))
+                selectedVariant = workingVariants.FirstOrDefault();
+
+            if (selectedVariant is not null)
+                await SelectVariant(selectedVariant);
+
+            return;
+        }
+
+        var dialogResult = await DialogService.ShowMessageBoxAsync(
+            "Warning",
+            $"Delete variant '{variant.Name}'?",
+            yesText: "Delete",
+            cancelText: "Cancel");
+
+        if (dialogResult != true)
+            return;
+
+        var response = await MenuService.DeleteVariantWithGuardAsync(variant.ID!);
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadFromJsonAsync<ShiftEntityResponse>();
+            MessageService.Error(error?.Message?.Title ?? "Delete failed", error?.Message?.Title, error?.Message?.Body);
+            return;
+        }
+
+        await LoadVariants();
+        selectedVariant = null;
+        if (workingVariants.Any())
+            await SelectVariant(workingVariants.First());
+    }
+
+    async Task LoadReplacementItems(string vehicleModelID, MenuVariantDTO entity, bool overrideData = false, bool loadDefaultPrices = false)
+    {
+        loading = true;
+
+        var vehicleModel = await ReplacementItemService.GetVehicleModelById(vehicleModelID);
+
+        if (vehicleModel?.IsSuccess is not true)
+        {
+            loading = false;
+            MessageService.Error(vehicleModel?.ErrorMessage!);
+            return;
+        }
+
+        if (overrideData)
+            entity.Items = [];
+        else
+            entity.Items ??= [];
+
+        var items = vehicleModel.Data!.ReplacementItems;
+        var replacementItemsById = items
+            .ToDictionary(x => x.ReplacementItemVehicleModelID);
+
+        // For existing variants, keep stored prices from the database and only refresh the UI-side
+        // replacement item metadata when it is missing.
+        if (!overrideData)
+        {
+            EnsureVariantLabourRates(entity);
+            if (entity.LabourRate is null)
+                entity.LabourRate = vehicleModel.Data.LabourRate;
+
+            foreach (var existingItem in entity.Items.Where(x => x.ReplacementItemVehicleModelID.HasValue))
+            {
+                if (existingItem.ReplacementItem is not null)
+                    continue;
+
+                if (!replacementItemsById.TryGetValue(existingItem.ReplacementItemVehicleModelID!.Value, out var sourceItem))
+                    continue;
+
+                existingItem.ReplacementItem = new MenuItemReplacementItemDTO
+                {
+                    StandaloneAllowedTime = sourceItem.StandaloneAllowedTime,
+                    DefaultPartPriceMarginPercentage = sourceItem.DefaultPartPriceMarginPercentage,
+                    StandaloneReplacementItemGroup = sourceItem.StandaloneReplacementItemGroup,
+                    Name = sourceItem.Name,
+                    Type = sourceItem.Type,
+                    AllowMultiplePartNumbers = sourceItem.AllowMultiplePartNumbers,
+                    ID = sourceItem.ID,
+                };
+
+                existingItem.Parts ??= [];
+                if (!existingItem.Parts.Any())
+                {
+                    existingItem.Parts = (sourceItem.DefaultParts ?? [])
+                        .Select(x => new MenuItemPartDTO
+                        {
+                            PartNumber = x.PartNumber,
+                            PeriodicQuantity = x.DefaultPeriodicQuantity,
+                            StandaloneQuantity = x.DefaultStandaloneQuantity,
+                            PartPriceMarginPercentage = sourceItem.DefaultPartPriceMarginPercentage,
+                        }).ToList();
+                }
+
+                if (!existingItem.Parts.Any())
+                    existingItem.Parts.Add(new MenuItemPartDTO { PartPriceMarginPercentage = sourceItem.DefaultPartPriceMarginPercentage });
+
+                foreach (var part in existingItem.Parts)
+                    EnsurePartCountryPrices(part, sourceItem.DefaultPartPriceMarginPercentage);
+            }
+
+            if (entity.LabourRates.Count == 0)
+                entity.LabourRates = vehicleModel.Data.LabourRates.Select(CloneLabourRate).ToList();
+
+            EnsureVariantLabourRates(entity);
+            EnsureVariantPartCountryPrices(entity);
+
+            foreach (var item in entity.LabourDetails ?? new())
+            {
+                var ld = vehicleModel.Data.LabourDetails.FirstOrDefault(x => x.ServiceIntervalGroupID == item.ServiceIntervalGroupID);
+                if (ld is not null)
+                {
+                    if (item.Consumable is null)
+                        item.Consumable = ld.Consumable;
+                    if (item.AllowedTime is null)
+                        item.AllowedTime = ld.AllowedTime;
+                }
+            }
+
+            loading = false;
+            return;
+        }
+
+        var notSelectedItems = items.Where(x => !entity.Items.Select(s => s.ReplacementItemVehicleModelID).Contains(x.ReplacementItemVehicleModelID));
+
+        var stocks = new Dictionary<string, List<StockPriceByCountryDTO>>(StringComparer.OrdinalIgnoreCase);
+        if (loadDefaultPrices)
+        {
+            var requestedPartNumbers = notSelectedItems
+                .SelectMany(x => x.DefaultParts ?? [])
+                .Select(x => x.PartNumber)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            stocks = (await MenuService.GetStockByPartNumbersAsync(requestedPartNumbers))
+                .Where(x => !string.IsNullOrWhiteSpace(x.PartNumber))
+                .GroupBy(x => x.PartNumber.Trim(), StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(x => x.Key, x => x.First().CountryPrices ?? [], StringComparer.OrdinalIgnoreCase);
+        }
+
+        foreach (var item in notSelectedItems ?? [])
+        {
+            var result = new MenuItemDTO
+            {
+                ReplacementItem = new MenuItemReplacementItemDTO
+                {
+                    StandaloneAllowedTime = item.StandaloneAllowedTime,
+                    DefaultPartPriceMarginPercentage = item.DefaultPartPriceMarginPercentage,
+                    StandaloneReplacementItemGroup = item.StandaloneReplacementItemGroup,
+                    Name = item.Name,
+                    Type = item.Type,
+                    AllowMultiplePartNumbers = item.AllowMultiplePartNumbers,
+                    ID = item.ID,
+                },
+                StandaloneAllowedTime = item.StandaloneAllowedTime,
+                ReplacementItemVehicleModelID = item.ReplacementItemVehicleModelID,
+                Parts = (item.DefaultParts ?? [])
+                    .Select(x => new MenuItemPartDTO
+                    {
+                        PartNumber = x.PartNumber,
+                        PeriodicQuantity = x.DefaultPeriodicQuantity,
+                        StandaloneQuantity = x.DefaultStandaloneQuantity,
+                        PartPriceMarginPercentage = item.DefaultPartPriceMarginPercentage,
+                    }).ToList(),
+                NotStoredInMenuItemsTable = true
+            };
+
+            foreach (var part in result.Parts)
+            {
+                EnsurePartCountryPrices(part, item.DefaultPartPriceMarginPercentage);
+
+                if (loadDefaultPrices && !string.IsNullOrWhiteSpace(part.PartNumber))
+                {
+                    var partPrices = stocks.GetValueOrDefault(part.PartNumber.Trim(), []);
+                    ApplyCountryPrices(part, partPrices);
+                }
+
+                CalculatePartFinalPrice(part);
+            }
+
+            if (!result.Parts.Any())
+            {
+                var part = new MenuItemPartDTO { PartPriceMarginPercentage = item.DefaultPartPriceMarginPercentage };
+                EnsurePartCountryPrices(part, item.DefaultPartPriceMarginPercentage);
+                result.Parts.Add(part);
+            }
+
+            entity.Items.Add(result);
+        }
+
+        entity.LabourRates ??= [];
+        if (entity.LabourRate is null || overrideData)
+            entity.LabourRate = vehicleModel.Data.LabourRate;
+        if (entity.LabourRates.Count == 0 || overrideData)
+            entity.LabourRates = vehicleModel.Data.LabourRates.Select(CloneLabourRate).ToList();
+
+        EnsureVariantLabourRates(entity);
+        EnsureVariantPartCountryPrices(entity);
+
+        if (overrideData)
+        {
+            entity.LabourDetails = vehicleModel.Data.LabourDetails
+                .Select(x => new LabourDetailsDTO
+                {
+                    ServiceIntervalGroupID = x.ServiceIntervalGroupID,
+                    AllowedTime = x.AllowedTime,
+                    Consumable = x.Consumable
+                })
+                .ToList();
+        }
+        else
+        {
+            foreach (var item in entity.LabourDetails ?? new())
+            {
+                var ld = vehicleModel.Data.LabourDetails.FirstOrDefault(x => x.ServiceIntervalGroupID == item.ServiceIntervalGroupID);
+                if (ld is not null)
+                {
+                    if (item.Consumable is null)
+                        item.Consumable = ld.Consumable;
+                    if (item.AllowedTime is null)
+                        item.AllowedTime = ld.AllowedTime;
+                }
+            }
+        }
+
+        loading = false;
+    }
+
+    void ToggleServiceIntervalSelects(bool value)
+    {
+        serviceIntervals?.Values.ToList().ForEach(x => x.IsSelected = value);
+    }
+
+    async Task LoadLabourDetails(MenuVariantDTO entity)
+    {
+        var labourDetails = await ServiceIntervalGroupService.GetDictionaryLabourDetailsAsync() ?? new();
+
+        foreach (var item in entity.LabourDetails ?? [])
+            item.Name = labourDetails.GetValueOrDefault(item.ServiceIntervalGroupID, string.Empty);
+
+        var notSelectedLabourDetails = labourDetails.Where(x => !(entity.LabourDetails?.Select(s => s.ServiceIntervalGroupID)?.Contains(x.Key) ?? false));
+        foreach (var item in notSelectedLabourDetails)
+        {
+            entity.LabourDetails ??= [];
+            entity.LabourDetails.Add(new LabourDetailsDTO
+            {
+                ServiceIntervalGroupID = item.Key,
+                Name = item.Value,
+            });
+        }
+    }
+
+    void SetStandaloneAlloweTime(MenuItemDTO item, decimal? value)
+    {
+        if (selectedVariant is null)
+            return;
+
+        if (item.ReplacementItem.StandaloneReplacementItemGroup is null)
+            item.StandaloneAllowedTime = value;
+        else
+            foreach (var i in selectedVariant.Items.Where(x => x.ReplacementItem.StandaloneReplacementItemGroup?.Value == item.ReplacementItem.StandaloneReplacementItemGroup.Value))
+                i.StandaloneAllowedTime = value;
+    }
+
+    async Task LoadServiceIntervals(IEnumerable<string>? selectedIds = null)
+    {
+        serviceIntervals = (await ServiceIntervalService.GetListAsync())?
+            .ToDictionary(x => x.ID!, x => x);
+
+        if (selectedIds is not null)
+            foreach (var id in selectedIds)
+                if (serviceIntervals?.ContainsKey(id) ?? false)
+                    serviceIntervals[id].IsSelected = true;
+    }
+
+    async Task PartNumberChanged(MenuItemPartDTO part, string partNumber)
+    {
+        try
+        {
+            var stock = await MenuService.GetStockByPartNumberAsync(partNumber);
+            part.PartNumber = partNumber;
+            EnsurePartCountryPrices(part);
+            ApplyCountryPrices(part, stock?.CountryPrices ?? []);
+            CalculatePartFinalPrice(part);
+        }
+        catch (Exception)
+        {
+            part.PartNumber = partNumber;
+            EnsurePartCountryPrices(part);
+            foreach (var countryPrice in part.CountryPrices)
+            {
+                countryPrice.PartPrice = 0;
+                countryPrice.PartFinalPrice = 0;
+            }
+            SyncLegacyPartPriceFields(part);
+            CalculatePartFinalPrice(part);
+        }
+    }
+
+    private bool IsPartPriceRefreshing(MenuItemPartDTO part)
+    {
+        return refreshingPartPrices.Contains(part);
+    }
+
+    private string GetPartPriceRefreshButtonClass(MenuItemPartDTO part)
+    {
+        return IsPartPriceRefreshing(part)
+            ? "part-price-refresh-button spinning"
+            : "part-price-refresh-button";
+    }
+
+    private async Task RefreshPartPrice(MenuItemPartDTO part)
+    {
+        if (string.IsNullOrWhiteSpace(part.PartNumber))
+            return;
+
+        if (!refreshingPartPrices.Add(part))
+            return;
+
+        StateHasChanged();
+        try
+        {
+            await PartNumberChanged(part, part.PartNumber);
+        }
+        finally
+        {
+            refreshingPartPrices.Remove(part);
+            StateHasChanged();
+        }
+    }
+
+    private decimal? GetPartPrice(MenuItemPartDTO part)
+    {
+        EnsurePartCountryPrices(part);
+        return GetSelectedCountryPrice(part).PartPrice;
+    }
+
+    private decimal? GetPartMargin(MenuItemPartDTO part)
+    {
+        EnsurePartCountryPrices(part);
+        return GetSelectedCountryPrice(part).PartPriceMarginPercentage;
+    }
+
+    private decimal? GetPartFinalPrice(MenuItemPartDTO part)
+    {
+        EnsurePartCountryPrices(part);
+        return GetSelectedCountryPrice(part).PartFinalPrice;
+    }
+
+    private PartPriceByCountryDTO GetSelectedCountryPrice(MenuItemPartDTO part)
+    {
+        part.CountryPrices ??= [];
+        return part.CountryPrices.FirstOrDefault(x => x.CountryID == selectedPartPriceCountryID)
+            ?? new PartPriceByCountryDTO { CountryID = selectedPartPriceCountryID };
+    }
+
+    private void OnSelectedPartPriceCountryChanged(long value)
+    {
+        selectedPartPriceCountryID = value;
+        StateHasChanged();
+    }
+
+    private void EnsureVariantPartCountryPrices(MenuVariantDTO variant)
+    {
+        foreach (var item in variant.Items ?? [])
+        {
+            foreach (var part in item.Parts ?? [])
+            {
+                EnsurePartCountryPrices(part, item.ReplacementItem?.DefaultPartPriceMarginPercentage);
+            }
+        }
+    }
+
+    private void EnsurePartCountryPrices(MenuItemPartDTO part, decimal? defaultMargin = null)
+    {
+        part.CountryPrices ??= [];
+
+        // 0-country mode: synthesize a single CountryID=0 row.
+        var effectiveCountryIds = countries.Count == 0
+            ? new List<long> { 0 }
+            : countries.Select(c => c.Id).ToList();
+
+        foreach (var id in effectiveCountryIds)
+        {
+            var row = part.CountryPrices.FirstOrDefault(x => x.CountryID == id);
+            if (row is null)
+            {
+                part.CountryPrices.Add(new PartPriceByCountryDTO
+                {
+                    CountryID = id,
+                    PartPrice = part.PartPrice ?? 0,
+                    PartPriceMarginPercentage = defaultMargin ?? part.PartPriceMarginPercentage ?? 0,
+                    PartFinalPrice = part.PartFinalPrice ?? part.PartPrice ?? 0,
+                });
+            }
+        }
+
+        var supportedIds = effectiveCountryIds.ToHashSet();
+        part.CountryPrices = part.CountryPrices
+            .Where(x => x.CountryID.HasValue && supportedIds.Contains(x.CountryID.Value))
+            .OrderBy(x => x.CountryID.GetValueOrDefault())
+            .ToList();
+
+        SyncLegacyPartPriceFields(part);
+    }
+
+    private void ApplyCountryPrices(MenuItemPartDTO part, List<StockPriceByCountryDTO> stockCountryPrices)
+    {
+        EnsurePartCountryPrices(part);
+
+        foreach (var countryPrice in part.CountryPrices)
+        {
+            var price = (stockCountryPrices.FirstOrDefault(x => x.CountryID == countryPrice.CountryID)
+                         ?? stockCountryPrices.FirstOrDefault())?.Price ?? 0;
+            price = AdjustSpecialPartPrice(part.PartNumber, price);
+
+            countryPrice.PartPrice = price;
+            countryPrice.PartFinalPrice = Math.Round((price * (1 + countryPrice.PartPriceMarginPercentage.GetValueOrDefault() / 100)), 2);
+        }
+
+        SyncLegacyPartPriceFields(part);
+    }
+
+    private static decimal AdjustSpecialPartPrice(string? partNumber, decimal value)
+    {
+        if (string.Equals(partNumber?.Trim(), "ZGX-01-AEKS", StringComparison.OrdinalIgnoreCase))
+            return Math.Round(value / 10, 2);
+
+        if (string.Equals(partNumber?.Trim(), "ZBG8905M", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(partNumber?.Trim(), "ZBG4035M", StringComparison.OrdinalIgnoreCase))
+            return Math.Round(value / 19, 2);
+
+        return value;
+    }
+
+    private void SyncLegacyPartPriceFields(MenuItemPartDTO part)
+    {
+        var selected = part.CountryPrices?.FirstOrDefault(x => x.CountryID == selectedPartPriceCountryID)
+            ?? part.CountryPrices?.FirstOrDefault();
+        if (selected is null)
+            return;
+        part.PartPrice = selected.PartPrice;
+        part.PartPriceMarginPercentage = selected.PartPriceMarginPercentage;
+        part.PartFinalPrice = selected.PartFinalPrice;
+    }
+
+    private void PartPriceChanged(MenuItemPartDTO part, decimal? value)
+    {
+        EnsurePartCountryPrices(part);
+        var countryPrice = GetSelectedCountryPrice(part);
+        countryPrice.PartPrice = value;
+        SyncLegacyPartPriceFields(part);
+        CalculatePartFinalPrice(part);
+    }
+
+    private void PartMarginChanged(MenuItemPartDTO part, decimal? value)
+    {
+        EnsurePartCountryPrices(part);
+        var countryPrice = GetSelectedCountryPrice(part);
+        countryPrice.PartPriceMarginPercentage = value;
+        SyncLegacyPartPriceFields(part);
+        CalculatePartFinalPrice(part);
+    }
+
+    private void PartFinalPriceChanged(MenuItemPartDTO part, decimal? value)
+    {
+        EnsurePartCountryPrices(part);
+        var countryPrice = GetSelectedCountryPrice(part);
+        countryPrice.PartFinalPrice = value;
+        SyncLegacyPartPriceFields(part);
+        CalculatePartPricePercentage(part);
+    }
+
+    private void CalculatePartFinalPrice(MenuItemPartDTO part)
+    {
+        EnsurePartCountryPrices(part);
+        var countryPrice = GetSelectedCountryPrice(part);
+
+        if (countryPrice.PartPriceMarginPercentage.HasValue)
+            countryPrice.PartFinalPrice = countryPrice.PartPrice.HasValue ? Math.Round((countryPrice.PartPrice.GetValueOrDefault() * (1 + countryPrice.PartPriceMarginPercentage.GetValueOrDefault() / 100)), 2) : null;
+        else
+            countryPrice.PartFinalPrice = countryPrice.PartPrice;
+
+        SyncLegacyPartPriceFields(part);
+    }
+
+    private void CalculatePartPricePercentage(MenuItemPartDTO part)
+    {
+        EnsurePartCountryPrices(part);
+        var countryPrice = GetSelectedCountryPrice(part);
+
+        if (!countryPrice.PartPrice.HasValue || !countryPrice.PartFinalPrice.HasValue)
+            return;
+
+        if (countryPrice.PartPrice.Value == 0)
+        {
+            countryPrice.PartPriceMarginPercentage = countryPrice.PartFinalPrice.Value == 0 ? 0 : null;
+            return;
+        }
+
+        countryPrice.PartPriceMarginPercentage = Math.Round(((countryPrice.PartFinalPrice.Value - countryPrice.PartPrice.Value) / countryPrice.PartPrice.Value) * 100, 2);
+        SyncLegacyPartPriceFields(part);
+    }
+
+    private void AddPartRow(MenuItemDTO item)
+    {
+        item.Parts ??= [];
+        var part = new MenuItemPartDTO
+        {
+            PartPriceMarginPercentage = item.ReplacementItem.DefaultPartPriceMarginPercentage
+        };
+        EnsurePartCountryPrices(part, item.ReplacementItem.DefaultPartPriceMarginPercentage);
+        item.Parts.Add(part);
+    }
+
+    private void RemovePartRow(MenuItemDTO item, int index)
+    {
+        if (index < 0 || index >= item.Parts.Count || item.Parts.Count <= 1)
+            return;
+
+        item.Parts.RemoveAt(index);
+    }
+
+    private string GetRowStyle(MenuItemDTO item, int rowIndex)
+    {
+        return item.NotStoredInMenuItemsTable
+            ? "background-color: #FFD149; color: #000000;"
+            : string.Empty;
+    }
+
+    private string GetNextDefaultVariantName()
+    {
+        var taken = workingVariants
+            .Select(x => x.Name?.Trim())
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        int i = 1;
+        while (taken.Contains($"V{i}"))
+            i++;
+
+        return $"V{i}";
+    }
+
+    private static MenuVariantDTO CloneVariant(MenuVariantDTO source)
+    {
+        return new MenuVariantDTO
+        {
+            MenuID = source.MenuID,
+            Name = source.Name,
+            MenuPrefix = source.MenuPrefix,
+            MenuPostfix = source.MenuPostfix,
+            LabourRate = source.LabourRate,
+            LabourRates = source.LabourRates.Select(CloneLabourRate).ToList(),
+            DiscountPercentage = source.DiscountPercentage,
+            HasStandaloneItems = source.HasStandaloneItems,
+            LabourDetails = source.LabourDetails.Select(x => new LabourDetailsDTO
+            {
+                ServiceIntervalGroupID = x.ServiceIntervalGroupID,
+                Name = x.Name,
+                AllowedTime = x.AllowedTime,
+                Consumable = x.Consumable
+            }).ToList(),
+            PeriodicAvailabilities = source.PeriodicAvailabilities.Select(x => new ServiceIntervalIDSelectorDTO
+            {
+                ID = x.ID
+            }).ToList(),
+            Items = source.Items.Select(x => new MenuItemDTO
+            {
+                ReplacementItem = new MenuItemReplacementItemDTO
+                {
+                    ID = x.ReplacementItem.ID,
+                    Name = x.ReplacementItem.Name,
+                    Type = x.ReplacementItem.Type,
+                    AllowMultiplePartNumbers = x.ReplacementItem.AllowMultiplePartNumbers,
+                    StandaloneAllowedTime = x.ReplacementItem.StandaloneAllowedTime,
+                    DefaultPartPriceMarginPercentage = x.ReplacementItem.DefaultPartPriceMarginPercentage,
+                    StandaloneReplacementItemGroup = x.ReplacementItem.StandaloneReplacementItemGroup is null
+                        ? null
+                        : new ShiftEntitySelectDTO
+                        {
+                            Value = x.ReplacementItem.StandaloneReplacementItemGroup.Value,
+                            Text = x.ReplacementItem.StandaloneReplacementItemGroup.Text
+                        }
+                },
+                ReplacementItemVehicleModelID = x.ReplacementItemVehicleModelID,
+                Parts = x.Parts.Select(p => new MenuItemPartDTO
+                {
+                    PartNumber = p.PartNumber,
+                    PeriodicQuantity = p.PeriodicQuantity,
+                    StandaloneQuantity = p.StandaloneQuantity,
+                    PartPrice = p.PartPrice,
+                    PartPriceMarginPercentage = p.PartPriceMarginPercentage,
+                    PartFinalPrice = p.PartFinalPrice,
+                    CountryPrices = p.CountryPrices.Select(cp => new PartPriceByCountryDTO
+                    {
+                        CountryID = cp.CountryID,
+                        PartPrice = cp.PartPrice,
+                        PartPriceMarginPercentage = cp.PartPriceMarginPercentage,
+                        PartFinalPrice = cp.PartFinalPrice
+                    }).ToList()
+                }).ToList(),
+                StandaloneAllowedTime = x.StandaloneAllowedTime,
+                NotStoredInMenuItemsTable = x.NotStoredInMenuItemsTable
+            }).ToList()
+        };
+    }
+
+    private static LabourRateByCountryDTO CloneLabourRate(LabourRateByCountryDTO source)
+    {
+        return new LabourRateByCountryDTO
+        {
+            CountryID = source.CountryID,
+            LabourRate = source.LabourRate
+        };
+    }
+
+    private void EnsureVariantLabourRates(MenuVariantDTO variant)
+    {
+        variant.LabourRates ??= [];
+
+        foreach (var country in countries)
+        {
+            var row = variant.LabourRates.FirstOrDefault(x => x.CountryID == country.Id);
+            if (row is null)
+            {
+                variant.LabourRates.Add(new LabourRateByCountryDTO
+                {
+                    CountryID = country.Id,
+                    LabourRate = variant.LabourRate
+                });
+            }
+        }
+
+        var supportedIds = countries.Select(c => c.Id).ToHashSet();
+        variant.LabourRates = variant.LabourRates
+            .Where(x => x.CountryID.HasValue && supportedIds.Contains(x.CountryID.Value))
+            .OrderBy(x => x.CountryID.GetValueOrDefault())
+            .ToList();
+    }
+
+    private string GetLabourRateLabel(LabourRateByCountryDTO rate)
+    {
+        if (rate.CountryID.HasValue && countryNames.TryGetValue(rate.CountryID.Value, out var name))
+            return name;
+
+        return $"Country {rate.CountryID}";
+    }
+}
+

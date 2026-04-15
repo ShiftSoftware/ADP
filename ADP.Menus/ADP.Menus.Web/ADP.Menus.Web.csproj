@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+	<Import Project="..\..\GlobalSettings.props" />
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<RootNamespace>ShiftSoftware.ADP.Menus.Web</RootNamespace>
+		<BlazorWebAssemblyLoadAllGlobalizationData>true</BlazorWebAssemblyLoadAllGlobalizationData>
+		<Authors>Shift Software</Authors>
+		<Product>ADP.Menus</Product>
+		<Version>$(ADPVersion)</Version>
+		<AssemblyName>ShiftSoftware.ADP.Menus.Web</AssemblyName>
+		<PackageId>ShiftSoftware.ADP.Menus.Web</PackageId>
+		<Title>ShiftSoftware ADP.Menus — Web</Title>
+		<Description>Blazor WebAssembly pages, forms and services for the ShiftSoftware ADP.Menus package — an automotive service menu (parts &amp; labour) module.</Description>
+		<Copyright>Copyright (c) Shift Software 2026</Copyright>
+		<PackageProjectUrl>https://github.com/ShiftSoftware/ADP</PackageProjectUrl>
+		<PackageIcon>icon.png</PackageIcon>
+		<RepositoryUrl>https://github.com/ShiftSoftware/ADP</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageTags>shift;shiftsoftware;adp;menus;automotive;service;parts;labour;blazor</PackageTags>
+		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="Images\icon.png" Pack="true" PackagePath="\" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.5" />
+		<PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="10.0.5" />
+		<PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.5" />
+		<PackageReference Include="ShiftSoftware.ShiftBlazor" Version="2026.4.13.6" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\ADP.Menus.Shared\ADP.Menus.Shared.csproj" />
+	</ItemGroup>
+</Project>

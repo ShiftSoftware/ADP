@@ -1,0 +1,8 @@
+﻿.button-container {
+    display: flex;
+    gap: 10px; /* Adjust the gap between buttons as needed */
+}
+
+.container {
+    padding: 25px;
+}

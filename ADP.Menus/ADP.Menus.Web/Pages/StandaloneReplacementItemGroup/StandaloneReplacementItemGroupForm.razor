@@ -1,0 +1,43 @@
+﻿@attribute [Route($"{MenuRoutes.Prefix}/{nameof(StandaloneReplacementItemGroupForm)}/{{Key?}}")]
+
+@using global::ShiftSoftware.ADP.Menus.Web.Extensions
+@using ShiftSoftware.ShiftBlazor.Components
+
+@inherits ShiftForm<StandaloneReplacementItemGroupForm, StandaloneReplacementItemGroupDTO>
+
+@inject MenuWebOptions MenuOptions
+
+<ShiftEntityForm @bind-Mode="Mode"
+                 @bind-Value="TheItem"
+                 @ref="FormContainer"
+                 Endpoint="@($"{MenuOptions.ResolvedRoutePrefix}StandaloneReplacementItemGroup")"
+                 Title="Standalone Group"
+                 TypeAuthAction="MenuActionTree.StandaloneReplacementItemGroups"
+                 @bind-Key="@Key">
+
+    <MudTextFieldExtended OnlyValidateIfDirty="true"
+                          Label="Name"
+                          @bind-Value="TheItem.Name"
+                          For="@(() => TheItem.Name)" />
+
+    @if (MenuOptions.Languages.Count > 0)
+    {
+        <LocalizedTextField OnlyValidateIfDirty="true"
+                            Label="Menu Code"
+                            @bind-Value="TheItem.MenuCode"
+                            For="@(() => TheItem.MenuCode)"
+                            Languages="MenuOptions.LanguageInfos" />
+    }
+    else
+    {
+        <MudTextFieldExtended OnlyValidateIfDirty="true"
+                              Label="Menu Code"
+                              @bind-Value="TheItem.MenuCode"
+                              For="@(() => TheItem.MenuCode)" />
+    }
+
+    <MudTextFieldExtended OnlyValidateIfDirty="true"
+                          Label="Labour Code"
+                          @bind-Value="TheItem.LabourCode"
+                          For="@(() => TheItem.LabourCode)" />
+</ShiftEntityForm>

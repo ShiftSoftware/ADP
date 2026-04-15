@@ -1,0 +1,28 @@
+@attribute [Route($"{MenuRoutes.Prefix}/{nameof(ServiceIntervalGroupForm)}/{{Key?}}")]
+@inherits ShiftForm<ServiceIntervalGroupForm, ServiceIntervalGroupDTO>
+@inject ServiceIntervalService ServiceIntervalService
+@inject MenuWebOptions MenuOptions
+
+<ShiftEntityForm @bind-Value="TheItem"
+                 @ref="FormContainer"
+                 Endpoint="@($"{MenuOptions.ResolvedRoutePrefix}ServiceIntervalGroup")"
+                 Title="Service Interval Group"
+                 T="ServiceIntervalGroupDTO"
+                 TypeAuthAction="MenuActionTree.ServiceIntervalGroups"
+                 @bind-Key="@Key">
+
+    <MudTextFieldExtended OnlyValidateIfDirty="true"
+                          Label="Name"
+                          @bind-Value="TheItem.Name"
+                          For="@(() => TheItem.Name)" />
+
+    <MudTextFieldExtended OnlyValidateIfDirty="true"
+                          Label="Labour Code"
+                          @bind-Value="TheItem.LabourCode"
+                          For="@(() => TheItem.LabourCode)" />
+
+    <MudTextFieldExtended OnlyValidateIfDirty="true"
+                          Label="Labour Description"
+                          @bind-Value="TheItem.LabourDescription"
+                          For="@(() => TheItem.LabourDescription)" />
+</ShiftEntityForm>

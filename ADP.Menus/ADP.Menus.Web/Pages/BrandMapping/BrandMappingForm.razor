@@ -1,0 +1,34 @@
+@attribute [Route($"{MenuRoutes.Prefix}/{nameof(BrandMappingForm)}/{{Key?}}")]
+@inject MenuWebOptions MenuOptions
+
+@inherits ShiftForm<BrandMappingForm, BrandMappingDTO>
+
+<ShiftEntityForm @bind-Mode="Mode"
+                 @bind-Value="TheItem"
+                 @ref="FormContainer"
+                 Endpoint="@($"{MenuOptions.ResolvedRoutePrefix}BrandMapping")"
+                 Title="Brand Mapping"
+                 TypeAuthAction="MenuActionTree.BrandMappings"
+                 @bind-Key="@Key">
+
+    <MudTextFieldExtended OnlyValidateIfDirty="true"
+                          Label="Code"
+                          @bind-Value="TheItem.Code"
+                          For="@(() => TheItem.Code)" />
+
+    <MudTextFieldExtended OnlyValidateIfDirty="true"
+                          Label="Brand Abbreviation"
+                          @bind-Value="TheItem.BrandAbbreviation"
+                          For="@(() => TheItem.BrandAbbreviation)" />
+
+    <ShiftAutocomplete Label="Brand"
+                       TEntitySet="ShiftSoftware.ShiftIdentity.Core.DTOs.Brand.BrandListDTO"
+                       EntitySet="IdentityBrand"
+                       BaseUrl="@MenuOptions.IdentityApiUrl"
+                       For="() => TheItem.Brand"
+                       @bind-Value="TheItem.Brand" />
+</ShiftEntityForm>
+
+
+
+

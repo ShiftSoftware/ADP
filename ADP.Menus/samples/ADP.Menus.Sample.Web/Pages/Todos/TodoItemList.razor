@@ -1,0 +1,13 @@
+@page "/Todos"
+@attribute [Authorize]
+@using ShiftSoftware.ADP.Menus.Sample.Web.DTOs.Todo
+
+<ShiftList EntitySet="TodoItem"
+           Title="Todos"
+           T="TodoItemListDTO"
+           Dense
+           ComponentType="typeof(TodoItemForm)"
+           ShowIDColumn="true">
+    <PropertyColumn Property="x => x.Title" Title="Title" />
+    <PropertyColumn Property="x => x.IsDone" Title="Done" />
+</ShiftList>

@@ -40,6 +40,10 @@ nav:
       - CRM:
           - Support Ticket System: components/tickets.md
           - Customer Database: components/customers.md
+  - Menus:
+      - Intro: menus/intro.md
+      - Menu Generation: menus/menu-generation.md
+      - Integration: menus/integration.md
   - Architecture:
       - Stack: architecture/stack.md
       - Deployment Pipelines: architecture/deployment-pipelines.md

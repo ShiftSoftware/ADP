@@ -1,0 +1,118 @@
+1. Generate a JSON Payload for each Technician from the old portal 
+
+SELECT
+    (
+        SELECT
+            displayName,
+            autoLineUserId,
+            (
+                SELECT 
+                    AutoLineShiftId, DayOfWeek 
+                FROM ToyotaAftersalesTechnicianShiftIds 
+                WHERE ToyotaAftersalesTechnicianShiftIds.ToyotaAfterSalesTechnicianId = t.ToyotaAfterSalesTechnicianiD 
+                FOR JSON PATH
+            ) AS shiftIds,
+                -- Wrap with JSON_QUERY to avoid string escape
+    JSON_QUERY((
+        SELECT d.IdentityId AS Value
+        FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
+    )) AS company,
+
+    JSON_QUERY((
+        SELECT ub.IdentityId AS Value
+        FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
+    )) AS companyBranch
+        FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
+
+    ) AS technicianJson, ','
+FROM ToyotaAfterSalesTechnicians t
+LEFT JOIN Divisions d ON d.DivisionId = t.DivisionId
+LEFT JOIN UserBranches ub ON ub.UserBranchId = t.UserBranchId
+WHERE t.Deleted = 0 AND t.DivisionId != 14
+
+This will generate a result like below
+
+{"displayName":"Husain Ahmed","autoLineUserId":"2308","shiftIds":[{"AutoLineShiftId":"M","DayOfWeek":6},{"AutoLineShiftId":"M","DayOfWeek":0},{"AutoLineShiftId":"M","DayOfWeek":1},{"AutoLineShiftId":"M","DayOfWeek":2},{"AutoLineShiftId":"M","DayOfWeek":3},{"AutoLineShiftId":"H","DayOfWeek":4}],"company":{"Value":"pW0G3"},"companyBranch":{"Value":"BjEKJ"}},
+{"displayName":"Sizar Nasr","autoLineUserId":"2307","shiftIds":[{"AutoLineShiftId":"M","DayOfWeek":6},{"AutoLineShiftId":"M","DayOfWeek":0},{"AutoLineShiftId":"M","DayOfWeek":1},{"AutoLineShiftId":"M","DayOfWeek":2},{"AutoLineShiftId":"M","DayOfWeek":3},{"AutoLineShiftId":"H","DayOfWeek":4}],"company":{"Value":"pW0G3"},"companyBranch":{"Value":"BjEKJ"}},
+
+----------------------------------------------------------------------------------------------
+
+2. Copy all of the result and save them inside a JSON array file.
+
+----------------------------------------------------------------------------------------------
+
+3. Create a Postman Post request that calls below with a Bearer Token
+https://tiq-services.azurewebsites.net/api/Technician
+
+----------------------------------------------------------------------------------------------
+
+4. Add {{requestBody}} as the JSON request Payload
+
+----------------------------------------------------------------------------------------------
+
+5. add below to the Pre-Request script of the postman request:
+
+pm.variables.set("requestBody", JSON.stringify(data));
+
+----------------------------------------------------------------------------------------------
+
+6. Save the request into a collection
+
+----------------------------------------------------------------------------------------------
+
+7. Run the Collection using the saved json array file
+
+this will post all the technicians
+
+----------------------------------------------------------------------------------------------
+
+8. Generate an update statement that will set the Photos JSON array from the old portal:
+
+
+select
+CONCAT('UPDATE Technician SET Photo = ', '''', '[', PhotoJson, ']', '''', ' WHERE AutoLineUserId = ', '''', AutoLineUserId, '''', ' AND DisplayName = ', '''', DisplayName, '''')
+from
+(
+SELECT 
+AutoLineUserId,
+DisplayName,
+    (
+        SELECT 
+            SUBSTRING(JSON_VALUE(Photo, '$[0]'), 18) AS Name,
+            'tiqappstorage' AS AccountName,
+            'portal-private' AS ContainerName,
+            SUBSTRING(JSON_VALUE(Photo, '$[0]'), 2) AS Blob,
+
+            -- Safe extension extraction from just the path
+            CONCAT(
+                'image/', 
+                RIGHT(
+                    JSON_VALUE(Photo, '$[0]'), 
+                    CASE 
+                        WHEN CHARINDEX('.', REVERSE(JSON_VALUE(Photo, '$[0]'))) > 0 
+                            THEN CHARINDEX('.', REVERSE(JSON_VALUE(Photo, '$[0]'))) - 1
+                        ELSE 0
+                    END
+                )
+            ) AS ContentType
+
+        FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
+    ) AS PhotoJson
+FROM ToyotaAfterSalesTechnicians
+WHERE Deleted = 0 
+  AND DivisionId != 14
+  AND JSON_VALUE(Photo, '$[0]') IS NOT NULL
+) as Data
+
+
+this will generate results like below:
+
+UPDATE Technician SET Photo = '[{"Name":"94108fb9-39ec-4f4f-b428-ef7c1dfbc4f3{89202}[800x800].jpg","AccountName":"tiqappstorage","ContainerName":"portal-private","Blob":"Uploads\/2019-01\/94108fb9-39ec-4f4f-b428-ef7c1dfbc4f3{89202}[800x800].jpg","ContentType":"image\/jpg"}]' WHERE AutoLineUserId = '4110' AND DisplayName = 'Shekhan Qutub'
+
+UPDATE Technician SET Photo = '[{"Name":"2043b585-db84-4a28-8649-35145a2b45eb{871587}[2024x2143].jpg","AccountName":"tiqappstorage","ContainerName":"portal-private","Blob":"Uploads\/2019-02\/2043b585-db84-4a28-8649-35145a2b45eb{871587}[2024x2143].jpg","ContentType":"image\/jpg"}]' WHERE AutoLineUserId = 'AHMAE' AND DisplayName = 'Ahmad Khasrow'
+
+----------------------------------------------------------------------------------------------
+
+9. Execute all the Generated Updated Statements on the Services database.
+
+----------------------------------------------------------------------------------------------

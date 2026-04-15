@@ -1,0 +1,15 @@
+@* Consumer-owned navigation. Shown when the user is NOT inside the /Menu module. *@
+
+<MudNavMenu>
+    <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">
+        Home
+    </MudNavLink>
+
+    <MudNavLink Href="/Todos" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Checklist">
+        Todos
+    </MudNavLink>
+
+    <MudNavLink Href="@ShiftSoftware.ADP.Menus.Web.MenuRoutes.Prefix" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.MenuBook">
+        Menu Module
+    </MudNavLink>
+</MudNavMenu>

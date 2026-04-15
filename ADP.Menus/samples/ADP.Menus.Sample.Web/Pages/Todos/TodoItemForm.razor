@@ -1,0 +1,25 @@
+@page "/Todos/Form/{Key?}"
+@attribute [Authorize]
+@inherits ShiftForm<TodoItemForm, TodoItemDTO>
+@using ShiftSoftware.ADP.Menus.Sample.Web.DTOs.Todo
+
+<ShiftEntityForm @bind-Value="TheItem"
+                 @ref="FormContainer"
+                 Endpoint="TodoItem"
+                 Title="Todo"
+                 T="TodoItemDTO"
+                 @bind-Key="@Key">
+
+    <MudTextFieldExtended OnlyValidateIfDirty="true"
+                          Label="Title"
+                          @bind-Value="TheItem.Title"
+                          For="@(() => TheItem.Title)" />
+
+    <MudTextFieldExtended OnlyValidateIfDirty="true"
+                          Label="Notes"
+                          Lines="3"
+                          @bind-Value="TheItem.Notes"
+                          For="@(() => TheItem.Notes)" />
+
+    <MudCheckBox @bind-Value="TheItem.IsDone" Label="Done" />
+</ShiftEntityForm>

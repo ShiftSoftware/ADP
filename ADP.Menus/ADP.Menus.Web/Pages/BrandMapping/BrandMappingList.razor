@@ -1,0 +1,31 @@
+@attribute [Route($"{MenuRoutes.Prefix}/{nameof(BrandMappingList)}")]
+@attribute [Authorize]
+@inject MenuWebOptions MenuOptions
+
+<ShiftList EntitySet="@($"{MenuOptions.ResolvedRoutePrefix}BrandMapping")"
+           Title="Brand Mapping"
+           T="BrandMappingListDTO"
+           Dense
+           ComponentType="typeof(BrandMappingForm)"
+           TypeAuthAction="MenuActionTree.BrandMappings"
+           ShowIDColumn="true"
+           EnableExport>
+
+    <PropertyColumn Property="x => x.Code" Title="Code" />
+
+    <PropertyColumn Property="x => x.BrandAbbreviation" Title="Brand Abbreviation" />
+
+    <ForeignColumn Title="Brand"
+                   T="BrandMappingListDTO"
+                   Filterable="false"
+                   CellClass="whitespace-nowrap"
+                   TEntity="ShiftSoftware.ShiftIdentity.Core.DTOs.Company.CompanyListDTO"
+                   EntitySet="IdentityBrand"
+                   BaseUrl="@MenuOptions.IdentityApiUrl"
+                   TProperty="string"
+                   Property="x=> x.BrandID" />
+</ShiftList>
+
+
+
+

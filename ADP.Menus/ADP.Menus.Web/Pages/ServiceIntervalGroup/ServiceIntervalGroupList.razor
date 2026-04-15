@@ -1,0 +1,17 @@
+@attribute [Route($"{MenuRoutes.Prefix}/{nameof(ServiceIntervalGroupList)}")]
+@attribute [Authorize]
+@inject MenuWebOptions MenuOptions
+
+<ShiftList EntitySet="@($"{MenuOptions.ResolvedRoutePrefix}ServiceIntervalGroup")"
+           Title="Service Interval Groups"
+           T="ServiceIntervalGroupListDTO"
+           Dense
+           ComponentType="typeof(ServiceIntervalGroupForm)"
+           TypeAuthAction="MenuActionTree.ServiceIntervalGroups"
+           ShowIDColumn="true"
+           EnableExport>
+
+    <PropertyColumn Property="x => x.Name" Title="Name" />
+    <PropertyColumn Property="x => x.LabourCode" Title="Labour Code" />
+    <PropertyColumn Property="x => x.LabourDescription" Title="Labour Description" />
+</ShiftList>

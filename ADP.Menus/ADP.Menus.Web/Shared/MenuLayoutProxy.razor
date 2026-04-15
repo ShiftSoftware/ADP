@@ -1,0 +1,13 @@
+@inherits LayoutComponentBase
+@inject ShiftSoftware.ADP.Menus.Web.Extensions.MenuWebOptions MenuOptions
+
+<DynamicComponent Type="@LayoutType" Parameters="@LayoutParameters" />
+
+@code {
+    private Type LayoutType => MenuOptions.Layout ?? typeof(MenuLayout);
+
+    private Dictionary<string, object?> LayoutParameters => new()
+    {
+        [nameof(LayoutComponentBase.Body)] = Body
+    };
+}

@@ -1,0 +1,69 @@
+<MudNavMenu>
+    <AuthorizedMudNavLink
+        TypeAuthAction="MenuActionTree.BrandMappings"
+        Href="@(MenuRoutes.Prefix + "/" + nameof(Pages.BrandMapping.BrandMappingList))"
+        Match="NavLinkMatch.All"
+        Icon="@Icons.Material.Filled.AccountTree">
+        Brand Mapping
+    </AuthorizedMudNavLink>
+
+    <AuthorizedMudNavLink
+        TypeAuthAction="MenuActionTree.LabourRateMappings"
+        Href="@(MenuRoutes.Prefix + "/" + nameof(Pages.LabourRateMapping.LabourRateMappingList))"
+        Match="NavLinkMatch.All"
+        Icon="@Icons.Material.Filled.LibraryBooks">
+        Labour Rate Mapping
+    </AuthorizedMudNavLink>
+
+    <AuthorizedMudNavLink
+        TypeAuthAction="MenuActionTree.ServiceIntervalGroups"
+        Href="@(MenuRoutes.Prefix + "/" + nameof(Pages.ServiceIntervalGroup.ServiceIntervalGroupList))"
+        Match="NavLinkMatch.All"
+        Icon="@Icons.Material.Filled.GroupWork">
+        Service Interval Groups
+    </AuthorizedMudNavLink>
+
+    <AuthorizedMudNavLink
+        TypeAuthAction="MenuActionTree.ServiceIntervals"
+        Href="@(MenuRoutes.Prefix + "/" + nameof(Pages.ServiceInterval.ServiceIntervalList))"
+        Match="NavLinkMatch.All"
+        Icon="@Icons.Material.Filled.Refresh">
+        Service Intervals
+    </AuthorizedMudNavLink>
+
+    <AuthorizedMudNavLink
+        TypeAuthAction="MenuActionTree.StandaloneReplacementItemGroups"
+        Href="@(MenuRoutes.Prefix + "/" + nameof(Pages.StandaloneReplacementItemGroup.StandaloneReplacementItemGroupList))"
+        Match="NavLinkMatch.All"
+        Icon="@Icons.Material.Filled.Groups3">
+        Standalone Groups
+    </AuthorizedMudNavLink>
+
+    <AuthorizedMudNavLink
+        TypeAuthAction="MenuActionTree.ReplacementItems"
+        Href="@(MenuRoutes.Prefix + "/" + nameof(Pages.ReplacementItem.ReplacementItemList))"
+        Match="NavLinkMatch.All"
+        Icon="@Icons.Material.Filled.HomeRepairService">
+        Replacement Items
+    </AuthorizedMudNavLink>
+
+    <AuthorizedMudNavLink
+        TypeAuthAction="MenuActionTree.VehicleModels"
+        Href="@(MenuRoutes.Prefix + "/" + nameof(Pages.VehicleModel.VehicleModelList))"
+        Match="NavLinkMatch.All"
+        Icon="@Icons.Material.Filled.DirectionsCar">
+        Vehicle Models
+    </AuthorizedMudNavLink>
+
+    <AuthorizedMudNavLink
+        TypeAuthAction="MenuActionTree.Menus"
+        Href="@(MenuRoutes.Prefix + "/" + nameof(Pages.Menu.MenuList))"
+        Match="NavLinkMatch.All"
+        Icon="@Icons.Material.Filled.MenuBook">
+        Menus
+    </AuthorizedMudNavLink>
+</MudNavMenu>
+
+@code {
+    [Parameter] public bool isDrawerOpen { get; set; }
+}

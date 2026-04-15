@@ -34,6 +34,22 @@ steps:
    condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-nuget'))
    displayName: 'pack ADP.SyncAgent'
 
+ - script: dotnet pack ADP.Menus/ADP.Menus.Shared --configuration Release --output $(Build.ArtifactStagingDirectory)/ADP
+   condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-nuget'))
+   displayName: 'pack ADP.Menus.Shared'
+
+ - script: dotnet pack ADP.Menus/ADP.Menus.Data --configuration Release --output $(Build.ArtifactStagingDirectory)/ADP
+   condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-nuget'))
+   displayName: 'pack ADP.Menus.Data'
+
+ - script: dotnet pack ADP.Menus/ADP.Menus.API --configuration Release --output $(Build.ArtifactStagingDirectory)/ADP
+   condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-nuget'))
+   displayName: 'pack ADP.Menus.API'
+
+ - script: dotnet pack ADP.Menus/ADP.Menus.Web --configuration Release --output $(Build.ArtifactStagingDirectory)/ADP
+   condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-nuget'))
+   displayName: 'pack ADP.Menus.Web'
+
 
  - script: dotnet test ADP.LookupServices.BDD
    displayName: 'ADP.LookupServices BDD Tests'

@@ -1,0 +1,15 @@
+@using ShiftSoftware.ShiftIdentity.Blazor
+@using ShiftSoftware.ShiftIdentity.Core
+@using static ShiftSoftware.ShiftBlazor.Components.DefaultApp
+
+<CascadingAuthenticationState>
+    <DefaultApp AppTitle="Example"
+                AppAssembly="@typeof(App).Assembly"
+                IdentityHostingType="shiftIdentityHostingTypes"
+                AdditionalAssemblies="additionalAssemblies">
+
+        <NavMenuTemplate>
+            <ShiftSoftware.ADP.Menus.Sample.Web.Shared.ExampleNavMenu />
+        </NavMenuTemplate>
+    </DefaultApp>
+</CascadingAuthenticationState>

@@ -1,0 +1,31 @@
+@attribute [Route($"{MenuRoutes.Prefix}/{nameof(LabourRateMappingForm)}/{{Key?}}")]
+@inject MenuWebOptions MenuOptions
+
+@inherits ShiftForm<LabourRateMappingForm, LabourRateMappingDTO>
+
+<ShiftEntityForm @bind-Mode="Mode"
+                 @bind-Value="TheItem"
+                 @ref="FormContainer"
+                 Endpoint="@($"{MenuOptions.ResolvedRoutePrefix}LabourRateMapping")"
+                 Title="Labour Rate Mapping"
+                 TypeAuthAction="MenuActionTree.LabourRateMappings"
+                 @bind-Key="@Key">
+
+    <MudTextFieldExtended OnlyValidateIfDirty="true"
+                          Label="Code"
+                          @bind-Value="TheItem.Code"
+                          For="@(() => TheItem.Code)" />
+
+    <MudTextFieldExtended OnlyValidateIfDirty="true"
+                          Label="Labour Rate"
+                          @bind-Value="TheItem.LabourRate"
+                          For="@(() => TheItem.LabourRate)" />
+
+    <ShiftAutocomplete Label="Brand"
+                       TEntitySet="ShiftSoftware.ShiftIdentity.Core.DTOs.Brand.BrandListDTO"
+                       EntitySet="IdentityBrand"
+                       BaseUrl="@MenuOptions.IdentityApiUrl"
+                       For="() => TheItem.Brand"
+                       @bind-Value="TheItem.Brand" />
+</ShiftEntityForm>
+

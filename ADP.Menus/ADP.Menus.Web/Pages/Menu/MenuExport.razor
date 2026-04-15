@@ -1,0 +1,100 @@
+﻿@using global::ShiftSoftware.ADP.Menus.Web.Extensions
+
+@inject IJSRuntime JSRuntime
+@inject HttpClient Http
+@inject ShiftModal ShiftModal
+@inject MessageService MessageService
+@inject IMenuCountryProvider CountryProvider
+@inject MenuWebOptions MenuOptions
+
+<ShiftFormBasic T="MenuExportDTO"
+                @bind-Value="theItem"
+                SubmitText="Export"
+                OnValidSubmit="Export"
+                Title="@Title">
+    <ShiftAutocomplete Label="Brand"
+                       TEntitySet="ShiftSoftware.ShiftIdentity.Core.DTOs.Brand.BrandListDTO"
+                       EntitySet="IdentityBrand"
+                       BaseUrl="@MenuOptions.IdentityApiUrl"
+                       MultiSelect
+                       @bind-selectedValues="theItem.Brands" />
+
+    <ValidationMessage For="() => theItem.Brands" />
+
+    @if (ShowCountryUi)
+    {
+        <MudSelect T="long?" Label="Country" @bind-Value="theItem.CountryID">
+            @foreach (var country in countries)
+            {
+                <MudSelectItem T="long?" Value="@country.Id">@country.Name</MudSelectItem>
+            }
+        </MudSelect>
+
+        <MudNumericField T="decimal?" Label="Transfer Rate" @bind-Value="theItem.TransferRate" Min="0" Step="0.01m" />
+    }
+
+    @if (MenuOptions.Languages.Count > 0)
+    {
+        <MudSelect T="string" Label="Language" @bind-Value="selectedLanguage" Required="true">
+            @foreach (var lang in MenuOptions.Languages)
+            {
+                <MudSelectItem T="string" Value="@lang.Culture">@lang.Label</MudSelectItem>
+            }
+        </MudSelect>
+    }
+</ShiftFormBasic>
+
+@code {
+    private MenuExportDTO theItem = new();
+    private IReadOnlyList<CountryInfo> countries = [];
+    private bool ShowCountryUi => countries.Count > 1;
+    private string? selectedLanguage;
+
+    [Parameter]
+    public string Title { get; set; }
+
+    [Parameter]
+    public string Url { get; set; }
+
+    [Parameter]
+    public string FileName { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        countries = (await CountryProvider.GetSupportedCountriesAsync()) ?? Array.Empty<CountryInfo>();
+        theItem.CountryID = countries.Count == 0 ? 0 : countries.First().Id;
+        theItem.TransferRate = 1;
+        selectedLanguage = MenuOptions.Languages.FirstOrDefault()?.Culture;
+    }
+
+    async Task Export()
+    {
+        var queryParams = new List<string>();
+        queryParams.AddRange(theItem.Brands.Select(b => $"brands={b.Value}"));
+        queryParams.Add($"countryId={theItem.CountryID}");
+        queryParams.Add($"transferRate={theItem.TransferRate}");
+        if (MenuOptions.Languages.Count > 0 && !string.IsNullOrEmpty(selectedLanguage))
+            queryParams.Add($"language={Uri.EscapeDataString(selectedLanguage)}");
+        var queryString = string.Join("&", queryParams);
+
+        var response = await Http.GetAsync($"{Url}?{queryString}");
+        if (response.IsSuccessStatusCode)
+        {
+            var excelData = await response.Content.ReadAsByteArrayAsync();
+            var fileName = FileName;
+            var mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            var fileUrl = $"data:{mimeType};base64,{Convert.ToBase64String(excelData)}";
+
+            await JSRuntime.InvokeVoidAsync("downloadFileFromUrl", fileUrl, fileName);
+        }
+        else
+        {
+            var errorMessage = await response.Content.ReadFromJsonAsync<ShiftEntityResponse>();
+            if (errorMessage != null)
+            {
+                MessageService.Error(errorMessage.Message?.Title, errorMessage.Message?.Title, errorMessage.Message?.Body);
+                return;
+            }
+        }
+    }
+}

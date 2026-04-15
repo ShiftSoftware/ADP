@@ -1,0 +1,196 @@
+﻿@using global::ShiftSoftware.ADP.Menus.Shared.DTOs.MenuVersion
+@attribute [Route($"{MenuRoutes.Prefix}/{nameof(MenuList)}")]
+@attribute [Authorize]
+
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject MessageService MessageService
+@inject ShiftSoftware.TypeAuth.Core.ITypeAuthService TypeAuthService
+@inject IDialogService DialogService
+@inject global::ShiftSoftware.ADP.Menus.Web.Services.MenuAuthService MenuAuth
+@inject MenuWebOptions MenuOptions
+
+<ShiftList EntitySet="@($"{MenuOptions.ResolvedRoutePrefix}Menu")"
+           Title="Menus"
+           Context="list"
+           T="MenuListDTO"
+           Dense
+           @ref="ShiftList"
+           ComponentType="typeof(MenuForm)"
+           TypeAuthAction="MenuActionTree.Menus"
+           ShowIDColumn="true"
+           EnableExport>
+    <ToolbarEndTemplate>
+        @if (MenuAuth.CanExportMenusToExcel)
+        {
+            <MudButton OnClick="ExportMenu" Color="Color.Primary">Export Menu</MudButton>
+        }
+        @if (MenuAuth.CanExportRTSCodesToExcel)
+        {
+            <MudButton OnClick="ExportRTS" Color="Color.Primary">Export RTS</MudButton>
+        }
+        @if (MenuAuth.CanExportMenuDetailReport)
+        {
+            <MudButton OnClick="MenuDetailReport" Color="Color.Primary">Detail Report</MudButton>
+        }
+    </ToolbarEndTemplate>
+
+    <ToolbarStartTemplate>
+        @if (MenuAuth.CanUpdatePartsPrice)
+        {
+            <MudButton Color="Color.Warning"
+                       Variant="Variant.Outlined"
+                       Size="Size.Small"
+                       OnClick="UpdateMenuPartsPrice"
+                       Disabled="@updateMenuPartsPriceInProgress"
+                       StartIcon="@(!updateMenuPartsPriceInProgress ? Icons.Material.Filled.CurrencyExchange : null)">
+
+                @if (updateMenuPartsPriceInProgress)
+                {
+                    <MudProgressCircular Color="Color.Primary" Size="Size.Small" Indeterminate="true" />
+                    <span style="display:inline-block; width: 10px;"></span>
+                }
+                Update Parts Price
+            </MudButton>
+
+            <span style="display:inline-block; width: 8px;"></span>
+        }
+
+        @if (MenuAuth.CanCreateMenuVersion)
+        {
+            <MudButton Color="Color.Primary"
+                       Variant="Variant.Outlined"
+                       Size="Size.Small"
+                       OnClick="CreateVersion"
+                       Disabled="@createVersionInProgress"
+                       StartIcon="@(!createVersionInProgress ? Icons.Material.Filled.Commit : null)">
+
+                @if (createVersionInProgress)
+                {
+                    <MudProgressCircular Color="Color.Primary" Size="Size.Small" Indeterminate="true" />
+                    <span style="display:inline-block; width: 10px;"></span>
+                }
+                Create Version
+            </MudButton>
+        }
+    </ToolbarStartTemplate>
+
+    <ChildContent>
+        <PropertyColumn Property="x => x.BasicModelCode" Title="Basic Model Code" />
+        <PropertyColumn Property="x => x.VehilceModel" Title="Vehicle Model" />
+        <PropertyColumn Property="x => x.VariantsCount" Title="Variants" />
+        <ForeignColumn Title="Brand"
+                       T="MenuListDTO"
+                       Filterable="false"
+                       CellClass="whitespace-nowrap"
+                       TEntity="ShiftSoftware.ShiftIdentity.Core.DTOs.Company.CompanyListDTO"
+                       EntitySet="IdentityBrand"
+                       BaseUrl="@MenuOptions.IdentityApiUrl"
+                       TProperty="string"
+                       Property="x => x.BrandID" />
+    </ChildContent>
+</ShiftList>
+
+<script>
+    function downloadFileFromUrl(url, fileName) {
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+</script>
+
+@code {
+    public ShiftList<MenuListDTO>? ShiftList { get; set; }
+    private bool updateMenuPartsPriceInProgress = false;
+    private bool createVersionInProgress = false;
+
+    async Task ExportMenu()
+    {
+        Dictionary<string, object> parameters = new();
+        parameters.Add("Title", "Export Menu");
+        parameters.Add("Url", $"{MenuOptions.ResolvedRoutePrefix}Menu/ExportMenusToExcel");
+        parameters.Add("FileName", "Menus.xlsx");
+
+        await ShiftList!.OpenDialog(typeof(MenuExport), null, ModalOpenMode.Popup, parameters);
+    }
+
+    async Task ExportRTS()
+    {
+        Dictionary<string, object> parameters = new();
+        parameters.Add("Title", "Export RTS");
+        parameters.Add("Url", $"{MenuOptions.ResolvedRoutePrefix}Menu/ExportRTSCodesToExcel");
+        parameters.Add("FileName", "RTSCodes.xlsx");
+
+        await ShiftList!.OpenDialog(typeof(MenuExport), null, ModalOpenMode.Popup, parameters);
+    }
+
+    async Task MenuDetailReport()
+    {
+        await ShiftList!.OpenDialog(typeof(MenuDetailReport));
+    }
+
+    async Task UpdateMenuPartsPrice()
+    {
+        updateMenuPartsPriceInProgress = true;
+
+        var dialogResult = await DialogService.ShowMessageBoxAsync(
+            "Warning",
+            "Are you sure you want to update part prices for all menus?",
+            yesText: "Yes!", cancelText: "No");
+
+        if (dialogResult == true)
+        {
+            try
+            {
+                var response = await Http.PostAsync($"{MenuOptions.ResolvedRoutePrefix}Menu/UpdatePartsPrice", null);
+                if (response.IsSuccessStatusCode)
+                    MessageService.Success("Successfully updated parts price for menus");
+                else
+                    throw new Exception("Failed to update parts price for menus");
+            }
+            catch (Exception)
+            {
+                MessageService.Error("Failed to update parts price for menus");
+            }
+        }
+
+        updateMenuPartsPriceInProgress = false;
+    }
+
+    async Task CreateVersion()
+    {
+        createVersionInProgress = true;
+
+        var dialogResult = await DialogService.ShowMessageBoxAsync(
+            "Warning",
+            "Are you sure you want to create a menu version?",
+            yesText: "Yes!", cancelText: "No");
+
+        if (dialogResult == true)
+        {
+            try
+            {
+                var response = await Http.PostAsJsonAsync($"{MenuOptions.ResolvedRoutePrefix}MenuVersion", new object());
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadFromJsonAsync<ShiftEntityResponse<MenuVersionDTO>>();
+
+                    MessageService.Success($"Version '{content?.Entity?.Version} - {content?.Entity?.VersionDateTime.LocalDateTime}' successfully created");
+                }
+                else
+                {
+                    throw new Exception("Failed to create version");
+                }
+            }
+            catch (Exception)
+            {
+                MessageService.Error("Failed to create version");
+            }
+        }
+
+        createVersionInProgress = false;
+    }
+}

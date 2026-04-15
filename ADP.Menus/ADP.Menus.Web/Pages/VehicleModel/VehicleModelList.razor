@@ -1,0 +1,25 @@
+@attribute [Route($"{MenuRoutes.Prefix}/{nameof(VehicleModelList)}")]
+@attribute [Authorize]
+@inject MenuWebOptions MenuOptions
+
+<ShiftList EntitySet="@($"{MenuOptions.ResolvedRoutePrefix}VehicleModel")"
+           Title="Vehicle Models"
+           T="VehicleModelListDTO"
+           Dense
+           ComponentType="typeof(VehicleModelForm)"
+           TypeAuthAction="MenuActionTree.VehicleModels"
+           ShowIDColumn="true"
+           EnableExport>
+
+    <PropertyColumn Property="x => x.Name" Title="Name" />
+
+    <ForeignColumn Title="Brand"
+                   T="VehicleModelListDTO"
+                   Filterable="false"
+                   CellClass="whitespace-nowrap"
+                   TEntity="ShiftSoftware.ShiftIdentity.Core.DTOs.Company.CompanyListDTO"
+                   EntitySet="IdentityBrand"
+                   BaseUrl="@MenuOptions.IdentityApiUrl"
+                   TProperty="string"
+                   Property="x => x.BrandID" />
+</ShiftList>

@@ -1,0 +1,393 @@
+@attribute [Route($"{MenuRoutes.Prefix}/{nameof(VehicleModelForm)}/{{Key?}}")]
+@inject ReplacementItemService ReplacementItemService
+@inject ServiceIntervalGroupService ServiceIntervalGroupService
+@inject IMenuCountryProvider CountryProvider
+@inject MenuWebOptions MenuOptions
+
+@inherits ShiftForm<VehicleModelForm, VehicleModelDTO>
+
+<ShiftEntityForm @bind-Mode="Mode"
+                 @bind-Value="TheItem"
+                 @ref="FormContainer"
+                 Endpoint="@($"{MenuOptions.ResolvedRoutePrefix}VehicleModel")"
+                 Title="Vehicle Model"
+                 TypeAuthAction="MenuActionTree.VehicleModels"
+                 OnSubmit="Submit"
+                 Context="list"
+                 T="VehicleModelDTO"
+                 OnResult="EntityLoaded"
+                 AllowSaveAsNew
+                 @bind-Key="@Key">
+
+    <MudTabs ApplyEffectsToContainer="true" PanelClass="pa-6">
+        <MudTabPanel Text="Basic Info">
+            <MudTextFieldExtended OnlyValidateIfDirty="true"
+                                  Label="Name"
+                                  @bind-Value="TheItem.Name"
+                                  For="@(() => TheItem.Name)" />
+
+            <ShiftAutocomplete Label="Brand"
+                               TEntitySet="ShiftSoftware.ShiftIdentity.Core.DTOs.Brand.BrandListDTO"
+                               EntitySet="IdentityBrand"
+                               BaseUrl="@MenuOptions.IdentityApiUrl"
+                               For="() => TheItem.Brand"
+                               @bind-Value="TheItem.Brand" />
+        </MudTabPanel>
+
+        <MudTabPanel Text="Parts List">
+            <MudDataGrid Items="@TheItem.ReplacementItems"
+            T="VehicleModelDTOReplacementItem"
+            FixedHeader="true"
+            SortMode="SortMode.None"
+            MultiSelection="true"
+            Filterable="false"
+            SelectOnRowClick="false"
+            Loading="loadingReplacementItems">
+                <ToolBarContent>
+                    <MudText Typo="Typo.h6">Parts List</MudText>
+                </ToolBarContent>
+
+                <Columns>
+                    <PropertyColumn Property="x => x.ReplacementItemID" Title="">
+                        <CellTemplate>
+                            <MudCheckBox T="bool" Value="context.Item.IsSelected" ValueChanged="@(x=> ReplacementItemSelectionChanged(context.Item, x))" />
+                        </CellTemplate>
+                    </PropertyColumn>
+                    <PropertyColumn Property="x => x.Name" Title="Name" />
+                    <PropertyColumn Property="x => x.Type.Describe()" Title="Type" />
+                    <PropertyColumn Property="@(x => x.StandaloneReplacementItemGroup != null? x.StandaloneReplacementItemGroup.Text : "")" Title="Standalone Group" />
+                    <PropertyColumn Property="x => x.DefaultParts" Title="Part Number">
+                        <CellTemplate>
+                            <div style="display:flex;flex-direction:column;gap:6px;min-width:170px;">
+                                @foreach (var part in context.Item.DefaultParts.Select((x, i) => new { Part = x, Index = i }))
+                                {
+                                    <MudInput T="string" @bind-Value="part.Part.PartNumber" Placeholder="Part Number" />
+                                }
+                            </div>
+                        </CellTemplate>
+                    </PropertyColumn>
+                    <PropertyColumn Property="x => x.DefaultParts" Title="Periodic Qty">
+                        <CellTemplate>
+                            <div style="display:flex;flex-direction:column;gap:6px;min-width:110px;">
+                                @foreach (var part in context.Item.DefaultParts.Select((x, i) => new { Part = x, Index = i }))
+                                {
+                                    <MudInput T="decimal?" @bind-Value="part.Part.DefaultPeriodicQuantity" Placeholder="Periodic Qty" />
+                                }
+                            </div>
+                        </CellTemplate>
+                    </PropertyColumn>
+                    <PropertyColumn Property="x => x.DefaultParts" Title="Standalone Qty">
+                        <CellTemplate>
+                            <div style="display:flex;flex-direction:column;gap:6px;min-width:120px;">
+                                @foreach (var part in context.Item.DefaultParts.Select((x, i) => new { Part = x, Index = i }))
+                                {
+                                    <MudInput T="decimal?" @bind-Value="part.Part.DefaultStandaloneQuantity" Placeholder="Standalone Qty" />
+                                }
+                            </div>
+                        </CellTemplate>
+                    </PropertyColumn>
+                    @if (Mode != FormModes.View)
+                    {
+                    <PropertyColumn Property="x => x.DefaultParts" Title="">
+                        <CellTemplate>
+                            <div style="display:flex;flex-direction:column;gap:6px;min-width:90px;">
+                                @foreach (var part in context.Item.DefaultParts.Select((x, i) => new { Part = x, Index = i }))
+                                {
+                                    <div style="display:flex;align-items:center;gap:4px;">
+                                        @if (context.Item.AllowMultiplePartNumbers)
+                                        {
+                                            <MudIconButton Icon="@Icons.Material.Outlined.Delete"
+                                                           Color="Color.Error"
+                                                           Disabled="context.Item.DefaultParts.Count <= 1"
+                                                           OnClick="@(() => RemoveDefaultPart(context.Item, part.Index))" />
+                                            @if (part.Index == context.Item.DefaultParts.Count - 1)
+                                            {
+                                                <MudIconButton Icon="@Icons.Material.Filled.Add"
+                                                               Color="Color.Primary"
+                                                               OnClick="@(() => AddDefaultPart(context.Item))" />
+                                            }
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </CellTemplate>
+                    </PropertyColumn>
+                    }
+                    <PropertyColumn Property="x => x.StandaloneAllowedTime" Title="Standalone Allowed Time">
+                        <CellTemplate>
+                            <MudInput T="decimal?" Value="context.Item.StandaloneAllowedTime" ValueChanged="@(x=> SetStandaloneAlloweTime(context.Item, x))" Placeholder="Standalone Allowed Time" />
+                        </CellTemplate>
+                    </PropertyColumn>
+                    <PropertyColumn Property="x => x.DefaultPartPriceMarginPercentage" Title="Default Margin %">
+                        <CellTemplate>
+                            <MudInput T="decimal?" @bind-Value="context.Item.DefaultPartPriceMarginPercentage" Placeholder="Default Margin %" />
+                        </CellTemplate>
+                    </PropertyColumn>
+                </Columns>
+            </MudDataGrid>
+        </MudTabPanel>
+
+        <MudTabPanel Text="Labour">
+            <MudTextFieldExtended OnlyValidateIfDirty="true"
+                                  Label="Primary Labour Rate In Dollar"
+                                  @bind-Value="TheItem.LabourRate"
+                                  For="@(() => TheItem.LabourRate)" />
+
+            @if (countries.Count > 1)
+            {
+            <MudSimpleTable>
+                <thead>
+                    <tr>
+                        <th>Country</th>
+                        <th>Labour Rate In Dollar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var rate in TheItem.LabourRates ?? [])
+                    {
+                        <tr>
+                            <th>@GetLabourRateLabel(rate)</th>
+                            <td>
+                                <MudTextFieldExtended OnlyValidateIfDirty="true"
+                                                      Label="Labour Rate"
+                                                      @bind-Value="rate.LabourRate" />
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </MudSimpleTable>
+            }
+            <div style="height: 24px;"></div>
+
+            <MudSimpleTable>
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Allowed Time In Hour</th>
+                        <th>Consumable In Dollar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in TheItem.LabourDetails ?? [])
+                    {
+                        <tr>
+                            <th>@item.Name</th>
+                            <td>
+                                <MudTextFieldExtended OnlyValidateIfDirty="true"
+                                Label="Allowed Time"
+                                @bind-Value="item.AllowedTime"
+                                For="@(() => item.AllowedTime)" />
+                            </td>
+                            <td>
+                                <MudTextFieldExtended OnlyValidateIfDirty="true"
+                                Label="Consumable"
+                                @bind-Value="item.Consumable"
+                                For="@(() => item.Consumable)" />
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </MudSimpleTable>
+        </MudTabPanel>
+    </MudTabs>
+</ShiftEntityForm>
+
+@code {
+    private bool loadingReplacementItems = false;
+    private IReadOnlyList<CountryInfo> countries = [];
+    private Dictionary<long, string> countryNames = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        countries = await CountryProvider.GetSupportedCountriesAsync();
+        countryNames = countries.ToDictionary(c => c.Id, c => c.Name);
+        await Init(TheItem);
+    }
+
+    void Submit()
+    {
+        EnsureLabourRates(TheItem);
+        TheItem.ReplacementItems = TheItem.ReplacementItems?.Where(x => x.IsSelected)?.ToList() ?? [];
+
+        foreach (var item in TheItem.ReplacementItems)
+        {
+            item.DefaultParts ??= [];
+            item.DefaultParts = item.DefaultParts.Where(x => !string.IsNullOrWhiteSpace(x.PartNumber)).ToList();
+
+            if (!item.AllowMultiplePartNumbers)
+                item.DefaultParts = item.DefaultParts.Take(1).ToList();
+        }
+    }
+
+    async ValueTask<bool> EntityLoaded(ShiftEntityResponse<VehicleModelDTO> response)
+    {
+        await Init(response.Entity!);
+        return true;
+    }
+
+    async Task Init(VehicleModelDTO entity)
+    {
+        EnsureLabourRates(entity);
+        await LoadReplacementItems(entity);
+
+        await LoadLabourDetails(entity);
+    }
+
+    void ReplacementItemSelectionChanged(VehicleModelDTOReplacementItem item, bool selected)
+    {
+        if(item.StandaloneReplacementItemGroup is null)
+            item.IsSelected = selected;
+        else
+        {
+            foreach (var i in TheItem.ReplacementItems.Where(x => x.StandaloneReplacementItemGroup?.Value == item.StandaloneReplacementItemGroup.Value))
+            {
+                i.IsSelected = selected;
+            }
+        }
+    }
+
+    void SetStandaloneAlloweTime(VehicleModelDTOReplacementItem item, decimal? value)
+    {
+        if (item.StandaloneReplacementItemGroup is null)
+            item.StandaloneAllowedTime = value;
+        else
+            foreach (var i in TheItem.ReplacementItems.Where(x => x.StandaloneReplacementItemGroup?.Value == item.StandaloneReplacementItemGroup.Value))
+                i.StandaloneAllowedTime = value;
+    }
+
+    async Task LoadReplacementItems(VehicleModelDTO entity)
+    {
+        this.loadingReplacementItems = true;
+
+        try
+        {
+            var replacementItems = await ReplacementItemService.GetListAsync();
+
+            entity.ReplacementItems ??= [];
+
+            foreach (var item in entity.ReplacementItems ?? [])
+            {
+                item.IsSelected = true;
+                var replacementItem = replacementItems?.GetValueOrDefault(item.ReplacementItemID, null);
+                if (replacementItem is not null)
+                {
+                    item.Name = replacementItem.Name;
+                    item.Type = replacementItem.Type;
+                    item.AllowMultiplePartNumbers = replacementItem.AllowMultiplePartNumbers;
+                    item.StandaloneReplacementItemGroup = replacementItem.StandaloneReplacementItemGroup is null ? null : new ShiftEntitySelectDTO
+                    {
+                        Text = replacementItem.StandaloneReplacementItemGroup.Text,
+                        Value = replacementItem.StandaloneReplacementItemGroup.Value
+                    };
+
+                    if (Mode == FormModes.Create && !item.DefaultPartPriceMarginPercentage.HasValue)
+                        item.DefaultPartPriceMarginPercentage = replacementItem.DefaultPartPriceMarginPercentage;
+                }
+
+                item.DefaultParts ??= [];
+                if (!item.DefaultParts.Any())
+                    item.DefaultParts.Add(new ReplacementItemDefaultPartDTO());
+            }
+
+            var notSelectedReplacementItems = replacementItems?.Where(x => !(entity.ReplacementItems?.Select(s => s.ReplacementItemID)?.Contains(x.Key) ?? false));
+            foreach (var item in notSelectedReplacementItems ?? [])
+            {
+                entity?.ReplacementItems?.Add(new VehicleModelDTOReplacementItem
+                    {
+                        ReplacementItemID = item!.Value!.ID!,
+                        Name = item.Value.Name,
+                        Type = item.Value.Type,
+                        AllowMultiplePartNumbers = item.Value.AllowMultiplePartNumbers,
+                        StandaloneReplacementItemGroup = item.Value.StandaloneReplacementItemGroup is null ? null : new ShiftEntitySelectDTO
+                        {
+                            Text = item.Value.StandaloneReplacementItemGroup.Text,
+                            Value = item.Value.StandaloneReplacementItemGroup.Value
+                        },
+                        DefaultPartPriceMarginPercentage = item.Value.DefaultPartPriceMarginPercentage,
+                        DefaultParts = item.Value.DefaultParts?.Any() == true
+                            ? item.Value.DefaultParts.Select(x => new ReplacementItemDefaultPartDTO
+                            {
+                                PartNumber = x.PartNumber,
+                                DefaultPeriodicQuantity = x.DefaultPeriodicQuantity,
+                                DefaultStandaloneQuantity = x.DefaultStandaloneQuantity
+                            }).ToList()
+                            : [new ReplacementItemDefaultPartDTO()],
+                    });
+            }
+        }
+        catch (Exception)
+        {
+
+        }
+
+        this.loadingReplacementItems = false;
+    }
+
+    async Task LoadLabourDetails(VehicleModelDTO entity)
+    {
+        var labourDetails = await ServiceIntervalGroupService.GetDictionaryLabourDetailsAsync() ?? new();
+
+        foreach (var item in entity.LabourDetails ?? [])
+            item.Name = labourDetails.GetValueOrDefault(item.ServiceIntervalGroupID, string.Empty);
+
+        var notSelectedLabourDetails = labourDetails.Where(x => !(entity.LabourDetails?.Select(s => s.ServiceIntervalGroupID)?.Contains(x.Key) ?? false));
+        foreach (var item in notSelectedLabourDetails)
+        {
+            entity.LabourDetails ??= [];
+            entity.LabourDetails.Add(new LabourDetailsDTO
+            {
+                ServiceIntervalGroupID = item.Key,
+                Name = item.Value,
+            });
+        }
+    }
+
+    void EnsureLabourRates(VehicleModelDTO entity)
+    {
+        entity.LabourRates ??= [];
+
+        foreach (var country in countries)
+        {
+            var row = entity.LabourRates.FirstOrDefault(x => x.CountryID == country.Id);
+            if (row is null)
+            {
+                entity.LabourRates.Add(new LabourRateByCountryDTO
+                {
+                    CountryID = country.Id,
+                    LabourRate = entity.LabourRate
+                });
+            }
+        }
+
+        var supportedIds = countries.Select(c => c.Id).ToHashSet();
+        entity.LabourRates = entity.LabourRates
+            .Where(x => x.CountryID.HasValue && supportedIds.Contains(x.CountryID.Value))
+            .OrderBy(x => x.CountryID.GetValueOrDefault())
+            .ToList();
+    }
+
+    string GetLabourRateLabel(LabourRateByCountryDTO rate)
+    {
+        if (rate.CountryID.HasValue && countryNames.TryGetValue(rate.CountryID.Value, out var name))
+            return name;
+
+        return $"Country {rate.CountryID}";
+    }
+
+    void AddDefaultPart(VehicleModelDTOReplacementItem item)
+    {
+        item.DefaultParts ??= [];
+        item.DefaultParts.Add(new ReplacementItemDefaultPartDTO());
+    }
+
+    void RemoveDefaultPart(VehicleModelDTOReplacementItem item, int index)
+    {
+        if (!item.AllowMultiplePartNumbers)
+            return;
+
+        if (item.DefaultParts.Count <= 1 || index < 0 || index >= item.DefaultParts.Count)
+            return;
+
+        item.DefaultParts.RemoveAt(index);
+    }
+}

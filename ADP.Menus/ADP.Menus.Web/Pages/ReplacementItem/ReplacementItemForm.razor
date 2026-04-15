@@ -1,0 +1,140 @@
+﻿@attribute [Route($"{MenuRoutes.Prefix}/{nameof(ReplacementItemForm)}/{{Key?}}")]
+
+@using global::ShiftSoftware.ADP.Menus.Web.Extensions
+@using ShiftSoftware.ShiftBlazor.Components
+
+@inherits ShiftForm<ReplacementItemForm, ReplacementItemDTO>
+
+@inject ServiceIntervalGroupService ServiceIntervalGroupService
+@inject MenuWebOptions MenuOptions
+
+<ShiftEntityForm @bind-Mode="Mode"
+                 @bind-Value="TheItem"
+                 @ref="FormContainer"
+                 Endpoint="@($"{MenuOptions.ResolvedRoutePrefix}ReplacementItem")"
+                 Title="Replacement Item"
+                 T="ReplacementItemDTO"
+                 TypeAuthAction="MenuActionTree.ReplacementItems"
+                 OnValidSubmit="Submit"
+                 OnResult="EntityLoaded"
+                 @bind-Key="@Key">
+
+    <MudTextFieldExtended OnlyValidateIfDirty="true"
+                          Label="Name"
+                          @bind-Value="TheItem.Name"
+                          For="@(() => TheItem.Name)" />
+
+    <MudTextFieldExtended OnlyValidateIfDirty="true"
+                          Label="Friendly Name"
+                          @bind-Value="TheItem.FriendlyName"
+                          For="@(() => TheItem.FriendlyName)" />
+
+    <MudSelectExtended OnlyValidateIfDirty="true"
+                       T="ReplacementItemType"
+                       Label="Type"
+                       AnchorOrigin="Origin.BottomCenter"
+                       @bind-Value="TheItem.Type"
+                       For="@(() => TheItem.Type)">
+        <MudSelectItem Value="default(ReplacementItemType)" Disabled="true">Please Select a Type</MudSelectItem>
+        @foreach (var x in Enum.GetValues<ReplacementItemType>())
+        {
+            <MudSelectItem Value="@x">@x.Describe()</MudSelectItem>
+        }
+    </MudSelectExtended>
+
+    <MudCheckBoxExtended Label="Allow Multiple Part Numbers"
+                         @bind-Value="TheItem.AllowMultiplePartNumbers" />
+
+    <MudTextFieldExtended OnlyValidateIfDirty="true"
+                          Label="Default Margin %"
+                          @bind-Value="TheItem.DefaultPartPriceMarginPercentage"
+                          For="@(() => TheItem.DefaultPartPriceMarginPercentage)" />
+
+    @if (MenuOptions.Languages.Count > 0)
+    {
+        <LocalizedTextField OnlyValidateIfDirty="true"
+                            Label="Standalone Operation Code"
+                            @bind-Value="TheItem.StandaloneOperationCode"
+                            For="@(() => TheItem.StandaloneOperationCode)"
+                            Languages="MenuOptions.LanguageInfos" />
+    }
+    else
+    {
+        <MudTextFieldExtended OnlyValidateIfDirty="true"
+                              Label="Standalone Operation Code"
+                              @bind-Value="TheItem.StandaloneOperationCode"
+                              For="@(() => TheItem.StandaloneOperationCode)" />
+    }
+
+    <MudTextFieldExtended OnlyValidateIfDirty="true"
+                          Label="Standalone Labour Code"
+                          @bind-Value="TheItem.StandaloneLabourCode"
+                          For="@(() => TheItem.StandaloneLabourCode)" />
+
+    <ShiftAutocomplete Label="Standalone Group"
+                       @bind-Value="TheItem.StandaloneReplacementItemGroup"
+                       TEntitySet="StandaloneReplacementItemGroupListDTO"
+                       EntitySet="@($"{MenuOptions.ResolvedRoutePrefix}StandaloneReplacementItemGroup")"
+                       For="() => TheItem.StandaloneReplacementItemGroup" />
+
+    <br />
+
+
+    <MudPaper>
+        @if (serviceIntervalGroups is not null)
+        {
+            <MudList T="ServiceIntervalGroupListDTO"
+                     SelectionMode="SelectionMode.MultiSelection"
+                     @bind-SelectedValues="selectedServiceIntervalGroups">
+
+                <MudListSubheader>
+                    Available At Service Interval Groups:
+                </MudListSubheader>
+
+                @foreach (var serviceIntervalGroup in serviceIntervalGroups)
+                {
+                    <MudListItem Value="serviceIntervalGroup">
+                        @serviceIntervalGroup.Name
+                    </MudListItem>
+                }
+
+            </MudList>
+        }
+        else
+        {
+            <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-7" />
+        }
+    </MudPaper>
+</ShiftEntityForm>
+
+@code {
+    IReadOnlyCollection<ServiceIntervalGroupListDTO>? serviceIntervalGroups;
+    IReadOnlyCollection<ServiceIntervalGroupListDTO>? selectedServiceIntervalGroups;
+
+    override protected async Task OnInitializedAsync()
+    {
+        serviceIntervalGroups = await ServiceIntervalGroupService.GetListAsync();
+
+        LoadSelectedGroups(TheItem);
+    }
+
+    void Submit()
+    {
+        TheItem.ServiceIntervalGroups = selectedServiceIntervalGroups?.Select(x => new ServiceIntervalGroupReplacaementItemDTO(x.ID!))
+            ?? new List<ServiceIntervalGroupReplacaementItemDTO>();
+    }
+
+    ValueTask<bool> EntityLoaded(ShiftEntityResponse<ReplacementItemDTO> response)
+    {
+        LoadSelectedGroups(response.Entity);
+        return ValueTask.FromResult(true);
+    }
+
+    void LoadSelectedGroups(ReplacementItemDTO? entity)
+    {
+        Console.WriteLine(serviceIntervalGroups?.Count);
+
+        if (entity?.ServiceIntervalGroups?.Any() ?? false)
+            selectedServiceIntervalGroups = serviceIntervalGroups?.Where(x => entity.ServiceIntervalGroups.Any(a => a.ID == x.ID)).ToList();
+    }
+}

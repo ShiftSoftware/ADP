@@ -1,0 +1,26 @@
+@attribute [Route($"{MenuRoutes.Prefix}/{nameof(ReplacementItemList)}")]
+@attribute [Authorize]
+@inject MenuWebOptions MenuOptions
+
+<ShiftList EntitySet="@($"{MenuOptions.ResolvedRoutePrefix}ReplacementItem")"
+           Title="Replacement Items"
+           T="ReplacementItemListDTO"
+           Dense
+           ComponentType="typeof(ReplacementItemForm)"
+           TypeAuthAction="MenuActionTree.ReplacementItems"
+           ShowIDColumn="true"
+           EnableExport>
+
+    <PropertyColumn Property="x => x.Name" Title="Name" />
+    <PropertyColumn Property="x => x.Type.Describe()" Title="Type" />
+    <PropertyColumn Property="x => x.AllowMultiplePartNumbers" Title="Multi Part#">
+        <CellTemplate Context="cell">
+            <MudCheckBox T="bool" Value="cell.Item.AllowMultiplePartNumbers" Disabled="true" />
+        </CellTemplate>
+    </PropertyColumn>
+    <PropertyColumn Property="x => x.DefaultPartPriceMarginPercentage" Title="Default Margin %" />
+    <PropertyColumn Property="x => x.StandaloneOperationCode" Title="Standalone Operation Code" />
+    <PropertyColumn Property="x => x.StandaloneLabourCode" Title="Standalone Labour Code" />
+    <PropertyColumn Property="@(x => x.StandaloneReplacementItemGroup != null ? x.StandaloneReplacementItemGroup.Text:"")" Title="Standalone Group Name" />
+
+</ShiftList>

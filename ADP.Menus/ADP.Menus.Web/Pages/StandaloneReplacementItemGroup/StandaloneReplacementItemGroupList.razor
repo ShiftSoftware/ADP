@@ -1,0 +1,17 @@
+@attribute [Route($"{MenuRoutes.Prefix}/{nameof(StandaloneReplacementItemGroupList)}")]
+@attribute [Authorize]
+@inject MenuWebOptions MenuOptions
+
+<ShiftList EntitySet="@($"{MenuOptions.ResolvedRoutePrefix}StandaloneReplacementItemGroup")"
+           Title="Standalone Groups"
+           T="StandaloneReplacementItemGroupListDTO"
+           Dense
+           ComponentType="typeof(StandaloneReplacementItemGroupForm)"
+           TypeAuthAction="MenuActionTree.StandaloneReplacementItemGroups"
+           ShowIDColumn="true"
+           EnableExport>
+
+    <PropertyColumn Property="x => x.Name" Title="Name" />
+    <PropertyColumn Property="x => x.MenuCode" Title="Menu Code" />
+    <PropertyColumn Property="x => x.LabourCode" Title="Labour Code" />
+</ShiftList>

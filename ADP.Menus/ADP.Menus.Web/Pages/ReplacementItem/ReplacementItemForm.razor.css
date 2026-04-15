@@ -1,0 +1,8 @@
+﻿.checkbox-container {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+    .checkbox-container > * {
+        margin-right: 10px;
+    }
