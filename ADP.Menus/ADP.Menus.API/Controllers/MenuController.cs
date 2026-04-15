@@ -163,7 +163,7 @@ public class MenuController : ShiftEntitySecureControllerAsync<MenuRepository, M
                 .Where(s => !s.IsDeleted)
                 .Where(s => s.MenuItems.Any()))
             .SelectMany(x => x.MenuItems
-                .Where(s => s.Parts.Any(p => !p.IsDeleted && p.StandaloneQuantity.HasValue))
+                .Where(s => s.Parts.Any(p => !p.IsDeleted && p.StandaloneQuantity.GetValueOrDefault() > 0))
                 .Where(s => s.MenuVariant.HasStandaloneItems)
                 .Where(s => !s.MenuVariant.IsDeleted)
                 .Where(s => !s.MenuVariant.Menu.IsDeleted)
@@ -187,7 +187,7 @@ public class MenuController : ShiftEntitySecureControllerAsync<MenuRepository, M
                 .Where(s => !s.IsDeleted)
                 .Where(s => s.MenuItems.Any()))
             .SelectMany(x => x.MenuItems
-                .Where(s => s.Parts.Any(p => !p.IsDeleted && p.StandaloneQuantity.HasValue))
+                .Where(s => s.Parts.Any(p => !p.IsDeleted && p.StandaloneQuantity.GetValueOrDefault() > 0))
                 .Where(s=> s.MenuVariant.HasStandaloneItems)
                 .Where(s=> !s.MenuVariant.IsDeleted)
                 .Where(s=> !s.MenuVariant.Menu.IsDeleted)
