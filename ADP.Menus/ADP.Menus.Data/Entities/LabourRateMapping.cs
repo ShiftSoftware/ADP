@@ -4,6 +4,7 @@ using ShiftSoftware.ShiftEntity.Model.Flags;
 
 namespace ShiftSoftware.ADP.Menus.Data.Entities;
 
+[TemporalShiftEntity]
 public class LabourRateMapping : ShiftEntity<LabourRateMapping>, IEntityHasBrand<LabourRateMapping>
 {
     [Precision(12, 2)]

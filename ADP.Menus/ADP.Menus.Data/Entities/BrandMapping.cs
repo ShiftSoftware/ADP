@@ -3,6 +3,7 @@ using ShiftSoftware.ShiftEntity.Model.Flags;
 
 namespace ShiftSoftware.ADP.Menus.Data.Entities;
 
+[TemporalShiftEntity]
 public class BrandMapping : ShiftEntity<BrandMapping>, IEntityHasBrand<BrandMapping>
 {
     public string Code { get; set; } = default!;
