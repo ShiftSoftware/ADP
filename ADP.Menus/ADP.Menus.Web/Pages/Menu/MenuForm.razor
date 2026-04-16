@@ -600,6 +600,12 @@
 
         if (workingVariants.Any())
         {
+            // On first load the @bind-Value for TheItem may not be committed yet when
+            // OnResult fires. Backfill from response.Entity so SelectVariant can reach
+            // LoadReplacementItems and inject unconfigured RIVMs on the initial render.
+            if (string.IsNullOrWhiteSpace(TheItem.VehicleModel?.Value) && response?.Entity?.VehicleModel is not null)
+                TheItem.VehicleModel = response.Entity.VehicleModel;
+
             var variantToSelect = !string.IsNullOrWhiteSpace(selectedVariantId)
                 ? workingVariants.FirstOrDefault(x => x.ID == selectedVariantId)
                 : selectedVariant is not null
@@ -886,9 +892,6 @@
                         item.AllowedTime = ld.AllowedTime;
                 }
             }
-
-            loading = false;
-            return;
         }
 
         var notSelectedItems = items.Where(x => !entity.Items.Select(s => s.ReplacementItemVehicleModelID).Contains(x.ReplacementItemVehicleModelID));
@@ -1295,8 +1298,10 @@
 
     private string GetRowStyle(MenuItemDTO item, int rowIndex)
     {
+        // Rows sourced from the vehicle model but not yet saved to MenuItem: show a subtle
+        // "needs attention" accent so the user knows they are reviewing / configuring a new one.
         return item.NotStoredInMenuItemsTable
-            ? "background-color: #FFD149; color: #000000;"
+            ? "background-color: #EEF4FB; box-shadow: inset 4px 0 0 0 #1976D2;"
             : string.Empty;
     }
 

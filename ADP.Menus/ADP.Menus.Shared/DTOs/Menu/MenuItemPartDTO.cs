@@ -4,6 +4,8 @@ namespace ShiftSoftware.ADP.Menus.Shared.DTOs.Menu;
 
 public class MenuItemPartDTO
 {
+    public long? ID { get; set; }
+
     [Required]
     public string PartNumber { get => field; set => field = value?.Trim() ?? string.Empty; }
 

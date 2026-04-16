@@ -21,7 +21,9 @@ public class GeneralMappingProfile : Profile
 {
     public GeneralMappingProfile()
     {
-        CreateMap<MenuItemPart, MenuItemPartDTO>().ReverseMap();
+        CreateMap<MenuItemPart, MenuItemPartDTO>()
+            .ReverseMap()
+            .ForMember(x => x.ID, x => x.Ignore());
         CreateMap<MenuItemPartCountryPrice, PartPriceByCountryDTO>().ReverseMap();
         CreateMap<ReplacementItemVehicleModelPart, ReplacementItemDefaultPartDTO>()
             .ReverseMap()
@@ -95,7 +97,7 @@ public class GeneralMappingProfile : Profile
                 x => x.ReplacementItems,
                 x => x.MapFrom(src =>
                 src.ReplacementItemVehicleModels != null ?
-                    src.ReplacementItemVehicleModels.Select(s => new VehicleModelDTOReplacementItem(s.ReplacementItemID.ToString())
+                    src.ReplacementItemVehicleModels.Where(s => !s.IsDeleted).Select(s => new VehicleModelDTOReplacementItem(s.ReplacementItemID.ToString())
                     {
                         Name = s.ReplacementItem != null ? s.ReplacementItem.Name : string.Empty,
                         Type = s.ReplacementItem != null ? s.ReplacementItem.Type : default,
@@ -136,18 +138,24 @@ public class GeneralMappingProfile : Profile
                 // Hnadle ReplacementItemVehicleModels
                 dest.ReplacementItemVehicleModels ??= [];
 
-                // 1. Remove items that are not in the source
+                // 1. Soft-delete items that are not in the source. Physically removing them
+                //    would sever a required non-nullable FK (ShiftEntity forces Restrict).
+                //    Soft-deleted RIVMs are filtered out of the forward map.
                 var itemsToRemove = dest.ReplacementItemVehicleModels
-                    .Where(existing => !src.ReplacementItems.Any(r => r.ReplacementItemID == existing.ReplacementItemID.ToString()))
+                    .Where(existing => !existing.IsDeleted && !src.ReplacementItems.Any(r => r.ReplacementItemID == existing.ReplacementItemID.ToString()))
                     .ToList();
                 foreach (var item in itemsToRemove)
-                    dest.ReplacementItemVehicleModels.Remove(item);
+                {
+                    item.IsDeleted = true;
+                    foreach (var part in item.DefaultParts?.Where(p => !p.IsDeleted) ?? [])
+                        part.IsDeleted = true;
+                }
 
                 // 2. Update existing items or add new items
                 foreach (var item in src.ReplacementItems)
                 {
                     var existingItem = dest.ReplacementItemVehicleModels
-                        .FirstOrDefault(r => r.ReplacementItemID.ToString() == item.ReplacementItemID);
+                        .FirstOrDefault(r => !r.IsDeleted && r.ReplacementItemID.ToString() == item.ReplacementItemID);
                     if (existingItem != null)
                     {
                         existingItem.StandaloneAllowedTime = item.StandaloneAllowedTime ?? existingItem.StandaloneAllowedTime;
@@ -398,29 +406,93 @@ public class GeneralMappingProfile : Profile
             .ForMember(x => x.Parts, x => x.Ignore())
             .AfterMap((src, dest, ctx) =>
             {
+                // Don't Clear()/Remove() on tracked Parts — MenuItemPart.MenuItemID is
+                // non-nullable and ShiftEntity forces DeleteBehavior.Restrict, which turns
+                // severed FKs into a HandleConceptualNulls throw. Diff by ID instead, and
+                // soft-delete rows missing from the incoming DTO.
                 dest.Parts ??= [];
-                dest.Parts.Clear();
+
+                var incomingPartIds = src.Parts
+                    .Where(p => p.ID.HasValue)
+                    .Select(p => p.ID!.Value)
+                    .ToHashSet();
+
+                foreach (var existingPart in dest.Parts.Where(p => !p.IsDeleted && !incomingPartIds.Contains(p.ID)).ToList())
+                {
+                    existingPart.IsDeleted = true;
+                    foreach (var cp in existingPart.CountryPrices?.Where(c => !c.IsDeleted) ?? [])
+                        cp.IsDeleted = true;
+                }
 
                 for (int i = 0; i < src.Parts.Count; i++)
                 {
                     var sourcePart = src.Parts[i];
                     var sourceCountryPrices = sourcePart.CountryPrices ?? [];
-                    dest.Parts.Add(new MenuItemPart
+
+                    var existingPart = sourcePart.ID.HasValue
+                        ? dest.Parts.FirstOrDefault(p => !p.IsDeleted && p.ID == sourcePart.ID.Value)
+                        : null;
+
+                    if (existingPart != null)
                     {
-                        SortOrder = i,
-                        PartNumber = sourcePart.PartNumber,
-                        PeriodicQuantity = sourcePart.PeriodicQuantity,
-                        StandaloneQuantity = sourcePart.StandaloneQuantity,
-                        CountryPrices = sourceCountryPrices
-                            .Select(cp => new MenuItemPartCountryPrice
+                        existingPart.SortOrder = i;
+                        existingPart.PartNumber = sourcePart.PartNumber;
+                        existingPart.PeriodicQuantity = sourcePart.PeriodicQuantity;
+                        existingPart.StandaloneQuantity = sourcePart.StandaloneQuantity;
+
+                        existingPart.CountryPrices ??= new HashSet<MenuItemPartCountryPrice>();
+
+                        var incomingCountryIds = sourceCountryPrices
+                            .Where(cp => cp.CountryID.HasValue)
+                            .Select(cp => cp.CountryID!.Value)
+                            .ToHashSet();
+
+                        foreach (var cp in existingPart.CountryPrices.Where(c => !c.IsDeleted && !incomingCountryIds.Contains(c.CountryID)).ToList())
+                            cp.IsDeleted = true;
+
+                        foreach (var sourceCp in sourceCountryPrices)
+                        {
+                            var existingCp = sourceCp.CountryID.HasValue
+                                ? existingPart.CountryPrices.FirstOrDefault(c => !c.IsDeleted && c.CountryID == sourceCp.CountryID.Value)
+                                : null;
+
+                            if (existingCp != null)
                             {
-                                CountryID = cp.CountryID.GetValueOrDefault(),
-                                PartPrice = cp.PartPrice,
-                                PartPriceMarginPercentage = cp.PartPriceMarginPercentage,
-                                PartFinalPrice = cp.PartFinalPrice.GetValueOrDefault()
-                            })
-                            .ToList()
-                    });
+                                existingCp.PartPrice = sourceCp.PartPrice;
+                                existingCp.PartPriceMarginPercentage = sourceCp.PartPriceMarginPercentage;
+                                existingCp.PartFinalPrice = sourceCp.PartFinalPrice.GetValueOrDefault();
+                            }
+                            else
+                            {
+                                existingPart.CountryPrices.Add(new MenuItemPartCountryPrice
+                                {
+                                    CountryID = sourceCp.CountryID.GetValueOrDefault(),
+                                    PartPrice = sourceCp.PartPrice,
+                                    PartPriceMarginPercentage = sourceCp.PartPriceMarginPercentage,
+                                    PartFinalPrice = sourceCp.PartFinalPrice.GetValueOrDefault()
+                                });
+                            }
+                        }
+                    }
+                    else
+                    {
+                        dest.Parts.Add(new MenuItemPart
+                        {
+                            SortOrder = i,
+                            PartNumber = sourcePart.PartNumber,
+                            PeriodicQuantity = sourcePart.PeriodicQuantity,
+                            StandaloneQuantity = sourcePart.StandaloneQuantity,
+                            CountryPrices = sourceCountryPrices
+                                .Select(cp => new MenuItemPartCountryPrice
+                                {
+                                    CountryID = cp.CountryID.GetValueOrDefault(),
+                                    PartPrice = cp.PartPrice,
+                                    PartPriceMarginPercentage = cp.PartPriceMarginPercentage,
+                                    PartFinalPrice = cp.PartFinalPrice.GetValueOrDefault()
+                                })
+                                .ToList()
+                        });
+                    }
                 }
             });
         CreateMap<MenuEntity, MenuListDTO>()

@@ -191,7 +191,7 @@ using (var scope = app.Services.CreateScope())
     // throwaway sample DB — don't copy this pattern into real projects.
     if (app.Environment.IsDevelopment())
     {
-        await db.Database.EnsureDeletedAsync();
+        //await db.Database.EnsureDeletedAsync();
     }
     await db.Database.EnsureCreatedAsync();
     await db.SeedAsync();
