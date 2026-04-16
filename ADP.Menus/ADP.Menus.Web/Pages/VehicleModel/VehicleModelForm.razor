@@ -42,7 +42,8 @@
             MultiSelection="true"
             Filterable="false"
             SelectOnRowClick="false"
-            Loading="loadingReplacementItems">
+            Loading="loadingReplacementItems"
+            RowStyleFunc="GetReplacementItemRowStyle">
                 <ToolBarContent>
                     <MudText Typo="Typo.h6">Parts List</MudText>
                 </ToolBarContent>
@@ -50,7 +51,7 @@
                 <Columns>
                     <PropertyColumn Property="x => x.ReplacementItemID" Title="">
                         <CellTemplate>
-                            <MudCheckBox T="bool" Value="context.Item.IsSelected" ValueChanged="@(x=> ReplacementItemSelectionChanged(context.Item, x))" />
+                            <MudCheckBox T="bool" Value="context.Item.IsSelected" ValueChanged="@(x=> ReplacementItemSelectionChanged(context.Item, x))" Disabled="@(Mode == FormModes.View)" />
                         </CellTemplate>
                     </PropertyColumn>
                     <PropertyColumn Property="x => x.Name" Title="Name" />
@@ -61,7 +62,7 @@
                             <div style="display:flex;flex-direction:column;gap:6px;min-width:170px;">
                                 @foreach (var part in context.Item.DefaultParts.Select((x, i) => new { Part = x, Index = i }))
                                 {
-                                    <MudInput T="string" @bind-Value="part.Part.PartNumber" Placeholder="Part Number" />
+                                    <MudInput T="string" @bind-Value="part.Part.PartNumber" Placeholder="Part Number" Disabled="@IsRowReadOnly(context.Item)" />
                                 }
                             </div>
                         </CellTemplate>
@@ -71,7 +72,7 @@
                             <div style="display:flex;flex-direction:column;gap:6px;min-width:110px;">
                                 @foreach (var part in context.Item.DefaultParts.Select((x, i) => new { Part = x, Index = i }))
                                 {
-                                    <MudInput T="decimal?" @bind-Value="part.Part.DefaultPeriodicQuantity" Placeholder="Periodic Qty" />
+                                    <MudInput T="decimal?" @bind-Value="part.Part.DefaultPeriodicQuantity" Placeholder="Periodic Qty" Disabled="@IsRowReadOnly(context.Item)" />
                                 }
                             </div>
                         </CellTemplate>
@@ -81,7 +82,7 @@
                             <div style="display:flex;flex-direction:column;gap:6px;min-width:120px;">
                                 @foreach (var part in context.Item.DefaultParts.Select((x, i) => new { Part = x, Index = i }))
                                 {
-                                    <MudInput T="decimal?" @bind-Value="part.Part.DefaultStandaloneQuantity" Placeholder="Standalone Qty" />
+                                    <MudInput T="decimal?" @bind-Value="part.Part.DefaultStandaloneQuantity" Placeholder="Standalone Qty" Disabled="@IsRowReadOnly(context.Item)" />
                                 }
                             </div>
                         </CellTemplate>
@@ -98,12 +99,13 @@
                                         {
                                             <MudIconButton Icon="@Icons.Material.Outlined.Delete"
                                                            Color="Color.Error"
-                                                           Disabled="context.Item.DefaultParts.Count <= 1"
+                                                           Disabled="@(IsRowReadOnly(context.Item) || context.Item.DefaultParts.Count <= 1)"
                                                            OnClick="@(() => RemoveDefaultPart(context.Item, part.Index))" />
                                             @if (part.Index == context.Item.DefaultParts.Count - 1)
                                             {
                                                 <MudIconButton Icon="@Icons.Material.Filled.Add"
                                                                Color="Color.Primary"
+                                                               Disabled="@IsRowReadOnly(context.Item)"
                                                                OnClick="@(() => AddDefaultPart(context.Item))" />
                                             }
                                         }
@@ -115,12 +117,12 @@
                     }
                     <PropertyColumn Property="x => x.StandaloneAllowedTime" Title="Standalone Allowed Time">
                         <CellTemplate>
-                            <MudInput T="decimal?" Value="context.Item.StandaloneAllowedTime" ValueChanged="@(x=> SetStandaloneAlloweTime(context.Item, x))" Placeholder="Standalone Allowed Time" />
+                            <MudInput T="decimal?" Value="context.Item.StandaloneAllowedTime" ValueChanged="@(x=> SetStandaloneAlloweTime(context.Item, x))" Placeholder="Standalone Allowed Time" Disabled="@IsRowReadOnly(context.Item)" />
                         </CellTemplate>
                     </PropertyColumn>
                     <PropertyColumn Property="x => x.DefaultPartPriceMarginPercentage" Title="Default Margin %">
                         <CellTemplate>
-                            <MudInput T="decimal?" @bind-Value="context.Item.DefaultPartPriceMarginPercentage" Placeholder="Default Margin %" />
+                            <MudInput T="decimal?" @bind-Value="context.Item.DefaultPartPriceMarginPercentage" Placeholder="Default Margin %" Disabled="@IsRowReadOnly(context.Item)" />
                         </CellTemplate>
                     </PropertyColumn>
                 </Columns>
@@ -232,6 +234,12 @@
 
         await LoadLabourDetails(entity);
     }
+
+    // A row's inputs are only active when the row is ticked and the form is not in View mode.
+    bool IsRowReadOnly(VehicleModelDTOReplacementItem item) => Mode == FormModes.View || !item.IsSelected;
+
+    string GetReplacementItemRowStyle(VehicleModelDTOReplacementItem item, int rowIndex)
+        => item.IsSelected ? string.Empty : "opacity: 0.55;";
 
     void ReplacementItemSelectionChanged(VehicleModelDTOReplacementItem item, bool selected)
     {
