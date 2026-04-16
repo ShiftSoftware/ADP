@@ -23,7 +23,9 @@ public class GeneralMappingProfile : Profile
     {
         CreateMap<MenuItemPart, MenuItemPartDTO>().ReverseMap();
         CreateMap<MenuItemPartCountryPrice, PartPriceByCountryDTO>().ReverseMap();
-        CreateMap<ReplacementItemVehicleModelPart, ReplacementItemDefaultPartDTO>().ReverseMap();
+        CreateMap<ReplacementItemVehicleModelPart, ReplacementItemDefaultPartDTO>()
+            .ReverseMap()
+            .ForMember(x => x.ID, x => x.Ignore());
 
         CreateMap<ReplacementItem, ReplacementItemListDTO>()
             .ForMember(
@@ -105,6 +107,7 @@ public class GeneralMappingProfile : Profile
                             .OrderBy(x => x.SortOrder)
                             .Select(x => new ReplacementItemDefaultPartDTO
                             {
+                                ID = x.ID,
                                 PartNumber = x.PartNumber,
                                 DefaultPeriodicQuantity = x.DefaultPeriodicQuantity,
                                 DefaultStandaloneQuantity = x.DefaultStandaloneQuantity
@@ -150,17 +153,41 @@ public class GeneralMappingProfile : Profile
                         existingItem.StandaloneAllowedTime = item.StandaloneAllowedTime ?? existingItem.StandaloneAllowedTime;
                         existingItem.DefaultPartPriceMarginPercentage = item.DefaultPartPriceMarginPercentage ?? existingItem.DefaultPartPriceMarginPercentage;
                         existingItem.DefaultParts ??= [];
-                        existingItem.DefaultParts.Clear();
+
+                        var incomingPartIds = item.DefaultParts
+                            .Where(p => p.ID.HasValue)
+                            .Select(p => p.ID!.Value)
+                            .ToHashSet();
+
+                        // Soft-delete parts missing from the incoming list. Physically removing
+                        // them would sever a required non-nullable FK (ShiftEntity forces Restrict).
+                        foreach (var existingPart in existingItem.DefaultParts.Where(p => !p.IsDeleted && !incomingPartIds.Contains(p.ID)).ToList())
+                            existingPart.IsDeleted = true;
+
                         for (int i = 0; i < item.DefaultParts.Count; i++)
                         {
                             var sourcePart = item.DefaultParts[i];
-                            existingItem.DefaultParts.Add(new ReplacementItemVehicleModelPart
+                            var existingPart = sourcePart.ID.HasValue
+                                ? existingItem.DefaultParts.FirstOrDefault(p => !p.IsDeleted && p.ID == sourcePart.ID.Value)
+                                : null;
+
+                            if (existingPart != null)
                             {
-                                SortOrder = i,
-                                PartNumber = sourcePart.PartNumber,
-                                DefaultPeriodicQuantity = sourcePart.DefaultPeriodicQuantity,
-                                DefaultStandaloneQuantity = sourcePart.DefaultStandaloneQuantity
-                            });
+                                existingPart.SortOrder = i;
+                                existingPart.PartNumber = sourcePart.PartNumber;
+                                existingPart.DefaultPeriodicQuantity = sourcePart.DefaultPeriodicQuantity;
+                                existingPart.DefaultStandaloneQuantity = sourcePart.DefaultStandaloneQuantity;
+                            }
+                            else
+                            {
+                                existingItem.DefaultParts.Add(new ReplacementItemVehicleModelPart
+                                {
+                                    SortOrder = i,
+                                    PartNumber = sourcePart.PartNumber,
+                                    DefaultPeriodicQuantity = sourcePart.DefaultPeriodicQuantity,
+                                    DefaultStandaloneQuantity = sourcePart.DefaultStandaloneQuantity
+                                });
+                            }
                         }
                     }
                     else

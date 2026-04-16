@@ -68,6 +68,7 @@ public class VehicleModelController : ShiftEntitySecureControllerAsync<VehicleMo
                 DefaultPartPriceMarginPercentage = x.DefaultPartPriceMarginPercentage,
                 DefaultParts = x.DefaultParts.Where(p => !p.IsDeleted).OrderBy(p => p.SortOrder).Select(p => new ReplacementItemDefaultPartDTO
                 {
+                    ID = p.ID,
                     PartNumber = p.PartNumber,
                     DefaultPeriodicQuantity = p.DefaultPeriodicQuantity,
                     DefaultStandaloneQuantity = p.DefaultStandaloneQuantity
