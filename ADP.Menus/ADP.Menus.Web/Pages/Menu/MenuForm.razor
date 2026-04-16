@@ -963,6 +963,11 @@
             entity.Items.Add(result);
         }
 
+        // Surface unconfigured rows at the top so users notice them before configured items.
+        entity.Items = entity.Items
+            .OrderByDescending(x => x.NotStoredInMenuItemsTable)
+            .ToList();
+
         entity.LabourRates ??= [];
         if (entity.LabourRate is null || overrideData)
             entity.LabourRate = vehicleModel.Data.LabourRate;
