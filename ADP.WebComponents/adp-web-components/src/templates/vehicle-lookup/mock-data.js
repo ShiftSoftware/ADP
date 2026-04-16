@@ -1435,7 +1435,7 @@ const mockData = {
         serviceDate: '2024-10-13',
         mileage: 73941,
         companyName: 'SAS',
-        branchName: 'SAS - Showroom | Duhok',
+        branchName: 'SAS - Showroom | Duhok SAS - Showroom | Duhok SAS - Showroom | Duhok SAS - Showroom | Duhok SAS - Showroom | Duhok',
         companyId: 1,
         branchId: 43,
         account: 'C00015',
@@ -2784,7 +2784,7 @@ const mockData = {
         ],
       },
       {
-        serviceType: 'Fist Service (1000 KM)',
+        serviceType: 'Fist Service (1000 KM) Fist Service (1000 KM) Fist Service (1000 KM) Fist Service (1000 KM) Fist Service (1000 KM) Fist Service (1000 KM) Fist Service (1000 KM)',
         serviceDate: '2023-11-28',
         mileage: 2165,
         companyName: 'SAS',

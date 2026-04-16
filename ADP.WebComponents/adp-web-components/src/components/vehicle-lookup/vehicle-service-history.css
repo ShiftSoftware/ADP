@@ -18,23 +18,29 @@
 }
 
 .service-history-subrow {
-  @apply border-t border-slate-200 items-start overflow-x-auto flex gap-[12px] bg-gray-50 py-[12px] px-[12px];
+  @apply border-y-2 border-slate-400 flex flex-col gap-[10px] bg-[#f4f4f4] px-[10px] py-[18px];
+  box-shadow: inset 0 2px 4px rgb(0 0 0 / 0.06);
 }
 
 .service-history-subsection {
-  @apply border border-slate-200 min-w-fit flex-1 shrink-0 bg-white rounded-[6px] overflow-hidden;
+  @apply bg-white border border-slate-200 rounded-[4px] overflow-hidden shadow-md;
 }
 
 .service-history-subsection-header {
-  @apply flex items-center gap-[10px] py-[8px] px-[8px] ps-[16px] bg-slate-100 border-b border-slate-200;
+  @apply relative flex items-center gap-[10px] py-[4px] ps-[14px] pe-[8px] bg-slate-200 border-b border-slate-300;
+}
+
+.service-history-subsection-header::before {
+  content: '';
+  @apply absolute top-0 bottom-0 start-0 w-[4px] bg-slate-500;
 }
 
 .service-history-subsection-title {
-  @apply text-[14px] font-bold text-slate-900;
+  @apply text-[12px] font-bold text-slate-800 uppercase tracking-wide;
 }
 
 .service-history-subsection-meta {
-  @apply text-[12px] px-[8px] min-w-[16px] shrink-0 flex items-center font-bold text-slate-700 bg-white border border-indigo-100 rounded-full;
+  @apply text-[11px] px-[6px] min-w-[16px] shrink-0 flex items-center font-bold text-slate-700 bg-white border border-slate-300 rounded;
 }
 
 .service-history-subsection-table {

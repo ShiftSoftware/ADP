@@ -101,36 +101,12 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
 
   render() {
     const tableHeaders: InformationTableColumn[] = [
-      {
-        width: 400,
-        key: 'branchName',
-        label: this.locale.branch,
-      },
-      {
-        width: 200,
-        key: 'companyName',
-        label: this.locale.dealer,
-      },
-      {
-        width: 200,
-        key: 'invoiceNumber',
-        label: this.locale.invoiceNumber,
-      },
-      {
-        width: 200,
-        key: 'serviceDate',
-        label: this.locale.date,
-      },
-      {
-        width: 400,
-        key: 'serviceType',
-        label: this.locale.serviceType,
-      },
-      {
-        width: 200,
-        key: 'mileage',
-        label: this.locale.odometer,
-      },
+      { key: 'branchName', label: this.locale.branch },
+      { key: 'companyName', label: this.locale.dealer, nowrap: true },
+      { key: 'invoiceNumber', label: this.locale.invoiceNumber, nowrap: true },
+      { key: 'serviceDate', label: this.locale.date, nowrap: true },
+      { key: 'serviceType', label: this.locale.serviceType, maxWidth: 420 },
+      { key: 'mileage', label: this.locale.odometer, nowrap: true },
     ];
 
     return (
@@ -145,8 +121,10 @@ export class VehicleServiceHistory implements MultiLingual, VehicleInfoLayoutInt
         >
           <div class="overflow-x-auto">
             <information-table
+              size="small"
+              allowAutoWidth
+              scrollExpandedIntoView
               expandUsingEntireRow
-              allowMultipleExpanded
               headers={tableHeaders}
               isLoading={this.isLoading}
               rows={this.vehicleLookup?.serviceHistory || []}

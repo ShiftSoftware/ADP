@@ -1,1 +1,55 @@
 @import '../style/shift-skeleton.css';
+
+/* Auto-width mode uses a real HTML <table> so the browser's
+   table-layout:auto algorithm handles column sizing — columns
+   adapt to content, share leftover space naturally, and shrink
+   proportionally when total content exceeds container width. */
+.info-table-table-wrapper {
+  width: 100%;
+}
+
+.info-table-table {
+  width: 100%;
+  table-layout: auto;
+  border-collapse: collapse;
+  transition: width 500ms ease;
+}
+
+.info-table-th {
+  vertical-align: middle;
+  border-bottom: 1px solid rgb(226 232 240);
+  background-color: inherit;
+}
+
+.info-table-td {
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+}
+
+.info-table-tr {
+  transition: background-color 300ms;
+}
+
+.info-table-data-tr {
+  border-bottom: 1px solid rgb(226 232 240);
+}
+
+.info-table-data-tr:last-child {
+  border-bottom: 0;
+}
+
+.info-table-tr-stripe {
+  background-color: rgb(241 245 249);
+}
+
+.info-table-tr-clickable {
+  cursor: pointer;
+}
+
+.info-table-data-tr:hover {
+  background-color: rgba(224, 242, 254, 0.5);
+}
+
+.info-table-subrow-td {
+  padding: 0;
+}
