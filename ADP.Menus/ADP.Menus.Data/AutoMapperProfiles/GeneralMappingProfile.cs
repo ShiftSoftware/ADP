@@ -287,6 +287,12 @@ public class GeneralMappingProfile : Profile
                 x => x.PeriodicAvailabilities,
                 x => x.MapFrom(src => src.PeriodicAvailabilities.Select(s => new ServiceIntervalIDSelectorDTO { ID = s.ServiceIntervalID.ToString() }))
             )
+            .ForMember(
+                x => x.Items,
+                x => x.MapFrom(src => src.Items
+                    .Where(i => !i.IsDeleted
+                        && (i.ReplacementItemVehicleModel == null || !i.ReplacementItemVehicleModel.IsDeleted)))
+            )
         .ReverseMap()
             .ForMember(
                 x => x.MenuID,
@@ -343,16 +349,13 @@ public class GeneralMappingProfile : Profile
                 }
 
                 dest.Items ??= [];
-                var itemsToRemoveFromMenu = dest.Items
-                    .Where(existing => !src.Items.Any(r => r.ReplacementItemVehicleModelID == existing.ReplacementItemVehicleModelID))
-                    .ToList();
-                foreach (var item in itemsToRemoveFromMenu)
-                    dest.Items.Remove(item);
-
+                // Skip already-soft-deleted items: they won't be in src (they're filtered out of
+                // the forward map) and we must not touch them here — removing them would sever
+                // a required non-nullable FK (MenuItem.MenuVariantID) and throw.
                 foreach (var item in src.Items)
                 {
                     var existingItem = dest.Items
-                        .FirstOrDefault(r => r.ReplacementItemVehicleModelID == item.ReplacementItemVehicleModelID);
+                        .FirstOrDefault(r => !r.IsDeleted && r.ReplacementItemVehicleModelID == item.ReplacementItemVehicleModelID);
                     if (existingItem != null)
                         ctx.Mapper.Map(item, existingItem);
                     else
@@ -400,7 +403,7 @@ public class GeneralMappingProfile : Profile
             )
             .ForMember(
                 x => x.Parts,
-                x => x.MapFrom(s => s.Parts.OrderBy(p => p.SortOrder))
+                x => x.MapFrom(s => s.Parts.Where(p => !p.IsDeleted).OrderBy(p => p.SortOrder))
             )
             .ReverseMap()
             .ForMember(x => x.Parts, x => x.Ignore())

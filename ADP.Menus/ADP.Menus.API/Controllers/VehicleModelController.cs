@@ -4,6 +4,7 @@ using ShiftSoftware.ADP.Menus.Data.Repositories;
 using ShiftSoftware.ADP.Menus.Shared.ActionTrees;
 using ShiftSoftware.ADP.Menus.Shared.DTOs.LabourDetails;
 using ShiftSoftware.ADP.Menus.Shared.DTOs.Menu;
+using ShiftSoftware.ADP.Menus.Shared.DTOs.ReplcamentItem;
 using ShiftSoftware.ADP.Menus.Shared.DTOs.VehicleModel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -98,6 +99,40 @@ public class VehicleModelController : ShiftEntitySecureControllerAsync<VehicleMo
             VehicleModelName = vehicleModel.Name,
             VehicleModelID = vehicleModel.ID.ToString()
         };
+
+        return Ok(result);
+    }
+
+    [HttpPost("CheckReplacementItemMenuUsage/{key}")]
+    [Authorize]
+    public async Task<ActionResult<List<ReplacementItemMenuUsageDTO>>> CheckReplacementItemMenuUsage(string key, [FromBody] ReplacementItemMenuUsageRequestDTO request)
+    {
+        if (options.EnableMenuActionTreeAuthorization)
+        {
+            var typeAuth = HttpContext.RequestServices.GetRequiredService<ITypeAuthService>();
+            if (!typeAuth.CanRead(MenuActionTree.VehicleModels))
+                return Forbid();
+        }
+
+        var vehicleModelId = ShiftEntityHashIdService.Decode<VehicleModelDTO>(key);
+        var replacementItemIds = (request?.ReplacementItemIDs ?? [])
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => ShiftEntityHashIdService.Decode<ReplacementItemDTO>(x))
+            .ToList();
+
+        if (replacementItemIds.Count == 0)
+            return Ok(new List<ReplacementItemMenuUsageDTO>());
+
+        var usage = await vehicleModelRepository.GetReplacementItemMenuUsageAsync(vehicleModelId, replacementItemIds);
+
+        var result = usage
+            .Select(x => new ReplacementItemMenuUsageDTO
+            {
+                ReplacementItemID = x.ReplacementItemID.ToString(),
+                ReplacementItemName = x.ReplacementItemName,
+                MenuLabels = x.MenuLabels
+            })
+            .ToList();
 
         return Ok(result);
     }

@@ -49,4 +49,19 @@ public class ReplacementItemService
         var data = await response.Content.ReadFromJsonAsync<VehicleModelMenuDTO>();
         return new HttpResponse<VehicleModelMenuDTO>(data!, response.StatusCode);
     }
+
+    public async Task<List<ReplacementItemMenuUsageDTO>> CheckReplacementItemMenuUsageAsync(string vehicleModelKey, IEnumerable<string> replacementItemIds)
+    {
+        var ids = replacementItemIds?.Where(x => !string.IsNullOrWhiteSpace(x)).Distinct().ToList() ?? [];
+        if (ids.Count == 0)
+            return new List<ReplacementItemMenuUsageDTO>();
+
+        var url = $"{prefix}VehicleModel/CheckReplacementItemMenuUsage/{vehicleModelKey}";
+        var response = await http.PostAsJsonAsync(url, new ReplacementItemMenuUsageRequestDTO { ReplacementItemIDs = ids });
+
+        if (!response.IsSuccessStatusCode)
+            return new List<ReplacementItemMenuUsageDTO>();
+
+        return await response.Content.ReadFromJsonAsync<List<ReplacementItemMenuUsageDTO>>() ?? [];
+    }
 }

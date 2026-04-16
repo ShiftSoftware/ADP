@@ -3,6 +3,7 @@
 @inject ServiceIntervalGroupService ServiceIntervalGroupService
 @inject IMenuCountryProvider CountryProvider
 @inject MenuWebOptions MenuOptions
+@inject IDialogService DialogService
 
 @inherits ShiftForm<VehicleModelForm, VehicleModelDTO>
 
@@ -206,8 +207,47 @@
         await Init(TheItem);
     }
 
-    void Submit()
+    async Task Submit(ShiftEvent<EditContext> args)
     {
+        // Confirm with the user before removing any replacement item that is used by menus.
+        // Unticked items that are NOT in any menu are removed silently.
+        if (!string.IsNullOrWhiteSpace(TheItem.ID) && TheItem.ReplacementItems is not null)
+        {
+            var removedIds = TheItem.ReplacementItems
+                .Where(x => !x.IsSelected && !string.IsNullOrWhiteSpace(x.ReplacementItemID))
+                .Select(x => x.ReplacementItemID)
+                .ToList();
+
+            if (removedIds.Count > 0)
+            {
+                var usages = await ReplacementItemService.CheckReplacementItemMenuUsageAsync(TheItem.ID, removedIds);
+
+                if (usages.Count > 0)
+                {
+                    var lines = usages.Select(u =>
+                        $"• {u.ReplacementItemName} — used in: {string.Join(", ", u.MenuLabels)}");
+
+                    var message =
+                        "The following replacement item(s) are in use by existing menus. "
+                        + "Removing them will also remove them from those menus:\n\n"
+                        + string.Join("\n", lines)
+                        + "\n\nContinue?";
+
+                    var confirmed = await DialogService.ShowMessageBoxAsync(
+                        title: "Remove from menus?",
+                        message: message,
+                        yesText: "Remove",
+                        cancelText: "Cancel");
+
+                    if (confirmed is not true)
+                    {
+                        args.ShouldPreventDefault = true;
+                        return;
+                    }
+                }
+            }
+        }
+
         EnsureLabourRates(TheItem);
         TheItem.ReplacementItems = TheItem.ReplacementItems?.Where(x => x.IsSelected)?.ToList() ?? [];
 

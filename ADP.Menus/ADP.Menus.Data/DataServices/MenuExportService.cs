@@ -61,6 +61,9 @@ public class MenuExportService
                     DiscountPercentage = menuVariant.DiscountPercentage,
                     IsStandalone = false,
                     Parts = menuVariant.Items
+                        .Where(x => !x.IsDeleted
+                            && x.ReplacementItemVehicleModel != null
+                            && !x.ReplacementItemVehicleModel.IsDeleted)
                         .Where(x => x.ReplacementItemVehicleModel!.ReplacementItem.ReplacementItemServiceIntervalGroups
                             .Any(a => a.ServiceIntervalGroup.ServiceIntervals.Any(i => i.ID == serviceInterval.ServiceIntervalID)))
                         .SelectMany(x => x.Parts.Where(p => !p.IsDeleted && p.PeriodicQuantity.GetValueOrDefault() > 0).Select(p => new MenuLinePartDTO
@@ -107,8 +110,11 @@ public class MenuExportService
         {
             // Create menu for non grouped items
             var nonGroupedItems = menuVariant.Items
-                .Where(x => x.ReplacementItemVehicleModel!.ReplacementItem.StandaloneReplacementItemGroup is null &&
-                    x.Parts.Any(p => !p.IsDeleted && p.StandaloneQuantity.GetValueOrDefault() > 0))
+                .Where(x => !x.IsDeleted
+                    && x.ReplacementItemVehicleModel != null
+                    && !x.ReplacementItemVehicleModel.IsDeleted
+                    && x.ReplacementItemVehicleModel.ReplacementItem.StandaloneReplacementItemGroup is null
+                    && x.Parts.Any(p => !p.IsDeleted && p.StandaloneQuantity.GetValueOrDefault() > 0))
                 .ToList();
 
             foreach (var item in nonGroupedItems)
@@ -156,8 +162,11 @@ public class MenuExportService
             }
 
             // Create menu for grouped items
-            var groupedItems = menuVariant.Items.Where(x => x.ReplacementItemVehicleModel?.ReplacementItem?.StandaloneReplacementItemGroup is not null &&
-                x.Parts.Any(p => !p.IsDeleted && p.StandaloneQuantity.GetValueOrDefault() > 0))
+            var groupedItems = menuVariant.Items.Where(x => !x.IsDeleted
+                && x.ReplacementItemVehicleModel != null
+                && !x.ReplacementItemVehicleModel.IsDeleted
+                && x.ReplacementItemVehicleModel.ReplacementItem?.StandaloneReplacementItemGroup is not null
+                && x.Parts.Any(p => !p.IsDeleted && p.StandaloneQuantity.GetValueOrDefault() > 0))
                 .GroupBy(x => x.ReplacementItemVehicleModel!.ReplacementItem!.StandaloneReplacementItemGroup!.ID).ToList();
 
             foreach (var item in groupedItems)

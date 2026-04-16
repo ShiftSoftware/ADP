@@ -161,7 +161,7 @@ public class MenuController : ShiftEntitySecureControllerAsync<MenuRepository, M
             .Where(x => !x.StandaloneReplacementItemGroupID.HasValue)
             .SelectMany(x => x.ReplacementItemVehicleModels
                 .Where(s => !s.IsDeleted)
-                .Where(s => s.MenuItems.Any()))
+                .Where(s => s.MenuItems.Any(mi => !mi.IsDeleted)))
             .SelectMany(x => x.MenuItems
                 .Where(s => s.Parts.Any(p => !p.IsDeleted && p.StandaloneQuantity.GetValueOrDefault() > 0))
                 .Where(s => s.MenuVariant.HasStandaloneItems)
@@ -185,7 +185,7 @@ public class MenuController : ShiftEntitySecureControllerAsync<MenuRepository, M
             .Select(x=> x.ReplacementItems.First())
             .SelectMany(x => x.ReplacementItemVehicleModels
                 .Where(s => !s.IsDeleted)
-                .Where(s => s.MenuItems.Any()))
+                .Where(s => s.MenuItems.Any(mi => !mi.IsDeleted)))
             .SelectMany(x => x.MenuItems
                 .Where(s => s.Parts.Any(p => !p.IsDeleted && p.StandaloneQuantity.GetValueOrDefault() > 0))
                 .Where(s=> s.MenuVariant.HasStandaloneItems)
