@@ -118,7 +118,7 @@ public class VehicleServiceHistoryEvaluator
             serviceHistory.Add(serviceHistoryEntry);
         }
 
-        return serviceHistory;
+        return serviceHistory.OrderByDescending(x => x.ServiceDate);
     }
 
     private static DateTime? GetMaxServiceDate(
