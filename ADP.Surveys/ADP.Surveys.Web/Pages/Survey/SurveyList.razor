@@ -1,0 +1,17 @@
+@attribute [Route($"{SurveyRoutes.Prefix}/{nameof(SurveyList)}")]
+@attribute [Authorize]
+@inject SurveysWebOptions SurveysOptions
+
+<ShiftList EntitySet="@($"{SurveysOptions.ResolvedRoutePrefix}Survey")"
+           Title="Surveys"
+           T="SurveyListDTO"
+           Dense
+           ComponentType="typeof(SurveyForm)"
+           TypeAuthAction="SurveysActionTree.Surveys"
+           ShowIDColumn="true"
+           EnableExport>
+
+    <PropertyColumn Property="x => x.Name" Title="Name" />
+    <PropertyColumn Property="x => x.PublishedVersionNumber" Title="Published Version" />
+
+</ShiftList>

@@ -1,0 +1,23 @@
+{
+  "name": "@shiftsoftware/adp-surveys-e2e",
+  "version": "0.1.0",
+  "private": true,
+  "description": "End-to-end smoke harness: boots against a live Sample.API, seeds a survey with cross-screen logic + navigationList, publishes it, creates an instance, then drives the public endpoints through the @shiftsoftware/survey-sdk and asserts screen routing + response persistence.",
+  "type": "module",
+  "scripts": {
+    "start": "tsx run.ts",
+    "browser": "tsx browser.ts",
+    "resume": "tsx resume.ts",
+    "seed-demo": "tsx seed-demo.ts",
+    "unseed-demo": "tsx unseed-demo.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@shiftsoftware/survey-sdk": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}

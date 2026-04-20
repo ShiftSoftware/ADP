@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<Import Project="..\..\GlobalSettings.props" />
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<NoWarn>$(NoWarn);NU1701</NoWarn>
+		<RootNamespace>ShiftSoftware.ADP.Surveys.API</RootNamespace>
+		<Authors>Shift Software</Authors>
+		<Product>ADP.Surveys</Product>
+		<Version>$(ADPVersion)</Version>
+		<AssemblyName>ShiftSoftware.ADP.Surveys.API</AssemblyName>
+		<PackageId>ShiftSoftware.ADP.Surveys.API</PackageId>
+		<Title>ShiftSoftware ADP.Surveys — API</Title>
+		<Description>ASP.NET Core controllers, extensions and registration helpers for the ShiftSoftware ADP.Surveys package — a dynamic survey platform module.</Description>
+		<Copyright>Copyright (c) Shift Software 2026</Copyright>
+		<PackageProjectUrl>https://github.com/ShiftSoftware/ADP</PackageProjectUrl>
+		<PackageIcon>icon.png</PackageIcon>
+		<RepositoryUrl>https://github.com/ShiftSoftware/ADP</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageTags>shift;shiftsoftware;adp;surveys;survey;dynamic;forms;aspnetcore</PackageTags>
+		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="Images\icon.png" Pack="true" PackagePath="\" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+		<PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.Web" Version="2026.4.13.6" />
+		<PackageReference Include="ShiftSoftware.TypeAuth.AspNetCore" Version="1.6.12" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\ADP.Surveys.Data\ADP.Surveys.Data.csproj" />
+	</ItemGroup>
+
+</Project>

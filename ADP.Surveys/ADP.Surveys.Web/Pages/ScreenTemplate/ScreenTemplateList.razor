@@ -1,0 +1,17 @@
+@attribute [Route($"{SurveyRoutes.Prefix}/{nameof(ScreenTemplateList)}")]
+@attribute [Authorize]
+@inject SurveysWebOptions SurveysOptions
+
+<ShiftList EntitySet="@($"{SurveysOptions.ResolvedRoutePrefix}ScreenTemplate")"
+           Title="Screen Templates"
+           T="ScreenTemplateListDTO"
+           Dense
+           ComponentType="typeof(ScreenTemplateForm)"
+           TypeAuthAction="SurveysActionTree.ScreenTemplates"
+           ShowIDColumn="true"
+           EnableExport>
+
+    <PropertyColumn Property="x => x.Key" Title="Key" />
+    <PropertyColumn Property="x => x.QuestionCount" Title="Questions" />
+
+</ShiftList>

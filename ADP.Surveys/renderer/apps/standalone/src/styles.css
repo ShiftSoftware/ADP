@@ -1,0 +1,42 @@
+/* Host-layer styles for the standalone app. Renderer styles already ship via
+ * @shiftsoftware/survey-renderer/styles.css; this file covers loading + error
+ * + landing states only. */
+
+html, body, #root {
+  min-height: 100%;
+  margin: 0;
+  background: #f7f8fa;
+}
+
+body {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color: #111;
+}
+
+.survey-host__loading,
+.survey-host__error,
+.survey-host__landing {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 64px 16px;
+  text-align: center;
+}
+
+.survey-host__error-title,
+.survey-host__landing h1 {
+  font-size: 1.4rem;
+  margin: 0 0 12px;
+}
+
+.survey-host__error-body,
+.survey-host__landing p {
+  color: #555;
+  margin: 0;
+}
+
+.survey-host__landing code {
+  background: #eee;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}

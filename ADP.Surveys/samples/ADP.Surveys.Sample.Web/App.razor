@@ -1,0 +1,14 @@
+@using ShiftSoftware.ShiftIdentity.Blazor
+@using ShiftSoftware.ShiftIdentity.Core
+@using static ShiftSoftware.ShiftBlazor.Components.DefaultApp
+
+<CascadingAuthenticationState>
+    <DefaultApp AppTitle="ADP.Surveys"
+                AppAssembly="@typeof(App).Assembly"
+                IdentityHostingType="shiftIdentityHostingTypes"
+                AdditionalAssemblies="additionalAssemblies">
+        <NavMenuTemplate>
+            <ShiftSoftware.ADP.Surveys.Sample.Web.Shared.SurveysNavMenu />
+        </NavMenuTemplate>
+    </DefaultApp>
+</CascadingAuthenticationState>

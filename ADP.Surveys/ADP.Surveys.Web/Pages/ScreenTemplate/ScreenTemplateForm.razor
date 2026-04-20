@@ -1,0 +1,75 @@
+@attribute [Route($"{SurveyRoutes.Prefix}/{nameof(ScreenTemplateForm)}/{{Key?}}")]
+@using System.Text.Json
+@using ShiftSoftware.ADP.Surveys.Shared.Json
+
+@inherits ShiftForm<ScreenTemplateForm, ScreenTemplateAdminDTO>
+
+@inject SurveysWebOptions SurveysOptions
+
+<ShiftEntityForm @bind-Mode="Mode"
+                 @bind-Value="TheItem"
+                 @ref="FormContainer"
+                 Endpoint="@($"{SurveysOptions.ResolvedRoutePrefix}ScreenTemplate")"
+                 Title="Screen Template"
+                 T="ScreenTemplateAdminDTO"
+                 TypeAuthAction="SurveysActionTree.ScreenTemplates"
+                 OnResult="EntityLoaded"
+                 @bind-Key="@Key">
+
+    <MudTextFieldExtended OnlyValidateIfDirty="true"
+                          Label="Key (reference id used by surveys via templateRef)"
+                          @bind-Value="TheItem.Key"
+                          For="@(() => TheItem.Key)" />
+
+    <MudTextFieldExtended T="string"
+                          Label="Template (JSON — schema-level ScreenTemplateDto)"
+                          @bind-Value:get="TemplateJson"
+                          @bind-Value:set="OnTemplateJsonChanged"
+                          Lines="16"
+                          Variant="Variant.Outlined"
+                          HelperText="Paste a ScreenTemplateDto JSON payload (title, description, banked question refs)." />
+
+    @if (parseError is not null)
+    {
+        <MudAlert Severity="Severity.Error" Dense="true" Class="mt-2">
+            JSON parse error: @parseError
+        </MudAlert>
+    }
+
+</ShiftEntityForm>
+
+@code {
+    string TemplateJson { get; set; } = "";
+    string? parseError;
+
+    async ValueTask<bool> EntityLoaded(ShiftEntityResponse<ScreenTemplateAdminDTO> response)
+    {
+        TemplateJson = TheItem.Template is null
+            ? ""
+            : JsonSerializer.Serialize(TheItem.Template, SurveySchemaSerializer.Pretty);
+        parseError = null;
+        // See SurveyForm.EntityLoaded for the reason this is InvokeAsync'd.
+        await InvokeAsync(StateHasChanged);
+        return true;
+    }
+
+    void OnTemplateJsonChanged(string value)
+    {
+        TemplateJson = value;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            TheItem.Template = null;
+            parseError = null;
+            return;
+        }
+        try
+        {
+            TheItem.Template = JsonSerializer.Deserialize<ScreenTemplateDto>(value, SurveySchemaSerializer.Options);
+            parseError = null;
+        }
+        catch (JsonException ex)
+        {
+            parseError = ex.Message;
+        }
+    }
+}

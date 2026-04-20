@@ -1,0 +1,25 @@
+@* Consumer-owned nav — shown when the user is outside the /Surveys module. *@
+
+<MudNavMenu>
+    <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">
+        Home
+    </MudNavLink>
+
+    <MudNavGroup Title="Surveys" Icon="@Icons.Material.Filled.Poll" Expanded="true">
+        <MudNavLink Href="@($"{ShiftSoftware.ADP.Surveys.Web.SurveyRoutes.Prefix}/SurveyList")"
+                    Match="NavLinkMatch.Prefix"
+                    Icon="@Icons.Material.Filled.ListAlt">
+            Surveys
+        </MudNavLink>
+        <MudNavLink Href="@($"{ShiftSoftware.ADP.Surveys.Web.SurveyRoutes.Prefix}/BankQuestionList")"
+                    Match="NavLinkMatch.Prefix"
+                    Icon="@Icons.Material.Filled.QuestionAnswer">
+            Question Bank
+        </MudNavLink>
+        <MudNavLink Href="@($"{ShiftSoftware.ADP.Surveys.Web.SurveyRoutes.Prefix}/ScreenTemplateList")"
+                    Match="NavLinkMatch.Prefix"
+                    Icon="@Icons.Material.Filled.ViewQuilt">
+            Screen Templates
+        </MudNavLink>
+    </MudNavGroup>
+</MudNavMenu>

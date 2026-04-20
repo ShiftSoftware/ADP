@@ -1,0 +1,26 @@
+{
+  "name": "@shiftsoftware/adp-surveys-standalone",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Customer-facing standalone app. Mounts @shiftsoftware/survey-renderer against a real instance fetched by GUID from /api/Surveys/SurveyInstances/{publicId}/schema. Deployed per-client; branding comes from the schema.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@shiftsoftware/survey-renderer": "*",
+    "@shiftsoftware/survey-sdk": "*",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.3"
+  }
+}

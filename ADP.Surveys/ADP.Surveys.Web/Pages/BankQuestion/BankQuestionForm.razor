@@ -1,0 +1,91 @@
+@attribute [Route($"{SurveyRoutes.Prefix}/{nameof(BankQuestionForm)}/{{Key?}}")]
+@using System.Text.Json
+@using ShiftSoftware.ADP.Surveys.Shared.Json
+
+@inherits ShiftForm<BankQuestionForm, BankQuestionAdminDTO>
+
+@inject SurveysWebOptions SurveysOptions
+
+<ShiftEntityForm @bind-Mode="Mode"
+                 @bind-Value="TheItem"
+                 @ref="FormContainer"
+                 Endpoint="@($"{SurveysOptions.ResolvedRoutePrefix}BankQuestion")"
+                 Title="Bank Question"
+                 T="BankQuestionAdminDTO"
+                 TypeAuthAction="SurveysActionTree.BankQuestions"
+                 OnResult="EntityLoaded"
+                 @bind-Key="@Key">
+
+    <MudTextFieldExtended OnlyValidateIfDirty="true"
+                          Label="Key (stable cross-survey id)"
+                          @bind-Value="TheItem.Key"
+                          For="@(() => TheItem.Key)" />
+
+    <MudTextFieldExtended OnlyValidateIfDirty="true"
+                          Label="BI Column (optional)"
+                          @bind-Value="TheItem.BiColumn"
+                          For="@(() => TheItem.BiColumn)" />
+
+    <MudCheckBoxExtended Label="Locked (server-owned — read-only)"
+                         Value="TheItem.Locked"
+                         T="bool"
+                         ReadOnly="true" />
+
+    <MudCheckBoxExtended Label="Retired"
+                         @bind-Value="TheItem.Retired" />
+
+    @* JSON editor for the canonical question definition. Text changes deserialize
+       straight into TheItem.Question so FluentValidation sees the real value and
+       never silently blocks save on a validator it can't surface. *@
+    <MudTextFieldExtended T="string"
+                          Label="Question (JSON — schema-level QuestionDto)"
+                          @bind-Value:get="QuestionJson"
+                          @bind-Value:set="OnQuestionJsonChanged"
+                          Lines="14"
+                          Variant="Variant.Outlined"
+                          HelperText="Paste a QuestionDto JSON payload. The server validates shape on save." />
+
+    @if (parseError is not null)
+    {
+        <MudAlert Severity="Severity.Error" Dense="true" Class="mt-2">
+            JSON parse error: @parseError
+        </MudAlert>
+    }
+
+</ShiftEntityForm>
+
+@code {
+    string QuestionJson { get; set; } = "";
+    string? parseError;
+
+    async ValueTask<bool> EntityLoaded(ShiftEntityResponse<BankQuestionAdminDTO> response)
+    {
+        QuestionJson = TheItem.Question is null
+            ? ""
+            : JsonSerializer.Serialize<QuestionDto>(TheItem.Question, SurveySchemaSerializer.Pretty);
+        parseError = null;
+        // See SurveyForm.EntityLoaded for the reason this is InvokeAsync'd.
+        await InvokeAsync(StateHasChanged);
+        return true;
+    }
+
+    void OnQuestionJsonChanged(string value)
+    {
+        QuestionJson = value;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            TheItem.Question = null;
+            parseError = null;
+            return;
+        }
+        try
+        {
+            TheItem.Question = JsonSerializer.Deserialize<QuestionDto>(value, SurveySchemaSerializer.Options);
+            parseError = null;
+        }
+        catch (JsonException ex)
+        {
+            parseError = ex.Message;
+        }
+    }
+}

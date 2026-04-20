@@ -1,0 +1,152 @@
+@using System.Net.Http
+@using System.Net.Http.Json
+@using System.Text.Json
+@using ShiftSoftware.ADP.Surveys.Shared.Json
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+@inject HttpClient Http
+@inject SurveysWebOptions SurveysOptions
+
+@*
+    Live-preview pane. Hosts the @shiftsoftware/survey-web-component custom
+    element and pushes a RESOLVED version of the current draft via JS interop
+    whenever the bound Schema parameter changes. Resolution happens server-side
+    via POST {prefix}Preview — same SchemaResolver the publish pipeline runs —
+    so the preview matches production exactly (banked questions expanded inline,
+    screen templates unrolled).
+
+    When Schema is null (empty draft) or resolution errors, we hide the element
+    and render a placeholder so the pane isn't a blank white box.
+*@
+
+<div class="survey-preview">
+    @if (Schema is null)
+    {
+        <div class="survey-preview__placeholder">
+            <em>No valid draft to preview.</em>
+        </div>
+    }
+    else if (resolveError is not null)
+    {
+        <div class="survey-preview__placeholder">
+            <em>Preview unavailable: @resolveError</em>
+        </div>
+    }
+    else
+    {
+        <shift-survey @ref="surveyElement" locale="@Locale"></shift-survey>
+    }
+</div>
+
+@code {
+    [Parameter] public SurveyDto? Schema { get; set; }
+    [Parameter] public string? Locale { get; set; }
+
+    private const string InteropPath =
+        "./_content/ShiftSoftware.ADP.Surveys.Web/js/shift-survey/interop.js";
+
+    private ElementReference surveyElement;
+    private IJSObjectReference? interopModule;
+    private SurveyDto? lastPushedSource;
+    private string? lastPushedLocale;
+    private bool submitHandlerInstalled;
+    private string? resolveError;
+
+    /// <summary>
+    /// Resolves the draft server-side (bankRefs + templateRefs → inline) so the
+    /// preview shows exactly what a customer would see. On failure we surface
+    /// the server's error copy via the placeholder and retain the same Schema
+    /// reference so we don't retry on every re-render.
+    /// </summary>
+    private async Task<string?> ResolveDraftJson(SurveyDto draft)
+    {
+        try
+        {
+            var response = await Http.PostAsJsonAsync(
+                $"{SurveysOptions.ResolvedRoutePrefix}Preview",
+                draft,
+                SurveySchemaSerializer.Options);
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                resolveError = body.Length > 200 ? body.Substring(0, 200) + "…" : body;
+                return null;
+            }
+            resolveError = null;
+            return await response.Content.ReadAsStringAsync();
+        }
+        catch (Exception ex)
+        {
+            resolveError = ex.Message;
+            return null;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (Schema is null)
+        {
+            lastPushedSource = null;
+            lastPushedLocale = null;
+            submitHandlerInstalled = false;
+            return;
+        }
+
+        var schemaChanged = !ReferenceEquals(Schema, lastPushedSource);
+        var localeChanged = Locale != lastPushedLocale;
+
+        if (!schemaChanged && !localeChanged) return;
+
+        string? resolvedJson = null;
+        if (schemaChanged)
+        {
+            resolvedJson = await ResolveDraftJson(Schema);
+            if (resolvedJson is null)
+            {
+                // Capture the bad source so we don't retry on every re-render.
+                // Author will retype → new Schema reference → we try again.
+                lastPushedSource = Schema;
+                StateHasChanged();
+                return;
+            }
+        }
+
+        // If a previous render had the element hidden because of an error, the
+        // ref we hold is stale. Trigger a re-render so <shift-survey> rebinds.
+        if (resolveError is not null)
+        {
+            resolveError = null;
+            StateHasChanged();
+            await Task.Yield();
+        }
+
+        interopModule ??= await JS.InvokeAsync<IJSObjectReference>("import", InteropPath);
+
+        if (!submitHandlerInstalled)
+        {
+            await interopModule.InvokeVoidAsync("installPreviewSubmitHandler", surveyElement);
+            submitHandlerInstalled = true;
+        }
+
+        if (resolvedJson is not null)
+        {
+            await interopModule.InvokeVoidAsync("setSchema", surveyElement, resolvedJson);
+            lastPushedSource = Schema;
+        }
+
+        if (Locale != lastPushedLocale)
+        {
+            await interopModule.InvokeVoidAsync("setLocale", surveyElement, Locale);
+            lastPushedLocale = Locale;
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (interopModule is not null)
+        {
+            try { await interopModule.DisposeAsync(); }
+            catch (JSDisconnectedException) { /* page navigated away; ignore */ }
+        }
+    }
+}

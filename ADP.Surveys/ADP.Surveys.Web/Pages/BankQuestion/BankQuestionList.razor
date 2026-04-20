@@ -1,0 +1,27 @@
+@attribute [Route($"{SurveyRoutes.Prefix}/{nameof(BankQuestionList)}")]
+@attribute [Authorize]
+@inject SurveysWebOptions SurveysOptions
+
+<ShiftList EntitySet="@($"{SurveysOptions.ResolvedRoutePrefix}BankQuestion")"
+           Title="Question Bank"
+           T="BankQuestionListDTO"
+           Dense
+           ComponentType="typeof(BankQuestionForm)"
+           TypeAuthAction="SurveysActionTree.BankQuestions"
+           ShowIDColumn="true"
+           EnableExport>
+
+    <PropertyColumn Property="x => x.Key" Title="Key" />
+    <PropertyColumn Property="x => x.Type" Title="Type" />
+    <PropertyColumn Property="x => x.Locked" Title="Locked">
+        <CellTemplate Context="cell">
+            <MudCheckBox T="bool" Value="cell.Item.Locked" Disabled="true" />
+        </CellTemplate>
+    </PropertyColumn>
+    <PropertyColumn Property="x => x.Retired" Title="Retired">
+        <CellTemplate Context="cell">
+            <MudCheckBox T="bool" Value="cell.Item.Retired" Disabled="true" />
+        </CellTemplate>
+    </PropertyColumn>
+
+</ShiftList>
