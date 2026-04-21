@@ -274,6 +274,7 @@
                             </MudTabPanel>
 
                             <MudTabPanel Text="Labour">
+                                <div @key="selectedVariant">
                                 <MudTextFieldExtended Label="Primary Labour Rate In Dollar" @bind-Value="selectedVariant.LabourRate" />
 
                                 @if (ShowCountryUi)
@@ -309,9 +310,11 @@
                                         }
                                     </tbody>
                                 </MudSimpleTable>
+                                </div>
                             </MudTabPanel>
 
                             <MudTabPanel Text="Service Intervals">
+                                <div @key="selectedVariant">
                                 <MudCheckBox ValueChanged="ToggleServiceIntervalSelects" T="bool">Select All</MudCheckBox>
                                 <MudGrid>
                                     @foreach (var serviceInterval in serviceIntervals)
@@ -321,9 +324,11 @@
                                         </MudItem>
                                     }
                                 </MudGrid>
+                                </div>
                             </MudTabPanel>
 
                             <MudTabPanel Text="Menu">
+                                <div @key="selectedVariant">
                                 <MudPaper Outlined="true" Class="menu-section-card">
                                     <MudText Typo="Typo.subtitle1" Class="menu-section-title">Periodic</MudText>
                                     <div class="menu-field-row">
@@ -389,6 +394,7 @@
                                         <MudTextFieldExtended Label="Discount Percentage" @bind-Value="selectedVariant.DiscountPercentage" />
                                     </div>
                                 </MudPaper>
+                                </div>
                             </MudTabPanel>
                         </MudTabs>
             }
