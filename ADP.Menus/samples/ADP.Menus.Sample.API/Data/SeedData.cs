@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ShiftSoftware.ADP.Menus.Data.Entities;
 using ShiftSoftware.ADP.Menus.Shared.Enums;
+using ShiftSoftware.ShiftIdentity.Core.Entities;
 using System.Text.Json;
 
 using MenuEntity = global::ShiftSoftware.ADP.Menus.Data.Entities.Menu;
@@ -99,6 +100,9 @@ public static class SeedData
     {
         // The static *Data() methods assign explicit IDs, so on SQL Server we must
         // toggle IDENTITY_INSERT around each table's save. Save tables one at a time.
+
+        if (!db.Set<Brand>().Any())
+            await SaveWithIdentityInsertAsync(db, "[ShiftIdentity].[Brands]", BrandData());
 
         if (!db.Set<ReplacementItem>().Any())
             await SaveWithIdentityInsertAsync(db, "[Menu].[ReplacementItem]", ReplacementItemData());
@@ -270,8 +274,8 @@ public static class SeedData
         {
             MenuID = toyotaGroup.ID,
             Name = "V1",
-            MenuPrefix = "SER",
-            MenuPostfix = "A",
+            MenuPrefix = Loc("SER"),
+            MenuPostfix = Loc("A"),
             LabourRate = 45,
             DiscountPercentage = 5,
             HasStandaloneItems = true
@@ -281,8 +285,8 @@ public static class SeedData
         {
             MenuID = toyotaGroup.ID,
             Name = "V2",
-            MenuPrefix = "SER",
-            MenuPostfix = "P",
+            MenuPrefix = Loc("SER"),
+            MenuPostfix = Loc("P"),
             LabourRate = 45,
             DiscountPercentage = 7.5m,
             HasStandaloneItems = true
@@ -292,8 +296,8 @@ public static class SeedData
         {
             MenuID = toyotaGroup.ID,
             Name = "V3",
-            MenuPrefix = "MNT",
-            MenuPostfix = "X",
+            MenuPrefix = Loc("MNT"),
+            MenuPostfix = Loc("X"),
             LabourRate = 47,
             DiscountPercentage = 4,
             HasStandaloneItems = true
@@ -303,7 +307,7 @@ public static class SeedData
         {
             MenuID = lexusGroup.ID,
             Name = "V1",
-            MenuPrefix = "PMS",
+            MenuPrefix = Loc("PMS"),
             MenuPostfix = null,
             LabourRate = 62,
             DiscountPercentage = 3,
@@ -314,8 +318,8 @@ public static class SeedData
         {
             MenuID = lexusGroup.ID,
             Name = "V2",
-            MenuPrefix = "PMS",
-            MenuPostfix = "L",
+            MenuPrefix = Loc("PMS"),
+            MenuPostfix = Loc("L"),
             LabourRate = 64,
             DiscountPercentage = 2.5m,
             HasStandaloneItems = true
@@ -325,8 +329,8 @@ public static class SeedData
         {
             MenuID = toyotaGroup2.ID,
             Name = "V1",
-            MenuPrefix = "SRV",
-            MenuPostfix = "B",
+            MenuPrefix = Loc("SRV"),
+            MenuPostfix = Loc("B"),
             LabourRate = 46,
             DiscountPercentage = 6,
             HasStandaloneItems = true
@@ -336,8 +340,8 @@ public static class SeedData
         {
             MenuID = lexusGroup2.ID,
             Name = "V1",
-            MenuPrefix = "PRE",
-            MenuPostfix = "R",
+            MenuPrefix = Loc("PRE"),
+            MenuPostfix = Loc("R"),
             LabourRate = 63,
             DiscountPercentage = 2,
             HasStandaloneItems = true
@@ -347,8 +351,8 @@ public static class SeedData
         {
             MenuID = camryGroup.ID,
             Name = "V1",
-            MenuPrefix = "CMP",
-            MenuPostfix = "H",
+            MenuPrefix = Loc("CMP"),
+            MenuPostfix = Loc("H"),
             LabourRate = 47,
             DiscountPercentage = 5,
             HasStandaloneItems = true
@@ -358,8 +362,8 @@ public static class SeedData
         {
             MenuID = rxGroup.ID,
             Name = "V1",
-            MenuPrefix = "RXS",
-            MenuPostfix = "T",
+            MenuPrefix = Loc("RXS"),
+            MenuPostfix = Loc("T"),
             LabourRate = 68,
             DiscountPercentage = 3,
             HasStandaloneItems = true
@@ -707,6 +711,16 @@ public static class SeedData
         };
 
         return mappings;
+    }
+
+    private static IEnumerable<Brand> BrandData()
+    {
+        return new List<Brand>
+        {
+            new Brand { ID = 1, Name = "Hino" },
+            new Brand { ID = 2, Name = "Toyota" },
+            new Brand { ID = 3, Name = "Lexus" },
+        };
     }
 
     private static IEnumerable<ReplacementItemServiceIntervalGroup> GetReplacementItemServiceIntervalGroupData()

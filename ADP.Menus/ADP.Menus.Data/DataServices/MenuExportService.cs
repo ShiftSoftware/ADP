@@ -20,9 +20,12 @@ public class MenuExportService
 
         foreach (var menuVariant in menuVariants)
         {
+            var menuPrefix = LocalizedText.Resolve(menuVariant.MenuPrefix, language);
+            var menuPostfix = LocalizedText.Resolve(menuVariant.MenuPostfix, language);
+
             foreach (var serviceInterval in menuVariant.PeriodicAvailabilities)
             {
-                var code = $"{menuVariant.MenuPrefix} {menuVariant.Menu.BasicModelCode} {serviceInterval.ServiceInterval.Code} {menuVariant.MenuPostfix}".Trim();
+                var code = $"{menuPrefix} {menuVariant.Menu.BasicModelCode} {serviceInterval.ServiceInterval.Code} {menuPostfix}".Trim();
 
                 string labourCode = "";
                 decimal allowedTime = 0;
@@ -108,6 +111,9 @@ public class MenuExportService
 
         foreach (var menuVariant in standaloneMenus)
         {
+            var menuPrefix = LocalizedText.Resolve(menuVariant.MenuPrefix, language);
+            var menuPostfix = LocalizedText.Resolve(menuVariant.MenuPostfix, language);
+
             // Create menu for non grouped items
             var nonGroupedItems = menuVariant.Items
                 .Where(x => !x.IsDeleted
@@ -121,7 +127,7 @@ public class MenuExportService
             {
                 var standaloneOperationCode = LocalizedText.Resolve(item.ReplacementItemVehicleModel!.ReplacementItem.StandaloneOperationCode, language);
                 var code = applyPrefixPostfixToStandalones
-                    ? $"{menuVariant.MenuPrefix} {standaloneOperationCode} {menuVariant.Menu.BasicModelCode} {menuVariant.MenuPostfix}".Trim()
+                    ? $"{menuPrefix} {standaloneOperationCode} {menuVariant.Menu.BasicModelCode} {menuPostfix}".Trim()
                     : $"{standaloneOperationCode} {menuVariant.Menu.BasicModelCode}".Trim();
 
                 decimal allowedTime = item.StandaloneAllowedTime;
@@ -173,7 +179,7 @@ public class MenuExportService
             {
                 var menuCode = LocalizedText.Resolve(item.First().ReplacementItemVehicleModel!.ReplacementItem!.StandaloneReplacementItemGroup!.MenuCode, language);
                 var code = applyPrefixPostfixToStandalones
-                    ? $"{menuVariant.MenuPrefix} {menuCode} {menuVariant.Menu.BasicModelCode} {menuVariant.MenuPostfix}".Trim()
+                    ? $"{menuPrefix} {menuCode} {menuVariant.Menu.BasicModelCode} {menuPostfix}".Trim()
                     : $"{menuCode} {menuVariant.Menu.BasicModelCode}".Trim();
 
                 decimal allowedTime = item.First().StandaloneAllowedTime;

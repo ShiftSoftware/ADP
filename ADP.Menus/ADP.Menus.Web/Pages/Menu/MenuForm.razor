@@ -75,7 +75,7 @@
                             <button type="button" class="variant-chip-btn"
                                     @onclick="@(() => SelectVariant(variant))">
                                 <span class="variant-chip-name">@variant.Name</span>
-                                <span class="variant-chip-sub">@variant.MenuPrefix @variant.MenuPostfix</span>
+                                <span class="variant-chip-sub">@ResolveLocalized(variant.MenuPrefix) @ResolveLocalized(variant.MenuPostfix)</span>
                             </button>
                         }
                         <div class="variant-chip-actions">
@@ -324,8 +324,20 @@
                             </MudTabPanel>
 
                             <MudTabPanel Text="Menu">
-                                <MudTextFieldExtended Label="Menu Prefix" @bind-Value="selectedVariant.MenuPrefix" />
-                                <MudTextFieldExtended Label="Menu Postfix" @bind-Value="selectedVariant.MenuPostfix" />
+                                @if (MenuOptions.Languages.Count > 0)
+                                {
+                                    <LocalizedTextField Label="Menu Prefix"
+                                                        @bind-Value="selectedVariant.MenuPrefix"
+                                                        Languages="MenuOptions.LanguageInfos" />
+                                    <LocalizedTextField Label="Menu Postfix"
+                                                        @bind-Value="selectedVariant.MenuPostfix"
+                                                        Languages="MenuOptions.LanguageInfos" />
+                                }
+                                else
+                                {
+                                    <MudTextFieldExtended Label="Menu Prefix" @bind-Value="selectedVariant.MenuPrefix" />
+                                    <MudTextFieldExtended Label="Menu Postfix" @bind-Value="selectedVariant.MenuPostfix" />
+                                }
                                 <MudTextFieldExtended Label="Discount Percentage" @bind-Value="selectedVariant.DiscountPercentage" />
                             </MudTabPanel>
                         </MudTabs>
@@ -515,6 +527,27 @@
 </style>
 
 @code {
+    private static string ResolveLocalized(string? raw)
+    {
+        if (string.IsNullOrEmpty(raw)) return raw ?? string.Empty;
+        if (raw[0] != '{') return raw;
+
+        try
+        {
+            var dict = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(raw);
+            if (dict is null || dict.Count == 0) return raw;
+
+            var key = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+            if (dict.TryGetValue(key, out var v)) return v;
+            if (dict.TryGetValue("en", out var en)) return en;
+            return dict.Values.FirstOrDefault() ?? raw;
+        }
+        catch
+        {
+            return raw;
+        }
+    }
+
     private bool loading;
     private bool variantSaving;
     private readonly HashSet<MenuItemPartDTO> refreshingPartPrices = [];
