@@ -1,0 +1,55 @@
+@namespace ShiftSoftware.ADP.Surveys.Web.Components.QuestionEditors
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Types
+
+<QuestionCommonFields Question="@Question"
+                      Locales="@Locales"
+                      ReadOnly="@ReadOnly"
+                      Changed="Changed" />
+
+<div class="qte-section">
+    <div class="qte-section__title">Star rating</div>
+    <div class="qte-row">
+        <MudNumericField T="int"
+                         Label="Max stars"
+                         Value="@Question.Max"
+                         ValueChanged="@((int v) => OnChanged(() => Question.Max = v))"
+                         ReadOnly="@ReadOnly"
+                         Min="1"
+                         Max="20"
+                         HelperText="1–20"
+                         Class="qte-num" />
+        <MudCheckBox T="bool"
+                     Value="@Question.AllowHalf"
+                     ValueChanged="@((bool v) => OnChanged(() => Question.AllowHalf = v))"
+                     ReadOnly="@ReadOnly"
+                     Label="Allow half-stars"
+                     Dense="true" />
+    </div>
+</div>
+
+<style>
+    .qte-section { margin-top: 14px; padding-top: 10px; border-top: 1px dashed #e0e5ec; }
+    .qte-section__title { font-size: 0.8rem; font-weight: 600; color: #4b5563; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+    .qte-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    .qte-num { flex: 0 0 140px; }
+</style>
+
+@code {
+    [Parameter, EditorRequired]
+    public RatingQuestionDto Question { get; set; } = default!;
+
+    [Parameter]
+    public List<string>? Locales { get; set; }
+
+    [Parameter]
+    public bool ReadOnly { get; set; }
+
+    [Parameter]
+    public EventCallback Changed { get; set; }
+
+    async Task OnChanged(Action mutation)
+    {
+        mutation();
+        await Changed.InvokeAsync();
+    }
+}

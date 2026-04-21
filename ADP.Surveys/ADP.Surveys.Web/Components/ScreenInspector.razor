@@ -1,0 +1,157 @@
+@namespace ShiftSoftware.ADP.Surveys.Web.Components
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Screens
+@using LocalizedString = ShiftSoftware.ADP.Surveys.Shared.DTOs.LocalizedString
+
+<div class="screen-inspector">
+    @if (Draft is null || SelectedIndex < 0 || SelectedIndex >= Draft.Screens.Count)
+    {
+        <div class="screen-inspector__empty">Select a screen on the left to edit it.</div>
+    }
+    else if (Draft.Screens[SelectedIndex] is InlineScreenDto inline)
+    {
+        <div class="screen-inspector__section-title">Screen properties</div>
+
+        <MudTextField T="string"
+                      Label="Screen ID"
+                      Value="@inline.Id"
+                      ValueChanged="@((string v) => OnIdChanged(inline, v))"
+                      ReadOnly="@ReadOnly"
+                      HelperText="Stable identifier used by logic rules and nextScreen."
+                      Class="mb-3" />
+
+        <LocalizedStringField Value="@inline.Title"
+                              ValueChanged="@((LocalizedString? v) => OnTitleChanged(inline, v))"
+                              Label="Title"
+                              Locales="@Draft.Locales"
+                              ReadOnly="@ReadOnly" />
+
+        <LocalizedStringField Value="@inline.Description"
+                              ValueChanged="@((LocalizedString? v) => OnDescriptionChanged(inline, v))"
+                              Label="Description"
+                              Locales="@Draft.Locales"
+                              ReadOnly="@ReadOnly"
+                              Lines="2"
+                              MaxLines="4"
+                              AutoGrow="true" />
+
+        <MudSelect T="string"
+                   Label="Next screen (default)"
+                   Value="@(inline.NextScreen ?? "")"
+                   ValueChanged="@((string v) => OnNextScreenChanged(inline, v))"
+                   ReadOnly="@ReadOnly"
+                   HelperText="Pinned by screen ID — reordering the list does NOT change it. Leave blank to follow the list order above (or end the survey when on the last screen)."
+                   Clearable="true"
+                   Class="mt-3">
+            <MudSelectItem T="string" Value="@("")">(next in list order)</MudSelectItem>
+            @foreach (var (sid, index) in OtherScreenIdsNumbered(Draft, SelectedIndex))
+            {
+                <MudSelectItem T="string" Value="@sid">@($"{index + 1}. {sid}")</MudSelectItem>
+            }
+        </MudSelect>
+
+        <div class="screen-inspector__section-title mt-4">Questions</div>
+        <QuestionList Screen="inline"
+                      Draft="@Draft"
+                      Locales="@Draft.Locales"
+                      ReadOnly="@ReadOnly"
+                      SchemaVersion="@SchemaVersion"
+                      Changed="OnQuestionsChanged" />
+    }
+    else if (Draft.Screens[SelectedIndex] is ScreenTemplateRefDto templateRef)
+    {
+        <div class="screen-inspector__section-title">Screen template reference</div>
+        <MudAlert Severity="Severity.Info" Dense="true" Class="mb-2">
+            This screen pulls from a screen template by reference. The visual editor
+            for template refs lands in <b>Slice 4</b> (Bank &amp; Template picker). Edit the
+            <code>templateRef</code> field via the <b>Raw JSON</b> tab for now.
+        </MudAlert>
+        <MudTextField T="string"
+                      Label="templateRef"
+                      Value="@templateRef.TemplateRef"
+                      ReadOnly="true" />
+    }
+</div>
+
+<style>
+    .screen-inspector {
+        border: 1px solid #d0d5dd;
+        border-radius: 8px;
+        background: #fff;
+        padding: 16px;
+        min-height: 200px;
+    }
+    .screen-inspector__empty {
+        text-align: center;
+        color: #888;
+        padding: 32px 16px;
+        font-size: 0.9rem;
+    }
+    .screen-inspector__section-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 10px;
+        padding-bottom: 4px;
+        border-bottom: 1px solid #e0e5ec;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public SurveyDto? Draft { get; set; }
+
+    [Parameter]
+    public EventCallback<SurveyDto?> DraftChanged { get; set; }
+
+    [Parameter]
+    public int SelectedIndex { get; set; } = -1;
+
+    [Parameter]
+    public bool ReadOnly { get; set; }
+
+    /// <summary>
+    /// Bumped by the parent on every <see cref="Draft"/> mutation. Forces
+    /// Blazor to re-render this component even when the Draft reference
+    /// stays the same, so the NextScreen MudSelect refreshes its options.
+    /// </summary>
+    [Parameter]
+    public int SchemaVersion { get; set; }
+
+    async Task OnIdChanged(InlineScreenDto screen, string value)
+    {
+        screen.Id = value ?? "";
+        await DraftChanged.InvokeAsync(Draft);
+    }
+
+    async Task OnTitleChanged(InlineScreenDto screen, LocalizedString? value)
+    {
+        screen.Title = value;
+        await DraftChanged.InvokeAsync(Draft);
+    }
+
+    async Task OnDescriptionChanged(InlineScreenDto screen, LocalizedString? value)
+    {
+        screen.Description = value;
+        await DraftChanged.InvokeAsync(Draft);
+    }
+
+    async Task OnNextScreenChanged(InlineScreenDto screen, string value)
+    {
+        screen.NextScreen = string.IsNullOrWhiteSpace(value) ? null : value;
+        await DraftChanged.InvokeAsync(Draft);
+    }
+
+    // QuestionList mutates the InlineScreenDto's Questions list in place.
+    // We bubble that up as a Draft mutation so SurveyForm bumps schemaVersion
+    // and the preview refreshes.
+    async Task OnQuestionsChanged()
+    {
+        await DraftChanged.InvokeAsync(Draft);
+    }
+
+    static IEnumerable<(string Id, int Index)> OtherScreenIdsNumbered(SurveyDto draft, int currentIndex) =>
+        draft.Screens
+            .Select((s, i) => (s, i))
+            .Where(t => t.i != currentIndex && t.s is InlineScreenDto inline && !string.IsNullOrWhiteSpace(inline.Id))
+            .Select(t => (((InlineScreenDto)t.s).Id, t.i));
+}

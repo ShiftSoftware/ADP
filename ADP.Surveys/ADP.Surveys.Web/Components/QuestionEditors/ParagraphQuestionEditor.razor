@@ -1,0 +1,78 @@
+@namespace ShiftSoftware.ADP.Surveys.Web.Components.QuestionEditors
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Types
+@using LocalizedString = ShiftSoftware.ADP.Surveys.Shared.DTOs.LocalizedString
+
+<QuestionCommonFields Question="@Question"
+                      Locales="@Locales"
+                      ReadOnly="@ReadOnly"
+                      Changed="Changed" />
+
+<div class="qte-section">
+    <div class="qte-section__title">Text constraints</div>
+    <LocalizedStringField Value="@Question.Placeholder"
+                          ValueChanged="@((LocalizedString? v) => OnChanged(() => Question.Placeholder = v))"
+                          Label="Placeholder (optional)"
+                          Locales="@Locales"
+                          ReadOnly="@ReadOnly" />
+
+    <div class="qte-row">
+        <MudNumericField T="int?"
+                         Label="Min length"
+                         Value="@Question.MinLength"
+                         ValueChanged="@((int? v) => OnChanged(() => Question.MinLength = v))"
+                         ReadOnly="@ReadOnly"
+                         Min="0"
+                         Clearable="true"
+                         Class="qte-num" />
+        <MudNumericField T="int?"
+                         Label="Max length"
+                         Value="@Question.MaxLength"
+                         ValueChanged="@((int? v) => OnChanged(() => Question.MaxLength = v))"
+                         ReadOnly="@ReadOnly"
+                         Min="0"
+                         Clearable="true"
+                         Class="qte-num" />
+    </div>
+</div>
+
+<style>
+    .qte-section {
+        margin-top: 14px;
+        padding-top: 10px;
+        border-top: 1px dashed #e0e5ec;
+    }
+    .qte-section__title {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #4b5563;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 8px;
+    }
+    .qte-row {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    .qte-num { flex: 1 1 140px; min-width: 120px; }
+</style>
+
+@code {
+    [Parameter, EditorRequired]
+    public ParagraphQuestionDto Question { get; set; } = default!;
+
+    [Parameter]
+    public List<string>? Locales { get; set; }
+
+    [Parameter]
+    public bool ReadOnly { get; set; }
+
+    [Parameter]
+    public EventCallback Changed { get; set; }
+
+    async Task OnChanged(Action mutation)
+    {
+        mutation();
+        await Changed.InvokeAsync();
+    }
+}

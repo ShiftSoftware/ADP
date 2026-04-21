@@ -1,0 +1,341 @@
+@namespace ShiftSoftware.ADP.Surveys.Web.Components
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Types
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Screens
+@using ShiftSoftware.ADP.Surveys.Shared.Enums
+@using LocalizedString = ShiftSoftware.ADP.Surveys.Shared.DTOs.LocalizedString
+
+@* Inline-screen question editor. Renders each QuestionEntryDto as a
+   MudExpansionPanel. Collapsed header shows number, type, title preview,
+   and row controls. Expanded body hosts the QuestionInspector dispatcher.
+   Add-question menu at the top covers the 3 visually-supported types first;
+   the others land in Slice 3. Re-order / delete operate in place and raise
+   Changed so the parent bumps SchemaVersion and the preview refreshes. *@
+
+<div class="ql">
+    <div class="ql__header">
+        <span class="ql__title">Questions</span>
+        @if (!ReadOnly)
+        {
+            @*
+                MudMenu renders its own activator button when Label + StartIcon
+                are set directly on it (no ActivatorContent). ActivatorContent
+                with a nested MudButton was swallowing the click because the
+                inner button's <button> element didn't forward to MudMenu's
+                wrapper reliably. Using MudMenu's own button avoids that.
+            *@
+            <MudMenu Label="Add question"
+                     StartIcon="@Icons.Material.Filled.Add"
+                     Variant="Variant.Text"
+                     Size="Size.Small"
+                     Color="Color.Primary"
+                     AnchorOrigin="Origin.BottomRight"
+                     TransformOrigin="Origin.TopRight">
+                @foreach (var type in visuallyEditableTypes)
+                {
+                    <MudMenuItem OnClick="@(() => AddQuestion(type))">
+                        @FormatType(type)
+                    </MudMenuItem>
+                }
+            </MudMenu>
+        }
+    </div>
+
+    @if (Screen.Questions.Count == 0)
+    {
+        <div class="ql__empty">No questions on this screen. Click <b>+ Add question</b> to start.</div>
+    }
+    else
+    {
+        <MudExpansionPanels MultiExpansion="false" Elevation="0" Dense="true">
+            @for (int i = 0; i < Screen.Questions.Count; i++)
+            {
+                var idx = i;
+                var entry = Screen.Questions[idx];
+                var label = EntryLabel(entry, idx);
+                var typeBadge = EntryTypeBadge(entry);
+
+                <MudExpansionPanel Expanded="@(idx == expandedIndex)"
+                                   ExpandedChanged="@(b => OnExpandedChanged(idx, b))">
+                    <TitleContent>
+                        <div class="ql__row">
+                            <div class="ql__row-label">
+                                <span class="ql__row-number">@(idx + 1).</span>
+                                <span class="ql__row-type">@typeBadge</span>
+                                <span class="ql__row-title">@label</span>
+                            </div>
+                            @if (!ReadOnly)
+                            {
+                                <div class="ql__row-actions" @onclick:stopPropagation="true">
+                                    <MudIconButton Icon="@Icons.Material.Filled.ArrowUpward"
+                                                   Size="Size.Small"
+                                                   Disabled="@(idx == 0)"
+                                                   OnClick="@(() => MoveUp(idx))"
+                                                   title="Move up" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.ArrowDownward"
+                                                   Size="Size.Small"
+                                                   Disabled="@(idx == Screen.Questions.Count - 1)"
+                                                   OnClick="@(() => MoveDown(idx))"
+                                                   title="Move down" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                   Size="Size.Small"
+                                                   Color="Color.Error"
+                                                   OnClick="@(() => RemoveQuestion(idx))"
+                                                   title="Remove" />
+                                </div>
+                            }
+                        </div>
+                    </TitleContent>
+                    <ChildContent>
+                        <QuestionInspector Entry="entry"
+                                           Draft="@Draft"
+                                           Locales="@Locales"
+                                           ReadOnly="@ReadOnly"
+                                           Changed="OnChildChanged" />
+                    </ChildContent>
+                </MudExpansionPanel>
+            }
+        </MudExpansionPanels>
+    }
+</div>
+
+<style>
+    .ql {
+        margin-top: 6px;
+    }
+    .ql__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 4px 0 8px;
+    }
+    .ql__title {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #333;
+    }
+    .ql__empty {
+        padding: 16px;
+        text-align: center;
+        color: #888;
+        font-size: 0.85rem;
+        border: 1px dashed #d0d5dd;
+        border-radius: 8px;
+    }
+    .ql__row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        width: 100%;
+    }
+    .ql__row-label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+        flex: 1;
+    }
+    .ql__row-number {
+        font-weight: 600;
+        color: #666;
+        font-variant-numeric: tabular-nums;
+        min-width: 22px;
+    }
+    .ql__row-type {
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        background: #eef2ff;
+        color: #4338ca;
+        padding: 2px 6px;
+        border-radius: 999px;
+    }
+    .ql__row-title {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 0.9rem;
+        color: #111;
+    }
+    .ql__row-actions {
+        display: flex;
+        gap: 2px;
+        flex-shrink: 0;
+    }
+    /* MudMenu handles open/close + outside-click on its own; no scrim needed. */
+</style>
+
+@code {
+    [Parameter, EditorRequired]
+    public InlineScreenDto Screen { get; set; } = default!;
+
+    /// <summary>
+    /// Full draft survey — needed by NavigationListQuestionEditor (per-option
+    /// nextScreen picker). Pass-through only.
+    /// </summary>
+    [Parameter]
+    public SurveyDto? Draft { get; set; }
+
+    [Parameter]
+    public List<string>? Locales { get; set; }
+
+    [Parameter]
+    public bool ReadOnly { get; set; }
+
+    [Parameter]
+    public EventCallback Changed { get; set; }
+
+    /// <summary>
+    /// Bumped by the parent on every Draft mutation so Blazor re-renders this
+    /// component even when the Screen reference stays the same across mutations.
+    /// </summary>
+    [Parameter]
+    public int SchemaVersion { get; set; }
+
+    int expandedIndex = -1;
+
+    // All 14 question types have a visual editor as of Slice 3.
+    static readonly QuestionType[] visuallyEditableTypes = new[]
+    {
+        QuestionType.Text,
+        QuestionType.Paragraph,
+        QuestionType.Number,
+        QuestionType.Rating,
+        QuestionType.Nps,
+        QuestionType.SingleChoice,
+        QuestionType.MultiChoice,
+        QuestionType.Dropdown,
+        QuestionType.Date,
+        QuestionType.DateTime,
+        QuestionType.File,
+        QuestionType.Signature,
+        QuestionType.YesNo,
+        QuestionType.NavigationList,
+    };
+
+    static string FormatType(QuestionType t) => t switch
+    {
+        QuestionType.Text => "Text (single line)",
+        QuestionType.Paragraph => "Paragraph (multi-line)",
+        QuestionType.Number => "Number",
+        QuestionType.Rating => "Rating (stars)",
+        QuestionType.Nps => "NPS score",
+        QuestionType.SingleChoice => "Single choice (radio)",
+        QuestionType.MultiChoice => "Multi choice (checkbox)",
+        QuestionType.Dropdown => "Dropdown",
+        QuestionType.Date => "Date",
+        QuestionType.DateTime => "Date & time",
+        QuestionType.File => "File upload",
+        QuestionType.Signature => "Signature",
+        QuestionType.YesNo => "Yes / No",
+        QuestionType.NavigationList => "Navigation list",
+        _ => t.ToString(),
+    };
+
+    static string EntryLabel(QuestionEntryDto entry, int index)
+    {
+        if (entry.Ref is not null)
+            return $"[banked: {entry.Ref.BankRef}]";
+        if (entry.Inline is not null)
+        {
+            var title = entry.Inline.Title;
+            if (title is not null)
+            {
+                var first = title.Values.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v));
+                if (!string.IsNullOrEmpty(first)) return first;
+            }
+            return !string.IsNullOrWhiteSpace(entry.Inline.Id)
+                ? entry.Inline.Id
+                : $"Question #{index + 1}";
+        }
+        return $"Question #{index + 1}";
+    }
+
+    static string EntryTypeBadge(QuestionEntryDto entry)
+    {
+        if (entry.Ref is not null) return "ref";
+        if (entry.Inline is not null) return entry.Inline.QuestionType.ToString().ToLowerInvariant();
+        return "?";
+    }
+
+    async Task OnChildChanged()
+    {
+        await Changed.InvokeAsync();
+    }
+
+    void OnExpandedChanged(int index, bool expanded)
+    {
+        expandedIndex = expanded ? index : -1;
+    }
+
+    async Task AddQuestion(QuestionType type)
+    {
+        QuestionDto q = type switch
+        {
+            QuestionType.Text => new TextQuestionDto(),
+            QuestionType.Paragraph => new ParagraphQuestionDto(),
+            QuestionType.Number => new NumberQuestionDto(),
+            QuestionType.Rating => new RatingQuestionDto { Max = 5 },
+            QuestionType.Nps => new NpsQuestionDto { Min = 0, Max = 10 },
+            QuestionType.SingleChoice => new SingleChoiceQuestionDto(),
+            QuestionType.MultiChoice => new MultiChoiceQuestionDto(),
+            QuestionType.Dropdown => new DropdownQuestionDto(),
+            QuestionType.Date => new DateQuestionDto(),
+            QuestionType.DateTime => new DateTimeQuestionDto(),
+            QuestionType.File => new FileQuestionDto(),
+            QuestionType.Signature => new SignatureQuestionDto(),
+            QuestionType.YesNo => new YesNoQuestionDto(),
+            QuestionType.NavigationList => new NavigationListQuestionDto(),
+            _ => throw new NotSupportedException($"Unsupported question type for visual add: {type}"),
+        };
+        q.Id = GenerateQuestionId(Screen, type);
+        q.Title = new LocalizedString();
+        Screen.Questions.Add(QuestionEntryDto.FromInline(q));
+        expandedIndex = Screen.Questions.Count - 1;
+        await Changed.InvokeAsync();
+    }
+
+    async Task RemoveQuestion(int index)
+    {
+        if (index < 0 || index >= Screen.Questions.Count) return;
+        Screen.Questions.RemoveAt(index);
+        if (expandedIndex == index) expandedIndex = -1;
+        else if (expandedIndex > index) expandedIndex--;
+        await Changed.InvokeAsync();
+    }
+
+    async Task MoveUp(int index)
+    {
+        if (index <= 0) return;
+        (Screen.Questions[index - 1], Screen.Questions[index]) = (Screen.Questions[index], Screen.Questions[index - 1]);
+        if (expandedIndex == index) expandedIndex = index - 1;
+        else if (expandedIndex == index - 1) expandedIndex = index;
+        await Changed.InvokeAsync();
+    }
+
+    async Task MoveDown(int index)
+    {
+        if (index >= Screen.Questions.Count - 1) return;
+        (Screen.Questions[index + 1], Screen.Questions[index]) = (Screen.Questions[index], Screen.Questions[index + 1]);
+        if (expandedIndex == index) expandedIndex = index + 1;
+        else if (expandedIndex == index + 1) expandedIndex = index;
+        await Changed.InvokeAsync();
+    }
+
+    static string GenerateQuestionId(InlineScreenDto screen, QuestionType type)
+    {
+        var prefix = type.ToString().ToLowerInvariant();
+        var existing = screen.Questions
+            .Select(e => e.Inline?.Id)
+            .Where(id => !string.IsNullOrEmpty(id))
+            .ToHashSet();
+        for (int n = 1; ; n++)
+        {
+            var candidate = n == 1 ? prefix : $"{prefix}-{n}";
+            if (!existing.Contains(candidate)) return candidate;
+        }
+    }
+}

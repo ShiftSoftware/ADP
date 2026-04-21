@@ -1,0 +1,61 @@
+@namespace ShiftSoftware.ADP.Surveys.Web.Components.QuestionEditors
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Types
+
+<QuestionCommonFields Question="@Question"
+                      Locales="@Locales"
+                      ReadOnly="@ReadOnly"
+                      Changed="Changed" />
+
+<div class="qte-section">
+    <div class="qte-section__title">Selection limits</div>
+    <div class="qte-row">
+        <MudNumericField T="int?"
+                         Label="Min selected"
+                         Value="@Question.MinSelected"
+                         ValueChanged="@((int? v) => OnChanged(() => Question.MinSelected = v))"
+                         ReadOnly="@ReadOnly"
+                         Min="0"
+                         Clearable="true"
+                         Class="qte-num" />
+        <MudNumericField T="int?"
+                         Label="Max selected"
+                         Value="@Question.MaxSelected"
+                         ValueChanged="@((int? v) => OnChanged(() => Question.MaxSelected = v))"
+                         ReadOnly="@ReadOnly"
+                         Min="1"
+                         Clearable="true"
+                         Class="qte-num" />
+    </div>
+</div>
+
+<OptionListEditor Options="@Question.Options"
+                  Locales="@Locales"
+                  ReadOnly="@ReadOnly"
+                  Changed="Changed" />
+
+<style>
+    .qte-section { margin-top: 14px; padding-top: 10px; border-top: 1px dashed #e0e5ec; }
+    .qte-section__title { font-size: 0.8rem; font-weight: 600; color: #4b5563; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+    .qte-row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .qte-num { flex: 1 1 140px; min-width: 120px; }
+</style>
+
+@code {
+    [Parameter, EditorRequired]
+    public MultiChoiceQuestionDto Question { get; set; } = default!;
+
+    [Parameter]
+    public List<string>? Locales { get; set; }
+
+    [Parameter]
+    public bool ReadOnly { get; set; }
+
+    [Parameter]
+    public EventCallback Changed { get; set; }
+
+    async Task OnChanged(Action mutation)
+    {
+        mutation();
+        await Changed.InvokeAsync();
+    }
+}

@@ -1,0 +1,236 @@
+@namespace ShiftSoftware.ADP.Surveys.Web.Components
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Screens
+
+<div class="screen-list">
+    <div class="screen-list__header">
+        <span class="screen-list__title">Screens</span>
+        @if (!ReadOnly)
+        {
+            <MudIconButton Icon="@Icons.Material.Filled.Add"
+                           Size="Size.Small"
+                           Color="Color.Primary"
+                           OnClick="AddScreen"
+                           title="Add screen" />
+        }
+    </div>
+
+    @if (Draft is null || Draft.Screens.Count == 0)
+    {
+        <div class="screen-list__empty">No screens yet. Click + to add one.</div>
+    }
+    else
+    {
+        <MudList T="int" Dense="true" Class="screen-list__items">
+            @for (int i = 0; i < Draft.Screens.Count; i++)
+            {
+                var idx = i;
+                var screen = Draft.Screens[idx];
+                var selected = idx == SelectedIndex;
+                var label = GetLabel(screen, idx);
+                var isRef = screen is ScreenTemplateRefDto;
+
+                <div class="screen-list__row @(selected ? "screen-list__row--selected" : "")"
+                     @onclick="() => SelectScreen(idx)">
+                    <div class="screen-list__row-label">
+                        <span class="screen-list__row-number">@(idx + 1).</span>
+                        @if (isRef)
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Link" Size="Size.Small" Class="mr-1" />
+                        }
+                        else
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.ViewCarousel" Size="Size.Small" Class="mr-1" />
+                        }
+                        <span>@label</span>
+                    </div>
+                    @if (!ReadOnly)
+                    {
+                        <div class="screen-list__row-actions">
+                            <MudIconButton Icon="@Icons.Material.Filled.ArrowUpward"
+                                           Size="Size.Small"
+                                           Disabled="@(idx == 0)"
+                                           OnClick="@(() => MoveUp(idx))"
+                                           title="Move up" />
+                            <MudIconButton Icon="@Icons.Material.Filled.ArrowDownward"
+                                           Size="Size.Small"
+                                           Disabled="@(idx == Draft.Screens.Count - 1)"
+                                           OnClick="@(() => MoveDown(idx))"
+                                           title="Move down" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                           Size="Size.Small"
+                                           Color="Color.Error"
+                                           OnClick="@(() => RemoveScreen(idx))"
+                                           title="Remove" />
+                        </div>
+                    }
+                </div>
+            }
+        </MudList>
+    }
+</div>
+
+<style>
+    .screen-list {
+        border: 1px solid #d0d5dd;
+        border-radius: 8px;
+        background: #fff;
+        display: flex;
+        flex-direction: column;
+        min-height: 200px;
+    }
+    .screen-list__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px;
+        border-bottom: 1px solid #d0d5dd;
+        background: #f7f8fa;
+    }
+    .screen-list__title {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #333;
+    }
+    .screen-list__empty {
+        padding: 24px;
+        text-align: center;
+        color: #888;
+        font-size: 0.85rem;
+    }
+    .screen-list__items {
+        padding: 4px;
+        max-height: 560px;
+        overflow-y: auto;
+    }
+    .screen-list__row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 8px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background-color 0.12s ease;
+        gap: 8px;
+    }
+    .screen-list__row:hover {
+        background: #f0f4ff;
+    }
+    .screen-list__row--selected {
+        background: #e0ecff;
+    }
+    .screen-list__row-label {
+        display: flex;
+        align-items: center;
+        min-width: 0;
+        font-size: 0.85rem;
+        flex: 1;
+        gap: 2px;
+    }
+    .screen-list__row-number {
+        font-weight: 600;
+        color: #666;
+        font-variant-numeric: tabular-nums;
+        min-width: 22px;
+        text-align: right;
+        margin-right: 4px;
+    }
+    .screen-list__row-label span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .screen-list__row-actions {
+        display: flex;
+        gap: 2px;
+        flex-shrink: 0;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public SurveyDto? Draft { get; set; }
+
+    [Parameter]
+    public EventCallback<SurveyDto?> DraftChanged { get; set; }
+
+    [Parameter]
+    public int SelectedIndex { get; set; } = -1;
+
+    [Parameter]
+    public EventCallback<int> SelectedIndexChanged { get; set; }
+
+    [Parameter]
+    public bool ReadOnly { get; set; }
+
+    /// <summary>
+    /// Bumped by the parent on every <see cref="Draft"/> mutation so Blazor
+    /// re-renders this component even when <see cref="Draft"/> keeps its
+    /// reference identity (in-place edits by sibling components).
+    /// </summary>
+    [Parameter]
+    public int SchemaVersion { get; set; }
+
+    static string GetLabel(ScreenDto screen, int index) => screen switch
+    {
+        InlineScreenDto inline => !string.IsNullOrWhiteSpace(inline.Id)
+            ? inline.Id
+            : $"Screen #{index + 1}",
+        ScreenTemplateRefDto r => $"[template: {(!string.IsNullOrWhiteSpace(r.TemplateRef) ? r.TemplateRef : "unset")}]",
+        _ => $"Screen #{index + 1}"
+    };
+
+    async Task SelectScreen(int index)
+    {
+        if (index != SelectedIndex)
+            await SelectedIndexChanged.InvokeAsync(index);
+    }
+
+    async Task AddScreen()
+    {
+        Draft ??= new SurveyDto();
+        var nextId = GenerateScreenId(Draft);
+        Draft.Screens.Add(new InlineScreenDto { Id = nextId, Questions = new List<QuestionEntryDto>() });
+        var newIndex = Draft.Screens.Count - 1;
+        await DraftChanged.InvokeAsync(Draft);
+        await SelectedIndexChanged.InvokeAsync(newIndex);
+    }
+
+    async Task RemoveScreen(int index)
+    {
+        if (Draft is null || index < 0 || index >= Draft.Screens.Count) return;
+        Draft.Screens.RemoveAt(index);
+        var newSelected = Math.Min(SelectedIndex, Draft.Screens.Count - 1);
+        await DraftChanged.InvokeAsync(Draft);
+        await SelectedIndexChanged.InvokeAsync(newSelected);
+    }
+
+    async Task MoveUp(int index)
+    {
+        if (Draft is null || index <= 0) return;
+        (Draft.Screens[index - 1], Draft.Screens[index]) = (Draft.Screens[index], Draft.Screens[index - 1]);
+        var newSelected = SelectedIndex == index ? index - 1 :
+                          SelectedIndex == index - 1 ? index : SelectedIndex;
+        await DraftChanged.InvokeAsync(Draft);
+        await SelectedIndexChanged.InvokeAsync(newSelected);
+    }
+
+    async Task MoveDown(int index)
+    {
+        if (Draft is null || index >= Draft.Screens.Count - 1) return;
+        (Draft.Screens[index + 1], Draft.Screens[index]) = (Draft.Screens[index], Draft.Screens[index + 1]);
+        var newSelected = SelectedIndex == index ? index + 1 :
+                          SelectedIndex == index + 1 ? index : SelectedIndex;
+        await DraftChanged.InvokeAsync(Draft);
+        await SelectedIndexChanged.InvokeAsync(newSelected);
+    }
+
+    static string GenerateScreenId(SurveyDto draft)
+    {
+        var existing = draft.Screens.OfType<InlineScreenDto>().Select(s => s.Id).ToHashSet();
+        for (int n = draft.Screens.Count + 1; ; n++)
+        {
+            var candidate = $"screen-{n}";
+            if (!existing.Contains(candidate)) return candidate;
+        }
+    }
+}

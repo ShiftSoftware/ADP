@@ -1,0 +1,85 @@
+@namespace ShiftSoftware.ADP.Surveys.Web.Components.QuestionEditors
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions
+@using LocalizedString = ShiftSoftware.ADP.Surveys.Shared.DTOs.LocalizedString
+
+@* Shared fields for every QuestionDto: Id, Title, Help, Required, BiColumn.
+   Consumers render this at the top of their per-type editor. Bubbles a
+   Changed callback up whenever anything mutates so the parent form
+   can bump its SchemaVersion counter and refresh the preview. *@
+
+<div class="qcf">
+    <div class="qcf__row">
+        <MudTextField T="string"
+                      Label="Question ID"
+                      Value="@Question.Id"
+                      ValueChanged="@((string v) => OnChangedString(v, s => Question.Id = s))"
+                      ReadOnly="@ReadOnly"
+                      HelperText="Stable identifier referenced by logic rules and answer keys."
+                      Class="qcf__id" />
+        <MudTextField T="string"
+                      Label="BI column"
+                      Value="@(Question.BiColumn ?? "")"
+                      ValueChanged="@((string v) => OnChangedString(v, s => Question.BiColumn = string.IsNullOrWhiteSpace(s) ? null : s))"
+                      ReadOnly="@ReadOnly"
+                      HelperText="Optional export column name (leave blank = derived from ID)."
+                      Class="qcf__bi" />
+    </div>
+
+    <LocalizedStringField Value="@Question.Title"
+                          ValueChanged="@((LocalizedString? v) => OnChanged(() => Question.Title = v ?? new LocalizedString()))"
+                          Label="Title"
+                          Locales="@Locales"
+                          ReadOnly="@ReadOnly" />
+
+    <LocalizedStringField Value="@Question.Help"
+                          ValueChanged="@((LocalizedString? v) => OnChanged(() => Question.Help = v))"
+                          Label="Help text (optional)"
+                          Locales="@Locales"
+                          ReadOnly="@ReadOnly"
+                          Lines="2"
+                          MaxLines="3"
+                          AutoGrow="true" />
+
+    <MudCheckBox T="bool"
+                 Value="@Question.Required"
+                 ValueChanged="@((bool v) => OnChanged(() => Question.Required = v))"
+                 ReadOnly="@ReadOnly"
+                 Label="Required"
+                 Dense="true" />
+</div>
+
+<style>
+    .qcf__row {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    .qcf__id { flex: 1 1 240px; min-width: 180px; }
+    .qcf__bi { flex: 1 1 180px; min-width: 160px; }
+</style>
+
+@code {
+    [Parameter, EditorRequired]
+    public QuestionDto Question { get; set; } = default!;
+
+    [Parameter]
+    public List<string>? Locales { get; set; }
+
+    [Parameter]
+    public bool ReadOnly { get; set; }
+
+    [Parameter]
+    public EventCallback Changed { get; set; }
+
+    async Task OnChanged(Action mutation)
+    {
+        mutation();
+        await Changed.InvokeAsync();
+    }
+
+    async Task OnChangedString(string value, Action<string> assign)
+    {
+        assign(value ?? "");
+        await Changed.InvokeAsync();
+    }
+}
