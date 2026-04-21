@@ -8,6 +8,7 @@
 @inject SurveyService SurveySvc
 @inject MudBlazor.ISnackbar Snackbar
 
+<div class="survey-form-page">
 <ShiftEntityForm @bind-Mode="Mode"
                  @bind-Value="TheItem"
                  @ref="FormContainer"
@@ -17,12 +18,30 @@
                  TypeAuthAction="SurveysActionTree.Surveys"
                  @bind-Key="@Key">
 
+    @*
+        Published-version chip sits in the toolbar-start slot — replaces the
+        full-width alert that used to eat a whole row inside ChildContent.
+    *@
+    <ToolbarStartTemplate>
+        @if (TheItem.PublishedVersionNumber.HasValue)
+        {
+            <MudChip T="string"
+                     Size="Size.Small"
+                     Color="Color.Info"
+                     Variant="Variant.Outlined"
+                     Icon="@Icons.Material.Filled.Publish">
+                Last published: v@(TheItem.PublishedVersionNumber)
+            </MudChip>
+        }
+    </ToolbarStartTemplate>
+
     <ToolbarEndTemplate>
         @if (Mode != FormModes.Create && Key is not null)
         {
             <MudButton StartIcon="@Icons.Material.Filled.Publish"
-                       Variant="Variant.Filled"
+                       Variant="Variant.Text"
                        Color="Color.Primary"
+                       Size="Size.Small"
                        Disabled="@publishing"
                        OnClick="OnPublish">
                 @(publishing ? "Publishing…" : "Publish")
@@ -30,110 +49,178 @@
         }
     </ToolbarEndTemplate>
 
-    <ChildContent>
-        <MudTextFieldExtended OnlyValidateIfDirty="true"
-                              Label="Name"
-                              @bind-Value="TheItem.Name"
-                              For="@(() => TheItem.Name)" />
-
-        @if (TheItem.PublishedVersionNumber.HasValue)
-        {
-            <MudAlert Severity="Severity.Info" Dense="true" Class="mb-2">
-                Last published version: <b>@TheItem.PublishedVersionNumber</b>
-            </MudAlert>
-        }
-
+    <ChildContent Context="formCtx">
         @*
-            JSON editor + live preview side-by-side (stacks below 1024px). Text
-            changes deserialize straight into TheItem.Draft so FluentValidation's
-            `When(Draft is not null, ...)` inner-validator sees real screens / logic
-            and can surface inline errors — not delayed to server-side. The preview
-            pane picks up TheItem.Draft on every render; invalid-JSON states clear
-            it so the preview shows a placeholder instead of stale content.
+            Seed DraftJson once from TheItem.Draft — reliable here because
+            we're in the render pass where TheItem is already populated via
+            ShiftEntityForm's @bind-Value. OnParametersSet + OnResult proved
+            unreliable for this timing. The flag is one-shot so the user's
+            Raw-JSON edits aren't clobbered on re-render.
         *@
         @{
-            // Seed the textarea once from TheItem.Draft — reliable here because
-            // we're in the render pass where TheItem is already populated via
-            // ShiftEntityForm's @bind-Value. OnParametersSet + OnResult proved
-            // unreliable for this timing, but a one-shot inline check runs on
-            // every render and catches the first render with a populated Draft.
             if (!draftJsonSeeded && TheItem?.Draft is not null)
             {
                 DraftJson = JsonSerializer.Serialize(TheItem.Draft, SurveySchemaSerializer.Pretty);
                 draftJsonSeeded = true;
             }
+            var isReadOnly = Mode == FormModes.View;
         }
-        <div class="survey-form__split">
-            <div class="survey-form__editor">
-                @* Native <textarea> on purpose. MudTextFieldExtended caches its
-                   internal value on first render and drops subsequent parameter
-                   updates, so the editor stayed blank after the API load even
-                   with @@bind-Value:get/set + InvokeAsync(StateHasChanged). A
-                   native element also reads more like what authors expect for
-                   a JSON blob — monospace font, fixed rows, no floating label. *@
-                <label class="survey-form__editor-label">Draft (SurveyDto JSON)</label>
-                <textarea class="survey-form__editor-textarea"
-                          rows="24"
-                          spellcheck="false"
-                          value="@DraftJson"
-                          @oninput="OnDraftJsonInput" />
-                <p class="survey-form__editor-help">
-                    Full SurveyDto — screens, logic, locales. Saved as-is on Save; resolved + frozen on Publish.
-                </p>
 
-                @if (parseError is not null)
+        <div class="survey-form__layout">
+            <div class="survey-form__left">
+                @*
+                    Top strip of the left column: Name field on the left, the
+                    Visual/Raw toggle on the right. Replaces the wide header
+                    band that used to live above the editor grid.
+                *@
+                <div class="survey-form__left-top">
+                    <div class="survey-form__left-top-name">
+                        <MudTextFieldExtended OnlyValidateIfDirty="true"
+                                              Label="Name"
+                                              Margin="Margin.Dense"
+                                              @bind-Value="TheItem.Name"
+                                              For="@(() => TheItem.Name)" />
+                    </div>
+                    <MudToggleGroup T="string"
+                                    SelectionMode="SelectionMode.SingleSelection"
+                                    @bind-Value="currentView"
+                                    Color="Color.Primary"
+                                    Size="Size.Small"
+                                    CheckMark="false">
+                        <MudToggleItem T="string" Value="@("visual")">
+                            <MudIcon Icon="@Icons.Material.Filled.ViewModule" Size="Size.Small" Class="mr-1" />Visual
+                        </MudToggleItem>
+                        <MudToggleItem T="string" Value="@("raw")">
+                            <MudIcon Icon="@Icons.Material.Filled.Code" Size="Size.Small" Class="mr-1" />Raw JSON
+                        </MudToggleItem>
+                    </MudToggleGroup>
+                </div>
+
+                @if (currentView == "visual")
                 {
-                    <MudAlert Severity="Severity.Error" Dense="true" Class="mt-2">
-                        JSON parse error: @parseError
-                    </MudAlert>
+                    <div class="survey-form__visual">
+                        <div class="survey-form__visual-column survey-form__visual-screens">
+                            <ScreenList Draft="TheItem.Draft"
+                                        DraftChanged="OnDraftMutatedFromVisual"
+                                        SelectedIndex="selectedScreenIndex"
+                                        SelectedIndexChanged="OnSelectedScreenChanged"
+                                        ReadOnly="@isReadOnly"
+                                        SchemaVersion="schemaVersion" />
+                        </div>
+                        <div class="survey-form__visual-column survey-form__visual-inspector">
+                            <ScreenInspector Draft="TheItem.Draft"
+                                             DraftChanged="OnDraftMutatedFromVisual"
+                                             SelectedIndex="selectedScreenIndex"
+                                             ReadOnly="@isReadOnly"
+                                             SchemaVersion="schemaVersion" />
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="survey-form__raw">
+                        <textarea class="survey-form__editor-textarea"
+                                  rows="28"
+                                  spellcheck="false"
+                                  readonly="@isReadOnly"
+                                  value="@DraftJson"
+                                  @oninput="OnDraftJsonInput" />
+                        <p class="survey-form__editor-help">
+                            Full SurveyDto — screens, logic, locales. Saved as-is on Save; resolved + frozen on Publish.
+                            Editing here updates the Visual editor and the preview on each keystroke.
+                        </p>
+
+                        @if (parseError is not null)
+                        {
+                            <MudAlert Severity="Severity.Error" Dense="true" Class="mt-2">
+                                JSON parse error: @parseError
+                            </MudAlert>
+                        }
+                    </div>
                 }
             </div>
-            <div class="survey-form__preview">
-                <div class="survey-form__preview-header">Live preview</div>
-                <SurveyPreview Schema="TheItem.Draft" />
+
+            <div class="survey-form__right">
+                <SurveyPreview Schema="TheItem.Draft" SchemaVersion="schemaVersion" />
             </div>
         </div>
 
         <style>
-            /* Scoped via the unique class names below; lives in the form so the
-             * preview pane owns its own layout without bleeding into consumers. */
-            .survey-form__split {
+            /*
+                ShiftEntityForm hard-codes a pa-6 wrapper (24px all sides)
+                around the form body — see ShiftEntityForm.razor line 227. We
+                scope an override to .survey-form-page so it only affects this
+                form, trimming vertical padding to nothing and horizontal to
+                12px so the editor + phone get the full dialog viewport.
+                Framework feature request F2 in STATUS.md asks to make this
+                padding configurable upstream.
+            */
+            .survey-form-page .pa-6 {
+                padding-top: 4px !important;
+                padding-bottom: 4px !important;
+                padding-left: 12px !important;
+                padding-right: 12px !important;
+            }
+
+            /* Top-level 2-column split: editor on the left, phone on the right.
+               Phone column sized to the device (375 + 14px padding both sides +
+               a little breathing room). Left column grows to fill the rest. */
+            .survey-form__layout {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 16px;
+                padding: 4px 0;
+                align-items: start;
+            }
+            @@media (min-width: 1024px) {
+                .survey-form__layout {
+                    grid-template-columns: minmax(0, 1fr) 420px;
+                }
+            }
+
+            .survey-form__left {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                min-width: 0;
+            }
+
+            /* Name field + Visual/Raw toggle strip above the editor. */
+            .survey-form__left-top {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                flex-wrap: wrap;
+            }
+            .survey-form__left-top-name {
+                flex: 1 1 240px;
+                min-width: 200px;
+            }
+
+            /* Visual editor body: Screens rail + Inspector. */
+            .survey-form__visual {
                 display: grid;
                 grid-template-columns: 1fr;
                 gap: 16px;
                 align-items: start;
             }
-            @@media (min-width: 1024px) {
-                .survey-form__split {
-                    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            @@media (min-width: 640px) {
+                .survey-form__visual {
+                    grid-template-columns: 240px minmax(0, 1fr);
                 }
             }
-            .survey-form__preview {
-                border: 1px solid #d0d5dd;
-                border-radius: 8px;
-                background: #f7f8fa;
-                overflow: hidden;
-                min-height: 400px;
+
+            /* Raw JSON editor — takes the full left column. */
+            .survey-form__raw {
+                display: flex;
+                flex-direction: column;
             }
-            .survey-form__preview-header {
-                padding: 8px 12px;
-                border-bottom: 1px solid #d0d5dd;
-                background: #fff;
-                font-size: 0.85rem;
-                font-weight: 600;
-                color: #555;
-            }
+
             .survey-preview__placeholder {
                 padding: 32px;
                 text-align: center;
                 color: #888;
-            }
-            .survey-form__editor-label {
-                display: block;
-                font-weight: 600;
-                font-size: 0.85rem;
-                color: #555;
-                margin-bottom: 6px;
             }
             .survey-form__editor-textarea {
                 width: 100%;
@@ -160,18 +247,24 @@
     </ChildContent>
 
 </ShiftEntityForm>
+</div>
 
 @code {
     string DraftJson { get; set; } = "";
     string? parseError;
     bool publishing;
+    int selectedScreenIndex = -1;
+    // "visual" | "raw" — toggled via the MudToggleGroup above the editor.
+    string currentView = "visual";
+    // Counter bumped on every Draft mutation so SurveyPreview detects content
+    // changes even when the SurveyDto reference is reused. Reference-equality
+    // alone would miss in-place field edits from the visual editor.
+    int schemaVersion;
     // Tracks whether we've seeded DraftJson from TheItem.Draft yet. After the
-    // user touches the textarea, the textarea is the source of truth — we never
-    // re-seed or the user would lose mid-edit state.
+    // user touches the textarea OR the visual editor, DraftJson is re-derived
+    // from TheItem.Draft on each mutation — never clobbered mid-edit because
+    // the mutation source IS TheItem.Draft.
     bool draftJsonSeeded;
-
-    // Seeding is done inline in the render block — see the top of the
-    // ChildContent. Keeping the flag here so the @code block owns its state.
 
     void OnDraftJsonInput(ChangeEventArgs e)
     {
@@ -185,17 +278,44 @@
         {
             TheItem.Draft = null;
             parseError = null;
+            if (selectedScreenIndex >= 0) selectedScreenIndex = -1;
+            schemaVersion++;
             return;
         }
         try
         {
             TheItem.Draft = JsonSerializer.Deserialize<SurveyDto>(value, SurveySchemaSerializer.Options);
             parseError = null;
+            ClampSelection();
+            schemaVersion++;
         }
         catch (JsonException ex)
         {
             parseError = ex.Message;
         }
+    }
+
+    // Visual editor mutated the Draft. Re-serialize so Raw JSON stays in sync,
+    // bump the schema version so the preview sees the change.
+    void OnDraftMutatedFromVisual(SurveyDto? draft)
+    {
+        TheItem.Draft = draft;
+        DraftJson = draft is null ? "" : JsonSerializer.Serialize(draft, SurveySchemaSerializer.Pretty);
+        parseError = null;
+        ClampSelection();
+        schemaVersion++;
+    }
+
+    void OnSelectedScreenChanged(int index)
+    {
+        selectedScreenIndex = index;
+    }
+
+    void ClampSelection()
+    {
+        var count = TheItem?.Draft?.Screens.Count ?? 0;
+        if (selectedScreenIndex >= count) selectedScreenIndex = count - 1;
+        if (selectedScreenIndex < 0 && count > 0) selectedScreenIndex = 0;
     }
 
     async Task OnPublish()

@@ -1,0 +1,31 @@
+@namespace ShiftSoftware.ADP.Surveys.Web.Components.QuestionEditors
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Types
+
+<QuestionCommonFields Question="@Question"
+                      Locales="@Locales"
+                      ReadOnly="@ReadOnly"
+                      Changed="Changed" />
+
+<NavigationListOptionsEditor Options="@Question.Options"
+                             Draft="@Draft"
+                             Locales="@Locales"
+                             ReadOnly="@ReadOnly"
+                             Changed="Changed" />
+
+@code {
+    [Parameter, EditorRequired]
+    public NavigationListQuestionDto Question { get; set; } = default!;
+
+    [Parameter]
+    public SurveyDto? Draft { get; set; }
+
+    [Parameter]
+    public List<string>? Locales { get; set; }
+
+    [Parameter]
+    public bool ReadOnly { get; set; }
+
+    [Parameter]
+    public EventCallback Changed { get; set; }
+}

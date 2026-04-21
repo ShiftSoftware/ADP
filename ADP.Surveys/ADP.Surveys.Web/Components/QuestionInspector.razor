@@ -1,0 +1,113 @@
+@namespace ShiftSoftware.ADP.Surveys.Web.Components
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Types
+@using ShiftSoftware.ADP.Surveys.Web.Components.QuestionEditors
+
+@* Dispatches on Entry.Inline's concrete QuestionDto subtype and renders the
+   per-type editor. Every one of the 14 question types has a dedicated editor
+   as of Slice 3. QuestionRef entries still route to the Slice 4 placeholder. *@
+
+@if (Entry is null)
+{
+    <div class="qi-empty">No question selected.</div>
+}
+else if (Entry.Ref is not null)
+{
+    <MudAlert Severity="Severity.Info" Dense="true" Class="mb-2">
+        Banked question reference (<code>@Entry.Ref.BankRef</code>).
+        Visual editing of banked refs lands in <b>Slice 4</b>.
+        Use the <b>Raw JSON</b> tab to edit overrides for now.
+    </MudAlert>
+}
+else
+{
+    @switch (Entry.Inline)
+    {
+        case TextQuestionDto q:
+            <TextQuestionEditor Question="q" Locales="@Locales" ReadOnly="@ReadOnly" Changed="Changed" />
+            break;
+        case ParagraphQuestionDto q:
+            <ParagraphQuestionEditor Question="q" Locales="@Locales" ReadOnly="@ReadOnly" Changed="Changed" />
+            break;
+        case NumberQuestionDto q:
+            <NumberQuestionEditor Question="q" Locales="@Locales" ReadOnly="@ReadOnly" Changed="Changed" />
+            break;
+        case RatingQuestionDto q:
+            <RatingQuestionEditor Question="q" Locales="@Locales" ReadOnly="@ReadOnly" Changed="Changed" />
+            break;
+        case NpsQuestionDto q:
+            <NpsQuestionEditor Question="q" Locales="@Locales" ReadOnly="@ReadOnly" Changed="Changed" />
+            break;
+        case SingleChoiceQuestionDto q:
+            <SingleChoiceQuestionEditor Question="q" Locales="@Locales" ReadOnly="@ReadOnly" Changed="Changed" />
+            break;
+        case MultiChoiceQuestionDto q:
+            <MultiChoiceQuestionEditor Question="q" Locales="@Locales" ReadOnly="@ReadOnly" Changed="Changed" />
+            break;
+        case DropdownQuestionDto q:
+            <DropdownQuestionEditor Question="q" Locales="@Locales" ReadOnly="@ReadOnly" Changed="Changed" />
+            break;
+        case DateQuestionDto q:
+            <DateQuestionEditor Question="q" Locales="@Locales" ReadOnly="@ReadOnly" Changed="Changed" />
+            break;
+        case DateTimeQuestionDto q:
+            <DateTimeQuestionEditor Question="q" Locales="@Locales" ReadOnly="@ReadOnly" Changed="Changed" />
+            break;
+        case FileQuestionDto q:
+            <FileQuestionEditor Question="q" Locales="@Locales" ReadOnly="@ReadOnly" Changed="Changed" />
+            break;
+        case SignatureQuestionDto q:
+            <SignatureQuestionEditor Question="q" Locales="@Locales" ReadOnly="@ReadOnly" Changed="Changed" />
+            break;
+        case YesNoQuestionDto q:
+            <YesNoQuestionEditor Question="q" Locales="@Locales" ReadOnly="@ReadOnly" Changed="Changed" />
+            break;
+        case NavigationListQuestionDto q:
+            <NavigationListQuestionEditor Question="q" Draft="@Draft" Locales="@Locales" ReadOnly="@ReadOnly" Changed="Changed" />
+            break;
+        default:
+            @* Defensive catch-all — should never hit unless a new type lands
+               without an editor. Shows the common fields read-only + tells
+               the author to use Raw JSON. *@
+            @if (Entry.Inline is not null)
+            {
+                <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-2">
+                    No visual editor for type <b>@Entry.Inline.QuestionType</b>. Use the <b>Raw JSON</b> tab.
+                </MudAlert>
+                <QuestionCommonFields Question="Entry.Inline" Locales="@Locales" ReadOnly="true" Changed="Changed" />
+            }
+            break;
+    }
+}
+
+<style>
+    .qi-empty {
+        color: #888;
+        font-size: 0.9rem;
+        padding: 12px;
+        text-align: center;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public QuestionEntryDto? Entry { get; set; }
+
+    /// <summary>
+    /// Full draft survey — required so NavigationListQuestionEditor can offer
+    /// a screen picker for per-option nextScreen. Pass-through only; not
+    /// mutated here (the editor mutates Entry in place and bubbles Changed).
+    /// </summary>
+    [Parameter]
+    public SurveyDto? Draft { get; set; }
+
+    [Parameter]
+    public List<string>? Locales { get; set; }
+
+    [Parameter]
+    public bool ReadOnly { get; set; }
+
+    [Parameter]
+    public EventCallback Changed { get; set; }
+}

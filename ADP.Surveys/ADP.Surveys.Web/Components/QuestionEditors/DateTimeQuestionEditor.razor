@@ -1,0 +1,56 @@
+@namespace ShiftSoftware.ADP.Surveys.Web.Components.QuestionEditors
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Types
+
+<QuestionCommonFields Question="@Question"
+                      Locales="@Locales"
+                      ReadOnly="@ReadOnly"
+                      Changed="Changed" />
+
+<div class="qte-section">
+    <div class="qte-section__title">Date &amp; time range</div>
+    <div class="qte-row">
+        <MudTextField T="string"
+                      Label="Min datetime"
+                      InputType="InputType.DateTimeLocal"
+                      Value="@(Question.MinDateTime ?? "")"
+                      ValueChanged="@((string v) => OnChanged(() => Question.MinDateTime = string.IsNullOrWhiteSpace(v) ? null : v))"
+                      ReadOnly="@ReadOnly"
+                      HelperText="ISO 8601 datetime"
+                      Class="qte-num" />
+        <MudTextField T="string"
+                      Label="Max datetime"
+                      InputType="InputType.DateTimeLocal"
+                      Value="@(Question.MaxDateTime ?? "")"
+                      ValueChanged="@((string v) => OnChanged(() => Question.MaxDateTime = string.IsNullOrWhiteSpace(v) ? null : v))"
+                      ReadOnly="@ReadOnly"
+                      HelperText="ISO 8601 datetime"
+                      Class="qte-num" />
+    </div>
+</div>
+
+<style>
+    .qte-section { margin-top: 14px; padding-top: 10px; border-top: 1px dashed #e0e5ec; }
+    .qte-section__title { font-size: 0.8rem; font-weight: 600; color: #4b5563; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+    .qte-row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .qte-num { flex: 1 1 200px; min-width: 180px; }
+</style>
+
+@code {
+    [Parameter, EditorRequired]
+    public DateTimeQuestionDto Question { get; set; } = default!;
+
+    [Parameter]
+    public List<string>? Locales { get; set; }
+
+    [Parameter]
+    public bool ReadOnly { get; set; }
+
+    [Parameter]
+    public EventCallback Changed { get; set; }
+
+    async Task OnChanged(Action mutation)
+    {
+        mutation();
+        await Changed.InvokeAsync();
+    }
+}

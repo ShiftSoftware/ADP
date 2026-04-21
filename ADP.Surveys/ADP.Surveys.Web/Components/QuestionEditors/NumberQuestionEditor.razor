@@ -1,0 +1,70 @@
+@namespace ShiftSoftware.ADP.Surveys.Web.Components.QuestionEditors
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Types
+@using LocalizedString = ShiftSoftware.ADP.Surveys.Shared.DTOs.LocalizedString
+
+<QuestionCommonFields Question="@Question"
+                      Locales="@Locales"
+                      ReadOnly="@ReadOnly"
+                      Changed="Changed" />
+
+<div class="qte-section">
+    <div class="qte-section__title">Number constraints</div>
+    <div class="qte-row">
+        <MudNumericField T="decimal?"
+                         Label="Min"
+                         Value="@Question.Min"
+                         ValueChanged="@((decimal? v) => OnChanged(() => Question.Min = v))"
+                         ReadOnly="@ReadOnly"
+                         Clearable="true"
+                         Class="qte-num" />
+        <MudNumericField T="decimal?"
+                         Label="Max"
+                         Value="@Question.Max"
+                         ValueChanged="@((decimal? v) => OnChanged(() => Question.Max = v))"
+                         ReadOnly="@ReadOnly"
+                         Clearable="true"
+                         Class="qte-num" />
+        <MudNumericField T="decimal?"
+                         Label="Step"
+                         Value="@Question.Step"
+                         ValueChanged="@((decimal? v) => OnChanged(() => Question.Step = v))"
+                         ReadOnly="@ReadOnly"
+                         Min="0"
+                         Clearable="true"
+                         HelperText="0 = any"
+                         Class="qte-num" />
+    </div>
+
+    <LocalizedStringField Value="@Question.Unit"
+                          ValueChanged="@((LocalizedString? v) => OnChanged(() => Question.Unit = v))"
+                          Label="Unit (optional)"
+                          Locales="@Locales"
+                          ReadOnly="@ReadOnly" />
+</div>
+
+<style>
+    .qte-section { margin-top: 14px; padding-top: 10px; border-top: 1px dashed #e0e5ec; }
+    .qte-section__title { font-size: 0.8rem; font-weight: 600; color: #4b5563; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+    .qte-row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .qte-num { flex: 1 1 120px; min-width: 100px; }
+</style>
+
+@code {
+    [Parameter, EditorRequired]
+    public NumberQuestionDto Question { get; set; } = default!;
+
+    [Parameter]
+    public List<string>? Locales { get; set; }
+
+    [Parameter]
+    public bool ReadOnly { get; set; }
+
+    [Parameter]
+    public EventCallback Changed { get; set; }
+
+    async Task OnChanged(Action mutation)
+    {
+        mutation();
+        await Changed.InvokeAsync();
+    }
+}

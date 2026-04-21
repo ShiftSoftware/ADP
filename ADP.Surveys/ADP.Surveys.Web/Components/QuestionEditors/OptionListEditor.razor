@@ -1,0 +1,205 @@
+@namespace ShiftSoftware.ADP.Surveys.Web.Components.QuestionEditors
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Options
+@using LocalizedString = ShiftSoftware.ADP.Surveys.Shared.DTOs.LocalizedString
+
+@* Shared options editor for choice types (SingleChoice, MultiChoice, Dropdown).
+   Each option exposes: Id, localized Label, optional BiColumn. Add/remove/up/down
+   operate in place and raise Changed so the parent editor bubbles to SurveyForm. *@
+
+<div class="ole">
+    <div class="ole__header">
+        <span class="ole__title">Options</span>
+        @if (!ReadOnly)
+        {
+            <MudButton StartIcon="@Icons.Material.Filled.Add"
+                       Size="Size.Small"
+                       Variant="Variant.Text"
+                       Color="Color.Primary"
+                       OnClick="AddOption">Add option</MudButton>
+        }
+    </div>
+
+    @if (Options.Count == 0)
+    {
+        <div class="ole__empty">No options yet. Click <b>+ Add option</b>.</div>
+    }
+    else
+    {
+        @for (int i = 0; i < Options.Count; i++)
+        {
+            var idx = i;
+            var option = Options[idx];
+            <div class="ole__row">
+                <span class="ole__row-number">@(idx + 1).</span>
+                <div class="ole__row-body">
+                    <div class="ole__row-ids">
+                        <MudTextField T="string"
+                                      Label="Option ID"
+                                      Value="@option.Id"
+                                      ValueChanged="@((string v) => OnIdChanged(option, v))"
+                                      ReadOnly="@ReadOnly"
+                                      Margin="Margin.Dense"
+                                      Class="ole__id" />
+                        <MudTextField T="string"
+                                      Label="BI column (optional)"
+                                      Value="@(option.BiColumn ?? "")"
+                                      ValueChanged="@((string v) => OnBiChanged(option, v))"
+                                      ReadOnly="@ReadOnly"
+                                      Margin="Margin.Dense"
+                                      Class="ole__bi" />
+                    </div>
+                    <LocalizedStringField Value="@option.Label"
+                                          ValueChanged="@((LocalizedString? v) => OnLabelChanged(option, v))"
+                                          Label="Label"
+                                          Locales="@Locales"
+                                          ReadOnly="@ReadOnly" />
+                </div>
+                @if (!ReadOnly)
+                {
+                    <div class="ole__row-actions">
+                        <MudIconButton Icon="@Icons.Material.Filled.ArrowUpward"
+                                       Size="Size.Small"
+                                       Disabled="@(idx == 0)"
+                                       OnClick="@(() => MoveUp(idx))"
+                                       title="Move up" />
+                        <MudIconButton Icon="@Icons.Material.Filled.ArrowDownward"
+                                       Size="Size.Small"
+                                       Disabled="@(idx == Options.Count - 1)"
+                                       OnClick="@(() => MoveDown(idx))"
+                                       title="Move down" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                       Size="Size.Small"
+                                       Color="Color.Error"
+                                       OnClick="@(() => Remove(idx))"
+                                       title="Remove" />
+                    </div>
+                }
+            </div>
+        }
+    }
+</div>
+
+<style>
+    .ole { margin-top: 10px; }
+    .ole__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 6px;
+    }
+    .ole__title {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #374151;
+    }
+    .ole__empty {
+        padding: 12px;
+        text-align: center;
+        color: #888;
+        font-size: 0.85rem;
+        border: 1px dashed #d0d5dd;
+        border-radius: 6px;
+    }
+    .ole__row {
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
+        padding: 8px;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        margin-bottom: 8px;
+        background: #fafbff;
+    }
+    .ole__row-number {
+        font-weight: 600;
+        color: #6b7280;
+        font-variant-numeric: tabular-nums;
+        padding-top: 10px;
+        min-width: 22px;
+    }
+    .ole__row-body { flex: 1; min-width: 0; }
+    .ole__row-ids {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 6px;
+    }
+    .ole__id { flex: 1 1 160px; min-width: 140px; }
+    .ole__bi { flex: 1 1 140px; min-width: 120px; }
+    .ole__row-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        flex-shrink: 0;
+    }
+</style>
+
+@code {
+    [Parameter, EditorRequired]
+    public List<OptionDto> Options { get; set; } = default!;
+
+    [Parameter]
+    public List<string>? Locales { get; set; }
+
+    [Parameter]
+    public bool ReadOnly { get; set; }
+
+    [Parameter]
+    public EventCallback Changed { get; set; }
+
+    async Task OnIdChanged(OptionDto option, string value)
+    {
+        option.Id = value ?? "";
+        await Changed.InvokeAsync();
+    }
+
+    async Task OnBiChanged(OptionDto option, string value)
+    {
+        option.BiColumn = string.IsNullOrWhiteSpace(value) ? null : value;
+        await Changed.InvokeAsync();
+    }
+
+    async Task OnLabelChanged(OptionDto option, LocalizedString? value)
+    {
+        option.Label = value ?? new LocalizedString();
+        await Changed.InvokeAsync();
+    }
+
+    async Task AddOption()
+    {
+        var id = GenerateOptionId();
+        Options.Add(new OptionDto { Id = id, Label = new LocalizedString() });
+        await Changed.InvokeAsync();
+    }
+
+    async Task Remove(int index)
+    {
+        if (index < 0 || index >= Options.Count) return;
+        Options.RemoveAt(index);
+        await Changed.InvokeAsync();
+    }
+
+    async Task MoveUp(int index)
+    {
+        if (index <= 0) return;
+        (Options[index - 1], Options[index]) = (Options[index], Options[index - 1]);
+        await Changed.InvokeAsync();
+    }
+
+    async Task MoveDown(int index)
+    {
+        if (index >= Options.Count - 1) return;
+        (Options[index + 1], Options[index]) = (Options[index], Options[index + 1]);
+        await Changed.InvokeAsync();
+    }
+
+    string GenerateOptionId()
+    {
+        var existing = Options.Select(o => o.Id).ToHashSet();
+        for (int n = Options.Count + 1; ; n++)
+        {
+            var candidate = $"option-{n}";
+            if (!existing.Contains(candidate)) return candidate;
+        }
+    }
+}

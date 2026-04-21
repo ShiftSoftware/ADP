@@ -1,0 +1,69 @@
+@namespace ShiftSoftware.ADP.Surveys.Web.Components.QuestionEditors
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Types
+
+<QuestionCommonFields Question="@Question"
+                      Locales="@Locales"
+                      ReadOnly="@ReadOnly"
+                      Changed="Changed" />
+
+<div class="qte-section">
+    <div class="qte-section__title">Upload constraints</div>
+    <MudTextField T="string"
+                  Label="Accepted file types (comma-separated)"
+                  Value="@AcceptedTypesCsv"
+                  ValueChanged="OnAcceptedTypesChanged"
+                  ReadOnly="@ReadOnly"
+                  HelperText='MIME types or extensions, e.g. "image/*, application/pdf, .docx"' />
+
+    <MudNumericField T="long?"
+                     Label="Max size (bytes)"
+                     Value="@Question.MaxSizeBytes"
+                     ValueChanged="@((long? v) => OnChanged(() => Question.MaxSizeBytes = v))"
+                     ReadOnly="@ReadOnly"
+                     Min="0"
+                     Clearable="true"
+                     HelperText="Leave blank = no limit" />
+</div>
+
+<style>
+    .qte-section { margin-top: 14px; padding-top: 10px; border-top: 1px dashed #e0e5ec; }
+    .qte-section__title { font-size: 0.8rem; font-weight: 600; color: #4b5563; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+</style>
+
+@code {
+    [Parameter, EditorRequired]
+    public FileQuestionDto Question { get; set; } = default!;
+
+    [Parameter]
+    public List<string>? Locales { get; set; }
+
+    [Parameter]
+    public bool ReadOnly { get; set; }
+
+    [Parameter]
+    public EventCallback Changed { get; set; }
+
+    string AcceptedTypesCsv =>
+        Question.AcceptedTypes is null ? "" : string.Join(", ", Question.AcceptedTypes);
+
+    async Task OnAcceptedTypesChanged(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            Question.AcceptedTypes = null;
+        }
+        else
+        {
+            Question.AcceptedTypes = value
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToList();
+        }
+        await Changed.InvokeAsync();
+    }
+
+    async Task OnChanged(Action mutation)
+    {
+        mutation();
+        await Changed.InvokeAsync();
+    }
+}

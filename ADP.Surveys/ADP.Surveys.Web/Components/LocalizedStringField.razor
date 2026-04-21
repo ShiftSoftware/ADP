@@ -1,0 +1,126 @@
+@namespace ShiftSoftware.ADP.Surveys.Web.Components
+@using System.Linq.Expressions
+@using System.Text.Json
+@using ShiftSoftware.ShiftBlazor.Services
+@using LocalizedString = ShiftSoftware.ADP.Surveys.Shared.DTOs.LocalizedString
+
+@* Adapter around ShiftBlazor's LocalizedTextField. The ShiftBlazor component
+   binds to a JSON-encoded `string` ({"en":"...","ar":"..."}); our schema uses
+   LocalizedString : Dictionary<string,string>. This adapter round-trips
+   dict <-> JSON on each edit so the visual editor can bind TheItem.Title etc.
+   directly. Languages are derived from the declared Survey.Locales list.
+
+   ReadOnly falls back to a parallel-per-locale MudTextField grid so values
+   remain visible but uneditable — LocalizedTextField has no ReadOnly of its own. *@
+
+@if (ReadOnly)
+{
+    <div class="lsf-readonly-grid">
+        @foreach (var code in effectiveLocales)
+        {
+            var label = Label is null ? code.ToUpperInvariant() : $"{Label} ({code.ToUpperInvariant()})";
+            var v = Value is not null && Value.TryGetValue(code, out var text) ? text : string.Empty;
+            <MudTextField T="string"
+                          Label="@label"
+                          Value="@v"
+                          ReadOnly="true"
+                          Lines="Lines"
+                          Class="lsf-readonly-field" />
+        }
+    </div>
+}
+else
+{
+    <LocalizedTextField Value="@JsonValue"
+                        ValueChanged="OnTextChanged"
+                        Label="@Label"
+                        Languages="languageInfos"
+                        Lines="Lines"
+                        MaxLines="MaxLines"
+                        AutoGrow="AutoGrow" />
+}
+
+<style>
+    .lsf-readonly-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 8px;
+        margin: 4px 0 10px;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public LocalizedString? Value { get; set; }
+
+    [Parameter]
+    public EventCallback<LocalizedString?> ValueChanged { get; set; }
+
+    [Parameter]
+    public string? Label { get; set; }
+
+    /// <summary>
+    /// Locale codes to render side-by-side (typically Survey.Locales).
+    /// Defaults to just "en" when null/empty.
+    /// </summary>
+    [Parameter]
+    public List<string>? Locales { get; set; }
+
+    [Parameter]
+    public int Lines { get; set; } = 1;
+
+    [Parameter]
+    public int MaxLines { get; set; } = 1;
+
+    [Parameter]
+    public bool AutoGrow { get; set; } = false;
+
+    [Parameter]
+    public bool ReadOnly { get; set; }
+
+    string JsonValue { get; set; } = "";
+    List<LanguageInfo> languageInfos = new();
+    List<string> effectiveLocales = new();
+    List<string> currentLocales = new();
+
+    protected override void OnParametersSet()
+    {
+        effectiveLocales = (Locales is { Count: > 0 }) ? Locales.ToList() : new List<string> { "en" };
+        if (!effectiveLocales.SequenceEqual(currentLocales))
+        {
+            currentLocales = effectiveLocales.ToList();
+            languageInfos = effectiveLocales
+                .Select(code => new LanguageInfo { CultureName = code, Label = code.ToUpperInvariant() })
+                .ToList();
+        }
+
+        JsonValue = Value is null || Value.Count == 0
+            ? ""
+            : JsonSerializer.Serialize((Dictionary<string, string>)Value);
+    }
+
+    async Task OnTextChanged(string json)
+    {
+        LocalizedString? next = null;
+        if (!string.IsNullOrWhiteSpace(json))
+        {
+            try
+            {
+                var dict = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+                if (dict is not null)
+                {
+                    // Drop empty values so serialization matches schema expectations.
+                    var pruned = dict.Where(kv => !string.IsNullOrEmpty(kv.Value))
+                                     .ToDictionary(kv => kv.Key, kv => kv.Value);
+                    if (pruned.Count > 0)
+                        next = new LocalizedString(pruned);
+                }
+            }
+            catch (JsonException)
+            {
+                // LocalizedTextField always emits valid JSON; swallow defensively.
+            }
+        }
+        await ValueChanged.InvokeAsync(next);
+    }
+}
