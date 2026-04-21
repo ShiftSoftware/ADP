@@ -77,27 +77,49 @@ public class MenuVariantRepository : ShiftRepository<ShiftDbContext, MenuVariant
         }
 
         if (await db.Set<MenuVariant>().Where(x => !x.IsDeleted && x.ID != entity.ID && x.MenuID == menuID)
-            .AnyAsync(x => x.MenuPrefix == dto.MenuPrefix && x.MenuPostfix == dto.MenuPostfix))
-            throw new ShiftEntityException(new("Conflict", "The combination of menu prefix and menu postfix should be unique within group"));
-
-        if (await db.Set<MenuVariant>().Where(x => !x.IsDeleted && x.ID != entity.ID && x.MenuID == menuID)
             .AnyAsync(x => x.Name == dto.Name))
             throw new ShiftEntityException(new("Conflict", "Menu variant name should be unique within group"));
 
+        var siblingVariants = await db.Set<MenuVariant>()
+            .Where(x => !x.IsDeleted && x.ID != entity.ID && x.MenuID == menuID)
+            .Select(x => new
+            {
+                x.Name,
+                x.MenuPrefix,
+                x.MenuPostfix,
+                x.HasStandaloneItems,
+                x.StandaloneMenuPrefix,
+                x.StandaloneMenuPostfix
+            })
+            .ToListAsync();
+
+        foreach (var sibling in siblingVariants)
+        {
+            var conflict = FindPrefixPostfixConflict(
+                sibling.MenuPrefix, sibling.MenuPostfix,
+                dto.MenuPrefix, dto.MenuPostfix);
+
+            if (conflict is not null)
+            {
+                throw new ShiftEntityException(new(
+                    "Conflict",
+                    $"Menu prefix/postfix of variant \"{dto.Name}\" conflicts with variant \"{sibling.Name}\" in {DescribeLanguage(conflict.Value.Language)}: prefix \"{conflict.Value.Prefix}\", postfix \"{conflict.Value.Postfix}\"."));
+            }
+        }
+
         if (dto.HasStandaloneItems)
         {
-            var siblingStandalones = await db.Set<MenuVariant>()
-                .Where(x => !x.IsDeleted && x.ID != entity.ID && x.MenuID == menuID && x.HasStandaloneItems)
-                .Select(x => new { x.StandaloneMenuPrefix, x.StandaloneMenuPostfix })
-                .ToListAsync();
-
-            foreach (var sibling in siblingStandalones)
+            foreach (var sibling in siblingVariants.Where(x => x.HasStandaloneItems))
             {
-                if (IsStandalonePrefixPostfixDuplicate(
-                        sibling.StandaloneMenuPrefix, sibling.StandaloneMenuPostfix,
-                        dto.StandaloneMenuPrefix, dto.StandaloneMenuPostfix))
+                var conflict = FindPrefixPostfixConflict(
+                    sibling.StandaloneMenuPrefix, sibling.StandaloneMenuPostfix,
+                    dto.StandaloneMenuPrefix, dto.StandaloneMenuPostfix);
+
+                if (conflict is not null)
                 {
-                    throw new ShiftEntityException(new("Conflict", "The combination of standalone menu prefix and standalone menu postfix should be unique within group across all languages"));
+                    throw new ShiftEntityException(new(
+                        "Conflict",
+                        $"Standalone menu prefix/postfix of variant \"{dto.Name}\" conflicts with variant \"{sibling.Name}\" in {DescribeLanguage(conflict.Value.Language)}: prefix \"{conflict.Value.Prefix}\", postfix \"{conflict.Value.Postfix}\"."));
                 }
             }
         }
@@ -135,42 +157,87 @@ public class MenuVariantRepository : ShiftRepository<ShiftDbContext, MenuVariant
             throw new ShiftEntityException(new Message("Conflict", "Menu variant labour rates must include all required countries."));
     }
 
-    private static bool IsStandalonePrefixPostfixDuplicate(string? aPrefix, string? aPostfix, string? bPrefix, string? bPostfix)
+    // Returns the first language where the resolved (prefix, postfix) pair matches,
+    // or null if no collision exists.
+    private static PrefixPostfixConflict? FindPrefixPostfixConflict(string? aPrefix, string? aPostfix, string? bPrefix, string? bPostfix)
     {
-        var languages = GetLanguageKeys(aPrefix)
-            .Concat(GetLanguageKeys(aPostfix))
-            .Concat(GetLanguageKeys(bPrefix))
-            .Concat(GetLanguageKeys(bPostfix))
-            .ToHashSet();
+        var aPrefixMap = AsLanguageMap(aPrefix);
+        var aPostfixMap = AsLanguageMap(aPostfix);
+        var bPrefixMap = AsLanguageMap(bPrefix);
+        var bPostfixMap = AsLanguageMap(bPostfix);
 
+        var languages = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var k in aPrefixMap.Keys) languages.Add(k);
+        foreach (var k in aPostfixMap.Keys) languages.Add(k);
+        foreach (var k in bPrefixMap.Keys) languages.Add(k);
+        foreach (var k in bPostfixMap.Keys) languages.Add(k);
+
+        // Null-null or plain-plain pairs still need a comparison pass.
         if (languages.Count == 0)
-            languages.Add("en");
+            languages.Add("");
 
         foreach (var lang in languages)
         {
-            if (LocalizedText.Resolve(aPrefix, lang) == LocalizedText.Resolve(bPrefix, lang)
-                && LocalizedText.Resolve(aPostfix, lang) == LocalizedText.Resolve(bPostfix, lang))
+            var aP = ResolveForLanguage(aPrefixMap, lang);
+            var aS = ResolveForLanguage(aPostfixMap, lang);
+            var bP = ResolveForLanguage(bPrefixMap, lang);
+            var bS = ResolveForLanguage(bPostfixMap, lang);
+
+            if (string.Equals(aP, bP, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(aS, bS, StringComparison.OrdinalIgnoreCase))
             {
-                return true;
+                return new PrefixPostfixConflict(lang, aP, aS);
             }
         }
 
-        return false;
+        return null;
     }
 
-    private static IEnumerable<string> GetLanguageKeys(string? raw)
+    private readonly record struct PrefixPostfixConflict(string Language, string Prefix, string Postfix);
+
+    private static string DescribeLanguage(string lang) => lang switch
     {
-        if (string.IsNullOrEmpty(raw) || raw[0] != '{')
-            yield break;
+        "" => "all languages (no language-specific values)",
+        PlainKey => "all languages (plain text)",
+        _ => $"language \"{lang}\""
+    };
 
-        Dictionary<string, string>? dict = null;
-        try { dict = JsonSerializer.Deserialize<Dictionary<string, string>>(raw); }
-        catch { }
+    // "" → empty map; "{...}" → parsed dict (case-insensitive keys); plain string → { "*": raw }.
+    private static IReadOnlyDictionary<string, string> AsLanguageMap(string? raw)
+    {
+        if (string.IsNullOrEmpty(raw))
+            return EmptyMap;
 
-        if (dict is null) yield break;
-        foreach (var key in dict.Keys)
-            yield return key;
+        if (raw[0] == '{')
+        {
+            try
+            {
+                var parsed = JsonSerializer.Deserialize<Dictionary<string, string>>(raw);
+                if (parsed is not null && parsed.Count > 0)
+                {
+                    var dict = new Dictionary<string, string>(parsed.Count, StringComparer.OrdinalIgnoreCase);
+                    foreach (var kv in parsed)
+                        dict[kv.Key] = kv.Value;
+                    return dict;
+                }
+            }
+            catch { /* fall through to plain-string handling */ }
+        }
+
+        return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { [PlainKey] = raw };
     }
+
+    private static string ResolveForLanguage(IReadOnlyDictionary<string, string> map, string lang)
+    {
+        if (map.Count == 0) return string.Empty;
+        if (map.TryGetValue(PlainKey, out var plain)) return plain;
+        if (map.TryGetValue(lang, out var v)) return v;
+        if (map.TryGetValue("en", out var en)) return en;
+        return map.Values.First();
+    }
+
+    private const string PlainKey = "*"; // reserved bucket for non-JSON values
+    private static readonly IReadOnlyDictionary<string, string> EmptyMap = new Dictionary<string, string>(0);
 
     private static void ValidatePartCountryPrices(MenuVariantDTO dto, IReadOnlyList<CountryInfo> countries)
     {
