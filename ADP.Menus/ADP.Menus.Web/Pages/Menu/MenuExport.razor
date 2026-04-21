@@ -5,7 +5,7 @@
 @inject ShiftModal ShiftModal
 @inject MessageService MessageService
 @inject IMenuCountryProvider CountryProvider
-@inject MenuWebOptions MenuOptions
+@inject IOptions<MenuWebOptions> MenuOptionsAccessor
 
 <ShiftFormBasic T="MenuExportDTO"
                 @bind-Value="theItem"
@@ -45,6 +45,8 @@
 </ShiftFormBasic>
 
 @code {
+    private MenuWebOptions MenuOptions => MenuOptionsAccessor.Value;
+
     private MenuExportDTO theItem = new();
     private IReadOnlyList<CountryInfo> countries = [];
     private bool ShowCountryUi => countries.Count > 1;

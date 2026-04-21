@@ -6,6 +6,7 @@ using ShiftSoftware.ADP.Menus.Shared.DTOs.MenuVersion;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using ShiftSoftware.ShiftEntity.Model;
 using ShiftSoftware.ShiftEntity.Web;
 using ShiftSoftware.TypeAuth.Core;
@@ -18,10 +19,10 @@ public class MenuVersionController : ShiftEntitySecureControllerAsync<MenuVersio
 {
     private readonly MenuApiOptions options;
 
-    public MenuVersionController(MenuApiOptions options)
-        : base(options.EnableMenuActionTreeAuthorization ? MenuActionTree.MenuVersions : null)
+    public MenuVersionController(IOptions<MenuApiOptions> options)
+        : base(options.Value.EnableMenuActionTreeAuthorization ? MenuActionTree.MenuVersions : null)
     {
-        this.options = options;
+        this.options = options.Value;
     }
 
     // Creating a new menu version is gated by a dedicated boolean action so it can be granted independently

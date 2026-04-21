@@ -4,6 +4,7 @@ using ShiftSoftware.ADP.Menus.Data.Repositories;
 using ShiftSoftware.ADP.Menus.Shared.ActionTrees;
 using ShiftSoftware.ADP.Menus.Shared.DTOs.ServiceInterval;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using ShiftSoftware.ShiftEntity.Web;
 
 namespace ShiftSoftware.ADP.Menus.API.Controllers;
@@ -12,8 +13,8 @@ namespace ShiftSoftware.ADP.Menus.API.Controllers;
 [ApiController]
 public class ServiceIntervalController : ShiftEntitySecureControllerAsync<ServiceIntervalRepository, ServiceInterval, ServiceIntervalListDTO, ServiceIntervalDTO>
 {
-    public ServiceIntervalController(MenuApiOptions options)
-        : base(options.EnableMenuActionTreeAuthorization ? MenuActionTree.ServiceIntervals : null)
+    public ServiceIntervalController(IOptions<MenuApiOptions> options)
+        : base(options.Value.EnableMenuActionTreeAuthorization ? MenuActionTree.ServiceIntervals : null)
     {
     }
 }

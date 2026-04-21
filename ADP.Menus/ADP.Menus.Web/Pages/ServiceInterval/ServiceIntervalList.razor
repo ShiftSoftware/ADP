@@ -1,6 +1,6 @@
 @attribute [Route($"{MenuRoutes.Prefix}/{nameof(ServiceIntervalList)}")]
 @attribute [Authorize]
-@inject MenuWebOptions MenuOptions
+@inject IOptions<MenuWebOptions> MenuOptionsAccessor
 
 <ShiftList EntitySet="@($"{MenuOptions.ResolvedRoutePrefix}ServiceInterval")"
            Title="Service Intervals"
@@ -16,3 +16,7 @@
     <PropertyColumn Property="x => x.ValueInMeter" Title="Value In Meter" Format="N0" />
     <PropertyColumn Property="x => x.ServiceIntervalGroupName" Title="Group Name" />
 </ShiftList>
+
+@code {
+    private MenuWebOptions MenuOptions => MenuOptionsAccessor.Value;
+}

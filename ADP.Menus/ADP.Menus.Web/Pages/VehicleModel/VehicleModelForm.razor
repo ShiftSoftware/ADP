@@ -2,7 +2,7 @@
 @inject ReplacementItemService ReplacementItemService
 @inject ServiceIntervalGroupService ServiceIntervalGroupService
 @inject IMenuCountryProvider CountryProvider
-@inject MenuWebOptions MenuOptions
+@inject IOptions<MenuWebOptions> MenuOptionsAccessor
 @inject IDialogService DialogService
 
 @inherits ShiftForm<VehicleModelForm, VehicleModelDTO>
@@ -196,6 +196,8 @@
 </ShiftEntityForm>
 
 @code {
+    private MenuWebOptions MenuOptions => MenuOptionsAccessor.Value;
+
     private bool loadingReplacementItems = false;
     private IReadOnlyList<CountryInfo> countries = [];
     private Dictionary<long, string> countryNames = new();

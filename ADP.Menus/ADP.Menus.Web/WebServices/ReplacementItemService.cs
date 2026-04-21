@@ -1,4 +1,5 @@
-﻿using ShiftSoftware.ADP.Menus.Shared.DTOs.ReplcamentItem;
+﻿using Microsoft.Extensions.Options;
+using ShiftSoftware.ADP.Menus.Shared.DTOs.ReplcamentItem;
 using ShiftSoftware.ADP.Menus.Shared.DTOs.VehicleModel;
 using ShiftSoftware.ADP.Menus.Web.Extensions;
 using ShiftSoftware.ShiftEntity.Model;
@@ -12,10 +13,10 @@ public class ReplacementItemService
     private readonly HttpClient http;
     private readonly string prefix;
 
-    public ReplacementItemService(HttpClient http, MenuWebOptions options)
+    public ReplacementItemService(HttpClient http, IOptions<MenuWebOptions> options)
     {
         this.http = http;
-        this.prefix = options.ResolvedRoutePrefix;
+        this.prefix = options.Value.ResolvedRoutePrefix;
     }
 
     public async Task<Dictionary<string, VehicelModelReplacementItemUI>?> GetListAsync()

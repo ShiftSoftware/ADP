@@ -10,7 +10,7 @@
 @inject ShiftModal ShiftModal
 @inject MessageService MessageService
 @inject IMenuCountryProvider CountryProvider
-@inject MenuWebOptions MenuOptions
+@inject IOptions<MenuWebOptions> MenuOptionsAccessor
 
 <ShiftFormBasic T="MenuDetailReportQueryDTO"
                 @bind-Value="theItem"
@@ -93,6 +93,8 @@
 </ShiftFormBasic>
 
 @code {
+    private MenuWebOptions MenuOptions => MenuOptionsAccessor.Value;
+
     [CascadingParameter]
     internal IMudDialogInstance? MudDialog { get; set; }
 

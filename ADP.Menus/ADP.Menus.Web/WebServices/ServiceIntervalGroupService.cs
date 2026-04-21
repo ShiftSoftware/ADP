@@ -1,4 +1,5 @@
-﻿using ShiftSoftware.ADP.Menus.Shared.DTOs.LabourDetails;
+﻿using Microsoft.Extensions.Options;
+using ShiftSoftware.ADP.Menus.Shared.DTOs.LabourDetails;
 using ShiftSoftware.ADP.Menus.Shared.DTOs.ServiceIntervalGroup;
 using ShiftSoftware.ADP.Menus.Web.Extensions;
 using ShiftSoftware.ShiftEntity.Model.Dtos;
@@ -11,10 +12,10 @@ public class ServiceIntervalGroupService
     private readonly HttpClient http;
     private readonly string prefix;
 
-    public ServiceIntervalGroupService(HttpClient http, MenuWebOptions options)
+    public ServiceIntervalGroupService(HttpClient http, IOptions<MenuWebOptions> options)
     {
         this.http = http;
-        this.prefix = options.ResolvedRoutePrefix;
+        this.prefix = options.Value.ResolvedRoutePrefix;
     }
 
     public async Task<List<ServiceIntervalGroupListDTO>?> GetListAsync()

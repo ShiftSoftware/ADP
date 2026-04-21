@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using ShiftSoftware.ShiftEntity.Model;
 using ShiftSoftware.ShiftEntity.Model.HashIds;
 using ShiftSoftware.ShiftEntity.Web;
@@ -22,11 +23,11 @@ public class MenuVariantController : ShiftEntitySecureControllerAsync<MenuVarian
     private readonly MenuVariantRepository repository;
     private readonly MenuApiOptions options;
 
-    public MenuVariantController(MenuVariantRepository repository, MenuApiOptions options)
-        : base(options.EnableMenuActionTreeAuthorization ? MenuActionTree.MenuVariants : null)
+    public MenuVariantController(MenuVariantRepository repository, IOptions<MenuApiOptions> options)
+        : base(options.Value.EnableMenuActionTreeAuthorization ? MenuActionTree.MenuVariants : null)
     {
         this.repository = repository;
-        this.options = options;
+        this.options = options.Value;
     }
 
     [HttpGet("ByMenu/{menuID}")]

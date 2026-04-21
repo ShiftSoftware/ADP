@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using ShiftSoftware.ShiftEntity.Core;
 using ShiftSoftware.ShiftEntity.EFCore;
 using ShiftSoftware.ADP.Menus.Data.Extensions;
@@ -21,11 +22,16 @@ public static class MenuApiExtensions
     /// </summary>
     public static IServiceCollection AddMenuApiServices<TDbContext>(
         this IServiceCollection services,
-        MenuApiOptions options,
-        IMvcBuilder mvcBuilder)
+        IMvcBuilder mvcBuilder,
+        Action<MenuApiOptions> configure)
         where TDbContext : ShiftDbContext
     {
-        services.AddSingleton(options);
+        var options = new MenuApiOptions();
+        configure?.Invoke(options);
+
+        if (configure is not null)
+            services.Configure(configure);
+
         services.AddScoped<ShiftDbContext>(sp => sp.GetRequiredService<TDbContext>());
         services.RegisterShiftRepositories(typeof(Data.Marker).Assembly);
 
@@ -63,12 +69,16 @@ public static class MenuApiExtensions
 
     public static IServiceCollection AddMenuApiServices<TDbContext>(
         this IServiceCollection services,
-        IMvcBuilder mvcBuilder,
-        Action<MenuApiOptions> configure)
+        MenuApiOptions options,
+        IMvcBuilder mvcBuilder)
         where TDbContext : ShiftDbContext
+        => services.AddMenuApiServices<TDbContext>(mvcBuilder, o => CopyMenuApiOptions(options, o));
+
+    private static void CopyMenuApiOptions(MenuApiOptions source, MenuApiOptions target)
     {
-        var options = new MenuApiOptions();
-        configure(options);
-        return services.AddMenuApiServices<TDbContext>(options, mvcBuilder);
+        if (source is null) return;
+        target.RoutePrefix = source.RoutePrefix;
+        target.EnableMenuActionTreeAuthorization = source.EnableMenuActionTreeAuthorization;
+        target.Languages = source.Languages;
     }
 }

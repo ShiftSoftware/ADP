@@ -1,5 +1,5 @@
 @attribute [Route($"{MenuRoutes.Prefix}/{nameof(ServiceIntervalForm)}/{{Key?}}")]
-@inject MenuWebOptions MenuOptions
+@inject IOptions<MenuWebOptions> MenuOptionsAccessor
 
 @inherits ShiftForm<ServiceIntervalForm, ServiceIntervalDTO>
 
@@ -38,3 +38,7 @@
                                    For="() => TheItem.ServiceIntervalGroup" />
 
 </ShiftEntityForm>
+
+@code {
+    private MenuWebOptions MenuOptions => MenuOptionsAccessor.Value;
+}

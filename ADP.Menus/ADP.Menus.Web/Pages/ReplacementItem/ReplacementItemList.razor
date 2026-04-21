@@ -1,6 +1,6 @@
 @attribute [Route($"{MenuRoutes.Prefix}/{nameof(ReplacementItemList)}")]
 @attribute [Authorize]
-@inject MenuWebOptions MenuOptions
+@inject IOptions<MenuWebOptions> MenuOptionsAccessor
 
 <ShiftList EntitySet="@($"{MenuOptions.ResolvedRoutePrefix}ReplacementItem")"
            Title="Replacement Items"
@@ -24,3 +24,7 @@
     <PropertyColumn Property="@(x => x.StandaloneReplacementItemGroup != null ? x.StandaloneReplacementItemGroup.Text:"")" Title="Standalone Group Name" />
 
 </ShiftList>
+
+@code {
+    private MenuWebOptions MenuOptions => MenuOptionsAccessor.Value;
+}

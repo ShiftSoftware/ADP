@@ -8,7 +8,7 @@
 @inject HttpClient Http
 @inject IMenuCountryProvider CountryProvider
 @inject IDialogService DialogService
-@inject MenuWebOptions MenuOptions
+@inject IOptions<MenuWebOptions> MenuOptionsAccessor
 
 @inherits ShiftForm<MenuForm, MenuDTO>
 
@@ -627,6 +627,8 @@
 </style>
 
 @code {
+    private MenuWebOptions MenuOptions => MenuOptionsAccessor.Value;
+
     private static string ResolveLocalized(string? raw)
     {
         if (string.IsNullOrEmpty(raw)) return raw ?? string.Empty;
