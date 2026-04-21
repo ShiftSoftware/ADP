@@ -276,6 +276,8 @@ public static class SeedData
             Name = "V1",
             MenuPrefix = Loc("SER"),
             MenuPostfix = Loc("A"),
+            StandaloneMenuPrefix = Loc("STD"),
+            StandaloneMenuPostfix = Loc("A"),
             LabourRate = 45,
             DiscountPercentage = 5,
             HasStandaloneItems = true
@@ -287,6 +289,8 @@ public static class SeedData
             Name = "V2",
             MenuPrefix = Loc("SER"),
             MenuPostfix = Loc("P"),
+            StandaloneMenuPrefix = Loc("STD"),
+            StandaloneMenuPostfix = Loc("P"),
             LabourRate = 45,
             DiscountPercentage = 7.5m,
             HasStandaloneItems = true
@@ -298,6 +302,8 @@ public static class SeedData
             Name = "V3",
             MenuPrefix = Loc("MNT"),
             MenuPostfix = Loc("X"),
+            StandaloneMenuPrefix = Loc("STD"),
+            StandaloneMenuPostfix = Loc("X"),
             LabourRate = 47,
             DiscountPercentage = 4,
             HasStandaloneItems = true
@@ -320,6 +326,8 @@ public static class SeedData
             Name = "V2",
             MenuPrefix = Loc("PMS"),
             MenuPostfix = Loc("L"),
+            StandaloneMenuPrefix = Loc("STD"),
+            StandaloneMenuPostfix = Loc("L"),
             LabourRate = 64,
             DiscountPercentage = 2.5m,
             HasStandaloneItems = true
@@ -331,6 +339,8 @@ public static class SeedData
             Name = "V1",
             MenuPrefix = Loc("SRV"),
             MenuPostfix = Loc("B"),
+            StandaloneMenuPrefix = Loc("STD"),
+            StandaloneMenuPostfix = Loc("B"),
             LabourRate = 46,
             DiscountPercentage = 6,
             HasStandaloneItems = true
@@ -342,6 +352,8 @@ public static class SeedData
             Name = "V1",
             MenuPrefix = Loc("PRE"),
             MenuPostfix = Loc("R"),
+            StandaloneMenuPrefix = Loc("STD"),
+            StandaloneMenuPostfix = Loc("R"),
             LabourRate = 63,
             DiscountPercentage = 2,
             HasStandaloneItems = true
@@ -353,6 +365,8 @@ public static class SeedData
             Name = "V1",
             MenuPrefix = Loc("CMP"),
             MenuPostfix = Loc("H"),
+            StandaloneMenuPrefix = Loc("STD"),
+            StandaloneMenuPostfix = Loc("H"),
             LabourRate = 47,
             DiscountPercentage = 5,
             HasStandaloneItems = true
@@ -364,6 +378,8 @@ public static class SeedData
             Name = "V1",
             MenuPrefix = Loc("RXS"),
             MenuPostfix = Loc("T"),
+            StandaloneMenuPrefix = Loc("STD"),
+            StandaloneMenuPostfix = Loc("T"),
             LabourRate = 68,
             DiscountPercentage = 3,
             HasStandaloneItems = true

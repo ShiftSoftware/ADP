@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using ShiftSoftware.ADP.Menus.Data.DataServices;
 using ShiftSoftware.ADP.Menus.Data.Entities;
 using ShiftSoftware.ADP.Menus.Shared;
 using ShiftSoftware.ADP.Menus.Shared.DTOs.MenuVariant;
@@ -7,6 +8,7 @@ using ShiftSoftware.ShiftEntity.EFCore;
 using ShiftSoftware.ShiftEntity.Model;
 using ShiftSoftware.ShiftIdentity.Core;
 using ShiftSoftware.ShiftIdentity.Core.DTOs.Brand;
+using System.Text.Json;
 
 using MenuEntity = global::ShiftSoftware.ADP.Menus.Data.Entities.Menu;
 
@@ -82,6 +84,24 @@ public class MenuVariantRepository : ShiftRepository<ShiftDbContext, MenuVariant
             .AnyAsync(x => x.Name == dto.Name))
             throw new ShiftEntityException(new("Conflict", "Menu variant name should be unique within group"));
 
+        if (dto.HasStandaloneItems)
+        {
+            var siblingStandalones = await db.Set<MenuVariant>()
+                .Where(x => !x.IsDeleted && x.ID != entity.ID && x.MenuID == menuID && x.HasStandaloneItems)
+                .Select(x => new { x.StandaloneMenuPrefix, x.StandaloneMenuPostfix })
+                .ToListAsync();
+
+            foreach (var sibling in siblingStandalones)
+            {
+                if (IsStandalonePrefixPostfixDuplicate(
+                        sibling.StandaloneMenuPrefix, sibling.StandaloneMenuPostfix,
+                        dto.StandaloneMenuPrefix, dto.StandaloneMenuPostfix))
+                {
+                    throw new ShiftEntityException(new("Conflict", "The combination of standalone menu prefix and standalone menu postfix should be unique within group across all languages"));
+                }
+            }
+        }
+
         var countries = await countryProvider.GetSupportedCountriesAsync();
         ValidateLabourRates(dto, countries);
         ValidatePartCountryPrices(dto, countries);
@@ -113,6 +133,43 @@ public class MenuVariantRepository : ShiftRepository<ShiftDbContext, MenuVariant
             .ToHashSet();
         if (!supportedCountryIds.All(countrySet.Contains))
             throw new ShiftEntityException(new Message("Conflict", "Menu variant labour rates must include all required countries."));
+    }
+
+    private static bool IsStandalonePrefixPostfixDuplicate(string? aPrefix, string? aPostfix, string? bPrefix, string? bPostfix)
+    {
+        var languages = GetLanguageKeys(aPrefix)
+            .Concat(GetLanguageKeys(aPostfix))
+            .Concat(GetLanguageKeys(bPrefix))
+            .Concat(GetLanguageKeys(bPostfix))
+            .ToHashSet();
+
+        if (languages.Count == 0)
+            languages.Add("en");
+
+        foreach (var lang in languages)
+        {
+            if (LocalizedText.Resolve(aPrefix, lang) == LocalizedText.Resolve(bPrefix, lang)
+                && LocalizedText.Resolve(aPostfix, lang) == LocalizedText.Resolve(bPostfix, lang))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static IEnumerable<string> GetLanguageKeys(string? raw)
+    {
+        if (string.IsNullOrEmpty(raw) || raw[0] != '{')
+            yield break;
+
+        Dictionary<string, string>? dict = null;
+        try { dict = JsonSerializer.Deserialize<Dictionary<string, string>>(raw); }
+        catch { }
+
+        if (dict is null) yield break;
+        foreach (var key in dict.Keys)
+            yield return key;
     }
 
     private static void ValidatePartCountryPrices(MenuVariantDTO dto, IReadOnlyList<CountryInfo> countries)

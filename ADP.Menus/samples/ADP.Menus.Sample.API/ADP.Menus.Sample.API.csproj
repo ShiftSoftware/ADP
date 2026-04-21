@@ -6,7 +6,7 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<RootNamespace>ShiftSoftware.ADP.Menus.Sample.API</RootNamespace>
 		<UserSecretsId>7863cc8d-6a65-4f31-8d90-b217d168b163</UserSecretsId>
-		<NoWarn>$(NoWarn);NU1903;NU1608</NoWarn>
+		<NoWarn>$(NoWarn);NU1903;NU1608;NU1900</NoWarn>
 		<IsPackable>false</IsPackable>
 	</PropertyGroup>
 

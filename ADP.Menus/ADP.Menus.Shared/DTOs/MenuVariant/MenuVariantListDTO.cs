@@ -21,6 +21,12 @@ public class MenuVariantListDTO : ShiftEntityListDTO
     [JsonConverter(typeof(LocalizedTextJsonConverter))]
     public string? MenuPostfix { get; set; }
 
+    [JsonConverter(typeof(LocalizedTextJsonConverter))]
+    public string? StandaloneMenuPrefix { get; set; }
+
+    [JsonConverter(typeof(LocalizedTextJsonConverter))]
+    public string? StandaloneMenuPostfix { get; set; }
+
     public decimal LabourRate { get; set; }
     public bool HasStandaloneItems { get; set; }
 }

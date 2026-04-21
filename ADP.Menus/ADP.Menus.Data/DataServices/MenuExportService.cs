@@ -13,8 +13,7 @@ public class MenuExportService
             long countryId,
             decimal transferRate,
             string? language = null,
-            bool usePrimaryLabourRate = false,
-            bool applyPrefixPostfixToStandalones = false)
+            bool usePrimaryLabourRate = false)
     {
         IEnumerable<MenuLineDTO> result = [];
 
@@ -82,7 +81,7 @@ public class MenuExportService
             }
         }
 
-        result = result.Concat(GenerateStandaloneMenuLines(menuVariants, labourRateMapping, brandMapping, countryId, language, usePrimaryLabourRate, applyPrefixPostfixToStandalones));
+        result = result.Concat(GenerateStandaloneMenuLines(menuVariants, labourRateMapping, brandMapping, countryId, language, usePrimaryLabourRate));
 
         return result;
     }
@@ -101,8 +100,7 @@ public class MenuExportService
             Dictionary<long?, BrandMapping> brandMapping,
             long countryId,
             string? language = null,
-            bool usePrimaryLabourRate = false,
-            bool applyPrefixPostfixToStandalones = false)
+            bool usePrimaryLabourRate = false)
     {
         IEnumerable<MenuLineDTO> result = [];
 
@@ -111,8 +109,8 @@ public class MenuExportService
 
         foreach (var menuVariant in standaloneMenus)
         {
-            var menuPrefix = LocalizedText.Resolve(menuVariant.MenuPrefix, language);
-            var menuPostfix = LocalizedText.Resolve(menuVariant.MenuPostfix, language);
+            var standalonePrefix = LocalizedText.Resolve(menuVariant.StandaloneMenuPrefix, language);
+            var standalonePostfix = LocalizedText.Resolve(menuVariant.StandaloneMenuPostfix, language);
 
             // Create menu for non grouped items
             var nonGroupedItems = menuVariant.Items
@@ -126,9 +124,7 @@ public class MenuExportService
             foreach (var item in nonGroupedItems)
             {
                 var standaloneOperationCode = LocalizedText.Resolve(item.ReplacementItemVehicleModel!.ReplacementItem.StandaloneOperationCode, language);
-                var code = applyPrefixPostfixToStandalones
-                    ? $"{menuPrefix} {standaloneOperationCode} {menuVariant.Menu.BasicModelCode} {menuPostfix}".Trim()
-                    : $"{standaloneOperationCode} {menuVariant.Menu.BasicModelCode}".Trim();
+                var code = $"{standalonePrefix} {standaloneOperationCode} {menuVariant.Menu.BasicModelCode} {standalonePostfix}".Trim();
 
                 decimal allowedTime = item.StandaloneAllowedTime;
 
@@ -178,9 +174,7 @@ public class MenuExportService
             foreach (var item in groupedItems)
             {
                 var menuCode = LocalizedText.Resolve(item.First().ReplacementItemVehicleModel!.ReplacementItem!.StandaloneReplacementItemGroup!.MenuCode, language);
-                var code = applyPrefixPostfixToStandalones
-                    ? $"{menuPrefix} {menuCode} {menuVariant.Menu.BasicModelCode} {menuPostfix}".Trim()
-                    : $"{menuCode} {menuVariant.Menu.BasicModelCode}".Trim();
+                var code = $"{standalonePrefix} {menuCode} {menuVariant.Menu.BasicModelCode} {standalonePostfix}".Trim();
 
                 decimal allowedTime = item.First().StandaloneAllowedTime;
 

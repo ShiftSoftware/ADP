@@ -145,7 +145,6 @@ builder.Services.AddMenuApiServices<DB>(mvcBuilder, options =>
 {
     options.RoutePrefix = "api/Menu";
     options.EnableMenuActionTreeAuthorization = true;
-    options.ApplyMenuPrefixPostfixToStandalones = true;
     options.Languages = new()
     {
         new MenuLanguageOption("en-US", "English"),
@@ -191,7 +190,7 @@ using (var scope = app.Services.CreateScope())
     // throwaway sample DB — don't copy this pattern into real projects.
     if (app.Environment.IsDevelopment())
     {
-        await db.Database.EnsureDeletedAsync();
+        //await db.Database.EnsureDeletedAsync();
     }
     await db.Database.EnsureCreatedAsync();
     await db.SeedAsync();

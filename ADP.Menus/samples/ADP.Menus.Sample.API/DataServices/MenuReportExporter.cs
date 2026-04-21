@@ -18,7 +18,7 @@ public class MenuReportExporter : IMenuReportExporter
         var worksheet = workbook.Worksheets.Add("Sheet1");
 
         // Get the biggest number of parts in a menu code
-        var numberOfParts = lines?.Select(x => x.Parts.Count())?.Max() ?? 0;
+        var numberOfParts = lines?.Select(x => x.Parts.Count()).DefaultIfEmpty(0).Max() ?? 0;
 
         GenerateHeadersForExportMenuToExcel(worksheet, numberOfParts);
 

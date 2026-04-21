@@ -324,21 +324,71 @@
                             </MudTabPanel>
 
                             <MudTabPanel Text="Menu">
-                                @if (MenuOptions.Languages.Count > 0)
+                                <MudPaper Outlined="true" Class="menu-section-card">
+                                    <MudText Typo="Typo.subtitle1" Class="menu-section-title">Periodic</MudText>
+                                    <div class="menu-field-row">
+                                        @if (MenuOptions.Languages.Count > 0)
+                                        {
+                                            <LocalizedTextField Label="Menu Prefix"
+                                                                @bind-Value="selectedVariant.MenuPrefix"
+                                                                Languages="MenuOptions.LanguageInfos" />
+                                        }
+                                        else
+                                        {
+                                            <MudTextFieldExtended Label="Menu Prefix" @bind-Value="selectedVariant.MenuPrefix" />
+                                        }
+                                    </div>
+                                    <div class="menu-field-row">
+                                        @if (MenuOptions.Languages.Count > 0)
+                                        {
+                                            <LocalizedTextField Label="Menu Postfix"
+                                                                @bind-Value="selectedVariant.MenuPostfix"
+                                                                Languages="MenuOptions.LanguageInfos" />
+                                        }
+                                        else
+                                        {
+                                            <MudTextFieldExtended Label="Menu Postfix" @bind-Value="selectedVariant.MenuPostfix" />
+                                        }
+                                    </div>
+                                </MudPaper>
+
+                                @if (selectedVariant.HasStandaloneItems)
                                 {
-                                    <LocalizedTextField Label="Menu Prefix"
-                                                        @bind-Value="selectedVariant.MenuPrefix"
-                                                        Languages="MenuOptions.LanguageInfos" />
-                                    <LocalizedTextField Label="Menu Postfix"
-                                                        @bind-Value="selectedVariant.MenuPostfix"
-                                                        Languages="MenuOptions.LanguageInfos" />
+                                    <MudPaper Outlined="true" Class="menu-section-card">
+                                        <MudText Typo="Typo.subtitle1" Class="menu-section-title">Standalone</MudText>
+                                        <div class="menu-field-row">
+                                            @if (MenuOptions.Languages.Count > 0)
+                                            {
+                                                <LocalizedTextField Label="Standalone Menu Prefix"
+                                                                    @bind-Value="selectedVariant.StandaloneMenuPrefix"
+                                                                    Languages="MenuOptions.LanguageInfos" />
+                                            }
+                                            else
+                                            {
+                                                <MudTextFieldExtended Label="Standalone Menu Prefix" @bind-Value="selectedVariant.StandaloneMenuPrefix" />
+                                            }
+                                        </div>
+                                        <div class="menu-field-row">
+                                            @if (MenuOptions.Languages.Count > 0)
+                                            {
+                                                <LocalizedTextField Label="Standalone Menu Postfix"
+                                                                    @bind-Value="selectedVariant.StandaloneMenuPostfix"
+                                                                    Languages="MenuOptions.LanguageInfos" />
+                                            }
+                                            else
+                                            {
+                                                <MudTextFieldExtended Label="Standalone Menu Postfix" @bind-Value="selectedVariant.StandaloneMenuPostfix" />
+                                            }
+                                        </div>
+                                    </MudPaper>
                                 }
-                                else
-                                {
-                                    <MudTextFieldExtended Label="Menu Prefix" @bind-Value="selectedVariant.MenuPrefix" />
-                                    <MudTextFieldExtended Label="Menu Postfix" @bind-Value="selectedVariant.MenuPostfix" />
-                                }
-                                <MudTextFieldExtended Label="Discount Percentage" @bind-Value="selectedVariant.DiscountPercentage" />
+
+                                <MudPaper Outlined="true" Class="menu-section-card">
+                                    <MudText Typo="Typo.subtitle1" Class="menu-section-title">Discount</MudText>
+                                    <div class="menu-field-row menu-field-row--narrow">
+                                        <MudTextFieldExtended Label="Discount Percentage" @bind-Value="selectedVariant.DiscountPercentage" />
+                                    </div>
+                                </MudPaper>
                             </MudTabPanel>
                         </MudTabs>
             }
@@ -524,6 +574,50 @@
             transform: rotate(360deg);
         }
     }
+
+    /* Menu tab: each logical group is its own card */
+    .menu-section-card {
+        padding: 16px 20px;
+        margin-bottom: 16px;
+        background-color: var(--mud-palette-surface);
+    }
+
+    .menu-section-card:last-child {
+        margin-bottom: 0;
+    }
+
+    .menu-section-title {
+        margin: 0 0 12px 0;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        font-size: 0.8rem;
+        color: var(--mud-palette-primary);
+    }
+
+    .menu-field-row {
+        display: block;
+        width: 100%;
+        padding-bottom: 20px;
+        margin-bottom: 20px;
+        border-bottom: 1px dashed var(--mud-palette-lines-default);
+    }
+
+    .menu-field-row:last-child {
+        padding-bottom: 0;
+        margin-bottom: 0;
+        border-bottom: none;
+    }
+
+    .menu-field-row::after {
+        content: "";
+        display: block;
+        clear: both;
+    }
+
+    .menu-field-row--narrow {
+        max-width: 260px;
+    }
 </style>
 
 @code {
@@ -623,6 +717,10 @@
         if (workingVariants.Any() && !string.IsNullOrWhiteSpace(response?.Entity?.ID) && CanManageVariants)
         {
             TheItem.ID = response.Entity.ID;
+            // The menu has already been persisted; sync the concurrency stamp so a
+            // subsequent retry (e.g. after a child-variant save fails) doesn't submit
+            // a stale LastSaveDate and get rejected.
+            TheItem.LastSaveDate = response.Entity.LastSaveDate;
             var variantsSaved = await SaveAllVariantsInternal();
             if (!variantsSaved)
                 return false;
@@ -761,7 +859,12 @@
 
             var entityResponse = await response.Content.ReadFromJsonAsync<ShiftEntityResponse<MenuVariantDTO>>();
             if (!string.IsNullOrWhiteSpace(entityResponse?.Entity?.ID))
+            {
                 variant.ID = entityResponse.Entity.ID;
+                // Sync concurrency stamp so a later retry in the same session doesn't
+                // submit a stale LastSaveDate for this variant.
+                variant.LastSaveDate = entityResponse.Entity.LastSaveDate;
+            }
 
             if (showSuccessMessage)
             {
@@ -1365,6 +1468,8 @@
             Name = source.Name,
             MenuPrefix = source.MenuPrefix,
             MenuPostfix = source.MenuPostfix,
+            StandaloneMenuPrefix = source.StandaloneMenuPrefix,
+            StandaloneMenuPostfix = source.StandaloneMenuPostfix,
             LabourRate = source.LabourRate,
             LabourRates = source.LabourRates.Select(CloneLabourRate).ToList(),
             DiscountPercentage = source.DiscountPercentage,

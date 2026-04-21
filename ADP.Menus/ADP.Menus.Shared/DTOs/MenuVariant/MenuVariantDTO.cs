@@ -25,6 +25,10 @@ public class MenuVariantDTO : ShiftEntityViewAndUpsertDTO
 
     public string? MenuPostfix { get => field; set => field = !string.IsNullOrWhiteSpace(value) ? value.Trim() : null; }
 
+    public string? StandaloneMenuPrefix { get => field; set => field = !string.IsNullOrWhiteSpace(value) ? value.Trim() : null; }
+
+    public string? StandaloneMenuPostfix { get => field; set => field = !string.IsNullOrWhiteSpace(value) ? value.Trim() : null; }
+
     [Required]
     public decimal? LabourRate { get; set; }
 

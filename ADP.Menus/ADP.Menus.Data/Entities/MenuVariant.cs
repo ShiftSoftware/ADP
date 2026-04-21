@@ -16,6 +16,10 @@ public class MenuVariant : ShiftEntity<MenuVariant>
 
     public string? MenuPostfix { get; set; }
 
+    public string? StandaloneMenuPrefix { get; set; }
+
+    public string? StandaloneMenuPostfix { get; set; }
+
     [Precision(12, 2)]
     public decimal LabourRate { get; set; }
 

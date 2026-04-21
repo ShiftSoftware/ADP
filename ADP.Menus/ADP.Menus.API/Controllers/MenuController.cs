@@ -494,7 +494,7 @@ public class MenuController : ShiftEntitySecureControllerAsync<MenuRepository, M
                     Body = $"'{string.Join(" , ", missingLaborRates.Select(x => $"{x.LaborRate} - BrandID: {x.BrandID}"))}' is missing"
                 });
 
-        var lines = MenuExportService.GenerateMenuLines(menus, labourRateMappings, brandMapping, countryId, transferRate, language, usePrimaryLabourRate, options.ApplyMenuPrefixPostfixToStandalones);
+        var lines = MenuExportService.GenerateMenuLines(menus, labourRateMappings, brandMapping, countryId, transferRate, language, usePrimaryLabourRate);
 
         return lines;
     }
