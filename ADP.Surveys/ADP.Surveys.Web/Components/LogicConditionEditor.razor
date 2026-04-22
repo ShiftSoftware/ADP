@@ -1,0 +1,275 @@
+@namespace ShiftSoftware.ADP.Surveys.Web.Components
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Logic
+
+@*
+    Dispatches on the three condition shapes. For simple mode, composites
+    only contain predicate children at one nesting level — nested composites
+    are read-only with a pointer to the Raw JSON tab. Expressions likewise
+    display read-only; switching to/from expression mode drops the previous
+    content (because a free-form expression can't be mapped back to a
+    predicate without parsing it).
+
+    The component mutates the parent's rule in place through OnReplaceRoot
+    when the user switches shapes — the root LogicConditionDto reference
+    changes, so the parent receives the new one and stores it back on the
+    LogicRuleDto.If.
+*@
+
+@{
+    var currentShape = Condition switch
+    {
+        PredicateConditionDto => "predicate",
+        CompositeConditionDto => "composite",
+        ExpressionConditionDto => "expression",
+        _ => "predicate",
+    };
+
+    // Shape-switch menu, shared across all three branches. Declared at the
+    // top of the template so the @if branches below can invoke it; pure
+    // Razor so EventCallback types land correctly (an earlier
+    // RenderTreeBuilder version tripped InvalidCastException setting
+    // OnClick on MudMenuItem).
+    RenderFragment<string> ShapeMenu = (current) => @<text>
+        <MudMenu Label="@ShapeLabel(current)"
+                 EndIcon="@Icons.Material.Filled.KeyboardArrowDown"
+                 Variant="Variant.Outlined"
+                 Size="Size.Small"
+                 Disabled="@ReadOnly"
+                 Dense="true">
+            <MudMenuItem Disabled="@(current == "predicate")"
+                         OnClick="@(() => SwitchShape("predicate"))">
+                Single predicate
+            </MudMenuItem>
+            <MudMenuItem Disabled="@(current == "composite")"
+                         OnClick="@(() => SwitchShape("composite"))">
+                All of / any of (composite)
+            </MudMenuItem>
+            <MudMenuItem Disabled="@(current == "expression")"
+                         OnClick="@(() => SwitchShape("expression"))">
+                Sandbox expression
+            </MudMenuItem>
+        </MudMenu>
+    </text>;
+}
+
+@if (Condition is PredicateConditionDto pred)
+{
+    <div class="cond-shell">
+        <div class="cond-shell__toolbar">
+            <span class="cond-shell__mode-label">IF</span>
+            @ShapeMenu(currentShape)
+        </div>
+        <LogicPredicateEditor Predicate="pred"
+                              QuestionChoices="QuestionChoices"
+                              ReadOnly="@ReadOnly"
+                              Changed="Changed" />
+    </div>
+}
+else if (Condition is CompositeConditionDto comp)
+{
+    var children = comp.All ?? comp.Any ?? new List<LogicConditionDto>();
+    var mode = comp.All is not null ? "all" : "any";
+
+    <div class="cond-shell">
+        <div class="cond-shell__toolbar">
+            <span class="cond-shell__mode-label">IF</span>
+            <MudToggleGroup T="string"
+                            SelectionMode="SelectionMode.SingleSelection"
+                            Value="@mode"
+                            ValueChanged="@(async (string m) => await SwitchCompositeMode(comp, m))"
+                            Color="Color.Primary"
+                            Size="Size.Small"
+                            CheckMark="false"
+                            Disabled="@ReadOnly">
+                <MudToggleItem T="string" Value="@("all")">Match ALL of</MudToggleItem>
+                <MudToggleItem T="string" Value="@("any")">Match ANY of</MudToggleItem>
+            </MudToggleGroup>
+            @ShapeMenu(currentShape)
+        </div>
+
+        <div class="cond-shell__children">
+            @for (int i = 0; i < children.Count; i++)
+            {
+                var idx = i;
+                var child = children[idx];
+                <div class="cond-shell__child">
+                    <div class="cond-shell__child-handle">@(idx + 1)</div>
+                    <div class="cond-shell__child-body">
+                        @if (child is PredicateConditionDto p)
+                        {
+                            <LogicPredicateEditor Predicate="p"
+                                                  QuestionChoices="QuestionChoices"
+                                                  ReadOnly="@ReadOnly"
+                                                  Changed="Changed" />
+                        }
+                        else
+                        {
+                            <MudAlert Severity="Severity.Warning" Dense="true">
+                                Nested @(child is CompositeConditionDto ? "composite" : "expression") child.
+                                Edit via the <b>Raw JSON</b> tab — the visual editor only edits one nesting level.
+                            </MudAlert>
+                        }
+                    </div>
+                    @if (!ReadOnly)
+                    {
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                       Size="Size.Small"
+                                       Color="Color.Error"
+                                       OnClick="@(() => RemoveChild(comp, idx))"
+                                       title="Remove condition" />
+                    }
+                </div>
+            }
+            @if (!ReadOnly)
+            {
+                <MudButton StartIcon="@Icons.Material.Filled.Add"
+                           Size="Size.Small"
+                           Variant="Variant.Text"
+                           Color="Color.Primary"
+                           OnClick="@(() => AddChild(comp))">
+                    Add condition
+                </MudButton>
+            }
+        </div>
+    </div>
+}
+else if (Condition is ExpressionConditionDto expr)
+{
+    <div class="cond-shell">
+        <div class="cond-shell__toolbar">
+            <span class="cond-shell__mode-label">IF</span>
+            @ShapeMenu(currentShape)
+        </div>
+        <LogicExpressionEditor Condition="expr"
+                               QuestionChoices="QuestionChoices"
+                               ReadOnly="@ReadOnly"
+                               Changed="Changed" />
+    </div>
+}
+
+
+<style>
+    .cond-shell {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        background: #f7f8fa;
+        border: 1px solid #e0e5ec;
+        border-radius: 8px;
+        padding: 10px 12px;
+    }
+    .cond-shell__toolbar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .cond-shell__mode-label {
+        font-weight: 700;
+        color: #4338ca;
+        font-size: 0.9rem;
+    }
+    .cond-shell__children {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .cond-shell__child {
+        display: grid;
+        grid-template-columns: 20px 1fr auto;
+        gap: 6px;
+        align-items: start;
+        background: #fff;
+        border: 1px solid #e0e5ec;
+        border-radius: 6px;
+        padding: 8px;
+    }
+    .cond-shell__child-handle {
+        font-weight: 600;
+        color: #666;
+        font-size: 0.8rem;
+        padding-top: 10px;
+        text-align: right;
+    }
+    .cond-shell__child-body {
+        min-width: 0;
+    }
+</style>
+
+@code {
+    [Parameter, EditorRequired]
+    public LogicConditionDto Condition { get; set; } = default!;
+
+    [Parameter]
+    public IReadOnlyList<LogicPredicateEditor.QuestionChoice> QuestionChoices { get; set; }
+        = Array.Empty<LogicPredicateEditor.QuestionChoice>();
+
+    [Parameter]
+    public bool ReadOnly { get; set; }
+
+    /// <summary>
+    /// Invoked when the root condition reference changes (shape switch).
+    /// Parent writes the new value back onto the LogicRuleDto.If.
+    /// </summary>
+    [Parameter]
+    public EventCallback<LogicConditionDto> OnReplaceRoot { get; set; }
+
+    [Parameter]
+    public EventCallback Changed { get; set; }
+
+    static string ShapeLabel(string shape) => shape switch
+    {
+        "predicate" => "Single predicate",
+        "composite" => "Composite",
+        "expression" => "Expression",
+        _ => shape,
+    };
+
+    async Task SwitchShape(string target)
+    {
+        LogicConditionDto replacement = target switch
+        {
+            "predicate" => new PredicateConditionDto(),
+            "composite" => new CompositeConditionDto { All = new List<LogicConditionDto> { new PredicateConditionDto() } },
+            "expression" => new ExpressionConditionDto { Expression = "" },
+            _ => Condition,
+        };
+        if (ReferenceEquals(replacement, Condition)) return;
+        await OnReplaceRoot.InvokeAsync(replacement);
+    }
+
+    async Task SwitchCompositeMode(CompositeConditionDto comp, string newMode)
+    {
+        var children = comp.All ?? comp.Any ?? new List<LogicConditionDto>();
+        if (newMode == "all")
+        {
+            comp.All = children;
+            comp.Any = null;
+        }
+        else
+        {
+            comp.Any = children;
+            comp.All = null;
+        }
+        await Changed.InvokeAsync();
+    }
+
+    async Task AddChild(CompositeConditionDto comp)
+    {
+        var children = comp.All ?? comp.Any;
+        if (children is null)
+        {
+            children = new List<LogicConditionDto>();
+            comp.All = children;
+        }
+        children.Add(new PredicateConditionDto());
+        await Changed.InvokeAsync();
+    }
+
+    async Task RemoveChild(CompositeConditionDto comp, int index)
+    {
+        var children = comp.All ?? comp.Any;
+        if (children is null || index < 0 || index >= children.Count) return;
+        children.RemoveAt(index);
+        await Changed.InvokeAsync();
+    }
+}

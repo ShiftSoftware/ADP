@@ -1,10 +1,12 @@
 @namespace ShiftSoftware.ADP.Surveys.Web.Components
 @using ShiftSoftware.ADP.Surveys.Shared.DTOs
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Admin.BankQuestion
 @using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions
 @using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Types
 @using ShiftSoftware.ADP.Surveys.Shared.DTOs.Screens
 @using ShiftSoftware.ADP.Surveys.Shared.Enums
 @using LocalizedString = ShiftSoftware.ADP.Surveys.Shared.DTOs.LocalizedString
+@inject IDialogService DialogService
 
 @* Inline-screen question editor. Renders each QuestionEntryDto as a
    MudExpansionPanel. Collapsed header shows number, type, title preview,
@@ -32,6 +34,10 @@
                      Color="Color.Primary"
                      AnchorOrigin="Origin.BottomRight"
                      TransformOrigin="Origin.TopRight">
+                <MudMenuItem OnClick="InsertFromBank" Icon="@Icons.Material.Filled.LibraryBooks">
+                    Insert from bank…
+                </MudMenuItem>
+                <MudDivider />
                 @foreach (var type in visuallyEditableTypes)
                 {
                     <MudMenuItem OnClick="@(() => AddQuestion(type))">
@@ -269,6 +275,24 @@
     void OnExpandedChanged(int index, bool expanded)
     {
         expandedIndex = expanded ? index : -1;
+    }
+
+    async Task InsertFromBank()
+    {
+        var options = new DialogOptions
+        {
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true,
+            CloseButton = true,
+        };
+        var dialog = await DialogService.ShowAsync<BankPickerDialog>("", options);
+        var result = await dialog.Result;
+        if (result is null || result.Canceled || result.Data is not BankQuestionListDTO picked) return;
+        if (string.IsNullOrWhiteSpace(picked.Key)) return;
+
+        Screen.Questions.Add(QuestionEntryDto.FromRef(new QuestionRefDto { BankRef = picked.Key }));
+        expandedIndex = Screen.Questions.Count - 1;
+        await Changed.InvokeAsync();
     }
 
     async Task AddQuestion(QuestionType type)

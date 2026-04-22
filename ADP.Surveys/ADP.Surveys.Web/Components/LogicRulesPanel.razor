@@ -1,0 +1,324 @@
+@namespace ShiftSoftware.ADP.Surveys.Web.Components
+@using System.Text.Json
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Logic
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Types
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Screens
+@using ShiftSoftware.ADP.Surveys.Shared.Enums
+
+@*
+    Top-level logic section. Surfaces SurveyDto.Logic as a list of
+    expansion panels, each wrapping a LogicRuleEditor. Add/remove/reorder
+    live at this level; the inner editors mutate LogicRuleDto in place.
+
+    The cross-screen QuestionChoice catalog is built once per render here
+    and passed down so inner predicate editors don't walk the draft
+    themselves. Banked refs + screen-template refs are excluded from the
+    catalog (type unknown without bank lookup); the predicate editor
+    still accepts a free-text questionId fallback for advanced cases.
+*@
+
+<div class="logic-panel">
+    <div class="logic-panel__header">
+        <div class="logic-panel__title">
+            <MudIcon Icon="@Icons.Material.Filled.Bolt" />
+            <span>Logic rules</span>
+            @if (Rules.Count > 0)
+            {
+                <MudChip T="string"
+                         Size="Size.Small"
+                         Color="Color.Info"
+                         Variant="Variant.Outlined">@Rules.Count rule@(Rules.Count == 1 ? "" : "s")</MudChip>
+            }
+        </div>
+        @if (!ReadOnly)
+        {
+            <MudButton StartIcon="@Icons.Material.Filled.Add"
+                       Size="Size.Small"
+                       Variant="Variant.Text"
+                       Color="Color.Primary"
+                       OnClick="AddRule">
+                Add rule
+            </MudButton>
+        }
+    </div>
+
+    <MudAlert Severity="Severity.Info" Dense="true" Class="mb-3">
+        Rules are evaluated top-to-bottom on every <b>Next</b> — the first matching rule's goto wins.
+        Reorder rules to change priority. Questions from every screen are available.
+    </MudAlert>
+
+    @if (Draft is null || Rules.Count == 0)
+    {
+        <div class="logic-panel__empty">
+            No rules yet. Click <b>+ Add rule</b> to branch based on an answer.
+        </div>
+    }
+    else
+    {
+        <MudExpansionPanels MultiExpansion="false" Elevation="0" Dense="true">
+            @for (int i = 0; i < Rules.Count; i++)
+            {
+                var idx = i;
+                var rule = Rules[idx];
+                var summary = BuildSummary(rule);
+
+                <MudExpansionPanel Expanded="@(idx == expandedIndex)"
+                                   ExpandedChanged="@(b => OnExpandedChanged(idx, b))">
+                    <TitleContent>
+                        <div class="logic-panel__row">
+                            <div class="logic-panel__row-label">
+                                <span class="logic-panel__row-number">@(idx + 1).</span>
+                                <span class="logic-panel__row-summary">@summary</span>
+                            </div>
+                            @if (!ReadOnly)
+                            {
+                                <div class="logic-panel__row-actions" @onclick:stopPropagation="true">
+                                    <MudIconButton Icon="@Icons.Material.Filled.ArrowUpward"
+                                                   Size="Size.Small"
+                                                   Disabled="@(idx == 0)"
+                                                   OnClick="@(() => MoveUp(idx))"
+                                                   title="Move up" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.ArrowDownward"
+                                                   Size="Size.Small"
+                                                   Disabled="@(idx == Rules.Count - 1)"
+                                                   OnClick="@(() => MoveDown(idx))"
+                                                   title="Move down" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                   Size="Size.Small"
+                                                   Color="Color.Error"
+                                                   OnClick="@(() => RemoveRule(idx))"
+                                                   title="Remove rule" />
+                                </div>
+                            }
+                        </div>
+                    </TitleContent>
+                    <ChildContent>
+                        <LogicRuleEditor Rule="rule"
+                                         Draft="@Draft"
+                                         QuestionChoices="@QuestionChoices"
+                                         ReadOnly="@ReadOnly"
+                                         Changed="OnChildChanged" />
+                    </ChildContent>
+                </MudExpansionPanel>
+            }
+        </MudExpansionPanels>
+    }
+</div>
+
+<style>
+    .logic-panel {
+        border: 1px solid #d0d5dd;
+        border-radius: 8px;
+        background: #fff;
+        padding: 12px 16px 16px;
+    }
+    .logic-panel__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 10px;
+    }
+    .logic-panel__title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        font-size: 1rem;
+        color: #333;
+    }
+    .logic-panel__empty {
+        padding: 20px;
+        text-align: center;
+        color: #888;
+        font-size: 0.9rem;
+        border: 1px dashed #d0d5dd;
+        border-radius: 8px;
+    }
+    .logic-panel__row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        width: 100%;
+    }
+    .logic-panel__row-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        flex: 1;
+    }
+    .logic-panel__row-number {
+        font-weight: 600;
+        color: #666;
+        font-variant-numeric: tabular-nums;
+        min-width: 22px;
+    }
+    .logic-panel__row-summary {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 0.88rem;
+        color: #111;
+    }
+    .logic-panel__row-actions {
+        display: flex;
+        gap: 2px;
+        flex-shrink: 0;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public SurveyDto? Draft { get; set; }
+
+    [Parameter]
+    public EventCallback<SurveyDto?> DraftChanged { get; set; }
+
+    [Parameter]
+    public bool ReadOnly { get; set; }
+
+    /// <summary>
+    /// Bumped on every Draft mutation by the parent. We don't act on it
+    /// directly — the re-render re-walks <see cref="QuestionChoices"/> so
+    /// newly added questions surface immediately in child pickers.
+    /// </summary>
+    [Parameter]
+    public int SchemaVersion { get; set; }
+
+    int expandedIndex = -1;
+
+    List<LogicRuleDto> Rules => Draft?.Logic ?? new List<LogicRuleDto>();
+
+    IReadOnlyList<LogicPredicateEditor.QuestionChoice> QuestionChoices
+    {
+        get
+        {
+            var list = new List<LogicPredicateEditor.QuestionChoice>();
+            if (Draft is null) return list;
+            for (int i = 0; i < Draft.Screens.Count; i++)
+            {
+                if (Draft.Screens[i] is not InlineScreenDto inline) continue;
+                foreach (var entry in inline.Questions)
+                {
+                    if (entry.Inline is null || string.IsNullOrEmpty(entry.Inline.Id)) continue;
+                    list.Add(new LogicPredicateEditor.QuestionChoice
+                    {
+                        ScreenId = inline.Id,
+                        ScreenNumber = i + 1,
+                        Id = entry.Inline.Id,
+                        TypeLabel = entry.Inline.QuestionType.ToString().ToLowerInvariant(),
+                        Question = entry.Inline,
+                    });
+                }
+            }
+            return list;
+        }
+    }
+
+    async Task AddRule()
+    {
+        Draft ??= new SurveyDto();
+        Draft.Logic ??= new List<LogicRuleDto>();
+        Draft.Logic.Add(new LogicRuleDto { If = new PredicateConditionDto(), Then = new LogicActionDto() });
+        expandedIndex = Draft.Logic.Count - 1;
+        await DraftChanged.InvokeAsync(Draft);
+    }
+
+    async Task RemoveRule(int index)
+    {
+        if (Draft?.Logic is null || index < 0 || index >= Draft.Logic.Count) return;
+        Draft.Logic.RemoveAt(index);
+        if (expandedIndex == index) expandedIndex = -1;
+        else if (expandedIndex > index) expandedIndex--;
+        await DraftChanged.InvokeAsync(Draft);
+    }
+
+    async Task MoveUp(int index)
+    {
+        if (Draft?.Logic is null || index <= 0) return;
+        (Draft.Logic[index - 1], Draft.Logic[index]) = (Draft.Logic[index], Draft.Logic[index - 1]);
+        if (expandedIndex == index) expandedIndex = index - 1;
+        else if (expandedIndex == index - 1) expandedIndex = index;
+        await DraftChanged.InvokeAsync(Draft);
+    }
+
+    async Task MoveDown(int index)
+    {
+        if (Draft?.Logic is null || index >= Draft.Logic.Count - 1) return;
+        (Draft.Logic[index + 1], Draft.Logic[index]) = (Draft.Logic[index], Draft.Logic[index + 1]);
+        if (expandedIndex == index) expandedIndex = index + 1;
+        else if (expandedIndex == index + 1) expandedIndex = index;
+        await DraftChanged.InvokeAsync(Draft);
+    }
+
+    void OnExpandedChanged(int index, bool expanded)
+    {
+        expandedIndex = expanded ? index : -1;
+    }
+
+    async Task OnChildChanged()
+    {
+        await DraftChanged.InvokeAsync(Draft);
+    }
+
+    string BuildSummary(LogicRuleDto rule)
+    {
+        var left = SummariseCondition(rule.If);
+        var right = string.IsNullOrEmpty(rule.Then.Goto) ? "(no target)" : rule.Then.Goto;
+        return $"IF {left} THEN goto {right}";
+    }
+
+    string SummariseCondition(LogicConditionDto? cond) => cond switch
+    {
+        null => "(empty)",
+        PredicateConditionDto p => SummarisePredicate(p),
+        CompositeConditionDto c => SummariseComposite(c),
+        ExpressionConditionDto e => string.IsNullOrEmpty(e.Expression) ? "(expression)" : $"`{Trunc(e.Expression, 40)}`",
+        _ => "(unknown)",
+    };
+
+    string SummarisePredicate(PredicateConditionDto p)
+    {
+        if (string.IsNullOrEmpty(p.QuestionId)) return "(unset)";
+        var qLabel = p.QuestionId;
+        var opLabel = p.Op switch
+        {
+            LogicOperator.Equals => "=",
+            LogicOperator.NotEquals => "≠",
+            LogicOperator.GreaterThan => ">",
+            LogicOperator.GreaterThanOrEqual => "≥",
+            LogicOperator.LessThan => "<",
+            LogicOperator.LessThanOrEqual => "≤",
+            LogicOperator.In => "in",
+            LogicOperator.NotIn => "not in",
+            LogicOperator.IsSet => "is set",
+            LogicOperator.IsNotSet => "is not set",
+            _ => p.Op.ToString(),
+        };
+        if (p.Op is LogicOperator.IsSet or LogicOperator.IsNotSet)
+            return $"{qLabel} {opLabel}";
+
+        var val = p.Value.HasValue ? ShortValue(p.Value.Value) : "(unset)";
+        return $"{qLabel} {opLabel} {val}";
+    }
+
+    string SummariseComposite(CompositeConditionDto c)
+    {
+        var children = c.All ?? c.Any ?? new List<LogicConditionDto>();
+        var joiner = c.All is not null ? " AND " : " OR ";
+        return string.Join(joiner, children.Select(ch => SummariseCondition(ch)));
+    }
+
+    static string ShortValue(JsonElement el) => el.ValueKind switch
+    {
+        JsonValueKind.String => $"\"{Trunc(el.GetString() ?? "", 20)}\"",
+        JsonValueKind.Array => "[" + Trunc(string.Join(",", el.EnumerateArray().Select(e => e.ToString())), 30) + "]",
+        _ => Trunc(el.ToString(), 20),
+    };
+
+    static string Trunc(string s, int max) => s.Length <= max ? s : s[..(max - 1)] + "…";
+}

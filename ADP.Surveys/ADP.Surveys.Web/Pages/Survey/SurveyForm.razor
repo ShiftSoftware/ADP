@@ -8,79 +8,58 @@
 @inject SurveyService SurveySvc
 @inject MudBlazor.ISnackbar Snackbar
 
+@*
+    Two-column page: ShiftEntityForm on the left owns the editor; the phone
+    preview lives OUTSIDE the form in a sticky right column so it stays
+    pinned as the form scrolls. Both share TheItem via the component class
+    (ShiftEntityForm.@bind-Value populates it before the outer markup reads
+    it).
+
+    Name field + Visual/Logic/Raw toggle live inside the form's toolbar
+    slots (start + end) to reclaim the row that used to sit between the
+    toolbar and the editor body.
+*@
+
 <div class="survey-form-page">
-<ShiftEntityForm @bind-Mode="Mode"
-                 @bind-Value="TheItem"
-                 @ref="FormContainer"
-                 Endpoint="@($"{SurveysOptions.ResolvedRoutePrefix}Survey")"
-                 Title="Survey"
-                 T="SurveyAdminDTO"
-                 TypeAuthAction="SurveysActionTree.Surveys"
-                 @bind-Key="@Key">
+    <div class="survey-form-page__main">
+        <ShiftEntityForm @bind-Mode="Mode"
+                         @bind-Value="TheItem"
+                         @ref="FormContainer"
+                         Endpoint="@($"{SurveysOptions.ResolvedRoutePrefix}Survey")"
+                         Title="Survey"
+                         T="SurveyAdminDTO"
+                         TypeAuthAction="SurveysActionTree.Surveys"
+                         @bind-Key="@Key">
 
-    @*
-        Published-version chip sits in the toolbar-start slot — replaces the
-        full-width alert that used to eat a whole row inside ChildContent.
-    *@
-    <ToolbarStartTemplate>
-        @if (TheItem.PublishedVersionNumber.HasValue)
-        {
-            <MudChip T="string"
-                     Size="Size.Small"
-                     Color="Color.Info"
-                     Variant="Variant.Outlined"
-                     Icon="@Icons.Material.Filled.Publish">
-                Last published: v@(TheItem.PublishedVersionNumber)
-            </MudChip>
-        }
-    </ToolbarStartTemplate>
+            <ToolbarStartTemplate>
+                <div class="survey-form__toolbar-start">
+                    @if (TheItem?.PublishedVersionNumber.HasValue == true)
+                    {
+                        <MudChip T="string"
+                                 Size="Size.Small"
+                                 Color="Color.Info"
+                                 Variant="Variant.Outlined"
+                                 Icon="@Icons.Material.Filled.Publish">
+                            v@(TheItem.PublishedVersionNumber)
+                        </MudChip>
+                    }
+                    @if (TheItem is not null)
+                    {
+                        <div class="survey-form__toolbar-name">
+                            <MudTextFieldExtended T="string"
+                                                  OnlyValidateIfDirty="true"
+                                                  Placeholder="Survey name"
+                                                  Margin="Margin.Dense"
+                                                  Variant="Variant.Outlined"
+                                                  @bind-Value="TheItem.Name"
+                                                  For="@(() => TheItem.Name)" />
+                        </div>
+                    }
+                </div>
+            </ToolbarStartTemplate>
 
-    <ToolbarEndTemplate>
-        @if (Mode != FormModes.Create && Key is not null)
-        {
-            <MudButton StartIcon="@Icons.Material.Filled.Publish"
-                       Variant="Variant.Text"
-                       Color="Color.Primary"
-                       Size="Size.Small"
-                       Disabled="@publishing"
-                       OnClick="OnPublish">
-                @(publishing ? "Publishing…" : "Publish")
-            </MudButton>
-        }
-    </ToolbarEndTemplate>
-
-    <ChildContent Context="formCtx">
-        @*
-            Seed DraftJson once from TheItem.Draft — reliable here because
-            we're in the render pass where TheItem is already populated via
-            ShiftEntityForm's @bind-Value. OnParametersSet + OnResult proved
-            unreliable for this timing. The flag is one-shot so the user's
-            Raw-JSON edits aren't clobbered on re-render.
-        *@
-        @{
-            if (!draftJsonSeeded && TheItem?.Draft is not null)
-            {
-                DraftJson = JsonSerializer.Serialize(TheItem.Draft, SurveySchemaSerializer.Pretty);
-                draftJsonSeeded = true;
-            }
-            var isReadOnly = Mode == FormModes.View;
-        }
-
-        <div class="survey-form__layout">
-            <div class="survey-form__left">
-                @*
-                    Top strip of the left column: Name field on the left, the
-                    Visual/Raw toggle on the right. Replaces the wide header
-                    band that used to live above the editor grid.
-                *@
-                <div class="survey-form__left-top">
-                    <div class="survey-form__left-top-name">
-                        <MudTextFieldExtended OnlyValidateIfDirty="true"
-                                              Label="Name"
-                                              Margin="Margin.Dense"
-                                              @bind-Value="TheItem.Name"
-                                              For="@(() => TheItem.Name)" />
-                    </div>
+            <ToolbarEndTemplate>
+                <div class="survey-form__toolbar-end">
                     <MudToggleGroup T="string"
                                     SelectionMode="SelectionMode.SingleSelection"
                                     @bind-Value="currentView"
@@ -90,11 +69,52 @@
                         <MudToggleItem T="string" Value="@("visual")">
                             <MudIcon Icon="@Icons.Material.Filled.ViewModule" Size="Size.Small" Class="mr-1" />Visual
                         </MudToggleItem>
+                        <MudToggleItem T="string" Value="@("logic")">
+                            <MudIcon Icon="@Icons.Material.Filled.Bolt" Size="Size.Small" Class="mr-1" />Logic
+                            @if ((TheItem?.Draft?.Logic?.Count ?? 0) > 0)
+                            {
+                                <MudChip T="string"
+                                         Size="Size.Small"
+                                         Color="Color.Info"
+                                         Variant="Variant.Filled"
+                                         Class="ml-1">@TheItem!.Draft!.Logic.Count</MudChip>
+                            }
+                        </MudToggleItem>
                         <MudToggleItem T="string" Value="@("raw")">
                             <MudIcon Icon="@Icons.Material.Filled.Code" Size="Size.Small" Class="mr-1" />Raw JSON
                         </MudToggleItem>
                     </MudToggleGroup>
+
+                    @if (Mode != FormModes.Create && Key is not null)
+                    {
+                        <MudButton StartIcon="@Icons.Material.Filled.Publish"
+                                   Variant="Variant.Text"
+                                   Color="Color.Primary"
+                                   Size="Size.Small"
+                                   Disabled="@publishing"
+                                   OnClick="OnPublish">
+                            @(publishing ? "Publishing…" : "Publish")
+                        </MudButton>
+                    }
                 </div>
+            </ToolbarEndTemplate>
+
+            <ChildContent Context="formCtx">
+                @*
+                    Seed DraftJson once from TheItem.Draft — reliable here because
+                    we're in the render pass where TheItem is already populated via
+                    ShiftEntityForm's @bind-Value. OnParametersSet + OnResult proved
+                    unreliable for this timing. The flag is one-shot so the user's
+                    Raw-JSON edits aren't clobbered on re-render.
+                *@
+                @{
+                    if (!draftJsonSeeded && TheItem?.Draft is not null)
+                    {
+                        DraftJson = JsonSerializer.Serialize(TheItem.Draft, SurveySchemaSerializer.Pretty);
+                        draftJsonSeeded = true;
+                    }
+                    var isReadOnly = Mode == FormModes.View;
+                }
 
                 @if (currentView == "visual")
                 {
@@ -115,6 +135,13 @@
                                              SchemaVersion="schemaVersion" />
                         </div>
                     </div>
+                }
+                else if (currentView == "logic")
+                {
+                    <LogicRulesPanel Draft="TheItem.Draft"
+                                     DraftChanged="OnDraftMutatedFromVisual"
+                                     ReadOnly="@isReadOnly"
+                                     SchemaVersion="schemaVersion" />
                 }
                 else
                 {
@@ -138,123 +165,212 @@
                         }
                     </div>
                 }
-            </div>
+            </ChildContent>
+        </ShiftEntityForm>
+    </div>
 
-            <div class="survey-form__right">
-                <SurveyPreview Schema="TheItem.Draft" SchemaVersion="schemaVersion" />
-            </div>
+    @*
+        Phone preview lives outside the form so it can stick to the viewport
+        while the form body scrolls. TheItem comes from the base component
+        class (populated by ShiftEntityForm's @bind-Value above) — null on
+        first render until data loads.
+    *@
+    <aside class="survey-form-page__preview" aria-label="Live preview">
+        <div class="survey-form-page__preview-sticky">
+            <SurveyPreview Schema="@TheItem?.Draft" SchemaVersion="schemaVersion" />
         </div>
-
-        <style>
-            /*
-                ShiftEntityForm hard-codes a pa-6 wrapper (24px all sides)
-                around the form body — see ShiftEntityForm.razor line 227. We
-                scope an override to .survey-form-page so it only affects this
-                form, trimming vertical padding to nothing and horizontal to
-                12px so the editor + phone get the full dialog viewport.
-                Framework feature request F2 in STATUS.md asks to make this
-                padding configurable upstream.
-            */
-            .survey-form-page .pa-6 {
-                padding-top: 4px !important;
-                padding-bottom: 4px !important;
-                padding-left: 12px !important;
-                padding-right: 12px !important;
-            }
-
-            /* Top-level 2-column split: editor on the left, phone on the right.
-               Phone column sized to the device (375 + 14px padding both sides +
-               a little breathing room). Left column grows to fill the rest. */
-            .survey-form__layout {
-                display: grid;
-                grid-template-columns: 1fr;
-                gap: 16px;
-                padding: 4px 0;
-                align-items: start;
-            }
-            @@media (min-width: 1024px) {
-                .survey-form__layout {
-                    grid-template-columns: minmax(0, 1fr) 420px;
-                }
-            }
-
-            .survey-form__left {
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-                min-width: 0;
-            }
-
-            /* Name field + Visual/Raw toggle strip above the editor. */
-            .survey-form__left-top {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 12px;
-                flex-wrap: wrap;
-            }
-            .survey-form__left-top-name {
-                flex: 1 1 240px;
-                min-width: 200px;
-            }
-
-            /* Visual editor body: Screens rail + Inspector. */
-            .survey-form__visual {
-                display: grid;
-                grid-template-columns: 1fr;
-                gap: 16px;
-                align-items: start;
-            }
-            @@media (min-width: 640px) {
-                .survey-form__visual {
-                    grid-template-columns: 240px minmax(0, 1fr);
-                }
-            }
-
-            /* Raw JSON editor — takes the full left column. */
-            .survey-form__raw {
-                display: flex;
-                flex-direction: column;
-            }
-
-            .survey-preview__placeholder {
-                padding: 32px;
-                text-align: center;
-                color: #888;
-            }
-            .survey-form__editor-textarea {
-                width: 100%;
-                box-sizing: border-box;
-                padding: 12px;
-                border: 1px solid #d0d5dd;
-                border-radius: 8px;
-                font-family: ui-monospace, "Cascadia Code", Menlo, Consolas, monospace;
-                font-size: 0.85rem;
-                line-height: 1.5;
-                resize: vertical;
-            }
-            .survey-form__editor-textarea:focus-visible {
-                outline: 2px solid #2563eb;
-                outline-offset: 1px;
-                border-color: #2563eb;
-            }
-            .survey-form__editor-help {
-                margin: 4px 0 0;
-                font-size: 0.8rem;
-                color: #666;
-            }
-        </style>
-    </ChildContent>
-
-</ShiftEntityForm>
+    </aside>
 </div>
+
+<style>
+    /*
+        ShiftEntityForm hard-codes a pa-6 wrapper (24px all sides)
+        around the form body — see ShiftEntityForm.razor line 227. We
+        scope an override so it only affects THIS form, trimming vertical
+        padding to nothing and horizontal to 12px so the editor gets the
+        full card width. Framework feature request F2 in STATUS.md asks
+        to make this padding configurable upstream.
+    */
+    .survey-form-page .pa-6 {
+        padding-top: 4px !important;
+        padding-bottom: 4px !important;
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+    }
+
+    /*
+        ShiftEntityForm sets an EXPLICIT pixel height on both its outer
+        wrapper (an HTML5 article element) and the inner MudPaper. That
+        height equals the inner form's own height — but the Save/Cancel
+        toolbar is rendered as a sibling of the form, NOT inside it. So
+        the toolbar visually overflows the paper's fixed height (about
+        48px). Overflow is visible, so the toolbar paints and extends
+        the document's scroll area — but the paper's clientHeight stays
+        stuck at the form's height, which means the outer grid row (and
+        therefore the right grid cell that contains our sticky phone
+        preview) is 48px shorter than the true scroll area. The sticky
+        then releases early, clipping the phone at the bottom of the
+        page. Letting the wrapper and paper size to their full content
+        (toolbar included) aligns the grid row with the document scroll.
+        We use "> *" for the wrapper because it carries no CSS class we
+        can target, and a plain element-name selector here trips up the
+        Razor compiler.
+    */
+    .survey-form-page__main > * {
+        height: auto !important;
+        min-height: 0 !important;
+    }
+    .survey-form-page__main .mud-paper.mud-elevation-25 {
+        height: auto !important;
+        min-height: 0 !important;
+    }
+
+
+    /*
+        Root grid: editor on the left, sticky preview on the right.
+        Single column on narrow viewports — preview stacks below.
+        Deliberately NO align-items: start — the right column MUST stretch
+        to match the left column's grown height so position: sticky has
+        travel distance when the editor body grows past the viewport. With
+        align-items: start the right cell collapses to the preview's
+        intrinsic height and sticky has nowhere to travel.
+    */
+    .survey-form-page {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    @@media (min-width: 1024px) {
+        /* Right column auto-sizes to the phone's current width so the
+           editor reclaims the space that used to sit on either side of
+           a narrower device. Because the phone is width: fit-content
+           and shrinks with the viewport height, this column also shrinks. */
+        .survey-form-page {
+            grid-template-columns: minmax(0, 1fr) auto;
+        }
+    }
+
+    .survey-form-page__main {
+        min-width: 0;
+    }
+
+    .survey-form-page__preview {
+        min-width: 0;
+    }
+
+    /*
+        position: sticky must live on a direct child of the scroll
+        ancestor that can actually move. The top value clears the MudBlazor
+        AppBar (64px default in the ADP shell) plus a little breathing room,
+        otherwise the phone's rounded top hides behind the fixed bar when
+        the user scrolls. Flex-center so the now-width-fitted device sits
+        horizontally centered in the column instead of left-aligned.
+    */
+    .survey-form-page__preview-sticky {
+        position: sticky;
+        top: 72px;
+        display: flex;
+        justify-content: center;
+    }
+
+    /*
+        Toolbar slots. Keep them compact so the form header stays small.
+        Name field pulled into the start slot; Visual/Logic/Raw toggle
+        pulled into the end slot.
+    */
+    .survey-form__toolbar-start {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: nowrap;
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+    .survey-form__toolbar-name {
+        flex: 1 1 240px;
+        min-width: 160px;
+        max-width: 420px;
+    }
+    .survey-form__toolbar-end {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: nowrap;
+    }
+
+    /* Visual editor body: Screens rail + Inspector. No align-items: start
+       at the grid level so the screens grid CELL stretches to the row
+       height; the screens column itself uses align-self: start to stay
+       intrinsic-height inside that stretched cell, which is what lets
+       position: sticky have travel room. */
+    .survey-form__visual {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    @@media (min-width: 640px) {
+        .survey-form__visual {
+            grid-template-columns: 240px minmax(0, 1fr);
+        }
+    }
+
+    /* Screens column sticks at the same top offset as the phone preview
+       (72px — clears the AppBar) so both pinned rails line up. Internal
+       scroll on this container + unbounding ScreenList's built-in
+       max-height keeps a single scroller for long screen lists rather
+       than nested ones. */
+    .survey-form__visual-screens {
+        position: sticky;
+        top: 72px;
+        align-self: start;
+        max-height: calc(100vh - 88px);
+        overflow-y: auto;
+    }
+    .survey-form__visual-screens .screen-list__items {
+        max-height: none;
+        overflow-y: visible;
+    }
+
+    /* Raw JSON editor — takes the full width. */
+    .survey-form__raw {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .survey-preview__placeholder {
+        padding: 32px;
+        text-align: center;
+        color: #888;
+    }
+    .survey-form__editor-textarea {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 12px;
+        border: 1px solid #d0d5dd;
+        border-radius: 8px;
+        font-family: ui-monospace, "Cascadia Code", Menlo, Consolas, monospace;
+        font-size: 0.85rem;
+        line-height: 1.5;
+        resize: vertical;
+    }
+    .survey-form__editor-textarea:focus-visible {
+        outline: 2px solid #2563eb;
+        outline-offset: 1px;
+        border-color: #2563eb;
+    }
+    .survey-form__editor-help {
+        margin: 4px 0 0;
+        font-size: 0.8rem;
+        color: #666;
+    }
+</style>
 
 @code {
     string DraftJson { get; set; } = "";
     string? parseError;
     bool publishing;
     int selectedScreenIndex = -1;
-    // "visual" | "raw" — toggled via the MudToggleGroup above the editor.
+    // "visual" | "logic" | "raw" — toggled via the MudToggleGroup in the toolbar end slot.
     string currentView = "visual";
     // Counter bumped on every Draft mutation so SurveyPreview detects content
     // changes even when the SurveyDto reference is reused. Reference-equality

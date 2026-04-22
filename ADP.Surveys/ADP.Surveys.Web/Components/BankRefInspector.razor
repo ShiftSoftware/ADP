@@ -1,0 +1,175 @@
+@namespace ShiftSoftware.ADP.Surveys.Web.Components
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions
+@using LocalizedString = ShiftSoftware.ADP.Surveys.Shared.DTOs.LocalizedString
+
+@*
+    Visual editor for a QuestionEntryDto that carries a QuestionRef. Per
+    Decision #9, only presentation-surface fields are overridable: title,
+    help, and required. Order is a technical positioning field the entry
+    list already handles via move up/down, so we don't expose it here.
+    Per-option labels deferred to a later slice — authors can still tweak
+    them via the Raw JSON tab.
+*@
+
+<div class="bank-ref">
+    <MudAlert Severity="Severity.Info" Dense="true" Class="mb-3">
+        <div class="bank-ref__header">
+            <MudIcon Icon="@Icons.Material.Filled.LibraryBooks" Size="Size.Small" />
+            <span>Banked question:</span>
+            <code class="bank-ref__key">@Entry.Ref!.BankRef</code>
+        </div>
+        <MudText Typo="Typo.caption" Class="bank-ref__hint">
+            The type and answer shape come from the bank and can't be changed here.
+            Overrides below only adjust how this question is presented inside this survey.
+        </MudText>
+    </MudAlert>
+
+    <div class="bank-ref__section-title">Presentation overrides</div>
+
+    <LocalizedStringField Value="@OverrideTitle"
+                          ValueChanged="OnTitleChanged"
+                          Label="Title override"
+                          Locales="@Locales"
+                          ReadOnly="@ReadOnly" />
+
+    <LocalizedStringField Value="@OverrideHelp"
+                          ValueChanged="OnHelpChanged"
+                          Label="Help text override"
+                          Locales="@Locales"
+                          Lines="2"
+                          MaxLines="4"
+                          AutoGrow="true"
+                          ReadOnly="@ReadOnly" />
+
+    <MudSelect T="string"
+               Label="Required override"
+               Value="@RequiredValue"
+               ValueChanged="OnRequiredChanged"
+               ReadOnly="@ReadOnly"
+               Clearable="false"
+               HelperText="Leave as 'Inherit from bank' unless you deliberately want this survey to differ from the canonical definition."
+               Class="mt-3">
+        <MudSelectItem T="string" Value="@("inherit")">Inherit from bank</MudSelectItem>
+        <MudSelectItem T="string" Value="@("true")">Required</MudSelectItem>
+        <MudSelectItem T="string" Value="@("false")">Optional</MudSelectItem>
+    </MudSelect>
+
+    @if (HasOptionLabelOverrides)
+    {
+        <MudAlert Severity="Severity.Warning" Dense="true" Class="mt-3">
+            This reference has per-option label overrides. Edit them via the
+            <b>Raw JSON</b> tab — a visual editor for option labels lands in a later slice.
+        </MudAlert>
+    }
+</div>
+
+<style>
+    .bank-ref {
+        padding-top: 4px;
+    }
+    .bank-ref__header {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.9rem;
+    }
+    .bank-ref__key {
+        background: #eef2ff;
+        color: #4338ca;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 0.82rem;
+    }
+    .bank-ref__hint {
+        display: block;
+        margin-top: 4px;
+        color: #444;
+    }
+    .bank-ref__section-title {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #333;
+        margin: 8px 0 10px;
+        padding-bottom: 4px;
+        border-bottom: 1px solid #e0e5ec;
+    }
+</style>
+
+@code {
+    [Parameter, EditorRequired]
+    public QuestionEntryDto Entry { get; set; } = default!;
+
+    [Parameter]
+    public List<string>? Locales { get; set; }
+
+    [Parameter]
+    public bool ReadOnly { get; set; }
+
+    [Parameter]
+    public EventCallback Changed { get; set; }
+
+    LocalizedString? OverrideTitle => Entry.Ref?.Overrides?.Title;
+    LocalizedString? OverrideHelp => Entry.Ref?.Overrides?.Help;
+
+    string RequiredValue => Entry.Ref?.Overrides?.Required switch
+    {
+        true => "true",
+        false => "false",
+        null => "inherit",
+    };
+
+    bool HasOptionLabelOverrides =>
+        Entry.Ref?.Overrides?.OptionLabels is { Count: > 0 };
+
+    async Task OnTitleChanged(LocalizedString? value)
+    {
+        EnsureOverrides().Title = value;
+        PruneIfEmpty();
+        await Changed.InvokeAsync();
+    }
+
+    async Task OnHelpChanged(LocalizedString? value)
+    {
+        EnsureOverrides().Help = value;
+        PruneIfEmpty();
+        await Changed.InvokeAsync();
+    }
+
+    async Task OnRequiredChanged(string value)
+    {
+        var target = EnsureOverrides();
+        target.Required = value switch
+        {
+            "true" => true,
+            "false" => false,
+            _ => null,
+        };
+        PruneIfEmpty();
+        await Changed.InvokeAsync();
+    }
+
+    QuestionOverridesDto EnsureOverrides()
+    {
+        Entry.Ref!.Overrides ??= new QuestionOverridesDto();
+        return Entry.Ref.Overrides!;
+    }
+
+    /// <summary>
+    /// Drop the overrides object entirely when every field is empty — keeps
+    /// the draft JSON clean and matches the "null or absent" convention the
+    /// schema converter understands.
+    /// </summary>
+    void PruneIfEmpty()
+    {
+        var o = Entry.Ref?.Overrides;
+        if (o is null) return;
+        var titleEmpty = o.Title is null || o.Title.Count == 0;
+        var helpEmpty = o.Help is null || o.Help.Count == 0;
+        var optionsEmpty = o.OptionLabels is null || o.OptionLabels.Count == 0;
+        var orderEmpty = o.Order is null;
+        if (titleEmpty && helpEmpty && optionsEmpty && orderEmpty && o.Required is null)
+            Entry.Ref!.Overrides = null;
+    }
+}

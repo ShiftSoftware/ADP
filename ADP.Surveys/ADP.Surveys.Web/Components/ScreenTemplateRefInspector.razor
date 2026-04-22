@@ -1,0 +1,179 @@
+@namespace ShiftSoftware.ADP.Surveys.Web.Components
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Screens
+@using LocalizedString = ShiftSoftware.ADP.Surveys.Shared.DTOs.LocalizedString
+
+@*
+    Visual editor for a ScreenTemplateRefDto. Per the template model, the
+    question list comes from the template and can't be reshaped per-survey.
+    Overrides exposed here: Title, Description, NextScreen (the same
+    numbered screen picker ScreenInspector uses for inline screens).
+
+    Per-banked-question overrides (Overrides.Questions) are deferred — a
+    warning surfaces when they exist so authors know to edit via Raw JSON.
+*@
+
+<div class="template-ref">
+    <MudAlert Severity="Severity.Info" Dense="true" Class="mb-3">
+        <div class="template-ref__header">
+            <MudIcon Icon="@Icons.Material.Filled.ViewCarousel" Size="Size.Small" />
+            <span>Screen template:</span>
+            <code class="template-ref__key">@TemplateRef.TemplateRef</code>
+        </div>
+        <MudText Typo="Typo.caption" Class="template-ref__hint">
+            Questions come from the template and can't be reshaped here.
+            Overrides below adjust presentation for this survey usage.
+        </MudText>
+    </MudAlert>
+
+    <div class="template-ref__section-title">Presentation overrides</div>
+
+    <LocalizedStringField Value="@OverrideTitle"
+                          ValueChanged="OnTitleChanged"
+                          Label="Title override"
+                          Locales="@(Draft?.Locales)"
+                          ReadOnly="@ReadOnly" />
+
+    <LocalizedStringField Value="@OverrideDescription"
+                          ValueChanged="OnDescriptionChanged"
+                          Label="Description override"
+                          Locales="@(Draft?.Locales)"
+                          Lines="2"
+                          MaxLines="4"
+                          AutoGrow="true"
+                          ReadOnly="@ReadOnly" />
+
+    <MudSelect T="string"
+               Label="Next screen (default)"
+               Value="@(OverrideNextScreen ?? "")"
+               ValueChanged="OnNextScreenChanged"
+               ReadOnly="@ReadOnly"
+               HelperText="Pinned by screen ID — reordering the list does NOT change it. Leave blank to follow the list order above (or end the survey when on the last screen)."
+               Clearable="true"
+               Class="mt-3">
+        <MudSelectItem T="string" Value="@("")">(next in list order)</MudSelectItem>
+        @if (Draft is not null)
+        {
+            @foreach (var (sid, index) in OtherInlineScreenIdsNumbered(Draft, SelectedIndex))
+            {
+                <MudSelectItem T="string" Value="@sid">@($"{index + 1}. {sid}")</MudSelectItem>
+            }
+        }
+    </MudSelect>
+
+    @if (HasQuestionOverrides)
+    {
+        <MudAlert Severity="Severity.Warning" Dense="true" Class="mt-3">
+            This reference has per-question overrides inside the template.
+            Edit them via the <b>Raw JSON</b> tab — a visual editor for template
+            question overrides lands in a later slice.
+        </MudAlert>
+    }
+</div>
+
+<style>
+    .template-ref {
+        padding-top: 4px;
+    }
+    .template-ref__header {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.9rem;
+    }
+    .template-ref__key {
+        background: #eef2ff;
+        color: #4338ca;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 0.82rem;
+    }
+    .template-ref__hint {
+        display: block;
+        margin-top: 4px;
+        color: #444;
+    }
+    .template-ref__section-title {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #333;
+        margin: 8px 0 10px;
+        padding-bottom: 4px;
+        border-bottom: 1px solid #e0e5ec;
+    }
+</style>
+
+@code {
+    [Parameter, EditorRequired]
+    public ScreenTemplateRefDto TemplateRef { get; set; } = default!;
+
+    [Parameter]
+    public SurveyDto? Draft { get; set; }
+
+    [Parameter]
+    public int SelectedIndex { get; set; }
+
+    [Parameter]
+    public bool ReadOnly { get; set; }
+
+    [Parameter]
+    public EventCallback Changed { get; set; }
+
+    LocalizedString? OverrideTitle => TemplateRef.Overrides?.Title;
+    LocalizedString? OverrideDescription => TemplateRef.Overrides?.Description;
+    string? OverrideNextScreen => TemplateRef.Overrides?.NextScreen;
+
+    bool HasQuestionOverrides =>
+        TemplateRef.Overrides?.Questions is { Count: > 0 };
+
+    async Task OnTitleChanged(LocalizedString? value)
+    {
+        EnsureOverrides().Title = value;
+        PruneIfEmpty();
+        await Changed.InvokeAsync();
+    }
+
+    async Task OnDescriptionChanged(LocalizedString? value)
+    {
+        EnsureOverrides().Description = value;
+        PruneIfEmpty();
+        await Changed.InvokeAsync();
+    }
+
+    async Task OnNextScreenChanged(string value)
+    {
+        var target = EnsureOverrides();
+        target.NextScreen = string.IsNullOrWhiteSpace(value) ? null : value;
+        PruneIfEmpty();
+        await Changed.InvokeAsync();
+    }
+
+    ScreenTemplateOverridesDto EnsureOverrides()
+    {
+        TemplateRef.Overrides ??= new ScreenTemplateOverridesDto();
+        return TemplateRef.Overrides!;
+    }
+
+    /// <summary>
+    /// Drops the overrides object when all fields are empty so the schema JSON
+    /// stays clean. Matches BankRefInspector's convention.
+    /// </summary>
+    void PruneIfEmpty()
+    {
+        var o = TemplateRef.Overrides;
+        if (o is null) return;
+        var titleEmpty = o.Title is null || o.Title.Count == 0;
+        var descEmpty = o.Description is null || o.Description.Count == 0;
+        var nextEmpty = string.IsNullOrEmpty(o.NextScreen);
+        var questionsEmpty = o.Questions is null || o.Questions.Count == 0;
+        if (titleEmpty && descEmpty && nextEmpty && questionsEmpty)
+            TemplateRef.Overrides = null;
+    }
+
+    static IEnumerable<(string Id, int Index)> OtherInlineScreenIdsNumbered(SurveyDto draft, int currentIndex) =>
+        draft.Screens
+            .Select((s, i) => (s, i))
+            .Where(t => t.i != currentIndex && t.s is InlineScreenDto inline && !string.IsNullOrWhiteSpace(inline.Id))
+            .Select(t => (((InlineScreenDto)t.s).Id, t.i));
+}

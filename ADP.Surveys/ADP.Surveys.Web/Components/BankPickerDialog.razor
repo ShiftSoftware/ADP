@@ -1,0 +1,73 @@
+@namespace ShiftSoftware.ADP.Surveys.Web.Components
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Admin.BankQuestion
+@using ShiftSoftware.ShiftBlazor.Utils
+@inject SurveysWebOptions SurveysOptions
+
+@*
+    Picks a single BankQuestion for insertion into a draft survey as a
+    QuestionRef. Reuses the same ShiftList the Question Bank admin page
+    uses, with OnRowClick hijacked to return the picked row instead of
+    opening the edit form.
+*@
+
+<MudDialog DefaultFocus="DefaultFocus.FirstChild">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.LibraryBooks" Class="mr-2" />
+            Insert from question bank
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <div class="bank-picker">
+            <MudAlert Severity="Severity.Info" Dense="true" Class="mb-2">
+                Click a row to insert it as a banked question reference. The
+                type and answer shape are locked at the bank — the survey can
+                still override title, help, and required.
+            </MudAlert>
+
+            <ShiftList EntitySet="@($"{SurveysOptions.ResolvedRoutePrefix}BankQuestion")"
+                       T="BankQuestionListDTO"
+                       Dense
+                       DisableAdd
+                       OnRowClick="OnRowClick"
+                       TypeAuthAction="SurveysActionTree.BankQuestions">
+                <PropertyColumn Property="x => x.Key" Title="Key" />
+                <PropertyColumn Property="x => x.Type" Title="Type" />
+                <PropertyColumn Property="x => x.Locked" Title="Locked">
+                    <CellTemplate Context="cell">
+                        <MudCheckBox T="bool" Value="cell.Item.Locked" Disabled="true" />
+                    </CellTemplate>
+                </PropertyColumn>
+                <PropertyColumn Property="x => x.Retired" Title="Retired">
+                    <CellTemplate Context="cell">
+                        <MudCheckBox T="bool" Value="cell.Item.Retired" Disabled="true" />
+                    </CellTemplate>
+                </PropertyColumn>
+            </ShiftList>
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+    </DialogActions>
+</MudDialog>
+
+<style>
+    .bank-picker {
+        min-width: 640px;
+        max-width: 840px;
+    }
+</style>
+
+@code {
+    [CascadingParameter]
+    public IMudDialogInstance MudDialogInstance { get; set; } = default!;
+
+    void OnRowClick(ShiftEvent<MudBlazor.DataGridRowClickEventArgs<BankQuestionListDTO>> evt)
+    {
+        // Stop ShiftList from opening the bank-question edit form.
+        evt.ShouldPreventDefault = true;
+        MudDialogInstance.Close(DialogResult.Ok(evt.Data.Item));
+    }
+
+    void Cancel() => MudDialogInstance.Close(DialogResult.Cancel());
+}

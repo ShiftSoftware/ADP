@@ -60,15 +60,11 @@
     else if (Draft.Screens[SelectedIndex] is ScreenTemplateRefDto templateRef)
     {
         <div class="screen-inspector__section-title">Screen template reference</div>
-        <MudAlert Severity="Severity.Info" Dense="true" Class="mb-2">
-            This screen pulls from a screen template by reference. The visual editor
-            for template refs lands in <b>Slice 4</b> (Bank &amp; Template picker). Edit the
-            <code>templateRef</code> field via the <b>Raw JSON</b> tab for now.
-        </MudAlert>
-        <MudTextField T="string"
-                      Label="templateRef"
-                      Value="@templateRef.TemplateRef"
-                      ReadOnly="true" />
+        <ScreenTemplateRefInspector TemplateRef="templateRef"
+                                    Draft="@Draft"
+                                    SelectedIndex="@SelectedIndex"
+                                    ReadOnly="@ReadOnly"
+                                    Changed="OnTemplateRefChanged" />
     }
 </div>
 
@@ -145,6 +141,13 @@
     // We bubble that up as a Draft mutation so SurveyForm bumps schemaVersion
     // and the preview refreshes.
     async Task OnQuestionsChanged()
+    {
+        await DraftChanged.InvokeAsync(Draft);
+    }
+
+    // ScreenTemplateRefInspector mutates the ScreenTemplateRefDto in place;
+    // same bubble-up contract as OnQuestionsChanged so the preview re-resolves.
+    async Task OnTemplateRefChanged()
     {
         await DraftChanged.InvokeAsync(Draft);
     }

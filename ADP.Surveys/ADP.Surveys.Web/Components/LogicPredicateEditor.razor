@@ -1,0 +1,428 @@
+@namespace ShiftSoftware.ADP.Surveys.Web.Components
+@using System.Text.Json
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Logic
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Options
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Types
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Screens
+@using ShiftSoftware.ADP.Surveys.Shared.Enums
+
+@*
+    Leaf of a logic rule: { questionId, op, value }. Picks a question from
+    anywhere in the draft, an operator, and a type-aware value. IsSet /
+    IsNotSet operators hide the value input. In / NotIn accept a
+    multi-select for choice questions and a CSV text field otherwise.
+
+    Banked refs and screen-template refs have unknown concrete types from
+    this component's perspective, so they fall back to a plain text value
+    input — the simpler behaviour matches the Slice 5 simple-mode scope.
+    The Raw JSON tab remains authoritative for anything this editor can't
+    express.
+*@
+
+<div class="predicate">
+    <div class="predicate__row">
+        <MudSelect T="string"
+                   Label="Question"
+                   Value="@Predicate.QuestionId"
+                   ValueChanged="OnQuestionIdChanged"
+                   ReadOnly="@ReadOnly"
+                   Dense="true"
+                   Class="predicate__q">
+            @if (!pickerContainsSelected)
+            {
+                <MudSelectItem T="string" Value="@Predicate.QuestionId">@($"{Predicate.QuestionId} (unknown)")</MudSelectItem>
+            }
+            @foreach (var q in QuestionChoices)
+            {
+                <MudSelectItem T="string" Value="@q.Id">
+                    @($"{q.ScreenNumber}.{q.ScreenId} / {q.Id} — {q.TypeLabel}")
+                </MudSelectItem>
+            }
+        </MudSelect>
+
+        <MudSelect T="LogicOperator"
+                   Label="Operator"
+                   Value="@Predicate.Op"
+                   ValueChanged="OnOpChanged"
+                   ReadOnly="@ReadOnly"
+                   Dense="true"
+                   Class="predicate__op">
+            @foreach (var op in AllOperators)
+            {
+                <MudSelectItem T="LogicOperator" Value="@op">@OpLabel(op)</MudSelectItem>
+            }
+        </MudSelect>
+
+        @if (NeedsValueInput)
+        {
+            @RenderValueEditor()
+        }
+        else
+        {
+            <div class="predicate__value-placeholder">(no value)</div>
+        }
+    </div>
+</div>
+
+<style>
+    .predicate {
+        padding: 4px 0;
+    }
+    .predicate__row {
+        display: grid;
+        grid-template-columns: minmax(220px, 2.2fr) minmax(160px, 1.1fr) minmax(200px, 1.8fr);
+        gap: 8px;
+        align-items: start;
+    }
+    .predicate__value-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #888;
+        font-style: italic;
+        font-size: 0.85rem;
+        padding: 12px 8px;
+        border: 1px dashed #d0d5dd;
+        border-radius: 6px;
+    }
+</style>
+
+@code {
+    [Parameter, EditorRequired]
+    public PredicateConditionDto Predicate { get; set; } = default!;
+
+    /// <summary>
+    /// Cross-screen question catalog built by the parent so we don't re-walk
+    /// the draft every render. See <see cref="QuestionChoice"/>.
+    /// </summary>
+    [Parameter]
+    public IReadOnlyList<QuestionChoice> QuestionChoices { get; set; } = Array.Empty<QuestionChoice>();
+
+    [Parameter]
+    public bool ReadOnly { get; set; }
+
+    [Parameter]
+    public EventCallback Changed { get; set; }
+
+    static readonly LogicOperator[] AllOperators = new[]
+    {
+        LogicOperator.Equals,
+        LogicOperator.NotEquals,
+        LogicOperator.GreaterThan,
+        LogicOperator.GreaterThanOrEqual,
+        LogicOperator.LessThan,
+        LogicOperator.LessThanOrEqual,
+        LogicOperator.In,
+        LogicOperator.NotIn,
+        LogicOperator.IsSet,
+        LogicOperator.IsNotSet,
+    };
+
+    static string OpLabel(LogicOperator op) => op switch
+    {
+        LogicOperator.Equals => "= equals",
+        LogicOperator.NotEquals => "≠ not equals",
+        LogicOperator.GreaterThan => "> greater than",
+        LogicOperator.GreaterThanOrEqual => "≥ at least",
+        LogicOperator.LessThan => "< less than",
+        LogicOperator.LessThanOrEqual => "≤ at most",
+        LogicOperator.In => "in (any of)",
+        LogicOperator.NotIn => "not in",
+        LogicOperator.IsSet => "is set",
+        LogicOperator.IsNotSet => "is not set",
+        _ => op.ToString(),
+    };
+
+    bool NeedsValueInput =>
+        Predicate.Op != LogicOperator.IsSet && Predicate.Op != LogicOperator.IsNotSet;
+
+    bool pickerContainsSelected =>
+        string.IsNullOrEmpty(Predicate.QuestionId)
+        || QuestionChoices.Any(q => q.Id == Predicate.QuestionId);
+
+    QuestionChoice? SelectedChoice =>
+        QuestionChoices.FirstOrDefault(q => q.Id == Predicate.QuestionId);
+
+    async Task OnQuestionIdChanged(string value)
+    {
+        Predicate.QuestionId = value ?? "";
+        // Changing the question can invalidate the value shape — clear it so
+        // the type-aware editor starts from a clean slate.
+        Predicate.Value = null;
+        await Changed.InvokeAsync();
+    }
+
+    async Task OnOpChanged(LogicOperator op)
+    {
+        Predicate.Op = op;
+        // Operator shape changes (scalar ↔ array ↔ none) invalidate the value.
+        Predicate.Value = null;
+        await Changed.InvokeAsync();
+    }
+
+    RenderFragment RenderValueEditor() => builder =>
+    {
+        var choice = SelectedChoice;
+        var q = choice?.Question;
+        var isArrayOp = Predicate.Op is LogicOperator.In or LogicOperator.NotIn;
+
+        // Choice-typed questions get a proper option picker whether scalar or array.
+        var options = ResolveOptions(q);
+        if (options is not null)
+        {
+            if (isArrayOp)
+            {
+                RenderMultiSelect(builder, options);
+            }
+            else
+            {
+                RenderSingleSelect(builder, options);
+            }
+            return;
+        }
+
+        // YesNo — hard-coded yes/no values, not OptionDto-backed.
+        if (q is YesNoQuestionDto)
+        {
+            RenderYesNo(builder, isArrayOp);
+            return;
+        }
+
+        // Numeric-ish.
+        if (q is NumberQuestionDto or RatingQuestionDto or NpsQuestionDto)
+        {
+            if (isArrayOp) RenderCsv(builder, numeric: true);
+            else RenderNumber(builder);
+            return;
+        }
+
+        // Date / DateTime.
+        if (q is DateQuestionDto or DateTimeQuestionDto)
+        {
+            if (isArrayOp) RenderCsv(builder, numeric: false);
+            else RenderDate(builder, includeTime: q is DateTimeQuestionDto);
+            return;
+        }
+
+        // Fallback: text / paragraph / unknown (banked refs).
+        if (isArrayOp) RenderCsv(builder, numeric: false);
+        else RenderText(builder);
+    };
+
+    static IReadOnlyList<OptionDto>? ResolveOptions(QuestionDto? q) => q switch
+    {
+        SingleChoiceQuestionDto s => s.Options,
+        MultiChoiceQuestionDto m => m.Options,
+        DropdownQuestionDto d => d.Options,
+        _ => null,
+    };
+
+    void RenderSingleSelect(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder b, IReadOnlyList<OptionDto> opts)
+    {
+        var selected = ValueAsString();
+        b.OpenComponent<MudBlazor.MudSelect<string>>(0);
+        b.AddAttribute(1, "Label", "Value");
+        b.AddAttribute(2, "Value", selected);
+        b.AddAttribute(3, "ValueChanged", EventCallback.Factory.Create<string>(this, async s =>
+        {
+            Predicate.Value = s is null ? null : JsonSerializer.SerializeToElement(s);
+            await Changed.InvokeAsync();
+        }));
+        b.AddAttribute(4, "ReadOnly", ReadOnly);
+        b.AddAttribute(5, "Dense", true);
+        b.AddAttribute(6, "ChildContent", (RenderFragment)(cb =>
+        {
+            int seq = 0;
+            foreach (var opt in opts)
+            {
+                cb.OpenComponent<MudBlazor.MudSelectItem<string>>(seq++);
+                cb.AddAttribute(seq++, "Value", opt.Id);
+                cb.AddAttribute(seq++, "ChildContent", (RenderFragment)(cb2 => cb2.AddContent(0, OptionLabel(opt))));
+                cb.CloseComponent();
+            }
+        }));
+        b.CloseComponent();
+    }
+
+    void RenderMultiSelect(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder b, IReadOnlyList<OptionDto> opts)
+    {
+        var selected = ValueAsList();
+        b.OpenComponent<MudBlazor.MudSelect<string>>(0);
+        b.AddAttribute(1, "Label", "Values");
+        b.AddAttribute(2, "MultiSelection", true);
+        b.AddAttribute(3, "SelectedValues", (IEnumerable<string>)selected);
+        b.AddAttribute(4, "SelectedValuesChanged", EventCallback.Factory.Create<IEnumerable<string>>(this, async vs =>
+        {
+            var list = vs?.Where(s => !string.IsNullOrEmpty(s)).ToList() ?? new();
+            Predicate.Value = list.Count == 0 ? null : JsonSerializer.SerializeToElement(list);
+            await Changed.InvokeAsync();
+        }));
+        b.AddAttribute(5, "ReadOnly", ReadOnly);
+        b.AddAttribute(6, "Dense", true);
+        b.AddAttribute(7, "ChildContent", (RenderFragment)(cb =>
+        {
+            int seq = 0;
+            foreach (var opt in opts)
+            {
+                cb.OpenComponent<MudBlazor.MudSelectItem<string>>(seq++);
+                cb.AddAttribute(seq++, "Value", opt.Id);
+                cb.AddAttribute(seq++, "ChildContent", (RenderFragment)(cb2 => cb2.AddContent(0, OptionLabel(opt))));
+                cb.CloseComponent();
+            }
+        }));
+        b.CloseComponent();
+    }
+
+    void RenderYesNo(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder b, bool multi)
+    {
+        var fakeOpts = new[] { new OptionDto { Id = "yes", Label = new() { ["en"] = "Yes" } }, new OptionDto { Id = "no", Label = new() { ["en"] = "No" } } };
+        if (multi) RenderMultiSelect(b, fakeOpts);
+        else RenderSingleSelect(b, fakeOpts);
+    }
+
+    void RenderNumber(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder b)
+    {
+        var v = ValueAsDouble();
+        b.OpenComponent<MudBlazor.MudNumericField<double?>>(0);
+        b.AddAttribute(1, "Label", "Value");
+        b.AddAttribute(2, "Value", v);
+        b.AddAttribute(3, "ValueChanged", EventCallback.Factory.Create<double?>(this, async d =>
+        {
+            Predicate.Value = d.HasValue ? JsonSerializer.SerializeToElement(d.Value) : null;
+            await Changed.InvokeAsync();
+        }));
+        b.AddAttribute(4, "ReadOnly", ReadOnly);
+        b.AddAttribute(5, "Margin", MudBlazor.Margin.Dense);
+        b.CloseComponent();
+    }
+
+    void RenderText(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder b)
+    {
+        var v = ValueAsString();
+        b.OpenComponent<MudBlazor.MudTextField<string>>(0);
+        b.AddAttribute(1, "Label", "Value");
+        b.AddAttribute(2, "Value", v);
+        b.AddAttribute(3, "ValueChanged", EventCallback.Factory.Create<string>(this, async s =>
+        {
+            Predicate.Value = string.IsNullOrEmpty(s) ? null : JsonSerializer.SerializeToElement(s);
+            await Changed.InvokeAsync();
+        }));
+        b.AddAttribute(4, "ReadOnly", ReadOnly);
+        b.AddAttribute(5, "Margin", MudBlazor.Margin.Dense);
+        b.CloseComponent();
+    }
+
+    void RenderCsv(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder b, bool numeric)
+    {
+        // CSV fallback for In/NotIn when we don't have option choices — rare
+        // (non-choice arrays). The user writes a comma-separated list; we
+        // serialize as a JSON array. Numeric tries double.Parse per token.
+        var v = ValueAsCsv();
+        b.OpenComponent<MudBlazor.MudTextField<string>>(0);
+        b.AddAttribute(1, "Label", numeric ? "Values (comma-separated numbers)" : "Values (comma-separated)");
+        b.AddAttribute(2, "Value", v);
+        b.AddAttribute(3, "ValueChanged", EventCallback.Factory.Create<string>(this, async s =>
+        {
+            if (string.IsNullOrWhiteSpace(s)) { Predicate.Value = null; await Changed.InvokeAsync(); return; }
+            var parts = s.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (numeric)
+            {
+                var nums = new List<double>();
+                foreach (var p in parts)
+                {
+                    if (double.TryParse(p, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var d))
+                        nums.Add(d);
+                }
+                Predicate.Value = nums.Count == 0 ? null : JsonSerializer.SerializeToElement(nums);
+            }
+            else
+            {
+                Predicate.Value = parts.Length == 0 ? null : JsonSerializer.SerializeToElement(parts);
+            }
+            await Changed.InvokeAsync();
+        }));
+        b.AddAttribute(4, "ReadOnly", ReadOnly);
+        b.AddAttribute(5, "Margin", MudBlazor.Margin.Dense);
+        b.CloseComponent();
+    }
+
+    void RenderDate(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder b, bool includeTime)
+    {
+        var iso = ValueAsString();
+        DateTime? parsed = null;
+        if (!string.IsNullOrEmpty(iso) && DateTime.TryParse(iso, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal, out var dt))
+            parsed = dt;
+
+        b.OpenComponent<MudBlazor.MudDatePicker>(0);
+        b.AddAttribute(1, "Label", includeTime ? "Date (time edited as text — use ISO 8601)" : "Date");
+        b.AddAttribute(2, "Date", parsed);
+        b.AddAttribute(3, "DateChanged", EventCallback.Factory.Create<DateTime?>(this, async d =>
+        {
+            if (!d.HasValue) { Predicate.Value = null; await Changed.InvokeAsync(); return; }
+            var stored = includeTime ? d.Value.ToString("yyyy-MM-ddTHH:mm:ssK") : d.Value.ToString("yyyy-MM-dd");
+            Predicate.Value = JsonSerializer.SerializeToElement(stored);
+            await Changed.InvokeAsync();
+        }));
+        b.AddAttribute(4, "ReadOnly", ReadOnly);
+        b.CloseComponent();
+    }
+
+    string ValueAsString()
+    {
+        if (!Predicate.Value.HasValue) return "";
+        var el = Predicate.Value.Value;
+        return el.ValueKind switch
+        {
+            JsonValueKind.String => el.GetString() ?? "",
+            JsonValueKind.Number => el.ToString() ?? "",
+            JsonValueKind.True or JsonValueKind.False => el.GetBoolean().ToString().ToLowerInvariant(),
+            _ => "",
+        };
+    }
+
+    double? ValueAsDouble()
+    {
+        if (!Predicate.Value.HasValue) return null;
+        var el = Predicate.Value.Value;
+        if (el.ValueKind == JsonValueKind.Number && el.TryGetDouble(out var d)) return d;
+        if (el.ValueKind == JsonValueKind.String && double.TryParse(el.GetString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var dd)) return dd;
+        return null;
+    }
+
+    List<string> ValueAsList()
+    {
+        if (!Predicate.Value.HasValue) return new();
+        var el = Predicate.Value.Value;
+        if (el.ValueKind != JsonValueKind.Array) return new();
+        var result = new List<string>();
+        foreach (var item in el.EnumerateArray())
+        {
+            if (item.ValueKind == JsonValueKind.String) result.Add(item.GetString() ?? "");
+            else result.Add(item.ToString());
+        }
+        return result;
+    }
+
+    string ValueAsCsv() => string.Join(", ", ValueAsList());
+
+    static string OptionLabel(OptionDto opt)
+    {
+        var label = opt.Label?.Values.FirstOrDefault(v => !string.IsNullOrEmpty(v));
+        return string.IsNullOrEmpty(label) ? opt.Id : $"{opt.Id} — {label}";
+    }
+
+    /// <summary>
+    /// Projection of every inline question in the draft that logic rules can
+    /// reference. Built once per draft change by the parent panel.
+    /// </summary>
+    public class QuestionChoice
+    {
+        public string ScreenId { get; set; } = "";
+        public int ScreenNumber { get; set; }
+        public string Id { get; set; } = "";
+        public string TypeLabel { get; set; } = "";
+        public QuestionDto? Question { get; set; }
+    }
+}

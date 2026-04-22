@@ -52,12 +52,15 @@
     /* Phone-shaped frame so authors preview the survey at a real mobile
        viewport. 375×740 roughly matches iPhone 13 mini / SE3. The screen
        area scrolls internally so long surveys behave like they would on a
-       real device — the phone itself stays fixed in the layout. */
+       real device. Width is derived from the (clamped) height via
+       aspect-ratio on .survey-preview__device-screen — the outer frame
+       wraps its child so it stays phone-shaped at any viewport. The
+       parent sticky column centers it with flex (see SurveyForm.razor). */
     .survey-preview__device {
         --device-width: 375px;
         --device-height: 740px;
         --device-radius: 42px;
-        width: var(--device-width);
+        width: fit-content;
         max-width: 100%;
         margin: 8px auto;
         background: #111827;
@@ -83,7 +86,21 @@
         background: #ffffff;
         border-radius: calc(var(--device-radius) - 14px);
         overflow: auto;
-        height: var(--device-height);
+        /* Adapt to available viewport when the sticky container can't show
+           the full --device-height. The 140px subtracts the AppBar-aware
+           sticky offset (72) + breathing (16) + device frame margin (16) +
+           device frame vertical padding (28) + a small safety margin. Falls
+           back to 280px minimum so the phone is still usable at extreme
+           zoom levels, and caps at the nominal 740px so a wide viewport
+           doesn't stretch the device beyond its intended silhouette. */
+        height: clamp(280px, calc(100vh - 140px), var(--device-height));
+        /* Width flows from height at a fixed phone ratio so shrinking
+           the viewport produces a shorter-AND-narrower phone rather than
+           a squat tablet silhouette. 375/812 matches iPhone 13 mini —
+           slimmer than the older 375/740 so the device reads as a modern
+           phone, not a 2015-era one. */
+        aspect-ratio: 375 / 812;
+        width: auto;
         padding-top: 40px;
         -webkit-overflow-scrolling: touch;
     }

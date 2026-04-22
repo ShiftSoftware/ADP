@@ -6,7 +6,7 @@
 
 @* Dispatches on Entry.Inline's concrete QuestionDto subtype and renders the
    per-type editor. Every one of the 14 question types has a dedicated editor
-   as of Slice 3. QuestionRef entries still route to the Slice 4 placeholder. *@
+   as of Slice 3. QuestionRef entries route to BankRefInspector (Slice 4). *@
 
 @if (Entry is null)
 {
@@ -14,11 +14,7 @@
 }
 else if (Entry.Ref is not null)
 {
-    <MudAlert Severity="Severity.Info" Dense="true" Class="mb-2">
-        Banked question reference (<code>@Entry.Ref.BankRef</code>).
-        Visual editing of banked refs lands in <b>Slice 4</b>.
-        Use the <b>Raw JSON</b> tab to edit overrides for now.
-    </MudAlert>
+    <BankRefInspector Entry="Entry" Locales="@Locales" ReadOnly="@ReadOnly" Changed="Changed" />
 }
 else
 {
