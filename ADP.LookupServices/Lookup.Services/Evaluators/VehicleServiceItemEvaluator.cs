@@ -93,23 +93,9 @@ public class VehicleServiceItemEvaluator
 
             var modelCodeMatch = modelCodeMatchingEvaluator(item);
 
-            //Per vehicle is only applicable for warranty activated (official) items
-            if (
-                item.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.WarrantyActivation &&
-                options.PerVehicleEligibilitySupport
-            )
-            {
-                x = vehicle?.EligibleServiceItemUniqueReferences is not null &&
-                    vehicle.EligibleServiceItemUniqueReferences
-                    .Select(y => y?.Trim())
-                    .Contains(item.UniqueReference?.Trim(), StringComparer.InvariantCultureIgnoreCase);
-            }
-            else
-            {
-                //Items targgeting all vehicles are applicable for official cars and for non-official cars (In case the item is not warranty activated).
-                if (vehicle is not null || item.CampaignActivationTrigger != ClaimableItemCampaignActivationTrigger.WarrantyActivation)
-                    x = (item.ModelCosts?.Count() ?? 0) == 0;
-            }
+            //Items targgeting all vehicles are applicable for official cars and for non-official cars (In case the item is not warranty activated).
+            if (vehicle is not null || item.CampaignActivationTrigger != ClaimableItemCampaignActivationTrigger.WarrantyActivation)
+                x = (item.ModelCosts?.Count() ?? 0) == 0;
 
             return x || modelCodeMatch;
         });

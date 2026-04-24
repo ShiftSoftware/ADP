@@ -34,7 +34,6 @@ Represents a vehicle entry in the dealer stock. Each entry corresponds to a vehi
 | LineID <div><strong>``string``</strong></div> | The line item identifier within the order document. |
 | LoadDate <div><strong>``DateTime?``</strong></div> | The date when this record was loaded into the system. |
 | PostDate <div><strong>``DateTime?``</strong></div> | The date when this record was posted/finalized. |
-| EligibleServiceItemUniqueReferences <div><strong>``IEnumerable<string>``</strong></div> | Per Vehicle Service Item Eligibility. A list of unique references for service items this vehicle is eligible for. |
 | OrderDocumentNumber <div><strong>``string``</strong></div> | The order document number for this vehicle transaction. |
 | OrderQuantity <div><strong>``decimal?``</strong></div> | The quantity ordered. |
 | SoldQuantity <div><strong>``decimal?``</strong></div> | The quantity sold. |

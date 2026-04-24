@@ -22,7 +22,6 @@ The main configuration class for the lookup services.
 | PartLookupPriceResolver <div><strong>``Func<LookupOptionResolverModel<PartLookupPriceResoulverModel>, ValueTask<(decimal? distributorPurchasePrice, IEnumerable<PartPriceDTO> prices)>>?``</strong></div> | Resolver delegate that processes and returns part pricing (distributor purchase price and per-region prices). |
 | PartLookupStocksResolver <div><strong>``Func<LookupOptionResolverModel<IEnumerable<StockPartDTO>>, ValueTask<IEnumerable<StockPartDTO>>>?``</strong></div> | Resolver delegate that processes and returns part stock availability data. |
 | IncludeInactivatedFreeServiceItems <div><strong>``bool``</strong></div> | Whether to include free service items that have not yet been activated (e.g., awaiting warranty activation). |
-| PerVehicleEligibilitySupport <div><strong>``bool``</strong></div> | Whether per-vehicle eligibility filtering is supported for service items. |
 | WarrantyStartDateDefaultsToInvoiceDate <div><strong>``bool``</strong></div> | Whether the warranty start date should default to the invoice date when no explicit activation date is set. Defaults to true. |
 | SigningSecreteKey <div><strong>``string``</strong></div> | The HMAC secret key used for signing service item claim requests. |
 | SignatureValidityDuration <div><strong>``TimeSpan``</strong></div> | How long a generated claim signature remains valid. |

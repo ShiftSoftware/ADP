@@ -171,11 +171,6 @@ public class VehicleEntryModel :
     /// </summary>
     public DateTime? PostDate { get; set; }
 
-    /// <summary>
-    /// Per Vehicle Service Item Eligibility. A list of unique references for service items this vehicle is eligible for.
-    /// </summary>
-    public IEnumerable<string> EligibleServiceItemUniqueReferences { get; set; }
-
     [DocIgnore]
     public string ItemType => ModelTypes.VehicleEntry;
 

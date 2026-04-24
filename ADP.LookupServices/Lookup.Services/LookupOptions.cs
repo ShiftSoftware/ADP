@@ -46,8 +46,6 @@ public class LookupOptions
     public Func<LookupOptionResolverModel<IEnumerable<StockPartDTO>>, ValueTask<IEnumerable<StockPartDTO>>>? PartLookupStocksResolver { get; set; }
     /// <summary>Whether to include free service items that have not yet been activated (e.g., awaiting warranty activation).</summary>
     public bool IncludeInactivatedFreeServiceItems { get; set; }
-    /// <summary>Whether per-vehicle eligibility filtering is supported for service items.</summary>
-    public bool PerVehicleEligibilitySupport { get; set; }
     /// <summary>Whether the warranty start date should default to the invoice date when no explicit activation date is set. Defaults to true.</summary>
     public bool WarrantyStartDateDefaultsToInvoiceDate { get; set; } = true;
     /// <summary>The HMAC secret key used for signing service item claim requests.</summary>
