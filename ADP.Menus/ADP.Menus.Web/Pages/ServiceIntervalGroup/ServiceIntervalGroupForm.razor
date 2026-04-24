@@ -1,7 +1,7 @@
 @attribute [Route($"{MenuRoutes.Prefix}/{nameof(ServiceIntervalGroupForm)}/{{Key?}}")]
 @inherits ShiftForm<ServiceIntervalGroupForm, ServiceIntervalGroupDTO>
 @inject ServiceIntervalService ServiceIntervalService
-@inject MenuWebOptions MenuOptions
+@inject IOptions<MenuWebOptions> MenuOptionsAccessor
 
 <ShiftEntityForm @bind-Value="TheItem"
                  @ref="FormContainer"
@@ -26,3 +26,7 @@
                           @bind-Value="TheItem.LabourDescription"
                           For="@(() => TheItem.LabourDescription)" />
 </ShiftEntityForm>
+
+@code {
+    private MenuWebOptions MenuOptions => MenuOptionsAccessor.Value;
+}

@@ -27,7 +27,7 @@ public class ExpressionSyntaxException(string message, int position)
 /// Hand-rolled lexer for the survey expression mini-language. Kept intentionally
 /// terse — this is the shape the TypeScript SDK will mirror.
 /// </summary>
-internal sealed class Lexer(string source)
+public sealed class Lexer(string source)
 {
     private readonly string source = source;
     private int pos;

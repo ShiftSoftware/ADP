@@ -1,0 +1,61 @@
+@namespace ShiftSoftware.ADP.Surveys.Web.Components
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Admin.ScreenTemplate
+@using ShiftSoftware.ShiftBlazor.Utils
+@inject SurveysWebOptions SurveysOptions
+
+@*
+    Picks a single ScreenTemplate for insertion into a draft survey as a
+    ScreenTemplateRefDto. Sibling of BankPickerDialog — same pattern,
+    different entity set.
+*@
+
+<MudDialog DefaultFocus="DefaultFocus.FirstChild">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.ViewCarousel" Class="mr-2" />
+            Insert from screen template
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <div class="template-picker">
+            <MudAlert Severity="Severity.Info" Dense="true" Class="mb-2">
+                Click a row to insert it as a screen template reference. The
+                question list is locked at the template — the survey can still
+                override the title, description, and per-question presentation.
+            </MudAlert>
+
+            <ShiftList EntitySet="@($"{SurveysOptions.ResolvedRoutePrefix}ScreenTemplate")"
+                       T="ScreenTemplateListDTO"
+                       Dense
+                       DisableAdd
+                       OnRowClick="OnRowClick"
+                       TypeAuthAction="SurveysActionTree.ScreenTemplates">
+                <PropertyColumn Property="x => x.Key" Title="Key" />
+                <PropertyColumn Property="x => x.QuestionCount" Title="Questions" />
+            </ShiftList>
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+    </DialogActions>
+</MudDialog>
+
+<style>
+    .template-picker {
+        min-width: 640px;
+        max-width: 840px;
+    }
+</style>
+
+@code {
+    [CascadingParameter]
+    public IMudDialogInstance MudDialogInstance { get; set; } = default!;
+
+    void OnRowClick(ShiftEvent<MudBlazor.DataGridRowClickEventArgs<ScreenTemplateListDTO>> evt)
+    {
+        evt.ShouldPreventDefault = true;
+        MudDialogInstance.Close(DialogResult.Ok(evt.Data.Item));
+    }
+
+    void Cancel() => MudDialogInstance.Close(DialogResult.Cancel());
+}

@@ -1,5 +1,5 @@
 @attribute [Route($"{MenuRoutes.Prefix}/{nameof(LabourRateMappingForm)}/{{Key?}}")]
-@inject MenuWebOptions MenuOptions
+@inject IOptions<MenuWebOptions> MenuOptionsAccessor
 
 @inherits ShiftForm<LabourRateMappingForm, LabourRateMappingDTO>
 
@@ -28,4 +28,8 @@
                        For="() => TheItem.Brand"
                        @bind-Value="TheItem.Brand" />
 </ShiftEntityForm>
+
+@code {
+    private MenuWebOptions MenuOptions => MenuOptionsAccessor.Value;
+}
 

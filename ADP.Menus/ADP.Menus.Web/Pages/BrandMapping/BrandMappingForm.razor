@@ -1,5 +1,5 @@
 @attribute [Route($"{MenuRoutes.Prefix}/{nameof(BrandMappingForm)}/{{Key?}}")]
-@inject MenuWebOptions MenuOptions
+@inject IOptions<MenuWebOptions> MenuOptionsAccessor
 
 @inherits ShiftForm<BrandMappingForm, BrandMappingDTO>
 
@@ -29,6 +29,7 @@
                        @bind-Value="TheItem.Brand" />
 </ShiftEntityForm>
 
-
-
+@code {
+    private MenuWebOptions MenuOptions => MenuOptionsAccessor.Value;
+}
 

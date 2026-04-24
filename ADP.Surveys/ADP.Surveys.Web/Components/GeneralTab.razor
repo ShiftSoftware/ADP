@@ -6,17 +6,11 @@
    alongside Visual + Raw JSON in SurveyForm's top toggle group. *@
 
 <div class="general-tab">
+    @* Name lives in the form's toolbar-start slot (always visible across
+       tabs), so this tab only surfaces the optional external identifier. *@
     <MudPaper Class="pa-4 mb-3" Elevation="0" Outlined="true">
         <div class="general-tab__section-title">Identity</div>
         <div class="general-tab__row">
-            <MudTextFieldExtended OnlyValidateIfDirty="true"
-                                  Label="Name"
-                                  Margin="Margin.Dense"
-                                  Value="@(Item.Name)"
-                                  ValueChanged="@OnNameChanged"
-                                  T="string"
-                                  ReadOnly="@ReadOnly"
-                                  For="@(() => Item.Name)" />
             <MudTextFieldExtended OnlyValidateIfDirty="true"
                                   Label="Integration ID"
                                   HelperText="Optional external reference. Must be unique across non-deleted surveys."
@@ -153,23 +147,6 @@
     {
         Item.Draft ??= SurveyDraftFactory.CreateSkeleton();
         return Item.Draft;
-    }
-
-    async Task OnNameChanged(string value)
-    {
-        Item.Name = value;
-        // Keep Title in step with Name when Title is empty or was tracking Name.
-        // Only auto-fills the default-locale entry; user-authored values stay.
-        if (Item.Draft is not null)
-        {
-            var code = Item.Draft.DefaultLocale;
-            if (!string.IsNullOrEmpty(code)
-                && (!Item.Draft.Title.TryGetValue(code, out var existing) || string.IsNullOrEmpty(existing)))
-            {
-                Item.Draft.Title[code] = value;
-                await DraftChanged.InvokeAsync(Item.Draft);
-            }
-        }
     }
 
     async Task OnLocalesChanged(IEnumerable<string> values)

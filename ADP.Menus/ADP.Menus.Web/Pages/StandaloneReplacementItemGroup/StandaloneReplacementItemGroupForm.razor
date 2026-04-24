@@ -5,7 +5,7 @@
 
 @inherits ShiftForm<StandaloneReplacementItemGroupForm, StandaloneReplacementItemGroupDTO>
 
-@inject MenuWebOptions MenuOptions
+@inject IOptions<MenuWebOptions> MenuOptionsAccessor
 
 <ShiftEntityForm @bind-Mode="Mode"
                  @bind-Value="TheItem"
@@ -41,3 +41,7 @@
                           @bind-Value="TheItem.LabourCode"
                           For="@(() => TheItem.LabourCode)" />
 </ShiftEntityForm>
+
+@code {
+    private MenuWebOptions MenuOptions => MenuOptionsAccessor.Value;
+}

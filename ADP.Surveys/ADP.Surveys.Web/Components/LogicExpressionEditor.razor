@@ -1,0 +1,393 @@
+@namespace ShiftSoftware.ADP.Surveys.Web.Components
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Logic
+@using ShiftSoftware.ADP.Surveys.Shared.Evaluation.ExpressionSandbox
+
+@*
+    Expression-mode editor for a LogicConditionDto. Bound directly to the
+    sandbox parser from ADP.Surveys.Shared — every keystroke runs the lexer
+    + parser and surfaces a column-qualified error when the syntax is bad.
+
+    Syntax highlighting uses the standard highlight-within-textarea trick:
+    a transparent <textarea> sits on top of a <pre> filled with colored
+    token spans. The textarea owns the caret and keyboard; the pre owns
+    the visible text. They share metrics (font, padding, line-height) so
+    the two layers stay aligned. We sync scrollTop from textarea to pre so
+    long expressions stay aligned on vertical scroll.
+
+    The "Insert answer" helper appends an `answers['questionId']` snippet
+    to the end of the expression because native selection APIs aren't
+    reliable through component re-renders. Authors can move it after.
+*@
+
+<div class="expr">
+    <MudAlert Severity="Severity.Info" Dense="true" Class="mb-2">
+        Use this when a single predicate or a composite (all/any) can't
+        express your rule. Syntax is sandboxed — no host access, no
+        arithmetic, no side effects.
+    </MudAlert>
+
+    <label class="expr__label">Expression</label>
+    <div class="expr__box @(ReadOnly ? "expr__box--ro" : "") @(parseError is not null ? "expr__box--err" : "")">
+        <pre class="expr__highlight" aria-hidden="true" @ref="highlightPre">@HighlightFragment</pre>
+        <textarea class="expr__input"
+                  spellcheck="false"
+                  rows="3"
+                  readonly="@ReadOnly"
+                  @ref="textareaRef"
+                  value="@Condition.Expression"
+                  @oninput="OnInput"
+                  @onscroll="OnTextareaScroll"></textarea>
+    </div>
+
+    @if (parseError is not null)
+    {
+        <MudAlert Severity="Severity.Error" Dense="true" Icon="@Icons.Material.Filled.ErrorOutline" Class="mt-1">
+            <div class="expr__status">
+                <span class="expr__status-col">col @(parseError.Column):</span>
+                <span>@parseError.Message</span>
+            </div>
+        </MudAlert>
+    }
+    else if (!string.IsNullOrWhiteSpace(Condition.Expression))
+    {
+        <MudAlert Severity="Severity.Success" Dense="true" Icon="@Icons.Material.Filled.Check" Class="mt-1">
+            Parses cleanly.
+        </MudAlert>
+    }
+
+    @if (QuestionChoices is { Count: > 0 } && !ReadOnly)
+    {
+        <div class="expr__inserter">
+            <span class="expr__inserter-label">Insert answer:</span>
+            <MudMenu Label="Pick question…"
+                     EndIcon="@Icons.Material.Filled.KeyboardArrowDown"
+                     Variant="Variant.Outlined"
+                     Size="Size.Small">
+                @foreach (var q in QuestionChoices)
+                {
+                    <MudMenuItem OnClick="@(() => InsertAnswerSnippet(q.Id))">
+                        @($"{q.ScreenNumber}.{q.ScreenId} / {q.Id} — {q.TypeLabel}")
+                    </MudMenuItem>
+                }
+            </MudMenu>
+        </div>
+    }
+
+    <details class="expr__help">
+        <summary>Grammar cheat-sheet</summary>
+        <ul>
+            <li><code>answers['questionId']</code> or <code>answers.questionId</code> — answer lookup</li>
+            <li>Comparisons: <code>==</code> <code>!=</code> <code>&lt;</code> <code>&gt;</code> <code>&lt;=</code> <code>&gt;=</code></li>
+            <li>Boolean: <code>&amp;&amp;</code> <code>||</code> <code>!</code></li>
+            <li>Built-ins: <code>has(answers['q'], 'x')</code>, <code>isSet(answers['q'])</code>, <code>isNotSet(answers['q'])</code>, <code>in(answers['q'], ['a','b'])</code></li>
+            <li>Literals: <code>"double-quoted"</code> / <code>'single-quoted'</code>, numbers, <code>true</code>/<code>false</code>, <code>null</code></li>
+            <li>No arithmetic, no host-env access, no arbitrary identifiers.</li>
+        </ul>
+    </details>
+</div>
+
+<style>
+    /* Textarea + pre share every metric that affects text layout. Any
+       change here (font family, size, line-height, padding) must be
+       applied to BOTH .expr__highlight and .expr__input, otherwise the
+       caret in the textarea drifts away from the colored text below. */
+    .expr__label {
+        display: block;
+        font-size: 0.75rem;
+        color: #666;
+        margin-bottom: 4px;
+        font-weight: 500;
+    }
+    .expr__box {
+        position: relative;
+        border: 1px solid #d0d5dd;
+        border-radius: 6px;
+        background: #fafbfc;
+        min-height: 4.5em;
+        max-height: 16em;
+        overflow: hidden;
+    }
+    .expr__box:focus-within {
+        outline: 2px solid #2563eb;
+        outline-offset: -2px;
+        border-color: #2563eb;
+    }
+    .expr__box--err {
+        border-color: #dc2626;
+    }
+    .expr__box--err:focus-within {
+        outline-color: #dc2626;
+    }
+    .expr__box--ro {
+        background: #f1f3f5;
+    }
+
+    .expr__highlight,
+    .expr__input {
+        margin: 0;
+        padding: 8px 10px;
+        border: 0;
+        font-family: ui-monospace, "Cascadia Code", Menlo, Consolas, monospace;
+        font-size: 0.9rem;
+        line-height: 1.45;
+        letter-spacing: 0;
+        white-space: pre-wrap;
+        word-break: break-word;
+        tab-size: 4;
+        box-sizing: border-box;
+    }
+
+    .expr__highlight {
+        position: absolute;
+        inset: 0;
+        color: #24292f;
+        overflow: hidden;
+        pointer-events: none;
+    }
+
+    .expr__input {
+        position: relative;
+        display: block;
+        width: 100%;
+        min-height: 4.5em;
+        max-height: inherit;
+        background: transparent;
+        color: transparent;
+        caret-color: #111;
+        resize: vertical;
+        outline: none;
+        overflow: auto;
+    }
+    .expr__input::selection {
+        background: rgba(37, 99, 235, 0.25);
+        color: transparent;
+    }
+
+    /* Token colors — loosely matches GitHub's light syntax theme so the
+       page's overall palette stays consistent. */
+    .expr__tok--kw { color: #cf222e; font-weight: 600; }    /* true/false/null */
+    .expr__tok--ident { color: #0969da; }                    /* answers, has, isSet, question ids */
+    .expr__tok--num { color: #9a6700; }                      /* literals */
+    .expr__tok--str { color: #116329; }                      /* 'a', "b" */
+    .expr__tok--op { color: #6e7781; font-weight: 600; }     /* comparisons, boolean, negation */
+    .expr__tok--punct { color: #57606a; }                    /* ( ) [ ] , . */
+    .expr__tok--err { color: #24292f; background: rgba(220, 38, 38, 0.12); }
+    .expr__tok--ws { white-space: pre-wrap; }
+
+    .expr__status {
+        display: flex;
+        gap: 6px;
+        align-items: baseline;
+    }
+    .expr__status-col {
+        font-weight: 600;
+        color: #b91c1c;
+        font-variant-numeric: tabular-nums;
+    }
+    .expr__inserter {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 10px;
+    }
+    .expr__inserter-label {
+        font-size: 0.85rem;
+        color: #555;
+    }
+    .expr__help {
+        margin-top: 10px;
+        font-size: 0.85rem;
+        color: #444;
+    }
+    .expr__help > summary {
+        cursor: pointer;
+        color: #4338ca;
+        font-weight: 500;
+    }
+    .expr__help ul {
+        margin: 6px 0 0 18px;
+        padding: 0;
+    }
+    .expr__help li {
+        margin: 2px 0;
+    }
+    .expr__help code {
+        background: #eef2ff;
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-family: ui-monospace, "Cascadia Code", Menlo, Consolas, monospace;
+        font-size: 0.82rem;
+    }
+</style>
+
+@code {
+    [Parameter, EditorRequired]
+    public ExpressionConditionDto Condition { get; set; } = default!;
+
+    [Parameter]
+    public IReadOnlyList<LogicPredicateEditor.QuestionChoice> QuestionChoices { get; set; }
+        = Array.Empty<LogicPredicateEditor.QuestionChoice>();
+
+    [Parameter]
+    public bool ReadOnly { get; set; }
+
+    [Parameter]
+    public EventCallback Changed { get; set; }
+
+    ParseErrorInfo? parseError;
+    string? lastParsedSource;
+    ElementReference textareaRef;
+    ElementReference highlightPre;
+
+    protected override void OnParametersSet()
+    {
+        if (Condition.Expression != lastParsedSource)
+        {
+            ReparseCurrentText();
+        }
+    }
+
+    async Task OnInput(ChangeEventArgs e)
+    {
+        Condition.Expression = (e.Value as string) ?? "";
+        ReparseCurrentText();
+        await Changed.InvokeAsync();
+    }
+
+    async Task OnTextareaScroll()
+    {
+        // Nothing to do — CSS-wise both layers scroll inside .expr__box, and
+        // browser re-layout keeps them aligned because the textarea drives
+        // height. Keeping the handler wired in case we later need to sync
+        // scrollTop across wrapped layouts.
+        await Task.CompletedTask;
+    }
+
+    void ReparseCurrentText()
+    {
+        lastParsedSource = Condition.Expression;
+        if (string.IsNullOrWhiteSpace(Condition.Expression))
+        {
+            parseError = null;
+            return;
+        }
+        try
+        {
+            ExpressionSandbox.Parse(Condition.Expression);
+            parseError = null;
+        }
+        catch (ExpressionSyntaxException ex)
+        {
+            var msg = ex.Message;
+            var idx = msg.IndexOf(": ", StringComparison.Ordinal);
+            var core = idx >= 0 ? msg[(idx + 2)..] : msg;
+            parseError = new ParseErrorInfo(ex.Position, core);
+        }
+        catch (Exception ex)
+        {
+            parseError = new ParseErrorInfo(0, ex.Message);
+        }
+    }
+
+    async Task InsertAnswerSnippet(string questionId)
+    {
+        var snippet = $"answers['{questionId}']";
+        var current = Condition.Expression ?? "";
+        var separator = string.IsNullOrWhiteSpace(current) || current.EndsWith(' ') || current.EndsWith('(') || current.EndsWith(',')
+            ? ""
+            : " ";
+        Condition.Expression = current + separator + snippet;
+        ReparseCurrentText();
+        await Changed.InvokeAsync();
+    }
+
+    /// <summary>
+    /// Renders colored token spans for the current expression text. Uses the
+    /// sandbox Lexer; whitespace between tokens is emitted verbatim so widths
+    /// match the textarea. If the lexer throws (partial syntax while typing)
+    /// the already-tokenized prefix gets highlighted and the remainder
+    /// renders in a subtle error-tinted span so something visible is shown.
+    ///
+    /// An explicit trailing newline keeps the &lt;pre&gt; height tracking the
+    /// textarea — without it, a last-line-only expression would leave a
+    /// one-line gap between layers.
+    /// </summary>
+    RenderFragment HighlightFragment => builder =>
+    {
+        var src = Condition.Expression ?? "";
+        var segments = Tokenize(src);
+        int seq = 0;
+        foreach (var seg in segments)
+        {
+            builder.OpenElement(seq++, "span");
+            builder.AddAttribute(seq++, "class", $"expr__tok expr__tok--{seg.Kind}");
+            builder.AddContent(seq++, seg.Text);
+            builder.CloseElement();
+        }
+        // Trailing newline so the pre's last line height always matches.
+        builder.AddContent(seq++, "\n");
+    };
+
+    static List<HighlightSegment> Tokenize(string src)
+    {
+        var segments = new List<HighlightSegment>();
+        if (string.IsNullOrEmpty(src)) return segments;
+
+        List<Token> tokens;
+        try
+        {
+            tokens = new Lexer(src).Tokenize();
+        }
+        catch (ExpressionSyntaxException ex)
+        {
+            // Highlight everything up to the failure position as plain text
+            // then mark the rest with the error class so the user sees where
+            // the lexer gave up.
+            var safe = src[..Math.Min(ex.Position, src.Length)];
+            var bad = src[safe.Length..];
+            if (safe.Length > 0) segments.Add(new("err", safe));
+            if (bad.Length > 0) segments.Add(new("err", bad));
+            return segments;
+        }
+
+        int cursor = 0;
+        foreach (var token in tokens)
+        {
+            if (token.Kind == TokenKind.EndOfInput) break;
+
+            // Emit skipped whitespace verbatim so layout stays aligned.
+            if (token.Position > cursor)
+            {
+                segments.Add(new("ws", src[cursor..token.Position]));
+            }
+
+            var klass = ClassFor(token.Kind);
+            var end = Math.Min(token.Position + token.Text.Length, src.Length);
+            segments.Add(new(klass, src[token.Position..end]));
+            cursor = end;
+        }
+        // Trailing whitespace (newline at end) — keep so pre height matches.
+        if (cursor < src.Length)
+        {
+            segments.Add(new("ws", src[cursor..]));
+        }
+        return segments;
+    }
+
+    static string ClassFor(TokenKind kind) => kind switch
+    {
+        TokenKind.True or TokenKind.False or TokenKind.Null => "kw",
+        TokenKind.Identifier => "ident",
+        TokenKind.Number => "num",
+        TokenKind.String => "str",
+        TokenKind.Eq or TokenKind.StrictEq or TokenKind.NotEq or TokenKind.StrictNotEq
+            or TokenKind.Lt or TokenKind.Gt or TokenKind.LtEq or TokenKind.GtEq
+            or TokenKind.And or TokenKind.Or or TokenKind.Not => "op",
+        TokenKind.LParen or TokenKind.RParen or TokenKind.LBracket or TokenKind.RBracket
+            or TokenKind.Comma or TokenKind.Dot => "punct",
+        _ => "ws",
+    };
+
+    readonly record struct HighlightSegment(string Kind, string Text);
+    record ParseErrorInfo(int Column, string Message);
+}

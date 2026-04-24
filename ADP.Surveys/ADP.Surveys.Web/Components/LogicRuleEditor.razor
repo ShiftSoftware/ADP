@@ -1,0 +1,124 @@
+@namespace ShiftSoftware.ADP.Surveys.Web.Components
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Logic
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Screens
+
+@*
+    Single-rule editor: IF (condition dispatcher) THEN (goto target picker).
+    Goto targets enumerate all inline screen IDs plus screen-template refs;
+    logic actions can't end the survey in the current schema, so the null
+    case is treated as unset (validator rejects empty goto at publish).
+*@
+
+<div class="rule-editor">
+    <LogicConditionEditor Condition="Rule.If"
+                          QuestionChoices="QuestionChoices"
+                          ReadOnly="@ReadOnly"
+                          OnReplaceRoot="OnReplaceConditionRoot"
+                          Changed="Changed" />
+
+    <div class="rule-editor__then">
+        <div class="rule-editor__then-label">THEN GO TO</div>
+        <MudSelect T="string"
+                   Value="@(Rule.Then.Goto ?? "")"
+                   ValueChanged="OnGotoChanged"
+                   ReadOnly="@ReadOnly"
+                   Dense="true"
+                   Placeholder="Select target screen…"
+                   Class="rule-editor__then-select">
+            <MudSelectItem T="string" Value="@("")">(pick a screen)</MudSelectItem>
+            @foreach (var t in ScreenTargets)
+            {
+                <MudSelectItem T="string" Value="@t.Id">@($"{t.Number}. {t.Label}")</MudSelectItem>
+            }
+        </MudSelect>
+    </div>
+</div>
+
+<style>
+    .rule-editor {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .rule-editor__then {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 10px;
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 8px;
+    }
+    .rule-editor__then-label {
+        font-weight: 700;
+        color: #15803d;
+        font-size: 0.85rem;
+        letter-spacing: 0.04em;
+        flex-shrink: 0;
+    }
+    .rule-editor__then-select {
+        flex: 1;
+        min-width: 0;
+    }
+</style>
+
+@code {
+    [Parameter, EditorRequired]
+    public LogicRuleDto Rule { get; set; } = default!;
+
+    [Parameter]
+    public SurveyDto? Draft { get; set; }
+
+    [Parameter]
+    public IReadOnlyList<LogicPredicateEditor.QuestionChoice> QuestionChoices { get; set; }
+        = Array.Empty<LogicPredicateEditor.QuestionChoice>();
+
+    [Parameter]
+    public bool ReadOnly { get; set; }
+
+    [Parameter]
+    public EventCallback Changed { get; set; }
+
+    IEnumerable<ScreenTarget> ScreenTargets
+    {
+        get
+        {
+            if (Draft is null) yield break;
+            for (int i = 0; i < Draft.Screens.Count; i++)
+            {
+                var s = Draft.Screens[i];
+                switch (s)
+                {
+                    case InlineScreenDto inline when !string.IsNullOrWhiteSpace(inline.Id):
+                        yield return new ScreenTarget { Id = inline.Id, Number = i + 1, Label = inline.Id };
+                        break;
+                    case ScreenTemplateRefDto tref when !string.IsNullOrWhiteSpace(tref.TemplateRef):
+                        // Screen template refs resolve to the template's id at publish;
+                        // during draft the template-key IS the screen id the runtime sees.
+                        yield return new ScreenTarget { Id = tref.TemplateRef, Number = i + 1, Label = $"[template: {tref.TemplateRef}]" };
+                        break;
+                }
+            }
+        }
+    }
+
+    async Task OnReplaceConditionRoot(LogicConditionDto newRoot)
+    {
+        Rule.If = newRoot;
+        await Changed.InvokeAsync();
+    }
+
+    async Task OnGotoChanged(string value)
+    {
+        Rule.Then.Goto = string.IsNullOrWhiteSpace(value) ? null : value;
+        await Changed.InvokeAsync();
+    }
+
+    class ScreenTarget
+    {
+        public string Id { get; set; } = "";
+        public int Number { get; set; }
+        public string Label { get; set; } = "";
+    }
+}

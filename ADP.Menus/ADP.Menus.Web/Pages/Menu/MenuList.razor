@@ -8,7 +8,7 @@
 @inject ShiftSoftware.TypeAuth.Core.ITypeAuthService TypeAuthService
 @inject IDialogService DialogService
 @inject global::ShiftSoftware.ADP.Menus.Web.Services.MenuAuthService MenuAuth
-@inject MenuWebOptions MenuOptions
+@inject IOptions<MenuWebOptions> MenuOptionsAccessor
 
 <ShiftList EntitySet="@($"{MenuOptions.ResolvedRoutePrefix}Menu")"
            Title="Menus"
@@ -103,6 +103,8 @@
 </script>
 
 @code {
+    private MenuWebOptions MenuOptions => MenuOptionsAccessor.Value;
+
     public ShiftList<MenuListDTO>? ShiftList { get; set; }
     private bool updateMenuPartsPriceInProgress = false;
     private bool createVersionInProgress = false;

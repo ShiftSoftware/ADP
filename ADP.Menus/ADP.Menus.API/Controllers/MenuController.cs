@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using ShiftSoftware.ShiftEntity.Model;
 using ShiftSoftware.ShiftEntity.Model.HashIds;
 using ShiftSoftware.ShiftEntity.Web;
@@ -43,10 +44,10 @@ public class MenuController : ShiftEntitySecureControllerAsync<MenuRepository, M
             IMenuPartPriceService partPriceService,
             IMenuReportExporter reportExporter,
             IMenuCountryProvider countryProvider,
-            MenuApiOptions options
-        ) : base(options.EnableMenuActionTreeAuthorization ? MenuActionTree.Menus : null)
+            IOptions<MenuApiOptions> options
+        ) : base(options.Value.EnableMenuActionTreeAuthorization ? MenuActionTree.Menus : null)
     {
-        this.options = options;
+        this.options = options.Value;
         this.menuRepo = menuRepo;
         this.serviceIntervalGroupRepo = serviceIntervalGroupRepo;
         this.labourRateMappingRepo = labourRateMappingRepo;

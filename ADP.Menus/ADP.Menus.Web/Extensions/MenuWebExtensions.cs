@@ -20,10 +20,8 @@ public static class MenuWebExtensions
         this IServiceCollection services,
         Action<MenuWebOptions>? configure = null)
     {
-        var options = new MenuWebOptions();
-        configure?.Invoke(options);
-
-        services.AddSingleton(options);
+        if (configure is not null)
+            services.Configure(configure);
 
         // Register MenuActionTree so the consumer doesn't have to
         services.Configure<TypeAuthBlazorOptions>(o => o.AddActionTree<MenuActionTree>());

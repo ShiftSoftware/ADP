@@ -1,4 +1,5 @@
-﻿using ShiftSoftware.ADP.Menus.Shared.DTOs.Menu;
+﻿using Microsoft.Extensions.Options;
+using ShiftSoftware.ADP.Menus.Shared.DTOs.Menu;
 using ShiftSoftware.ADP.Menus.Shared.DTOs.MenuVariant;
 using ShiftSoftware.ADP.Menus.Web.Extensions;
 using ShiftSoftware.ShiftEntity.Model;
@@ -18,10 +19,10 @@ public class MenuService
         public List<StockPriceByCountryDTO>? CountryPrices { get; set; }
     }
 
-    public MenuService(HttpClient http, MenuWebOptions options)
+    public MenuService(HttpClient http, IOptions<MenuWebOptions> options)
     {
         this.http = http;
-        this.prefix = options.ResolvedRoutePrefix;
+        this.prefix = options.Value.ResolvedRoutePrefix;
     }
 
     public async Task<StockDTO?> GetStockByPartNumberAsync(string partNumber)

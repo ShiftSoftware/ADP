@@ -1,16 +1,29 @@
 @namespace ShiftSoftware.ADP.Surveys.Web.Components
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Admin.ScreenTemplate
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions
 @using ShiftSoftware.ADP.Surveys.Shared.DTOs.Screens
+@inject IDialogService DialogService
 
 <div class="screen-list">
     <div class="screen-list__header">
         <span class="screen-list__title">Screens</span>
         @if (!ReadOnly)
         {
-            <MudIconButton Icon="@Icons.Material.Filled.Add"
-                           Size="Size.Small"
-                           Color="Color.Primary"
-                           OnClick="AddScreen"
-                           title="Add screen" />
+            <MudMenu Icon="@Icons.Material.Filled.Add"
+                     Size="Size.Small"
+                     Color="Color.Primary"
+                     Variant="Variant.Text"
+                     AnchorOrigin="Origin.BottomRight"
+                     TransformOrigin="Origin.TopRight"
+                     title="Add screen">
+                <MudMenuItem OnClick="AddScreen" Icon="@Icons.Material.Filled.ViewCarousel">
+                    New inline screen
+                </MudMenuItem>
+                <MudDivider />
+                <MudMenuItem OnClick="InsertFromTemplate" Icon="@Icons.Material.Filled.Link">
+                    Insert from template…
+                </MudMenuItem>
+            </MudMenu>
         }
     </div>
 
@@ -190,6 +203,26 @@
         Draft ??= SurveyDraftFactory.CreateSkeleton();
         var nextId = GenerateScreenId(Draft);
         Draft.Screens.Add(new InlineScreenDto { Id = nextId, Questions = new List<QuestionEntryDto>() });
+        var newIndex = Draft.Screens.Count - 1;
+        await DraftChanged.InvokeAsync(Draft);
+        await SelectedIndexChanged.InvokeAsync(newIndex);
+    }
+
+    async Task InsertFromTemplate()
+    {
+        var options = new DialogOptions
+        {
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true,
+            CloseButton = true,
+        };
+        var dialog = await DialogService.ShowAsync<ScreenTemplatePickerDialog>("", options);
+        var result = await dialog.Result;
+        if (result is null || result.Canceled || result.Data is not ScreenTemplateListDTO picked) return;
+        if (string.IsNullOrWhiteSpace(picked.Key)) return;
+
+        Draft ??= new SurveyDto();
+        Draft.Screens.Add(new ScreenTemplateRefDto { TemplateRef = picked.Key });
         var newIndex = Draft.Screens.Count - 1;
         await DraftChanged.InvokeAsync(Draft);
         await SelectedIndexChanged.InvokeAsync(newIndex);

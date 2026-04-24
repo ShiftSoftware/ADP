@@ -1,6 +1,6 @@
 @attribute [Route($"{MenuRoutes.Prefix}/{nameof(VehicleModelList)}")]
 @attribute [Authorize]
-@inject MenuWebOptions MenuOptions
+@inject IOptions<MenuWebOptions> MenuOptionsAccessor
 
 <ShiftList EntitySet="@($"{MenuOptions.ResolvedRoutePrefix}VehicleModel")"
            Title="Vehicle Models"
@@ -23,3 +23,7 @@
                    TProperty="string"
                    Property="x => x.BrandID" />
 </ShiftList>
+
+@code {
+    private MenuWebOptions MenuOptions => MenuOptionsAccessor.Value;
+}

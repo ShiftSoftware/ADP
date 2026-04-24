@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using ShiftSoftware.ShiftEntity.Model.Dtos;
 using ShiftSoftware.ShiftEntity.Model.HashIds;
 using ShiftSoftware.ShiftEntity.Web;
@@ -26,11 +27,11 @@ public class VehicleModelController : ShiftEntitySecureControllerAsync<VehicleMo
 
     public VehicleModelController(
             VehicleModelRepository vehicleModelRepository,
-            MenuApiOptions options
-        ) : base(options.EnableMenuActionTreeAuthorization ? MenuActionTree.VehicleModels : null)
+            IOptions<MenuApiOptions> options
+        ) : base(options.Value.EnableMenuActionTreeAuthorization ? MenuActionTree.VehicleModels : null)
     {
         this.vehicleModelRepository = vehicleModelRepository;
-        this.options = options;
+        this.options = options.Value;
     }
 
     [HttpGet("GetById/{key}")]

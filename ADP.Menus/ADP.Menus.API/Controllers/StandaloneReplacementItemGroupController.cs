@@ -4,6 +4,7 @@ using ShiftSoftware.ADP.Menus.Data.Repositories;
 using ShiftSoftware.ADP.Menus.Shared.ActionTrees;
 using ShiftSoftware.ADP.Menus.Shared.DTOs.StandaloneReplacementItemGroup;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using ShiftSoftware.ShiftEntity.Web;
 
 namespace ShiftSoftware.ADP.Menus.API.Controllers;
@@ -13,8 +14,8 @@ namespace ShiftSoftware.ADP.Menus.API.Controllers;
 public class StandaloneReplacementItemGroupController :
     ShiftEntitySecureControllerAsync<StandaloneReplacementItemGroupRepository, StandaloneReplacementItemGroup, StandaloneReplacementItemGroupListDTO, StandaloneReplacementItemGroupDTO>
 {
-    public StandaloneReplacementItemGroupController(MenuApiOptions options)
-        : base(options.EnableMenuActionTreeAuthorization ? MenuActionTree.StandaloneReplacementItemGroups : null)
+    public StandaloneReplacementItemGroupController(IOptions<MenuApiOptions> options)
+        : base(options.Value.EnableMenuActionTreeAuthorization ? MenuActionTree.StandaloneReplacementItemGroups : null)
     {
     }
 }

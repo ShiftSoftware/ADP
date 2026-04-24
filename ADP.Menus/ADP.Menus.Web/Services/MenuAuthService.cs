@@ -1,4 +1,5 @@
-﻿using ShiftSoftware.ADP.Menus.Shared.ActionTrees;
+﻿using Microsoft.Extensions.Options;
+using ShiftSoftware.ADP.Menus.Shared.ActionTrees;
 using ShiftSoftware.ADP.Menus.Web.Extensions;
 using ShiftSoftware.TypeAuth.Core;
 using ShiftSoftware.TypeAuth.Core.Actions;
@@ -14,9 +15,9 @@ public class MenuAuthService
     private readonly MenuWebOptions options;
     private readonly ITypeAuthService typeAuth;
 
-    public MenuAuthService(MenuWebOptions options, ITypeAuthService typeAuth)
+    public MenuAuthService(IOptions<MenuWebOptions> options, ITypeAuthService typeAuth)
     {
-        this.options = options;
+        this.options = options.Value;
         this.typeAuth = typeAuth;
     }
 
