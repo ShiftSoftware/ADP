@@ -21,6 +21,38 @@ public class LookupOptionsStepDefinitions
         _context = context;
     }
 
+    [Given("LookupOptions has include-inactivated-free-service-items enabled")]
+    public void GivenIncludeInactivatedFreeServiceItemsEnabled()
+    {
+        _context.Options.IncludeInactivatedFreeServiceItems = true;
+    }
+
+    [Given("LookupOptions has signature validity duration of {int} minutes")]
+    public void GivenSignatureValidityDurationMinutes(int minutes)
+    {
+        _context.Options.SignatureValidityDuration = TimeSpan.FromMinutes(minutes);
+    }
+
+    [Given("an inspection pre-claim voucher URL resolver is configured")]
+    public void GivenInspectionPreClaimVoucherUrlResolverIsConfigured()
+    {
+        _context.Options.VehicleInspectionPreClaimVoucherPrintingURLResolver = (model) =>
+        {
+            var url = $"inspection/{model.Value.VehicleInspectionID}/{model.Value.ServiceItemID}";
+            return new ValueTask<string?>(url);
+        };
+    }
+
+    [Given("a service activation pre-claim voucher URL resolver is configured")]
+    public void GivenServiceActivationPreClaimVoucherUrlResolverIsConfigured()
+    {
+        _context.Options.ServiceActivationPreClaimVoucherPrintingURLResolver = (model) =>
+        {
+            var url = $"activation/{model.Value.ServiceActivationID}/{model.Value.ServiceItemID}";
+            return new ValueTask<string?>(url);
+        };
+    }
+
     [Given("warranty start date defaults to invoice date")]
     public void GivenWarrantyStartDateDefaultsToInvoiceDate()
     {

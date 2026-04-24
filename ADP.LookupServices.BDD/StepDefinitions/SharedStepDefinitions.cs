@@ -191,6 +191,7 @@ public class SharedStepDefinitions
         _context.Aggregate.VehicleServiceActivations.AddRange(
             dataTable.Rows.Select(row => new VehicleServiceActivation
             {
+                id = GetOptionalString(row, "id") ?? Guid.NewGuid().ToString(),
                 WarrantyActivationDate = GetOptionalDate(row, "WarrantyActivationDate"),
                 CompanyID = GetOptionalLong(row, "CompanyID"),
             }));
@@ -212,6 +213,7 @@ public class SharedStepDefinitions
         _context.Aggregate.FreeServiceItemDateShifts.AddRange(
             dataTable.Rows.Select(row => new FreeServiceItemDateShiftModel
             {
+                VIN = GetOptionalString(row, "VIN"),
                 NewDate = DateTime.Parse(row["NewDate"]),
             }));
     }
@@ -322,6 +324,7 @@ public class SharedStepDefinitions
                 VIN = GetOptionalString(row, "VIN"),
             }));
     }
+
 
     [Given("vehicle inspections:")]
     public void GivenVehicleInspections(DataTable dataTable)

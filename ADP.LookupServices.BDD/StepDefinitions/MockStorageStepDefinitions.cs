@@ -126,11 +126,28 @@ public class MockStorageStepDefinitions
                 ? Enum.Parse<ClaimableItemCampaignActivationTrigger>(row["ActivationTrigger"])
                 : ClaimableItemCampaignActivationTrigger.WarrantyActivation;
 
+            var activationType = row.ContainsKey("ActivationType") && !string.IsNullOrWhiteSpace(row["ActivationType"])
+                ? Enum.Parse<ClaimableItemCampaignActivationTypes>(row["ActivationType"])
+                : default;
+
             var validityMode = row.ContainsKey("ValidityMode") && !string.IsNullOrWhiteSpace(row["ValidityMode"])
                 ? Enum.Parse<ClaimableItemValidityMode>(row["ValidityMode"])
                 : ClaimableItemValidityMode.RelativeToActivation;
 
             var brandId = GetOptionalLong(row, "BrandID");
+            var companyId = GetOptionalLong(row, "CompanyID");
+            var countryId = GetOptionalLong(row, "CountryID");
+
+            var katashiki = GetOptionalString(row, "ModelCostKatashiki");
+            var variant = GetOptionalString(row, "ModelCostVariant");
+            List<ServiceItemCostModel>? modelCosts = null;
+            if (katashiki is not null || variant is not null)
+            {
+                modelCosts = new List<ServiceItemCostModel>
+                {
+                    new() { Katashiki = katashiki, Variant = variant },
+                };
+            }
 
             return new ServiceItemModel
             {
@@ -138,16 +155,23 @@ public class MockStorageStepDefinitions
                 Name = new Dictionary<string, string> { { "en", GetOptionalString(row, "Name") ?? "" } },
                 IsDeleted = false,
                 BrandIDs = brandId is not null ? new List<long?> { brandId } : null,
-                CampaignStartDate = GetOptionalDate(row, "CampaignStartDate") ?? DateTime.MinValue,
-                CampaignEndDate = GetOptionalDate(row, "CampaignEndDate") ?? DateTime.MaxValue,
+                CompanyIDs = companyId is not null ? new List<long?> { companyId } : null,
+                CountryIDs = countryId is not null ? new List<long?> { countryId } : null,
+                CampaignStartDate = GetOptionalDate(row, "CampaignStartDate") ?? new DateTime(1900, 1, 1),
+                CampaignEndDate = GetOptionalDate(row, "CampaignEndDate") ?? new DateTime(2100, 1, 1),
                 CampaignActivationTrigger = activationTrigger,
+                CampaignActivationType = activationType,
                 ValidityMode = validityMode,
+                ValidFrom = GetOptionalDate(row, "ValidFrom"),
+                ValidTo = GetOptionalDate(row, "ValidTo"),
                 ActiveFor = row.ContainsKey("ActiveForMonths") && !string.IsNullOrWhiteSpace(row["ActiveForMonths"])
                     ? int.Parse(row["ActiveForMonths"]) : null,
                 ActiveForDurationType = row.ContainsKey("ActiveForMonths") && !string.IsNullOrWhiteSpace(row["ActiveForMonths"])
                     ? DurationType.Months : null,
                 MaximumMileage = GetOptionalLong(row, "MaximumMileage"),
                 PackageCode = GetOptionalString(row, "PackageCode"),
+                VehicleInspectionTypeID = GetOptionalLong(row, "VehicleInspectionTypeID"),
+                ModelCosts = modelCosts,
             };
         }).ToList();
 

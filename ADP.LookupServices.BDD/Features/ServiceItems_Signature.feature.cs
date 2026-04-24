@@ -17,7 +17,7 @@ namespace LookupServices.BDD.Features
     
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Reqnroll", "3.0.0.0")]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    public partial class VehiclePaintThicknessInspectionsFeature : object, Xunit.IClassFixture<VehiclePaintThicknessInspectionsFeature.FixtureData>, Xunit.IAsyncLifetime
+    public partial class ServiceItemSignatureFeature : object, Xunit.IClassFixture<ServiceItemSignatureFeature.FixtureData>, Xunit.IAsyncLifetime
     {
         
         private global::Reqnroll.ITestRunner testRunner;
@@ -26,13 +26,15 @@ namespace LookupServices.BDD.Features
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("en-US"), "Features", "Vehicle Paint Thickness Inspections", "  Paint thickness inspection records show measured thickness values\r\n  per panel," +
-                " along with inspection metadata.", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("en-US"), "Features", "Service Item Signature", @"  Every service item returned by the evaluator is stamped with an HMAC
+  signature (for downstream claim-request validation) and a
+  SignatureExpiry. The expiry defaults to now but is extended by
+  LookupOptions.SignatureValidityDuration when configured.", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
         
-#line 1 "VehiclePaintThickness.feature"
+#line 1 "ServiceItems_Signature.feature"
 #line hidden
         
-        public VehiclePaintThicknessInspectionsFeature(VehiclePaintThicknessInspectionsFeature.FixtureData fixtureData, Xunit.ITestOutputHelper testOutputHelper)
+        public ServiceItemSignatureFeature(ServiceItemSignatureFeature.FixtureData fixtureData, Xunit.ITestOutputHelper testOutputHelper)
         {
             this._testOutputHelper = testOutputHelper;
         }
@@ -106,7 +108,7 @@ namespace LookupServices.BDD.Features
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/VehiclePaintThickness.feature.ndjson", 4);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/ServiceItems_Signature.feature.ndjson", 3);
         }
         
         async System.Threading.Tasks.ValueTask Xunit.IAsyncLifetime.InitializeAsync()
@@ -134,18 +136,21 @@ namespace LookupServices.BDD.Features
             await this.TestTearDownAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="Inspection with panels")]
-        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Paint Thickness Inspections")]
-        [global::Xunit.TraitAttribute("Description", "Inspection with panels")]
-        public async global::System.Threading.Tasks.Task InspectionWithPanels()
+        [global::Xunit.FactAttribute(DisplayName="Every service item has a signature and an expiry honoring the configured validity" +
+            " duration")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Service Item Signature")]
+        [global::Xunit.TraitAttribute("Description", "Every service item has a signature and an expiry honoring the configured validity" +
+            " duration")]
+        public async global::System.Threading.Tasks.Task EveryServiceItemHasASignatureAndAnExpiryHonoringTheConfiguredValidityDuration()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "0";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Inspection with panels", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Every service item has a signature and an expiry honoring the configured validity" +
+                    " duration", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 5
+#line 7
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -155,72 +160,50 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table130 = new global::Reqnroll.Table(new string[] {
-                            "InspectionDate",
-                            "Source"});
-                table130.AddRow(new string[] {
-                            "2024-03-15",
-                            "Dealer"});
-#line 6
-  await testRunner.GivenAsync("paint thickness inspections:", ((string)(null)), table130, "Given ");
+                global::Reqnroll.Table table104 = new global::Reqnroll.Table(new string[] {
+                            "VIN",
+                            "InvoiceDate",
+                            "CompanyID",
+                            "BranchID",
+                            "BrandID"});
+                table104.AddRow(new string[] {
+                            "1FDKF37GXVEB34368",
+                            "2026-01-15",
+                            "1",
+                            "10",
+                            "1"});
+#line 8
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table104, "Given ");
 #line hidden
-                global::Reqnroll.Table table131 = new global::Reqnroll.Table(new string[] {
-                            "PanelType",
-                            "PanelSide",
-                            "PanelPosition",
-                            "MeasuredThickness"});
-                table131.AddRow(new string[] {
-                            "Hood",
-                            "Center",
-                            "Front",
-                            "120"});
-                table131.AddRow(new string[] {
-                            "Roof",
-                            "Left",
-                            "Middle",
-                            "95"});
-#line 9
-  await testRunner.AndAsync("paint thickness panels for inspection on \"2024-03-15\":", ((string)(null)), table131, "And ");
-#line hidden
-#line 13
-  await testRunner.WhenAsync("evaluating paint thickness with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+                global::Reqnroll.Table table105 = new global::Reqnroll.Table(new string[] {
+                            "ServiceItemID",
+                            "Name",
+                            "BrandID",
+                            "ActiveForMonths",
+                            "MaximumMileage"});
+                table105.AddRow(new string[] {
+                            "SI-001",
+                            "Oil Change",
+                            "1",
+                            "24",
+                            "10000"});
+#line 11
+  await testRunner.AndAsync("service items:", ((string)(null)), table105, "And ");
 #line hidden
 #line 14
-  await testRunner.ThenAsync("there is 1 paint thickness inspection", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+  await testRunner.AndAsync("LookupOptions has signature validity duration of 30 minutes", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 15
-  await testRunner.AndAsync("the inspection on \"2024-03-15\" has 2 panels", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+  await testRunner.AndAsync("the free service start date is \"2026-01-15\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-            }
-            await this.ScenarioCleanupAsync();
-        }
-        
-        [global::Xunit.FactAttribute(DisplayName="No inspections returns null")]
-        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Paint Thickness Inspections")]
-        [global::Xunit.TraitAttribute("Description", "No inspections returns null")]
-        public async global::System.Threading.Tasks.Task NoInspectionsReturnsNull()
-        {
-            string[] tagsOfScenario = ((string[])(null));
-            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            string pickleIndex = "1";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("No inspections returns null", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
-            string[] tagsOfRule = ((string[])(null));
-            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 16
+  await testRunner.WhenAsync("evaluating service items for \"1FDKF37GXVEB34368\" with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
 #line 17
-this.ScenarioInitialize(scenarioInfo, ruleInfo);
+  await testRunner.ThenAsync("service item \"SI-001\" has a signature", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
-            {
-                await testRunner.SkipScenarioAsync();
-            }
-            else
-            {
-                await this.ScenarioStartAsync();
 #line 18
-  await testRunner.WhenAsync("evaluating paint thickness with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
-#line hidden
-#line 19
-  await testRunner.ThenAsync("there are no paint thickness inspections", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+  await testRunner.AndAsync("service item \"SI-001\" has signature expiry within 30 minutes of now", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -233,12 +216,12 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             
             async System.Threading.Tasks.ValueTask Xunit.IAsyncLifetime.InitializeAsync()
             {
-                await VehiclePaintThicknessInspectionsFeature.FeatureSetupAsync();
+                await ServiceItemSignatureFeature.FeatureSetupAsync();
             }
             
             async System.Threading.Tasks.ValueTask System.IAsyncDisposable.DisposeAsync()
             {
-                await VehiclePaintThicknessInspectionsFeature.FeatureTearDownAsync();
+                await ServiceItemSignatureFeature.FeatureTearDownAsync();
             }
         }
     }
