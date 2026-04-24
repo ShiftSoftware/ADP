@@ -43,19 +43,27 @@ public class SurveyDto
     public List<LogicRuleDto> Logic { get; set; } = new();
 }
 
+/// <summary>
+/// Draft-time validator. Runs on every Survey save so the builder can persist
+/// work-in-progress without being blocked by publish-gate rules. Structural
+/// checks (type shape, screen/question item-level validity, logic shape) stay
+/// here; "has-at-least-one-screen / title / locales" checks are in
+/// <see cref="SurveyPublishValidator"/>.
+/// </summary>
 public class SurveyDtoValidator : AbstractValidator<SurveyDto>
 {
     public SurveyDtoValidator()
     {
-        RuleFor(x => x.SurveyId).NotEmpty();
+        // SurveyId is server-owned — stamped from the entity ID on load (see
+        // GeneralMappingProfile.MapSurvey). Not validated at author-time.
         RuleFor(x => x.Version).GreaterThanOrEqualTo(0);
-        RuleFor(x => x.Title).NotNull().SetValidator(new LocalizedStringValidator());
-        When(x => x.Description is not null, () =>
-            RuleFor(x => x.Description!).SetValidator(new LocalizedStringValidator()));
 
-        RuleFor(x => x.Locales).NotEmpty()
-            .WithMessage("Survey must declare at least one locale.");
-        RuleFor(x => x.DefaultLocale).NotEmpty();
+        // Title / Description / Locales / DefaultLocale are allowed to be empty on
+        // drafts. When they are populated they still have to be well-formed.
+        When(x => x.Title is not null && x.Title.Count > 0, () =>
+            RuleFor(x => x.Title!).SetValidator(new LocalizedStringValidator()));
+        When(x => x.Description is not null && x.Description.Count > 0, () =>
+            RuleFor(x => x.Description!).SetValidator(new LocalizedStringValidator()));
         RuleFor(x => x).Must(x => x.Locales.Contains(x.DefaultLocale))
             .When(x => !string.IsNullOrEmpty(x.DefaultLocale) && x.Locales.Count > 0)
             .WithMessage("defaultLocale must be one of the declared locales.");
@@ -63,8 +71,6 @@ public class SurveyDtoValidator : AbstractValidator<SurveyDto>
         When(x => x.Branding is not null, () =>
             RuleFor(x => x.Branding!).SetValidator(new BrandingDtoValidator()));
 
-        RuleFor(x => x.Screens).NotEmpty()
-            .WithMessage("Survey must have at least one screen.");
         RuleForEach(x => x.Screens).SetInheritanceValidator(v =>
         {
             v.Add(new InlineScreenDtoValidator());
@@ -72,5 +78,25 @@ public class SurveyDtoValidator : AbstractValidator<SurveyDto>
         });
 
         RuleForEach(x => x.Logic).SetValidator(new LogicRuleDtoValidator());
+    }
+}
+
+/// <summary>
+/// Publish-time validator. Adds the strict rules that drafts are exempt from: a
+/// survey must declare locales, a default locale, a title, and at least one
+/// screen before it can be published. Runs alongside <see cref="SurveyDtoValidator"/>
+/// in the publish pipeline.
+/// </summary>
+public class SurveyPublishValidator : AbstractValidator<SurveyDto>
+{
+    public SurveyPublishValidator()
+    {
+        RuleFor(x => x.Title).NotNull().SetValidator(new LocalizedStringValidator());
+        RuleFor(x => x.Locales).NotEmpty()
+            .WithMessage("Survey must declare at least one locale before publishing.");
+        RuleFor(x => x.DefaultLocale).NotEmpty()
+            .WithMessage("Survey must declare a default locale before publishing.");
+        RuleFor(x => x.Screens).NotEmpty()
+            .WithMessage("Survey must have at least one screen before publishing.");
     }
 }

@@ -33,15 +33,27 @@ public class GeneralMappingProfile : Profile
         CreateMap<Survey, SurveyListDTO>();
 
         CreateMap<Survey, SurveyAdminDTO>()
-            .ForMember(d => d.Draft, opt => opt.MapFrom(src =>
-                string.IsNullOrEmpty(src.DraftJson)
-                    ? null
-                    : JsonSerializer.Deserialize<SurveyDto>(src.DraftJson, SurveySchemaSerializer.Options)))
+            .ForMember(d => d.Draft, opt => opt.MapFrom(src => DeserializeDraft(src)))
             .ReverseMap()
             .ForMember(e => e.DraftJson, opt => opt.MapFrom(src =>
                 src.Draft == null ? "" : JsonSerializer.Serialize(src.Draft, SurveySchemaSerializer.Options)))
             // PublishedVersionNumber is server-owned; ignore incoming writes.
             .ForMember(e => e.PublishedVersionNumber, opt => opt.Ignore());
+    }
+
+    /// <summary>
+    /// Deserializes the draft JSON and stamps <see cref="SurveyDto.SurveyId"/> with the
+    /// entity's long ID. SurveyId is server-owned — never authored via the builder, and
+    /// published snapshots carry whatever is on the Draft at publish time.
+    /// </summary>
+    private static SurveyDto? DeserializeDraft(Survey entity)
+    {
+        if (string.IsNullOrEmpty(entity.DraftJson))
+            return null;
+        var dto = JsonSerializer.Deserialize<SurveyDto>(entity.DraftJson, SurveySchemaSerializer.Options);
+        if (dto is not null)
+            dto.SurveyId = entity.ID.ToString();
+        return dto;
     }
 
     private void MapBankQuestion()

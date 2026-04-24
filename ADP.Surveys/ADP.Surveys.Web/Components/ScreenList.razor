@@ -187,7 +187,7 @@
 
     async Task AddScreen()
     {
-        Draft ??= new SurveyDto();
+        Draft ??= SurveyDraftFactory.CreateSkeleton();
         var nextId = GenerateScreenId(Draft);
         Draft.Screens.Add(new InlineScreenDto { Id = nextId, Questions = new List<QuestionEntryDto>() });
         var newIndex = Draft.Screens.Count - 1;

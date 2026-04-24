@@ -10,6 +10,9 @@ public class SurveyListDTO : ShiftEntityListDTO
 
     public string Name { get; set; } = default!;
 
+    /// <summary>Optional friendly identifier for external integrations. Unique across non-deleted rows.</summary>
+    public string? IntegrationId { get; set; }
+
     /// <summary>Null before the survey has ever been published.</summary>
     public int? PublishedVersionNumber { get; set; }
 }

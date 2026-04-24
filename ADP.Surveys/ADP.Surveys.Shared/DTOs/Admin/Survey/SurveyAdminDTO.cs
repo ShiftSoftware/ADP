@@ -17,6 +17,12 @@ public class SurveyAdminDTO : ShiftEntityViewAndUpsertDTO
 
     public string Name { get; set; } = default!;
 
+    /// <summary>
+    /// Optional externally-facing identifier. Must be unique across non-deleted surveys.
+    /// Uniqueness is enforced server-side via the framework's UniqueHash.
+    /// </summary>
+    public string? IntegrationId { get; set; }
+
     /// <summary>The editable schema draft. Null on create — server stamps an empty-but-valid skeleton.</summary>
     public SurveyDto? Draft { get; set; }
 
@@ -29,6 +35,11 @@ public class SurveyAdminDTOValidator : AbstractValidator<SurveyAdminDTO>
     public SurveyAdminDTOValidator()
     {
         RuleFor(x => x.Name).NotEmpty().MaximumLength(200);
+        RuleFor(x => x.IntegrationId)
+            .MaximumLength(200)
+            .Matches("^[A-Za-z0-9._:-]+$")
+            .WithMessage("IntegrationId may only contain letters, digits, '.', '_', ':' and '-'.")
+            .When(x => !string.IsNullOrEmpty(x.IntegrationId));
         When(x => x.Draft is not null, () =>
             RuleFor(x => x.Draft!).SetValidator(new SurveyDtoValidator()));
     }

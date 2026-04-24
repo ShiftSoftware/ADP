@@ -1,0 +1,209 @@
+@namespace ShiftSoftware.ADP.Surveys.Web.Components
+@using LocalizedString = ShiftSoftware.ADP.Surveys.Shared.DTOs.LocalizedString
+
+@* Survey-level metadata tab — Name, IntegrationId, localized Title, locales,
+   default locale, plus a placeholder for the Phase 5 trigger config. Lives
+   alongside Visual + Raw JSON in SurveyForm's top toggle group. *@
+
+<div class="general-tab">
+    <MudPaper Class="pa-4 mb-3" Elevation="0" Outlined="true">
+        <div class="general-tab__section-title">Identity</div>
+        <div class="general-tab__row">
+            <MudTextFieldExtended OnlyValidateIfDirty="true"
+                                  Label="Name"
+                                  Margin="Margin.Dense"
+                                  Value="@(Item.Name)"
+                                  ValueChanged="@OnNameChanged"
+                                  T="string"
+                                  ReadOnly="@ReadOnly"
+                                  For="@(() => Item.Name)" />
+            <MudTextFieldExtended OnlyValidateIfDirty="true"
+                                  Label="Integration ID"
+                                  HelperText="Optional external reference. Must be unique across non-deleted surveys."
+                                  Margin="Margin.Dense"
+                                  @bind-Value="Item.IntegrationId"
+                                  T="string"
+                                  ReadOnly="@ReadOnly"
+                                  For="@(() => Item.IntegrationId)" />
+        </div>
+    </MudPaper>
+
+    <MudPaper Class="pa-4 mb-3" Elevation="0" Outlined="true">
+        <div class="general-tab__section-title">Localization</div>
+        <div class="general-tab__row">
+            <MudSelect T="string"
+                       Label="Locales"
+                       MultiSelection="true"
+                       SelectAll="false"
+                       Margin="Margin.Dense"
+                       Disabled="@ReadOnly"
+                       SelectedValues="@selectedLocales"
+                       SelectedValuesChanged="@OnLocalesChanged"
+                       AnchorOrigin="Origin.BottomCenter">
+                @foreach (var loc in SupportedLocales)
+                {
+                    <MudSelectItem T="string" Value="@loc">@LocaleLabel(loc)</MudSelectItem>
+                }
+            </MudSelect>
+            <MudSelect T="string"
+                       Label="Default locale"
+                       Margin="Margin.Dense"
+                       Disabled="@(ReadOnly || selectedLocales.Count == 0)"
+                       Value="@(Item.Draft?.DefaultLocale)"
+                       ValueChanged="@OnDefaultLocaleChanged"
+                       AnchorOrigin="Origin.BottomCenter">
+                @foreach (var loc in selectedLocales)
+                {
+                    <MudSelectItem T="string" Value="@loc">@LocaleLabel(loc)</MudSelectItem>
+                }
+            </MudSelect>
+        </div>
+
+        <div class="general-tab__localized">
+            <LocalizedStringField Label="Title"
+                                  Value="@(Item.Draft?.Title)"
+                                  ValueChanged="@OnTitleChanged"
+                                  Locales="@selectedLocales.ToList()"
+                                  ReadOnly="@ReadOnly" />
+        </div>
+    </MudPaper>
+
+    <MudPaper Class="pa-4 mb-3 general-tab__placeholder" Elevation="0" Outlined="true">
+        <div class="general-tab__section-title">Trigger</div>
+        <MudAlert Severity="Severity.Info" Dense="true" Variant="Variant.Outlined" Class="mt-1">
+            Trigger configuration lands with Phase 5 (SMS / email senders + instance lifecycle).
+        </MudAlert>
+    </MudPaper>
+</div>
+
+<style>
+    .general-tab {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .general-tab__section-title {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #444;
+        margin-bottom: 8px;
+    }
+
+    .general-tab__row {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    @@media (min-width: 640px) {
+        .general-tab__row {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+
+    .general-tab__localized {
+        margin-top: 10px;
+    }
+
+    .general-tab__placeholder {
+        opacity: 0.85;
+    }
+</style>
+
+@code {
+    [Parameter, EditorRequired]
+    public SurveyAdminDTO Item { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<SurveyDto?> DraftChanged { get; set; }
+
+    [Parameter]
+    public bool ReadOnly { get; set; }
+
+    /// <summary>
+    /// Bumped by the parent on every Draft mutation so this component re-renders
+    /// when sibling tabs (Visual / Raw JSON) edit the same draft.
+    /// </summary>
+    [Parameter]
+    public int SchemaVersion { get; set; }
+
+    /// <summary>
+    /// Catalog of locale codes shown in the Locales multiselect. Extend here as
+    /// ADP supports more markets.
+    /// </summary>
+    public static readonly string[] SupportedLocales = new[] { "en", "ar", "ku" };
+
+    HashSet<string> selectedLocales = new();
+
+    protected override void OnParametersSet()
+    {
+        selectedLocales = Item.Draft?.Locales is { Count: > 0 }
+            ? new HashSet<string>(Item.Draft.Locales)
+            : new HashSet<string>();
+    }
+
+    static string LocaleLabel(string code) => code switch
+    {
+        "en" => "English (en)",
+        "ar" => "العربية (ar)",
+        "ku" => "Kurdî (ku)",
+        _ => code,
+    };
+
+    SurveyDto EnsureDraft()
+    {
+        Item.Draft ??= SurveyDraftFactory.CreateSkeleton();
+        return Item.Draft;
+    }
+
+    async Task OnNameChanged(string value)
+    {
+        Item.Name = value;
+        // Keep Title in step with Name when Title is empty or was tracking Name.
+        // Only auto-fills the default-locale entry; user-authored values stay.
+        if (Item.Draft is not null)
+        {
+            var code = Item.Draft.DefaultLocale;
+            if (!string.IsNullOrEmpty(code)
+                && (!Item.Draft.Title.TryGetValue(code, out var existing) || string.IsNullOrEmpty(existing)))
+            {
+                Item.Draft.Title[code] = value;
+                await DraftChanged.InvokeAsync(Item.Draft);
+            }
+        }
+    }
+
+    async Task OnLocalesChanged(IEnumerable<string> values)
+    {
+        var draft = EnsureDraft();
+        var list = values?.ToList() ?? new List<string>();
+        draft.Locales = list;
+        selectedLocales = new HashSet<string>(list);
+
+        // Keep DefaultLocale valid: snap to the first selected when unset / stale.
+        if (string.IsNullOrEmpty(draft.DefaultLocale) || !list.Contains(draft.DefaultLocale))
+            draft.DefaultLocale = list.FirstOrDefault() ?? "en";
+
+        // Prune Title entries for locales that are no longer selected.
+        foreach (var code in draft.Title.Keys.ToList())
+        {
+            if (!list.Contains(code))
+                draft.Title.Remove(code);
+        }
+
+        await DraftChanged.InvokeAsync(draft);
+    }
+
+    async Task OnDefaultLocaleChanged(string value)
+    {
+        var draft = EnsureDraft();
+        draft.DefaultLocale = value ?? "";
+        await DraftChanged.InvokeAsync(draft);
+    }
+
+    async Task OnTitleChanged(LocalizedString? value)
+    {
+        var draft = EnsureDraft();
+        draft.Title = value ?? new LocalizedString();
+        await DraftChanged.InvokeAsync(draft);
+    }
+}

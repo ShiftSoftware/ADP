@@ -1,6 +1,6 @@
 @attribute [Route($"{SurveyRoutes.Prefix}/{nameof(SurveyForm)}/{{Key?}}")]
 @using System.Text.Json
-@using ShiftSoftware.ADP.Surveys.Shared.Json
+@using Microsoft.AspNetCore.Components.Forms
 
 @inherits ShiftForm<SurveyForm, SurveyAdminDTO>
 
@@ -16,6 +16,8 @@
                  Title="Survey"
                  T="SurveyAdminDTO"
                  TypeAuthAction="SurveysActionTree.Surveys"
+                 OnInvalidSubmit="@OnInvalidSubmit"
+                 OnValidSubmit="@OnValidSubmit"
                  @bind-Key="@Key">
 
     @*
@@ -60,33 +62,41 @@
         @{
             if (!draftJsonSeeded && TheItem?.Draft is not null)
             {
-                DraftJson = JsonSerializer.Serialize(TheItem.Draft, SurveySchemaSerializer.Pretty);
+                DraftJson = SurveyDraftFactory.ToEditorJson(TheItem.Draft);
                 draftJsonSeeded = true;
             }
             var isReadOnly = Mode == FormModes.View;
         }
 
+        @if (validationErrors.Count > 0)
+        {
+            <MudAlert Severity="Severity.Error" Variant="Variant.Outlined" Dense="true" Class="mb-2 survey-form__validation-alert">
+                <div class="survey-form__validation-title">Save blocked — please fix:</div>
+                <ul class="survey-form__validation-list">
+                    @foreach (var msg in validationErrors)
+                    {
+                        <li>@msg</li>
+                    }
+                </ul>
+            </MudAlert>
+        }
+
         <div class="survey-form__layout">
             <div class="survey-form__left">
                 @*
-                    Top strip of the left column: Name field on the left, the
-                    Visual/Raw toggle on the right. Replaces the wide header
-                    band that used to live above the editor grid.
+                    Top strip: the General/Visual/Raw toggle. Name moved into the
+                    General tab so the strip is just the view switcher now.
                 *@
                 <div class="survey-form__left-top">
-                    <div class="survey-form__left-top-name">
-                        <MudTextFieldExtended OnlyValidateIfDirty="true"
-                                              Label="Name"
-                                              Margin="Margin.Dense"
-                                              @bind-Value="TheItem.Name"
-                                              For="@(() => TheItem.Name)" />
-                    </div>
                     <MudToggleGroup T="string"
                                     SelectionMode="SelectionMode.SingleSelection"
                                     @bind-Value="currentView"
                                     Color="Color.Primary"
                                     Size="Size.Small"
                                     CheckMark="false">
+                        <MudToggleItem T="string" Value="@("general")">
+                            <MudIcon Icon="@Icons.Material.Filled.Settings" Size="Size.Small" Class="mr-1" />General
+                        </MudToggleItem>
                         <MudToggleItem T="string" Value="@("visual")">
                             <MudIcon Icon="@Icons.Material.Filled.ViewModule" Size="Size.Small" Class="mr-1" />Visual
                         </MudToggleItem>
@@ -96,7 +106,14 @@
                     </MudToggleGroup>
                 </div>
 
-                @if (currentView == "visual")
+                @if (currentView == "general")
+                {
+                    <GeneralTab Item="TheItem"
+                                DraftChanged="OnDraftMutatedFromVisual"
+                                ReadOnly="@isReadOnly"
+                                SchemaVersion="schemaVersion" />
+                }
+                else if (currentView == "visual")
                 {
                     <div class="survey-form__visual">
                         <div class="survey-form__visual-column survey-form__visual-screens">
@@ -243,6 +260,16 @@
                 font-size: 0.8rem;
                 color: #666;
             }
+
+            .survey-form__validation-title {
+                font-weight: 600;
+                margin-bottom: 4px;
+            }
+            .survey-form__validation-list {
+                margin: 0;
+                padding-left: 18px;
+                font-size: 0.85rem;
+            }
         </style>
     </ChildContent>
 
@@ -253,8 +280,15 @@
     string DraftJson { get; set; } = "";
     string? parseError;
     bool publishing;
+    // Validation-summary rows shown in a top-of-form MudAlert whenever a save
+    // attempt fails. Includes errors on fields that aren't bound via `For=`
+    // (e.g. Draft.Screens, Draft.Title) so users see what's blocking the save
+    // instead of clicking Save and getting nothing.
+    List<string> validationErrors = new();
     int selectedScreenIndex = -1;
-    // "visual" | "raw" — toggled via the MudToggleGroup above the editor.
+    // "general" | "visual" | "raw" — toggled via the MudToggleGroup above the
+    // editor. Defaults to General on Create (Key is null) and Visual on Edit
+    // so returning to a survey lands on the builder surface.
     string currentView = "visual";
     // Counter bumped on every Draft mutation so SurveyPreview detects content
     // changes even when the SurveyDto reference is reused. Reference-equality
@@ -265,6 +299,12 @@
     // from TheItem.Draft on each mutation — never clobbered mid-edit because
     // the mutation source IS TheItem.Draft.
     bool draftJsonSeeded;
+
+    protected override void OnInitialized()
+    {
+        if (Mode == FormModes.Create || Key is null)
+            currentView = "general";
+    }
 
     void OnDraftJsonInput(ChangeEventArgs e)
     {
@@ -284,7 +324,7 @@
         }
         try
         {
-            TheItem.Draft = JsonSerializer.Deserialize<SurveyDto>(value, SurveySchemaSerializer.Options);
+            TheItem.Draft = SurveyDraftFactory.FromEditorJson(value);
             parseError = null;
             ClampSelection();
             schemaVersion++;
@@ -299,8 +339,17 @@
     // bump the schema version so the preview sees the change.
     void OnDraftMutatedFromVisual(SurveyDto? draft)
     {
+        if (draft is not null
+            && draft.Title.Count == 0
+            && !string.IsNullOrWhiteSpace(TheItem?.Name)
+            && draft.Locales.Count > 0)
+        {
+            // Seed Title from Name on first materialize so a user who just
+            // types a Name and adds a screen still produces a valid survey.
+            draft.Title[draft.Locales[0]] = TheItem.Name;
+        }
         TheItem.Draft = draft;
-        DraftJson = draft is null ? "" : JsonSerializer.Serialize(draft, SurveySchemaSerializer.Pretty);
+        DraftJson = SurveyDraftFactory.ToEditorJson(draft);
         parseError = null;
         ClampSelection();
         schemaVersion++;
@@ -316,6 +365,22 @@
         var count = TheItem?.Draft?.Screens.Count ?? 0;
         if (selectedScreenIndex >= count) selectedScreenIndex = count - 1;
         if (selectedScreenIndex < 0 && count > 0) selectedScreenIndex = 0;
+    }
+
+    void OnInvalidSubmit(ShiftSoftware.ShiftBlazor.Utils.ShiftEvent<EditContext> e)
+    {
+        var ctx = e.Data;
+        validationErrors = ctx.GetValidationMessages()
+            .Distinct()
+            .ToList();
+        if (validationErrors.Count == 0)
+            validationErrors.Add("Form is invalid but no detailed message was produced.");
+    }
+
+    void OnValidSubmit(ShiftSoftware.ShiftBlazor.Utils.ShiftEvent<EditContext> e)
+    {
+        // Clear any prior error summary once the form validates.
+        if (validationErrors.Count > 0) validationErrors.Clear();
     }
 
     async Task OnPublish()

@@ -92,12 +92,14 @@ public class PublishController : ControllerBase
         }
 
         var fluentResult = await surveyValidator.ValidateAsync(draft);
-        if (!fluentResult.IsValid)
+        var publishResult = await new SurveyPublishValidator().ValidateAsync(draft);
+        var allErrors = fluentResult.Errors.Concat(publishResult.Errors).ToList();
+        if (allErrors.Count > 0)
         {
             return BadRequest(new
             {
                 Message = "Draft failed validation.",
-                Errors = fluentResult.Errors.Select(e => new { e.PropertyName, e.ErrorMessage })
+                Errors = allErrors.Select(e => new { e.PropertyName, e.ErrorMessage })
             });
         }
 

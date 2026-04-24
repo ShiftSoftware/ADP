@@ -1,4 +1,5 @@
 using ShiftSoftware.ShiftEntity.Core;
+using ShiftSoftware.ShiftEntity.Core.Flags;
 
 namespace ShiftSoftware.ADP.Surveys.Data.Entities;
 
@@ -14,10 +15,17 @@ namespace ShiftSoftware.ADP.Surveys.Data.Entities;
 /// not drafts.
 /// </summary>
 [TemporalShiftEntity]
-public class Survey : ShiftEntity<Survey>
+public class Survey : ShiftEntity<Survey>, IEntityHasUniqueHash<Survey>
 {
     /// <summary>Human-readable survey name — shown in the builder's list view.</summary>
     public string Name { get; set; } = default!;
+
+    /// <summary>
+    /// Optional externally-facing identifier for integrations (e.g. "dealer-nps-2026").
+    /// Unique across non-deleted rows — enforced by the framework's <see cref="IEntityHasUniqueHash{Entity}"/>
+    /// shadow column with a filtered unique index.
+    /// </summary>
+    public string? IntegrationId { get; set; }
 
     /// <summary>
     /// The editable <c>SurveyDto</c> serialized via <c>SurveySchemaSerializer.Options</c>.
@@ -30,4 +38,7 @@ public class Survey : ShiftEntity<Survey>
 
     public virtual ICollection<SurveyVersion> Versions { get; set; } = new HashSet<SurveyVersion>();
     public virtual ICollection<SurveyInstance> Instances { get; set; } = new HashSet<SurveyInstance>();
+
+    public string? CalculateUniqueHash() =>
+        string.IsNullOrWhiteSpace(IntegrationId) ? null : IntegrationId.ToUpperInvariant();
 }
