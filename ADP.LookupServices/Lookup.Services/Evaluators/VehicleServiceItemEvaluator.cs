@@ -57,48 +57,12 @@ public class VehicleServiceItemEvaluator
             showingInactivatedItems = true;
         }
 
-        // Free services  
-        var eligibleServiceItems = serviceItems.Where(x => !(x.IsDeleted));
-
-        // Brand
-        eligibleServiceItems = eligibleServiceItems.Where(x => vehicle is null || x.BrandIDs is null || x.BrandIDs.Where(a => a == vehicle.BrandID).Count() > 0);
-
-        // Company
-        eligibleServiceItems = eligibleServiceItems.Where(x => x.CompanyIDs is null || x.CompanyIDs.Count() == 0 || vehicle is null || x.CompanyIDs.Where(a => a == vehicle?.CompanyID).Count() > 0);
-
-        // Country
-        eligibleServiceItems = eligibleServiceItems.Where(x => x.CountryIDs is null || x.CountryIDs.Count() == 0 || vehicle is null || x.CountryIDs.Where(a => a == vehicleSaleInformation?.CountryID?.ToLong()).Count() > 0);
-
-        // Expiry
-        eligibleServiceItems = eligibleServiceItems.Where(x =>
-
-            x.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.WarrantyActivation ?
-            (freeServiceStartDate >= x.CampaignStartDate && freeServiceStartDate <= x.CampaignEndDate) :
-
-            x.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.VehicleInspection ?
-            (vehicleInspections?.Where(i => i.VehicleInspectionTypeID == x.VehicleInspectionTypeID && i.InspectionDate >= x.CampaignStartDate && i.InspectionDate <= x.CampaignEndDate).Count() > 0) :
-
-            false
-        );
-
-        bool modelCodeMatchingEvaluator(ServiceItemModel x) =>
-            x.ModelCosts?.Any(a =>
-                (!string.IsNullOrWhiteSpace(vehicle?.Katashiki) && !string.IsNullOrWhiteSpace(a?.Katashiki) && vehicle.Katashiki.StartsWith(a?.Katashiki ?? "", StringComparison.InvariantCultureIgnoreCase)) ||
-                (!string.IsNullOrWhiteSpace(vehicle?.VariantCode) && !string.IsNullOrWhiteSpace(a?.Variant) && vehicle.VariantCode.StartsWith(a?.Variant ?? "", StringComparison.InvariantCultureIgnoreCase))
-            ) ?? false;
-
-        eligibleServiceItems = eligibleServiceItems.Where(item =>
-        {
-            var x = false;
-
-            var modelCodeMatch = modelCodeMatchingEvaluator(item);
-
-            //Items targgeting all vehicles are applicable for official cars and for non-official cars (In case the item is not warranty activated).
-            if (vehicle is not null || item.CampaignActivationTrigger != ClaimableItemCampaignActivationTrigger.WarrantyActivation)
-                x = (item.ModelCosts?.Count() ?? 0) == 0;
-
-            return x || modelCodeMatch;
-        });
+        var eligibleServiceItems = FilterEligibleServiceItems(
+            serviceItems,
+            vehicle,
+            vehicleSaleInformation,
+            freeServiceStartDate,
+            vehicleInspections);
 
         if (eligibleServiceItems?.Count() > 0)
         {
@@ -274,6 +238,80 @@ public class VehicleServiceItemEvaluator
 
         return (result, activationRequired);
     }
+
+    private static IEnumerable<ServiceItemModel> FilterEligibleServiceItems(
+        IEnumerable<ServiceItemModel> serviceItems,
+        VehicleEntryModel vehicle,
+        VehicleSaleInformation vehicleSaleInformation,
+        DateTime? freeServiceStartDate,
+        IEnumerable<VehicleInspectionModel> vehicleInspections)
+    {
+        return serviceItems
+            .Where(x => !x.IsDeleted)
+            .Where(x => MatchesBrand(x, vehicle))
+            .Where(x => MatchesCompany(x, vehicle))
+            .Where(x => MatchesCountry(x, vehicle, vehicleSaleInformation))
+            .Where(x => IsWithinCampaignWindow(x, freeServiceStartDate, vehicleInspections))
+            .Where(x => IsApplicableToVehicle(x, vehicle));
+    }
+
+    private static bool MatchesBrand(ServiceItemModel item, VehicleEntryModel vehicle) =>
+        vehicle is null || item.BrandIDs is null || item.BrandIDs.Any(a => a == vehicle.BrandID);
+
+    private static bool MatchesCompany(ServiceItemModel item, VehicleEntryModel vehicle) =>
+        vehicle is null || item.CompanyIDs is null || !item.CompanyIDs.Any() || item.CompanyIDs.Any(a => a == vehicle.CompanyID);
+
+    // Note: this short-circuits on `vehicle is null` rather than `saleInformation is null`,
+    // matching the original code. The country filter doesn't actually use `vehicle`, so the
+    // guard looks like a copy-paste from the brand/company filters. Behavior is pinned for
+    // now; revisit alongside other latent issues.
+    private static bool MatchesCountry(ServiceItemModel item, VehicleEntryModel vehicle, VehicleSaleInformation saleInformation) =>
+        vehicle is null || item.CountryIDs is null || !item.CountryIDs.Any() || item.CountryIDs.Any(a => a == saleInformation?.CountryID?.ToLong());
+
+    private static bool IsWithinCampaignWindow(
+        ServiceItemModel item,
+        DateTime? freeServiceStartDate,
+        IEnumerable<VehicleInspectionModel> vehicleInspections) =>
+        item.CampaignActivationTrigger switch
+        {
+            ClaimableItemCampaignActivationTrigger.WarrantyActivation =>
+                freeServiceStartDate >= item.CampaignStartDate && freeServiceStartDate <= item.CampaignEndDate,
+
+            ClaimableItemCampaignActivationTrigger.VehicleInspection =>
+                vehicleInspections?.Any(i =>
+                    i.VehicleInspectionTypeID == item.VehicleInspectionTypeID &&
+                    i.InspectionDate >= item.CampaignStartDate &&
+                    i.InspectionDate <= item.CampaignEndDate) ?? false,
+
+            _ => false,
+        };
+
+    // An item applies to the vehicle if either:
+    //   - it has no per-model costs (item targets all vehicles), or
+    //   - the vehicle's Katashiki / VariantCode prefix-matches one of the item's model costs.
+    // The all-vehicles rule is gated to skip warranty-activated items when no vehicle is loaded
+    // (lookups without a vehicle should not see warranty-activated free items).
+    private static bool IsApplicableToVehicle(ServiceItemModel item, VehicleEntryModel vehicle)
+    {
+        if (HasMatchingModelCost(item, vehicle))
+            return true;
+
+        var hasVehicle = vehicle is not null;
+        var isWarrantyActivationCampaign = item.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.WarrantyActivation;
+        var modelCostCount = item.ModelCosts?.Count() ?? 0;
+
+        return (hasVehicle || !isWarrantyActivationCampaign) && modelCostCount == 0;
+    }
+
+    private static bool HasMatchingModelCost(ServiceItemModel item, VehicleEntryModel vehicle) =>
+        item.ModelCosts?.Any(cost =>
+            HasPrefixMatch(vehicle?.Katashiki, cost?.Katashiki) ||
+            HasPrefixMatch(vehicle?.VariantCode, cost?.Variant)) ?? false;
+
+    private static bool HasPrefixMatch(string vehicleValue, string costValue) =>
+        !string.IsNullOrWhiteSpace(vehicleValue) &&
+        !string.IsNullOrWhiteSpace(costValue) &&
+        vehicleValue.StartsWith(costValue, StringComparison.InvariantCultureIgnoreCase);
 
     private ServiceItemCostModel GetModelCost(
         IEnumerable<ServiceItemCostModel> modelCosts,
