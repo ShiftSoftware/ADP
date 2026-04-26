@@ -23,7 +23,7 @@ The main configuration class for the lookup services.
 | PartLookupStocksResolver <div><strong>``Func<LookupOptionResolverModel<IEnumerable<StockPartDTO>>, ValueTask<IEnumerable<StockPartDTO>>>?``</strong></div> | Resolver delegate that processes and returns part stock availability data. |
 | IncludeInactivatedFreeServiceItems <div><strong>``bool``</strong></div> | Whether to include free service items that have not yet been activated (e.g., awaiting warranty activation). |
 | WarrantyStartDateDefaultsToInvoiceDate <div><strong>``bool``</strong></div> | Whether the warranty start date should default to the invoice date when no explicit activation date is set. Defaults to true. |
-| SigningSecreteKey <div><strong>``string``</strong></div> | The HMAC secret key used for signing service item claim requests. |
+| SigningSecretKey <div><strong>``string``</strong></div> | The HMAC secret key used for signing service item claim requests. |
 | SignatureValidityDuration <div><strong>``TimeSpan``</strong></div> | How long a generated claim signature remains valid. |
 | VehicleInspectionPreClaimVoucherPrintingURLResolver <div><strong>``Func<LookupOptionResolverModel<(string VehicleInspectionID, string ServiceItemID)>, ValueTask<string?>>?``</strong></div> | Resolver delegate that generates a pre-claim voucher printing URL for vehicle inspection-based claims. |
 | ServiceActivationPreClaimVoucherPrintingURLResolver <div><strong>``Func<LookupOptionResolverModel<(string ServiceActivationID, string ServiceItemID)>, ValueTask<string?>>?``</strong></div> | Resolver delegate that generates a pre-claim voucher printing URL for service activation-based claims. |

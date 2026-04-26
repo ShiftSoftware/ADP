@@ -8,10 +8,10 @@ namespace ShiftSoftware.ADP.Lookup.Services.Evaluators;
 
 public class VehicleSpecificationEvaluator
 {
-    private readonly IVehicleLoockupStorageService VehicleLoockupCosmos;
-    public VehicleSpecificationEvaluator(IVehicleLoockupStorageService vehicleLoockupCosmos)
+    private readonly IVehicleLookupStorageService VehicleLookupCosmos;
+    public VehicleSpecificationEvaluator(IVehicleLookupStorageService vehicleLookupCosmos)
     {
-        this.VehicleLoockupCosmos = vehicleLoockupCosmos;
+        this.VehicleLookupCosmos = vehicleLookupCosmos;
     }
 
     public async Task<VehicleSpecificationDTO> Evaluate(VehicleEntryModel vehicle, VehicleLookupRequestOptions requestOptions = null)
@@ -22,15 +22,15 @@ public class VehicleSpecificationEvaluator
 
         if (requestOptions?.UseKatashikiLookup == true && !string.IsNullOrWhiteSpace(vehicle?.Katashiki))
         {
-            var models = await VehicleLoockupCosmos.GetVehicleModelsByKatashikiAsync(vehicle.Katashiki);
+            var models = await VehicleLookupCosmos.GetVehicleModelsByKatashikiAsync(vehicle.Katashiki);
             vehicleModel = models?.FirstOrDefault();
         }
         else
         {
-            vehicleModel = await VehicleLoockupCosmos.GetVehicleModelsAsync(vehicle?.VariantCode, vehicle?.BrandID);
+            vehicleModel = await VehicleLookupCosmos.GetVehicleModelsAsync(vehicle?.VariantCode, vehicle?.BrandID);
         }
-        var exteriorColor = await VehicleLoockupCosmos.GetExteriorColorsAsync(vehicle?.ExteriorColorCode, vehicle?.BrandID);
-        var interiorColor = await VehicleLoockupCosmos.GetInteriorColorsAsync(vehicle?.InteriorColorCode, vehicle?.BrandID);
+        var exteriorColor = await VehicleLookupCosmos.GetExteriorColorsAsync(vehicle?.ExteriorColorCode, vehicle?.BrandID);
+        var interiorColor = await VehicleLookupCosmos.GetInteriorColorsAsync(vehicle?.InteriorColorCode, vehicle?.BrandID);
 
         //if (vtModel is not null)
         {

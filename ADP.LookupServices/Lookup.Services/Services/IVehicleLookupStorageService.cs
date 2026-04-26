@@ -12,7 +12,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
     /// Provides methods to retrieve aggregated vehicle data, broker stock, colors, vehicle models, service items, and customers.
     /// Implemented by CosmosDB and DuckDB storage services.
     /// </summary>
-    public interface IVehicleLoockupStorageService
+    public interface IVehicleLookupStorageService
     {
         /// <summary>Retrieves a broker by account number and company ID.</summary>
         Task<BrokerModel> GetBrokerAsync(string accountNumber, long? companyID);

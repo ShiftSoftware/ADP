@@ -21,7 +21,7 @@ public class Hooks
         var context = new TestContext
         {
             ServiceProvider = Substitute.For<IServiceProvider>(),
-            StorageService = Substitute.For<IVehicleLoockupStorageService>()
+            StorageService = Substitute.For<IVehicleLookupStorageService>()
         };
         _container.RegisterInstanceAs(context);
     }

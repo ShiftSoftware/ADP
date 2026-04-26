@@ -14,11 +14,11 @@ namespace ShiftSoftware.ADP.Lookup.Services.Evaluators;
 public class VehicleServiceItemEvaluator
 {
     private readonly CompanyDataAggregateModel companyDataAggregate;
-    private readonly IVehicleLoockupStorageService lookupCosmosService;
+    private readonly IVehicleLookupStorageService lookupCosmosService;
     private readonly LookupOptions options;
     private readonly IServiceProvider services;
 
-    public VehicleServiceItemEvaluator(IVehicleLoockupStorageService lookupCosmosService, CompanyDataAggregateModel companyDataAggregate, LookupOptions options, IServiceProvider services)
+    public VehicleServiceItemEvaluator(IVehicleLookupStorageService lookupCosmosService, CompanyDataAggregateModel companyDataAggregate, LookupOptions options, IServiceProvider services)
     {
         this.lookupCosmosService = lookupCosmosService;
         this.companyDataAggregate = companyDataAggregate;
@@ -112,32 +112,7 @@ public class VehicleServiceItemEvaluator
 
         result = await ApplyPostProcessing(result, serviceItems, vehicle, languageCode);
 
-        var itemSignatureExpiry = DateTime.UtcNow;
-
-        if (this.options?.SignatureValidityDuration != null)
-            itemSignatureExpiry = itemSignatureExpiry.Add(this.options.SignatureValidityDuration);
-
-        foreach (var item in result)
-        {
-            item.SignatureExpiry = itemSignatureExpiry;
-
-            item.Signature = item.GenerateSignature(companyDataAggregate.VIN, this.options.SigningSecreteKey);
-
-            //if (options.VehicleInspectionPreClaimVoucherPrintingURL is not null && item.VehicleInspectionID is not null)
-            //    item.PrintUrl = $"{options.VehicleInspectionPreClaimVoucherPrintingURL}{item.VehicleInspectionID}/{item.ServiceItemID}";
-
-            if (options.VehicleInspectionPreClaimVoucherPrintingURLResolver is not null && item.VehicleInspectionID is not null)
-                item.PrintUrl = await options.VehicleInspectionPreClaimVoucherPrintingURLResolver(new(new(item.VehicleInspectionID, item.ServiceItemID), languageCode, this.services));
-
-            //Service Activation takes priority and overrides PrintURL if applicable
-            //if (options.ServiceActivationPreClaimVoucherPrintingURL is not null && serviceActivation is not null)
-            //    item.PrintUrl = $"{options.ServiceActivationPreClaimVoucherPrintingURL}{serviceActivation.id}/{item.ServiceItemID}";
-
-            if (options.ServiceActivationPreClaimVoucherPrintingURLResolver is not null && serviceActivation is not null)
-                item.PrintUrl = await options.ServiceActivationPreClaimVoucherPrintingURLResolver(new (new (serviceActivation.id, item.ServiceItemID), languageCode, this.services));
-
-            item.Warnings = options.StandardItemClaimWarnings;
-        }
+        await StampSignaturesAndPrintUrls(result, serviceActivation, languageCode);
 
         return (result, activationRequired);
     }
@@ -518,6 +493,39 @@ public class VehicleServiceItemEvaluator
             .ThenBy(x => x.ExpiresAt)
             .ThenBy(x => x.StatusEnum)
             .ToList();
+    }
+
+    private async Task StampSignaturesAndPrintUrls(
+        List<VehicleServiceItemDTO> result,
+        VehicleServiceActivation serviceActivation,
+        string languageCode)
+    {
+        var itemSignatureExpiry = DateTime.UtcNow;
+
+        if (this.options?.SignatureValidityDuration != null)
+            itemSignatureExpiry = itemSignatureExpiry.Add(this.options.SignatureValidityDuration);
+
+        foreach (var item in result)
+        {
+            item.SignatureExpiry = itemSignatureExpiry;
+
+            item.Signature = item.GenerateSignature(companyDataAggregate.VIN, this.options.SigningSecretKey);
+
+            //if (options.VehicleInspectionPreClaimVoucherPrintingURL is not null && item.VehicleInspectionID is not null)
+            //    item.PrintUrl = $"{options.VehicleInspectionPreClaimVoucherPrintingURL}{item.VehicleInspectionID}/{item.ServiceItemID}";
+
+            if (options.VehicleInspectionPreClaimVoucherPrintingURLResolver is not null && item.VehicleInspectionID is not null)
+                item.PrintUrl = await options.VehicleInspectionPreClaimVoucherPrintingURLResolver(new(new(item.VehicleInspectionID, item.ServiceItemID), languageCode, this.services));
+
+            //Service Activation takes priority and overrides PrintURL if applicable
+            //if (options.ServiceActivationPreClaimVoucherPrintingURL is not null && serviceActivation is not null)
+            //    item.PrintUrl = $"{options.ServiceActivationPreClaimVoucherPrintingURL}{serviceActivation.id}/{item.ServiceItemID}";
+
+            if (options.ServiceActivationPreClaimVoucherPrintingURLResolver is not null && serviceActivation is not null)
+                item.PrintUrl = await options.ServiceActivationPreClaimVoucherPrintingURLResolver(new(new(serviceActivation.id, item.ServiceItemID), languageCode, this.services));
+
+            item.Warnings = options.StandardItemClaimWarnings;
+        }
     }
 
     private async Task<IEnumerable<VehicleServiceItemDTO>> GetIneligibleServiceItems(

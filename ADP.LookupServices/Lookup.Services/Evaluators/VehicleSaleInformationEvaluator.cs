@@ -13,9 +13,9 @@ public class VehicleSaleInformationEvaluator
     private readonly CompanyDataAggregateModel CompanyDataAggregate;
     private readonly LookupOptions Options;
     private readonly IServiceProvider ServiceProvider;
-    private readonly IVehicleLoockupStorageService LookupCosmosService;
+    private readonly IVehicleLookupStorageService LookupCosmosService;
 
-    public VehicleSaleInformationEvaluator(CompanyDataAggregateModel companyDataAggregate, LookupOptions options, IServiceProvider serviceProvider, IVehicleLoockupStorageService lookupCosmosService)
+    public VehicleSaleInformationEvaluator(CompanyDataAggregateModel companyDataAggregate, LookupOptions options, IServiceProvider serviceProvider, IVehicleLookupStorageService lookupCosmosService)
     {
         this.CompanyDataAggregate = companyDataAggregate;
         this.Options = options;

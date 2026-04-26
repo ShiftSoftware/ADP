@@ -19,7 +19,7 @@ public static class IServiceCollectionExtensions
 
         if (options.VehicleLookupStorageSource == Enums.StorageSources.CosmosDB)
         {
-            services.AddScoped<IVehicleLoockupStorageService>(x => new CosmosVehicleLoockupStorageService(x.GetRequiredService<CosmosClient>()));
+            services.AddScoped<IVehicleLookupStorageService>(x => new CosmosVehicleLookupStorageService(x.GetRequiredService<CosmosClient>()));
         }
 
         services.AddScoped<ILogCosmosService>(x => new LogCosmosService(x.GetRequiredService<CosmosClient>()));

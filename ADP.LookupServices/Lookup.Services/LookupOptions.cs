@@ -49,7 +49,7 @@ public class LookupOptions
     /// <summary>Whether the warranty start date should default to the invoice date when no explicit activation date is set. Defaults to true.</summary>
     public bool WarrantyStartDateDefaultsToInvoiceDate { get; set; } = true;
     /// <summary>The HMAC secret key used for signing service item claim requests.</summary>
-    public string SigningSecreteKey { get; set; } = string.Empty;
+    public string SigningSecretKey { get; set; } = string.Empty;
     /// <summary>How long a generated claim signature remains valid.</summary>
     public TimeSpan SignatureValidityDuration { get; set; }
 

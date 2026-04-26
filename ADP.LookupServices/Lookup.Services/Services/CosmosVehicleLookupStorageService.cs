@@ -15,12 +15,12 @@ using System.Threading.Tasks;
 
 namespace ShiftSoftware.ADP.Lookup.Services.Services;
 
-public class CosmosVehicleLoockupStorageService : IVehicleLoockupStorageService
+public class CosmosVehicleLookupStorageService : IVehicleLookupStorageService
 {
     private readonly CosmosClient client;
     private readonly List<Task> tasks = new List<Task>();
 
-    public CosmosVehicleLoockupStorageService(CosmosClient client)
+    public CosmosVehicleLookupStorageService(CosmosClient client)
     {
         this.client = client;
     }

@@ -19,7 +19,7 @@ public class TestContext
     };
     public LookupOptions Options { get; set; } = new();
     public IServiceProvider ServiceProvider { get; set; } = null!;
-    public IVehicleLoockupStorageService StorageService { get; set; } = null!;
+    public IVehicleLookupStorageService StorageService { get; set; } = null!;
 
     // Intermediate evaluator results
     public VehicleEntryModel? CurrentVehicle { get; set; }

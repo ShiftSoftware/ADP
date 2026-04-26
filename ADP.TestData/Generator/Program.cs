@@ -50,8 +50,8 @@ foreach (var envFile in Directory.GetFiles(environmentsDir, "*.json"))
     var lookupOptions = env.LookupOptions.ToLookupOptions(companyNames, branchNames, countryNames, regionNames);
     IServiceProvider serviceProvider = Substitute.For<IServiceProvider>();
 
-    // Mock IVehicleLoockupStorageService
-    var storageService = Substitute.For<IVehicleLoockupStorageService>();
+    // Mock IVehicleLookupStorageService
+    var storageService = Substitute.For<IVehicleLookupStorageService>();
 
     // Wire up vehicle model lookups
     storageService.GetVehicleModelsAsync(Arg.Any<string>(), Arg.Any<long?>())
@@ -140,7 +140,7 @@ static async Task<VehicleLookupDTO> GenerateVehicleLookup(
     string vin,
     ShiftSoftware.ADP.Lookup.Services.Aggregate.CompanyDataAggregateModel aggregate,
     LookupOptions options,
-    IVehicleLoockupStorageService storageService,
+    IVehicleLookupStorageService storageService,
     IServiceProvider serviceProvider)
 {
     var vehicle = new VehicleEntryEvaluator(aggregate).Evaluate();

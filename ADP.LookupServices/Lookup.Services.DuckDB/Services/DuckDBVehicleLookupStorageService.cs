@@ -18,8 +18,8 @@ using System.Threading.Tasks;
 
 namespace ShiftSoftware.ADP.Lookup.Services.Services;
 
-public class DuckDBVehicleLoockupStorageService(global::DuckDB.NET.Data.DuckDBConnection connection)
-    : IVehicleLoockupStorageService
+public class DuckDBVehicleLookupStorageService(global::DuckDB.NET.Data.DuckDBConnection connection)
+    : IVehicleLookupStorageService
 {
     private const int AggregateVinChunkSize = 500;
     private static readonly TimeSpan ServiceItemCacheTtl = TimeSpan.FromMinutes(5);

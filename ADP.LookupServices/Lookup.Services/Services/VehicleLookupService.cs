@@ -11,19 +11,19 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services;
 
 public class VehicleLookupService
 {
-    private readonly IVehicleLoockupStorageService vehicleLoockupStorageService;
+    private readonly IVehicleLookupStorageService vehicleLookupStorageService;
     private readonly LookupOptions lookupOptions;
     private readonly IServiceProvider serviceProvider;
     private readonly ILogCosmosService logCosmosService;
 
     public VehicleLookupService(
-        IVehicleLoockupStorageService vehicleLoockupStorageService,
+        IVehicleLookupStorageService vehicleLookupStorageService,
         IServiceProvider services = null,
         ILogCosmosService logCosmosService = null,
         LookupOptions options = null
     )
     {
-        this.vehicleLoockupStorageService = vehicleLoockupStorageService;
+        this.vehicleLookupStorageService = vehicleLookupStorageService;
         this.lookupOptions = options;
         this.serviceProvider = services;
         this.logCosmosService = logCosmosService;
@@ -31,12 +31,12 @@ public class VehicleLookupService
 
     public async Task<CompanyDataAggregateModel> GetAggregatedCompanyDataAsync(string vin)
     {
-        return await vehicleLoockupStorageService.GetAggregatedCompanyData(vin);
+        return await vehicleLookupStorageService.GetAggregatedCompanyData(vin);
     }
 
     public async Task<IEnumerable<CompanyDataAggregateModel>> GetAggregatedCompanyDataAsync(IEnumerable<string> vins, IEnumerable<string> itemTypes)
     {
-        return await vehicleLoockupStorageService.GetAggregatedCompanyData(vins, itemTypes);
+        return await vehicleLookupStorageService.GetAggregatedCompanyData(vins, itemTypes);
     }
 
     public async Task<VehicleLookupDTO> LookupAsync(string vin)
@@ -65,7 +65,7 @@ public class VehicleLookupService
         if (!normalizedInputOrder.Any())
             return Enumerable.Empty<VehicleLookupDTO>();
 
-        var aggregates = await vehicleLoockupStorageService.GetAggregatedCompanyDataForBulkLookupAsync(normalizedInputOrder);
+        var aggregates = await vehicleLookupStorageService.GetAggregatedCompanyDataForBulkLookupAsync(normalizedInputOrder);
 
         var result = new List<VehicleLookupDTO>();
 
@@ -87,7 +87,7 @@ public class VehicleLookupService
             requestOptions = new VehicleLookupRequestOptions();
 
         // Get all items related to the VIN from the cosmos container
-        var companyDataAggregate = await vehicleLoockupStorageService.GetAggregatedCompanyData(vin);
+        var companyDataAggregate = await vehicleLookupStorageService.GetAggregatedCompanyData(vin);
         return await LookupFromAggregateAsync(vin, companyDataAggregate, requestOptions, disableLogs: false);
     }
 
@@ -108,12 +108,12 @@ public class VehicleLookupService
             IsAuthorized = new VehicleAuthorizationEvaluator(companyDataAggregate).Evaluate(),
             PaintThicknessInspections = await new VehiclePaintThicknessEvaluator(companyDataAggregate, lookupOptions, serviceProvider).Evaluate(requestOptions.LanguageCode),
             Identifiers = new VehicleIdentifierEvaluator(companyDataAggregate).Evaluate(vehicle),
-            VehicleSpecification = await new VehicleSpecificationEvaluator(vehicleLoockupStorageService).Evaluate(vehicle, requestOptions),
+            VehicleSpecification = await new VehicleSpecificationEvaluator(vehicleLookupStorageService).Evaluate(vehicle, requestOptions),
             ServiceHistory = await new VehicleServiceHistoryEvaluator(companyDataAggregate, lookupOptions, this.serviceProvider).Evaluate(requestOptions.LanguageCode, requestOptions.VehicleServiceHistoryConsistencyLevel),
             SSC = new VehicleSSCEvaluator(companyDataAggregate).Evaluate(),
             NextServiceDate = companyDataAggregate.LaborLines?.Max(x => x.NextServiceDate),
             Accessories = await new VehicleAccessoriesEvaluator(companyDataAggregate, lookupOptions, serviceProvider).Evaluate(requestOptions.LanguageCode),
-            SaleInformation = await new VehicleSaleInformationEvaluator(companyDataAggregate, lookupOptions, serviceProvider, vehicleLoockupStorageService).Evaluate(requestOptions),
+            SaleInformation = await new VehicleSaleInformationEvaluator(companyDataAggregate, lookupOptions, serviceProvider, vehicleLookupStorageService).Evaluate(requestOptions),
         };
 
         if (requestOptions.LegacyPaintThickness)
@@ -145,7 +145,7 @@ public class VehicleLookupService
             .Evaluate(vehicle, data.SaleInformation, requestOptions.IgnoreBrokerStock);
 
         var serviceItemsResult = await new VehicleServiceItemEvaluator(
-            this.vehicleLoockupStorageService, companyDataAggregate, this.lookupOptions, this.serviceProvider
+            this.vehicleLookupStorageService, companyDataAggregate, this.lookupOptions, this.serviceProvider
         ).Evaluate(
             vehicle,
             data.Warranty?.FreeServiceStartDate,
@@ -211,21 +211,21 @@ public class VehicleLookupService
 
     public async Task<IEnumerable<VehicleModelModel>> GetAllVehicleModelsAsync()
     {
-        return await vehicleLoockupStorageService.GetAllVehicleModelsAsync();
+        return await vehicleLookupStorageService.GetAllVehicleModelsAsync();
     }
 
     public async Task<IEnumerable<VehicleModelModel>> GetVehicleModelsByKatashikiAsync(string katashiki)
     {
-        return await vehicleLoockupStorageService.GetVehicleModelsByKatashikiAsync(katashiki);
+        return await vehicleLookupStorageService.GetVehicleModelsByKatashikiAsync(katashiki);
     }
 
     public async Task<IEnumerable<VehicleModelModel>> GetVehicleModelsByVariantAsync(string variant)
     {
-        return await vehicleLoockupStorageService.GetVehicleModelsByVariantAsync(variant);
+        return await vehicleLookupStorageService.GetVehicleModelsByVariantAsync(variant);
     }
 
     public async Task<IEnumerable<VehicleModelModel>> GetVehicleModelsByVinAsync(string vin)
     {
-        return await vehicleLoockupStorageService.GetVehicleModelsByVinAsync(vin);
+        return await vehicleLookupStorageService.GetVehicleModelsByVinAsync(vin);
     }
 }
