@@ -110,38 +110,7 @@ public class VehicleServiceItemEvaluator
 
         var activationRequired = await CalculateServiceItemStatusAndClaimability(result, showingInactivatedItems, languageCode);
 
-        // companyDataAggregate is loaded per-VIN by the storage layer, so FreeServiceItemExcludedVINs
-        // only ever contains entries for the current vehicle — a non-empty list means "this vehicle
-        // is excluded from warranty-activated items". No per-item VIN check is needed here.
-        // Runs after CalculateServiceItemStatusAndClaimability so activationRequired still reflects
-        // the unfiltered list — that's a likely bug; see issue #22 in STATUS.md (pinned pending a
-        // LookupOptions flag to choose between suppressing the prompt vs. still requesting activation
-        // for customer-data collection).
-        var currentVehicleIsExcludedFromWarrantyActivatedItems = companyDataAggregate.FreeServiceItemExcludedVINs.Any();
-
-        if (currentVehicleIsExcludedFromWarrantyActivatedItems)
-            result.RemoveAll(x => x.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.WarrantyActivation);
-
-        var ineligibleServiceItems = await GetIneligibleServiceItems(
-            result,
-            serviceItems,
-            vehicle?.Katashiki,
-            vehicle?.VariantCode,
-            languageCode
-        );
-
-        result.AddRange(ineligibleServiceItems);
-
-        ProccessDynamicCanceledFreeServiceItems(result);
-
-        // Order items by mileage
-        result = result
-            .OrderBy(x => x.TypeEnum)
-            .ThenByDescending(x => x.MaximumMileage.HasValue)
-            .ThenBy(x => x.MaximumMileage)
-            .ThenBy(x => x.ExpiresAt)
-            .ThenBy(x => x.StatusEnum)
-            .ToList();
+        result = await ApplyPostProcessing(result, serviceItems, vehicle, languageCode);
 
         var itemSignatureExpiry = DateTime.UtcNow;
 
@@ -512,6 +481,45 @@ public class VehicleServiceItemEvaluator
         return ("pending", VehcileServiceItemStatuses.Pending, null, null, null, null, null);
     }
 
+    private async Task<List<VehicleServiceItemDTO>> ApplyPostProcessing(
+        List<VehicleServiceItemDTO> result,
+        IEnumerable<ServiceItemModel> serviceItems,
+        VehicleEntryModel vehicle,
+        string languageCode)
+    {
+        // companyDataAggregate is loaded per-VIN by the storage layer, so FreeServiceItemExcludedVINs
+        // only ever contains entries for the current vehicle — a non-empty list means "this vehicle
+        // is excluded from warranty-activated items". No per-item VIN check is needed here.
+        // Runs after CalculateServiceItemStatusAndClaimability so activationRequired still reflects
+        // the unfiltered list — that's a likely bug; see issue #22 in STATUS.md (pinned pending a
+        // LookupOptions flag to choose between suppressing the prompt vs. still requesting activation
+        // for customer-data collection).
+        var currentVehicleIsExcludedFromWarrantyActivatedItems = companyDataAggregate.FreeServiceItemExcludedVINs.Any();
+
+        if (currentVehicleIsExcludedFromWarrantyActivatedItems)
+            result.RemoveAll(x => x.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.WarrantyActivation);
+
+        var ineligibleServiceItems = await GetIneligibleServiceItems(
+            result,
+            serviceItems,
+            vehicle?.Katashiki,
+            vehicle?.VariantCode,
+            languageCode
+        );
+
+        result.AddRange(ineligibleServiceItems);
+
+        ProcessDynamicCancelledFreeServiceItems(result);
+
+        return result
+            .OrderBy(x => x.TypeEnum)
+            .ThenByDescending(x => x.MaximumMileage.HasValue)
+            .ThenBy(x => x.MaximumMileage)
+            .ThenBy(x => x.ExpiresAt)
+            .ThenBy(x => x.StatusEnum)
+            .ToList();
+    }
+
     private async Task<IEnumerable<VehicleServiceItemDTO>> GetIneligibleServiceItems(
         IEnumerable<VehicleServiceItemDTO> eligibleServiceItems,
         IEnumerable<ServiceItemModel> availableServiceItems,
@@ -568,7 +576,7 @@ public class VehicleServiceItemEvaluator
         return result;
     }
 
-    private void ProccessDynamicCanceledFreeServiceItems(IEnumerable<VehicleServiceItemDTO> serviceItems)
+    private void ProcessDynamicCancelledFreeServiceItems(IEnumerable<VehicleServiceItemDTO> serviceItems)
     {
         var freeItems = serviceItems
             .Where(x => x.TypeEnum == VehcileServiceItemTypes.Free)
