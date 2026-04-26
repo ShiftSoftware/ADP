@@ -73,51 +73,7 @@ public class VehicleServiceItemEvaluator
 
             foreach (var item in eligibleServiceItems)
             {
-                ServiceItemCostModel modelCost = null;
-
-                if (item.ModelCosts != null)
-                    modelCost = GetModelCost(item.ModelCosts, vehicle?.Katashiki, vehicle?.VariantCode);
-
-                var serviceItem = new VehicleServiceItemDTO
-                {
-                    ServiceItemID = item.IntegrationID,
-                    Name = Utility.GetLocalizedText(item.Name, languageCode),
-                    Description = Utility.GetLocalizedText(item.PrintoutDescription, languageCode),
-                    Title = Utility.GetLocalizedText(item.PrintoutTitle, languageCode),
-                    //Image = await GetFirstImageFullUrl(item.Photo),
-                    Type = "free",
-                    TypeEnum = VehcileServiceItemTypes.Free,
-                    ModelCostID = modelCost?.ID,
-                    PackageCode = modelCost?.PackageCode ?? item.PackageCode,
-                    Cost = modelCost == null ? item?.FixedCost : modelCost?.Cost,
-                    CampaignID = item.CampaignID,
-                    CampaignUniqueReference = item.CampaignUniqueReference,
-
-                    MaximumMileage = item.MaximumMileage,
-                    CampaignActivationTrigger = item.CampaignActivationTrigger,
-                    CampaignActivationType = item.CampaignActivationType,
-
-                    ValidityModeEnum = item.ValidityMode,
-                    ClaimingMethodEnum = item.ClaimingMethod,
-
-                    ShowDocumentUploader = item.AttachmentFieldBehavior != ClaimableItemAttachmentFieldBehavior.Hidden,
-                    DocumentUploaderIsRequired = item.AttachmentFieldBehavior == ClaimableItemAttachmentFieldBehavior.Required,
-
-                    VehicleInspectionTypeID = item.VehicleInspectionTypeID.ToString()
-                };
-
-                if (item.ValidityMode == ClaimableItemValidityMode.FixedDateRange)
-                {
-                    serviceItem.ActivatedAt = item.ValidFrom.Value;
-                    serviceItem.ExpiresAt = item.ValidTo;
-                }
-                else if (item.ValidityMode == ClaimableItemValidityMode.RelativeToActivation)
-                {
-                    serviceItem.ActiveFor = item.ActiveFor;
-                    serviceItem.ActiveForDurationType = item.ActiveForDurationType;
-                }
-
-                result.Add(serviceItem);
+                result.Add(BuildFreeServiceItemDto(item, vehicle, languageCode));
             }
         }
 
@@ -127,29 +83,9 @@ public class VehicleServiceItemEvaluator
             {
                 if (paidService?.Lines?.Count() > 0)
                 {
-                    foreach (var item in paidService.Lines)
+                    foreach (var line in paidService.Lines)
                     {
-                        var itemResult = new VehicleServiceItemDTO
-                        {
-                            ServiceItemID = item.ServiceItemID,
-                            PaidServiceInvoiceLineID = item.IntegrationID,
-                            ActivatedAt = paidService.InvoiceDate,
-                            CampaignUniqueReference = item.ServiceItem?.CampaignUniqueReference,
-                            Description = Utility.GetLocalizedText(item.ServiceItem?.PrintoutDescription, languageCode),
-                            //Image = await GetFirstImageFullUrl(item.ServiceItem?.Photo),
-                            Name = Utility.GetLocalizedText(item.ServiceItem?.Name, languageCode),
-                            Title = Utility.GetLocalizedText(item.ServiceItem?.PrintoutTitle, languageCode),
-                            ExpiresAt = item.ExpireDate,
-                            Type = "paid",
-                            MaximumMileage = item.ServiceItem?.MaximumMileage,
-                            TypeEnum = VehcileServiceItemTypes.Paid,
-                            PackageCode = item.PackageCode,
-
-                            ClaimingMethodEnum = item.ServiceItem?.ClaimingMethod ?? ClaimableItemClaimingMethod.ClaimByEnteringInvoiceAndJobNumber,
-                            VehicleInspectionTypeID = item.ServiceItem?.VehicleInspectionTypeID?.ToString(),
-                        };
-
-                        result.Add(itemResult);
+                        result.Add(BuildPaidServiceItemDto(paidService, line, languageCode));
                     }
                 }
             }
@@ -325,6 +261,84 @@ public class VehicleServiceItemEvaluator
             .Where(x => katashiki.StartsWith(x?.Katashiki ?? "") && !string.IsNullOrWhiteSpace(x?.Katashiki ?? "")
                 || variant.StartsWith(x?.Variant ?? "") && !string.IsNullOrWhiteSpace(x?.Variant ?? ""))
             .FirstOrDefault();
+    }
+
+    private VehicleServiceItemDTO BuildFreeServiceItemDto(
+        ServiceItemModel item,
+        VehicleEntryModel vehicle,
+        string languageCode)
+    {
+        ServiceItemCostModel modelCost = null;
+
+        if (item.ModelCosts != null)
+            modelCost = GetModelCost(item.ModelCosts, vehicle?.Katashiki, vehicle?.VariantCode);
+
+        var serviceItem = new VehicleServiceItemDTO
+        {
+            ServiceItemID = item.IntegrationID,
+            Name = Utility.GetLocalizedText(item.Name, languageCode),
+            Description = Utility.GetLocalizedText(item.PrintoutDescription, languageCode),
+            Title = Utility.GetLocalizedText(item.PrintoutTitle, languageCode),
+            //Image = await GetFirstImageFullUrl(item.Photo),
+            Type = "free",
+            TypeEnum = VehcileServiceItemTypes.Free,
+            ModelCostID = modelCost?.ID,
+            PackageCode = modelCost?.PackageCode ?? item.PackageCode,
+            Cost = modelCost == null ? item?.FixedCost : modelCost?.Cost,
+            CampaignID = item.CampaignID,
+            CampaignUniqueReference = item.CampaignUniqueReference,
+
+            MaximumMileage = item.MaximumMileage,
+            CampaignActivationTrigger = item.CampaignActivationTrigger,
+            CampaignActivationType = item.CampaignActivationType,
+
+            ValidityModeEnum = item.ValidityMode,
+            ClaimingMethodEnum = item.ClaimingMethod,
+
+            ShowDocumentUploader = item.AttachmentFieldBehavior != ClaimableItemAttachmentFieldBehavior.Hidden,
+            DocumentUploaderIsRequired = item.AttachmentFieldBehavior == ClaimableItemAttachmentFieldBehavior.Required,
+
+            VehicleInspectionTypeID = item.VehicleInspectionTypeID.ToString()
+        };
+
+        if (item.ValidityMode == ClaimableItemValidityMode.FixedDateRange)
+        {
+            serviceItem.ActivatedAt = item.ValidFrom.Value;
+            serviceItem.ExpiresAt = item.ValidTo;
+        }
+        else if (item.ValidityMode == ClaimableItemValidityMode.RelativeToActivation)
+        {
+            serviceItem.ActiveFor = item.ActiveFor;
+            serviceItem.ActiveForDurationType = item.ActiveForDurationType;
+        }
+
+        return serviceItem;
+    }
+
+    private static VehicleServiceItemDTO BuildPaidServiceItemDto(
+        PaidServiceInvoiceModel paidService,
+        PaidServiceInvoiceLineModel line,
+        string languageCode)
+    {
+        return new VehicleServiceItemDTO
+        {
+            ServiceItemID = line.ServiceItemID,
+            PaidServiceInvoiceLineID = line.IntegrationID,
+            ActivatedAt = paidService.InvoiceDate,
+            CampaignUniqueReference = line.ServiceItem?.CampaignUniqueReference,
+            Description = Utility.GetLocalizedText(line.ServiceItem?.PrintoutDescription, languageCode),
+            //Image = await GetFirstImageFullUrl(line.ServiceItem?.Photo),
+            Name = Utility.GetLocalizedText(line.ServiceItem?.Name, languageCode),
+            Title = Utility.GetLocalizedText(line.ServiceItem?.PrintoutTitle, languageCode),
+            ExpiresAt = line.ExpireDate,
+            Type = "paid",
+            MaximumMileage = line.ServiceItem?.MaximumMileage,
+            TypeEnum = VehcileServiceItemTypes.Paid,
+            PackageCode = line.PackageCode,
+
+            ClaimingMethodEnum = line.ServiceItem?.ClaimingMethod ?? ClaimableItemClaimingMethod.ClaimByEnteringInvoiceAndJobNumber,
+            VehicleInspectionTypeID = line.ServiceItem?.VehicleInspectionTypeID?.ToString(),
+        };
     }
 
     private void CalculateRollingExpireDateForWarrantyActivatedFreeServiceItems(IEnumerable<VehicleServiceItemDTO> serviceItems, DateTime? invoiceDate)
