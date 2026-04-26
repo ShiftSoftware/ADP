@@ -108,21 +108,19 @@ public class VehicleServiceItemEvaluator
 
         result.AddRange(newVehicleInspectionActivatedItems);
 
-        await CalulateServiceItemStatus(result, showingInactivatedItems, languageCode);
+        var activationRequired = await CalculateServiceItemStatusAndClaimability(result, showingInactivatedItems, languageCode);
 
-        var activationRequired = result.Any(x => x.StatusEnum == VehcileServiceItemStatuses.ActivationRequired);
+        // companyDataAggregate is loaded per-VIN by the storage layer, so FreeServiceItemExcludedVINs
+        // only ever contains entries for the current vehicle — a non-empty list means "this vehicle
+        // is excluded from warranty-activated items". No per-item VIN check is needed here.
+        // Runs after CalculateServiceItemStatusAndClaimability so activationRequired still reflects
+        // the unfiltered list — that's a likely bug; see issue #22 in STATUS.md (pinned pending a
+        // LookupOptions flag to choose between suppressing the prompt vs. still requesting activation
+        // for customer-data collection).
+        var currentVehicleIsExcludedFromWarrantyActivatedItems = companyDataAggregate.FreeServiceItemExcludedVINs.Any();
 
-        if (companyDataAggregate.FreeServiceItemExcludedVINs.Any())
-            result = result.Where(x => x.CampaignActivationTrigger != ClaimableItemCampaignActivationTrigger.WarrantyActivation).ToList();
-
-        foreach (var item in result)
-        {
-            if (item.StatusEnum == VehcileServiceItemStatuses.Pending)
-                item.Claimable = true;
-
-            if (item.ValidityModeEnum == ClaimableItemValidityMode.FixedDateRange && item.ActivatedAt > DateTime.Now)
-                item.Claimable = false;
-        }
+        if (currentVehicleIsExcludedFromWarrantyActivatedItems)
+            result.RemoveAll(x => x.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.WarrantyActivation);
 
         var ineligibleServiceItems = await GetIneligibleServiceItems(
             result,
@@ -441,7 +439,28 @@ public class VehicleServiceItemEvaluator
             return date;
     }
 
-    private async Task CalulateServiceItemStatus(IEnumerable<VehicleServiceItemDTO> serviceItems, bool showingInactivatedItems, string languageCode)
+    private async Task<bool> CalculateServiceItemStatusAndClaimability(
+        List<VehicleServiceItemDTO> serviceItems,
+        bool showingInactivatedItems,
+        string languageCode)
+    {
+        await CalculateServiceItemStatus(serviceItems, showingInactivatedItems, languageCode);
+
+        var activationRequired = serviceItems.Any(x => x.StatusEnum == VehcileServiceItemStatuses.ActivationRequired);
+
+        foreach (var item in serviceItems)
+        {
+            if (item.StatusEnum == VehcileServiceItemStatuses.Pending)
+                item.Claimable = true;
+
+            if (item.ValidityModeEnum == ClaimableItemValidityMode.FixedDateRange && item.ActivatedAt > DateTime.Now)
+                item.Claimable = false;
+        }
+
+        return activationRequired;
+    }
+
+    private async Task CalculateServiceItemStatus(IEnumerable<VehicleServiceItemDTO> serviceItems, bool showingInactivatedItems, string languageCode)
     {
         foreach (var item in serviceItems)
         {
