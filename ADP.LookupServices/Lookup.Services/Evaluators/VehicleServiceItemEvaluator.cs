@@ -346,24 +346,28 @@ public class VehicleServiceItemEvaluator
         if (invoiceDate is null)
             return;
 
-        var startDate = invoiceDate;
+        var sequentialServiceItems = serviceItems.Where(x => x.MaximumMileage is not null);
+        var nonSequentialServiceItems = serviceItems.Where(x => x.MaximumMileage is null);
 
-        var sequencialServiceItems = serviceItems.Where(x => x.MaximumMileage is not null);
+        DateTime? rollingDate = invoiceDate.Value;
 
-        foreach (var item in sequencialServiceItems)
+        foreach (var item in sequentialServiceItems)
         {
-            item.ActivatedAt = startDate.GetValueOrDefault();
-            item.ExpiresAt = AddInterval(startDate.GetValueOrDefault(), item.ActiveFor, item.ActiveForDurationType);
+            item.ActivatedAt = rollingDate.Value;
+            item.ExpiresAt = AddInterval(rollingDate.Value, item.ActiveFor, item.ActiveForDurationType);
 
-            startDate = item.ExpiresAt;
+            rollingDate = item.ExpiresAt;
         }
 
-        var nonSequencialServiceItems = serviceItems.Where(x => x.MaximumMileage is null);
-
-        foreach (var item in nonSequencialServiceItems)
+        // Issue #14 (pinned): non-sequential items inherit the bundle's collective end date.
+        // When no sequential items exist, rollingDate stays at invoiceDate, so the non-sequential
+        // item ends up activated and expired on the same day. Production data always bundles
+        // these alongside sequential items, so this hasn't surfaced in practice. See
+        // ServiceItems_Expiration.feature ("Sole non-sequential item expires at the free service start date — pinned").
+        foreach (var item in nonSequentialServiceItems)
         {
             item.ActivatedAt = invoiceDate.Value;
-            item.ExpiresAt = startDate;
+            item.ExpiresAt = rollingDate;
         }
     }
 
@@ -373,51 +377,48 @@ public class VehicleServiceItemEvaluator
 
         foreach (var item in serviceItems)
         {
-            var filteredVehicleInspections = vehicleInspections
-                .Where(x => x.VehicleInspectionTypeID.ToString() == item.VehicleInspectionTypeID);
-
-            if (item.CampaignActivationType == ClaimableItemCampaignActivationTypes.EveryTrigger)
-            {
-                foreach (var vehicleInspection in filteredVehicleInspections)
-                {
-                    var cloned = item.Clone();
-
-                    if (item.ValidityModeEnum == ClaimableItemValidityMode.RelativeToActivation)
-                    {
-                        cloned.ActivatedAt = vehicleInspection.InspectionDate.DateTime;
-                        cloned.ExpiresAt = AddInterval(cloned.ActivatedAt, item.ActiveFor, cloned.ActiveForDurationType);
-                    }
-
-                    cloned.VehicleInspectionID = vehicleInspection.id;
-
-                    newList.Add(cloned);
-                }
-            }
-            else
-            {
-                VehicleInspectionModel vehicleInspection = null;
-
-                if (item.CampaignActivationType == ClaimableItemCampaignActivationTypes.FirstTriggerOnly)
-                    vehicleInspection = filteredVehicleInspections.OrderBy(x => x.InspectionDate).First();
-
-                else if (item.CampaignActivationType == ClaimableItemCampaignActivationTypes.ExtendOnEachTrigger)
-                    vehicleInspection = filteredVehicleInspections.OrderByDescending(x => x.InspectionDate).First();
-
-                var cloned = item.Clone();
-
-                cloned.VehicleInspectionID = vehicleInspection.id;
-
-                if (cloned.ValidityModeEnum == ClaimableItemValidityMode.RelativeToActivation)
-                {
-                    cloned.ActivatedAt = vehicleInspection.InspectionDate.DateTime;
-                    cloned.ExpiresAt = AddInterval(cloned.ActivatedAt, cloned.ActiveFor, cloned.ActiveForDurationType);
-                }
-
-                newList.Add(cloned);
-            }
+            foreach (var inspection in SelectInspectionsForActivation(item, vehicleInspections))
+                newList.Add(CloneWithInspectionActivation(item, inspection));
         }
 
         return newList;
+    }
+
+    private static IEnumerable<VehicleInspectionModel> SelectInspectionsForActivation(
+        VehicleServiceItemDTO item,
+        IEnumerable<VehicleInspectionModel> vehicleInspections)
+    {
+        var matching = vehicleInspections
+            .Where(x => x.VehicleInspectionTypeID.ToString() == item.VehicleInspectionTypeID);
+
+        if (item.CampaignActivationType == ClaimableItemCampaignActivationTypes.EveryTrigger)
+            return matching;
+
+        if (item.CampaignActivationType == ClaimableItemCampaignActivationTypes.FirstTriggerOnly)
+            return new[] { matching.OrderBy(x => x.InspectionDate).First() };
+
+        if (item.CampaignActivationType == ClaimableItemCampaignActivationTypes.ExtendOnEachTrigger)
+            return new[] { matching.OrderByDescending(x => x.InspectionDate).First() };
+
+        // Pinning original behavior: an unset/unexpected CampaignActivationType used to fall
+        // through with a null inspection and NRE downstream on `vehicleInspection.id`. The
+        // single-null array reproduces that failure mode.
+        return new VehicleInspectionModel[] { null };
+    }
+
+    private VehicleServiceItemDTO CloneWithInspectionActivation(VehicleServiceItemDTO item, VehicleInspectionModel inspection)
+    {
+        var cloned = item.Clone();
+
+        cloned.VehicleInspectionID = inspection.id;
+
+        if (cloned.ValidityModeEnum == ClaimableItemValidityMode.RelativeToActivation)
+        {
+            cloned.ActivatedAt = inspection.InspectionDate.DateTime;
+            cloned.ExpiresAt = AddInterval(cloned.ActivatedAt, cloned.ActiveFor, cloned.ActiveForDurationType);
+        }
+
+        return cloned;
     }
 
     private DateTime AddInterval(DateTime date, int? intervalValue, DurationType? durationType)
