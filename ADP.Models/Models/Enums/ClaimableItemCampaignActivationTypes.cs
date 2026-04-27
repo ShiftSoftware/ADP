@@ -46,6 +46,15 @@ public static class ClaimableItemCampaignActivationRules
                     ClaimableItemCampaignActivationTypes.EveryTrigger,
                     ClaimableItemCampaignActivationTypes.ExtendOnEachTrigger
                 }
+            },
+            {
+                ClaimableItemCampaignActivationTrigger.ManualVinEntry,
+                new[]
+                {
+                    ClaimableItemCampaignActivationTypes.FirstTriggerOnly,
+                    ClaimableItemCampaignActivationTypes.EveryTrigger,
+                    ClaimableItemCampaignActivationTypes.ExtendOnEachTrigger
+                }
             }
         };
 
