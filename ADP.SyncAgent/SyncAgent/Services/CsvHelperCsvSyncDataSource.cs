@@ -106,14 +106,14 @@ public class CsvHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource<
 
             return new(true);
         }
-        catch (Exception)
+        catch
         {
             this.streamReader?.Close();
             this.streamReader?.Dispose();
             this.streamReader = null;
             this.csvReader?.Dispose();
             this.csvReader = null;
-            return new(true);
+            throw;
         }
     }
 
@@ -154,25 +154,18 @@ public class CsvHelperCsvSyncDataSource<TCSV, TDestination> : CsvSyncDataSource<
 
     private async Task<long> GetItemCountAsync(string filePath)
     {
-        try
+        long count = 0;
+        using var reader = new StreamReader(filePath);
+        using var csv = new CsvReader(reader, new CsvHelper.Configuration.CsvConfiguration(CultureInfo.InvariantCulture)
         {
-            long count = 0;
-            using var reader = new StreamReader(filePath);
-            using var csv = new CsvReader(reader, new CsvHelper.Configuration.CsvConfiguration(CultureInfo.InvariantCulture)
-            {
-                HasHeaderRecord = Configurations!.HasHeaderRecord,
-                IgnoreBlankLines = false,
-            });
+            HasHeaderRecord = Configurations!.HasHeaderRecord,
+            IgnoreBlankLines = false,
+        });
 
-            await foreach (var record in csv.EnumerateRecordsAsync(new TCSV()))
-                count++;
+        await foreach (var record in csv.EnumerateRecordsAsync(new TCSV()))
+            count++;
 
-            return count;
-        }
-        catch
-        {
-            return 0;
-        }
+        return count;
     }
 
     public async ValueTask<IEnumerable<TCSV?>?> GetSourceBatchItems(SyncFunctionInput<SyncGetBatchDataInput<TCSV>> input)
