@@ -19,4 +19,11 @@ public enum ClaimableItemCampaignActivationTrigger
     /// </summary>
     [Description("On Vehicle Inspection")]
     VehicleInspection = 2,
+
+    /// <summary>
+    /// The campaign activates when a per-VIN entry is manually recorded against the campaign
+    /// (e.g., admin tags specific VINs as eligible for a one-off reward).
+    /// </summary>
+    [Description("On Manual VIN Entry")]
+    ManualVinEntry = 3,
 }

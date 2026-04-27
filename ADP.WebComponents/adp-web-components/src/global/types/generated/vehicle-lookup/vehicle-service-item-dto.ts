@@ -32,6 +32,7 @@ export type VehicleServiceItemDTO = {
     claimingMethodEnum: 'ClaimByScanningQRCode' | 'ClaimByEnteringInvoiceAndJobNumber';
     vehicleInspectionID: string;
     vehicleInspectionTypeID: string;
+    campaignVinEntryID: string;
     signature: string;
     signatureExpiry: string;
 };

@@ -54,6 +54,12 @@ public class ItemClaimModel : IPartitionedItem, ICompanyProps, IBranchProps
     public string VehicleInspectionID { get; set; }
 
     /// <summary>
+    /// The ID of the <see cref="CampaignVinEntryModel">Campaign VIN Entry</see> associated with this claim, if any.
+    /// Set when the claimed item was activated by a manual per-VIN entry (ManualVinEntry trigger).
+    /// </summary>
+    public string CampaignVinEntryID { get; set; }
+
+    /// <summary>
     /// The cost of this claim.
     /// </summary>
     public decimal Cost { get; set; }

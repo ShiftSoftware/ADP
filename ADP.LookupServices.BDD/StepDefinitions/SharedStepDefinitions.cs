@@ -312,6 +312,7 @@ public class SharedStepDefinitions
                 CompanyID = GetOptionalLong(row, "CompanyID"),
                 PackageCode = GetOptionalString(row, "PackageCode"),
                 VehicleInspectionID = GetOptionalString(row, "VehicleInspectionID"),
+                CampaignVinEntryID = GetOptionalString(row, "CampaignVinEntryID"),
             }));
     }
 
@@ -336,6 +337,21 @@ public class SharedStepDefinitions
                 InspectionDate = DateTimeOffset.Parse(row["InspectionDate"]),
                 VehicleInspectionTypeID = row.ContainsKey("VehicleInspectionTypeID") && !string.IsNullOrWhiteSpace(row["VehicleInspectionTypeID"])
                     ? long.Parse(row["VehicleInspectionTypeID"]) : 0,
+            }));
+    }
+
+    [Given("campaign VIN entries:")]
+    public void GivenCampaignVinEntries(DataTable dataTable)
+    {
+        _context.Aggregate.CampaignVinEntries.AddRange(
+            dataTable.Rows.Select(row => new CampaignVinEntryModel
+            {
+                id = GetOptionalString(row, "id") ?? Guid.NewGuid().ToString(),
+                VIN = GetOptionalString(row, "VIN"),
+                CampaignID = GetOptionalLong(row, "CampaignID"),
+                CampaignUniqueReference = GetOptionalString(row, "CampaignUniqueReference"),
+                RecordedDate = DateTimeOffset.Parse(row["RecordedDate"]),
+                CompanyID = GetOptionalLong(row, "CompanyID"),
             }));
     }
 

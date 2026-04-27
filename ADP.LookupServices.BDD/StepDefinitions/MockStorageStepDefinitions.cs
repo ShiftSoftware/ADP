@@ -171,6 +171,7 @@ public class MockStorageStepDefinitions
                 MaximumMileage = GetOptionalLong(row, "MaximumMileage"),
                 PackageCode = GetOptionalString(row, "PackageCode"),
                 VehicleInspectionTypeID = GetOptionalLong(row, "VehicleInspectionTypeID"),
+                CampaignID = GetOptionalLong(row, "CampaignID"),
                 ModelCosts = modelCosts,
             };
         }).ToList();

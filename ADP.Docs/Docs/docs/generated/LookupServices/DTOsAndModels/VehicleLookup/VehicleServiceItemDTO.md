@@ -38,5 +38,6 @@ Represents a service item available for a vehicle — includes its type (free/pa
 | ClaimingMethodEnum <div><strong>``ClaimableItemClaimingMethod``</strong></div> | The method used to claim this item (e.g., QR Code scan, Invoice + Job Number). |
 | VehicleInspectionID <div><strong>``string``</strong></div> | The vehicle inspection ID associated with this claim, if applicable. |
 | VehicleInspectionTypeID <div><strong>``string``</strong></div> | The vehicle inspection type ID required for claiming, if applicable. |
+| CampaignVinEntryID <div><strong>``string``</strong></div> | The campaign VIN entry ID that activated this item, if applicable (ManualVinEntry trigger). |
 | Signature <div><strong>``string``</strong></div> | The HMAC signature used to securely validate claim requests. |
 | SignatureExpiry <div><strong>``DateTime``</strong></div> | The UTC expiry time of the signature. |

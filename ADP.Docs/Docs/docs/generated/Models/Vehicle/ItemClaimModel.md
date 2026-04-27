@@ -14,6 +14,8 @@ Represents a claim made against a Service Item for a specific vehicle.
 | IsDeleted <div><strong>``bool``</strong></div> | Indicates whether this claim has been deleted. |
 | ServiceItemID <div><strong>``string``</strong></div> | The ID of the [Service Item](/generated/Models/Vehicle/ServiceItemModel.html) being claimed. |
 | VehicleInspectionID <div><strong>``string``</strong></div> | The ID of the [Vehicle Inspection](/generated/Models/Vehicle/VehicleInspectionModel.html) associated with this claim, if any. |
+| CampaignVinEntryID <div><strong>``string``</strong></div> | The ID of the [Campaign VIN Entry](/generated/Models/Vehicle/CampaignVinEntryModel.html) associated with this claim, if any.
+ Set when the claimed item was activated by a manual per-VIN entry (ManualVinEntry trigger). |
 | Cost <div><strong>``decimal``</strong></div> | The cost of this claim. |
 | PackageCode <div><strong>``string``</strong></div> | The package code grouping this claim with related service items. |
 | JobNumber <div><strong>``string``</strong></div> | The job number from the dealer's service system. |

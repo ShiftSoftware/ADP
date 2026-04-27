@@ -155,32 +155,32 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table130 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table154 = new global::Reqnroll.Table(new string[] {
                             "InspectionDate",
                             "Source"});
-                table130.AddRow(new string[] {
+                table154.AddRow(new string[] {
                             "2024-03-15",
                             "Dealer"});
 #line 6
-  await testRunner.GivenAsync("paint thickness inspections:", ((string)(null)), table130, "Given ");
+  await testRunner.GivenAsync("paint thickness inspections:", ((string)(null)), table154, "Given ");
 #line hidden
-                global::Reqnroll.Table table131 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table155 = new global::Reqnroll.Table(new string[] {
                             "PanelType",
                             "PanelSide",
                             "PanelPosition",
                             "MeasuredThickness"});
-                table131.AddRow(new string[] {
+                table155.AddRow(new string[] {
                             "Hood",
                             "Center",
                             "Front",
                             "120"});
-                table131.AddRow(new string[] {
+                table155.AddRow(new string[] {
                             "Roof",
                             "Left",
                             "Middle",
                             "95"});
 #line 9
-  await testRunner.AndAsync("paint thickness panels for inspection on \"2024-03-15\":", ((string)(null)), table131, "And ");
+  await testRunner.AndAsync("paint thickness panels for inspection on \"2024-03-15\":", ((string)(null)), table155, "And ");
 #line hidden
 #line 13
   await testRunner.WhenAsync("evaluating paint thickness with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");

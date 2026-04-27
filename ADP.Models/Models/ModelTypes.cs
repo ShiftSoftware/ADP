@@ -23,6 +23,7 @@ public static class ModelTypes
     public static readonly PartitionedItemType VehicleEntry = new("VehicleEntry");
     public static readonly PartitionedItemType VehicleServiceActivation = new("VehicleServiceActivation");
     public static readonly PartitionedItemType VehicleInspection = new("VehicleInspection");
+    public static readonly PartitionedItemType CampaignVinEntry = new("CampaignVinEntry");
     public static readonly PartitionedItemType WarrantyClaim = new("WarrantyClaim");
 
     public static readonly PartitionedItemType FreeServiceItemDateShift = new("FreeServiceItemDateShift");

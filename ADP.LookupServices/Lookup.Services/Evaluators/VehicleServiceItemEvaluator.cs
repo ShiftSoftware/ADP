@@ -36,6 +36,7 @@ public class VehicleServiceItemEvaluator
         var paidServices = companyDataAggregate.PaidServiceInvoices;
         var tlpTransactionLines = companyDataAggregate.ItemClaims;
         var vehicleInspections = companyDataAggregate.VehicleInspections;
+        var campaignVinEntries = companyDataAggregate.CampaignVinEntries;
         var serviceActivation = companyDataAggregate.VehicleServiceActivations.FirstOrDefault();
 
         var result = new List<VehicleServiceItemDTO>();
@@ -62,7 +63,8 @@ public class VehicleServiceItemEvaluator
             vehicle,
             vehicleSaleInformation,
             freeServiceStartDate,
-            vehicleInspections);
+            vehicleInspections,
+            campaignVinEntries);
 
         if (eligibleServiceItems?.Count() > 0)
         {
@@ -108,6 +110,16 @@ public class VehicleServiceItemEvaluator
 
         result.AddRange(newVehicleInspectionActivatedItems);
 
+        var newManualVinEntryActivatedItems = CalculateExpireDateForManualVinEntryActivatedFreeServiceItems(
+            result.Where(x => x.TypeEnum == VehcileServiceItemTypes.Free)
+                  .Where(x => x.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.ManualVinEntry),
+            campaignVinEntries
+        );
+
+        result.RemoveAll(x => x.TypeEnum == VehcileServiceItemTypes.Free && x.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.ManualVinEntry);
+
+        result.AddRange(newManualVinEntryActivatedItems);
+
         var activationRequired = await CalculateServiceItemStatusAndClaimability(result, showingInactivatedItems, languageCode);
 
         result = await ApplyPostProcessing(result, serviceItems, vehicle, languageCode);
@@ -122,14 +134,15 @@ public class VehicleServiceItemEvaluator
         VehicleEntryModel vehicle,
         VehicleSaleInformation vehicleSaleInformation,
         DateTime? freeServiceStartDate,
-        IEnumerable<VehicleInspectionModel> vehicleInspections)
+        IEnumerable<VehicleInspectionModel> vehicleInspections,
+        IEnumerable<CampaignVinEntryModel> campaignVinEntries)
     {
         return serviceItems
             .Where(x => !x.IsDeleted)
             .Where(x => MatchesBrand(x, vehicle))
             .Where(x => MatchesCompany(x, vehicle))
             .Where(x => MatchesCountry(x, vehicle, vehicleSaleInformation))
-            .Where(x => IsWithinCampaignWindow(x, freeServiceStartDate, vehicleInspections))
+            .Where(x => IsWithinCampaignWindow(x, freeServiceStartDate, vehicleInspections, campaignVinEntries))
             .Where(x => IsApplicableToVehicle(x, vehicle));
     }
 
@@ -149,7 +162,8 @@ public class VehicleServiceItemEvaluator
     private static bool IsWithinCampaignWindow(
         ServiceItemModel item,
         DateTime? freeServiceStartDate,
-        IEnumerable<VehicleInspectionModel> vehicleInspections) =>
+        IEnumerable<VehicleInspectionModel> vehicleInspections,
+        IEnumerable<CampaignVinEntryModel> campaignVinEntries) =>
         item.CampaignActivationTrigger switch
         {
             ClaimableItemCampaignActivationTrigger.WarrantyActivation =>
@@ -160,6 +174,12 @@ public class VehicleServiceItemEvaluator
                     i.VehicleInspectionTypeID == item.VehicleInspectionTypeID &&
                     i.InspectionDate >= item.CampaignStartDate &&
                     i.InspectionDate <= item.CampaignEndDate) ?? false,
+
+            ClaimableItemCampaignActivationTrigger.ManualVinEntry =>
+                campaignVinEntries?.Any(e =>
+                    e.CampaignID == item.CampaignID &&
+                    e.RecordedDate >= item.CampaignStartDate &&
+                    e.RecordedDate <= item.CampaignEndDate) ?? false,
 
             _ => false,
         };
@@ -363,6 +383,60 @@ public class VehicleServiceItemEvaluator
         return cloned;
     }
 
+    // ManualVinEntry mirrors VehicleInspection's per-trigger expansion: each matching CampaignVinEntry
+    // produces an activated DTO. Match key is CampaignID (vs. VehicleInspectionTypeID for inspections),
+    // because ManualVinEntry items don't carry an inspection type — the entry itself targets a campaign.
+    private List<VehicleServiceItemDTO> CalculateExpireDateForManualVinEntryActivatedFreeServiceItems(
+        IEnumerable<VehicleServiceItemDTO> serviceItems,
+        IEnumerable<CampaignVinEntryModel> campaignVinEntries)
+    {
+        var newList = new List<VehicleServiceItemDTO>();
+
+        foreach (var item in serviceItems)
+        {
+            foreach (var entry in SelectCampaignVinEntriesForActivation(item, campaignVinEntries))
+                newList.Add(CloneWithCampaignVinEntryActivation(item, entry));
+        }
+
+        return newList;
+    }
+
+    private static IEnumerable<CampaignVinEntryModel> SelectCampaignVinEntriesForActivation(
+        VehicleServiceItemDTO item,
+        IEnumerable<CampaignVinEntryModel> campaignVinEntries)
+    {
+        var matching = campaignVinEntries
+            .Where(x => x.CampaignID == item.CampaignID);
+
+        if (item.CampaignActivationType == ClaimableItemCampaignActivationTypes.EveryTrigger)
+            return matching;
+
+        if (item.CampaignActivationType == ClaimableItemCampaignActivationTypes.FirstTriggerOnly)
+            return new[] { matching.OrderBy(x => x.RecordedDate).First() };
+
+        if (item.CampaignActivationType == ClaimableItemCampaignActivationTypes.ExtendOnEachTrigger)
+            return new[] { matching.OrderByDescending(x => x.RecordedDate).First() };
+
+        // Same null-fallback behavior as the inspection branch — preserves the NRE-on-misconfig
+        // failure mode rather than silently swallowing unset CampaignActivationType.
+        return new CampaignVinEntryModel[] { null };
+    }
+
+    private VehicleServiceItemDTO CloneWithCampaignVinEntryActivation(VehicleServiceItemDTO item, CampaignVinEntryModel entry)
+    {
+        var cloned = item.Clone();
+
+        cloned.CampaignVinEntryID = entry.id;
+
+        if (cloned.ValidityModeEnum == ClaimableItemValidityMode.RelativeToActivation)
+        {
+            cloned.ActivatedAt = entry.RecordedDate.DateTime;
+            cloned.ExpiresAt = AddInterval(cloned.ActivatedAt, cloned.ActiveFor, cloned.ActiveForDurationType);
+        }
+
+        return cloned;
+    }
+
     private DateTime AddInterval(DateTime date, int? intervalValue, DurationType? durationType)
     {
         if (durationType == DurationType.Seconds)
@@ -437,6 +511,7 @@ public class VehicleServiceItemEvaluator
         var claimLine = serviceClaimLines?
             .Where(x => x?.ServiceItemID == item.ServiceItemID.ToString())
             .Where(x => x?.VehicleInspectionID == item.VehicleInspectionID)
+            .Where(x => x?.CampaignVinEntryID == item.CampaignVinEntryID)
             .FirstOrDefault();
 
         if (claimLine is not null)

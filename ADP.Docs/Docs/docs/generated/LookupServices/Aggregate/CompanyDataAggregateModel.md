@@ -11,6 +11,7 @@ The aggregate root model containing all company-related data for a vehicle (iden
 | VehicleEntries <div><strong>``List<VehicleEntryModel>``</strong></div> | All vehicle entries (sale records) for this VIN across companies. |
 | VehicleServiceActivations <div><strong>``List<VehicleServiceActivation>``</strong></div> | Service activation records for this VIN. |
 | VehicleInspections <div><strong>``List<VehicleInspectionModel>``</strong></div> | Vehicle inspection records for this VIN. |
+| CampaignVinEntries <div><strong>``List<CampaignVinEntryModel>``</strong></div> | Per-VIN campaign entries (ManualVinEntry trigger) for this VIN. |
 | InitialOfficialVINs <div><strong>``List<InitialOfficialVINModel>``</strong></div> | Initial official VIN registration records. |
 | LaborLines <div><strong>``List<OrderLaborLineModel>``</strong></div> | Service history labor lines for this VIN. |
 | PartLines <div><strong>``List<OrderPartLineModel>``</strong></div> | Service history part lines for this VIN. |

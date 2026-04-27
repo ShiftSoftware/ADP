@@ -131,6 +131,9 @@ public class DuckDBVehicleLookupStorageService(global::DuckDB.NET.Data.DuckDBCon
             if (ShouldInclude(requestedItemTypes, ModelTypes.VehicleInspection))
                 AssignItemsByVin(await GetVehicleInspectionsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.VehicleInspections = items);
 
+            if (ShouldInclude(requestedItemTypes, ModelTypes.CampaignVinEntry))
+                AssignItemsByVin(await GetCampaignVinEntriesByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.CampaignVinEntries = items);
+
             if (ShouldInclude(requestedItemTypes, ModelTypes.VehicleServiceActivation))
                 AssignItemsByVin(await GetVehicleServiceActivationsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.VehicleServiceActivations = items);
         }
@@ -186,6 +189,7 @@ public class DuckDBVehicleLookupStorageService(global::DuckDB.NET.Data.DuckDBCon
         AssignItemsByVin(await GetPaintThicknessInspectionsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.PaintThicknessInspections = items);
         AssignItemsByVin(await GetVehicleAccessoriesByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.Accessories = items);
         AssignItemsByVin(await GetVehicleInspectionsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.VehicleInspections = items);
+        AssignItemsByVin(await GetCampaignVinEntriesByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.CampaignVinEntries = items);
         AssignItemsByVin(await GetVehicleServiceActivationsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.VehicleServiceActivations = items);
         AssignItemsByVin(await GetFreeServiceItemDateShiftsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.FreeServiceItemDateShifts = items);
         AssignItemsByVin(await GetFreeServiceItemExcludedVINsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.FreeServiceItemExcludedVINs = items);
@@ -383,6 +387,16 @@ public class DuckDBVehicleLookupStorageService(global::DuckDB.NET.Data.DuckDBCon
     {
         return await ExecuteQueryAsync<VehicleInspectionModel>(
             $"SELECT * FROM VehicleInspection WHERE VIN IN ({vinInClause}) AND IsDeleted = false");
+    }
+
+    #endregion
+
+    #region Campaign VIN Entry
+
+    private async Task<List<CampaignVinEntryModel>> GetCampaignVinEntriesByVinsAsync(string vinInClause)
+    {
+        return await ExecuteQueryAsync<CampaignVinEntryModel>(
+            $"SELECT * FROM CampaignVinEntry WHERE VIN IN ({vinInClause}) AND IsDeleted = false");
     }
 
     #endregion

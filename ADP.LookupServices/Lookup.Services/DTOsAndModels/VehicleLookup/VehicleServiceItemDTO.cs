@@ -119,6 +119,8 @@ public class VehicleServiceItemDTO
     public string VehicleInspectionID { get; set; }
     /// <summary>The vehicle inspection type ID required for claiming, if applicable.</summary>
     public string VehicleInspectionTypeID { get; set; }
+    /// <summary>The campaign VIN entry ID that activated this item, if applicable (ManualVinEntry trigger).</summary>
+    public string CampaignVinEntryID { get; set; }
     /// <summary>The HMAC signature used to securely validate claim requests.</summary>
     public string Signature { get; set; }
     /// <summary>The UTC expiry time of the signature.</summary>
@@ -141,7 +143,8 @@ public class VehicleServiceItemDTO
             this.Claimable,
             this.SignatureExpiry.Ticks,
             this.Cost,
-            this.CampaignID
+            this.CampaignID,
+            this.CampaignVinEntryID
         );
 
         var keyBytes = Encoding.UTF8.GetBytes(secretKey);

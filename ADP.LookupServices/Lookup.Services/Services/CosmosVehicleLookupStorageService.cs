@@ -121,6 +121,11 @@ public class CosmosVehicleLookupStorageService : IVehicleLookupStorageService
             .Where(x => !(x?.IsDeleted ?? false))
             .ToList();
 
+        companyData.CampaignVinEntries = items.Where(x => x.ItemType.ToString() == ModelTypes.CampaignVinEntry)
+            .Select(x => ((JObject)x).ToObject<CampaignVinEntryModel>())
+            .Where(x => !(x?.IsDeleted ?? false))
+            .ToList();
+
         companyData.VehicleServiceActivations = items.Where(x => x.ItemType.ToString() == ModelTypes.VehicleServiceActivation)
             .Select(x => ((JObject)x).ToObject<VehicleServiceActivation>())
             .Where(x => !(x?.IsDeleted ?? false))

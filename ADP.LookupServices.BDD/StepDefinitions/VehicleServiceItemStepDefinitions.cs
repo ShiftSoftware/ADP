@@ -179,6 +179,15 @@ public class VehicleServiceItemStepDefinitions
         Assert.Equal(expectedStatus, item.Status);
     }
 
+    [Then("service item {string} for campaign VIN entry {string} has status {string}")]
+    public void ThenServiceItemForCampaignVinEntryHasStatus(string serviceItemId, string entryId, string expectedStatus)
+    {
+        Assert.NotNull(_result);
+        var item = _result.FirstOrDefault(i => i.ServiceItemID == serviceItemId && i.CampaignVinEntryID == entryId);
+        Assert.NotNull(item);
+        Assert.Equal(expectedStatus, item.Status);
+    }
+
     [Then("service item {string} is claimable")]
     public void ThenServiceItemIsClaimable(string serviceItemId)
     {

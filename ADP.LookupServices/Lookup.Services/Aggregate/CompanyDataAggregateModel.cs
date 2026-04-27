@@ -22,6 +22,8 @@ public class CompanyDataAggregateModel
     public List<VehicleServiceActivation> VehicleServiceActivations { get; set; } = new();
     /// <summary>Vehicle inspection records for this VIN.</summary>
     public List<VehicleInspectionModel> VehicleInspections { get; set; }  = new();
+    /// <summary>Per-VIN campaign entries (ManualVinEntry trigger) for this VIN.</summary>
+    public List<CampaignVinEntryModel> CampaignVinEntries { get; set; }  = new();
     /// <summary>Initial official VIN registration records.</summary>
     public List<InitialOfficialVINModel> InitialOfficialVINs { get; set; }  = new();
     /// <summary>Service history labor lines for this VIN.</summary>
