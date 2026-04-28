@@ -32,7 +32,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="ShiftSoftware.ShiftEntity.EFCore" Version="2026.4.28.1" />
-		<PackageReference Include="ShiftSoftware.ShiftIdentity.Core" Version="2026.4.28.1" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.EFCore" Version="2026.4.28.2" />
+		<PackageReference Include="ShiftSoftware.ShiftIdentity.Core" Version="2026.4.28.2" />
 	</ItemGroup>
 </Project>

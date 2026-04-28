@@ -12,8 +12,8 @@
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.7" />
-		<PackageReference Include="ShiftSoftware.ADP.Models" Version="1.8.8" />
-		<PackageReference Include="ShiftSoftware.ShiftIdentity.Dashboard.AspNetCore" Version="2026.4.28.1" />
+		<PackageReference Include="ShiftSoftware.ADP.Models" Version="1.8.9" />
+		<PackageReference Include="ShiftSoftware.ShiftIdentity.Dashboard.AspNetCore" Version="2026.4.28.2" />
 		<PackageReference Include="ClosedXML" Version="0.105.0" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.7">
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
