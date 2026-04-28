@@ -28,10 +28,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.5" />
-		<PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="10.0.5" />
-		<PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.5" />
-		<PackageReference Include="ShiftSoftware.ShiftBlazor" Version="2026.4.13.6" />
+		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.7" />
+		<PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="10.0.7" />
+		<PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.7" />
+		<PackageReference Include="ShiftSoftware.ShiftBlazor" Version="2026.4.28.1" />
 	</ItemGroup>
 
 	<ItemGroup>

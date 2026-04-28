@@ -30,8 +30,8 @@
 	<ItemGroup>
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />
 		<PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
-		<PackageReference Include="ShiftSoftware.ShiftEntity.Web" Version="2026.4.13.6" />
-		<PackageReference Include="ShiftSoftware.TypeAuth.AspNetCore" Version="1.6.12" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.Web" Version="2026.4.28.1" />
+		<PackageReference Include="ShiftSoftware.TypeAuth.AspNetCore" Version="1.6.14" />
 	</ItemGroup>
 
 	<ItemGroup>

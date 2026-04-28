@@ -29,8 +29,8 @@
 
 	<ItemGroup>
 		<PackageReference Include="FluentValidation" Version="12.1.1" />
-		<PackageReference Include="ShiftSoftware.ShiftEntity.Model" Version="2026.4.13.6" />
-		<PackageReference Include="ShiftSoftware.TypeAuth.Core" Version="1.6.12" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.Model" Version="2026.4.28.1" />
+		<PackageReference Include="ShiftSoftware.TypeAuth.Core" Version="1.6.14" />
 	</ItemGroup>
 
 </Project>
