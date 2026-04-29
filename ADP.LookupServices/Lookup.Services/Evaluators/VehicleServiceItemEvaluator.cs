@@ -496,12 +496,17 @@ public class VehicleServiceItemEvaluator
             //item.CompanyID = statusResult.companyID;
             item.PackageCode = statusResult.packageCode ?? item.PackageCode;
 
+            // Once claimed, the recorded claim cost is authoritative — service item / model
+            // cost can change later, but the price billed at claim time must not.
+            if (statusResult.claimedCost is not null)
+                item.Cost = statusResult.claimedCost;
+
             if (statusResult.companyID != null && statusResult.companyID != 0 && options.CompanyNameResolver is not null)
                 item.CompanyName = await options.CompanyNameResolver(new(statusResult.companyID, languageCode, services));
         }
     }
 
-    private (string statusText, VehcileServiceItemStatuses status, DateTimeOffset? claimDate, string wip, string invoice, long? companyID, string packageCode)
+    private (string statusText, VehcileServiceItemStatuses status, DateTimeOffset? claimDate, string wip, string invoice, long? companyID, string packageCode, decimal? claimedCost)
     ProcessServiceItemStatus(
         VehicleServiceItemDTO item,
         IEnumerable<ItemClaimModel> serviceClaimLines,
@@ -519,16 +524,16 @@ public class VehicleServiceItemEvaluator
             return ("processed", VehcileServiceItemStatuses.Processed,
                 claimLine.ClaimDate,
                 claimLine.JobNumber,
-                claimLine.InvoiceNumber, claimLine.CompanyID, claimLine.PackageCode);
+                claimLine.InvoiceNumber, claimLine.CompanyID, claimLine.PackageCode, claimLine.Cost);
         }
 
         if (item.ExpiresAt is not null && item.ExpiresAt < DateTime.Now)
-            return ("expired", VehcileServiceItemStatuses.Expired, null, null, null, null, null);
+            return ("expired", VehcileServiceItemStatuses.Expired, null, null, null, null, null, null);
 
         if (showingInactivatedItems && item.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.WarrantyActivation)
-            return ("activationRequired", VehcileServiceItemStatuses.ActivationRequired, null, null, null, null, null);
+            return ("activationRequired", VehcileServiceItemStatuses.ActivationRequired, null, null, null, null, null, null);
 
-        return ("pending", VehcileServiceItemStatuses.Pending, null, null, null, null, null);
+        return ("pending", VehcileServiceItemStatuses.Pending, null, null, null, null, null, null);
     }
 
     private async Task<List<VehicleServiceItemDTO>> ApplyPostProcessing(
@@ -644,6 +649,7 @@ public class VehicleServiceItemEvaluator
                 //ModelCostID = modelCost?.ID,
                 PackageCode = claimLine.PackageCode, //modelCost?.PackageCode ?? item.PackageCode,
                 ClaimDate = claimLine?.ClaimDate,
+                Cost = claimLine?.Cost,
                 InvoiceNumber = claimLine?.InvoiceNumber,
                 JobNumber = claimLine?.JobNumber,
                 //CompanyID = claimLine?.CompanyID,
