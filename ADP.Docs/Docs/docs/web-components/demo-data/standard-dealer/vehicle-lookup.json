@@ -176,15 +176,21 @@
         "typeEnum": "Free",
         "activatedAt": "2024-02-01",
         "expiresAt": "2024-08-01",
-        "status": "expired",
-        "statusEnum": "Expired",
+        "status": "processed",
+        "statusEnum": "Processed",
+        "packageCode": "PKG-FREE-1K",
+        "cost": 0,
+        "claimDate": "2024-04-15T10:30:00+03:00",
         "serviceItemID": "SI-001",
+        "companyName": "Sample Motors",
+        "invoiceNumber": "INV-2024-101",
+        "jobNumber": "WO-2024-101",
         "maximumMileage": 1500,
         "claimable": false,
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "5Wbb76A3/4yPSZyZtz4n95MSwZUs4m2qtg7V\u002Bje7OrY=",
-        "signatureExpiry": "2026-04-28T04:50:02.7442544Z"
+        "signature": "xjtJuPXJF7gZaMg1CVcU40kyBApiWFUCMeeoTVzSN9o=",
+        "signatureExpiry": "2026-04-30T10:06:39.211512Z"
       },
       {
         "showDocumentUploader": false,
@@ -194,15 +200,21 @@
         "typeEnum": "Free",
         "activatedAt": "2024-08-01",
         "expiresAt": "2025-08-01",
-        "status": "expired",
-        "statusEnum": "Expired",
+        "status": "processed",
+        "statusEnum": "Processed",
+        "packageCode": "PKG-FREE-5K",
+        "cost": 0,
+        "claimDate": "2024-12-10T14:15:00+03:00",
         "serviceItemID": "SI-002",
+        "companyName": "Sample Motors",
+        "invoiceNumber": "INV-2024-218",
+        "jobNumber": "WO-2024-218",
         "maximumMileage": 6000,
         "claimable": false,
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "hFoebFezk7Len19U2QWG27m0QiaTxK6ZM3z70ZNlwRc=",
-        "signatureExpiry": "2026-04-28T04:50:02.7442544Z"
+        "signature": "yKzIGYauOSvSXC9qg7pCdqzy3uSQ7crAqU/dRuZA32Q=",
+        "signatureExpiry": "2026-04-30T10:06:39.211512Z"
       },
       {
         "showDocumentUploader": false,
@@ -219,8 +231,26 @@
         "claimable": true,
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "1B0E2gZ6C51XwIwfe6g8e1uN7Nd5xykUCqnXt95tnOM=",
-        "signatureExpiry": "2026-04-28T04:50:02.7442544Z"
+        "signature": "CGgZ2ecGk0\u002BJ7WTAQ2exVYvcJ\u002BEcQpsWiQxBonMSVh4=",
+        "signatureExpiry": "2026-04-30T10:06:39.211512Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "documentUploaderIsRequired": false,
+        "name": "15,000 KM Paid Service",
+        "type": "paid",
+        "typeEnum": "Paid",
+        "activatedAt": "2026-02-01",
+        "expiresAt": "2027-02-01",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "PKG-PAID-15K",
+        "serviceItemID": "SI-PAID-15K",
+        "maximumMileage": 16000,
+        "claimable": true,
+        "claimingMethodEnum": 0,
+        "signature": "WhVy0BghO7EMPHWatTCqxaP2E1y8YR3YZZVqMDn/cYw=",
+        "signatureExpiry": "2026-04-30T10:06:39.211512Z"
       }
     ],
     "accessories": [
@@ -279,15 +309,21 @@
         "typeEnum": "Free",
         "activatedAt": "2023-06-20",
         "expiresAt": "2023-12-20",
-        "status": "expired",
-        "statusEnum": "Expired",
+        "status": "processed",
+        "statusEnum": "Processed",
+        "packageCode": "PKG-FREE-1K",
+        "cost": 0,
+        "claimDate": "2023-08-22T11:05:00+03:00",
         "serviceItemID": "SI-001",
+        "companyName": "Sample Motors",
+        "invoiceNumber": "INV-2023-077",
+        "jobNumber": "WO-2023-077",
         "maximumMileage": 1500,
         "claimable": false,
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "00DRd1L0GKxYZ/4w3\u002BSfBwgzm6jyNRBcrWK6xjbQ7FE=",
-        "signatureExpiry": "2026-04-28T04:50:02.7492399Z"
+        "signature": "LlZO4gPphKPJB3cd8FLtZnJZmqH2qSyNVazDqdEFPXs=",
+        "signatureExpiry": "2026-04-30T10:06:39.2162307Z"
       },
       {
         "showDocumentUploader": false,
@@ -304,8 +340,8 @@
         "claimable": false,
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "jy\u002B\u002BFJnhgUi9flazn3r6QwAv42G9KWjE08Nd3KKhrhs=",
-        "signatureExpiry": "2026-04-28T04:50:02.7492399Z"
+        "signature": "FCDK\u002BfwZ/lluhibyxDFgmQSdgLN9YpaSMXvBG6oF6bw=",
+        "signatureExpiry": "2026-04-30T10:06:39.2162307Z"
       },
       {
         "showDocumentUploader": false,
@@ -322,8 +358,8 @@
         "claimable": true,
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "8EKwgNKGGxHiCTmcioSyj4hOKwRhuNopUs0RQ33WV7E=",
-        "signatureExpiry": "2026-04-28T04:50:02.7492399Z"
+        "signature": "PFyfiGODpruRgYe06m4WXd2\u002BBZnRFnfYtoysby3Bk5Y=",
+        "signatureExpiry": "2026-04-30T10:06:39.2162307Z"
       }
     ],
     "accessories": [],

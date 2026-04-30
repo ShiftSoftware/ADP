@@ -175,8 +175,55 @@
       "ExtendedWarrantyEntries": [],
       "WarrantyDateShifts": [],
       "FreeServiceItemDateShifts": [],
-      "ItemClaims": [],
-      "PaidServiceInvoices": [],
+      "ItemClaims": [
+        {
+          "VIN": "JTMHX01J8L4198293",
+          "ServiceItemID": "SI-001",
+          "ClaimDate": "2024-04-15T10:30:00+03:00",
+          "CompanyID": 1,
+          "BranchID": 20,
+          "JobNumber": "WO-2024-101",
+          "InvoiceNumber": "INV-2024-101",
+          "Cost": 0,
+          "PackageCode": "PKG-FREE-1K"
+        },
+        {
+          "VIN": "JTMHX01J8L4198293",
+          "ServiceItemID": "SI-002",
+          "ClaimDate": "2024-12-10T14:15:00+03:00",
+          "CompanyID": 1,
+          "BranchID": 20,
+          "JobNumber": "WO-2024-218",
+          "InvoiceNumber": "INV-2024-218",
+          "Cost": 0,
+          "PackageCode": "PKG-FREE-5K"
+        }
+      ],
+      "PaidServiceInvoices": [
+        {
+          "VIN": "JTMHX01J8L4198293",
+          "InvoiceDate": "2026-02-01",
+          "StartDate": "2026-02-01",
+          "InvoiceNumber": 7240501,
+          "CompanyID": 1,
+          "BranchID": 20,
+          "BrandID": 1,
+          "Lines": [
+            {
+              "ServiceItemID": "SI-PAID-15K",
+              "Cost": 85.00,
+              "ExpireDate": "2027-02-01",
+              "PackageCode": "PKG-PAID-15K",
+              "ServiceItem": {
+                "IntegrationID": "SI-PAID-15K",
+                "Name": { "en": "15,000 KM Paid Service" },
+                "MaximumMileage": 16000,
+                "BrandIDs": [1]
+              }
+            }
+          ]
+        }
+      ],
       "FreeServiceItemExcludedVINs": [],
       "VehicleInspections": []
     },
@@ -207,7 +254,19 @@
       "ExtendedWarrantyEntries": [],
       "WarrantyDateShifts": [],
       "FreeServiceItemDateShifts": [],
-      "ItemClaims": [],
+      "ItemClaims": [
+        {
+          "VIN": "JTMW43FV10D123456",
+          "ServiceItemID": "SI-001",
+          "ClaimDate": "2023-08-22T11:05:00+03:00",
+          "CompanyID": 1,
+          "BranchID": 20,
+          "JobNumber": "WO-2023-077",
+          "InvoiceNumber": "INV-2023-077",
+          "Cost": 0,
+          "PackageCode": "PKG-FREE-1K"
+        }
+      ],
       "PaidServiceInvoices": [],
       "FreeServiceItemExcludedVINs": [],
       "VehicleInspections": []
