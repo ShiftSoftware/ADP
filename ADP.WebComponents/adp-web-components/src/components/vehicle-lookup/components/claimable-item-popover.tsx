@@ -3,6 +3,7 @@ import { h, FunctionalComponent } from '@stencil/core';
 import { VehicleServiceItemDTO } from '~types/generated/vehicle-lookup/vehicle-service-item-dto';
 
 import cn from '~lib/cn';
+import { formatDateTime } from '~lib/format-date-time';
 
 import { TriangleIcon } from '~assets/triangle-icon';
 import { ActivationIcon } from '~assets/activation-icon';
@@ -19,110 +20,106 @@ const detailRows: DetailRow[] = [
     key: 'type',
     formatter: (item: VehicleServiceItemDTO) => item.type.charAt(0).toUpperCase() + item.type.slice(1),
   },
-  {
-    label: 'activationDate',
-    key: 'activatedAt',
-  },
-  {
-    label: 'expireDate',
-    key: 'expiresAt',
-  },
-  {
-    label: 'claimAt',
-    key: 'claimDate',
-  },
-  {
-    label: 'claimingCompany',
-    key: 'companyName',
-  },
-  {
-    label: 'invoiceNumber',
-    key: 'invoiceNumber',
-  },
-  {
-    label: 'jobNumber',
-    key: 'jobNumber',
-  },
-  {
-    label: 'packageCode',
-    key: 'packageCode',
-  },
+  { label: 'activationDate', key: 'activatedAt' },
+  { label: 'expireDate', key: 'expiresAt' },
+  { label: 'claimAt', key: 'claimDate', formatter: item => formatDateTime(item.claimDate) },
+  { label: 'claimingCompany', key: 'companyName' },
+  { label: 'invoiceNumber', key: 'invoiceNumber' },
+  { label: 'jobNumber', key: 'jobNumber' },
+  { label: 'packageCode', key: 'packageCode' },
 ];
 
-const LEFT_PADDING = 16;
-
-const RIGHT_PADDING = 16;
-
-const BOTTOM_PADDING = 10;
-
-const LEFT_SAFE_AREA = LEFT_PADDING + 25;
-
-const RIGHT_SAFE_AREA = RIGHT_PADDING + 25;
-
-const POPOVER_WIDTH = 400;
-
+export const POPOVER_WIDTH = 540;
 const HALF_POPOVER_WIDTH = POPOVER_WIDTH / 2;
-
 const ARROW_PADDING = 19;
+const ARROW_HALF_WIDTH = 25;
+const VIEWPORT_PADDING = 16;
 
-const CLAIMABLE_HEIGHT = 378;
-
-const NONE_CLAIMABLE_HEIGHT = 322;
+export type PopoverTarget = { centerX: number; topY: number; bottomY: number };
 
 type ClaimableItemPopoverProps = {
   showPopover: boolean;
   item: VehicleServiceItemDTO;
+  popoverHeight: number;
+  target: PopoverTarget;
+  fadingOut: boolean;
+  contentFading: boolean;
+  bodyContentHeight: number;
   claim: (item: VehicleServiceItemDTO) => void;
   locale: ComponentLocale<typeof dynamicClaimSchema>;
-  targetLocation: { left: number; bottom: number; top: number };
+  onMouseEnter: () => void;
+  onMouseLeave: () => void;
 };
 
-export const ClaimableItemPopover: FunctionalComponent<ClaimableItemPopoverProps> = ({ locale, item, targetLocation, showPopover, claim }) => {
-  let top = targetLocation.bottom + ARROW_PADDING;
+export const ClaimableItemPopover: FunctionalComponent<ClaimableItemPopoverProps> = ({
+  locale,
+  item,
+  target,
+  popoverHeight,
+  showPopover,
+  fadingOut,
+  contentFading,
+  bodyContentHeight,
+  claim,
+  onMouseEnter,
+  onMouseLeave,
+}) => {
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
 
-  const popOverHeight = item?.claimable ? CLAIMABLE_HEIGHT : NONE_CLAIMABLE_HEIGHT;
+  const minArrowX = VIEWPORT_PADDING + ARROW_HALF_WIDTH;
+  const maxArrowX = viewportWidth - VIEWPORT_PADDING - ARROW_HALF_WIDTH;
+  const arrowX = Math.max(minArrowX, Math.min(target.centerX, maxArrowX));
 
-  const flipVertically = popOverHeight + top + BOTTOM_PADDING > window.innerHeight;
+  const fitsBelow = target.bottomY + ARROW_PADDING + popoverHeight + VIEWPORT_PADDING <= viewportHeight;
+  const flipVertically = !fitsBelow;
 
-  if (flipVertically) top = targetLocation.top - popOverHeight - ARROW_PADDING;
+  // Anchor by `bottom` when flipped so the popover's height doesn't drag its visible
+  // position up/down between items with different content. Anchor by `top` otherwise.
+  const verticalStyle: { [key: string]: string } = flipVertically
+    ? { top: 'auto', bottom: `${viewportHeight - target.topY + ARROW_PADDING}px` }
+    : { top: `${target.bottomY + ARROW_PADDING}px`, bottom: 'auto' };
+  const left = arrowX - HALF_POPOVER_WIDTH;
 
-  if (targetLocation.left < LEFT_SAFE_AREA) targetLocation.left = LEFT_SAFE_AREA;
+  const naturalBodyLeft = arrowX - HALF_POPOVER_WIDTH;
+  const naturalBodyRight = arrowX + HALF_POPOVER_WIDTH;
 
-  if (targetLocation.left > window.innerWidth - RIGHT_SAFE_AREA) targetLocation.left = window.innerWidth - RIGHT_SAFE_AREA;
-
-  let left = targetLocation.left - HALF_POPOVER_WIDTH;
-
-  let popoverBodyOffset = 0;
-
-  const popoverBodyLeft = targetLocation.left - HALF_POPOVER_WIDTH;
-
-  const popoverBodyRight = targetLocation.left + HALF_POPOVER_WIDTH;
-
-  if (popoverBodyLeft - LEFT_PADDING < 0) popoverBodyOffset += LEFT_PADDING - popoverBodyLeft;
-
-  if (popoverBodyRight + RIGHT_PADDING > window.innerWidth) popoverBodyOffset -= popoverBodyRight + RIGHT_PADDING - window.innerWidth;
+  let bodyOffset = 0;
+  if (naturalBodyLeft < VIEWPORT_PADDING) bodyOffset = VIEWPORT_PADDING - naturalBodyLeft;
+  else if (naturalBodyRight > viewportWidth - VIEWPORT_PADDING) bodyOffset = viewportWidth - VIEWPORT_PADDING - naturalBodyRight;
 
   return (
-    <div aria-expanded={showPopover.toString()} dir={locale.sharedLocales.direction} style={{ top: `${top}px`, left: `${left}px` }} class="claimable-item-popover">
+    <div
+      aria-expanded={showPopover.toString()}
+      dir={locale.sharedLocales.direction}
+      style={{ ...verticalStyle, left: `${left}px` }}
+      class={cn('claimable-item-popover', { 'fading-out': fadingOut, 'content-fading': contentFading })}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
       <div class="popover-relative-container">
         <div class={cn('popover-arrow-icon', { flipped: flipVertically })}>
           <TriangleIcon class="popover-arrow-icon-svg" />
           <div class="popover-arrow-bottom-line" />
         </div>
-        <div style={{ transform: `translateX(${popoverBodyOffset}px)` }} class="popover-body">
-          {detailRows.map(row => (
-            <div class="popover-info-row">
-              <b>{locale[row.label]}</b>
-              <div>{item ? (row?.formatter ? row.formatter(item) : item[row.key]) : ''}</div>
-            </div>
-          ))}
+        <div style={{ transform: `translateX(${bodyOffset}px)` }} class="popover-body">
+          <div class="popover-body-content" style={bodyContentHeight > 0 ? { height: `${bodyContentHeight}px` } : {}}>
+            <div class="popover-body-inner">
+              {detailRows.map(row => (
+                <div class="popover-info-row">
+                  <b>{locale[row.label]}</b>
+                  <div class="popover-info-value">{item ? (row?.formatter ? row.formatter(item) : item[row.key]) : ''}</div>
+                </div>
+              ))}
 
-          {item?.claimable && (
-            <button onClick={() => claim && claim(item)} class="claim-button">
-              <ActivationIcon />
-              <span>{locale.claim}</span>
-            </button>
-          )}
+              {item?.claimable && (
+                <button onClick={() => claim && claim(item)} class="claim-button">
+                  <ActivationIcon />
+                  <span>{locale.claim}</span>
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

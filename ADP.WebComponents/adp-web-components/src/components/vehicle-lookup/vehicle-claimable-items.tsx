@@ -12,7 +12,7 @@ import { setVehicleLookupData, setVehicleLookupErrorState, VehicleLookupComponen
 import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, sharedLocalesSchema } from '~features/multi-lingual';
 
 import { ClaimableItem } from './components/claimable-item';
-import { ClaimableItemPopover } from './components/claimable-item-popover';
+import { ClaimableItemPopover, PopoverTarget } from './components/claimable-item-popover';
 import { VehicleItemClaimForm } from './vehicle-item-claim-form';
 
 import dynamicClaimSchema from '~locales/vehicleLookup/claimableItems/type';
@@ -122,11 +122,18 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
   @State() showClaimableItemPopover: boolean = false;
   @State() selectedClaimItem?: VehicleServiceItemDTO;
   @State() tabs: VehicleServiceItemDTO['group'][] = [];
-  @State() popoverTargetLocation: { left: number; bottom: number; top: number } = { left: 0, bottom: 0, top: 0 };
+  @State() popoverTarget: PopoverTarget = { centerX: 0, topY: 0, bottomY: 0 };
+  @State() popoverHeight: number = 0;
+  @State() popoverBodyContentHeight: number = 0;
+  @State() popoverContentFading: boolean = false;
+  @State() popoverFadingOut: boolean = false;
 
   claimForm: VehicleItemClaimForm;
 
-  private claimableItemPopoverRef: HTMLDivElement;
+  private popoverAnchorEl: HTMLElement;
+  private popoverCloseTimeoutRef: ReturnType<typeof setTimeout>;
+  private popoverHideTimeoutRef: ReturnType<typeof setTimeout>;
+  private popoverContentSwapTimeoutRef: ReturnType<typeof setTimeout>;
 
   private progressBar: HTMLElement;
   private claimableItemsBox: HTMLElement;
@@ -235,6 +242,8 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
     if (this.claimableItemsBox) this.claimableItemsBox.addEventListener('scroll', this.updatePopoverLocation);
     window.addEventListener('scroll', this.updatePopoverLocation);
     window.addEventListener('resize', this.updatePopoverLocation);
+
+    requestAnimationFrame(() => this.measurePopoverHeight());
   }
 
   async disconnectedCallback() {
@@ -242,6 +251,9 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
     if (this.claimableItemsBox) this.claimableItemsBox.removeEventListener('scroll', this.updatePopoverLocation);
     window.removeEventListener('scroll', this.updatePopoverLocation);
     window.removeEventListener('resize', this.updatePopoverLocation);
+    clearTimeout(this.popoverCloseTimeoutRef);
+    clearTimeout(this.popoverHideTimeoutRef);
+    clearTimeout(this.popoverContentSwapTimeoutRef);
   }
 
   @Watch('vehicleLookup')
@@ -281,22 +293,109 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
   };
 
   updatePopoverLocation = () => {
-    if (!this.claimableItemPopoverRef) return;
+    if (!this.popoverAnchorEl) return;
 
-    const { left, bottom, width, top } = this.claimableItemPopoverRef.getBoundingClientRect();
+    const { left, right, top, bottom } = this.popoverAnchorEl.getBoundingClientRect();
 
-    this.popoverTargetLocation = { left: left + width / 2, bottom, top };
+    this.popoverTarget = { centerX: (left + right) / 2, topY: top, bottomY: bottom };
   };
 
-  setClaimableItemPopover = (showPopover: boolean, claimableItem?: VehicleServiceItemDTO, claimableItemPopoverRef?: HTMLDivElement) => {
+  private measurePopoverHeight = () => {
+    const body = this.el.shadowRoot?.querySelector('.popover-body') as HTMLElement | null;
+    if (body && body.offsetHeight > 0) this.popoverHeight = body.offsetHeight;
+  };
+
+  private measurePopoverContentHeight = (): number => {
+    const inner = this.el.shadowRoot?.querySelector('.popover-body-inner') as HTMLElement | null;
+    if (!inner) return 0;
+    // Use getBoundingClientRect for sub-pixel precision and ceil to avoid undershooting at
+    // fractional browser zoom (e.g. 80%, where offsetHeight may round down by 1px and clip the bottom).
+    return Math.ceil(inner.getBoundingClientRect().height);
+  };
+
+  private static readonly POPOVER_CLOSE_DELAY_MS = 200;
+  private static readonly POPOVER_FADE_OUT_MS = 500;
+  private static readonly POPOVER_CONTENT_FADE_MS = 150;
+
+  setClaimableItemPopover = (showPopover: boolean, claimableItem?: VehicleServiceItemDTO, anchorEl?: HTMLElement) => {
+    clearTimeout(this.popoverCloseTimeoutRef);
+    clearTimeout(this.popoverHideTimeoutRef);
+
     if (showPopover) {
-      this.claimableItemPopoverRef = claimableItemPopoverRef;
-      this.updatePopoverLocation();
-      this.selectedClaimItem = claimableItem;
-      this.showClaimableItemPopover = true;
+      // Called without args (e.g. popover hover) — just keep it open by cancelling close timers.
+      if (!anchorEl || !claimableItem) {
+        if (this.popoverFadingOut) {
+          this.popoverFadingOut = false;
+          this.showClaimableItemPopover = true;
+        }
+        return;
+      }
+
+      // The popover is "still active" if it's open OR mid-fade-out. Don't tear down state in either case.
+      const wasActive = this.showClaimableItemPopover || this.popoverFadingOut;
+      const sameItem = wasActive && this.selectedClaimItem === claimableItem;
+
+      this.popoverAnchorEl = anchorEl;
+
+      if (sameItem) {
+        // Re-hovering the same item that's still showing/fading — just bring it back, no state churn.
+        this.popoverFadingOut = false;
+        this.showClaimableItemPopover = true;
+        return;
+      }
+
+      clearTimeout(this.popoverContentSwapTimeoutRef);
+
+      if (wasActive) {
+        // Switching to a different item while still active: slide + cross-fade content.
+        this.popoverBodyContentHeight = this.measurePopoverContentHeight();
+        this.popoverContentFading = true;
+        this.popoverFadingOut = false;
+        this.showClaimableItemPopover = true;
+        this.updatePopoverLocation();
+
+        this.popoverContentSwapTimeoutRef = setTimeout(() => {
+          this.selectedClaimItem = claimableItem;
+          requestAnimationFrame(() => {
+            this.popoverBodyContentHeight = this.measurePopoverContentHeight();
+            this.popoverContentFading = false;
+            this.measurePopoverHeight();
+          });
+        }, VehicleClaimableItems.POPOVER_CONTENT_FADE_MS);
+      } else {
+        // Truly fresh open. Two-frame dance: set position while still hidden, then flip aria-expanded
+        // next frame so the opacity fade-in doesn't drag a position transition along with it.
+        this.popoverContentFading = false;
+        this.popoverBodyContentHeight = 0;
+        this.selectedClaimItem = claimableItem;
+        this.updatePopoverLocation();
+        requestAnimationFrame(() => {
+          this.showClaimableItemPopover = true;
+          requestAnimationFrame(() => this.measurePopoverHeight());
+        });
+      }
     } else {
-      this.showClaimableItemPopover = false;
+      this.popoverCloseTimeoutRef = setTimeout(() => {
+        clearTimeout(this.popoverContentSwapTimeoutRef);
+        this.showClaimableItemPopover = false;
+        this.popoverFadingOut = true;
+        this.popoverContentFading = false;
+
+        this.popoverHideTimeoutRef = setTimeout(() => {
+          this.popoverFadingOut = false;
+          this.popoverBodyContentHeight = 0;
+        }, VehicleClaimableItems.POPOVER_FADE_OUT_MS);
+      }, VehicleClaimableItems.POPOVER_CLOSE_DELAY_MS);
     }
+  };
+
+  private onPopoverMouseEnter = () => {
+    // Cancel any pending close + recover from fade-out if needed.
+    this.setClaimableItemPopover(true);
+  };
+
+  private onPopoverMouseLeave = () => {
+    this.setClaimableItemPopover(false);
   };
 
   @Method()
@@ -459,7 +558,13 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
           claim={this.claim.bind(this)}
           item={this.selectedClaimItem}
           showPopover={this.showClaimableItemPopover}
-          targetLocation={this.popoverTargetLocation}
+          target={this.popoverTarget}
+          popoverHeight={this.popoverHeight}
+          fadingOut={this.popoverFadingOut}
+          contentFading={this.popoverContentFading}
+          bodyContentHeight={this.popoverBodyContentHeight}
+          onMouseEnter={this.onPopoverMouseEnter}
+          onMouseLeave={this.onPopoverMouseLeave}
         />
 
         <VehicleInfoLayout

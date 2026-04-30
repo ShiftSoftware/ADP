@@ -34,7 +34,9 @@ export const ClaimableItem: FunctionalComponent<ClaimableItemProps> = ({ item, l
     component.classList.remove('load-animation');
   };
 
-  const openPopover = event => setClaimableItemPopover(true, item, event?.target);
+  let headerEl: HTMLDivElement;
+
+  const openPopover = () => setClaimableItemPopover(true, item, headerEl);
 
   const closePopover = () => setClaimableItemPopover(false);
 
@@ -42,6 +44,7 @@ export const ClaimableItem: FunctionalComponent<ClaimableItemProps> = ({ item, l
     <div class={cn('claimable-item', { [item.status]: addStatusClass })}>
       <div class="claimable-item-container">
         <div
+          ref={el => (headerEl = el as HTMLDivElement)}
           onBlur={closePopover}
           onClick={openPopover}
           onMouseEnter={openPopover}

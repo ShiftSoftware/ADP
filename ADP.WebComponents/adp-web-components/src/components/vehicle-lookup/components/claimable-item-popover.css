@@ -1,10 +1,15 @@
 .claimable-item-popover {
-  @apply transition-opacity opacity-0 fixed z-50 block duration-500 w-fit pointer-events-none;
+  @apply opacity-0 fixed z-50 block w-fit pointer-events-none;
+  transition: opacity 0.5s ease;
 }
 
-.claimable-item-popover:hover,
 .claimable-item-popover[aria-expanded='true'] {
   @apply !opacity-100 !pointer-events-auto [&_*]:!pointer-events-auto;
+  transition: top 0.3s ease, bottom 0.3s ease, left 0.3s ease, opacity 0.5s ease;
+}
+
+.claimable-item-popover.fading-out {
+  pointer-events: auto;
 }
 
 .popover-relative-container {
@@ -20,7 +25,22 @@
 }
 
 .popover-body {
-  @apply relative z-10 bg-[#f9f9f9] border shadow border-[#dddddd] w-[400px] p-[20px] rounded-[5px]  text-[#282828];
+  @apply relative z-10 bg-[#f9f9f9] border shadow border-[#dddddd] w-[540px] p-[20px] rounded-[5px] text-[#282828];
+}
+
+.popover-body-content {
+  overflow: hidden;
+  transition: height 0.3s ease;
+}
+
+.popover-info-value,
+.claimable-item-popover .claim-button {
+  transition: opacity 0.15s ease;
+}
+
+.claimable-item-popover.content-fading .popover-info-value,
+.claimable-item-popover.content-fading .claim-button {
+  opacity: 0;
 }
 
 .popover-body button {
@@ -28,7 +48,7 @@
 }
 
 .popover-info-row {
-  @apply flex [&_*]:flex-1 [&_*]:shrink-0 text-start border-b h-[35px] pt-[2px] items-center text-[16px];
+  @apply flex [&_*]:flex-1 [&_*]:shrink-0 text-start border-b min-h-[35px] py-[2px] items-center text-[16px];
 }
 
 .popover-arrow-icon {
