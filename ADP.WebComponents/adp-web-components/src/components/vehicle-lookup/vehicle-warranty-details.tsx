@@ -109,6 +109,7 @@ export class VehicleWarrantyDetails implements MultiLingual, VehicleInfoLayoutIn
     this.vehicleLookup = undefined;
     this.recaptchaRes = null;
     this.showRecaptcha = false;
+    this.devRecaptchaChecked = false;
     this.checkingUnauthorizedSSC = false;
     this.isError = false;
     this.errorMessage = undefined;
@@ -135,6 +136,7 @@ export class VehicleWarrantyDetails implements MultiLingual, VehicleInfoLayoutIn
   // #region Component Logic
   @Prop() showSsc: boolean = false;
   @Prop() recaptchaKey: string = '';
+  @Prop() mockRecaptcha: boolean = false;
   @Prop() showWarranty: boolean = false;
   @Prop() unauthorizedSscLookupBaseUrl: string = '';
   @Prop() unauthorizedSscLookupQueryString: string = '';
@@ -155,6 +157,7 @@ export class VehicleWarrantyDetails implements MultiLingual, VehicleInfoLayoutIn
   @State() showRecaptcha: boolean = false;
   @State() unInvoicedByBrokerName?: string = null;
   @State() checkingUnauthorizedSSC: boolean = false;
+  @State() devRecaptchaChecked: boolean = false;
   @State() recaptchaRes: {
     status: 'noRecall' | 'recallExists' | 'noApplicableVehicleFound'
   } | null = null;
@@ -165,65 +168,81 @@ export class VehicleWarrantyDetails implements MultiLingual, VehicleInfoLayoutIn
   private recaptchaPlaceholderRef: HTMLDivElement;
   private positionRAF: number;
 
+  private get useMockRecaptchaWidget(): boolean {
+    return this.isDev || this.mockRecaptcha;
+  }
+
+  private mockRecaptchaTrigger?: () => Promise<void>;
+
+  private handleDevRecaptchaClick = async () => {
+    if (this.devRecaptchaChecked) return;
+    if (!this.mockRecaptchaTrigger) return;
+    this.devRecaptchaChecked = true;
+    await this.mockRecaptchaTrigger();
+  };
+
+  private async runUnauthorizedSscLookup(newVehicleLookup: VehicleLookupDTO, recaptchaToken: string, scopedTimeoutRef) {
+    this.checkingUnauthorizedSSC = true;
+
+    if (this.isDev) {
+      await new Promise(r => setTimeout(r, 3000));
+      this.checkingUnauthorizedSSC = false;
+
+      const randomValue = Math.random();
+      const devSscLookupStatus = randomValue < 0.33 ? 0 : (randomValue > 0.33 && randomValue < 0.66) ? 2 : 1;
+
+      this.recaptchaRes = {
+        status:
+          devSscLookupStatus === 0 ? 'noRecall' :
+            devSscLookupStatus === 2 ? 'noApplicableVehicleFound' :
+              'recallExists'
+      };
+
+      smartInvokable.bind(this)(this.unauthorizedSscLookupResponse, devSscLookupStatus);
+      return;
+    }
+
+    const response = await fetch(`${this.unauthorizedSscLookupBaseUrl}${newVehicleLookup?.vin}/${newVehicleLookup?.sscLogId}?${this.unauthorizedSscLookupQueryString}`, {
+      signal: this.abortController.signal,
+      headers: {
+        ...this.headers,
+        'Ssc-Recaptcha-Token': recaptchaToken,
+      },
+    });
+
+    const vinResponse = await response.json();
+
+    if (vinResponse && this.networkTimeoutRef === scopedTimeoutRef) {
+      this.checkingUnauthorizedSSC = false;
+
+      this.recaptchaRes = {
+        status: vinResponse.sscLookupStatus === 0 ? 'noRecall' :
+          vinResponse.sscLookupStatus === 1 ? 'recallExists' :
+          vinResponse.sscLookupStatus === 2 ? 'noApplicableVehicleFound' : null
+      };
+
+      smartInvokable.bind(this)(this.unauthorizedSscLookupResponse, vinResponse.sscLookupStatus);
+    } else throw new Error('wrongResponseFormat');
+  }
+
   private async handleInitializingRecaptcha(newVehicleLookup: VehicleLookupDTO, scopedTimeoutRef) {
     if (newVehicleLookup?.isAuthorized === false && this.showSsc && this.recaptchaKey !== '') {
+      this.devRecaptchaChecked = false;
+
+      if (this.useMockRecaptchaWidget) {
+        this.mockRecaptchaTrigger = () => this.runUnauthorizedSscLookup(newVehicleLookup, 'mock-recaptcha-token', scopedTimeoutRef);
+        this.showRecaptcha = true;
+        return;
+      }
+
       if (this.recaptchaWidgetId !== undefined) {
         grecaptcha.reset(this.recaptchaWidgetId);
       }
-      // await new Promise(r => setTimeout(r, 400));
       this.recaptchaIntervalRef = setInterval(async () => {
         const recaptchaResponse = grecaptcha.getResponse(this.recaptchaWidgetId);
         if (recaptchaResponse) {
           clearInterval(this.recaptchaIntervalRef);
-
-          if (this.isDev) {
-            this.checkingUnauthorizedSSC = true;
-
-            //this.showRecaptcha = false;
-
-            await new Promise(r => setTimeout(r, 3000));
-
-            this.checkingUnauthorizedSSC = false;
-
-            var randomValue = Math.random();
-
-            var devSscLookupStatus = randomValue < 0.33 ? 0 : (randomValue > 0.33 && randomValue < 0.66) ? 2 : 1;
-
-            this.recaptchaRes = {
-              status:
-                devSscLookupStatus === 0 ? 'noRecall' :
-                  devSscLookupStatus === 2 ? 'noApplicableVehicleFound' :
-                    'recallExists'
-            };
-
-            smartInvokable.bind(this)(this.unauthorizedSscLookupResponse, devSscLookupStatus);
-          } else {
-            this.checkingUnauthorizedSSC = true;
-
-            //this.showRecaptcha = false;
-
-            const response = await fetch(`${this.unauthorizedSscLookupBaseUrl}${newVehicleLookup?.vin}/${newVehicleLookup?.sscLogId}?${this.unauthorizedSscLookupQueryString}`, {
-              signal: this.abortController.signal,
-              headers: {
-                ...this.headers,
-                'Ssc-Recaptcha-Token': recaptchaResponse,
-              },
-            });
-
-            const vinResponse = await response.json();
-
-            if (vinResponse && this.networkTimeoutRef === scopedTimeoutRef) {
-              this.checkingUnauthorizedSSC = false;
-
-              this.recaptchaRes = {
-                status: vinResponse.sscLookupStatus === 0 ? 'noRecall' :
-                  vinResponse.sscLookupStatus === 1 ? 'recallExists' :
-                  vinResponse.sscLookupStatus === 2 ? 'noApplicableVehicleFound' : null
-              };
-
-              smartInvokable.bind(this)(this.unauthorizedSscLookupResponse, vinResponse.sscLookupStatus);
-            } else throw new Error('wrongResponseFormat');
-          }
+          await this.runUnauthorizedSscLookup(newVehicleLookup, recaptchaResponse, scopedTimeoutRef);
         }
       }, 500);
       this.showRecaptcha = true;
@@ -233,6 +252,8 @@ export class VehicleWarrantyDetails implements MultiLingual, VehicleInfoLayoutIn
   }
 
   async componentDidLoad() {
+    if (this.useMockRecaptchaWidget) return;
+
     if (this.recaptchaKey !== '') {
       this.recaptchaPortalEl = document.createElement('div');
       this.recaptchaPortalEl.style.cssText = 'position: fixed; z-index: 1; display: none;';
@@ -393,7 +414,24 @@ export class VehicleWarrantyDetails implements MultiLingual, VehicleInfoLayoutIn
 
             <flexible-container isOpened={this.showRecaptcha} classes={cn('w-fit mx-auto shift-skeleton', { loading: !this.showRecaptcha || this.isLoading })}>
               <div style={{ height: 'auto' }} class="recaptcha-container">
-                <div ref={el => (this.recaptchaPlaceholderRef = el)} style={{ minWidth: '302px', minHeight: '76px' }}></div>
+                {this.useMockRecaptchaWidget ? (
+                  <div
+                    ref={el => (this.recaptchaPlaceholderRef = el)}
+                    onClick={this.handleDevRecaptchaClick}
+                    class={cn('dev-recaptcha', { 'dev-recaptcha-disabled': this.devRecaptchaChecked })}
+                  >
+                    <div class={cn('dev-recaptcha-checkbox', { checked: this.devRecaptchaChecked })}>
+                      {this.devRecaptchaChecked && <span class="dev-recaptcha-checkmark">✓</span>}
+                    </div>
+                    <div class="dev-recaptcha-label">I'm not a robot</div>
+                    <div class="dev-recaptcha-brand">
+                      <div class="dev-recaptcha-brand-name">reCAPTCHA</div>
+                      <div class="dev-recaptcha-brand-mock">(dev mock)</div>
+                    </div>
+                  </div>
+                ) : (
+                  <div ref={el => (this.recaptchaPlaceholderRef = el)} style={{ minWidth: '302px', minHeight: '76px' }}></div>
+                )}
               </div>
 
 

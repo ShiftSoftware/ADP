@@ -72,6 +72,7 @@ export class VehicleLookup implements MultiLingual {
   @Prop() baseUrl: string = '';
   @Prop() isDev: boolean = false;
   @Prop() mockUrl: string = '';
+  @Prop() mockRecaptcha: boolean = false;
   @Prop() disableVinValidation: boolean = false;
   @Prop() queryString: string = '';
   @Prop() sscQueryString: string = '';
@@ -313,6 +314,7 @@ export class VehicleLookup implements MultiLingual {
           coreOnly
           show-ssc={!this.separateSsc}
           isDev={this.isDev}
+          mockRecaptcha={this.mockRecaptcha}
           disableVinValidation={this.disableVinValidation}
           show-warranty="true"
           base-url={this.baseUrl}
@@ -330,6 +332,7 @@ export class VehicleLookup implements MultiLingual {
                 coreOnly
                 show-ssc="true"
                 isDev={this.isDev}
+                mockRecaptcha={this.mockRecaptcha}
                 disableVinValidation={this.disableVinValidation}
                 show-warranty="false"
                 base-url={this.baseUrl}
