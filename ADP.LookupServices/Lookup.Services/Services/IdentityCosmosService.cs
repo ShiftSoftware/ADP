@@ -10,9 +10,9 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services;
 
 public class IdentityCosmosService : IIdentityCosmosService
 {
-    private readonly CosmosClient client;
+    private readonly LookUpCosmosClient client;
 
-    public IdentityCosmosService(CosmosClient client)
+    public IdentityCosmosService(LookUpCosmosClient client)
     {
         this.client = client;
     }

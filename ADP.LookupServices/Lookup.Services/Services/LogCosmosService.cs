@@ -11,9 +11,9 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services;
 
 public class LogCosmosService : ILogCosmosService
 {
-    private readonly CosmosClient client;
+    private readonly LookUpCosmosClient client;
 
-    public LogCosmosService(CosmosClient client)
+    public LogCosmosService(LookUpCosmosClient client)
     {
         this.client = client;
     }

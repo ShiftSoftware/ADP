@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace ShiftSoftware.ADP.Lookup.Services.Services;
 
-public class PartLookupCosmosService(CosmosClient client, LookupOptions lookupOptions)
+public class PartLookupCosmosService(LookUpCosmosClient client, LookupOptions lookupOptions)
 {
     private async Task<List<dynamic>> GetLookupItemsAsync(string partNumber)
     {

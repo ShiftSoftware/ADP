@@ -17,10 +17,10 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services;
 
 public class CosmosVehicleLookupStorageService : IVehicleLookupStorageService
 {
-    private readonly CosmosClient client;
+    private readonly LookUpCosmosClient client;
     private readonly List<Task> tasks = new List<Task>();
 
-    public CosmosVehicleLookupStorageService(CosmosClient client)
+    public CosmosVehicleLookupStorageService(LookUpCosmosClient client)
     {
         this.client = client;
     }
