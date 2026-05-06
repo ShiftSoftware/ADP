@@ -65,6 +65,7 @@ public class IdentityCosmosService : IIdentityCosmosService
     private Dictionary<long?, CountryModel> countries = new();
     private Dictionary<long?, CompanyModel> companies = new();
     private Dictionary<long?, CompanyBranchModel> companiesBranch = new();
+    private Dictionary<long?, BrandModel> brands = new();
 
     public async Task<RegionModel> GetRegionAsync(long? id)
     {
@@ -149,6 +150,34 @@ public class IdentityCosmosService : IIdentityCosmosService
 
             var result = response.Resource;
             companies[id] = result;
+
+            return result;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task<BrandModel> GetBrandAsync(long? id)
+    {
+        try
+        {
+            if (brands.TryGetValue(id, out var brand))
+                return brand;
+
+            var container = client.GetContainer(
+                IdentityDatabaseAndContainerNames.DatabaseName,
+                IdentityDatabaseAndContainerNames.BrandContainerName
+            );
+
+            var query = container.GetItemLinqQueryable<BrandModel>(true)
+                .Where(x => x.BrandID == id);
+
+            var iterator = query.ToFeedIterator();
+
+            var result = (await iterator.ReadNextAsync()).FirstOrDefault();
+            brands[id] = result;
 
             return result;
         }

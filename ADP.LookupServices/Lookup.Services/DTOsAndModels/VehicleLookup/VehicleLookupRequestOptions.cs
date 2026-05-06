@@ -30,4 +30,13 @@ public class VehicleLookupRequestOptions
     public bool LegacyPaintThickness { get; set; }
     /// <summary>Whether to use Katashiki instead of VariantCode for vehicle model lookup.</summary>
     public bool UseKatashikiLookup { get; set; }
+
+    /// <summary>
+    /// When true, the service item evaluator records a structured
+    /// <see cref="Diagnostics.ServiceItemTrace"/> of every decision (eligibility, expansion,
+    /// status, post-processing) and attaches it to <see cref="VehicleLookupDTO.ServiceItemTrace"/>.
+    /// Off by default; opt in per request only when debugging. Adds an O(items) walk and
+    /// per-item allocations; do not leave on in production hot paths.
+    /// </summary>
+    public bool TraceServiceItemEvaluation { get; set; }
 }

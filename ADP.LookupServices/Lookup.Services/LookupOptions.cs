@@ -32,6 +32,8 @@ public class LookupOptions
     public Func<LookupOptionResolverModel<long?>, ValueTask<(long? countryID, string countryName)?>>? CountryFromBranchIDResolver { get; set; }
     /// <summary>Resolver delegate that resolves a country ID to its name.</summary>
     public Func<LookupOptionResolverModel<long?>, ValueTask<string?>>? CountryNameResolver { get; set; }
+    /// <summary>Resolver delegate that resolves a brand ID to its name. Used by the diagnostic trace renderer; not required for normal lookups.</summary>
+    public Func<LookupOptionResolverModel<long?>, ValueTask<string?>>? BrandNameResolver { get; set; }
     /// <summary>Resolver delegate that resolves a region ID to its name.</summary>
     public Func<LookupOptionResolverModel<long?>, ValueTask<string?>>? RegionNameResolver { get; set; }
     /// <summary>Resolver delegate that resolves a company ID to its name.</summary>

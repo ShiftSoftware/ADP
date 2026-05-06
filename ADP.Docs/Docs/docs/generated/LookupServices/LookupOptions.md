@@ -15,6 +15,7 @@ The main configuration class for the lookup services.
 | PartLocationNameResolver <div><strong>``Func<LookupOptionResolverModel<PartLocationNameResolverModel>, ValueTask<string?>>?``</strong></div> | Resolver delegate that resolves a part location identifier to a human-readable name. |
 | CountryFromBranchIDResolver <div><strong>``Func<LookupOptionResolverModel<long?>, ValueTask<(long? countryID, string countryName)?>>?``</strong></div> | Resolver delegate that resolves a branch ID to its country ID and name. |
 | CountryNameResolver <div><strong>``Func<LookupOptionResolverModel<long?>, ValueTask<string?>>?``</strong></div> | Resolver delegate that resolves a country ID to its name. |
+| BrandNameResolver <div><strong>``Func<LookupOptionResolverModel<long?>, ValueTask<string?>>?``</strong></div> | Resolver delegate that resolves a brand ID to its name. Used by the diagnostic trace renderer; not required for normal lookups. |
 | RegionNameResolver <div><strong>``Func<LookupOptionResolverModel<long?>, ValueTask<string?>>?``</strong></div> | Resolver delegate that resolves a region ID to its name. |
 | CompanyNameResolver <div><strong>``Func<LookupOptionResolverModel<long?>, ValueTask<string?>>?``</strong></div> | Resolver delegate that resolves a company ID to its name. |
 | CompanyBranchNameResolver <div><strong>``Func<LookupOptionResolverModel<long?>, ValueTask<string?>>?``</strong></div> | Resolver delegate that resolves a company branch ID to its name. |

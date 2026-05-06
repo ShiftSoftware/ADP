@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using ShiftSoftware.ADP.Lookup.Services.Diagnostics;
 using ShiftSoftware.ADP.Models;
 using ShiftSoftware.ADP.Models.JsonConverters;
 using System;
@@ -126,6 +127,19 @@ public class VehicleLookupDTO
     /// The <see cref="AccessoryDTO">accessories</see> installed on this vehicle.
     /// </summary>
     public IEnumerable<AccessoryDTO> Accessories { get; set; }
+
+    /// <summary>
+    /// Diagnostic trace of the service-item evaluator (filters, expansions, status,
+    /// post-processing). Populated only when
+    /// <see cref="VehicleLookupRequestOptions.TraceServiceItemEvaluation"/> is true.
+    /// Excluded from production responses and from the generated TypeScript model.
+    /// Render via <see cref="ServiceItemTraceRenderer"/>.
+    /// </summary>
+    [DocIgnore]
+    [TypeScriptIgnore]
+    [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+    [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public ServiceItemTrace ServiceItemTrace { get; set; }
 
     /// <summary>
     /// The basic model code extracted from the Katashiki (first segment before the hyphen, with trailing L/R removed).

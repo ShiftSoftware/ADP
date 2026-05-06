@@ -1,4 +1,5 @@
 ﻿using ShiftSoftware.ADP.Lookup.Services.Aggregate;
+using ShiftSoftware.ADP.Lookup.Services.Diagnostics;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using ShiftSoftware.ADP.Lookup.Services.Evaluators;
 using ShiftSoftware.ADP.Models.Vehicle;
@@ -144,9 +145,16 @@ public class VehicleLookupService
         data.Warranty = new WarrantyAndFreeServiceDateEvaluator(companyDataAggregate, lookupOptions)
             .Evaluate(vehicle, data.SaleInformation, requestOptions.IgnoreBrokerStock);
 
-        var serviceItemsResult = await new VehicleServiceItemEvaluator(
+        var traceCollector = requestOptions.TraceServiceItemEvaluation
+            ? new ServiceItemTraceCollector(vin)
+            : ServiceItemTraceCollector.Disabled;
+
+        var serviceItemEvaluator = new VehicleServiceItemEvaluator(
             this.vehicleLookupStorageService, companyDataAggregate, this.lookupOptions, this.serviceProvider
-        ).Evaluate(
+        )
+        { Trace = traceCollector };
+
+        var serviceItemsResult = await serviceItemEvaluator.Evaluate(
             vehicle,
             data.Warranty?.FreeServiceStartDate,
             data.SaleInformation,
@@ -154,6 +162,9 @@ public class VehicleLookupService
         );
 
         data.ServiceItems = serviceItemsResult.serviceItems;
+
+        if (requestOptions.TraceServiceItemEvaluation)
+            data.ServiceItemTrace = traceCollector.Build();
 
         if (data.Warranty is not null && data.Warranty.WarrantyStartDate is not null)
             data.Warranty.ActivationIsRequired = serviceItemsResult.activationRequired;

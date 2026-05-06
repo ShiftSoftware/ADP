@@ -1,4 +1,5 @@
-﻿using ShiftSoftware.ADP.Lookup.Services.Aggregate;
+using ShiftSoftware.ADP.Lookup.Services.Aggregate;
+using ShiftSoftware.ADP.Lookup.Services.Diagnostics;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using ShiftSoftware.ADP.Lookup.Services.Enums;
 using ShiftSoftware.ADP.Lookup.Services.Services;
@@ -11,12 +12,20 @@ using System.Threading.Tasks;
 
 namespace ShiftSoftware.ADP.Lookup.Services.Evaluators;
 
-public class VehicleServiceItemEvaluator
+public partial class VehicleServiceItemEvaluator
 {
     private readonly CompanyDataAggregateModel companyDataAggregate;
     private readonly IVehicleLookupStorageService lookupCosmosService;
     private readonly LookupOptions options;
     private readonly IServiceProvider services;
+
+    /// <summary>
+    /// Optional diagnostic trace collector. Defaults to <see cref="ServiceItemTraceCollector.Disabled"/>
+    /// (no-op virtual overrides), so the production hot path is branch-free and zero-allocation.
+    /// Populate via object initializer when constructing the evaluator. Trace plumbing lives
+    /// in <c>VehicleServiceItemEvaluator.Tracing.cs</c>; see also <see cref="ServiceItemTraceCollector"/>.
+    /// </summary>
+    public ServiceItemTraceCollector Trace { get; set; } = ServiceItemTraceCollector.Disabled;
 
     public VehicleServiceItemEvaluator(IVehicleLookupStorageService lookupCosmosService, CompanyDataAggregateModel companyDataAggregate, LookupOptions options, IServiceProvider services)
     {
@@ -26,124 +35,431 @@ public class VehicleServiceItemEvaluator
         this.services = services;
     }
 
+    /// <summary>
+    /// Evaluates the service items available for a vehicle. Reads as a 7-step recipe:
+    /// load catalog → resolve activation mode → build eligible free + paid items →
+    /// expand by trigger (warranty rolling expiry, vehicle inspection, manual VIN entry) →
+    /// determine status & claimability → post-process (VIN exclusion, ineligible pickup,
+    /// dynamic cancellation) → stamp signatures.
+    /// </summary>
     public async Task<(IEnumerable<VehicleServiceItemDTO> serviceItems, bool activationRequired)> Evaluate(
         VehicleEntryModel vehicle,
         DateTime? freeServiceStartDate,
         VehicleSaleInformation vehicleSaleInformation,
-        string languageCode
-    )
+        string languageCode)
     {
-        var paidServices = companyDataAggregate.PaidServiceInvoices;
-        var tlpTransactionLines = companyDataAggregate.ItemClaims;
-        var vehicleInspections = companyDataAggregate.VehicleInspections;
-        var campaignVinEntries = companyDataAggregate.CampaignVinEntries;
-        var serviceActivation = companyDataAggregate.VehicleServiceActivations.FirstOrDefault();
+        var requestedStartDate = freeServiceStartDate;
+        var serviceItems = await LoadServiceItemCatalog();
+        (freeServiceStartDate, var showingInactivatedItems) = ResolveActivationMode(vehicle, freeServiceStartDate);
+        Trace.RecordInputs(vehicle, vehicleSaleInformation, freeServiceStartDate, requestedStartDate, showingInactivatedItems, serviceItems, companyDataAggregate);
 
         var result = new List<VehicleServiceItemDTO>();
-        IEnumerable<ServiceItemModel> serviceItems = new List<ServiceItemModel>();
 
-        //if (vehicle is not null)
-        serviceItems = await lookupCosmosService.GetServiceItemsAsync(useCache: true);
+        using (Trace.Stage("Eligibility"))            result.AddRange(BuildEligibleFreeItems(serviceItems, vehicle, vehicleSaleInformation, freeServiceStartDate, languageCode));
+        using (Trace.Stage("PaidItems"))              result.AddRange(BuildPaidItems(languageCode));
+        using (Trace.Stage("WarrantyRollingExpiry"))  ApplyWarrantyRollingExpiry(result, freeServiceStartDate);
+        using (Trace.Stage("InspectionExpansion"))    ApplyVehicleInspectionExpansion(result);
+        using (Trace.Stage("ManualVinExpansion"))     ApplyManualVinEntryExpansion(result);
 
-        var shiftDay = companyDataAggregate.FreeServiceItemDateShifts?.FirstOrDefault(x => x.VIN == vehicle.VIN);
-        if (shiftDay is not null)
-            freeServiceStartDate = shiftDay.NewDate;
+        bool activationRequired;
+        using (Trace.Stage("StatusAndClaimability"))  activationRequired = await CalculateServiceItemStatusAndClaimability(result, showingInactivatedItems, languageCode);
+        using (Trace.Stage("PostProcessing"))         result = await ApplyPostProcessing(result, serviceItems, vehicle, languageCode, activationRequired);
+        using (Trace.Stage("Signatures"))             await StampSignaturesAndPrintUrls(result, ServiceActivation, languageCode);
 
-        var showingInactivatedItems = false;
-
-        //Allow showing free service items as 'Activation Required'
-        if (options.IncludeInactivatedFreeServiceItems && freeServiceStartDate is null)
-        {
-            freeServiceStartDate = DateTime.Now.Date;
-            showingInactivatedItems = true;
-        }
-
-        var eligibleServiceItems = FilterEligibleServiceItems(
-            serviceItems,
-            vehicle,
-            vehicleSaleInformation,
-            freeServiceStartDate,
-            vehicleInspections,
-            campaignVinEntries);
-
-        if (eligibleServiceItems?.Count() > 0)
-        {
-            // Order them by mileage
-            eligibleServiceItems = eligibleServiceItems
-                .OrderByDescending(x => x.MaximumMileage.HasValue)
-                .ThenBy(x => x.MaximumMileage);
-
-            foreach (var item in eligibleServiceItems)
-            {
-                result.Add(BuildFreeServiceItemDto(item, vehicle, languageCode));
-            }
-        }
-
-        if (paidServices?.Count() > 0)
-        {
-            foreach (var paidService in paidServices)
-            {
-                if (paidService?.Lines?.Count() > 0)
-                {
-                    foreach (var line in paidService.Lines)
-                    {
-                        result.Add(BuildPaidServiceItemDto(paidService, line, languageCode));
-                    }
-                }
-            }
-        }
-
-        CalculateRollingExpireDateForWarrantyActivatedFreeServiceItems(
-            result.Where(x => x.ValidityModeEnum == ClaimableItemValidityMode.RelativeToActivation)
-                  .Where(x => x.TypeEnum == VehcileServiceItemTypes.Free)
-                  .Where(x => x.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.WarrantyActivation),
-            freeServiceStartDate
-        );
-
-        var newVehicleInspectionActivatedItems = CalculateRollingExpireDateForVehicleInspectionActivatedFreeServiceItems(
-            result.Where(x => x.TypeEnum == VehcileServiceItemTypes.Free)
-                  .Where(x => x.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.VehicleInspection),
-            vehicleInspections
-        );
-
-        result.RemoveAll(x => x.TypeEnum == VehcileServiceItemTypes.Free && x.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.VehicleInspection);
-
-        result.AddRange(newVehicleInspectionActivatedItems);
-
-        var newManualVinEntryActivatedItems = CalculateExpireDateForManualVinEntryActivatedFreeServiceItems(
-            result.Where(x => x.TypeEnum == VehcileServiceItemTypes.Free)
-                  .Where(x => x.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.ManualVinEntry),
-            campaignVinEntries
-        );
-
-        result.RemoveAll(x => x.TypeEnum == VehcileServiceItemTypes.Free && x.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.ManualVinEntry);
-
-        result.AddRange(newManualVinEntryActivatedItems);
-
-        var activationRequired = await CalculateServiceItemStatusAndClaimability(result, showingInactivatedItems, languageCode);
-
-        result = await ApplyPostProcessing(result, serviceItems, vehicle, languageCode);
-
-        await StampSignaturesAndPrintUrls(result, serviceActivation, languageCode);
+        Trace.RecordFinalResult(result, activationRequired);
+        if (Trace.IsEnabled)
+            using (Trace.Stage("NameResolution"))
+                await EnrichTraceWithResolvedNames(languageCode);
 
         return (result, activationRequired);
     }
 
-    private static IEnumerable<ServiceItemModel> FilterEligibleServiceItems(
+    // ===== Step methods =====
+
+    private VehicleServiceActivation ServiceActivation =>
+        companyDataAggregate.VehicleServiceActivations.FirstOrDefault();
+
+    private async Task<IEnumerable<ServiceItemModel>> LoadServiceItemCatalog()
+    {
+        using (Trace.Stage("LoadCatalog"))
+            return await lookupCosmosService.GetServiceItemsAsync(useCache: true);
+    }
+
+    /// <summary>
+    /// Applies the per-VIN date shift (if any) and the "show inactivated" fallback
+    /// (when a date is required for warranty-activated items but the caller didn't provide one).
+    /// </summary>
+    private (DateTime? freeServiceStartDate, bool showingInactivatedItems) ResolveActivationMode(
+        VehicleEntryModel vehicle,
+        DateTime? freeServiceStartDate)
+    {
+        var shiftDay = companyDataAggregate.FreeServiceItemDateShifts?.FirstOrDefault(x => x.VIN == vehicle.VIN);
+        if (shiftDay is not null)
+            freeServiceStartDate = shiftDay.NewDate;
+
+        if (options.IncludeInactivatedFreeServiceItems && freeServiceStartDate is null)
+            return (DateTime.Now.Date, showingInactivatedItems: true);
+
+        return (freeServiceStartDate, showingInactivatedItems: false);
+    }
+
+    /// <summary>
+    /// Filters the catalog to items eligible for this vehicle, then orders them by mileage
+    /// (sequential first, smaller mileage first) and builds a free-item DTO for each.
+    /// </summary>
+    private IEnumerable<VehicleServiceItemDTO> BuildEligibleFreeItems(
         IEnumerable<ServiceItemModel> serviceItems,
         VehicleEntryModel vehicle,
-        VehicleSaleInformation vehicleSaleInformation,
+        VehicleSaleInformation saleInformation,
         DateTime? freeServiceStartDate,
-        IEnumerable<VehicleInspectionModel> vehicleInspections,
-        IEnumerable<CampaignVinEntryModel> campaignVinEntries)
+        string languageCode)
     {
-        return serviceItems
-            .Where(x => !x.IsDeleted)
-            .Where(x => MatchesBrand(x, vehicle))
-            .Where(x => MatchesCompany(x, vehicle))
-            .Where(x => MatchesCountry(x, vehicle, vehicleSaleInformation))
-            .Where(x => IsWithinCampaignWindow(x, freeServiceStartDate, vehicleInspections, campaignVinEntries))
-            .Where(x => IsApplicableToVehicle(x, vehicle));
+        var eligible = FilterEligibleServiceItems(serviceItems, vehicle, saleInformation, freeServiceStartDate)
+            .OrderByDescending(x => x.MaximumMileage.HasValue)
+            .ThenBy(x => x.MaximumMileage);
+
+        foreach (var item in eligible)
+        {
+            var modelCost = GetModelCost(item.ModelCosts, vehicle?.Katashiki, vehicle?.VariantCode);
+            var dto = BuildFreeServiceItemDto(item, vehicle, languageCode, modelCost);
+            Trace.RecordFreeBuild(item, dto, modelCost, languageCode);
+            yield return dto;
+        }
+    }
+
+    private IEnumerable<VehicleServiceItemDTO> BuildPaidItems(string languageCode)
+    {
+        var paidServices = companyDataAggregate.PaidServiceInvoices;
+        if (paidServices is null) yield break;
+
+        foreach (var invoice in paidServices)
+        {
+            if (invoice?.Lines is null) continue;
+            foreach (var line in invoice.Lines)
+            {
+                var dto = BuildPaidServiceItemDto(invoice, line, languageCode);
+                Trace.RecordPaidBuild(invoice, line, dto, languageCode);
+                yield return dto;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Free items in <c>RelativeToActivation</c> mode that are warranty-activated have their
+    /// activation/expiry computed by rolling the anchor date forward through each sequential
+    /// (mileage-keyed) item. Non-sequential items inherit the bundle's collective end date —
+    /// see issue #14 in <c>STATUS.md</c> for the same-day-expiry edge case when no sequential
+    /// anchor exists.
+    /// </summary>
+    private void ApplyWarrantyRollingExpiry(List<VehicleServiceItemDTO> result, DateTime? anchorDate)
+    {
+        if (anchorDate is null)
+        {
+            Trace.RecordWarrantyRollingSkipped("freeServiceStartDate is null — rolling expiry is not applied; items keep default ActivatedAt.");
+            return;
+        }
+
+        Trace.RecordWarrantyRollingAnchor(anchorDate.Value);
+
+        var warrantyActivated = result
+            .Where(x => x.ValidityModeEnum == ClaimableItemValidityMode.RelativeToActivation
+                     && x.TypeEnum == VehcileServiceItemTypes.Free
+                     && x.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.WarrantyActivation)
+            .ToList();
+        var sequential = warrantyActivated.Where(x => x.MaximumMileage is not null).ToList();
+        var nonSequential = warrantyActivated.Where(x => x.MaximumMileage is null).ToList();
+
+        var rollingDate = anchorDate.Value;
+        foreach (var item in sequential)
+        {
+            item.ActivatedAt = rollingDate;
+            item.ExpiresAt = AddInterval(rollingDate, item.ActiveFor, item.ActiveForDurationType);
+            rollingDate = item.ExpiresAt!.Value;
+            Trace.RecordWarrantyRollingItem(sequential: true, item);
+        }
+
+        var noSequentialAnchor = sequential.Count == 0 && nonSequential.Count > 0;
+        if (noSequentialAnchor)
+            Trace.Note("Issue #14 triggered: non-sequential items present without any sequential anchor — they will be activated and expired on the same day (freeServiceStartDate). In production these usually come bundled with sequential items, masking this.");
+
+        foreach (var item in nonSequential)
+        {
+            item.ActivatedAt = anchorDate.Value;
+            item.ExpiresAt = rollingDate;
+            Trace.RecordWarrantyRollingItem(
+                sequential: false,
+                item,
+                note: noSequentialAnchor ? "Same-day expiry (issue #14 pinned)" : "Inherits bundle end date");
+        }
+    }
+
+    private void ApplyVehicleInspectionExpansion(List<VehicleServiceItemDTO> result)
+    {
+        var inspectionItems = result
+            .Where(x => x.TypeEnum == VehcileServiceItemTypes.Free
+                     && x.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.VehicleInspection)
+            .ToList();
+
+        if (inspectionItems.Count == 0) return;
+
+        var newItems = new List<VehicleServiceItemDTO>();
+        foreach (var item in inspectionItems)
+        {
+            var matching = (companyDataAggregate.VehicleInspections ?? Enumerable.Empty<VehicleInspectionModel>())
+                .Where(x => x.VehicleInspectionTypeID.ToString() == item.VehicleInspectionTypeID)
+                .ToList();
+            var (selected, fallbackNote) = SelectInspectionsForActivation(item.CampaignActivationType, matching);
+
+            var clones = selected.Select(insp => CloneWithInspectionActivation(item, insp)).ToList();
+            newItems.AddRange(clones);
+            Trace.RecordVehicleInspectionExpansion(item, matching.Count, selected, clones, fallbackNote);
+        }
+
+        result.RemoveAll(x => x.TypeEnum == VehcileServiceItemTypes.Free && x.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.VehicleInspection);
+        result.AddRange(newItems);
+    }
+
+    /// <summary>
+    /// Mirrors <see cref="ApplyVehicleInspectionExpansion"/> but keys on <c>CampaignID</c>
+    /// against <c>CampaignVinEntries</c> — manual-VIN-entry items don't carry an inspection
+    /// type, the entry itself targets a campaign.
+    /// </summary>
+    private void ApplyManualVinEntryExpansion(List<VehicleServiceItemDTO> result)
+    {
+        var manualVinItems = result
+            .Where(x => x.TypeEnum == VehcileServiceItemTypes.Free
+                     && x.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.ManualVinEntry)
+            .ToList();
+
+        if (manualVinItems.Count == 0) return;
+
+        var newItems = new List<VehicleServiceItemDTO>();
+        foreach (var item in manualVinItems)
+        {
+            var matching = (companyDataAggregate.CampaignVinEntries ?? Enumerable.Empty<CampaignVinEntryModel>())
+                .Where(x => x.CampaignID == item.CampaignID)
+                .ToList();
+            var (selected, fallbackNote) = SelectCampaignVinEntriesForActivation(item.CampaignActivationType, matching);
+
+            var clones = selected.Select(entry => CloneWithCampaignVinEntryActivation(item, entry)).ToList();
+            newItems.AddRange(clones);
+            Trace.RecordManualVinEntryExpansion(item, matching.Count, selected, clones, fallbackNote);
+        }
+
+        result.RemoveAll(x => x.TypeEnum == VehcileServiceItemTypes.Free && x.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.ManualVinEntry);
+        result.AddRange(newItems);
+    }
+
+    private async Task<bool> CalculateServiceItemStatusAndClaimability(
+        List<VehicleServiceItemDTO> serviceItems,
+        bool showingInactivatedItems,
+        string languageCode)
+    {
+        await AssignStatusToItems(serviceItems, showingInactivatedItems, languageCode);
+
+        var activationRequired = serviceItems.Any(x => x.StatusEnum == VehcileServiceItemStatuses.ActivationRequired);
+
+        foreach (var item in serviceItems)
+        {
+            var reason = ApplyClaimability(item);
+            Trace.RecordStatus(item, reason);
+        }
+
+        return activationRequired;
+    }
+
+    /// <summary>
+    /// Mutates <paramref name="item"/>'s <c>Claimable</c> flag based on its status and validity
+    /// mode, returning the reason text for the trace.
+    /// </summary>
+    private static string ApplyClaimability(VehicleServiceItemDTO item)
+    {
+        if (item.ValidityModeEnum == ClaimableItemValidityMode.FixedDateRange && item.ActivatedAt > DateTime.Now)
+        {
+            item.Claimable = false;
+            return $"FixedDateRange item with future ActivatedAt={item.ActivatedAt:yyyy-MM-dd} → not yet claimable.";
+        }
+
+        if (item.StatusEnum == VehcileServiceItemStatuses.Pending)
+        {
+            item.Claimable = true;
+            return "Pending status → claimable.";
+        }
+
+        return ServiceItemEligibilityReasonFormatter.FormatStatusFallback(item);
+    }
+
+    private async Task<List<VehicleServiceItemDTO>> ApplyPostProcessing(
+        List<VehicleServiceItemDTO> result,
+        IEnumerable<ServiceItemModel> serviceItems,
+        VehicleEntryModel vehicle,
+        string languageCode,
+        bool activationRequiredFromUnfilteredList)
+    {
+        ApplyVinExclusionFilter(result, activationRequiredFromUnfilteredList);
+
+        var ineligibleClaimedItems = (await BuildIneligibleClaimedItems(result, serviceItems, languageCode)).ToList();
+        Trace.RecordIneligiblePickup(ineligibleClaimedItems.Count);
+        result.AddRange(ineligibleClaimedItems);
+
+        ApplyDynamicCancellation(result);
+
+        return result
+            .OrderBy(x => x.TypeEnum)
+            .ThenByDescending(x => x.MaximumMileage.HasValue)
+            .ThenBy(x => x.MaximumMileage)
+            .ThenBy(x => x.ExpiresAt)
+            .ThenBy(x => x.StatusEnum)
+            .ToList();
+    }
+
+    /// <summary>
+    /// <c>FreeServiceItemExcludedVINs</c> is loaded per-VIN by the storage layer, so a non-empty
+    /// list means "this vehicle is excluded from warranty-activated items". No per-item VIN
+    /// check needed. See issue #22 in <c>STATUS.md</c>: <c>activationRequired</c> was already
+    /// computed from the unfiltered list, so the caller may show "activation needed" even
+    /// though no items will appear post-activation.
+    /// </summary>
+    private void ApplyVinExclusionFilter(List<VehicleServiceItemDTO> result, bool activationRequiredFromUnfilteredList)
+    {
+        if (!companyDataAggregate.FreeServiceItemExcludedVINs.Any()) return;
+
+        var beforeCount = result.Count;
+        result.RemoveAll(x => x.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.WarrantyActivation);
+        var removed = beforeCount - result.Count;
+        Trace.RecordVinExclusion(removed);
+
+        if (activationRequiredFromUnfilteredList && removed > 0)
+            Trace.Note("Issue #22 triggered: VIN is on FreeServiceItemExcludedVINs and warranty-activated items were stripped, but activationRequired was already computed from the unfiltered list and is true. Caller may show 'activation needed' for items that will never appear after activation.");
+    }
+
+    /// <summary>
+    /// A free item that's been claimed (has an ItemClaim row) but is no longer in the eligible
+    /// set — e.g. the item was deleted from the catalog after claiming, or no longer matches
+    /// the vehicle. We still surface it in the result as "processed" so the dealer can see
+    /// the historical record.
+    /// </summary>
+    private async Task<IEnumerable<VehicleServiceItemDTO>> BuildIneligibleClaimedItems(
+        IEnumerable<VehicleServiceItemDTO> eligibleServiceItems,
+        IEnumerable<ServiceItemModel> availableServiceItems,
+        string languageCode)
+    {
+        var result = new List<VehicleServiceItemDTO>();
+
+        var existingFreeIds = eligibleServiceItems
+            ?.Where(x => x.TypeEnum == VehcileServiceItemTypes.Free)
+            .Select(x => x.ServiceItemID.ToString())
+            .ToList();
+
+        var orphanClaimedIds = companyDataAggregate.ItemClaims
+            ?.Select(x => x?.ServiceItemID)
+            .Where(id => !(existingFreeIds?.Any(s => s == id) ?? false));
+
+        var matched = availableServiceItems.Where(x => orphanClaimedIds?.Any(id => id == x.IntegrationID) ?? false);
+
+        foreach (var item in matched)
+        {
+            var claimLine = companyDataAggregate.ItemClaims?.FirstOrDefault(t => t.ServiceItemID == item.IntegrationID);
+            var dto = new VehicleServiceItemDTO
+            {
+                ServiceItemID = item.IntegrationID,
+                Name = Utility.GetLocalizedText(item.Name, languageCode),
+                Description = Utility.GetLocalizedText(item.PrintoutDescription, languageCode),
+                Title = Utility.GetLocalizedText(item.PrintoutTitle, languageCode),
+                Type = "free",
+                TypeEnum = VehcileServiceItemTypes.Free,
+                StatusEnum = VehcileServiceItemStatuses.Processed,
+                Status = "processed",
+                PackageCode = claimLine.PackageCode,
+                ClaimDate = claimLine?.ClaimDate,
+                Cost = claimLine?.Cost,
+                InvoiceNumber = claimLine?.InvoiceNumber,
+                JobNumber = claimLine?.JobNumber,
+                MaximumMileage = item.MaximumMileage,
+            };
+
+            if (claimLine.CompanyID is { } companyId && companyId != 0 && options.CompanyNameResolver is not null)
+                dto.CompanyName = await options.CompanyNameResolver(new(companyId, languageCode, services));
+
+            result.Add(dto);
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// If a higher-mileage free item is already <c>Processed</c>, mark all lower-mileage
+    /// <c>Pending</c> items as <c>Cancelled</c> — they were superseded by the customer
+    /// jumping straight to a later interval.
+    /// </summary>
+    private void ApplyDynamicCancellation(IEnumerable<VehicleServiceItemDTO> serviceItems)
+    {
+        var freeItems = serviceItems
+            .Where(x => x.TypeEnum == VehcileServiceItemTypes.Free && x.MaximumMileage.HasValue)
+            .OrderBy(x => x.MaximumMileage)
+            .ToList();
+
+        foreach (var item in freeItems)
+        {
+            if (item.StatusEnum != VehcileServiceItemStatuses.Pending) continue;
+
+            var supersededBy = freeItems.FirstOrDefault(x =>
+                x.StatusEnum == VehcileServiceItemStatuses.Processed && x.MaximumMileage > item.MaximumMileage);
+            if (supersededBy is null) continue;
+
+            item.Status = "cancelled";
+            item.StatusEnum = VehcileServiceItemStatuses.Cancelled;
+            item.Claimable = false;
+            Trace.RecordCancellation(item, supersededBy);
+        }
+    }
+
+    private async Task StampSignaturesAndPrintUrls(
+        List<VehicleServiceItemDTO> result,
+        VehicleServiceActivation serviceActivation,
+        string languageCode)
+    {
+        var itemSignatureExpiry = options?.SignatureValidityDuration is { } d
+            ? DateTime.UtcNow.Add(d)
+            : DateTime.UtcNow;
+
+        foreach (var item in result)
+        {
+            item.SignatureExpiry = itemSignatureExpiry;
+            item.Signature = item.GenerateSignature(companyDataAggregate.VIN, options.SigningSecretKey);
+
+            if (options.VehicleInspectionPreClaimVoucherPrintingURLResolver is not null && item.VehicleInspectionID is not null)
+                item.PrintUrl = await options.VehicleInspectionPreClaimVoucherPrintingURLResolver(new(new(item.VehicleInspectionID, item.ServiceItemID), languageCode, services));
+
+            // Service activation overrides the inspection URL when both apply.
+            if (options.ServiceActivationPreClaimVoucherPrintingURLResolver is not null && serviceActivation is not null)
+                item.PrintUrl = await options.ServiceActivationPreClaimVoucherPrintingURLResolver(new(new(serviceActivation.id, item.ServiceItemID), languageCode, services));
+
+            item.Warnings = options.StandardItemClaimWarnings;
+        }
+    }
+
+    // ===== Eligibility predicates =====
+
+    /// <summary>
+    /// Per-item eligibility evaluation. Returns <see cref="EligibilityRejectionStage.None"/>
+    /// for accepted items, or the first failing stage (predicates are checked in declaration
+    /// order). Reason strings are formatted separately by the trace collector — this method
+    /// stays predicate-only and allocation-free.
+    /// </summary>
+    private EligibilityRejectionStage EvaluateItemEligibility(
+        ServiceItemModel item,
+        VehicleEntryModel vehicle,
+        VehicleSaleInformation saleInformation,
+        DateTime? freeServiceStartDate)
+    {
+        if (item.IsDeleted) return EligibilityRejectionStage.IsDeleted;
+        if (!MatchesBrand(item, vehicle)) return EligibilityRejectionStage.Brand;
+        if (!MatchesCompany(item, vehicle)) return EligibilityRejectionStage.Company;
+        if (!MatchesCountry(item, vehicle, saleInformation)) return EligibilityRejectionStage.Country;
+        if (!IsWithinCampaignWindow(item, freeServiceStartDate)) return EligibilityRejectionStage.CampaignWindow;
+        if (!IsApplicableToVehicle(item, vehicle)) return EligibilityRejectionStage.VehicleApplicability;
+        return EligibilityRejectionStage.None;
     }
 
     private static bool MatchesBrand(ServiceItemModel item, VehicleEntryModel vehicle) =>
@@ -152,53 +468,42 @@ public class VehicleServiceItemEvaluator
     private static bool MatchesCompany(ServiceItemModel item, VehicleEntryModel vehicle) =>
         vehicle is null || item.CompanyIDs is null || !item.CompanyIDs.Any() || item.CompanyIDs.Any(a => a == vehicle.CompanyID);
 
-    // Note: this short-circuits on `vehicle is null` rather than `saleInformation is null`,
-    // matching the original code. The country filter doesn't actually use `vehicle`, so the
-    // guard looks like a copy-paste from the brand/company filters. Behavior is pinned for
-    // now; revisit alongside other latent issues.
+    // Note: short-circuits on `vehicle is null` rather than `saleInformation is null` — copy-paste
+    // from the brand/company filters. Behavior pinned (issue #21 in STATUS.md).
     private static bool MatchesCountry(ServiceItemModel item, VehicleEntryModel vehicle, VehicleSaleInformation saleInformation) =>
         vehicle is null || item.CountryIDs is null || !item.CountryIDs.Any() || item.CountryIDs.Any(a => a == saleInformation?.CountryID?.ToLong());
 
-    private static bool IsWithinCampaignWindow(
-        ServiceItemModel item,
-        DateTime? freeServiceStartDate,
-        IEnumerable<VehicleInspectionModel> vehicleInspections,
-        IEnumerable<CampaignVinEntryModel> campaignVinEntries) =>
+    private bool IsWithinCampaignWindow(ServiceItemModel item, DateTime? freeServiceStartDate) =>
         item.CampaignActivationTrigger switch
         {
             ClaimableItemCampaignActivationTrigger.WarrantyActivation =>
                 freeServiceStartDate >= item.CampaignStartDate && freeServiceStartDate <= item.CampaignEndDate,
-
             ClaimableItemCampaignActivationTrigger.VehicleInspection =>
-                vehicleInspections?.Any(i =>
+                companyDataAggregate.VehicleInspections?.Any(i =>
                     i.VehicleInspectionTypeID == item.VehicleInspectionTypeID &&
                     i.InspectionDate >= item.CampaignStartDate &&
                     i.InspectionDate <= item.CampaignEndDate) ?? false,
-
             ClaimableItemCampaignActivationTrigger.ManualVinEntry =>
-                campaignVinEntries?.Any(e =>
+                companyDataAggregate.CampaignVinEntries?.Any(e =>
                     e.CampaignID == item.CampaignID &&
                     e.RecordedDate >= item.CampaignStartDate &&
                     e.RecordedDate <= item.CampaignEndDate) ?? false,
-
             _ => false,
         };
 
-    // An item applies to the vehicle if either:
-    //   - it has no per-model costs (item targets all vehicles), or
-    //   - the vehicle's Katashiki / VariantCode prefix-matches one of the item's model costs.
-    // The all-vehicles rule is gated to skip warranty-activated items when no vehicle is loaded
-    // (lookups without a vehicle should not see warranty-activated free items).
+    /// <summary>
+    /// An item applies to the vehicle if either: (a) it has no per-model costs (targets all
+    /// vehicles), or (b) the vehicle's Katashiki / VariantCode prefix-matches one of the
+    /// item's model costs. The all-vehicles rule is gated to skip warranty-activated items
+    /// when no vehicle is loaded.
+    /// </summary>
     private static bool IsApplicableToVehicle(ServiceItemModel item, VehicleEntryModel vehicle)
     {
-        if (HasMatchingModelCost(item, vehicle))
-            return true;
+        if (HasMatchingModelCost(item, vehicle)) return true;
 
-        var hasVehicle = vehicle is not null;
-        var isWarrantyActivationCampaign = item.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.WarrantyActivation;
         var modelCostCount = item.ModelCosts?.Count() ?? 0;
-
-        return (hasVehicle || !isWarrantyActivationCampaign) && modelCostCount == 0;
+        var isWarrantyActivation = item.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.WarrantyActivation;
+        return (vehicle is not null || !isWarrantyActivation) && modelCostCount == 0;
     }
 
     private static bool HasMatchingModelCost(ServiceItemModel item, VehicleEntryModel vehicle) =>
@@ -211,307 +516,202 @@ public class VehicleServiceItemEvaluator
         !string.IsNullOrWhiteSpace(costValue) &&
         vehicleValue.StartsWith(costValue, StringComparison.InvariantCultureIgnoreCase);
 
-    private ServiceItemCostModel GetModelCost(
-        IEnumerable<ServiceItemCostModel> modelCosts,
-        string katashiki,
-        string variant)
+    private static ServiceItemCostModel GetModelCost(IEnumerable<ServiceItemCostModel> modelCosts, string katashiki, string variant)
     {
-        if (modelCosts is null || modelCosts?.Count() == 0)
-            return null;
-
-        return modelCosts?
-            .Where(x => katashiki.StartsWith(x?.Katashiki ?? "") && !string.IsNullOrWhiteSpace(x?.Katashiki ?? "")
-                || variant.StartsWith(x?.Variant ?? "") && !string.IsNullOrWhiteSpace(x?.Variant ?? ""))
-            .FirstOrDefault();
+        if (modelCosts is null) return null;
+        return modelCosts.FirstOrDefault(x =>
+            (!string.IsNullOrWhiteSpace(x?.Katashiki) && (katashiki ?? "").StartsWith(x.Katashiki)) ||
+            (!string.IsNullOrWhiteSpace(x?.Variant) && (variant ?? "").StartsWith(x.Variant)));
     }
+
+    /// <summary>
+    /// Walks the catalog item-by-item and yields accepted items. Recording happens via the
+    /// trace collector — the <c>Disabled</c> sink ignores the calls, so this is the only
+    /// path (no separate fast path needed).
+    /// </summary>
+    private IEnumerable<ServiceItemModel> FilterEligibleServiceItems(
+        IEnumerable<ServiceItemModel> serviceItems,
+        VehicleEntryModel vehicle,
+        VehicleSaleInformation vehicleSaleInformation,
+        DateTime? freeServiceStartDate)
+    {
+        Trace.RecordEligibilityInputCount(serviceItems?.Count() ?? 0);
+
+        // Issue #21 callout (latent): the country filter short-circuits on `vehicle is null`,
+        // not `saleInformation is null`. With a null vehicle, items pass the country check
+        // regardless of CountryIDs. Surface it via the trace so it's visible if it bites.
+        if (vehicle is null)
+            Trace.Note("Issue #21 (latent): vehicle is null — country eligibility filter is being short-circuited via the brand/company copy-paste guard. Items will pass the country check regardless of their CountryIDs.");
+
+        foreach (var item in serviceItems ?? Enumerable.Empty<ServiceItemModel>())
+        {
+            var stage = EvaluateItemEligibility(item, vehicle, vehicleSaleInformation, freeServiceStartDate);
+            Trace.RecordEligibilityDecision(item, stage, vehicle, vehicleSaleInformation);
+            if (stage == EligibilityRejectionStage.None)
+                yield return item;
+        }
+    }
+
+    // ===== DTO builders =====
 
     private VehicleServiceItemDTO BuildFreeServiceItemDto(
         ServiceItemModel item,
         VehicleEntryModel vehicle,
-        string languageCode)
+        string languageCode,
+        ServiceItemCostModel modelCost)
     {
-        ServiceItemCostModel modelCost = null;
-
-        if (item.ModelCosts != null)
-            modelCost = GetModelCost(item.ModelCosts, vehicle?.Katashiki, vehicle?.VariantCode);
-
-        var serviceItem = new VehicleServiceItemDTO
+        var dto = new VehicleServiceItemDTO
         {
             ServiceItemID = item.IntegrationID,
             Name = Utility.GetLocalizedText(item.Name, languageCode),
             Description = Utility.GetLocalizedText(item.PrintoutDescription, languageCode),
             Title = Utility.GetLocalizedText(item.PrintoutTitle, languageCode),
-            //Image = await GetFirstImageFullUrl(item.Photo),
             Type = "free",
             TypeEnum = VehcileServiceItemTypes.Free,
             ModelCostID = modelCost?.ID,
             PackageCode = modelCost?.PackageCode ?? item.PackageCode,
-            Cost = modelCost == null ? item?.FixedCost : modelCost?.Cost,
+            Cost = modelCost?.Cost ?? item?.FixedCost,
             CampaignID = item.CampaignID,
             CampaignUniqueReference = item.CampaignUniqueReference,
-
             MaximumMileage = item.MaximumMileage,
             CampaignActivationTrigger = item.CampaignActivationTrigger,
             CampaignActivationType = item.CampaignActivationType,
-
             ValidityModeEnum = item.ValidityMode,
             ClaimingMethodEnum = item.ClaimingMethod,
-
             ShowDocumentUploader = item.AttachmentFieldBehavior != ClaimableItemAttachmentFieldBehavior.Hidden,
             DocumentUploaderIsRequired = item.AttachmentFieldBehavior == ClaimableItemAttachmentFieldBehavior.Required,
-
-            VehicleInspectionTypeID = item.VehicleInspectionTypeID.ToString()
+            VehicleInspectionTypeID = item.VehicleInspectionTypeID.ToString(),
         };
 
         if (item.ValidityMode == ClaimableItemValidityMode.FixedDateRange)
         {
-            serviceItem.ActivatedAt = item.ValidFrom.Value;
-            serviceItem.ExpiresAt = item.ValidTo;
+            dto.ActivatedAt = item.ValidFrom.Value;
+            dto.ExpiresAt = item.ValidTo;
         }
         else if (item.ValidityMode == ClaimableItemValidityMode.RelativeToActivation)
         {
-            serviceItem.ActiveFor = item.ActiveFor;
-            serviceItem.ActiveForDurationType = item.ActiveForDurationType;
+            dto.ActiveFor = item.ActiveFor;
+            dto.ActiveForDurationType = item.ActiveForDurationType;
         }
 
-        return serviceItem;
+        return dto;
     }
 
     private static VehicleServiceItemDTO BuildPaidServiceItemDto(
         PaidServiceInvoiceModel paidService,
         PaidServiceInvoiceLineModel line,
-        string languageCode)
+        string languageCode) => new()
     {
-        return new VehicleServiceItemDTO
-        {
-            ServiceItemID = line.ServiceItemID,
-            PaidServiceInvoiceLineID = line.IntegrationID,
-            ActivatedAt = paidService.InvoiceDate,
-            CampaignUniqueReference = line.ServiceItem?.CampaignUniqueReference,
-            Description = Utility.GetLocalizedText(line.ServiceItem?.PrintoutDescription, languageCode),
-            //Image = await GetFirstImageFullUrl(line.ServiceItem?.Photo),
-            Name = Utility.GetLocalizedText(line.ServiceItem?.Name, languageCode),
-            Title = Utility.GetLocalizedText(line.ServiceItem?.PrintoutTitle, languageCode),
-            ExpiresAt = line.ExpireDate,
-            Type = "paid",
-            MaximumMileage = line.ServiceItem?.MaximumMileage,
-            TypeEnum = VehcileServiceItemTypes.Paid,
-            PackageCode = line.PackageCode,
+        ServiceItemID = line.ServiceItemID,
+        PaidServiceInvoiceLineID = line.IntegrationID,
+        ActivatedAt = paidService.InvoiceDate,
+        CampaignUniqueReference = line.ServiceItem?.CampaignUniqueReference,
+        Description = Utility.GetLocalizedText(line.ServiceItem?.PrintoutDescription, languageCode),
+        Name = Utility.GetLocalizedText(line.ServiceItem?.Name, languageCode),
+        Title = Utility.GetLocalizedText(line.ServiceItem?.PrintoutTitle, languageCode),
+        ExpiresAt = line.ExpireDate,
+        Type = "paid",
+        MaximumMileage = line.ServiceItem?.MaximumMileage,
+        TypeEnum = VehcileServiceItemTypes.Paid,
+        PackageCode = line.PackageCode,
+        ClaimingMethodEnum = line.ServiceItem?.ClaimingMethod ?? ClaimableItemClaimingMethod.ClaimByEnteringInvoiceAndJobNumber,
+        VehicleInspectionTypeID = line.ServiceItem?.VehicleInspectionTypeID?.ToString(),
+    };
 
-            ClaimingMethodEnum = line.ServiceItem?.ClaimingMethod ?? ClaimableItemClaimingMethod.ClaimByEnteringInvoiceAndJobNumber,
-            VehicleInspectionTypeID = line.ServiceItem?.VehicleInspectionTypeID?.ToString(),
-        };
-    }
+    // ===== Per-trigger expansion helpers =====
 
-    private void CalculateRollingExpireDateForWarrantyActivatedFreeServiceItems(IEnumerable<VehicleServiceItemDTO> serviceItems, DateTime? invoiceDate)
+    /// <summary>
+    /// Selects which inspections drive activation of an item, per the item's
+    /// <c>CampaignActivationType</c>. An unrecognized value produces a single-null sentinel
+    /// — pinned NRE-on-misconfig behavior; the caller will throw downstream on
+    /// <c>inspection.id</c>.
+    /// </summary>
+    private static (List<VehicleInspectionModel> selected, string fallbackNote) SelectInspectionsForActivation(
+        ClaimableItemCampaignActivationTypes activationType,
+        List<VehicleInspectionModel> matching) => activationType switch
     {
-        if (invoiceDate is null)
-            return;
+        ClaimableItemCampaignActivationTypes.EveryTrigger => (matching, null),
+        ClaimableItemCampaignActivationTypes.FirstTriggerOnly => (new() { matching.OrderBy(x => x.InspectionDate).First() }, null),
+        ClaimableItemCampaignActivationTypes.ExtendOnEachTrigger => (new() { matching.OrderByDescending(x => x.InspectionDate).First() }, null),
+        _ => (new() { null }, $"Unrecognized CampaignActivationType={activationType} → emitting null sentinel (pinned NRE-on-misconfig)."),
+    };
 
-        var sequentialServiceItems = serviceItems.Where(x => x.MaximumMileage is not null);
-        var nonSequentialServiceItems = serviceItems.Where(x => x.MaximumMileage is null);
-
-        DateTime? rollingDate = invoiceDate.Value;
-
-        foreach (var item in sequentialServiceItems)
-        {
-            item.ActivatedAt = rollingDate.Value;
-            item.ExpiresAt = AddInterval(rollingDate.Value, item.ActiveFor, item.ActiveForDurationType);
-
-            rollingDate = item.ExpiresAt;
-        }
-
-        // Issue #14 (pinned): non-sequential items inherit the bundle's collective end date.
-        // When no sequential items exist, rollingDate stays at invoiceDate, so the non-sequential
-        // item ends up activated and expired on the same day. Production data always bundles
-        // these alongside sequential items, so this hasn't surfaced in practice. See
-        // ServiceItems_Expiration.feature ("Sole non-sequential item expires at the free service start date — pinned").
-        foreach (var item in nonSequentialServiceItems)
-        {
-            item.ActivatedAt = invoiceDate.Value;
-            item.ExpiresAt = rollingDate;
-        }
-    }
-
-    private List<VehicleServiceItemDTO> CalculateRollingExpireDateForVehicleInspectionActivatedFreeServiceItems(IEnumerable<VehicleServiceItemDTO> serviceItems, IEnumerable<VehicleInspectionModel> vehicleInspections)
+    private static (List<CampaignVinEntryModel> selected, string fallbackNote) SelectCampaignVinEntriesForActivation(
+        ClaimableItemCampaignActivationTypes activationType,
+        List<CampaignVinEntryModel> matching) => activationType switch
     {
-        var newList = new List<VehicleServiceItemDTO>();
-
-        foreach (var item in serviceItems)
-        {
-            foreach (var inspection in SelectInspectionsForActivation(item, vehicleInspections))
-                newList.Add(CloneWithInspectionActivation(item, inspection));
-        }
-
-        return newList;
-    }
-
-    private static IEnumerable<VehicleInspectionModel> SelectInspectionsForActivation(
-        VehicleServiceItemDTO item,
-        IEnumerable<VehicleInspectionModel> vehicleInspections)
-    {
-        var matching = vehicleInspections
-            .Where(x => x.VehicleInspectionTypeID.ToString() == item.VehicleInspectionTypeID);
-
-        if (item.CampaignActivationType == ClaimableItemCampaignActivationTypes.EveryTrigger)
-            return matching;
-
-        if (item.CampaignActivationType == ClaimableItemCampaignActivationTypes.FirstTriggerOnly)
-            return new[] { matching.OrderBy(x => x.InspectionDate).First() };
-
-        if (item.CampaignActivationType == ClaimableItemCampaignActivationTypes.ExtendOnEachTrigger)
-            return new[] { matching.OrderByDescending(x => x.InspectionDate).First() };
-
-        // Pinning original behavior: an unset/unexpected CampaignActivationType used to fall
-        // through with a null inspection and NRE downstream on `vehicleInspection.id`. The
-        // single-null array reproduces that failure mode.
-        return new VehicleInspectionModel[] { null };
-    }
+        ClaimableItemCampaignActivationTypes.EveryTrigger => (matching, null),
+        ClaimableItemCampaignActivationTypes.FirstTriggerOnly => (new() { matching.OrderBy(x => x.RecordedDate).First() }, null),
+        ClaimableItemCampaignActivationTypes.ExtendOnEachTrigger => (new() { matching.OrderByDescending(x => x.RecordedDate).First() }, null),
+        _ => (new() { null }, $"Unrecognized CampaignActivationType={activationType} → emitting null sentinel (pinned NRE-on-misconfig)."),
+    };
 
     private VehicleServiceItemDTO CloneWithInspectionActivation(VehicleServiceItemDTO item, VehicleInspectionModel inspection)
     {
         var cloned = item.Clone();
-
         cloned.VehicleInspectionID = inspection.id;
-
         if (cloned.ValidityModeEnum == ClaimableItemValidityMode.RelativeToActivation)
         {
             cloned.ActivatedAt = inspection.InspectionDate.DateTime;
             cloned.ExpiresAt = AddInterval(cloned.ActivatedAt, cloned.ActiveFor, cloned.ActiveForDurationType);
         }
-
         return cloned;
-    }
-
-    // ManualVinEntry mirrors VehicleInspection's per-trigger expansion: each matching CampaignVinEntry
-    // produces an activated DTO. Match key is CampaignID (vs. VehicleInspectionTypeID for inspections),
-    // because ManualVinEntry items don't carry an inspection type — the entry itself targets a campaign.
-    private List<VehicleServiceItemDTO> CalculateExpireDateForManualVinEntryActivatedFreeServiceItems(
-        IEnumerable<VehicleServiceItemDTO> serviceItems,
-        IEnumerable<CampaignVinEntryModel> campaignVinEntries)
-    {
-        var newList = new List<VehicleServiceItemDTO>();
-
-        foreach (var item in serviceItems)
-        {
-            foreach (var entry in SelectCampaignVinEntriesForActivation(item, campaignVinEntries))
-                newList.Add(CloneWithCampaignVinEntryActivation(item, entry));
-        }
-
-        return newList;
-    }
-
-    private static IEnumerable<CampaignVinEntryModel> SelectCampaignVinEntriesForActivation(
-        VehicleServiceItemDTO item,
-        IEnumerable<CampaignVinEntryModel> campaignVinEntries)
-    {
-        var matching = campaignVinEntries
-            .Where(x => x.CampaignID == item.CampaignID);
-
-        if (item.CampaignActivationType == ClaimableItemCampaignActivationTypes.EveryTrigger)
-            return matching;
-
-        if (item.CampaignActivationType == ClaimableItemCampaignActivationTypes.FirstTriggerOnly)
-            return new[] { matching.OrderBy(x => x.RecordedDate).First() };
-
-        if (item.CampaignActivationType == ClaimableItemCampaignActivationTypes.ExtendOnEachTrigger)
-            return new[] { matching.OrderByDescending(x => x.RecordedDate).First() };
-
-        // Same null-fallback behavior as the inspection branch — preserves the NRE-on-misconfig
-        // failure mode rather than silently swallowing unset CampaignActivationType.
-        return new CampaignVinEntryModel[] { null };
     }
 
     private VehicleServiceItemDTO CloneWithCampaignVinEntryActivation(VehicleServiceItemDTO item, CampaignVinEntryModel entry)
     {
         var cloned = item.Clone();
-
         cloned.CampaignVinEntryID = entry.id;
-
         if (cloned.ValidityModeEnum == ClaimableItemValidityMode.RelativeToActivation)
         {
             cloned.ActivatedAt = entry.RecordedDate.DateTime;
             cloned.ExpiresAt = AddInterval(cloned.ActivatedAt, cloned.ActiveFor, cloned.ActiveForDurationType);
         }
-
         return cloned;
     }
 
-    private DateTime AddInterval(DateTime date, int? intervalValue, DurationType? durationType)
+    private static DateTime AddInterval(DateTime date, int? intervalValue, DurationType? durationType) => durationType switch
     {
-        if (durationType == DurationType.Seconds)
-            return date.AddSeconds(intervalValue.GetValueOrDefault());
-        else if (durationType == DurationType.Minutes)
-            return date.AddMinutes(intervalValue.GetValueOrDefault());
-        else if (durationType == DurationType.Hours)
-            return date.AddHours(intervalValue.GetValueOrDefault());
-        else if (durationType == DurationType.Days)
-            return date.AddDays(intervalValue.GetValueOrDefault());
-        else if (durationType == DurationType.Weeks)
-            return date.AddDays(7 * intervalValue.GetValueOrDefault());
-        else if (durationType == DurationType.Months)
-            return date.AddMonths(intervalValue.GetValueOrDefault());
-        else if (durationType == DurationType.Years)
-            return date.AddYears(intervalValue.GetValueOrDefault());
-        else
-            return date;
-    }
+        DurationType.Seconds => date.AddSeconds(intervalValue.GetValueOrDefault()),
+        DurationType.Minutes => date.AddMinutes(intervalValue.GetValueOrDefault()),
+        DurationType.Hours => date.AddHours(intervalValue.GetValueOrDefault()),
+        DurationType.Days => date.AddDays(intervalValue.GetValueOrDefault()),
+        DurationType.Weeks => date.AddDays(7 * intervalValue.GetValueOrDefault()),
+        DurationType.Months => date.AddMonths(intervalValue.GetValueOrDefault()),
+        DurationType.Years => date.AddYears(intervalValue.GetValueOrDefault()),
+        _ => date,
+    };
 
-    private async Task<bool> CalculateServiceItemStatusAndClaimability(
-        List<VehicleServiceItemDTO> serviceItems,
-        bool showingInactivatedItems,
-        string languageCode)
-    {
-        await CalculateServiceItemStatus(serviceItems, showingInactivatedItems, languageCode);
+    // ===== Status assignment =====
 
-        var activationRequired = serviceItems.Any(x => x.StatusEnum == VehcileServiceItemStatuses.ActivationRequired);
-
-        foreach (var item in serviceItems)
-        {
-            if (item.StatusEnum == VehcileServiceItemStatuses.Pending)
-                item.Claimable = true;
-
-            if (item.ValidityModeEnum == ClaimableItemValidityMode.FixedDateRange && item.ActivatedAt > DateTime.Now)
-                item.Claimable = false;
-        }
-
-        return activationRequired;
-    }
-
-    private async Task CalculateServiceItemStatus(IEnumerable<VehicleServiceItemDTO> serviceItems, bool showingInactivatedItems, string languageCode)
+    private async Task AssignStatusToItems(IEnumerable<VehicleServiceItemDTO> serviceItems, bool showingInactivatedItems, string languageCode)
     {
         foreach (var item in serviceItems)
         {
-            var statusResult = ProcessServiceItemStatus(
-                item,
-                companyDataAggregate.ItemClaims,
-                showingInactivatedItems
-            );
+            var verdict = ResolveItemStatus(item, companyDataAggregate.ItemClaims, showingInactivatedItems);
 
-            item.Status = statusResult.statusText;
-            item.StatusEnum = statusResult.status;
-            item.ClaimDate = statusResult.claimDate;
-            item.JobNumber = statusResult.wip;
-            item.InvoiceNumber = statusResult.invoice;
-            //item.CompanyID = statusResult.companyID;
-            item.PackageCode = statusResult.packageCode ?? item.PackageCode;
+            item.Status = verdict.statusText;
+            item.StatusEnum = verdict.status;
+            item.ClaimDate = verdict.claimDate;
+            item.JobNumber = verdict.wip;
+            item.InvoiceNumber = verdict.invoice;
+            item.PackageCode = verdict.packageCode ?? item.PackageCode;
 
             // Once claimed, the recorded claim cost is authoritative — service item / model
             // cost can change later, but the price billed at claim time must not.
-            if (statusResult.claimedCost is not null)
-                item.Cost = statusResult.claimedCost;
+            if (verdict.claimedCost is not null)
+                item.Cost = verdict.claimedCost;
 
-            if (statusResult.companyID != null && statusResult.companyID != 0 && options.CompanyNameResolver is not null)
-                item.CompanyName = await options.CompanyNameResolver(new(statusResult.companyID, languageCode, services));
+            if (verdict.companyID is { } id && id != 0 && options.CompanyNameResolver is not null)
+                item.CompanyName = await options.CompanyNameResolver(new(id, languageCode, services));
         }
     }
 
-    private (string statusText, VehcileServiceItemStatuses status, DateTimeOffset? claimDate, string wip, string invoice, long? companyID, string packageCode, decimal? claimedCost)
-    ProcessServiceItemStatus(
+    private static (string statusText, VehcileServiceItemStatuses status, DateTimeOffset? claimDate, string wip, string invoice, long? companyID, string packageCode, decimal? claimedCost)
+    ResolveItemStatus(
         VehicleServiceItemDTO item,
         IEnumerable<ItemClaimModel> serviceClaimLines,
-        bool showingInactivatedItems
-    )
+        bool showingInactivatedItems)
     {
         var claimLine = serviceClaimLines?
             .Where(x => x?.ServiceItemID == item.ServiceItemID.ToString())
@@ -520,12 +720,9 @@ public class VehicleServiceItemEvaluator
             .FirstOrDefault();
 
         if (claimLine is not null)
-        {
             return ("processed", VehcileServiceItemStatuses.Processed,
-                claimLine.ClaimDate,
-                claimLine.JobNumber,
-                claimLine.InvoiceNumber, claimLine.CompanyID, claimLine.PackageCode, claimLine.Cost);
-        }
+                claimLine.ClaimDate, claimLine.JobNumber, claimLine.InvoiceNumber,
+                claimLine.CompanyID, claimLine.PackageCode, claimLine.Cost);
 
         if (item.ExpiresAt is not null && item.ExpiresAt < DateTime.Now)
             return ("expired", VehcileServiceItemStatuses.Expired, null, null, null, null, null, null);
@@ -534,155 +731,5 @@ public class VehicleServiceItemEvaluator
             return ("activationRequired", VehcileServiceItemStatuses.ActivationRequired, null, null, null, null, null, null);
 
         return ("pending", VehcileServiceItemStatuses.Pending, null, null, null, null, null, null);
-    }
-
-    private async Task<List<VehicleServiceItemDTO>> ApplyPostProcessing(
-        List<VehicleServiceItemDTO> result,
-        IEnumerable<ServiceItemModel> serviceItems,
-        VehicleEntryModel vehicle,
-        string languageCode)
-    {
-        // companyDataAggregate is loaded per-VIN by the storage layer, so FreeServiceItemExcludedVINs
-        // only ever contains entries for the current vehicle — a non-empty list means "this vehicle
-        // is excluded from warranty-activated items". No per-item VIN check is needed here.
-        // Runs after CalculateServiceItemStatusAndClaimability so activationRequired still reflects
-        // the unfiltered list — that's a likely bug; see issue #22 in STATUS.md (pinned pending a
-        // LookupOptions flag to choose between suppressing the prompt vs. still requesting activation
-        // for customer-data collection).
-        var currentVehicleIsExcludedFromWarrantyActivatedItems = companyDataAggregate.FreeServiceItemExcludedVINs.Any();
-
-        if (currentVehicleIsExcludedFromWarrantyActivatedItems)
-            result.RemoveAll(x => x.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.WarrantyActivation);
-
-        var ineligibleServiceItems = await GetIneligibleServiceItems(
-            result,
-            serviceItems,
-            vehicle?.Katashiki,
-            vehicle?.VariantCode,
-            languageCode
-        );
-
-        result.AddRange(ineligibleServiceItems);
-
-        ProcessDynamicCancelledFreeServiceItems(result);
-
-        return result
-            .OrderBy(x => x.TypeEnum)
-            .ThenByDescending(x => x.MaximumMileage.HasValue)
-            .ThenBy(x => x.MaximumMileage)
-            .ThenBy(x => x.ExpiresAt)
-            .ThenBy(x => x.StatusEnum)
-            .ToList();
-    }
-
-    private async Task StampSignaturesAndPrintUrls(
-        List<VehicleServiceItemDTO> result,
-        VehicleServiceActivation serviceActivation,
-        string languageCode)
-    {
-        var itemSignatureExpiry = DateTime.UtcNow;
-
-        if (this.options?.SignatureValidityDuration != null)
-            itemSignatureExpiry = itemSignatureExpiry.Add(this.options.SignatureValidityDuration);
-
-        foreach (var item in result)
-        {
-            item.SignatureExpiry = itemSignatureExpiry;
-
-            item.Signature = item.GenerateSignature(companyDataAggregate.VIN, this.options.SigningSecretKey);
-
-            //if (options.VehicleInspectionPreClaimVoucherPrintingURL is not null && item.VehicleInspectionID is not null)
-            //    item.PrintUrl = $"{options.VehicleInspectionPreClaimVoucherPrintingURL}{item.VehicleInspectionID}/{item.ServiceItemID}";
-
-            if (options.VehicleInspectionPreClaimVoucherPrintingURLResolver is not null && item.VehicleInspectionID is not null)
-                item.PrintUrl = await options.VehicleInspectionPreClaimVoucherPrintingURLResolver(new(new(item.VehicleInspectionID, item.ServiceItemID), languageCode, this.services));
-
-            //Service Activation takes priority and overrides PrintURL if applicable
-            //if (options.ServiceActivationPreClaimVoucherPrintingURL is not null && serviceActivation is not null)
-            //    item.PrintUrl = $"{options.ServiceActivationPreClaimVoucherPrintingURL}{serviceActivation.id}/{item.ServiceItemID}";
-
-            if (options.ServiceActivationPreClaimVoucherPrintingURLResolver is not null && serviceActivation is not null)
-                item.PrintUrl = await options.ServiceActivationPreClaimVoucherPrintingURLResolver(new(new(serviceActivation.id, item.ServiceItemID), languageCode, this.services));
-
-            item.Warnings = options.StandardItemClaimWarnings;
-        }
-    }
-
-    private async Task<IEnumerable<VehicleServiceItemDTO>> GetIneligibleServiceItems(
-        IEnumerable<VehicleServiceItemDTO> eligibleServiceItems,
-        IEnumerable<ServiceItemModel> availableServiceItems,
-        string katashiki,
-        string variant,
-        string languageCode
-        )
-    {
-        var result = new List<VehicleServiceItemDTO>();
-
-        var existingServiceItemIds = eligibleServiceItems?
-            .Where(x => x.TypeEnum == VehcileServiceItemTypes.Free)
-            .Select(x => x.ServiceItemID.ToString())
-            .ToList();
-
-        var claimedItems = companyDataAggregate.ItemClaims?
-            .Select(x => x?.ServiceItemID)
-            .Where(x => !(existingServiceItemIds?.Any(s => s == x) ?? false));
-
-        foreach (var item in availableServiceItems.Where(x => claimedItems?.Any(a => a == x.IntegrationID) ?? false))
-        {
-            //var modelCost = GetModelCost(item.ModelCosts, katashiki, variant);
-
-            var claimLine = companyDataAggregate
-                .ItemClaims?
-                .FirstOrDefault(t => t.ServiceItemID == item.IntegrationID);
-
-            var serviceItem = new VehicleServiceItemDTO
-            {
-                ServiceItemID = item.IntegrationID,
-                Name = Utility.GetLocalizedText(item.Name, languageCode),
-                Description = Utility.GetLocalizedText(item.PrintoutDescription, languageCode),
-                Title = Utility.GetLocalizedText(item.PrintoutTitle, languageCode),
-                //Image = await GetFirstImageFullUrl(item.Photo),
-                Type = "free",
-                TypeEnum = VehcileServiceItemTypes.Free,
-                StatusEnum = VehcileServiceItemStatuses.Processed,
-                Status = "processed",
-                //ModelCostID = modelCost?.ID,
-                PackageCode = claimLine.PackageCode, //modelCost?.PackageCode ?? item.PackageCode,
-                ClaimDate = claimLine?.ClaimDate,
-                Cost = claimLine?.Cost,
-                InvoiceNumber = claimLine?.InvoiceNumber,
-                JobNumber = claimLine?.JobNumber,
-                //CompanyID = claimLine?.CompanyID,
-                MaximumMileage = item.MaximumMileage
-            };
-
-            if (claimLine.CompanyID != null && claimLine.CompanyID != 0 && options.CompanyNameResolver is not null)
-                serviceItem.CompanyName = await options.CompanyNameResolver(new(claimLine?.CompanyID, languageCode, services));
-
-            result.Add(serviceItem);
-        }
-
-        return result;
-    }
-
-    private void ProcessDynamicCancelledFreeServiceItems(IEnumerable<VehicleServiceItemDTO> serviceItems)
-    {
-        var freeItems = serviceItems
-            .Where(x => x.TypeEnum == VehcileServiceItemTypes.Free)
-            .Where(x => x.MaximumMileage.HasValue)
-            .OrderBy(x => x.MaximumMileage);
-
-        foreach (var item in freeItems)
-        {
-            if (item.StatusEnum == VehcileServiceItemStatuses.Pending)
-            {
-                if (freeItems.Any(x => x.StatusEnum == VehcileServiceItemStatuses.Processed && x.MaximumMileage > item.MaximumMileage))
-                {
-                    item.Status = "cancelled";
-                    item.StatusEnum = VehcileServiceItemStatuses.Cancelled;
-                    item.Claimable = false;
-                }
-            }
-        }
     }
 }
