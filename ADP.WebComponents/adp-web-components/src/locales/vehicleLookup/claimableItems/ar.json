@@ -18,6 +18,10 @@
   "successFulClaimMessage": "تم المطالبة بنجاح.",
   "activationRequired": "Activation Required",
   "warrantyAndServicesNotActivated": "Warranty & Services have not been activated for this vehicle.",
+  "viewTrace": "عرض تتبع البحث",
+  "traceTitle": "تتبع البحث عن عنصر الخدمة",
+  "traceLoading": "جارٍ تحميل التتبع…",
+  "traceFailed": "تعذر تحميل التتبع.",
   "claimForm": {
     "print": "مطبعة",
     "expand": "تکبیر",

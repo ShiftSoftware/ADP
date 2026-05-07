@@ -18,6 +18,10 @@
   "successFulClaimMessage": "Item was claimed successfully.",
   "activationRequired": "Activation Required",
   "warrantyAndServicesNotActivated": "Warranty & Services have not been activated for this vehicle.",
+  "viewTrace": "View Lookup Trace",
+  "traceTitle": "Service-item Lookup Trace",
+  "traceLoading": "Loading trace…",
+  "traceFailed": "Failed to load trace.",
   "claimForm": {
     "expand": "Expand",
     "print": "Print",

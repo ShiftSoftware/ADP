@@ -18,6 +18,10 @@
   "successFulClaimMessage": "Item was claimed successfully.",
   "activationRequired": "Activation Required",
   "warrantyAndServicesNotActivated": "Warranty & Services have not been activated for this vehicle.",
+  "viewTrace": "Открыть трассировку",
+  "traceTitle": "Трассировка поиска услуг",
+  "traceLoading": "Загрузка трассировки…",
+  "traceFailed": "Не удалось загрузить трассировку.",
   "claimForm": {
     "print": "Печать",
     "expand": "Раскрыть",

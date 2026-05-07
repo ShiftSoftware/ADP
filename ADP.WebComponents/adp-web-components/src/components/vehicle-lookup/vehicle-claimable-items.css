@@ -1,6 +1,7 @@
 @import '../style/shift-skeleton.css';
 @import './components/claimable-item.css';
 @import './components/claimable-item-popover.css';
+@import './components/claimable-trace-modal.css';
 @import '../../features/vehicle-info-layout/vehicle-info-layout.css';
 
 :host {

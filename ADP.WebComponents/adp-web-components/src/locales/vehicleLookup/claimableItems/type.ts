@@ -48,6 +48,10 @@ const claimableItemsSchema = object({
     'successFulClaimMessage',
     'activationRequired',
     'warrantyAndServicesNotActivated',
+    'viewTrace',
+    'traceTitle',
+    'traceLoading',
+    'traceFailed',
   ]),
 );
 

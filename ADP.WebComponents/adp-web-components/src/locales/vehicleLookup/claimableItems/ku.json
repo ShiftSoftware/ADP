@@ -18,6 +18,10 @@
   "successFulClaimMessage": "بە سەرکەوتویی چالاک کرا.",
   "activationRequired": "Activation Required",
   "warrantyAndServicesNotActivated": "Warranty & Services have not been activated for this vehicle.",
+  "viewTrace": "بینینی شوێنپێی گەڕان",
+  "traceTitle": "شوێنپێی گەڕانی بڕگەی خزمەتگوزاری",
+  "traceLoading": "بارکردنی شوێنپێ…",
+  "traceFailed": "بارکردنی شوێنپێ سەرکەوتوو نەبوو.",
   "claimForm": {
     "print": "چاپ",
     "expand": "فراوانکردن",

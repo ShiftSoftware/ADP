@@ -13,6 +13,7 @@ import { ComponentLocale, ErrorKeys, getLocaleLanguage, getSharedLocal, Language
 
 import { ClaimableItem } from './components/claimable-item';
 import { ClaimableItemPopover, PopoverTarget } from './components/claimable-item-popover';
+import { ClaimableTraceModal } from './components/claimable-trace-modal';
 import { VehicleItemClaimForm } from './vehicle-item-claim-form';
 
 import dynamicClaimSchema from '~locales/vehicleLookup/claimableItems/type';
@@ -20,6 +21,7 @@ import dynamicClaimSchema from '~locales/vehicleLookup/claimableItems/type';
 import { PrintIcon } from '~assets/print-icon';
 import { ActivationIcon } from '~assets/activation-icon';
 import { EmptyTableIcon } from '~assets/empty-table-icon';
+import Eye from '~assets/eye.svg';
 import { VehicleLookupMock } from '~features/vehicle-lookup-component/types';
 import { ItemClaimDTO } from '../../global/types/generated/vehicle-lookup/item-claim-dto';
 
@@ -114,6 +116,7 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
   @Prop() maximumDocumentFileSizeInMb: number = 30;
   @Prop() claimEndPoint: string = 'api/vehicle/swift-claim';
   @Prop() activate?: (vehicleInformation: VehicleLookupDTO) => void;
+  @Prop() showTrace: boolean = false;
 
   @State() activeTab: string = '';
   @State() showPrintBox: boolean = false;
@@ -128,7 +131,16 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
   @State() popoverContentFading: boolean = false;
   @State() popoverFadingOut: boolean = false;
 
+  @State() showTraceModal: boolean = false;
+  @State() traceModalFadingOut: boolean = false;
+  @State() isLoadingTrace: boolean = false;
+  @State() traceError?: string;
+  @State() traceHtml?: string;
+
   claimForm: VehicleItemClaimForm;
+  private traceAbortController?: AbortController;
+  private traceCloseListener?: (event: KeyboardEvent) => void;
+  private traceFadeOutTimeoutRef: ReturnType<typeof setTimeout>;
 
   private popoverAnchorEl: HTMLElement;
   private popoverCloseTimeoutRef: ReturnType<typeof setTimeout>;
@@ -254,6 +266,10 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
     clearTimeout(this.popoverCloseTimeoutRef);
     clearTimeout(this.popoverHideTimeoutRef);
     clearTimeout(this.popoverContentSwapTimeoutRef);
+    clearTimeout(this.traceFadeOutTimeoutRef);
+    if (this.traceCloseListener) window.removeEventListener('keydown', this.traceCloseListener);
+    this.traceAbortController?.abort();
+    if (this.showTraceModal || this.traceModalFadingOut) document.body.style.overflow = 'auto';
   }
 
   @Watch('vehicleLookup')
@@ -316,6 +332,7 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
   private static readonly POPOVER_CLOSE_DELAY_MS = 200;
   private static readonly POPOVER_FADE_OUT_MS = 500;
   private static readonly POPOVER_CONTENT_FADE_MS = 150;
+  private static readonly TRACE_FADE_OUT_MS = 300;
 
   setClaimableItemPopover = (showPopover: boolean, claimableItem?: VehicleServiceItemDTO, anchorEl?: HTMLElement) => {
     clearTimeout(this.popoverCloseTimeoutRef);
@@ -396,6 +413,70 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
 
   private onPopoverMouseLeave = () => {
     this.setClaimableItemPopover(false);
+  };
+
+  private openTraceModal = async () => {
+    if (!this.vehicleLookup?.vin) return;
+
+    clearTimeout(this.traceFadeOutTimeoutRef);
+    this.traceModalFadingOut = false;
+    this.showTraceModal = true;
+    this.isLoadingTrace = true;
+    this.traceError = undefined;
+    this.traceHtml = undefined;
+    // Match the claim-form pattern: lock host page scroll so the only scrollbar is the iframe's.
+    document.body.style.overflow = 'hidden';
+
+    this.traceCloseListener = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') this.closeTraceModal();
+    };
+    window.addEventListener('keydown', this.traceCloseListener);
+
+    this.traceAbortController?.abort();
+    this.traceAbortController = new AbortController();
+
+    try {
+      const traceQuery = [this.queryString, 'trace=html'].filter(Boolean).join('&');
+      const url = `${this.baseUrl}${this.vehicleLookup.vin}${traceQuery ? `?${traceQuery}` : ''}`;
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: { Accept: 'text/html', ...((this.headers as Record<string, string>) || {}) },
+        signal: this.traceAbortController.signal,
+      });
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const html = await response.text();
+
+      if (!this.showTraceModal) return;
+
+      this.traceHtml = html;
+      this.isLoadingTrace = false;
+    } catch (error) {
+      if ((error as DOMException)?.name === 'AbortError') return;
+      console.error('Trace fetch failed', error);
+      this.isLoadingTrace = false;
+      this.traceError = this.locale.traceFailed;
+    }
+  };
+
+  private closeTraceModal = () => {
+    if (!this.showTraceModal && !this.traceModalFadingOut) return;
+    this.traceAbortController?.abort();
+    this.showTraceModal = false;
+    this.traceModalFadingOut = true;
+    document.body.style.overflow = 'auto';
+    if (this.traceCloseListener) {
+      window.removeEventListener('keydown', this.traceCloseListener);
+      this.traceCloseListener = undefined;
+    }
+    clearTimeout(this.traceFadeOutTimeoutRef);
+    this.traceFadeOutTimeoutRef = setTimeout(() => {
+      this.traceModalFadingOut = false;
+      this.isLoadingTrace = false;
+      this.traceError = undefined;
+      this.traceHtml = undefined;
+    }, VehicleClaimableItems.TRACE_FADE_OUT_MS);
   };
 
   @Method()
@@ -567,6 +648,17 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
           onMouseLeave={this.onPopoverMouseLeave}
         />
 
+        <ClaimableTraceModal
+          isOpen={this.showTraceModal}
+          fadingOut={this.traceModalFadingOut}
+          isLoading={this.isLoadingTrace}
+          errorMessage={this.traceError}
+          vin={this.vehicleLookup?.vin}
+          traceHtml={this.traceHtml}
+          locale={this.locale}
+          onClose={this.closeTraceModal}
+        />
+
         <VehicleInfoLayout
           isError={this.isError}
           coreOnly={this.coreOnly}
@@ -612,6 +704,11 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
             </div>
 
             <div class="claimable-items-box px-[30px] min-w-full relative overflow-x-scroll h-full overflow-y-hidden">
+              {this.showTrace && this.vehicleLookup && !this.isLoading && !this.tabAnimationLoading && (
+                <button type="button" class="trace-trigger-button" title={this.locale.viewTrace} aria-label={this.locale.viewTrace} onClick={this.openTraceModal}>
+                  <img src={Eye} alt="" />
+                </button>
+              )}
               <div class="flex relative w-fit min-w-full items-center h-full [&_*]:shrink-0 gap-[250px] justify-between">
                 {/* Lane */}
                 <div
