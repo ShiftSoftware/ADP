@@ -10,6 +10,8 @@
       "brandID": "1"
     },
     "saleInformation": {
+      "countryID": "1",
+      "countryName": "Iraq",
       "companyName": "Sample Motors",
       "branchName": "Main Branch 2",
       "invoiceDate": "2024-01-15"
@@ -189,8 +191,8 @@
         "claimable": false,
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "yoUn84FZeT3pZRqmyqZImKb8XZ9iia0So/DomMB1WTs=",
-        "signatureExpiry": "2026-05-07T20:18:01.5706609Z"
+        "signature": "mP2CSHkbxpQWoiVikV4YdQjG0sr3g2ERrlou6q//scE=",
+        "signatureExpiry": "2026-05-07T20:20:43.2394445Z"
       },
       {
         "showDocumentUploader": false,
@@ -213,8 +215,8 @@
         "claimable": false,
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "u/1Pbkwb5xE7/S8JfOsE/0jHlv7MxzX82YbqD0bMMcY=",
-        "signatureExpiry": "2026-05-07T20:18:01.5706609Z"
+        "signature": "qjMvuTDHK9YTFPTWCk8yrHrXmOvPIes6X8P1LsFRqp0=",
+        "signatureExpiry": "2026-05-07T20:20:43.2394445Z"
       },
       {
         "showDocumentUploader": false,
@@ -231,8 +233,8 @@
         "claimable": true,
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "IXfgyz2/NAXyQYQ2aCaL4Z/9ZkyNDJTg6dNRcWu2Vak=",
-        "signatureExpiry": "2026-05-07T20:18:01.5706609Z"
+        "signature": "6Wz58SEmseCR7WPFvDD\u002BYcvTCtkFWVXCm44GuwC6hVM=",
+        "signatureExpiry": "2026-05-07T20:20:43.2394445Z"
       },
       {
         "showDocumentUploader": false,
@@ -249,8 +251,8 @@
         "maximumMileage": 16000,
         "claimable": true,
         "claimingMethodEnum": 0,
-        "signature": "SfKnyVHCm4lpwwVrkp6xI/t\u002BvCiKcQ//QNfCBSQs5lI=",
-        "signatureExpiry": "2026-05-07T20:18:01.5706609Z"
+        "signature": "oqMf3LqOYn3tuIaOGM3dXplE8JRFQZryX40zeA64\u002BfQ=",
+        "signatureExpiry": "2026-05-07T20:20:43.2394445Z"
       }
     ],
     "accessories": [
@@ -276,6 +278,8 @@
       "brandID": "1"
     },
     "saleInformation": {
+      "countryID": "1",
+      "countryName": "Iraq",
       "companyName": "Sample Motors",
       "branchName": "Service Center",
       "invoiceDate": "2023-06-20"
@@ -322,8 +326,8 @@
         "claimable": false,
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "2LptMIiuEss0cieni1kWx6G/jqnqrXcIShfGC6hCt0o=",
-        "signatureExpiry": "2026-05-07T20:18:01.5776898Z"
+        "signature": "NobuKFX\u002BM\u002BYti8VPob54NAZVvgw7CtLrBQxNCJjimNs=",
+        "signatureExpiry": "2026-05-07T20:20:43.2449519Z"
       },
       {
         "showDocumentUploader": false,
@@ -340,8 +344,8 @@
         "claimable": false,
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "kBdKse93H406xqDmJ5ome2VF0UDk08khjk0hWbogSXw=",
-        "signatureExpiry": "2026-05-07T20:18:01.5776898Z"
+        "signature": "9BvsHsu9rs5tQvKQbtqIkZ\u002BCfS/1NiYKu/2pQe/m4rQ=",
+        "signatureExpiry": "2026-05-07T20:20:43.2449519Z"
       },
       {
         "showDocumentUploader": false,
@@ -358,8 +362,8 @@
         "claimable": true,
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "dof5Kbg\u002BRBI6RWFWtckXrjosejEveC7E6BhZqQamU64=",
-        "signatureExpiry": "2026-05-07T20:18:01.5776898Z"
+        "signature": "Xyg6SRPyXDj7O\u002BaZQQdirHJUdN5iPTdHAlZgxHBVWHU=",
+        "signatureExpiry": "2026-05-07T20:20:43.2449519Z"
       }
     ],
     "accessories": [],

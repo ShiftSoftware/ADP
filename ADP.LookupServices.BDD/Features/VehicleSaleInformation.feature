@@ -13,6 +13,14 @@ Scenario: Direct sale with company and branch
   And the sale branch is "Downtown Branch"
   And the sale invoice date is "2024-01-15"
 
+Scenario: Country name resolves from vehicle CountryID
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | BranchID | CountryID |
+    | 1FDKF37GXVEB34368 | 2024-01-15  | 1         | 10       | 42        |
+  And country 42 is named "Iraq"
+  When evaluating sale information for "1FDKF37GXVEB34368" with language "en"
+  Then the sale country is "Iraq"
+
 Scenario: Vehicle at broker stock (no broker invoice)
   Given vehicles in dealer stock:
     | VIN               | InvoiceDate | CompanyID | BranchID | BrandID |

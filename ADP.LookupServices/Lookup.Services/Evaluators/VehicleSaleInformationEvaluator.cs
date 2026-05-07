@@ -70,16 +70,10 @@ public class VehicleSaleInformationEvaluator
         result.CustomerID = vehicle?.CustomerID;
         result.CustomerAccountNumber = vehicle?.CustomerAccountNumber;
 
-        if (Options.CountryFromBranchIDResolver is not null)
-        {
-            var countryResult = await Options.CountryFromBranchIDResolver(new(vehicle.BranchID, languageCode, ServiceProvider));
+        result.CountryID = vehicle.CountryID?.ToString();
 
-            if (countryResult is not null)
-            {
-                result.CountryID = countryResult.Value.countryID?.ToString();
-                result.CountryName = countryResult.Value.countryName;
-            }
-        }
+        if (Options.CountryNameResolver is not null)
+            result.CountryName = await Options.CountryNameResolver(new(vehicle.CountryID, languageCode, ServiceProvider));
 
         if (Options.CompanyNameResolver is not null)
             result.CompanyName = await Options.CompanyNameResolver(new(vehicle.CompanyID, languageCode, ServiceProvider));

@@ -18,8 +18,7 @@ internal static class ServiceItemEligibilityReasonFormatter
     public static string Format(
         ServiceItemModel item,
         EligibilityRejectionStage stage,
-        VehicleEntryModel vehicle,
-        VehicleSaleInformation saleInformation) => stage switch
+        VehicleEntryModel vehicle) => stage switch
     {
         EligibilityRejectionStage.IsDeleted =>
             "Item is marked deleted.",
@@ -28,7 +27,7 @@ internal static class ServiceItemEligibilityReasonFormatter
         EligibilityRejectionStage.Company =>
             $"Vehicle CompanyID={vehicle?.CompanyID} not in item.CompanyIDs=[{Join(item.CompanyIDs)}].",
         EligibilityRejectionStage.Country =>
-            $"Sale CountryID={saleInformation?.CountryID?.ToLong()} not in item.CountryIDs=[{Join(item.CountryIDs)}].",
+            $"Vehicle CountryID={vehicle?.CountryID} not in item.CountryIDs=[{Join(item.CountryIDs)}].",
         EligibilityRejectionStage.CampaignWindow =>
             FormatCampaignWindow(item),
         EligibilityRejectionStage.VehicleApplicability =>

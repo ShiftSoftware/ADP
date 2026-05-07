@@ -28,8 +28,6 @@ public class LookupOptions
     public Func<LookupOptionResolverModel<List<ShiftFileDTO>?>, ValueTask<List<ShiftFileDTO>?>>? CompanyLogoImageResolver { get; set; }
     /// <summary>Resolver delegate that resolves a part location identifier to a human-readable name.</summary>
     public Func<LookupOptionResolverModel<PartLocationNameResolverModel>, ValueTask<string?>>? PartLocationNameResolver { get; set; }
-    /// <summary>Resolver delegate that resolves a branch ID to its country ID and name.</summary>
-    public Func<LookupOptionResolverModel<long?>, ValueTask<(long? countryID, string countryName)?>>? CountryFromBranchIDResolver { get; set; }
     /// <summary>Resolver delegate that resolves a country ID to its name.</summary>
     public Func<LookupOptionResolverModel<long?>, ValueTask<string?>>? CountryNameResolver { get; set; }
     /// <summary>Resolver delegate that resolves a brand ID to its name. Used by the diagnostic trace renderer; not required for normal lookups.</summary>

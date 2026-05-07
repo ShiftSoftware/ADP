@@ -45,17 +45,16 @@ public partial class VehicleServiceItemEvaluator
     public async Task<(IEnumerable<VehicleServiceItemDTO> serviceItems, bool activationRequired)> Evaluate(
         VehicleEntryModel vehicle,
         DateTime? freeServiceStartDate,
-        VehicleSaleInformation vehicleSaleInformation,
         string languageCode)
     {
         var requestedStartDate = freeServiceStartDate;
         var serviceItems = await LoadServiceItemCatalog();
         (freeServiceStartDate, var showingInactivatedItems) = ResolveActivationMode(vehicle, freeServiceStartDate);
-        Trace.RecordInputs(vehicle, vehicleSaleInformation, freeServiceStartDate, requestedStartDate, showingInactivatedItems, serviceItems, companyDataAggregate);
+        Trace.RecordInputs(vehicle, freeServiceStartDate, requestedStartDate, showingInactivatedItems, serviceItems, companyDataAggregate);
 
         var result = new List<VehicleServiceItemDTO>();
 
-        using (Trace.Stage("Eligibility"))            result.AddRange(BuildEligibleFreeItems(serviceItems, vehicle, vehicleSaleInformation, freeServiceStartDate, languageCode));
+        using (Trace.Stage("Eligibility"))            result.AddRange(BuildEligibleFreeItems(serviceItems, vehicle, freeServiceStartDate, languageCode));
         using (Trace.Stage("PaidItems"))              result.AddRange(BuildPaidItems(languageCode));
         using (Trace.Stage("WarrantyRollingExpiry"))  ApplyWarrantyRollingExpiry(result, freeServiceStartDate);
         using (Trace.Stage("InspectionExpansion"))    ApplyVehicleInspectionExpansion(result);
@@ -110,11 +109,10 @@ public partial class VehicleServiceItemEvaluator
     private IEnumerable<VehicleServiceItemDTO> BuildEligibleFreeItems(
         IEnumerable<ServiceItemModel> serviceItems,
         VehicleEntryModel vehicle,
-        VehicleSaleInformation saleInformation,
         DateTime? freeServiceStartDate,
         string languageCode)
     {
-        var eligible = FilterEligibleServiceItems(serviceItems, vehicle, saleInformation, freeServiceStartDate)
+        var eligible = FilterEligibleServiceItems(serviceItems, vehicle, freeServiceStartDate)
             .OrderByDescending(x => x.MaximumMileage.HasValue)
             .ThenBy(x => x.MaximumMileage);
 
@@ -450,13 +448,12 @@ public partial class VehicleServiceItemEvaluator
     private EligibilityRejectionStage EvaluateItemEligibility(
         ServiceItemModel item,
         VehicleEntryModel vehicle,
-        VehicleSaleInformation saleInformation,
         DateTime? freeServiceStartDate)
     {
         if (item.IsDeleted) return EligibilityRejectionStage.IsDeleted;
         if (!MatchesBrand(item, vehicle)) return EligibilityRejectionStage.Brand;
         if (!MatchesCompany(item, vehicle)) return EligibilityRejectionStage.Company;
-        if (!MatchesCountry(item, vehicle, saleInformation)) return EligibilityRejectionStage.Country;
+        if (!MatchesCountry(item, vehicle)) return EligibilityRejectionStage.Country;
         if (!IsWithinCampaignWindow(item, freeServiceStartDate)) return EligibilityRejectionStage.CampaignWindow;
         if (!IsApplicableToVehicle(item, vehicle)) return EligibilityRejectionStage.VehicleApplicability;
         return EligibilityRejectionStage.None;
@@ -468,10 +465,8 @@ public partial class VehicleServiceItemEvaluator
     private static bool MatchesCompany(ServiceItemModel item, VehicleEntryModel vehicle) =>
         vehicle is null || item.CompanyIDs is null || !item.CompanyIDs.Any() || item.CompanyIDs.Any(a => a == vehicle.CompanyID);
 
-    // Note: short-circuits on `vehicle is null` rather than `saleInformation is null` — copy-paste
-    // from the brand/company filters. Behavior pinned (issue #21 in STATUS.md).
-    private static bool MatchesCountry(ServiceItemModel item, VehicleEntryModel vehicle, VehicleSaleInformation saleInformation) =>
-        vehicle is null || item.CountryIDs is null || !item.CountryIDs.Any() || item.CountryIDs.Any(a => a == saleInformation?.CountryID?.ToLong());
+    private static bool MatchesCountry(ServiceItemModel item, VehicleEntryModel vehicle) =>
+        vehicle is null || item.CountryIDs is null || !item.CountryIDs.Any() || item.CountryIDs.Any(a => a == vehicle.CountryID);
 
     private bool IsWithinCampaignWindow(ServiceItemModel item, DateTime? freeServiceStartDate) =>
         item.CampaignActivationTrigger switch
@@ -532,21 +527,14 @@ public partial class VehicleServiceItemEvaluator
     private IEnumerable<ServiceItemModel> FilterEligibleServiceItems(
         IEnumerable<ServiceItemModel> serviceItems,
         VehicleEntryModel vehicle,
-        VehicleSaleInformation vehicleSaleInformation,
         DateTime? freeServiceStartDate)
     {
         Trace.RecordEligibilityInputCount(serviceItems?.Count() ?? 0);
 
-        // Issue #21 callout (latent): the country filter short-circuits on `vehicle is null`,
-        // not `saleInformation is null`. With a null vehicle, items pass the country check
-        // regardless of CountryIDs. Surface it via the trace so it's visible if it bites.
-        if (vehicle is null)
-            Trace.Note("Issue #21 (latent): vehicle is null — country eligibility filter is being short-circuited via the brand/company copy-paste guard. Items will pass the country check regardless of their CountryIDs.");
-
         foreach (var item in serviceItems ?? Enumerable.Empty<ServiceItemModel>())
         {
-            var stage = EvaluateItemEligibility(item, vehicle, vehicleSaleInformation, freeServiceStartDate);
-            Trace.RecordEligibilityDecision(item, stage, vehicle, vehicleSaleInformation);
+            var stage = EvaluateItemEligibility(item, vehicle, freeServiceStartDate);
+            Trace.RecordEligibilityDecision(item, stage, vehicle);
             if (stage == EligibilityRejectionStage.None)
                 yield return item;
         }

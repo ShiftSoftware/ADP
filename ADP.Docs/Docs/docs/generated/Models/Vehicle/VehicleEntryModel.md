@@ -20,6 +20,7 @@ Represents a vehicle entry in the dealer stock. Each entry corresponds to a vehi
 | InvoiceDate <div><strong>``DateTime?``</strong></div> | The date on the sale invoice for this vehicle. |
 | CompanyHashID <div><strong>``string``</strong></div> | The Company Hash ID from the Identity System. |
 | BranchHashID <div><strong>``string``</strong></div> | The Branch Hash ID from the Identity System. |
+| CountryHashID <div><strong>``string``</strong></div> | The Country Hash ID from the Identity System. |
 | WarrantyActivationDate <div><strong>``DateTime?``</strong></div> | The date when the vehicle's warranty was activated. This may differ from the invoice date. |
 | InvoiceNumber <div><strong>``string``</strong></div> | The invoice number for the vehicle sale transaction. |
 | AccountNumber <div><strong>``string``</strong></div> | The dealer account number associated with this transaction. |
