@@ -24,13 +24,6 @@ public class VehicleServiceItemStepDefinitions
         _freeServiceStartDate = DateTime.Parse(date);
     }
 
-    [Given("the sale country is {string}")]
-    public void GivenTheSaleCountryIs(string countryId)
-    {
-        _context.SaleInformation ??= new VehicleSaleInformation();
-        _context.SaleInformation.CountryID = countryId;
-    }
-
     [When("evaluating service items for {string} with language {string}")]
     public async Task WhenEvaluatingServiceItemsFor(string vin, string language)
     {
@@ -39,16 +32,10 @@ public class VehicleServiceItemStepDefinitions
         var vehicle = new VehicleEntryEvaluator(_context.Aggregate).Evaluate();
         _context.CurrentVehicle = vehicle;
 
-        var saleInfo = _context.SaleInformation ?? new VehicleSaleInformation
-        {
-            InvoiceDate = vehicle?.InvoiceDate,
-            WarrantyActivationDate = vehicle?.WarrantyActivationDate,
-        };
-
         var evaluator = new VehicleServiceItemEvaluator(
             _context.StorageService, _context.Aggregate, _context.Options, _context.ServiceProvider);
 
-        var (serviceItems, activationRequired) = await evaluator.Evaluate(vehicle!, _freeServiceStartDate, saleInfo, language);
+        var (serviceItems, activationRequired) = await evaluator.Evaluate(vehicle!, _freeServiceStartDate, language);
         _result = serviceItems;
         _activationRequired = activationRequired;
     }

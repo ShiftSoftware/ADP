@@ -57,6 +57,13 @@ public class VehicleSaleInformationStepDefinitions
         Assert.Equal(expectedCompany, _result.CompanyName);
     }
 
+    [Then("the sale country is {string}")]
+    public void ThenTheSaleCountryIs(string expectedCountry)
+    {
+        Assert.NotNull(_result);
+        Assert.Equal(expectedCountry, _result.CountryName);
+    }
+
     [Then("the sale branch is {string}")]
     public void ThenTheSaleBranchIs(string expectedBranch)
     {

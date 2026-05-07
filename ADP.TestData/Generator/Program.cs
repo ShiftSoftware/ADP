@@ -178,7 +178,6 @@ static async Task<VehicleLookupDTO> GenerateVehicleLookup(
     ).Evaluate(
         vehicle,
         data.Warranty?.FreeServiceStartDate,
-        data.SaleInformation,
         "en"
     );
 

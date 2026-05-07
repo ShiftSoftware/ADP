@@ -157,7 +157,6 @@ public class VehicleLookupService
         var serviceItemsResult = await serviceItemEvaluator.Evaluate(
             vehicle,
             data.Warranty?.FreeServiceStartDate,
-            data.SaleInformation,
             requestOptions.LanguageCode
         );
 

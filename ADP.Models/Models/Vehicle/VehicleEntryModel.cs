@@ -13,6 +13,7 @@ public class VehicleEntryModel :
     IPartitionedItem,
     IBrandProps,
     ICompanyProps,
+    ICountryProps,
     IRegionProps,
     IBranchProps,
     IOrderDocumentProps,
@@ -97,6 +98,14 @@ public class VehicleEntryModel :
     /// The Branch Hash ID from the Identity System.
     /// </summary>
     public string BranchHashID { get; set; }
+
+    [DocIgnore]
+    public long? CountryID { get; set; }
+
+    /// <summary>
+    /// The Country Hash ID from the Identity System.
+    /// </summary>
+    public string CountryHashID { get; set; }
 
     /// <summary>
     /// The date when the vehicle's warranty was activated. This may differ from the invoice date.

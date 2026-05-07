@@ -45,26 +45,24 @@ Scenario: Service item for a different company is excluded
 
 # --- Country filter ---
 
-Scenario: Service item matching the sale country is included
+Scenario: Service item matching the vehicle country is included
   Given vehicles in dealer stock:
-    | VIN               | InvoiceDate | CompanyID | BranchID | BrandID |
-    | 1FDKF37GXVEB34368 | 2026-01-15  | 1         | 10       | 1       |
+    | VIN               | InvoiceDate | CompanyID | BranchID | BrandID | CountryID |
+    | 1FDKF37GXVEB34368 | 2026-01-15  | 1         | 10       | 1       | 42        |
   And service items:
     | ServiceItemID | Name       | BrandID | CountryID | ActiveForMonths |
     | SI-COUNTRY    | Oil Change | 1       | 42        | 24              |
-  And the sale country is "42"
   And the free service start date is "2026-01-15"
   When evaluating service items for "1FDKF37GXVEB34368" with language "en"
   Then service item "SI-COUNTRY" is in the result
 
 Scenario: Service item for a different country is excluded
   Given vehicles in dealer stock:
-    | VIN               | InvoiceDate | CompanyID | BranchID | BrandID |
-    | 1FDKF37GXVEB34368 | 2026-01-15  | 1         | 10       | 1       |
+    | VIN               | InvoiceDate | CompanyID | BranchID | BrandID | CountryID |
+    | 1FDKF37GXVEB34368 | 2026-01-15  | 1         | 10       | 1       | 99        |
   And service items:
     | ServiceItemID | Name       | BrandID | CountryID | ActiveForMonths |
     | SI-OTHERCTRY  | Oil Change | 1       | 42        | 24              |
-  And the sale country is "99"
   And the free service start date is "2026-01-15"
   When evaluating service items for "1FDKF37GXVEB34368" with language "en"
   Then service item "SI-OTHERCTRY" is not in the result

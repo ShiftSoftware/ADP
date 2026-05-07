@@ -77,7 +77,6 @@ public class ServiceItemTraceCollector
 
     public virtual void RecordInputs(
         VehicleEntryModel vehicle,
-        VehicleSaleInformation saleInfo,
         DateTime? freeServiceStartDate,
         DateTime? freeServiceStartDateBeforeShift,
         bool showingInactivatedItems,
@@ -92,7 +91,7 @@ public class ServiceItemTraceCollector
             Katashiki = vehicle?.Katashiki,
             VariantCode = vehicle?.VariantCode,
             VehicleLoaded = vehicle is not null,
-            SaleCountryID = saleInfo?.CountryID?.ToLong(),
+            SaleCountryID = vehicle?.CountryID,
             FreeServiceStartDate = freeServiceStartDate,
             FreeServiceStartDateBeforeDateShift = freeServiceStartDateBeforeShift,
             FreeServiceStartDateOverriddenByDateShift = freeServiceStartDateBeforeShift != freeServiceStartDate && !showingInactivatedItems,
@@ -143,8 +142,7 @@ public class ServiceItemTraceCollector
     public virtual void RecordEligibilityDecision(
         ServiceItemModel item,
         EligibilityRejectionStage stage,
-        VehicleEntryModel vehicle,
-        VehicleSaleInformation saleInformation)
+        VehicleEntryModel vehicle)
     {
         var accepted = stage == EligibilityRejectionStage.None;
         var decision = new ServiceItemEligibilityDecision
@@ -155,7 +153,7 @@ public class ServiceItemTraceCollector
             Item = Snapshot(item),
             Verdict = accepted ? EligibilityVerdict.Accepted : EligibilityVerdict.Rejected,
             RejectionStage = stage,
-            Reason = accepted ? null : ServiceItemEligibilityReasonFormatter.Format(item, stage, vehicle, saleInformation),
+            Reason = accepted ? null : ServiceItemEligibilityReasonFormatter.Format(item, stage, vehicle),
         };
         trace.Eligibility.Decisions.Add(decision);
         if (accepted) trace.Eligibility.AcceptedCount++;
@@ -406,11 +404,11 @@ public class ServiceItemTraceCollector
     {
         public override bool IsEnabled => false;
         public override IDisposable Stage(string name) => noopScope;
-        public override void RecordInputs(VehicleEntryModel vehicle, VehicleSaleInformation saleInfo, DateTime? freeServiceStartDate, DateTime? freeServiceStartDateBeforeShift, bool showingInactivatedItems, IEnumerable<ServiceItemModel> serviceItems, CompanyDataAggregateModel aggregate) { }
+        public override void RecordInputs(VehicleEntryModel vehicle, DateTime? freeServiceStartDate, DateTime? freeServiceStartDateBeforeShift, bool showingInactivatedItems, IEnumerable<ServiceItemModel> serviceItems, CompanyDataAggregateModel aggregate) { }
         public override void RecordFinalResult(List<VehicleServiceItemDTO> result, bool activationRequired) { }
         public override void Note(string message) { }
         public override void RecordEligibilityInputCount(int count) { }
-        public override void RecordEligibilityDecision(ServiceItemModel item, EligibilityRejectionStage stage, VehicleEntryModel vehicle, VehicleSaleInformation saleInformation) { }
+        public override void RecordEligibilityDecision(ServiceItemModel item, EligibilityRejectionStage stage, VehicleEntryModel vehicle) { }
         public override void RecordFreeBuild(ServiceItemModel item, VehicleServiceItemDTO dto, ServiceItemCostModel matchedCost, string languageCode) { }
         public override void RecordPaidBuild(PaidServiceInvoiceModel invoice, PaidServiceInvoiceLineModel line, VehicleServiceItemDTO dto, string languageCode) { }
         public override void RecordWarrantyRollingSkipped(string reason) { }

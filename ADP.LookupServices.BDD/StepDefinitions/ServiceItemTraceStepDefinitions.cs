@@ -28,12 +28,6 @@ public class ServiceItemTraceStepDefinitions
         var vehicle = new VehicleEntryEvaluator(_context.Aggregate).Evaluate();
         _context.CurrentVehicle = vehicle;
 
-        var saleInfo = _context.SaleInformation ?? new VehicleSaleInformation
-        {
-            InvoiceDate = vehicle?.InvoiceDate,
-            WarrantyActivationDate = vehicle?.WarrantyActivationDate,
-        };
-
         var collector = new ServiceItemTraceCollector(vin);
         var evaluator = new VehicleServiceItemEvaluator(
             _context.StorageService, _context.Aggregate, _context.Options, _context.ServiceProvider)
@@ -41,7 +35,7 @@ public class ServiceItemTraceStepDefinitions
             Trace = collector,
         };
 
-        await evaluator.Evaluate(vehicle!, _freeServiceStartDate, saleInfo, language);
+        await evaluator.Evaluate(vehicle!, _freeServiceStartDate, language);
         _trace = collector.Build();
     }
 

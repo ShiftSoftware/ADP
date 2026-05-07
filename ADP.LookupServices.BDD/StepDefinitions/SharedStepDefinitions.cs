@@ -96,6 +96,7 @@ public class SharedStepDefinitions
                 BrandID = GetOptionalLong(row, "BrandID"),
                 CompanyID = GetOptionalLong(row, "CompanyID"),
                 BranchID = GetOptionalLong(row, "BranchID"),
+                CountryID = GetOptionalLong(row, "CountryID"),
                 WarrantyActivationDate = GetOptionalDate(row, "WarrantyActivationDate"),
                 CustomerID = GetOptionalString(row, "CustomerID"),
                 InvoiceNumber = GetOptionalString(row, "InvoiceNumber"),

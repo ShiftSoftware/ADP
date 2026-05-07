@@ -13,7 +13,6 @@ The main configuration class for the lookup services.
 | AccessoryImageUrlResolver <div><strong>``Func<LookupOptionResolverModel<string>, ValueTask<string?>>?``</strong></div> | Resolver delegate that converts an accessory image path to a full URL. |
 | CompanyLogoImageResolver <div><strong>``Func<LookupOptionResolverModel<List<ShiftFileDTO>?>, ValueTask<List<ShiftFileDTO>?>>?``</strong></div> | Resolver delegate that resolves company logo images. |
 | PartLocationNameResolver <div><strong>``Func<LookupOptionResolverModel<PartLocationNameResolverModel>, ValueTask<string?>>?``</strong></div> | Resolver delegate that resolves a part location identifier to a human-readable name. |
-| CountryFromBranchIDResolver <div><strong>``Func<LookupOptionResolverModel<long?>, ValueTask<(long? countryID, string countryName)?>>?``</strong></div> | Resolver delegate that resolves a branch ID to its country ID and name. |
 | CountryNameResolver <div><strong>``Func<LookupOptionResolverModel<long?>, ValueTask<string?>>?``</strong></div> | Resolver delegate that resolves a country ID to its name. |
 | BrandNameResolver <div><strong>``Func<LookupOptionResolverModel<long?>, ValueTask<string?>>?``</strong></div> | Resolver delegate that resolves a brand ID to its name. Used by the diagnostic trace renderer; not required for normal lookups. |
 | RegionNameResolver <div><strong>``Func<LookupOptionResolverModel<long?>, ValueTask<string?>>?``</strong></div> | Resolver delegate that resolves a region ID to its name. |
