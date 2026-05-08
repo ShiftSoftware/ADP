@@ -1,0 +1,357 @@
+/* Plain CSS on purpose — keeps the first slice dependency-light. A later slice
+ * can migrate to Tailwind or radix-ui per the Phase 3 plan's Part A.2 without
+ * changing the renderer's public API. */
+
+.survey-root {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: #111;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 32px 16px;
+}
+
+.survey-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.survey-screen__title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.survey-screen__description {
+  color: #555;
+  margin: 0;
+}
+
+.survey-screen__questions {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.survey-screen__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.survey-screen__error {
+  color: #b42318;
+  background: #fef3f2;
+  border: 1px solid #fecdca;
+  padding: 12px 14px;
+  border-radius: 8px;
+  margin: 0;
+}
+
+.survey-question {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.survey-question__label {
+  font-weight: 600;
+  display: block;
+}
+
+.survey-question__required {
+  color: #b42318;
+}
+
+.survey-question__help {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.survey-question__input {
+  padding: 10px 12px;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  font: inherit;
+}
+
+.survey-question__input:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
+  border-color: #2563eb;
+}
+
+/* NPS */
+.survey-question--nps {
+  border: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.survey-question__nps-scale {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.survey-question__nps-step {
+  min-width: 40px;
+  min-height: 40px;
+  padding: 8px;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  background: #fff;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.survey-question__nps-step:hover {
+  background: #f5f7fa;
+}
+
+.survey-question__nps-step--selected {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+.survey-question__nps-labels {
+  display: flex;
+  justify-content: space-between;
+  color: #555;
+  font-size: 0.85rem;
+}
+
+/* Navigation list */
+.survey-question--navlist {
+  gap: 12px;
+}
+
+.survey-navlist {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.survey-navlist__row {
+  margin: 0;
+}
+
+.survey-navlist__button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border: 1px solid #d0d5dd;
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+  font: inherit;
+  text-align: start;
+}
+
+.survey-navlist__button:hover {
+  background: #f5f7fa;
+  border-color: #2563eb;
+}
+
+.survey-navlist__chevron {
+  font-size: 1.5rem;
+  color: #667085;
+}
+
+/* Forward chevron is intrinsically directional — mirror it in RTL so it still
+ * points in the reading direction. */
+.survey-root[dir='rtl'] .survey-navlist__chevron {
+  transform: scaleX(-1);
+}
+
+.survey-navlist__label {
+  font-weight: 500;
+}
+
+/* Textarea (paragraph) */
+.survey-question__textarea {
+  padding: 10px 12px;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  font: inherit;
+  resize: vertical;
+  min-height: 96px;
+}
+
+.survey-question__textarea:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
+  border-color: #2563eb;
+}
+
+/* Number */
+.survey-question__number-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.survey-question__number-wrap .survey-question__input {
+  flex: 1;
+}
+
+.survey-question__unit {
+  color: #555;
+  font-size: 0.9rem;
+}
+
+/* Rating (stars) */
+.survey-question__rating-scale {
+  display: flex;
+  gap: 4px;
+}
+
+.survey-question__rating-star {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 1.8rem;
+  line-height: 1;
+  color: #d0d5dd;
+  padding: 4px;
+}
+
+.survey-question__rating-star:hover,
+.survey-question__rating-star--selected {
+  color: #f5b60c;
+}
+
+/* Choice options (single/multi checkbox/radio list) */
+.survey-question__options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.survey-question__option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.survey-question__option:hover {
+  background: #f5f7fa;
+  border-color: #2563eb;
+}
+
+.survey-question__option input {
+  margin: 0;
+}
+
+/* Dropdown */
+.survey-question__select {
+  padding: 10px 12px;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  font: inherit;
+  background: #fff;
+}
+
+/* Yes / No */
+.survey-question__yesno {
+  display: flex;
+  gap: 12px;
+}
+
+.survey-question__yesno-button {
+  flex: 1;
+  padding: 14px 16px;
+  border: 1px solid #d0d5dd;
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.survey-question__yesno-button:hover {
+  background: #f5f7fa;
+  border-color: #2563eb;
+}
+
+.survey-question__yesno-button--selected {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+/* File */
+.survey-question__file {
+  font: inherit;
+}
+
+.survey-question__file-name {
+  color: #555;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+/* Signature */
+.survey-question__signature-canvas {
+  width: 100%;
+  max-width: 480px;
+  height: auto;
+  aspect-ratio: 3 / 1;
+  border: 1px dashed #d0d5dd;
+  border-radius: 8px;
+  background: #fff;
+  touch-action: none;
+}
+
+.survey-question__signature-actions {
+  display: flex;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+/* Buttons */
+.survey-button {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+}
+
+.survey-button--primary {
+  background: #2563eb;
+  color: #fff;
+}
+
+.survey-button--primary:hover {
+  background: #1e40af;
+}
+
+.survey-button--ghost {
+  background: #fff;
+  color: #555;
+  border-color: #d0d5dd;
+}
+
+.survey-button--ghost:hover {
+  background: #f5f7fa;
+}
+
+.survey-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

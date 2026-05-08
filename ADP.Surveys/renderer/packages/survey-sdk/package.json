@@ -1,0 +1,29 @@
+{
+  "name": "@shiftsoftware/survey-sdk",
+  "version": "0.1.0",
+  "description": "Runtime contract for the ADP Dynamic Surveys platform — expression sandbox, logic evaluator, schema types. Mirrors ADP.Surveys.Shared/Evaluation.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test.watch": "vitest"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  }
+}
