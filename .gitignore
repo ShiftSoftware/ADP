@@ -233,6 +233,10 @@ PublishScripts/
 **/[Pp]ackages/*
 # except build/, which is used as an MSBuild target.
 !**/[Pp]ackages/build/
+# ADP.Surveys/renderer/packages is an npm workspace (survey-sdk / survey-renderer / survey-web-component),
+# not a NuGet restore folder. Override the rule above so its source is tracked.
+!ADP.Surveys/renderer/packages/
+!ADP.Surveys/renderer/packages/**
 # Uncomment if necessary however generally it will be regenerated when needed
 #!**/[Pp]ackages/repositories.config
 # NuGet v3's project.json files produces more ignorable files
