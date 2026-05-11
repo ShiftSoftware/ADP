@@ -11,8 +11,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using ShiftSoftware.ShiftEntity.Core;
 using ShiftSoftware.ShiftEntity.Model.Dtos;
-using ShiftSoftware.ShiftEntity.Model.HashIds;
 using ShiftSoftware.ShiftEntity.Web;
 using ShiftSoftware.TypeAuth.Core;
 
@@ -23,14 +23,17 @@ namespace ShiftSoftware.ADP.Menus.API.Controllers;
 public class VehicleModelController : ShiftEntitySecureControllerAsync<VehicleModelRepository, VehicleModel, VehicleModelListDTO, VehicleModelDTO>
 {
     private readonly VehicleModelRepository vehicleModelRepository;
+    private readonly IHashIdService hashIdService;
     private readonly MenuApiOptions options;
 
     public VehicleModelController(
             VehicleModelRepository vehicleModelRepository,
+            IHashIdService hashIdService,
             IOptions<MenuApiOptions> options
         ) : base(options.Value.EnableMenuActionTreeAuthorization ? MenuActionTree.VehicleModels : null)
     {
         this.vehicleModelRepository = vehicleModelRepository;
+        this.hashIdService = hashIdService;
         this.options = options.Value;
     }
 
@@ -45,7 +48,7 @@ public class VehicleModelController : ShiftEntitySecureControllerAsync<VehicleMo
                 return Forbid();
         }
 
-        var id = ShiftEntityHashIdService.Decode<VehicleModelDTO>(key);
+        var id = hashIdService.Decode<VehicleModelDTO>(key);
 
         var vehicleModel = await (await vehicleModelRepository.GetIQueryable(null, null, false, false)).AsNoTracking()
             .Where(x => x.ID == id)
@@ -115,10 +118,10 @@ public class VehicleModelController : ShiftEntitySecureControllerAsync<VehicleMo
                 return Forbid();
         }
 
-        var vehicleModelId = ShiftEntityHashIdService.Decode<VehicleModelDTO>(key);
+        var vehicleModelId = hashIdService.Decode<VehicleModelDTO>(key);
         var replacementItemIds = (request?.ReplacementItemIDs ?? [])
             .Where(x => !string.IsNullOrWhiteSpace(x))
-            .Select(x => ShiftEntityHashIdService.Decode<ReplacementItemDTO>(x))
+            .Select(x => hashIdService.Decode<ReplacementItemDTO>(x))
             .ToList();
 
         if (replacementItemIds.Count == 0)
