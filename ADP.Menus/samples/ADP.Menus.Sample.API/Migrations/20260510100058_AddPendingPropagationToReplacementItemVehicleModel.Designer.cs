@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ShiftSoftware.ADP.Menus.Sample.API.Data;
 
@@ -11,9 +12,11 @@ using ShiftSoftware.ADP.Menus.Sample.API.Data;
 namespace ShiftSoftware.ADP.Menus.Sample.API.Migrations
 {
     [DbContext(typeof(DB))]
-    partial class DBModelSnapshot : ModelSnapshot
+    [Migration("20260510100058_AddPendingPropagationToReplacementItemVehicleModel")]
+    partial class AddPendingPropagationToReplacementItemVehicleModel
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -187,9 +190,6 @@ namespace ShiftSoftware.ADP.Menus.Sample.API.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
-
-                    b.Property<DateTimeOffset?>("LastPropagatedAt")
-                        .HasColumnType("datetimeoffset");
 
                     b.Property<DateTimeOffset?>("LastReplicationDate")
                         .HasColumnType("datetimeoffset");

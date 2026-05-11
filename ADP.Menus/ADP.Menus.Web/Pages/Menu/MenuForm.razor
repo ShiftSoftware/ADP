@@ -155,7 +155,17 @@
                                              RowStyleFunc="GetRowStyle">
                                     <Columns>
                                         <PropertyColumn Property="x => x.ReplacementItem" Title="Replacement Item">
-                                            <CellTemplate>@context.Item.ReplacementItem.Name</CellTemplate>
+                                            <CellTemplate>
+                                                <div style="display:flex;align-items:center;gap:6px;">
+                                                    <span>@context.Item.ReplacementItem.Name</span>
+                                                    @if (context.Item.BackingItemHasPendingPropagation)
+                                                    {
+                                                        <MudTooltip Text="Vehicle-model defaults have changed since this menu item was last propagated.">
+                                                            <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Filled">Pending</MudChip>
+                                                        </MudTooltip>
+                                                    }
+                                                </div>
+                                            </CellTemplate>
                                         </PropertyColumn>
                                         <PropertyColumn Property="x => x.Parts" Title="Part Number">
                                             <CellTemplate>
@@ -1449,9 +1459,14 @@
     {
         // Rows sourced from the vehicle model but not yet saved to MenuItem: show a subtle
         // "needs attention" accent so the user knows they are reviewing / configuring a new one.
-        return item.NotStoredInMenuItemsTable
-            ? "background-color: #EEF4FB; box-shadow: inset 4px 0 0 0 #1976D2;"
-            : string.Empty;
+        if (item.NotStoredInMenuItemsTable)
+            return "background-color: #EEF4FB; box-shadow: inset 4px 0 0 0 #1976D2;";
+
+        // Backing replacement-item defaults changed since this menu item was last propagated.
+        if (item.BackingItemHasPendingPropagation)
+            return "background-color: #FFF7E6; box-shadow: inset 4px 0 0 0 #ED6C02;";
+
+        return string.Empty;
     }
 
     private string GetNextDefaultVariantName()

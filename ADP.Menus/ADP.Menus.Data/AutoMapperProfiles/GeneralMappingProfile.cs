@@ -104,6 +104,8 @@ public class GeneralMappingProfile : Profile
                         AllowMultiplePartNumbers = s.ReplacementItem != null ? s.ReplacementItem.AllowMultiplePartNumbers : false,
                         StandaloneAllowedTime = s.StandaloneAllowedTime,
                         DefaultPartPriceMarginPercentage = s.DefaultPartPriceMarginPercentage,
+                        HasPendingPropagation = s.HasPendingPropagation,
+                        PendingSince = s.PendingSince,
                         DefaultParts = (s.DefaultParts != null ? s.DefaultParts : new List<ReplacementItemVehicleModelPart>())
                             .Where(x => !x.IsDeleted)
                             .OrderBy(x => x.SortOrder)
@@ -243,6 +245,9 @@ public class GeneralMappingProfile : Profile
             });
         CreateMap<VehicleModelDTOReplacementItem, ReplacementItemVehicleModel>()
             .ForMember(x => x.DefaultParts, x => x.Ignore())
+            // Pending state is owned by the repository (computed from a diff, not the user).
+            .ForMember(x => x.HasPendingPropagation, x => x.Ignore())
+            .ForMember(x => x.PendingSince, x => x.Ignore())
             .AfterMap((src, dest, ctx) =>
             {
                 dest.DefaultParts = src.DefaultParts
@@ -405,10 +410,28 @@ public class GeneralMappingProfile : Profile
                 x => x.Parts,
                 x => x.MapFrom(s => s.Parts.Where(p => !p.IsDeleted).OrderBy(p => p.SortOrder))
             )
+            .ForMember(
+                x => x.BackingItemHasPendingPropagation,
+                // Per-MenuItem staleness: only highlight when the RIVM is pending AND this
+                // particular MenuItem's LastPropagatedAt is older than RIVM.PendingSince.
+                // After bulk-form propagation or manual MenuForm save, LastPropagatedAt is
+                // bumped → highlight clears for that row even if other variants are still stale.
+                x => x.MapFrom(s => s.ReplacementItemVehicleModel != null
+                    && s.ReplacementItemVehicleModel.HasPendingPropagation
+                    && s.ReplacementItemVehicleModel.PendingSince.HasValue
+                    && (!s.LastPropagatedAt.HasValue
+                        || s.LastPropagatedAt.Value < s.ReplacementItemVehicleModel.PendingSince.Value))
+            )
             .ReverseMap()
             .ForMember(x => x.Parts, x => x.Ignore())
             .AfterMap((src, dest, ctx) =>
             {
+                // Stamp LastPropagatedAt on every MenuItem save (MenuForm path). Saving
+                // counts as the user confirming the values against current vehicle-model
+                // defaults — same effect as propagating via the bulk dialog. Clears the
+                // per-MenuItem pending highlight for this row.
+                dest.LastPropagatedAt = DateTimeOffset.UtcNow;
+
                 // Don't Clear()/Remove() on tracked Parts — MenuItemPart.MenuItemID is
                 // non-nullable and ShiftEntity forces DeleteBehavior.Restrict, which turns
                 // severed FKs into a HandleConceptualNulls throw. Diff by ID instead, and

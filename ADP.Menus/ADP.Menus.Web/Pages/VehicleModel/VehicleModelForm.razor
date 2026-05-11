@@ -20,7 +20,7 @@
                  AllowSaveAsNew
                  @bind-Key="@Key">
 
-    <MudTabs ApplyEffectsToContainer="true" PanelClass="pa-6">
+    <MudTabs ApplyEffectsToContainer="true" PanelClass="pa-6" ActivePanelIndex="1">
         <MudTabPanel Text="Basic Info">
             <MudTextFieldExtended OnlyValidateIfDirty="true"
                                   Label="Name"
@@ -124,6 +124,24 @@
                     <PropertyColumn Property="x => x.DefaultPartPriceMarginPercentage" Title="Default Margin %">
                         <CellTemplate>
                             <MudInput T="decimal?" @bind-Value="context.Item.DefaultPartPriceMarginPercentage" Placeholder="Default Margin %" Disabled="@IsRowReadOnly(context.Item)" />
+                        </CellTemplate>
+                    </PropertyColumn>
+                    <PropertyColumn Property="x => x.HasPendingPropagation" Title="">
+                        <CellTemplate>
+                            <div style="display:flex;align-items:center;gap:6px;">
+                                @if (context.Item.HasPendingPropagation)
+                                {
+                                    <MudTooltip Text="@PendingTooltip(context.Item)">
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Filled">Pending</MudChip>
+                                    </MudTooltip>
+                                }
+                                <MudTooltip Text="Apply to menus / variants">
+                                    <MudIconButton Icon="@Icons.Material.Filled.SyncAlt"
+                                                   Color="Color.Primary"
+                                                   Disabled="@IsPropagateDisabled(context.Item)"
+                                                   OnClick="@(() => OpenPropagateDialog(context.Item))" />
+                                </MudTooltip>
+                            </div>
                         </CellTemplate>
                     </PropertyColumn>
                 </Columns>
@@ -287,7 +305,69 @@
     bool IsRowReadOnly(VehicleModelDTOReplacementItem item) => Mode == FormModes.View || !item.IsSelected;
 
     string GetReplacementItemRowStyle(VehicleModelDTOReplacementItem item, int rowIndex)
-        => item.IsSelected ? string.Empty : "opacity: 0.55;";
+    {
+        if (!item.IsSelected)
+            return "opacity: 0.55;";
+
+        if (item.HasPendingPropagation)
+            return "box-shadow: inset 4px 0 0 0 #ED6C02; background-color: #FFF7E6;";
+
+        return string.Empty;
+    }
+
+    string PendingTooltip(VehicleModelDTOReplacementItem item)
+    {
+        if (!item.PendingSince.HasValue)
+            return "Defaults changed — propagate to menus to clear this flag.";
+        return $"Defaults changed at {item.PendingSince.Value.ToLocalTime():g} — propagate to menus to clear this flag.";
+    }
+
+    bool IsPropagateDisabled(VehicleModelDTOReplacementItem item)
+    {
+        // Only enabled in View mode: in Edit/Create the user may have unsaved changes, so the
+        // values the dialog would propagate would be stale — propagation must run against the
+        // last saved defaults.
+        return Mode != FormModes.View
+            || !item.IsSelected
+            || string.IsNullOrWhiteSpace(TheItem?.ID)
+            || string.IsNullOrWhiteSpace(item.ReplacementItemID);
+    }
+
+    async Task OpenPropagateDialog(VehicleModelDTOReplacementItem item)
+    {
+        if (IsPropagateDisabled(item)) return;
+
+        var parameters = new DialogParameters
+        {
+            { nameof(PropagateReplacementItemDialog.VehicleModelID), TheItem!.ID! },
+            { nameof(PropagateReplacementItemDialog.ReplacementItemID), item.ReplacementItemID },
+            { nameof(PropagateReplacementItemDialog.ReplacementItemName), item.Name ?? string.Empty },
+            { nameof(PropagateReplacementItemDialog.AllowMultiplePartNumbers), item.AllowMultiplePartNumbers },
+            { nameof(PropagateReplacementItemDialog.CurrentDefaults), item }
+        };
+
+        var options = new DialogOptions
+        {
+            MaxWidth = MaxWidth.Large,
+            FullWidth = true,
+            CloseButton = true
+        };
+
+        var dialog = await DialogService.ShowAsync<PropagateReplacementItemDialog>("Apply to menus", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is not null && !result.Canceled && result.Data is PropagateReplacementItemDialog.PropagateDialogResult dialogResult && dialogResult.Applied)
+        {
+            // Update the pending flag in place rather than reloading the whole form (which
+            // would discard any other unsaved edits the user might have made on this page).
+            if (dialogResult.PendingCleared)
+            {
+                item.HasPendingPropagation = false;
+                item.PendingSince = null;
+                StateHasChanged();
+            }
+        }
+    }
 
     void ReplacementItemSelectionChanged(VehicleModelDTOReplacementItem item, bool selected)
     {

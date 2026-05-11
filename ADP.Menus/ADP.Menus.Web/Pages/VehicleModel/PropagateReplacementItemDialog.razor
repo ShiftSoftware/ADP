@@ -1,0 +1,820 @@
+@namespace ShiftSoftware.ADP.Menus.Web.Pages.VehicleModel
+@inject ReplacementItemService ReplacementItemService
+@inject MenuService MenuService
+@inject MessageService MessageService
+@inject IMenuCountryProvider CountryProvider
+
+@*
+    Bulk-applies a replacement item's vehicle-model defaults to every menu/variant
+    under the same vehicle model. Lets the user pick which variants to update,
+    override values per row (qty / part #s / per-country prices), and add the
+    replacement item to variants that don't yet contain it.
+*@
+
+<MudDialog DefaultFocus="DefaultFocus.FirstChild">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.SyncAlt" Class="mr-2" />
+            Apply to menus — @ReplacementItemName
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <div class="propagate-dialog">
+            @if (loading)
+            {
+                <div style="display:flex;justify-content:center;padding:24px;">
+                    <MudProgressCircular Indeterminate="true" />
+                </div>
+            }
+            else if (drafts.Count == 0)
+            {
+                <MudAlert Severity="Severity.Info">
+                    No menus exist for this vehicle model yet.
+                </MudAlert>
+            }
+            else
+            {
+                <MudPaper Class="pa-3 mb-3" Elevation="0" Style="background:#FAFAFA;">
+                    <MudText Typo="Typo.subtitle2" Class="mb-1">Vehicle model defaults</MudText>
+                    <div style="display:flex;flex-wrap:wrap;gap:24px;align-items:center;">
+                        <MudText Typo="Typo.body2">
+                            Standalone Allowed Time:
+                            <b>@(CurrentDefaults.StandaloneAllowedTime?.ToString("0.##") ?? "—")</b>
+                        </MudText>
+                        <MudText Typo="Typo.body2">
+                            Default Margin:
+                            <b>@(CurrentDefaults.DefaultPartPriceMarginPercentage?.ToString("0.##") ?? "—")%</b>
+                        </MudText>
+                        @foreach (var p in CurrentDefaults.DefaultParts ?? new List<ReplacementItemDefaultPartDTO>())
+                        {
+                            <MudText Typo="Typo.body2">
+                                <b>@(string.IsNullOrWhiteSpace(p.PartNumber) ? "—" : p.PartNumber)</b>
+                                · Periodic <b>@(p.DefaultPeriodicQuantity?.ToString("0.###") ?? "—")</b>
+                                · Standalone <b>@(p.DefaultStandaloneQuantity?.ToString("0.###") ?? "—")</b>
+                            </MudText>
+                        }
+                    </div>
+                </MudPaper>
+
+                <div style="margin-bottom:8px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+                    <MudButton Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.SyncAlt"
+                               OnClick="ApplyDefaultsToAll">
+                        Apply defaults to all
+                    </MudButton>
+                    <MudButton Size="Size.Small" Variant="Variant.Outlined" OnClick="SelectAll">Select all</MudButton>
+                    <MudButton Size="Size.Small" Variant="Variant.Outlined" OnClick="SelectNone">Select none</MudButton>
+                    @if (drafts.Any(d => !d.IsPropagated))
+                    {
+                        <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Warning" OnClick="SelectStale">
+                            Select pending only
+                        </MudButton>
+                    }
+                    @if (countries.Count > 1)
+                    {
+                        <div style="margin-left:auto;">
+                            <MudToggleGroup T="long" Value="selectedPartPriceCountryID" ValueChanged="OnSelectedPartPriceCountryChanged"
+                                            Color="Color.Primary" Rounded="true" CheckMark Dense>
+                                @foreach (var country in countries)
+                                {
+                                    <MudToggleItem Value="country.Id" Text="@country.Name" />
+                                }
+                            </MudToggleGroup>
+                        </div>
+                    }
+                </div>
+
+                @foreach (var menuGroup in drafts.GroupBy(d => d.MenuLabel).OrderBy(g => g.Key))
+                {
+                    <MudExpansionPanel Text="@menuGroup.Key" Expanded="true" Dense="true">
+                        <div style="overflow-x:auto;">
+                            <MudSimpleTable Dense="true" Hover="true" Style="min-width:1280px;">
+                                <thead>
+                                    <tr>
+                                        <th style="width:36px;"></th>
+                                        <th style="width:200px;">Variant</th>
+                                        <th style="width:120px;">Allowed Time</th>
+                                        <th style="width:170px;">Part #</th>
+                                        <th style="width:100px;">Periodic</th>
+                                        <th style="width:100px;">Standalone</th>
+                                        <th style="width:120px;">Price</th>
+                                        <th style="width:90px;">Margin %</th>
+                                        <th style="width:120px;">Final Price</th>
+                                        @if (AllowMultiplePartNumbers)
+                                        {
+                                            <th style="width:70px;"></th>
+                                        }
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var draft in menuGroup)
+                                    {
+                                        <tr style="@RowStyle(draft)">
+                                            <td>
+                                                <MudCheckBox T="bool" Value="draft.IsSelected"
+                                                             ValueChanged="@(v => draft.IsSelected = v)" />
+                                            </td>
+                                            <td>
+                                                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                                                    <div style="display:flex;flex-direction:column;line-height:1.2;">
+                                                        <span>@draft.VariantName</span>
+                                                        @if (!string.IsNullOrWhiteSpace(draft.VariantSubLabel))
+                                                        {
+                                                            <span style="opacity:0.6;font-size:0.78em;">@draft.VariantSubLabel</span>
+                                                        }
+                                                    </div>
+                                                    @if (draft.MenuItemID is null)
+                                                    {
+                                                        <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Filled">+ Add</MudChip>
+                                                    }
+                                                    else if (!draft.IsPropagated)
+                                                    {
+                                                        <MudTooltip Text="Defaults changed since this variant was last propagated.">
+                                                            <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Filled">Pending</MudChip>
+                                                        </MudTooltip>
+                                                    }
+                                                    else
+                                                    {
+                                                        <MudChip T="string" Size="Size.Small" Color="Color.Default" Variant="Variant.Outlined">Update</MudChip>
+                                                    }
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <MudInput T="decimal?" @bind-Value="draft.StandaloneAllowedTime"
+                                                          @bind-Value:after="@(() => draft.IsSelected = true)"
+                                                          Placeholder="Allowed Time"
+                                                          Adornment="Adornment.End"
+                                                          AdornmentIcon="@Icons.Material.Filled.Refresh"
+                                                          AdornmentColor="Color.Primary"
+                                                          OnAdornmentClick="@(() => ApplyDefaultStandaloneAllowedTime(draft))" />
+                                            </td>
+                                            <td>
+                                                <div style="display:flex;flex-direction:column;gap:6px;">
+                                                    @foreach (var partRow in draft.Parts.Select((p, i) => new { Part = p, Index = i }))
+                                                    {
+                                                        <MudInput T="string" Value="partRow.Part.PartNumber"
+                                                                  ValueChanged="@(async x => await PartNumberChanged(draft, partRow.Part, x))"
+                                                                  Placeholder="Part #"
+                                                                  Adornment="@(HasDefaultAt(partRow.Index) ? Adornment.End : Adornment.None)"
+                                                                  AdornmentIcon="@Icons.Material.Filled.Refresh"
+                                                                  AdornmentColor="Color.Primary"
+                                                                  OnAdornmentClick="@(() => ApplyDefaultPartNumber(draft, partRow.Part, partRow.Index))" />
+                                                    }
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div style="display:flex;flex-direction:column;gap:6px;">
+                                                    @foreach (var partRow in draft.Parts.Select((p, i) => new { Part = p, Index = i }))
+                                                    {
+                                                        <MudInput T="decimal?" @bind-Value="partRow.Part.PeriodicQuantity"
+                                                                  @bind-Value:after="@(() => draft.IsSelected = true)"
+                                                                  Placeholder="Periodic"
+                                                                  Adornment="@(HasDefaultAt(partRow.Index) ? Adornment.End : Adornment.None)"
+                                                                  AdornmentIcon="@Icons.Material.Filled.Refresh"
+                                                                  AdornmentColor="Color.Primary"
+                                                                  OnAdornmentClick="@(() => ApplyDefaultPeriodicQuantity(draft, partRow.Part, partRow.Index))" />
+                                                    }
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div style="display:flex;flex-direction:column;gap:6px;">
+                                                    @foreach (var partRow in draft.Parts.Select((p, i) => new { Part = p, Index = i }))
+                                                    {
+                                                        <MudInput T="decimal?" @bind-Value="partRow.Part.StandaloneQuantity"
+                                                                  @bind-Value:after="@(() => draft.IsSelected = true)"
+                                                                  Placeholder="Standalone"
+                                                                  Adornment="@(HasDefaultAt(partRow.Index) ? Adornment.End : Adornment.None)"
+                                                                  AdornmentIcon="@Icons.Material.Filled.Refresh"
+                                                                  AdornmentColor="Color.Primary"
+                                                                  OnAdornmentClick="@(() => ApplyDefaultStandaloneQuantity(draft, partRow.Part, partRow.Index))" />
+                                                    }
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div style="display:flex;flex-direction:column;gap:6px;">
+                                                    @foreach (var partRow in draft.Parts.Select((p, i) => new { Part = p, Index = i }))
+                                                    {
+                                                        <MudInput T="decimal?"
+                                                                  Value="GetPartPrice(partRow.Part)"
+                                                                  ValueChanged="@(x => PartPriceChanged(draft, partRow.Part, x))"
+                                                                  Placeholder="Price"
+                                                                  Adornment="Adornment.End"
+                                                                  AdornmentIcon="@(IsPartPriceRefreshing(partRow.Part) ? Icons.Material.Filled.Sync : Icons.Material.Filled.Refresh)"
+                                                                  AdornmentColor="Color.Info"
+                                                                  OnAdornmentClick="@(async () => await RefreshPartPrice(draft, partRow.Part))" />
+                                                    }
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div style="display:flex;flex-direction:column;gap:6px;">
+                                                    @foreach (var partRow in draft.Parts.Select((p, i) => new { Part = p, Index = i }))
+                                                    {
+                                                        <MudInput T="decimal?"
+                                                                  Value="GetPartMargin(partRow.Part)"
+                                                                  ValueChanged="@(x => PartMarginChanged(draft, partRow.Part, x))"
+                                                                  Placeholder="Margin %" />
+                                                    }
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div style="display:flex;flex-direction:column;gap:6px;">
+                                                    @foreach (var partRow in draft.Parts.Select((p, i) => new { Part = p, Index = i }))
+                                                    {
+                                                        <MudInput T="decimal?"
+                                                                  Value="GetPartFinalPrice(partRow.Part)"
+                                                                  ValueChanged="@(x => PartFinalPriceChanged(draft, partRow.Part, x))"
+                                                                  Placeholder="Final Price" />
+                                                    }
+                                                </div>
+                                            </td>
+                                            @if (AllowMultiplePartNumbers)
+                                            {
+                                                <td>
+                                                    <div style="display:flex;flex-direction:column;gap:6px;">
+                                                        @foreach (var partRow in draft.Parts.Select((p, i) => new { Part = p, Index = i }))
+                                                        {
+                                                            <div style="display:flex;align-items:center;gap:2px;">
+                                                                <MudIconButton Icon="@Icons.Material.Outlined.Delete"
+                                                                               Size="Size.Small" Color="Color.Error"
+                                                                               Disabled="@(draft.Parts.Count <= 1)"
+                                                                               OnClick="@(() => RemovePart(draft, partRow.Index))" />
+                                                                @if (partRow.Index == draft.Parts.Count - 1)
+                                                                {
+                                                                    <MudIconButton Icon="@Icons.Material.Filled.Add"
+                                                                                   Size="Size.Small" Color="Color.Primary"
+                                                                                   OnClick="@(() => AddPart(draft))" />
+                                                                }
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                </td>
+                                            }
+                                        </tr>
+                                    }
+                                </tbody>
+                            </MudSimpleTable>
+                        </div>
+                    </MudExpansionPanel>
+                }
+            }
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudText Typo="Typo.caption" Class="mr-3" Style="opacity:0.7;">
+            @SelectedSummary()
+        </MudText>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                   Disabled="@(saving || drafts.All(d => !d.IsSelected))"
+                   OnClick="Apply">
+            Apply to selected
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+<style>
+    .propagate-dialog {
+        min-width: 760px;
+        max-width: 1400px;
+    }
+</style>
+
+@code {
+    [CascadingParameter] public IMudDialogInstance MudDialogInstance { get; set; } = default!;
+
+    [Parameter, EditorRequired] public string VehicleModelID { get; set; } = default!;
+    [Parameter, EditorRequired] public string ReplacementItemID { get; set; } = default!;
+    [Parameter, EditorRequired] public string ReplacementItemName { get; set; } = default!;
+    [Parameter] public bool AllowMultiplePartNumbers { get; set; }
+    [Parameter, EditorRequired] public VehicleModelDTOReplacementItem CurrentDefaults { get; set; } = default!;
+
+    private List<VariantDraft> drafts = new();
+    private bool loading = true;
+    private bool saving;
+    private IReadOnlyList<CountryInfo> countries = [];
+    private long selectedPartPriceCountryID;
+    private readonly HashSet<PartDraft> refreshingPartPrices = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        loading = true;
+        try
+        {
+            countries = await CountryProvider.GetSupportedCountriesAsync();
+            selectedPartPriceCountryID = countries.FirstOrDefault()?.Id ?? 0;
+
+            var usage = await ReplacementItemService.GetReplacementItemUsageAsync(VehicleModelID, ReplacementItemID);
+            drafts = usage.Select(u => new VariantDraft
+            {
+                MenuID = u.MenuID,
+                MenuLabel = u.MenuLabel,
+                VariantID = u.VariantID,
+                VariantName = u.VariantName,
+                VariantSubLabel = BuildVariantSubLabel(u.MenuPrefix, u.MenuPostfix),
+                MenuItemID = u.MenuItemID,
+                IsPropagated = u.IsPropagated,
+                IsSelected = CurrentDefaults.HasPendingPropagation && !u.IsPropagated,
+                StandaloneAllowedTime = u.StandaloneAllowedTime ?? CurrentDefaults.StandaloneAllowedTime,
+                OriginalStandaloneAllowedTime = u.StandaloneAllowedTime,
+                Parts = BuildInitialParts(u)
+            }).ToList();
+
+            // Make sure every part has a row per supported country (or a single CountryID=0
+            // synthetic row in 0-country mode), matching MenuForm's invariant.
+            foreach (var d in drafts)
+                foreach (var p in d.Parts)
+                    EnsurePartCountryPrices(p);
+
+            // For "Add" rows the parts come from the vehicle-model defaults — they have
+            // a part number but no prices. Fetch stock prices in one batched call so the
+            // dialog opens with prices already filled in (no manual refresh needed).
+            await LoadInitialStockPricesForAddRows();
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private async Task LoadInitialStockPricesForAddRows()
+    {
+        var partNumbers = drafts
+            .Where(d => d.MenuItemID is null)
+            .SelectMany(d => d.Parts)
+            .Select(p => p.PartNumber?.Trim() ?? string.Empty)
+            .Where(pn => !string.IsNullOrWhiteSpace(pn))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (partNumbers.Count == 0) return;
+
+        Dictionary<string, List<StockPriceByCountryDTO>> stocks;
+        try
+        {
+            var fetched = await MenuService.GetStockByPartNumbersAsync(partNumbers);
+            stocks = fetched
+                .Where(s => !string.IsNullOrWhiteSpace(s.PartNumber))
+                .GroupBy(s => s.PartNumber.Trim(), StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.First().CountryPrices ?? new(), StringComparer.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            // Don't block the dialog if pricing lookup fails — user can refresh per-row.
+            return;
+        }
+
+        foreach (var d in drafts.Where(x => x.MenuItemID is null))
+        {
+            foreach (var p in d.Parts)
+            {
+                if (string.IsNullOrWhiteSpace(p.PartNumber)) continue;
+                var key = p.PartNumber.Trim();
+                if (!stocks.TryGetValue(key, out var prices)) continue;
+                ApplyStockToCountryPrices(p, prices);
+            }
+        }
+    }
+
+    private List<PartDraft> BuildInitialParts(MenuVariantReplacementItemUsageDTO usage)
+    {
+        if (usage.MenuItemID is null)
+            return CloneDefaultsAsParts();
+
+        return usage.Parts
+            .OrderBy(p => p.SortOrder)
+            .Select(p => new PartDraft
+            {
+                MenuItemPartID = p.ID,
+                SortOrder = p.SortOrder,
+                PartNumber = p.PartNumber,
+                PeriodicQuantity = p.PeriodicQuantity,
+                StandaloneQuantity = p.StandaloneQuantity,
+                CountryPrices = p.CountryPrices?
+                    .Select(cp => new PartPriceByCountryDTO
+                    {
+                        CountryID = cp.CountryID,
+                        PartPrice = cp.PartPrice,
+                        PartPriceMarginPercentage = cp.PartPriceMarginPercentage,
+                        PartFinalPrice = cp.PartFinalPrice
+                    }).ToList() ?? new()
+            })
+            .ToList();
+    }
+
+    private List<PartDraft> CloneDefaultsAsParts()
+    {
+        var defaults = CurrentDefaults.DefaultParts ?? new List<ReplacementItemDefaultPartDTO>();
+        var parts = defaults.Select((p, i) => new PartDraft
+        {
+            MenuItemPartID = null,
+            SortOrder = i,
+            PartNumber = p.PartNumber ?? string.Empty,
+            PeriodicQuantity = p.DefaultPeriodicQuantity,
+            StandaloneQuantity = p.DefaultStandaloneQuantity
+        }).ToList();
+
+        if (parts.Count == 0)
+            parts.Add(new PartDraft());
+
+        foreach (var part in parts)
+            EnsurePartCountryPrices(part);
+
+        return parts;
+    }
+
+    private void ApplyDefaultsToAll()
+    {
+        foreach (var d in drafts)
+        {
+            d.IsSelected = true;
+            d.StandaloneAllowedTime = CurrentDefaults.StandaloneAllowedTime;
+            d.Parts = CloneDefaultsAsParts();
+        }
+    }
+
+    private bool HasDefaultAt(int index)
+    {
+        var defaults = CurrentDefaults.DefaultParts;
+        return defaults != null && index >= 0 && index < defaults.Count;
+    }
+
+    private ReplacementItemDefaultPartDTO? DefaultAt(int index)
+    {
+        return HasDefaultAt(index) ? CurrentDefaults.DefaultParts![index] : null;
+    }
+
+    private void ApplyDefaultStandaloneAllowedTime(VariantDraft d)
+    {
+        d.IsSelected = true;
+        d.StandaloneAllowedTime = CurrentDefaults.StandaloneAllowedTime;
+    }
+
+    private async Task ApplyDefaultPartNumber(VariantDraft d, PartDraft p, int index)
+    {
+        var src = DefaultAt(index);
+        if (src is null) return;
+        d.IsSelected = true;
+        // Auto-load stock prices to mirror the manual PartNumber change behavior.
+        await PartNumberChanged(d, p, src.PartNumber ?? string.Empty);
+    }
+
+    private void ApplyDefaultPeriodicQuantity(VariantDraft d, PartDraft p, int index)
+    {
+        var src = DefaultAt(index);
+        if (src is null) return;
+        d.IsSelected = true;
+        p.PeriodicQuantity = src.DefaultPeriodicQuantity;
+    }
+
+    private void ApplyDefaultStandaloneQuantity(VariantDraft d, PartDraft p, int index)
+    {
+        var src = DefaultAt(index);
+        if (src is null) return;
+        d.IsSelected = true;
+        p.StandaloneQuantity = src.DefaultStandaloneQuantity;
+    }
+
+    private void SelectAll() { foreach (var d in drafts) d.IsSelected = true; }
+    private void SelectNone() { foreach (var d in drafts) d.IsSelected = false; }
+    private void SelectStale() { foreach (var d in drafts) d.IsSelected = !d.IsPropagated; }
+
+    private static string BuildVariantSubLabel(string? prefix, string? postfix)
+    {
+        var combined = ($"{ResolveLocalized(prefix)} {ResolveLocalized(postfix)}").Trim();
+        return combined;
+    }
+
+    private static string ResolveLocalized(string? raw)
+    {
+        // Mirrors MenuForm.ResolveLocalized — handles a JSON-localized blob ({ "en": "...", "ar": "..." })
+        // and falls back to the raw string when not JSON.
+        if (string.IsNullOrEmpty(raw)) return string.Empty;
+        if (raw[0] != '{') return raw;
+        try
+        {
+            var dict = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(raw);
+            if (dict is null || dict.Count == 0) return raw;
+            var key = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+            if (dict.TryGetValue(key, out var v)) return v;
+            if (dict.TryGetValue("en", out var en)) return en;
+            return dict.Values.FirstOrDefault() ?? raw;
+        }
+        catch
+        {
+            return raw;
+        }
+    }
+
+    private string RowStyle(VariantDraft d)
+    {
+        return d.IsPropagated
+            ? string.Empty
+            : "background-color: #FFF7E6; box-shadow: inset 4px 0 0 0 #ED6C02;";
+    }
+
+    private void AddPart(VariantDraft d)
+    {
+        if (!AllowMultiplePartNumbers) return;
+        d.IsSelected = true;
+        var part = new PartDraft();
+        EnsurePartCountryPrices(part);
+        d.Parts.Add(part);
+    }
+
+    private void RemovePart(VariantDraft d, int index)
+    {
+        if (!AllowMultiplePartNumbers || d.Parts.Count <= 1) return;
+        if (index < 0 || index >= d.Parts.Count) return;
+        d.IsSelected = true;
+        d.Parts.RemoveAt(index);
+    }
+
+    // ─────────────────────────────────── Pricing ───────────────────────────────────
+
+    private void OnSelectedPartPriceCountryChanged(long value)
+    {
+        selectedPartPriceCountryID = value;
+        StateHasChanged();
+    }
+
+    private decimal? GetPartPrice(PartDraft p) => GetSelectedCountryRow(p).PartPrice;
+    private decimal? GetPartMargin(PartDraft p) => GetSelectedCountryRow(p).PartPriceMarginPercentage;
+    private decimal? GetPartFinalPrice(PartDraft p) => GetSelectedCountryRow(p).PartFinalPrice;
+
+    private PartPriceByCountryDTO GetSelectedCountryRow(PartDraft p)
+    {
+        EnsurePartCountryPrices(p);
+        return p.CountryPrices.FirstOrDefault(x => x.CountryID == selectedPartPriceCountryID)
+            ?? new PartPriceByCountryDTO { CountryID = selectedPartPriceCountryID };
+    }
+
+    private void EnsurePartCountryPrices(PartDraft p)
+    {
+        p.CountryPrices ??= new();
+        var defaultMargin = CurrentDefaults.DefaultPartPriceMarginPercentage;
+
+        var effectiveCountryIds = countries.Count == 0
+            ? new List<long> { 0 }
+            : countries.Select(c => c.Id).ToList();
+
+        foreach (var id in effectiveCountryIds)
+        {
+            if (!p.CountryPrices.Any(x => x.CountryID == id))
+            {
+                p.CountryPrices.Add(new PartPriceByCountryDTO
+                {
+                    CountryID = id,
+                    PartPrice = 0,
+                    PartPriceMarginPercentage = defaultMargin ?? 0,
+                    PartFinalPrice = 0
+                });
+            }
+        }
+
+        var supported = effectiveCountryIds.ToHashSet();
+        p.CountryPrices = p.CountryPrices
+            .Where(x => x.CountryID.HasValue && supported.Contains(x.CountryID.Value))
+            .OrderBy(x => x.CountryID.GetValueOrDefault())
+            .ToList();
+    }
+
+    private void PartPriceChanged(VariantDraft d, PartDraft p, decimal? value)
+    {
+        d.IsSelected = true;
+        var row = GetSelectedCountryRow(p);
+        var idx = p.CountryPrices.FindIndex(x => x.CountryID == row.CountryID);
+        if (idx < 0)
+        {
+            p.CountryPrices.Add(row);
+            idx = p.CountryPrices.Count - 1;
+        }
+        p.CountryPrices[idx].PartPrice = value;
+        RecalcFinalPrice(p, p.CountryPrices[idx]);
+    }
+
+    private void PartMarginChanged(VariantDraft d, PartDraft p, decimal? value)
+    {
+        d.IsSelected = true;
+        var row = GetSelectedCountryRow(p);
+        var idx = p.CountryPrices.FindIndex(x => x.CountryID == row.CountryID);
+        if (idx < 0)
+        {
+            p.CountryPrices.Add(row);
+            idx = p.CountryPrices.Count - 1;
+        }
+        p.CountryPrices[idx].PartPriceMarginPercentage = value;
+        RecalcFinalPrice(p, p.CountryPrices[idx]);
+    }
+
+    private void PartFinalPriceChanged(VariantDraft d, PartDraft p, decimal? value)
+    {
+        d.IsSelected = true;
+        var row = GetSelectedCountryRow(p);
+        var idx = p.CountryPrices.FindIndex(x => x.CountryID == row.CountryID);
+        if (idx < 0)
+        {
+            p.CountryPrices.Add(row);
+            idx = p.CountryPrices.Count - 1;
+        }
+        p.CountryPrices[idx].PartFinalPrice = value;
+        RecalcMarginFromFinal(p.CountryPrices[idx]);
+    }
+
+    private static void RecalcFinalPrice(PartDraft _, PartPriceByCountryDTO row)
+    {
+        if (row.PartPrice.HasValue && row.PartPriceMarginPercentage.HasValue)
+            row.PartFinalPrice = Math.Round(row.PartPrice.Value * (1 + row.PartPriceMarginPercentage.Value / 100), 2);
+        else
+            row.PartFinalPrice = row.PartPrice;
+    }
+
+    private static void RecalcMarginFromFinal(PartPriceByCountryDTO row)
+    {
+        if (!row.PartPrice.HasValue || !row.PartFinalPrice.HasValue)
+            return;
+        if (row.PartPrice.Value == 0)
+        {
+            row.PartPriceMarginPercentage = row.PartFinalPrice.Value == 0 ? 0 : null;
+            return;
+        }
+        row.PartPriceMarginPercentage = Math.Round(((row.PartFinalPrice.Value / row.PartPrice.Value) - 1) * 100, 3);
+    }
+
+    private async Task PartNumberChanged(VariantDraft d, PartDraft p, string? partNumber)
+    {
+        d.IsSelected = true;
+        p.PartNumber = partNumber ?? string.Empty;
+
+        // Mirror MenuForm: try to fetch stock pricing for the new part number; on failure,
+        // zero the prices so stale values don't linger.
+        try
+        {
+            var stock = string.IsNullOrWhiteSpace(p.PartNumber)
+                ? null
+                : await MenuService.GetStockByPartNumberAsync(p.PartNumber);
+            EnsurePartCountryPrices(p);
+            ApplyStockToCountryPrices(p, stock?.CountryPrices ?? []);
+        }
+        catch
+        {
+            EnsurePartCountryPrices(p);
+            foreach (var cp in p.CountryPrices)
+            {
+                cp.PartPrice = 0;
+                cp.PartFinalPrice = 0;
+            }
+        }
+    }
+
+    private async Task RefreshPartPrice(VariantDraft d, PartDraft p)
+    {
+        if (string.IsNullOrWhiteSpace(p.PartNumber)) return;
+        if (!refreshingPartPrices.Add(p)) return;
+
+        StateHasChanged();
+        try
+        {
+            await PartNumberChanged(d, p, p.PartNumber);
+        }
+        finally
+        {
+            refreshingPartPrices.Remove(p);
+            StateHasChanged();
+        }
+    }
+
+    private bool IsPartPriceRefreshing(PartDraft p) => refreshingPartPrices.Contains(p);
+
+    private void ApplyStockToCountryPrices(PartDraft p, List<StockPriceByCountryDTO> stockPrices)
+    {
+        EnsurePartCountryPrices(p);
+        var fallback = stockPrices.FirstOrDefault();
+        foreach (var cp in p.CountryPrices)
+        {
+            var match = stockPrices.FirstOrDefault(x => x.CountryID == cp.CountryID);
+            var price = (match ?? fallback)?.Price ?? 0;
+            price = AdjustSpecialPartPrice(p.PartNumber, price);
+            cp.PartPrice = price;
+            cp.PartFinalPrice = Math.Round(price * (1 + cp.PartPriceMarginPercentage.GetValueOrDefault() / 100), 2);
+        }
+    }
+
+    private static decimal AdjustSpecialPartPrice(string? partNumber, decimal value)
+    {
+        // Same special cases MenuForm applies — keep behavior identical between the two flows.
+        if (string.Equals(partNumber?.Trim(), "ZGX-01-AEKS", StringComparison.OrdinalIgnoreCase))
+            return Math.Round(value / 10, 2);
+        if (string.Equals(partNumber?.Trim(), "ZBG8905M", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(partNumber?.Trim(), "ZBG4035M", StringComparison.OrdinalIgnoreCase))
+            return Math.Round(value / 19, 2);
+        return value;
+    }
+
+    // ─────────────────────────────────── Save ───────────────────────────────────
+
+    private string SelectedSummary()
+    {
+        var selected = drafts.Where(d => d.IsSelected).ToList();
+        if (selected.Count == 0) return "None selected";
+        var updates = selected.Count(d => d.MenuItemID.HasValue);
+        var adds = selected.Count - updates;
+        return $"{updates} update{(updates == 1 ? "" : "s")} · {adds} addition{(adds == 1 ? "" : "s")}";
+    }
+
+    private async Task Apply()
+    {
+        var selected = drafts.Where(d => d.IsSelected).ToList();
+        if (selected.Count == 0) return;
+
+        saving = true;
+        try
+        {
+            var request = new PropagateReplacementItemRequestDTO
+            {
+                ReplacementItemID = ReplacementItemID,
+                Variants = selected.Select(d => new PropagateReplacementItemVariantDTO
+                {
+                    VariantID = d.VariantID,
+                    MenuItemID = d.MenuItemID,
+                    StandaloneAllowedTime = d.StandaloneAllowedTime,
+                    Parts = d.Parts
+                        .Where(p => !string.IsNullOrWhiteSpace(p.PartNumber)
+                                 || p.PeriodicQuantity.HasValue
+                                 || p.StandaloneQuantity.HasValue)
+                        .Select((p, i) => new PropagateReplacementItemPartDTO
+                        {
+                            MenuItemPartID = p.MenuItemPartID,
+                            SortOrder = i,
+                            PartNumber = (p.PartNumber ?? string.Empty).Trim(),
+                            PeriodicQuantity = p.PeriodicQuantity,
+                            StandaloneQuantity = p.StandaloneQuantity,
+                            CountryPrices = (p.CountryPrices ?? new())
+                                .Where(cp => cp.CountryID.HasValue)
+                                .Select(cp => new PartPriceByCountryDTO
+                                {
+                                    CountryID = cp.CountryID,
+                                    PartPrice = cp.PartPrice,
+                                    PartPriceMarginPercentage = cp.PartPriceMarginPercentage,
+                                    PartFinalPrice = cp.PartFinalPrice
+                                }).ToList()
+                        })
+                        .ToList()
+                }).ToList()
+            };
+
+            var (ok, pendingCleared, error) = await ReplacementItemService.PropagateReplacementItemAsync(VehicleModelID, request);
+            if (ok)
+            {
+                MessageService.Success(pendingCleared
+                    ? "Changes applied. Replacement item is fully propagated."
+                    : "Changes applied to the selected menus.");
+                MudDialogInstance.Close(DialogResult.Ok(new PropagateDialogResult
+                {
+                    Applied = true,
+                    PendingCleared = pendingCleared
+                }));
+            }
+            else
+            {
+                MessageService.Error($"Failed to apply changes: {error}");
+            }
+        }
+        finally
+        {
+            saving = false;
+        }
+    }
+
+    private void Cancel() => MudDialogInstance.Close(DialogResult.Cancel());
+
+    public class PropagateDialogResult
+    {
+        public bool Applied { get; set; }
+        public bool PendingCleared { get; set; }
+    }
+
+    private class VariantDraft
+    {
+        public string MenuID { get; set; } = default!;
+        public string MenuLabel { get; set; } = default!;
+        public string VariantID { get; set; } = default!;
+        public string VariantName { get; set; } = default!;
+        public string VariantSubLabel { get; set; } = string.Empty;
+        public long? MenuItemID { get; set; }
+        public bool IsPropagated { get; set; }
+        public bool IsSelected { get; set; }
+        public decimal? StandaloneAllowedTime { get; set; }
+        public decimal? OriginalStandaloneAllowedTime { get; set; }
+        public List<PartDraft> Parts { get; set; } = new();
+    }
+
+    private class PartDraft
+    {
+        public long? MenuItemPartID { get; set; }
+        public int SortOrder { get; set; }
+        public string PartNumber { get; set; } = string.Empty;
+        public decimal? PeriodicQuantity { get; set; }
+        public decimal? StandaloneQuantity { get; set; }
+        public List<PartPriceByCountryDTO> CountryPrices { get; set; } = new();
+    }
+}

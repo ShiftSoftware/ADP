@@ -19,6 +19,8 @@ public class MenuItemDTO
     public decimal? StandaloneAllowedTime { get; set; }
 
     public bool NotStoredInMenuItemsTable { get; set; }
+
+    public bool BackingItemHasPendingPropagation { get; set; }
 }
 
 public class MenuItemPartDTOValidator : AbstractValidator<MenuItemPartDTO>

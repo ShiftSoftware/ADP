@@ -65,4 +65,33 @@ public class ReplacementItemService
 
         return await response.Content.ReadFromJsonAsync<List<ReplacementItemMenuUsageDTO>>() ?? [];
     }
+
+    public async Task<List<MenuVariantReplacementItemUsageDTO>> GetReplacementItemUsageAsync(string vehicleModelKey, string replacementItemKey)
+    {
+        if (string.IsNullOrWhiteSpace(vehicleModelKey) || string.IsNullOrWhiteSpace(replacementItemKey))
+            return new List<MenuVariantReplacementItemUsageDTO>();
+
+        var url = $"{prefix}VehicleModel/ReplacementItemUsage/{vehicleModelKey}/{replacementItemKey}";
+        var response = await http.GetAsync(url);
+
+        if (!response.IsSuccessStatusCode)
+            return new List<MenuVariantReplacementItemUsageDTO>();
+
+        return await response.Content.ReadFromJsonAsync<List<MenuVariantReplacementItemUsageDTO>>() ?? [];
+    }
+
+    public async Task<(bool Success, bool PendingCleared, string? Error)> PropagateReplacementItemAsync(string vehicleModelKey, PropagateReplacementItemRequestDTO request)
+    {
+        var url = $"{prefix}VehicleModel/PropagateReplacementItem/{vehicleModelKey}";
+        var response = await http.PostAsJsonAsync(url, request);
+
+        if (response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadFromJsonAsync<PropagateReplacementItemResponseDTO>();
+            return (true, body?.PendingCleared ?? false, null);
+        }
+
+        var error = await response.Content.ReadAsStringAsync();
+        return (false, false, string.IsNullOrWhiteSpace(error) ? response.ReasonPhrase : error);
+    }
 }

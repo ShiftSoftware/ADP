@@ -104,6 +104,45 @@ public class VehicleModelController : ShiftEntitySecureControllerAsync<VehicleMo
         return Ok(result);
     }
 
+    [HttpGet("ReplacementItemUsage/{key}/{replacementItemKey}")]
+    [Authorize]
+    public async Task<ActionResult<List<MenuVariantReplacementItemUsageDTO>>> GetReplacementItemUsage(string key, string replacementItemKey)
+    {
+        if (options.EnableMenuActionTreeAuthorization)
+        {
+            var typeAuth = HttpContext.RequestServices.GetRequiredService<ITypeAuthService>();
+            if (!typeAuth.CanRead(MenuActionTree.VehicleModels))
+                return Forbid();
+        }
+
+        var vehicleModelId = ShiftEntityHashIdService.Decode<VehicleModelDTO>(key);
+        var replacementItemId = ShiftEntityHashIdService.Decode<ReplacementItemDTO>(replacementItemKey);
+
+        var usage = await vehicleModelRepository.GetReplacementItemUsageAsync(vehicleModelId, replacementItemId);
+        return Ok(usage);
+    }
+
+    [HttpPost("PropagateReplacementItem/{key}")]
+    [Authorize]
+    public async Task<ActionResult<PropagateReplacementItemResponseDTO>> PropagateReplacementItem(string key, [FromBody] PropagateReplacementItemRequestDTO request)
+    {
+        if (options.EnableMenuActionTreeAuthorization)
+        {
+            var typeAuth = HttpContext.RequestServices.GetRequiredService<ITypeAuthService>();
+            if (!typeAuth.CanWrite(MenuActionTree.VehicleModels))
+                return Forbid();
+        }
+
+        if (request is null)
+            return BadRequest("Request body is required.");
+
+        var vehicleModelId = ShiftEntityHashIdService.Decode<VehicleModelDTO>(key);
+        var replacementItemId = ShiftEntityHashIdService.Decode<ReplacementItemDTO>(request.ReplacementItemID);
+
+        var pendingCleared = await vehicleModelRepository.PropagateReplacementItemAsync(vehicleModelId, replacementItemId, request);
+        return Ok(new PropagateReplacementItemResponseDTO { PendingCleared = pendingCleared });
+    }
+
     [HttpPost("CheckReplacementItemMenuUsage/{key}")]
     [Authorize]
     public async Task<ActionResult<List<ReplacementItemMenuUsageDTO>>> CheckReplacementItemMenuUsage(string key, [FromBody] ReplacementItemMenuUsageRequestDTO request)

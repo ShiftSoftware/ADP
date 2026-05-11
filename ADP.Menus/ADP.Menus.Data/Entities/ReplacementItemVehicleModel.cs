@@ -15,6 +15,9 @@ public class ReplacementItemVehicleModel : ShiftEntity<ReplacementItemVehicleMod
     [Precision(9, 3)]
     public decimal? DefaultPartPriceMarginPercentage { get; set; }
 
+    public bool HasPendingPropagation { get; set; }
+    public DateTimeOffset? PendingSince { get; set; }
+
     public ReplacementItem ReplacementItem { get; set; } = default!;
     public VehicleModel VehicleModel { get; set; } = default!;
 

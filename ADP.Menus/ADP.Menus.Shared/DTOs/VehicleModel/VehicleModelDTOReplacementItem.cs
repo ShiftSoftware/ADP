@@ -24,6 +24,9 @@ public class VehicleModelDTOReplacementItem
 
     public bool IsSelected { get; set; }
 
+    public bool HasPendingPropagation { get; set; }
+    public DateTimeOffset? PendingSince { get; set; }
+
     public VehicleModelDTOReplacementItem()
     {
     }
