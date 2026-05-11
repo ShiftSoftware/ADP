@@ -14,8 +14,9 @@ namespace ShiftSoftware.ADP.Menus.Data.Repositories;
 public class VehicleModelRepository : ShiftRepository<ShiftDbContext, VehicleModel, VehicleModelListDTO, VehicleModelDTO>
 {
     private readonly IMenuCountryProvider countryProvider;
+    private readonly IHashIdService hashIdService;
 
-    public VehicleModelRepository(ShiftDbContext db, IMenuCountryProvider countryProvider) : base(db,
+    public VehicleModelRepository(ShiftDbContext db, IMenuCountryProvider countryProvider, IHashIdService hashIdService) : base(db,
         x => x.IncludeRelatedEntitiesWithFindAsync(
             i => i.Include(s => s.ReplacementItemVehicleModels!).ThenInclude(r => r.ReplacementItem).ThenInclude(r => r.StandaloneReplacementItemGroup),
             i => i.Include(s => s.ReplacementItemVehicleModels!).ThenInclude(r => r.DefaultParts),
@@ -23,6 +24,7 @@ public class VehicleModelRepository : ShiftRepository<ShiftDbContext, VehicleMod
             i => i.Include(s => s.LabourRates)))
     {
         this.countryProvider = countryProvider;
+        this.hashIdService = hashIdService;
     }
 
     public override async ValueTask<VehicleModel> UpsertAsync(VehicleModel entity, VehicleModelDTO dto, ActionTypes actionType, long? userId, Guid? idempotencyKey, bool disableDefaultDataLevelAccess, bool disableGlobalFilters)
@@ -256,7 +258,7 @@ public class VehicleModelRepository : ShiftRepository<ShiftDbContext, VehicleMod
             .Where(v => !string.IsNullOrEmpty(v.VariantID))
             .Select(v => new
             {
-                VariantID = ShiftEntityHashIdService.Decode<MenuVariantDTO>(v.VariantID),
+                VariantID = hashIdService.Decode<MenuVariantDTO>(v.VariantID),
                 v.MenuItemID,
                 v.StandaloneAllowedTime,
                 Parts = v.Parts ?? new List<PropagateReplacementItemPartDTO>()

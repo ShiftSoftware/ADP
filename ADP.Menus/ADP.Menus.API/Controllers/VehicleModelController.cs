@@ -118,8 +118,8 @@ public class VehicleModelController : ShiftEntitySecureControllerAsync<VehicleMo
                 return Forbid();
         }
 
-        var vehicleModelId = ShiftEntityHashIdService.Decode<VehicleModelDTO>(key);
-        var replacementItemId = ShiftEntityHashIdService.Decode<ReplacementItemDTO>(replacementItemKey);
+        var vehicleModelId = hashIdService.Decode<VehicleModelDTO>(key);
+        var replacementItemId = hashIdService.Decode<ReplacementItemDTO>(replacementItemKey);
 
         var usage = await vehicleModelRepository.GetReplacementItemUsageAsync(vehicleModelId, replacementItemId);
         return Ok(usage);
@@ -139,8 +139,8 @@ public class VehicleModelController : ShiftEntitySecureControllerAsync<VehicleMo
         if (request is null)
             return BadRequest("Request body is required.");
 
-        var vehicleModelId = ShiftEntityHashIdService.Decode<VehicleModelDTO>(key);
-        var replacementItemId = ShiftEntityHashIdService.Decode<ReplacementItemDTO>(request.ReplacementItemID);
+        var vehicleModelId = hashIdService.Decode<VehicleModelDTO>(key);
+        var replacementItemId = hashIdService.Decode<ReplacementItemDTO>(request.ReplacementItemID);
 
         var pendingCleared = await vehicleModelRepository.PropagateReplacementItemAsync(vehicleModelId, replacementItemId, request);
         return Ok(new PropagateReplacementItemResponseDTO { PendingCleared = pendingCleared });
