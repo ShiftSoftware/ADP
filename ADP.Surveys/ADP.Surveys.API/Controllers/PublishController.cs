@@ -1,6 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
-using System.Text.Json;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -17,9 +14,10 @@ using ShiftSoftware.ADP.Surveys.Shared.Json;
 using ShiftSoftware.ADP.Surveys.Shared.Resolver;
 using ShiftSoftware.ShiftEntity.Core;
 using ShiftSoftware.ShiftEntity.EFCore;
-using ShiftSoftware.ShiftEntity.Model;
-using ShiftSoftware.ShiftEntity.Model.HashIds;
 using ShiftSoftware.TypeAuth.Core;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 
 namespace ShiftSoftware.ADP.Surveys.API.Controllers;
 
@@ -38,17 +36,20 @@ public class PublishController : ControllerBase
     private readonly ShiftDbContext db;
     private readonly EfBankSource bankSource;
     private readonly IValidator<SurveyDto> surveyValidator;
+    private readonly IHashIdService hashIdService;
     private readonly SurveyApiOptions options;
 
     public PublishController(
         ShiftDbContext db,
         EfBankSource bankSource,
         IValidator<SurveyDto> surveyValidator,
+        IHashIdService hashIdService,
         SurveyApiOptions options)
     {
         this.db = db;
         this.bankSource = bankSource;
         this.surveyValidator = surveyValidator;
+        this.hashIdService = hashIdService;
         this.options = options;
     }
 
@@ -67,7 +68,7 @@ public class PublishController : ControllerBase
         }
 
         long surveyId;
-        try { surveyId = ShiftEntityHashIdService.Decode<SurveyListDTO>(id); }
+        try { surveyId = hashIdService.Decode<SurveyListDTO>(id); }
         catch
         {
             return BadRequest(new { Message = "Invalid survey id." });

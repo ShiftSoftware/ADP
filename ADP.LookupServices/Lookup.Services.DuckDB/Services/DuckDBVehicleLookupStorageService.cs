@@ -5,7 +5,7 @@ using ShiftSoftware.ADP.Models.Part;
 using ShiftSoftware.ADP.Models.Service;
 using ShiftSoftware.ADP.Models.TBP;
 using ShiftSoftware.ADP.Models.Vehicle;
-using ShiftSoftware.ShiftEntity.Model.HashIds;
+using ShiftSoftware.ShiftEntity.Core;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -18,7 +18,7 @@ using System.Threading.Tasks;
 
 namespace ShiftSoftware.ADP.Lookup.Services.Services;
 
-public class DuckDBVehicleLookupStorageService(global::DuckDB.NET.Data.DuckDBConnection connection)
+public class DuckDBVehicleLookupStorageService(global::DuckDB.NET.Data.DuckDBConnection connection, IHashIdService hashIdService)
     : IVehicleLookupStorageService
 {
     private const int AggregateVinChunkSize = 500;
@@ -242,16 +242,16 @@ public class DuckDBVehicleLookupStorageService(global::DuckDB.NET.Data.DuckDBCon
         foreach (var model in models)
         {
             if (model.CompanyHashID is not null)
-                model.CompanyID = ShiftEntityHashIdService.Decode(model.CompanyHashID, new ShiftSoftware.ShiftEntity.Model.HashIds.CompanyHashIdConverter());
+                model.CompanyID = hashIdService.Decode(model.CompanyHashID, new ShiftSoftware.ShiftEntity.Model.HashIds.CompanyHashIdConverter());
 
             if (model.BranchHashID is not null)
-                model.BranchID = ShiftEntityHashIdService.Decode(model.BranchHashID, new ShiftSoftware.ShiftEntity.Model.HashIds.CompanyBranchHashIdConverter());
+                model.BranchID = hashIdService.Decode(model.BranchHashID, new ShiftSoftware.ShiftEntity.Model.HashIds.CompanyBranchHashIdConverter());
 
             if (model.RegionHashID is not null)
-                model.RegionID = ShiftEntityHashIdService.Decode(model.RegionHashID, new ShiftSoftware.ShiftEntity.Model.HashIds.RegionHashIdConverter());
+                model.RegionID = hashIdService.Decode(model.RegionHashID, new ShiftSoftware.ShiftEntity.Model.HashIds.RegionHashIdConverter());
 
             if (model.BrandHashID is not null)
-                model.BrandID = ShiftEntityHashIdService.Decode(model.BrandHashID, new ShiftSoftware.ShiftEntity.Model.HashIds.BrandHashIdConverter());
+                model.BrandID = hashIdService.Decode(model.BrandHashID, new ShiftSoftware.ShiftEntity.Model.HashIds.BrandHashIdConverter());
         }
 
         return models;

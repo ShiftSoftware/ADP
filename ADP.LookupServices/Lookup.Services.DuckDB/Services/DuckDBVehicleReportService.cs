@@ -1,7 +1,6 @@
 using CsvHelper;
 using CsvHelper.Configuration;
 using Parquet;
-using Parquet.Data;
 using Parquet.Schema;
 using Parquet.Serialization;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
@@ -602,9 +601,7 @@ public class DuckDBVehicleReportService(
         var (schema, propertyMappings) = BuildParquetSchema<TModel>();
 
         int totalRows = 0;
-
-        using var fileStream = File.Create(fileFullPath);
-        using var parquetWriter = await ParquetWriter.CreateAsync(schema, fileStream);
+        bool firstChunk = true;
 
         foreach (var vinChunk in Chunk(allVins, batchSize))
         {
@@ -614,7 +611,15 @@ public class DuckDBVehicleReportService(
             if (rows.Count > 0)
             {
                 var records = ConvertToParquetRecords(rows, propertyMappings);
-                await WriteParquetRowGroupAsync(parquetWriter, schema, records, propertyMappings);
+                using var fileStream = firstChunk
+                    ? File.Create(fileFullPath)
+                    : new FileStream(fileFullPath, FileMode.Open, FileAccess.ReadWrite);
+                await ParquetSerializer.SerializeUntypedAsync(
+                    records,
+                    schema,
+                    fileStream,
+                    new ParquetOptions { Append = !firstChunk });
+                firstChunk = false;
             }
 
             totalRows += rows.Count;
@@ -666,33 +671,6 @@ public class DuckDBVehicleReportService(
         }
 
         return records;
-    }
-
-    private static async Task WriteParquetRowGroupAsync(
-        ParquetWriter parquetWriter,
-        ParquetSchema schema,
-        List<IDictionary<string, object>> records,
-        List<ParquetPropertyMapping> propertyMappings)
-    {
-        using var rowGroup = parquetWriter.CreateRowGroup();
-
-        for (int colIdx = 0; colIdx < propertyMappings.Count; colIdx++)
-        {
-            var mapping = propertyMappings[colIdx];
-            var dataField = (DataField)mapping.Field;
-
-            // Parquet.Net requires typed arrays, not object[]
-            var typedArray = Array.CreateInstance(dataField.ClrNullableIfHasNullsType ?? dataField.ClrType, records.Count);
-
-            for (int rowIdx = 0; rowIdx < records.Count; rowIdx++)
-            {
-                records[rowIdx].TryGetValue(mapping.Property.Name, out var value);
-                typedArray.SetValue(value, rowIdx);
-            }
-
-            var column = new DataColumn(dataField, typedArray);
-            await rowGroup.WriteColumnAsync(column);
-        }
     }
 
     #endregion
@@ -833,7 +811,7 @@ public class DuckDBVehicleReportService(
         }
 
         using var stream = File.Create(fileFullPath);
-        await ParquetSerializer.SerializeAsync(schema, records, stream, new ParquetSerializerOptions());
+        await ParquetSerializer.SerializeUntypedAsync(records, schema, stream, new ParquetOptions());
     }
 
     private static bool TryGetParquetType(Type propertyType, out Type parquetType, out bool isNullable, out bool isEnum, out bool isDateTimeOffset)

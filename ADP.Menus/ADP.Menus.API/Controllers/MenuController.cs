@@ -1,17 +1,17 @@
-﻿using ShiftSoftware.ADP.Menus.API.Extensions;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using ShiftSoftware.ADP.Menus.API.Extensions;
 using ShiftSoftware.ADP.Menus.Data.DataServices;
 using ShiftSoftware.ADP.Menus.Data.Entities;
 using ShiftSoftware.ADP.Menus.Data.Repositories;
 using ShiftSoftware.ADP.Menus.Shared;
 using ShiftSoftware.ADP.Menus.Shared.ActionTrees;
 using ShiftSoftware.ADP.Menus.Shared.DTOs.Menu;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
+using ShiftSoftware.ShiftEntity.Core;
 using ShiftSoftware.ShiftEntity.Model;
-using ShiftSoftware.ShiftEntity.Model.HashIds;
 using ShiftSoftware.ShiftEntity.Web;
 using ShiftSoftware.ShiftIdentity.Core.DTOs.Brand;
 using ShiftSoftware.TypeAuth.Core;
@@ -32,6 +32,7 @@ public class MenuController : ShiftEntitySecureControllerAsync<MenuRepository, M
     private readonly IMenuPartPriceService partPriceService;
     private readonly IMenuReportExporter reportExporter;
     private readonly IMenuCountryProvider countryProvider;
+    private readonly IHashIdService hashIdService;
     private readonly MenuApiOptions options;
 
     public MenuController(
@@ -44,6 +45,7 @@ public class MenuController : ShiftEntitySecureControllerAsync<MenuRepository, M
             IMenuPartPriceService partPriceService,
             IMenuReportExporter reportExporter,
             IMenuCountryProvider countryProvider,
+            IHashIdService hashIdService,
             IOptions<MenuApiOptions> options
         ) : base(options.Value.EnableMenuActionTreeAuthorization ? MenuActionTree.Menus : null)
     {
@@ -57,6 +59,7 @@ public class MenuController : ShiftEntitySecureControllerAsync<MenuRepository, M
         this.partPriceService = partPriceService;
         this.reportExporter = reportExporter;
         this.countryProvider = countryProvider;
+        this.hashIdService = hashIdService;
     }
 
     private async Task<(long countryId, decimal transferRate, bool usePrimaryLabourRate)> NormalizeCountryAndTransferRateAsync(long countryId, decimal transferRate)
@@ -95,7 +98,7 @@ public class MenuController : ShiftEntitySecureControllerAsync<MenuRepository, M
 
         try
         {
-            var brandIDs = brands?.Select(x => ShiftEntityHashIdService.Decode<BrandDTO>(x)).ToList() ?? [];
+            var brandIDs = brands?.Select(x => hashIdService.Decode<BrandDTO>(x)).ToList() ?? [];
 
             var lines = await GenerateLinesAsync(labourRateMappings, brandIDs, brandMapping, countryId, transferRate, language: language, usePrimaryLabourRate: usePrimaryLabourRate);
 
@@ -134,7 +137,7 @@ public class MenuController : ShiftEntitySecureControllerAsync<MenuRepository, M
             .Where(x => !x.IsDeleted).AsNoTracking().ToListAsync())
             .ToDictionary(x => x.BrandID, x => x);
 
-        var brandIDs = brands?.Select(x => ShiftEntityHashIdService.Decode<BrandDTO>(x)).ToList() ?? [];
+        var brandIDs = brands?.Select(x => hashIdService.Decode<BrandDTO>(x)).ToList() ?? [];
 
         var menuItems = (await (await serviceIntervalGroupRepo.GetIQueryable(null, null, false, false)).AsNoTracking()
             .Where(x => !x.IsDeleted)
@@ -402,7 +405,7 @@ public class MenuController : ShiftEntitySecureControllerAsync<MenuRepository, M
             NewVersionDateTime = newVersionDateTime
         };
 
-        var brandIDs = brands.Select(x => ShiftEntityHashIdService.Decode<BrandDTO>(x));
+        var brandIDs = brands.Select(x => hashIdService.Decode<BrandDTO>(x));
 
         var labourRateMappings = (await (await labourRateMappingRepo.GetIQueryable(null, null, false, false))
             .Where(x => !x.IsDeleted).AsNoTracking().ToListAsync()).ToDictionary(x => new CompositeKey<long?, decimal>(x.BrandID, x.LabourRate), x => x);

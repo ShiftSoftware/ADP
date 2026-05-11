@@ -9,8 +9,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using ShiftSoftware.ShiftEntity.Core;
 using ShiftSoftware.ShiftEntity.Model;
-using ShiftSoftware.ShiftEntity.Model.HashIds;
 using ShiftSoftware.ShiftEntity.Web;
 using ShiftSoftware.TypeAuth.Core;
 
@@ -21,12 +21,14 @@ namespace ShiftSoftware.ADP.Menus.API.Controllers;
 public class MenuVariantController : ShiftEntitySecureControllerAsync<MenuVariantRepository, MenuVariant, MenuVariantListDTO, MenuVariantDTO>
 {
     private readonly MenuVariantRepository repository;
+    private readonly IHashIdService hashIdService;
     private readonly MenuApiOptions options;
 
-    public MenuVariantController(MenuVariantRepository repository, IOptions<MenuApiOptions> options)
+    public MenuVariantController(MenuVariantRepository repository, IHashIdService hashIdService, IOptions<MenuApiOptions> options)
         : base(options.Value.EnableMenuActionTreeAuthorization ? MenuActionTree.MenuVariants : null)
     {
         this.repository = repository;
+        this.hashIdService = hashIdService;
         this.options = options.Value;
     }
 
@@ -41,7 +43,7 @@ public class MenuVariantController : ShiftEntitySecureControllerAsync<MenuVarian
                 return Forbid();
         }
 
-        var id = ShiftEntityHashIdService.Decode<MenuDTO>(menuID);
+        var id = hashIdService.Decode<MenuDTO>(menuID);
         var items = await (await repository.GetIQueryable(null, null, false, false))
             .Where(x => !x.IsDeleted && x.MenuID == id)
             .OrderBy(x => x.Name)
@@ -71,7 +73,7 @@ public class MenuVariantController : ShiftEntitySecureControllerAsync<MenuVarian
                 return Forbid();
         }
 
-        var id = ShiftEntityHashIdService.Decode<MenuVariantDTO>(key);
+        var id = hashIdService.Decode<MenuVariantDTO>(key);
         var entity = await (await repository.GetIQueryable(null, null, false, false))
             .Where(x => x.ID == id)
             .FirstOrDefaultAsync();
