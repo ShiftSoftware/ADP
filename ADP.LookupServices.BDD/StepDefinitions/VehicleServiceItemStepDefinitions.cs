@@ -40,6 +40,37 @@ public class VehicleServiceItemStepDefinitions
         _activationRequired = activationRequired;
     }
 
+    /// <summary>
+    /// End-to-end variant: chains the warranty evaluator (driving the free service start date)
+    /// before the service item evaluator. Use this to test scenarios where the start date is
+    /// produced by the warranty fallback chain (broker invoice, sale activation, or de facto
+    /// from claims) rather than supplied explicitly by the test setup.
+    /// </summary>
+    [When("evaluating service items end-to-end for {string} with language {string}")]
+    public async Task WhenEvaluatingServiceItemsEndToEndFor(string vin, string language)
+    {
+        _context.Aggregate.VIN = vin;
+
+        var vehicle = new VehicleEntryEvaluator(_context.Aggregate).Evaluate();
+        _context.CurrentVehicle = vehicle;
+
+        var saleInfo = _context.SaleInformation ?? new VehicleSaleInformation
+        {
+            InvoiceDate = vehicle?.InvoiceDate,
+            WarrantyActivationDate = vehicle?.WarrantyActivationDate,
+        };
+
+        var warranty = new WarrantyAndFreeServiceDateEvaluator(_context.Aggregate, _context.Options)
+            .Evaluate(vehicle!, saleInfo, ignoreBrokerStock: false);
+
+        var evaluator = new VehicleServiceItemEvaluator(
+            _context.StorageService, _context.Aggregate, _context.Options, _context.ServiceProvider);
+
+        var (serviceItems, activationRequired) = await evaluator.Evaluate(vehicle!, warranty.FreeServiceStartDate, language);
+        _result = serviceItems;
+        _activationRequired = activationRequired;
+    }
+
     [Then("service item {string} has status {string}")]
     public void ThenServiceItemHasStatus(string serviceItemId, string expectedStatus)
     {

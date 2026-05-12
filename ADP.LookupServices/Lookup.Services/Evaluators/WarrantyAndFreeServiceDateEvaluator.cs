@@ -95,6 +95,21 @@ public class WarrantyAndFreeServiceDateEvaluator
             result.ExtendedWarrantyEndDate = lastExtendedWarrantyEntry.EndDate;
         }
 
+        // De facto fallback: the earliest non-deleted ItemClaim.ClaimDate. A claim is a real
+        // anchor for "service has begun" — if the regular chain produced nothing (typically
+        // broker-no-invoice + IgnoreBrokerStock=false), use this so downstream items still
+        // project. Always exposed on the DTO regardless of whether it's used.
+        var deFactoServiceStartDate = CompanyDataAggregate.ItemClaims?
+            .Where(x => x is not null && !x.IsDeleted)
+            .Select(x => (DateTimeOffset?)x.ClaimDate)
+            .Min()?
+            .ToUniversalTime().Date;
+
+        result.DeFactoServiceStartDate = deFactoServiceStartDate;
+
+        if (freeServiceStartDate is null && deFactoServiceStartDate is not null)
+            freeServiceStartDate = deFactoServiceStartDate;
+
         var freeServiceShiftDate = CompanyDataAggregate.FreeServiceItemDateShifts?.FirstOrDefault();
 
         if (freeServiceShiftDate is not null)

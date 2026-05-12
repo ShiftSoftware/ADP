@@ -68,6 +68,16 @@ public class ServiceItemTraceInputs
     public bool FreeServiceStartDateOverriddenByDateShift { get; set; }
     public DateTime? FreeServiceStartDateBeforeDateShift { get; set; }
     public bool ShowingInactivatedItems { get; set; }
+
+    /// <summary>
+    /// Earliest non-deleted ItemClaim.ClaimDate for this VIN, mirroring
+    /// <c>VehicleWarrantyDTO.DeFactoServiceStartDate</c>. Populated whenever any non-deleted
+    /// claim exists. When this matches <see cref="FreeServiceStartDate"/> AND no per-VIN
+    /// date shift applied, the warranty evaluator's claim-anchored fallback is the most
+    /// likely source — the evaluator records a clarifying <see cref="ServiceItemTrace.Notes"/>
+    /// entry in that case (e.g. broker without invoice + previously claimed).
+    /// </summary>
+    public DateTime? DeFactoServiceStartDate { get; set; }
     public ServiceItemTraceAggregateCounts AggregateCounts { get; set; } = new();
 }
 

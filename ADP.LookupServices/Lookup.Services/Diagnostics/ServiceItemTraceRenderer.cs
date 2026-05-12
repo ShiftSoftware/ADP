@@ -461,6 +461,11 @@ public static class ServiceItemTraceRenderer
         sb.AppendLine($"- {NameOrIdPlain("Country (sale)", i.SaleCountryID, t.ResolvedNames?.Countries)}");
         sb.AppendLine($"- Katashiki: {i.Katashiki} · Variant: {i.VariantCode}");
         sb.AppendLine($"- Free service start date: {Date(i.FreeServiceStartDate)}{(i.FreeServiceStartDateOverriddenByDateShift ? $" (shifted from {Date(i.FreeServiceStartDateBeforeDateShift)})" : "")}");
+        if (i.DeFactoServiceStartDate is not null)
+        {
+            var matches = i.DeFactoServiceStartDate == i.FreeServiceStartDate;
+            sb.AppendLine($"- De facto service start date (earliest claim): {Date(i.DeFactoServiceStartDate)}{(matches ? " — matches the effective free service start date" : "")}");
+        }
         var c = i.AggregateCounts ?? new ServiceItemTraceAggregateCounts();
         sb.AppendLine($"- Data loaded: {c.CosmosServiceItems} catalog items · {c.PaidServiceInvoices} paid invoices ({c.PaidServiceInvoiceLines} lines) · {c.ItemClaims} previous claims · {c.VehicleInspections} inspections · {c.CampaignVinEntries} manual VIN entries");
         sb.AppendLine();

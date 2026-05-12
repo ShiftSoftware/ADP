@@ -57,4 +57,17 @@ public class VehicleWarrantyDTO
     /// </summary>
     [JsonCustomDateTime("yyyy-MM-dd")]
     public DateTime? FreeServiceStartDate { get; set; }
+
+    /// <summary>
+    /// The earliest non-deleted <c>ItemClaim.ClaimDate</c> for this vehicle. Always populated
+    /// when at least one non-deleted claim exists, regardless of whether it ends up being used.
+    /// When the regular fallback chain (service activation / sale warranty / sale invoice /
+    /// broker invoice) would otherwise leave <see cref="FreeServiceStartDate"/> null, this
+    /// value is used as the effective <see cref="FreeServiceStartDate"/> so downstream items
+    /// project as if activation had occurred — the act of claiming is itself evidence the
+    /// vehicle has been serviced. <see cref="FreeServiceItemDateShiftModel"/> overrides still
+    /// win over this fallback.
+    /// </summary>
+    [JsonCustomDateTime("yyyy-MM-dd")]
+    public DateTime? DeFactoServiceStartDate { get; set; }
 }

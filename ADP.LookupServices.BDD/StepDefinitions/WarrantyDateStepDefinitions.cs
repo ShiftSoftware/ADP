@@ -16,6 +16,32 @@ public class WarrantyDateStepDefinitions
         _context = context;
     }
 
+    [Given("the sale has a broker without invoice")]
+    public void GivenTheSaleHasABrokerWithoutInvoice()
+    {
+        _context.SaleInformation = new VehicleSaleInformation
+        {
+            Broker = new VehicleBrokerSaleInformation
+            {
+                BrokerName = "Test Broker",
+                InvoiceDate = null,
+            },
+        };
+    }
+
+    [Given("the sale has a broker with invoice date {string}")]
+    public void GivenTheSaleHasABrokerWithInvoiceDate(string invoiceDate)
+    {
+        _context.SaleInformation = new VehicleSaleInformation
+        {
+            Broker = new VehicleBrokerSaleInformation
+            {
+                BrokerName = "Test Broker",
+                InvoiceDate = DateTime.Parse(invoiceDate),
+            },
+        };
+    }
+
     [When("evaluating warranty dates for {string}")]
     public void WhenEvaluatingWarrantyDatesFor(string vin)
     {
@@ -76,5 +102,26 @@ public class WarrantyDateStepDefinitions
     {
         Assert.NotNull(_result);
         Assert.Equal(DateTime.Parse(expectedDate), _result.FreeServiceStartDate);
+    }
+
+    [Then("the free service start date is empty")]
+    public void ThenTheFreeServiceStartDateIsEmpty()
+    {
+        Assert.NotNull(_result);
+        Assert.Null(_result.FreeServiceStartDate);
+    }
+
+    [Then("the de facto service start date is {string}")]
+    public void ThenTheDeFactoServiceStartDateIs(string expectedDate)
+    {
+        Assert.NotNull(_result);
+        Assert.Equal(DateTime.Parse(expectedDate), _result.DeFactoServiceStartDate);
+    }
+
+    [Then("the de facto service start date is empty")]
+    public void ThenTheDeFactoServiceStartDateIsEmpty()
+    {
+        Assert.NotNull(_result);
+        Assert.Null(_result.DeFactoServiceStartDate);
     }
 }

@@ -17,3 +17,32 @@ Almost all authorized vehicles come with a standard warranty that is usually act
 ## Extended Warranty
 Customers have the option to extend their warranty by buying extended warranty packages.
 
+## Free Service Start Date
+
+The **Free Service Start Date** anchors when free service items become eligible.
+It is normally derived in this priority order: service activation record →
+sale warranty activation date → sale invoice date → broker invoice date.
+
+### De Facto Service Start Date
+
+Some vehicles reach the dealer through a broker who has not yet inserted an
+invoice. In the UI lookup (where `IgnoreBrokerStock=true`) the dealer can still
+claim against the vehicle — a customer can't be turned away for a missing
+broker invoice. In the bulk lookup (where `IgnoreBrokerStock=false`, used by
+the parquet export and other financial projections) that same vehicle would
+otherwise produce no service items at all, because there is no anchor date
+to evaluate eligibility against.
+
+The **De Facto Service Start Date** closes that gap. It is the earliest
+non-deleted [Item Claim](#) date for the vehicle, exposed on
+`VehicleWarrantyDTO.DeFactoServiceStartDate`. When the regular fallback chain
+would otherwise leave `FreeServiceStartDate` null, this value becomes the
+effective start date so downstream items project as if activation had
+occurred — the act of claiming is itself evidence the vehicle has been
+serviced. The field is always exposed when any non-deleted claim exists, so
+consumers can see "this vehicle has been claimed against starting YYYY-MM-DD"
+regardless of whether it ended up driving the effective start date.
+
+`FreeServiceItemDateShift` overrides still win — an operator-applied shift
+date takes precedence over the de facto fallback.
+

@@ -50,7 +50,24 @@ public partial class VehicleServiceItemEvaluator
         var requestedStartDate = freeServiceStartDate;
         var serviceItems = await LoadServiceItemCatalog();
         (freeServiceStartDate, var showingInactivatedItems) = ResolveActivationMode(vehicle, freeServiceStartDate);
-        Trace.RecordInputs(vehicle, freeServiceStartDate, requestedStartDate, showingInactivatedItems, serviceItems, companyDataAggregate);
+
+        // De facto date (earliest non-deleted ItemClaim.ClaimDate) — same computation
+        // WarrantyAndFreeServiceDateEvaluator uses to populate VehicleWarrantyDTO.DeFactoServiceStartDate.
+        // Recorded on the trace whenever any non-deleted claim exists. When it matches the
+        // caller-supplied requestedStartDate AND no per-VIN date shift was applied, the warranty
+        // evaluator's claim-anchored fallback is the most likely source — flagged via Trace.Note
+        // below for diagnostic clarity (broker-without-invoice + previously claimed scenario).
+        var deFactoServiceStartDate = companyDataAggregate.ItemClaims?
+            .Where(x => x is not null && !x.IsDeleted)
+            .Select(x => (DateTimeOffset?)x.ClaimDate)
+            .Min()?
+            .ToUniversalTime().Date;
+
+        Trace.RecordInputs(vehicle, freeServiceStartDate, requestedStartDate, showingInactivatedItems, serviceItems, companyDataAggregate, deFactoServiceStartDate);
+
+        var dateShiftApplied = companyDataAggregate.FreeServiceItemDateShifts?.Any() ?? false;
+        if (deFactoServiceStartDate is not null && requestedStartDate == deFactoServiceStartDate && !dateShiftApplied && !showingInactivatedItems)
+            Trace.Note($"FreeServiceStartDate matches DeFactoServiceStartDate ({deFactoServiceStartDate:yyyy-MM-dd}) — claim-anchored fallback is the most likely source (broker-without-invoice + previously claimed). A coincidental match with broker/activation/sale date is also possible.");
 
         var result = new List<VehicleServiceItemDTO>();
 

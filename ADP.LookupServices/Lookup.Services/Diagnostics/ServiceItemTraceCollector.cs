@@ -81,7 +81,8 @@ public class ServiceItemTraceCollector
         DateTime? freeServiceStartDateBeforeShift,
         bool showingInactivatedItems,
         IEnumerable<ServiceItemModel> serviceItems,
-        CompanyDataAggregateModel aggregate)
+        CompanyDataAggregateModel aggregate,
+        DateTime? deFactoServiceStartDate)
     {
         trace.Inputs = new ServiceItemTraceInputs
         {
@@ -96,6 +97,7 @@ public class ServiceItemTraceCollector
             FreeServiceStartDateBeforeDateShift = freeServiceStartDateBeforeShift,
             FreeServiceStartDateOverriddenByDateShift = freeServiceStartDateBeforeShift != freeServiceStartDate && !showingInactivatedItems,
             ShowingInactivatedItems = showingInactivatedItems,
+            DeFactoServiceStartDate = deFactoServiceStartDate,
             AggregateCounts = new ServiceItemTraceAggregateCounts
             {
                 CosmosServiceItems = serviceItems?.Count() ?? 0,
@@ -404,7 +406,7 @@ public class ServiceItemTraceCollector
     {
         public override bool IsEnabled => false;
         public override IDisposable Stage(string name) => noopScope;
-        public override void RecordInputs(VehicleEntryModel vehicle, DateTime? freeServiceStartDate, DateTime? freeServiceStartDateBeforeShift, bool showingInactivatedItems, IEnumerable<ServiceItemModel> serviceItems, CompanyDataAggregateModel aggregate) { }
+        public override void RecordInputs(VehicleEntryModel vehicle, DateTime? freeServiceStartDate, DateTime? freeServiceStartDateBeforeShift, bool showingInactivatedItems, IEnumerable<ServiceItemModel> serviceItems, CompanyDataAggregateModel aggregate, DateTime? deFactoServiceStartDate) { }
         public override void RecordFinalResult(List<VehicleServiceItemDTO> result, bool activationRequired) { }
         public override void Note(string message) { }
         public override void RecordEligibilityInputCount(int count) { }

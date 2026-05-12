@@ -105,7 +105,8 @@
       "warrantyEndDate": "2027-02-01",
       "activationIsRequired": false,
       "hasExtendedWarranty": false,
-      "freeServiceStartDate": "2024-02-01"
+      "freeServiceStartDate": "2024-02-01",
+      "deFactoServiceStartDate": "2024-04-15"
     },
     "nextServiceDate": "2025-06-15",
     "serviceHistory": [
@@ -191,8 +192,8 @@
         "claimable": false,
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "qKEj0\u002BMIo\u002BINGbqw\u002BX0wvU7qZ1NL0KpHRD5nUniPL/M=",
-        "signatureExpiry": "2026-05-11T10:58:08.3914344Z"
+        "signature": "Sn4EevU5Z9CqhDMcDW7ia6SwJgg88kp8P7eJiscd6Uw=",
+        "signatureExpiry": "2026-05-12T19:15:37.9771623Z"
       },
       {
         "showDocumentUploader": false,
@@ -215,8 +216,8 @@
         "claimable": false,
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "7t8DnGkFB09xzh0jmnNx2vWi7dinrjtxys1xTVrSr9w=",
-        "signatureExpiry": "2026-05-11T10:58:08.3914344Z"
+        "signature": "y\u002BJuZmZjZHmSRF/cIpuLFOsT2mbwSzfQ7t9IbQv05Eg=",
+        "signatureExpiry": "2026-05-12T19:15:37.9771623Z"
       },
       {
         "showDocumentUploader": false,
@@ -233,8 +234,8 @@
         "claimable": true,
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "AIFk41KCnD7PwfEssC1zeKAOEuTvSfom4\u002BHI\u002BGV0HRM=",
-        "signatureExpiry": "2026-05-11T10:58:08.3914344Z"
+        "signature": "Q9PamGC0v6rjINC38jIVinDQhZJN542myE020RHeS4M=",
+        "signatureExpiry": "2026-05-12T19:15:37.9771623Z"
       },
       {
         "showDocumentUploader": false,
@@ -251,8 +252,8 @@
         "maximumMileage": 16000,
         "claimable": true,
         "claimingMethodEnum": 0,
-        "signature": "ES6A/EbYKFkWRQi2uz9bghBO8VoJW1rfrNtZ9hevYj8=",
-        "signatureExpiry": "2026-05-11T10:58:08.3914344Z"
+        "signature": "eF04QSbNPy4UkKG9nxxeap7oyfG9pMHxnlu8IN/41LI=",
+        "signatureExpiry": "2026-05-12T19:15:37.9771623Z"
       }
     ],
     "accessories": [
@@ -292,7 +293,8 @@
       "warrantyEndDate": "2026-06-20",
       "activationIsRequired": false,
       "hasExtendedWarranty": false,
-      "freeServiceStartDate": "2023-06-20"
+      "freeServiceStartDate": "2023-06-20",
+      "deFactoServiceStartDate": "2023-08-22"
     },
     "serviceHistory": [],
     "vehicleSpecification": {
@@ -326,8 +328,8 @@
         "claimable": false,
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "f8gui6xM1IcGC1OTCLYcpmwYBXfyyqqW4BjdYULKGDQ=",
-        "signatureExpiry": "2026-05-11T10:58:08.3964601Z"
+        "signature": "6syNTaYgZzXWWQ7IzWBpOI2FwbqYpoJJNuII3B7U7Bc=",
+        "signatureExpiry": "2026-05-12T19:15:37.9773956Z"
       },
       {
         "showDocumentUploader": false,
@@ -344,8 +346,8 @@
         "claimable": false,
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "Hj0Y0IFQNNrzp/ubUknzPqnqfiAdBHqKflEhANcMS6w=",
-        "signatureExpiry": "2026-05-11T10:58:08.3964601Z"
+        "signature": "54ZF15ukd99GNmA9A7cV5yORfmIP7DhpFVUCSJRyxLQ=",
+        "signatureExpiry": "2026-05-12T19:15:37.9773956Z"
       },
       {
         "showDocumentUploader": false,
@@ -362,8 +364,8 @@
         "claimable": true,
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "boWl2y9dyK8ELG2hE7vKbZo8lOmau8hIze2Ka5S7\u002BoA=",
-        "signatureExpiry": "2026-05-11T10:58:08.3964601Z"
+        "signature": "vIzvRhg4ThwGBbbosy5EtwShDxkE8EQtCql50eqf690=",
+        "signatureExpiry": "2026-05-12T19:15:37.9773956Z"
       }
     ],
     "accessories": [],

@@ -307,13 +307,15 @@ public class SharedStepDefinitions
             {
                 ServiceItemID = GetOptionalString(row, "ServiceItemID"),
                 ClaimDate = row.ContainsKey("ClaimDate") && !string.IsNullOrWhiteSpace(row["ClaimDate"])
-                    ? DateTimeOffset.Parse(row["ClaimDate"]) : default,
+                    ? new DateTimeOffset(DateTime.Parse(row["ClaimDate"]), TimeSpan.Zero) : default,
                 JobNumber = GetOptionalString(row, "JobNumber"),
                 InvoiceNumber = GetOptionalString(row, "InvoiceNumber"),
                 CompanyID = GetOptionalLong(row, "CompanyID"),
                 PackageCode = GetOptionalString(row, "PackageCode"),
                 VehicleInspectionID = GetOptionalString(row, "VehicleInspectionID"),
                 CampaignVinEntryID = GetOptionalString(row, "CampaignVinEntryID"),
+                IsDeleted = row.ContainsKey("IsDeleted") && !string.IsNullOrWhiteSpace(row["IsDeleted"])
+                    && bool.Parse(row["IsDeleted"]),
             }));
     }
 
