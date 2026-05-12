@@ -204,7 +204,22 @@ nav:
           - Part Stock: generated/Features/PartStock.md
           - Part Dead Stock: generated/Features/PartDeadStock.md
       - Service:
-          - Service Items: generated/Features/ServiceItems.md
+          - Service Items:
+              - Overview: generated/Features/ServiceItems.md
+              - Eligibility & Status:
+                  - Status & Claimability: generated/Features/ServiceItems_Status.md
+                  - Eligibility Filters: generated/Features/ServiceItems_Eligibility.md
+                  - Ineligible Items with Existing Claims: generated/Features/ServiceItems_Ineligible.md
+                  - Expiration & Activation Dates: generated/Features/ServiceItems_Expiration.md
+              - Activation:
+                  - Activation-Required Status: generated/Features/ServiceItems_Activation.md
+                  - Vehicle-Inspection Activated: generated/Features/ServiceItems_InspectionActivated.md
+                  - Manual-VIN-Entry Activated: generated/Features/ServiceItems_ManualVinEntry.md
+              - Date Shifts: generated/Features/ServiceItems_DateShifts.md
+              - Paid Service Items: generated/Features/ServiceItems_Paid.md
+              - Signature: generated/Features/ServiceItems_Signature.md
+              - Resolvers (Company Name & Print URL): generated/Features/ServiceItems_Resolvers.md
+              - Diagnostic Trace: generated/Features/ServiceItems_Trace.md
       - Warranty:
           - Warranty Dates: generated/Features/WarrantyDates.md
 
