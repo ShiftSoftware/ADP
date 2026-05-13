@@ -386,9 +386,10 @@ export class VehicleLookup implements MultiLingual {
       Object.entries(allComponents).filter(([key]) => !hiddenSet.has(key))
     ) as Partial<Record<ActiveElement, Node>>;
 
+    const claimableProps = props[componentTags.vehicleClaimableItems] as Record<string, any> | undefined;
     const showClaimableTrace =
       this.activeElement === componentTags.vehicleClaimableItems &&
-      !!(props[componentTags.vehicleClaimableItems] as { showTrace?: boolean })?.showTrace &&
+      !!(claimableProps?.showTrace ?? claimableProps?.['show-trace']) &&
       !!this.currentVin &&
       !this.isError &&
       !this.isLoading;
