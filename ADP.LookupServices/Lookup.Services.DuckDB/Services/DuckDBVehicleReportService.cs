@@ -56,7 +56,8 @@ public class DuckDBVehicleReportService(
 
     public async Task<IEnumerable<VehicleServiceItemReportModel>> GetVehicleServiceItemsReportAsync(
         IEnumerable<string> vins = null,
-        int? distinctVinCount = null)
+        int? distinctVinCount = null,
+        VehicleLookupRequestOptions requestOptions = null)
     {
         var normalizedVins = vins?
             .Select(NormalizeVin)
@@ -79,7 +80,9 @@ public class DuckDBVehicleReportService(
                 .Take(LookupBatchSize)
                 .ToList();
 
-            var lookups = await vehicleLookupService.LookupAsync(batch);
+            var lookups = requestOptions is null
+                ? await vehicleLookupService.LookupAsync(batch)
+                : await vehicleLookupService.LookupAsync(batch, requestOptions);
 
             foreach (var lookup in lookups)
             {
@@ -116,7 +119,8 @@ public class DuckDBVehicleReportService(
         string fileFullPath,
         IEnumerable<string> vins = null,
         int? distinctVinCount = null,
-        int batchSize = 1000)
+        int batchSize = 1000,
+        VehicleLookupRequestOptions requestOptions = null)
     {
         if (string.IsNullOrWhiteSpace(fileFullPath))
             throw new ArgumentException("CSV output file path is required.", nameof(fileFullPath));
@@ -124,14 +128,15 @@ public class DuckDBVehicleReportService(
         var allVins = await ResolveVinsAsync(vins, distinctVinCount);
         if (allVins.Count == 0) return 0;
 
-        return await StreamCsvAsync<VehicleServiceItemReportModel, VehicleServiceItemReportModelCsvMap>(fileFullPath, allVins, batchSize, TransformServiceItemLookups);
+        return await StreamCsvAsync<VehicleServiceItemReportModel, VehicleServiceItemReportModelCsvMap>(fileFullPath, allVins, batchSize, TransformServiceItemLookups, requestOptions);
     }
 
     public async Task<int> ExportVehicleServiceItemsReportToParquetAsync(
         string fileFullPath,
         IEnumerable<string> vins = null,
         int? distinctVinCount = null,
-        int batchSize = 1000)
+        int batchSize = 1000,
+        VehicleLookupRequestOptions requestOptions = null)
     {
         if (string.IsNullOrWhiteSpace(fileFullPath))
             throw new ArgumentException("Parquet output file path is required.", nameof(fileFullPath));
@@ -139,7 +144,7 @@ public class DuckDBVehicleReportService(
         var allVins = await ResolveVinsAsync(vins, distinctVinCount);
         if (allVins.Count == 0) return 0;
 
-        return await StreamParquetAsync(fileFullPath, allVins, batchSize, TransformServiceItemLookups);
+        return await StreamParquetAsync(fileFullPath, allVins, batchSize, TransformServiceItemLookups, requestOptions);
     }
 
     public async Task<IEnumerable<VehicleSscReportModel>> GetVehicleSscReportAsync(
@@ -568,7 +573,8 @@ public class DuckDBVehicleReportService(
         string fileFullPath,
         List<string> allVins,
         int batchSize,
-        Func<List<string>, IEnumerable<VehicleLookupDTO>, List<TModel>> transform)
+        Func<List<string>, IEnumerable<VehicleLookupDTO>, List<TModel>> transform,
+        VehicleLookupRequestOptions requestOptions = null)
         where TMap : ClassMap<TModel>, new()
     {
         EnsureDirectoryExists(fileFullPath);
@@ -580,7 +586,9 @@ public class DuckDBVehicleReportService(
 
         foreach (var vinChunk in Chunk(allVins, batchSize))
         {
-            var lookups = await vehicleLookupService.LookupAsync(vinChunk);
+            var lookups = requestOptions is null
+                ? await vehicleLookupService.LookupAsync(vinChunk)
+                : await vehicleLookupService.LookupAsync(vinChunk, requestOptions);
             var rows = transform(vinChunk, lookups);
             await csvWriter.WriteRecordsAsync(rows);
             await writer.FlushAsync();
@@ -594,7 +602,8 @@ public class DuckDBVehicleReportService(
         string fileFullPath,
         List<string> allVins,
         int batchSize,
-        Func<List<string>, IEnumerable<VehicleLookupDTO>, List<TModel>> transform)
+        Func<List<string>, IEnumerable<VehicleLookupDTO>, List<TModel>> transform,
+        VehicleLookupRequestOptions requestOptions = null)
     {
         EnsureDirectoryExists(fileFullPath);
 
@@ -605,7 +614,9 @@ public class DuckDBVehicleReportService(
 
         foreach (var vinChunk in Chunk(allVins, batchSize))
         {
-            var lookups = await vehicleLookupService.LookupAsync(vinChunk);
+            var lookups = requestOptions is null
+                ? await vehicleLookupService.LookupAsync(vinChunk)
+                : await vehicleLookupService.LookupAsync(vinChunk, requestOptions);
             var rows = transform(vinChunk, lookups);
 
             if (rows.Count > 0)

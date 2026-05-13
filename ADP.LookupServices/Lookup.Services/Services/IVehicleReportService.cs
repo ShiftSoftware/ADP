@@ -11,9 +11,9 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services;
 public interface IVehicleReportService
 {
     Task<IEnumerable<string>> GetDistinctVinsAsync(int? count = null);
-    Task<IEnumerable<VehicleServiceItemReportModel>> GetVehicleServiceItemsReportAsync(IEnumerable<string> vins = null, int? distinctVinCount = null);
-    Task<int> ExportVehicleServiceItemsReportToCsvAsync(string fileFullPath, IEnumerable<string> vins = null, int? distinctVinCount = null, int batchSize = 1000);
-    Task<int> ExportVehicleServiceItemsReportToParquetAsync(string fileFullPath, IEnumerable<string> vins = null, int? distinctVinCount = null, int batchSize = 1000);
+    Task<IEnumerable<VehicleServiceItemReportModel>> GetVehicleServiceItemsReportAsync(IEnumerable<string> vins = null, int? distinctVinCount = null, VehicleLookupRequestOptions requestOptions = null);
+    Task<int> ExportVehicleServiceItemsReportToCsvAsync(string fileFullPath, IEnumerable<string> vins = null, int? distinctVinCount = null, int batchSize = 1000, VehicleLookupRequestOptions requestOptions = null);
+    Task<int> ExportVehicleServiceItemsReportToParquetAsync(string fileFullPath, IEnumerable<string> vins = null, int? distinctVinCount = null, int batchSize = 1000, VehicleLookupRequestOptions requestOptions = null);
     Task<IEnumerable<VehicleSscReportModel>> GetVehicleSscReportAsync(IEnumerable<string> vins = null, int? distinctVinCount = null);
     Task<int> ExportVehicleSscReportToCsvAsync(string fileFullPath, IEnumerable<string> vins = null, int? distinctVinCount = null, int batchSize = 1000);
     Task<int> ExportVehicleSscReportToParquetAsync(string fileFullPath, IEnumerable<string> vins = null, int? distinctVinCount = null, int batchSize = 1000);
