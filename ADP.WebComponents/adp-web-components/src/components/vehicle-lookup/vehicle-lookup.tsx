@@ -386,6 +386,13 @@ export class VehicleLookup implements MultiLingual {
       Object.entries(allComponents).filter(([key]) => !hiddenSet.has(key))
     ) as Partial<Record<ActiveElement, Node>>;
 
+    const showClaimableTrace =
+      this.activeElement === componentTags.vehicleClaimableItems &&
+      !!(props[componentTags.vehicleClaimableItems] as { showTrace?: boolean })?.showTrace &&
+      !!this.currentVin &&
+      !this.isError &&
+      !this.isLoading;
+
     return (
       <Host translate="no">
         <VehicleInfoLayout
@@ -394,6 +401,23 @@ export class VehicleLookup implements MultiLingual {
           isLoading={this.isLoading}
           direction={this.locale.direction}
           errorMessage={this.errorMessage || this.locale.errors.wildCard}
+          headerRight={
+            showClaimableTrace ? (
+              <button
+                type="button"
+                class="trace-trigger-button"
+                title="View Lookup Trace"
+                aria-label="View Lookup Trace"
+                onClick={() => this.componentsList?.[componentTags.vehicleClaimableItems]?.openTrace()}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="6" cy="19" r="3" />
+                  <path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15" />
+                  <circle cx="18" cy="5" r="3" />
+                </svg>
+              </button>
+            ) : null
+          }
         >
           <shift-tab-content components={componentList} activeComponent={this.activeElement}></shift-tab-content>
         </VehicleInfoLayout>

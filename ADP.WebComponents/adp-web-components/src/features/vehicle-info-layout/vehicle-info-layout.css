@@ -57,6 +57,7 @@
 }
 
 .vehicle-info-header {
+  position: relative;
   height: 54px;
   display: flex;
   align-items: center;
@@ -64,6 +65,15 @@
   text-align: center;
   background-color: #f6f6f6;
   border: 1px solid #ededed;
+}
+
+.vehicle-info-header-action {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
 }
 
 .vehicle-info-header-vin {

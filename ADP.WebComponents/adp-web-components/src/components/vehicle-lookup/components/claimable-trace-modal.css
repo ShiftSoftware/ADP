@@ -50,13 +50,13 @@
   border: 0;
 }
 
-/* Eye-icon trigger button — top-right of the claimable items area. The items box is
-   forced LTR for the pipeline visualization, so the button position doesn't flip in RTL. */
+/* Trace trigger — lives in the panel header's right action slot. Yellow/warning palette
+   to signal "this is a debug/trace tool, not a regular action." */
 .trace-trigger-button {
-  @apply absolute top-[12px] right-[12px] z-20 flex items-center justify-center size-[32px] rounded-full border border-[#d6dde4] bg-white text-[#5a6b7a] hover:text-[#1d2735] hover:border-[#3071a9] hover:bg-[#eef2f5] cursor-pointer transition duration-200 shadow-sm;
+  @apply flex items-center justify-center size-[32px] rounded-full border border-[#e0c97a] bg-white text-[#c08a0e] hover:text-[#8a6d3b] hover:border-[#c08a0e] hover:bg-[#fcf8e3] cursor-pointer transition duration-200 shadow-sm;
 }
 
-.trace-trigger-button img {
-  @apply size-[18px];
-  filter: invert(40%) sepia(8%) saturate(485%) hue-rotate(174deg) brightness(94%) contrast(89%);
+.trace-trigger-button svg {
+  width: 18px;
+  height: 18px;
 }

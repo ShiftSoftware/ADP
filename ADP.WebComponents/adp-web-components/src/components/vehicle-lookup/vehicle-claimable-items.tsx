@@ -21,7 +21,6 @@ import dynamicClaimSchema from '~locales/vehicleLookup/claimableItems/type';
 import { PrintIcon } from '~assets/print-icon';
 import { ActivationIcon } from '~assets/activation-icon';
 import { EmptyTableIcon } from '~assets/empty-table-icon';
-import Eye from '~assets/eye.svg';
 import { VehicleLookupMock } from '~features/vehicle-lookup-component/types';
 import { ItemClaimDTO } from '../../global/types/generated/vehicle-lookup/item-claim-dto';
 
@@ -415,6 +414,11 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
     this.setClaimableItemPopover(false);
   };
 
+  @Method()
+  async openTrace() {
+    await this.openTraceModal();
+  }
+
   private openTraceModal = async () => {
     if (!this.vehicleLookup?.vin) return;
 
@@ -666,6 +670,17 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
           direction={this.locale.sharedLocales.direction}
           isLoading={this.isLoading || this.tabAnimationLoading}
           errorMessage={this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard}
+          headerRight={
+            this.showTrace && this.vehicleLookup && !this.isLoading && !this.tabAnimationLoading && !this.isError ? (
+              <button type="button" class="trace-trigger-button" title={this.locale.viewTrace} aria-label={this.locale.viewTrace} onClick={this.openTraceModal}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="6" cy="19" r="3" />
+                  <path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15" />
+                  <circle cx="18" cy="5" r="3" />
+                </svg>
+              </button>
+            ) : null
+          }
         >
           <div dir="ltr" class={cn('relative flex items-center h-[320px] transition-all duration-300', { loading: this.isLoading || this.tabAnimationLoading })}>
             {/* Tabs container */}
@@ -704,11 +719,6 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
             </div>
 
             <div class="claimable-items-box px-[30px] min-w-full relative overflow-x-scroll h-full overflow-y-hidden">
-              {this.showTrace && this.vehicleLookup && !this.isLoading && !this.tabAnimationLoading && (
-                <button type="button" class="trace-trigger-button" title={this.locale.viewTrace} aria-label={this.locale.viewTrace} onClick={this.openTraceModal}>
-                  <img src={Eye} alt="" />
-                </button>
-              )}
               <div class="flex relative w-fit min-w-full items-center h-full [&_*]:shrink-0 gap-[250px] justify-between">
                 {/* Lane */}
                 <div

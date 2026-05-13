@@ -9,6 +9,7 @@ type VehicleInfoLayoutProps = {
   coreOnly?: boolean;
   isLoading: boolean;
   errorMessage: string;
+  headerRight?: any;
 };
 
 export const VehicleInfoLayout: FunctionalComponent<VehicleInfoLayoutProps> = (props, children) =>
@@ -26,6 +27,7 @@ export const VehicleInfoLayout: FunctionalComponent<VehicleInfoLayoutProps> = (p
             props.header
           )}
         </strong>
+        {props.headerRight && <div class="vehicle-info-header-action">{props.headerRight}</div>}
       </div>
 
       <div part="vehicle-info-body" class="vehicle-info-body">
