@@ -8,6 +8,7 @@
     "start": "tsx run.ts",
     "browser": "tsx browser.ts",
     "resume": "tsx resume.ts",
+    "trigger-ingest": "tsx trigger-ingest.ts",
     "seed-demo": "tsx seed-demo.ts",
     "unseed-demo": "tsx unseed-demo.ts",
     "typecheck": "tsc --noEmit"

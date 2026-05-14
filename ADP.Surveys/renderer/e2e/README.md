@@ -25,6 +25,7 @@ From `ADP.Surveys/renderer/e2e/`:
 | `npm run seed-demo` | `seed-demo.ts` | Inserts a `demo:`-prefixed survey + instance and prints the public URL. Persistent — survives runs. Use for manual exploration of the standalone app. |
 | `npm run unseed-demo` | `unseed-demo.ts` | Removes everything `seed-demo.ts` created. |
 | `npm run resume` | `resume.ts` | Walks the localStorage-resume flow: starts a survey, navigates partway, reloads the page, asserts mid-flow state is restored. |
+| `npm run trigger-ingest` | `trigger-ingest.ts` | **Phase 5 slice 2.** Creates + publishes a CSI-GR-style survey with one `service-visit-closed` trigger, POSTs a matching candidate event to `/api/Surveys/Triggers/ingest`, asserts the response shape and the resulting `SurveyInstance` snapshot fields (TriggerId/Channel/RecipientAddress/RecipientLocale/RemindersRemaining/UniqueHash/NextSendAt/CustomerRef + MetaDataJson). Also tests filter mismatch (jobType=PM → NoMatch) and unknown eventKind → NoMatch. Slice 3 will extend this with dedup assertions. |
 | `npm run typecheck` | — | `tsc --noEmit` across the harness. |
 
 ## Adding a new harness
