@@ -44,6 +44,8 @@ nav:
       - Intro: menus/intro.md
       - Menu Generation: menus/menu-generation.md
       - Integration: menus/integration.md
+  - Surveys:
+      - Triggers & Scheduler: surveys/triggers-and-scheduler.md
   - Architecture:
       - Stack: architecture/stack.md
       - Deployment Pipelines: architecture/deployment-pipelines.md
