@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using FluentValidation;
 using ShiftSoftware.ADP.Surveys.Shared.DTOs.Logic;
 using ShiftSoftware.ADP.Surveys.Shared.DTOs.Screens;
+using ShiftSoftware.ADP.Surveys.Shared.DTOs.Triggers;
 
 namespace ShiftSoftware.ADP.Surveys.Shared.DTOs;
 
@@ -41,6 +42,9 @@ public class SurveyDto
 
     [JsonPropertyName("logic")]
     public List<LogicRuleDto> Logic { get; set; } = new();
+
+    [JsonPropertyName("triggers")]
+    public List<TriggerDto> Triggers { get; set; } = new();
 }
 
 /// <summary>
@@ -78,6 +82,8 @@ public class SurveyDtoValidator : AbstractValidator<SurveyDto>
         });
 
         RuleForEach(x => x.Logic).SetValidator(new LogicRuleDtoValidator());
+
+        RuleForEach(x => x.Triggers).SetValidator(new TriggerDtoValidator());
     }
 }
 
@@ -98,5 +104,12 @@ public class SurveyPublishValidator : AbstractValidator<SurveyDto>
             .WithMessage("Survey must declare a default locale before publishing.");
         RuleFor(x => x.Screens).NotEmpty()
             .WithMessage("Survey must have at least one screen before publishing.");
+
+        RuleForEach(x => x.Triggers).SetValidator(new TriggerPublishValidator());
+
+        RuleFor(x => x.Triggers)
+            .Must(triggers => triggers.Select(t => t.Id).Distinct().Count() == triggers.Count)
+            .When(x => x.Triggers.Count > 0)
+            .WithMessage("Trigger ids must be unique within a survey.");
     }
 }
