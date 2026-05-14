@@ -59,6 +59,21 @@ public static class SurveyApiExtensions
         services.AddScoped<SurveyRepository>();
         services.AddScoped<BankQuestionRepository>();
         services.AddScoped<ScreenTemplateRepository>();
+        services.AddScoped<Services.TriggerIngestService>();
+        services.AddScoped<Services.TriggerSchedulerService>();
+        services.AddScoped<Services.OutboxDispatchService>();
+
+        // Trigger channels — register the in-memory mock by default so dev / e2e harnesses
+        // have a working channel out of the box. Real deployments add their WhatsApp / SMS
+        // / email implementations alongside; SurveyChannelRegistry resolves by Key.
+        services.AddSingleton<ShiftSoftware.ADP.Surveys.Shared.Triggers.ISurveyChannel, Channels.InMemorySurveyChannel>();
+        services.AddSingleton<Channels.SurveyChannelRegistry>();
+
+        // Outbox subscribers — same pattern. Real deployments register their Service Bus /
+        // webhook / in-process subscribers; the mock keeps the dispatch path runnable in
+        // dev / e2e. Slice 7.
+        services.AddSingleton<ShiftSoftware.ADP.Surveys.Shared.Triggers.ISurveyResponseSubscriber, Subscribers.InMemoryOutboxSubscriber>();
+        services.AddSingleton<Subscribers.OutboxSubscriberRegistry>();
 
         // EfBankSource is scoped per request — each resolve pass gets a fresh cache.
         services.AddScoped<Data.Bank.EfBankSource>();

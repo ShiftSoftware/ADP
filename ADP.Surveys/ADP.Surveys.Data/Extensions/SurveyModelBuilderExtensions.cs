@@ -59,6 +59,15 @@ public static class SurveyModelBuilderExtensions
 
             x.HasIndex(i => i.CustomerRef);
             x.HasIndex(i => i.Status);
+
+            // Drives the trigger scheduler poll: SELECT TOP N WHERE active AND NextSendAt <= NOW
+            // ORDER BY NextSendAt. Filter limits to active states (Pending=0, Sent=1, Opened=2)
+            // and excludes soft-deletes so the index stays small as the table grows.
+            // SQL Server filtered indexes don't support NOT IN — phrasing as positive IN
+            // matches the (Pending, Sent, Opened) enum values explicitly. Slice 4.
+            x.HasIndex(i => new { i.Status, i.NextSendAt })
+                .HasDatabaseName("IX_SurveyInstance_Status_NextSendAt_Active")
+                .HasFilter($"{nameof(SurveyInstance.Status)} IN (0, 1, 2) AND {nameof(SurveyInstance.IsDeleted)} = 0");
         });
 
         modelBuilder.Entity<SurveyResponse>(x =>
@@ -69,6 +78,26 @@ public static class SurveyModelBuilderExtensions
                 .OnDelete(DeleteBehavior.Cascade);
 
             x.HasIndex(r => r.CompletedAt);
+        });
+
+        modelBuilder.Entity<SurveyOutboxEvent>(x =>
+        {
+            x.HasOne(e => e.SurveyResponse)
+                .WithMany()
+                .HasForeignKey(e => e.SurveyResponseID)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            x.HasOne(e => e.SurveyInstance)
+                .WithMany()
+                .HasForeignKey(e => e.SurveyInstanceID)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Drives the outbox dispatch poll: SELECT TOP N WHERE Status = Pending
+            // ORDER BY CreateDate. Filtered to keep the index small as dispatched
+            // rows accumulate. Status enum: Pending=0, Dispatched=1, Failed=2.
+            x.HasIndex(e => new { e.Status, e.CreateDate })
+                .HasDatabaseName("IX_SurveyOutboxEvent_Status_CreateDate_Pending")
+                .HasFilter($"{nameof(SurveyOutboxEvent.Status)} = 0 AND {nameof(SurveyOutboxEvent.IsDeleted)} = 0");
         });
 
         modelBuilder.Entity<SurveyAnswer>(x =>
