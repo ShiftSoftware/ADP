@@ -2,8 +2,7 @@
 @using LocalizedString = ShiftSoftware.ADP.Surveys.Shared.DTOs.LocalizedString
 
 @* Survey-level metadata tab — Name, IntegrationId, localized Title, locales,
-   default locale, plus a placeholder for the Phase 5 trigger config. Lives
-   alongside Visual + Raw JSON in SurveyForm's top toggle group. *@
+   default locale. Triggers live in their own toolbar tab (TriggersPanel). *@
 
 <div class="general-tab">
     @* Name lives in the form's toolbar-start slot (always visible across
@@ -61,13 +60,6 @@
                                   ReadOnly="@ReadOnly" />
         </div>
     </MudPaper>
-
-    <MudPaper Class="pa-4 mb-3 general-tab__placeholder" Elevation="0" Outlined="true">
-        <div class="general-tab__section-title">Trigger</div>
-        <MudAlert Severity="Severity.Info" Dense="true" Variant="Variant.Outlined" Class="mt-1">
-            Trigger configuration lands with Phase 5 (SMS / email senders + instance lifecycle).
-        </MudAlert>
-    </MudPaper>
 </div>
 
 <style>
@@ -96,10 +88,6 @@
 
     .general-tab__localized {
         margin-top: 10px;
-    }
-
-    .general-tab__placeholder {
-        opacity: 0.85;
     }
 </style>
 

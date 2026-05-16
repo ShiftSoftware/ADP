@@ -29,4 +29,22 @@ public class SurveyService
         var url = $"{prefix}Publish/{hashedId}";
         return await http.PostAsync(url, content: null, ct);
     }
+
+    /// <summary>
+    /// GET <c>{prefix}Triggers/channels</c>. Returns the registry keys the host has
+    /// wired up. Empty (not null) on failure so the dropdown still renders.
+    /// </summary>
+    public async Task<List<string>> GetRegisteredChannelsAsync(CancellationToken ct = default)
+    {
+        var url = $"{prefix}Triggers/channels";
+        try
+        {
+            var keys = await http.GetFromJsonAsync<List<string>>(url, ct);
+            return keys ?? new();
+        }
+        catch
+        {
+            return new();
+        }
+    }
 }

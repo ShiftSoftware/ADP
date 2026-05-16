@@ -16,8 +16,7 @@ namespace ShiftSoftware.ADP.Surveys.API.Controllers;
 /// <summary>
 /// Anonymous public endpoints consumed by the renderer and agent-assist iframe.
 /// Per Decision #7, there is <b>no auth</b> on these — the instance's public GUID
-/// is the capability. Rate-limiting / captcha is an orthogonal concern (provider
-/// interface will land in Phase 5).
+/// is the capability. Rate-limiting / captcha is an orthogonal concern.
 /// </summary>
 [Route("SurveyInstances")]
 [ApiController]

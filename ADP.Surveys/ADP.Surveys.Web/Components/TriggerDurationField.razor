@@ -1,0 +1,129 @@
+@namespace ShiftSoftware.ADP.Surveys.Web.Components
+@using System.Globalization
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Triggers
+
+@*
+    Composite editor for the TriggerDuration grammar (^(\d+)([smhd])$). Two MudBlazor
+    controls — a numeric field and a unit dropdown — that round-trip to a single
+    string value. Empty value bubbles back as empty (drafts are allowed to be blank).
+*@
+
+<div class="trigger-duration">
+    <MudNumericField T="int?"
+                     Value="@magnitude"
+                     ValueChanged="@OnMagnitudeChanged"
+                     Min="0"
+                     HideSpinButtons="false"
+                     Placeholder="0"
+                     Margin="Margin.Dense"
+                     Disabled="@ReadOnly"
+                     Label="@Label"
+                     Class="trigger-duration__num" />
+    <MudSelect T="string"
+               Value="@unit"
+               ValueChanged="@OnUnitChanged"
+               Margin="Margin.Dense"
+               Disabled="@(ReadOnly || magnitude is null)"
+               Label="Unit"
+               AnchorOrigin="Origin.BottomCenter"
+               Class="trigger-duration__unit">
+        <MudSelectItem T="string" Value="@("s")">seconds</MudSelectItem>
+        <MudSelectItem T="string" Value="@("m")">minutes</MudSelectItem>
+        <MudSelectItem T="string" Value="@("h")">hours</MudSelectItem>
+        <MudSelectItem T="string" Value="@("d")">days</MudSelectItem>
+    </MudSelect>
+</div>
+
+<style>
+    .trigger-duration {
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
+    }
+    .trigger-duration__num {
+        flex: 1 1 0;
+        min-width: 0;
+    }
+    .trigger-duration__unit {
+        flex: 0 0 110px;
+    }
+</style>
+
+@code {
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public string? Label { get; set; }
+
+    int? magnitude;
+    string unit = "d";
+
+    string? lastSeenValue;
+
+    protected override void OnParametersSet()
+    {
+        // Re-parse only when the inbound Value actually changed — avoids snapping
+        // the unit selector back to "d" while the user is mid-edit (magnitude=null).
+        if (!string.Equals(lastSeenValue, Value, StringComparison.Ordinal))
+        {
+            lastSeenValue = Value;
+            ParseInbound(Value);
+        }
+    }
+
+    void ParseInbound(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            magnitude = null;
+            // Keep unit as-is so empty → typing produces the user's last unit choice
+            // instead of always defaulting to days.
+            return;
+        }
+
+        if (TriggerDuration.TryParse(value, out var ts))
+        {
+            // Recover the original unit when the parse succeeded — the regex
+            // captured it but TimeSpan throws it away. Re-derive from the raw
+            // string so "60m" doesn't become "1h".
+            var trimmed = value.Trim();
+            var suffix = trimmed[^1];
+            unit = char.ToLowerInvariant(suffix).ToString();
+            magnitude = unit switch
+            {
+                "s" => (int)ts.TotalSeconds,
+                "m" => (int)ts.TotalMinutes,
+                "h" => (int)ts.TotalHours,
+                "d" => (int)ts.TotalDays,
+                _ => null,
+            };
+        }
+        else
+        {
+            magnitude = null;
+        }
+    }
+
+    async Task OnMagnitudeChanged(int? value)
+    {
+        magnitude = value;
+        await EmitAsync();
+    }
+
+    async Task OnUnitChanged(string value)
+    {
+        unit = string.IsNullOrEmpty(value) ? "d" : value;
+        await EmitAsync();
+    }
+
+    async Task EmitAsync()
+    {
+        var emitted = magnitude is null
+            ? ""
+            : magnitude.Value.ToString(CultureInfo.InvariantCulture) + unit;
+        // Suppress the next OnParametersSet re-parse — the parent will round-trip
+        // this exact string back to us, and re-parsing it would be a no-op anyway.
+        lastSeenValue = emitted;
+        await ValueChanged.InvokeAsync(emitted);
+    }
+}

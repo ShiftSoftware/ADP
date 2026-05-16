@@ -85,6 +85,17 @@
                                          Class="ml-1">@TheItem!.Draft!.Logic.Count</MudChip>
                             }
                         </MudToggleItem>
+                        <MudToggleItem T="string" Value="@("triggers")">
+                            <MudIcon Icon="@Icons.Material.Filled.NotificationsActive" Size="Size.Small" Class="mr-1" />Triggers
+                            @if ((TheItem?.Draft?.Triggers?.Count ?? 0) > 0)
+                            {
+                                <MudChip T="string"
+                                         Size="Size.Small"
+                                         Color="Color.Info"
+                                         Variant="Variant.Filled"
+                                         Class="ml-1">@TheItem!.Draft!.Triggers.Count</MudChip>
+                            }
+                        </MudToggleItem>
                         <MudToggleItem T="string" Value="@("raw")">
                             <MudIcon Icon="@Icons.Material.Filled.Code" Size="Size.Small" Class="mr-1" />Raw JSON
                         </MudToggleItem>
@@ -167,6 +178,13 @@
                                      DraftChanged="OnDraftMutatedFromVisual"
                                      ReadOnly="@isReadOnly"
                                      SchemaVersion="schemaVersion" />
+                }
+                else if (currentView == "triggers")
+                {
+                    <TriggersPanel Draft="TheItem.Draft"
+                                   DraftChanged="OnDraftMutatedFromVisual"
+                                   ReadOnly="@isReadOnly"
+                                   SchemaVersion="schemaVersion" />
                 }
                 else
                 {

@@ -1,0 +1,639 @@
+@namespace ShiftSoftware.ADP.Surveys.Web.Components
+@using System.Text.RegularExpressions
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Triggers
+@using ShiftSoftware.ADP.Surveys.Web.WebServices
+
+@inject SurveyService SurveySvc
+
+@*
+    Survey-level trigger list. Lives as its own toolbar tab alongside General /
+    Visual / Logic / Raw. Mirrors the LogicRulesPanel layout (header row +
+    info alert + expansion panels).
+
+    Three pieces of polish vs the inline version this replaces:
+      - Schedule durations edited via TriggerDurationField (number + unit), not
+        free-text duration strings.
+      - Channel field is a MudAutocomplete sourced from the registry endpoint
+        with free-text fallback.
+      - Dedup recipe rows are scope+field pickers matching the four shapes
+        documented in TriggerHasher.cs, with inline validation + a cheat-sheet.
+*@
+
+<div class="triggers-panel">
+    <div class="triggers-panel__header">
+        <div class="triggers-panel__title">
+            <MudIcon Icon="@Icons.Material.Filled.NotificationsActive" />
+            <span>Triggers</span>
+            @if (Triggers.Count > 0)
+            {
+                <MudChip T="string"
+                         Size="Size.Small"
+                         Color="Color.Info"
+                         Variant="Variant.Outlined">@Triggers.Count</MudChip>
+            }
+        </div>
+        @if (!ReadOnly)
+        {
+            <MudButton StartIcon="@Icons.Material.Filled.Add"
+                       Size="Size.Small"
+                       Variant="Variant.Text"
+                       Color="Color.Primary"
+                       OnClick="AddTrigger">
+                Add trigger
+            </MudButton>
+        }
+    </div>
+
+    <MudAlert Severity="Severity.Info" Dense="true" Class="mb-3">
+        Triggers fire when an upstream event of <b>eventKind</b> arrives. Each materializes a
+        survey instance, dedup'd by the recipe, and delivered via the named channel on the
+        schedule below. Filter conditions are currently editable via the <b>Raw JSON</b> tab.
+    </MudAlert>
+
+    @if (Draft is null || Triggers.Count == 0)
+    {
+        <div class="triggers-panel__empty">
+            No triggers yet. Click <b>+ Add trigger</b> to fire a survey instance on an event.
+        </div>
+    }
+    else
+    {
+        <MudExpansionPanels MultiExpansion="false" Elevation="0" Dense="true">
+            @for (int i = 0; i < Triggers.Count; i++)
+            {
+                var idx = i;
+                var trigger = Triggers[idx];
+
+                <MudExpansionPanel Expanded="@(idx == expandedIndex)"
+                                   ExpandedChanged="@(b => OnExpandedChanged(idx, b))">
+                    <TitleContent>
+                        <div class="triggers-panel__row">
+                            <div class="triggers-panel__row-label">
+                                <span class="triggers-panel__row-number">@(idx + 1).</span>
+                                <span class="triggers-panel__row-summary">
+                                    @(string.IsNullOrWhiteSpace(trigger.Id) ? "(untitled)" : trigger.Id)
+                                    @if (!string.IsNullOrWhiteSpace(trigger.EventKind))
+                                    {
+                                        <span class="triggers-panel__row-event"> · @trigger.EventKind</span>
+                                    }
+                                    @if (!trigger.Enabled)
+                                    {
+                                        <MudChip T="string"
+                                                 Size="Size.Small"
+                                                 Color="Color.Default"
+                                                 Variant="Variant.Outlined"
+                                                 Class="ml-2">disabled</MudChip>
+                                    }
+                                </span>
+                            </div>
+                            @if (!ReadOnly)
+                            {
+                                <div class="triggers-panel__row-actions" @onclick:stopPropagation="true">
+                                    <MudSwitch T="bool"
+                                               Value="@trigger.Enabled"
+                                               ValueChanged="@(v => OnEnabledChanged(idx, v))"
+                                               Color="Color.Primary"
+                                               Size="Size.Small" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                   Size="Size.Small"
+                                                   Color="Color.Error"
+                                                   OnClick="@(() => RemoveTrigger(idx))"
+                                                   title="Remove trigger" />
+                                </div>
+                            }
+                        </div>
+                    </TitleContent>
+                    <ChildContent>
+                        <div class="triggers-panel__body">
+                            <div class="triggers-panel__grid">
+                                <MudTextField T="string"
+                                              Label="Id"
+                                              HelperText="Stable within the survey (used as SurveyInstance.TriggerId)."
+                                              Margin="Margin.Dense"
+                                              ReadOnly="@ReadOnly"
+                                              Value="@trigger.Id"
+                                              ValueChanged="@(v => OnIdChanged(idx, v))" />
+                                <MudTextField T="string"
+                                              Label="Event kind"
+                                              HelperText="e.g. service-visit-closed — matched at ingest."
+                                              Margin="Margin.Dense"
+                                              ReadOnly="@ReadOnly"
+                                              Value="@trigger.EventKind"
+                                              ValueChanged="@(v => OnEventKindChanged(idx, v))" />
+                            </div>
+
+                            <div class="triggers-panel__grid mt-2">
+                                <div>
+                                    <MudAutocomplete T="string"
+                                                     Label="Channel"
+                                                     Margin="Margin.Dense"
+                                                     Disabled="@ReadOnly"
+                                                     Value="@trigger.Channel"
+                                                     ValueChanged="@(v => OnChannelChanged(idx, v))"
+                                                     SearchFunc="SearchChannels"
+                                                     CoerceText="true"
+                                                     CoerceValue="true"
+                                                     Clearable="false"
+                                                     ResetValueOnEmptyText="false"
+                                                     AnchorOrigin="Origin.BottomCenter" />
+                                    @if (!string.IsNullOrWhiteSpace(trigger.Channel) && registeredChannels is not null
+                                        && !registeredChannels.Contains(trigger.Channel))
+                                    {
+                                        <div class="triggers-panel__hint triggers-panel__hint--warn">
+                                            Not registered in this environment — survey will fail to send until a matching ISurveyChannel is wired up.
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="triggers-panel__hint">
+                                            DI key of a registered ISurveyChannel.
+                                        </div>
+                                    }
+                                </div>
+                                <TriggerDurationField Value="@trigger.Schedule.InitialDelay"
+                                                      ValueChanged="@(v => OnInitialDelayChanged(idx, v))"
+                                                      ReadOnly="@ReadOnly"
+                                                      Label="Initial delay" />
+                            </div>
+
+                            <div class="triggers-panel__sublabel">Reminders</div>
+                            <div class="triggers-panel__sublabel-help">
+                                Each entry is a duration since the previous send.
+                            </div>
+                            @for (int r = 0; r < trigger.Schedule.Reminders.Count; r++)
+                            {
+                                var rIdx = r;
+                                <div class="triggers-panel__list-row">
+                                    <div class="triggers-panel__list-row-main">
+                                        <TriggerDurationField Value="@trigger.Schedule.Reminders[rIdx]"
+                                                              ValueChanged="@(v => OnReminderChanged(idx, rIdx, v))"
+                                                              ReadOnly="@ReadOnly"
+                                                              Label="@($"Reminder {rIdx + 1}")" />
+                                    </div>
+                                    @if (!ReadOnly)
+                                    {
+                                        <MudIconButton Icon="@Icons.Material.Filled.Close"
+                                                       Size="Size.Small"
+                                                       OnClick="@(() => RemoveReminder(idx, rIdx))"
+                                                       title="Remove reminder" />
+                                    }
+                                </div>
+                            }
+                            @if (!ReadOnly)
+                            {
+                                <MudButton StartIcon="@Icons.Material.Filled.Add"
+                                           Size="Size.Small"
+                                           Variant="Variant.Text"
+                                           OnClick="@(() => AddReminder(idx))">
+                                    Add reminder
+                                </MudButton>
+                            }
+
+                            <div class="triggers-panel__sublabel mt-3">Dedup recipe</div>
+                            <div class="triggers-panel__sublabel-help">
+                                Field references that combine into the instance's <code>UniqueHash</code> —
+                                this is what makes <i>"process each event at most once per recipient"</i> work.
+                            </div>
+
+                            <MudExpansionPanels Elevation="0" Dense="true" Class="triggers-panel__cheatsheet">
+                                <MudExpansionPanel Text="Recipe grammar cheat-sheet">
+                                    <ul class="triggers-panel__cheatsheet-list">
+                                        <li><code>templateId</code> — survey ID (useful when one event fires multiple surveys to the same recipient).</li>
+                                        <li><code>recipient.address</code> — phone / email / etc. resolved upstream.</li>
+                                        <li><code>recipient.locale</code> — recipient's locale.</li>
+                                        <li><code>recipient.customerRef</code> — caller-supplied stable recipient ID.</li>
+                                        <li><code>candidate.&lt;field&gt;</code> — top-level property on the event payload (e.g. <code>candidate.wip</code>, <code>candidate.dealerId</code>). Nested paths not yet supported.</li>
+                                    </ul>
+                                </MudExpansionPanel>
+                            </MudExpansionPanels>
+
+                            @for (int d = 0; d < trigger.DedupRecipe.Count; d++)
+                            {
+                                var dIdx = d;
+                                var entry = trigger.DedupRecipe[dIdx];
+                                var (scope, field) = ParseDedupEntry(entry);
+                                var valid = IsDedupEntryValid(entry);
+
+                                <div class="triggers-panel__list-row">
+                                    <MudSelect T="string"
+                                               Value="@scope"
+                                               ValueChanged="@(v => OnDedupScopeChanged(idx, dIdx, v))"
+                                               Margin="Margin.Dense"
+                                               Disabled="@ReadOnly"
+                                               AnchorOrigin="Origin.BottomCenter"
+                                               Class="triggers-panel__dedup-scope">
+                                        <MudSelectItem T="string" Value="@("templateId")">templateId</MudSelectItem>
+                                        <MudSelectItem T="string" Value="@("recipient")">recipient.*</MudSelectItem>
+                                        <MudSelectItem T="string" Value="@("candidate")">candidate.*</MudSelectItem>
+                                    </MudSelect>
+
+                                    @if (scope == "recipient")
+                                    {
+                                        <MudSelect T="string"
+                                                   Value="@field"
+                                                   ValueChanged="@(v => OnDedupFieldChanged(idx, dIdx, v))"
+                                                   Margin="Margin.Dense"
+                                                   Disabled="@ReadOnly"
+                                                   Placeholder="select…"
+                                                   AnchorOrigin="Origin.BottomCenter"
+                                                   Class="triggers-panel__dedup-field">
+                                            <MudSelectItem T="string" Value="@("address")">address</MudSelectItem>
+                                            <MudSelectItem T="string" Value="@("locale")">locale</MudSelectItem>
+                                            <MudSelectItem T="string" Value="@("customerRef")">customerRef</MudSelectItem>
+                                        </MudSelect>
+                                    }
+                                    else if (scope == "candidate")
+                                    {
+                                        <MudTextField T="string"
+                                                      Value="@field"
+                                                      ValueChanged="@(v => OnDedupFieldChanged(idx, dIdx, v))"
+                                                      Placeholder="field name (e.g. wip)"
+                                                      Margin="Margin.Dense"
+                                                      ReadOnly="@ReadOnly"
+                                                      Class="triggers-panel__dedup-field" />
+                                    }
+                                    else
+                                    {
+                                        @* templateId: no field *@
+                                        <div class="triggers-panel__dedup-field-spacer"></div>
+                                    }
+
+                                    @if (!valid)
+                                    {
+                                        <MudChip T="string"
+                                                 Size="Size.Small"
+                                                 Color="Color.Warning"
+                                                 Variant="Variant.Outlined"
+                                                 Icon="@Icons.Material.Filled.Warning">
+                                            invalid
+                                        </MudChip>
+                                    }
+
+                                    @if (!ReadOnly)
+                                    {
+                                        <MudIconButton Icon="@Icons.Material.Filled.Close"
+                                                       Size="Size.Small"
+                                                       OnClick="@(() => RemoveDedupRow(idx, dIdx))"
+                                                       title="Remove field" />
+                                    }
+                                </div>
+                            }
+                            @if (!ReadOnly)
+                            {
+                                <MudButton StartIcon="@Icons.Material.Filled.Add"
+                                           Size="Size.Small"
+                                           Variant="Variant.Text"
+                                           OnClick="@(() => AddDedupRow(idx))">
+                                    Add field
+                                </MudButton>
+                            }
+
+                            @if (trigger.Filter is not null)
+                            {
+                                <MudAlert Severity="Severity.Info" Dense="true" Variant="Variant.Outlined" Class="mt-3">
+                                    A filter condition is configured. Edit it in the <b>Raw JSON</b> tab.
+                                </MudAlert>
+                            }
+                        </div>
+                    </ChildContent>
+                </MudExpansionPanel>
+            }
+        </MudExpansionPanels>
+    }
+</div>
+
+<style>
+    .triggers-panel {
+        border: 1px solid #d0d5dd;
+        border-radius: 8px;
+        background: #fff;
+        padding: 12px 16px 16px;
+    }
+    .triggers-panel__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+    }
+    .triggers-panel__title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+    }
+    .triggers-panel__empty {
+        font-size: 0.9rem;
+        color: #666;
+        padding: 16px;
+        border: 1px dashed #d0d5dd;
+        border-radius: 8px;
+        background: #fafafa;
+        text-align: center;
+    }
+
+    .triggers-panel__row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        width: 100%;
+    }
+    .triggers-panel__row-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+    .triggers-panel__row-number {
+        font-weight: 600;
+        color: #555;
+    }
+    .triggers-panel__row-summary {
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .triggers-panel__row-event {
+        color: #666;
+        font-weight: 400;
+    }
+    .triggers-panel__row-actions {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .triggers-panel__body {
+        padding: 4px 4px 8px;
+    }
+
+    .triggers-panel__grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    @@media (min-width: 640px) {
+        .triggers-panel__grid {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+
+    .triggers-panel__hint {
+        font-size: 0.75rem;
+        color: #666;
+        margin-top: 2px;
+    }
+    .triggers-panel__hint--warn {
+        color: #b54708;
+    }
+
+    .triggers-panel__sublabel {
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: #444;
+        margin-top: 14px;
+    }
+    .triggers-panel__sublabel-help {
+        font-size: 0.75rem;
+        color: #666;
+        margin-bottom: 4px;
+    }
+    .triggers-panel__sublabel-help code {
+        background: #f3f3f3;
+        padding: 0 4px;
+        border-radius: 3px;
+    }
+
+    .triggers-panel__cheatsheet {
+        margin: 4px 0 8px;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+    }
+    .triggers-panel__cheatsheet-list {
+        margin: 0;
+        padding-left: 18px;
+        font-size: 0.8rem;
+        color: #444;
+        line-height: 1.55;
+    }
+    .triggers-panel__cheatsheet-list code {
+        background: #f3f3f3;
+        padding: 0 4px;
+        border-radius: 3px;
+        font-size: 0.78rem;
+    }
+
+    .triggers-panel__list-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 6px;
+    }
+    .triggers-panel__list-row-main {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+    .triggers-panel__dedup-scope {
+        flex: 0 0 160px;
+    }
+    .triggers-panel__dedup-field {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+    .triggers-panel__dedup-field-spacer {
+        flex: 1 1 auto;
+    }
+</style>
+
+@code {
+    [Parameter] public SurveyDto? Draft { get; set; }
+    [Parameter] public EventCallback<SurveyDto?> DraftChanged { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public int SchemaVersion { get; set; }
+
+    int expandedIndex = -1;
+    List<string>? registeredChannels;
+
+    static readonly Regex DedupGrammar = new(
+        @"^(templateId|recipient\.(address|locale|customerRef)|candidate\.[A-Za-z_][A-Za-z0-9_-]*)$",
+        RegexOptions.Compiled);
+
+    List<TriggerDto> Triggers => Draft?.Triggers ?? new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        registeredChannels = await SurveySvc.GetRegisteredChannelsAsync();
+    }
+
+    SurveyDto EnsureDraft()
+    {
+        Draft ??= SurveyDraftFactory.CreateSkeleton();
+        return Draft;
+    }
+
+    void OnExpandedChanged(int idx, bool expanded) => expandedIndex = expanded ? idx : -1;
+
+    Task<IEnumerable<string>> SearchChannels(string? value, CancellationToken ct)
+    {
+        var pool = registeredChannels ?? new();
+        if (string.IsNullOrWhiteSpace(value))
+            return Task.FromResult<IEnumerable<string>>(pool);
+        return Task.FromResult<IEnumerable<string>>(
+            pool.Where(k => k.Contains(value, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    // ---- CRUD ----
+
+    async Task AddTrigger()
+    {
+        var draft = EnsureDraft();
+        draft.Triggers.Add(new TriggerDto
+        {
+            Id = $"trigger-{draft.Triggers.Count + 1}",
+            Enabled = true,
+            Schedule = new TriggerScheduleDto { InitialDelay = "0d" },
+        });
+        expandedIndex = draft.Triggers.Count - 1;
+        await DraftChanged.InvokeAsync(draft);
+    }
+
+    async Task RemoveTrigger(int idx)
+    {
+        var draft = EnsureDraft();
+        if (idx < 0 || idx >= draft.Triggers.Count) return;
+        draft.Triggers.RemoveAt(idx);
+        if (expandedIndex == idx) expandedIndex = -1;
+        else if (expandedIndex > idx) expandedIndex--;
+        await DraftChanged.InvokeAsync(draft);
+    }
+
+    async Task OnIdChanged(int idx, string value)
+    {
+        var draft = EnsureDraft();
+        draft.Triggers[idx].Id = value ?? "";
+        await DraftChanged.InvokeAsync(draft);
+    }
+
+    async Task OnEventKindChanged(int idx, string value)
+    {
+        var draft = EnsureDraft();
+        draft.Triggers[idx].EventKind = value ?? "";
+        await DraftChanged.InvokeAsync(draft);
+    }
+
+    async Task OnChannelChanged(int idx, string value)
+    {
+        var draft = EnsureDraft();
+        draft.Triggers[idx].Channel = value ?? "";
+        await DraftChanged.InvokeAsync(draft);
+    }
+
+    async Task OnEnabledChanged(int idx, bool value)
+    {
+        var draft = EnsureDraft();
+        draft.Triggers[idx].Enabled = value;
+        await DraftChanged.InvokeAsync(draft);
+    }
+
+    async Task OnInitialDelayChanged(int idx, string value)
+    {
+        var draft = EnsureDraft();
+        draft.Triggers[idx].Schedule.InitialDelay = value ?? "";
+        await DraftChanged.InvokeAsync(draft);
+    }
+
+    async Task AddReminder(int idx)
+    {
+        var draft = EnsureDraft();
+        draft.Triggers[idx].Schedule.Reminders.Add("");
+        await DraftChanged.InvokeAsync(draft);
+    }
+
+    async Task RemoveReminder(int idx, int rIdx)
+    {
+        var draft = EnsureDraft();
+        var list = draft.Triggers[idx].Schedule.Reminders;
+        if (rIdx < 0 || rIdx >= list.Count) return;
+        list.RemoveAt(rIdx);
+        await DraftChanged.InvokeAsync(draft);
+    }
+
+    async Task OnReminderChanged(int idx, int rIdx, string value)
+    {
+        var draft = EnsureDraft();
+        draft.Triggers[idx].Schedule.Reminders[rIdx] = value ?? "";
+        await DraftChanged.InvokeAsync(draft);
+    }
+
+    // ---- Dedup recipe ----
+
+    /// <summary>
+    /// Splits a recipe entry into (scope, field) for editor binding. Scope is one of
+    /// "templateId" | "recipient" | "candidate"; field is the suffix or "".
+    /// Falls back to candidate-scope when the input doesn't match the grammar so
+    /// a newly-added blank row still renders sensibly.
+    /// </summary>
+    static (string scope, string field) ParseDedupEntry(string entry)
+    {
+        if (string.IsNullOrEmpty(entry)) return ("candidate", "");
+        if (entry == "templateId") return ("templateId", "");
+        if (entry.StartsWith("recipient.", StringComparison.Ordinal))
+            return ("recipient", entry["recipient.".Length..]);
+        if (entry.StartsWith("candidate.", StringComparison.Ordinal))
+            return ("candidate", entry["candidate.".Length..]);
+        return ("candidate", entry);
+    }
+
+    static bool IsDedupEntryValid(string entry)
+        => !string.IsNullOrEmpty(entry) && DedupGrammar.IsMatch(entry);
+
+    static string ComposeDedupEntry(string scope, string field) => scope switch
+    {
+        "templateId" => "templateId",
+        "recipient" => string.IsNullOrEmpty(field) ? "recipient." : $"recipient.{field}",
+        "candidate" => string.IsNullOrEmpty(field) ? "candidate." : $"candidate.{field}",
+        _ => "",
+    };
+
+    async Task AddDedupRow(int idx)
+    {
+        var draft = EnsureDraft();
+        draft.Triggers[idx].DedupRecipe.Add("candidate.");
+        await DraftChanged.InvokeAsync(draft);
+    }
+
+    async Task RemoveDedupRow(int idx, int dIdx)
+    {
+        var draft = EnsureDraft();
+        var recipe = draft.Triggers[idx].DedupRecipe;
+        if (dIdx < 0 || dIdx >= recipe.Count) return;
+        recipe.RemoveAt(dIdx);
+        await DraftChanged.InvokeAsync(draft);
+    }
+
+    async Task OnDedupScopeChanged(int idx, int dIdx, string newScope)
+    {
+        var draft = EnsureDraft();
+        var current = draft.Triggers[idx].DedupRecipe[dIdx];
+        var (_, field) = ParseDedupEntry(current);
+        // Reset field when switching to/from templateId (no field), or to recipient
+        // (free-text won't validate against the fixed enum). Keep candidate's field
+        // when coming from another candidate edit so users don't lose what they typed.
+        if (newScope == "templateId") field = "";
+        else if (newScope == "recipient" && field is not "address" and not "locale" and not "customerRef") field = "";
+        draft.Triggers[idx].DedupRecipe[dIdx] = ComposeDedupEntry(newScope, field);
+        await DraftChanged.InvokeAsync(draft);
+    }
+
+    async Task OnDedupFieldChanged(int idx, int dIdx, string newField)
+    {
+        var draft = EnsureDraft();
+        var current = draft.Triggers[idx].DedupRecipe[dIdx];
+        var (scope, _) = ParseDedupEntry(current);
+        draft.Triggers[idx].DedupRecipe[dIdx] = ComposeDedupEntry(scope, newField ?? "");
+        await DraftChanged.InvokeAsync(draft);
+    }
+}

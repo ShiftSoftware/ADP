@@ -422,7 +422,9 @@ async function seedSurveyDef(token: string, def: SurveyDef): Promise<{ hashId: s
   const publishBody = JSON.parse(publishText) as { Version?: number };
   const version = publishBody.Version ?? 0;
 
-  // Insert instance via sqlcmd — no API endpoint creates instances yet (Phase 5).
+  // Insert instance directly via sqlcmd — the demo bypasses the trigger-ingest
+  // matching path because it needs a specific (surveyID, versionID) tuple without
+  // an upstream event.
   const row = sql(`
     SELECT TOP 1 s.ID, v.ID
     FROM [Surveys].[Survey] s

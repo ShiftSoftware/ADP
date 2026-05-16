@@ -7,6 +7,25 @@
 // `installPreviewSubmitHandler` for the full rationale.
 const remountAfterNextSchema = new WeakSet();
 
+// In Create mode, the <shift-survey> element renders for the first time only
+// when the author adds their first screen — and the very first Blazor interop
+// call can race the customElements.define('shift-survey', ...) registration in
+// shift-survey.js. If we set `.schema` / `.onSubmit` on the raw HTMLElement
+// before upgrade, those values become instance properties that the class's
+// setters never see once upgraded. Awaiting whenDefined here guarantees we
+// always assign through the upgraded class. After Save the form re-renders
+// the element after registration has already completed, which is why the
+// workaround "save once" makes the live preview start working.
+async function ensureDefined() {
+  if (typeof customElements === 'undefined') return;
+  try {
+    await customElements.whenDefined('shift-survey');
+  } catch {
+    // Element not registered in this environment — fall through; the assignment
+    // is still attempted so a future registration via direct DOM use can catch it.
+  }
+}
+
 /** Assign a schema (parsed JSON) to a `<shift-survey>` element. Pass the raw
  *  JSON string — we parse here so JSON serialization settings can be owned by
  *  the caller (matches `SurveySchemaSerializer` on the .NET side).
@@ -15,8 +34,9 @@ const remountAfterNextSchema = new WeakSet();
  *  remount it by nulling schema first so SurveyRenderer's internal `done`
  *  state resets — otherwise the next push wouldn't leave the thank-you
  *  state even if the author added a question back. */
-export function setSchema(element, schemaJson) {
+export async function setSchema(element, schemaJson) {
   if (!element) return;
+  await ensureDefined();
   if (!schemaJson) {
     element.schema = null;
     return;
@@ -56,8 +76,9 @@ export function setSchema(element, schemaJson) {
   }
 }
 
-export function setLocale(element, locale) {
+export async function setLocale(element, locale) {
   if (!element) return;
+  await ensureDefined();
   if (locale) element.setAttribute('locale', locale);
   else element.removeAttribute('locale');
 }
@@ -78,8 +99,9 @@ export function setLocale(element, locale) {
  *  schedule another remount, which would ... — a tight loop. By deferring
  *  remount to the next Blazor-initiated setSchema, we only remount on
  *  authoring intent, never on the renderer's own lifecycle. */
-export function installPreviewSubmitHandler(element) {
+export async function installPreviewSubmitHandler(element) {
   if (!element) return;
+  await ensureDefined();
   element.onSubmit = async (submission) => {
     // eslint-disable-next-line no-console
     console.log('[preview] submission (not sent):', submission);

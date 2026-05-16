@@ -118,8 +118,11 @@
     /// </summary>
     [Parameter] public int SchemaVersion { get; set; }
 
-    private const string InteropPath =
-        "./_content/ShiftSoftware.ADP.Surveys.Web/js/shift-survey/interop.js";
+    // Cache-bust the import URL with the assembly version so a published
+    // interop.js change can't be silently shadowed by a stale ES module the
+    // browser had pinned from a previous deploy.
+    private static readonly string InteropPath =
+        $"./_content/ShiftSoftware.ADP.Surveys.Web/js/shift-survey/interop.js?v={typeof(SurveyPreview).Assembly.GetName().Version}";
 
     private ElementReference surveyElement;
     private IJSObjectReference? interopModule;

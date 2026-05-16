@@ -142,6 +142,26 @@ export function SurveyRenderer({
   const [currentScreenId, setCurrentScreenId] = useState<string | null>(
     () => resumeSnapshot?.currentScreenId ?? schema.screens[0]?.id ?? null,
   );
+
+  // Reconcile currentScreenId against the schema whenever the schema changes.
+  // The lazy useState above seeds this once on mount; in the builder-preview
+  // path the renderer can mount with `schema.screens === []` (e.g. an author
+  // who sets locales before adding any screen), leaving currentScreenId
+  // permanently null. When screens later appear, snap to the first one so the
+  // renderer leaves the "No screens in this survey" branch. Also handles a
+  // screen deletion mid-flow: if the active screen id no longer exists, fall
+  // back to the first available rather than stranding the user.
+  useEffect(() => {
+    if (schema.screens.length === 0) {
+      if (currentScreenId !== null) setCurrentScreenId(null);
+      return;
+    }
+    const stillValid =
+      currentScreenId !== null && schema.screens.some((s) => s.id === currentScreenId);
+    if (!stillValid) {
+      setCurrentScreenId(schema.screens[0]!.id);
+    }
+  }, [schema, currentScreenId]);
   const [submitting, setSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
