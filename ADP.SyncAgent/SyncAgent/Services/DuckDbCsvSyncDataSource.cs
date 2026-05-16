@@ -337,6 +337,10 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
             $"HEADER {(config.HasHeaderRecord ? "true" : "false")}",
             $"DELIMITER {DuckDbSchemaHelpers.QuoteString(config.Delimiter)}",
             $"QUOTE {DuckDbSchemaHelpers.QuoteString(config.Quote)}",
+            // Pin ESCAPE — without it the sniffer can decide escape=empty when the sample
+            // window happens not to contain any "" sequences, and later rows like
+            // "...""C""..." then fail with "Value with unterminated quote found".
+            $"ESCAPE {DuckDbSchemaHelpers.QuoteString(config.Escape)}",
             "NULL_PADDING true"
         };
 

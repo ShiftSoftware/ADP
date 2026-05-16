@@ -60,6 +60,15 @@ public class DuckDbCsvSyncDataSourceConfigurations<TCsv> where TCsv : SyncCsvBas
     public string Quote { get; set; } = "\"";
 
     /// <summary>
+    /// CSV escape character used inside quoted fields. RFC 4180 doubles the quote (e.g.
+    /// <c>""</c> inside <c>"..."</c>), which is what the default — same as <see cref="Quote"/> —
+    /// gives you. We pin this explicitly because DuckDB's CSV sniffer can override the default
+    /// to empty when the sample window happens not to contain any escaped quotes, after which
+    /// any later row with <c>""</c> fails parsing with "Value with unterminated quote found".
+    /// </summary>
+    public string Escape { get; set; } = "\"";
+
+    /// <summary>
     /// Encoding of the source CSV file. Passed to DuckDB's <c>COPY ... (ENCODING '...')</c>.
     /// Default <c>utf-8</c>, picked because it can represent every Unicode character — Arabic,
     /// Kurdish, accented Latin, Chinese, emoji — without loss. Plain ASCII files (the common
