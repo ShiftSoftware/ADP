@@ -1,10 +1,12 @@
-using System.Globalization;
-using System.Reflection;
-using System.Text;
+using CsvHelper.Configuration.Attributes;
 using DuckDB.NET.Data;
 using ShiftSoftware.ADP.SyncAgent.Configurations;
 using ShiftSoftware.ADP.SyncAgent.Extensions;
 using ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
+using System.Globalization;
+using System.Reflection;
+// IStorageService is intentionally not referenced: the data source reads <see cref="DuckDbCsvSyncDataSourceConfigurations{TCsv}.CsvFilePath"/>
+// directly. Fetching the CSV from a remote store, if needed, is the caller's responsibility.
 
 namespace ShiftSoftware.ADP.SyncAgent.Services;
 
@@ -39,11 +41,7 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
     private const string StatusColumn = "_Status";
     private const string BatchIdColumn = "_BatchId";
 
-    private readonly IStorageService storageService;
-
     private DuckDBConnection? connection;
-    private string? localCsvPath;
-    private string? workingDirectory;
 
     private Guid? currentBatchId;
     private SyncActionType? currentBatchActionType;
@@ -51,9 +49,8 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
     public DuckDbCsvSyncDataSourceConfigurations<TCsv>? Configurations { get; private set; }
     public ISyncEngine<TCsv, TDestination> SyncService { get; private set; } = default!;
 
-    public DuckDbCsvSyncDataSource(IStorageService storageService)
+    public DuckDbCsvSyncDataSource()
     {
-        this.storageService = storageService;
     }
 
     public DuckDbCsvSyncDataSource<TCsv, TDestination> SetSyncService(ISyncEngine<TCsv, TDestination> syncService)
@@ -146,10 +143,7 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
             await input.SyncProgressIndicators.LogInformation("Resetting any in-flight rows from a previous crashed run.");
             ResetInFlightRows();
 
-            await input.SyncProgressIndicators.LogInformation("Downloading new CSV to local working directory.");
-            await DownloadCsvAsync(input.CancellationToken);
-
-            await input.SyncProgressIndicators.LogInformation("Loading CSV into DuckDB staging table.");
+            await input.SyncProgressIndicators.LogInformation($"Loading CSV '{config.CsvFilePath}' into DuckDB staging table.");
             CreateStagingTable();
             CopyCsvIntoStaging();
             ComputeStagingKeyAndHash();
@@ -158,9 +152,16 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
             CancelStaleChanges();
 
             await input.SyncProgressIndicators.LogInformation("Computing diff and writing to changes table.");
-            InsertAdds();
-            InsertUpdates();
-            InsertDeletes();
+            // Add/Update are key-based: a row that exists in staging is never enqueued as Delete,
+            // so a deletion that "comes back" or a row that moved between buckets cannot appear as
+            // both Delete and Add/Update in the same diff. The git-diff ProccessDeletedItems hook
+            // is therefore unnecessary here — dedup is implicit.
+            if (IsActionEnabled(SyncActionType.Add))
+                InsertAdds();
+            if (IsActionEnabled(SyncActionType.Update))
+                InsertUpdates();
+            if (IsActionEnabled(SyncActionType.Delete))
+                InsertDeletes();
 
             DropStaging();
 
@@ -181,8 +182,37 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
     private void OpenConnection()
     {
         var config = RequireConfig();
-        connection = new DuckDBConnection(config.ConnectionString);
+
+        var connectionString = config.ConnectionString;
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            if (string.IsNullOrWhiteSpace(config.DuckDbFilePath))
+                throw new InvalidOperationException(
+                    "DuckDbCsvSyncDataSource requires either ConnectionString or DuckDbFilePath to be set.");
+
+            var filePath = config.DuckDbFilePath!;
+            var fileDir = Path.GetDirectoryName(filePath);
+            if (!string.IsNullOrEmpty(fileDir))
+                Directory.CreateDirectory(fileDir);
+
+            connectionString = $"Data Source={filePath}";
+        }
+
+        connection = new DuckDBConnection(connectionString);
         connection.Open();
+
+        ApplyDuckDbRuntimeSettings();
+    }
+
+    private void ApplyDuckDbRuntimeSettings()
+    {
+        var config = RequireConfig();
+
+        // Only memory_limit is configured here. DuckDB picks its own spill directory next to the
+        // database file when the limit is exceeded — managing that location is an environment
+        // concern, not a sync-engine concern.
+        if (config.MemoryLimitMB > 0)
+            ExecuteNonQuery($"SET memory_limit='{config.MemoryLimitMB}MB'");
     }
 
     private void EnsureSourceTable()
@@ -269,26 +299,6 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
             $"WHERE {DuckDbSchemaHelpers.QuoteIdentifier(StatusColumn)} = {(int)SyncChangeStatus.InFlight}");
     }
 
-    private async Task DownloadCsvAsync(CancellationToken cancellationToken)
-    {
-        var config = RequireConfig();
-
-        workingDirectory = Path.Combine(
-            config.LocalWorkingDirectory ?? Path.GetTempPath(),
-            "duckdb-csv-sync",
-            Guid.NewGuid().ToString("N"));
-
-        Directory.CreateDirectory(workingDirectory);
-        localCsvPath = Path.Combine(workingDirectory, config.CsvFileName);
-
-        await storageService.LoadNewVersionAsync(
-            Path.Combine(config.SourceDirectory ?? "", config.CsvFileName),
-            localCsvPath,
-            ignoreFirstLines: 0, // we let DuckDB COPY handle skipping via SKIP=N
-            config.SourceContainerOrShareName,
-            cancellationToken);
-    }
-
     private void CreateStagingTable()
     {
         var sql = DuckDbSchemaHelpers.BuildCreateTableSql(
@@ -328,7 +338,7 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
             optionParts.Add($"SKIP {skip}");
 
         var sql = $"COPY {DuckDbSchemaHelpers.QuoteIdentifier(GetStagingTableName())}({modelCols}) " +
-                  $"FROM {DuckDbSchemaHelpers.QuoteString(localCsvPath!)} " +
+                  $"FROM {DuckDbSchemaHelpers.QuoteString(config.CsvFilePath)} " +
                   $"({string.Join(", ", optionParts)})";
 
         ExecuteNonQuery(sql);
@@ -498,7 +508,7 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
     public ValueTask<long?> SourceTotalItemCount(SyncFunctionInput<SyncActionType> input)
     {
         var changeType = MapSupportedAction(input.Input);
-        if (changeType is null)
+        if (changeType is null || !IsActionEnabled(changeType.Value))
             return new((long?)0);
 
         using var cmd = connection!.CreateCommand();
@@ -705,16 +715,11 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
 
     public ValueTask Succeeded(SyncFunctionInput input) => default;
 
-    public ValueTask Finished(SyncFunctionInput input)
-    {
-        CleanupLocalFiles();
-        return default;
-    }
+    public ValueTask Finished(SyncFunctionInput input) => default;
 
     public ValueTask Reset()
     {
         CloseConnection();
-        CleanupLocalFiles();
         currentBatchId = null;
         currentBatchActionType = null;
         return default;
@@ -723,22 +728,6 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
     public async ValueTask DisposeAsync()
     {
         await Reset();
-    }
-
-    private void CleanupLocalFiles()
-    {
-        if (string.IsNullOrEmpty(workingDirectory))
-            return;
-
-        try
-        {
-            if (Directory.Exists(workingDirectory))
-                Directory.Delete(workingDirectory, recursive: true);
-        }
-        catch { }
-
-        workingDirectory = null;
-        localCsvPath = null;
     }
 
     private void CloseConnection()
@@ -769,8 +758,9 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
     private string GetStagingTableName() => $"{typeof(TCsv).Name}_staging";
 
     /// <summary>
-    /// Model properties = all public instance properties of TCsv excluding the metadata columns
-    /// declared on <see cref="SyncCsvBase"/>.
+    /// Model properties = public instance properties of TCsv that map to columns in the CSV.
+    /// Excludes: <see cref="SyncCsvBase"/> metadata columns, computed properties without a
+    /// public setter, and properties marked with CsvHelper's <see cref="IgnoreAttribute"/>.
     /// </summary>
     private static PropertyInfo[] GetModelProperties()
     {
@@ -783,17 +773,23 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
 
         return DuckDbSchemaHelpers.GetPropertiesWithChildPriority<TCsv>()
             .Where(p => !metadataNames.Contains(p.Name))
+            .Where(p => p.CanWrite)
+            .Where(p => p.GetCustomAttribute<IgnoreAttribute>() is null)
             .ToArray();
     }
 
     /// <summary>
     /// Properties used for materializing a TCsv instance from the changes table — model
-    /// columns + metadata columns. Order must match the SELECT projection in
-    /// <see cref="MaterializeBatch"/>.
+    /// columns + metadata columns. Computed properties (no setter) and CsvHelper
+    /// <see cref="IgnoreAttribute"/>-marked properties are excluded so the SELECT only
+    /// references columns that actually exist in the table.
     /// </summary>
     private static PropertyInfo[] GetMaterializableProperties()
     {
-        return DuckDbSchemaHelpers.GetPropertiesWithChildPriority<TCsv>();
+        return DuckDbSchemaHelpers.GetPropertiesWithChildPriority<TCsv>()
+            .Where(p => p.CanWrite)
+            .Where(p => p.GetCustomAttribute<IgnoreAttribute>() is null)
+            .ToArray();
     }
 
     private List<string> GetKeyColumnNames()
@@ -825,6 +821,21 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
         SyncActionType.Add or SyncActionType.Update or SyncActionType.Delete => action,
         _ => null
     };
+
+    /// <summary>
+    /// True when the engine is configured to execute the given action. Used to skip the diff
+    /// for action types the caller has opted out of — e.g. labor-line / part-line syncs do not
+    /// emit Deletes because the upstream system moves removed rows to an archive table rather
+    /// than removing them from the active CSV.
+    /// </summary>
+    private bool IsActionEnabled(SyncActionType action)
+    {
+        var actions = SyncService.Configurations?.ActionExecutionAndOrder;
+        if (actions is null)
+            return true;
+        return actions.Contains(action);
+    }
+
 
     private void ExecuteNonQuery(string sql)
     {

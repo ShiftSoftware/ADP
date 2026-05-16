@@ -12,19 +12,32 @@ namespace ShiftSoftware.ADP.SyncAgent.Configurations;
 public class DuckDbCsvSyncDataSourceConfigurations<TCsv> where TCsv : SyncCsvBase
 {
     /// <summary>
-    /// DuckDB connection string. A persisted file is required so the changes queue survives
-    /// between runs. One file per sync (do not share across concurrent functions — DuckDB is
-    /// single-writer per file).
+    /// DuckDB connection string. Optional when <see cref="DuckDbFilePath"/> is provided —
+    /// the source will build a default <c>Data Source={path}</c> string in that case.
+    /// One DuckDB file per sync (DuckDB is single-writer per file).
     /// </summary>
-    public required string ConnectionString { get; set; }
+    public string? ConnectionString { get; set; }
 
     /// <summary>
-    /// CSV file location in the storage service.
+    /// Absolute path to the persisted DuckDB file. Used when <see cref="ConnectionString"/>
+    /// is not provided.
     /// </summary>
-    public required string CsvFileName { get; set; }
+    public string? DuckDbFilePath { get; set; }
 
-    public string? SourceContainerOrShareName { get; set; }
-    public string? SourceDirectory { get; set; }
+    /// <summary>
+    /// Absolute path of the source CSV file. The data source reads it in-place — it does not
+    /// download, copy, or stage the file. Callers that need to fetch the file from a remote
+    /// store should do that before calling <c>Configure</c> and pass the resolved local path
+    /// here.
+    /// </summary>
+    public required string CsvFilePath { get; set; }
+
+    /// <summary>
+    /// DuckDB memory limit in megabytes. Applied via <c>SET memory_limit</c> after the
+    /// connection opens so DuckDB spills to its default temp directory instead of growing to
+    /// the system ceiling. Default 2000 MB.
+    /// </summary>
+    public long MemoryLimitMB { get; set; } = 2000;
 
     /// <summary>
     /// Whether the CSV has a header row. Default true.
@@ -87,10 +100,4 @@ public class DuckDbCsvSyncDataSourceConfigurations<TCsv> where TCsv : SyncCsvBas
     /// Override the changes table name. Default: <c>{TCsv.Name}_changes</c>.
     /// </summary>
     public string? ChangesTableName { get; set; }
-
-    /// <summary>
-    /// Local working directory for staging the downloaded CSV file before COPY. Defaults to
-    /// the OS temp directory when not set.
-    /// </summary>
-    public string? LocalWorkingDirectory { get; set; }
 }
