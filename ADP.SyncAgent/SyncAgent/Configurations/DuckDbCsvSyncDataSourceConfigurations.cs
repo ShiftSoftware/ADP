@@ -60,6 +60,21 @@ public class DuckDbCsvSyncDataSourceConfigurations<TCsv> where TCsv : SyncCsvBas
     public string Quote { get; set; } = "\"";
 
     /// <summary>
+    /// Encoding of the source CSV file. Passed to DuckDB's <c>COPY ... (ENCODING '...')</c>.
+    /// Default <c>utf-8</c>, picked because it can represent every Unicode character — Arabic,
+    /// Kurdish, accented Latin, Chinese, emoji — without loss. Plain ASCII files (the common
+    /// case for ERP exports) are a valid subset of UTF-8 and decode cleanly.
+    /// <para>
+    /// UTF-8 is strict: an invalid byte sequence aborts the <c>COPY</c> rather than silently
+    /// reading garbage. If you hit that on a file you can't fix upstream, set <c>Encoding</c> to
+    /// the file's actual encoding — <c>"utf-16"</c> for UTF-16 dumps, or <c>"latin-1"</c> as a
+    /// last-resort fallback that accepts any byte sequence (but will mojibake non-Latin
+    /// characters since latin-1 only covers 256 codepoints).
+    /// </para>
+    /// </summary>
+    public string Encoding { get; set; } = "utf-8";
+
+    /// <summary>
     /// Composite or single-column natural key that identifies a logical row across versions.
     /// Used to detect Add vs Update vs Delete and to coalesce pending changes across runs.
     /// Required.

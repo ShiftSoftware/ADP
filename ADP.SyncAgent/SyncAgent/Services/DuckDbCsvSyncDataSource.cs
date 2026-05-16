@@ -324,6 +324,12 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
         var modelCols = string.Join(", ", GetModelProperties().Select(p => DuckDbSchemaHelpers.QuoteIdentifier(p.Name)));
 
         var skip = config.IgnoreFirstLines;
+        // Strict-by-default: IGNORE_ERRORS is intentionally NOT set (DuckDB defaults it to false).
+        // Any unparseable row — wrong column count, type-cast failure, or a byte sequence that
+        // doesn't decode in the configured encoding — aborts the entire COPY, the exception
+        // propagates to Preparing, and the sync returns Failed. We never silently skip rows.
+        // Do not flip this without a deliberate plan for surfacing the rejects.
+        //
         // When HasHeaderRecord=true the header row is consumed by HEADER=true and is *not*
         // counted toward SKIP — that matches DuckDB's COPY semantics.
         var optionParts = new List<string>
@@ -333,6 +339,9 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
             $"QUOTE {DuckDbSchemaHelpers.QuoteString(config.Quote)}",
             "NULL_PADDING true"
         };
+
+        if (!string.IsNullOrWhiteSpace(config.Encoding))
+            optionParts.Add($"ENCODING {DuckDbSchemaHelpers.QuoteString(config.Encoding)}");
 
         if (skip > 0)
             optionParts.Add($"SKIP {skip}");
