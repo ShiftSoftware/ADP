@@ -253,9 +253,13 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
 
         ExecuteNonQuery(sql);
 
+        // Composite index covering the per-batch claim query
+        //   WHERE _Status=Pending AND _ChangeType=X ORDER BY _DetectedAt LIMIT N
+        // Without _DetectedAt in the index, each batch re-scans + re-sorts every still-Pending
+        // row of the action — O(N²/batch_size) total work over a full-table sync.
         ExecuteNonQuery(
             $"CREATE INDEX IF NOT EXISTS {DuckDbSchemaHelpers.QuoteIdentifier(GetChangesTableName() + "_status_idx")} " +
-            $"ON {DuckDbSchemaHelpers.QuoteIdentifier(GetChangesTableName())} ({DuckDbSchemaHelpers.QuoteIdentifier(StatusColumn)}, {DuckDbSchemaHelpers.QuoteIdentifier(ChangeTypeColumn)})");
+            $"ON {DuckDbSchemaHelpers.QuoteIdentifier(GetChangesTableName())} ({DuckDbSchemaHelpers.QuoteIdentifier(StatusColumn)}, {DuckDbSchemaHelpers.QuoteIdentifier(ChangeTypeColumn)}, {DuckDbSchemaHelpers.QuoteIdentifier(DetectedAtColumn)})");
 
         ExecuteNonQuery(
             $"CREATE INDEX IF NOT EXISTS {DuckDbSchemaHelpers.QuoteIdentifier(GetChangesTableName() + "_batch_idx")} " +
@@ -590,24 +594,24 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
         currentBatchId = batchId;
         currentBatchActionType = input.Input.Status.ActionType;
 
-        var items = MaterializeBatch(keyList);
+        var items = MaterializeBatch();
         return new((IEnumerable<TCsv?>?)items);
     }
 
-    private List<TCsv?> MaterializeBatch(string keyList)
+    private List<TCsv?> MaterializeBatch()
     {
         var props = GetMaterializableProperties();
         var changes = DuckDbSchemaHelpers.QuoteIdentifier(GetChangesTableName());
-        var pk = DuckDbSchemaHelpers.QuoteIdentifier(PrimaryKeyColumn);
         var batchIdCol = DuckDbSchemaHelpers.QuoteIdentifier(BatchIdColumn);
 
         var selectCols = string.Join(", ", props.Select(p => DuckDbSchemaHelpers.QuoteIdentifier(p.Name)));
 
+        // batch_id is unique per claim and indexed (_batch_idx) — no need to re-filter by the
+        // 10K-key IN list we used to tag the rows. That filter was ~250 KB of SQL text per call.
         using var cmd = connection!.CreateCommand();
         cmd.CommandText =
             $"SELECT {selectCols} FROM {changes} " +
-            $"WHERE {batchIdCol} = '{currentBatchId}' " +
-            $"  AND {pk} IN ({keyList})";
+            $"WHERE {batchIdCol} = '{currentBatchId}'";
 
         var items = new List<TCsv?>();
         using var reader = cmd.ExecuteReader();
