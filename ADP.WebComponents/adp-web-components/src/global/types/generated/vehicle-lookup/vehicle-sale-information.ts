@@ -15,4 +15,6 @@ export type VehicleSaleInformation = {
     broker: VehicleBrokerSaleInformation;
     regionID: string;
     endCustomer: VehicleSaleEndCustomerInformationDTO;
+    cityID: string;
+    cityName: string;
 };

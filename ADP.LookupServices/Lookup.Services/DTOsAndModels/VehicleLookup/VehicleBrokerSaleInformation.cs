@@ -15,9 +15,27 @@ public class VehicleBrokerSaleInformation
     public long BrokerID { get; set; }
     /// <summary>The name of the broker.</summary>
     public string BrokerName { get; set; }
+
+    /// <summary>
+    /// The name of the Non Official Broker in case the vehicle was sold through a non-official broker.
+    /// </summary>
+    public string NonOfficialBrokerName { get; set; }
+
     /// <summary>The broker's invoice number for the sale.</summary>
     public long? InvoiceNumber { get; set; }
     /// <summary>The date of the broker invoice.</summary>
     [JsonCustomDateTime("yyyy-MM-dd")]
     public DateTime? InvoiceDate { get; set; }
+
+
+    /// <summary>
+    /// The City Hash ID from the Identity System.
+    /// </summary>
+    [ShiftSoftware.ShiftEntity.Model.HashIds.CityHashIdConverter]
+    public string CityID { get; set; }
+
+    /// <summary>
+    /// The resolved City Name.
+    /// </summary>
+    public string CityName { get; set; }
 }

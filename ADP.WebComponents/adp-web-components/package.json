@@ -1,6 +1,6 @@
 {
   "name": "adp-web-components",
-  "version": "0.1.104",
+  "version": "0.1.105",
   "description": "ADP Platform Web Components",
   "main": "dist/index.cjs.js",
   "module": "dist/index.js",

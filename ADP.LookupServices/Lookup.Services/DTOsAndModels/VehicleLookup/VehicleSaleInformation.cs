@@ -118,4 +118,17 @@ public class VehicleSaleInformation
     /// The <see cref="VehicleSaleEndCustomerInformationDTO">end customer information</see> for this sale.
     /// </summary>
     public VehicleSaleEndCustomerInformationDTO EndCustomer { get; set; }
+
+
+    /// <summary>
+    /// The City Hash ID from the Identity System.
+    /// </summary>
+    [ShiftSoftware.ShiftEntity.Model.HashIds.CityHashIdConverter]
+    public string CityID { get; set; }
+
+    /// <summary>
+    /// The resolved City Name.
+    /// </summary>
+    public string CityName { get; set; }
+
 }

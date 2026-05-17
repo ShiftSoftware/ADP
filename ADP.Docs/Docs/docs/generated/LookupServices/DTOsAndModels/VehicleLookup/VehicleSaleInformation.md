@@ -20,3 +20,5 @@ Contains the sale information for a vehicle — the dealer, invoice details, war
 | Broker <div><strong>``VehicleBrokerSaleInformation``</strong></div> | The [broker sale information](/generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleBrokerSaleInformation.html) if the vehicle was sold through a broker. |
 | RegionID <div><strong>``string``</strong></div> | The Region Hash ID from the Identity System. |
 | EndCustomer <div><strong>``VehicleSaleEndCustomerInformationDTO``</strong></div> | The [end customer information](/generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleSaleEndCustomerInformationDTO.html) for this sale. |
+| CityID <div><strong>``string``</strong></div> | The City Hash ID from the Identity System. |
+| CityName <div><strong>``string``</strong></div> | The resolved City Name. |
