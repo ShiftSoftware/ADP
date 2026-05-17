@@ -1,0 +1,8192 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../menus/integration.html">
+      
+      
+        <link rel="next" href="../architecture/stack.html">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.11">
+    
+    
+      
+        <title>Triggers & Scheduler - Auto Distributor Platform</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.4af4bdda.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../overrides/css/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#triggers-scheduler" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../index.html" title="Auto Distributor Platform" class="md-header__button md-logo" aria-label="Auto Distributor Platform" data-md-component="logo">
+      
+  <img src="../assets/images/ADP.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Auto Distributor Platform
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Triggers & Scheduler
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../index.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Introduction
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../components/intro.html" class="md-tabs__link">
+          
+  
+  
+  Components
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../menus/intro.html" class="md-tabs__link">
+          
+  
+  
+  Menus
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="triggers-and-scheduler.html" class="md-tabs__link">
+          
+  
+  
+  Surveys
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../architecture/stack.html" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../integrations/intro.html" class="md-tabs__link">
+          
+  
+  
+  Integrations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../generated/Features/VehicleEntry.html" class="md-tabs__link">
+          
+  
+  
+  BDD Specifications
+
+        </a>
+      </li>
+    
+  
+
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../web-components/introduction.html" class="md-tabs__link">
+          
+  
+  
+  Web Components
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../index.html" title="Auto Distributor Platform" class="md-nav__button md-logo" aria-label="Auto Distributor Platform" data-md-component="logo">
+      
+  <img src="../assets/images/ADP.svg" alt="logo">
+
+    </a>
+    Auto Distributor Platform
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../index.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Introduction
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Components
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Components
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../components/intro.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Intro
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_2" id="__nav_2_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Identity
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            Identity
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../components/identity.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Identity System
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_3" id="__nav_2_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Parts
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_3">
+            <span class="md-nav__icon md-icon"></span>
+            Parts
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../components/parts.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Parts Database
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_4" id="__nav_2_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Vehicles
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4">
+            <span class="md-nav__icon md-icon"></span>
+            Vehicles
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../components/vehicles.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Vehicle Database
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_4_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_4_2" id="__nav_2_4_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Vehicle Information
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_4_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4_2">
+            <span class="md-nav__icon md-icon"></span>
+            Vehicle Information
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../components/vehicle-information/identifiers.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Identifiers
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../components/vehicle-information/authorized.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Authorized (Official)
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../components/vehicle-information/warranty.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Warranty
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../components/vehicle-information/safety-recalls.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Safety Recalls
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../components/vehicle-information/service-history.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Service History
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../components/vehicle-information/item-claim.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Item Claim
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_5" id="__nav_2_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Services
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_5">
+            <span class="md-nav__icon md-icon"></span>
+            Services
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../components/services/intro.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Service Database
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_5_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_5_2" id="__nav_2_5_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Warranty System
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_5_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_5_2">
+            <span class="md-nav__icon md-icon"></span>
+            Warranty System
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../components/services/warranty/warranty.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Intro
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../components/services/claimable-items.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Claimable Items
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_6" id="__nav_2_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    CRM
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_6">
+            <span class="md-nav__icon md-icon"></span>
+            CRM
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../components/tickets.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Support Ticket System
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../components/customers.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Customer Database
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Menus
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Menus
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../menus/intro.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Intro
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../menus/menu-generation.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Menu Generation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../menus/integration.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Integration
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Surveys
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Surveys
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Triggers & Scheduler
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="triggers-and-scheduler.html" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Triggers & Scheduler
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-big-picture" class="md-nav__link">
+    <span class="md-ellipsis">
+      The big picture
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-trigger-config-what-survey-authors-set-up" class="md-nav__link">
+    <span class="md-ellipsis">
+      The trigger config (what survey authors set up)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-worked-example-one-event-end-to-end" class="md-nav__link">
+    <span class="md-ellipsis">
+      A worked example: one event end-to-end
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="A worked example: one event end-to-end">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-caller-posts-to-ingest" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 1 — caller posts to ingest
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-service-finds-candidate-triggers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 2 — service finds candidate triggers
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-building-the-evaluation-context" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 3 — building the evaluation context
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-building-the-dedup-hash" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 4 — building the dedup hash
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-the-surveyinstance-row-after-insert" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 5 — the SurveyInstance row after INSERT
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-6-the-response" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 6 — the response
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#same-event-posted-twice-the-dedup-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      Same event posted twice — the dedup path
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-scheduler" class="md-nav__link">
+    <span class="md-ellipsis">
+      The scheduler
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The scheduler">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-advance-nextsendat-actually-does" class="md-nav__link">
+    <span class="md-ellipsis">
+      What "advance NextSendAt" actually does
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#walking-through-a-tick" class="md-nav__link">
+    <span class="md-ellipsis">
+      Walking through a tick
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tick-five-minutes-later" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tick five minutes later
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tick-24-hours-after-the-first-send" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tick 24 hours after the first send
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-longer-schedule-vocs-60d-5d10d15d" class="md-nav__link">
+    <span class="md-ellipsis">
+      A longer schedule — VOC's 60d + 5d/10d/15d
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-expiry-sweep-slice-6" class="md-nav__link">
+    <span class="md-ellipsis">
+      The expiry sweep (slice 6)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#surveyinstance-state-machine" class="md-nav__link">
+    <span class="md-ellipsis">
+      SurveyInstance state machine
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#post-answer-fanout-slice-7" class="md-nav__link">
+    <span class="md-ellipsis">
+      Post-answer fanout (slice 7)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Post-answer fanout (slice 7)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-the-payload-contains" class="md-nav__link">
+    <span class="md-ellipsis">
+      What the payload contains
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#surveyoutboxevent-state-machine" class="md-nav__link">
+    <span class="md-ellipsis">
+      SurveyOutboxEvent state machine
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#subscriber-wire-up" class="md-nav__link">
+    <span class="md-ellipsis">
+      Subscriber wire-up
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#channels" class="md-nav__link">
+    <span class="md-ellipsis">
+      Channels
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Channels">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-gets-passed-to-the-channel" class="md-nav__link">
+    <span class="md-ellipsis">
+      What gets passed to the channel
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#failure-modes-the-scheduler-handles" class="md-nav__link">
+    <span class="md-ellipsis">
+      Failure modes the scheduler handles
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#production-wiring-deferred" class="md-nav__link">
+    <span class="md-ellipsis">
+      Production wiring (deferred)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#gotchas" class="md-nav__link">
+    <span class="md-ellipsis">
+      Gotchas
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-ships-next" class="md-nav__link">
+    <span class="md-ellipsis">
+      What ships next
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      See also
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Architecture
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Architecture
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/stack.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Stack
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/deployment-pipelines.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Deployment Pipelines
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Integrations
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            Integrations
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/intro.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Intro
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_2" id="__nav_6_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Sync Agent
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_2">
+            <span class="md-nav__icon md-icon"></span>
+            Sync Agent
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/sync-agent/index.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Overview
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/sync-agent/architecture.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Architecture
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/sync-agent/data-adapters.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Data Adapters
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/sync-agent/configuration.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Configuration
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/sync-agent/resilience.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Resilience & Fault Tolerance
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/sync-agent/logging.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Logging & Monitoring
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/sync-agent/getting-started.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Getting Started
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_3" id="__nav_6_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Parts
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_3">
+            <span class="md-nav__icon md-icon"></span>
+            Parts
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/parts.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Parts Integration
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Part/CatalogPartModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Catalog Part
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Part/PartSupersessionModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Part Supersession
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Part/PartCountryDataModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Part Country Data
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Part/RegionPriceModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Per Region Price
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Part/StockPartModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Stock Part
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Part/StockPartFirstReceiveDateModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Stock Part First Receive Date
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Part/CompanyDeadStockPartModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Company Dead Stock Part
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Part/OrderPartLineModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Order Part Line
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Part/ManufacturerPartLookupModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Manufacturer Part Lookup
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_4" id="__nav_6_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Labor
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_4">
+            <span class="md-nav__icon md-icon"></span>
+            Labor
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Service/OrderLaborLineModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Order Labor Line
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Service/FlatRateModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Flat Rate
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_5" id="__nav_6_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Vehicles
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_5">
+            <span class="md-nav__icon md-icon"></span>
+            Vehicles
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Vehicle/VehicleEntryModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Vehicle Entry
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Vehicle/VehicleModelModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Vehicle Model
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Vehicle/ColorModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Color
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Vehicle/VehicleAccessoryModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Vehicle Accessory
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Vehicle/VehicleInspectionModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Vehicle Inspection
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Vehicle/InitialOfficialVINModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Initial Official VIN
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Vehicle/VehicleServiceActivation.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Vehicle Service Activation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_6" id="__nav_6_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Warranty & Service
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_6">
+            <span class="md-nav__icon md-icon"></span>
+            Warranty & Service
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Vehicle/ExtendedWarrantyModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Extended Warranty
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Vehicle/WarrantyClaimModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Warranty Claim
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Vehicle/WarrantyClaimLaborLineModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Warranty Claim Labor Line
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Vehicle/WarrantyDateShiftModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Warranty Date Shift
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Vehicle/ServiceCampaignModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Service Campaign
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Vehicle/ServiceItemModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Service Item
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Vehicle/ServiceItemCostModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Service Item Cost
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Vehicle/ItemClaimModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Item Claim
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Vehicle/FreeServiceItemDateShiftModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Free Service Item Date Shift
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Vehicle/FreeServiceItemExcludedVINModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Free Service Item Excluded VIN
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Vehicle/PaidServiceInvoiceModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Paid Service Invoice
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Vehicle/PaidServiceInvoiceLineModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Paid Service Invoice Line
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_7" id="__nav_6_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Safety Recalls
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_7">
+            <span class="md-nav__icon md-icon"></span>
+            Safety Recalls
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Vehicle/SSCAffectedVINModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    SSC Affected VIN
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_8" id="__nav_6_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Paint Thickness
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_8">
+            <span class="md-nav__icon md-icon"></span>
+            Paint Thickness
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Vehicle/PaintThicknessInspectionModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Inspection
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Vehicle/PaintThicknessInspectionPanelModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Inspection Panel
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_9" id="__nav_6_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Customers
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_9">
+            <span class="md-nav__icon md-icon"></span>
+            Customers
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Customer/CustomerModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Customer
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Customer/GoldenCustomerModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Golden Customer
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_10" id="__nav_6_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Broker (TBP)
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_10">
+            <span class="md-nav__icon md-icon"></span>
+            Broker (TBP)
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/TBP/TBP_StockModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Broker Stock
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/TBP/TBP_BrokerModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Broker
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/TBP/TBP_BrokerAccountNumberModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Broker Account Number
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/TBP/TBP_BrokerBrokerBrandAccessModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Broker Brand Access
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/TBP/TBP_Invoice.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Broker Invoice (TBP)
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/TBP/TBP_VehicleEntryModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Broker Vehicle Entry
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/TBP/TBP_VehicleTransferModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Broker Vehicle Transfer (TBP)
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/TBP/BrokerModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Broker (Company)
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/TBP/BrokerInitialVehicleModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Broker Initial Vehicle
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/TBP/BrokerInvoiceModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Broker Invoice
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/TBP/BrokerVehicleModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Broker Vehicle
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/TBP/BrokerVehicleTransferModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Broker Vehicle Transfer
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/TBP/VehicleColorModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Broker Vehicle Color
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_11" id="__nav_6_11_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Enums
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_11">
+            <span class="md-nav__icon md-icon"></span>
+            Enums
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Enums/Currencies.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Currencies
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Enums/ClaimStatus.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Claim Status
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Enums/WarrantyManufacturerClaimStatus.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Warranty Manufacturer Claim Status
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Enums/ClaimableItemAttachmentFieldBehavior.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Claimable Item Attachment Field Behavior
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Enums/ClaimableItemCampaignActivationTriggers.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Claimable Item Campaign Activation Triggers
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Enums/ClaimableItemCampaignActivationTypes.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Claimable Item Campaign Activation Types
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Enums/ClaimableItemClaimingMethod.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Claimable Item Claiming Method
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Enums/ClaimableItemValidityMode.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Claimable Item Validity Mode
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Enums/CustomerTypes.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Customer Types
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Enums/DurationType.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Duration Type
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Enums/Genders.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Genders
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Enums/Languages.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Languages
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Enums/ManufacturerOrderType.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Manufacturer Order Type
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Enums/ManufacturerPartLookupStatus.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Manufacturer Part Lookup Status
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Enums/VehiclePanelPosition.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Vehicle Panel Position
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Enums/VehiclePanelSide.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Vehicle Panel Side
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Models/Enums/VehiclePanelType.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Vehicle Panel Type
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_12" id="__nav_6_12_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Lookup Services
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_12">
+            <span class="md-nav__icon md-icon"></span>
+            Lookup Services
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_12_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_12_1" id="__nav_6_12_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Configuration
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_6_12_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_12_1">
+            <span class="md-nav__icon md-icon"></span>
+            Configuration
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/LookupOptions.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Lookup Options
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_12_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_12_2" id="__nav_6_12_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Vehicle Lookup
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_6_12_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_12_2">
+            <span class="md-nav__icon md-icon"></span>
+            Vehicle Lookup
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleLookupDTO.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Vehicle Lookup Result
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleIdentifiersDTO.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Vehicle Identifiers
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleSaleInformation.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Sale Information
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleBrokerSaleInformation.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Broker Sale Information
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleSaleEndCustomerInformationDTO.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    End Customer Information
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleWarrantyDTO.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Warranty
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleSpecificationDTO.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Specification
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleVariantInfoDTO.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Variant Info
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleServiceItemDTO.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Service Item
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleServiceItemGroup.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Service Item Group
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/DTOsAndModels/VehicleLookup/ItemClaimDTO.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Item Claim
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleItemWarning.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Item Warning
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleServiceHistoryDTO.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Service History
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleLaborDTO.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Service History Labor
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/DTOsAndModels/VehicleLookup/VehiclePartDTO.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Service History Part
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/DTOsAndModels/VehicleLookup/SscDTO.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    SSC (Safety Recall)
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/DTOsAndModels/VehicleLookup/SSCLaborDTO.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    SSC Labor
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/DTOsAndModels/VehicleLookup/SSCPartDTO.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    SSC Part
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/DTOsAndModels/VehicleLookup/PaintThicknessInspectionDTO.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Paint Thickness Inspection
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/DTOsAndModels/VehicleLookup/PaintThicknessInspectionPanelDTO.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Paint Thickness Panel
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/DTOsAndModels/VehicleLookup/AccessoryDTO.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Accessory
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleLookupRequestOptions.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Request Options
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_12_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_12_3" id="__nav_6_12_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Part Lookup
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_6_12_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_12_3">
+            <span class="md-nav__icon md-icon"></span>
+            Part Lookup
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/DTOsAndModels/Part/PartLookupDTO.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Part Lookup Result
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/DTOsAndModels/Part/StockPartDTO.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Stock Part
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/DTOsAndModels/Part/PartPriceDTO.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Part Price
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/DTOsAndModels/Part/PriceDTO.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Price
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/DTOsAndModels/Part/DeadStockDTO.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Dead Stock
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/DTOsAndModels/Part/BranchDeadStockDTO.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Branch Dead Stock
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/DTOsAndModels/Part/HSCodeDTO.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    HS Code
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/DTOsAndModels/Part/KeyValuePairDTO.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Key Value Pair
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/DTOsAndModels/Part/ManufacturerPartLookupRequestDTO.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Manufacturer Lookup Request
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/DTOsAndModels/Part/ManufacturerPartLookupResponseDTO.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Manufacturer Lookup Response
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/DTOsAndModels/Part/UpdateManufacturerPartLookupStatusDTO.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Update Manufacturer Lookup Status
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_12_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_12_4" id="__nav_6_12_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Service Lookup
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_6_12_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_12_4">
+            <span class="md-nav__icon md-icon"></span>
+            Service Lookup
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/DTOsAndModels/Service/FlatRateDTO.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Flat Rate
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_12_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_12_5" id="__nav_6_12_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    SSC Lookup
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_6_12_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_12_5">
+            <span class="md-nav__icon md-icon"></span>
+            SSC Lookup
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/DTOsAndModels/SSC/SSCLookupStatuses.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    SSC Lookup Statuses
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/DTOsAndModels/SSC/TMCSaRIIResponse.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    TMC SaRII Response
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_12_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_12_6" id="__nav_6_12_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Aggregates
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_6_12_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_12_6">
+            <span class="md-nav__icon md-icon"></span>
+            Aggregates
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/Aggregate/CompanyDataAggregateModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Company Data Aggregate
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/DTOsAndModels/Part/PartAggregateCosmosModel.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Part Aggregate
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_12_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_12_7" id="__nav_6_12_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Enums
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_6_12_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_12_7">
+            <span class="md-nav__icon md-icon"></span>
+            Enums
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/Enums/ConsistencyLevels.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Consistency Levels
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/Enums/StorageSources.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Storage Sources
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/Enums/QuantityLookUpResults.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Quantity Lookup Results
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/Enums/VehcileServiceItemStatuses.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Service Item Statuses
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/Enums/VehcileServiceItemTypes.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Service Item Types
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/LookupServices/DTOsAndModels/Shared/LookupSources.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Lookup Sources
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    BDD Specifications
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            BDD Specifications
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_1" id="__nav_7_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Vehicle
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_1">
+            <span class="md-nav__icon md-icon"></span>
+            Vehicle
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Features/VehicleEntry.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Vehicle Entry
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Features/VehicleAuthorization.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Vehicle Authorization
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Features/VehicleIdentifiers.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Vehicle Identifiers
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Features/VehicleSSC.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Vehicle SSC
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Features/VehicleSpecification.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Vehicle Specification
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Features/VehicleAccessories.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Vehicle Accessories
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Features/VehiclePaintThickness.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Vehicle Paint Thickness
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Features/VehicleSaleInformation.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Vehicle Sale Information
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Features/VehicleServiceHistory.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Vehicle Service History
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_2" id="__nav_7_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Parts
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_2">
+            <span class="md-nav__icon md-icon"></span>
+            Parts
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Features/PartPrice.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Part Price
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Features/PartStock.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Part Stock
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Features/PartDeadStock.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Part Dead Stock
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_3" id="__nav_7_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Service
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_3">
+            <span class="md-nav__icon md-icon"></span>
+            Service
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_3_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_3_1" id="__nav_7_3_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Service Items
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_7_3_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_3_1">
+            <span class="md-nav__icon md-icon"></span>
+            Service Items
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Features/ServiceItems.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Overview
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_3_1_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_3_1_2" id="__nav_7_3_1_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Eligibility & Status
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_7_3_1_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_3_1_2">
+            <span class="md-nav__icon md-icon"></span>
+            Eligibility & Status
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Features/ServiceItems_Status.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Status & Claimability
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Features/ServiceItems_Eligibility.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Eligibility Filters
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Features/ServiceItems_Ineligible.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Ineligible Items with Existing Claims
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Features/ServiceItems_Expiration.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Expiration & Activation Dates
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_3_1_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_3_1_3" id="__nav_7_3_1_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Activation
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_7_3_1_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_3_1_3">
+            <span class="md-nav__icon md-icon"></span>
+            Activation
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Features/ServiceItems_Activation.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Activation-Required Status
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Features/ServiceItems_InspectionActivated.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Vehicle-Inspection Activated
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Features/ServiceItems_ManualVinEntry.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Manual-VIN-Entry Activated
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Features/ServiceItems_DateShifts.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Date Shifts
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Features/ServiceItems_Paid.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Paid Service Items
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Features/ServiceItems_Signature.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Signature
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Features/ServiceItems_Resolvers.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Resolvers (Company Name & Print URL)
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Features/ServiceItems_Trace.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Diagnostic Trace
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_4" id="__nav_7_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Warranty
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_4">
+            <span class="md-nav__icon md-icon"></span>
+            Warranty
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generated/Features/WarrantyDates.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Warranty Dates
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Web Components
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            Web Components
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../web-components/introduction.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Introduction
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../web-components/installation.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Installation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../web-components/theming.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Theming
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_4" id="__nav_8_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Components
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_4">
+            <span class="md-nav__icon md-icon"></span>
+            Components
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../web-components/components/components-list.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Components List
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../web-components/components/vehicle-lookup.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Vehicle Lookup (Wrapper)
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../web-components/components/vehicle-specification.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Vehicle Specification
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../web-components/components/vehicle-accessories.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Vehicle Accessories
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../web-components/components/warranty-details.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Warranty Details
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../web-components/components/service-history.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Service History
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../web-components/components/paint-thickness.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Paint Thickness
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../web-components/components/swift-claim.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Swift Claim
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../web-components/components/dead-stock-lookup.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Dead Stock Lookup
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../web-components/components/distributor-lookup.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Distributor Lookup
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../web-components/components/manufacturer-lookup.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Manufacturer Lookup
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-big-picture" class="md-nav__link">
+    <span class="md-ellipsis">
+      The big picture
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-trigger-config-what-survey-authors-set-up" class="md-nav__link">
+    <span class="md-ellipsis">
+      The trigger config (what survey authors set up)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-worked-example-one-event-end-to-end" class="md-nav__link">
+    <span class="md-ellipsis">
+      A worked example: one event end-to-end
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="A worked example: one event end-to-end">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-caller-posts-to-ingest" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 1 — caller posts to ingest
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-service-finds-candidate-triggers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 2 — service finds candidate triggers
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-building-the-evaluation-context" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 3 — building the evaluation context
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-building-the-dedup-hash" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 4 — building the dedup hash
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-the-surveyinstance-row-after-insert" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 5 — the SurveyInstance row after INSERT
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-6-the-response" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 6 — the response
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#same-event-posted-twice-the-dedup-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      Same event posted twice — the dedup path
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-scheduler" class="md-nav__link">
+    <span class="md-ellipsis">
+      The scheduler
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The scheduler">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-advance-nextsendat-actually-does" class="md-nav__link">
+    <span class="md-ellipsis">
+      What "advance NextSendAt" actually does
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#walking-through-a-tick" class="md-nav__link">
+    <span class="md-ellipsis">
+      Walking through a tick
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tick-five-minutes-later" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tick five minutes later
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tick-24-hours-after-the-first-send" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tick 24 hours after the first send
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-longer-schedule-vocs-60d-5d10d15d" class="md-nav__link">
+    <span class="md-ellipsis">
+      A longer schedule — VOC's 60d + 5d/10d/15d
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-expiry-sweep-slice-6" class="md-nav__link">
+    <span class="md-ellipsis">
+      The expiry sweep (slice 6)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#surveyinstance-state-machine" class="md-nav__link">
+    <span class="md-ellipsis">
+      SurveyInstance state machine
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#post-answer-fanout-slice-7" class="md-nav__link">
+    <span class="md-ellipsis">
+      Post-answer fanout (slice 7)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Post-answer fanout (slice 7)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-the-payload-contains" class="md-nav__link">
+    <span class="md-ellipsis">
+      What the payload contains
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#surveyoutboxevent-state-machine" class="md-nav__link">
+    <span class="md-ellipsis">
+      SurveyOutboxEvent state machine
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#subscriber-wire-up" class="md-nav__link">
+    <span class="md-ellipsis">
+      Subscriber wire-up
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#channels" class="md-nav__link">
+    <span class="md-ellipsis">
+      Channels
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Channels">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-gets-passed-to-the-channel" class="md-nav__link">
+    <span class="md-ellipsis">
+      What gets passed to the channel
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#failure-modes-the-scheduler-handles" class="md-nav__link">
+    <span class="md-ellipsis">
+      Failure modes the scheduler handles
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#production-wiring-deferred" class="md-nav__link">
+    <span class="md-ellipsis">
+      Production wiring (deferred)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#gotchas" class="md-nav__link">
+    <span class="md-ellipsis">
+      Gotchas
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-ships-next" class="md-nav__link">
+    <span class="md-ellipsis">
+      What ships next
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      See also
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="triggers-scheduler">Triggers &amp; Scheduler<a class="headerlink" href="#triggers-scheduler" title="Permanent link">&para;</a></h1>
+<p>How an upstream business event — a service visit closing, a vehicle invoice posting, an operator pressing "send" on a campaign — turns into a survey link in a customer's hand.</p>
+<p>This doc walks through one concrete event end-to-end against a real <strong>CSI-GR</strong> (Customer Satisfaction Index — General Repair) survey configuration. It's the same fixture the e2e harness exercises, so what you read here is what's actually running.</p>
+<hr />
+<h2 id="the-big-picture">The big picture<a class="headerlink" href="#the-big-picture" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>flowchart LR
+    A[Upstream system&lt;br/&gt;CSV scanner / webhook /&lt;br/&gt;operator UI] --&gt;|POST candidate event| B[Trigger Ingest&lt;br/&gt;Endpoint]
+    B --&gt;|find matching triggers| C[(SurveyVersion&lt;br/&gt;schema JSON)]
+    B --&gt;|insert / dedup| D[(SurveyInstance)]
+    E[Scheduler&lt;br/&gt;periodic tick] --&gt;|SELECT due rows| D
+    E --&gt;|resolve by Channel key| F[ISurveyChannel&lt;br/&gt;WhatsApp / SMS /&lt;br/&gt;email / mock]
+    F --&gt;|deliver link| G[👤 Customer]
+    G --&gt;|click + submit| H[Public&lt;br/&gt;Submit Endpoint]
+    H --&gt;|update Status| D
+
+    style A fill:#e1f5ff,stroke:#0288d1
+    style G fill:#e1f5ff,stroke:#0288d1
+    style D fill:#fff3e0,stroke:#f57c00
+    style C fill:#fff3e0,stroke:#f57c00</code></pre>
+<p>Five moving parts:</p>
+<ol>
+<li><strong>Upstream system</strong> — anything that knows when a real-world event happened. Could be a Hangfire job in another service scanning a CSV, a webhook from a DMS, a Service Bus consumer, or an operator pressing a button.</li>
+<li><strong>Trigger Ingest Endpoint</strong> — <code>POST /api/Surveys/Triggers/ingest</code>. Accepts batches of candidate events. Stateless; reads the published-survey schema, writes one <code>SurveyInstance</code> per matching <code>(survey, trigger)</code> pair.</li>
+<li><strong><code>SurveyInstance</code> table</strong> — the source of truth. Every link ever offered to a customer is one row here.</li>
+<li><strong>Scheduler</strong> — polls the table on an interval, picks up rows whose <code>NextSendAt</code> has elapsed, dispatches via the channel snapshotted on the row.</li>
+<li><strong><code>ISurveyChannel</code> implementations</strong> — pluggable transports. The module ships an in-memory mock for tests. Production deployments register WhatsApp / SMS / email implementations under stable keys (<code>whatsapp:default</code>, <code>sms:twilio</code>, etc.).</li>
+</ol>
+<hr />
+<h2 id="the-trigger-config-what-survey-authors-set-up">The trigger config (what survey authors set up)<a class="headerlink" href="#the-trigger-config-what-survey-authors-set-up" title="Permanent link">&para;</a></h2>
+<p>Triggers live inside the survey schema as a <code>triggers[]</code> array. Here's the CSI-GR fixture:</p>
+<div class="highlight"><pre><span></span><code>{
+  &quot;id&quot;: &quot;csi-gr-trigger&quot;,                          // stable handle within this survey
+  &quot;enabled&quot;: true,                                  // off-switch without removing the config
+  &quot;eventKind&quot;: &quot;service-visit-closed&quot;,              // matches against the ingest payload&#39;s eventKind
+  &quot;filter&quot;: {                                       // optional — same evaluator as navigation logic
+    &quot;questionId&quot;: &quot;candidate.jobType&quot;,
+    &quot;op&quot;: &quot;==&quot;,
+    &quot;value&quot;: &quot;GR&quot;
+  },
+  &quot;dedupRecipe&quot;: [                                  // hashed → UniqueHash column
+    &quot;templateId&quot;,
+    &quot;recipient.address&quot;,
+    &quot;candidate.dealerId&quot;,
+    &quot;candidate.wip&quot;
+  ],
+  &quot;schedule&quot;: {
+    &quot;initialDelay&quot;: &quot;0d&quot;,                           // delay from event timestamp to first send
+    &quot;reminders&quot;: [&quot;1d&quot;]                             // each entry = delay since previous send
+  },
+  &quot;channel&quot;: &quot;memory:default&quot;                       // DI key resolved at scheduler tick time
+}
+</code></pre></div>
+<p>What each field controls:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Controls</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>eventKind</code></td>
+<td>Which <code>eventKind</code> ingest calls this trigger responds to.</td>
+</tr>
+<tr>
+<td><code>filter</code></td>
+<td>Which candidate events of that kind actually produce an instance. Matches against a path-keyed dict (<code>templateId</code>, <code>recipient.X</code>, <code>candidate.X</code>).</td>
+</tr>
+<tr>
+<td><code>dedupRecipe</code></td>
+<td>The natural key for "have I already produced an instance for this event + recipient." Authors must include the event's identifying fields.</td>
+</tr>
+<tr>
+<td><code>schedule.initialDelay</code></td>
+<td>How long after the event before the first send fires. Duration string (<code>0d</code>, <code>15m</code>, <code>4h</code>, <code>2d</code>).</td>
+</tr>
+<tr>
+<td><code>schedule.reminders</code></td>
+<td>Each subsequent send delay, measured from the <em>previous</em> send.</td>
+</tr>
+<tr>
+<td><code>channel</code></td>
+<td>Stable DI key. Resolved against registered <code>ISurveyChannel</code> implementations at send time.</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition tip">
+<p class="admonition-title">Authoring rule of thumb for <code>dedupRecipe</code></p>
+<p>Always include the event's natural identifier (<code>candidate.wip</code> for service visits, <code>candidate.salesInvoiceNumber</code> for vehicle sales). Always include <code>recipient.address</code>. Always include <code>templateId</code>. Anything else only if you have a reason — those three give you "process each event at most once per recipient per survey."</p>
+</div>
+<hr />
+<h2 id="a-worked-example-one-event-end-to-end">A worked example: one event end-to-end<a class="headerlink" href="#a-worked-example-one-event-end-to-end" title="Permanent link">&para;</a></h2>
+<p>Let's say the survey has been published. Its DB row:</p>
+<table>
+<thead>
+<tr>
+<th>Survey.ID</th>
+<th>Survey.Name</th>
+<th>Survey.PublishedVersionNumber</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>4523</code></td>
+<td>E2E CSI-GR</td>
+<td><code>1</code></td>
+</tr>
+</tbody>
+</table>
+<p>…with a <code>SurveyVersion</code> row carrying the resolved JSON above.</p>
+<p>There are no <code>SurveyInstance</code> rows yet. Now an upstream service-visit-closed event arrives.</p>
+<h3 id="step-1-caller-posts-to-ingest">Step 1 — caller posts to ingest<a class="headerlink" href="#step-1-caller-posts-to-ingest" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="err">POST /api/Surveys/Triggers/ingest</span>
+<span class="err">Authorization: Bearer …</span>
+
+<span class="err">{</span>
+<span class="err">  &quot;eventKind&quot;: &quot;service-visit-closed&quot;,</span>
+<span class="err">  &quot;items&quot;: [{</span>
+<span class="err">    &quot;payload&quot;: {</span>
+<span class="err">      &quot;wip&quot;: &quot;40956&quot;,</span>
+<span class="err">      &quot;dealerId&quot;: &quot;1&quot;,</span>
+<span class="err">      &quot;jobType&quot;: &quot;GR&quot;,</span>
+<span class="err">      &quot;VIN&quot;: &quot;JTMABBBJ2N4024400&quot;,</span>
+<span class="err">      &quot;CustomerName&quot;: &quot;Kadhem Owaid&quot;</span>
+<span class="err">    },</span>
+<span class="err">    &quot;recipient&quot;: {</span>
+<span class="err">      &quot;address&quot;: &quot;+964 770 000 0001&quot;,</span>
+<span class="err">      &quot;locale&quot;: &quot;ar&quot;,</span>
+<span class="err">      &quot;customerRef&quot;: &quot;cust-123&quot;</span>
+<span class="err">    }</span>
+<span class="err">  }]</span>
+<span class="err">}</span>
+</code></pre></div>
+<h3 id="step-2-service-finds-candidate-triggers">Step 2 — service finds candidate triggers<a class="headerlink" href="#step-2-service-finds-candidate-triggers" title="Permanent link">&para;</a></h3>
+<pre class="mermaid"><code>sequenceDiagram
+    autonumber
+    participant Caller
+    participant Ingest as TriggerIngest&lt;br/&gt;Service
+    participant DB
+    participant Eval as LogicEvaluator
+    participant Hash as TriggerHasher
+
+    Caller-&gt;&gt;Ingest: POST /ingest { eventKind, items }
+    Ingest-&gt;&gt;DB: SELECT published surveys + their pinned versions
+    DB--&gt;&gt;Ingest: 50 versions (in prod)
+    Ingest-&gt;&gt;Ingest: parse each ResolvedJson, keep&lt;br/&gt;triggers where eventKind matches
+    Note over Ingest: 1 trigger matches:&lt;br/&gt;survey 4523 / csi-gr-trigger
+
+    loop per item × per matching trigger
+        Ingest-&gt;&gt;Eval: evaluate filter against&lt;br/&gt;{ candidate.X, recipient.X, templateId }
+        Eval--&gt;&gt;Ingest: true (jobType=="GR" passes)
+        Ingest-&gt;&gt;Hash: BuildHashBytes(recipe, …)
+        Hash--&gt;&gt;Ingest: SHA-256 → 32 bytes
+        Ingest-&gt;&gt;DB: INSERT SurveyInstance + UniqueHash
+        alt unique constraint violation
+            DB--&gt;&gt;Ingest: duplicate key error
+            Ingest-&gt;&gt;DB: SELECT PublicID WHERE UniqueHash = ?
+            DB--&gt;&gt;Ingest: existing PublicID
+            Note over Ingest: outcome = Skipped
+        else success
+            DB--&gt;&gt;Ingest: inserted
+            Note over Ingest: outcome = Created
+        end
+    end
+
+    Ingest--&gt;&gt;Caller: { created, skipped, failed, items[] }</code></pre>
+<h3 id="step-3-building-the-evaluation-context">Step 3 — building the evaluation context<a class="headerlink" href="#step-3-building-the-evaluation-context" title="Permanent link">&para;</a></h3>
+<p>For the filter to evaluate against an event payload, the service flattens the candidate + recipient into a path-keyed dict:</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>templateId</code></td>
+<td><code>4523</code></td>
+</tr>
+<tr>
+<td><code>recipient.address</code></td>
+<td><code>"+964 770 000 0001"</code></td>
+</tr>
+<tr>
+<td><code>recipient.locale</code></td>
+<td><code>"ar"</code></td>
+</tr>
+<tr>
+<td><code>recipient.customerRef</code></td>
+<td><code>"cust-123"</code></td>
+</tr>
+<tr>
+<td><code>candidate.wip</code></td>
+<td><code>"40956"</code></td>
+</tr>
+<tr>
+<td><code>candidate.dealerId</code></td>
+<td><code>"1"</code></td>
+</tr>
+<tr>
+<td><code>candidate.jobType</code></td>
+<td><code>"GR"</code></td>
+</tr>
+<tr>
+<td><code>candidate.VIN</code></td>
+<td><code>"JTMABBBJ2N4024400"</code></td>
+</tr>
+<tr>
+<td><code>candidate.CustomerName</code></td>
+<td><code>"Kadhem Owaid"</code></td>
+</tr>
+</tbody>
+</table>
+<p>The same <code>LogicEvaluator</code> that drives navigation rules then runs the filter against this dict. The filter <code>candidate.jobType == "GR"</code> returns <code>true</code>. (If <code>jobType</code> had been <code>"PM"</code>, the filter would have returned <code>false</code> and the loop would <code>continue</code> — no instance created.)</p>
+<h3 id="step-4-building-the-dedup-hash">Step 4 — building the dedup hash<a class="headerlink" href="#step-4-building-the-dedup-hash" title="Permanent link">&para;</a></h3>
+<p><code>TriggerHasher.BuildHashBytes</code> walks the recipe in order, prefixes each path with its name, joins with the unit-separator (<code></code>):</p>
+<div class="highlight"><pre><span></span><code>templateId=4523␟recipient.address=+964 770 000 0001␟candidate.dealerId=1␟candidate.wip=40956
+</code></pre></div>
+<p>Then SHA-256 of those UTF-8 bytes → 32 bytes. Call it <code>0x3F:E8:11:…:7A</code>.</p>
+<div class="admonition info">
+<p class="admonition-title">Why path-prefix the values?</p>
+<p>Without the <code>path=</code> prefix, two recipes that produce the same concatenated value-string would collide. With the prefix, even an empty value (<code>candidate.X=</code>) is distinct from an empty value at a different path (<code>candidate.Y=</code>). The unit-separator (<code></code>) prevents string-content from accidentally bridging slot boundaries.</p>
+</div>
+<h3 id="step-5-the-surveyinstance-row-after-insert">Step 5 — the <code>SurveyInstance</code> row after INSERT<a class="headerlink" href="#step-5-the-surveyinstance-row-after-insert" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ID</code></td>
+<td><code>12345</code></td>
+</tr>
+<tr>
+<td><code>PublicID</code></td>
+<td><code>8f3a1c4e-…</code> (fresh GUID — appears in the customer URL)</td>
+</tr>
+<tr>
+<td><code>SurveyID</code></td>
+<td><code>4523</code></td>
+</tr>
+<tr>
+<td><code>SurveyVersionID</code></td>
+<td><code>7</code></td>
+</tr>
+<tr>
+<td><code>TriggeredAt</code></td>
+<td><code>2026-05-14 05:12:34</code></td>
+</tr>
+<tr>
+<td><code>TriggeredBy</code></td>
+<td><code>event:service-visit-closed</code></td>
+</tr>
+<tr>
+<td><code>Status</code></td>
+<td><code>0</code> (Pending)</td>
+</tr>
+<tr>
+<td><code>CustomerRef</code></td>
+<td><code>cust-123</code></td>
+</tr>
+<tr>
+<td><code>MetaDataJson</code></td>
+<td><code>{"wip":"40956","dealerId":"1",...}</code> <em>(full candidate payload snapshotted)</em></td>
+</tr>
+<tr>
+<td><code>TriggerId</code></td>
+<td><code>csi-gr-trigger</code></td>
+</tr>
+<tr>
+<td><code>Channel</code></td>
+<td><code>memory:default</code></td>
+</tr>
+<tr>
+<td><code>RecipientAddress</code></td>
+<td><code>+964 770 000 0001</code></td>
+</tr>
+<tr>
+<td><code>RecipientLocale</code></td>
+<td><code>ar</code></td>
+</tr>
+<tr>
+<td><code>NextSendAt</code></td>
+<td><code>2026-05-14 05:12:34</code> <em>(= TriggeredAt + <code>0d</code> initialDelay)</em></td>
+</tr>
+<tr>
+<td><code>LastSentAt</code></td>
+<td><code>NULL</code></td>
+</tr>
+<tr>
+<td><code>RemindersRemaining</code></td>
+<td><code>1</code> <em>(one reminder configured)</em></td>
+</tr>
+<tr>
+<td><code>DeliveryLogJson</code></td>
+<td><code>NULL</code></td>
+</tr>
+<tr>
+<td><code>UniqueHash</code></td>
+<td><code>0x3F:E8:11:…:7A</code> <em>(stamped explicitly via <code>db.Entry(instance).Property("UniqueHash")</code>)</em></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">About <code>UniqueHash</code></p>
+<p>The framework's <code>IEntityHasUniqueHash&lt;T&gt;</code> adds the <code>UniqueHash BINARY(32)</code> column + filtered unique index automatically (<code>WHERE UniqueHash IS NOT NULL AND IsDeleted = 0</code>). The auto-hash logic in <code>ShiftRepository.SetAuditFields</code> only fires on the per-row save path through <code>ShiftRepository</code>. The trigger ingest service goes straight through <code>db.SaveChangesAsync</code> — so <code>CalculateUniqueHash()</code> returns <code>null</code> (opting out of the framework's path) and the service stamps the bytes itself. Same behaviour, manual control.</p>
+</div>
+<h3 id="step-6-the-response">Step 6 — the response<a class="headerlink" href="#step-6-the-response" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>{
+  &quot;created&quot;: 1,
+  &quot;skipped&quot;: 0,
+  &quot;failed&quot;: 0,
+  &quot;items&quot;: [{
+    &quot;outcome&quot;: &quot;Created&quot;,
+    &quot;instances&quot;: [{
+      &quot;surveyId&quot;: 4523,
+      &quot;triggerId&quot;: &quot;csi-gr-trigger&quot;,
+      &quot;publicId&quot;: &quot;8f3a1c4e-…&quot;
+    }]
+  }]
+}
+</code></pre></div>
+<hr />
+<h2 id="same-event-posted-twice-the-dedup-path">Same event posted twice — the dedup path<a class="headerlink" href="#same-event-posted-twice-the-dedup-path" title="Permanent link">&para;</a></h2>
+<p>If the upstream system retries (or the operator clicks twice, or a CSV row gets reprocessed), the second POST hits the same recipe → same hash → same <code>UniqueHash</code> bytes. SQL Server rejects the second INSERT.</p>
+<pre class="mermaid"><code>sequenceDiagram
+    autonumber
+    participant Caller
+    participant Ingest as TriggerIngest&lt;br/&gt;Service
+    participant DB
+
+    Caller-&gt;&gt;Ingest: POST /ingest (same event)
+    Ingest-&gt;&gt;Ingest: filter passes, hash computed (same bytes)
+    Ingest-&gt;&gt;DB: INSERT SurveyInstance + UniqueHash
+    DB--&gt;&gt;Ingest: ❌ Cannot insert duplicate key&lt;br/&gt;'IX_SurveyInstance_UniqueHash'
+
+    Ingest-&gt;&gt;Ingest: detach the failed entity
+    Ingest-&gt;&gt;DB: SELECT PublicID WHERE UniqueHash = ?
+    DB--&gt;&gt;Ingest: 8f3a1c4e-… (the original)
+
+    Ingest--&gt;&gt;Caller: { created: 0, skipped: 1,&lt;br/&gt;items: [{ outcome: "Skipped",&lt;br/&gt;instances: [{ publicId: "8f3a1c4e-…" }] }] }</code></pre>
+<p>The caller now knows: <em>"this event already produced instance <code>8f3a1c4e-…</code>."</em> They can correlate without ever knowing how dedup is implemented.</p>
+<div class="admonition warning">
+<p class="admonition-title">The dedup recipe is a load-bearing design choice</p>
+<p>The recipe defines what counts as "the same event." Get it wrong in either direction:</p>
+<ul>
+<li><strong>Too narrow</strong> (e.g., omit <code>candidate.dealerId</code> for service visits): two dealers' WIP numbers can collide because WIP is per-dealer, not globally unique. You'll miss a legitimate second instance.</li>
+<li><strong>Too wide</strong> (e.g., include <code>candidate.timestamp</code> to the second): every event always looks new, dedup never fires, customers get retriggered on every replay.</li>
+</ul>
+<p>The natural rule: include exactly the fields that uniquely identify the real-world event for that recipient. For service visits that's <code>(dealer + WIP)</code>. For vehicle sales it's <code>(dealer + sales invoice number)</code>.</p>
+</div>
+<hr />
+<h2 id="the-scheduler">The scheduler<a class="headerlink" href="#the-scheduler" title="Permanent link">&para;</a></h2>
+<p>A single <code>TriggerSchedulerService.PollOnceAsync(batchSize)</code> call is "one tick." Each tick does two passes:</p>
+<ol>
+<li><strong>Send-due pass.</strong> Find active rows whose <code>NextSendAt</code> has elapsed, route them to their channel, advance their schedule.</li>
+<li><strong>Expiry sweep.</strong> Find rows whose schedule has run out (<code>NextSendAt IS NULL</code>) and that have been quiet past <code>ExpiryGracePeriod</code>. Flip them to <code>Expired</code>.</li>
+</ol>
+<p>The send pass owns the read-due-rows → send → advance-schedule loop:</p>
+<pre class="mermaid"><code>sequenceDiagram
+    autonumber
+    participant Tick as Tick invoker&lt;br/&gt;(timer / Hangfire /&lt;br/&gt;admin endpoint)
+    participant Sched as TriggerScheduler&lt;br/&gt;Service
+    participant DB
+    participant Reg as SurveyChannel&lt;br/&gt;Registry
+    participant Ch as ISurveyChannel&lt;br/&gt;(memory:default)
+
+    Tick-&gt;&gt;Sched: PollOnceAsync(batchSize=100)
+    Sched-&gt;&gt;DB: SELECT TOP 100 SurveyInstance&lt;br/&gt;WHERE Status IN (0,1,2)&lt;br/&gt;AND NextSendAt &lt;= NOW&lt;br/&gt;ORDER BY NextSendAt
+    DB--&gt;&gt;Sched: due rows (uses&lt;br/&gt;IX_SurveyInstance_Status_NextSendAt_Active)
+
+    loop per due row
+        Sched-&gt;&gt;Reg: Resolve(instance.Channel)
+        Reg--&gt;&gt;Sched: ISurveyChannel
+        Sched-&gt;&gt;Sched: build URL from template&lt;br/&gt;compute attempt # from log length
+        Sched-&gt;&gt;Ch: SendAsync({ address, url, attempt, … })
+        Ch--&gt;&gt;Sched: { delivered: true, providerMessageId }
+        Sched-&gt;&gt;Sched: append DeliveryLogJson&lt;br/&gt;flip Pending→Sent on first&lt;br/&gt;set LastSentAt = now&lt;br/&gt;advance NextSendAt
+        Sched-&gt;&gt;DB: UPDATE
+    end
+    Sched--&gt;&gt;Tick: { Processed: N }</code></pre>
+<h3 id="what-advance-nextsendat-actually-does">What "advance <code>NextSendAt</code>" actually does<a class="headerlink" href="#what-advance-nextsendat-actually-does" title="Permanent link">&para;</a></h3>
+<p>The schedule has one <code>initialDelay</code> and an array of <code>reminders</code>. The <code>RemindersRemaining</code> counter on the row tracks where we are in the array:</p>
+<div class="highlight"><pre><span></span><code>reminderIndex = totalReminders - RemindersRemaining
+</code></pre></div>
+<p>If <code>reminderIndex &lt; totalReminders</code> and <code>reminders[reminderIndex]</code> parses cleanly:</p>
+<ul>
+<li><code>NextSendAt = LastSentAt + reminders[reminderIndex]</code></li>
+<li><code>RemindersRemaining--</code></li>
+</ul>
+<p>Otherwise (we just sent the last reminder):</p>
+<ul>
+<li><code>NextSendAt = NULL</code> <em>(scheduler will never pick this row up again)</em></li>
+</ul>
+<h3 id="walking-through-a-tick">Walking through a tick<a class="headerlink" href="#walking-through-a-tick" title="Permanent link">&para;</a></h3>
+<p>Tick at 2026-05-14 05:13:00. Our row has <code>NextSendAt = 05:12:34</code> (in past) → picked up.</p>
+<pre class="mermaid"><code>flowchart LR
+    A["Row before tick&lt;br/&gt;Status=Pending&lt;br/&gt;NextSendAt=05:12:34&lt;br/&gt;LastSentAt=NULL&lt;br/&gt;RemindersRemaining=1&lt;br/&gt;DeliveryLogJson=NULL"] --&gt; B["Channel.SendAsync()"]
+    B --&gt; C["delivered=true&lt;br/&gt;messageId=mem-abc123"]
+    C --&gt; D["Row after tick&lt;br/&gt;Status=Sent&lt;br/&gt;NextSendAt=05:13:00 + 1d&lt;br/&gt;LastSentAt=05:13:00&lt;br/&gt;RemindersRemaining=0&lt;br/&gt;DeliveryLogJson=[{attempt:1,…}]"]
+    style A fill:#fff3e0
+    style D fill:#e8f5e9</code></pre>
+<p>Concretely:</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Was</th>
+<th>Now</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Status</code></td>
+<td><code>0</code> (Pending)</td>
+<td><code>1</code> (Sent)</td>
+</tr>
+<tr>
+<td><code>NextSendAt</code></td>
+<td><code>2026-05-14 05:12:34</code> (past)</td>
+<td><code>2026-05-15 05:13:00</code> (24h ahead)</td>
+</tr>
+<tr>
+<td><code>LastSentAt</code></td>
+<td><code>NULL</code></td>
+<td><code>2026-05-14 05:13:00</code></td>
+</tr>
+<tr>
+<td><code>RemindersRemaining</code></td>
+<td><code>1</code></td>
+<td><code>0</code></td>
+</tr>
+<tr>
+<td><code>DeliveryLogJson</code></td>
+<td><code>NULL</code></td>
+<td><code>[{"attempt":1,"sentAt":"…","status":"delivered","messageId":"mem-abc123"}]</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="tick-five-minutes-later">Tick five minutes later<a class="headerlink" href="#tick-five-minutes-later" title="Permanent link">&para;</a></h3>
+<p><code>NextSendAt = 2026-05-15 …</code> is <strong>24 hours in the future</strong>. The query's <code>WHERE NextSendAt &lt;= NOW</code> excludes it. <code>LastSentAt</code> doesn't change. The e2e harness asserts exactly this.</p>
+<h3 id="tick-24-hours-after-the-first-send">Tick 24 hours after the first send<a class="headerlink" href="#tick-24-hours-after-the-first-send" title="Permanent link">&para;</a></h3>
+<p><code>NextSendAt</code> is now in past. The row is picked up again.</p>
+<ul>
+<li><code>ComputeAttemptNumber</code> reads <code>DeliveryLogJson.length = 1</code> → this is <strong>attempt 2</strong> (the reminder)</li>
+<li>Channel sends with <code>attempt: 2</code></li>
+<li>Append a second entry to <code>DeliveryLogJson</code></li>
+<li><code>LastSentAt</code> bumps to the new now</li>
+<li><code>Status</code> stays Sent (already Sent)</li>
+<li><strong>Schedule advance:</strong> <code>reminderIndex = 1 - 0 = 1</code>. <code>1 &lt; totalReminders(1)</code> → <strong>false</strong>. No more reminders.</li>
+<li><code>NextSendAt = NULL</code></li>
+</ul>
+<p>The row is now terminal for the scheduler. Future ticks ignore it forever (NULL <code>NextSendAt</code>).</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>After reminder send</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Status</code></td>
+<td><code>1</code> (Sent) — stays here until the customer submits or we expire it</td>
+</tr>
+<tr>
+<td><code>NextSendAt</code></td>
+<td><code>NULL</code></td>
+</tr>
+<tr>
+<td><code>LastSentAt</code></td>
+<td><code>2026-05-15 05:13:00</code></td>
+</tr>
+<tr>
+<td><code>RemindersRemaining</code></td>
+<td><code>0</code></td>
+</tr>
+<tr>
+<td><code>DeliveryLogJson</code></td>
+<td><code>[{attempt:1,…},{attempt:2,…}]</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="a-longer-schedule-vocs-60d-5d10d15d">A longer schedule — VOC's 60d + 5d/10d/15d<a class="headerlink" href="#a-longer-schedule-vocs-60d-5d10d15d" title="Permanent link">&para;</a></h2>
+<p>The standard new-vehicle VOC cadence is 60-day initial delay, then 5/10/15-day reminders. Walking the arithmetic:</p>
+<table>
+<thead>
+<tr>
+<th>Tick</th>
+<th><code>RemindersRemaining</code> before</th>
+<th><code>reminderIndex</code></th>
+<th>What we send</th>
+<th><code>NextSendAt</code> after</th>
+<th><code>RemindersRemaining</code> after</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1 (day 60 from event)</td>
+<td><code>3</code></td>
+<td><code>3 - 3 = 0</code> → reminders[0] = <code>5d</code></td>
+<td>initial</td>
+<td>sent + 5d</td>
+<td><code>2</code></td>
+</tr>
+<tr>
+<td>2 (day 65)</td>
+<td><code>2</code></td>
+<td><code>3 - 2 = 1</code> → reminders[1] = <code>10d</code></td>
+<td>reminder #1</td>
+<td>sent + 10d</td>
+<td><code>1</code></td>
+</tr>
+<tr>
+<td>3 (day 75)</td>
+<td><code>1</code></td>
+<td><code>3 - 1 = 2</code> → reminders[2] = <code>15d</code></td>
+<td>reminder #2</td>
+<td>sent + 15d</td>
+<td><code>0</code></td>
+</tr>
+<tr>
+<td>4 (day 90)</td>
+<td><code>0</code></td>
+<td><code>3 - 0 = 3</code>, <strong>out of range</strong></td>
+<td>reminder #3 (last)</td>
+<td><code>NULL</code></td>
+<td><code>0</code></td>
+</tr>
+</tbody>
+</table>
+<p>Four sends total: 1 initial + 3 reminders. The arithmetic is identical for any reminders-array length, including zero (one initial send, no reminders, <code>NextSendAt = NULL</code> after the first tick).</p>
+<hr />
+<h2 id="the-expiry-sweep-slice-6">The expiry sweep (slice 6)<a class="headerlink" href="#the-expiry-sweep-slice-6" title="Permanent link">&para;</a></h2>
+<p>The second pass of every tick. Selects rows where:</p>
+<ul>
+<li><code>NextSendAt IS NULL</code> (schedule has run out — either reminders all fired, or the scheduler nulled it because of a channel-resolution failure, or it was never set)</li>
+<li><code>Status</code> is still active (<code>Pending</code>, <code>Sent</code>, or <code>Opened</code>)</li>
+<li>The row has been quiet past <code>SurveyApiOptions.ExpiryGracePeriod</code> (default <code>30d</code>), measured against <code>LastSentAt</code> if any send happened, otherwise against <code>TriggeredAt</code></li>
+</ul>
+<p>…and flips each one to <code>Expired</code>. The schedule's natural progression already nulls <code>NextSendAt</code> after the last reminder fires, so by the time the expiry sweep fires, a row sits there for the grace period before being terminated.</p>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="n">TOP</span><span class="w"> </span><span class="n">N</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">SurveyInstance</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">IsDeleted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="n">NextSendAt</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span>
+<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="n">Status</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span>
+<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="p">((</span><span class="n">LastSentAt</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">LastSentAt</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="o">@</span><span class="n">cutoff</span><span class="p">)</span>
+<span class="w">       </span><span class="k">OR</span><span class="w"> </span><span class="p">(</span><span class="n">LastSentAt</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">TriggeredAt</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="o">@</span><span class="n">cutoff</span><span class="p">))</span>
+<span class="c1">-- @cutoff = NOW - ExpiryGracePeriod</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Lifecycle this catches</th>
+<th>What the row looks like</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Customer never responded after the last reminder</td>
+<td><code>LastSentAt</code> = time of last send; <code>NextSendAt = NULL</code>; <code>Status = Sent</code></td>
+</tr>
+<tr>
+<td>Channel was misconfigured at trigger time, scheduler bailed</td>
+<td><code>LastSentAt = NULL</code>; <code>NextSendAt = NULL</code>; <code>Status = Pending</code></td>
+</tr>
+<tr>
+<td>Scheduler never picked up an old row (e.g., singleton ticker was down for days)</td>
+<td><code>LastSentAt = NULL</code>; <code>NextSendAt = NULL</code>; <code>Status = Pending</code> — caught via <code>TriggeredAt</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="surveyinstance-state-machine"><code>SurveyInstance</code> state machine<a class="headerlink" href="#surveyinstance-state-machine" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>stateDiagram-v2
+    [*] --&gt; Pending : Trigger ingest creates row
+    Pending --&gt; Sent : Scheduler sends initial&lt;br/&gt;(slice 4)
+    Pending --&gt; Pending : Send fails&lt;br/&gt;retry next tick
+    Sent --&gt; Sent : Reminder send&lt;br/&gt;(slice 4)
+    Sent --&gt; Completed : Customer submits&lt;br/&gt;(slice 5)
+    Sent --&gt; Expired : Reminders exhausted +&lt;br/&gt;no response after grace&lt;br/&gt;(slice 6)
+    Pending --&gt; Completed : Edge case:&lt;br/&gt;customer submits before first send
+    Pending --&gt; Expired : Channel never resolves&lt;br/&gt;or scheduler never ran&lt;br/&gt;(slice 6 catches both)
+    Completed --&gt; [*]
+    Expired --&gt; [*]</code></pre>
+<h2 id="post-answer-fanout-slice-7">Post-answer fanout (slice 7)<a class="headerlink" href="#post-answer-fanout-slice-7" title="Permanent link">&para;</a></h2>
+<p>When a customer submits, that submit is also the moment side-effects fire — write to a ticket system, push to BI, email a manager, etc. The legacy system hardcoded this routing per survey-template-name into one giant controller. The new system uses the <strong>transactional outbox pattern</strong>:</p>
+<ol>
+<li>On submit, <code>PublicSurveyController.SubmitResponse</code> writes both the <code>SurveyResponse</code> <em>and</em> a <code>SurveyOutboxEvent</code> row in a single <code>SaveChangesAsync</code>. Either both land or neither lands — that's the at-least-once delivery guarantee.</li>
+<li>The scheduler tick's third pass (<code>OutboxDispatchService.PollOnceAsync</code>) finds Pending events and fans each out to every registered <code>ISurveyResponseSubscriber</code>.</li>
+<li>Per-subscriber outcomes go into <code>DispatchLogJson</code>; the event flips to <code>Dispatched</code> if every subscriber succeeded, <code>Failed</code> otherwise.</li>
+</ol>
+<pre class="mermaid"><code>sequenceDiagram
+    autonumber
+    participant Customer
+    participant Submit as PublicSurvey&lt;br/&gt;Controller
+    participant DB
+    participant Tick as Scheduler&lt;br/&gt;Tick
+    participant Outbox as OutboxDispatch&lt;br/&gt;Service
+    participant Reg as OutboxSubscriber&lt;br/&gt;Registry
+    participant Sub1 as Subscriber A&lt;br/&gt;(servicebus:csi-tickets)
+    participant Sub2 as Subscriber B&lt;br/&gt;(webhook:bi-ingest)
+
+    Customer-&gt;&gt;Submit: POST /SurveyInstances/{id}/responses
+    Submit-&gt;&gt;Submit: validate answers
+    Note over Submit: same SaveChangesAsync:
+    Submit-&gt;&gt;DB: INSERT SurveyResponse + SurveyAnswers
+    Submit-&gt;&gt;DB: UPDATE SurveyInstance Status=Completed, NextSendAt=NULL
+    Submit-&gt;&gt;DB: INSERT SurveyOutboxEvent Status=Pending
+    DB--&gt;&gt;Submit: committed
+    Submit--&gt;&gt;Customer: 200 OK
+
+    Tick-&gt;&gt;Outbox: PollOnceAsync(batchSize=100)
+    Outbox-&gt;&gt;DB: SELECT TOP N WHERE Status = Pending
+    DB--&gt;&gt;Outbox: pending events
+    loop per event
+        Outbox-&gt;&gt;Outbox: deserialize PayloadJson
+        Outbox-&gt;&gt;Reg: All subscribers
+        loop per subscriber
+            Outbox-&gt;&gt;Sub1: DispatchAsync(payload)
+            Sub1--&gt;&gt;Outbox: { success: true, messageId }
+            Outbox-&gt;&gt;Sub2: DispatchAsync(payload)
+            Sub2--&gt;&gt;Outbox: { success: true }
+        end
+        Outbox-&gt;&gt;DB: UPDATE Status=Dispatched, DispatchLogJson, Attempts++
+    end
+    Outbox--&gt;&gt;Tick: { Dispatched, Failed }</code></pre>
+<h3 id="what-the-payload-contains">What the payload contains<a class="headerlink" href="#what-the-payload-contains" title="Permanent link">&para;</a></h3>
+<p><code>SurveyOutboxPayload</code> is self-contained — subscribers don't need to re-query the DB to act:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SurveyId</code>, <code>SurveyVersion</code>, <code>SurveyIntegrationId</code></td>
+<td><code>instance.Survey</code> / <code>instance.SurveyVersion</code></td>
+</tr>
+<tr>
+<td><code>InstancePublicId</code>, <code>TriggerId</code>, <code>CustomerRef</code></td>
+<td><code>instance</code></td>
+</tr>
+<tr>
+<td><code>RecipientAddress</code>, <code>RecipientLocale</code></td>
+<td><code>instance</code> (snapshotted at trigger ingest)</td>
+</tr>
+<tr>
+<td><code>EventType</code></td>
+<td><code>"response-completed"</code> (slice 7 only emits this; future events extend the enum)</td>
+</tr>
+<tr>
+<td><code>CompletedAt</code>, <code>AgentId</code></td>
+<td><code>response.Meta</code></td>
+</tr>
+<tr>
+<td><code>Answers</code></td>
+<td><code>body.Answers</code> — the same dict the submitter sent</td>
+</tr>
+<tr>
+<td><code>CandidateMetadataJson</code></td>
+<td><code>instance.MetaDataJson</code> — the original event payload that fired the trigger</td>
+</tr>
+</tbody>
+</table>
+<p>A subscriber that pushes to a CSI ticket system can read <code>Answers["has-a-complaint"]</code> and decide whether to escalate, without needing to load anything else.</p>
+<h3 id="surveyoutboxevent-state-machine"><code>SurveyOutboxEvent</code> state machine<a class="headerlink" href="#surveyoutboxevent-state-machine" title="Permanent link">&para;</a></h3>
+<pre class="mermaid"><code>stateDiagram-v2
+    [*] --&gt; Pending : submit writes the row&lt;br/&gt;(in-transaction)
+    Pending --&gt; Dispatched : every subscriber returned success
+    Pending --&gt; Failed : any subscriber threw&lt;br/&gt;or returned !success
+    Failed --&gt; Failed : stays Failed until manually retried&lt;br/&gt;(slice 7 has no auto-retry)
+    Dispatched --&gt; [*]
+    Failed --&gt; [*]</code></pre>
+<h3 id="subscriber-wire-up">Subscriber wire-up<a class="headerlink" href="#subscriber-wire-up" title="Permanent link">&para;</a></h3>
+<p>The same DI shape as channels:</p>
+<div class="highlight"><pre><span></span><code><span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">CsiTicketServiceBusSubscriber</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">ISurveyResponseSubscriber</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">Key</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s">&quot;servicebus:csi-tickets&quot;</span><span class="p">;</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="n">Task</span><span class="o">&lt;</span><span class="n">SubscriberDispatchResult</span><span class="o">&gt;</span><span class="w"> </span><span class="n">DispatchAsync</span><span class="p">(</span>
+<span class="w">        </span><span class="n">SurveyOutboxPayload</span><span class="w"> </span><span class="n">payload</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">ct</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="c1">// Filter on whatever this subscriber cares about</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">payload</span><span class="p">.</span><span class="n">SurveyIntegrationId</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s">&quot;csi-gr&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">SubscriberDispatchResult</span><span class="p">.</span><span class="n">Ok</span><span class="p">();</span>
+
+<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="n">serviceBusClient</span><span class="p">.</span><span class="n">SendMessageAsync</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">ServiceBusMessage</span><span class="p">(</span>
+<span class="w">            </span><span class="n">JsonSerializer</span><span class="p">.</span><span class="n">Serialize</span><span class="p">(</span><span class="n">payload</span><span class="p">))</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="n">MessageId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">payload</span><span class="p">.</span><span class="n">InstancePublicId</span><span class="p">.</span><span class="n">ToString</span><span class="p">(),</span>
+<span class="w">        </span><span class="p">});</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">SubscriberDispatchResult</span><span class="p">.</span><span class="n">Ok</span><span class="p">();</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Register in <code>Program.cs</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="n">services</span><span class="p">.</span><span class="n">AddSingleton</span><span class="o">&lt;</span><span class="n">ISurveyResponseSubscriber</span><span class="p">,</span><span class="w"> </span><span class="n">CsiTicketServiceBusSubscriber</span><span class="o">&gt;</span><span class="p">();</span>
+</code></pre></div>
+<p>The registry picks it up automatically.</p>
+<div class="admonition tip">
+<p class="admonition-title">Subscriber-side filtering vs schema-side filtering</p>
+<p>Slice 7 lets each subscriber decide whether it cares about a given event (the example above filters on <code>SurveyIntegrationId</code>). That's the simplest shape and works fine when subscribers are app-code.</p>
+<p>The legacy system did filtering centrally — "if <code>has-a-complaint = Yes</code> AND <code>rate = 7</code> → route to potential-complaint-tickets." That kind of conditional routing wants to live on the survey schema as a filter expression, not in subscriber code. Adding a <code>subscribers: [{ key, filter? }]</code> field to the survey schema (evaluated against the answer JSON at dispatch time, reusing <code>LogicEvaluator</code>) is the natural extension when a real second-subscriber case lands.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">No automatic retry yet</p>
+<p>A subscriber that fails on its first attempt leaves the outbox event at <code>Status = Failed</code>. The next tick <em>does not</em> retry it. Operations team alerts on <code>Status = Failed</code> rows and manually re-runs (today: UPDATE Status to Pending). Adding bounded retry with exponential backoff + a max-attempts dead-letter is a polish task.</p>
+</div>
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>Meaning</th>
+<th>Scheduler picks it up?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Pending</code> (0)</td>
+<td>Created but not yet sent</td>
+<td>Yes (if <code>NextSendAt</code> is past)</td>
+</tr>
+<tr>
+<td><code>Sent</code> (1)</td>
+<td>At least one delivery succeeded</td>
+<td>Yes (if <code>NextSendAt</code> is past — for reminders)</td>
+</tr>
+<tr>
+<td><code>Opened</code> (2)</td>
+<td>Customer fetched the public link</td>
+<td>Yes (reminders still queued)</td>
+</tr>
+<tr>
+<td><code>Completed</code> (3)</td>
+<td>Customer submitted a response</td>
+<td><strong>No</strong> (terminal)</td>
+</tr>
+<tr>
+<td><code>Expired</code> (4)</td>
+<td>Cutoff reached without submission</td>
+<td><strong>No</strong> (terminal)</td>
+</tr>
+</tbody>
+</table>
+<p>The composite filtered index <code>IX_SurveyInstance_Status_NextSendAt_Active</code> (<code>WHERE Status IN (0, 1, 2) AND IsDeleted = 0</code>) keeps the scheduler's poll query small even as the table grows — terminal rows are excluded from the index entirely.</p>
+<div class="admonition info">
+<p class="admonition-title">Why positive <code>IN (0, 1, 2)</code> instead of <code>NOT IN (3, 4)</code>?</p>
+<p>SQL Server filtered index predicates don't allow <code>NOT IN</code>. The active states are listed explicitly. If a new active state is ever added (say <code>OnHold</code>), this filter — and the migration — needs updating.</p>
+</div>
+<hr />
+<h2 id="channels">Channels<a class="headerlink" href="#channels" title="Permanent link">&para;</a></h2>
+<p><code>ISurveyChannel</code> lives in <code>ADP.Surveys.Shared.Triggers</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="k">public</span><span class="w"> </span><span class="k">interface</span><span class="w"> </span><span class="n">ISurveyChannel</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="kt">string</span><span class="w"> </span><span class="n">Key</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="p">}</span><span class="w">   </span><span class="c1">// &quot;whatsapp:default&quot;, &quot;sms:twilio&quot;, &quot;memory:default&quot;, …</span>
+<span class="w">    </span><span class="n">Task</span><span class="o">&lt;</span><span class="n">ChannelSendResult</span><span class="o">&gt;</span><span class="w"> </span><span class="n">SendAsync</span><span class="p">(</span><span class="n">ChannelSendRequest</span><span class="w"> </span><span class="n">request</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">ct</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>The <code>SurveyChannelRegistry</code> resolves by Key. Every registered <code>ISurveyChannel</code> in DI is added to the registry at startup; lookup is <code>O(1)</code> by key.</p>
+<h3 id="what-gets-passed-to-the-channel">What gets passed to the channel<a class="headerlink" href="#what-gets-passed-to-the-channel" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="k">new</span><span class="w"> </span><span class="n">ChannelSendRequest</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">PublicId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">instance</span><span class="p">.</span><span class="n">PublicID</span><span class="p">,</span><span class="w">                              </span><span class="c1">// for the URL</span>
+<span class="w">    </span><span class="n">Address</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">instance</span><span class="p">.</span><span class="n">RecipientAddress</span><span class="p">,</span><span class="w">                       </span><span class="c1">// phone / email</span>
+<span class="w">    </span><span class="n">Locale</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">instance</span><span class="p">.</span><span class="n">RecipientLocale</span><span class="p">,</span><span class="w">                         </span><span class="c1">// for template selection</span>
+<span class="w">    </span><span class="n">SurveyUrl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">options</span><span class="p">.</span><span class="n">PublicSurveyUrlTemplate</span>
+<span class="w">        </span><span class="p">.</span><span class="n">Replace</span><span class="p">(</span><span class="s">&quot;{publicId}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">instance</span><span class="p">.</span><span class="n">PublicID</span><span class="p">.</span><span class="n">ToString</span><span class="p">()),</span><span class="w">  </span><span class="c1">// the actual link</span>
+<span class="w">    </span><span class="n">AttemptNumber</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="err">…</span><span class="p">,</span><span class="w">                                 </span><span class="c1">// for &quot;follow-up&quot; templating</span>
+<span class="w">    </span><span class="n">CandidateMetadataJson</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">instance</span><span class="p">.</span><span class="n">MetaDataJson</span><span class="p">,</span><span class="w">             </span><span class="c1">// for placeholder filling</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="failure-modes-the-scheduler-handles">Failure modes the scheduler handles<a class="headerlink" href="#failure-modes-the-scheduler-handles" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>What happens</th>
+<th>Scheduler reaction</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>channels.Resolve(instance.Channel)</code> returns <code>null</code></td>
+<td>Append <code>"no-channel"</code> log entry. <strong>Null <code>NextSendAt</code></strong> to halt retries (deployment misconfiguration). The next expiry sweep will flip it to <code>Expired</code> once the grace period elapses from <code>TriggeredAt</code>.</td>
+</tr>
+<tr>
+<td><code>SendAsync</code> throws</td>
+<td>Catch, log, leave row unchanged. Next tick retries.</td>
+</tr>
+<tr>
+<td><code>SendAsync</code> returns <code>Delivered = false</code></td>
+<td>Append failure log entry. <strong>Leave <code>NextSendAt</code></strong> so the next tick retries. (Backoff/give-up logic is a future slice.)</td>
+</tr>
+<tr>
+<td><code>SendAsync</code> returns <code>Delivered = true</code></td>
+<td>Append success log entry. Advance schedule.</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title">Today's retry is naive</p>
+<p>A persistently-failing channel will retry on every poll forever. The next iteration adds backoff and a give-up threshold. For now, an alerting rule on <code>DeliveryLogJson</code> LIKE <code>%failed%</code> is the operational signal.</p>
+</div>
+<hr />
+<h2 id="production-wiring-deferred">Production wiring (deferred)<a class="headerlink" href="#production-wiring-deferred" title="Permanent link">&para;</a></h2>
+<p>Slice 4 ships the <strong>service</strong> plus an <strong>admin tick endpoint</strong>. The endpoint is the test-and-ad-hoc surface; production needs a periodic invoker. Two reasonable shapes:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Hosted service in the API host</label><label for="__tabbed_1_2">Azure Function timer trigger</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">TriggerSchedulerHostedService</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">BackgroundService</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">protected</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">ExecuteAsync</span><span class="p">(</span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">stoppingToken</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="k">using</span><span class="w"> </span><span class="nn">var</span><span class="w"> </span><span class="n">timer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">PeriodicTimer</span><span class="p">(</span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromSeconds</span><span class="p">(</span><span class="mi">60</span><span class="p">));</span>
+<span class="w">        </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="k">await</span><span class="w"> </span><span class="n">timer</span><span class="p">.</span><span class="n">WaitForNextTickAsync</span><span class="p">(</span><span class="n">stoppingToken</span><span class="p">))</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="k">using</span><span class="w"> </span><span class="nn">var</span><span class="w"> </span><span class="n">scope</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sp</span><span class="p">.</span><span class="n">CreateScope</span><span class="p">();</span>
+<span class="w">            </span><span class="kt">var</span><span class="w"> </span><span class="n">sched</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">scope</span><span class="p">.</span><span class="n">ServiceProvider</span><span class="p">.</span><span class="n">GetRequiredService</span><span class="o">&lt;</span><span class="n">TriggerSchedulerService</span><span class="o">&gt;</span><span class="p">();</span>
+<span class="w">            </span><span class="k">await</span><span class="w"> </span><span class="n">sched</span><span class="p">.</span><span class="n">PollOnceAsync</span><span class="p">(</span><span class="n">batchSize</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span><span class="p">,</span><span class="w"> </span><span class="n">stoppingToken</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Single replica = single ticker. No external dependencies.</p>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="na">[Function(&quot;ScheduleTick&quot;)]</span>
+<span class="na">[Singleton]</span><span class="w">   </span><span class="c1">// one execution at a time even if multiple host instances scale up</span>
+<span class="k">public</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">Run</span><span class="p">([</span><span class="n">TimerTrigger</span><span class="p">(</span><span class="s">&quot;0 */1 * * * *&quot;</span><span class="p">)]</span><span class="w"> </span><span class="n">TimerInfo</span><span class="w"> </span><span class="n">timer</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">ct</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="n">scheduler</span><span class="p">.</span><span class="n">PollOnceAsync</span><span class="p">(</span><span class="n">batchSize</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span><span class="p">,</span><span class="w"> </span><span class="n">ct</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Pure-serverless. The <code>[Singleton]</code> is mandatory — without it, a scaled-out function fleet duplicates sends.</p>
+</div>
+</div>
+</div>
+<p>The choice doesn't affect any of the service code. <code>TriggerSchedulerService.PollOnceAsync</code> is the contract; the invoker just calls it on a schedule.</p>
+<div class="admonition danger">
+<p class="admonition-title">Do not scale the scheduler horizontally without claim semantics</p>
+<p><code>PollOnceAsync</code> reads-then-updates. Two concurrent tickers can pick the same row before either marks it sent → duplicate delivery. To go multi-instance you'd need <code>UPDATE … OUTPUT inserted.ID WHERE NextSendAt &lt;= NOW AND ProcessingStartedAt IS NULL</code> for atomic claim semantics. Until then: one ticker only.</p>
+</div>
+<hr />
+<h2 id="gotchas">Gotchas<a class="headerlink" href="#gotchas" title="Permanent link">&para;</a></h2>
+<div class="admonition warning">
+<p class="admonition-title">Filtered indexes require specific SET options for any UPDATE</p>
+<p>The <code>IX_SurveyInstance_Status_NextSendAt_Active</code> filtered index has <code>Status</code> and <code>NextSendAt</code> as both filter and key columns. Any UPDATE that touches either column needs the connection's SET options to satisfy SQL Server's filtered-index preconditions:</p>
+<div class="highlight"><pre><span></span><code><span class="k">SET</span><span class="w"> </span><span class="n">ANSI_NULLS</span><span class="p">,</span><span class="w"> </span><span class="n">ANSI_PADDING</span><span class="p">,</span><span class="w"> </span><span class="n">ANSI_WARNINGS</span><span class="p">,</span><span class="w"> </span><span class="n">ARITHABORT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">CONCAT_NULL_YIELDS_NULL</span><span class="p">,</span><span class="w"> </span><span class="n">QUOTED_IDENTIFIER</span><span class="w"> </span><span class="k">ON</span><span class="p">;</span>
+<span class="k">SET</span><span class="w"> </span><span class="n">NUMERIC_ROUNDABORT</span><span class="w"> </span><span class="k">OFF</span><span class="p">;</span>
+</code></pre></div>
+<p>Application code via EF Core / ADO.NET gets these by default. <strong>sqlcmd and similar admin tools don't.</strong> UPDATE statements run from sqlcmd that touch the filtered index will fail with <code>Msg 1934</code>. If you write a test or operator query that updates <code>Status</code> or <code>NextSendAt</code> (or <code>IsDeleted</code>, which is in the filter), prefix it with the SET block above. The e2e harness <code>trigger-ingest.ts</code> shows the pattern.</p>
+</div>
+<h2 id="what-ships-next">What ships next<a class="headerlink" href="#what-ships-next" title="Permanent link">&para;</a></h2>
+<p>Phase 5 is now functionally complete. Remaining items are deployment-side, polish, or future scope:</p>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>What it adds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Production scheduler invoker</strong></td>
+<td>Background hosted-service or Azure Function timer trigger that calls <code>/scheduler/tick</code> on an interval. See the "Production wiring" section above.</td>
+</tr>
+<tr>
+<td><strong>Real channel adapters</strong></td>
+<td>WhatsApp (Infobip / 360dialog), SMS (Twilio / local providers), email (SMTP, SendGrid). Each is an <code>ISurveyChannel</code> implementation registered alongside the in-memory mock.</td>
+</tr>
+<tr>
+<td><strong>Real outbox subscribers</strong></td>
+<td>Service Bus senders, webhook callers, in-process handlers. Each is an <code>ISurveyResponseSubscriber</code> implementation.</td>
+</tr>
+<tr>
+<td><strong>Outbox retry + dead-letter</strong></td>
+<td>Bounded retry with exponential backoff for <code>Status = Failed</code> events; max-attempts threshold flips to a permanent dead-letter state.</td>
+</tr>
+<tr>
+<td><strong>Schema-level outbox routing</strong></td>
+<td><code>triggers[].subscribers: [{ key, filter? }]</code> on the survey schema for legacy-style "route based on answer content" without needing subscriber-side conditionals.</td>
+</tr>
+<tr>
+<td><strong>Per-trigger expiry window</strong></td>
+<td>Currently <code>ExpiryGracePeriod</code> is global; future could override per-trigger for surveys with different lifecycles.</td>
+</tr>
+<tr>
+<td><strong>Bulk ingest path</strong></td>
+<td>Swap <code>TriggerIngestService</code> per-item save loop for <code>BulkInsertOrUpdateAsync</code> if measured load demands it.</td>
+</tr>
+<tr>
+<td><strong>Schema cache</strong></td>
+<td><code>LoadPublishedTriggersForEventKindAsync</code> pulls every published survey on every ingest call. Cache by <code>(SurveyVersionID, ResolvedJson hash)</code> once the live-survey count grows past ~hundreds.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>ADP.Surveys/renderer/e2e/trigger-ingest.ts</code> — the e2e harness that exercises every path on this page (<code>npm run trigger-ingest</code> from <code>renderer/e2e/</code>).</li>
+<li><code>ADP.Surveys/ADP.Surveys.API/Services/TriggerIngestService.cs</code> — the ingest service.</li>
+<li><code>ADP.Surveys/ADP.Surveys.API/Services/TriggerSchedulerService.cs</code> — the scheduler.</li>
+<li><code>ADP.Surveys/ADP.Surveys.Shared/Triggers/TriggerHasher.cs</code> — the recipe → SHA-256 transformation.</li>
+<li><code>ADP.Surveys/ADP.Surveys.Shared/DTOs/Triggers/TriggerDto.cs</code> — the trigger config DTO + validators.</li>
+<li><code>ADP.Surveys/ADP.Surveys.Shared/Triggers/ISurveyResponseSubscriber.cs</code> — the outbox subscriber interface + payload.</li>
+<li><code>ADP.Surveys/ADP.Surveys.API/Services/OutboxDispatchService.cs</code> — the outbox dispatch worker.</li>
+<li><code>ADP.Surveys/ADP.Surveys.Data/Entities/SurveyOutboxEvent.cs</code> — the outbox table entity.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "..", "features": ["navigation.tracking", "navigation.tabs", "navigation.sections", "content.code.copy", "navigation.collapse"], "search": "../assets/javascripts/workers/search.f8cc74c7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.c8b220af.min.js"></script>
+      
+    
+  </body>
+</html>

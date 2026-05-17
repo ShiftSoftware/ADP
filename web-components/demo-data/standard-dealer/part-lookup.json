@@ -1,0 +1,129 @@
+{
+  "SU00302474": {
+    "partNumber": "SU00302474",
+    "partDescription": "CLAMP",
+    "localDescription": "Clamp Assembly",
+    "productGroup": "F",
+    "pnc": "90460",
+    "binType": "A",
+    "showManufacturerPartLookup": false,
+    "distributorPurchasePrice": 2.50,
+    "length": 80,
+    "width": 50,
+    "height": 15,
+    "netWeight": 0.25,
+    "cubicMeasure": 0.06,
+    "origin": "JP",
+    "supersededTo": [
+      "SU00302475"
+    ],
+    "supersededFrom": [],
+    "stockParts": [
+      {
+        "quantityLookUpResult": "Available",
+        "locationID": "WH-001",
+        "availableQuantity": 45
+      },
+      {
+        "quantityLookUpResult": "Available",
+        "locationID": "WH-002",
+        "availableQuantity": 12
+      }
+    ],
+    "prices": [
+      {
+        "countryID": "1",
+        "countryName": "Iraq",
+        "regionID": "10",
+        "regionName": "Kurdistan",
+        "retailPrice": {
+          "value": 5.00
+        },
+        "purchasePrice": {
+          "value": 3.50
+        },
+        "warrantyPrice": {
+          "value": 2.80
+        }
+      },
+      {
+        "countryID": "1",
+        "countryName": "Iraq",
+        "regionID": "20",
+        "regionName": "Central Iraq",
+        "retailPrice": {
+          "value": 4.80
+        },
+        "purchasePrice": {
+          "value": 3.40
+        },
+        "warrantyPrice": {
+          "value": 2.70
+        }
+      },
+      {
+        "countryID": "2",
+        "countryName": "Kuwait",
+        "regionID": "30",
+        "regionName": "Kuwait City",
+        "retailPrice": {
+          "value": 5.50
+        },
+        "purchasePrice": {
+          "value": 3.80
+        },
+        "warrantyPrice": {
+          "value": 3.00
+        }
+      }
+    ],
+    "deadStock": [
+      {
+        "companyHashID": "CH-2",
+        "companyName": "City Auto",
+        "branchDeadStock": [
+          {
+            "companyBranchHashID": "BH-30",
+            "companyBranchName": "Downtown Branch",
+            "quantity": 8
+          }
+        ]
+      }
+    ]
+  },
+  "04152-YZZA1": {
+    "partNumber": "04152-YZZA1",
+    "partDescription": "OIL FILTER",
+    "productGroup": "E",
+    "showManufacturerPartLookup": false,
+    "distributorPurchasePrice": 4.20,
+    "origin": "TH",
+    "supersededTo": [],
+    "supersededFrom": [],
+    "stockParts": [
+      {
+        "quantityLookUpResult": "Available",
+        "locationID": "WH-001",
+        "availableQuantity": 200
+      }
+    ],
+    "prices": [
+      {
+        "countryID": "1",
+        "countryName": "Iraq",
+        "regionID": "10",
+        "regionName": "Kurdistan",
+        "retailPrice": {
+          "value": 8.50
+        },
+        "purchasePrice": {
+          "value": 6.00
+        },
+        "warrantyPrice": {
+          "value": 4.50
+        }
+      }
+    ],
+    "deadStock": []
+  }
+}
