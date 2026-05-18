@@ -63,6 +63,7 @@ public class IdentityCosmosService : IIdentityCosmosService
 
     private Dictionary<long?, RegionModel> regions = new();
     private Dictionary<long?, CountryModel> countries = new();
+    private Dictionary<long?, CityModel> cities = new();
     private Dictionary<long?, CompanyModel> companies = new();
     private Dictionary<long?, CompanyBranchModel> companiesBranch = new();
     private Dictionary<long?, BrandModel> brands = new();
@@ -118,6 +119,34 @@ public class IdentityCosmosService : IIdentityCosmosService
             // Store the country into catch
             var result = (await iterator.ReadNextAsync()).FirstOrDefault();
             countries[id] = result;
+
+            return result;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task<CityModel> GetCityAsync(long? id)
+    {
+        try
+        {
+            if (cities.TryGetValue(id, out var city))
+                return city;
+
+            var container = client.GetContainer(
+                IdentityDatabaseAndContainerNames.DatabaseName,
+                IdentityDatabaseAndContainerNames.CountryContainerName
+            );
+
+            var query = container.GetItemLinqQueryable<CityModel>(true)
+                .Where(x => x.CityID == id && x.ItemType == CountryContainerItemTypes.City);
+
+            var iterator = query.ToFeedIterator();
+
+            var result = (await iterator.ReadNextAsync()).FirstOrDefault();
+            cities[id] = result;
 
             return result;
         }

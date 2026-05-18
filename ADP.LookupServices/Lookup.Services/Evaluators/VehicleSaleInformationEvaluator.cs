@@ -82,6 +82,18 @@ public class VehicleSaleInformationEvaluator
             result.BranchName = await Options.CompanyBranchNameResolver(
                 new(vehicle.BranchID, languageCode, ServiceProvider));
 
+        if (Options.CityFromBranchIDResolver is not null)
+        {
+            var cityID = await Options.CityFromBranchIDResolver(
+                new(vehicle.BranchID, languageCode, ServiceProvider));
+
+            result.CityID = cityID?.ToString();
+
+            if (cityID.HasValue && Options.CityNameResolver is not null)
+                result.CityName = await Options.CityNameResolver(
+                    new(cityID, languageCode, ServiceProvider));
+        }
+
         string companyLogo = null;
 
         if (Options.CompanyLogoResolver is not null)

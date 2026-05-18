@@ -21,6 +21,8 @@ namespace ShiftSoftware.ADP.Lookup.Services.Services
         Task<CountryModel> GetCountryAsync(long? id);
         /// <summary>Retrieves a region by ID.</summary>
         Task<RegionModel> GetRegionAsync(long? id);
+        /// <summary>Retrieves a city by ID.</summary>
+        Task<CityModel> GetCityAsync(long? id);
         /// <summary>Retrieves a brand by ID.</summary>
         Task<BrandModel> GetBrandAsync(long? id);
     }
