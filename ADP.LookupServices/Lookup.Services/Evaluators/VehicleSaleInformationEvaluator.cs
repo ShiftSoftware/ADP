@@ -147,6 +147,7 @@ public class VehicleSaleInformationEvaluator
                                 {
                                     BrokerID = lastBrokerStock.BrokerID,
                                     BrokerName = lastBrokerStock.Broker.Name,
+                                    NonOfficialBrokerName = lastBrokerInvoice.NonOfficialBrokerName,
                                     InvoiceDate = lastBrokerInvoice.InvoiceDate.ToUniversalTime().Date,
                                     InvoiceNumber = lastBrokerInvoice.InvoiceNumber,
                                 };
