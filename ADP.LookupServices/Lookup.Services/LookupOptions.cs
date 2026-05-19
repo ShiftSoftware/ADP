@@ -34,6 +34,10 @@ public class LookupOptions
     public Func<LookupOptionResolverModel<long?>, ValueTask<string?>>? BrandNameResolver { get; set; }
     /// <summary>Resolver delegate that resolves a region ID to its name.</summary>
     public Func<LookupOptionResolverModel<long?>, ValueTask<string?>>? RegionNameResolver { get; set; }
+    /// <summary>Resolver delegate that resolves a city ID to its name.</summary>
+    public Func<LookupOptionResolverModel<long?>, ValueTask<string?>>? CityNameResolver { get; set; }
+    /// <summary>Resolver delegate that resolves a company branch ID to the city ID the branch belongs to.</summary>
+    public Func<LookupOptionResolverModel<long?>, ValueTask<long?>>? CityFromBranchIDResolver { get; set; }
     /// <summary>Resolver delegate that resolves a company ID to its name.</summary>
     public Func<LookupOptionResolverModel<long?>, ValueTask<string?>>? CompanyNameResolver { get; set; }
     /// <summary>Resolver delegate that resolves a company branch ID to its name.</summary>

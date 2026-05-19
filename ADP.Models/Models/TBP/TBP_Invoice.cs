@@ -43,6 +43,10 @@ public class TBP_Invoice
     /// </summary>
     public string CustomerPhone { get; set; }
 
+
+    public string? NonOfficialBrokerName { get; set; }
+    public string? NonOfficialBrokerPhone{ get; set; }
+
     /// <summary>
     /// The government-issued ID number of the end customer.
     /// </summary>
