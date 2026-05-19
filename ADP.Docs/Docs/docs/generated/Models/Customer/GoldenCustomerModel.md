@@ -7,5 +7,5 @@ Represents a Golden Customer record — a unified, deduplicated identity that li
 
 | Property | Summary |
 |----------|---------|
-| GoldenCustomerID <div><strong>``string``</strong></div> | The unique Golden Customer identifier. This is the same value as . |
-| CustomerID <div><strong>``string``</strong></div> | The customer identifier. This is the same value as . |
+| GoldenCustomerID <div><strong>``string``</strong></div> | The unique Golden Customer identifier. This is the same value as `CustomerID`. |
+| CustomerID <div><strong>``string``</strong></div> | The customer identifier. This is the same value as `GoldenCustomerID`. |

@@ -20,7 +20,7 @@ Represents a claimable service item offered through a Service Campaign.
 | CountryIDs <div><strong>``IEnumerable<long?>``</strong></div> | The country IDs this service item is available in. |
 | CompanyIDs <div><strong>``IEnumerable<long?>``</strong></div> | The company IDs this service item is available for. |
 | ActiveFor <div><strong>``int?``</strong></div> | The duration for which this service item remains active after activation. |
-| ActiveForDurationType <div><strong>``DurationType?``</strong></div> | The unit of time for the  duration (e.g., Days, Months, Years). |
+| ActiveForDurationType <div><strong>``DurationType?``</strong></div> | The unit of time for the `ActiveFor` duration (e.g., Days, Months, Years). |
 | MaximumMileage <div><strong>``long?``</strong></div> | The maximum mileage up to which this service item is valid. Used in sequential validity calculations. |
 | PackageCode <div><strong>``string``</strong></div> | The package code that groups related service items together. |
 | UniqueReference <div><strong>``string``</strong></div> | A unique reference identifier for this service item. |

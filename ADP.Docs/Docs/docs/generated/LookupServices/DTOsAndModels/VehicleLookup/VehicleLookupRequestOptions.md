@@ -17,7 +17,7 @@ Options passed to the vehicle lookup service to control lookup behavior, languag
 | LegacyPaintThickness <div><strong>``bool``</strong></div> | Whether to include the legacy paint thickness format in the response. |
 | UseKatashikiLookup <div><strong>``bool``</strong></div> | Whether to use Katashiki instead of VariantCode for vehicle model lookup. |
 | TraceServiceItemEvaluation <div><strong>``bool``</strong></div> | When true, the service item evaluator records a structured
-  of every decision (eligibility, expansion,
- status, post-processing) and attaches it to .
+ [Diagnostics.ServiceItemTrace](/generated/LookupServices/Diagnostics/ServiceItemTrace.html) of every decision (eligibility, expansion,
+ status, post-processing) and attaches it to `VehicleLookupDTO.ServiceItemTrace`.
  Off by default; opt in per request only when debugging. Adds an O(items) walk and
  per-item allocations; do not leave on in production hot paths. |

@@ -27,7 +27,7 @@ The main configuration class for the lookup services.
 | WarrantyStartDateDefaultsToInvoiceDate <div><strong>``bool``</strong></div> | Whether the warranty start date should default to the invoice date when no explicit activation date is set. Defaults to true. |
 | SigningSecretKey <div><strong>``string``</strong></div> | The HMAC secret key used for signing service item claim requests. |
 | SignatureValidityDuration <div><strong>``TimeSpan``</strong></div> | How long a generated claim signature remains valid. |
-| TimeProvider <div><strong>``TimeProvider``</strong></div> | Clock used when stamping . Defaults to ; override with a fixed provider to produce deterministic signatures for sample/doc generation or tests. |
+| TimeProvider <div><strong>``TimeProvider``</strong></div> | Clock used when stamping `SignatureExpiry`. Defaults to `TimeProvider.System`; override with a fixed provider to produce deterministic signatures for sample/doc generation or tests. |
 | VehicleInspectionPreClaimVoucherPrintingURLResolver <div><strong>``Func<LookupOptionResolverModel<(string VehicleInspectionID, string ServiceItemID)>, ValueTask<string?>>?``</strong></div> | Resolver delegate that generates a pre-claim voucher printing URL for vehicle inspection-based claims. |
 | ServiceActivationPreClaimVoucherPrintingURLResolver <div><strong>``Func<LookupOptionResolverModel<(string ServiceActivationID, string ServiceItemID)>, ValueTask<string?>>?``</strong></div> | Resolver delegate that generates a pre-claim voucher printing URL for service activation-based claims. |
 | StandardItemClaimWarnings <div><strong>``List<VehicleItemWarning>``</strong></div> | Standard warning messages displayed to users before claiming any service item. |

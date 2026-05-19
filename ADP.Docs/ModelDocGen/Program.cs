@@ -161,32 +161,23 @@ static string GetSummary(SyntaxNode node, SemanticModel semanticModel)
                         var crefAttr = element.StartTag.Attributes
                             .OfType<XmlCrefAttributeSyntax>()
                             .FirstOrDefault();
-                        
+
                         var linkText = string.Concat(element.Content.Select(e => e.ToFullString())).Trim();
+                        sb.Append(RenderSeeCref(crefAttr, linkText, semanticModel));
+                    }
+                    else if (c is XmlEmptyElementSyntax emptyElement && emptyElement.Name.ToString() == "see")
+                    {
+                        var crefAttr = emptyElement.Attributes
+                            .OfType<XmlCrefAttributeSyntax>()
+                            .FirstOrDefault();
 
-                        var symbolInfo = semanticModel.GetSymbolInfo(crefAttr?.Cref);
-                        var crefSymbol = symbolInfo.Symbol;
-
-                        if (crefSymbol is INamedTypeSymbol typeSymbol)
-                        {
-                            // Use full name with namespace
-                            var fullName = typeSymbol.ToDisplayString(); // e.g., "ShiftSoftware.ADP.Models.Part.CountryDataModel"
-                            string markdownLink;
-                            if (fullName.Contains("ADP.Lookup.Services"))
-                            {
-                                // ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.X -> LookupServices/DTOsAndModels/X.html
-                                markdownLink = "LookupServices/" + fullName.Substring(fullName.IndexOf("ADP.Lookup.Services.") + "ADP.Lookup.Services.".Length).Replace('.', '/') + ".html";
-                            }
-                            else if (fullName.Contains("ADP.Models"))
-                            {
-                                markdownLink = fullName.Substring(fullName.IndexOf(@"ADP.Models") + 4).Replace('.', '/') + ".html";
-                            }
-                            else
-                            {
-                                markdownLink = fullName.Replace('.', '/') + ".html";
-                            }
-                            sb.Append($"[{linkText}](/generated/{markdownLink})");
-                        }
+                        sb.Append(RenderSeeCref(crefAttr, linkText: null, semanticModel));
+                    }
+                    else if (c is XmlElementSyntax codeElement && codeElement.StartTag.Name.ToString() == "c")
+                    {
+                        var inlineCode = string.Concat(codeElement.Content.Select(e => e.ToFullString())).Trim();
+                        if (!string.IsNullOrEmpty(inlineCode))
+                            sb.Append($"`{inlineCode}`");
                     }
                 }
 
@@ -223,7 +214,26 @@ string? GetSyntaxNodeSummary(SyntaxNode node)
                     {
                         // Extract the display text from inside the <see> element
                         var linkText = string.Concat(element.Content.Select(e => e.ToFullString())).Trim();
-                        sb2.Append(linkText);
+                        if (string.IsNullOrEmpty(linkText))
+                        {
+                            var crefAttr = element.StartTag.Attributes.OfType<XmlCrefAttributeSyntax>().FirstOrDefault();
+                            if (crefAttr is not null) sb2.Append($"`{crefAttr.Cref}`");
+                        }
+                        else
+                        {
+                            sb2.Append(linkText);
+                        }
+                    }
+                    else if (c is XmlEmptyElementSyntax emptyElement && emptyElement.Name.ToString() == "see")
+                    {
+                        var crefAttr = emptyElement.Attributes.OfType<XmlCrefAttributeSyntax>().FirstOrDefault();
+                        if (crefAttr is not null) sb2.Append($"`{crefAttr.Cref}`");
+                    }
+                    else if (c is XmlElementSyntax codeElement && codeElement.StartTag.Name.ToString() == "c")
+                    {
+                        var inlineCode = string.Concat(codeElement.Content.Select(e => e.ToFullString())).Trim();
+                        if (!string.IsNullOrEmpty(inlineCode))
+                            sb2.Append($"`{inlineCode}`");
                     }
                 }
 
@@ -232,4 +242,34 @@ string? GetSyntaxNodeSummary(SyntaxNode node)
         }
     }
     return null;
+}
+
+static string RenderSeeCref(XmlCrefAttributeSyntax? crefAttr, string? linkText, SemanticModel semanticModel)
+{
+    if (crefAttr is null) return string.Empty;
+
+    var crefText = crefAttr.Cref.ToString();
+    var displayText = string.IsNullOrEmpty(linkText) ? crefText : linkText;
+
+    var crefSymbol = semanticModel.GetSymbolInfo(crefAttr.Cref).Symbol;
+    if (crefSymbol is INamedTypeSymbol typeSymbol)
+    {
+        var fullName = typeSymbol.ToDisplayString();
+        string markdownLink;
+        if (fullName.Contains("ADP.Lookup.Services"))
+        {
+            markdownLink = "LookupServices/" + fullName.Substring(fullName.IndexOf("ADP.Lookup.Services.") + "ADP.Lookup.Services.".Length).Replace('.', '/') + ".html";
+        }
+        else if (fullName.Contains("ADP.Models"))
+        {
+            markdownLink = fullName.Substring(fullName.IndexOf(@"ADP.Models") + 4).Replace('.', '/') + ".html";
+        }
+        else
+        {
+            markdownLink = fullName.Replace('.', '/') + ".html";
+        }
+        return $"[{displayText}](/generated/{markdownLink})";
+    }
+
+    return $"`{displayText}`";
 }
