@@ -13,4 +13,6 @@ Represents an invoice in the Third-Party Broker (TBP) system for a vehicle sale 
 | InvoiceNumber <div><strong>``long?``</strong></div> | The invoice number. |
 | CustomerName <div><strong>``string``</strong></div> | The name of the end customer on this invoice. |
 | CustomerPhone <div><strong>``string``</strong></div> | The phone number of the end customer. |
+| NonOfficialBrokerName <div><strong>``string?``</strong></div> |  |
+| NonOfficialBrokerPhone <div><strong>``string?``</strong></div> |  |
 | CustomerIDNumber <div><strong>``string``</strong></div> | The government-issued ID number of the end customer. |

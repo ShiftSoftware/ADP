@@ -16,6 +16,8 @@ The main configuration class for the lookup services.
 | CountryNameResolver <div><strong>``Func<LookupOptionResolverModel<long?>, ValueTask<string?>>?``</strong></div> | Resolver delegate that resolves a country ID to its name. |
 | BrandNameResolver <div><strong>``Func<LookupOptionResolverModel<long?>, ValueTask<string?>>?``</strong></div> | Resolver delegate that resolves a brand ID to its name. Used by the diagnostic trace renderer; not required for normal lookups. |
 | RegionNameResolver <div><strong>``Func<LookupOptionResolverModel<long?>, ValueTask<string?>>?``</strong></div> | Resolver delegate that resolves a region ID to its name. |
+| CityNameResolver <div><strong>``Func<LookupOptionResolverModel<long?>, ValueTask<string?>>?``</strong></div> | Resolver delegate that resolves a city ID to its name. |
+| CityFromBranchIDResolver <div><strong>``Func<LookupOptionResolverModel<long?>, ValueTask<long?>>?``</strong></div> | Resolver delegate that resolves a company branch ID to the city ID the branch belongs to. |
 | CompanyNameResolver <div><strong>``Func<LookupOptionResolverModel<long?>, ValueTask<string?>>?``</strong></div> | Resolver delegate that resolves a company ID to its name. |
 | CompanyBranchNameResolver <div><strong>``Func<LookupOptionResolverModel<long?>, ValueTask<string?>>?``</strong></div> | Resolver delegate that resolves a company branch ID to its name. |
 | CompanyLogoResolver <div><strong>``Func<LookupOptionResolverModel<long?>, ValueTask<string?>>?``</strong></div> | Resolver delegate that resolves a company ID to its logo URL. |
