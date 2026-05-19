@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ShiftSoftware.ADP.Surveys.API.Extensions;
 using ShiftSoftware.ADP.Surveys.Sample.API.Data;
+using ShiftSoftware.ADP.Surveys.Sample.API.Data.Seed;
 using ShiftSoftware.ADP.Surveys.Sample.API.Services;
 using ShiftSoftware.ShiftEntity.Core;
 using ShiftSoftware.ShiftEntity.Model.Enums;
@@ -161,6 +162,12 @@ await app.SeedDBAsync("SuperUser", "OneTwo", new ShiftSoftware.ShiftIdentity.Dat
 });
 
 await app.SetFullAccessAsync("t1", "t3");
+
+// Seeds demo surveys (drafts only) so the builder list view ships with concrete
+// examples of every advanced authoring option — banked questions, screen templates,
+// branching navigation, cross-screen logic, multi-locale + branding, and triggers.
+// Idempotent — each sample is keyed by IntegrationId.
+await app.SeedSampleSurveysAsync();
 
 app.UseCors(x => x.WithOrigins("*").AllowAnyMethod().AllowAnyHeader());
 
