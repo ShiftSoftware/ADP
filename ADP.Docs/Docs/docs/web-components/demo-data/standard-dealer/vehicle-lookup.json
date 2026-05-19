@@ -192,8 +192,8 @@
         "claimable": false,
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "WarXV3Wn0WmdR0qFChfjLAwy2RmQ\u002BTBd/TBtlrQUL1c=",
-        "signatureExpiry": "2026-05-17T18:22:50.9369698Z"
+        "signature": "HSLx0/0inwioPqiYz8YPClZl1CrQ7Z69cxq5/Aj859Q=",
+        "signatureExpiry": "2026-01-01T00:00:00Z"
       },
       {
         "showDocumentUploader": false,
@@ -216,8 +216,8 @@
         "claimable": false,
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "Ze92DRTijsBvCezNI3E8cTdFX/XSjKQ5AuRHCqSY1HE=",
-        "signatureExpiry": "2026-05-17T18:22:50.9369698Z"
+        "signature": "85ONZt9PWL55fa\u002B/sKpRyQ\u002BQTvsoAf0tx0Wp3N05DHg=",
+        "signatureExpiry": "2026-01-01T00:00:00Z"
       },
       {
         "showDocumentUploader": false,
@@ -234,8 +234,8 @@
         "claimable": true,
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "e2aAQxRnk23/W0d/Jn7\u002BMhf7b0F/7jb5iOVuXXd81qE=",
-        "signatureExpiry": "2026-05-17T18:22:50.9369698Z"
+        "signature": "sky2cXkn\u002B6BigEcxaKIv2vFHpvtzk2pbmvSl6Rbkv5I=",
+        "signatureExpiry": "2026-01-01T00:00:00Z"
       },
       {
         "showDocumentUploader": false,
@@ -252,8 +252,8 @@
         "maximumMileage": 16000,
         "claimable": true,
         "claimingMethodEnum": 0,
-        "signature": "\u002Bp9TLsecPqp51RIUepxWHi2M/7kzDfHWDufTjMYZsFc=",
-        "signatureExpiry": "2026-05-17T18:22:50.9369698Z"
+        "signature": "wXIeSDcLWcyTytl50arDAA0IBUzezuk2kD6YYRi//us=",
+        "signatureExpiry": "2026-01-01T00:00:00Z"
       }
     ],
     "accessories": [
@@ -328,8 +328,8 @@
         "claimable": false,
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "azXrot1RVEi/UTiKETnnDECWJLIAr\u002BFvU7O8ZSyo6GE=",
-        "signatureExpiry": "2026-05-17T18:22:50.937156Z"
+        "signature": "OFcZKV5AhjGzj08NKbKct8Lo/7ts11jZ5LFbt5WgPp8=",
+        "signatureExpiry": "2026-01-01T00:00:00Z"
       },
       {
         "showDocumentUploader": false,
@@ -346,8 +346,8 @@
         "claimable": false,
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "PXJIBeKT\u002B\u002BMoEn6mKwMfrOpF0QQkAUzrsFs7wYHRQak=",
-        "signatureExpiry": "2026-05-17T18:22:50.937156Z"
+        "signature": "GjBgd3yU/D10Z9GAY3/kiZyx/A4/2pwnl9xZ7gVthxk=",
+        "signatureExpiry": "2026-01-01T00:00:00Z"
       },
       {
         "showDocumentUploader": false,
@@ -364,8 +364,8 @@
         "claimable": true,
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
-        "signature": "L7eTzD0Kif9b7HMrFJwbBEQdcWy1neKxyqMSNBs\u002BCdE=",
-        "signatureExpiry": "2026-05-17T18:22:50.937156Z"
+        "signature": "VetjMtjUwePcrwvFMdiDuMu1HUfWNYa0n3hBMIT2Yaw=",
+        "signatureExpiry": "2026-01-01T00:00:00Z"
       }
     ],
     "accessories": [],

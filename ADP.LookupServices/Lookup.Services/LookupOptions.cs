@@ -56,6 +56,8 @@ public class LookupOptions
     public string SigningSecretKey { get; set; } = string.Empty;
     /// <summary>How long a generated claim signature remains valid.</summary>
     public TimeSpan SignatureValidityDuration { get; set; }
+    /// <summary>Clock used when stamping <c>SignatureExpiry</c>. Defaults to <see cref="TimeProvider.System"/>; override with a fixed provider to produce deterministic signatures for sample/doc generation or tests.</summary>
+    public TimeProvider TimeProvider { get; set; } = TimeProvider.System;
 
     /// <summary>Resolver delegate that generates a pre-claim voucher printing URL for vehicle inspection-based claims.</summary>
     public Func<LookupOptionResolverModel<(string VehicleInspectionID, string ServiceItemID)>, ValueTask<string?>>? VehicleInspectionPreClaimVoucherPrintingURLResolver { get; set; }

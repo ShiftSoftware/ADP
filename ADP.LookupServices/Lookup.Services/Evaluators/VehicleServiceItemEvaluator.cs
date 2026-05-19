@@ -434,9 +434,10 @@ public partial class VehicleServiceItemEvaluator
         VehicleServiceActivation serviceActivation,
         string languageCode)
     {
+        var now = (options?.TimeProvider ?? TimeProvider.System).GetUtcNow().UtcDateTime;
         var itemSignatureExpiry = options?.SignatureValidityDuration is { } d
-            ? DateTime.UtcNow.Add(d)
-            : DateTime.UtcNow;
+            ? now.Add(d)
+            : now;
 
         foreach (var item in result)
         {

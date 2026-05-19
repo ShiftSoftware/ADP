@@ -48,6 +48,7 @@ foreach (var envFile in Directory.GetFiles(environmentsDir, "*.json"))
     var regionNames = env.Regions.ToDictionary(r => r.RegionId, r => r.RegionName);
 
     var lookupOptions = env.LookupOptions.ToLookupOptions(companyNames, branchNames, countryNames, regionNames);
+    lookupOptions.TimeProvider = FixedTimeProvider.Anchor;
     IServiceProvider serviceProvider = Substitute.For<IServiceProvider>();
 
     // Mock IVehicleLookupStorageService
@@ -240,6 +241,19 @@ static string FindRepoRoot(string startDir)
         dir = dir.Parent;
     }
     throw new InvalidOperationException("Could not find repo root (no .git directory found).");
+}
+
+/// <summary>
+/// Fixed clock used so generated sample data (signatures, expiries) stays byte-stable
+/// across runs. Update <see cref="Anchor"/> only when intentionally re-baselining samples.
+/// </summary>
+sealed class FixedTimeProvider : TimeProvider
+{
+    public static readonly FixedTimeProvider Anchor = new(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
+
+    private readonly DateTimeOffset _utcNow;
+    public FixedTimeProvider(DateTimeOffset utcNow) => _utcNow = utcNow;
+    public override DateTimeOffset GetUtcNow() => _utcNow;
 }
 
 /// <summary>
