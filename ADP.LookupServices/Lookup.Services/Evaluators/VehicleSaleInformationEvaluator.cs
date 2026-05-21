@@ -60,12 +60,12 @@ public class VehicleSaleInformationEvaluator
         result.Location = vehicle.Location;
         result.SaleType = vehicle.SaleType;
         result.AccountNumber = vehicle.AccountNumber;
-        //result.RegionID = vsData.RegionID;
+        result.RegionID = vehicle?.RegionID?.ToString();
 
         result.InvoiceNumber = vehicle?.InvoiceNumber;
         result.InvoiceTotal = vehicle?.InvoiceTotal ?? 0;
-        //result.CompanyID = vsData?.CompanyID;
-        //result.BranchID = vsData?.BranchID;
+        result.CompanyID = vehicle?.CompanyID?.ToString();
+        result.BranchID = vehicle?.BranchID?.ToString();
 
         result.CustomerID = vehicle?.CustomerID;
         result.CustomerAccountNumber = vehicle?.CustomerAccountNumber;
