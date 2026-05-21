@@ -12,7 +12,9 @@
     "saleInformation": {
       "countryID": "1",
       "countryName": "Iraq",
+      "companyID": "1",
       "companyName": "Sample Motors",
+      "branchID": "10",
       "branchName": "Main Branch 2",
       "invoiceDate": "2024-01-15"
     },
@@ -281,7 +283,9 @@
     "saleInformation": {
       "countryID": "1",
       "countryName": "Iraq",
+      "companyID": "1",
       "companyName": "Sample Motors",
+      "branchID": "20",
       "branchName": "Service Center",
       "invoiceDate": "2023-06-20"
     },

@@ -12,7 +12,9 @@
     "saleInformation": {
       "countryID": "1",
       "countryName": "Iraq",
+      "companyID": "1",
       "companyName": "Al-Rashid Motors",
+      "branchID": "10",
       "branchName": "Erbil Showroom",
       "customerAccountNumber": "BRK-ACC-001",
       "invoiceDate": "2024-03-10",
@@ -55,7 +57,9 @@
     "saleInformation": {
       "countryID": "1",
       "countryName": "Iraq",
+      "companyID": "1",
       "companyName": "Al-Rashid Motors",
+      "branchID": "10",
       "branchName": "Erbil Showroom",
       "customerAccountNumber": "BRK-ACC-002",
       "invoiceDate": "2023-11-20",
@@ -193,7 +197,9 @@
     "saleInformation": {
       "countryID": "1",
       "countryName": "Iraq",
+      "companyID": "1",
       "companyName": "Al-Rashid Motors",
+      "branchID": "10",
       "branchName": "Erbil Showroom",
       "customerAccountNumber": "BRK-ACC-003",
       "invoiceDate": "2024-04-15",
@@ -312,7 +318,9 @@
     "saleInformation": {
       "countryID": "1",
       "countryName": "Iraq",
+      "companyID": "2",
       "companyName": "Gulf Auto Services",
+      "branchID": "30",
       "branchName": "Basra Center",
       "invoiceDate": "2024-06-01"
     },
