@@ -5,6 +5,8 @@ Feature: Vehicle Safety Service Campaigns (SSC)
 	2. Matching warranty claim (by campaign code in distributor comment, or by labor code)
 	3. Matching labor line (by labor code with invoice status X or C)
 
+Rule: Repair detected via direct RepairDate
+
 Scenario: SSC repaired via direct RepairDate
 	Given SSC affected vehicles:
 		| VIN               | CampaignCode | Description   | RepairDate |
@@ -12,6 +14,8 @@ Scenario: SSC repaired via direct RepairDate
 	When Checking "1G1ZC5E17BF283048"
 	Then SSC "SSC-001" is marked as repaired
 	And SSC "SSC-001" has repair date "2024-03-15"
+
+Rule: Repair detected via matching warranty claim
 
 Scenario: SSC repaired via warranty claim matching campaign code in comment
 	Given SSC affected vehicles:
@@ -34,6 +38,18 @@ Scenario: SSC repaired via warranty claim matching labor code
 	When Checking "1G1ZC5E17BF283048"
 	Then SSC "SSC-001" is marked as repaired
 
+Scenario: Warranty claim with non-matching status is ignored
+	Given SSC affected vehicles:
+		| VIN               | CampaignCode | Description   | LaborCode1 |
+		| 1G1ZC5E17BF283048 | SSC-001      | Airbag recall | LAB001     |
+	And warranty claims:
+		| ClaimStatus          | RepairCompletionDate | DistributorComment |
+		| RejectedPermanently  | 2024-04-01           | Repair for SSC-001 |
+	When Checking "1G1ZC5E17BF283048"
+	Then SSC "SSC-001" is marked as not repaired
+
+Rule: Repair detected via matching labor line
+
 Scenario: SSC repaired via labor line
 	Given SSC affected vehicles:
 		| VIN               | CampaignCode | Description   | LaborCode1 |
@@ -45,22 +61,16 @@ Scenario: SSC repaired via labor line
 	Then SSC "SSC-001" is marked as repaired
 	And SSC "SSC-001" has repair date "2024-06-01"
 
-Scenario: SSC not repaired when no evidence found
+Scenario: SSC repaired via labor line with status C
 	Given SSC affected vehicles:
 		| VIN               | CampaignCode | Description   | LaborCode1 |
 		| 1G1ZC5E17BF283048 | SSC-001      | Airbag recall | LAB001     |
+	And labor lines:
+		| LaborCode | InvoiceDate | InvoiceStatus |
+		| LAB001    | 2024-07-01  | C             |
 	When Checking "1G1ZC5E17BF283048"
-	Then SSC "SSC-001" is marked as not repaired
-
-Scenario: Warranty claim with non-matching status is ignored
-	Given SSC affected vehicles:
-		| VIN               | CampaignCode | Description   | LaborCode1 |
-		| 1G1ZC5E17BF283048 | SSC-001      | Airbag recall | LAB001     |
-	And warranty claims:
-		| ClaimStatus          | RepairCompletionDate | DistributorComment |
-		| RejectedPermanently  | 2024-04-01           | Repair for SSC-001 |
-	When Checking "1G1ZC5E17BF283048"
-	Then SSC "SSC-001" is marked as not repaired
+	Then SSC "SSC-001" is marked as repaired
+	And SSC "SSC-001" has repair date "2024-07-01"
 
 Scenario: Labor line with non-matching status is ignored
 	Given SSC affected vehicles:
@@ -71,6 +81,21 @@ Scenario: Labor line with non-matching status is ignored
 		| LAB001    | 2024-06-01  | O             |
 	When Checking "1G1ZC5E17BF283048"
 	Then SSC "SSC-001" is marked as not repaired
+
+Rule: No repair evidence
+
+Scenario: SSC not repaired when no evidence found
+	Given SSC affected vehicles:
+		| VIN               | CampaignCode | Description   | LaborCode1 |
+		| 1G1ZC5E17BF283048 | SSC-001      | Airbag recall | LAB001     |
+	When Checking "1G1ZC5E17BF283048"
+	Then SSC "SSC-001" is marked as not repaired
+
+Scenario: No SSC records returns null
+	When Checking "1G1ZC5E17BF283048"
+	Then there are no SSC records
+
+Rule: Result composition
 
 Scenario: Multiple SSCs with mixed repair status
 	Given SSC affected vehicles:
@@ -88,18 +113,3 @@ Scenario: SSC parts and labor codes appear in result
 	When Checking "1G1ZC5E17BF283048"
 	Then SSC "SSC-001" has 2 labor codes
 	And SSC "SSC-001" has 2 part numbers
-
-Scenario: SSC repaired via labor line with status C
-	Given SSC affected vehicles:
-		| VIN               | CampaignCode | Description   | LaborCode1 |
-		| 1G1ZC5E17BF283048 | SSC-001      | Airbag recall | LAB001     |
-	And labor lines:
-		| LaborCode | InvoiceDate | InvoiceStatus |
-		| LAB001    | 2024-07-01  | C             |
-	When Checking "1G1ZC5E17BF283048"
-	Then SSC "SSC-001" is marked as repaired
-	And SSC "SSC-001" has repair date "2024-07-01"
-
-Scenario: No SSC records returns null
-	When Checking "1G1ZC5E17BF283048"
-	Then there are no SSC records

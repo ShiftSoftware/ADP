@@ -147,8 +147,8 @@ namespace LookupServices.BDD.Features
             string pickleIndex = "0";
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("SSC repaired via direct RepairDate", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
-            global::Reqnroll.RuleInfo ruleInfo = null;
-#line 8
+            global::Reqnroll.RuleInfo ruleInfo = new global::Reqnroll.RuleInfo("Repair detected via direct RepairDate", null, tagsOfRule);
+#line 10
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -158,26 +158,26 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table186 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table1 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CampaignCode",
                             "Description",
                             "RepairDate"});
-                table186.AddRow(new string[] {
+                table1.AddRow(new string[] {
                             "1G1ZC5E17BF283048",
                             "SSC-001",
                             "Airbag recall",
                             "2024-03-15"});
-#line 9
- await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table186, "Given ");
-#line hidden
-#line 12
- await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
-#line hidden
-#line 13
- await testRunner.ThenAsync("SSC \"SSC-001\" is marked as repaired", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line 11
+ await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table1, "Given ");
 #line hidden
 #line 14
+ await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 15
+ await testRunner.ThenAsync("SSC \"SSC-001\" is marked as repaired", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 16
  await testRunner.AndAsync("SSC \"SSC-001\" has repair date \"2024-03-15\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -194,8 +194,8 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             string pickleIndex = "1";
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("SSC repaired via warranty claim matching campaign code in comment", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
-            global::Reqnroll.RuleInfo ruleInfo = null;
-#line 16
+            global::Reqnroll.RuleInfo ruleInfo = new global::Reqnroll.RuleInfo("Repair detected via matching warranty claim", null, tagsOfRule);
+#line 20
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -205,37 +205,37 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table187 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table2 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CampaignCode",
                             "Description",
                             "LaborCode1"});
-                table187.AddRow(new string[] {
+                table2.AddRow(new string[] {
                             "1G1ZC5E17BF283048",
                             "SSC-001",
                             "Airbag recall",
                             "LAB001"});
-#line 17
- await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table187, "Given ");
+#line 21
+ await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table2, "Given ");
 #line hidden
-                global::Reqnroll.Table table188 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table3 = new global::Reqnroll.Table(new string[] {
                             "ClaimStatus",
                             "RepairCompletionDate",
                             "DistributorComment"});
-                table188.AddRow(new string[] {
+                table3.AddRow(new string[] {
                             "Accepted",
                             "2024-04-01",
                             "Repair for SSC-001 done"});
-#line 20
- await testRunner.AndAsync("warranty claims:", ((string)(null)), table188, "And ");
+#line 24
+ await testRunner.AndAsync("warranty claims:", ((string)(null)), table3, "And ");
 #line hidden
-#line 23
+#line 27
  await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 24
+#line 28
  await testRunner.ThenAsync("SSC \"SSC-001\" is marked as repaired", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 25
+#line 29
  await testRunner.AndAsync("SSC \"SSC-001\" has repair date \"2024-04-01\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -252,8 +252,8 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             string pickleIndex = "2";
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("SSC repaired via warranty claim matching labor code", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
-            global::Reqnroll.RuleInfo ruleInfo = null;
-#line 27
+            global::Reqnroll.RuleInfo ruleInfo = new global::Reqnroll.RuleInfo("Repair detected via matching warranty claim", null, tagsOfRule);
+#line 31
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -263,137 +263,35 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table189 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table4 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CampaignCode",
                             "Description",
                             "LaborCode1"});
-                table189.AddRow(new string[] {
+                table4.AddRow(new string[] {
                             "1G1ZC5E17BF283048",
                             "SSC-001",
                             "Airbag recall",
                             "LAB001"});
-#line 28
- await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table189, "Given ");
+#line 32
+ await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table4, "Given ");
 #line hidden
-                global::Reqnroll.Table table190 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table5 = new global::Reqnroll.Table(new string[] {
                             "ClaimStatus",
                             "RepairCompletionDate",
                             "LaborCode"});
-                table190.AddRow(new string[] {
+                table5.AddRow(new string[] {
                             "Certified",
                             "2024-05-10",
                             "LAB001"});
-#line 31
- await testRunner.AndAsync("warranty claims:", ((string)(null)), table190, "And ");
-#line hidden
-#line 34
- await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
-#line hidden
 #line 35
- await testRunner.ThenAsync("SSC \"SSC-001\" is marked as repaired", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+ await testRunner.AndAsync("warranty claims:", ((string)(null)), table5, "And ");
 #line hidden
-            }
-            await this.ScenarioCleanupAsync();
-        }
-        
-        [global::Xunit.FactAttribute(DisplayName="SSC repaired via labor line")]
-        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Safety Service Campaigns (SSC)")]
-        [global::Xunit.TraitAttribute("Description", "SSC repaired via labor line")]
-        public async global::System.Threading.Tasks.Task SSCRepairedViaLaborLine()
-        {
-            string[] tagsOfScenario = ((string[])(null));
-            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            string pickleIndex = "3";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("SSC repaired via labor line", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
-            string[] tagsOfRule = ((string[])(null));
-            global::Reqnroll.RuleInfo ruleInfo = null;
-#line 37
-this.ScenarioInitialize(scenarioInfo, ruleInfo);
-#line hidden
-            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
-            {
-                await testRunner.SkipScenarioAsync();
-            }
-            else
-            {
-                await this.ScenarioStartAsync();
-                global::Reqnroll.Table table191 = new global::Reqnroll.Table(new string[] {
-                            "VIN",
-                            "CampaignCode",
-                            "Description",
-                            "LaborCode1"});
-                table191.AddRow(new string[] {
-                            "1G1ZC5E17BF283048",
-                            "SSC-001",
-                            "Airbag recall",
-                            "LAB001"});
 #line 38
- await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table191, "Given ");
-#line hidden
-                global::Reqnroll.Table table192 = new global::Reqnroll.Table(new string[] {
-                            "LaborCode",
-                            "InvoiceDate",
-                            "InvoiceStatus"});
-                table192.AddRow(new string[] {
-                            "LAB001",
-                            "2024-06-01",
-                            "X"});
-#line 41
- await testRunner.AndAsync("labor lines:", ((string)(null)), table192, "And ");
-#line hidden
-#line 44
  await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 45
+#line 39
  await testRunner.ThenAsync("SSC \"SSC-001\" is marked as repaired", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
-#line hidden
-#line 46
- await testRunner.AndAsync("SSC \"SSC-001\" has repair date \"2024-06-01\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
-#line hidden
-            }
-            await this.ScenarioCleanupAsync();
-        }
-        
-        [global::Xunit.FactAttribute(DisplayName="SSC not repaired when no evidence found")]
-        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Safety Service Campaigns (SSC)")]
-        [global::Xunit.TraitAttribute("Description", "SSC not repaired when no evidence found")]
-        public async global::System.Threading.Tasks.Task SSCNotRepairedWhenNoEvidenceFound()
-        {
-            string[] tagsOfScenario = ((string[])(null));
-            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            string pickleIndex = "4";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("SSC not repaired when no evidence found", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
-            string[] tagsOfRule = ((string[])(null));
-            global::Reqnroll.RuleInfo ruleInfo = null;
-#line 48
-this.ScenarioInitialize(scenarioInfo, ruleInfo);
-#line hidden
-            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
-            {
-                await testRunner.SkipScenarioAsync();
-            }
-            else
-            {
-                await this.ScenarioStartAsync();
-                global::Reqnroll.Table table193 = new global::Reqnroll.Table(new string[] {
-                            "VIN",
-                            "CampaignCode",
-                            "Description",
-                            "LaborCode1"});
-                table193.AddRow(new string[] {
-                            "1G1ZC5E17BF283048",
-                            "SSC-001",
-                            "Airbag recall",
-                            "LAB001"});
-#line 49
- await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table193, "Given ");
-#line hidden
-#line 52
- await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
-#line hidden
-#line 53
- await testRunner.ThenAsync("SSC \"SSC-001\" is marked as not repaired", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -406,11 +304,11 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            string pickleIndex = "5";
+            string pickleIndex = "3";
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Warranty claim with non-matching status is ignored", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
-            global::Reqnroll.RuleInfo ruleInfo = null;
-#line 55
+            global::Reqnroll.RuleInfo ruleInfo = new global::Reqnroll.RuleInfo("Repair detected via matching warranty claim", null, tagsOfRule);
+#line 41
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -420,35 +318,151 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table194 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table6 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CampaignCode",
                             "Description",
                             "LaborCode1"});
-                table194.AddRow(new string[] {
+                table6.AddRow(new string[] {
                             "1G1ZC5E17BF283048",
                             "SSC-001",
                             "Airbag recall",
                             "LAB001"});
-#line 56
- await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table194, "Given ");
+#line 42
+ await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table6, "Given ");
 #line hidden
-                global::Reqnroll.Table table195 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table7 = new global::Reqnroll.Table(new string[] {
                             "ClaimStatus",
                             "RepairCompletionDate",
                             "DistributorComment"});
-                table195.AddRow(new string[] {
+                table7.AddRow(new string[] {
                             "RejectedPermanently",
                             "2024-04-01",
                             "Repair for SSC-001"});
-#line 59
- await testRunner.AndAsync("warranty claims:", ((string)(null)), table195, "And ");
+#line 45
+ await testRunner.AndAsync("warranty claims:", ((string)(null)), table7, "And ");
 #line hidden
-#line 62
+#line 48
  await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 63
+#line 49
  await testRunner.ThenAsync("SSC \"SSC-001\" is marked as not repaired", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.FactAttribute(DisplayName="SSC repaired via labor line")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Safety Service Campaigns (SSC)")]
+        [global::Xunit.TraitAttribute("Description", "SSC repaired via labor line")]
+        public async global::System.Threading.Tasks.Task SSCRepairedViaLaborLine()
+        {
+            string[] tagsOfScenario = ((string[])(null));
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "4";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("SSC repaired via labor line", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = new global::Reqnroll.RuleInfo("Repair detected via matching labor line", null, tagsOfRule);
+#line 53
+this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+                global::Reqnroll.Table table8 = new global::Reqnroll.Table(new string[] {
+                            "VIN",
+                            "CampaignCode",
+                            "Description",
+                            "LaborCode1"});
+                table8.AddRow(new string[] {
+                            "1G1ZC5E17BF283048",
+                            "SSC-001",
+                            "Airbag recall",
+                            "LAB001"});
+#line 54
+ await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table8, "Given ");
+#line hidden
+                global::Reqnroll.Table table9 = new global::Reqnroll.Table(new string[] {
+                            "LaborCode",
+                            "InvoiceDate",
+                            "InvoiceStatus"});
+                table9.AddRow(new string[] {
+                            "LAB001",
+                            "2024-06-01",
+                            "X"});
+#line 57
+ await testRunner.AndAsync("labor lines:", ((string)(null)), table9, "And ");
+#line hidden
+#line 60
+ await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 61
+ await testRunner.ThenAsync("SSC \"SSC-001\" is marked as repaired", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 62
+ await testRunner.AndAsync("SSC \"SSC-001\" has repair date \"2024-06-01\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.FactAttribute(DisplayName="SSC repaired via labor line with status C")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Safety Service Campaigns (SSC)")]
+        [global::Xunit.TraitAttribute("Description", "SSC repaired via labor line with status C")]
+        public async global::System.Threading.Tasks.Task SSCRepairedViaLaborLineWithStatusC()
+        {
+            string[] tagsOfScenario = ((string[])(null));
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "5";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("SSC repaired via labor line with status C", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = new global::Reqnroll.RuleInfo("Repair detected via matching labor line", null, tagsOfRule);
+#line 64
+this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+                global::Reqnroll.Table table10 = new global::Reqnroll.Table(new string[] {
+                            "VIN",
+                            "CampaignCode",
+                            "Description",
+                            "LaborCode1"});
+                table10.AddRow(new string[] {
+                            "1G1ZC5E17BF283048",
+                            "SSC-001",
+                            "Airbag recall",
+                            "LAB001"});
+#line 65
+ await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table10, "Given ");
+#line hidden
+                global::Reqnroll.Table table11 = new global::Reqnroll.Table(new string[] {
+                            "LaborCode",
+                            "InvoiceDate",
+                            "InvoiceStatus"});
+                table11.AddRow(new string[] {
+                            "LAB001",
+                            "2024-07-01",
+                            "C"});
+#line 68
+ await testRunner.AndAsync("labor lines:", ((string)(null)), table11, "And ");
+#line hidden
+#line 71
+ await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 72
+ await testRunner.ThenAsync("SSC \"SSC-001\" is marked as repaired", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 73
+ await testRunner.AndAsync("SSC \"SSC-001\" has repair date \"2024-07-01\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -464,8 +478,8 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             string pickleIndex = "6";
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Labor line with non-matching status is ignored", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
-            global::Reqnroll.RuleInfo ruleInfo = null;
-#line 65
+            global::Reqnroll.RuleInfo ruleInfo = new global::Reqnroll.RuleInfo("Repair detected via matching labor line", null, tagsOfRule);
+#line 75
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -475,35 +489,110 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table196 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table12 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CampaignCode",
                             "Description",
                             "LaborCode1"});
-                table196.AddRow(new string[] {
+                table12.AddRow(new string[] {
                             "1G1ZC5E17BF283048",
                             "SSC-001",
                             "Airbag recall",
                             "LAB001"});
-#line 66
- await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table196, "Given ");
+#line 76
+ await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table12, "Given ");
 #line hidden
-                global::Reqnroll.Table table197 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table13 = new global::Reqnroll.Table(new string[] {
                             "LaborCode",
                             "InvoiceDate",
                             "InvoiceStatus"});
-                table197.AddRow(new string[] {
+                table13.AddRow(new string[] {
                             "LAB001",
                             "2024-06-01",
                             "O"});
-#line 69
- await testRunner.AndAsync("labor lines:", ((string)(null)), table197, "And ");
+#line 79
+ await testRunner.AndAsync("labor lines:", ((string)(null)), table13, "And ");
 #line hidden
-#line 72
+#line 82
  await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 73
+#line 83
  await testRunner.ThenAsync("SSC \"SSC-001\" is marked as not repaired", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.FactAttribute(DisplayName="SSC not repaired when no evidence found")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Safety Service Campaigns (SSC)")]
+        [global::Xunit.TraitAttribute("Description", "SSC not repaired when no evidence found")]
+        public async global::System.Threading.Tasks.Task SSCNotRepairedWhenNoEvidenceFound()
+        {
+            string[] tagsOfScenario = ((string[])(null));
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "7";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("SSC not repaired when no evidence found", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = new global::Reqnroll.RuleInfo("No repair evidence", null, tagsOfRule);
+#line 87
+this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+                global::Reqnroll.Table table14 = new global::Reqnroll.Table(new string[] {
+                            "VIN",
+                            "CampaignCode",
+                            "Description",
+                            "LaborCode1"});
+                table14.AddRow(new string[] {
+                            "1G1ZC5E17BF283048",
+                            "SSC-001",
+                            "Airbag recall",
+                            "LAB001"});
+#line 88
+ await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table14, "Given ");
+#line hidden
+#line 91
+ await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 92
+ await testRunner.ThenAsync("SSC \"SSC-001\" is marked as not repaired", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.FactAttribute(DisplayName="No SSC records returns null")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Safety Service Campaigns (SSC)")]
+        [global::Xunit.TraitAttribute("Description", "No SSC records returns null")]
+        public async global::System.Threading.Tasks.Task NoSSCRecordsReturnsNull()
+        {
+            string[] tagsOfScenario = ((string[])(null));
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "8";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("No SSC records returns null", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = new global::Reqnroll.RuleInfo("No repair evidence", null, tagsOfRule);
+#line 94
+this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 95
+ await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 96
+ await testRunner.ThenAsync("there are no SSC records", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -516,11 +605,11 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            string pickleIndex = "7";
+            string pickleIndex = "9";
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Multiple SSCs with mixed repair status", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
-            global::Reqnroll.RuleInfo ruleInfo = null;
-#line 75
+            global::Reqnroll.RuleInfo ruleInfo = new global::Reqnroll.RuleInfo("Result composition", null, tagsOfRule);
+#line 100
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -530,34 +619,34 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table198 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table15 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CampaignCode",
                             "Description",
                             "LaborCode1",
                             "RepairDate"});
-                table198.AddRow(new string[] {
+                table15.AddRow(new string[] {
                             "1G1ZC5E17BF283048",
                             "SSC-001",
                             "Airbag recall",
                             "LAB001",
                             "2024-03-15"});
-                table198.AddRow(new string[] {
+                table15.AddRow(new string[] {
                             "1G1ZC5E17BF283048",
                             "SSC-002",
                             "Seatbelt recall",
                             "LAB002",
                             ""});
-#line 76
- await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table198, "Given ");
+#line 101
+ await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table15, "Given ");
 #line hidden
-#line 80
+#line 105
  await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 81
+#line 106
  await testRunner.ThenAsync("SSC \"SSC-001\" is marked as repaired", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 82
+#line 107
  await testRunner.AndAsync("SSC \"SSC-002\" is marked as not repaired", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -571,11 +660,11 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            string pickleIndex = "8";
+            string pickleIndex = "10";
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("SSC parts and labor codes appear in result", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
-            global::Reqnroll.RuleInfo ruleInfo = null;
-#line 84
+            global::Reqnroll.RuleInfo ruleInfo = new global::Reqnroll.RuleInfo("Result composition", null, tagsOfRule);
+#line 109
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -585,7 +674,7 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table199 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table16 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CampaignCode",
                             "Description",
@@ -593,7 +682,7 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "LaborCode2",
                             "PartNumber1",
                             "PartNumber2"});
-                table199.AddRow(new string[] {
+                table16.AddRow(new string[] {
                             "1G1ZC5E17BF283048",
                             "SSC-001",
                             "Airbag recall",
@@ -601,106 +690,17 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "LAB002",
                             "PRT001",
                             "PRT002"});
-#line 85
- await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table199, "Given ");
+#line 110
+ await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table16, "Given ");
 #line hidden
-#line 88
+#line 113
  await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 89
+#line 114
  await testRunner.ThenAsync("SSC \"SSC-001\" has 2 labor codes", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 90
+#line 115
  await testRunner.AndAsync("SSC \"SSC-001\" has 2 part numbers", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
-#line hidden
-            }
-            await this.ScenarioCleanupAsync();
-        }
-        
-        [global::Xunit.FactAttribute(DisplayName="SSC repaired via labor line with status C")]
-        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Safety Service Campaigns (SSC)")]
-        [global::Xunit.TraitAttribute("Description", "SSC repaired via labor line with status C")]
-        public async global::System.Threading.Tasks.Task SSCRepairedViaLaborLineWithStatusC()
-        {
-            string[] tagsOfScenario = ((string[])(null));
-            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            string pickleIndex = "9";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("SSC repaired via labor line with status C", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
-            string[] tagsOfRule = ((string[])(null));
-            global::Reqnroll.RuleInfo ruleInfo = null;
-#line 92
-this.ScenarioInitialize(scenarioInfo, ruleInfo);
-#line hidden
-            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
-            {
-                await testRunner.SkipScenarioAsync();
-            }
-            else
-            {
-                await this.ScenarioStartAsync();
-                global::Reqnroll.Table table200 = new global::Reqnroll.Table(new string[] {
-                            "VIN",
-                            "CampaignCode",
-                            "Description",
-                            "LaborCode1"});
-                table200.AddRow(new string[] {
-                            "1G1ZC5E17BF283048",
-                            "SSC-001",
-                            "Airbag recall",
-                            "LAB001"});
-#line 93
- await testRunner.GivenAsync("SSC affected vehicles:", ((string)(null)), table200, "Given ");
-#line hidden
-                global::Reqnroll.Table table201 = new global::Reqnroll.Table(new string[] {
-                            "LaborCode",
-                            "InvoiceDate",
-                            "InvoiceStatus"});
-                table201.AddRow(new string[] {
-                            "LAB001",
-                            "2024-07-01",
-                            "C"});
-#line 96
- await testRunner.AndAsync("labor lines:", ((string)(null)), table201, "And ");
-#line hidden
-#line 99
- await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
-#line hidden
-#line 100
- await testRunner.ThenAsync("SSC \"SSC-001\" is marked as repaired", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
-#line hidden
-#line 101
- await testRunner.AndAsync("SSC \"SSC-001\" has repair date \"2024-07-01\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
-#line hidden
-            }
-            await this.ScenarioCleanupAsync();
-        }
-        
-        [global::Xunit.FactAttribute(DisplayName="No SSC records returns null")]
-        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Safety Service Campaigns (SSC)")]
-        [global::Xunit.TraitAttribute("Description", "No SSC records returns null")]
-        public async global::System.Threading.Tasks.Task NoSSCRecordsReturnsNull()
-        {
-            string[] tagsOfScenario = ((string[])(null));
-            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            string pickleIndex = "10";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("No SSC records returns null", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
-            string[] tagsOfRule = ((string[])(null));
-            global::Reqnroll.RuleInfo ruleInfo = null;
-#line 103
-this.ScenarioInitialize(scenarioInfo, ruleInfo);
-#line hidden
-            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
-            {
-                await testRunner.SkipScenarioAsync();
-            }
-            else
-            {
-                await this.ScenarioStartAsync();
-#line 104
- await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
-#line hidden
-#line 105
- await testRunner.ThenAsync("there are no SSC records", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
