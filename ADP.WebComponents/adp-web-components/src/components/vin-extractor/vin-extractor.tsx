@@ -28,6 +28,8 @@ export class VinExtractor {
   @Prop() manualCapture: boolean = false;
   @Prop() skipValidation: boolean = false;
 
+  @Prop() manualCaptureLabel: string = '';
+
   @Prop() ocrEndpoint: string;
 
   @Prop() onExtract?: ((vin: string) => void) | string;
@@ -503,10 +505,14 @@ export class VinExtractor {
               {this.manualCapture && (
                 <button
                   type="button"
+                  part="vin-extractor-capture-button"
                   disabled={this.manualCaptureLoading}
                   onClick={this.captureFrame.bind(this, true)}
-                  aria-label={this.manualCaptureLoading ? 'Capturing...' : 'Capture VIN'}
-                  class="absolute disabled:bg-white/75 outline-none cursor-pointer left-1/2 -translate-x-1/2 flex justify-center items-center h-[60px] py-[10px] w-[100px] rounded-full shadow-lg border border-slate-500 text-slate-500 z-10 bg-white bottom-4"
+                  aria-label={this.manualCaptureLoading ? 'Capturing...' : this.manualCaptureLabel || 'Capture VIN'}
+                  class={cn(
+                    'vin-extractor-capture-button absolute disabled:bg-white/75 outline-none cursor-pointer left-1/2 -translate-x-1/2 flex justify-center items-center h-[60px] py-[10px] rounded-full shadow-lg border border-slate-500 text-slate-500 z-10 bg-white bottom-4',
+                    this.manualCaptureLabel ? 'px-6 min-w-[140px] gap-2 text-[15px] font-medium whitespace-nowrap' : 'w-[100px]',
+                  )}
                 >
                   {this.manualCaptureLoading ? (
                     <svg
@@ -518,10 +524,12 @@ export class VinExtractor {
                       stroke-linecap="round"
                       stroke-linejoin="round"
                       xmlns="http://www.w3.org/2000/svg"
-                      class="size-full animate-spin animate-spin-v"
+                      class={cn('animate-spin animate-spin-v', this.manualCaptureLabel ? 'size-[22px]' : 'size-full')}
                     >
                       <path d="M21 12a9 9 0 1 1-6.219-8.56" />
                     </svg>
+                  ) : this.manualCaptureLabel ? (
+                    <span>{this.manualCaptureLabel}</span>
                   ) : (
                     <svg
                       fill="none"

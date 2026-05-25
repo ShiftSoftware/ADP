@@ -9,6 +9,18 @@
   font-family: inherit !important;
 }
 
+.vin-extractor-capture-button {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.vin-extractor-capture-button:focus {
+  outline: none !important;
+}
+.vin-extractor-capture-button:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
 @keyframes slideIn {
   0% {
     transform: translateX(100%);
