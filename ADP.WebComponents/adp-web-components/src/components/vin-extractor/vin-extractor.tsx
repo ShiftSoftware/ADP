@@ -359,7 +359,12 @@ export class VinExtractor {
 
       if (this.videoPlayer) {
         this.videoPlayer.srcObject = this.streamRef;
-        this.videoPlayer.play();
+        try {
+          await this.videoPlayer.play();
+        } catch (_) {
+          // play() can reject when interrupted (e.g. the modal closes again
+          // before the stream is ready) — safe to swallow.
+        }
       }
 
       this.manualCaptureLoading = false;
@@ -371,9 +376,18 @@ export class VinExtractor {
 
   closeScanner = () => {
     this.isCameraReady = false;
+    this.manualCaptureLoading = false;
     this.abortController?.abort();
     clearTimeout(this.frameCaptureTimeoutRef);
     if (this.codeReader) this.codeReader.reset();
+    if (this.videoPlayer) {
+      try {
+        this.videoPlayer.pause();
+      } catch (_) {
+        /* ignore */
+      }
+      this.videoPlayer.srcObject = null;
+    }
     if (document) document.body.style.overflow = 'auto';
     this.containerAnimation = 'hide-container';
   };
