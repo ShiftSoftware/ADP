@@ -30,6 +30,8 @@ export class VinExtractor {
 
   @Prop() manualCaptureLabel: string = '';
 
+  @Prop() manualCaptureHint: string = '';
+
   @Prop() ocrEndpoint: string;
 
   @Prop() onExtract?: ((vin: string) => void) | string;
@@ -285,9 +287,10 @@ export class VinExtractor {
 
       if (permissionStatus.state === 'prompt') {
         try {
-          await navigator.mediaDevices.getUserMedia({
+          const probe = await navigator.mediaDevices.getUserMedia({
             video: true,
           });
+          probe.getTracks().forEach(track => track.stop());
         } catch (error) {
           throw new Error('no camera access');
         }
@@ -516,6 +519,14 @@ export class VinExtractor {
                   </svg>
                 </button>
               </div>
+              {this.manualCapture && !!this.manualCaptureHint && !this.manualCaptureLoading && (
+                <p
+                  aria-hidden="true"
+                  class="vin-extractor-manual-capture-hint absolute left-1/2 -translate-x-1/2 bottom-[88px] z-10 m-0 px-3 py-1 rounded-full bg-black/55 text-white text-center text-[13px] leading-[1.3] whitespace-nowrap pointer-events-none"
+                >
+                  {this.manualCaptureHint}
+                </p>
+              )}
               {this.manualCapture && (
                 <button
                   type="button"
