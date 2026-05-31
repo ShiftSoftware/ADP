@@ -9,7 +9,13 @@ namespace ShiftSoftware.ADP.SyncAgent.Configurations;
 /// The CSV row model. Must inherit from <see cref="SyncCsvBase"/> so the metadata columns
 /// (_PrimaryKey, _RowHash, _LoadedAt) are part of the schema.
 /// </typeparam>
-public class DuckDbCsvSyncDataSourceConfigurations<TCsv> where TCsv : SyncCsvBase
+/// <typeparam name="TDestination">
+/// The destination model the engine stores. Only referenced by
+/// <see cref="DestinationPrimaryKeySelector"/>; everything else is driven by <typeparamref name="TCsv"/>.
+/// </typeparam>
+public class DuckDbCsvSyncDataSourceConfigurations<TCsv, TDestination>
+    where TCsv : SyncCsvBase
+    where TDestination : class
 {
     /// <summary>
     /// DuckDB connection string. Optional when <see cref="DuckDbFilePath"/> is provided —
@@ -124,4 +130,37 @@ public class DuckDbCsvSyncDataSourceConfigurations<TCsv> where TCsv : SyncCsvBas
     /// Override the changes table name. Default: <c>{TCsv.Name}_changes</c>.
     /// </summary>
     public string? ChangesTableName { get; set; }
+
+    /// <summary>
+    /// Enables partial-batch promotion. Mirrors <c>EFCoreSyncDataSourceConfigurations.DestinationKey</c>:
+    /// it reads the natural key off a destination item the same way <see cref="KeyColumns"/> reads it
+    /// off a CSV row. The components must align 1:1 and in the same order as <see cref="KeyColumns"/>
+    /// (single column: <c>x =&gt; x.Vin</c>; composite: <c>x =&gt; new { x.Vin, x.CampaignCode }</c>).
+    /// <para>
+    /// When set and a batch comes back <see cref="SyncStoreDataResultType.Partial"/>, the data source
+    /// reads the key off each succeeded destination item, matches it against the key columns of the
+    /// rows claimed for the batch, and — in one query — promotes just those rows to source and
+    /// removes them from the changes table; only the unsucceeded rows are retried. When null
+    /// (default), partial batches keep the all-or-nothing behavior — the whole batch is retried.
+    /// Fully-succeeded and fully-failed batches behave the same either way.
+    /// </para>
+    /// <para>
+    /// Matching is by key <em>value</em> (<c>CAST(... AS VARCHAR)</c>), so it is exact when the
+    /// destination carries the key unchanged. If your Mapping transforms a key value (e.g. trims it)
+    /// a mismatch simply leaves that row pending to be re-sent next run — it never promotes the
+    /// wrong row.
+    /// </para>
+    /// </summary>
+    public Expression<Func<TDestination, object>>? DestinationKey { get; set; }
+
+    /// <summary>
+    /// Set this when the single-component <see cref="DestinationKey"/> is the <see cref="KeyColumns"/>
+    /// values concatenated by a separator — e.g. a destination id like <c>"{Dealer}-{Comp}-{Wip}-…"</c>.
+    /// For partial-batch matching the data source rebuilds that same string from the changes columns
+    /// (each key column <c>CAST</c> to text, NULL rendered as empty, joined by this separator), so you
+    /// don't have to expose the individual key components on the destination model. Requires
+    /// <see cref="DestinationKey"/> to be a single component, and assumes the id is exactly the
+    /// <see cref="KeyColumns"/> in order. Mismatches stay safe — the row simply re-syncs next run.
+    /// </summary>
+    public string? DestinationKeyJoinSeparator { get; set; }
 }

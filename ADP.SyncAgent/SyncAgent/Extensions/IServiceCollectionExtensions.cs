@@ -36,7 +36,7 @@ public static class IServiceCollectionExtensions
     /// legacy <see cref="AddCSVSyncDataSource(IServiceCollection, FileSystemStorageOptions)"/>
     /// overloads, this does not pull in <see cref="FileSystemStorageOptions"/>,
     /// <see cref="IStorageService"/>, or the FileHelper/CsvHelper data sources — the DuckDB
-    /// diff source reads the CSV path passed in <see cref="Configurations.DuckDbCsvSyncDataSourceConfigurations{TCsv}.CsvFilePath"/>
+    /// diff source reads the CSV path passed in <see cref="Configurations.DuckDbCsvSyncDataSourceConfigurations{TCsv, TDestination}.CsvFilePath"/>
     /// directly, so none of that machinery is needed.
     /// </summary>
     public static IServiceCollection AddDuckDbCsvSyncDataSource(this IServiceCollection services)

@@ -4,6 +4,7 @@ using ShiftSoftware.ADP.SyncAgent.Configurations;
 using ShiftSoftware.ADP.SyncAgent.Extensions;
 using ShiftSoftware.ADP.SyncAgent.Services.Interfaces;
 using System.Globalization;
+using System.Linq.Expressions;
 using System.Reflection;
 // IStorageService is intentionally not referenced: the data source reads <see cref="DuckDbCsvSyncDataSourceConfigurations{TCsv}.CsvFilePath"/>
 // directly. Fetching the CSV from a remote store, if needed, is the caller's responsibility.
@@ -26,7 +27,7 @@ namespace ShiftSoftware.ADP.SyncAgent.Services;
 /// </list>
 /// </remarks>
 public class DuckDbCsvSyncDataSource<TCsv, TDestination>
-    : ISyncDataAdapter<TCsv, TDestination, DuckDbCsvSyncDataSourceConfigurations<TCsv>, DuckDbCsvSyncDataSource<TCsv, TDestination>>
+    : ISyncDataAdapter<TCsv, TDestination, DuckDbCsvSyncDataSourceConfigurations<TCsv, TDestination>, DuckDbCsvSyncDataSource<TCsv, TDestination>>
     where TCsv : SyncCsvBase, new()
     where TDestination : class
 {
@@ -46,7 +47,11 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
     private Guid? currentBatchId;
     private SyncActionType? currentBatchActionType;
 
-    public DuckDbCsvSyncDataSourceConfigurations<TCsv>? Configurations { get; private set; }
+    // Lazily-compiled accessors for DestinationKey (one per key component). Built once per run.
+    private Func<TDestination, object?>[]? destinationKeyAccessors;
+    private bool destinationKeyAccessorsBuilt;
+
+    public DuckDbCsvSyncDataSourceConfigurations<TCsv, TDestination>? Configurations { get; private set; }
     public ISyncEngine<TCsv, TDestination> SyncService { get; private set; } = default!;
 
     public DuckDbCsvSyncDataSource()
@@ -59,7 +64,7 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
         return this;
     }
 
-    public ISyncEngine<TCsv, TDestination> Configure(DuckDbCsvSyncDataSourceConfigurations<TCsv> configurations, bool configureSyncService = true)
+    public ISyncEngine<TCsv, TDestination> Configure(DuckDbCsvSyncDataSourceConfigurations<TCsv, TDestination> configurations, bool configureSyncService = true)
     {
         this.Configurations = configurations;
 
@@ -636,61 +641,240 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
 
         var batchId = currentBatchId.Value;
         var actionType = currentBatchActionType ?? input.Input.Status.ActionType;
-        var resultType = input.Input.StoreDataResult?.ResultType ?? SyncStoreDataResultType.Failed;
+        var storeResult = input.Input.StoreDataResult;
+        var resultType = storeResult?.ResultType ?? SyncStoreDataResultType.Failed;
 
         if (resultType == SyncStoreDataResultType.Succeeded)
         {
-            PromoteBatchToSource(batchId, actionType);
-            DeleteBatchFromChanges(batchId);
-            currentBatchId = null;
-            currentBatchActionType = null;
+            // Whole batch landed: promote every claimed row and drop it from the queue — one
+            // set-based query each, keyed by _BatchId (no per-row work).
+            PromoteToSource(batchId, actionType);
+            DeleteFromChanges(batchId);
+            ClearCurrentBatch();
             return new(true);
         }
 
-        // Anything other than fully succeeded → bump attempts and (maybe) Dead.
-        var error = input.Input.Exception?.Message ?? input.Input.StoreDataResult?.RetryException?.ToString();
+        var error = input.Input.Exception?.Message ?? storeResult?.RetryException?.ToString();
+
+        // Partial batch + a DestinationKey → split it: promote the succeeded subset (one query) and
+        // leave only the unsucceeded rows under this batch id for BumpAttempts to retry. Without a
+        // DestinationKey we can't tell which change rows the succeeded destination items came from,
+        // so we fall back to all-or-nothing (whole batch retried).
+        if (resultType == SyncStoreDataResultType.Partial && RequireConfig().DestinationKey is not null)
+        {
+            var matchPredicate = BuildSucceededKeyMatchPredicate(
+                storeResult!.SucceededItems ?? Enumerable.Empty<TDestination?>(), ChangesAlias);
+
+            if (matchPredicate is not null)
+            {
+                PromoteToSource(batchId, actionType, matchPredicate);
+                DeleteFromChanges(batchId, matchPredicate);
+            }
+
+            // Whatever is still tagged with this batch id is exactly the failed/skipped rows.
+            BumpAttempts(batchId, error);
+            ClearCurrentBatch();
+            return new(true);
+        }
+
+        // Failed / Skipped, or Partial without a DestinationKey → bump the whole batch and (maybe) Dead.
         BumpAttempts(batchId, error);
-        currentBatchId = null;
-        currentBatchActionType = null;
+        ClearCurrentBatch();
         return new(true);
     }
 
-    private void PromoteBatchToSource(Guid batchId, SyncActionType actionType)
+    // Stable alias for the changes table in promote/delete queries; the partial-promotion
+    // predicate built from DestinationKey references the changes row through it.
+    private const string ChangesAlias = "c";
+
+    /// <summary>
+    /// Promotes change rows to the source table. <paramref name="matchPredicate"/> null promotes
+    /// the whole batch; a non-null predicate (built from DestinationKey, referencing the changes
+    /// row as <see cref="ChangesAlias"/>) restricts promotion to the succeeded subset of a partial
+    /// batch.
+    /// </summary>
+    private void PromoteToSource(Guid batchId, SyncActionType actionType, string? matchPredicate = null)
     {
         var source = DuckDbSchemaHelpers.QuoteIdentifier(GetSourceTableName());
         var changes = DuckDbSchemaHelpers.QuoteIdentifier(GetChangesTableName());
         var pk = DuckDbSchemaHelpers.QuoteIdentifier(PrimaryKeyColumn);
         var batchIdCol = DuckDbSchemaHelpers.QuoteIdentifier(BatchIdColumn);
 
-        var sourceColumns = GetModelProperties()
-            .Select(p => DuckDbSchemaHelpers.QuoteIdentifier(p.Name))
-            .Concat(new[] {
-                DuckDbSchemaHelpers.QuoteIdentifier(PrimaryKeyColumn),
-                DuckDbSchemaHelpers.QuoteIdentifier(RowHashColumn),
-                DuckDbSchemaHelpers.QuoteIdentifier(LoadedAtColumn) })
-            .ToList();
-        var sourceColList = string.Join(", ", sourceColumns);
+        var where = $"{ChangesAlias}.{batchIdCol} = '{batchId}'"
+                    + (matchPredicate is null ? string.Empty : $" AND {matchPredicate}");
 
         if (actionType == SyncActionType.Delete)
         {
             ExecuteNonQuery(
                 $"DELETE FROM {source} WHERE {pk} IN " +
-                $"(SELECT {pk} FROM {changes} WHERE {batchIdCol} = '{batchId}')");
+                $"(SELECT {ChangesAlias}.{pk} FROM {changes} AS {ChangesAlias} WHERE {where})");
         }
         else
         {
             // Add and Update both upsert into source.
+            var sourceColumns = GetModelProperties()
+                .Select(p => DuckDbSchemaHelpers.QuoteIdentifier(p.Name))
+                .Concat(new[] {
+                    DuckDbSchemaHelpers.QuoteIdentifier(PrimaryKeyColumn),
+                    DuckDbSchemaHelpers.QuoteIdentifier(RowHashColumn),
+                    DuckDbSchemaHelpers.QuoteIdentifier(LoadedAtColumn) })
+                .ToList();
+            var sourceColList = string.Join(", ", sourceColumns);
+            var selectColList = string.Join(", ", sourceColumns.Select(c => $"{ChangesAlias}.{c}"));
+
             ExecuteNonQuery(
                 $"INSERT OR REPLACE INTO {source} ({sourceColList}) " +
-                $"SELECT {sourceColList} FROM {changes} WHERE {batchIdCol} = '{batchId}'");
+                $"SELECT {selectColList} FROM {changes} AS {ChangesAlias} WHERE {where}");
         }
     }
 
-    private void DeleteBatchFromChanges(Guid batchId)
+    /// <summary>
+    /// Removes change rows from the queue. <paramref name="matchPredicate"/> null deletes the whole
+    /// batch; a non-null predicate restricts deletion to the rows it matches.
+    /// </summary>
+    private void DeleteFromChanges(Guid batchId, string? matchPredicate = null)
     {
+        var changes = DuckDbSchemaHelpers.QuoteIdentifier(GetChangesTableName());
+        var pk = DuckDbSchemaHelpers.QuoteIdentifier(PrimaryKeyColumn);
+        var batchIdCol = DuckDbSchemaHelpers.QuoteIdentifier(BatchIdColumn);
+
+        if (matchPredicate is null)
+        {
+            ExecuteNonQuery($"DELETE FROM {changes} WHERE {batchIdCol} = '{batchId}'");
+            return;
+        }
+
+        // Resolve to a PK set first so the DELETE target needs no alias (portable across DuckDB).
         ExecuteNonQuery(
-            $"DELETE FROM {DuckDbSchemaHelpers.QuoteIdentifier(GetChangesTableName())} " +
-            $"WHERE {DuckDbSchemaHelpers.QuoteIdentifier(BatchIdColumn)} = '{batchId}'");
+            $"DELETE FROM {changes} WHERE {pk} IN " +
+            $"(SELECT {ChangesAlias}.{pk} FROM {changes} AS {ChangesAlias} " +
+            $" WHERE {ChangesAlias}.{batchIdCol} = '{batchId}' AND {matchPredicate})");
+    }
+
+    /// <summary>
+    /// Builds a correlated EXISTS predicate that matches a changes row (aliased
+    /// <paramref name="changesAlias"/>) against the natural key read off the succeeded destination
+    /// items via <see cref="DuckDbCsvSyncDataSourceConfigurations{TCsv, TDestination}.DestinationKey"/>.
+    /// Returns null when there are no succeeded items to match.
+    /// </summary>
+    private string? BuildSucceededKeyMatchPredicate(IEnumerable<TDestination?> succeededItems, string changesAlias)
+    {
+        var accessors = GetDestinationKeyAccessors();
+        if (accessors is null)
+            return null;
+
+        var keyColumns = GetKeyColumnNames();
+
+        // When the destination key is the key columns joined by a separator (a concatenated id),
+        // match the single id value against that same string rebuilt from the changes columns —
+        // no need to expose the individual components on the destination model.
+        var joinSeparator = RequireConfig().DestinationKeyJoinSeparator;
+        if (joinSeparator is not null)
+        {
+            if (accessors.Length != 1)
+                throw new InvalidOperationException(
+                    "DuckDbCsvSyncDataSource: DestinationKeyJoinSeparator requires a single-component DestinationKey (the joined id).");
+
+            var ids = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var item in succeededItems)
+            {
+                if (item is null)
+                    continue;
+                var value = accessors[0](item);
+                if (value is null)
+                    continue;
+                ids.Add(DuckDbSchemaHelpers.QuoteString(Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty));
+            }
+
+            if (ids.Count == 0)
+                return null;
+
+            var separator = DuckDbSchemaHelpers.QuoteString(joinSeparator);
+            var concat = string.Join(
+                $" || {separator} || ",
+                keyColumns.Select(col =>
+                    $"COALESCE(CAST({changesAlias}.{DuckDbSchemaHelpers.QuoteIdentifier(col)} AS VARCHAR), '')"));
+
+            return $"({concat}) IN ({string.Join(", ", ids)})";
+        }
+
+        if (accessors.Length != keyColumns.Count)
+            throw new InvalidOperationException(
+                $"DuckDbCsvSyncDataSource: DestinationKey has {accessors.Length} component(s) but KeyColumns has " +
+                $"{keyColumns.Count}. They must align 1:1 and in the same order.");
+
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var tuples = new List<string>();
+        foreach (var item in succeededItems)
+        {
+            if (item is null)
+                continue;
+
+            var parts = new string[accessors.Length];
+            for (var i = 0; i < accessors.Length; i++)
+            {
+                var value = accessors[i](item);
+                parts[i] = value is null
+                    ? "NULL"
+                    : DuckDbSchemaHelpers.QuoteString(Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty);
+            }
+
+            var tuple = "(" + string.Join(", ", parts) + ")";
+            if (seen.Add(tuple))
+                tuples.Add(tuple);
+        }
+
+        if (tuples.Count == 0)
+            return null;
+
+        var tupleColumns = string.Join(", ", keyColumns.Select((_, i) => $"k{i}"));
+        var conditions = string.Join(
+            " AND ",
+            keyColumns.Select((col, i) =>
+                $"t.k{i} IS NOT DISTINCT FROM CAST({changesAlias}.{DuckDbSchemaHelpers.QuoteIdentifier(col)} AS VARCHAR)"));
+
+        return $"EXISTS (SELECT 1 FROM (VALUES {string.Join(", ", tuples)}) AS t({tupleColumns}) WHERE {conditions})";
+    }
+
+    private Func<TDestination, object?>[]? GetDestinationKeyAccessors()
+    {
+        if (!destinationKeyAccessorsBuilt)
+        {
+            var expression = RequireConfig().DestinationKey;
+            destinationKeyAccessors = expression is null ? null : BuildDestinationKeyAccessors(expression);
+            destinationKeyAccessorsBuilt = true;
+        }
+
+        return destinationKeyAccessors;
+    }
+
+    /// <summary>
+    /// Compiles a DestinationKey expression into one accessor per key component, in declaration
+    /// order — so a composite <c>x =&gt; new { x.A, x.B }</c> yields two accessors aligned with the
+    /// two <see cref="KeyColumns"/> components, and a scalar <c>x =&gt; x.A</c> yields one.
+    /// </summary>
+    private static Func<TDestination, object?>[] BuildDestinationKeyAccessors(Expression<Func<TDestination, object>> expression)
+    {
+        var parameter = expression.Parameters[0];
+        var body = expression.Body;
+        if (body is UnaryExpression unary && unary.NodeType is ExpressionType.Convert or ExpressionType.ConvertChecked)
+            body = unary.Operand;
+
+        var components = body is NewExpression newExpression && newExpression.Arguments.Count > 0
+            ? (IEnumerable<Expression>)newExpression.Arguments
+            : new[] { body };
+
+        return components
+            .Select(component => Expression
+                .Lambda<Func<TDestination, object?>>(Expression.Convert(component, typeof(object)), parameter)
+                .Compile())
+            .ToArray();
+    }
+
+    private void ClearCurrentBatch()
+    {
+        currentBatchId = null;
+        currentBatchActionType = null;
     }
 
     private void BumpAttempts(Guid batchId, string? error)
@@ -739,6 +923,8 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
         CloseConnection();
         currentBatchId = null;
         currentBatchActionType = null;
+        destinationKeyAccessors = null;
+        destinationKeyAccessorsBuilt = false;
         return default;
     }
 
@@ -762,7 +948,7 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
 
     #region Helpers
 
-    private DuckDbCsvSyncDataSourceConfigurations<TCsv> RequireConfig()
+    private DuckDbCsvSyncDataSourceConfigurations<TCsv, TDestination> RequireConfig()
     {
         return Configurations
             ?? throw new InvalidOperationException("DuckDbCsvSyncDataSource is not configured. Call Configure(...) first.");
