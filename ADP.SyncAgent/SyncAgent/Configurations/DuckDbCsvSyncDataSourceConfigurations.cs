@@ -154,13 +154,15 @@ public class DuckDbCsvSyncDataSourceConfigurations<TCsv, TDestination>
     public Expression<Func<TDestination, object>>? DestinationKey { get; set; }
 
     /// <summary>
-    /// Set this when the single-component <see cref="DestinationKey"/> is the <see cref="KeyColumns"/>
-    /// values concatenated by a separator — e.g. a destination id like <c>"{Dealer}-{Comp}-{Wip}-…"</c>.
-    /// For partial-batch matching the data source rebuilds that same string from the changes columns
-    /// (each key column <c>CAST</c> to text, NULL rendered as empty, joined by this separator), so you
-    /// don't have to expose the individual key components on the destination model. Requires
-    /// <see cref="DestinationKey"/> to be a single component, and assumes the id is exactly the
-    /// <see cref="KeyColumns"/> in order. Mismatches stay safe — the row simply re-syncs next run.
+    /// Optional key selector on the CSV/source side, paired with <see cref="DestinationKey"/>, for
+    /// partial-batch matching. When set, the data source correlates a succeeded destination item to its
+    /// source row by comparing <see cref="DestinationKey"/> (evaluated on the destination item) with
+    /// this expression (evaluated on the source row) — both in memory — and promotes the matched rows by
+    /// their primary key. Use when the destination key isn't a plain column, e.g. a concatenated id:
+    /// <c>SourceKey = x =&gt; x.ID</c> (the CSV's computed id) paired with <c>DestinationKey = x =&gt; x.id</c>.
+    /// Because both sides are evaluated in C#, the formatting always agrees (no SQL <c>CAST</c> mismatch,
+    /// e.g. for decimals). When null, partial matching falls back to the default per-<see cref="KeyColumns"/>
+    /// comparison. Requires <see cref="DestinationKey"/> to be a single component.
     /// </summary>
-    public string? DestinationKeyJoinSeparator { get; set; }
+    public Expression<Func<TCsv, object>>? SourceKey { get; set; }
 }

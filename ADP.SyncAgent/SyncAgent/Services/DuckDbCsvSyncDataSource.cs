@@ -51,6 +51,10 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
     private Func<TDestination, object?>[]? destinationKeyAccessors;
     private bool destinationKeyAccessorsBuilt;
 
+    // Lazily-compiled accessor for the optional SourceKey expression. Built once per run.
+    private Func<TCsv, object?>? sourceKeyAccessor;
+    private bool sourceKeyAccessorBuilt;
+
     public DuckDbCsvSyncDataSourceConfigurations<TCsv, TDestination>? Configurations { get; private set; }
     public ISyncEngine<TCsv, TDestination> SyncService { get; private set; } = default!;
 
@@ -663,7 +667,9 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
         if (resultType == SyncStoreDataResultType.Partial && RequireConfig().DestinationKey is not null)
         {
             var matchPredicate = BuildSucceededKeyMatchPredicate(
-                storeResult!.SucceededItems ?? Enumerable.Empty<TDestination?>(), ChangesAlias);
+                storeResult!.SucceededItems ?? Enumerable.Empty<TDestination?>(),
+                input.Input.SourceItems,
+                ChangesAlias);
 
             if (matchPredicate is not null)
             {
@@ -757,47 +763,56 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
     /// items via <see cref="DuckDbCsvSyncDataSourceConfigurations{TCsv, TDestination}.DestinationKey"/>.
     /// Returns null when there are no succeeded items to match.
     /// </summary>
-    private string? BuildSucceededKeyMatchPredicate(IEnumerable<TDestination?> succeededItems, string changesAlias)
+    private string? BuildSucceededKeyMatchPredicate(
+        IEnumerable<TDestination?> succeededItems,
+        IEnumerable<TCsv?>? sourceItems,
+        string changesAlias)
     {
         var accessors = GetDestinationKeyAccessors();
         if (accessors is null)
             return null;
 
-        var keyColumns = GetKeyColumnNames();
-
-        // When the destination key is the key columns joined by a separator (a concatenated id),
-        // match the single id value against that same string rebuilt from the changes columns —
-        // no need to expose the individual components on the destination model.
-        var joinSeparator = RequireConfig().DestinationKeyJoinSeparator;
-        if (joinSeparator is not null)
+        // When a SourceKey is configured, correlate in memory: compare DestinationKey (on the succeeded
+        // destination item) with SourceKey (on the source row), and promote the matched rows by their
+        // primary key. Both sides run in C#, so the values always format identically.
+        var sourceKey = GetSourceKeyAccessor();
+        if (sourceKey is not null)
         {
             if (accessors.Length != 1)
                 throw new InvalidOperationException(
-                    "DuckDbCsvSyncDataSource: DestinationKeyJoinSeparator requires a single-component DestinationKey (the joined id).");
+                    "DuckDbCsvSyncDataSource: SourceKey pairs with a single-component DestinationKey.");
 
-            var ids = new HashSet<string>(StringComparer.Ordinal);
+            var succeededKeys = new HashSet<string>(StringComparer.Ordinal);
             foreach (var item in succeededItems)
             {
                 if (item is null)
                     continue;
                 var value = accessors[0](item);
-                if (value is null)
-                    continue;
-                ids.Add(DuckDbSchemaHelpers.QuoteString(Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty));
+                if (value is not null)
+                    succeededKeys.Add(Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty);
             }
 
-            if (ids.Count == 0)
+            if (succeededKeys.Count == 0)
                 return null;
 
-            var separator = DuckDbSchemaHelpers.QuoteString(joinSeparator);
-            var concat = string.Join(
-                $" || {separator} || ",
-                keyColumns.Select(col =>
-                    $"COALESCE(CAST({changesAlias}.{DuckDbSchemaHelpers.QuoteIdentifier(col)} AS VARCHAR), '')"));
+            var primaryKeys = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var row in sourceItems ?? Enumerable.Empty<TCsv?>())
+            {
+                if (row is null || string.IsNullOrEmpty(row._PrimaryKey))
+                    continue;
+                var value = sourceKey(row);
+                if (value is not null && succeededKeys.Contains(Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty))
+                    primaryKeys.Add(row._PrimaryKey!);
+            }
 
-            return $"({concat}) IN ({string.Join(", ", ids)})";
+            if (primaryKeys.Count == 0)
+                return null;
+
+            var pkList = string.Join(", ", primaryKeys.Select(DuckDbSchemaHelpers.QuoteString));
+            return $"{changesAlias}.{DuckDbSchemaHelpers.QuoteIdentifier(PrimaryKeyColumn)} IN ({pkList})";
         }
 
+        var keyColumns = GetKeyColumnNames();
         if (accessors.Length != keyColumns.Count)
             throw new InvalidOperationException(
                 $"DuckDbCsvSyncDataSource: DestinationKey has {accessors.Length} component(s) but KeyColumns has " +
@@ -846,6 +861,26 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
         }
 
         return destinationKeyAccessors;
+    }
+
+    private Func<TCsv, object?>? GetSourceKeyAccessor()
+    {
+        if (!sourceKeyAccessorBuilt)
+        {
+            var expression = RequireConfig().SourceKey;
+            if (expression is null)
+            {
+                sourceKeyAccessor = null;
+            }
+            else
+            {
+                var compiled = expression.Compile();
+                sourceKeyAccessor = row => compiled(row);
+            }
+            sourceKeyAccessorBuilt = true;
+        }
+
+        return sourceKeyAccessor;
     }
 
     /// <summary>
@@ -925,6 +960,8 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
         currentBatchActionType = null;
         destinationKeyAccessors = null;
         destinationKeyAccessorsBuilt = false;
+        sourceKeyAccessor = null;
+        sourceKeyAccessorBuilt = false;
         return default;
     }
 
