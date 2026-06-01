@@ -44,6 +44,14 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
 
     private DuckDBConnection? connection;
 
+    // Reflection is resolved once per closed generic type (TCsv is fixed per closed type), not per
+    // batch/row: the model/materializable property arrays and the compiled per-property setters used
+    // to hydrate a TCsv. Building setters via Expression replaces per-row PropertyInfo.SetValue
+    // (reflection + boxing) with direct delegate calls — the only rows×columns cost in the pipeline.
+    private static PropertyInfo[]? cachedModelProperties;
+    private static PropertyInfo[]? cachedMaterializableProperties;
+    private static Action<TCsv, object?>[]? cachedMaterializeSetters;
+
     private Guid? currentBatchId;
     private SyncActionType? currentBatchActionType;
 
@@ -157,20 +165,23 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
             CopyCsvIntoStaging();
             ComputeStagingKeyAndHash();
 
-            await input.SyncProgressIndicators.LogInformation("Cancelling pending changes invalidated by the new source.");
-            CancelStaleChanges();
-
-            await input.SyncProgressIndicators.LogInformation("Computing diff and writing to changes table.");
+            await input.SyncProgressIndicators.LogInformation("Cancelling pending changes invalidated by the new source, then computing diff.");
+            // Group the stale-cancel DELETE and the diff INSERTs into one transaction so the whole
+            // diff lands with a single checkpoint instead of one fsync per statement.
             // Add/Update are key-based: a row that exists in staging is never enqueued as Delete,
             // so a deletion that "comes back" or a row that moved between buckets cannot appear as
             // both Delete and Add/Update in the same diff. The git-diff ProccessDeletedItems hook
             // is therefore unnecessary here — dedup is implicit.
-            if (IsActionEnabled(SyncActionType.Add))
-                InsertAdds();
-            if (IsActionEnabled(SyncActionType.Update))
-                InsertUpdates();
-            if (IsActionEnabled(SyncActionType.Delete))
-                InsertDeletes();
+            InTransaction(() =>
+            {
+                CancelStaleChanges();
+                if (IsActionEnabled(SyncActionType.Add))
+                    InsertAdds();
+                if (IsActionEnabled(SyncActionType.Update))
+                    InsertUpdates();
+                if (IsActionEnabled(SyncActionType.Delete))
+                    InsertDeletes();
+            });
 
             DropStaging();
 
@@ -566,50 +577,45 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
         var batchIdCol = DuckDbSchemaHelpers.QuoteIdentifier(BatchIdColumn);
         var detectedAt = DuckDbSchemaHelpers.QuoteIdentifier(DetectedAtColumn);
 
-        // Two-step claim: select the keys to claim, then update them. Avoids depending on
-        // RETURNING semantics for cross-version DuckDB.NET compatibility.
-        var keysToClaim = new List<string>();
-        using (var selectCmd = connection!.CreateCommand())
+        // Single-statement claim: tag the next page of pending rows for this action with a fresh
+        // batch id in one UPDATE driven by an ORDER BY ... LIMIT subquery. The previous two-step form
+        // (SELECT the keys to the client, then UPDATE ... WHERE pk IN (<batchSize keys>)) made an extra
+        // round-trip and shipped a batch-sized IN-list as SQL text every batch; this is one round-trip
+        // with no app-built key list. MaterializeBatch then reads the claimed rows by batch id; an
+        // empty result means nothing was pending.
+        currentBatchId = batchId;
+        currentBatchActionType = input.Input.Status.ActionType;
+
+        using (var claimCmd = connection!.CreateCommand())
         {
-            selectCmd.CommandText =
-                $"SELECT {pk} FROM {changes} " +
-                $"WHERE {status} = {(int)SyncChangeStatus.Pending} " +
-                $"  AND {changeTypeCol} = {(int)changeType} " +
-                $"ORDER BY {detectedAt} " +
-                $"LIMIT {batchSize}";
-            using var reader = selectCmd.ExecuteReader();
-            while (reader.Read())
-                keysToClaim.Add(reader.GetString(0));
+            claimCmd.CommandText =
+                $"UPDATE {changes} SET " +
+                $"  {status} = {(int)SyncChangeStatus.InFlight}, " +
+                $"  {batchIdCol} = '{batchId}' " +
+                $"WHERE {pk} IN (" +
+                $"  SELECT {pk} FROM {changes} " +
+                $"  WHERE {status} = {(int)SyncChangeStatus.Pending} " +
+                $"    AND {changeTypeCol} = {(int)changeType} " +
+                $"  ORDER BY {detectedAt} " +
+                $"  LIMIT {batchSize})";
+            claimCmd.ExecuteNonQuery();
         }
 
-        if (keysToClaim.Count == 0)
+        var items = MaterializeBatch();
+        if (items.Count == 0)
         {
             currentBatchId = null;
             currentBatchActionType = null;
             return new((IEnumerable<TCsv?>?)Array.Empty<TCsv?>());
         }
 
-        var keyList = string.Join(", ", keysToClaim.Select(DuckDbSchemaHelpers.QuoteString));
-        using (var updateCmd = connection!.CreateCommand())
-        {
-            updateCmd.CommandText =
-                $"UPDATE {changes} SET " +
-                $"  {status} = {(int)SyncChangeStatus.InFlight}, " +
-                $"  {batchIdCol} = '{batchId}' " +
-                $"WHERE {pk} IN ({keyList})";
-            updateCmd.ExecuteNonQuery();
-        }
-
-        currentBatchId = batchId;
-        currentBatchActionType = input.Input.Status.ActionType;
-
-        var items = MaterializeBatch();
         return new((IEnumerable<TCsv?>?)items);
     }
 
     private List<TCsv?> MaterializeBatch()
     {
         var props = GetMaterializableProperties();
+        var setters = GetMaterializeSetters();
         var changes = DuckDbSchemaHelpers.QuoteIdentifier(GetChangesTableName());
         var batchIdCol = DuckDbSchemaHelpers.QuoteIdentifier(BatchIdColumn);
 
@@ -630,8 +636,10 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
             for (var i = 0; i < props.Length; i++)
             {
                 var value = DuckDbSchemaHelpers.ReadValue(reader, i, props[i].PropertyType);
-                if (props[i].CanWrite)
-                    props[i].SetValue(item, value);
+                // Skip nulls: a fresh TCsv already has default/null for every property, so this is
+                // equivalent to assigning null — and it avoids unboxing null into a value-type setter.
+                if (value is not null)
+                    setters[i](item, value);
             }
             items.Add(item);
         }
@@ -651,9 +659,13 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
         if (resultType == SyncStoreDataResultType.Succeeded)
         {
             // Whole batch landed: promote every claimed row and drop it from the queue — one
-            // set-based query each, keyed by _BatchId (no per-row work).
-            PromoteToSource(batchId, actionType);
-            DeleteFromChanges(batchId);
+            // set-based query each, keyed by _BatchId (no per-row work). One transaction so the
+            // promote + delete commit with a single checkpoint instead of two fsyncs.
+            InTransaction(() =>
+            {
+                PromoteToSource(batchId, actionType);
+                DeleteFromChanges(batchId);
+            });
             ClearCurrentBatch();
             return new(true);
         }
@@ -671,14 +683,18 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
                 input.Input.SourceItems,
                 ChangesAlias);
 
-            if (matchPredicate is not null)
+            // Promote-succeeded + delete-succeeded + bump-the-rest commit together in one transaction.
+            InTransaction(() =>
             {
-                PromoteToSource(batchId, actionType, matchPredicate);
-                DeleteFromChanges(batchId, matchPredicate);
-            }
+                if (matchPredicate is not null)
+                {
+                    PromoteToSource(batchId, actionType, matchPredicate);
+                    DeleteFromChanges(batchId, matchPredicate);
+                }
 
-            // Whatever is still tagged with this batch id is exactly the failed/skipped rows.
-            BumpAttempts(batchId, error);
+                // Whatever is still tagged with this batch id is exactly the failed/skipped rows.
+                BumpAttempts(batchId, error);
+            });
             ClearCurrentBatch();
             return new(true);
         }
@@ -1004,6 +1020,10 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
     /// </summary>
     private static PropertyInfo[] GetModelProperties()
     {
+        // Cached per closed generic type — the result is identical for every call with the same TCsv.
+        if (cachedModelProperties is not null)
+            return cachedModelProperties;
+
         var metadataNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             nameof(SyncCsvBase._PrimaryKey),
@@ -1011,7 +1031,7 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
             nameof(SyncCsvBase._LoadedAt)
         };
 
-        return DuckDbSchemaHelpers.GetPropertiesWithChildPriority<TCsv>()
+        return cachedModelProperties = DuckDbSchemaHelpers.GetPropertiesWithChildPriority<TCsv>()
             .Where(p => !metadataNames.Contains(p.Name))
             .Where(p => p.CanWrite)
             .Where(p => p.GetCustomAttribute<IgnoreAttribute>() is null)
@@ -1026,10 +1046,37 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
     /// </summary>
     private static PropertyInfo[] GetMaterializableProperties()
     {
-        return DuckDbSchemaHelpers.GetPropertiesWithChildPriority<TCsv>()
+        // Cached per closed generic type — see GetModelProperties.
+        return cachedMaterializableProperties ??= DuckDbSchemaHelpers.GetPropertiesWithChildPriority<TCsv>()
             .Where(p => p.CanWrite)
             .Where(p => p.GetCustomAttribute<IgnoreAttribute>() is null)
             .ToArray();
+    }
+
+    /// <summary>
+    /// Compiled setters aligned 1:1 with <see cref="GetMaterializableProperties"/>, built once per
+    /// closed generic type. Each is an <c>(entity, value) =&gt; entity.Prop = (PropType)value</c> lambda
+    /// — a direct assignment that replaces per-row <see cref="PropertyInfo.SetValue"/> (reflection +
+    /// boxing) in the materialization hot loop.
+    /// </summary>
+    private static Action<TCsv, object?>[] GetMaterializeSetters()
+    {
+        if (cachedMaterializeSetters is not null)
+            return cachedMaterializeSetters;
+
+        var props = GetMaterializableProperties();
+        var setters = new Action<TCsv, object?>[props.Length];
+        for (var i = 0; i < props.Length; i++)
+        {
+            var entity = Expression.Parameter(typeof(TCsv), "e");
+            var value = Expression.Parameter(typeof(object), "v");
+            var assign = Expression.Assign(
+                Expression.Property(entity, props[i]),
+                Expression.Convert(value, props[i].PropertyType));
+            setters[i] = Expression.Lambda<Action<TCsv, object?>>(assign, entity, value).Compile();
+        }
+
+        return cachedMaterializeSetters = setters;
     }
 
     private List<string> GetKeyColumnNames()
@@ -1082,6 +1129,28 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
         using var cmd = connection!.CreateCommand();
         cmd.CommandText = sql;
         cmd.ExecuteNonQuery();
+    }
+
+    /// <summary>
+    /// Runs <paramref name="body"/> inside a single explicit DuckDB transaction. On a persistent
+    /// (on-disk) database every autocommit statement is independently checkpointed/fsync'd; grouping
+    /// the per-batch bookkeeping writes (and the Preparing diff) into one transaction collapses those
+    /// 2-3 synchronous disk flushes into one — the dominant per-batch cost. Rolls back on failure so
+    /// a half-applied batch never lands.
+    /// </summary>
+    private void InTransaction(Action body)
+    {
+        ExecuteNonQuery("BEGIN TRANSACTION");
+        try
+        {
+            body();
+            ExecuteNonQuery("COMMIT");
+        }
+        catch
+        {
+            try { ExecuteNonQuery("ROLLBACK"); } catch { /* connection is being torn down anyway */ }
+            throw;
+        }
     }
 
     #endregion
