@@ -4,7 +4,9 @@ import cn from '~lib/cn';
 import validateVin from '~lib/validate-vin';
 
 const CAPTURE_INTERVAL = 2000;
-const ACTIVE_CAMERA_ID_KEY = 'activeCameraId';
+const FACING_MODE_KEY = 'cameraFacingMode';
+
+type CameraFacing = 'environment' | 'user';
 
 @Component({
   shadow: true,
@@ -48,7 +50,7 @@ export class VinExtractor {
   @State() blazorRef?: DotNetObjectReference;
   @State() videoInputs: MediaDeviceInfo[] = [];
   @State() manualCaptureLoading: boolean = false;
-  @State() activeCameraId: string = localStorage.getItem(ACTIVE_CAMERA_ID_KEY) || '';
+  @State() facingMode: CameraFacing = localStorage.getItem(FACING_MODE_KEY) === 'user' ? 'user' : 'environment';
 
   @Element() el: HTMLElement;
 
@@ -303,31 +305,15 @@ export class VinExtractor {
         throw new Error('no camera access');
       }
 
+      // We only need the count here — to decide whether to show the front/back
+      // toggle. The lens choice itself is delegated to facingMode in startCamera,
+      // so we no longer match against device labels (empty/non-standard on Android).
       const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoInputs = devices.filter(device => {
-        if (device.kind !== 'videoinput') return false;
-
-        // TODO: this code only works for IOS however android has no standards
-
-        // const label = device.label.toLowerCase();
-        // const hasDirection = label.includes('front') || label.includes('back');
-        // const isValid = label.includes('front camera') || label.includes('back camera');
-
-        // return hasDirection ? isValid : true;
-        return true;
-      });
+      const videoInputs = devices.filter(device => device.kind === 'videoinput');
 
       if (videoInputs.length === 0) throw new Error('No Camera Found');
 
       this.videoInputs = videoInputs;
-
-      if (!videoInputs.some(input => input.deviceId === this.activeCameraId)) {
-        const selectedCamera = videoInputs.find(({ label }) => label.toLowerCase().includes('back') || label.toLowerCase().includes('environment')) || videoInputs[0];
-
-        this.activeCameraId = selectedCamera.deviceId;
-
-        localStorage.setItem(ACTIVE_CAMERA_ID_KEY, this.activeCameraId);
-      }
 
       await this.startCamera();
 
@@ -353,20 +339,24 @@ export class VinExtractor {
     this.isOpen = false;
   }
 
+  // Ask the browser for a camera by *direction* and let the OS hand back its
+  // primary lens for that side — the main, autofocus-capable sensor the native
+  // camera app uses — instead of guessing from non-standard device labels.
+  // `exact` forces the requested side; the fallback drops to an advisory
+  // facingMode so a device lacking that side (e.g. a laptop with only a front
+  // webcam) doesn't hard-fail with OverconstrainedError. The advanced focusMode
+  // is the acquisition-time half of the autofocus fix (see applyAutofocus); it's
+  // advisory, so devices that don't support it (e.g. iOS) simply ignore it.
+  getCameraStream = (facing: CameraFacing): Promise<MediaStream> => {
+    const base: MediaTrackConstraints = { advanced: [{ focusMode: 'continuous' } as any] };
+    return navigator.mediaDevices
+      .getUserMedia({ video: { ...base, facingMode: { exact: facing } } })
+      .catch(() => navigator.mediaDevices.getUserMedia({ video: { ...base, facingMode: facing } }));
+  };
+
   startCamera = async () => {
     try {
-      const constraints: MediaStreamConstraints = {
-        video: {
-          deviceId: this.activeCameraId,
-          // Best-effort continuous autofocus at acquisition time. `advanced`
-          // entries are advisory — browsers/devices that don't support
-          // focusMode (e.g. iOS, which autofocuses natively) just ignore it,
-          // so this never throws or over-constrains the request.
-          advanced: [{ focusMode: 'continuous' } as any],
-        },
-      };
-
-      this.streamRef = await navigator.mediaDevices.getUserMedia(constraints);
+      this.streamRef = await this.getCameraStream(this.facingMode);
 
       if (this.videoPlayer) {
         this.videoPlayer.srcObject = this.streamRef;
@@ -453,19 +443,15 @@ export class VinExtractor {
   }
 
   switchCamera = () => {
-    if (this.videoInputs.length > 1) {
-      const currentIndex = this.videoInputs.findIndex(device => device.deviceId === this.activeCameraId);
+    if (this.videoInputs.length <= 1) return;
 
-      const newCameraIndex = (currentIndex + 1) % this.videoInputs.length;
+    this.facingMode = this.facingMode === 'environment' ? 'user' : 'environment';
 
-      this.activeCameraId = this.videoInputs[newCameraIndex].deviceId;
+    localStorage.setItem(FACING_MODE_KEY, this.facingMode);
 
-      localStorage.setItem(ACTIVE_CAMERA_ID_KEY, this.activeCameraId);
-
-      this.stopCamera();
-      this.startCamera();
-      this.switchRotateDegree += 90;
-    }
+    this.stopCamera();
+    this.startCamera();
+    this.switchRotateDegree += 90;
   };
 
   @Watch('isAnimating')
