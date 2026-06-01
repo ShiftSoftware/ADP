@@ -191,6 +191,9 @@ export class VinExtractor {
         this.videoPlayer.play();
         this.manualCaptureLoading = false;
         this.handleOnProcessing(false);
+        // Re-engage autofocus last: some devices drop to idle focus after the
+        // pause. Fire-and-forget so it can't affect the resume flow.
+        this.applyAutofocus();
       }, 1000);
     }
   };
@@ -355,6 +358,11 @@ export class VinExtractor {
       const constraints: MediaStreamConstraints = {
         video: {
           deviceId: this.activeCameraId,
+          // Best-effort continuous autofocus at acquisition time. `advanced`
+          // entries are advisory — browsers/devices that don't support
+          // focusMode (e.g. iOS, which autofocuses natively) just ignore it,
+          // so this never throws or over-constrains the request.
+          advanced: [{ focusMode: 'continuous' } as any],
         },
       };
 
@@ -371,9 +379,38 @@ export class VinExtractor {
       }
 
       this.manualCaptureLoading = false;
+
+      // Fire-and-forget: autofocus is a best-effort enhancement and must never
+      // block or alter the existing open/capture flow if it stalls or fails.
+      this.applyAutofocus();
     } catch (error) {
       if (this.verbose) console.error(error);
       throw new Error('Error accessing camera: ');
+    }
+  };
+
+  // Low-end Android cameras often open with a fixed/idle focus mode, so the live
+  // preview never sharpens — whereas iOS autofocuses natively, which is why it
+  // "just works" on iPhone. When the track advertises focus control, explicitly
+  // request continuous autofocus (falling back to single-shot). Everything here
+  // is feature-detected and best-effort; unsupported devices keep their default.
+  applyAutofocus = async () => {
+    try {
+      const track = this.streamRef?.getVideoTracks?.()[0];
+      if (!track || typeof track.getCapabilities !== 'function') return;
+
+      const capabilities: any = track.getCapabilities();
+      const focusModes: string[] = capabilities?.focusMode ?? [];
+
+      if (this.verbose) {
+        console.log('vin-extractor camera capabilities', capabilities);
+        console.log('vin-extractor camera settings', track.getSettings?.());
+      }
+
+      if (focusModes.includes('continuous')) await track.applyConstraints({ advanced: [{ focusMode: 'continuous' } as any] });
+      else if (focusModes.includes('single-shot')) await track.applyConstraints({ advanced: [{ focusMode: 'single-shot' } as any] });
+    } catch (error) {
+      if (this.verbose) console.warn('vin-extractor autofocus not applied', error);
     }
   };
 
