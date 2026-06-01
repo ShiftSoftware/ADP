@@ -61,6 +61,7 @@ export class VinExtractor {
   private videoCanvas: HTMLCanvasElement;
   private abortController: AbortController;
   private frameCaptureTimeoutRef: ReturnType<typeof setTimeout>;
+  private backCameraDeviceId: string = '';
 
   async componentDidLoad() {
     this.videoPlayer = this.el.shadowRoot.querySelector('.video-player');
@@ -339,19 +340,142 @@ export class VinExtractor {
     this.isOpen = false;
   }
 
-  // Ask the browser for a camera by *direction* and let the OS hand back its
-  // primary lens for that side — the main, autofocus-capable sensor the native
-  // camera app uses — instead of guessing from non-standard device labels.
-  // `exact` forces the requested side; the fallback drops to an advisory
-  // facingMode so a device lacking that side (e.g. a laptop with only a front
-  // webcam) doesn't hard-fail with OverconstrainedError. The advanced focusMode
-  // is the acquisition-time half of the autofocus fix (see applyAutofocus); it's
-  // advisory, so devices that don't support it (e.g. iOS) simply ignore it.
-  getCameraStream = (facing: CameraFacing): Promise<MediaStream> => {
-    const base: MediaTrackConstraints = { advanced: [{ focusMode: 'continuous' } as any] };
-    return navigator.mediaDevices
-      .getUserMedia({ video: { ...base, facingMode: { exact: facing } } })
-      .catch(() => navigator.mediaDevices.getUserMedia({ video: { ...base, facingMode: facing } }));
+  // Every acquisition carries an advisory continuous-autofocus hint. It's
+  // best-effort: devices that don't support focusMode (e.g. iOS, which focuses
+  // natively) ignore it, so it never throws or over-constrains. See applyAutofocus
+  // for the post-stream re-assert.
+  private withAutofocus = (video: MediaTrackConstraints): MediaTrackConstraints => ({ ...video, advanced: [{ focusMode: 'continuous' } as any] });
+
+  // Open a camera by direction. `exact` forces the side; the fallback drops to an
+  // advisory facingMode so a device lacking that side (e.g. a front-only webcam)
+  // doesn't hard-fail with OverconstrainedError.
+  private openFacing = (facing: CameraFacing): Promise<MediaStream> =>
+    navigator.mediaDevices
+      .getUserMedia({ video: this.withAutofocus({ facingMode: { exact: facing } }) })
+      .catch(() => navigator.mediaDevices.getUserMedia({ video: this.withAutofocus({ facingMode: facing }) }));
+
+  private openDeviceId = (deviceId: string): Promise<MediaStream> => navigator.mediaDevices.getUserMedia({ video: this.withAutofocus({ deviceId: { exact: deviceId } }) });
+
+  getCameraStream = async (facing: CameraFacing): Promise<MediaStream> => {
+    try {
+      return facing === 'user' ? await this.openFacing('user') : await this.openBackCamera();
+    } catch (error) {
+      // Any failure in smart selection falls back to the plain default for that
+      // side — i.e. exactly the pre-selection behavior. Never leaves us with no camera.
+      if (this.verbose) console.warn('vin-extractor camera selection failed, using default', error);
+      return this.openFacing(facing);
+    }
+  };
+
+  // facingMode picks *a* back camera, but when several rear lenses share
+  // facingMode:'environment' (Galaxy A25 = main + ultrawide + macro) the browser
+  // returns an implementation-defined default — often a fixed-focus ultrawide/macro
+  // that can never focus on a close QR/VIN. So: take the default, and only if it
+  // can't autofocus do we probe the other lenses and pick the best one. Most
+  // devices (incl. iOS) keep the default with no extra camera opens.
+  private openBackCamera = async (): Promise<MediaStream> => {
+    // Reuse the lens we picked earlier this session (kept in memory only — no
+    // localStorage, so there's no stale pick to carry across sessions or devices).
+    if (this.backCameraDeviceId) {
+      try {
+        return await this.openDeviceId(this.backCameraDeviceId);
+      } catch (_) {
+        this.backCameraDeviceId = ''; // lens vanished — re-pick
+      }
+    }
+
+    const def = await this.openFacing('environment');
+    const track = def.getVideoTracks()[0];
+    const caps: any = track?.getCapabilities?.();
+
+    if (this.verbose) console.log('vin-extractor default back lens', track?.getSettings?.()?.deviceId, caps);
+
+    // Probe only when the default can't autofocus AND the platform exposes focus
+    // control (focusMode array) or is Android. iOS doesn't expose focusMode and
+    // focuses natively, so it always keeps the default — no regression there.
+    const isAndroid = /android/i.test(navigator.userAgent);
+    const needsBetterLens = !!caps && !this.lensAutofocuses(caps) && (Array.isArray(caps.focusMode) || isAndroid);
+
+    if (!needsBetterLens) return def;
+
+    const defId: string | undefined = track?.getSettings?.().deviceId;
+    def.getTracks().forEach(t => t.stop());
+
+    const bestId = await this.pickBackCameraDeviceId(defId);
+    if (bestId) {
+      try {
+        const best = await this.openDeviceId(bestId);
+        this.backCameraDeviceId = bestId; // remember for this session
+        if (this.verbose) console.log('vin-extractor selected back lens', bestId);
+        return best;
+      } catch (_) {
+        /* fall through to default */
+      }
+    }
+
+    // Nothing better available/openable — fall back to the OS default back camera.
+    return this.openFacing('environment');
+  };
+
+  // Open each non-front lens briefly (one at a time — some devices forbid
+  // concurrent camera use), read capabilities, and return the highest-scoring
+  // deviceId. Labels are only a cheap pre-filter to avoid waking the front camera;
+  // the facingMode capability is authoritative.
+  private pickBackCameraDeviceId = async (excludeDeviceId?: string): Promise<string | null> => {
+    let devices: MediaDeviceInfo[];
+    try {
+      devices = await navigator.mediaDevices.enumerateDevices();
+    } catch {
+      return null;
+    }
+
+    let bestId: string | null = null;
+    let bestScore = -1;
+
+    for (const cam of devices) {
+      if (cam.kind !== 'videoinput' || cam.deviceId === excludeDeviceId) continue;
+
+      const label = (cam.label || '').toLowerCase();
+      if (label.includes('front') || label.includes('face') || label.includes('user')) continue;
+
+      let probe: MediaStream | null = null;
+      try {
+        probe = await this.openDeviceId(cam.deviceId);
+        const track = probe.getVideoTracks()[0];
+        const caps: any = track?.getCapabilities?.() ?? {};
+        const settings: any = track?.getSettings?.() ?? {};
+        const facing: string[] = caps.facingMode ?? (settings.facingMode ? [settings.facingMode] : []);
+
+        if (facing.includes('user') && !facing.includes('environment')) continue; // front lens
+
+        const score = this.scoreCamera(caps);
+        if (this.verbose) console.log('vin-extractor probe', cam.label || cam.deviceId, { score, caps });
+        if (score > bestScore) {
+          bestScore = score;
+          bestId = settings.deviceId || cam.deviceId;
+        }
+      } catch (error) {
+        if (this.verbose) console.warn('vin-extractor probe failed', cam.label || cam.deviceId, error);
+      } finally {
+        probe?.getTracks().forEach(t => t.stop());
+      }
+    }
+
+    return bestId;
+  };
+
+  // A lens can scan a close-up QR/VIN only if it autofocuses, so autofocus is
+  // decisive; then sensor resolution (main lens ≫ ultrawide/macro); then torch as
+  // a weak tiebreak (usually only the main lens exposes it). FOV isn't exposed by
+  // the API, so resolution stands in for "is this the main lens".
+  private lensAutofocuses = (caps: any): boolean => {
+    const modes: string[] = caps?.focusMode ?? [];
+    return modes.includes('continuous') || modes.includes('single-shot') || !!caps?.focusDistance;
+  };
+
+  private scoreCamera = (caps: any): number => {
+    const resolution = (caps?.width?.max ?? 0) * (caps?.height?.max ?? 0);
+    return (this.lensAutofocuses(caps) ? 1e12 : 0) + resolution + (caps?.torch ? 1e6 : 0);
   };
 
   startCamera = async () => {
