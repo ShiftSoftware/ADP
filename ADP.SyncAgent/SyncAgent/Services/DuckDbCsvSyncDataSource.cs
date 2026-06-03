@@ -165,6 +165,11 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
             CopyCsvIntoStaging();
             ComputeStagingKeyAndHash();
 
+            var duplicateRowsCollapsed = DeduplicateStagingByPrimaryKey();
+            if (duplicateRowsCollapsed > 0)
+                await input.SyncProgressIndicators.LogInformation(
+                    $"Collapsed {duplicateRowsCollapsed} duplicate CSV row(s) sharing a primary key — kept the latest occurrence (override).");
+
             await input.SyncProgressIndicators.LogInformation("Cancelling pending changes invalidated by the new source, then computing diff.");
             // Group the stale-cancel DELETE and the diff INSERTs into one transaction so the whole
             // diff lands with a single checkpoint instead of one fsync per statement.
@@ -394,6 +399,36 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
             $"  {DuckDbSchemaHelpers.QuoteIdentifier(PrimaryKeyColumn)} = {keyExpr}, " +
             $"  {DuckDbSchemaHelpers.QuoteIdentifier(RowHashColumn)} = {hashExpr}, " +
             $"  {DuckDbSchemaHelpers.QuoteIdentifier(LoadedAtColumn)} = now()");
+    }
+
+    /// <summary>
+    /// Collapses staging rows that share a <see cref="PrimaryKeyColumn"/> down to a single row,
+    /// keeping the last occurrence (highest <c>rowid</c>, i.e. the row that appeared later in the
+    /// CSV). A snapshot is meant to carry one row per natural key; when the upstream export repeats
+    /// a key, the diff must treat the latest line as authoritative and override the earlier ones —
+    /// the same "latest wins" upsert the DuckDB destination applies.
+    /// <para>
+    /// Without this, both duplicate rows reach the <c>INSERT OR REPLACE</c> diff statements together.
+    /// DuckDB then resolves the in-batch conflict arbitrarily (observed: it keeps the <em>first</em>
+    /// row), so the work queue can capture a stale value; on a plain-INSERT code path the same
+    /// duplicate would instead raise "Duplicate key ... violates primary key constraint". Removing the
+    /// duplicates here makes the result deterministic and eliminates that failure mode outright.
+    /// </para>
+    /// Returns the number of duplicate rows removed.
+    /// </summary>
+    private int DeduplicateStagingByPrimaryKey()
+    {
+        var staging = DuckDbSchemaHelpers.QuoteIdentifier(GetStagingTableName());
+        var pk = DuckDbSchemaHelpers.QuoteIdentifier(PrimaryKeyColumn);
+
+        // rowid is DuckDB's implicit per-row identifier; the COPY appends rows in file order, so the
+        // highest rowid for a key is its last occurrence in the CSV. _PrimaryKey is md5(...) and never
+        // null, and rowid is never null, so the NOT IN anti-join has no null pitfalls.
+        using var cmd = connection!.CreateCommand();
+        cmd.CommandText =
+            $"DELETE FROM {staging} " +
+            $"WHERE rowid NOT IN (SELECT max(rowid) FROM {staging} GROUP BY {pk})";
+        return cmd.ExecuteNonQuery();
     }
 
     private void CancelStaleChanges()
