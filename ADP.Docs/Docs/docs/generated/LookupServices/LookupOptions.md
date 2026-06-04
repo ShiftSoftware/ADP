@@ -25,6 +25,12 @@ The main configuration class for the lookup services.
 | PartLookupStocksResolver <div><strong>``Func<LookupOptionResolverModel<IEnumerable<StockPartDTO>>, ValueTask<IEnumerable<StockPartDTO>>>?``</strong></div> | Resolver delegate that processes and returns part stock availability data. |
 | IncludeInactivatedFreeServiceItems <div><strong>``bool``</strong></div> | Whether to include free service items that have not yet been activated (e.g., awaiting warranty activation). |
 | WarrantyStartDateDefaultsToInvoiceDate <div><strong>``bool``</strong></div> | Whether the warranty start date should default to the invoice date when no explicit activation date is set. Defaults to true. |
+| DistributorCompanyID <div><strong>``long?``</strong></div> | The Identity `CompanyID` of the distributor company. A VIN can have multiple `VehicleEntries` —
+ one for the distributor and one (or more) for the selling dealer(s) — and the dealer's sale invoice date
+ is later than the distributor's. Distributor-scoped logic such as the Paint Thickness Certificate anchors
+ on the distributor's invoice date, so it selects the entry whose `CompanyID` equals this value.
+  for the Paint Thickness Certificate: if this is unset, or the VIN has no invoiced entry for
+ this company, no certificate is produced — it never falls back to a dealer's invoice. |
 | SigningSecretKey <div><strong>``string``</strong></div> | The HMAC secret key used for signing service item claim requests. |
 | SignatureValidityDuration <div><strong>``TimeSpan``</strong></div> | How long a generated claim signature remains valid. |
 | TimeProvider <div><strong>``TimeProvider``</strong></div> | Clock used when stamping `SignatureExpiry`. Defaults to `TimeProvider.System`; override with a fixed provider to produce deterministic signatures for sample/doc generation or tests. |

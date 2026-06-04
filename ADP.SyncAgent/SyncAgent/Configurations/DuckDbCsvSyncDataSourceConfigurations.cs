@@ -90,6 +90,35 @@ public class DuckDbCsvSyncDataSourceConfigurations<TCsv, TDestination>
     public string Encoding { get; set; } = "utf-8";
 
     /// <summary>
+    /// strptime-style format passed to DuckDB's <c>COPY ... (DATEFORMAT '...')</c> and applied to
+    /// every <c>DATE</c> column read from the CSV. Leave null (default) to let DuckDB parse ISO
+    /// <c>YYYY-MM-DD</c>. Set this when the source exports dates in a locale format, e.g.
+    /// <c>"%m/%d/%Y"</c> for <c>11/7/2024</c>.
+    /// <para>
+    /// Because the staging column types are pinned from the model, DuckDB does NOT fall back to the
+    /// CSV sniffer's auto-detected format — an unset format means strict ISO parsing, so a
+    /// locale-formatted date column aborts the whole COPY with a "Could not convert string ... to
+    /// 'DATE'" conversion error.
+    /// </para>
+    /// <para>
+    /// This format is global to the file (DuckDB's COPY supports only one date/timestamp format). On
+    /// the rare file with two date columns in different formats, type the odd column as
+    /// <see cref="string"/> on the model and convert it in the sync engine's mapping instead.
+    /// </para>
+    /// </summary>
+    public string? DateFormat { get; set; }
+
+    /// <summary>
+    /// strptime-style format passed to DuckDB's <c>COPY ... (TIMESTAMPFORMAT '...')</c> and applied
+    /// to every <c>TIMESTAMP</c> column read from the CSV. A model property typed <c>DateTime</c>/
+    /// <c>DateTime?</c> maps to <c>TIMESTAMP</c>, so a date-only value like <c>11/7/2024</c> in such a
+    /// column needs this set (e.g. <c>"%m/%d/%Y"</c>) — DuckDB parses it to a timestamp at midnight.
+    /// Leave null (default) for strict ISO parsing. See <see cref="DateFormat"/> for why the sniffer's
+    /// auto-detected format does not apply and how to handle two columns with different formats.
+    /// </summary>
+    public string? TimestampFormat { get; set; }
+
+    /// <summary>
     /// Composite or single-column natural key that identifies a logical row across versions.
     /// Used to detect Add vs Update vs Delete and to coalesce pending changes across runs.
     /// Required.

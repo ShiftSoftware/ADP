@@ -52,6 +52,15 @@ public class LookupOptions
     public bool IncludeInactivatedFreeServiceItems { get; set; }
     /// <summary>Whether the warranty start date should default to the invoice date when no explicit activation date is set. Defaults to true.</summary>
     public bool WarrantyStartDateDefaultsToInvoiceDate { get; set; } = true;
+    /// <summary>
+    /// The Identity <c>CompanyID</c> of the distributor company. A VIN can have multiple <c>VehicleEntries</c> —
+    /// one for the distributor and one (or more) for the selling dealer(s) — and the dealer's sale invoice date
+    /// is later than the distributor's. Distributor-scoped logic such as the Paint Thickness Certificate anchors
+    /// on the distributor's invoice date, so it selects the entry whose <c>CompanyID</c> equals this value.
+    /// <b>Required</b> for the Paint Thickness Certificate: if this is unset, or the VIN has no invoiced entry for
+    /// this company, no certificate is produced — it never falls back to a dealer's invoice.
+    /// </summary>
+    public long? DistributorCompanyID { get; set; }
     /// <summary>The HMAC secret key used for signing service item claim requests.</summary>
     public string SigningSecretKey { get; set; } = string.Empty;
     /// <summary>How long a generated claim signature remains valid.</summary>
