@@ -28,7 +28,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.Azure.Cosmos" Version="3.60.0" />
+		<PackageReference Include="Microsoft.Azure.Cosmos" Version="3.61.0" />
 		<PackageReference Include="Microsoft.Bcl.TimeProvider" Version="10.0.8" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />
 		<PackageReference Include="ShiftSoftware.ADP.Models" Version="$(ADPVersion)" Condition="!Exists('..\..\ADP.Models\Models\Models.csproj')" />

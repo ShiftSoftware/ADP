@@ -31,7 +31,7 @@
 		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.8" />
 		<PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="10.0.8" />
 		<PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.8" />
-		<PackageReference Include="ShiftSoftware.ShiftBlazor" Version="2026.5.22.2" />
+		<PackageReference Include="ShiftSoftware.ShiftBlazor" Version="2026.5.30.4" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -70,8 +70,8 @@ Built with **Stencil.js** (namespace: `shift-components`), Tailwind CSS, and SCS
 The `WebComponentModelGenerator` (C# console app) uses Roslyn to scan C# models with `[TypeScriptModel]` attribute and generates TypeScript types into `src/global/types/generated/`. Models with `[TypeScriptIgnore]` are excluded. This runs automatically post-build.
 
 ## Versioning
-- .NET version: `ADPVersion` property in `GlobalSettings.props` (currently 1.7.8)
-- Web components version: `version` field in `package.json` (currently 0.1.78)
+- .NET version: `ADPVersion` property in `GlobalSettings.props`
+- Web components version: `version` field in `package.json`
 - `GlobalSettings.props` also defines `ImportADPPackagesViaProjectReference=true` for local development
 
 ## CI/CD
