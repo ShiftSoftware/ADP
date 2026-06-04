@@ -376,6 +376,17 @@ public class DuckDbCsvSyncDataSource<TCsv, TDestination>
         if (!string.IsNullOrWhiteSpace(config.Encoding))
             optionParts.Add($"ENCODING {DuckDbSchemaHelpers.QuoteString(config.Encoding)}");
 
+        // Column types are pinned from the model, so DuckDB does NOT apply the sniffer's
+        // auto-detected date/timestamp format — without these options a locale-formatted column
+        // (e.g. "11/7/2024" into a TIMESTAMP) aborts the COPY with a conversion error. The format is
+        // global to the file; a file mixing two date formats should type the odd column as string on
+        // the model and convert it in the mapping.
+        if (!string.IsNullOrWhiteSpace(config.DateFormat))
+            optionParts.Add($"DATEFORMAT {DuckDbSchemaHelpers.QuoteString(config.DateFormat)}");
+
+        if (!string.IsNullOrWhiteSpace(config.TimestampFormat))
+            optionParts.Add($"TIMESTAMPFORMAT {DuckDbSchemaHelpers.QuoteString(config.TimestampFormat)}");
+
         if (skip > 0)
             optionParts.Add($"SKIP {skip}");
 
