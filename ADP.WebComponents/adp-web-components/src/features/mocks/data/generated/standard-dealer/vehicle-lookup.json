@@ -175,6 +175,13 @@
     "serviceItems": [
       {
         "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "attachment-warning",
+            "title": "Warning",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+          }
+        ],
         "documentUploaderIsRequired": false,
         "name": "1,000 KM Service",
         "type": "free",
@@ -199,6 +206,13 @@
       },
       {
         "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "attachment-warning",
+            "title": "Warning",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+          }
+        ],
         "documentUploaderIsRequired": false,
         "name": "5,000 KM Service",
         "type": "free",
@@ -223,6 +237,13 @@
       },
       {
         "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "attachment-warning",
+            "title": "Warning",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+          }
+        ],
         "documentUploaderIsRequired": false,
         "name": "10,000 KM Service",
         "type": "free",
@@ -241,6 +262,75 @@
       },
       {
         "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "title": "Warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002720,000 KM Service\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E10,000 KM Service\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "attachment-warning",
+            "title": "Warning",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "20,000 KM Service",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2027-02-01",
+        "expiresAt": "2029-02-01",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "serviceItemID": "SI-004",
+        "maximumMileage": 20000,
+        "claimable": true,
+        "claimingMethodEnum": 0,
+        "vehicleInspectionTypeID": "",
+        "signature": "laYpHTnuqvjaLi4OCCk5oSr4uxWRhkSfiC8k4WcUPIk=",
+        "signatureExpiry": "2026-01-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "title": "Warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002730,000 KM Service\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E10,000 KM Service\u003C/li\u003E\u003Cli\u003E20,000 KM Service\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "attachment-warning",
+            "title": "Warning",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "30,000 KM Service",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2029-02-01",
+        "expiresAt": "2031-02-01",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "serviceItemID": "SI-005",
+        "maximumMileage": 30000,
+        "claimable": true,
+        "claimingMethodEnum": 0,
+        "vehicleInspectionTypeID": "",
+        "signature": "9sUlY1q5xgHrM\u002Bs0L\u002BifmKXebe0L0XOnPbSaOfPzimE=",
+        "signatureExpiry": "2026-01-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "attachment-warning",
+            "title": "Warning",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+          }
+        ],
         "documentUploaderIsRequired": false,
         "name": "15,000 KM Paid Service",
         "type": "paid",
@@ -313,6 +403,13 @@
     "serviceItems": [
       {
         "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "attachment-warning",
+            "title": "Warning",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+          }
+        ],
         "documentUploaderIsRequired": false,
         "name": "1,000 KM Service",
         "type": "free",
@@ -337,6 +434,13 @@
       },
       {
         "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "attachment-warning",
+            "title": "Warning",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+          }
+        ],
         "documentUploaderIsRequired": false,
         "name": "5,000 KM Service",
         "type": "free",
@@ -355,6 +459,13 @@
       },
       {
         "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "attachment-warning",
+            "title": "Warning",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+          }
+        ],
         "documentUploaderIsRequired": false,
         "name": "10,000 KM Service",
         "type": "free",
@@ -369,6 +480,68 @@
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
         "signature": "VetjMtjUwePcrwvFMdiDuMu1HUfWNYa0n3hBMIT2Yaw=",
+        "signatureExpiry": "2026-01-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "title": "Warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002720,000 KM Service\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E10,000 KM Service\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "attachment-warning",
+            "title": "Warning",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "20,000 KM Service",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2026-06-20",
+        "expiresAt": "2028-06-20",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "serviceItemID": "SI-004",
+        "maximumMileage": 20000,
+        "claimable": true,
+        "claimingMethodEnum": 0,
+        "vehicleInspectionTypeID": "",
+        "signature": "1loGdRCQnXNjoCOMDKq9cwn4VWtpOLwwEOkxHJOqCY4=",
+        "signatureExpiry": "2026-01-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "title": "Warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002730,000 KM Service\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E10,000 KM Service\u003C/li\u003E\u003Cli\u003E20,000 KM Service\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "attachment-warning",
+            "title": "Warning",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "30,000 KM Service",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2028-06-20",
+        "expiresAt": "2030-06-20",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "serviceItemID": "SI-005",
+        "maximumMileage": 30000,
+        "claimable": true,
+        "claimingMethodEnum": 0,
+        "vehicleInspectionTypeID": "",
+        "signature": "loP1YM4sVOgXz8Kz7odIKF879HnrkukC6F\u002BuwbTwuzA=",
         "signatureExpiry": "2026-01-01T00:00:00Z"
       }
     ],

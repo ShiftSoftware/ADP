@@ -114,6 +114,13 @@
     "serviceItems": [
       {
         "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "attachment-warning",
+            "title": "Warning",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+          }
+        ],
         "documentUploaderIsRequired": false,
         "name": "Free 1K Oil Change",
         "description": "First-1000km complimentary oil service for new vehicles.",
@@ -135,6 +142,13 @@
       },
       {
         "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "attachment-warning",
+            "title": "Warning",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+          }
+        ],
         "documentUploaderIsRequired": false,
         "name": "Free 10K Inspection",
         "description": "10000-km complimentary inspection for new vehicles.",
@@ -156,6 +170,19 @@
       },
       {
         "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "title": "Warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u0027Free 20K Major Service\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003EFree 10K Inspection\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "attachment-warning",
+            "title": "Warning",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+          }
+        ],
         "documentUploaderIsRequired": false,
         "name": "Free 20K Major Service",
         "description": "20000-km complimentary major service for new vehicles.",
@@ -173,6 +200,40 @@
         "claimingMethodEnum": "ClaimByEnteringInvoiceAndJobNumber",
         "vehicleInspectionTypeID": "",
         "signature": "nIReU6NX9hDQeJP6ww3uqmCihA1Iw4/ZXRO/TWKMDGc=",
+        "signatureExpiry": "2026-01-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "title": "Warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u0027Free 40K Extended Service\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003EFree 10K Inspection\u003C/li\u003E\u003Cli\u003EFree 20K Major Service\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "attachment-warning",
+            "title": "Warning",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "Free 40K Extended Service",
+        "description": "40000-km complimentary extended service for new vehicles.",
+        "title": "Complimentary 40K Extended Service",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2030-02-10",
+        "expiresAt": "2034-02-10",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "PKG-XL-40K",
+        "serviceItemID": "SI-DEMO-XL",
+        "maximumMileage": 40000,
+        "claimable": true,
+        "claimingMethodEnum": "ClaimByEnteringInvoiceAndJobNumber",
+        "vehicleInspectionTypeID": "",
+        "signature": "dVuGyP\u002BUxFt9CrV8/DCnCOjX3\u002BStSV7NrqNrkSo3Ymk=",
         "signatureExpiry": "2026-01-01T00:00:00Z"
       }
     ],
@@ -230,6 +291,13 @@
     "serviceItems": [
       {
         "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "attachment-warning",
+            "title": "Warning",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+          }
+        ],
         "documentUploaderIsRequired": false,
         "name": "Free 1K Oil Change",
         "description": "First-1000km complimentary oil service for new vehicles.",
@@ -256,6 +324,13 @@
       },
       {
         "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "attachment-warning",
+            "title": "Warning",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+          }
+        ],
         "documentUploaderIsRequired": false,
         "name": "Free 10K Inspection",
         "description": "10000-km complimentary inspection for new vehicles.",
@@ -282,6 +357,19 @@
       },
       {
         "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "un-invoiced-broker-warning",
+            "title": "Warning",
+            "bodyContent": "This Vehicle is not yet invoiced by the following Trusted Business Partner: \u003Cstrong\u003EDuhok Vehicle Trader\u003C/strong\u003E",
+            "confirmationText": "Confirm Claiming without Trusted Business Partner Invoice"
+          },
+          {
+            "key": "attachment-warning",
+            "title": "Warning",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+          }
+        ],
         "documentUploaderIsRequired": false,
         "name": "Free 20K Major Service",
         "description": "20000-km complimentary major service for new vehicles.",
@@ -299,6 +387,46 @@
         "claimingMethodEnum": "ClaimByEnteringInvoiceAndJobNumber",
         "vehicleInspectionTypeID": "",
         "signature": "nxsmbcvcIlJlMc8L/Kos1KEJE\u002BF5IfIeWZ42lYXqEIk=",
+        "signatureExpiry": "2026-01-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "title": "Warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u0027Free 40K Extended Service\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003EFree 20K Major Service\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "un-invoiced-broker-warning",
+            "title": "Warning",
+            "bodyContent": "This Vehicle is not yet invoiced by the following Trusted Business Partner: \u003Cstrong\u003EDuhok Vehicle Trader\u003C/strong\u003E",
+            "confirmationText": "Confirm Claiming without Trusted Business Partner Invoice"
+          },
+          {
+            "key": "attachment-warning",
+            "title": "Warning",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "Free 40K Extended Service",
+        "description": "40000-km complimentary extended service for new vehicles.",
+        "title": "Complimentary 40K Extended Service",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2030-06-15",
+        "expiresAt": "2034-06-15",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "PKG-XL-40K",
+        "serviceItemID": "SI-DEMO-XL",
+        "maximumMileage": 40000,
+        "claimable": true,
+        "claimingMethodEnum": "ClaimByEnteringInvoiceAndJobNumber",
+        "vehicleInspectionTypeID": "",
+        "signature": "fss/53escKSdeH8wAg2ks5sSaYREYpy6DecRtC0nDV0=",
         "signatureExpiry": "2026-01-01T00:00:00Z"
       }
     ],
@@ -459,6 +587,13 @@
     "serviceItems": [
       {
         "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "attachment-warning",
+            "title": "Warning",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+          }
+        ],
         "documentUploaderIsRequired": false,
         "name": "Free 1K Oil Change",
         "description": "First-1000km complimentary oil service for new vehicles.",
@@ -480,6 +615,13 @@
       },
       {
         "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "attachment-warning",
+            "title": "Warning",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+          }
+        ],
         "documentUploaderIsRequired": false,
         "name": "Free 10K Inspection",
         "description": "10000-km complimentary inspection for new vehicles.",
@@ -501,6 +643,19 @@
       },
       {
         "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "title": "Warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u0027Free 20K Major Service\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003EFree 10K Inspection\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "attachment-warning",
+            "title": "Warning",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+          }
+        ],
         "documentUploaderIsRequired": false,
         "name": "Free 20K Major Service",
         "description": "20000-km complimentary major service for new vehicles.",
@@ -518,6 +673,40 @@
         "claimingMethodEnum": "ClaimByEnteringInvoiceAndJobNumber",
         "vehicleInspectionTypeID": "",
         "signature": "3yvsOt8GnP70nkpp5xWu\u002BjfkJmJToUlA6bNodk2gGlg=",
+        "signatureExpiry": "2026-01-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "title": "Warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u0027Free 40K Extended Service\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003EFree 10K Inspection\u003C/li\u003E\u003Cli\u003EFree 20K Major Service\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "attachment-warning",
+            "title": "Warning",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "Free 40K Extended Service",
+        "description": "40000-km complimentary extended service for new vehicles.",
+        "title": "Complimentary 40K Extended Service",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2030-07-01",
+        "expiresAt": "2034-07-01",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "PKG-XL-40K",
+        "serviceItemID": "SI-DEMO-XL",
+        "maximumMileage": 40000,
+        "claimable": true,
+        "claimingMethodEnum": "ClaimByEnteringInvoiceAndJobNumber",
+        "vehicleInspectionTypeID": "",
+        "signature": "wB7hjjSNkXfnNaC\u002Bl3UhF0hS0SPqmr6ZPLCazCXrxZM=",
         "signatureExpiry": "2026-01-01T00:00:00Z"
       }
     ],
