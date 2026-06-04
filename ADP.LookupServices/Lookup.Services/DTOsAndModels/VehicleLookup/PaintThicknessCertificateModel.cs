@@ -16,7 +16,6 @@ namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 /// HTTP function to render the certificate PDF and a customer-facing landing page (readings table + PDF viewer
 /// + panel-image gallery).
 /// </remarks>
-[TypeScriptModel]
 [Docable]
 public class PaintThicknessCertificateModel
 {

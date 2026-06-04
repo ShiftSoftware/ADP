@@ -9,7 +9,6 @@ namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 /// A single panel reading on a <see cref="PaintThicknessCertificateModel">Paint Thickness Certificate</see>.
 /// One row in the certificate's readings table; carries the resolved panel-image URLs for the gallery.
 /// </summary>
-[TypeScriptModel]
 [Docable]
 public class PaintThicknessCertificateReadingModel
 {
