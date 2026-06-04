@@ -8,6 +8,7 @@ import type {
   SubmissionMeta,
 } from '@shiftsoftware/survey-sdk';
 import { computeNext, resolveNavigationListTarget } from '@shiftsoftware/survey-sdk';
+import { brandingToCssVars } from './branding.js';
 import { SurveyContextProvider } from './SurveyContext.js';
 import { localize } from './locale.js';
 import { resolveLocaleConfig, type LocaleConfig } from './i18n.js';
@@ -368,6 +369,23 @@ export function SurveyRenderer({
     [schema, effectiveLocale, localeConfig, answers, setAnswer],
   );
 
+  // Branding → CSS variable overrides on the root + optional logo header.
+  // Served pre-merged by the API (deployment default ⊕ per-survey override).
+  const brandStyle = useMemo(() => brandingToCssVars(schema.branding), [schema.branding]);
+  const brandLogo = schema.branding?.logoUrl ? (
+    <div className="survey-brand">
+      <img
+        className="survey-brand__logo"
+        src={schema.branding.logoUrl}
+        alt=""
+        // A dead logo URL must degrade to "no logo", not a broken-image glyph.
+        onError={(e) => {
+          (e.currentTarget.parentElement as HTMLElement).style.display = 'none';
+        }}
+      />
+    </div>
+  ) : null;
+
   if (done) {
     return (
       <div
@@ -375,7 +393,9 @@ export function SurveyRenderer({
         className="survey-root survey-root--done"
         dir={localeConfig.direction}
         lang={effectiveLocale}
+        style={brandStyle}
       >
+        {brandLogo}
         <div className="survey-screen">
           <h2 className="survey-screen__title">
             {currentScreen?.title
@@ -394,7 +414,7 @@ export function SurveyRenderer({
 
   if (!currentScreen) {
     return (
-      <div ref={rootRef} className="survey-root" dir={localeConfig.direction} lang={effectiveLocale}>
+      <div ref={rootRef} className="survey-root" dir={localeConfig.direction} lang={effectiveLocale} style={brandStyle}>
         <div className="survey-screen"><em>{localeConfig.strings.noScreens}</em></div>
       </div>
     );
@@ -414,7 +434,8 @@ export function SurveyRenderer({
 
   return (
     <SurveyContextProvider value={contextValue}>
-      <div ref={rootRef} className="survey-root" dir={localeConfig.direction} lang={effectiveLocale}>
+      <div ref={rootRef} className="survey-root" dir={localeConfig.direction} lang={effectiveLocale} style={brandStyle}>
+        {brandLogo}
         <div className="survey-screen">
           {currentScreen.title && (
             <h2 className="survey-screen__title">

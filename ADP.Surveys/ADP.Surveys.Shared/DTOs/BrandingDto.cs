@@ -17,6 +17,25 @@ public class BrandingDto
 
     [JsonPropertyName("faviconUrl")]
     public string? FaviconUrl { get; set; }
+
+    /// <summary>
+    /// Field-level cascade: the survey's own branding wins per field, the deployment
+    /// default fills the gaps. Returns null when neither side has anything — callers
+    /// can then skip the overlay entirely and serve the frozen schema bytes untouched.
+    /// </summary>
+    public static BrandingDto? Merge(BrandingDto? deploymentDefault, BrandingDto? survey)
+    {
+        if (deploymentDefault is null) return survey;
+        if (survey is null) return deploymentDefault;
+
+        return new BrandingDto
+        {
+            PrimaryColor = survey.PrimaryColor ?? deploymentDefault.PrimaryColor,
+            SecondaryColor = survey.SecondaryColor ?? deploymentDefault.SecondaryColor,
+            LogoUrl = survey.LogoUrl ?? deploymentDefault.LogoUrl,
+            FaviconUrl = survey.FaviconUrl ?? deploymentDefault.FaviconUrl,
+        };
+    }
 }
 
 public class BrandingDtoValidator : AbstractValidator<BrandingDto>

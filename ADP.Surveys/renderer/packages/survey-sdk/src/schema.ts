@@ -88,12 +88,23 @@ export interface NavigationOption {
   nextScreen?: string;
 }
 
+/** Branding block served with the schema — per-survey authored branding merged
+ *  over the deployment's `SurveyApiOptions.DefaultBranding` by the API at serve
+ *  time. The renderer maps colors onto CSS custom properties and shows the logo. */
+export interface Branding {
+  primaryColor?: string;
+  secondaryColor?: string;
+  logoUrl?: string;
+  faviconUrl?: string;
+}
+
 /** Minimal survey envelope — only the fields the SDK touches to drive navigation. */
 export interface Survey {
   id: string;
   version?: number;
   defaultLocale?: string;
   locales?: string[];
+  branding?: Branding;
   screens: Screen[];
   logic?: LogicRule[];
 }

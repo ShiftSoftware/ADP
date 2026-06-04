@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ShiftSoftware.ADP.Surveys.API.Extensions;
 using ShiftSoftware.ADP.Surveys.Data.Bank;
 using ShiftSoftware.ADP.Surveys.Shared.DTOs;
 using ShiftSoftware.ADP.Surveys.Shared.Json;
@@ -27,10 +28,12 @@ namespace ShiftSoftware.ADP.Surveys.API.Controllers;
 public class PreviewController : ControllerBase
 {
     private readonly EfBankSource bankSource;
+    private readonly SurveyApiOptions options;
 
-    public PreviewController(EfBankSource bankSource)
+    public PreviewController(EfBankSource bankSource, SurveyApiOptions options)
     {
         this.bankSource = bankSource;
+        this.options = options;
     }
 
     /// <summary>
@@ -69,6 +72,10 @@ public class PreviewController : ControllerBase
                 Errors = result.Errors.Select(e => new { e.Path, e.Message }),
             });
         }
+
+        // Deployment branding overlay — same cascade GetSchema applies, so the
+        // builder preview is WYSIWYG against production.
+        result.Survey!.Branding = BrandingDto.Merge(options.DefaultBranding, result.Survey.Branding);
 
         // Hand-serialize so the canonical settings apply both ways — no PascalCase
         // leak, no duplicate `QuestionType` fields, polymorphism preserved.

@@ -3,11 +3,29 @@
  * changing the renderer's public API. */
 
 .survey-root {
+  /* Brandable surface — overridden per deployment/survey via inline style vars
+   * (see branding.ts). Defaults preserve the unbranded look exactly. */
+  --survey-primary: #2563eb;
+  --survey-primary-hover: #1e40af;
+  --survey-primary-contrast: #ffffff;
+  --survey-accent: #f5b60c;
+
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   color: #111;
   max-width: 640px;
   margin: 0 auto;
   padding: 32px 16px;
+}
+
+/* Brand logo header — start-aligned, mirrors naturally in RTL. */
+.survey-brand {
+  display: flex;
+  margin-bottom: 20px;
+}
+
+.survey-brand__logo {
+  height: 28px;
+  width: auto;
 }
 
 .survey-screen {
@@ -87,9 +105,9 @@
 }
 
 .survey-question__input:focus-visible {
-  outline: 2px solid #2563eb;
+  outline: 2px solid var(--survey-primary);
   outline-offset: 1px;
-  border-color: #2563eb;
+  border-color: var(--survey-primary);
 }
 
 /* NPS */
@@ -124,9 +142,9 @@
 }
 
 .survey-question__nps-step--selected {
-  background: #2563eb;
-  border-color: #2563eb;
-  color: #fff;
+  background: var(--survey-primary);
+  border-color: var(--survey-primary);
+  color: var(--survey-primary-contrast);
 }
 
 .survey-question__nps-labels {
@@ -170,7 +188,7 @@
 
 .survey-navlist__button:hover {
   background: #f5f7fa;
-  border-color: #2563eb;
+  border-color: var(--survey-primary);
 }
 
 .survey-navlist__chevron {
@@ -199,9 +217,9 @@
 }
 
 .survey-question__textarea:focus-visible {
-  outline: 2px solid #2563eb;
+  outline: 2px solid var(--survey-primary);
   outline-offset: 1px;
-  border-color: #2563eb;
+  border-color: var(--survey-primary);
 }
 
 /* Number */
@@ -238,7 +256,7 @@
 
 .survey-question__rating-star:hover,
 .survey-question__rating-star--selected {
-  color: #f5b60c;
+  color: var(--survey-accent);
 }
 
 /* Choice options (single/multi checkbox/radio list) */
@@ -260,7 +278,7 @@
 
 .survey-question__option:hover {
   background: #f5f7fa;
-  border-color: #2563eb;
+  border-color: var(--survey-primary);
 }
 
 .survey-question__option input {
@@ -295,13 +313,13 @@
 
 .survey-question__yesno-button:hover {
   background: #f5f7fa;
-  border-color: #2563eb;
+  border-color: var(--survey-primary);
 }
 
 .survey-question__yesno-button--selected {
-  background: #2563eb;
-  border-color: #2563eb;
-  color: #fff;
+  background: var(--survey-primary);
+  border-color: var(--survey-primary);
+  color: var(--survey-primary-contrast);
 }
 
 /* File */
@@ -344,12 +362,12 @@
 }
 
 .survey-button--primary {
-  background: #2563eb;
-  color: #fff;
+  background: var(--survey-primary);
+  color: var(--survey-primary-contrast);
 }
 
 .survey-button--primary:hover {
-  background: #1e40af;
+  background: var(--survey-primary-hover);
 }
 
 .survey-button--ghost {

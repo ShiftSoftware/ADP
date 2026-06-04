@@ -33,6 +33,30 @@ export function SurveyRoute({ publicId }: { publicId: string }) {
     };
   }, [client, publicId]);
 
+  // Page-level branding: tab title from the survey's localized title, favicon
+  // from the (deployment-merged) branding block. Lives here — not in the
+  // renderer — because embedded renderers must not touch the host document.
+  useEffect(() => {
+    if (!schema) return;
+    const title = schema as unknown as {
+      title?: Record<string, string>;
+      defaultLocale?: string;
+      branding?: { faviconUrl?: string };
+    };
+    const titleMap = title.title;
+    const resolved =
+      titleMap?.[locale ?? ''] ?? titleMap?.[title.defaultLocale ?? ''] ?? Object.values(titleMap ?? {})[0];
+    if (resolved) document.title = resolved;
+
+    const favicon = title.branding?.faviconUrl;
+    if (favicon) {
+      const link =
+        document.querySelector<HTMLLinkElement>("link[rel~='icon']") ??
+        document.head.appendChild(Object.assign(document.createElement('link'), { rel: 'icon' }));
+      link.href = favicon;
+    }
+  }, [schema, locale]);
+
   if (error) return <ErrorState error={error} />;
 
   if (!schema) {

@@ -1,3 +1,5 @@
+using ShiftSoftware.ADP.Surveys.Shared.DTOs;
+
 namespace ShiftSoftware.ADP.Surveys.API.Extensions;
 
 public class SurveyApiOptions
@@ -41,6 +43,17 @@ public class SurveyApiOptions
     /// completed. Default 30d.
     /// </summary>
     public TimeSpan ExpiryGracePeriod { get; set; } = TimeSpan.FromDays(30);
+
+    /// <summary>
+    /// Deployment-wide branding (logo, colors, favicon) applied to every survey this
+    /// install serves — the "Toyota Iraq looks Toyota Iraq, TCA looks TCA" knob. A
+    /// survey's own <c>SurveyDto.Branding</c> overrides it field-by-field at serve
+    /// time (<see cref="BrandingDto.Merge"/>), so per-survey brands (e.g. a Lexus
+    /// survey inside a Toyota deployment) still work. Serve-time means a rebrand here
+    /// reaches in-flight instances without republishing anything. Null (default) =
+    /// schemas are served byte-for-byte as frozen at publish.
+    /// </summary>
+    public BrandingDto? DefaultBranding { get; set; }
 }
 
 public record SurveyLocaleOption(string Culture, string Label);

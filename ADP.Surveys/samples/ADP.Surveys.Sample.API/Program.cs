@@ -126,6 +126,16 @@ builder.Services.AddSurveysApiServices<DB>(mvcBuilder, options =>
 {
     options.RoutePrefix = "api/Surveys";
     options.EnableSurveysActionTreeAuthorization = true;
+
+    // Deployment-wide branding — every survey this install serves gets the Toyota
+    // identity unless the survey's own Branding overrides a field (see
+    // "Sample: Multi-locale + branding" for the override case). Real consumers set
+    // their own colors/logo here; the logo is served from this app's wwwroot.
+    options.DefaultBranding = new ShiftSoftware.ADP.Surveys.Shared.DTOs.BrandingDto
+    {
+        PrimaryColor = "#EB0A1E",
+        LogoUrl = "http://localhost:5134/toyota-logo.png",
+    };
 });
 
 builder.Services.AddRazorPages();

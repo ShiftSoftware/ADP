@@ -143,6 +143,41 @@ describe('SurveyRenderer', () => {
     expect(screen.getByRole('button', { name: 'Continue' })).toBeInTheDocument();
   });
 
+  it('applies branding as CSS variables + logo, hides logo on load error', async () => {
+    const branded: Survey = {
+      ...fixture(),
+      branding: {
+        primaryColor: '#eb0a1e',
+        secondaryColor: '#f4a300',
+        logoUrl: 'https://brand.example/logo.png',
+      },
+    };
+    const { container } = render(<SurveyRenderer schema={branded} onSubmit={vi.fn()} />);
+
+    const root = container.querySelector('.survey-root') as HTMLElement;
+    expect(root.style.getPropertyValue('--survey-primary')).toBe('#eb0a1e');
+    expect(root.style.getPropertyValue('--survey-accent')).toBe('#f4a300');
+    // Toyota red is dark — contrast text must be white.
+    expect(root.style.getPropertyValue('--survey-primary-contrast')).toBe('#ffffff');
+    // Hover shade derived, darker than the base.
+    expect(root.style.getPropertyValue('--survey-primary-hover')).not.toBe('');
+
+    const logo = container.querySelector('.survey-brand__logo') as HTMLImageElement;
+    expect(logo).toBeInTheDocument();
+    expect(logo.src).toBe('https://brand.example/logo.png');
+
+    // Broken logo URL degrades to no logo, not a broken-image glyph.
+    logo.dispatchEvent(new Event('error'));
+    expect((container.querySelector('.survey-brand') as HTMLElement).style.display).toBe('none');
+  });
+
+  it('renders no logo header and keeps default styling without branding', () => {
+    const { container } = render(<SurveyRenderer schema={fixture()} onSubmit={vi.fn()} />);
+    expect(container.querySelector('.survey-brand')).not.toBeInTheDocument();
+    const root = container.querySelector('.survey-root') as HTMLElement;
+    expect(root.style.getPropertyValue('--survey-primary')).toBe('');
+  });
+
   it('blocks Next while a required question is unanswered, clears once answered', async () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     render(<SurveyRenderer schema={fixture()} onSubmit={onSubmit} />);

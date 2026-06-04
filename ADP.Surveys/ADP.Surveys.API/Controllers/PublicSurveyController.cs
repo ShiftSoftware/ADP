@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using ShiftSoftware.ADP.Surveys.API.Extensions;
 using ShiftSoftware.ADP.Surveys.Data.Entities;
 using ShiftSoftware.ADP.Surveys.Shared.Answers;
 using ShiftSoftware.ADP.Surveys.Shared.DTOs;
@@ -24,10 +25,12 @@ namespace ShiftSoftware.ADP.Surveys.API.Controllers;
 public class PublicSurveyController : ControllerBase
 {
     private readonly ShiftDbContext db;
+    private readonly SurveyApiOptions options;
 
-    public PublicSurveyController(ShiftDbContext db)
+    public PublicSurveyController(ShiftDbContext db, SurveyApiOptions options)
     {
         this.db = db;
+        this.options = options;
     }
 
     /// <summary>
@@ -49,9 +52,17 @@ public class PublicSurveyController : ControllerBase
         if (instance.Status == SurveyInstanceStatus.Expired)
             return StatusCode(StatusCodes.Status410Gone, new { Message = "This survey link has expired." });
 
-        // Returns the raw schema JSON untouched so the renderer hydrates against the
-        // exact bytes that were frozen at publish time.
-        return Content(instance.SurveyVersion.ResolvedJson, "application/json");
+        // No deployment branding configured → serve the raw schema JSON untouched so
+        // the renderer hydrates against the exact bytes frozen at publish time.
+        if (options.DefaultBranding is null)
+            return Content(instance.SurveyVersion.ResolvedJson, "application/json");
+
+        // Deployment branding overlay — applied at serve time (never baked into the
+        // immutable version) so a rebrand reaches in-flight instances immediately.
+        // The survey's own branding wins field-by-field.
+        var resolved = JsonSerializer.Deserialize<SurveyDto>(instance.SurveyVersion.ResolvedJson, SurveySchemaSerializer.Options)!;
+        resolved.Branding = BrandingDto.Merge(options.DefaultBranding, resolved.Branding);
+        return Content(JsonSerializer.Serialize(resolved, SurveySchemaSerializer.Options), "application/json");
     }
 
     /// <summary>
