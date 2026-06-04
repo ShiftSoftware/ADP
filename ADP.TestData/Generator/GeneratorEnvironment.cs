@@ -1,6 +1,7 @@
 using ShiftSoftware.ADP.Lookup.Services;
 using ShiftSoftware.ADP.Lookup.Services.Aggregate;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Part;
+using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using ShiftSoftware.ADP.Models.Part;
 using ShiftSoftware.ADP.Models.TBP;
 using ShiftSoftware.ADP.Models.Vehicle;
@@ -34,6 +35,23 @@ public class GeneratorLookupOptions
     public int? DistributorStockPartLookupQuantityThreshold { get; set; }
     public bool ShowPartLookupStockQauntity { get; set; }
     public bool EnableManufacturerLookup { get; set; }
+
+    /// <summary>Static warnings attached to every service item, exactly as in production LookupOptions.</summary>
+    public List<VehicleItemWarning>? StandardItemClaimWarnings { get; set; }
+
+    /// <summary>
+    /// Template for the skipped-items claim warning (claiming a higher-mileage item cancels lower pending ones).
+    /// When set, the generator wires <c>SkippedItemsClaimWarningResolver</c> from it. Placeholders in
+    /// <c>BodyContent</c>: <c>{ItemName}</c> (item being claimed) and <c>{SkippedItems}</c> (a ul-list of the
+    /// pending items that would be cancelled).
+    /// </summary>
+    public VehicleItemWarning? SkippedItemsClaimWarning { get; set; }
+
+    /// <summary>
+    /// Template for the un-invoiced broker claim warning. When set, the generator wires
+    /// <c>UnInvoicedBrokerClaimWarningResolver</c> from it. Placeholder in <c>BodyContent</c>: <c>{BrokerName}</c>.
+    /// </summary>
+    public VehicleItemWarning? UnInvoicedBrokerClaimWarning { get; set; }
 
     public LookupOptions ToLookupOptions(
         Dictionary<long, string> companyNames,
@@ -82,6 +100,45 @@ public class GeneratorLookupOptions
             return new ValueTask<(decimal?, IEnumerable<PartPriceDTO>)>(
                 (model.Value.DistributorPurchasePrice, model.Value.Prices));
         };
+
+        if (StandardItemClaimWarnings is not null)
+            options.StandardItemClaimWarnings = StandardItemClaimWarnings;
+
+        // Each resolver call builds a fresh VehicleItemWarning — the evaluator attaches the
+        // result per item, so reusing/mutating the template instance would leak across items.
+        if (SkippedItemsClaimWarning is { } skippedTemplate)
+        {
+            options.SkippedItemsClaimWarningResolver = (model) =>
+            {
+                var skippedItemsList = "<ul>" + string.Join("", model.Value.SkippedItems.Select(x => $"<li>{x.Name}</li>")) + "</ul>";
+
+                return new ValueTask<VehicleItemWarning?>(new VehicleItemWarning
+                {
+                    Key = skippedTemplate.Key,
+                    Title = skippedTemplate.Title,
+                    ImageUrl = skippedTemplate.ImageUrl,
+                    BodyContent = skippedTemplate.BodyContent?
+                        .Replace("{ItemName}", model.Value.ItemBeingClaimed.Name)
+                        .Replace("{SkippedItems}", skippedItemsList),
+                    ConfirmationText = skippedTemplate.ConfirmationText,
+                });
+            };
+        }
+
+        if (UnInvoicedBrokerClaimWarning is { } brokerTemplate)
+        {
+            options.UnInvoicedBrokerClaimWarningResolver = (model) =>
+            {
+                return new ValueTask<VehicleItemWarning?>(new VehicleItemWarning
+                {
+                    Key = brokerTemplate.Key,
+                    Title = brokerTemplate.Title,
+                    ImageUrl = brokerTemplate.ImageUrl,
+                    BodyContent = brokerTemplate.BodyContent?.Replace("{BrokerName}", model.Value.BrokerName),
+                    ConfirmationText = brokerTemplate.ConfirmationText,
+                });
+            };
+        }
 
         return options;
     }

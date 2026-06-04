@@ -35,7 +35,8 @@ public class VehicleServiceItemStepDefinitions
         var evaluator = new VehicleServiceItemEvaluator(
             _context.StorageService, _context.Aggregate, _context.Options, _context.ServiceProvider);
 
-        var (serviceItems, activationRequired) = await evaluator.Evaluate(vehicle!, _freeServiceStartDate, language);
+        var (serviceItems, activationRequired) = await evaluator.Evaluate(
+            vehicle!, _freeServiceStartDate, language, _context.SaleInformation?.Broker);
         _result = serviceItems;
         _activationRequired = activationRequired;
     }
@@ -66,7 +67,8 @@ public class VehicleServiceItemStepDefinitions
         var evaluator = new VehicleServiceItemEvaluator(
             _context.StorageService, _context.Aggregate, _context.Options, _context.ServiceProvider);
 
-        var (serviceItems, activationRequired) = await evaluator.Evaluate(vehicle!, warranty.FreeServiceStartDate, language);
+        var (serviceItems, activationRequired) = await evaluator.Evaluate(
+            vehicle!, warranty.FreeServiceStartDate, language, saleInfo?.Broker);
         _result = serviceItems;
         _activationRequired = activationRequired;
     }
@@ -186,6 +188,57 @@ public class VehicleServiceItemStepDefinitions
         var expected = dataTable.Rows.Select(r => r["ServiceItemID"]).ToList();
         var actual = _result.Select(i => i.ServiceItemID).ToList();
         Assert.Equal(expected, actual);
+    }
+
+    [Then("service item {string} has no warnings")]
+    public void ThenServiceItemHasNoWarnings(string serviceItemId)
+    {
+        var item = GetItem(serviceItemId);
+        Assert.True(item.Warnings is null || item.Warnings.Count == 0,
+            $"Expected no warnings on '{serviceItemId}' but found: {string.Join(", ", item.Warnings?.Select(w => w.Key) ?? [])}");
+    }
+
+    [Then("service item {string} has a warning with key {string}")]
+    public void ThenServiceItemHasAWarningWithKey(string serviceItemId, string key)
+    {
+        var item = GetItem(serviceItemId);
+        Assert.NotNull(item.Warnings);
+        Assert.Contains(item.Warnings, w => w.Key == key);
+    }
+
+    [Then("service item {string} has no warning with key {string}")]
+    public void ThenServiceItemHasNoWarningWithKey(string serviceItemId, string key)
+    {
+        var item = GetItem(serviceItemId);
+        Assert.DoesNotContain(item.Warnings ?? [], w => w.Key == key);
+    }
+
+    [Then("the warning with key {string} on service item {string} has body {string}")]
+    public void ThenTheWarningWithKeyOnServiceItemHasBody(string key, string serviceItemId, string expectedBody)
+    {
+        var item = GetItem(serviceItemId);
+        Assert.NotNull(item.Warnings);
+        var warning = item.Warnings.FirstOrDefault(w => w.Key == key);
+        Assert.NotNull(warning);
+        Assert.Equal(expectedBody, warning.BodyContent);
+    }
+
+    [Then("the warnings on service item {string} in order are:")]
+    public void ThenTheWarningsOnServiceItemInOrderAre(string serviceItemId, DataTable dataTable)
+    {
+        var item = GetItem(serviceItemId);
+        Assert.NotNull(item.Warnings);
+        var expected = dataTable.Rows.Select(r => r["Key"]).ToList();
+        var actual = item.Warnings.Select(w => w.Key).ToList();
+        Assert.Equal(expected, actual);
+    }
+
+    private VehicleServiceItemDTO GetItem(string serviceItemId)
+    {
+        Assert.NotNull(_result);
+        var item = _result.FirstOrDefault(i => i.ServiceItemID == serviceItemId);
+        Assert.NotNull(item);
+        return item;
     }
 
     [Then("service item {string} for inspection {string} has status {string}")]

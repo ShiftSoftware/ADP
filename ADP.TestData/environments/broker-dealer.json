@@ -4,7 +4,27 @@
     "BrandStandardWarrantyPeriodsInYears": { "1": 3 },
     "LookupBrokerStock": true,
     "DistributorStockPartLookupQuantityThreshold": 100,
-    "ShowPartLookupStockQauntity": true
+    "ShowPartLookupStockQauntity": true,
+    "StandardItemClaimWarnings": [
+      {
+        "Key": "attachment-warning",
+        "Title": "Warning",
+        "BodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.<br/><br/><strong>Claims submitted without the necessary document will not be accepted.</strong>",
+        "ConfirmationText": null
+      }
+    ],
+    "SkippedItemsClaimWarning": {
+      "Key": "skipped-items-warning",
+      "Title": "Warning",
+      "BodyContent": "The following Services are still 'Pending'. Claiming '{ItemName}' will mark them as 'Cancelled'.{SkippedItems}",
+      "ConfirmationText": "Confirm Marking the above Services as 'Cancelled'."
+    },
+    "UnInvoicedBrokerClaimWarning": {
+      "Key": "un-invoiced-broker-warning",
+      "Title": "Warning",
+      "BodyContent": "This Vehicle is not yet invoiced by the following Trusted Business Partner: <strong>{BrokerName}</strong>",
+      "ConfirmationText": "Confirm Claiming without Trusted Business Partner Invoice"
+    }
   },
   "Companies": [
     {
@@ -605,6 +625,23 @@
       "ActiveForDurationType": "Months",
       "MaximumMileage": 20000,
       "PackageCode": "PKG-MAJOR-20K",
+      "AttachmentFieldBehavior": "Hidden"
+    },
+    {
+      "IntegrationID": "SI-DEMO-XL",
+      "Name": { "en": "Free 40K Extended Service", "ar": "صيانة موسعة مجانية (40000 كم)" },
+      "PrintoutTitle": { "en": "Complimentary 40K Extended Service" },
+      "PrintoutDescription": { "en": "40000-km complimentary extended service for new vehicles." },
+      "BrandIDs": [1],
+      "CampaignStartDate": "2020-01-01",
+      "CampaignEndDate": "2030-12-31",
+      "CampaignActivationTrigger": "WarrantyActivation",
+      "ValidityMode": "RelativeToActivation",
+      "ClaimingMethod": "ClaimByEnteringInvoiceAndJobNumber",
+      "ActiveFor": 48,
+      "ActiveForDurationType": "Months",
+      "MaximumMileage": 40000,
+      "PackageCode": "PKG-XL-40K",
       "AttachmentFieldBehavior": "Hidden"
     }
   ],

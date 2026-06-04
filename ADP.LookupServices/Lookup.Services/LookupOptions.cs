@@ -67,6 +67,12 @@ public class LookupOptions
     /// <summary>Standard warning messages displayed to users before claiming any service item.</summary>
     public List<VehicleItemWarning> StandardItemClaimWarnings { get; set; }
 
+    /// <summary>Resolver delegate that builds the warning shown when claiming a free sequential item would cancel lower-mileage pending items (e.g. claiming the 50K service while the 45K is still pending). Receives the item being claimed and the pending items that claiming it would cancel (the pre-claim mirror of dynamic cancellation). Return null to suppress the warning. When not configured, no skipped-items warning is attached.</summary>
+    public Func<LookupOptionResolverModel<(VehicleServiceItemDTO ItemBeingClaimed, List<VehicleServiceItemDTO> SkippedItems)>, ValueTask<VehicleItemWarning?>>? SkippedItemsClaimWarningResolver { get; set; }
+
+    /// <summary>Resolver delegate that builds the warning shown when claiming items on a vehicle that is held by a broker (TBP) that has not invoiced it yet. Receives the broker sale information. Return null to suppress the warning. When not configured, no broker warning is attached.</summary>
+    public Func<LookupOptionResolverModel<VehicleBrokerSaleInformation>, ValueTask<VehicleItemWarning?>>? UnInvoicedBrokerClaimWarningResolver { get; set; }
+
     /// <summary>The minimum stock quantity threshold for distributor stock lookup. Quantities below this are reported as QuantityNotWithinLookupThreshold.</summary>
     public int? DistributorStockPartLookupQuantityThreshold { get; set; }
     /// <summary>Whether to show the actual stock quantity in part lookup results (vs. just availability status). Defaults to false.</summary>

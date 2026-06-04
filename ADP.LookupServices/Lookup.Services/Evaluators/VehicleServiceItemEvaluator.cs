@@ -40,12 +40,15 @@ public partial class VehicleServiceItemEvaluator
     /// load catalog → resolve activation mode → build eligible free + paid items →
     /// expand by trigger (warranty rolling expiry, vehicle inspection, manual VIN entry) →
     /// determine status & claimability → post-process (VIN exclusion, ineligible pickup,
-    /// dynamic cancellation) → stamp signatures.
+    /// dynamic cancellation) → stamp signatures & claim warnings.
+    /// <paramref name="brokerSaleInformation"/> (from <c>VehicleSaleInformation.Broker</c>) only
+    /// feeds the un-invoiced broker claim warning — pass null when sale info is unavailable.
     /// </summary>
     public async Task<(IEnumerable<VehicleServiceItemDTO> serviceItems, bool activationRequired)> Evaluate(
         VehicleEntryModel vehicle,
         DateTime? freeServiceStartDate,
-        string languageCode)
+        string languageCode,
+        VehicleBrokerSaleInformation brokerSaleInformation = null)
     {
         var requestedStartDate = freeServiceStartDate;
         var serviceItems = await LoadServiceItemCatalog();
@@ -80,7 +83,7 @@ public partial class VehicleServiceItemEvaluator
         bool activationRequired;
         using (Trace.Stage("StatusAndClaimability"))  activationRequired = await CalculateServiceItemStatusAndClaimability(result, showingInactivatedItems, languageCode);
         using (Trace.Stage("PostProcessing"))         result = await ApplyPostProcessing(result, serviceItems, vehicle, languageCode, activationRequired);
-        using (Trace.Stage("Signatures"))             await StampSignaturesAndPrintUrls(result, ServiceActivation, languageCode);
+        using (Trace.Stage("Signatures"))             await StampSignaturesPrintUrlsAndWarnings(result, ServiceActivation, languageCode, brokerSaleInformation);
 
         Trace.RecordFinalResult(result, activationRequired);
         if (Trace.IsEnabled)
@@ -406,6 +409,8 @@ public partial class VehicleServiceItemEvaluator
     /// If a higher-mileage free item is already <c>Processed</c>, mark all lower-mileage
     /// <c>Pending</c> items as <c>Cancelled</c> — they were superseded by the customer
     /// jumping straight to a later interval.
+    /// <see cref="FindItemsCancelledByClaiming"/> is the pre-claim mirror of this rule
+    /// (it feeds the skipped-items claim warning) — keep the two predicates in sync.
     /// </summary>
     private void ApplyDynamicCancellation(IEnumerable<VehicleServiceItemDTO> serviceItems)
     {
@@ -429,10 +434,11 @@ public partial class VehicleServiceItemEvaluator
         }
     }
 
-    private async Task StampSignaturesAndPrintUrls(
+    private async Task StampSignaturesPrintUrlsAndWarnings(
         List<VehicleServiceItemDTO> result,
         VehicleServiceActivation serviceActivation,
-        string languageCode)
+        string languageCode,
+        VehicleBrokerSaleInformation brokerSaleInformation)
     {
         var now = (options?.TimeProvider ?? TimeProvider.System).GetUtcNow().UtcDateTime;
         var itemSignatureExpiry = options?.SignatureValidityDuration is { } d
@@ -451,8 +457,79 @@ public partial class VehicleServiceItemEvaluator
             if (options.ServiceActivationPreClaimVoucherPrintingURLResolver is not null && serviceActivation is not null)
                 item.PrintUrl = await options.ServiceActivationPreClaimVoucherPrintingURLResolver(new(new(serviceActivation.id, item.ServiceItemID), languageCode, services));
 
-            item.Warnings = options.StandardItemClaimWarnings;
+            item.Warnings = await BuildItemClaimWarnings(item, result, brokerSaleInformation, languageCode);
         }
+    }
+
+    /// <summary>
+    /// Assembles the claim-form warnings for one item: the dynamic per-item warnings
+    /// (skipped lower-mileage items, un-invoiced broker — both resolver opt-in and only
+    /// on claimable items) followed by the configured standard warnings.
+    /// <see cref="LookupOptions.StandardItemClaimWarnings"/> is a single shared instance:
+    /// it is returned as-is when nothing dynamic applies and must never be mutated per item.
+    /// </summary>
+    private async Task<List<VehicleItemWarning>> BuildItemClaimWarnings(
+        VehicleServiceItemDTO item,
+        List<VehicleServiceItemDTO> allItems,
+        VehicleBrokerSaleInformation brokerSaleInformation,
+        string languageCode)
+    {
+        List<VehicleItemWarning> warnings = null;
+
+        if (item.Claimable)
+        {
+            if (options.SkippedItemsClaimWarningResolver is not null)
+            {
+                var skippedItems = FindItemsCancelledByClaiming(item, allItems);
+
+                if (skippedItems.Count > 0)
+                {
+                    var warning = await options.SkippedItemsClaimWarningResolver(new((item, skippedItems), languageCode, services));
+                    if (warning is not null)
+                        (warnings ??= new List<VehicleItemWarning>()).Add(warning);
+                }
+            }
+
+            if (options.UnInvoicedBrokerClaimWarningResolver is not null
+                && brokerSaleInformation is not null
+                && brokerSaleInformation.InvoiceDate is null)
+            {
+                var warning = await options.UnInvoicedBrokerClaimWarningResolver(new(brokerSaleInformation, languageCode, services));
+                if (warning is not null)
+                    (warnings ??= new List<VehicleItemWarning>()).Add(warning);
+            }
+        }
+
+        if (warnings is null)
+            return options.StandardItemClaimWarnings;
+
+        if (options.StandardItemClaimWarnings is not null)
+            warnings.AddRange(options.StandardItemClaimWarnings);
+
+        return warnings;
+    }
+
+    /// <summary>
+    /// The pre-claim mirror of <see cref="ApplyDynamicCancellation"/>: claiming
+    /// <paramref name="item"/> makes it <c>Processed</c>, which cancels every lower-mileage
+    /// <c>Pending</c> free item on the next evaluation. Only free, mileage-keyed items
+    /// participate on either side — paid items and non-sequential free items are never
+    /// cancelled and never cancel anything.
+    /// </summary>
+    private static List<VehicleServiceItemDTO> FindItemsCancelledByClaiming(
+        VehicleServiceItemDTO item,
+        List<VehicleServiceItemDTO> allItems)
+    {
+        if (item.TypeEnum != VehcileServiceItemTypes.Free || !item.MaximumMileage.HasValue)
+            return new List<VehicleServiceItemDTO>();
+
+        return allItems
+            .Where(x => x.TypeEnum == VehcileServiceItemTypes.Free
+                     && x.MaximumMileage.HasValue
+                     && x.StatusEnum == VehcileServiceItemStatuses.Pending
+                     && x.MaximumMileage < item.MaximumMileage)
+            .OrderBy(x => x.MaximumMileage)
+            .ToList();
     }
 
     // ===== Eligibility predicates =====

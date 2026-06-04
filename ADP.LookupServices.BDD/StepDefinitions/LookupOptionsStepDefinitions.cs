@@ -2,6 +2,7 @@ using LookupServices.BDD.Support;
 using Reqnroll;
 using ShiftSoftware.ADP.Lookup.Services;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Part;
+using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 
 namespace LookupServices.BDD.StepDefinitions;
 
@@ -145,6 +146,63 @@ public class LookupOptionsStepDefinitions
             return new ValueTask<(decimal?, IEnumerable<PartPriceDTO>)>(
                 (model.Value.DistributorPurchasePrice, model.Value.Prices));
         };
+    }
+
+    [Given("standard item claim warnings:")]
+    public void GivenStandardItemClaimWarnings(DataTable dataTable)
+    {
+        _context.Options.StandardItemClaimWarnings = dataTable.Rows.Select(row => new VehicleItemWarning
+        {
+            Key = row["Key"],
+            Title = GetOptionalString(row, "Title"),
+            BodyContent = GetOptionalString(row, "BodyContent"),
+            ConfirmationText = GetOptionalString(row, "ConfirmationText"),
+        }).ToList();
+    }
+
+    /// <summary>
+    /// Stub that surfaces which items the evaluator passed in: the warning body is the
+    /// comma-separated ServiceItemIDs of the skipped items, so Then steps can assert them.
+    /// </summary>
+    [Given("a skipped items claim warning resolver is configured")]
+    public void GivenASkippedItemsClaimWarningResolverIsConfigured()
+    {
+        _context.Options.SkippedItemsClaimWarningResolver = (model) =>
+        {
+            var warning = new VehicleItemWarning
+            {
+                Key = "skippedItems",
+                Title = "Warning",
+                BodyContent = string.Join(", ", model.Value.SkippedItems.Select(x => x.ServiceItemID)),
+                ConfirmationText = "Confirm skipping the above items",
+            };
+            return new ValueTask<VehicleItemWarning?>(warning);
+        };
+    }
+
+    /// <summary>Stub whose warning body is the broker name, so Then steps can assert it.</summary>
+    [Given("an un-invoiced broker claim warning resolver is configured")]
+    public void GivenAnUnInvoicedBrokerClaimWarningResolverIsConfigured()
+    {
+        _context.Options.UnInvoicedBrokerClaimWarningResolver = (model) =>
+        {
+            var warning = new VehicleItemWarning
+            {
+                Key = "unInvoicedBroker",
+                Title = "Warning",
+                BodyContent = model.Value.BrokerName,
+                ConfirmationText = "Confirm claiming without a broker invoice",
+            };
+            return new ValueTask<VehicleItemWarning?>(warning);
+        };
+    }
+
+    private static string? GetOptionalString(DataTableRow row, string column)
+    {
+        if (!row.ContainsKey(column))
+            return null;
+        var value = row[column];
+        return string.IsNullOrWhiteSpace(value) ? null : value;
     }
 
     [Given("LookupOptions distributor stock threshold is {int}")]
