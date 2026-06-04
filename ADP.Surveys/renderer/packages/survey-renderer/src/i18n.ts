@@ -29,6 +29,8 @@ export interface UiStrings {
   unsupportedQuestion: string;
   /** Prefix for submission-error alerts (followed by the server message). */
   couldNotSubmit: string;
+  /** Inline error under a required question the user tried to Next past. */
+  requiredError: string;
   /** Default labels for YesNoQuestion when the schema doesn't supply `yesLabel` / `noLabel`. */
   yes: string;
   no: string;
@@ -52,6 +54,7 @@ const en: LocaleConfig = {
     noScreens: 'No screens in this survey.',
     unsupportedQuestion: 'Unsupported question type:',
     couldNotSubmit: 'Could not submit:',
+    requiredError: 'This question is required.',
     yes: 'Yes',
     no: 'No',
   },
@@ -69,6 +72,7 @@ const ar: LocaleConfig = {
     noScreens: 'لا توجد شاشات في هذا الاستبيان.',
     unsupportedQuestion: 'نوع سؤال غير مدعوم:',
     couldNotSubmit: 'تعذر الإرسال:',
+    requiredError: 'هذا السؤال مطلوب.',
     yes: 'نعم',
     no: 'لا',
   },

@@ -5,6 +5,7 @@ using ShiftSoftware.ADP.Surveys.Shared.DTOs;
 using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions;
 using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Types;
 using ShiftSoftware.ADP.Surveys.Shared.DTOs.Screens;
+using ShiftSoftware.ADP.Surveys.Shared.Evaluation;
 
 namespace ShiftSoftware.ADP.Surveys.Shared.Answers;
 
@@ -12,6 +13,14 @@ namespace ShiftSoftware.ADP.Surveys.Shared.Answers;
 /// Runtime answer-shape validation. Given a resolved <see cref="SurveyDto"/> and a
 /// submitted answers map (from <c>POST /surveys/instances/{instanceId}/responses</c>),
 /// verifies each answer matches its question's type and validation.
+///
+/// <c>Required</c> is enforced per-path, not per-schema: a branching survey routes the
+/// respondent past whole screens, so a required question on an unvisited branch must
+/// not block the submission. Visited screens are reconstructed by replaying the
+/// renderer's navigation chain against the submitted answers (see
+/// <see cref="ComputeVisitedScreens"/>). Shape checks still run on every present
+/// answer regardless of branch — menu loops legitimately leave answers on screens the
+/// replay doesn't visit, and those values must still be well-formed.
 ///
 /// Not FluentValidation-shaped because the check is polymorphic on question type AND
 /// needs both the schema and the submitted values together — FluentValidation takes
@@ -22,27 +31,100 @@ public static class AnswerValidator
     public static IReadOnlyList<AnswerError> Validate(SurveyDto resolved, IReadOnlyDictionary<string, JsonElement> answers)
     {
         var errors = new List<AnswerError>();
+        var visited = ComputeVisitedScreens(resolved, answers);
 
         foreach (var screen in resolved.Screens)
         {
             if (screen is not InlineScreenDto inline) continue;
+            var onPath = visited.Contains(inline.Id);
             foreach (var entry in inline.Questions)
             {
                 if (entry.Inline is null) continue;
-                ValidateAnswer(entry.Inline, answers, errors);
+                ValidateAnswer(entry.Inline, answers, errors, enforceRequired: onPath);
             }
         }
 
         return errors;
     }
 
-    private static void ValidateAnswer(QuestionDto question, IReadOnlyDictionary<string, JsonElement> answers, List<AnswerError> errors)
+    /// <summary>
+    /// Replays the respondent's path through the survey using the final answer map.
+    /// Mirrors the SDK's <c>computeNext</c> tier-for-tier (navigationList option
+    /// dispatch → logic rule → <c>screen.nextScreen</c> → zero-question terminal →
+    /// sequential order → end), including the self-target guards. The replay uses the
+    /// final answers where the live walk used partial ones, so a menu loop replays as
+    /// its last iteration — a superset-of-one-pass approximation that is exactly what
+    /// required-enforcement needs. Revisiting a screen with a static answer map can
+    /// only cycle, so the walk stops on the first repeat.
+    /// </summary>
+    private static HashSet<string> ComputeVisitedScreens(SurveyDto resolved, IReadOnlyDictionary<string, JsonElement> answers)
+    {
+        var screens = resolved.Screens.OfType<InlineScreenDto>().ToList();
+        var byId = new Dictionary<string, InlineScreenDto>();
+        foreach (var s in screens)
+            byId.TryAdd(s.Id, s);
+
+        var visited = new HashSet<string>();
+        var current = screens.Count > 0 ? screens[0].Id : null;
+
+        while (current is not null && visited.Add(current))
+        {
+            if (!byId.TryGetValue(current, out var screen)) break;
+            current = NextScreenFrom(resolved, screen, screens, byId, answers);
+        }
+
+        return visited;
+    }
+
+    private static string? NextScreenFrom(
+        SurveyDto resolved,
+        InlineScreenDto screen,
+        List<InlineScreenDto> screens,
+        Dictionary<string, InlineScreenDto> byId,
+        IReadOnlyDictionary<string, JsonElement> answers)
+    {
+        // 0. An answered navigationList dispatches on its option's nextScreen the
+        // moment it is tapped — the Next button (and with it the logic tier) never
+        // runs on these screens. Option misses fall through to the chain below,
+        // matching resolveNavigationListTarget.
+        foreach (var entry in screen.Questions)
+        {
+            if (entry.Inline is not NavigationListQuestionDto nav) continue;
+            if (!answers.TryGetValue(nav.Id, out var picked) || picked.ValueKind != JsonValueKind.String) continue;
+            var option = nav.Options.FirstOrDefault(o => o.Id == picked.GetString());
+            if (option?.NextScreen is not null && byId.ContainsKey(option.NextScreen))
+                return option.NextScreen;
+        }
+
+        // 1. Logic rule — ignore self-targets and unknown screens.
+        var logicTarget = LogicEvaluator.EvaluateNext(resolved, answers);
+        if (logicTarget is not null && logicTarget != screen.Id && byId.ContainsKey(logicTarget))
+            return logicTarget;
+
+        // 2. Explicit nextScreen.
+        if (screen.NextScreen is not null && screen.NextScreen != screen.Id && byId.ContainsKey(screen.NextScreen))
+            return screen.NextScreen;
+
+        // 2b. Zero-question screens without an explicit nextScreen are terminal.
+        if (screen.Questions.Count == 0 && screen.NextScreen is null)
+            return null;
+
+        // 3. Sequential order.
+        var idx = screens.FindIndex(s => s.Id == screen.Id);
+        if (idx >= 0 && idx + 1 < screens.Count)
+            return screens[idx + 1].Id;
+
+        // 4. End of survey.
+        return null;
+    }
+
+    private static void ValidateAnswer(QuestionDto question, IReadOnlyDictionary<string, JsonElement> answers, List<AnswerError> errors, bool enforceRequired)
     {
         var present = answers.TryGetValue(question.Id, out var value) && value.ValueKind != JsonValueKind.Null;
 
         if (!present)
         {
-            if (question.Required)
+            if (question.Required && enforceRequired)
                 errors.Add(new AnswerError(question.Id, "Answer is required."));
             return;
         }

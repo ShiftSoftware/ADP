@@ -28,6 +28,7 @@ public static class SampleSurveys
         MultiLocaleBranding(),
         ScreenTemplatesAndBank(),
         TriggerDriven(),
+        Sf4PurchaseFollowUp.Recipe(),
     };
 
     // ──────────────────────────────────────────────────────────────────────

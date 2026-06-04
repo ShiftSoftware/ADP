@@ -164,6 +164,10 @@ export function SurveyRenderer({
   }, [schema, currentScreenId]);
   const [submitting, setSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
+  // Required questions the user tried to Next past on the current screen.
+  // Flagged ids render an inline error; the flag set resets on navigation and
+  // each entry hides itself as soon as its question gains an answer.
+  const [requiredFlags, setRequiredFlags] = useState<ReadonlySet<string>>(new Set());
   const [done, setDone] = useState(false);
   const startedAtRef = useRef<string>(new Date().toISOString());
 
@@ -229,9 +233,24 @@ export function SurveyRenderer({
   const goTo = useCallback(
     (screenId: string | null) => {
       if (screenId === null) return;
+      setRequiredFlags(new Set());
       setCurrentScreenId(screenId);
     },
     [],
+  );
+
+  /** A required question with no usable answer. Mirrors the server's presence
+   *  check but is stricter on empties — '' and [] count as missing here. */
+  const isAnswerMissing = useCallback(
+    (question: Record<string, unknown>): boolean => {
+      if (!question['required']) return false;
+      const value = answers[question['id'] as string];
+      if (value === undefined || value === null) return true;
+      if (typeof value === 'string' && value.trim() === '') return true;
+      if (Array.isArray(value) && value.length === 0) return true;
+      return false;
+    },
+    [answers],
   );
 
   const finishSurvey = useCallback(async () => {
@@ -259,13 +278,23 @@ export function SurveyRenderer({
 
   const advance = useCallback(() => {
     if (!currentScreenId) return;
+    // Required gate — block Next while the current screen has unanswered
+    // required questions. The server enforces the same rule path-aware at
+    // submit time; gating here surfaces it on the screen where it's fixable.
+    const screen = schema.screens.find((s) => s.id === currentScreenId);
+    const screenQuestions = (screen?.questions as Array<Record<string, unknown>> | undefined) ?? [];
+    const missing = screenQuestions.filter(isAnswerMissing).map((q) => q['id'] as string);
+    if (missing.length > 0) {
+      setRequiredFlags(new Set(missing));
+      return;
+    }
     const step = computeNext(schema, currentScreenId, answers);
     if (step.kind === 'end') {
       void finishSurvey();
     } else {
       goTo(step.screenId);
     }
-  }, [schema, currentScreenId, answers, goTo, finishSurvey]);
+  }, [schema, currentScreenId, answers, isAnswerMissing, goTo, finishSurvey]);
 
   // Auto-submit on arrival at a zero-question terminal screen — authors design
   // multiple thank-you pages per branch, and forcing the user to press Next once
@@ -398,9 +427,22 @@ export function SurveyRenderer({
             </p>
           )}
           <div className="survey-screen__questions">
-            {questions.map((q, idx) => (
-              <QuestionHost key={(q['id'] as string | undefined) ?? idx} question={q} registry={effectiveRegistry} />
-            ))}
+            {questions.map((q, idx) => {
+              const qid = q['id'] as string | undefined;
+              // The flag self-clears visually once the question gains an answer —
+              // no bookkeeping on answer change, just re-evaluate at render.
+              const flagged = qid !== undefined && requiredFlags.has(qid) && isAnswerMissing(q);
+              return (
+                <div key={qid ?? idx} className={flagged ? 'survey-question-slot survey-question-slot--invalid' : 'survey-question-slot'}>
+                  <QuestionHost question={q} registry={effectiveRegistry} />
+                  {flagged && (
+                    <p className="survey-question__required-error" role="alert">
+                      {localeConfig.strings.requiredError}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
           </div>
           {showNextButton && (
             <div className="survey-screen__actions">

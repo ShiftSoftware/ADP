@@ -123,6 +123,170 @@ public class AnswerValidatorTests
         Assert.Empty(errors);
     }
 
+    // ── Path-aware required enforcement ────────────────────────────────────
+    // A branching survey routes the respondent past whole screens; required
+    // questions on unvisited branches must not block the submission. Visited
+    // screens are replayed from the answers via the computeNext mirror.
+
+    [Fact]
+    public void Validate_RequiredOnUnvisitedNavigationBranch_Passes()
+    {
+        var survey = BranchingSurvey();
+        var errors = AnswerValidator.Validate(survey, AnswerMap(
+            ("pick", "\"a\""),
+            ("a-input", "\"went with branch a\"")));
+        Assert.Empty(errors);
+    }
+
+    [Fact]
+    public void Validate_RequiredOnVisitedNavigationBranch_StillEnforced()
+    {
+        var survey = BranchingSurvey();
+        var errors = AnswerValidator.Validate(survey, AnswerMap(("pick", "\"a\"")));
+        Assert.Contains(errors, e => e.QuestionId == "a-input" && e.Message.Contains("required"));
+        Assert.DoesNotContain(errors, e => e.QuestionId == "b-input");
+    }
+
+    [Fact]
+    public void Validate_AnswerOnUnvisitedScreen_ShapeStillChecked()
+    {
+        // Menu loops legitimately leave answers on screens the replay doesn't
+        // visit — those values must still be well-formed.
+        var survey = BranchingSurvey();
+        var errors = AnswerValidator.Validate(survey, AnswerMap(
+            ("pick", "\"a\""),
+            ("a-input", "\"fine\""),
+            ("b-input", "42")));
+        Assert.Contains(errors, e => e.QuestionId == "b-input" && e.Message.Contains("string"));
+    }
+
+    [Fact]
+    public void Validate_RequiredOnLogicSkippedScreen_Passes()
+    {
+        var survey = LogicSurvey();
+        // Promoter: rule doesn't match, s1.nextScreen routes to end — detractor unvisited.
+        var errors = AnswerValidator.Validate(survey, AnswerMap(("nps", "9")));
+        Assert.Empty(errors);
+    }
+
+    [Fact]
+    public void Validate_RequiredOnLogicRoutedScreen_StillEnforced()
+    {
+        var survey = LogicSurvey();
+        // Detractor: rule routes to the details screen, whose paragraph is required.
+        var errors = AnswerValidator.Validate(survey, AnswerMap(("nps", "3")));
+        Assert.Contains(errors, e => e.QuestionId == "details" && e.Message.Contains("required"));
+    }
+
+    [Fact]
+    public void Validate_SequentialFallback_EnforcesFollowingScreens()
+    {
+        var survey = new SurveyDto
+        {
+            SurveyId = "s",
+            Title = LocalizedString.From("en", "S"),
+            Locales = new() { "en" },
+            DefaultLocale = "en",
+            Screens =
+            {
+                new InlineScreenDto
+                {
+                    Id = "s1",
+                    Questions = { QuestionEntryDto.FromInline(new TextQuestionDto { Id = "first", Title = LocalizedString.From("en", "First"), Required = true }) }
+                },
+                new InlineScreenDto
+                {
+                    Id = "s2",
+                    Questions = { QuestionEntryDto.FromInline(new TextQuestionDto { Id = "second", Title = LocalizedString.From("en", "Second"), Required = true }) }
+                },
+            }
+        };
+        var errors = AnswerValidator.Validate(survey, new Dictionary<string, JsonElement>());
+        Assert.Contains(errors, e => e.QuestionId == "first");
+        Assert.Contains(errors, e => e.QuestionId == "second");
+    }
+
+    /// <summary>pick (navList: a → branch-a, b → branch-b) → required paragraph per branch → end.</summary>
+    private static SurveyDto BranchingSurvey() => new()
+    {
+        SurveyId = "s",
+        Title = LocalizedString.From("en", "S"),
+        Locales = new() { "en" },
+        DefaultLocale = "en",
+        Screens =
+        {
+            new InlineScreenDto
+            {
+                Id = "pick",
+                Questions =
+                {
+                    QuestionEntryDto.FromInline(new NavigationListQuestionDto
+                    {
+                        Id = "pick",
+                        Title = LocalizedString.From("en", "Pick"),
+                        Required = true,
+                        Options =
+                        {
+                            new NavigationListOptionDto { Id = "a", Label = LocalizedString.From("en", "A"), NextScreen = "branch-a" },
+                            new NavigationListOptionDto { Id = "b", Label = LocalizedString.From("en", "B"), NextScreen = "branch-b" },
+                        }
+                    })
+                }
+            },
+            new InlineScreenDto
+            {
+                Id = "branch-a",
+                Questions = { QuestionEntryDto.FromInline(new ParagraphQuestionDto { Id = "a-input", Title = LocalizedString.From("en", "A?"), Required = true }) },
+                NextScreen = "end",
+            },
+            new InlineScreenDto
+            {
+                Id = "branch-b",
+                Questions = { QuestionEntryDto.FromInline(new ParagraphQuestionDto { Id = "b-input", Title = LocalizedString.From("en", "B?"), Required = true }) },
+                NextScreen = "end",
+            },
+            new InlineScreenDto { Id = "end", Title = LocalizedString.From("en", "Done") },
+        }
+    };
+
+    /// <summary>nps screen (nextScreen=end) with a nps&lt;=6 → details rule; details carries a required paragraph.</summary>
+    private static SurveyDto LogicSurvey() => new()
+    {
+        SurveyId = "s",
+        Title = LocalizedString.From("en", "S"),
+        Locales = new() { "en" },
+        DefaultLocale = "en",
+        Screens =
+        {
+            new InlineScreenDto
+            {
+                Id = "s1",
+                Questions = { QuestionEntryDto.FromInline(new NpsQuestionDto { Id = "nps", Title = LocalizedString.From("en", "NPS"), Required = true }) },
+                NextScreen = "end",
+            },
+            new InlineScreenDto
+            {
+                Id = "details",
+                Questions = { QuestionEntryDto.FromInline(new ParagraphQuestionDto { Id = "details", Title = LocalizedString.From("en", "What went wrong?"), Required = true }) },
+                NextScreen = "end",
+            },
+            new InlineScreenDto { Id = "end", Title = LocalizedString.From("en", "Done") },
+        },
+        Logic =
+        {
+            new DTOs.Logic.LogicRuleDto
+            {
+                If = new DTOs.Logic.PredicateConditionDto
+                {
+                    QuestionId = "nps",
+                    Op = Enums.LogicOperator.LessThanOrEqual,
+                    Value = JsonDocument.Parse("6").RootElement.Clone(),
+                },
+                Then = new DTOs.Logic.LogicActionDto { Goto = "details" }
+            }
+        }
+    };
+
     private static SurveyDto SurveyWith(params QuestionDto[] questions) => new()
     {
         SurveyId = "s",

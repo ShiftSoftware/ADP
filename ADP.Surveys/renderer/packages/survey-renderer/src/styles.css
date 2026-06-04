@@ -47,6 +47,17 @@
   margin: 0;
 }
 
+.survey-question-slot--invalid {
+  border-inline-start: 3px solid #b42318;
+  padding-inline-start: 10px;
+}
+
+.survey-question__required-error {
+  color: #b42318;
+  font-size: 0.9rem;
+  margin: 4px 0 0;
+}
+
 .survey-question {
   display: flex;
   flex-direction: column;

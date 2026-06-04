@@ -132,6 +132,7 @@ describe('SurveyRenderer', () => {
               noScreens: 'No screens.',
               unsupportedQuestion: 'Unsupported:',
               couldNotSubmit: 'Error:',
+              requiredError: 'Required!',
               yes: 'Yes',
               no: 'No',
             },
@@ -140,6 +141,26 @@ describe('SurveyRenderer', () => {
       />,
     );
     expect(screen.getByRole('button', { name: 'Continue' })).toBeInTheDocument();
+  });
+
+  it('blocks Next while a required question is unanswered, clears once answered', async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    render(<SurveyRenderer schema={fixture()} onSubmit={onSubmit} />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Next' })); // welcome → feedback (name not required)
+    expect(screen.getByRole('heading', { name: 'How was it?' })).toBeInTheDocument();
+
+    // NPS is required — Next must not navigate, and the inline error appears.
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    expect(screen.getByRole('heading', { name: 'How was it?' })).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('This question is required.');
+
+    // Answering clears the flag without another Next click.
+    await user.click(screen.getByRole('radio', { name: '9' }));
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    expect(screen.getByRole('heading', { name: 'Which brand?' })).toBeInTheDocument();
   });
 
   it('auto-submits the full answer map on arrival at a terminal zero-question screen', async () => {
