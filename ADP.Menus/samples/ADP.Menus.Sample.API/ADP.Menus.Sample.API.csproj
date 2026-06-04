@@ -26,6 +26,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\..\..\ADP.Models\Models\Models.csproj" />
 		<ProjectReference Include="..\..\ADP.Menus.API\ADP.Menus.API.csproj" />
 		<ProjectReference Include="..\ADP.Menus.Sample.Web\ADP.Menus.Sample.Web.csproj" />
 	</ItemGroup>

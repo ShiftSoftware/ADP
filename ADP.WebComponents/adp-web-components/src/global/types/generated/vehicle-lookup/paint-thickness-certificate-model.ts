@@ -1,0 +1,20 @@
+import type { PaintThicknessCertificateReadingModel } from './paint-thickness-certificate-reading-model';
+export type PaintThicknessCertificateModel = {
+    vin: string;
+    modelDescription: string;
+    modelCode: string;
+    modelYear: string;
+    exteriorColorCode: string;
+    katashiki: string;
+    variantCode: string;
+    invoiceDate?: string;
+    invoiceNumber: string;
+    companyName: string;
+    branchName: string;
+    cityName: string;
+    countryName: string;
+    source: string;
+    inspectionDate?: string;
+    readings: PaintThicknessCertificateReadingModel[];
+    panelImages: string[];
+};

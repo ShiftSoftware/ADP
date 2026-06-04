@@ -92,6 +92,22 @@ public class VehicleLookupService
         return await LookupFromAggregateAsync(vin, companyDataAggregate, requestOptions, disableLogs: false);
     }
 
+    /// <summary>
+    /// Builds the Paint Thickness Certificate for a VIN: the latest PDI paint-thickness inspection taken
+    /// strictly before the distributor's sale invoice date, plus vehicle header information.
+    /// Returns <c>null</c> when there is no distributor invoice date or no qualifying PDI inspection.
+    /// </summary>
+    public async Task<PaintThicknessCertificateModel> GetPaintThicknessCertificateAsync(string vin, string languageCode)
+    {
+        var companyDataAggregate = await vehicleLookupStorageService.GetAggregatedCompanyData(vin);
+
+        if (companyDataAggregate is null)
+            return null;
+
+        return await new PaintThicknessCertificateEvaluator(companyDataAggregate, lookupOptions, serviceProvider)
+            .Evaluate(languageCode);
+    }
+
     private async Task<VehicleLookupDTO> LookupFromAggregateAsync(
         string vin,
         CompanyDataAggregateModel companyDataAggregate,
