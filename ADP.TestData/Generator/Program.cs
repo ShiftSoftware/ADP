@@ -94,6 +94,23 @@ foreach (var envFile in Directory.GetFiles(environmentsDir, "*.json"))
         vehicleLookupOutput[vin] = vehicleLookup;
     }
 
+    // === Generate Paint Thickness Certificate Output ===
+    // Only VINs whose data satisfies the strict anchor (an invoiced VehicleEntry of
+    // LookupOptions.DistributorCompanyID + a PDI inspection strictly before it) appear.
+    var certificateOutput = new Dictionary<string, PaintThicknessCertificateModel>();
+
+    foreach (var (vin, aggregate) in env.Vehicles)
+    {
+        var certificate = await new PaintThicknessCertificateEvaluator(aggregate, lookupOptions, serviceProvider)
+            .Evaluate("en");
+
+        if (certificate is not null)
+        {
+            Console.WriteLine($"  Certificate: {vin}");
+            certificateOutput[vin] = certificate;
+        }
+    }
+
     // === Generate Part Lookup Output ===
     var partLookupOutput = new Dictionary<string, PartLookupDTO>();
 
@@ -129,6 +146,9 @@ foreach (var envFile in Directory.GetFiles(environmentsDir, "*.json"))
         var partJson = JsonSerializer.Serialize(partLookupOutput, serializeOptions);
         File.WriteAllText(Path.Combine(envOutputDir, "part-lookup.json"), partJson);
 
+        var certificateJson = JsonSerializer.Serialize(certificateOutput, serializeOptions);
+        File.WriteAllText(Path.Combine(envOutputDir, "paint-thickness-certificate.json"), certificateJson);
+
         Console.WriteLine($"  Output written to: {envOutputDir}");
     }
 }
@@ -159,6 +179,8 @@ static async Task<VehicleLookupDTO> GenerateVehicleLookup(
         IsAuthorized = new VehicleAuthorizationEvaluator(aggregate).Evaluate(),
         PaintThicknessInspections = await new VehiclePaintThicknessEvaluator(aggregate, options, serviceProvider)
             .Evaluate("en"),
+        PaintThicknessCertificateAvailable = new PaintThicknessCertificateEvaluator(aggregate, options, serviceProvider)
+            .EvaluateAvailability(),
         Identifiers = new VehicleIdentifierEvaluator(aggregate).Evaluate(vehicle),
         VehicleSpecification = await new VehicleSpecificationEvaluator(storageService).Evaluate(vehicle),
         ServiceHistory = await new VehicleServiceHistoryEvaluator(aggregate, options, serviceProvider)

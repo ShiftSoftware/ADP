@@ -19,6 +19,14 @@ namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 [Docable]
 public class PaintThicknessCertificateModel
 {
+    /// <summary>
+    /// The certificate's auto-generated serial number (e.g. <c>"3F09A-12B45"</c>), derived
+    /// deterministically from the chosen inspection via
+    /// <see cref="LookupOptions.PaintThicknessCertificateSerialNumberResolver"/> — the same inspection
+    /// always yields the same serial, so re-prints match. <c>null</c> when no resolver is configured.
+    /// </summary>
+    public string SerialNumber { get; set; }
+
     // ---- Vehicle header ----
 
     /// <summary>The Vehicle Identification Number.</summary>

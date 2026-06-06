@@ -22,6 +22,13 @@ public class LookupOptions
     public Dictionary<long?, int> BrandStandardWarrantyPeriodsInYears { get; set; } = new Dictionary<long?, int>();
     /// <summary>Resolver delegate that converts a paint thickness image path to a full URL.</summary>
     public Func<LookupOptionResolverModel<string>,ValueTask<string?>>? PaintThickneesImageUrlResolver { get; set; }
+    /// <summary>
+    /// Resolver delegate that derives the Paint Thickness Certificate's serial number from the chosen
+    /// inspection's <c>id</c>. Must be deterministic — the same inspection should always produce the same
+    /// serial so re-printed certificates match. When unset, <c>PaintThicknessCertificateModel.SerialNumber</c>
+    /// is <c>null</c>.
+    /// </summary>
+    public Func<LookupOptionResolverModel<string>, ValueTask<string?>>? PaintThicknessCertificateSerialNumberResolver { get; set; }
     /// <summary>Resolver delegate that converts an accessory image path to a full URL.</summary>
     public Func<LookupOptionResolverModel<string>, ValueTask<string?>>? AccessoryImageUrlResolver { get; set; }
     /// <summary>Resolver delegate that resolves company logo images.</summary>

@@ -11,6 +11,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<!-- Same Hashids implementation the production apps use (via ShiftEntityHashId), so the
+		     generated mock serial numbers match what the real endpoint produces. -->
+		<PackageReference Include="Hashids.net" Version="1.7.0" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="NSubstitute" Version="5.*" />
 	</ItemGroup>
 

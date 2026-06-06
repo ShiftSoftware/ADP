@@ -14,6 +14,7 @@ export type VehicleLookupDTO = {
     identifiers: VehicleIdentifiersDTO;
     saleInformation: VehicleSaleInformation;
     paintThicknessInspections: PaintThicknessInspectionDTO[];
+    paintThicknessCertificateAvailable: boolean;
     paintThickness: LegacyPaintThicknessDTO;
     isAuthorized: boolean;
     warranty: VehicleWarrantyDTO;

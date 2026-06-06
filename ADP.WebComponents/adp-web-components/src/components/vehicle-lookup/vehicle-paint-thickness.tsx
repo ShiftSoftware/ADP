@@ -5,6 +5,7 @@ import cn from '~lib/cn';
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
 import Eye from '~assets/eye.svg';
+import { PrintIcon } from '~assets/print-icon';
 import { CalendarDaysIcon } from '~assets/calendar-days-icon';
 
 import paintThicknessSchema from '~locales/vehicleLookup/paintThickness/type';
@@ -125,6 +126,42 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
 
   // #endregion
 
+  // #region Certificate Print Logic
+
+  /** Host-controlled visibility (e.g. the Hub wires it from the user's TypeAuth permission). */
+  @Prop() showCertificateButton: boolean = false;
+
+  /** Base URL of the Paint Thickness Certificate endpoint; the component appends /{vin}?lang=. */
+  @Prop() certificateEndpoint: string;
+
+  @State() isPrintingCertificate: boolean = false;
+
+  // The endpoint is authenticated via the same headers as the lookup itself, so the PDF is
+  // fetched with them and opened as a blob URL (a plain window.open cannot carry headers).
+  private printCertificate = async () => {
+    if (this.isPrintingCertificate || !this.certificateEndpoint || !this.vehicleLookup?.vin) return;
+
+    this.isPrintingCertificate = true;
+
+    try {
+      const url = `${this.certificateEndpoint.replace(/\/+$/, '')}/${encodeURIComponent(this.vehicleLookup.vin)}?lang=${this.language}`;
+
+      const response = await fetch(url, { headers: { ...this.headers } as HeadersInit });
+
+      if (!response.ok) throw new Error(`Certificate request failed with ${response.status}`);
+
+      const blobUrl = URL.createObjectURL(await response.blob());
+      window.open(blobUrl, '_blank', 'noopener');
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    } catch (error) {
+      console.error('vehicle-paint-thickness: certificate print failed', error);
+    } finally {
+      this.isPrintingCertificate = false;
+    }
+  };
+
+  // #endregion
+
   private groupPanels = (panels: PaintThicknessInspectionPanelDTO[]) => {
     const groups = new Map<string, { panel: string; position: string; left?: number; right?: number; center?: number }>();
 
@@ -181,8 +218,22 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
           direction={this.locale.sharedLocales.direction}
           errorMessage={this.locale.sharedLocales.errors[this.errorMessage] || this.locale.sharedLocales.errors.wildCard}
         >
-          <div class={cn('duration-300', 'py-[15px]', { hidden: hideTabs })}>
-            <shift-tabs activeTabIndex={this.activeTabIndex} changeActiveTab={this.onActiveTabChange} tabs={tabs}></shift-tabs>
+          <div class={cn('duration-300', 'py-[15px]', 'flex', 'items-center', 'gap-[8px]', { hidden: hideTabs })}>
+            <div class="min-w-0 flex-1">
+              <shift-tabs activeTabIndex={this.activeTabIndex} changeActiveTab={this.onActiveTabChange} tabs={tabs}></shift-tabs>
+            </div>
+
+            {/* Print button sized to mirror the shift-tabs tab buttons (px-16 / py-6 / 17px). */}
+            {this.showCertificateButton && !!this.certificateEndpoint && this.vehicleLookup?.paintThicknessCertificateAvailable && (
+              <button
+                disabled={this.isPrintingCertificate}
+                onClick={this.printCertificate}
+                class="me-[16px] flex shrink-0 cursor-pointer items-center gap-[8px] rounded-[4px] border border-amber-500 bg-amber-500 px-[16px] py-[6px] text-[17px] font-medium text-white shadow-sm transition-colors duration-300 hover:border-amber-600 hover:bg-amber-600 disabled:cursor-wait disabled:opacity-60"
+              >
+                <PrintIcon fill="currentColor" viewBox="0 0 24 24" class="size-[18px] shrink-0" />
+                <span class="whitespace-nowrap">{texts.printCertificate}</span>
+              </button>
+            )}
           </div>
 
           <flexible-container isOpened={!this.isLoading && !!activeInspection?.inspectionDate}>
