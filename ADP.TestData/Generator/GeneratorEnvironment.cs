@@ -32,6 +32,13 @@ public class GeneratorLookupOptions
     public Dictionary<long?, int> BrandStandardWarrantyPeriodsInYears { get; set; } = new();
     public bool LookupBrokerStock { get; set; }
     public bool IncludeInactivatedFreeServiceItems { get; set; }
+
+    /// <summary>
+    /// The distributor's CompanyID — the Paint Thickness Certificate's strict invoice
+    /// anchor (only an invoiced VehicleEntry of this company can anchor a certificate).
+    /// </summary>
+    public long? DistributorCompanyID { get; set; }
+
     public int? DistributorStockPartLookupQuantityThreshold { get; set; }
     public bool ShowPartLookupStockQauntity { get; set; }
     public bool EnableManufacturerLookup { get; set; }
@@ -65,9 +72,40 @@ public class GeneratorLookupOptions
             BrandStandardWarrantyPeriodsInYears = BrandStandardWarrantyPeriodsInYears,
             LookupBrokerStock = LookupBrokerStock,
             IncludeInactivatedFreeServiceItems = IncludeInactivatedFreeServiceItems,
+            DistributorCompanyID = DistributorCompanyID,
             DistributorStockPartLookupQuantityThreshold = DistributorStockPartLookupQuantityThreshold,
             ShowPartLookupStockQauntity = ShowPartLookupStockQauntity,
             EnableManufacturerLookup = EnableManufacturerLookup,
+        };
+
+        // Resolve paint-thickness image keys to deterministic placeholder photos so the
+        // web-component mocks and docs demos render a working gallery (the keys are
+        // real-shaped blob paths that don't exist in any storage account).
+        options.PaintThickneesImageUrlResolver = (model) =>
+        {
+            if (string.IsNullOrWhiteSpace(model.Value))
+                return new ValueTask<string?>((string?)null);
+
+            var seed = new string(model.Value.Where(char.IsLetterOrDigit).ToArray());
+            seed = seed.Length > 40 ? seed[^40..] : seed;
+
+            return new ValueTask<string?>($"https://picsum.photos/seed/{seed}/640/480");
+        };
+
+        // Certificate serial numbers: mirrors the production wiring in LookUpFunctions —
+        // Hashids (0-9A-F alphabet, min length 10) over the NUMERIC inspection id,
+        // displayed XXXXX-XXXXX. Bijective, so collision-free; non-numeric ids yield no
+        // serial (fail visible, not wrong) exactly like production.
+        var serialHashids = new HashidsNet.Hashids("paint-thickness-certificate-serial", 10, "0123456789ABCDEF");
+
+        options.PaintThicknessCertificateSerialNumberResolver = (model) =>
+        {
+            if (!long.TryParse(model.Value, out var inspectionId) || inspectionId < 0)
+                return new ValueTask<string?>((string?)null);
+
+            var code = serialHashids.EncodeLong(inspectionId);
+
+            return new ValueTask<string?>(code.Length >= 10 ? $"{code[..5]}-{code[5..]}" : code);
         };
 
         options.CompanyNameResolver = (model) =>

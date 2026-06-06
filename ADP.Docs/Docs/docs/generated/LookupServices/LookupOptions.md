@@ -10,6 +10,10 @@ The main configuration class for the lookup services.
 | ServiceItemImageUrlResolver <div><strong>``Func<LookupOptionResolverModel<Dictionary<string,string>>, ValueTask<string?>>?``</strong></div> | Resolver delegate that converts a multilingual image dictionary to a resolved image URL for service items. |
 | BrandStandardWarrantyPeriodsInYears <div><strong>``Dictionary<long?, int>``</strong></div> | A dictionary mapping brand IDs to their standard warranty period in years. |
 | PaintThickneesImageUrlResolver <div><strong>``Func<LookupOptionResolverModel<string>,ValueTask<string?>>?``</strong></div> | Resolver delegate that converts a paint thickness image path to a full URL. |
+| PaintThicknessCertificateSerialNumberResolver <div><strong>``Func<LookupOptionResolverModel<string>, ValueTask<string?>>?``</strong></div> | Resolver delegate that derives the Paint Thickness Certificate's serial number from the chosen
+ inspection's `id`. Must be deterministic — the same inspection should always produce the same
+ serial so re-printed certificates match. When unset, `PaintThicknessCertificateModel.SerialNumber`
+ is `null`. |
 | AccessoryImageUrlResolver <div><strong>``Func<LookupOptionResolverModel<string>, ValueTask<string?>>?``</strong></div> | Resolver delegate that converts an accessory image path to a full URL. |
 | CompanyLogoImageResolver <div><strong>``Func<LookupOptionResolverModel<List<ShiftFileDTO>?>, ValueTask<List<ShiftFileDTO>?>>?``</strong></div> | Resolver delegate that resolves company logo images. |
 | PartLocationNameResolver <div><strong>``Func<LookupOptionResolverModel<PartLocationNameResolverModel>, ValueTask<string?>>?``</strong></div> | Resolver delegate that resolves a part location identifier to a human-readable name. |

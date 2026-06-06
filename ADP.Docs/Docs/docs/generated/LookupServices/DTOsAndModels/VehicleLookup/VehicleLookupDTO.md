@@ -11,6 +11,10 @@ The main result returned by the vehicle lookup service.
 | Identifiers <div><strong>``VehicleIdentifiersDTO``</strong></div> | The vehicle's [identifiers](/generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleIdentifiersDTO.html) (VIN, Variant, Katashiki, Color, Trim, Brand). |
 | SaleInformation <div><strong>``VehicleSaleInformation``</strong></div> | The vehicle's [sale information](/generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleSaleInformation.html) including invoice date, dealer, and broker details. |
 | PaintThicknessInspections <div><strong>``IEnumerable<PaintThicknessInspectionDTO>``</strong></div> | A list of [paint thickness inspections](/generated/LookupServices/DTOsAndModels/VehicleLookup/PaintThicknessInspectionDTO.html) performed on this vehicle. |
+| PaintThicknessCertificateAvailable <div><strong>``bool``</strong></div> | Whether a  can be produced for this vehicle: the distributor has an
+ invoiced entry and a PDI paint-thickness inspection exists strictly before that invoice date.
+ Lets UIs decide whether to offer the certificate (e.g. a print button) without re-implementing the
+ anchor logic client-side. |
 | IsAuthorized <div><strong>``bool``</strong></div> | Indicates whether the vehicle is authorized (has official VIN entries or SSC records). |
 | Warranty <div><strong>``VehicleWarrantyDTO``</strong></div> | The vehicle's [warranty information](/generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleWarrantyDTO.html) including start/end dates and extended warranty. |
 | NextServiceDate <div><strong>``DateTime?``</strong></div> | The next scheduled service date for this vehicle. |

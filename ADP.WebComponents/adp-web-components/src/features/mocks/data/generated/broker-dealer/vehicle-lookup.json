@@ -24,6 +24,7 @@
       }
     },
     "paintThicknessInspections": [],
+    "paintThicknessCertificateAvailable": false,
     "isAuthorized": true,
     "warranty": {
       "hasActiveWarranty": false,
@@ -71,6 +72,7 @@
       }
     },
     "paintThicknessInspections": [],
+    "paintThicknessCertificateAvailable": false,
     "isAuthorized": true,
     "warranty": {
       "hasActiveWarranty": true,
@@ -270,6 +272,7 @@
       }
     },
     "paintThicknessInspections": [],
+    "paintThicknessCertificateAvailable": false,
     "isAuthorized": true,
     "warranty": {
       "hasActiveWarranty": false,
@@ -534,6 +537,7 @@
         ]
       }
     ],
+    "paintThicknessCertificateAvailable": false,
     "isAuthorized": true,
     "warranty": {
       "hasActiveWarranty": true,

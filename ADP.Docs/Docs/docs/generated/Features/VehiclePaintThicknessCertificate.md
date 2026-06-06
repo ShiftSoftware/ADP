@@ -136,4 +136,54 @@ Scenario: Panel images flow to the certificate gallery
   Then a paint thickness certificate is produced
   And the certificate has 2 readings
   And the certificate gallery has 3 images
+
+Scenario: Certificate produced end-to-end from the standard-dealer environment
+  Given the "standard-dealer" environment is loaded
+  And loading vehicle "JTMHX01J8L4198293" from the environment
+  When evaluating the paint thickness certificate with language "en"
+  Then a paint thickness certificate is produced
+  And the certificate is based on the inspection on "2024-01-10"
+  And the certificate invoice date is "2024-01-12"
+  And the certificate has 11 readings
+  And the certificate has a reading "Hood (Front)" with thickness 125.5
+  And the certificate gallery has 16 images
+
+Scenario: The availability flag is true when the environment vehicle qualifies
+  Given the "standard-dealer" environment is loaded
+  And loading vehicle "JTMHX01J8L4198293" from the environment
+  When checking paint thickness certificate availability
+  Then the paint thickness certificate is reported as available
+
+Scenario: The availability flag is false for a dealer-only vehicle
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID |
+    | JTMBFREVXKD123456 | 2024-01-15  | 2         |
+  And paint thickness inspections:
+    | InspectionDate | Source |
+    | 2024-01-10     | PDI    |
+  When checking paint thickness certificate availability
+  Then the paint thickness certificate is reported as unavailable
+
+Scenario: The serial number resolver stamps the certificate deterministically
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID |
+    | JTMBFREVXKD123456 | 2024-01-15  | 1         |
+  And paint thickness inspections:
+    | InspectionDate | Source |
+    | 2024-01-10     | PDI    |
+  And a paint thickness certificate serial number resolver that returns "3F09A-12B45"
+  When evaluating the paint thickness certificate with language "en"
+  Then a paint thickness certificate is produced
+  And the certificate serial number is "3F09A-12B45"
+
+Scenario: Without a serial number resolver the certificate has no serial
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID |
+    | JTMBFREVXKD123456 | 2024-01-15  | 1         |
+  And paint thickness inspections:
+    | InspectionDate | Source |
+    | 2024-01-10     | PDI    |
+  When evaluating the paint thickness certificate with language "en"
+  Then a paint thickness certificate is produced
+  And the certificate has no serial number
 ```

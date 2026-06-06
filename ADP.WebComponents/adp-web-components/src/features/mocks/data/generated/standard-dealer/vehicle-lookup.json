@@ -27,49 +27,70 @@
             "panelType": "Hood",
             "measuredThickness": 125.5,
             "panelPosition": "Front",
-            "images": []
+            "images": [
+              "https://picsum.photos/seed/sJTMHX01J8L419829320240110083000Hood1jpg/640/480",
+              "https://picsum.photos/seed/sJTMHX01J8L419829320240110083000Hood2jpg/640/480"
+            ]
           },
           {
             "panelType": "Fender",
             "measuredThickness": 118.0,
             "panelSide": "Left",
             "panelPosition": "Front",
-            "images": []
+            "images": [
+              "https://picsum.photos/seed/419829320240110083000LeftFrontFender1jpg/640/480",
+              "https://picsum.photos/seed/419829320240110083000LeftFrontFender2jpg/640/480"
+            ]
           },
           {
             "panelType": "Fender",
             "measuredThickness": 120.3,
             "panelSide": "Right",
             "panelPosition": "Front",
-            "images": []
+            "images": [
+              "https://picsum.photos/seed/19829320240110083000RightFrontFender1jpg/640/480",
+              "https://picsum.photos/seed/19829320240110083000RightFrontFender2jpg/640/480"
+            ]
           },
           {
             "panelType": "Door",
             "measuredThickness": 115.0,
             "panelSide": "Left",
             "panelPosition": "Front",
-            "images": []
+            "images": [
+              "https://picsum.photos/seed/8L419829320240110083000LeftFrontDoor1jpg/640/480",
+              "https://picsum.photos/seed/8L419829320240110083000LeftFrontDoor2jpg/640/480"
+            ]
           },
           {
             "panelType": "Door",
             "measuredThickness": 116.2,
             "panelSide": "Right",
             "panelPosition": "Front",
-            "images": []
+            "images": [
+              "https://picsum.photos/seed/L419829320240110083000RightFrontDoor1jpg/640/480",
+              "https://picsum.photos/seed/L419829320240110083000RightFrontDoor2jpg/640/480"
+            ]
           },
           {
             "panelType": "Door",
             "measuredThickness": 122.0,
             "panelSide": "Left",
             "panelPosition": "Rear",
-            "images": []
+            "images": [
+              "https://picsum.photos/seed/J8L419829320240110083000LeftRearDoor1jpg/640/480",
+              "https://picsum.photos/seed/J8L419829320240110083000LeftRearDoor2jpg/640/480"
+            ]
           },
           {
             "panelType": "Door",
             "measuredThickness": 121.5,
             "panelSide": "Right",
             "panelPosition": "Rear",
-            "images": []
+            "images": [
+              "https://picsum.photos/seed/8L419829320240110083000RightRearDoor1jpg/640/480",
+              "https://picsum.photos/seed/8L419829320240110083000RightRearDoor2jpg/640/480"
+            ]
           },
           {
             "panelType": "Fender",
@@ -89,7 +110,10 @@
             "panelType": "TailGate",
             "measuredThickness": 135.0,
             "panelPosition": "Rear",
-            "images": []
+            "images": [
+              "https://picsum.photos/seed/HX01J8L419829320240110083000TailGate1jpg/640/480",
+              "https://picsum.photos/seed/HX01J8L419829320240110083000TailGate2jpg/640/480"
+            ]
           },
           {
             "panelType": "Roof",
@@ -100,6 +124,7 @@
         ]
       }
     ],
+    "paintThicknessCertificateAvailable": true,
     "isAuthorized": true,
     "warranty": {
       "hasActiveWarranty": true,
@@ -380,6 +405,7 @@
       "invoiceDate": "2023-06-20"
     },
     "paintThicknessInspections": [],
+    "paintThicknessCertificateAvailable": false,
     "isAuthorized": true,
     "warranty": {
       "hasActiveWarranty": true,
@@ -554,6 +580,7 @@
       "vin": "UNKNOWN_VIN_12345"
     },
     "paintThicknessInspections": [],
+    "paintThicknessCertificateAvailable": false,
     "isAuthorized": false,
     "warranty": {
       "hasActiveWarranty": false,

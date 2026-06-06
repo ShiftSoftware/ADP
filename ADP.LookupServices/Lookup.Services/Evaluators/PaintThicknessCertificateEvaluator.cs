@@ -36,30 +36,31 @@ public class PaintThicknessCertificateEvaluator
         this.ServiceProvider = serviceProvider;
     }
 
+    /// <summary>
+    /// Whether a certificate can be produced for this vehicle, using exactly the same anchor + PDI
+    /// selection as <see cref="Evaluate"/> but skipping the model assembly and image resolution.
+    /// Surfaced on <c>VehicleLookupDTO.PaintThicknessCertificateAvailable</c> so UIs can offer the
+    /// certificate without re-implementing the anchor logic.
+    /// </summary>
+    public bool EvaluateAvailability()
+    {
+        return SelectQualifyingInspection() is not null;
+    }
+
     /// <param name="languageCode">Language used to resolve panel-image URLs.</param>
     /// <returns>The certificate model, or <c>null</c> when there is no distributor invoice date or no qualifying PDI inspection.</returns>
     public async Task<PaintThicknessCertificateModel> Evaluate(string languageCode)
     {
         // 1. Anchor on the distributor's sale invoice date — never a dealer's later sale (see SelectAnchorEntry).
         var anchorEntry = SelectAnchorEntry();
-        var invoiceDate = anchorEntry?.InvoiceDate;
 
-        if (invoiceDate is null)
-            return null; // no distributor invoice -> no certificate
-
-        // 2. Latest PDI inspection strictly before the invoice date. Source is matched case-insensitively and
-        //    trimmed; inspections without a date are excluded (cannot be ordered); same-day ties break by id.
-        var chosen = CompanyDataAggregate.PaintThicknessInspections?
-            .Where(p => p != null
-                     && string.Equals(p.Source?.Trim(), PdiSource, StringComparison.OrdinalIgnoreCase)
-                     && p.InspectionDate.HasValue
-                     && p.InspectionDate.Value.Date < invoiceDate.Value.Date)
-            .OrderByDescending(p => p.InspectionDate)
-            .ThenByDescending(p => p.id)
-            .FirstOrDefault();
+        // 2. Latest PDI inspection strictly before the invoice date.
+        var chosen = SelectQualifyingInspection(anchorEntry);
 
         if (chosen is null)
-            return null; // no qualifying PDI inspection -> no certificate
+            return null; // no distributor invoice or no qualifying PDI inspection -> no certificate
+
+        var invoiceDate = anchorEntry.InvoiceDate;
 
         // 3. Assemble the print model.
         var readings = new List<PaintThicknessCertificateReadingModel>();
@@ -91,6 +92,7 @@ public class PaintThicknessCertificateEvaluator
         // Vehicle descriptors and invoice fields come from the distributor's anchor entry.
         return new PaintThicknessCertificateModel
         {
+            SerialNumber = await ResolveSerialNumber(chosen.id, languageCode),
             VIN = anchorEntry.VIN ?? CompanyDataAggregate.VIN ?? chosen.VIN,
             ModelDescription = anchorEntry.ModelDescription ?? chosen.ModelDescription,
             ModelCode = anchorEntry.ModelCode,
@@ -133,6 +135,28 @@ public class PaintThicknessCertificateEvaluator
             .FirstOrDefault();
     }
 
+    /// <summary>
+    /// Selects the PDI inspection the certificate is based on: the latest inspection with a trimmed,
+    /// case-insensitive <c>"PDI"</c> source dated strictly before the anchor invoice date (same-day ties
+    /// break by <c>id</c>). Returns <c>null</c> when there is no anchor entry or no qualifying inspection.
+    /// </summary>
+    private PaintThicknessInspectionModel SelectQualifyingInspection(VehicleEntryModel anchorEntry = null)
+    {
+        var invoiceDate = (anchorEntry ?? SelectAnchorEntry())?.InvoiceDate;
+
+        if (invoiceDate is null)
+            return null;
+
+        return CompanyDataAggregate.PaintThicknessInspections?
+            .Where(p => p != null
+                     && string.Equals(p.Source?.Trim(), PdiSource, StringComparison.OrdinalIgnoreCase)
+                     && p.InspectionDate.HasValue
+                     && p.InspectionDate.Value.Date < invoiceDate.Value.Date)
+            .OrderByDescending(p => p.InspectionDate)
+            .ThenByDescending(p => p.id)
+            .FirstOrDefault();
+    }
+
     private static string BuildPanelLabel(PaintThicknessInspectionPanelModel panel)
     {
         // Mirrors the panel label format used in the LegacyPaintThickness branch of VehicleLookupService,
@@ -151,5 +175,13 @@ public class PaintThicknessCertificateEvaluator
             return await Options.PaintThickneesImageUrlResolver(new(image, languageCode, ServiceProvider));
 
         return image;
+    }
+
+    private async Task<string> ResolveSerialNumber(string inspectionId, string languageCode)
+    {
+        if (Options?.PaintThicknessCertificateSerialNumberResolver is not null)
+            return await Options.PaintThicknessCertificateSerialNumberResolver(new(inspectionId, languageCode, ServiceProvider));
+
+        return null;
     }
 }

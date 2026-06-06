@@ -37,6 +37,14 @@ public class VehicleLookupDTO
     /// </summary>
     public IEnumerable<PaintThicknessInspectionDTO> PaintThicknessInspections { get; set; }
 
+    /// <summary>
+    /// Whether a <b>Paint Thickness Certificate</b> can be produced for this vehicle: the distributor has an
+    /// invoiced entry and a PDI paint-thickness inspection exists strictly before that invoice date.
+    /// Lets UIs decide whether to offer the certificate (e.g. a print button) without re-implementing the
+    /// anchor logic client-side.
+    /// </summary>
+    public bool PaintThicknessCertificateAvailable { get; set; }
+
     [DocIgnore]
     [Obsolete("This property is deprecated. Use PaintThicknessInspections instead.")]
     public LegacyPaintThicknessDTO PaintThickness { get; set; }

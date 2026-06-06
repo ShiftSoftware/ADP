@@ -11,6 +11,7 @@ public class VehiclePaintThicknessCertificateStepDefinitions
     private readonly Support.TestContext _context;
     private PaintThicknessCertificateModel? _result;
     private bool _evaluated;
+    private bool? _availability;
 
     public VehiclePaintThicknessCertificateStepDefinitions(Support.TestContext context)
     {
@@ -30,6 +31,46 @@ public class VehiclePaintThicknessCertificateStepDefinitions
             _context.Aggregate, _context.Options, _context.ServiceProvider)
             .Evaluate(language);
         _evaluated = true;
+    }
+
+    [Given("a paint thickness certificate serial number resolver that returns {string}")]
+    public void GivenASerialNumberResolver(string serial)
+    {
+        _context.Options.PaintThicknessCertificateSerialNumberResolver = _ => new ValueTask<string?>(serial);
+    }
+
+    [Then("the certificate serial number is {string}")]
+    public void ThenTheSerialNumberIs(string serial)
+    {
+        Assert.NotNull(_result);
+        Assert.Equal(serial, _result!.SerialNumber);
+    }
+
+    [Then("the certificate has no serial number")]
+    public void ThenTheCertificateHasNoSerialNumber()
+    {
+        Assert.NotNull(_result);
+        Assert.Null(_result!.SerialNumber);
+    }
+
+    [When("checking paint thickness certificate availability")]
+    public void WhenCheckingAvailability()
+    {
+        _availability = new PaintThicknessCertificateEvaluator(
+            _context.Aggregate, _context.Options, _context.ServiceProvider)
+            .EvaluateAvailability();
+    }
+
+    [Then("the paint thickness certificate is reported as available")]
+    public void ThenReportedAsAvailable()
+    {
+        Assert.True(_availability);
+    }
+
+    [Then("the paint thickness certificate is reported as unavailable")]
+    public void ThenReportedAsUnavailable()
+    {
+        Assert.False(_availability);
     }
 
     [Then("a paint thickness certificate is produced")]
