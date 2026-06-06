@@ -155,7 +155,7 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table229 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table235 = new global::Reqnroll.Table(new string[] {
                             "LaborCode",
                             "CompanyID",
                             "BranchID",
@@ -163,7 +163,7 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "OrderDocumentNumber",
                             "InvoiceDate",
                             "ServiceDescription"});
-                table229.AddRow(new string[] {
+                table235.AddRow(new string[] {
                             "LAB001",
                             "1",
                             "10",
@@ -172,9 +172,9 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "2024-06-01",
                             "Oil change"});
 #line 6
-  await testRunner.GivenAsync("labor lines:", ((string)(null)), table229, "Given ");
+  await testRunner.GivenAsync("labor lines:", ((string)(null)), table235, "Given ");
 #line hidden
-                global::Reqnroll.Table table230 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table236 = new global::Reqnroll.Table(new string[] {
                             "PartNumber",
                             "CompanyID",
                             "BranchID",
@@ -182,7 +182,7 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "OrderDocumentNumber",
                             "InvoiceDate",
                             "SoldQuantity"});
-                table230.AddRow(new string[] {
+                table236.AddRow(new string[] {
                             "PRT-001",
                             "1",
                             "10",
@@ -191,7 +191,7 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "2024-06-01",
                             "2"});
 #line 9
-  await testRunner.AndAsync("part lines:", ((string)(null)), table230, "And ");
+  await testRunner.AndAsync("part lines:", ((string)(null)), table236, "And ");
 #line hidden
 #line 12
   await testRunner.AndAsync("company 1 is named \"Toyota Motors\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -239,21 +239,21 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table231 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table237 = new global::Reqnroll.Table(new string[] {
                             "LaborCode",
                             "CompanyID",
                             "BranchID",
                             "InvoiceNumber",
                             "OrderDocumentNumber",
                             "InvoiceDate"});
-                table231.AddRow(new string[] {
+                table237.AddRow(new string[] {
                             "LAB001",
                             "1",
                             "10",
                             "INV-001",
                             "JOB-001",
                             "2024-06-01"});
-                table231.AddRow(new string[] {
+                table237.AddRow(new string[] {
                             "LAB002",
                             "1",
                             "10",
@@ -261,7 +261,7 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "JOB-002",
                             "2024-07-01"});
 #line 21
-  await testRunner.GivenAsync("labor lines:", ((string)(null)), table231, "Given ");
+  await testRunner.GivenAsync("labor lines:", ((string)(null)), table237, "Given ");
 #line hidden
 #line 25
   await testRunner.WhenAsync("evaluating service history with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -294,7 +294,7 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table232 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table238 = new global::Reqnroll.Table(new string[] {
                             "LaborCode",
                             "CompanyID",
                             "BranchID",
@@ -302,7 +302,7 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "OrderDocumentNumber",
                             "InvoiceDate",
                             "NumberOfPartLines"});
-                table232.AddRow(new string[] {
+                table238.AddRow(new string[] {
                             "LAB001",
                             "1",
                             "10",
@@ -311,9 +311,9 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "2024-06-01",
                             "2"});
 #line 29
-  await testRunner.GivenAsync("labor lines:", ((string)(null)), table232, "Given ");
+  await testRunner.GivenAsync("labor lines:", ((string)(null)), table238, "Given ");
 #line hidden
-                global::Reqnroll.Table table233 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table239 = new global::Reqnroll.Table(new string[] {
                             "PartNumber",
                             "CompanyID",
                             "BranchID",
@@ -321,7 +321,7 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "OrderDocumentNumber",
                             "InvoiceDate",
                             "NumberOfLaborLines"});
-                table233.AddRow(new string[] {
+                table239.AddRow(new string[] {
                             "PRT-001",
                             "1",
                             "10",
@@ -330,7 +330,7 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "2024-06-01",
                             "1"});
 #line 32
-  await testRunner.AndAsync("part lines:", ((string)(null)), table233, "And ");
+  await testRunner.AndAsync("part lines:", ((string)(null)), table239, "And ");
 #line hidden
 #line 35
   await testRunner.WhenAsync("evaluating service history with language \"en\" and strong consistency", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");

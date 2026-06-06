@@ -118,9 +118,10 @@
         "showDocumentUploader": false,
         "warnings": [
           {
-            "key": "attachment-warning",
+            "key": "scan-warning",
             "title": "Warning",
-            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+            "imageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03\u0026spr=https\u0026st=2026-05-29T14%3A57%3A01Z\u0026se=2999-05-30T14%3A57%3A00Z\u0026sr=b\u0026sp=r\u0026sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
           }
         ],
         "documentUploaderIsRequired": false,
@@ -146,9 +147,10 @@
         "showDocumentUploader": false,
         "warnings": [
           {
-            "key": "attachment-warning",
+            "key": "scan-warning",
             "title": "Warning",
-            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+            "imageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03\u0026spr=https\u0026st=2026-05-29T14%3A57%3A01Z\u0026se=2999-05-30T14%3A57%3A00Z\u0026sr=b\u0026sp=r\u0026sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
           }
         ],
         "documentUploaderIsRequired": false,
@@ -180,9 +182,10 @@
             "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
           },
           {
-            "key": "attachment-warning",
+            "key": "scan-warning",
             "title": "Warning",
-            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+            "imageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03\u0026spr=https\u0026st=2026-05-29T14%3A57%3A01Z\u0026se=2999-05-30T14%3A57%3A00Z\u0026sr=b\u0026sp=r\u0026sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
           }
         ],
         "documentUploaderIsRequired": false,
@@ -199,9 +202,9 @@
         "serviceItemID": "SI-DEMO-MAJOR",
         "maximumMileage": 20000,
         "claimable": true,
-        "claimingMethodEnum": "ClaimByEnteringInvoiceAndJobNumber",
+        "claimingMethodEnum": "ClaimByScanningQRCode",
         "vehicleInspectionTypeID": "",
-        "signature": "nIReU6NX9hDQeJP6ww3uqmCihA1Iw4/ZXRO/TWKMDGc=",
+        "signature": "97ol8F24hpr0v10zqhWY9XALtZ6a3hD4zJmoYQCkImM=",
         "signatureExpiry": "2026-01-01T00:00:00Z"
       },
       {
@@ -214,9 +217,10 @@
             "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
           },
           {
-            "key": "attachment-warning",
+            "key": "scan-warning",
             "title": "Warning",
-            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+            "imageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03\u0026spr=https\u0026st=2026-05-29T14%3A57%3A01Z\u0026se=2999-05-30T14%3A57%3A00Z\u0026sr=b\u0026sp=r\u0026sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
           }
         ],
         "documentUploaderIsRequired": false,
@@ -296,9 +300,10 @@
         "showDocumentUploader": false,
         "warnings": [
           {
-            "key": "attachment-warning",
+            "key": "scan-warning",
             "title": "Warning",
-            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+            "imageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03\u0026spr=https\u0026st=2026-05-29T14%3A57%3A01Z\u0026se=2999-05-30T14%3A57%3A00Z\u0026sr=b\u0026sp=r\u0026sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
           }
         ],
         "documentUploaderIsRequired": false,
@@ -329,9 +334,10 @@
         "showDocumentUploader": false,
         "warnings": [
           {
-            "key": "attachment-warning",
+            "key": "scan-warning",
             "title": "Warning",
-            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+            "imageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03\u0026spr=https\u0026st=2026-05-29T14%3A57%3A01Z\u0026se=2999-05-30T14%3A57%3A00Z\u0026sr=b\u0026sp=r\u0026sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
           }
         ],
         "documentUploaderIsRequired": false,
@@ -368,9 +374,10 @@
             "confirmationText": "Confirm Claiming without Trusted Business Partner Invoice"
           },
           {
-            "key": "attachment-warning",
+            "key": "scan-warning",
             "title": "Warning",
-            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+            "imageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03\u0026spr=https\u0026st=2026-05-29T14%3A57%3A01Z\u0026se=2999-05-30T14%3A57%3A00Z\u0026sr=b\u0026sp=r\u0026sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
           }
         ],
         "documentUploaderIsRequired": false,
@@ -387,9 +394,9 @@
         "serviceItemID": "SI-DEMO-MAJOR",
         "maximumMileage": 20000,
         "claimable": true,
-        "claimingMethodEnum": "ClaimByEnteringInvoiceAndJobNumber",
+        "claimingMethodEnum": "ClaimByScanningQRCode",
         "vehicleInspectionTypeID": "",
-        "signature": "nxsmbcvcIlJlMc8L/Kos1KEJE\u002BF5IfIeWZ42lYXqEIk=",
+        "signature": "YBzh\u002B5fIJWrWrPlMEmcbqPZfGSAhR/hGOqxkPp2ZfMU=",
         "signatureExpiry": "2026-01-01T00:00:00Z"
       },
       {
@@ -408,9 +415,10 @@
             "confirmationText": "Confirm Claiming without Trusted Business Partner Invoice"
           },
           {
-            "key": "attachment-warning",
+            "key": "scan-warning",
             "title": "Warning",
-            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+            "imageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03\u0026spr=https\u0026st=2026-05-29T14%3A57%3A01Z\u0026se=2999-05-30T14%3A57%3A00Z\u0026sr=b\u0026sp=r\u0026sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
           }
         ],
         "documentUploaderIsRequired": false,
@@ -593,9 +601,10 @@
         "showDocumentUploader": false,
         "warnings": [
           {
-            "key": "attachment-warning",
+            "key": "scan-warning",
             "title": "Warning",
-            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+            "imageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03\u0026spr=https\u0026st=2026-05-29T14%3A57%3A01Z\u0026se=2999-05-30T14%3A57%3A00Z\u0026sr=b\u0026sp=r\u0026sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
           }
         ],
         "documentUploaderIsRequired": false,
@@ -621,9 +630,10 @@
         "showDocumentUploader": false,
         "warnings": [
           {
-            "key": "attachment-warning",
+            "key": "scan-warning",
             "title": "Warning",
-            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+            "imageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03\u0026spr=https\u0026st=2026-05-29T14%3A57%3A01Z\u0026se=2999-05-30T14%3A57%3A00Z\u0026sr=b\u0026sp=r\u0026sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
           }
         ],
         "documentUploaderIsRequired": false,
@@ -655,9 +665,10 @@
             "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
           },
           {
-            "key": "attachment-warning",
+            "key": "scan-warning",
             "title": "Warning",
-            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+            "imageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03\u0026spr=https\u0026st=2026-05-29T14%3A57%3A01Z\u0026se=2999-05-30T14%3A57%3A00Z\u0026sr=b\u0026sp=r\u0026sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
           }
         ],
         "documentUploaderIsRequired": false,
@@ -674,9 +685,9 @@
         "serviceItemID": "SI-DEMO-MAJOR",
         "maximumMileage": 20000,
         "claimable": true,
-        "claimingMethodEnum": "ClaimByEnteringInvoiceAndJobNumber",
+        "claimingMethodEnum": "ClaimByScanningQRCode",
         "vehicleInspectionTypeID": "",
-        "signature": "3yvsOt8GnP70nkpp5xWu\u002BjfkJmJToUlA6bNodk2gGlg=",
+        "signature": "h1ihJjDHYNLyr8Dvnb3HYoFxBbeUe2pkgy2q1ilrd1U=",
         "signatureExpiry": "2026-01-01T00:00:00Z"
       },
       {
@@ -689,9 +700,10 @@
             "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
           },
           {
-            "key": "attachment-warning",
+            "key": "scan-warning",
             "title": "Warning",
-            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+            "imageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03\u0026spr=https\u0026st=2026-05-29T14%3A57%3A01Z\u0026se=2999-05-30T14%3A57%3A00Z\u0026sr=b\u0026sp=r\u0026sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
+            "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
           }
         ],
         "documentUploaderIsRequired": false,

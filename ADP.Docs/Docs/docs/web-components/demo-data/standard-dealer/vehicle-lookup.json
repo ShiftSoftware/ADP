@@ -204,7 +204,8 @@
           {
             "key": "attachment-warning",
             "title": "Warning",
-            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+            "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
           }
         ],
         "documentUploaderIsRequired": false,
@@ -235,7 +236,8 @@
           {
             "key": "attachment-warning",
             "title": "Warning",
-            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+            "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
           }
         ],
         "documentUploaderIsRequired": false,
@@ -261,15 +263,16 @@
         "signatureExpiry": "2026-01-01T00:00:00Z"
       },
       {
-        "showDocumentUploader": false,
+        "showDocumentUploader": true,
         "warnings": [
           {
             "key": "attachment-warning",
             "title": "Warning",
-            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+            "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
           }
         ],
-        "documentUploaderIsRequired": false,
+        "documentUploaderIsRequired": true,
         "name": "10,000 KM Service",
         "type": "free",
         "typeEnum": "Free",
@@ -280,9 +283,9 @@
         "serviceItemID": "SI-003",
         "maximumMileage": 12000,
         "claimable": true,
-        "claimingMethodEnum": 0,
+        "claimingMethodEnum": "ClaimByEnteringInvoiceAndJobNumber",
         "vehicleInspectionTypeID": "",
-        "signature": "sky2cXkn\u002B6BigEcxaKIv2vFHpvtzk2pbmvSl6Rbkv5I=",
+        "signature": "8B/vv5qXLexgRG\u002BL3rhNgUFvB/8NFROiwttD0jMLcgY=",
         "signatureExpiry": "2026-01-01T00:00:00Z"
       },
       {
@@ -297,7 +300,8 @@
           {
             "key": "attachment-warning",
             "title": "Warning",
-            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+            "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
           }
         ],
         "documentUploaderIsRequired": false,
@@ -328,7 +332,8 @@
           {
             "key": "attachment-warning",
             "title": "Warning",
-            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+            "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
           }
         ],
         "documentUploaderIsRequired": false,
@@ -353,7 +358,8 @@
           {
             "key": "attachment-warning",
             "title": "Warning",
-            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+            "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
           }
         ],
         "documentUploaderIsRequired": false,
@@ -433,7 +439,8 @@
           {
             "key": "attachment-warning",
             "title": "Warning",
-            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+            "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
           }
         ],
         "documentUploaderIsRequired": false,
@@ -464,7 +471,8 @@
           {
             "key": "attachment-warning",
             "title": "Warning",
-            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+            "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
           }
         ],
         "documentUploaderIsRequired": false,
@@ -484,15 +492,16 @@
         "signatureExpiry": "2026-01-01T00:00:00Z"
       },
       {
-        "showDocumentUploader": false,
+        "showDocumentUploader": true,
         "warnings": [
           {
             "key": "attachment-warning",
             "title": "Warning",
-            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+            "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
           }
         ],
-        "documentUploaderIsRequired": false,
+        "documentUploaderIsRequired": true,
         "name": "10,000 KM Service",
         "type": "free",
         "typeEnum": "Free",
@@ -503,9 +512,9 @@
         "serviceItemID": "SI-003",
         "maximumMileage": 12000,
         "claimable": true,
-        "claimingMethodEnum": 0,
+        "claimingMethodEnum": "ClaimByEnteringInvoiceAndJobNumber",
         "vehicleInspectionTypeID": "",
-        "signature": "VetjMtjUwePcrwvFMdiDuMu1HUfWNYa0n3hBMIT2Yaw=",
+        "signature": "P1o8S4Rn\u002BnCAztps9KA79c0PEm\u002BM2EXtei/7/NV4vFs=",
         "signatureExpiry": "2026-01-01T00:00:00Z"
       },
       {
@@ -520,7 +529,8 @@
           {
             "key": "attachment-warning",
             "title": "Warning",
-            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+            "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
           }
         ],
         "documentUploaderIsRequired": false,
@@ -551,7 +561,8 @@
           {
             "key": "attachment-warning",
             "title": "Warning",
-            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted.\u003C/strong\u003E"
+            "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
           }
         ],
         "documentUploaderIsRequired": false,
