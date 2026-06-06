@@ -8,7 +8,6 @@
     "StandardItemClaimWarnings": [
       {
         "Key": "scan-warning",
-        "Title": "Warning",
         "BodyContent": "Please ensure that you scan a valid Service Invoice.<br/>QR code can be found on the Service Invoice.<br/><br/><strong>Claims submitted without a valid Service Invoice may be rejected.</strong>",
         "ImageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03&spr=https&st=2026-05-29T14%3A57%3A01Z&se=2999-05-30T14%3A57%3A00Z&sr=b&sp=r&sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
         "ConfirmationText": null
@@ -16,13 +15,11 @@
     ],
     "SkippedItemsClaimWarning": {
       "Key": "skipped-items-warning",
-      "Title": "Warning",
       "BodyContent": "The following Services are still 'Pending'. Claiming '{ItemName}' will mark them as 'Cancelled'.{SkippedItems}",
       "ConfirmationText": "Confirm Marking the above Services as 'Cancelled'."
     },
     "UnInvoicedBrokerClaimWarning": {
       "Key": "un-invoiced-broker-warning",
-      "Title": "Warning",
       "BodyContent": "This Vehicle is not yet invoiced by the following Trusted Business Partner: <strong>{BrokerName}</strong>",
       "ConfirmationText": "Confirm Claiming without Trusted Business Partner Invoice"
     }

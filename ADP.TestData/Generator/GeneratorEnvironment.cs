@@ -153,7 +153,6 @@ public class GeneratorLookupOptions
                 return new ValueTask<VehicleItemWarning?>(new VehicleItemWarning
                 {
                     Key = skippedTemplate.Key,
-                    Title = skippedTemplate.Title,
                     ImageUrl = skippedTemplate.ImageUrl,
                     BodyContent = skippedTemplate.BodyContent?
                         .Replace("{ItemName}", model.Value.ItemBeingClaimed.Name)
@@ -170,7 +169,6 @@ public class GeneratorLookupOptions
                 return new ValueTask<VehicleItemWarning?>(new VehicleItemWarning
                 {
                     Key = brokerTemplate.Key,
-                    Title = brokerTemplate.Title,
                     ImageUrl = brokerTemplate.ImageUrl,
                     BodyContent = brokerTemplate.BodyContent?.Replace("{BrokerName}", model.Value.BrokerName),
                     ConfirmationText = brokerTemplate.ConfirmationText,

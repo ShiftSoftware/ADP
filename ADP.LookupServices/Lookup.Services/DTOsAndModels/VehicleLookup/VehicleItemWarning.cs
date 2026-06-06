@@ -11,8 +11,6 @@ namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup
     {
         /// <summary>A unique key identifying this warning type.</summary>
         public string Key { get; set; }
-        /// <summary>The warning title.</summary>
-        public string Title { get; set; }
         /// <summary>An optional image URL displayed with the warning.</summary>
         public string? ImageUrl { get; set; }
         /// <summary>The main body content/message of the warning.</summary>

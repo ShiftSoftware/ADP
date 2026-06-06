@@ -9,7 +9,6 @@
     "StandardItemClaimWarnings": [
       {
         "Key": "attachment-warning",
-        "Title": "Warning",
         "BodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.<br/>A picture of the required document type is indicated on the right hand side of this warning message.<br/><br/><strong>Claims submitted without the necessary document will not be accepted</strong>",
         "ImageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03&st=2025-08-11T18%3A45%3A24Z&se=2999-08-12T18%3A45%3A00Z&sr=b&sp=r&sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
         "ConfirmationText": null
@@ -17,13 +16,11 @@
     ],
     "SkippedItemsClaimWarning": {
       "Key": "skipped-items-warning",
-      "Title": "Warning",
       "BodyContent": "The following Services are still 'Pending'. Claiming '{ItemName}' will mark them as 'Cancelled'.{SkippedItems}",
       "ConfirmationText": "Confirm Marking the above Services as 'Cancelled'."
     },
     "UnInvoicedBrokerClaimWarning": {
       "Key": "un-invoiced-broker-warning",
-      "Title": "Warning",
       "BodyContent": "This Vehicle is not yet invoiced by the following Trusted Business Partner: <strong>{BrokerName}</strong>",
       "ConfirmationText": "Confirm Claiming without Trusted Business Partner Invoice"
     }

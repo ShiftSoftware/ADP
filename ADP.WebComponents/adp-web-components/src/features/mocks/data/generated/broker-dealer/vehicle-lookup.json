@@ -119,7 +119,6 @@
         "warnings": [
           {
             "key": "scan-warning",
-            "title": "Warning",
             "imageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03\u0026spr=https\u0026st=2026-05-29T14%3A57%3A01Z\u0026se=2999-05-30T14%3A57%3A00Z\u0026sr=b\u0026sp=r\u0026sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
             "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
           }
@@ -148,7 +147,6 @@
         "warnings": [
           {
             "key": "scan-warning",
-            "title": "Warning",
             "imageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03\u0026spr=https\u0026st=2026-05-29T14%3A57%3A01Z\u0026se=2999-05-30T14%3A57%3A00Z\u0026sr=b\u0026sp=r\u0026sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
             "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
           }
@@ -177,13 +175,11 @@
         "warnings": [
           {
             "key": "skipped-items-warning",
-            "title": "Warning",
             "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u0027Free 20K Major Service\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003EFree 10K Inspection\u003C/li\u003E\u003C/ul\u003E",
             "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
           },
           {
             "key": "scan-warning",
-            "title": "Warning",
             "imageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03\u0026spr=https\u0026st=2026-05-29T14%3A57%3A01Z\u0026se=2999-05-30T14%3A57%3A00Z\u0026sr=b\u0026sp=r\u0026sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
             "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
           }
@@ -212,13 +208,11 @@
         "warnings": [
           {
             "key": "skipped-items-warning",
-            "title": "Warning",
             "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u0027Free 40K Extended Service\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003EFree 10K Inspection\u003C/li\u003E\u003Cli\u003EFree 20K Major Service\u003C/li\u003E\u003C/ul\u003E",
             "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
           },
           {
             "key": "scan-warning",
-            "title": "Warning",
             "imageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03\u0026spr=https\u0026st=2026-05-29T14%3A57%3A01Z\u0026se=2999-05-30T14%3A57%3A00Z\u0026sr=b\u0026sp=r\u0026sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
             "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
           }
@@ -301,7 +295,6 @@
         "warnings": [
           {
             "key": "scan-warning",
-            "title": "Warning",
             "imageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03\u0026spr=https\u0026st=2026-05-29T14%3A57%3A01Z\u0026se=2999-05-30T14%3A57%3A00Z\u0026sr=b\u0026sp=r\u0026sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
             "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
           }
@@ -335,7 +328,6 @@
         "warnings": [
           {
             "key": "scan-warning",
-            "title": "Warning",
             "imageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03\u0026spr=https\u0026st=2026-05-29T14%3A57%3A01Z\u0026se=2999-05-30T14%3A57%3A00Z\u0026sr=b\u0026sp=r\u0026sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
             "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
           }
@@ -369,13 +361,11 @@
         "warnings": [
           {
             "key": "un-invoiced-broker-warning",
-            "title": "Warning",
             "bodyContent": "This Vehicle is not yet invoiced by the following Trusted Business Partner: \u003Cstrong\u003EDuhok Vehicle Trader\u003C/strong\u003E",
             "confirmationText": "Confirm Claiming without Trusted Business Partner Invoice"
           },
           {
             "key": "scan-warning",
-            "title": "Warning",
             "imageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03\u0026spr=https\u0026st=2026-05-29T14%3A57%3A01Z\u0026se=2999-05-30T14%3A57%3A00Z\u0026sr=b\u0026sp=r\u0026sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
             "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
           }
@@ -404,19 +394,16 @@
         "warnings": [
           {
             "key": "skipped-items-warning",
-            "title": "Warning",
             "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u0027Free 40K Extended Service\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003EFree 20K Major Service\u003C/li\u003E\u003C/ul\u003E",
             "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
           },
           {
             "key": "un-invoiced-broker-warning",
-            "title": "Warning",
             "bodyContent": "This Vehicle is not yet invoiced by the following Trusted Business Partner: \u003Cstrong\u003EDuhok Vehicle Trader\u003C/strong\u003E",
             "confirmationText": "Confirm Claiming without Trusted Business Partner Invoice"
           },
           {
             "key": "scan-warning",
-            "title": "Warning",
             "imageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03\u0026spr=https\u0026st=2026-05-29T14%3A57%3A01Z\u0026se=2999-05-30T14%3A57%3A00Z\u0026sr=b\u0026sp=r\u0026sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
             "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
           }
@@ -602,7 +589,6 @@
         "warnings": [
           {
             "key": "scan-warning",
-            "title": "Warning",
             "imageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03\u0026spr=https\u0026st=2026-05-29T14%3A57%3A01Z\u0026se=2999-05-30T14%3A57%3A00Z\u0026sr=b\u0026sp=r\u0026sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
             "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
           }
@@ -631,7 +617,6 @@
         "warnings": [
           {
             "key": "scan-warning",
-            "title": "Warning",
             "imageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03\u0026spr=https\u0026st=2026-05-29T14%3A57%3A01Z\u0026se=2999-05-30T14%3A57%3A00Z\u0026sr=b\u0026sp=r\u0026sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
             "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
           }
@@ -660,13 +645,11 @@
         "warnings": [
           {
             "key": "skipped-items-warning",
-            "title": "Warning",
             "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u0027Free 20K Major Service\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003EFree 10K Inspection\u003C/li\u003E\u003C/ul\u003E",
             "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
           },
           {
             "key": "scan-warning",
-            "title": "Warning",
             "imageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03\u0026spr=https\u0026st=2026-05-29T14%3A57%3A01Z\u0026se=2999-05-30T14%3A57%3A00Z\u0026sr=b\u0026sp=r\u0026sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
             "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
           }
@@ -695,13 +678,11 @@
         "warnings": [
           {
             "key": "skipped-items-warning",
-            "title": "Warning",
             "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u0027Free 40K Extended Service\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003EFree 10K Inspection\u003C/li\u003E\u003Cli\u003EFree 20K Major Service\u003C/li\u003E\u003C/ul\u003E",
             "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
           },
           {
             "key": "scan-warning",
-            "title": "Warning",
             "imageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03\u0026spr=https\u0026st=2026-05-29T14%3A57%3A01Z\u0026se=2999-05-30T14%3A57%3A00Z\u0026sr=b\u0026sp=r\u0026sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
             "bodyContent": "Please ensure that you scan a valid Service Invoice.\u003Cbr/\u003EQR code can be found on the Service Invoice.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without a valid Service Invoice may be rejected.\u003C/strong\u003E"
           }

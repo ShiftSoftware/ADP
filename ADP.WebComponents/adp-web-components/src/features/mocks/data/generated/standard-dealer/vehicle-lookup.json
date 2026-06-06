@@ -203,7 +203,6 @@
         "warnings": [
           {
             "key": "attachment-warning",
-            "title": "Warning",
             "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
             "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
           }
@@ -235,7 +234,6 @@
         "warnings": [
           {
             "key": "attachment-warning",
-            "title": "Warning",
             "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
             "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
           }
@@ -267,7 +265,6 @@
         "warnings": [
           {
             "key": "attachment-warning",
-            "title": "Warning",
             "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
             "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
           }
@@ -293,13 +290,11 @@
         "warnings": [
           {
             "key": "skipped-items-warning",
-            "title": "Warning",
             "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002720,000 KM Service\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E10,000 KM Service\u003C/li\u003E\u003C/ul\u003E",
             "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
           },
           {
             "key": "attachment-warning",
-            "title": "Warning",
             "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
             "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
           }
@@ -325,13 +320,11 @@
         "warnings": [
           {
             "key": "skipped-items-warning",
-            "title": "Warning",
             "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002730,000 KM Service\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E10,000 KM Service\u003C/li\u003E\u003Cli\u003E20,000 KM Service\u003C/li\u003E\u003C/ul\u003E",
             "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
           },
           {
             "key": "attachment-warning",
-            "title": "Warning",
             "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
             "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
           }
@@ -357,7 +350,6 @@
         "warnings": [
           {
             "key": "attachment-warning",
-            "title": "Warning",
             "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
             "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
           }
@@ -438,7 +430,6 @@
         "warnings": [
           {
             "key": "attachment-warning",
-            "title": "Warning",
             "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
             "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
           }
@@ -470,7 +461,6 @@
         "warnings": [
           {
             "key": "attachment-warning",
-            "title": "Warning",
             "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
             "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
           }
@@ -496,7 +486,6 @@
         "warnings": [
           {
             "key": "attachment-warning",
-            "title": "Warning",
             "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
             "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
           }
@@ -522,13 +511,11 @@
         "warnings": [
           {
             "key": "skipped-items-warning",
-            "title": "Warning",
             "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002720,000 KM Service\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E10,000 KM Service\u003C/li\u003E\u003C/ul\u003E",
             "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
           },
           {
             "key": "attachment-warning",
-            "title": "Warning",
             "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
             "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
           }
@@ -554,13 +541,11 @@
         "warnings": [
           {
             "key": "skipped-items-warning",
-            "title": "Warning",
             "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002730,000 KM Service\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E10,000 KM Service\u003C/li\u003E\u003Cli\u003E20,000 KM Service\u003C/li\u003E\u003C/ul\u003E",
             "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
           },
           {
             "key": "attachment-warning",
-            "title": "Warning",
             "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
             "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
           }

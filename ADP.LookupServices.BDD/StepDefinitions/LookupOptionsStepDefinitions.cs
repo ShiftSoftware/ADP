@@ -154,7 +154,6 @@ public class LookupOptionsStepDefinitions
         _context.Options.StandardItemClaimWarnings = dataTable.Rows.Select(row => new VehicleItemWarning
         {
             Key = row["Key"],
-            Title = GetOptionalString(row, "Title"),
             BodyContent = GetOptionalString(row, "BodyContent"),
             ConfirmationText = GetOptionalString(row, "ConfirmationText"),
         }).ToList();
@@ -172,7 +171,6 @@ public class LookupOptionsStepDefinitions
             var warning = new VehicleItemWarning
             {
                 Key = "skippedItems",
-                Title = "Warning",
                 BodyContent = string.Join(", ", model.Value.SkippedItems.Select(x => x.ServiceItemID)),
                 ConfirmationText = "Confirm skipping the above items",
             };
@@ -189,7 +187,6 @@ public class LookupOptionsStepDefinitions
             var warning = new VehicleItemWarning
             {
                 Key = "unInvoicedBroker",
-                Title = "Warning",
                 BodyContent = model.Value.BrokerName,
                 ConfirmationText = "Confirm claiming without a broker invoice",
             };

@@ -23,8 +23,8 @@ Scenario: Standard warnings are attached to every service item
     | ServiceItemID | ClaimDate  | JobNumber | InvoiceNumber |
     | SI-10K        | 2026-02-01 | JOB-001   | INV-001       |
   And standard item claim warnings:
-    | Key     | Title   | BodyContent             | ConfirmationText |
-    | std-doc | Warning | Upload signed documents | I confirm        |
+    | Key     | BodyContent             | ConfirmationText |
+    | std-doc | Upload signed documents | I confirm        |
   And the free service start date is "2026-01-15"
   When evaluating service items for "1FDKF37GXVEB34368" with language "en"
   Then service item "SI-10K" has status "processed"
@@ -142,8 +142,8 @@ Scenario: Dynamic warnings are not produced when no resolver is configured
     | SI-10K        | 10K Service | 1       | 24              | 10000          |
     | SI-20K        | 20K Service | 1       | 24              | 20000          |
   And standard item claim warnings:
-    | Key     | Title   | BodyContent             | ConfirmationText |
-    | std-doc | Warning | Upload signed documents | I confirm        |
+    | Key     | BodyContent             | ConfirmationText |
+    | std-doc | Upload signed documents | I confirm        |
   And the sale has a broker without invoice
   And the free service start date is "2026-01-15"
   When evaluating service items for "1FDKF37GXVEB34368" with language "en"
@@ -163,8 +163,8 @@ Scenario: Dynamic warnings precede the standard warnings and do not leak onto ot
     | SI-10K        | 10K Service | 1       | 24              | 10000          |
     | SI-20K        | 20K Service | 1       | 24              | 20000          |
   And standard item claim warnings:
-    | Key     | Title   | BodyContent             | ConfirmationText |
-    | std-doc | Warning | Upload signed documents | I confirm        |
+    | Key     | BodyContent             | ConfirmationText |
+    | std-doc | Upload signed documents | I confirm        |
   And a skipped items claim warning resolver is configured
   And the sale has a broker without invoice
   And an un-invoiced broker claim warning resolver is configured
