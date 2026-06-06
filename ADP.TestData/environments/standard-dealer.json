@@ -9,7 +9,8 @@
       {
         "Key": "attachment-warning",
         "Title": "Warning",
-        "BodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.<br/><br/><strong>Claims submitted without the necessary document will not be accepted.</strong>",
+        "BodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.<br/>A picture of the required document type is indicated on the right hand side of this warning message.<br/><br/><strong>Claims submitted without the necessary document will not be accepted</strong>",
+        "ImageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03&st=2025-08-11T18%3A45%3A24Z&se=2999-08-12T18%3A45%3A00Z&sr=b&sp=r&sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
         "ConfirmationText": null
       }
     ],
@@ -378,9 +379,11 @@
       "CampaignEndDate": "2030-12-31",
       "CampaignActivationTrigger": "WarrantyActivation",
       "ValidityMode": "RelativeToActivation",
+      "ClaimingMethod": "ClaimByEnteringInvoiceAndJobNumber",
       "ActiveFor": 18,
       "ActiveForDurationType": "Months",
-      "MaximumMileage": 12000
+      "MaximumMileage": 12000,
+      "AttachmentFieldBehavior": "Required"
     },
     {
       "IntegrationID": "SI-004",

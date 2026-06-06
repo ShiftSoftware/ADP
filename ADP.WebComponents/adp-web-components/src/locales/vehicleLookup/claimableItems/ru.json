@@ -30,17 +30,22 @@
     "documentRequiredError": "Пожалуйста, заполните поле документа.",
     "uploadSingleDocument": "Загрузить документ",
     "uploadMultipleDocument": "Загрузить документы",
+    "uploadHint": "PDF или изображение",
     "serviceType": "Тип обслуживания",
     "name": "Имя",
+    "vin": "VIN",
     "activationDate": "Дата активации",
     "expireDate": "Дата истечения срока действия",
     "packageCode": "Код меню",
     "scanTheVoucher": "Scan the Voucher",
+    "scanHint": "Заявка отправится автоматически после успешного сканирования.",
     "qrCode": "QR Code",
     "processing": "Обработка ...",
     "enterServiceInfo": "Enter Service Info",
     "invoice": "Invoice",
     "jobNumber": "Job Number",
-    "claim": "Claim"
+    "claim": "Claim",
+    "claimFailed": "Не удалось активировать",
+    "ok": "ОК"
   }
 }

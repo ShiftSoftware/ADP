@@ -30,17 +30,22 @@
     "documentRequiredError": "من فضلك إملأ حقل المستند.",
     "uploadSingleDocument": "تحميل مستند",
     "uploadMultipleDocument": "تحميل المستندات",
+    "uploadHint": "ملف PDF أو صورة",
     "serviceType": "نوع الخدمة",
     "name": "اسم",
+    "vin": "VIN",
     "activationDate": "تاريخ التفعيل",
     "expireDate": "تاريخ انتهاء الصلاحية",
     "packageCode": "كود القائمة",
     "scanTheVoucher": "Scan the Voucher",
+    "scanHint": "تُرسل المطالبة تلقائياً عند مسح رمز صالح.",
     "qrCode": "QR Code",
     "processing": "يعالج ...",
     "enterServiceInfo": "Enter Service Info",
     "invoice": "Invoice",
     "jobNumber": "Job Number",
-    "claim": "Claim"
+    "claim": "Claim",
+    "claimFailed": "فشلت المطالبة",
+    "ok": "حسناً"
   }
 }

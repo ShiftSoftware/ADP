@@ -5,8 +5,10 @@ import yupTypeMapper from '~lib/yup-type-mapper';
 export const claimFormSchema = yupTypeMapper([
   'uploadSingleDocument',
   'uploadMultipleDocument',
+  'uploadHint',
   'serviceType',
   'name',
+  'vin',
   'print',
   'expand',
   'documentLimitError',
@@ -15,12 +17,15 @@ export const claimFormSchema = yupTypeMapper([
   'expireDate',
   'packageCode',
   'scanTheVoucher',
+  'scanHint',
   'qrCode',
   'processing',
   'enterServiceInfo',
   'invoice',
   'jobNumber',
   'claim',
+  'claimFailed',
+  'ok',
 ]);
 
 export type ClaimFormType = InferType<typeof claimFormSchema>;

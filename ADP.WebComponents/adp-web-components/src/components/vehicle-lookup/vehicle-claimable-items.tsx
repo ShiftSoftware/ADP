@@ -577,7 +577,9 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
         xhr.send(formData);
       });
     } catch (error) {
-      alert(error?.serverMessage || this.locale.sharedLocales.errors.requestFailedPleaseTryAgainLater);
+      // Show the claim-failure dialog, then re-throw: the rejection resets the
+      // claim form's loading state and keeps it open for retry.
+      this.claimForm.showError(error?.serverMessage || this.locale.sharedLocales.errors.requestFailedPleaseTryAgainLater);
       throw new Error(error);
     }
   };
@@ -600,7 +602,7 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
 
       this.completeClaim({ Success: true, ID: '11223344', PrintURL: 'http://localhost/test/print/1122' });
     } catch (error) {
-      alert(this.locale.sharedLocales.errors.requestFailedPleaseTryAgainLater);
+      this.claimForm.showError(this.locale.sharedLocales.errors.requestFailedPleaseTryAgainLater);
       throw new Error(error);
     }
   };

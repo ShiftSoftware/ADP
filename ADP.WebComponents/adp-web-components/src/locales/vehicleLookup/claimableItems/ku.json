@@ -30,17 +30,22 @@
     "documentRequiredError": "تکایە بەڵگەنامەکە داخڵبکە.",
     "uploadSingleDocument": "دانانی بەڵگەنامەیەک",
     "uploadMultipleDocument": "دانانی بەڵگەنامەکان",
+    "uploadHint": "PDF یان وێنە",
     "serviceType": "جۆری خزمەتگوزاری",
     "name": "ناو",
+    "vin": "VIN",
     "activationDate": "بەرواری چالاککردن",
     "expireDate": "بەرواری بەسەرچوون",
     "packageCode": "کۆدی مینیو",
     "scanTheVoucher": "Scan the Voucher",
+    "scanHint": "داواکارییەکە خۆکارانە پێشکەش دەکرێت بە سکانێکی دروست.",
     "qrCode": "QR Code",
     "processing": "پرۆسێسکردن ...",
     "enterServiceInfo": "Enter Service Info",
     "invoice": "Invoice",
     "jobNumber": "Job Number",
-    "claim": "Claim"
+    "claim": "Claim",
+    "claimFailed": "داواکارییەکە سەرکەوتوو نەبوو",
+    "ok": "باشە"
   }
 }

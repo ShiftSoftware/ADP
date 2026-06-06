@@ -7,9 +7,10 @@
     "ShowPartLookupStockQauntity": true,
     "StandardItemClaimWarnings": [
       {
-        "Key": "attachment-warning",
+        "Key": "scan-warning",
         "Title": "Warning",
-        "BodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.<br/><br/><strong>Claims submitted without the necessary document will not be accepted.</strong>",
+        "BodyContent": "Please ensure that you scan a valid Service Invoice.<br/>QR code can be found on the Service Invoice.<br/><br/><strong>Claims submitted without a valid Service Invoice may be rejected.</strong>",
+        "ImageUrl": "https://tiqplatformac65.blob.core.windows.net/media/Hub/required-claim-documents.svg?sv=2023-01-03&spr=https&st=2026-05-29T14%3A57%3A01Z&se=2999-05-30T14%3A57%3A00Z&sr=b&sp=r&sig=dPDKvP5Uv4V31iriM6%2F77RhXOEqEkalg8ph4zrq1FDU%3D",
         "ConfirmationText": null
       }
     ],
@@ -620,7 +621,7 @@
       "CampaignEndDate": "2030-12-31",
       "CampaignActivationTrigger": "WarrantyActivation",
       "ValidityMode": "RelativeToActivation",
-      "ClaimingMethod": "ClaimByEnteringInvoiceAndJobNumber",
+      "ClaimingMethod": "ClaimByScanningQRCode",
       "ActiveFor": 36,
       "ActiveForDurationType": "Months",
       "MaximumMileage": 20000,

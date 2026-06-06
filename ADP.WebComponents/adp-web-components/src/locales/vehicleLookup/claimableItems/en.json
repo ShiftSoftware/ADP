@@ -30,17 +30,22 @@
     "documentRequiredError": "Please Fill the document field.",
     "uploadSingleDocument": "Upload a document",
     "uploadMultipleDocument": "Upload the documents",
+    "uploadHint": "PDF or image",
     "serviceType": "Service Type",
     "name": "Name",
+    "vin": "VIN",
     "activationDate": "Activation Date",
     "expireDate": "Expiry Date",
     "packageCode": "Package Code",
     "scanTheVoucher": "Scan the Voucher",
+    "scanHint": "The claim submits automatically on a valid scan.",
     "qrCode": "QR Code",
     "processing": "Processing ...",
     "enterServiceInfo": "Enter Service Info",
     "invoice": "Invoice",
     "jobNumber": "Job Number",
-    "claim": "Claim"
+    "claim": "Claim",
+    "claimFailed": "Claim Failed",
+    "ok": "OK"
   }
 }
