@@ -1,6 +1,8 @@
+using NSubstitute;
 using Reqnroll;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using ShiftSoftware.ADP.Lookup.Services.Evaluators;
+using ShiftSoftware.ADP.Lookup.Services.Services;
 using Xunit;
 
 namespace LookupServices.BDD.StepDefinitions;
@@ -12,6 +14,7 @@ public class VehiclePaintThicknessCertificateStepDefinitions
     private PaintThicknessCertificateModel? _result;
     private bool _evaluated;
     private bool? _availability;
+    private VehicleLookupDTO? _lookupResult;
 
     public VehiclePaintThicknessCertificateStepDefinitions(Support.TestContext context)
     {
@@ -71,6 +74,87 @@ public class VehiclePaintThicknessCertificateStepDefinitions
     public void ThenReportedAsUnavailable()
     {
         Assert.False(_availability);
+    }
+
+    [Given("a paint thickness certificate url resolver that returns {string} for languages {string}")]
+    public void GivenACertificateUrlResolver(string urlTemplate, string languages)
+    {
+        var languageList = languages
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .ToList();
+
+        _context.Options.PaintThicknessCertificateUrlsResolver =
+            h => new ValueTask<List<PaintThicknessCertificateUrlDTO>?>(
+                languageList.Select(language => new PaintThicknessCertificateUrlDTO
+                {
+                    Language = language,
+                    Name = $"{language}-name",
+                    Url = $"{urlTemplate.Replace("{vin}", h.Value)}?lang={language}",
+                }).ToList());
+    }
+
+    [When("looking up the vehicle {string} with certificate url generation requested")]
+    public Task WhenLookingUpWithUrlGeneration(string vin) => LookupAsync(vin, generateCertificateUrl: true);
+
+    [When("looking up the vehicle {string} without certificate url generation")]
+    public Task WhenLookingUpWithoutUrlGeneration(string vin) => LookupAsync(vin, generateCertificateUrl: false);
+
+    // Exercises the FULL lookup (not the evaluator directly) — the certificate url is
+    // produced by VehicleLookupService.LookupFromAggregateAsync, gated on availability,
+    // the request option and the resolver.
+    private async Task LookupAsync(string vin, bool generateCertificateUrl)
+    {
+        _context.StorageService.GetAggregatedCompanyData(vin).Returns(_context.Aggregate);
+
+        var service = new VehicleLookupService(_context.StorageService, _context.ServiceProvider, null, _context.Options);
+
+        _lookupResult = await service.LookupAsync(vin, new VehicleLookupRequestOptions
+        {
+            GeneratePaintThicknessCertificateUrls = generateCertificateUrl,
+        });
+    }
+
+    [Then("the lookup reports the paint thickness certificate as available")]
+    public void ThenLookupReportsAvailable()
+    {
+        Assert.NotNull(_lookupResult);
+        Assert.True(_lookupResult!.PaintThicknessCertificateAvailable);
+    }
+
+    [Then("the lookup reports the paint thickness certificate as unavailable")]
+    public void ThenLookupReportsUnavailable()
+    {
+        Assert.NotNull(_lookupResult);
+        Assert.False(_lookupResult!.PaintThicknessCertificateAvailable);
+    }
+
+    [Then("the lookup has {int} certificate urls")]
+    public void ThenTheLookupHasCertificateUrls(int count)
+    {
+        Assert.NotNull(_lookupResult);
+        Assert.NotNull(_lookupResult!.PaintThicknessCertificateUrls);
+        Assert.Equal(count, _lookupResult!.PaintThicknessCertificateUrls.Count);
+    }
+
+    [Then("the lookup certificate url for {string} is {string}")]
+    public void ThenTheLookupCertificateUrlForLanguageIs(string language, string url)
+    {
+        Assert.NotNull(_lookupResult);
+        Assert.NotNull(_lookupResult!.PaintThicknessCertificateUrls);
+        var entry = _lookupResult!.PaintThicknessCertificateUrls.FirstOrDefault(x => x.Language == language);
+        Assert.NotNull(entry);
+        Assert.Equal(url, entry!.Url);
+
+        // The display name rides the entry untouched — UIs render it with no language
+        // knowledge of their own.
+        Assert.Equal($"{language}-name", entry!.Name);
+    }
+
+    [Then("the lookup has no certificate urls")]
+    public void ThenTheLookupHasNoCertificateUrls()
+    {
+        Assert.NotNull(_lookupResult);
+        Assert.Null(_lookupResult!.PaintThicknessCertificateUrls);
     }
 
     [Then("a paint thickness certificate is produced")]

@@ -193,6 +193,13 @@ static async Task<VehicleLookupDTO> GenerateVehicleLookup(
             .Evaluate(requestOptions),
     };
 
+    // Mirrors VehicleLookupService.LookupFromAggregateAsync: the signed certificate URLs
+    // (one per print language) ride the lookup when the certificate is available and a
+    // resolver is wired (the generator always opts in so mocks carry the print menu).
+    if (data.PaintThicknessCertificateAvailable && options.PaintThicknessCertificateUrlsResolver is not null)
+        data.PaintThicknessCertificateUrls = await options.PaintThicknessCertificateUrlsResolver(
+            new LookupOptionResolverModel<string>(vin, "en", serviceProvider));
+
     data.Warranty = new WarrantyAndFreeServiceDateEvaluator(aggregate, options)
         .Evaluate(vehicle, data.SaleInformation, requestOptions.IgnoreBrokerStock);
 

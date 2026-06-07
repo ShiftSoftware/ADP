@@ -180,3 +180,63 @@ Scenario: Without a serial number resolver the certificate has no serial
   When evaluating the paint thickness certificate with language "en"
   Then a paint thickness certificate is produced
   And the certificate has no serial number
+
+Scenario: The lookup carries a signed certificate url per supported language when the request opts in
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID |
+    | JTMBFREVXKD123456 | 2024-01-15  | 1         |
+  And paint thickness inspections:
+    | InspectionDate | Source |
+    | 2024-01-10     | PDI    |
+  And a paint thickness certificate url resolver that returns "https://lookup.example/certificate/{vin}" for languages "en, ar, ku"
+  When looking up the vehicle "JTMBFREVXKD123456" with certificate url generation requested
+  Then the lookup reports the paint thickness certificate as available
+  And the lookup has 3 certificate urls
+  And the lookup certificate url for "ar" is "https://lookup.example/certificate/JTMBFREVXKD123456?lang=ar"
+
+Scenario: The certificate urls are omitted when the request does not opt in
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID |
+    | JTMBFREVXKD123456 | 2024-01-15  | 1         |
+  And paint thickness inspections:
+    | InspectionDate | Source |
+    | 2024-01-10     | PDI    |
+  And a paint thickness certificate url resolver that returns "https://lookup.example/certificate/{vin}" for languages "en, ar, ku"
+  When looking up the vehicle "JTMBFREVXKD123456" without certificate url generation
+  Then the lookup reports the paint thickness certificate as available
+  And the lookup has no certificate urls
+
+Scenario: The certificate urls are omitted when no certificate is available
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID |
+    | JTMBFREVXKD123456 | 2024-01-15  | 2         |
+  And paint thickness inspections:
+    | InspectionDate | Source |
+    | 2024-01-10     | PDI    |
+  And a paint thickness certificate url resolver that returns "https://lookup.example/certificate/{vin}" for languages "en, ar, ku"
+  When looking up the vehicle "JTMBFREVXKD123456" with certificate url generation requested
+  Then the lookup reports the paint thickness certificate as unavailable
+  And the lookup has no certificate urls
+
+Scenario: The certificate urls are omitted without a resolver
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID |
+    | JTMBFREVXKD123456 | 2024-01-15  | 1         |
+  And paint thickness inspections:
+    | InspectionDate | Source |
+    | 2024-01-10     | PDI    |
+  When looking up the vehicle "JTMBFREVXKD123456" with certificate url generation requested
+  Then the lookup reports the paint thickness certificate as available
+  And the lookup has no certificate urls
+
+Scenario: An empty url set from the resolver stays null on the lookup
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID |
+    | JTMBFREVXKD123456 | 2024-01-15  | 1         |
+  And paint thickness inspections:
+    | InspectionDate | Source |
+    | 2024-01-10     | PDI    |
+  And a paint thickness certificate url resolver that returns "https://lookup.example/certificate/{vin}" for languages ""
+  When looking up the vehicle "JTMBFREVXKD123456" with certificate url generation requested
+  Then the lookup reports the paint thickness certificate as available
+  And the lookup has no certificate urls

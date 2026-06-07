@@ -28,6 +28,13 @@ public class VehicleLookupRequestOptions
     public bool LookupEndCustomer { get; set; }
     /// <summary>Whether to include the legacy paint thickness format in the response.</summary>
     public bool LegacyPaintThickness { get; set; }
+    /// <summary>
+    /// Whether to generate the Paint Thickness Certificate's signed public URLs
+    /// (<c>VehicleLookupDTO.PaintThicknessCertificateUrls</c>) when the certificate is available.
+    /// The endpoint decides this per request — typically from a server-side permission check —
+    /// so the capability URLs are only produced for callers allowed to print the certificate.
+    /// </summary>
+    public bool GeneratePaintThicknessCertificateUrls { get; set; }
     /// <summary>Whether to use Katashiki instead of VariantCode for vehicle model lookup.</summary>
     public bool UseKatashikiLookup { get; set; }
 

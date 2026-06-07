@@ -45,6 +45,20 @@ public class VehicleLookupDTO
     /// </summary>
     public bool PaintThicknessCertificateAvailable { get; set; }
 
+    /// <summary>
+    /// Signed public URLs that serve the Paint Thickness Certificate — one
+    /// <see cref="PaintThicknessCertificateUrlDTO">entry</see> per print language the issuing host
+    /// supports (the host owns the template set, so it declares the languages by what it issues
+    /// here; list order is display order). The same kind of links the printed certificate's QR
+    /// carries. Set only when <see cref="PaintThicknessCertificateAvailable"/> is true, the
+    /// request opted in via
+    /// <c>VehicleLookupRequestOptions.GeneratePaintThicknessCertificateUrls</c> (the endpoint's
+    /// server-side permission check), and the host configured
+    /// <c>LookupOptions.PaintThicknessCertificateUrlsResolver</c>. UIs render a print menu from
+    /// the list and simply open the chosen URL in a new tab — no authenticated download round-trip.
+    /// </summary>
+    public List<PaintThicknessCertificateUrlDTO> PaintThicknessCertificateUrls { get; set; }
+
     [DocIgnore]
     [Obsolete("This property is deprecated. Use PaintThicknessInspections instead.")]
     public LegacyPaintThicknessDTO PaintThickness { get; set; }

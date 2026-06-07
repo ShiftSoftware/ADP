@@ -29,6 +29,17 @@ public class LookupOptions
     /// is <c>null</c>.
     /// </summary>
     public Func<LookupOptionResolverModel<string>, ValueTask<string?>>? PaintThicknessCertificateSerialNumberResolver { get; set; }
+    /// <summary>
+    /// Resolver delegate that generates the Paint Thickness Certificate's signed public URLs for a
+    /// VIN — one entry per print language the host supports (the host owns the certificate
+    /// templates, so it declares the supported set by what it returns here; list order is display
+    /// order). The same kind of links the printed certificate's QR carries. Invoked only when the
+    /// certificate is available and the request opted in via
+    /// <see cref="VehicleLookupRequestOptions.GeneratePaintThicknessCertificateUrls"/>. Receives the
+    /// VIN as the value and the request's language code. When unset,
+    /// <c>VehicleLookupDTO.PaintThicknessCertificateUrls</c> stays null.
+    /// </summary>
+    public Func<LookupOptionResolverModel<string>, ValueTask<List<PaintThicknessCertificateUrlDTO>?>>? PaintThicknessCertificateUrlsResolver { get; set; }
     /// <summary>Resolver delegate that converts an accessory image path to a full URL.</summary>
     public Func<LookupOptionResolverModel<string>, ValueTask<string?>>? AccessoryImageUrlResolver { get; set; }
     /// <summary>Resolver delegate that resolves company logo images.</summary>

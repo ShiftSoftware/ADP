@@ -108,6 +108,19 @@ public class GeneratorLookupOptions
             return new ValueTask<string?>(code.Length >= 10 ? $"{code[..5]}-{code[5..]}" : code);
         };
 
+        // Certificate print URLs: deterministic, production-shaped landing links (one per
+        // print language, mirroring the LookUpFunctions wiring) so the web-component mocks
+        // and docs demos render the print menu. The host is fake on purpose — mocks only
+        // need the menu to appear and carry plausible hrefs.
+        options.PaintThicknessCertificateUrlsResolver = (model) =>
+            new ValueTask<List<PaintThicknessCertificateUrlDTO>?>(
+                new[] { ("en", "English"), ("ar", "العربية"), ("ku", "کوردی") }.Select(language => new PaintThicknessCertificateUrlDTO
+                {
+                    Language = language.Item1,
+                    Name = language.Item2,
+                    Url = $"https://lookup.example/paint-thickness-certificate/{model.Value}?expires=9999-12-31.23-59-59-9999&token=mock-token&lang={language.Item1}",
+                }).ToList());
+
         options.CompanyNameResolver = (model) =>
         {
             var name = model.Value.HasValue && companyNames.TryGetValue(model.Value.Value, out var n) ? n : null;

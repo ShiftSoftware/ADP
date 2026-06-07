@@ -134,6 +134,21 @@ public class VehicleLookupService
             SaleInformation = await new VehicleSaleInformationEvaluator(companyDataAggregate, lookupOptions, serviceProvider, vehicleLookupStorageService).Evaluate(requestOptions),
         };
 
+        // The certificate's signed public URLs (one per language the host supports): produced
+        // only when the certificate is available, the endpoint opted in (its server-side
+        // permission check), and the host wired a resolver. An empty result stays null so
+        // consumers have a single "no print offered" signal.
+        if (data.PaintThicknessCertificateAvailable
+            && requestOptions.GeneratePaintThicknessCertificateUrls
+            && lookupOptions.PaintThicknessCertificateUrlsResolver is not null)
+        {
+            var certificateUrls = await lookupOptions.PaintThicknessCertificateUrlsResolver(
+                new LookupOptionResolverModel<string>(vin, requestOptions.LanguageCode, serviceProvider));
+
+            if (certificateUrls is not null && certificateUrls.Count > 0)
+                data.PaintThicknessCertificateUrls = certificateUrls;
+        }
+
         if (requestOptions.LegacyPaintThickness)
         {
             var paintThickness = data.PaintThicknessInspections

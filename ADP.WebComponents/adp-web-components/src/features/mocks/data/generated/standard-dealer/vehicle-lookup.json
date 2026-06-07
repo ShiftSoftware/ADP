@@ -125,6 +125,23 @@
       }
     ],
     "paintThicknessCertificateAvailable": true,
+    "paintThicknessCertificateUrls": [
+      {
+        "language": "en",
+        "name": "English",
+        "url": "https://lookup.example/paint-thickness-certificate/JTMHX01J8L4198293?expires=9999-12-31.23-59-59-9999\u0026token=mock-token\u0026lang=en"
+      },
+      {
+        "language": "ar",
+        "name": "\u0627\u0644\u0639\u0631\u0628\u064A\u0629",
+        "url": "https://lookup.example/paint-thickness-certificate/JTMHX01J8L4198293?expires=9999-12-31.23-59-59-9999\u0026token=mock-token\u0026lang=ar"
+      },
+      {
+        "language": "ku",
+        "name": "\u06A9\u0648\u0631\u062F\u06CC",
+        "url": "https://lookup.example/paint-thickness-certificate/JTMHX01J8L4198293?expires=9999-12-31.23-59-59-9999\u0026token=mock-token\u0026lang=ku"
+      }
+    ],
     "isAuthorized": true,
     "warranty": {
       "hasActiveWarranty": true,

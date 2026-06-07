@@ -14,6 +14,14 @@ The main configuration class for the lookup services.
  inspection's `id`. Must be deterministic — the same inspection should always produce the same
  serial so re-printed certificates match. When unset, `PaintThicknessCertificateModel.SerialNumber`
  is `null`. |
+| PaintThicknessCertificateUrlsResolver <div><strong>``Func<LookupOptionResolverModel<string>, ValueTask<List<PaintThicknessCertificateUrlDTO>?>>?``</strong></div> | Resolver delegate that generates the Paint Thickness Certificate's signed public URLs for a
+ VIN — one entry per print language the host supports (the host owns the certificate
+ templates, so it declares the supported set by what it returns here; list order is display
+ order). The same kind of links the printed certificate's QR carries. Invoked only when the
+ certificate is available and the request opted in via
+ `VehicleLookupRequestOptions.GeneratePaintThicknessCertificateUrls`. Receives the
+ VIN as the value and the request's language code. When unset,
+ `VehicleLookupDTO.PaintThicknessCertificateUrls` stays null. |
 | AccessoryImageUrlResolver <div><strong>``Func<LookupOptionResolverModel<string>, ValueTask<string?>>?``</strong></div> | Resolver delegate that converts an accessory image path to a full URL. |
 | CompanyLogoImageResolver <div><strong>``Func<LookupOptionResolverModel<List<ShiftFileDTO>?>, ValueTask<List<ShiftFileDTO>?>>?``</strong></div> | Resolver delegate that resolves company logo images. |
 | PartLocationNameResolver <div><strong>``Func<LookupOptionResolverModel<PartLocationNameResolverModel>, ValueTask<string?>>?``</strong></div> | Resolver delegate that resolves a part location identifier to a human-readable name. |

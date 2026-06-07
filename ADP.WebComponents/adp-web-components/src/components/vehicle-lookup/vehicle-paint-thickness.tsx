@@ -1,10 +1,11 @@
-import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stencil/core';
+import { Component, Element, Host, Listen, Method, Prop, State, Watch, h } from '@stencil/core';
 
 import cn from '~lib/cn';
 
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
 import Eye from '~assets/eye.svg';
+import { ArrowIcon } from '~assets/arrow-icon';
 import { PrintIcon } from '~assets/print-icon';
 import { CalendarDaysIcon } from '~assets/calendar-days-icon';
 
@@ -118,6 +119,7 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
   @Watch('vehicleLookup')
   onVehicleLookupChange() {
     this.activeTabIndex = 0;
+    this.certificateMenuOpen = false;
   }
 
   private onActiveTabChange = ({ idx }: { label: string; idx: number }) => {
@@ -128,37 +130,20 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
 
   // #region Certificate Print Logic
 
-  /** Host-controlled visibility (e.g. the Hub wires it from the user's TypeAuth permission). */
+  /** Host-controlled visibility (e.g. a feature gate). The links themselves come from the lookup
+   *  response (`paintThicknessCertificateUrls`, one signed URL per print language with its menu
+   *  label) — the server only issues them to callers allowed to print, so no endpoint, auth
+   *  headers, fetch or language knowledge live on the client. */
   @Prop() showCertificateButton: boolean = false;
 
-  /** Base URL of the Paint Thickness Certificate endpoint; the component appends /{vin}?lang=. */
-  @Prop() certificateEndpoint: string;
+  @State() certificateMenuOpen: boolean = false;
 
-  @State() isPrintingCertificate: boolean = false;
-
-  // The endpoint is authenticated via the same headers as the lookup itself, so the PDF is
-  // fetched with them and opened as a blob URL (a plain window.open cannot carry headers).
-  private printCertificate = async () => {
-    if (this.isPrintingCertificate || !this.certificateEndpoint || !this.vehicleLookup?.vin) return;
-
-    this.isPrintingCertificate = true;
-
-    try {
-      const url = `${this.certificateEndpoint.replace(/\/+$/, '')}/${encodeURIComponent(this.vehicleLookup.vin)}?lang=${this.language}`;
-
-      const response = await fetch(url, { headers: { ...this.headers } as HeadersInit });
-
-      if (!response.ok) throw new Error(`Certificate request failed with ${response.status}`);
-
-      const blobUrl = URL.createObjectURL(await response.blob());
-      window.open(blobUrl, '_blank', 'noopener');
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
-    } catch (error) {
-      console.error('vehicle-paint-thickness: certificate print failed', error);
-    } finally {
-      this.isPrintingCertificate = false;
-    }
-  };
+  // Shadow DOM retargets inner clicks to the host element, so any click whose composed
+  // path includes the host happened inside the component; everything else closes the menu.
+  @Listen('click', { target: 'document' })
+  onDocumentClick(event: MouseEvent) {
+    if (this.certificateMenuOpen && !event.composedPath().includes(this.el)) this.certificateMenuOpen = false;
+  }
 
   // #endregion
 
@@ -204,6 +189,8 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
         images: panel.images,
       }));
 
+    const certificateUrls = this.vehicleLookup?.paintThicknessCertificateUrls || [];
+
     const colWidths = { panel: 200, position: 200, side: 150 };
 
     return (
@@ -223,16 +210,41 @@ export class VehiclePaintThickness implements MultiLingual, VehicleInfoLayoutInt
               <shift-tabs activeTabIndex={this.activeTabIndex} changeActiveTab={this.onActiveTabChange} tabs={tabs}></shift-tabs>
             </div>
 
-            {/* Print button sized to mirror the shift-tabs tab buttons (px-16 / py-6 / 17px). */}
-            {this.showCertificateButton && !!this.certificateEndpoint && this.vehicleLookup?.paintThicknessCertificateAvailable && (
-              <button
-                disabled={this.isPrintingCertificate}
-                onClick={this.printCertificate}
-                class="me-[16px] flex shrink-0 cursor-pointer items-center gap-[8px] rounded-[4px] border border-amber-500 bg-amber-500 px-[16px] py-[6px] text-[17px] font-medium text-white shadow-sm transition-colors duration-300 hover:border-amber-600 hover:bg-amber-600 disabled:cursor-wait disabled:opacity-60"
-              >
-                <PrintIcon fill="currentColor" viewBox="0 0 24 24" class="size-[18px] shrink-0" />
-                <span class="whitespace-nowrap">{texts.printCertificate}</span>
-              </button>
+            {/* Print menu sized to mirror the shift-tabs tab buttons (px-16 / py-6 / 17px).
+                The button opens a language menu; each item is a plain anchor to that
+                language's server-issued signed URL — opens in a new tab with no fetch, so
+                no auth plumbing and no popup-blocker interception. */}
+            {this.showCertificateButton && !!certificateUrls.length && (
+              <div class="relative me-[16px] shrink-0">
+                <button
+                  aria-haspopup="menu"
+                  aria-expanded={this.certificateMenuOpen ? 'true' : 'false'}
+                  onClick={() => (this.certificateMenuOpen = !this.certificateMenuOpen)}
+                  class="flex w-full cursor-pointer items-center gap-[8px] rounded-[4px] border border-amber-500 bg-amber-500 px-[16px] py-[6px] text-[17px] font-medium text-white shadow-sm transition-colors duration-300 hover:border-amber-600 hover:bg-amber-600"
+                >
+                  <PrintIcon fill="currentColor" viewBox="0 0 24 24" class="size-[18px] shrink-0" />
+                  <span class="whitespace-nowrap">{texts.printCertificate}</span>
+                  <ArrowIcon class={cn('size-[16px] shrink-0 transition-transform duration-300', { 'rotate-180': this.certificateMenuOpen })} />
+                </button>
+
+                {this.certificateMenuOpen && (
+                  <div role="menu" class="absolute end-0 top-full z-10 mt-[4px] min-w-full overflow-hidden rounded-[4px] border border-slate-200 bg-white shadow-lg">
+                    {certificateUrls.map(({ language, name, url }) => (
+                      <a
+                        key={language}
+                        role="menuitem"
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => (this.certificateMenuOpen = false)}
+                        class="block whitespace-nowrap px-[16px] py-[8px] text-[16px] text-slate-700 no-underline transition-colors duration-150 hover:bg-amber-50"
+                      >
+                        {name || language}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
