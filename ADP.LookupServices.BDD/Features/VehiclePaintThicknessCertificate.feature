@@ -1,6 +1,6 @@
 Feature: Vehicle Paint Thickness Certificate
   The Paint Thickness Certificate shows the readings from the latest PDI
-  paint-thickness inspection taken strictly before the DISTRIBUTOR's sale
+  paint-thickness inspection taken on or before the DISTRIBUTOR's sale
   invoice date. The anchor entry must belong to the distributor company
   (CompanyID == DistributorCompanyID); if there is no such invoiced entry,
   no certificate is produced.
@@ -63,16 +63,28 @@ Scenario: The latest PDI inspection before the invoice date wins
   Then a paint thickness certificate is produced
   And the certificate is based on the inspection on "2024-05-20"
 
-Scenario: A PDI inspection on or after the invoice date is excluded
+Scenario: A PDI inspection after the invoice date is excluded
   Given vehicles in dealer stock:
     | VIN               | InvoiceDate | CompanyID |
-    | JTMBFREVXKD123456 | 2024-01-15  | 1         |
+    | JTMBFREVXKD123456 | 2024-01-14  | 1         |
   And paint thickness inspections:
     | InspectionDate | Source |
     | 2024-01-15     | PDI    |
     | 2024-02-01     | PDI    |
   When evaluating the paint thickness certificate with language "en"
   Then no paint thickness certificate is produced
+
+Scenario: A PDI inspection on the same day as the invoice date is included
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID |
+    | JTMBFREVXKD123456 | 2024-01-15  | 1         |
+  And paint thickness inspections:
+    | InspectionDate | Source |
+    | 2024-01-15     | PDI    |
+  When evaluating the paint thickness certificate with language "en"
+  Then a paint thickness certificate is produced
+  And the certificate is based on the inspection on "2024-01-15"
+  And the certificate invoice date is "2024-01-15"
 
 Scenario: A non-PDI inspection before the invoice date is ignored
   Given vehicles in dealer stock:

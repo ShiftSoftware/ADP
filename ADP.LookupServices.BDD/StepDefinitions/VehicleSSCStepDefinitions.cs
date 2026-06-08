@@ -18,6 +18,14 @@ public class VehicleSSCStepDefinitions
         _context = context;
     }
 
+    [Given("the SSC {string} labor code carries a trailing space")]
+    public void GivenTheSscLaborCodeCarriesATrailingSpace(string campaignCode)
+    {
+        // Gherkin trims table cells, so pad here to simulate untrimmed source data (e.g. "AURCM ").
+        var ssc = _context.Aggregate.SSCAffectedVINs.First(x => x.CampaignCode == campaignCode);
+        ssc.LaborCode1 += " ";
+    }
+
     private void EnsureEvaluated()
     {
         if (!_evaluated)

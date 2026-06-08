@@ -37,12 +37,18 @@ public class VehicleSSCEvaluator
             var isRepared = x.RepairDate is not null;
             DateTime? repairDate = x.RepairDate;
 
+            var campaignCode = x.CampaignCode?.Trim();
+            var laborCodes = new[] { x.LaborCode1, x.LaborCode2, x.LaborCode3 }
+                .Select(c => c?.Trim())
+                .Where(c => !string.IsNullOrEmpty(c))
+                .ToList();
+
             var warrantyClaim = warrantyClaims?
                 .Where(w => new List<ClaimStatus> { ClaimStatus.Accepted, ClaimStatus.Certified, ClaimStatus.Invoiced }.Contains(w?.ClaimStatus ?? 0))
                 .OrderByDescending(w => w.RepairCompletionDate)
-                .FirstOrDefault(w => (
-                    w.DistributorComment?.Contains(x.CampaignCode) ?? false) ||
-                    (w.LaborLines?.Any(y => new[] { x.LaborCode1, x.LaborCode2, x.LaborCode3 }.Contains(y.LaborCode)) ?? false)
+                .FirstOrDefault(w =>
+                    (!string.IsNullOrEmpty(campaignCode) && (w.DistributorComment?.Contains(campaignCode) ?? false)) ||
+                    (w.LaborLines?.Any(y => laborCodes.Contains(y.LaborCode?.Trim())) ?? false)
                 );
 
             if (warrantyClaim is not null)
@@ -54,9 +60,9 @@ public class VehicleSSCEvaluator
             {
                 var labor = labors?.OrderByDescending(s => s.InvoiceDate)
                     .FirstOrDefault(s =>
-                    (s.LaborCode.Equals(x.LaborCode1) || s.LaborCode.Equals(x.LaborCode2) || s.LaborCode.Equals(x.LaborCode3)) &&
-                    (s.InvoiceStatus.Equals("X") || s.InvoiceStatus.Equals("C"))
-                );
+                        laborCodes.Contains(s.LaborCode?.Trim()) &&
+                        (s.InvoiceStatus?.Trim() is "X" or "C")
+                    );
 
                 if (labor is not null)
                 {
@@ -68,7 +74,7 @@ public class VehicleSSCEvaluator
             var sscData = new SscDTO
             {
                 Description = x.Description,
-                SSCCode = x.CampaignCode,
+                SSCCode = campaignCode,
                 Repaired = isRepared,
                 RepairDate = repairDate
             };
@@ -76,37 +82,37 @@ public class VehicleSSCEvaluator
             if (!string.IsNullOrWhiteSpace(x.LaborCode1))
                 sscLabors.Add(new SSCLaborDTO
                 {
-                    LaborCode = x.LaborCode1,
+                    LaborCode = x.LaborCode1.Trim(),
                 });
 
             if (!string.IsNullOrWhiteSpace(x.LaborCode2))
                 sscLabors.Add(new SSCLaborDTO
                 {
-                    LaborCode = x.LaborCode2,
+                    LaborCode = x.LaborCode2.Trim(),
                 });
 
             if (!string.IsNullOrWhiteSpace(x.LaborCode3))
                 sscLabors.Add(new SSCLaborDTO
                 {
-                    LaborCode = x.LaborCode3,
+                    LaborCode = x.LaborCode3.Trim(),
                 });
 
             if (!string.IsNullOrWhiteSpace(x.PartNumber1))
                 parts.Add(new SSCPartDTO
                 {
-                    PartNumber = x.PartNumber1,
+                    PartNumber = x.PartNumber1.Trim(),
                 });
 
             if (!string.IsNullOrWhiteSpace(x.PartNumber2))
                 parts.Add(new SSCPartDTO
                 {
-                    PartNumber = x.PartNumber2,
+                    PartNumber = x.PartNumber2.Trim(),
                 });
 
             if (!string.IsNullOrWhiteSpace(x.PartNumber3))
                 parts.Add(new SSCPartDTO
                 {
-                    PartNumber = x.PartNumber3,
+                    PartNumber = x.PartNumber3.Trim(),
                 });
 
             sscData.Parts = parts;

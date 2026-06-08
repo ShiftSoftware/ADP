@@ -151,7 +151,7 @@ public class PaintThicknessCertificateEvaluator
             .Where(p => p != null
                      && string.Equals(p.Source?.Trim(), PdiSource, StringComparison.OrdinalIgnoreCase)
                      && p.InspectionDate.HasValue
-                     && p.InspectionDate.Value.Date < invoiceDate.Value.Date)
+                     && p.InspectionDate.Value.Date <= invoiceDate.Value.Date)
             .OrderByDescending(p => p.InspectionDate)
             .ThenByDescending(p => p.id)
             .FirstOrDefault();

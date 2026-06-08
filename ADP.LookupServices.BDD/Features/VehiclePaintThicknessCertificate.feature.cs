@@ -27,7 +27,7 @@ namespace LookupServices.BDD.Features
         private static string[] featureTags = ((string[])(null));
         
         private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("en-US"), "Features", "Vehicle Paint Thickness Certificate", @"  The Paint Thickness Certificate shows the readings from the latest PDI
-  paint-thickness inspection taken strictly before the DISTRIBUTOR's sale
+  paint-thickness inspection taken on or before the DISTRIBUTOR's sale
   invoice date. The anchor entry must belong to the distributor company
   (CompanyID == DistributorCompanyID); if there is no such invoiced entry,
   no certificate is produced.", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags, InitializeCucumberMessages());
@@ -118,7 +118,7 @@ namespace LookupServices.BDD.Features
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/VehiclePaintThicknessCertificate.feature.ndjson", 22);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/VehiclePaintThicknessCertificate.feature.ndjson", 23);
         }
         
         async System.Threading.Tasks.ValueTask Xunit.IAsyncLifetime.InitializeAsync()
@@ -414,15 +414,15 @@ await this.FeatureBackgroundAsync();
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="A PDI inspection on or after the invoice date is excluded")]
+        [global::Xunit.FactAttribute(DisplayName="A PDI inspection after the invoice date is excluded")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Paint Thickness Certificate")]
-        [global::Xunit.TraitAttribute("Description", "A PDI inspection on or after the invoice date is excluded")]
-        public async global::System.Threading.Tasks.Task APDIInspectionOnOrAfterTheInvoiceDateIsExcluded()
+        [global::Xunit.TraitAttribute("Description", "A PDI inspection after the invoice date is excluded")]
+        public async global::System.Threading.Tasks.Task APDIInspectionAfterTheInvoiceDateIsExcluded()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "4";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A PDI inspection on or after the invoice date is excluded", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A PDI inspection after the invoice date is excluded", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
 #line 66
@@ -444,7 +444,7 @@ await this.FeatureBackgroundAsync();
                             "CompanyID"});
                 table10.AddRow(new string[] {
                             "JTMBFREVXKD123456",
-                            "2024-01-15",
+                            "2024-01-14",
                             "1"});
 #line 67
   await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table10, "Given ");
@@ -471,15 +471,15 @@ await this.FeatureBackgroundAsync();
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="A non-PDI inspection before the invoice date is ignored")]
+        [global::Xunit.FactAttribute(DisplayName="A PDI inspection on the same day as the invoice date is included")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Paint Thickness Certificate")]
-        [global::Xunit.TraitAttribute("Description", "A non-PDI inspection before the invoice date is ignored")]
-        public async global::System.Threading.Tasks.Task ANon_PDIInspectionBeforeTheInvoiceDateIsIgnored()
+        [global::Xunit.TraitAttribute("Description", "A PDI inspection on the same day as the invoice date is included")]
+        public async global::System.Threading.Tasks.Task APDIInspectionOnTheSameDayAsTheInvoiceDateIsIncluded()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "5";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A non-PDI inspection before the invoice date is ignored", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A PDI inspection on the same day as the invoice date is included", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
 #line 77
@@ -510,8 +510,8 @@ await this.FeatureBackgroundAsync();
                             "InspectionDate",
                             "Source"});
                 table13.AddRow(new string[] {
-                            "2024-01-10",
-                            "Dealer"});
+                            "2024-01-15",
+                            "PDI"});
 #line 81
   await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table13, "And ");
 #line hidden
@@ -519,24 +519,30 @@ await this.FeatureBackgroundAsync();
   await testRunner.WhenAsync("evaluating the paint thickness certificate with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 85
-  await testRunner.ThenAsync("no paint thickness certificate is produced", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+  await testRunner.ThenAsync("a paint thickness certificate is produced", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 86
+  await testRunner.AndAsync("the certificate is based on the inspection on \"2024-01-15\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 87
+  await testRunner.AndAsync("the certificate invoice date is \"2024-01-15\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="A PDI inspection with no inspection date is excluded")]
+        [global::Xunit.FactAttribute(DisplayName="A non-PDI inspection before the invoice date is ignored")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Paint Thickness Certificate")]
-        [global::Xunit.TraitAttribute("Description", "A PDI inspection with no inspection date is excluded")]
-        public async global::System.Threading.Tasks.Task APDIInspectionWithNoInspectionDateIsExcluded()
+        [global::Xunit.TraitAttribute("Description", "A non-PDI inspection before the invoice date is ignored")]
+        public async global::System.Threading.Tasks.Task ANon_PDIInspectionBeforeTheInvoiceDateIsIgnored()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "6";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A PDI inspection with no inspection date is excluded", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A non-PDI inspection before the invoice date is ignored", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 87
+#line 89
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -557,40 +563,40 @@ await this.FeatureBackgroundAsync();
                             "JTMBFREVXKD123456",
                             "2024-01-15",
                             "1"});
-#line 88
+#line 90
   await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table14, "Given ");
 #line hidden
                 global::Reqnroll.Table table15 = new global::Reqnroll.Table(new string[] {
                             "InspectionDate",
                             "Source"});
                 table15.AddRow(new string[] {
-                            "",
-                            "PDI"});
-#line 91
+                            "2024-01-10",
+                            "Dealer"});
+#line 93
   await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table15, "And ");
 #line hidden
-#line 94
+#line 96
   await testRunner.WhenAsync("evaluating the paint thickness certificate with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 95
+#line 97
   await testRunner.ThenAsync("no paint thickness certificate is produced", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="A distributor entry with no invoice date yields no certificate")]
+        [global::Xunit.FactAttribute(DisplayName="A PDI inspection with no inspection date is excluded")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Paint Thickness Certificate")]
-        [global::Xunit.TraitAttribute("Description", "A distributor entry with no invoice date yields no certificate")]
-        public async global::System.Threading.Tasks.Task ADistributorEntryWithNoInvoiceDateYieldsNoCertificate()
+        [global::Xunit.TraitAttribute("Description", "A PDI inspection with no inspection date is excluded")]
+        public async global::System.Threading.Tasks.Task APDIInspectionWithNoInspectionDateIsExcluded()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "7";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A distributor entry with no invoice date yields no certificate", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A PDI inspection with no inspection date is excluded", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 97
+#line 99
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -609,42 +615,42 @@ await this.FeatureBackgroundAsync();
                             "CompanyID"});
                 table16.AddRow(new string[] {
                             "JTMBFREVXKD123456",
-                            "",
+                            "2024-01-15",
                             "1"});
-#line 98
+#line 100
   await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table16, "Given ");
 #line hidden
                 global::Reqnroll.Table table17 = new global::Reqnroll.Table(new string[] {
                             "InspectionDate",
                             "Source"});
                 table17.AddRow(new string[] {
-                            "2024-01-10",
+                            "",
                             "PDI"});
-#line 101
+#line 103
   await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table17, "And ");
 #line hidden
-#line 104
+#line 106
   await testRunner.WhenAsync("evaluating the paint thickness certificate with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 105
+#line 107
   await testRunner.ThenAsync("no paint thickness certificate is produced", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="The PDI source match is case-insensitive")]
+        [global::Xunit.FactAttribute(DisplayName="A distributor entry with no invoice date yields no certificate")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Paint Thickness Certificate")]
-        [global::Xunit.TraitAttribute("Description", "The PDI source match is case-insensitive")]
-        public async global::System.Threading.Tasks.Task ThePDISourceMatchIsCase_Insensitive()
+        [global::Xunit.TraitAttribute("Description", "A distributor entry with no invoice date yields no certificate")]
+        public async global::System.Threading.Tasks.Task ADistributorEntryWithNoInvoiceDateYieldsNoCertificate()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "8";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The PDI source match is case-insensitive", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A distributor entry with no invoice date yields no certificate", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 107
+#line 109
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -663,9 +669,9 @@ await this.FeatureBackgroundAsync();
                             "CompanyID"});
                 table18.AddRow(new string[] {
                             "JTMBFREVXKD123456",
-                            "2024-01-15",
+                            "",
                             "1"});
-#line 108
+#line 110
   await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table18, "Given ");
 #line hidden
                 global::Reqnroll.Table table19 = new global::Reqnroll.Table(new string[] {
@@ -673,35 +679,32 @@ await this.FeatureBackgroundAsync();
                             "Source"});
                 table19.AddRow(new string[] {
                             "2024-01-10",
-                            "pdi"});
-#line 111
+                            "PDI"});
+#line 113
   await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table19, "And ");
 #line hidden
-#line 114
+#line 116
   await testRunner.WhenAsync("evaluating the paint thickness certificate with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 115
-  await testRunner.ThenAsync("a paint thickness certificate is produced", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
-#line hidden
-#line 116
-  await testRunner.AndAsync("the certificate is based on the inspection on \"2024-01-10\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line 117
+  await testRunner.ThenAsync("no paint thickness certificate is produced", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="Panel images flow to the certificate gallery")]
+        [global::Xunit.FactAttribute(DisplayName="The PDI source match is case-insensitive")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Paint Thickness Certificate")]
-        [global::Xunit.TraitAttribute("Description", "Panel images flow to the certificate gallery")]
-        public async global::System.Threading.Tasks.Task PanelImagesFlowToTheCertificateGallery()
+        [global::Xunit.TraitAttribute("Description", "The PDI source match is case-insensitive")]
+        public async global::System.Threading.Tasks.Task ThePDISourceMatchIsCase_Insensitive()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "9";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Panel images flow to the certificate gallery", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The PDI source match is case-insensitive", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 118
+#line 119
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -722,7 +725,7 @@ await this.FeatureBackgroundAsync();
                             "JTMBFREVXKD123456",
                             "2024-01-15",
                             "1"});
-#line 119
+#line 120
   await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table20, "Given ");
 #line hidden
                 global::Reqnroll.Table table21 = new global::Reqnroll.Table(new string[] {
@@ -730,41 +733,98 @@ await this.FeatureBackgroundAsync();
                             "Source"});
                 table21.AddRow(new string[] {
                             "2024-01-10",
-                            "PDI"});
-#line 122
+                            "pdi"});
+#line 123
   await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table21, "And ");
 #line hidden
+#line 126
+  await testRunner.WhenAsync("evaluating the paint thickness certificate with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 127
+  await testRunner.ThenAsync("a paint thickness certificate is produced", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 128
+  await testRunner.AndAsync("the certificate is based on the inspection on \"2024-01-10\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.FactAttribute(DisplayName="Panel images flow to the certificate gallery")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Paint Thickness Certificate")]
+        [global::Xunit.TraitAttribute("Description", "Panel images flow to the certificate gallery")]
+        public async global::System.Threading.Tasks.Task PanelImagesFlowToTheCertificateGallery()
+        {
+            string[] tagsOfScenario = ((string[])(null));
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "10";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Panel images flow to the certificate gallery", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 130
+this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 8
+await this.FeatureBackgroundAsync();
+#line hidden
                 global::Reqnroll.Table table22 = new global::Reqnroll.Table(new string[] {
+                            "VIN",
+                            "InvoiceDate",
+                            "CompanyID"});
+                table22.AddRow(new string[] {
+                            "JTMBFREVXKD123456",
+                            "2024-01-15",
+                            "1"});
+#line 131
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table22, "Given ");
+#line hidden
+                global::Reqnroll.Table table23 = new global::Reqnroll.Table(new string[] {
+                            "InspectionDate",
+                            "Source"});
+                table23.AddRow(new string[] {
+                            "2024-01-10",
+                            "PDI"});
+#line 134
+  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table23, "And ");
+#line hidden
+                global::Reqnroll.Table table24 = new global::Reqnroll.Table(new string[] {
                             "PanelType",
                             "PanelSide",
                             "PanelPosition",
                             "MeasuredThickness",
                             "Images"});
-                table22.AddRow(new string[] {
+                table24.AddRow(new string[] {
                             "Hood",
                             "Center",
                             "Front",
                             "120",
                             "hood-1.jpg,hood-2.jpg"});
-                table22.AddRow(new string[] {
+                table24.AddRow(new string[] {
                             "Roof",
                             "Left",
                             "Middle",
                             "95",
                             "roof-1.jpg"});
-#line 125
-  await testRunner.AndAsync("paint thickness panels for inspection on \"2024-01-10\":", ((string)(null)), table22, "And ");
+#line 137
+  await testRunner.AndAsync("paint thickness panels for inspection on \"2024-01-10\":", ((string)(null)), table24, "And ");
 #line hidden
-#line 129
+#line 141
   await testRunner.WhenAsync("evaluating the paint thickness certificate with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 130
+#line 142
   await testRunner.ThenAsync("a paint thickness certificate is produced", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 131
+#line 143
   await testRunner.AndAsync("the certificate has 2 readings", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 132
+#line 144
   await testRunner.AndAsync("the certificate gallery has 3 images", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -778,11 +838,11 @@ await this.FeatureBackgroundAsync();
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            string pickleIndex = "10";
+            string pickleIndex = "11";
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Certificate produced end-to-end from the standard-dealer environment", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 134
+#line 146
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -795,31 +855,31 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 8
 await this.FeatureBackgroundAsync();
 #line hidden
-#line 135
+#line 147
   await testRunner.GivenAsync("the \"standard-dealer\" environment is loaded", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 136
+#line 148
   await testRunner.AndAsync("loading vehicle \"JTMHX01J8L4198293\" from the environment", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 137
+#line 149
   await testRunner.WhenAsync("evaluating the paint thickness certificate with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 138
+#line 150
   await testRunner.ThenAsync("a paint thickness certificate is produced", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 139
+#line 151
   await testRunner.AndAsync("the certificate is based on the inspection on \"2024-01-10\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 140
+#line 152
   await testRunner.AndAsync("the certificate invoice date is \"2024-01-12\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 141
+#line 153
   await testRunner.AndAsync("the certificate has 11 readings", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 142
+#line 154
   await testRunner.AndAsync("the certificate has a reading \"Hood (Front)\" with thickness 125.5", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 143
+#line 155
   await testRunner.AndAsync("the certificate gallery has 16 images", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -833,11 +893,11 @@ await this.FeatureBackgroundAsync();
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            string pickleIndex = "11";
+            string pickleIndex = "12";
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The availability flag is true when the environment vehicle qualifies", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 145
+#line 157
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -850,16 +910,16 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 8
 await this.FeatureBackgroundAsync();
 #line hidden
-#line 146
+#line 158
   await testRunner.GivenAsync("the \"standard-dealer\" environment is loaded", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 147
+#line 159
   await testRunner.AndAsync("loading vehicle \"JTMHX01J8L4198293\" from the environment", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 148
+#line 160
   await testRunner.WhenAsync("checking paint thickness certificate availability", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 149
+#line 161
   await testRunner.ThenAsync("the paint thickness certificate is reported as available", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
@@ -873,65 +933,11 @@ await this.FeatureBackgroundAsync();
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            string pickleIndex = "12";
+            string pickleIndex = "13";
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The availability flag is false for a dealer-only vehicle", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 151
-this.ScenarioInitialize(scenarioInfo, ruleInfo);
-#line hidden
-            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
-            {
-                await testRunner.SkipScenarioAsync();
-            }
-            else
-            {
-                await this.ScenarioStartAsync();
-#line 8
-await this.FeatureBackgroundAsync();
-#line hidden
-                global::Reqnroll.Table table23 = new global::Reqnroll.Table(new string[] {
-                            "VIN",
-                            "InvoiceDate",
-                            "CompanyID"});
-                table23.AddRow(new string[] {
-                            "JTMBFREVXKD123456",
-                            "2024-01-15",
-                            "2"});
-#line 152
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table23, "Given ");
-#line hidden
-                global::Reqnroll.Table table24 = new global::Reqnroll.Table(new string[] {
-                            "InspectionDate",
-                            "Source"});
-                table24.AddRow(new string[] {
-                            "2024-01-10",
-                            "PDI"});
-#line 155
-  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table24, "And ");
-#line hidden
-#line 158
-  await testRunner.WhenAsync("checking paint thickness certificate availability", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
-#line hidden
-#line 159
-  await testRunner.ThenAsync("the paint thickness certificate is reported as unavailable", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
-#line hidden
-            }
-            await this.ScenarioCleanupAsync();
-        }
-        
-        [global::Xunit.FactAttribute(DisplayName="The serial number resolver stamps the certificate deterministically")]
-        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Paint Thickness Certificate")]
-        [global::Xunit.TraitAttribute("Description", "The serial number resolver stamps the certificate deterministically")]
-        public async global::System.Threading.Tasks.Task TheSerialNumberResolverStampsTheCertificateDeterministically()
-        {
-            string[] tagsOfScenario = ((string[])(null));
-            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            string pickleIndex = "13";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The serial number resolver stamps the certificate deterministically", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
-            string[] tagsOfRule = ((string[])(null));
-            global::Reqnroll.RuleInfo ruleInfo = null;
-#line 161
+#line 163
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -951,8 +957,8 @@ await this.FeatureBackgroundAsync();
                 table25.AddRow(new string[] {
                             "JTMBFREVXKD123456",
                             "2024-01-15",
-                            "1"});
-#line 162
+                            "2"});
+#line 164
   await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table25, "Given ");
 #line hidden
                 global::Reqnroll.Table table26 = new global::Reqnroll.Table(new string[] {
@@ -961,34 +967,28 @@ await this.FeatureBackgroundAsync();
                 table26.AddRow(new string[] {
                             "2024-01-10",
                             "PDI"});
-#line 165
+#line 167
   await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table26, "And ");
 #line hidden
-#line 168
-  await testRunner.AndAsync("a paint thickness certificate serial number resolver that returns \"3F09A-12B45\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
-#line hidden
-#line 169
-  await testRunner.WhenAsync("evaluating the paint thickness certificate with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
-#line hidden
 #line 170
-  await testRunner.ThenAsync("a paint thickness certificate is produced", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+  await testRunner.WhenAsync("checking paint thickness certificate availability", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 171
-  await testRunner.AndAsync("the certificate serial number is \"3F09A-12B45\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+  await testRunner.ThenAsync("the paint thickness certificate is reported as unavailable", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="Without a serial number resolver the certificate has no serial")]
+        [global::Xunit.FactAttribute(DisplayName="The serial number resolver stamps the certificate deterministically")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Paint Thickness Certificate")]
-        [global::Xunit.TraitAttribute("Description", "Without a serial number resolver the certificate has no serial")]
-        public async global::System.Threading.Tasks.Task WithoutASerialNumberResolverTheCertificateHasNoSerial()
+        [global::Xunit.TraitAttribute("Description", "The serial number resolver stamps the certificate deterministically")]
+        public async global::System.Threading.Tasks.Task TheSerialNumberResolverStampsTheCertificateDeterministically()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "14";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Without a serial number resolver the certificate has no serial", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The serial number resolver stamps the certificate deterministically", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
 #line 173
@@ -1025,33 +1025,33 @@ await this.FeatureBackgroundAsync();
   await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table28, "And ");
 #line hidden
 #line 180
-  await testRunner.WhenAsync("evaluating the paint thickness certificate with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+  await testRunner.AndAsync("a paint thickness certificate serial number resolver that returns \"3F09A-12B45\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 181
-  await testRunner.ThenAsync("a paint thickness certificate is produced", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+  await testRunner.WhenAsync("evaluating the paint thickness certificate with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 182
-  await testRunner.AndAsync("the certificate has no serial number", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+  await testRunner.ThenAsync("a paint thickness certificate is produced", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 183
+  await testRunner.AndAsync("the certificate serial number is \"3F09A-12B45\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="The lookup carries a signed certificate url per supported language when the reque" +
-            "st opts in")]
+        [global::Xunit.FactAttribute(DisplayName="Without a serial number resolver the certificate has no serial")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Paint Thickness Certificate")]
-        [global::Xunit.TraitAttribute("Description", "The lookup carries a signed certificate url per supported language when the reque" +
-            "st opts in")]
-        public async global::System.Threading.Tasks.Task TheLookupCarriesASignedCertificateUrlPerSupportedLanguageWhenTheRequestOptsIn()
+        [global::Xunit.TraitAttribute("Description", "Without a serial number resolver the certificate has no serial")]
+        public async global::System.Threading.Tasks.Task WithoutASerialNumberResolverTheCertificateHasNoSerial()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "15";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The lookup carries a signed certificate url per supported language when the reque" +
-                    "st opts in", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Without a serial number resolver the certificate has no serial", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 184
+#line 185
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -1072,7 +1072,7 @@ await this.FeatureBackgroundAsync();
                             "JTMBFREVXKD123456",
                             "2024-01-15",
                             "1"});
-#line 185
+#line 186
   await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table29, "Given ");
 #line hidden
                 global::Reqnroll.Table table30 = new global::Reqnroll.Table(new string[] {
@@ -1081,43 +1081,37 @@ await this.FeatureBackgroundAsync();
                 table30.AddRow(new string[] {
                             "2024-01-10",
                             "PDI"});
-#line 188
+#line 189
   await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table30, "And ");
 #line hidden
-#line 191
-  await testRunner.AndAsync("a paint thickness certificate url resolver that returns \"https://lookup.example/c" +
-                        "ertificate/{vin}\" for languages \"en, ar, ku\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
-#line hidden
 #line 192
-  await testRunner.WhenAsync("looking up the vehicle \"JTMBFREVXKD123456\" with certificate url generation reques" +
-                        "ted", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+  await testRunner.WhenAsync("evaluating the paint thickness certificate with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 193
-  await testRunner.ThenAsync("the lookup reports the paint thickness certificate as available", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+  await testRunner.ThenAsync("a paint thickness certificate is produced", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 194
-  await testRunner.AndAsync("the lookup has 3 certificate urls", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
-#line hidden
-#line 195
-  await testRunner.AndAsync("the lookup certificate url for \"ar\" is \"https://lookup.example/certificate/JTMBFR" +
-                        "EVXKD123456?lang=ar\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+  await testRunner.AndAsync("the certificate has no serial number", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="The certificate urls are omitted when the request does not opt in")]
+        [global::Xunit.FactAttribute(DisplayName="The lookup carries a signed certificate url per supported language when the reque" +
+            "st opts in")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Paint Thickness Certificate")]
-        [global::Xunit.TraitAttribute("Description", "The certificate urls are omitted when the request does not opt in")]
-        public async global::System.Threading.Tasks.Task TheCertificateUrlsAreOmittedWhenTheRequestDoesNotOptIn()
+        [global::Xunit.TraitAttribute("Description", "The lookup carries a signed certificate url per supported language when the reque" +
+            "st opts in")]
+        public async global::System.Threading.Tasks.Task TheLookupCarriesASignedCertificateUrlPerSupportedLanguageWhenTheRequestOptsIn()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "16";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The certificate urls are omitted when the request does not opt in", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The lookup carries a signed certificate url per supported language when the reque" +
+                    "st opts in", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 197
+#line 196
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -1138,7 +1132,7 @@ await this.FeatureBackgroundAsync();
                             "JTMBFREVXKD123456",
                             "2024-01-15",
                             "1"});
-#line 198
+#line 197
   await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table31, "Given ");
 #line hidden
                 global::Reqnroll.Table table32 = new global::Reqnroll.Table(new string[] {
@@ -1147,35 +1141,40 @@ await this.FeatureBackgroundAsync();
                 table32.AddRow(new string[] {
                             "2024-01-10",
                             "PDI"});
-#line 201
+#line 200
   await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table32, "And ");
 #line hidden
-#line 204
+#line 203
   await testRunner.AndAsync("a paint thickness certificate url resolver that returns \"https://lookup.example/c" +
                         "ertificate/{vin}\" for languages \"en, ar, ku\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 205
-  await testRunner.WhenAsync("looking up the vehicle \"JTMBFREVXKD123456\" without certificate url generation", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line 204
+  await testRunner.WhenAsync("looking up the vehicle \"JTMBFREVXKD123456\" with certificate url generation reques" +
+                        "ted", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 206
+#line 205
   await testRunner.ThenAsync("the lookup reports the paint thickness certificate as available", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
+#line 206
+  await testRunner.AndAsync("the lookup has 3 certificate urls", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
 #line 207
-  await testRunner.AndAsync("the lookup has no certificate urls", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+  await testRunner.AndAsync("the lookup certificate url for \"ar\" is \"https://lookup.example/certificate/JTMBFR" +
+                        "EVXKD123456?lang=ar\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="The certificate urls are omitted when no certificate is available")]
+        [global::Xunit.FactAttribute(DisplayName="The certificate urls are omitted when the request does not opt in")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Paint Thickness Certificate")]
-        [global::Xunit.TraitAttribute("Description", "The certificate urls are omitted when no certificate is available")]
-        public async global::System.Threading.Tasks.Task TheCertificateUrlsAreOmittedWhenNoCertificateIsAvailable()
+        [global::Xunit.TraitAttribute("Description", "The certificate urls are omitted when the request does not opt in")]
+        public async global::System.Threading.Tasks.Task TheCertificateUrlsAreOmittedWhenTheRequestDoesNotOptIn()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "17";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The certificate urls are omitted when no certificate is available", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The certificate urls are omitted when the request does not opt in", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
 #line 209
@@ -1198,7 +1197,7 @@ await this.FeatureBackgroundAsync();
                 table33.AddRow(new string[] {
                             "JTMBFREVXKD123456",
                             "2024-01-15",
-                            "2"});
+                            "1"});
 #line 210
   await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table33, "Given ");
 #line hidden
@@ -1216,11 +1215,10 @@ await this.FeatureBackgroundAsync();
                         "ertificate/{vin}\" for languages \"en, ar, ku\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 217
-  await testRunner.WhenAsync("looking up the vehicle \"JTMBFREVXKD123456\" with certificate url generation reques" +
-                        "ted", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+  await testRunner.WhenAsync("looking up the vehicle \"JTMBFREVXKD123456\" without certificate url generation", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 218
-  await testRunner.ThenAsync("the lookup reports the paint thickness certificate as unavailable", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+  await testRunner.ThenAsync("the lookup reports the paint thickness certificate as available", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 219
   await testRunner.AndAsync("the lookup has no certificate urls", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -1229,15 +1227,15 @@ await this.FeatureBackgroundAsync();
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="The certificate urls are omitted without a resolver")]
+        [global::Xunit.FactAttribute(DisplayName="The certificate urls are omitted when no certificate is available")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Paint Thickness Certificate")]
-        [global::Xunit.TraitAttribute("Description", "The certificate urls are omitted without a resolver")]
-        public async global::System.Threading.Tasks.Task TheCertificateUrlsAreOmittedWithoutAResolver()
+        [global::Xunit.TraitAttribute("Description", "The certificate urls are omitted when no certificate is available")]
+        public async global::System.Threading.Tasks.Task TheCertificateUrlsAreOmittedWhenNoCertificateIsAvailable()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "18";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The certificate urls are omitted without a resolver", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The certificate urls are omitted when no certificate is available", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
 #line 221
@@ -1260,7 +1258,7 @@ await this.FeatureBackgroundAsync();
                 table35.AddRow(new string[] {
                             "JTMBFREVXKD123456",
                             "2024-01-15",
-                            "1"});
+                            "2"});
 #line 222
   await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table35, "Given ");
 #line hidden
@@ -1274,31 +1272,35 @@ await this.FeatureBackgroundAsync();
   await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table36, "And ");
 #line hidden
 #line 228
+  await testRunner.AndAsync("a paint thickness certificate url resolver that returns \"https://lookup.example/c" +
+                        "ertificate/{vin}\" for languages \"en, ar, ku\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 229
   await testRunner.WhenAsync("looking up the vehicle \"JTMBFREVXKD123456\" with certificate url generation reques" +
                         "ted", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 229
-  await testRunner.ThenAsync("the lookup reports the paint thickness certificate as available", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
-#line hidden
 #line 230
+  await testRunner.ThenAsync("the lookup reports the paint thickness certificate as unavailable", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 231
   await testRunner.AndAsync("the lookup has no certificate urls", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="An empty url set from the resolver stays null on the lookup")]
+        [global::Xunit.FactAttribute(DisplayName="The certificate urls are omitted without a resolver")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Paint Thickness Certificate")]
-        [global::Xunit.TraitAttribute("Description", "An empty url set from the resolver stays null on the lookup")]
-        public async global::System.Threading.Tasks.Task AnEmptyUrlSetFromTheResolverStaysNullOnTheLookup()
+        [global::Xunit.TraitAttribute("Description", "The certificate urls are omitted without a resolver")]
+        public async global::System.Threading.Tasks.Task TheCertificateUrlsAreOmittedWithoutAResolver()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "19";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("An empty url set from the resolver stays null on the lookup", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("The certificate urls are omitted without a resolver", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 232
+#line 233
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -1319,7 +1321,7 @@ await this.FeatureBackgroundAsync();
                             "JTMBFREVXKD123456",
                             "2024-01-15",
                             "1"});
-#line 233
+#line 234
   await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table37, "Given ");
 #line hidden
                 global::Reqnroll.Table table38 = new global::Reqnroll.Table(new string[] {
@@ -1328,12 +1330,8 @@ await this.FeatureBackgroundAsync();
                 table38.AddRow(new string[] {
                             "2024-01-10",
                             "PDI"});
-#line 236
+#line 237
   await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table38, "And ");
-#line hidden
-#line 239
-  await testRunner.AndAsync("a paint thickness certificate url resolver that returns \"https://lookup.example/c" +
-                        "ertificate/{vin}\" for languages \"\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 240
   await testRunner.WhenAsync("looking up the vehicle \"JTMBFREVXKD123456\" with certificate url generation reques" +
@@ -1343,6 +1341,68 @@ await this.FeatureBackgroundAsync();
   await testRunner.ThenAsync("the lookup reports the paint thickness certificate as available", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 242
+  await testRunner.AndAsync("the lookup has no certificate urls", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.FactAttribute(DisplayName="An empty url set from the resolver stays null on the lookup")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Vehicle Paint Thickness Certificate")]
+        [global::Xunit.TraitAttribute("Description", "An empty url set from the resolver stays null on the lookup")]
+        public async global::System.Threading.Tasks.Task AnEmptyUrlSetFromTheResolverStaysNullOnTheLookup()
+        {
+            string[] tagsOfScenario = ((string[])(null));
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "20";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("An empty url set from the resolver stays null on the lookup", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 244
+this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 8
+await this.FeatureBackgroundAsync();
+#line hidden
+                global::Reqnroll.Table table39 = new global::Reqnroll.Table(new string[] {
+                            "VIN",
+                            "InvoiceDate",
+                            "CompanyID"});
+                table39.AddRow(new string[] {
+                            "JTMBFREVXKD123456",
+                            "2024-01-15",
+                            "1"});
+#line 245
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table39, "Given ");
+#line hidden
+                global::Reqnroll.Table table40 = new global::Reqnroll.Table(new string[] {
+                            "InspectionDate",
+                            "Source"});
+                table40.AddRow(new string[] {
+                            "2024-01-10",
+                            "PDI"});
+#line 248
+  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table40, "And ");
+#line hidden
+#line 251
+  await testRunner.AndAsync("a paint thickness certificate url resolver that returns \"https://lookup.example/c" +
+                        "ertificate/{vin}\" for languages \"\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 252
+  await testRunner.WhenAsync("looking up the vehicle \"JTMBFREVXKD123456\" with certificate url generation reques" +
+                        "ted", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 253
+  await testRunner.ThenAsync("the lookup reports the paint thickness certificate as available", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 254
   await testRunner.AndAsync("the lookup has no certificate urls", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
