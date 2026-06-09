@@ -37,6 +37,7 @@ public class GeneralMappingProfile : Profile
             .ForMember(
                 x => x.ServiceIntervalGroups,
                 x => x.MapFrom(src => src.ReplacementItemServiceIntervalGroups
+                    .Where(s => !s.IsDeleted)
                     .Select(s => new ServiceIntervalGroupReplacaementItemDTO(s.ServiceIntervalGroupID.ToString())))
             )
             .ForMember(
@@ -57,21 +58,29 @@ public class GeneralMappingProfile : Profile
                 // Handle ReplacementItemServiceIntervalGroups mapping
                 dest.ReplacementItemServiceIntervalGroups ??= [];
 
-                // 1. Remove items that are not in the source
+                // 1. Soft-delete links missing from the source. Physically removing them
+                //    would sever a required non-nullable FK (ShiftEntity forces Restrict)
+                //    and throw a HandleConceptualNulls exception. Soft-deleted links are
+                //    filtered out of the forward map.
                 var serviceIntervalItemsToRemove = dest.ReplacementItemServiceIntervalGroups
-                    .Where(existing => !src.ServiceIntervalGroups.Any(r => r.ID == existing.ServiceIntervalGroupID.ToString()))
+                    .Where(existing => !existing.IsDeleted
+                        && !src.ServiceIntervalGroups.Any(r => r.ID == existing.ServiceIntervalGroupID.ToString()))
                     .ToList();
 
                 foreach (var item in serviceIntervalItemsToRemove)
-                    dest.ReplacementItemServiceIntervalGroups.Remove(item);
+                    item.IsDeleted = true;
 
-                // 2. Add new items
+                // 2. Add new items, reviving a previously soft-deleted link when present
+                //    (the unique index on ReplacementItemID+ServiceIntervalGroupID has no
+                //    IsDeleted filter, so we must reuse the existing row, not insert a duplicate).
                 foreach (var item in src.ServiceIntervalGroups)
                 {
                     var existingItem = dest.ReplacementItemServiceIntervalGroups
                         .FirstOrDefault(r => r.ServiceIntervalGroupID.ToString() == item.ID);
                     if (existingItem == null)
                         dest.ReplacementItemServiceIntervalGroups.Add(new ReplacementItemServiceIntervalGroup { ServiceIntervalGroupID = item.ID.ToLong() });
+                    else if (existingItem.IsDeleted)
+                        existingItem.IsDeleted = false;
                 }
             });
         CreateMap<ReplacementItem, MenuItemReplacementItemDTO>()
