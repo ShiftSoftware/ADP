@@ -12,7 +12,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.8" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.8" PrivateAssets="all" />
-    <PackageReference Include="ShiftSoftware.ShiftIdentity.Dashboard.Blazor" Version="2026.6.8.1" />
+    <PackageReference Include="ShiftSoftware.ShiftIdentity.Dashboard.Blazor" Version="2026.6.10.1" />
   </ItemGroup>
 
   <ItemGroup>
