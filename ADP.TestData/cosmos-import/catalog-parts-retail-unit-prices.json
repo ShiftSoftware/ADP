@@ -1,0 +1,484 @@
+[
+  {
+    "_comment": "CASE 1 — RetailUnitPrices omitted (null). Evaluator should append a default 'each' = RetailPrice.",
+    "id": "catalog-part-RUPNULL001",
+    "PartNumber": "RUPNULL001",
+    "ItemType": "CatalogPart",
+    "Location": "DEFAULT",
+    "PartName": "NULL UNIT PRICES",
+    "ProductGroup": "F",
+    "DistributorPurchasePrice": 10.00,
+    "Origin": "JP",
+    "CountryData": [
+      {
+        "CountryID": 1,
+        "CountryHashID": "CH-1",
+        "RegionPrices": [
+          {
+            "RegionID": 10,
+            "RegionHashID": "RH-10",
+            "RetailPrice": 35.00,
+            "PurchasePrice": 28.00,
+            "WarrantyPrice": 20.00
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_comment": "CASE 2 — RetailUnitPrices is an empty array. Evaluator should append a default 'each' = RetailPrice.",
+    "id": "catalog-part-RUPEMPTY002",
+    "PartNumber": "RUPEMPTY002",
+    "ItemType": "CatalogPart",
+    "Location": "DEFAULT",
+    "PartName": "EMPTY UNIT PRICES",
+    "ProductGroup": "F",
+    "DistributorPurchasePrice": 12.50,
+    "Origin": "JP",
+    "CountryData": [
+      {
+        "CountryID": 1,
+        "CountryHashID": "CH-1",
+        "RegionPrices": [
+          {
+            "RegionID": 10,
+            "RegionHashID": "RH-10",
+            "RetailPrice": 40.00,
+            "PurchasePrice": 32.00,
+            "WarrantyPrice": 22.00,
+            "RetailUnitPrices": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_comment": "CASE 3 — single unit explicitly marked default. Used as-is, no fallback.",
+    "id": "catalog-part-RUPSINGLE003",
+    "PartNumber": "RUPSINGLE003",
+    "ItemType": "CatalogPart",
+    "Location": "DEFAULT",
+    "PartName": "SINGLE DEFAULT UNIT",
+    "ProductGroup": "E",
+    "DistributorPurchasePrice": 8.00,
+    "Origin": "TH",
+    "CountryData": [
+      {
+        "CountryID": 1,
+        "CountryHashID": "CH-1",
+        "RegionPrices": [
+          {
+            "RegionID": 10,
+            "RegionHashID": "RH-10",
+            "RetailPrice": 30.00,
+            "PurchasePrice": 24.00,
+            "WarrantyPrice": 18.00,
+            "RetailUnitPrices": [
+              { "UnitName": "each", "Price": 30.00, "IsDefault": true }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_comment": "CASE 4 — multiple units with exactly one default ('each'). Valid.",
+    "id": "catalog-part-RUPMULTIDEFAULT004",
+    "PartNumber": "RUPMULTIDEFAULT004",
+    "ItemType": "CatalogPart",
+    "Location": "DEFAULT",
+    "PartName": "MULTI UNIT ONE DEFAULT",
+    "ProductGroup": "E",
+    "DistributorPurchasePrice": 6.00,
+    "Origin": "TH",
+    "CountryData": [
+      {
+        "CountryID": 1,
+        "CountryHashID": "CH-1",
+        "RegionPrices": [
+          {
+            "RegionID": 10,
+            "RegionHashID": "RH-10",
+            "RetailPrice": 25.00,
+            "PurchasePrice": 20.00,
+            "WarrantyPrice": 15.00,
+            "RetailUnitPrices": [
+              { "UnitName": "each", "Price": 25.00, "IsDefault": true },
+              { "UnitName": "box of 10", "Price": 230.00, "IsDefault": false },
+              { "UnitName": "pack of 4", "Price": 96.00, "IsDefault": false }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_comment": "CASE 5 — multiple units but NONE marked default. Evaluator should append a default 'each' = RetailPrice (result: 3 items).",
+    "id": "catalog-part-RUPNODEFAULT005",
+    "PartNumber": "RUPNODEFAULT005",
+    "ItemType": "CatalogPart",
+    "Location": "DEFAULT",
+    "PartName": "MULTI UNIT NO DEFAULT",
+    "ProductGroup": "E",
+    "DistributorPurchasePrice": 5.00,
+    "Origin": "TH",
+    "CountryData": [
+      {
+        "CountryID": 1,
+        "CountryHashID": "CH-1",
+        "RegionPrices": [
+          {
+            "RegionID": 10,
+            "RegionHashID": "RH-10",
+            "RetailPrice": 20.00,
+            "PurchasePrice": 16.00,
+            "WarrantyPrice": 12.00,
+            "RetailUnitPrices": [
+              { "UnitName": "box of 10", "Price": 185.00, "IsDefault": false },
+              { "UnitName": "pack of 4", "Price": 76.00, "IsDefault": false }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_comment": "CASE 6 — multiple countries and regions with mixed unit-price configurations.",
+    "id": "catalog-part-RUPMULTICOUNTRY006",
+    "PartNumber": "RUPMULTICOUNTRY006",
+    "ItemType": "CatalogPart",
+    "Location": "DEFAULT",
+    "PartName": "MULTI COUNTRY MIXED",
+    "ProductGroup": "G",
+    "DistributorPurchasePrice": 15.00,
+    "Origin": "JP",
+    "CountryData": [
+      {
+        "CountryID": 1,
+        "CountryHashID": "CH-1",
+        "RegionPrices": [
+          {
+            "RegionID": 10,
+            "RegionHashID": "RH-10",
+            "RetailPrice": 50.00,
+            "PurchasePrice": 40.00,
+            "WarrantyPrice": 30.00,
+            "RetailUnitPrices": [
+              { "UnitName": "each", "Price": 50.00, "IsDefault": true },
+              { "UnitName": "box of 6", "Price": 285.00, "IsDefault": false }
+            ]
+          },
+          {
+            "RegionID": 20,
+            "RegionHashID": "RH-20",
+            "RetailPrice": 48.00,
+            "PurchasePrice": 38.00,
+            "WarrantyPrice": 29.00,
+            "RetailUnitPrices": []
+          }
+        ]
+      },
+      {
+        "CountryID": 2,
+        "CountryHashID": "CH-2",
+        "RegionPrices": [
+          {
+            "RegionID": 30,
+            "RegionHashID": "RH-30",
+            "RetailPrice": 55.00,
+            "PurchasePrice": 44.00,
+            "WarrantyPrice": 33.00
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_comment": "CASE 7 — default unit is something other than 'each' (here 'box of 12'). Evaluator keeps it; no 'each' fallback added.",
+    "id": "catalog-part-RUPDEFAULTNOTEACH007",
+    "PartNumber": "RUPDEFAULTNOTEACH007",
+    "ItemType": "CatalogPart",
+    "Location": "DEFAULT",
+    "PartName": "DEFAULT IS BOX",
+    "ProductGroup": "G",
+    "DistributorPurchasePrice": 9.00,
+    "Origin": "JP",
+    "CountryData": [
+      {
+        "CountryID": 1,
+        "CountryHashID": "CH-1",
+        "RegionPrices": [
+          {
+            "RegionID": 10,
+            "RegionHashID": "RH-10",
+            "RetailPrice": 33.00,
+            "PurchasePrice": 26.00,
+            "WarrantyPrice": 19.00,
+            "RetailUnitPrices": [
+              { "UnitName": "each", "Price": 33.00, "IsDefault": false },
+              { "UnitName": "box of 12", "Price": 360.00, "IsDefault": true }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_comment": "CASE 8 — INVALID: duplicate unit names differing only by case ('each' vs 'EACH'). RetailUnitPrices getter should throw InvalidOperationException on lookup.",
+    "id": "catalog-part-RUPINVALIDDUP008",
+    "PartNumber": "RUPINVALIDDUP008",
+    "ItemType": "CatalogPart",
+    "Location": "DEFAULT",
+    "PartName": "INVALID - DUPLICATE UNIT NAME (CASE-INSENSITIVE)",
+    "ProductGroup": "F",
+    "DistributorPurchasePrice": 7.00,
+    "Origin": "JP",
+    "CountryData": [
+      {
+        "CountryID": 1,
+        "CountryHashID": "CH-1",
+        "RegionPrices": [
+          {
+            "RegionID": 10,
+            "RegionHashID": "RH-10",
+            "RetailPrice": 28.00,
+            "PurchasePrice": 22.00,
+            "WarrantyPrice": 16.00,
+            "RetailUnitPrices": [
+              { "UnitName": "each", "Price": 28.00, "IsDefault": true },
+              { "UnitName": "EACH", "Price": 27.50, "IsDefault": false }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_comment": "CASE 9 — INVALID: exact duplicate unit name ('box'). Getter should throw InvalidOperationException.",
+    "id": "catalog-part-RUPINVALIDDUPEXACT009",
+    "PartNumber": "RUPINVALIDDUPEXACT009",
+    "ItemType": "CatalogPart",
+    "Location": "DEFAULT",
+    "PartName": "INVALID - DUPLICATE UNIT NAME (EXACT)",
+    "ProductGroup": "F",
+    "DistributorPurchasePrice": 7.50,
+    "Origin": "JP",
+    "CountryData": [
+      {
+        "CountryID": 1,
+        "CountryHashID": "CH-1",
+        "RegionPrices": [
+          {
+            "RegionID": 10,
+            "RegionHashID": "RH-10",
+            "RetailPrice": 29.00,
+            "PurchasePrice": 23.00,
+            "WarrantyPrice": 17.00,
+            "RetailUnitPrices": [
+              { "UnitName": "box", "Price": 290.00, "IsDefault": true },
+              { "UnitName": "box", "Price": 285.00, "IsDefault": false }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_comment": "CASE 10 — INVALID: more than one entry marked default. Getter should throw InvalidOperationException.",
+    "id": "catalog-part-RUPINVALIDMULTIDEFAULT010",
+    "PartNumber": "RUPINVALIDMULTIDEFAULT010",
+    "ItemType": "CatalogPart",
+    "Location": "DEFAULT",
+    "PartName": "INVALID - MORE THAN ONE DEFAULT",
+    "ProductGroup": "F",
+    "DistributorPurchasePrice": 7.50,
+    "Origin": "JP",
+    "CountryData": [
+      {
+        "CountryID": 1,
+        "CountryHashID": "CH-1",
+        "RegionPrices": [
+          {
+            "RegionID": 10,
+            "RegionHashID": "RH-10",
+            "RetailPrice": 31.00,
+            "PurchasePrice": 25.00,
+            "WarrantyPrice": 18.00,
+            "RetailUnitPrices": [
+              { "UnitName": "each", "Price": 31.00, "IsDefault": true },
+              { "UnitName": "box of 8", "Price": 240.00, "IsDefault": true }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_comment": "CASE 11 — EDGE: a non-default unit literally named 'each' with no default present. Evaluator appends ANOTHER default 'each' -> the DTO output ends up with two 'each' entries (known fallback edge case).",
+    "id": "catalog-part-RUPEDGEEACHNODEFAULT011",
+    "PartNumber": "RUPEDGEEACHNODEFAULT011",
+    "ItemType": "CatalogPart",
+    "Location": "DEFAULT",
+    "PartName": "EDGE - NON-DEFAULT 'EACH' AND NO DEFAULT",
+    "ProductGroup": "F",
+    "DistributorPurchasePrice": 6.50,
+    "Origin": "JP",
+    "CountryData": [
+      {
+        "CountryID": 1,
+        "CountryHashID": "CH-1",
+        "RegionPrices": [
+          {
+            "RegionID": 10,
+            "RegionHashID": "RH-10",
+            "RetailPrice": 26.00,
+            "PurchasePrice": 21.00,
+            "WarrantyPrice": 15.00,
+            "RetailUnitPrices": [
+              { "UnitName": "each", "Price": 26.00, "IsDefault": false }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_comment": "CASE 12 — units with a zero price and a null price. Tests formatting of 0 and null values.",
+    "id": "catalog-part-RUPZERONULL012",
+    "PartNumber": "RUPZERONULL012",
+    "ItemType": "CatalogPart",
+    "Location": "DEFAULT",
+    "PartName": "ZERO AND NULL UNIT PRICES",
+    "ProductGroup": "F",
+    "DistributorPurchasePrice": 0.00,
+    "Origin": "JP",
+    "CountryData": [
+      {
+        "CountryID": 1,
+        "CountryHashID": "CH-1",
+        "RegionPrices": [
+          {
+            "RegionID": 10,
+            "RegionHashID": "RH-10",
+            "RetailPrice": 0.00,
+            "PurchasePrice": 0.00,
+            "WarrantyPrice": 0.00,
+            "RetailUnitPrices": [
+              { "UnitName": "each", "Price": 0.00, "IsDefault": true },
+              { "UnitName": "sample", "Price": null, "IsDefault": false }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_comment": "CASE 13 — many units (5) with one default. Larger valid list.",
+    "id": "catalog-part-RUPMANYUNITS013",
+    "PartNumber": "RUPMANYUNITS013",
+    "ItemType": "CatalogPart",
+    "Location": "DEFAULT",
+    "PartName": "MANY UNITS",
+    "ProductGroup": "H",
+    "DistributorPurchasePrice": 3.00,
+    "Origin": "CN",
+    "CountryData": [
+      {
+        "CountryID": 1,
+        "CountryHashID": "CH-1",
+        "RegionPrices": [
+          {
+            "RegionID": 10,
+            "RegionHashID": "RH-10",
+            "RetailPrice": 12.00,
+            "PurchasePrice": 9.50,
+            "WarrantyPrice": 7.00,
+            "RetailUnitPrices": [
+              { "UnitName": "each", "Price": 12.00, "IsDefault": true },
+              { "UnitName": "pair", "Price": 23.00, "IsDefault": false },
+              { "UnitName": "box of 10", "Price": 110.00, "IsDefault": false },
+              { "UnitName": "case of 50", "Price": 525.00, "IsDefault": false },
+              { "UnitName": "pallet of 500", "Price": 5000.00, "IsDefault": false }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_comment": "CASE 14 — one country, three regions: region with units+default, region with empty units (fallback), region with no units field (null -> fallback).",
+    "id": "catalog-part-RUPMULTIREGIONMIXED014",
+    "PartNumber": "RUPMULTIREGIONMIXED014",
+    "ItemType": "CatalogPart",
+    "Location": "DEFAULT",
+    "PartName": "MULTI REGION MIXED",
+    "ProductGroup": "H",
+    "DistributorPurchasePrice": 4.50,
+    "Origin": "CN",
+    "CountryData": [
+      {
+        "CountryID": 1,
+        "CountryHashID": "CH-1",
+        "RegionPrices": [
+          {
+            "RegionID": 10,
+            "RegionHashID": "RH-10",
+            "RetailPrice": 18.00,
+            "PurchasePrice": 14.00,
+            "WarrantyPrice": 10.00,
+            "RetailUnitPrices": [
+              { "UnitName": "each", "Price": 18.00, "IsDefault": true },
+              { "UnitName": "box of 20", "Price": 340.00, "IsDefault": false }
+            ]
+          },
+          {
+            "RegionID": 20,
+            "RegionHashID": "RH-20",
+            "RetailPrice": 17.50,
+            "PurchasePrice": 13.50,
+            "WarrantyPrice": 9.50,
+            "RetailUnitPrices": []
+          },
+          {
+            "RegionID": 30,
+            "RegionHashID": "RH-30",
+            "RetailPrice": 17.00,
+            "PurchasePrice": 13.00,
+            "WarrantyPrice": 9.00
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_comment": "CASE 15 — genuine part, normal valid unit prices with one default.",
+    "id": "catalog-part-RUPGENUINE015",
+    "PartNumber": "RUPGENUINE015",
+    "ItemType": "CatalogPart",
+    "Location": "DEFAULT",
+    "PartName": "GENUINE PART WITH UNITS",
+    "GenuinePartNumber": true,
+    "ProductGroup": "A",
+    "DistributorPurchasePrice": 20.00,
+    "Origin": "JP",
+    "CountryData": [
+      {
+        "CountryID": 1,
+        "CountryHashID": "CH-1",
+        "RegionPrices": [
+          {
+            "RegionID": 10,
+            "RegionHashID": "RH-10",
+            "RetailPrice": 60.00,
+            "PurchasePrice": 48.00,
+            "WarrantyPrice": 36.00,
+            "RetailUnitPrices": [
+              { "UnitName": "each", "Price": 60.00, "IsDefault": true },
+              { "UnitName": "box of 5", "Price": 285.00, "IsDefault": false }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

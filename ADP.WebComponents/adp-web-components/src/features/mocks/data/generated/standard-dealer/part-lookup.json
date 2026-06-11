@@ -37,7 +37,14 @@
         "regionID": "10",
         "regionName": "Kurdistan",
         "retailPrice": {
-          "value": 5.00
+          "value": 5.00,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 5.00,
+              "isDefault": true
+            }
+          ]
         },
         "purchasePrice": {
           "value": 3.50
@@ -52,7 +59,14 @@
         "regionID": "20",
         "regionName": "Central Iraq",
         "retailPrice": {
-          "value": 4.80
+          "value": 4.80,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 4.80,
+              "isDefault": true
+            }
+          ]
         },
         "purchasePrice": {
           "value": 3.40
@@ -67,7 +81,14 @@
         "regionID": "30",
         "regionName": "Kuwait City",
         "retailPrice": {
-          "value": 5.50
+          "value": 5.50,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 5.50,
+              "isDefault": true
+            }
+          ]
         },
         "purchasePrice": {
           "value": 3.80
@@ -114,7 +135,14 @@
         "regionID": "10",
         "regionName": "Kurdistan",
         "retailPrice": {
-          "value": 8.50
+          "value": 8.50,
+          "unitPrices": [
+            {
+              "unitName": "each",
+              "price": 8.50,
+              "isDefault": true
+            }
+          ]
         },
         "purchasePrice": {
           "value": 6.00

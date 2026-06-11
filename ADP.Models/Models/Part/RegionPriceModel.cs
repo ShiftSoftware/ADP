@@ -1,4 +1,8 @@
-﻿namespace ShiftSoftware.ADP.Models.Part;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace ShiftSoftware.ADP.Models.Part;
 
 
 /// <summary>
@@ -31,4 +35,32 @@ public class RegionPriceModel : IRegionProps
     /// The warranty price of the part in the region. (As reimbursed by the distributor)
     /// </summary>
     public decimal? WarrantyPrice { get; set; }
+
+    /// <summary>
+    /// The retail price of the part in the region broken down by selling unit (e.g. each, box).
+    /// When provided, unit names must be unique and at most one entry may be marked as the default.
+    /// These rules are validated on read (the path consumers and serializers go through) so they
+    /// hold against the current contents of the list, including items added after assignment;
+    /// a violation throws an <see cref="InvalidOperationException"/>.
+    /// </summary>
+    public IEnumerable<PartUnitPriceModel> RetailUnitPrices
+    {
+        get
+        {
+            if (field is not null)
+            {
+                var duplicateName = field
+                    .GroupBy(x => x.UnitName, StringComparer.OrdinalIgnoreCase)
+                    .FirstOrDefault(g => g.Count() > 1);
+                if (duplicateName is not null)
+                    throw new InvalidOperationException($"Duplicate retail unit price name '{duplicateName.Key}'. Unit names must be unique.");
+
+                if (field.Count(x => x.IsDefault) > 1)
+                    throw new InvalidOperationException("More than one default retail unit price was found. Only one unit price can be marked as the default.");
+            }
+
+            return field;
+        }
+        set => field = value;
+    }
 }
