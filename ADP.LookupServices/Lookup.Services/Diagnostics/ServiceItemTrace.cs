@@ -59,10 +59,12 @@ public class ServiceItemTraceInputs
 {
     public string Vin { get; set; }
     public long? BrandID { get; set; }
+    /// <summary>The resolved owning CompanyID (activation-aware, see <c>VehicleOwnership</c>) that eligibility filtered against.</summary>
     public long? CompanyID { get; set; }
     public string Katashiki { get; set; }
     public string VariantCode { get; set; }
     public bool VehicleLoaded { get; set; }
+    /// <summary>The resolved owning CountryID (activation-aware, see <c>VehicleOwnership</c>) that eligibility filtered against.</summary>
     public long? SaleCountryID { get; set; }
     public DateTime? FreeServiceStartDate { get; set; }
     public bool FreeServiceStartDateOverriddenByDateShift { get; set; }

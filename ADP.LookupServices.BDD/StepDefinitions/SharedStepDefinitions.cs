@@ -195,6 +195,9 @@ public class SharedStepDefinitions
                 id = GetOptionalString(row, "id") ?? Guid.NewGuid().ToString(),
                 WarrantyActivationDate = GetOptionalDate(row, "WarrantyActivationDate"),
                 CompanyID = GetOptionalLong(row, "CompanyID"),
+                CountryID = GetOptionalLong(row, "CountryID"),
+                RegionID = GetOptionalLong(row, "RegionID"),
+                BranchID = GetOptionalLong(row, "BranchID"),
             }));
     }
 
