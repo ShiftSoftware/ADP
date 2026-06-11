@@ -25,8 +25,7 @@ public class ServiceItemTraceStepDefinitions
     public async Task WhenEvaluatingWithTrace(string vin, string language)
     {
         _context.Aggregate.VIN = vin;
-        var vehicle = new VehicleEntryEvaluator(_context.Aggregate).Evaluate();
-        _context.CurrentVehicle = vehicle;
+        var (vehicle, ownership) = _context.ResolveVehicle();
 
         var collector = new ServiceItemTraceCollector(vin);
         var evaluator = new VehicleServiceItemEvaluator(
@@ -35,7 +34,7 @@ public class ServiceItemTraceStepDefinitions
             Trace = collector,
         };
 
-        await evaluator.Evaluate(vehicle!, _freeServiceStartDate, language);
+        await evaluator.Evaluate(vehicle, ownership, _freeServiceStartDate, language);
         _trace = collector.Build();
     }
 

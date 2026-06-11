@@ -1,6 +1,7 @@
 using System.Reflection;
 using ShiftSoftware.ADP.Lookup.Services;
 using ShiftSoftware.ADP.Lookup.Services.Aggregate;
+using ShiftSoftware.ADP.Lookup.Services.Evaluators;
 using ShiftSoftware.ADP.Lookup.Services.Services;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Part;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
@@ -23,7 +24,22 @@ public class TestContext
 
     // Intermediate evaluator results
     public VehicleEntryModel? CurrentVehicle { get; set; }
+    public VehicleOwnership? CurrentOwnership { get; set; }
     public VehicleSaleInformation? SaleInformation { get; set; }
+
+    /// <summary>
+    /// Selects the vehicle entry and resolves its ownership the same way the production
+    /// pipeline does (<see cref="VehicleEntryEvaluator"/> then
+    /// <see cref="VehicleOwnershipEvaluator"/>), recording both on the context.
+    /// </summary>
+    public (VehicleEntryModel? vehicle, VehicleOwnership ownership) ResolveVehicle()
+    {
+        var vehicle = new VehicleEntryEvaluator(Aggregate).Evaluate();
+        var ownership = new VehicleOwnershipEvaluator(Aggregate).Evaluate(vehicle);
+        CurrentVehicle = vehicle;
+        CurrentOwnership = ownership;
+        return (vehicle, ownership);
+    }
 
     // Loaded environment (populated by environment loading step)
     public TestEnvironment? Environment { get; set; }

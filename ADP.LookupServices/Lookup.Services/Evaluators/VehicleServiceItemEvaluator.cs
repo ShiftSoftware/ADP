@@ -41,11 +41,15 @@ public partial class VehicleServiceItemEvaluator
     /// expand by trigger (warranty rolling expiry, vehicle inspection, manual VIN entry) →
     /// determine status & claimability → post-process (VIN exclusion, ineligible pickup,
     /// dynamic cancellation) → stamp signatures & claim warnings.
+    /// <paramref name="vehicle"/> supplies spec (brand, Katashiki/Variant); <paramref name="ownership"/>
+    /// supplies the resolved owning company/country for the eligibility filters — never read
+    /// those off the entry, its ownership can be stale (see <see cref="VehicleOwnershipEvaluator"/>).
     /// <paramref name="brokerSaleInformation"/> (from <c>VehicleSaleInformation.Broker</c>) only
     /// feeds the un-invoiced broker claim warning — pass null when sale info is unavailable.
     /// </summary>
     public async Task<(IEnumerable<VehicleServiceItemDTO> serviceItems, bool activationRequired)> Evaluate(
         VehicleEntryModel vehicle,
+        VehicleOwnership ownership,
         DateTime? freeServiceStartDate,
         string languageCode,
         VehicleBrokerSaleInformation brokerSaleInformation = null)
@@ -66,7 +70,7 @@ public partial class VehicleServiceItemEvaluator
             .Min()?
             .ToUniversalTime().Date;
 
-        Trace.RecordInputs(vehicle, freeServiceStartDate, requestedStartDate, showingInactivatedItems, serviceItems, companyDataAggregate, deFactoServiceStartDate);
+        Trace.RecordInputs(vehicle, ownership, freeServiceStartDate, requestedStartDate, showingInactivatedItems, serviceItems, companyDataAggregate, deFactoServiceStartDate);
 
         var dateShiftApplied = companyDataAggregate.FreeServiceItemDateShifts?.Any() ?? false;
         if (deFactoServiceStartDate is not null && requestedStartDate == deFactoServiceStartDate && !dateShiftApplied && !showingInactivatedItems)
@@ -74,7 +78,7 @@ public partial class VehicleServiceItemEvaluator
 
         var result = new List<VehicleServiceItemDTO>();
 
-        using (Trace.Stage("Eligibility"))            result.AddRange(BuildEligibleFreeItems(serviceItems, vehicle, freeServiceStartDate, languageCode));
+        using (Trace.Stage("Eligibility"))            result.AddRange(BuildEligibleFreeItems(serviceItems, vehicle, ownership, freeServiceStartDate, languageCode));
         using (Trace.Stage("PaidItems"))              result.AddRange(BuildPaidItems(languageCode));
         using (Trace.Stage("WarrantyRollingExpiry"))  ApplyWarrantyRollingExpiry(result, freeServiceStartDate);
         using (Trace.Stage("InspectionExpansion"))    ApplyVehicleInspectionExpansion(result);
@@ -129,10 +133,11 @@ public partial class VehicleServiceItemEvaluator
     private IEnumerable<VehicleServiceItemDTO> BuildEligibleFreeItems(
         IEnumerable<ServiceItemModel> serviceItems,
         VehicleEntryModel vehicle,
+        VehicleOwnership ownership,
         DateTime? freeServiceStartDate,
         string languageCode)
     {
-        var eligible = FilterEligibleServiceItems(serviceItems, vehicle, freeServiceStartDate)
+        var eligible = FilterEligibleServiceItems(serviceItems, vehicle, ownership, freeServiceStartDate)
             .OrderByDescending(x => x.MaximumMileage.HasValue)
             .ThenBy(x => x.MaximumMileage);
 
@@ -543,12 +548,13 @@ public partial class VehicleServiceItemEvaluator
     private EligibilityRejectionStage EvaluateItemEligibility(
         ServiceItemModel item,
         VehicleEntryModel vehicle,
+        VehicleOwnership ownership,
         DateTime? freeServiceStartDate)
     {
         if (item.IsDeleted) return EligibilityRejectionStage.IsDeleted;
         if (!MatchesBrand(item, vehicle)) return EligibilityRejectionStage.Brand;
-        if (!MatchesCompany(item, vehicle)) return EligibilityRejectionStage.Company;
-        if (!MatchesCountry(item, vehicle)) return EligibilityRejectionStage.Country;
+        if (!MatchesCompany(item, ownership)) return EligibilityRejectionStage.Company;
+        if (!MatchesCountry(item, ownership)) return EligibilityRejectionStage.Country;
         if (!IsWithinCampaignWindow(item, freeServiceStartDate)) return EligibilityRejectionStage.CampaignWindow;
         if (!IsApplicableToVehicle(item, vehicle)) return EligibilityRejectionStage.VehicleApplicability;
         return EligibilityRejectionStage.None;
@@ -557,11 +563,16 @@ public partial class VehicleServiceItemEvaluator
     private static bool MatchesBrand(ServiceItemModel item, VehicleEntryModel vehicle) =>
         vehicle is null || item.BrandIDs is null || item.BrandIDs.Any(a => a == vehicle.BrandID);
 
-    private static bool MatchesCompany(ServiceItemModel item, VehicleEntryModel vehicle) =>
-        vehicle is null || item.CompanyIDs is null || !item.CompanyIDs.Any() || item.CompanyIDs.Any(a => a == vehicle.CompanyID);
+    // Company/country match against the resolved ownership, never the entry — the entry's
+    // ownership fields can be stale while the vehicle awaits allocation to the activating
+    // company. No vehicle-null leniency here: an unknown (null) owner matches nothing
+    // scoped, so another company's items can never leak in (fail closed).
 
-    private static bool MatchesCountry(ServiceItemModel item, VehicleEntryModel vehicle) =>
-        vehicle is null || item.CountryIDs is null || !item.CountryIDs.Any() || item.CountryIDs.Any(a => a == vehicle.CountryID);
+    private static bool MatchesCompany(ServiceItemModel item, VehicleOwnership ownership) =>
+        item.CompanyIDs is null || !item.CompanyIDs.Any() || item.CompanyIDs.Any(a => a == ownership?.CompanyID);
+
+    private static bool MatchesCountry(ServiceItemModel item, VehicleOwnership ownership) =>
+        item.CountryIDs is null || !item.CountryIDs.Any() || item.CountryIDs.Any(a => a == ownership?.CountryID);
 
     private bool IsWithinCampaignWindow(ServiceItemModel item, DateTime? freeServiceStartDate) =>
         item.CampaignActivationTrigger switch
@@ -622,14 +633,15 @@ public partial class VehicleServiceItemEvaluator
     private IEnumerable<ServiceItemModel> FilterEligibleServiceItems(
         IEnumerable<ServiceItemModel> serviceItems,
         VehicleEntryModel vehicle,
+        VehicleOwnership ownership,
         DateTime? freeServiceStartDate)
     {
         Trace.RecordEligibilityInputCount(serviceItems?.Count() ?? 0);
 
         foreach (var item in serviceItems ?? Enumerable.Empty<ServiceItemModel>())
         {
-            var stage = EvaluateItemEligibility(item, vehicle, freeServiceStartDate);
-            Trace.RecordEligibilityDecision(item, stage, vehicle);
+            var stage = EvaluateItemEligibility(item, vehicle, ownership, freeServiceStartDate);
+            Trace.RecordEligibilityDecision(item, stage, vehicle, ownership);
             if (stage == EligibilityRejectionStage.None)
                 yield return item;
         }

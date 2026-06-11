@@ -24,8 +24,8 @@ Scenario: Processed item enriches its company name via the resolver
 
 Scenario: Service activation print URL overrides the inspection print URL
   Given vehicles in dealer stock:
-    | VIN               | InvoiceDate | CompanyID | BranchID | BrandID |
-    | 1FDKF37GXVEB34368 | 2026-01-15  | 1         | 10       | 1       |
+    | VIN               | InvoiceDate | CompanyID | BranchID | CountryID | BrandID |
+    | 1FDKF37GXVEB34368 | 2026-01-15  | 1         | 10       | 1         | 1       |
   And service items:
     | ServiceItemID | Name       | BrandID | ActivationTrigger | ActivationType   | VehicleInspectionTypeID | ActiveForMonths |
     | SI-INSP       | Inspection | 1       | VehicleInspection | FirstTriggerOnly | 7                       | 12              |
@@ -33,8 +33,8 @@ Scenario: Service activation print URL overrides the inspection print URL
     | id     | InspectionDate | VehicleInspectionTypeID |
     | INSP-A | 2026-02-01     | 7                       |
   And vehicle service activations:
-    | id    | WarrantyActivationDate |
-    | ACT-1 | 2026-01-15             |
+    | id    | CompanyID | WarrantyActivationDate |
+    | ACT-1 | 1         | 2026-01-15             |
   And an inspection pre-claim voucher URL resolver is configured
   And a service activation pre-claim voucher URL resolver is configured
   When evaluating service items for "1FDKF37GXVEB34368" with language "en"

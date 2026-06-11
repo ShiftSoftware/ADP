@@ -165,6 +165,7 @@ static async Task<VehicleLookupDTO> GenerateVehicleLookup(
     IServiceProvider serviceProvider)
 {
     var vehicle = new VehicleEntryEvaluator(aggregate).Evaluate();
+    var ownership = new VehicleOwnershipEvaluator(aggregate).Evaluate(vehicle);
 
     var requestOptions = new VehicleLookupRequestOptions
     {
@@ -190,7 +191,7 @@ static async Task<VehicleLookupDTO> GenerateVehicleLookup(
         Accessories = await new VehicleAccessoriesEvaluator(aggregate, options, serviceProvider)
             .Evaluate("en"),
         SaleInformation = await new VehicleSaleInformationEvaluator(aggregate, options, serviceProvider, storageService)
-            .Evaluate(requestOptions),
+            .Evaluate(vehicle, ownership, requestOptions),
     };
 
     // Mirrors VehicleLookupService.LookupFromAggregateAsync: the signed certificate URLs
@@ -207,6 +208,7 @@ static async Task<VehicleLookupDTO> GenerateVehicleLookup(
         storageService, aggregate, options, serviceProvider
     ).Evaluate(
         vehicle,
+        ownership,
         data.Warranty?.FreeServiceStartDate,
         "en",
         data.SaleInformation?.Broker

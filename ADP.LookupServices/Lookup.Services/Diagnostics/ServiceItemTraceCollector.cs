@@ -77,6 +77,7 @@ public class ServiceItemTraceCollector
 
     public virtual void RecordInputs(
         VehicleEntryModel vehicle,
+        VehicleOwnership ownership,
         DateTime? freeServiceStartDate,
         DateTime? freeServiceStartDateBeforeShift,
         bool showingInactivatedItems,
@@ -88,11 +89,11 @@ public class ServiceItemTraceCollector
         {
             Vin = vehicle?.VIN,
             BrandID = vehicle?.BrandID,
-            CompanyID = vehicle?.CompanyID,
+            CompanyID = ownership?.CompanyID,
             Katashiki = vehicle?.Katashiki,
             VariantCode = vehicle?.VariantCode,
             VehicleLoaded = vehicle is not null,
-            SaleCountryID = vehicle?.CountryID,
+            SaleCountryID = ownership?.CountryID,
             FreeServiceStartDate = freeServiceStartDate,
             FreeServiceStartDateBeforeDateShift = freeServiceStartDateBeforeShift,
             FreeServiceStartDateOverriddenByDateShift = freeServiceStartDateBeforeShift != freeServiceStartDate && !showingInactivatedItems,
@@ -144,7 +145,8 @@ public class ServiceItemTraceCollector
     public virtual void RecordEligibilityDecision(
         ServiceItemModel item,
         EligibilityRejectionStage stage,
-        VehicleEntryModel vehicle)
+        VehicleEntryModel vehicle,
+        VehicleOwnership ownership)
     {
         var accepted = stage == EligibilityRejectionStage.None;
         var decision = new ServiceItemEligibilityDecision
@@ -155,7 +157,7 @@ public class ServiceItemTraceCollector
             Item = Snapshot(item),
             Verdict = accepted ? EligibilityVerdict.Accepted : EligibilityVerdict.Rejected,
             RejectionStage = stage,
-            Reason = accepted ? null : ServiceItemEligibilityReasonFormatter.Format(item, stage, vehicle),
+            Reason = accepted ? null : ServiceItemEligibilityReasonFormatter.Format(item, stage, vehicle, ownership),
         };
         trace.Eligibility.Decisions.Add(decision);
         if (accepted) trace.Eligibility.AcceptedCount++;
@@ -406,11 +408,11 @@ public class ServiceItemTraceCollector
     {
         public override bool IsEnabled => false;
         public override IDisposable Stage(string name) => noopScope;
-        public override void RecordInputs(VehicleEntryModel vehicle, DateTime? freeServiceStartDate, DateTime? freeServiceStartDateBeforeShift, bool showingInactivatedItems, IEnumerable<ServiceItemModel> serviceItems, CompanyDataAggregateModel aggregate, DateTime? deFactoServiceStartDate) { }
+        public override void RecordInputs(VehicleEntryModel vehicle, VehicleOwnership ownership, DateTime? freeServiceStartDate, DateTime? freeServiceStartDateBeforeShift, bool showingInactivatedItems, IEnumerable<ServiceItemModel> serviceItems, CompanyDataAggregateModel aggregate, DateTime? deFactoServiceStartDate) { }
         public override void RecordFinalResult(List<VehicleServiceItemDTO> result, bool activationRequired) { }
         public override void Note(string message) { }
         public override void RecordEligibilityInputCount(int count) { }
-        public override void RecordEligibilityDecision(ServiceItemModel item, EligibilityRejectionStage stage, VehicleEntryModel vehicle) { }
+        public override void RecordEligibilityDecision(ServiceItemModel item, EligibilityRejectionStage stage, VehicleEntryModel vehicle, VehicleOwnership ownership) { }
         public override void RecordFreeBuild(ServiceItemModel item, VehicleServiceItemDTO dto, ServiceItemCostModel matchedCost, string languageCode) { }
         public override void RecordPaidBuild(PaidServiceInvoiceModel invoice, PaidServiceInvoiceLineModel line, VehicleServiceItemDTO dto, string languageCode) { }
         public override void RecordWarrantyRollingSkipped(string reason) { }

@@ -29,14 +29,13 @@ public class VehicleServiceItemStepDefinitions
     {
         _context.Aggregate.VIN = vin;
 
-        var vehicle = new VehicleEntryEvaluator(_context.Aggregate).Evaluate();
-        _context.CurrentVehicle = vehicle;
+        var (vehicle, ownership) = _context.ResolveVehicle();
 
         var evaluator = new VehicleServiceItemEvaluator(
             _context.StorageService, _context.Aggregate, _context.Options, _context.ServiceProvider);
 
         var (serviceItems, activationRequired) = await evaluator.Evaluate(
-            vehicle!, _freeServiceStartDate, language, _context.SaleInformation?.Broker);
+            vehicle, ownership, _freeServiceStartDate, language, _context.SaleInformation?.Broker);
         _result = serviceItems;
         _activationRequired = activationRequired;
     }
@@ -52,8 +51,7 @@ public class VehicleServiceItemStepDefinitions
     {
         _context.Aggregate.VIN = vin;
 
-        var vehicle = new VehicleEntryEvaluator(_context.Aggregate).Evaluate();
-        _context.CurrentVehicle = vehicle;
+        var (vehicle, ownership) = _context.ResolveVehicle();
 
         var saleInfo = _context.SaleInformation ?? new VehicleSaleInformation
         {
@@ -68,7 +66,7 @@ public class VehicleServiceItemStepDefinitions
             _context.StorageService, _context.Aggregate, _context.Options, _context.ServiceProvider);
 
         var (serviceItems, activationRequired) = await evaluator.Evaluate(
-            vehicle!, warranty.FreeServiceStartDate, language, saleInfo?.Broker);
+            vehicle, ownership, warranty.FreeServiceStartDate, language, saleInfo?.Broker);
         _result = serviceItems;
         _activationRequired = activationRequired;
     }
