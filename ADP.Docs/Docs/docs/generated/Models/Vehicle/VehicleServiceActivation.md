@@ -21,3 +21,6 @@ Represents the activation of warranty services for a vehicle.
 | CustomerGender <div><strong>``Genders``</strong></div> | The customer's gender. |
 | IsDeleted <div><strong>``bool``</strong></div> | Indicates whether this activation record has been deleted. |
 | CompanyHashID <div><strong>``string``</strong></div> | The Company Hash ID from the Identity System. |
+| CountryHashID <div><strong>``string``</strong></div> | The Country Hash ID from the Identity System. |
+| RegionHashID <div><strong>``string``</strong></div> | The Region Hash ID from the Identity System. |
+| BranchHashID <div><strong>``string``</strong></div> | The Branch Hash ID from the Identity System. |

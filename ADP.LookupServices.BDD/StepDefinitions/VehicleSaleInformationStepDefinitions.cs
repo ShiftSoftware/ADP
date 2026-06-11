@@ -33,8 +33,7 @@ public class VehicleSaleInformationStepDefinitions
     {
         _context.Aggregate.VIN = vin;
 
-        var vehicle = new VehicleEntryEvaluator(_context.Aggregate).Evaluate();
-        _context.CurrentVehicle = vehicle;
+        var (vehicle, ownership) = _context.ResolveVehicle();
 
         var requestOptions = new VehicleLookupRequestOptions
         {
@@ -45,7 +44,7 @@ public class VehicleSaleInformationStepDefinitions
         var evaluator = new VehicleSaleInformationEvaluator(
             _context.Aggregate, _context.Options, _context.ServiceProvider, _context.StorageService);
 
-        _result = await evaluator.Evaluate(requestOptions);
+        _result = await evaluator.Evaluate(vehicle, ownership, requestOptions);
         _context.SaleInformation = _result;
         _evaluated = true;
     }
@@ -69,6 +68,14 @@ public class VehicleSaleInformationStepDefinitions
     {
         Assert.NotNull(_result);
         Assert.Equal(expectedBranch, _result.BranchName);
+    }
+
+    [Then("the sale has no branch")]
+    public void ThenTheSaleHasNoBranch()
+    {
+        Assert.NotNull(_result);
+        Assert.Null(_result.BranchID);
+        Assert.Null(_result.BranchName);
     }
 
     [Then("the sale invoice date is {string}")]

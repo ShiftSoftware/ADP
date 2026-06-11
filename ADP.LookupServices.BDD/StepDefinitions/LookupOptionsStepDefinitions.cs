@@ -83,13 +83,17 @@ public class LookupOptionsStepDefinitions
         };
     }
 
+    // The ID→name stubs must tolerate a null ID like production resolvers do — the sale
+    // evaluator invokes them with whatever the resolved ownership carries, which can be null
+    // (e.g. an activation-owned vehicle with no branch).
+
     [Given("company {long} is named {string}")]
     public void GivenCompanyIsNamed(long companyId, string name)
     {
         _companyNames[companyId] = name;
         _context.Options.CompanyNameResolver = (model) =>
         {
-            var resolved = _companyNames.TryGetValue(model.Value, out var n) ? n : null;
+            var resolved = model.Value is { } id && _companyNames.TryGetValue(id, out var n) ? n : null;
             return new ValueTask<string?>(resolved);
         };
     }
@@ -100,7 +104,7 @@ public class LookupOptionsStepDefinitions
         _branchNames[branchId] = name;
         _context.Options.CompanyBranchNameResolver = (model) =>
         {
-            var resolved = _branchNames.TryGetValue(model.Value, out var n) ? n : null;
+            var resolved = model.Value is { } id && _branchNames.TryGetValue(id, out var n) ? n : null;
             return new ValueTask<string?>(resolved);
         };
     }
@@ -111,7 +115,7 @@ public class LookupOptionsStepDefinitions
         _countryNames[countryId] = name;
         _context.Options.CountryNameResolver = (model) =>
         {
-            var resolved = _countryNames.TryGetValue(model.Value, out var n) ? n : null;
+            var resolved = model.Value is { } id && _countryNames.TryGetValue(id, out var n) ? n : null;
             return new ValueTask<string?>(resolved);
         };
     }
@@ -122,7 +126,7 @@ public class LookupOptionsStepDefinitions
         _regionNames[regionId] = name;
         _context.Options.RegionNameResolver = (model) =>
         {
-            var resolved = _regionNames.TryGetValue(model.Value, out var n) ? n : null;
+            var resolved = model.Value is { } id && _regionNames.TryGetValue(id, out var n) ? n : null;
             return new ValueTask<string?>(resolved);
         };
     }

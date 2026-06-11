@@ -1,3 +1,4 @@
+using ShiftSoftware.ADP.Lookup.Services.Aggregate;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using ShiftSoftware.ADP.Lookup.Services.Enums;
 using ShiftSoftware.ADP.Models.Enums;
@@ -18,16 +19,17 @@ internal static class ServiceItemEligibilityReasonFormatter
     public static string Format(
         ServiceItemModel item,
         EligibilityRejectionStage stage,
-        VehicleEntryModel vehicle) => stage switch
+        VehicleEntryModel vehicle,
+        VehicleOwnership ownership) => stage switch
     {
         EligibilityRejectionStage.IsDeleted =>
             "Item is marked deleted.",
         EligibilityRejectionStage.Brand =>
             $"Vehicle BrandID={vehicle?.BrandID} not in item.BrandIDs=[{Join(item.BrandIDs)}].",
         EligibilityRejectionStage.Company =>
-            $"Vehicle CompanyID={vehicle?.CompanyID} not in item.CompanyIDs=[{Join(item.CompanyIDs)}].",
+            $"Resolved owner CompanyID={ownership?.CompanyID} not in item.CompanyIDs=[{Join(item.CompanyIDs)}].",
         EligibilityRejectionStage.Country =>
-            $"Vehicle CountryID={vehicle?.CountryID} not in item.CountryIDs=[{Join(item.CountryIDs)}].",
+            $"Resolved owner CountryID={ownership?.CountryID} not in item.CountryIDs=[{Join(item.CountryIDs)}].",
         EligibilityRejectionStage.CampaignWindow =>
             FormatCampaignWindow(item),
         EligibilityRejectionStage.VehicleApplicability =>

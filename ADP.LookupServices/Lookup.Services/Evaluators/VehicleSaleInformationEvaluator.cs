@@ -23,36 +23,18 @@ public class VehicleSaleInformationEvaluator
         this.LookupCosmosService = lookupCosmosService;
     }
 
-    public async Task<VehicleSaleInformation> Evaluate(VehicleLookupRequestOptions requestOptions)
+    public async Task<VehicleSaleInformation> Evaluate(VehicleEntryModel vehicle, VehicleOwnership ownership, VehicleLookupRequestOptions requestOptions)
     {
         VehicleSaleInformation result = new();
 
         string languageCode = requestOptions.LanguageCode;
 
-        var vehicles = CompanyDataAggregate.VehicleEntries;
-
-        if (!(vehicles?.Any() ?? false))
+        // The entry supplies spec and sale/invoice fields; Company/Country/Region/Branch come from
+        // the resolved ownership (activation-authoritative), so the reported sale dealer matches the
+        // owner Service Item eligibility was computed for. A null vehicle means the VIN has no
+        // entries → no sale information.
+        if (vehicle is null)
             return null;
-
-        VehicleEntryModel vehicle = null;
-
-        var serviceActivation = CompanyDataAggregate
-            .VehicleServiceActivations
-            .FirstOrDefault();
-
-        if (serviceActivation is not null)
-        {
-            vehicle = vehicles
-                .Where(x => x.CompanyID == serviceActivation.CompanyID)
-                .FirstOrDefault();
-        }
-        else
-        {
-            vehicle = vehicles
-                .OrderByDescending(x => x.InvoiceDate == null)
-                .ThenByDescending(x => x.InvoiceDate)
-                .FirstOrDefault();
-        }
 
         result.InvoiceDate = vehicle?.InvoiceDate;
         result.WarrantyActivationDate = vehicle?.WarrantyActivationDate;
@@ -60,32 +42,32 @@ public class VehicleSaleInformationEvaluator
         result.Location = vehicle.Location;
         result.SaleType = vehicle.SaleType;
         result.AccountNumber = vehicle.AccountNumber;
-        result.RegionID = vehicle?.RegionID?.ToString();
+        result.RegionID = ownership?.RegionID?.ToString();
 
         result.InvoiceNumber = vehicle?.InvoiceNumber;
         result.InvoiceTotal = vehicle?.InvoiceTotal ?? 0;
-        result.CompanyID = vehicle?.CompanyID?.ToString();
-        result.BranchID = vehicle?.BranchID?.ToString();
+        result.CompanyID = ownership?.CompanyID?.ToString();
+        result.BranchID = ownership?.BranchID?.ToString();
 
         result.CustomerID = vehicle?.CustomerID;
         result.CustomerAccountNumber = vehicle?.CustomerAccountNumber;
 
-        result.CountryID = vehicle.CountryID?.ToString();
+        result.CountryID = ownership?.CountryID?.ToString();
 
         if (Options.CountryNameResolver is not null)
-            result.CountryName = await Options.CountryNameResolver(new(vehicle.CountryID, languageCode, ServiceProvider));
+            result.CountryName = await Options.CountryNameResolver(new(ownership?.CountryID, languageCode, ServiceProvider));
 
         if (Options.CompanyNameResolver is not null)
-            result.CompanyName = await Options.CompanyNameResolver(new(vehicle.CompanyID, languageCode, ServiceProvider));
+            result.CompanyName = await Options.CompanyNameResolver(new(ownership?.CompanyID, languageCode, ServiceProvider));
 
         if (Options.CompanyBranchNameResolver is not null)
             result.BranchName = await Options.CompanyBranchNameResolver(
-                new(vehicle.BranchID, languageCode, ServiceProvider));
+                new(ownership?.BranchID, languageCode, ServiceProvider));
 
         if (Options.CityFromBranchIDResolver is not null)
         {
             var cityID = await Options.CityFromBranchIDResolver(
-                new(vehicle.BranchID, languageCode, ServiceProvider));
+                new(ownership?.BranchID, languageCode, ServiceProvider));
 
             result.CityID = cityID?.ToString();
 
@@ -97,7 +79,7 @@ public class VehicleSaleInformationEvaluator
         string companyLogo = null;
 
         if (Options.CompanyLogoResolver is not null)
-            companyLogo = await Options.CompanyLogoResolver(new(vehicle.CompanyID, languageCode, ServiceProvider));
+            companyLogo = await Options.CompanyLogoResolver(new(ownership?.CompanyID, languageCode, ServiceProvider));
 
         if (Options.LookupBrokerStock)
         {
@@ -171,7 +153,7 @@ public class VehicleSaleInformationEvaluator
         //Load Customer from Customer Database
         if (requestOptions.LookupEndCustomer && result.Broker is null)
         {
-            var customer = await this.LookupCosmosService.GetCustomerAsync(vehicle.CustomerID, vehicle.CompanyID);
+            var customer = await this.LookupCosmosService.GetCustomerAsync(vehicle.CustomerID, ownership?.CompanyID);
 
             if (customer is not null)
             {

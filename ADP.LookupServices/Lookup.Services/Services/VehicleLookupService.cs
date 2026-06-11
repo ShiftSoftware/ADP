@@ -119,6 +119,11 @@ public class VehicleLookupService
 
         VehicleEntryModel vehicle = new VehicleEntryEvaluator(companyDataAggregate).Evaluate();
 
+        // The activation-aware owner (company/country/region/branch), resolved once and passed to
+        // the ownership-sensitive evaluators (Sale Information, Service Items) so they agree on the
+        // owning dealer even when the activating company's entry has not synced yet.
+        VehicleOwnership ownership = new VehicleOwnershipEvaluator(companyDataAggregate).Evaluate(vehicle);
+
         var data = new VehicleLookupDTO()
         {
             VIN = vin,
@@ -131,7 +136,7 @@ public class VehicleLookupService
             SSC = new VehicleSSCEvaluator(companyDataAggregate).Evaluate(),
             NextServiceDate = companyDataAggregate.LaborLines?.Max(x => x.NextServiceDate),
             Accessories = await new VehicleAccessoriesEvaluator(companyDataAggregate, lookupOptions, serviceProvider).Evaluate(requestOptions.LanguageCode),
-            SaleInformation = await new VehicleSaleInformationEvaluator(companyDataAggregate, lookupOptions, serviceProvider, vehicleLookupStorageService).Evaluate(requestOptions),
+            SaleInformation = await new VehicleSaleInformationEvaluator(companyDataAggregate, lookupOptions, serviceProvider, vehicleLookupStorageService).Evaluate(vehicle, ownership, requestOptions),
         };
 
         // The certificate's signed public URLs (one per language the host supports): produced
@@ -188,6 +193,7 @@ public class VehicleLookupService
 
         var serviceItemsResult = await serviceItemEvaluator.Evaluate(
             vehicle,
+            ownership,
             data.Warranty?.FreeServiceStartDate,
             requestOptions.LanguageCode,
             data.SaleInformation?.Broker

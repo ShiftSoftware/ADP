@@ -8,7 +8,7 @@ namespace ShiftSoftware.ADP.Models.Vehicle;
 /// Captures when the warranty was activated and the customer information at the time of activation.
 /// </summary>
 [Docable]
-public class VehicleServiceActivation : IPartitionedItem, ICompanyProps
+public class VehicleServiceActivation : IPartitionedItem, ICompanyProps, ICountryProps, IRegionProps, IBranchProps
 {
     [DocIgnore]
     public string id { get; set; }
@@ -88,4 +88,33 @@ public class VehicleServiceActivation : IPartitionedItem, ICompanyProps
     /// The Company Hash ID from the Identity System.
     /// </summary>
     public string CompanyHashID { get; set; }
+
+    // The activating company's location context (country / region / branch). Stamped by the
+    // upstream system at activation time so the lookup pipeline can resolve the vehicle's
+    // owning company/country/region from the activation alone — the matching VehicleEntry may
+    // not have synced yet (vehicle still in national stock). See VehicleOwnership.
+
+    [DocIgnore]
+    public long? CountryID { get; set; }
+
+    /// <summary>
+    /// The Country Hash ID from the Identity System.
+    /// </summary>
+    public string CountryHashID { get; set; }
+
+    [DocIgnore]
+    public long? RegionID { get; set; }
+
+    /// <summary>
+    /// The Region Hash ID from the Identity System.
+    /// </summary>
+    public string RegionHashID { get; set; }
+
+    [DocIgnore]
+    public long? BranchID { get; set; }
+
+    /// <summary>
+    /// The Branch Hash ID from the Identity System.
+    /// </summary>
+    public string BranchHashID { get; set; }
 }
