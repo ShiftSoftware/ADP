@@ -1,4 +1,5 @@
 ﻿using ShiftSoftware.ADP.Models;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Text.Json.Serialization;
 
@@ -17,6 +18,26 @@ public class PriceDTO
     public string CurrencySymbol { get; set; }
     /// <summary>The culture name used for formatting (e.g., "en-US", "ar-IQ").</summary>
     public string CultureName { get; set; }
+
+    /// <summary>
+    /// The price broken down by selling unit (e.g. each, box). Only populated for retail prices.
+    /// Unit names are unique and exactly one entry is marked as the default.
+    /// </summary>
+    public IEnumerable<PartUnitPriceDTO> UnitPrices
+    {
+        get
+        {
+            // Wire each unit price back to this price so it can read the currency/culture metadata
+            // when formatting. Done on read (the path serializers use) so items added after assignment
+            // are covered too, and so it always reflects this price's current culture.
+            if (field is not null)
+                foreach (var unitPrice in field)
+                    unitPrice.Parent = this;
+
+            return field;
+        }
+        set => field = value;
+    }
 
     [DocIgnore]
     [JsonIgnore]
