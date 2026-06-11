@@ -1,5 +1,6 @@
 using ShiftSoftware.ADP.Lookup.Services.Aggregate;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
+using ShiftSoftware.ADP.Lookup.Services.Services;
 using ShiftSoftware.ADP.Models.Vehicle;
 using System;
 using System.Collections.Generic;
@@ -28,12 +29,14 @@ public class PaintThicknessCertificateEvaluator
     private readonly CompanyDataAggregateModel CompanyDataAggregate;
     private readonly LookupOptions Options;
     private readonly IServiceProvider ServiceProvider;
+    private readonly IVehicleLookupStorageService VehicleLookupStorage;
 
-    public PaintThicknessCertificateEvaluator(CompanyDataAggregateModel companyDataAggregate, LookupOptions options, IServiceProvider serviceProvider)
+    public PaintThicknessCertificateEvaluator(CompanyDataAggregateModel companyDataAggregate, LookupOptions options, IServiceProvider serviceProvider, IVehicleLookupStorageService vehicleLookupStorage = null)
     {
         this.CompanyDataAggregate = companyDataAggregate;
         this.Options = options;
         this.ServiceProvider = serviceProvider;
+        this.VehicleLookupStorage = vehicleLookupStorage;
     }
 
     /// <summary>
@@ -61,6 +64,19 @@ public class PaintThicknessCertificateEvaluator
             return null; // no distributor invoice or no qualifying PDI inspection -> no certificate
 
         var invoiceDate = anchorEntry.InvoiceDate;
+
+        // Resolve the exterior/interior color descriptions the same way VehicleSpecificationEvaluator
+        // does — from the ExteriorColors/InteriorColors containers, keyed by the anchor entry's color
+        // codes + brand. When no storage service is supplied (e.g. the test-data generator or the
+        // availability-only path), the codes still flow through and only the descriptions stay null.
+        ColorModel exteriorColor = null;
+        ColorModel interiorColor = null;
+
+        if (VehicleLookupStorage is not null)
+        {
+            exteriorColor = await VehicleLookupStorage.GetExteriorColorsAsync(anchorEntry.ExteriorColorCode, anchorEntry.BrandID);
+            interiorColor = await VehicleLookupStorage.GetInteriorColorsAsync(anchorEntry.InteriorColorCode, anchorEntry.BrandID);
+        }
 
         // 3. Assemble the print model.
         var readings = new List<PaintThicknessCertificateReadingModel>();
@@ -98,6 +114,9 @@ public class PaintThicknessCertificateEvaluator
             ModelCode = anchorEntry.ModelCode,
             ModelYear = anchorEntry.ModelYear?.ToString() ?? chosen.ModelYear,
             ExteriorColorCode = anchorEntry.ExteriorColorCode ?? chosen.ColorCode,
+            ExteriorColorDescription = exteriorColor?.Description,
+            InteriorColorCode = anchorEntry.InteriorColorCode,
+            InteriorColorDescription = interiorColor?.Description,
             Katashiki = anchorEntry.Katashiki,
             VariantCode = anchorEntry.VariantCode,
 

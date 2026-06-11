@@ -44,6 +44,15 @@ public class PaintThicknessCertificateModel
     /// <summary>The exterior color code of the vehicle.</summary>
     public string ExteriorColorCode { get; set; }
 
+    /// <summary>The resolved exterior color description (e.g. "Pearl White"); <c>null</c> when unavailable.</summary>
+    public string ExteriorColorDescription { get; set; }
+
+    /// <summary>The interior (trim) color code of the vehicle.</summary>
+    public string InteriorColorCode { get; set; }
+
+    /// <summary>The resolved interior (trim) color description; <c>null</c> when unavailable.</summary>
+    public string InteriorColorDescription { get; set; }
+
     /// <summary>The Katashiki (manufacturer model-specific identifier).</summary>
     public string Katashiki { get; set; }
 

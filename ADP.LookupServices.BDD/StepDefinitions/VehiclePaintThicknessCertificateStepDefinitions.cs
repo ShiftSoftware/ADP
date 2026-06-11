@@ -3,6 +3,7 @@ using Reqnroll;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using ShiftSoftware.ADP.Lookup.Services.Evaluators;
 using ShiftSoftware.ADP.Lookup.Services.Services;
+using ShiftSoftware.ADP.Models.Vehicle;
 using Xunit;
 
 namespace LookupServices.BDD.StepDefinitions;
@@ -34,6 +35,43 @@ public class VehiclePaintThicknessCertificateStepDefinitions
             _context.Aggregate, _context.Options, _context.ServiceProvider)
             .Evaluate(language);
         _evaluated = true;
+    }
+
+    [Given("resolvable colors exterior {string} and interior {string}")]
+    public void GivenResolvableColors(string exteriorDescription, string interiorDescription)
+    {
+        _context.StorageService.GetExteriorColorsAsync(Arg.Any<string>(), Arg.Any<long?>())
+            .Returns(new ColorModel { Description = exteriorDescription });
+        _context.StorageService.GetInteriorColorsAsync(Arg.Any<string>(), Arg.Any<long?>())
+            .Returns(new ColorModel { Description = interiorDescription });
+    }
+
+    // Goes through VehicleLookupService.GetPaintThicknessCertificateAsync (not the evaluator
+    // directly) so the storage service it hands to the evaluator is exercised — color
+    // descriptions are resolved there, not from the (often-absent) IServiceProvider.
+    [When("evaluating the certificate for {string} through the lookup service with language {string}")]
+    public async Task WhenEvaluatingThroughTheService(string vin, string language)
+    {
+        _context.StorageService.GetAggregatedCompanyData(vin).Returns(_context.Aggregate);
+
+        var service = new VehicleLookupService(_context.StorageService, _context.ServiceProvider, null, _context.Options);
+
+        _result = await service.GetPaintThicknessCertificateAsync(vin, language);
+        _evaluated = true;
+    }
+
+    [Then("the certificate exterior color description is {string}")]
+    public void ThenExteriorColorDescriptionIs(string description)
+    {
+        Assert.NotNull(_result);
+        Assert.Equal(description, _result!.ExteriorColorDescription);
+    }
+
+    [Then("the certificate interior color description is {string}")]
+    public void ThenInteriorColorDescriptionIs(string description)
+    {
+        Assert.NotNull(_result);
+        Assert.Equal(description, _result!.InteriorColorDescription);
     }
 
     [Given("a paint thickness certificate serial number resolver that returns {string}")]

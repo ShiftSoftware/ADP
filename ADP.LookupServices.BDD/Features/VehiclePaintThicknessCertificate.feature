@@ -143,6 +143,19 @@ Scenario: Panel images flow to the certificate gallery
   And the certificate has 2 readings
   And the certificate gallery has 3 images
 
+Scenario: The certificate resolves exterior and interior color descriptions through the lookup service
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID |
+    | JTMBFREVXKD123456 | 2024-01-15  | 1         |
+  And paint thickness inspections:
+    | InspectionDate | Source |
+    | 2024-01-10     | PDI    |
+  And resolvable colors exterior "Super White II" and interior "Black Fabric"
+  When evaluating the certificate for "JTMBFREVXKD123456" through the lookup service with language "en"
+  Then a paint thickness certificate is produced
+  And the certificate exterior color description is "Super White II"
+  And the certificate interior color description is "Black Fabric"
+
 Scenario: Certificate produced end-to-end from the standard-dealer environment
   Given the "standard-dealer" environment is loaded
   And loading vehicle "JTMHX01J8L4198293" from the environment

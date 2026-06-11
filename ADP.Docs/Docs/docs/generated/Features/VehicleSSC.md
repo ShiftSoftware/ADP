@@ -84,6 +84,18 @@ Each SSC is checked for repair status by looking at three sources:
     	Then SSC "SSC-001" is marked as repaired
     	And SSC "SSC-001" has repair date "2024-07-01"
     
+    Scenario: SSC labor code with surrounding whitespace still matches the labor line
+    	Given SSC affected vehicles:
+    		| VIN               | CampaignCode | Description   | LaborCode1 |
+    		| 1G1ZC5E17BF283048 | SSC-001      | Airbag recall | AURCM      |
+    	And the SSC "SSC-001" labor code carries a trailing space
+    	And labor lines:
+    		| LaborCode | InvoiceDate | InvoiceStatus |
+    		| AURCM     | 2024-06-01  | X             |
+    	When Checking "1G1ZC5E17BF283048"
+    	Then SSC "SSC-001" is marked as repaired
+    	And SSC "SSC-001" has repair date "2024-06-01"
+    
     Scenario: Labor line with non-matching status is ignored
     	Given SSC affected vehicles:
     		| VIN               | CampaignCode | Description   | LaborCode1 |

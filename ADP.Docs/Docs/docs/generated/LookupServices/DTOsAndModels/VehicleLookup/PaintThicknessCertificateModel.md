@@ -17,6 +17,9 @@ The print/display data model for a vehicle's : the readings from the
 | ModelCode <div><strong>``string``</strong></div> | The model code that identifies the vehicle model. |
 | ModelYear <div><strong>``string``</strong></div> | The model year of the vehicle. |
 | ExteriorColorCode <div><strong>``string``</strong></div> | The exterior color code of the vehicle. |
+| ExteriorColorDescription <div><strong>``string``</strong></div> | The resolved exterior color description (e.g. "Pearl White"); `null` when unavailable. |
+| InteriorColorCode <div><strong>``string``</strong></div> | The interior (trim) color code of the vehicle. |
+| InteriorColorDescription <div><strong>``string``</strong></div> | The resolved interior (trim) color description; `null` when unavailable. |
 | Katashiki <div><strong>``string``</strong></div> | The Katashiki (manufacturer model-specific identifier). |
 | VariantCode <div><strong>``string``</strong></div> | The variant code of the vehicle within its model range. |
 | InvoiceDate <div><strong>``DateTime?``</strong></div> | The sale invoice date — the anchor the inspection is selected against. |

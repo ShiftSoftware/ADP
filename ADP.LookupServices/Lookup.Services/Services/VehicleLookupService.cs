@@ -104,7 +104,7 @@ public class VehicleLookupService
         if (companyDataAggregate is null)
             return null;
 
-        return await new PaintThicknessCertificateEvaluator(companyDataAggregate, lookupOptions, serviceProvider)
+        return await new PaintThicknessCertificateEvaluator(companyDataAggregate, lookupOptions, serviceProvider, vehicleLookupStorageService)
             .Evaluate(languageCode);
     }
 
