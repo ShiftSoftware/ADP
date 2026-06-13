@@ -1505,20 +1505,42 @@
     {
         EnsurePartCountryPrices(part);
 
-        // Apply the chosen unit to every country, each using that country's own price for the unit.
+        var missingCountryIds = new List<long>();
+
+        // Apply the chosen unit only to countries that have it, each using that country's own price.
+        // Countries that don't have the unit are left untouched (they keep their own valid selection).
         foreach (var countryPrice in part.CountryPrices)
         {
-            countryPrice.SelectedUnitName = unitName;
-
             var unit = countryPrice.UnitPrices?.FirstOrDefault(x => x.UnitName == unitName);
             if (unit is null)
+            {
+                if (countryPrice.CountryID.HasValue)
+                    missingCountryIds.Add(countryPrice.CountryID.Value);
                 continue;
+            }
 
+            countryPrice.SelectedUnitName = unitName;
             countryPrice.PartPrice = AdjustSpecialPartPrice(part.PartNumber, unit.Price ?? 0);
             RecalculatePartFinalPrice(countryPrice);
         }
 
         SyncLegacyPartPriceFields(part);
+
+        WarnIfUnitMissingForCountries(unitName, missingCountryIds);
+    }
+
+    private void WarnIfUnitMissingForCountries(string unitName, List<long> missingCountryIds)
+    {
+        if (missingCountryIds.Count == 0)
+            return;
+
+        var names = missingCountryIds
+            .Select(id => countryNames.TryGetValue(id, out var name) ? name : id.ToString())
+            .ToList();
+
+        MessageService.Warning(
+            $"\"{unitName}\" isn't available in: {string.Join(", ", names)}. Those countries kept their current unit and price.",
+            "Unit not available in all countries");
     }
 
     private static void RecalculatePartFinalPrice(PartPriceByCountryDTO countryPrice)
