@@ -496,6 +496,7 @@ public class GeneralMappingProfile : Profile
                                 existingCp.PartPrice = sourceCp.PartPrice;
                                 existingCp.PartPriceMarginPercentage = sourceCp.PartPriceMarginPercentage;
                                 existingCp.PartFinalPrice = sourceCp.PartFinalPrice.GetValueOrDefault();
+                                existingCp.SelectedUnitName = sourceCp.SelectedUnitName;
                             }
                             else
                             {
@@ -504,7 +505,8 @@ public class GeneralMappingProfile : Profile
                                     CountryID = sourceCp.CountryID.GetValueOrDefault(),
                                     PartPrice = sourceCp.PartPrice,
                                     PartPriceMarginPercentage = sourceCp.PartPriceMarginPercentage,
-                                    PartFinalPrice = sourceCp.PartFinalPrice.GetValueOrDefault()
+                                    PartFinalPrice = sourceCp.PartFinalPrice.GetValueOrDefault(),
+                                    SelectedUnitName = sourceCp.SelectedUnitName
                                 });
                             }
                         }
@@ -523,7 +525,8 @@ public class GeneralMappingProfile : Profile
                                     CountryID = cp.CountryID.GetValueOrDefault(),
                                     PartPrice = cp.PartPrice,
                                     PartPriceMarginPercentage = cp.PartPriceMarginPercentage,
-                                    PartFinalPrice = cp.PartFinalPrice.GetValueOrDefault()
+                                    PartFinalPrice = cp.PartFinalPrice.GetValueOrDefault(),
+                                    SelectedUnitName = cp.SelectedUnitName
                                 })
                                 .ToList()
                         });

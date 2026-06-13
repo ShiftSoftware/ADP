@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ShiftSoftware.ShiftEntity.Core;
+using System.ComponentModel.DataAnnotations;
 
 namespace ShiftSoftware.ADP.Menus.Data.Entities;
 
@@ -19,4 +20,8 @@ public class MenuItemPartCountryPrice : ShiftEntity<MenuItemPartCountryPrice>
 
     [Precision(12, 3)]
     public decimal PartFinalPrice { get; set; }
+
+    /// <summary>The retail unit selected for this price (e.g. each, box). The available units are not persisted.</summary>
+    [MaxLength(100)]
+    public string? SelectedUnitName { get; set; }
 }

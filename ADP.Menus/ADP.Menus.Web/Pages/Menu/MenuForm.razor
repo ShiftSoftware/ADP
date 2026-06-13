@@ -230,17 +230,20 @@
                                                     @foreach (var part in context.Item.Parts.Select((x, i) => new { Part = x, Index = i }))
                                                     {
                                                         var unitPrices = GetPartUnitPrices(part.Part);
-                                                        <MudSelect T="string"
-                                                                   Dense="true"
-                                                                   Margin="Margin.Dense"
-                                                                   Value="GetSelectedPartUnit(part.Part)"
-                                                                   ValueChanged="@(u => PartUnitChanged(part.Part, u))"
-                                                                   Disabled="@(!CanManageVariants || unitPrices.Count <= 1)">
-                                                            @foreach (var unit in unitPrices)
-                                                            {
-                                                                <MudSelectItem T="string" Value="@unit.UnitName">@unit.UnitName</MudSelectItem>
-                                                            }
-                                                        </MudSelect>
+                                                        // Fetch the unit options the first time the dropdown is focused/opened.
+                                                        <div @onfocusin="@(async () => await LoadPartUnitOptions(part.Part))">
+                                                            <MudSelect T="string"
+                                                                       Dense="true"
+                                                                       Margin="Margin.Dense"
+                                                                       Value="GetSelectedPartUnit(part.Part)"
+                                                                       ValueChanged="@(u => PartUnitChanged(part.Part, u))"
+                                                                       Disabled="!CanManageVariants">
+                                                                @foreach (var unit in unitPrices)
+                                                                {
+                                                                    <MudSelectItem T="string" Value="@unit.UnitName">@unit.UnitName</MudSelectItem>
+                                                                }
+                                                            </MudSelect>
+                                                        </div>
                                                     }
                                                 </div>
                                             </CellTemplate>
@@ -684,6 +687,9 @@
     private bool loading;
     private bool variantSaving;
     private readonly HashSet<MenuItemPartDTO> refreshingPartPrices = [];
+    // Tracks which parts have had their unit options fetched (lazily, on first dropdown open).
+    private readonly HashSet<MenuItemPartDTO> unitOptionsLoaded = [];
+    private readonly HashSet<MenuItemPartDTO> loadingUnitOptions = [];
     private List<MenuVariantDTO> workingVariants = [];
     private MenuVariantDTO? selectedVariant;
     private Dictionary<string, ServiceIntervalListSelectableUI>? serviceIntervals = new();
@@ -1373,15 +1379,20 @@
                 .Select(unit => new PartUnitPriceDTO { UnitName = unit.UnitName, Price = unit.Price, IsDefault = unit.IsDefault })
                 .ToList() ?? [];
 
-            // Default to the default unit (falling back to the first); its price drives the part price.
-            var defaultUnit = countryPrice.UnitPrices.FirstOrDefault(unit => unit.IsDefault) ?? countryPrice.UnitPrices.FirstOrDefault();
-            countryPrice.SelectedUnitName = defaultUnit?.UnitName;
+            // Keep the user's current unit if it still exists; otherwise fall back to the default (then first).
+            var chosenUnit = countryPrice.UnitPrices.FirstOrDefault(unit => unit.UnitName == countryPrice.SelectedUnitName)
+                             ?? countryPrice.UnitPrices.FirstOrDefault(unit => unit.IsDefault)
+                             ?? countryPrice.UnitPrices.FirstOrDefault();
+            countryPrice.SelectedUnitName = chosenUnit?.UnitName;
 
-            var price = AdjustSpecialPartPrice(part.PartNumber, defaultUnit?.Price ?? stockPrice?.Price ?? 0);
+            var price = AdjustSpecialPartPrice(part.PartNumber, chosenUnit?.Price ?? stockPrice?.Price ?? 0);
 
             countryPrice.PartPrice = price;
             countryPrice.PartFinalPrice = Math.Round((price * (1 + countryPrice.PartPriceMarginPercentage.GetValueOrDefault() / 100)), 2);
         }
+
+        // The full refresh has populated the unit options, so the dropdown needn't lazily re-fetch.
+        unitOptionsLoaded.Add(part);
 
         SyncLegacyPartPriceFields(part);
     }
@@ -1429,8 +1440,10 @@
         if (unitPrices is not null && unitPrices.Count > 0)
             return unitPrices;
 
-        // No unit prices from ADP: present a single read-only default representing the retail value.
-        return [new PartUnitPriceDTO { UnitName = DefaultUnitName, Price = countryPrice.PartPrice, IsDefault = true }];
+        // Options not loaded yet (or the part has none): show a single entry for the current value
+        // so the dropdown still displays the saved unit name (or a default).
+        var name = string.IsNullOrEmpty(countryPrice.SelectedUnitName) ? DefaultUnitName : countryPrice.SelectedUnitName;
+        return [new PartUnitPriceDTO { UnitName = name, Price = countryPrice.PartPrice, IsDefault = true }];
     }
 
     private string GetSelectedPartUnit(MenuItemPartDTO part)
@@ -1438,8 +1451,54 @@
         EnsurePartCountryPrices(part);
         var selected = GetSelectedCountryPrice(part).SelectedUnitName;
 
-        // Fall back to the (possibly synthesized) default unit so the dropdown always has a value.
+        // Keep showing the saved name even if it no longer exists in the loaded options.
         return string.IsNullOrEmpty(selected) ? GetPartUnitPrices(part).FirstOrDefault()?.UnitName : selected;
+    }
+
+    /// <summary>
+    /// Lazily fetches the available retail units for a part the first time its dropdown is opened.
+    /// Populates only the unit options (per country) — it does NOT change the price or the selected
+    /// unit. The price changes only when the user actually picks a unit (<see cref="PartUnitChanged"/>).
+    /// </summary>
+    private async Task LoadPartUnitOptions(MenuItemPartDTO part)
+    {
+        if (unitOptionsLoaded.Contains(part) || loadingUnitOptions.Contains(part))
+            return;
+
+        if (string.IsNullOrWhiteSpace(part.PartNumber))
+        {
+            unitOptionsLoaded.Add(part);
+            return;
+        }
+
+        loadingUnitOptions.Add(part);
+        StateHasChanged();
+        try
+        {
+            var stock = await MenuService.GetStockByPartNumberAsync(part.PartNumber);
+            EnsurePartCountryPrices(part);
+
+            foreach (var countryPrice in part.CountryPrices)
+            {
+                var stockPrice = stock?.CountryPrices?.FirstOrDefault(x => x.CountryID == countryPrice.CountryID)
+                                 ?? stock?.CountryPrices?.FirstOrDefault();
+
+                countryPrice.UnitPrices = stockPrice?.UnitPrices?
+                    .Select(unit => new PartUnitPriceDTO { UnitName = unit.UnitName, Price = unit.Price, IsDefault = unit.IsDefault })
+                    .ToList() ?? [];
+            }
+
+            unitOptionsLoaded.Add(part);
+        }
+        catch (Exception)
+        {
+            // Leave the options unloaded so the next open retries.
+        }
+        finally
+        {
+            loadingUnitOptions.Remove(part);
+            StateHasChanged();
+        }
     }
 
     private void PartUnitChanged(MenuItemPartDTO part, string unitName)
