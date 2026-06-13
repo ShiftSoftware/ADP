@@ -100,10 +100,20 @@ public class CosmosService : IMenuPartPriceService
         {
             foreach (var country in source.CountryData)
             {
+                var region = country.RegionPrices?.FirstOrDefault();
+
                 countryPrices.Add(new MenuPartCountryPrice
                 {
                     CountryID = country.CountryID,
-                    Price = country.RegionPrices?.FirstOrDefault()?.RetailPrice,
+                    Price = region?.RetailPrice,
+                    UnitPrices = region?.RetailUnitPrices?
+                        .Select(unit => new MenuPartUnitPrice
+                        {
+                            UnitName = unit.UnitName,
+                            Price = unit.Price,
+                            IsDefault = unit.IsDefault,
+                        })
+                        .ToList() ?? [],
                 });
             }
         }

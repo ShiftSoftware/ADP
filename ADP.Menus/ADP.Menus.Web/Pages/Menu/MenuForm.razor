@@ -224,6 +224,27 @@
                                                 </div>
                                             </CellTemplate>
                                         </PropertyColumn>
+                                        <PropertyColumn Property="x => x.Parts" Title="Unit">
+                                            <CellTemplate>
+                                                <div style="display:flex;flex-direction:column;gap:6px;min-width:150px;">
+                                                    @foreach (var part in context.Item.Parts.Select((x, i) => new { Part = x, Index = i }))
+                                                    {
+                                                        var unitPrices = GetPartUnitPrices(part.Part);
+                                                        <MudSelect T="string"
+                                                                   Dense="true"
+                                                                   Margin="Margin.Dense"
+                                                                   Value="GetSelectedPartUnit(part.Part)"
+                                                                   ValueChanged="@(u => PartUnitChanged(part.Part, u))"
+                                                                   Disabled="@(!CanManageVariants || unitPrices.Count <= 1)">
+                                                            @foreach (var unit in unitPrices)
+                                                            {
+                                                                <MudSelectItem T="string" Value="@unit.UnitName">@unit.UnitName</MudSelectItem>
+                                                            }
+                                                        </MudSelect>
+                                                    }
+                                                </div>
+                                            </CellTemplate>
+                                        </PropertyColumn>
                                         <PropertyColumn Property="x => x.Parts" Title="Margin %">
                                             <CellTemplate>
                                                 <div style="display:flex;flex-direction:column;gap:6px;min-width:95px;">
@@ -1344,9 +1365,19 @@
 
         foreach (var countryPrice in part.CountryPrices)
         {
-            var price = (stockCountryPrices.FirstOrDefault(x => x.CountryID == countryPrice.CountryID)
-                         ?? stockCountryPrices.FirstOrDefault())?.Price ?? 0;
-            price = AdjustSpecialPartPrice(part.PartNumber, price);
+            var stockPrice = stockCountryPrices.FirstOrDefault(x => x.CountryID == countryPrice.CountryID)
+                             ?? stockCountryPrices.FirstOrDefault();
+
+            // Carry the available retail unit prices so the user can pick one for this part/country.
+            countryPrice.UnitPrices = stockPrice?.UnitPrices?
+                .Select(unit => new PartUnitPriceDTO { UnitName = unit.UnitName, Price = unit.Price, IsDefault = unit.IsDefault })
+                .ToList() ?? [];
+
+            // Default to the default unit (falling back to the first); its price drives the part price.
+            var defaultUnit = countryPrice.UnitPrices.FirstOrDefault(unit => unit.IsDefault) ?? countryPrice.UnitPrices.FirstOrDefault();
+            countryPrice.SelectedUnitName = defaultUnit?.UnitName;
+
+            var price = AdjustSpecialPartPrice(part.PartNumber, defaultUnit?.Price ?? stockPrice?.Price ?? 0);
 
             countryPrice.PartPrice = price;
             countryPrice.PartFinalPrice = Math.Round((price * (1 + countryPrice.PartPriceMarginPercentage.GetValueOrDefault() / 100)), 2);
@@ -1385,6 +1416,60 @@
         countryPrice.PartPrice = value;
         SyncLegacyPartPriceFields(part);
         CalculatePartFinalPrice(part);
+    }
+
+    private const string DefaultUnitName = "each";
+
+    private List<PartUnitPriceDTO> GetPartUnitPrices(MenuItemPartDTO part)
+    {
+        EnsurePartCountryPrices(part);
+        var countryPrice = GetSelectedCountryPrice(part);
+        var unitPrices = countryPrice.UnitPrices;
+
+        if (unitPrices is not null && unitPrices.Count > 0)
+            return unitPrices;
+
+        // No unit prices from ADP: present a single read-only default representing the retail value.
+        return [new PartUnitPriceDTO { UnitName = DefaultUnitName, Price = countryPrice.PartPrice, IsDefault = true }];
+    }
+
+    private string GetSelectedPartUnit(MenuItemPartDTO part)
+    {
+        EnsurePartCountryPrices(part);
+        var selected = GetSelectedCountryPrice(part).SelectedUnitName;
+
+        // Fall back to the (possibly synthesized) default unit so the dropdown always has a value.
+        return string.IsNullOrEmpty(selected) ? GetPartUnitPrices(part).FirstOrDefault()?.UnitName : selected;
+    }
+
+    private void PartUnitChanged(MenuItemPartDTO part, string unitName)
+    {
+        EnsurePartCountryPrices(part);
+
+        // Apply the chosen unit to every country, each using that country's own price for the unit.
+        foreach (var countryPrice in part.CountryPrices)
+        {
+            countryPrice.SelectedUnitName = unitName;
+
+            var unit = countryPrice.UnitPrices?.FirstOrDefault(x => x.UnitName == unitName);
+            if (unit is null)
+                continue;
+
+            countryPrice.PartPrice = AdjustSpecialPartPrice(part.PartNumber, unit.Price ?? 0);
+            RecalculatePartFinalPrice(countryPrice);
+        }
+
+        SyncLegacyPartPriceFields(part);
+    }
+
+    private static void RecalculatePartFinalPrice(PartPriceByCountryDTO countryPrice)
+    {
+        if (countryPrice.PartPriceMarginPercentage.HasValue)
+            countryPrice.PartFinalPrice = countryPrice.PartPrice.HasValue
+                ? Math.Round(countryPrice.PartPrice.Value * (1 + countryPrice.PartPriceMarginPercentage.Value / 100), 2)
+                : null;
+        else
+            countryPrice.PartFinalPrice = countryPrice.PartPrice;
     }
 
     private void PartMarginChanged(MenuItemPartDTO part, decimal? value)

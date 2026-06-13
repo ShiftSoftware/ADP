@@ -510,25 +510,36 @@ public class MenuController : ShiftEntitySecureControllerAsync<MenuRepository, M
         // 0-country mode: synthesize a single CountryID=0 row using the first available retail price.
         if (ids.Count == 0)
         {
-            var firstPrice = stock.CountryPrices?
-                .Select(r => r.Price)
-                .FirstOrDefault() ?? 0;
+            var firstCountry = stock.CountryPrices?.FirstOrDefault();
 
-            return [new StockPriceByCountryDTO { CountryID = 0, Price = firstPrice }];
+            return [new StockPriceByCountryDTO { CountryID = 0, Price = firstCountry?.Price ?? 0, UnitPrices = MapUnitPrices(firstCountry) }];
         }
 
         var result = new List<StockPriceByCountryDTO>();
         foreach (var countryId in ids)
         {
-            var price = stock.CountryPrices?.FirstOrDefault(x => x.CountryID == countryId)?.Price ?? 0;
+            var countryPrice = stock.CountryPrices?.FirstOrDefault(x => x.CountryID == countryId);
             result.Add(new StockPriceByCountryDTO
             {
                 CountryID = countryId,
-                Price = price
+                Price = countryPrice?.Price ?? 0,
+                UnitPrices = MapUnitPrices(countryPrice),
             });
         }
 
         return result;
+    }
+
+    private static List<StockUnitPriceDTO> MapUnitPrices(MenuPartCountryPrice? countryPrice)
+    {
+        return countryPrice?.UnitPrices?
+            .Select(unit => new StockUnitPriceDTO
+            {
+                UnitName = unit.UnitName,
+                Price = unit.Price,
+                IsDefault = unit.IsDefault,
+            })
+            .ToList() ?? [];
     }
 }
 
