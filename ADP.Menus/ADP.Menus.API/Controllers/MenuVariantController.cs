@@ -91,7 +91,17 @@ public class MenuVariantController : ShiftEntitySecureControllerAsync<MenuVarian
                 Message = new ShiftSoftware.ShiftEntity.Model.Message("Conflict", "Can not delete the last variant in a menu group")
             });
 
-        await repository.DeleteAsync(entity, false, null, false, false);
+        long? userId = null;
+
+        try
+        {
+            userId = HttpContext.RequestServices.GetRequiredService<IdentityClaimProvider>().GetUserID();
+        }
+        catch
+        {
+
+        }
+        await repository.DeleteAsync(entity, userId, false, false);
         return Ok();
     }
 }

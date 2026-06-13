@@ -50,18 +50,15 @@ public class MenuRepository : ShiftRepository<ShiftDbContext, MenuEntity, MenuLi
         return result;
     }
 
-    public override async ValueTask<MenuEntity> DeleteAsync(MenuEntity entity, bool isHardDelete, long? userId, bool disableDefaultDataLevelAccess, bool disableGlobalFilters)
+    public override async ValueTask<MenuEntity> DeleteAsync(MenuEntity entity, long? userId, bool disableDefaultDataLevelAccess, bool disableGlobalFilters)
     {
-        if (!isHardDelete)
-        {
-            var variants = await db.Set<MenuVariant>()
-                .Where(x => !x.IsDeleted && x.MenuID == entity.ID)
-                .ToListAsync();
+        var variants = await db.Set<MenuVariant>()
+            .Where(x => !x.IsDeleted && x.MenuID == entity.ID)
+            .ToListAsync();
 
-            foreach (var variant in variants)
-                variant.IsDeleted = true;
-        }
+        foreach (var variant in variants)
+            variant.IsDeleted = true;
 
-        return await base.DeleteAsync(entity, isHardDelete, userId, disableDefaultDataLevelAccess, disableGlobalFilters);
+        return await base.DeleteAsync(entity, userId, disableDefaultDataLevelAccess, disableGlobalFilters);
     }
 }
