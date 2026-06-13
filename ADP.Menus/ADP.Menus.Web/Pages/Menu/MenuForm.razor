@@ -230,20 +230,29 @@
                                                     @foreach (var part in context.Item.Parts.Select((x, i) => new { Part = x, Index = i }))
                                                     {
                                                         var unitPrices = GetPartUnitPrices(part.Part);
-                                                        // Fetch the unit options the first time the dropdown is focused/opened.
-                                                        <div @onfocusin="@(async () => await LoadPartUnitOptions(part.Part))">
-                                                            <MudSelect T="string"
-                                                                       Dense="true"
-                                                                       Margin="Margin.Dense"
-                                                                       Value="GetSelectedPartUnit(part.Part)"
-                                                                       ValueChanged="@(u => PartUnitChanged(part.Part, u))"
-                                                                       Disabled="!CanManageVariants">
-                                                                @foreach (var unit in unitPrices)
+                                                        var unitDivergent = IsPartUnitDivergent(part.Part);
+                                                        // Hovering shows which unit each country uses when they differ.
+                                                        <MudTooltip Text="@GetUnitDivergenceMessage(part.Part)" Disabled="@(!unitDivergent)">
+                                                            @* Fetch the unit options the first time the dropdown is focused/opened. *@
+                                                            <div style="@(unitDivergent ? "display:flex;align-items:center;gap:4px;background:#fff8e1;border-radius:4px;padding:2px 4px;" : "display:flex;align-items:center;gap:4px;")"
+                                                                 @onfocusin="@(async () => await LoadPartUnitOptions(part.Part))">
+                                                                <MudSelect T="string"
+                                                                           Dense="true"
+                                                                           Margin="Margin.Dense"
+                                                                           Value="GetSelectedPartUnit(part.Part)"
+                                                                           ValueChanged="@(u => PartUnitChanged(part.Part, u))"
+                                                                           Disabled="!CanManageVariants">
+                                                                    @foreach (var unit in unitPrices)
+                                                                    {
+                                                                        <MudSelectItem T="string" Value="@unit.UnitName">@unit.UnitName</MudSelectItem>
+                                                                    }
+                                                                </MudSelect>
+                                                                @if (unitDivergent)
                                                                 {
-                                                                    <MudSelectItem T="string" Value="@unit.UnitName">@unit.UnitName</MudSelectItem>
+                                                                    <MudIcon Icon="@Icons.Material.Filled.Warning" Color="Color.Warning" Size="Size.Small" />
                                                                 }
-                                                            </MudSelect>
-                                                        </div>
+                                                            </div>
+                                                        </MudTooltip>
                                                     }
                                                 </div>
                                             </CellTemplate>
@@ -1541,6 +1550,39 @@
         MessageService.Warning(
             $"\"{unitName}\" isn't available in: {string.Join(", ", names)}. Those countries kept their current unit and price.",
             "Unit not available in all countries");
+    }
+
+    /// <summary>
+    /// True when the part's selected unit is not the same across all countries (reads the persisted
+    /// selection, so it works on reopen without fetching the unit options).
+    /// </summary>
+    private bool IsPartUnitDivergent(MenuItemPartDTO part)
+    {
+        if (countries.Count <= 1)
+            return false;
+
+        EnsurePartCountryPrices(part);
+
+        return part.CountryPrices
+            .Select(cp => cp.SelectedUnitName ?? string.Empty)
+            .Distinct()
+            .Count() > 1;
+    }
+
+    private string GetUnitDivergenceMessage(MenuItemPartDTO part)
+    {
+        EnsurePartCountryPrices(part);
+
+        var perCountry = part.CountryPrices
+            .Where(cp => cp.CountryID.HasValue)
+            .Select(cp =>
+            {
+                var name = countryNames.TryGetValue(cp.CountryID!.Value, out var n) ? n : cp.CountryID.Value.ToString();
+                var unit = string.IsNullOrEmpty(cp.SelectedUnitName) ? "—" : cp.SelectedUnitName;
+                return $"{name}: {unit}";
+            });
+
+        return "Unit differs across countries — " + string.Join(", ", perCountry);
     }
 
     private static void RecalculatePartFinalPrice(PartPriceByCountryDTO countryPrice)
