@@ -116,7 +116,7 @@ public partial class VehicleServiceItemEvaluator
         VehicleEntryModel vehicle,
         DateTime? freeServiceStartDate)
     {
-        var shiftDay = companyDataAggregate.FreeServiceItemDateShifts?.FirstOrDefault(x => x.VIN == vehicle.VIN);
+        var shiftDay = companyDataAggregate.FreeServiceItemDateShifts?.FirstOrDefault(x => x.VIN == vehicle?.VIN);
         if (shiftDay is not null)
             freeServiceStartDate = shiftDay.NewDate;
 

@@ -204,8 +204,20 @@ public class VehicleLookupService
         if (requestOptions.TraceServiceItemEvaluation)
             data.ServiceItemTrace = traceCollector.Build();
 
-        if (data.Warranty is not null && data.Warranty.WarrantyStartDate is not null)
-            data.Warranty.ActivationIsRequired = serviceItemsResult.activationRequired;
+        if (data.Warranty is not null)
+        {
+            // ActivationIsRequired (company-agnostic, consumed by reporting) keeps its legacy gate on a
+            // resolved warranty start date.
+            if (data.Warranty.WarrantyStartDate is not null)
+                data.Warranty.ActivationIsRequired = serviceItemsResult.activationRequired;
+
+            // ActivationStatus (company-scoped, drives the UI) is independent of the warranty start date:
+            // tenants that don't default the warranty start to the invoice date
+            // (WarrantyStartDateDefaultsToInvoiceDate = false) still leave it null for not-yet-activated
+            // vehicles, and those are exactly the vehicles that need an activation / blocked affordance.
+            data.Warranty.ActivationStatus = new ActivationStatusEvaluator(companyDataAggregate, lookupOptions)
+                .Evaluate(serviceItemsResult.activationRequired, requestOptions.RequestingCompanyID);
+        }
 
         if (!disableLogs && requestOptions.InsertSSCLog)
         {

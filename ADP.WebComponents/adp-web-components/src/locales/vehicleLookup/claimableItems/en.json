@@ -18,6 +18,7 @@
   "successFulClaimMessage": "Item was claimed successfully.",
   "activationRequired": "Activation Required",
   "warrantyAndServicesNotActivated": "Warranty & Services have not been activated for this vehicle.",
+  "activationBlockedNotAllocated": "Activation is required, but this vehicle is not allocated to your dealership, so it can't be activated.",
   "viewTrace": "View Lookup Trace",
   "traceTitle": "Service-item Lookup Trace",
   "traceLoading": "Loading trace…",

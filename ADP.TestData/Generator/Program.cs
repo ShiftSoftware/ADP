@@ -216,8 +216,15 @@ static async Task<VehicleLookupDTO> GenerateVehicleLookup(
 
     data.ServiceItems = serviceItemsResult.serviceItems;
 
-    if (data.Warranty is not null && data.Warranty.WarrantyStartDate is not null)
-        data.Warranty.ActivationIsRequired = serviceItemsResult.activationRequired;
+    if (data.Warranty is not null)
+    {
+        if (data.Warranty.WarrantyStartDate is not null)
+            data.Warranty.ActivationIsRequired = serviceItemsResult.activationRequired;
+
+        data.Warranty.ActivationStatus = serviceItemsResult.activationRequired
+            ? ShiftSoftware.ADP.Lookup.Services.Enums.WarrantyActivationStatus.Required
+            : ShiftSoftware.ADP.Lookup.Services.Enums.WarrantyActivationStatus.NotRequired;
+    }
 
     return data;
 }

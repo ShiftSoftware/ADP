@@ -18,6 +18,7 @@
   "successFulClaimMessage": "بە سەرکەوتویی چالاک کرا.",
   "activationRequired": "Activation Required",
   "warrantyAndServicesNotActivated": "Warranty & Services have not been activated for this vehicle.",
+  "activationBlockedNotAllocated": "Activation is required, but this vehicle is not allocated to your dealership, so it can't be activated.",
   "viewTrace": "بینینی شوێنپێی گەڕان",
   "traceTitle": "شوێنپێی گەڕانی بڕگەی خزمەتگوزاری",
   "traceLoading": "بارکردنی شوێنپێ…",

@@ -25,3 +25,8 @@ Options passed to the vehicle lookup service to control lookup behavior, languag
  status, post-processing) and attaches it to `VehicleLookupDTO.ServiceItemTrace`.
  Off by default; opt in per request only when debugging. Adds an O(items) walk and
  per-item allocations; do not leave on in production hot paths. |
+| RequestingCompanyID <div><strong>``long?``</strong></div> | The Identity `CompanyID` of the user/company making the lookup. The authenticated host sets it from
+ `IdentityClaimProvider.GetCompanyID()`. Used by the allocation guard
+ (`LookupOptions.RequireAllocationForActivation`) to decide whether warranty activation may be offered:
+ activation is only offered when this company has a vehicle entry for the vehicle. Null for anonymous and bulk
+ callers (no user context), in which case the activation affordance is suppressed. |

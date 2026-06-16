@@ -46,4 +46,13 @@ public class VehicleLookupRequestOptions
     /// per-item allocations; do not leave on in production hot paths.
     /// </summary>
     public bool TraceServiceItemEvaluation { get; set; }
+
+    /// <summary>
+    /// The Identity <c>CompanyID</c> of the user/company making the lookup. The authenticated host sets it from
+    /// <c>IdentityClaimProvider.GetCompanyID()</c>. Used by the allocation guard
+    /// (<c>LookupOptions.RequireAllocationForActivation</c>) to decide whether warranty activation may be offered:
+    /// activation is only offered when this company has a vehicle entry for the vehicle. Null for anonymous and bulk
+    /// callers (no user context), in which case the activation affordance is suppressed.
+    /// </summary>
+    public long? RequestingCompanyID { get; set; }
 }

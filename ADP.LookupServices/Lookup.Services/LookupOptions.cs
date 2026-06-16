@@ -68,6 +68,15 @@ public class LookupOptions
     public Func<LookupOptionResolverModel<IEnumerable<StockPartDTO>>, ValueTask<IEnumerable<StockPartDTO>>>? PartLookupStocksResolver { get; set; }
     /// <summary>Whether to include free service items that have not yet been activated (e.g., awaiting warranty activation).</summary>
     public bool IncludeInactivatedFreeServiceItems { get; set; }
+    /// <summary>
+    /// When enabled, warranty activation is only offered to a requester whose company has a vehicle entry for the
+    /// vehicle (i.e. it has been allocated/shipped/delivered to them). When activation is due but the vehicle is not
+    /// allocated to the requesting company, <c>VehicleWarrantyDTO.ActivationStatus</c> becomes <c>BlockedNotAllocated</c>
+    /// instead of <c>Required</c>. Requires the caller to supply <c>VehicleLookupRequestOptions.RequestingCompanyID</c>;
+    /// with no requesting company the activation affordance is suppressed. Layered on top of
+    /// <see cref="IncludeInactivatedFreeServiceItems"/>; defaults to false.
+    /// </summary>
+    public bool RequireAllocationForActivation { get; set; }
     /// <summary>Whether the warranty start date should default to the invoice date when no explicit activation date is set. Defaults to true.</summary>
     public bool WarrantyStartDateDefaultsToInvoiceDate { get; set; } = true;
     /// <summary>

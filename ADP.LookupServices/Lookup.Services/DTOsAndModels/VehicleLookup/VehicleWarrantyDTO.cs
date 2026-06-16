@@ -1,6 +1,8 @@
-﻿using ShiftSoftware.ADP.Models;
+﻿using ShiftSoftware.ADP.Lookup.Services.Enums;
+using ShiftSoftware.ADP.Models;
 using ShiftSoftware.ADP.Models.JsonConverters;
 using System;
+using System.Text.Json.Serialization;
 
 namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 
@@ -30,9 +32,23 @@ public class VehicleWarrantyDTO
     public DateTime? WarrantyEndDate { get; set; }
 
     /// <summary>
-    /// Indicates whether warranty activation is required before the warranty becomes effective.
+    /// Indicates whether warranty activation is due for this vehicle (it has pending warranty-activation–triggered
+    /// free service items). Company-agnostic — it does not consider which dealer is asking. Consumed by bulk
+    /// reporting/exports. For the dealer-facing activation affordance use <see cref="ActivationStatus"/>.
     /// </summary>
     public bool ActivationIsRequired { get; set; }
+
+    /// <summary>
+    /// The company-scoped activation state for the requesting dealer, used to drive the lookup UI.
+    /// <see cref="WarrantyActivationStatus.Required"/> offers activation (the vehicle is allocated to the requester's
+    /// company); <see cref="WarrantyActivationStatus.BlockedNotAllocated"/> warns that activation is due but the
+    /// vehicle is not allocated to the requester; <see cref="WarrantyActivationStatus.NotRequired"/> shows nothing.
+    /// Driven by <c>LookupOptions.RequireAllocationForActivation</c> and the caller-supplied
+    /// <c>VehicleLookupRequestOptions.RequestingCompanyID</c>; with the guard off it mirrors
+    /// <see cref="ActivationIsRequired"/>, and with no requesting company the affordance is suppressed.
+    /// </summary>
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public WarrantyActivationStatus ActivationStatus { get; set; }
 
     /// <summary>
     /// Whether the vehicle currently has an active extended warranty (end date is in the future).

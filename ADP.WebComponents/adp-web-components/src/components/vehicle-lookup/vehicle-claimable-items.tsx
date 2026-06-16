@@ -629,7 +629,12 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
 
     const tabs = this.tabs.map(group => group.name);
 
-    const hasInactiveItems = this.vehicleLookup?.warranty?.activationIsRequired ?? false;
+    const activationStatus = this.vehicleLookup?.warranty?.activationStatus ?? 'NotRequired';
+    const showActivationRequired = activationStatus === 'Required';
+    const showActivationBlocked = activationStatus === 'BlockedNotAllocated';
+    const showActivationBox = showActivationRequired || showActivationBlocked || this.showPrintBox;
+    const isBlockedBox = showActivationBlocked && !this.showPrintBox;
+    const showActionButton = this.showPrintBox || showActivationRequired;
 
     return (
       <Host translate="no">
@@ -705,19 +710,25 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
             <div
               dir={this.locale.sharedLocales.direction}
               class={cn(
-                'absolute w-[90%] z-10 pointer-events-none border opacity-0 translate-y-[-5px] scale-[70%] text-[#8a6d3b] bg-[#fcf8e3] border-[#faebcc] p-[25px] text-[16px] rounded-[6px] flex items-center justify-between left-1/2 -translate-x-1/2 h-10 bottom-[40px] transition duration-500',
+                'absolute w-[90%] z-10 pointer-events-none border opacity-0 translate-y-[-5px] scale-[70%] p-[25px] text-[16px] rounded-[6px] flex items-center justify-between left-1/2 -translate-x-1/2 h-10 bottom-[40px] transition duration-500',
                 {
+                  'text-[#8a6d3b] bg-[#fcf8e3] border-[#faebcc]': !isBlockedBox,
+                  'text-[#58151c] bg-[#f7d7d8] border-[#f2aeb5]': isBlockedBox,
                   'opacity-100 pointer-events-auto translate-y-0 scale-100':
-                    !this.isLoading && this.vehicleLookup && !this.tabAnimationLoading && (hasInactiveItems || this.showPrintBox),
+                    !this.isLoading && this.vehicleLookup && !this.tabAnimationLoading && showActivationBox,
                 },
               )}
             >
-              <span class="font-semibold">{this.showPrintBox ? this.locale.successFulClaimMessage : this.locale.warrantyAndServicesNotActivated}</span>
+              <span class="font-semibold">
+                {this.showPrintBox ? this.locale.successFulClaimMessage : showActivationBlocked ? this.locale.activationBlockedNotAllocated : this.locale.warrantyAndServicesNotActivated}
+              </span>
 
-              <button class="claim-button" onClick={this.showPrintBox ? this.printLastClaimResponse : this.activateClaimItem}>
-                {this.showPrintBox ? <PrintIcon class="size-[30px] duration-200" /> : <ActivationIcon class="size-[30px] duration-200" />}
-                <span>{this.showPrintBox ? this.locale.print : this.locale.activateNow}</span>
-              </button>
+              {showActionButton && (
+                <button class="claim-button" onClick={this.showPrintBox ? this.printLastClaimResponse : this.activateClaimItem}>
+                  {this.showPrintBox ? <PrintIcon class="size-[30px] duration-200" /> : <ActivationIcon class="size-[30px] duration-200" />}
+                  <span>{this.showPrintBox ? this.locale.print : this.locale.activateNow}</span>
+                </button>
+              )}
             </div>
 
             <div class="claimable-items-box px-[30px] min-w-full relative overflow-x-scroll h-full overflow-y-hidden">

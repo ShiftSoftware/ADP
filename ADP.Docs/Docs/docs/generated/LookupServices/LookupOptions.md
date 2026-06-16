@@ -36,6 +36,12 @@ The main configuration class for the lookup services.
 | PartLookupPriceResolver <div><strong>``Func<LookupOptionResolverModel<PartLookupPriceResoulverModel>, ValueTask<(decimal? distributorPurchasePrice, IEnumerable<PartPriceDTO> prices)>>?``</strong></div> | Resolver delegate that processes and returns part pricing (distributor purchase price and per-region prices). |
 | PartLookupStocksResolver <div><strong>``Func<LookupOptionResolverModel<IEnumerable<StockPartDTO>>, ValueTask<IEnumerable<StockPartDTO>>>?``</strong></div> | Resolver delegate that processes and returns part stock availability data. |
 | IncludeInactivatedFreeServiceItems <div><strong>``bool``</strong></div> | Whether to include free service items that have not yet been activated (e.g., awaiting warranty activation). |
+| RequireAllocationForActivation <div><strong>``bool``</strong></div> | When enabled, warranty activation is only offered to a requester whose company has a vehicle entry for the
+ vehicle (i.e. it has been allocated/shipped/delivered to them). When activation is due but the vehicle is not
+ allocated to the requesting company, `VehicleWarrantyDTO.ActivationStatus` becomes `BlockedNotAllocated`
+ instead of `Required`. Requires the caller to supply `VehicleLookupRequestOptions.RequestingCompanyID`;
+ with no requesting company the activation affordance is suppressed. Layered on top of
+ `IncludeInactivatedFreeServiceItems`; defaults to false. |
 | WarrantyStartDateDefaultsToInvoiceDate <div><strong>``bool``</strong></div> | Whether the warranty start date should default to the invoice date when no explicit activation date is set. Defaults to true. |
 | DistributorCompanyID <div><strong>``long?``</strong></div> | The Identity `CompanyID` of the distributor company. A VIN can have multiple `VehicleEntries` —
  one for the distributor and one (or more) for the selling dealer(s) — and the dealer's sale invoice date

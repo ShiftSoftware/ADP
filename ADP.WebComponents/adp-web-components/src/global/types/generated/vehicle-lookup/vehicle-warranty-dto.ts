@@ -3,6 +3,7 @@ export type VehicleWarrantyDTO = {
     warrantyStartDate?: string;
     warrantyEndDate?: string;
     activationIsRequired: boolean;
+    activationStatus: 'NotRequired' | 'Required' | 'BlockedNotAllocated';
     hasExtendedWarranty: boolean;
     extendedWarrantyStartDate?: string;
     extendedWarrantyEndDate?: string;

@@ -148,6 +148,7 @@
       "warrantyStartDate": "2024-02-01",
       "warrantyEndDate": "2027-02-01",
       "activationIsRequired": false,
+      "activationStatus": "notRequired",
       "hasExtendedWarranty": false,
       "freeServiceStartDate": "2024-02-01",
       "deFactoServiceStartDate": "2024-04-15"
@@ -427,6 +428,7 @@
       "warrantyStartDate": "2023-06-20",
       "warrantyEndDate": "2026-06-20",
       "activationIsRequired": false,
+      "activationStatus": "notRequired",
       "hasExtendedWarranty": false,
       "freeServiceStartDate": "2023-06-20",
       "deFactoServiceStartDate": "2023-08-22"
@@ -598,6 +600,7 @@
     "warranty": {
       "hasActiveWarranty": false,
       "activationIsRequired": false,
+      "activationStatus": "notRequired",
       "hasExtendedWarranty": false
     },
     "serviceHistory": [],
