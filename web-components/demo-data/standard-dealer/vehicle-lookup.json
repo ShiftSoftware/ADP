@@ -1,0 +1,609 @@
+{
+  "JTMHX01J8L4198293": {
+    "vin": "JTMHX01J8L4198293",
+    "identifiers": {
+      "vin": "JTMHX01J8L4198293",
+      "variant": "VAR001",
+      "katashiki": "MXAA52L-ANXGP",
+      "color": "1G3",
+      "trim": "LA20",
+      "brandID": "1"
+    },
+    "saleInformation": {
+      "countryID": "1",
+      "countryName": "Iraq",
+      "companyID": "1",
+      "companyName": "Sample Motors",
+      "branchID": "10",
+      "branchName": "Main Branch 2",
+      "invoiceDate": "2024-01-15"
+    },
+    "paintThicknessInspections": [
+      {
+        "source": "PDI",
+        "inspectionDate": "2024-01-10",
+        "panels": [
+          {
+            "panelType": "Hood",
+            "measuredThickness": 125.5,
+            "panelPosition": "Front",
+            "images": [
+              "https://picsum.photos/seed/sJTMHX01J8L419829320240110083000Hood1jpg/640/480",
+              "https://picsum.photos/seed/sJTMHX01J8L419829320240110083000Hood2jpg/640/480"
+            ]
+          },
+          {
+            "panelType": "Fender",
+            "measuredThickness": 118.0,
+            "panelSide": "Left",
+            "panelPosition": "Front",
+            "images": [
+              "https://picsum.photos/seed/419829320240110083000LeftFrontFender1jpg/640/480",
+              "https://picsum.photos/seed/419829320240110083000LeftFrontFender2jpg/640/480"
+            ]
+          },
+          {
+            "panelType": "Fender",
+            "measuredThickness": 120.3,
+            "panelSide": "Right",
+            "panelPosition": "Front",
+            "images": [
+              "https://picsum.photos/seed/19829320240110083000RightFrontFender1jpg/640/480",
+              "https://picsum.photos/seed/19829320240110083000RightFrontFender2jpg/640/480"
+            ]
+          },
+          {
+            "panelType": "Door",
+            "measuredThickness": 115.0,
+            "panelSide": "Left",
+            "panelPosition": "Front",
+            "images": [
+              "https://picsum.photos/seed/8L419829320240110083000LeftFrontDoor1jpg/640/480",
+              "https://picsum.photos/seed/8L419829320240110083000LeftFrontDoor2jpg/640/480"
+            ]
+          },
+          {
+            "panelType": "Door",
+            "measuredThickness": 116.2,
+            "panelSide": "Right",
+            "panelPosition": "Front",
+            "images": [
+              "https://picsum.photos/seed/L419829320240110083000RightFrontDoor1jpg/640/480",
+              "https://picsum.photos/seed/L419829320240110083000RightFrontDoor2jpg/640/480"
+            ]
+          },
+          {
+            "panelType": "Door",
+            "measuredThickness": 122.0,
+            "panelSide": "Left",
+            "panelPosition": "Rear",
+            "images": [
+              "https://picsum.photos/seed/J8L419829320240110083000LeftRearDoor1jpg/640/480",
+              "https://picsum.photos/seed/J8L419829320240110083000LeftRearDoor2jpg/640/480"
+            ]
+          },
+          {
+            "panelType": "Door",
+            "measuredThickness": 121.5,
+            "panelSide": "Right",
+            "panelPosition": "Rear",
+            "images": [
+              "https://picsum.photos/seed/8L419829320240110083000RightRearDoor1jpg/640/480",
+              "https://picsum.photos/seed/8L419829320240110083000RightRearDoor2jpg/640/480"
+            ]
+          },
+          {
+            "panelType": "Fender",
+            "measuredThickness": 130.0,
+            "panelSide": "Left",
+            "panelPosition": "Rear",
+            "images": []
+          },
+          {
+            "panelType": "Fender",
+            "measuredThickness": 128.5,
+            "panelSide": "Right",
+            "panelPosition": "Rear",
+            "images": []
+          },
+          {
+            "panelType": "TailGate",
+            "measuredThickness": 135.0,
+            "panelPosition": "Rear",
+            "images": [
+              "https://picsum.photos/seed/HX01J8L419829320240110083000TailGate1jpg/640/480",
+              "https://picsum.photos/seed/HX01J8L419829320240110083000TailGate2jpg/640/480"
+            ]
+          },
+          {
+            "panelType": "Roof",
+            "measuredThickness": 110.0,
+            "panelPosition": "Middle",
+            "images": []
+          }
+        ]
+      }
+    ],
+    "paintThicknessCertificateAvailable": true,
+    "paintThicknessCertificateUrls": [
+      {
+        "language": "en",
+        "name": "English",
+        "url": "https://lookup.example/paint-thickness-certificate/JTMHX01J8L4198293?expires=9999-12-31.23-59-59-9999\u0026token=mock-token\u0026lang=en"
+      },
+      {
+        "language": "ar",
+        "name": "\u0627\u0644\u0639\u0631\u0628\u064A\u0629",
+        "url": "https://lookup.example/paint-thickness-certificate/JTMHX01J8L4198293?expires=9999-12-31.23-59-59-9999\u0026token=mock-token\u0026lang=ar"
+      },
+      {
+        "language": "ku",
+        "name": "\u06A9\u0648\u0631\u062F\u06CC",
+        "url": "https://lookup.example/paint-thickness-certificate/JTMHX01J8L4198293?expires=9999-12-31.23-59-59-9999\u0026token=mock-token\u0026lang=ku"
+      }
+    ],
+    "isAuthorized": true,
+    "warranty": {
+      "hasActiveWarranty": true,
+      "warrantyStartDate": "2024-02-01",
+      "warrantyEndDate": "2027-02-01",
+      "activationIsRequired": false,
+      "hasExtendedWarranty": false,
+      "freeServiceStartDate": "2024-02-01",
+      "deFactoServiceStartDate": "2024-04-15"
+    },
+    "nextServiceDate": "2025-06-15",
+    "serviceHistory": [
+      {
+        "serviceType": "10000km Service - Full inspection",
+        "serviceDate": "2024-12-15",
+        "mileage": 10500,
+        "companyName": "Sample Motors",
+        "branchName": "Main Branch 2",
+        "invoiceNumber": "INV-2024-002",
+        "jobNumber": "WO-2024-002",
+        "laborLines": [
+          {
+            "laborCode": "LAB-SVC-01",
+            "serviceDescription": "Periodic Maintenance"
+          }
+        ],
+        "partLines": []
+      }
+    ],
+    "ssc": [
+      {
+        "sscCode": "SSC-2024-001",
+        "description": "Airbag inflator replacement",
+        "labors": [
+          {
+            "laborCode": "LAB-AIR-01"
+          }
+        ],
+        "repaired": false,
+        "parts": [
+          {
+            "partNumber": "PRT-AIR-001",
+            "isAvailable": false
+          }
+        ]
+      },
+      {
+        "sscCode": "SSC-2023-005",
+        "description": "Fuel pump relay",
+        "labors": [
+          {
+            "laborCode": "LAB-FP-01"
+          }
+        ],
+        "repaired": true,
+        "parts": [
+          {
+            "partNumber": "PRT-FP-001",
+            "isAvailable": false
+          }
+        ]
+      }
+    ],
+    "vehicleSpecification": {
+      "modelDescription": "RAV4 2.0L 4WD",
+      "bodyType": "SUV",
+      "engine": "2.0L M20A-FKS",
+      "doors": "5",
+      "fuel": "Petrol",
+      "transmission": "CVT",
+      "side": "LHD"
+    },
+    "serviceItems": [
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "attachment-warning",
+            "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "1,000 KM Service",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2024-02-01",
+        "expiresAt": "2024-08-01",
+        "status": "processed",
+        "statusEnum": "Processed",
+        "packageCode": "PKG-FREE-1K",
+        "cost": 0,
+        "claimDate": "2024-04-15T10:30:00+03:00",
+        "serviceItemID": "SI-001",
+        "companyName": "Sample Motors",
+        "invoiceNumber": "INV-2024-101",
+        "jobNumber": "WO-2024-101",
+        "maximumMileage": 1500,
+        "claimable": false,
+        "claimingMethodEnum": 0,
+        "vehicleInspectionTypeID": "",
+        "signature": "HSLx0/0inwioPqiYz8YPClZl1CrQ7Z69cxq5/Aj859Q=",
+        "signatureExpiry": "2026-01-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "attachment-warning",
+            "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "5,000 KM Service",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2024-08-01",
+        "expiresAt": "2025-08-01",
+        "status": "processed",
+        "statusEnum": "Processed",
+        "packageCode": "PKG-FREE-5K",
+        "cost": 0,
+        "claimDate": "2024-12-10T14:15:00+03:00",
+        "serviceItemID": "SI-002",
+        "companyName": "Sample Motors",
+        "invoiceNumber": "INV-2024-218",
+        "jobNumber": "WO-2024-218",
+        "maximumMileage": 6000,
+        "claimable": false,
+        "claimingMethodEnum": 0,
+        "vehicleInspectionTypeID": "",
+        "signature": "85ONZt9PWL55fa\u002B/sKpRyQ\u002BQTvsoAf0tx0Wp3N05DHg=",
+        "signatureExpiry": "2026-01-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": true,
+        "warnings": [
+          {
+            "key": "attachment-warning",
+            "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": true,
+        "name": "10,000 KM Service",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2025-08-01",
+        "expiresAt": "2027-02-01",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "serviceItemID": "SI-003",
+        "maximumMileage": 12000,
+        "claimable": true,
+        "claimingMethodEnum": "ClaimByEnteringInvoiceAndJobNumber",
+        "vehicleInspectionTypeID": "",
+        "signature": "8B/vv5qXLexgRG\u002BL3rhNgUFvB/8NFROiwttD0jMLcgY=",
+        "signatureExpiry": "2026-01-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002720,000 KM Service\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E10,000 KM Service\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "attachment-warning",
+            "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "20,000 KM Service",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2027-02-01",
+        "expiresAt": "2029-02-01",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "serviceItemID": "SI-004",
+        "maximumMileage": 20000,
+        "claimable": true,
+        "claimingMethodEnum": 0,
+        "vehicleInspectionTypeID": "",
+        "signature": "laYpHTnuqvjaLi4OCCk5oSr4uxWRhkSfiC8k4WcUPIk=",
+        "signatureExpiry": "2026-01-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002730,000 KM Service\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E10,000 KM Service\u003C/li\u003E\u003Cli\u003E20,000 KM Service\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "attachment-warning",
+            "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "30,000 KM Service",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2029-02-01",
+        "expiresAt": "2031-02-01",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "serviceItemID": "SI-005",
+        "maximumMileage": 30000,
+        "claimable": true,
+        "claimingMethodEnum": 0,
+        "vehicleInspectionTypeID": "",
+        "signature": "9sUlY1q5xgHrM\u002Bs0L\u002BifmKXebe0L0XOnPbSaOfPzimE=",
+        "signatureExpiry": "2026-01-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "attachment-warning",
+            "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "15,000 KM Paid Service",
+        "type": "paid",
+        "typeEnum": "Paid",
+        "activatedAt": "2026-02-01",
+        "expiresAt": "2027-02-01",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "packageCode": "PKG-PAID-15K",
+        "serviceItemID": "SI-PAID-15K",
+        "maximumMileage": 16000,
+        "claimable": true,
+        "claimingMethodEnum": 0,
+        "signature": "wXIeSDcLWcyTytl50arDAA0IBUzezuk2kD6YYRi//us=",
+        "signatureExpiry": "2026-01-01T00:00:00Z"
+      }
+    ],
+    "accessories": [
+      {
+        "partNumber": "PZ49E-X2653-ZA",
+        "description": "Side Steps"
+      },
+      {
+        "partNumber": "PZ323-X2651-ZA",
+        "description": "Roof Rails"
+      }
+    ],
+    "basicModelCode": "MXAA52"
+  },
+  "JTMW43FV10D123456": {
+    "vin": "JTMW43FV10D123456",
+    "identifiers": {
+      "vin": "JTMW43FV10D123456",
+      "variant": "VAR002",
+      "katashiki": "AXAH54L-ANXGB",
+      "color": "070",
+      "trim": "FB20",
+      "brandID": "1"
+    },
+    "saleInformation": {
+      "countryID": "1",
+      "countryName": "Iraq",
+      "companyID": "1",
+      "companyName": "Sample Motors",
+      "branchID": "20",
+      "branchName": "Service Center",
+      "invoiceDate": "2023-06-20"
+    },
+    "paintThicknessInspections": [],
+    "paintThicknessCertificateAvailable": false,
+    "isAuthorized": true,
+    "warranty": {
+      "hasActiveWarranty": true,
+      "warrantyStartDate": "2023-06-20",
+      "warrantyEndDate": "2026-06-20",
+      "activationIsRequired": false,
+      "hasExtendedWarranty": false,
+      "freeServiceStartDate": "2023-06-20",
+      "deFactoServiceStartDate": "2023-08-22"
+    },
+    "serviceHistory": [],
+    "vehicleSpecification": {
+      "modelDescription": "RAV4 Hybrid 2.5L",
+      "bodyType": "SUV",
+      "engine": "2.5L A25A-FXS Hybrid",
+      "doors": "5",
+      "fuel": "Hybrid",
+      "transmission": "E-CVT",
+      "side": "LHD"
+    },
+    "serviceItems": [
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "attachment-warning",
+            "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "1,000 KM Service",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2023-06-20",
+        "expiresAt": "2023-12-20",
+        "status": "processed",
+        "statusEnum": "Processed",
+        "packageCode": "PKG-FREE-1K",
+        "cost": 0,
+        "claimDate": "2023-08-22T11:05:00+03:00",
+        "serviceItemID": "SI-001",
+        "companyName": "Sample Motors",
+        "invoiceNumber": "INV-2023-077",
+        "jobNumber": "WO-2023-077",
+        "maximumMileage": 1500,
+        "claimable": false,
+        "claimingMethodEnum": 0,
+        "vehicleInspectionTypeID": "",
+        "signature": "OFcZKV5AhjGzj08NKbKct8Lo/7ts11jZ5LFbt5WgPp8=",
+        "signatureExpiry": "2026-01-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "attachment-warning",
+            "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "5,000 KM Service",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2023-12-20",
+        "expiresAt": "2024-12-20",
+        "status": "expired",
+        "statusEnum": "Expired",
+        "serviceItemID": "SI-002",
+        "maximumMileage": 6000,
+        "claimable": false,
+        "claimingMethodEnum": 0,
+        "vehicleInspectionTypeID": "",
+        "signature": "GjBgd3yU/D10Z9GAY3/kiZyx/A4/2pwnl9xZ7gVthxk=",
+        "signatureExpiry": "2026-01-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": true,
+        "warnings": [
+          {
+            "key": "attachment-warning",
+            "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": true,
+        "name": "10,000 KM Service",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2024-12-20",
+        "expiresAt": "2026-06-20",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "serviceItemID": "SI-003",
+        "maximumMileage": 12000,
+        "claimable": true,
+        "claimingMethodEnum": "ClaimByEnteringInvoiceAndJobNumber",
+        "vehicleInspectionTypeID": "",
+        "signature": "P1o8S4Rn\u002BnCAztps9KA79c0PEm\u002BM2EXtei/7/NV4vFs=",
+        "signatureExpiry": "2026-01-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002720,000 KM Service\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E10,000 KM Service\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "attachment-warning",
+            "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "20,000 KM Service",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2026-06-20",
+        "expiresAt": "2028-06-20",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "serviceItemID": "SI-004",
+        "maximumMileage": 20000,
+        "claimable": true,
+        "claimingMethodEnum": 0,
+        "vehicleInspectionTypeID": "",
+        "signature": "1loGdRCQnXNjoCOMDKq9cwn4VWtpOLwwEOkxHJOqCY4=",
+        "signatureExpiry": "2026-01-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "skipped-items-warning",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002730,000 KM Service\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E10,000 KM Service\u003C/li\u003E\u003Cli\u003E20,000 KM Service\u003C/li\u003E\u003C/ul\u003E",
+            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
+          },
+          {
+            "key": "attachment-warning",
+            "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "30,000 KM Service",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2028-06-20",
+        "expiresAt": "2030-06-20",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "serviceItemID": "SI-005",
+        "maximumMileage": 30000,
+        "claimable": true,
+        "claimingMethodEnum": 0,
+        "vehicleInspectionTypeID": "",
+        "signature": "loP1YM4sVOgXz8Kz7odIKF879HnrkukC6F\u002BuwbTwuzA=",
+        "signatureExpiry": "2026-01-01T00:00:00Z"
+      }
+    ],
+    "accessories": [],
+    "basicModelCode": "AXAH54"
+  },
+  "UNKNOWN_VIN_12345": {
+    "vin": "UNKNOWN_VIN_12345",
+    "identifiers": {
+      "vin": "UNKNOWN_VIN_12345"
+    },
+    "paintThicknessInspections": [],
+    "paintThicknessCertificateAvailable": false,
+    "isAuthorized": false,
+    "warranty": {
+      "hasActiveWarranty": false,
+      "activationIsRequired": false,
+      "hasExtendedWarranty": false
+    },
+    "serviceHistory": [],
+    "vehicleVariantInfo": {},
+    "vehicleSpecification": {},
+    "serviceItems": [],
+    "accessories": []
+  }
+}
