@@ -29,7 +29,7 @@
     "warranty": {
       "hasActiveWarranty": false,
       "activationIsRequired": false,
-      "activationStatus": "notRequired",
+      "activationStatus": "NotRequired",
       "hasExtendedWarranty": false
     },
     "serviceHistory": [],
@@ -80,7 +80,7 @@
       "warrantyStartDate": "2024-02-10",
       "warrantyEndDate": "2027-02-10",
       "activationIsRequired": false,
-      "activationStatus": "notRequired",
+      "activationStatus": "NotRequired",
       "hasExtendedWarranty": true,
       "extendedWarrantyStartDate": "2027-02-10",
       "extendedWarrantyEndDate": "2029-02-10",
@@ -277,7 +277,7 @@
     "warranty": {
       "hasActiveWarranty": false,
       "activationIsRequired": false,
-      "activationStatus": "notRequired",
+      "activationStatus": "NotRequired",
       "hasExtendedWarranty": false,
       "freeServiceStartDate": "2024-06-15",
       "deFactoServiceStartDate": "2024-06-15"
@@ -542,7 +542,7 @@
       "warrantyStartDate": "2024-07-01",
       "warrantyEndDate": "2027-07-01",
       "activationIsRequired": false,
-      "activationStatus": "notRequired",
+      "activationStatus": "NotRequired",
       "hasExtendedWarranty": false,
       "freeServiceStartDate": "2024-07-01"
     },

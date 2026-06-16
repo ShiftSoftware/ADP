@@ -26,6 +26,10 @@
   --warn-tint: #fff4e5;
   --warn-border: #ffd28f;
   --warn-text: #663c00;
+  --danger: #d92d20;
+  --danger-tint: #fef3f2;
+  --danger-border: #fda29b;
+  --danger-text: #912018;
   --green: #32b267;
   --green-dark: #27ae60;
   --text: #1f2937;
@@ -258,8 +262,8 @@
 .notice {
   position: relative;
   border: 1px solid var(--hair);
-  border-inline-start: 3px solid var(--warn);
-  background: #fffaf2;
+  border-inline-start: 3px solid var(--danger);
+  background: #fff6f5;
   border-start-end-radius: 5px;
   border-end-end-radius: 5px;
   padding-block: 10px;
@@ -307,9 +311,9 @@
   font-family: var(--mono) !important;
   font-size: 11px;
   font-weight: 500;
-  color: #92400e;
-  background: var(--warn-tint);
-  border: 1px dashed var(--warn-border);
+  color: var(--danger-text);
+  background: var(--danger-tint);
+  border: 1px dashed var(--danger-border);
   border-radius: 4px;
   padding: 2px 8px;
 }
@@ -319,7 +323,7 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--warn);
+  background: var(--danger);
 }
 
 .notice.info .ntc-body ul {
@@ -356,7 +360,7 @@
 .confirm {
   margin-top: 8px;
   padding-top: 8px;
-  border-top: 1px dashed var(--warn-border);
+  border-top: 1px dashed var(--danger-border);
 }
 
 .confirm label {
@@ -366,7 +370,7 @@
   cursor: pointer;
   font-size: 12px;
   font-weight: 500;
-  color: var(--warn-text);
+  color: var(--danger-text);
   user-select: none;
   transition: opacity 0.3s;
 }
@@ -380,7 +384,7 @@
   width: 17px;
   height: 17px;
   flex: 0 0 auto;
-  border: 1.5px solid #c8a35a;
+  border: 1.5px solid var(--danger-border);
   border-radius: 4px;
   background: #fff;
   color: #fff;
@@ -398,8 +402,8 @@
 }
 
 .confirm input:checked ~ .cbx-face {
-  background: var(--warn);
-  border-color: var(--warn);
+  background: var(--danger);
+  border-color: var(--danger);
 }
 
 .confirm input:checked ~ .cbx-face svg {
@@ -408,7 +412,7 @@
 }
 
 .confirm input:focus-visible ~ .cbx-face {
-  box-shadow: 0 0 0 3px rgba(255, 145, 0, 0.28);
+  box-shadow: 0 0 0 3px rgba(217, 45, 32, 0.28);
 }
 
 .doc-row {
