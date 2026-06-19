@@ -11,6 +11,21 @@ theme:
     - navigation.sections
     - content.code.copy
     - navigation.collapse
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-night
+        name: Switch to light mode
 
 extra_css:
   - overrides/css/extra.css
@@ -59,6 +74,14 @@ nav:
           - Resilience & Fault Tolerance: integrations/sync-agent/resilience.md
           - Logging & Monitoring: integrations/sync-agent/logging.md
           - Getting Started: integrations/sync-agent/getting-started.md
+      - Rastgo (Data Health):
+          - Overview: integrations/rastgo/index.md
+          - Concepts & Principles: integrations/rastgo/concepts.md
+          - Architecture: integrations/rastgo/architecture.md
+          - Check Model & Asserts: integrations/rastgo/check-model.md
+          - Sources: integrations/rastgo/sources.md
+          - Configuration: integrations/rastgo/configuration.md
+          - Getting Started: integrations/rastgo/getting-started.md
       # - Invoices:
       #     - Invoice: generated/Models/Invoice/InvoiceModel.md
       - Parts:

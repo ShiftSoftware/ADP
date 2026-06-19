@@ -34,6 +34,10 @@ steps:
    condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-nuget'))
    displayName: 'pack ADP.SyncAgent'
 
+ - script: dotnet pack ADP.Rastgo/Rastgo --configuration Release --output $(Build.ArtifactStagingDirectory)/ADP
+   condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-nuget'))
+   displayName: 'pack ADP.Rastgo'
+
  - script: dotnet pack ADP.Menus/ADP.Menus.Shared --configuration Release --output $(Build.ArtifactStagingDirectory)/ADP
    condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-nuget'))
    displayName: 'pack ADP.Menus.Shared'

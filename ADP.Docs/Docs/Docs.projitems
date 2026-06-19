@@ -14,6 +14,12 @@
     <None Include="$(MSBuildThisFileDirectory)docs\assets\imgs\deployment-pipelines-production.svg" />
     <None Include="$(MSBuildThisFileDirectory)docs\assets\imgs\deployment-pipelines-staging.svg" />
     <None Include="$(MSBuildThisFileDirectory)docs\assets\imgs\microservice-architecture.svg" />
+    <None Include="$(MSBuildThisFileDirectory)docs\assets\imgs\rastgo\rastgo-favicon.svg" />
+    <None Include="$(MSBuildThisFileDirectory)docs\assets\imgs\rastgo\rastgo-horizontal-dark.svg" />
+    <None Include="$(MSBuildThisFileDirectory)docs\assets\imgs\rastgo\rastgo-horizontal.svg" />
+    <None Include="$(MSBuildThisFileDirectory)docs\assets\imgs\rastgo\rastgo-icon-yellow.svg" />
+    <None Include="$(MSBuildThisFileDirectory)docs\assets\imgs\rastgo\rastgo-mark-dark.svg" />
+    <None Include="$(MSBuildThisFileDirectory)docs\assets\imgs\rastgo\rastgo-mark.svg" />
     <None Include="$(MSBuildThisFileDirectory)docs\assets\imgs\vehicle-database_data-warehousing.svg" />
     <None Include="$(MSBuildThisFileDirectory)docs\assets\imgs\warranty-system.svg" />
     <None Include="$(MSBuildThisFileDirectory)docs\CNAME" />
@@ -172,6 +178,13 @@
     <None Include="$(MSBuildThisFileDirectory)docs\index.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\integrations\intro.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\integrations\parts.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\integrations\rastgo\architecture.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\integrations\rastgo\check-model.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\integrations\rastgo\concepts.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\integrations\rastgo\configuration.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\integrations\rastgo\getting-started.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\integrations\rastgo\index.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\integrations\rastgo\sources.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\integrations\sync-agent\architecture.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\integrations\sync-agent\configuration.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\integrations\sync-agent\data-adapters.md" />
