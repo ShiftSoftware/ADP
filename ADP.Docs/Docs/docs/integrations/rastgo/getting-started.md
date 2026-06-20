@@ -93,10 +93,10 @@ During development the `HealthRunner` console runs a pack against a copied snaps
 
 ```bash
 # zero-config smoke test — seeds a demo db and runs the demo pack
-dotnet run --project tiq-sync-agent.HealthRunner -- --seed-demo
+dotnet run --project HealthRunner -- --seed-demo
 
 # run a real pack against the configured snapshot
-dotnet run --project tiq-sync-agent.HealthRunner -- --checks checks.sync-agent.yaml --out ./health-output
+dotnet run --project HealthRunner -- --checks checks.sync-agent.yaml --out ./health-output
 ```
 
 The console prints a per-check verdict line and a status tally, and exits non-zero if any check is `Fail` — so a scheduled run doubles as a CI/operational gate.

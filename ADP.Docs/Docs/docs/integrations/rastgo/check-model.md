@@ -68,7 +68,7 @@ A measure carries a `valueKind`:
 | `count` | a count of matching files | the file-share source |
 
 !!! warning "Timestamps are treated as UTC"
-    For `valueKind: timestamp`, the selected value is interpreted as UTC. If a source column stores local/naive time, normalize it in the measure SQL — e.g. `MAX(InvoiceDate) AT TIME ZONE 'Asia/Baghdad' AT TIME ZONE 'UTC'`.
+    For `valueKind: timestamp`, the selected value is interpreted as UTC. If a source column stores local/naive time, normalize it in the measure SQL — e.g. `MAX(InvoiceDate) AT TIME ZONE '<source-tz>' AT TIME ZONE 'UTC'`.
 
 ## How an assert is evaluated
 
@@ -182,7 +182,7 @@ flowchart LR
     D --> E[[dashboard: Freshness column]]
 ```
 
-If SAS's file is 4.9 days old, that *one* dealer's row goes `Fail` (severity `critical`) while the rest pass — a localized signal a global aggregate would hide.
+If one dealer's file is 4.9 days old, that *one* dealer's row goes `Fail` (severity `critical`) while the rest pass — a localized signal a global aggregate would hide.
 
 ---
 

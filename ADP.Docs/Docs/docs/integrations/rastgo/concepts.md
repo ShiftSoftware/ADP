@@ -4,7 +4,7 @@ Rastgo exists because the monitoring it replaces answered the wrong question. Th
 
 ## What the old checks measured
 
-The previous setup (in `tiq-sync-duckdb-agent`) was a **migration-consistency validator** dressed up as operational health. ~22 HTTP endpoints ran `COUNT(*)` in DuckDB and in Cosmos, grouped by company/brand, and flagged a mismatch. App Insights availability tests pinged the endpoints; a Workbook showed up/down.
+The previous setup (a count-comparison check baked into the DuckDB replica builder) was a **migration-consistency validator** dressed up as operational health. ~22 HTTP endpoints ran `COUNT(*)` in DuckDB and in Cosmos, grouped by company/brand, and flagged a mismatch. App Insights availability tests pinged the endpoints; a Workbook showed up/down.
 
 It answers *"do my two copies agree?"* — not *"is the data fresh, correct, and flowing?"* Those are different questions, and the gap between them is where real incidents hid.
 
@@ -57,7 +57,7 @@ flowchart LR
 | **Process liveness** | "The job threw" / "the app is down" is telemetry, not data. Leave it to App Insights. | — |
 
 !!! info "Cosmos is production; DuckDB is a transform-aligned replica"
-    `tiq-sync-agent` reads sources → transforms → **Cosmos** (read by downstream systems). `tiq-sync-duckdb-agent` applies the *same* transforms to the *same* sources → **DuckDB**, used for dev, batch reads (reports), and as an independent recomputation to reconcile against Cosmos. The `diff` comparison therefore keeps real value — it just cannot be the *freshness* signal.
+    The sync agent reads sources → transforms → **Cosmos** (read by downstream systems). The DuckDB replica builder applies the *same* transforms to the *same* sources → **DuckDB**, used for dev, batch reads (reports), and as an independent recomputation to reconcile against Cosmos. The `diff` comparison therefore keeps real value — it just cannot be the *freshness* signal.
 
 ## Principle 2 — Passive & read-only
 
@@ -67,7 +67,7 @@ Every signal Rastgo needs is **already persisted**: tickets carry per-stage time
 flowchart LR
     subgraph MON["Monitored pipelines (untouched)"]
       P1[Sync jobs] --> F1[(Cosmos rows + _ts)]
-      P2[Qlik exports] --> F2[/CSV files + mtime/]
+      P2[Upstream exports] --> F2[/CSV files + mtime/]
       P3[Loaders] --> F3[(DuckDB MAX date)]
     end
     OBS((Rastgo observer)) -. "read-only queries" .-> F1
@@ -111,7 +111,7 @@ This is also what makes promotion to a shared NuGet package the natural home: th
 A check is declarative config, not a compiled method. A run produces **result rows** — verdict, metrics, timestamp, sample — appended to a store. That single decision delivers three things the old setup lacked:
 
 - **Iterability** — change a threshold by editing YAML.
-- **History** — "how long has TBP broker stock been stale?" is a query over past rows, not a guess.
+- **History** — "how long has this feed been stale?" is a query over past rows, not a guess.
 - **Separation of render from logic** — the dashboard is just a view over the result rows; the checks don't know it exists.
 
 ```mermaid

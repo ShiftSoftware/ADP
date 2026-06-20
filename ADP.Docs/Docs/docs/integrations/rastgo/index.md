@@ -41,7 +41,7 @@ Every consumer runs its own checks against its own sources, then writes result r
 
 ```mermaid
 flowchart LR
-    subgraph SA["tiq-sync-agent runner"]
+    subgraph SA["Sync-agent runner"]
       Y1[checks.sync-agent.yaml] --> R1((CheckRunner))
       R1 --> S1[(DuckDB)]
       R1 --> S2[(Cosmos)]

@@ -88,13 +88,13 @@ Reads metrics from Cosmos DB. A measure must supply `sql`, `database`, and `cont
 
 ## File-share source &nbsp;`name: fileshare`
 
-Surfaces the **most upstream hop we can see** — external systems → Qlik → Azure Storage Sync → the file share. This is how Rastgo tells *"did data actually get delivered?"* apart from *"did our parse/load succeed?"*. `path` is relative to a configured base.
+Surfaces the **most upstream hop we can see** — upstream systems → file sync → the file share. This is how Rastgo tells *"did data actually get delivered?"* apart from *"did our parse/load succeed?"*. `path` is relative to a configured base.
 
 | Path form | Behavior |
 |---|---|
 | plain path | that file's last-write time (a timestamp) |
 | wildcard, scalar | the **newest** match's mtime (conflict copies excluded) |
-| wildcard + `breakdown` | one mtime per matching file (auto-covers every dealer/feed file) |
+| wildcard + `breakdown` | one mtime per matching file (auto-covers every matching feed file) |
 | `**/` prefix | recurse from the base |
 | `valueKind: count` | number of matching files |
 
@@ -107,12 +107,12 @@ flowchart TD
     W -->|yes| CNT{valueKind = count?}
     CNT -->|yes| N["count ALL matches"]
     CNT -->|no| GRP{grouped?}
-    GRP -->|yes| PER["one mtime per file<br/>(exclude -QlikServer copies)"]
-    GRP -->|no| NEW["newest mtime<br/>(exclude -QlikServer copies)"]
+    GRP -->|yes| PER["one mtime per file<br/>(exclude conflict copies)"]
+    GRP -->|no| NEW["newest mtime<br/>(exclude conflict copies)"]
 ```
 
 !!! tip "Conflict-copy aware"
-    Azure File Sync leaves `-QlikServer*` conflict copies (stale duplicates). Freshness deliberately **ignores** them (so a stale duplicate can't look fresh), while `valueKind: count` deliberately **includes** them — that *is* the conflict-copy detector (260 conflict copies surfaced in one real run).
+    Azure File Sync names conflict copies after the losing machine (`name-<machine>.ext`) — stale duplicates. Configure the marker (e.g. `-<machine>`) and freshness deliberately **ignores** them (so a stale duplicate can't look fresh), while `valueKind: count` deliberately **includes** them — that *is* the conflict-copy detector (260 conflict copies surfaced in one real run).
 
 ## Per-hop localization
 
@@ -132,7 +132,7 @@ flowchart LR
     class OK good
 ```
 
-A real run made this concrete: SAS/SAM/Kamaran *source* feeds were ~5 days stale (an upstream delivery gap) while our load was current — a distinction the old replica-vs-replica check could never draw.
+A real run made this concrete: several dealers' *source* feeds were ~5 days stale (an upstream delivery gap) while our load was current — a distinction the old replica-vs-replica check could never draw.
 
 ---
 

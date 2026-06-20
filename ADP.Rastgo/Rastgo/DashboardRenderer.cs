@@ -13,8 +13,9 @@ namespace ShiftSoftware.ADP.Rastgo;
 /// </summary>
 public static class DashboardRenderer
 {
-    public static string Render(IReadOnlyList<CheckResult> all, DateTimeOffset generatedAtUtc)
+    public static string Render(IReadOnlyList<CheckResult> all, DateTimeOffset generatedAtUtc, DashboardOptions? options = null)
     {
+        var L = new Labeler(options ?? DashboardOptions.Default);
         var checks = all
             .GroupBy(r => r.CheckName)
             .Select(g =>
@@ -87,12 +88,12 @@ public static class DashboardRenderer
             var slug = Slug(key);
             sb.Append($"<div class=\"toccat\" data-cat=\"{slug}\"><div class=\"tcatrow\">")
               .Append("<button class=\"tfold\" type=\"button\" aria-label=\"Fold section\">▾</button>")
-              .Append($"<a class=\"tcat\" data-cat=\"{slug}\" href=\"#cat-{slug}\" data-tip=\"{Esc(CategoryBlurb(key))}\"><span class=\"tlabel\">{Esc(CategoryName(key))} {InfoCue()}</span>{RollupCounts(cat.ToList())}</a></div>");
+              .Append($"<a class=\"tcat\" data-cat=\"{slug}\" href=\"#cat-{slug}\" data-tip=\"{Esc(CategoryBlurb(key))}\"><span class=\"tlabel\">{Esc(L.CategoryName(key))} {InfoCue()}</span>{RollupCounts(cat.ToList())}</a></div>");
 
             sb.Append("<div class=\"tfams\">");
-            foreach (var fam in cat.GroupBy(c => c.Family).OrderBy(f => FamilyTail(key, f.Key) ?? "~", StringComparer.OrdinalIgnoreCase))
+            foreach (var fam in cat.GroupBy(c => c.Family).OrderBy(f => L.FamilyTail(key, f.Key) ?? "~", StringComparer.OrdinalIgnoreCase))
             {
-                var tail = FamilyTail(key, fam.Key);
+                var tail = L.FamilyTail(key, fam.Key);
                 if (tail is null) continue;   // family == category (e.g. "volume"): covered by the category line
                 var famSlug = Slug(fam.Key);
                 sb.Append($"<a class=\"tfam\" data-target=\"fam-{famSlug}\" href=\"#fam-{famSlug}\"><span class=\"tlabel\">{Esc(tail)}</span>{RollupCounts(fam.ToList())}</a>");
@@ -115,11 +116,11 @@ public static class DashboardRenderer
         {
             var key = cat.Key;
             var slug = Slug(key);
-            sb.Append($"<tbody class=\"cat\" data-cat=\"{slug}\"><tr class=\"cathdr\" id=\"cat-{slug}\"><td colspan=\"3\" data-tip=\"{Esc(CategoryBlurb(key))}\"><span class=\"clabel\">{Esc(CategoryName(key))} {InfoCue()}</span>{RollupCounts(cat.ToList())}</td></tr></tbody>");
+            sb.Append($"<tbody class=\"cat\" data-cat=\"{slug}\"><tr class=\"cathdr\" id=\"cat-{slug}\"><td colspan=\"3\" data-tip=\"{Esc(CategoryBlurb(key))}\"><span class=\"clabel\">{Esc(L.CategoryName(key))} {InfoCue()}</span>{RollupCounts(cat.ToList())}</td></tr></tbody>");
 
-            foreach (var fam in cat.GroupBy(c => c.Family).OrderBy(f => FamilyTail(key, f.Key) ?? "~", StringComparer.OrdinalIgnoreCase))
+            foreach (var fam in cat.GroupBy(c => c.Family).OrderBy(f => L.FamilyTail(key, f.Key) ?? "~", StringComparer.OrdinalIgnoreCase))
             {
-                var tail = FamilyTail(key, fam.Key);
+                var tail = L.FamilyTail(key, fam.Key);
                 var famSlug = Slug(fam.Key);
                 var famChecks = fam.OrderBy(c => c.Name, StringComparer.OrdinalIgnoreCase).ToList();
 
@@ -127,7 +128,7 @@ public static class DashboardRenderer
                 if (tail is not null)
                     sb.Append($"<tr class=\"grp\" id=\"fam-{famSlug}\"><td colspan=\"3\"><span class=\"caret\">▾</span> {Esc(tail)} {RollupCounts(famChecks)}</td></tr>");
                 foreach (var c in famChecks)
-                    AppendCheckRow(sb, c, latestRunByDomain.GetValueOrDefault(c.Domain, ""), multiDomain);
+                    AppendCheckRow(sb, c, latestRunByDomain.GetValueOrDefault(c.Domain, ""), multiDomain, L);
                 sb.Append("</tbody>");
             }
         }
@@ -137,15 +138,15 @@ public static class DashboardRenderer
         return sb.ToString();
     }
 
-    private static void AppendCheckRow(StringBuilder sb, CheckView c, string domainLatestRunId, bool showDomain)
+    private static void AppendCheckRow(StringBuilder sb, CheckView c, string domainLatestRunId, bool showDomain, Labeler L)
     {
-        var title = Title(c.Name);
+        var title = L.Title(c.Name);
         var isGrouped = c.Rows.Count > 1 || c.Rows[0].BreakdownKey is not null;
         var stale = !string.IsNullOrEmpty(domainLatestRunId) && c.RunId != domainLatestRunId;
 
         var searchText = Esc((string.Join(' ',
             new[] { c.Name, title, c.Category, c.Severity, c.Domain, c.Description ?? "" }
-            .Concat(c.Rows.Select(r => $"{DealerLabel(r.BreakdownKey ?? "")} {r.Message}")))).ToLowerInvariant());
+            .Concat(c.Rows.Select(r => $"{L.BreakdownLabel(r.BreakdownKey ?? "")} {r.Message}")))).ToLowerInvariant());
 
         sb.Append($"<tr class=\"check\" data-status=\"{c.Status}\" data-domain=\"{Esc(c.Domain)}\" data-text=\"{searchText}\">");
         sb.Append($"<td><span class=\"pill {c.Status}\">{c.Status}</span></td>");
@@ -168,7 +169,7 @@ public static class DashboardRenderer
         {
             const int cap = 60;
             foreach (var r in c.Rows.Take(cap))
-                sb.Append($"<div class=\"bk\"><span class=\"dot {r.Status}\"></span><b>{Esc(DealerLabel(r.BreakdownKey ?? "—"))}</b> <span class=\"bkmsg\">{Esc(r.Message)}</span></div>");
+                sb.Append($"<div class=\"bk\"><span class=\"dot {r.Status}\"></span><b>{Esc(L.BreakdownLabel(r.BreakdownKey ?? "—"))}</b> <span class=\"bkmsg\">{Esc(r.Message)}</span></div>");
             if (c.Rows.Count > cap)
                 sb.Append($"<div class=\"bk muted\">+{c.Rows.Count - cap} more…</div>");
         }
@@ -197,28 +198,17 @@ public static class DashboardRenderer
 
     private static readonly string[] CatOrder = { "freshness", "reconciliation", "quality", "volume", "flow" };
     private static int CategoryRank(string key) { var i = Array.IndexOf(CatOrder, key); return i < 0 ? 99 : i; }
-    private static string CategoryName(string key) => PrettyToken(key);
 
     private static readonly Dictionary<string, string> Blurbs = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["freshness"] = "Is the data recent? File-delivery times plus the newest dates inside each feed (invoices, claims) and the snapshot publish.",
-        ["reconciliation"] = "Do the replicas agree? Source-vs-loaded gap, and DuckDB recomputation vs prod Cosmos counts.",
-        ["quality"] = "Integrity rules: required fields present (CompanyID, VIN), no Azure File-Sync conflict copies left behind.",
+        ["freshness"] = "Is the data recent? Source-delivery times plus the newest dates inside each feed and the snapshot publish.",
+        ["reconciliation"] = "Do the replicas agree? Source-vs-loaded gap, and an independent recomputation vs the production store's counts.",
+        ["quality"] = "Integrity rules: required fields present, no file-sync conflict copies left behind.",
         ["volume"] = "Row-count floors for tables with no date column — catches an empty or half-loaded table.",
         ["flow"] = "End-to-end pipeline flow checks.",
         ["other"] = "Uncategorised checks.",
     };
     private static string CategoryBlurb(string key) => Blurbs.TryGetValue(key, out var b) ? b : "Checks in this category.";
-
-    /// <summary>Family label relative to its category: drops a leading token that just echoes the
-    /// category (so "freshness.source" → "Source"), and null when the family IS the category.</summary>
-    private static string? FamilyTail(string categoryKey, string family)
-    {
-        var tokens = family.Split('.', StringSplitOptions.RemoveEmptyEntries).ToList();
-        if (tokens.Count > 0 && string.Equals(PrettyToken(tokens[0]), CategoryName(categoryKey), StringComparison.OrdinalIgnoreCase))
-            tokens.RemoveAt(0);
-        return tokens.Count == 0 ? null : string.Join(" › ", tokens.Select(PrettyToken));
-    }
 
     private static string Slug(string s)
     {
@@ -229,53 +219,72 @@ public static class DashboardRenderer
 
     // ---- friendly names ----------------------------------------------------
 
-    private static readonly Dictionary<string, string> Tokens = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["freshness"] = "Freshness", ["quality"] = "Quality", ["reconciliation"] = "Reconciliation", ["recon"] = "Reconciliation",
-        ["volume"] = "Volume", ["gap"] = "Gap", ["source"] = "Source", ["source_data"] = "Source data",
-        ["snapshot_published"] = "Snapshot published", ["vehicle_entry"] = "Vehicle entries", ["warranty_claim"] = "Warranty claims",
-        ["tbp_broker_stock"] = "TBP broker stock", ["service_item"] = "Service items", ["vehicle_accessory"] = "Vehicle accessories",
-        ["missing_company"] = "Missing CompanyID", ["missing_vin"] = "Missing VIN", ["conflict_copies"] = "File-sync conflict copies",
-        ["initial_official_vin"] = "Official VINs", ["ssc_affected_vin"] = "SSC affected VINs",
-        ["appointment_confirmation"] = "Appointment confirmation", ["service_reminder"] = "Service reminders",
-        ["sales"] = "Sales (VSData)", ["vsdata"] = "Sales (VSData)", ["parts"] = "Parts (SOParts)", ["labor"] = "Labor (SOLabor)",
-        ["customer"] = "Customer", ["invoice"] = "Invoice date", ["load"] = "Load", ["duck_vs_cosmos"] = "DuckDB vs Cosmos",
-    };
-
-    private static readonly HashSet<string> Acronyms = new(StringComparer.OrdinalIgnoreCase)
-    { "vin", "ssc", "tbp", "sas", "dam", "bar", "aea", "csi", "ssi", "tiq", "vsdata" };
-
-    private static string PrettyToken(string t)
-    {
-        if (Tokens.TryGetValue(t, out var v)) return v;
-        if (Acronyms.Contains(t)) return t.ToUpperInvariant();
-        var s = t.Replace('_', ' ').Trim();
-        return s.Length == 0 ? s : char.ToUpper(s[0]) + s[1..];
-    }
-
-    private static string PrettyPath(string dotted)
-        => string.IsNullOrEmpty(dotted)
-            ? "General"
-            : string.Join(" › ", dotted.Split('.', StringSplitOptions.RemoveEmptyEntries).Select(PrettyToken));
-
     private static string Family(string name)
     {
         var i = name.LastIndexOf('.');
         return i <= 0 ? "" : name[..i];
     }
 
-    private static string Title(string name)
+    /// <summary>
+    /// Turns raw check / family / breakdown tokens into display labels. Defaults to Rastgo's own structural
+    /// vocabulary (categories, families) plus generic title-casing; a consumer extends it via
+    /// <see cref="DashboardOptions"/> (domain token labels, acronyms, breakdown-key formatting) so
+    /// domain-specific names stay in the domain pack rather than the framework.
+    /// </summary>
+    private sealed class Labeler
     {
-        var i = name.LastIndexOf('.');
-        return PrettyToken(i < 0 ? name : name[(i + 1)..]);
-    }
+        private readonly Dictionary<string, string> _tokens;
+        private readonly IReadOnlySet<string> _acronyms;
+        private readonly Func<string, string> _breakdown;
 
-    private static string DealerLabel(string key)
-    {
-        foreach (var p in new[] { "VSDatas_", "UVSDatas_", "SOPartsDatas_Full_", "SOLabordatas_Full_", "CustomerData_" })
-            if (key.StartsWith(p, StringComparison.OrdinalIgnoreCase))
-                return key[p.Length..];
-        return key;
+        public Labeler(DashboardOptions options)
+        {
+            _tokens = new Dictionary<string, string>(FrameworkTokens, StringComparer.OrdinalIgnoreCase);
+            if (options.TokenLabels is not null)
+                foreach (var (k, v) in options.TokenLabels) _tokens[k] = v;   // consumer overrides win
+            _acronyms = options.Acronyms ?? EmptyAcronyms;
+            _breakdown = options.BreakdownKeyFormatter ?? (k => k);
+        }
+
+        public string CategoryName(string key) => PrettyToken(key);
+
+        /// <summary>Family label relative to its category: drops a leading token that just echoes the
+        /// category (so "freshness.source" → "Source"), and null when the family IS the category.</summary>
+        public string? FamilyTail(string categoryKey, string family)
+        {
+            var tokens = family.Split('.', StringSplitOptions.RemoveEmptyEntries).ToList();
+            if (tokens.Count > 0 && string.Equals(PrettyToken(tokens[0]), CategoryName(categoryKey), StringComparison.OrdinalIgnoreCase))
+                tokens.RemoveAt(0);
+            return tokens.Count == 0 ? null : string.Join(" › ", tokens.Select(PrettyToken));
+        }
+
+        public string Title(string name)
+        {
+            var i = name.LastIndexOf('.');
+            return PrettyToken(i < 0 ? name : name[(i + 1)..]);
+        }
+
+        public string BreakdownLabel(string key) => _breakdown(key);
+
+        private string PrettyToken(string t)
+        {
+            if (_tokens.TryGetValue(t, out var v)) return v;
+            if (_acronyms.Contains(t)) return t.ToUpperInvariant();
+            var s = t.Replace('_', ' ').Trim();
+            return s.Length == 0 ? s : char.ToUpper(s[0]) + s[1..];
+        }
+
+        private static readonly IReadOnlySet<string> EmptyAcronyms = new HashSet<string>();
+
+        // Rastgo's own structural vocabulary (categories + generic family/step tokens). Domain check names
+        // (e.g. a per-table freshness check) are supplied by the consumer via DashboardOptions.TokenLabels.
+        private static readonly Dictionary<string, string> FrameworkTokens = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["freshness"] = "Freshness", ["quality"] = "Quality", ["reconciliation"] = "Reconciliation", ["recon"] = "Reconciliation",
+            ["volume"] = "Volume", ["flow"] = "Flow", ["gap"] = "Gap", ["source"] = "Source", ["source_data"] = "Source data",
+            ["snapshot_published"] = "Snapshot published", ["load"] = "Load",
+            ["conflict_copies"] = "File-sync conflict copies", ["duck_vs_cosmos"] = "DuckDB vs Cosmos",
+        };
     }
 
     private sealed record CheckView(

@@ -12,4 +12,13 @@ public sealed class RastgoOptions
 
     /// <summary>Root the <see cref="JsonlResultSink"/> writes partitioned results under (e.g. the mounted <c>/mnt/adp-health</c> share).</summary>
     public string ResultsRoot { get; set; } = "";
+
+    /// <summary>
+    /// Optional substring marking file-sync conflict copies the <c>fileshare</c> source excludes from freshness
+    /// (e.g. <c>"-MachineName"</c>). Null/blank = no exclusion. See <see cref="FileShareCheckSource"/>.
+    /// </summary>
+    public string? ConflictCopyMarker { get; set; }
+
+    /// <summary>Presentation customization for the dashboard (friendly labels for domain-specific names). Generic by default.</summary>
+    public DashboardOptions Dashboard { get; set; } = DashboardOptions.Default;
 }

@@ -19,7 +19,7 @@ A check file is a YAML list of checks. Keys are camelCase; unknown keys are igno
       valueKind: timestamp
       sql: |
         SELECT CompanyID AS k,
-               MAX(InvoiceDate) AT TIME ZONE 'Asia/Baghdad' AT TIME ZONE 'UTC' AS v
+               MAX(InvoiceDate) AT TIME ZONE '<source-tz>' AT TIME ZONE 'UTC' AS v
         FROM VehicleEntry
         WHERE InvoiceDate <= now()        -- future-date guard
         GROUP BY CompanyID

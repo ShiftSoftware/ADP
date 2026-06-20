@@ -27,7 +27,7 @@ public static class IServiceCollectionExtensions
     public static IServiceCollection AddRastgoCore(this IServiceCollection services, RastgoOptions options)
     {
         services.AddSingleton(options);
-        services.AddSingleton<ICheckSource>(_ => new FileShareCheckSource(options.FileShareBase));
+        services.AddSingleton<ICheckSource>(_ => new FileShareCheckSource(options.FileShareBase, options.ConflictCopyMarker));
         services.AddSingleton(sp => new SourceRegistry(sp.GetServices<ICheckSource>()));
         services.AddSingleton<CheckRunner>();
         services.AddSingleton(_ => new JsonlResultSink(options.ResultsRoot));

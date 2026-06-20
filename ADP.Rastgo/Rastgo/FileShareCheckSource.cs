@@ -1,18 +1,24 @@
 namespace ShiftSoftware.ADP.Rastgo;
 
 /// <summary>
-/// Surfaces file-share signals — the most upstream hop we can see (external systems → Qlik →
-/// Azure Storage Sync → share). This is how we tell "did data actually get delivered?" apart from
-/// "did our parse/load succeed?". <see cref="MeasureSpec.Path"/> is relative to a configured base.
+/// Surfaces file-share signals — the most upstream hop we can see (upstream systems → file sync →
+/// share). This is how we tell "did data actually get delivered?" apart from "did our parse/load
+/// succeed?". <see cref="MeasureSpec.Path"/> is relative to a configured base.
 /// <list type="bullet">
 /// <item>plain path → that file's last-write time (a timestamp metric).</item>
 /// <item>wildcard, scalar → the NEWEST match's mtime (conflict copies excluded).</item>
-/// <item>wildcard, <c>breakdown</c> set → one mtime per matching file (auto-covers every dealer/feed file).</item>
+/// <item>wildcard, <c>breakdown</c> set → one mtime per matching file (auto-covers every matching feed file).</item>
 /// <item><c>**/</c> prefix → recurse from the base.</item>
 /// <item><c>valueKind: count</c> → number of matching files (e.g. count Azure File Sync conflict copies).</item>
 /// </list>
+/// <para>
+/// <paramref name="conflictCopyMarker"/> is an optional substring identifying file-sync conflict copies
+/// (Azure File Sync renames a losing copy to <c>name-MachineName.ext</c>). When set, those are excluded from
+/// freshness (so a stale duplicate can't look fresh) but still counted by <c>valueKind: count</c> — that is
+/// the conflict-copy detector. Null/blank = no exclusion.
+/// </para>
 /// </summary>
-public sealed class FileShareCheckSource(string basePath) : ICheckSource
+public sealed class FileShareCheckSource(string basePath, string? conflictCopyMarker = null) : ICheckSource
 {
     public string Name => "fileshare";
 
@@ -53,8 +59,10 @@ public sealed class FileShareCheckSource(string basePath) : ICheckSource
             if (wantCount)
                 return Scalar(new MeasureCell(matches.Length, null));
 
-            // Freshness ignores Azure File Sync conflict copies (stale duplicates).
-            var canonical = matches.Where(f => !Path.GetFileName(f).Contains("-QlikServer", StringComparison.OrdinalIgnoreCase)).ToArray();
+            // Freshness ignores file-sync conflict copies (stale duplicates) when a marker is configured.
+            var canonical = string.IsNullOrEmpty(conflictCopyMarker)
+                ? matches
+                : matches.Where(f => !Path.GetFileName(f).Contains(conflictCopyMarker, StringComparison.OrdinalIgnoreCase)).ToArray();
             if (canonical.Length == 0)
                 return Error($"No files match (excluding conflict copies): {combined}");
 

@@ -72,7 +72,7 @@ sequenceDiagram
 
 ## Scalar vs. grouped runs
 
-A check is **grouped** when it sets a `breakdown` label. Grouped measures return one cell per key (`k`, `v`); scalar measures return a single cell (`v`). The assert is applied per cell, so a grouped check emits one result row per group — which is how a per-dealer staleness check surfaces "SAM 199 days stale" even when the global aggregate (dominated by the freshest dealer) looks fine.
+A check is **grouped** when it sets a `breakdown` label. Grouped measures return one cell per key (`k`, `v`); scalar measures return a single cell (`v`). The assert is applied per cell, so a grouped check emits one result row per group — which is how a per-dealer staleness check surfaces a single dealer "199 days stale" even when the global aggregate (dominated by the freshest dealer) looks fine.
 
 ```mermaid
 flowchart LR
