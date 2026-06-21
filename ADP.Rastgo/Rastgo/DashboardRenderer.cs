@@ -65,8 +65,8 @@ public static class DashboardRenderer
 
         // ---- sidebar: health summary + jump nav -------------------------------
         sb.Append("<aside class=\"side\">");
-        sb.Append("<div class=\"brand\"><div class=\"logo\">Rastgo</div>")
-          .Append($"<div class=\"meta\">{generatedAtUtc:yyyy-MM-dd HH:mm} UTC · {checks.Count} checks · latest run per check</div></div>");
+        sb.Append("<div class=\"brand\"><div class=\"logo\">").Append(Logo).Append("</div>")
+          .Append($"<div class=\"meta\">{generatedAtUtc:yyyy-MM-dd HH:mm} UTC · {checks.Count} checks</div></div>");
 
         sb.Append("<div class=\"kpis\">");
         foreach (var (status, label) in new[] { (HealthStatus.Fail, "Fail"), (HealthStatus.Error, "Error"), (HealthStatus.Warn, "Warn"), (HealthStatus.Pass, "Pass") })
@@ -293,6 +293,15 @@ public static class DashboardRenderer
 
     // ---- static assets -----------------------------------------------------
 
+    // Rastgo horizontal lockup (on-dark variant: white letters, yellow star + "A" accent). Inlined because the
+    // page ships no external assets; the viewBox is tightened around the artwork for the sidebar header.
+    private const string Logo = """
+    <svg viewBox="48 24 412 128" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Rastgo">
+    <g transform="translate(64,40) scale(0.8)"><path fill-rule="evenodd" fill="#F2C230" d="M60,0 75,45 120,60 75,75 60,120 45,75 0,60 45,45 Z M60,28 68,52 92,60 68,68 60,92 52,68 28,60 52,52 Z"/></g>
+    <text x="184" y="109" textLength="260" lengthAdjust="spacing" font-family="'Sora','Exo 2','Rajdhani','Segoe UI',sans-serif" font-size="58" font-weight="600"><tspan fill="#ffffff">R</tspan><tspan fill="#F2C230">A</tspan><tspan fill="#ffffff">STGO</tspan></text>
+    </svg>
+    """;
+
     private const string HeadAndStyle = """
     <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Rastgo</title>
@@ -310,7 +319,7 @@ public static class DashboardRenderer
 
     /* sidebar header + KPIs */
     .brand{padding:15px 18px 8px}
-    .brand .logo{font-size:16px;font-weight:700;color:#fff}
+    .brand .logo svg{display:block;height:40px;width:auto}
     .brand .meta{font-size:11px;color:var(--side-muted);margin-top:3px;line-height:1.4}
     .kpis{display:flex;gap:6px;padding:6px 14px 12px}
     .kpi{flex:1;cursor:pointer;border:1px solid var(--side-line);background:#161b22;border-radius:8px;padding:8px 4px;color:var(--side-fg);font:inherit}
