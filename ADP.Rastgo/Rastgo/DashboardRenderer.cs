@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace ShiftSoftware.ADP.Rastgo;
 
@@ -11,7 +12,7 @@ namespace ShiftSoftware.ADP.Rastgo;
 /// view-swapping, so native Ctrl+F still finds everything on load. JS only adds opt-in filtering,
 /// scroll-spy, and collapsible groups.
 /// </summary>
-public static class DashboardRenderer
+public static partial class DashboardRenderer
 {
     public static string Render(IReadOnlyList<CheckResult> all, DateTimeOffset generatedAtUtc, DashboardOptions? options = null)
     {
@@ -168,8 +169,16 @@ public static class DashboardRenderer
         else
         {
             const int cap = 60;
+            // The threshold ("max 2d") belongs to the whole check, yet every breached breakdown row repeats it.
+            // When the rows agree on it, lift it to a single group-level chip and drop it from each row's message.
+            var rule = SharedRule(c.Rows);
+            if (rule is not null)
+                sb.Append($"<div class=\"bkrule\">{Esc(rule)}</div>");
             foreach (var r in c.Rows.Take(cap))
-                sb.Append($"<div class=\"bk\"><span class=\"dot {r.Status}\"></span><b>{Esc(L.BreakdownLabel(r.BreakdownKey ?? "—"))}</b> <span class=\"bkmsg\">{Esc(r.Message)}</span></div>");
+            {
+                var msg = rule is null ? r.Message : StripRule(r.Message);
+                sb.Append($"<div class=\"bk\"><span class=\"dot {r.Status}\"></span><b>{Esc(L.BreakdownLabel(r.BreakdownKey ?? "—"))}</b> <span class=\"bkmsg\">{Esc(msg)}</span></div>");
+            }
             if (c.Rows.Count > cap)
                 sb.Append($"<div class=\"bk muted\">+{c.Rows.Count - cap} more…</div>");
         }
@@ -193,6 +202,37 @@ public static class DashboardRenderer
     }
 
     private static string Esc(string? s) => WebUtility.HtmlEncode(s ?? "");
+
+    // A check's threshold parenthetical — "(max 2d)", "(warn 6h)", "(min 100)" — is a property of the whole
+    // check, not of each breakdown row, so a grouped check repeats it on every line. These two lift it to a
+    // single group-level note: matched only when it's a real rule keyword (so a diff's "(Δ 3)" value, which
+    // legitimately varies per row, is never mistaken for one).
+    [GeneratedRegex(@"\s*\((?:max|min|warn)\s+[^()]*\)(?=\.?\s*$)", RegexOptions.IgnoreCase)]
+    private static partial Regex RuleSuffixRegex();
+
+    /// <summary>The shared rule chip for a grouped check (e.g. "max 2d"), or null when the rows carry none or
+    /// disagree (a mix of "(max 2d)" and "(warn 1d)") — in which case messages are left verbatim.</summary>
+    private static string? SharedRule(IReadOnlyList<CheckResult> rows)
+    {
+        string? shared = null;
+        foreach (var r in rows)
+        {
+            var m = RuleSuffixRegex().Match(r.Message ?? "");
+            if (!m.Success) continue;
+            var rule = m.Value.Trim().Trim('(', ')');   // "(max 2d)" -> "max 2d"
+            if (shared is null) shared = rule;
+            else if (!string.Equals(shared, rule, StringComparison.Ordinal)) return null;
+        }
+        return shared;
+    }
+
+    /// <summary>Drops the rule suffix from a row message, keeping it terminated: "Stale: 4.5d old (max 2d)." → "Stale: 4.5d old.".</summary>
+    private static string StripRule(string? msg)
+    {
+        var s = RuleSuffixRegex().Replace(msg ?? "", "").TrimEnd();
+        if (s.Length > 0 && s[^1] is not ('.' or '!' or '?')) s += ".";
+        return s;
+    }
 
     // ---- category axis -----------------------------------------------------
 
@@ -401,6 +441,7 @@ public static class DashboardRenderer
     .bk .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;vertical-align:middle}
     .dot.Pass{background:var(--pass)}.dot.Warn{background:var(--warn)}.dot.Fail{background:var(--fail)}.dot.Error{background:var(--error)}.dot.Skipped{background:#8c959f}
     .bkmsg{color:var(--muted)}
+    .bkrule{display:inline-block;margin:0 0 4px;padding:1px 7px;font-size:11px;line-height:16px;color:var(--muted);background:#eef1f4;border-radius:6px}
     .muted{color:var(--muted)}
     .hide{display:none}
     #tip{position:fixed;z-index:50;max-width:340px;background:#0d1117;color:#e6edf3;border:1px solid #30363d;border-radius:8px;padding:8px 11px;font-size:12px;line-height:1.45;box-shadow:0 6px 22px rgba(0,0,0,.3);pointer-events:none;opacity:0;transition:opacity .1s}
@@ -461,8 +502,8 @@ public static class DashboardRenderer
       // collapse / expand family groups
       $$('tr.grp').forEach(h=>h.addEventListener('click',()=>h.parentElement.classList.toggle('collapsed')));
       const ex=document.getElementById('expand'),co=document.getElementById('collapse');
-      ex&&ex.addEventListener('click',()=>$$('tbody.group:not(.nohdr)').forEach(g=>g.classList.remove('collapsed')));
-      co&&co.addEventListener('click',()=>$$('tbody.group:not(.nohdr)').forEach(g=>g.classList.add('collapsed')));
+      ex&&ex.addEventListener('click',()=>$$('tbody.group').forEach(g=>g.classList.remove('collapsed')));
+      co&&co.addEventListener('click',()=>$$('tbody.group').forEach(g=>g.classList.add('collapsed')));
 
       // sidebar: fold a category's family list
       $$('.tfold').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();b.closest('.toccat').classList.toggle('folded');}));
@@ -510,7 +551,7 @@ public static class DashboardRenderer
 
       // default expanded => native Ctrl+F finds everything on load. Flip for big-picture-first.
       const COLLAPSE_ON_LOAD=false;
-      if(COLLAPSE_ON_LOAD)$$('tbody.group:not(.nohdr)').forEach(g=>g.classList.add('collapsed'));
+      if(COLLAPSE_ON_LOAD)$$('tbody.group').forEach(g=>g.classList.add('collapsed'));
     })();
     </script></body></html>
     """;
