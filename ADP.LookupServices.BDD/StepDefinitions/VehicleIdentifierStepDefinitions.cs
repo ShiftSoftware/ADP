@@ -19,7 +19,7 @@ public class VehicleIdentifierStepDefinitions
     [Then("the vehicle identifiers are:")]
     public void ThenTheVehicleIdentifiersAre(DataTable dataTable)
     {
-        var vehicle = new VehicleEntryEvaluator(_context.Aggregate).Evaluate();
+        var vehicle = new VehicleEntryEvaluator(_context.Aggregate, _context.Options).Evaluate();
         _context.CurrentVehicle = vehicle;
 
         var result = new VehicleIdentifierEvaluator(_context.Aggregate).Evaluate(vehicle);

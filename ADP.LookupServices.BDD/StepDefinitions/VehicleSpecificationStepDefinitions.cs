@@ -21,7 +21,7 @@ public class VehicleSpecificationStepDefinitions
     {
         _context.Aggregate.VIN = vin;
 
-        var vehicle = new VehicleEntryEvaluator(_context.Aggregate).Evaluate();
+        var vehicle = new VehicleEntryEvaluator(_context.Aggregate, _context.Options).Evaluate();
         _context.CurrentVehicle = vehicle;
 
         _result = await new VehicleSpecificationEvaluator(_context.StorageService)

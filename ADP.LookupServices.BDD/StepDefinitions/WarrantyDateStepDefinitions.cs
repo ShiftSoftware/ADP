@@ -47,7 +47,7 @@ public class WarrantyDateStepDefinitions
     {
         _context.Aggregate.VIN = vin;
 
-        var vehicle = new VehicleEntryEvaluator(_context.Aggregate).Evaluate();
+        var vehicle = new VehicleEntryEvaluator(_context.Aggregate, _context.Options).Evaluate();
         _context.CurrentVehicle = vehicle;
 
         // Build VehicleSaleInformation from the selected vehicle entry

@@ -18,7 +18,7 @@ public class VehicleEntryStepDefinitions
     [Then("the selected vehicle has no invoice date")]
     public void ThenTheSelectedVehicleHasNoInvoiceDate()
     {
-        var result = new VehicleEntryEvaluator(_context.Aggregate).Evaluate();
+        var result = new VehicleEntryEvaluator(_context.Aggregate, _context.Options).Evaluate();
         _context.CurrentVehicle = result;
 
         Assert.NotNull(result);
@@ -28,17 +28,27 @@ public class VehicleEntryStepDefinitions
     [Then("the selected vehicle has invoice date {string}")]
     public void ThenTheSelectedVehicleHasInvoiceDate(string expectedDate)
     {
-        var result = new VehicleEntryEvaluator(_context.Aggregate).Evaluate();
+        var result = new VehicleEntryEvaluator(_context.Aggregate, _context.Options).Evaluate();
         _context.CurrentVehicle = result;
 
         Assert.NotNull(result);
         Assert.Equal(DateTime.Parse(expectedDate), result.InvoiceDate);
     }
 
+    [Then("the selected vehicle has invoice number {string}")]
+    public void ThenTheSelectedVehicleHasInvoiceNumber(string expectedInvoiceNumber)
+    {
+        var result = new VehicleEntryEvaluator(_context.Aggregate, _context.Options).Evaluate();
+        _context.CurrentVehicle = result;
+
+        Assert.NotNull(result);
+        Assert.Equal(expectedInvoiceNumber, result.InvoiceNumber);
+    }
+
     [Then("no vehicle is selected")]
     public void ThenNoVehicleIsSelected()
     {
-        var result = new VehicleEntryEvaluator(_context.Aggregate).Evaluate();
+        var result = new VehicleEntryEvaluator(_context.Aggregate, _context.Options).Evaluate();
         _context.CurrentVehicle = result;
 
         Assert.Null(result);

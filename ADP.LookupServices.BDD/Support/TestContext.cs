@@ -34,7 +34,7 @@ public class TestContext
     /// </summary>
     public (VehicleEntryModel? vehicle, VehicleOwnership ownership) ResolveVehicle()
     {
-        var vehicle = new VehicleEntryEvaluator(Aggregate).Evaluate();
+        var vehicle = new VehicleEntryEvaluator(Aggregate, Options).Evaluate();
         var ownership = new VehicleOwnershipEvaluator(Aggregate).Evaluate(vehicle);
         CurrentVehicle = vehicle;
         CurrentOwnership = ownership;

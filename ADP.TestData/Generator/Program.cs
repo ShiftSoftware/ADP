@@ -164,7 +164,7 @@ static async Task<VehicleLookupDTO> GenerateVehicleLookup(
     IVehicleLookupStorageService storageService,
     IServiceProvider serviceProvider)
 {
-    var vehicle = new VehicleEntryEvaluator(aggregate).Evaluate();
+    var vehicle = new VehicleEntryEvaluator(aggregate, options).Evaluate();
     var ownership = new VehicleOwnershipEvaluator(aggregate).Evaluate(vehicle);
 
     var requestOptions = new VehicleLookupRequestOptions

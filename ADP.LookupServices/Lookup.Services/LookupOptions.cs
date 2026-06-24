@@ -86,8 +86,38 @@ public class LookupOptions
     /// on the distributor's invoice date, so it selects the entry whose <c>CompanyID</c> equals this value.
     /// <b>Required</b> for the Paint Thickness Certificate: if this is unset, or the VIN has no invoiced entry for
     /// this company, no certificate is produced — it never falls back to a dealer's invoice.
+    /// <para>This company also never makes the end-customer sale (it ships the vehicle to a dealer), so it is
+    /// excluded from end-customer-sale resolution alongside <see cref="IntermediaryCompanyIDs"/> — see
+    /// <see cref="IsEndCustomerSaleCompany"/>.</para>
     /// </summary>
     public long? DistributorCompanyID { get; set; }
+    /// <summary>
+    /// The Identity <c>CompanyID</c>s of any intermediary companies (e.g. a regional importer that sits between
+    /// the distributor and the dealer). A VIN can pass through more than one, so this is a list. Like the
+    /// distributor, an intermediary only moves the vehicle toward the dealer and never makes the end-customer
+    /// sale, so its <c>VehicleEntry</c> must not anchor warranty/free-service dates or service-item eligibility —
+    /// see <see cref="IsEndCustomerSaleCompany"/>. Defaults to empty (no intermediaries).
+    /// </summary>
+    public List<long> IntermediaryCompanyIDs { get; set; } = new();
+
+    /// <summary>
+    /// Whether <paramref name="companyID"/> is a company that makes end-customer sales (a dealer), as opposed to a
+    /// supply-chain company — the <see cref="DistributorCompanyID">distributor</see> or an
+    /// <see cref="IntermediaryCompanyIDs">intermediary</see> — that only moves the vehicle toward the dealer.
+    /// Warranty activation, free-service start, and service-item eligibility must anchor on an end-customer sale,
+    /// never on a distributor's or intermediary's leg. A null/unknown company is treated as an end-customer sale,
+    /// so callers with no distributor/intermediary configured behave exactly as before.
+    /// </summary>
+    public bool IsEndCustomerSaleCompany(long? companyID)
+    {
+        if (companyID is not { } id)
+            return true;
+
+        if (DistributorCompanyID is not null && id == DistributorCompanyID)
+            return false;
+
+        return IntermediaryCompanyIDs is null || !IntermediaryCompanyIDs.Contains(id);
+    }
     /// <summary>The HMAC secret key used for signing service item claim requests.</summary>
     public string SigningSecretKey { get; set; } = string.Empty;
     /// <summary>How long a generated claim signature remains valid.</summary>

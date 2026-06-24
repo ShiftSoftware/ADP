@@ -72,6 +72,16 @@ public class LookupOptionsStepDefinitions
         _context.Options.BrandStandardWarrantyPeriodsInYears[brandId] = years;
     }
 
+    // Comma-separated so a VIN can pass through more than one intermediary (e.g. "7, 8").
+    [Given("intermediary companies are {string}")]
+    public void GivenIntermediaryCompaniesAre(string commaSeparatedIds)
+    {
+        _context.Options.IntermediaryCompanyIDs = commaSeparatedIds
+            .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .Select(long.Parse)
+            .ToList();
+    }
+
     [Given("the accessory image resolver maps {string} to {string}")]
     public void GivenAccessoryImageResolverMaps(string from, string to)
     {

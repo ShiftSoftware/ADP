@@ -28,11 +28,17 @@ public class WarrantyAndFreeServiceDateEvaluator
         {
             warrantyStartDate = CompanyDataAggregate.VehicleServiceActivations.FirstOrDefault()?.WarrantyActivationDate;
 
-            if (warrantyStartDate is null)
+            // A distributor/intermediary entry is a supply-chain movement, not an end-customer sale, so its
+            // warranty-activation/invoice date must never seed the warranty or free-service start. The anchor can
+            // still be such an entry when the dealer's own entry has not synced yet (sync delay) or shares the
+            // distributor's invoice date — in those cases the start date stays null until the dealer sale appears.
+            if (warrantyStartDate is null && Options.IsEndCustomerSaleCompany(vehicle?.CompanyID))
+            {
                 warrantyStartDate = saleInformation?.WarrantyActivationDate;
 
-            if (warrantyStartDate is null && Options.WarrantyStartDateDefaultsToInvoiceDate)
-                warrantyStartDate = saleInformation?.InvoiceDate;
+                if (warrantyStartDate is null && Options.WarrantyStartDateDefaultsToInvoiceDate)
+                    warrantyStartDate = saleInformation?.InvoiceDate;
+            }
 
             freeServiceStartDate = warrantyStartDate;
         }
@@ -47,11 +53,15 @@ public class WarrantyAndFreeServiceDateEvaluator
 
                     freeServiceStartDate = CompanyDataAggregate.VehicleServiceActivations.FirstOrDefault()?.WarrantyActivationDate;
 
-                    if (freeServiceStartDate is null)
+                    // Same end-customer-sale guard as the normal branch: a distributor/intermediary entry's
+                    // dates must not seed the free-service start.
+                    if (freeServiceStartDate is null && Options.IsEndCustomerSaleCompany(vehicle?.CompanyID))
+                    {
                         freeServiceStartDate = saleInformation?.WarrantyActivationDate;
 
-                    if (freeServiceStartDate is null && Options.WarrantyStartDateDefaultsToInvoiceDate)
-                        freeServiceStartDate = saleInformation?.InvoiceDate;
+                        if (freeServiceStartDate is null && Options.WarrantyStartDateDefaultsToInvoiceDate)
+                            freeServiceStartDate = saleInformation?.InvoiceDate;
+                    }
                 }
             }
             //Normal Broker Sale

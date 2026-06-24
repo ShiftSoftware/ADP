@@ -117,7 +117,7 @@ public class VehicleLookupService
         if (requestOptions is null)
             requestOptions = new VehicleLookupRequestOptions();
 
-        VehicleEntryModel vehicle = new VehicleEntryEvaluator(companyDataAggregate).Evaluate();
+        VehicleEntryModel vehicle = new VehicleEntryEvaluator(companyDataAggregate, lookupOptions).Evaluate();
 
         // The activation-aware owner (company/country/region/branch), resolved once and passed to
         // the ownership-sensitive evaluators (Sale Information, Service Items) so they agree on the
