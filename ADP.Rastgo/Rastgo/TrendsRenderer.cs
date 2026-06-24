@@ -500,7 +500,7 @@ public static class TrendsRenderer
     *{box-sizing:border-box}
     body{margin:0;font-family:system-ui,'Segoe UI',Arial,sans-serif;color:var(--fg);background:var(--bg);font-size:13px}
     .bar{background:var(--side);color:#fff;padding:10px 20px;display:flex;align-items:center;gap:12px}
-    .bar .logo svg{height:22px;width:auto;display:block}
+    .bar .logo svg{height:32px;width:auto;display:block}
     .bar .sub{font-size:13px;font-weight:600;color:#fff}
     .bar .meta{font-size:12px;color:#8b949e}
     .bar .link{margin-left:auto;color:#58a6ff;text-decoration:none;font-size:12px}
