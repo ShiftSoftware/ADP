@@ -51,6 +51,7 @@ public sealed class CheckRunner(SourceRegistry sources)
                     Category = check.Category,
                     Severity = check.Severity,
                     Description = check.Description,
+                    Order = check.Order,
                     BreakdownKey = o.GroupKey,
                     Status = o.Status,
                     Message = o.Message,

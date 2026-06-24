@@ -24,6 +24,13 @@ public sealed class DashboardOptions
     /// </summary>
     public Func<string, string>? BreakdownKeyFormatter { get; init; }
 
+    /// <summary>
+    /// Category groups in display order, e.g. <c>["freshness","reconciliation","quality","volume","flow"]</c>.
+    /// Listed categories render in this order; any not listed fall after, in the framework's built-in order then
+    /// alphabetically. Null keeps the built-in order. Matched case-insensitively on the category token.
+    /// </summary>
+    public IReadOnlyList<string>? CategoryOrder { get; init; }
+
     /// <summary>Generic defaults — no domain-specific labels.</summary>
     public static readonly DashboardOptions Default = new();
 }

@@ -18,6 +18,7 @@ public sealed class CheckDefinition
     public string Category { get; set; } = "";          // freshness | reconciliation | quality | flow
     public string Severity { get; set; } = "warning";   // critical | warning | info
     public string? Description { get; set; }            // optional one-line blurb, surfaced as a tooltip in the dashboard
+    public int? Order { get; set; }                     // display-order hint; lower = earlier. Orders checks within a family, and families within a category by the family's lowest. Unset sorts after ordered ones.
     public string? Breakdown { get; set; }              // label for the group dimension; non-null => grouped
     public List<MeasureSpec> Measures { get; set; } = [];
     public AssertSpec Assert { get; set; } = new();
@@ -74,6 +75,7 @@ public sealed class CheckResult
     public string Category { get; set; } = "";
     public string Severity { get; set; } = "";
     public string? Description { get; set; }
+    public int? Order { get; set; }
     public string? BreakdownKey { get; set; }
     public HealthStatus Status { get; set; }
     public string Message { get; set; } = "";

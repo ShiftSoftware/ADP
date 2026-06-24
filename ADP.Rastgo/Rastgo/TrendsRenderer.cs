@@ -38,7 +38,20 @@ public static class TrendsRenderer
 
     public static string Render(IReadOnlyList<CheckResult> all, DateTimeOffset nowUtc, TimeSpan window, DashboardOptions? options = null)
     {
-        var L = new Labeler(options ?? DashboardOptions.Default);
+        var opt = options ?? DashboardOptions.Default;
+        var L = new Labeler(opt);
+
+        // Category display order: the consumer's CategoryOrder wins, then the built-in order, then name.
+        int CatRank(string key)
+        {
+            if (opt.CategoryOrder is { } co)
+            {
+                for (var i = 0; i < co.Count; i++)
+                    if (string.Equals(co[i], key, StringComparison.OrdinalIgnoreCase)) return i;
+                return co.Count + CategoryRank(key);
+            }
+            return CategoryRank(key);
+        }
 
         // ---- day buckets over the window -------------------------------------
         var startDay = (nowUtc - window).UtcDateTime.Date;
@@ -76,9 +89,10 @@ public static class TrendsRenderer
                     Category: string.IsNullOrWhiteSpace(any.Category) ? "other" : any.Category.Trim().ToLowerInvariant(),
                     Severity: any.Severity,
                     Description: any.Description,
+                    Order: any.Order,
                     Grouped: g.Any(r => r.BreakdownKey is not null));
             })
-            .OrderBy(c => c.Name, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(c => c.Order ?? int.MaxValue).ThenBy(c => c.Name, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
         // Latest day that actually has a run → KPIs + the "as of" stamp.
@@ -134,7 +148,7 @@ public static class TrendsRenderer
           .Append("</div></div>");
 
         // ---- per category: status strips + metric charts --------------------
-        foreach (var cat in checks.GroupBy(c => c.Category).OrderBy(g => CategoryRank(g.Key)).ThenBy(g => g.Key, StringComparer.OrdinalIgnoreCase))
+        foreach (var cat in checks.GroupBy(c => c.Category).OrderBy(g => CatRank(g.Key)).ThenBy(g => g.Key, StringComparer.OrdinalIgnoreCase))
         {
             var list = cat.ToList();
             sb.Append($"<div class=\"sec\"><h2>{Esc(L.Pretty(cat.Key))}</h2>");
@@ -395,7 +409,7 @@ public static class TrendsRenderer
 
     private sealed record Series(string Label, string Color, List<(int day, double v)> Points);
 
-    private sealed record CheckMeta(string Name, string Category, string Severity, string? Description, bool Grouped);
+    private sealed record CheckMeta(string Name, string Category, string Severity, string? Description, int? Order, bool Grouped);
 
     // --------------------------------------------------------------- utils ----
 

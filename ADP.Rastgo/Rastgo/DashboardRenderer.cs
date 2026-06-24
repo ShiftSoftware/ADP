@@ -16,7 +16,22 @@ public static partial class DashboardRenderer
 {
     public static string Render(IReadOnlyList<CheckResult> all, DateTimeOffset generatedAtUtc, DashboardOptions? options = null)
     {
-        var L = new Labeler(options ?? DashboardOptions.Default);
+        var opt = options ?? DashboardOptions.Default;
+        var L = new Labeler(opt);
+
+        // Category display order: the consumer's CategoryOrder wins; categories it omits fall after, by the
+        // framework's built-in order then name.
+        int CatRank(string key)
+        {
+            if (opt.CategoryOrder is { } co)
+            {
+                for (var i = 0; i < co.Count; i++)
+                    if (string.Equals(co[i], key, StringComparison.OrdinalIgnoreCase)) return i;
+                return co.Count + CategoryRank(key);
+            }
+            return CategoryRank(key);
+        }
+
         var checks = all
             .GroupBy(r => r.CheckName)
             .Select(g =>
@@ -33,6 +48,7 @@ public static partial class DashboardRenderer
                     Category: rows[0].Category,
                     Severity: rows[0].Severity,
                     Description: rows[0].Description,
+                    Order: rows[0].Order,
                     RunId: rows[0].RunId,
                     Status: CheckRunner.Rollup(rows.Select(x => x.Status)),
                     When: latestRun,
@@ -57,7 +73,7 @@ public static partial class DashboardRenderer
         // Top axis is the Category field (Freshness, Reconciliation, …); within it, group by name-Family.
         var categories = checks
             .GroupBy(c => string.IsNullOrWhiteSpace(c.Category) ? "other" : c.Category.Trim().ToLowerInvariant())
-            .OrderBy(g => CategoryRank(g.Key)).ThenBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(g => CatRank(g.Key)).ThenBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
         var sb = new StringBuilder();
@@ -92,7 +108,7 @@ public static partial class DashboardRenderer
               .Append($"<a class=\"tcat\" data-cat=\"{slug}\" href=\"#cat-{slug}\" data-tip=\"{Esc(CategoryBlurb(key))}\"><span class=\"tlabel\">{Esc(L.CategoryName(key))} {InfoCue()}</span>{RollupCounts(cat.ToList())}</a></div>");
 
             sb.Append("<div class=\"tfams\">");
-            foreach (var fam in cat.GroupBy(c => c.Family).OrderBy(f => L.FamilyTail(key, f.Key) ?? "~", StringComparer.OrdinalIgnoreCase))
+            foreach (var fam in cat.GroupBy(c => c.Family).OrderBy(f => f.Min(c => c.Order ?? int.MaxValue)).ThenBy(f => L.FamilyTail(key, f.Key) ?? "~", StringComparer.OrdinalIgnoreCase))
             {
                 var tail = L.FamilyTail(key, fam.Key);
                 if (tail is null) continue;   // family == category (e.g. "volume"): covered by the category line
@@ -117,13 +133,13 @@ public static partial class DashboardRenderer
         {
             var key = cat.Key;
             var slug = Slug(key);
-            sb.Append($"<tbody class=\"cat\" data-cat=\"{slug}\"><tr class=\"cathdr\" id=\"cat-{slug}\"><td colspan=\"3\" data-tip=\"{Esc(CategoryBlurb(key))}\"><span class=\"clabel\">{Esc(L.CategoryName(key))} {InfoCue()}</span>{RollupCounts(cat.ToList())}</td></tr></tbody>");
+            sb.Append($"<tbody class=\"cat\" data-cat=\"{slug}\"><tr class=\"cathdr\" id=\"cat-{slug}\"><td colspan=\"3\" data-tip=\"{Esc(CategoryBlurb(key))}\"><span class=\"ccaret\">▾</span><span class=\"clabel\">{Esc(L.CategoryName(key))} {InfoCue()}</span>{RollupCounts(cat.ToList())}</td></tr></tbody>");
 
-            foreach (var fam in cat.GroupBy(c => c.Family).OrderBy(f => L.FamilyTail(key, f.Key) ?? "~", StringComparer.OrdinalIgnoreCase))
+            foreach (var fam in cat.GroupBy(c => c.Family).OrderBy(f => f.Min(c => c.Order ?? int.MaxValue)).ThenBy(f => L.FamilyTail(key, f.Key) ?? "~", StringComparer.OrdinalIgnoreCase))
             {
                 var tail = L.FamilyTail(key, fam.Key);
                 var famSlug = Slug(fam.Key);
-                var famChecks = fam.OrderBy(c => c.Name, StringComparer.OrdinalIgnoreCase).ToList();
+                var famChecks = fam.OrderBy(c => c.Order ?? int.MaxValue).ThenBy(c => c.Name, StringComparer.OrdinalIgnoreCase).ToList();
 
                 sb.Append($"<tbody class=\"group{(tail is null ? " nohdr" : "")}\" data-cat=\"{slug}\">");
                 if (tail is not null)
@@ -328,7 +344,7 @@ public static partial class DashboardRenderer
     }
 
     private sealed record CheckView(
-        string Name, string Domain, string Family, string Category, string Severity, string? Description,
+        string Name, string Domain, string Family, string Category, string Severity, string? Description, int? Order,
         string RunId, HealthStatus Status, DateTimeOffset When, List<CheckResult> Rows);
 
     // ---- static assets -----------------------------------------------------
@@ -412,10 +428,13 @@ public static partial class DashboardRenderer
     thead th{position:sticky;top:var(--barH);background:#eef1f4;text-align:left;padding:7px 22px;color:var(--muted);font-weight:600;border-bottom:1px solid var(--line);z-index:4}
     td{padding:9px 22px;border-bottom:1px solid #eef1f4;vertical-align:top}
 
-    .cathdr{scroll-margin-top:96px}
+    .cathdr{scroll-margin-top:96px;cursor:pointer}
     .cathdr td{background:var(--side);color:#fff;font-weight:700;padding:9px 22px;font-size:12px;text-transform:uppercase;letter-spacing:.05em}
     .cathdr .counts{float:right}
     .clabel{vertical-align:middle}
+    .ccaret{display:inline-block;width:14px;color:#fff;opacity:.75;transition:transform .1s}
+    .cat.catcollapsed .ccaret{transform:rotate(-90deg)}
+    tbody.group.gcollapsed{display:none}
 
     .grp{cursor:pointer;scroll-margin-top:96px}
     .grp td{background:#f0f3f6;font-weight:600;border-bottom:1px solid var(--line)}
@@ -469,11 +488,12 @@ public static partial class DashboardRenderer
         $$('tbody.group').forEach(g=>{
           const vis=g.querySelector('tr.check:not(.hide)');
           g.classList.toggle('hide',!vis);
-          if((sf||t||df)&&vis)g.classList.remove('collapsed');
+          if((sf||t||df)&&vis)g.classList.remove('collapsed','gcollapsed');
         });
         $$('tbody.cat').forEach(c=>{
           const any=$$('tbody.group[data-cat="'+c.dataset.cat+'"]').some(g=>!g.classList.contains('hide'));
           c.classList.toggle('hide',!any);
+          if((sf||t||df)&&any)c.classList.remove('catcollapsed');
         });
         $$('.tfam').forEach(a=>{
           const row=document.getElementById(a.dataset.target);
@@ -499,11 +519,16 @@ public static partial class DashboardRenderer
         apply();
       }));
 
-      // collapse / expand family groups
+      // collapse / expand: a family group (its header), or a whole category incl. its loose checks (the category header)
       $$('tr.grp').forEach(h=>h.addEventListener('click',()=>h.parentElement.classList.toggle('collapsed')));
+      $$('tr.cathdr').forEach(h=>h.addEventListener('click',()=>{
+        const cat=h.closest('tbody.cat'),slug=cat.dataset.cat;
+        const collapsed=cat.classList.toggle('catcollapsed');
+        $$('tbody.group[data-cat="'+slug+'"]').forEach(g=>g.classList.toggle('gcollapsed',collapsed));
+      }));
       const ex=document.getElementById('expand'),co=document.getElementById('collapse');
-      ex&&ex.addEventListener('click',()=>$$('tbody.group').forEach(g=>g.classList.remove('collapsed')));
-      co&&co.addEventListener('click',()=>$$('tbody.group').forEach(g=>g.classList.add('collapsed')));
+      ex&&ex.addEventListener('click',()=>{$$('tbody.group').forEach(g=>g.classList.remove('collapsed','gcollapsed'));$$('tbody.cat').forEach(c=>c.classList.remove('catcollapsed'));});
+      co&&co.addEventListener('click',()=>{$$('tbody.cat').forEach(c=>c.classList.add('catcollapsed'));$$('tbody.group').forEach(g=>g.classList.add('gcollapsed'));});
 
       // sidebar: fold a category's family list
       $$('.tfold').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();b.closest('.toccat').classList.toggle('folded');}));
