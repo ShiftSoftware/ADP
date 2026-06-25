@@ -186,17 +186,26 @@ public static partial class DashboardRenderer
         {
             const int cap = 60;
             // The threshold ("max 2d") belongs to the whole check, yet every breached breakdown row repeats it.
-            // When the rows agree on it, lift it to a single group-level chip and drop it from each row's message.
-            var rule = SharedRule(c.Rows);
-            if (rule is not null)
-                sb.Append($"<div class=\"bkrule\">{Esc(rule)}</div>");
-            foreach (var r in c.Rows.Take(cap))
+            // Group the rows by their rule and lift each distinct rule to a single chip, dropping it from the
+            // rows beneath. The common case (every row shares one rule) collapses to a single chip; a mixed check
+            // (some "(warn 1.5d)", some "(max 2d)") gets one chip per rule, worst-severity group first (RuleGroups
+            // preserves c.Rows' status-ranked order). Rows carrying no rule render chip-less, verbatim.
+            var shown = 0;
+            foreach (var (rule, rows) in RuleGroups(c.Rows))
             {
-                var msg = rule is null ? r.Message : StripRule(r.Message);
-                sb.Append($"<div class=\"bk\"><span class=\"dot {r.Status}\"></span><b>{Esc(L.BreakdownLabel(r.BreakdownKey ?? "—"))}</b> <span class=\"bkmsg\">{Esc(msg)}</span></div>");
+                if (shown >= cap) break;
+                if (rule is not null)
+                    sb.Append($"<div class=\"bkrule\">{Esc(rule)}</div>");
+                foreach (var r in rows)
+                {
+                    if (shown >= cap) break;
+                    var msg = rule is null ? r.Message : StripRule(r.Message);
+                    sb.Append($"<div class=\"bk\"><span class=\"dot {r.Status}\"></span><b>{Esc(L.BreakdownLabel(r.BreakdownKey ?? "—"))}</b> <span class=\"bkmsg\">{Esc(msg)}</span></div>");
+                    shown++;
+                }
             }
-            if (c.Rows.Count > cap)
-                sb.Append($"<div class=\"bk muted\">+{c.Rows.Count - cap} more…</div>");
+            if (c.Rows.Count > shown)
+                sb.Append($"<div class=\"bk muted\">+{c.Rows.Count - shown} more…</div>");
         }
         sb.Append("</td></tr>");
     }
@@ -220,26 +229,36 @@ public static partial class DashboardRenderer
     private static string Esc(string? s) => WebUtility.HtmlEncode(s ?? "");
 
     // A check's threshold parenthetical — "(max 2d)", "(warn 6h)", "(min 100)" — is a property of the whole
-    // check, not of each breakdown row, so a grouped check repeats it on every line. These two lift it to a
-    // single group-level note: matched only when it's a real rule keyword (so a diff's "(Δ 3)" value, which
-    // legitimately varies per row, is never mistaken for one).
+    // check, not of each breakdown row, so a grouped check repeats it on every line. The helpers below lift it
+    // off the rows into per-rule chips: matched only when it's a real rule keyword (so a diff's "(Δ 3)" value,
+    // which legitimately varies per row, is never mistaken for one).
     [GeneratedRegex(@"\s*\((?:max|min|warn)\s+[^()]*\)(?=\.?\s*$)", RegexOptions.IgnoreCase)]
     private static partial Regex RuleSuffixRegex();
 
-    /// <summary>The shared rule chip for a grouped check (e.g. "max 2d"), or null when the rows carry none or
-    /// disagree (a mix of "(max 2d)" and "(warn 1d)") — in which case messages are left verbatim.</summary>
-    private static string? SharedRule(IReadOnlyList<CheckResult> rows)
+    /// <summary>A grouped check's rows clustered by their rule chip, ready to render as one chip per distinct
+    /// rule (e.g. "max 2d") with the matching rows beneath. Groups are ordered worst first: by the harshest
+    /// status they contain, then — so a "(max 2d)" breach leads its "(warn 1.5d)" sibling even when a
+    /// warning-severity check maps both Stale and Aging to Warn — by rule hardness (max/min before warn). Rows
+    /// keep their (status-ranked, then alphabetical) order within a group; rows with no rule cluster under a
+    /// null key and render chip-less, last. A single-rule check collapses to today's one-chip layout.</summary>
+    private static List<(string? Rule, List<CheckResult> Rows)> RuleGroups(IReadOnlyList<CheckResult> rows) =>
+        rows.GroupBy(RowRule)
+            .Select(g => (Rule: g.Key, Rows: g.ToList()))
+            .OrderByDescending(g => g.Rows.Max(r => CheckRunner.Rank(r.Status)))
+            .ThenBy(g => RuleHardness(g.Rule))
+            .ToList();
+
+    /// <summary>Orders rule chips within a check: hard breaches (max/min — "stale", out-of-range) before soft
+    /// ones (warn — "aging") when they share a status, so the more serious rule leads; no-rule groups sort last.</summary>
+    private static int RuleHardness(string? rule) =>
+        rule is null ? 2 : rule.StartsWith("warn", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
+
+    /// <summary>The rule suffix of a single row, unwrapped ("Stale: 4.5d old (max 2d)." → "max 2d"), or null
+    /// when the row carries none.</summary>
+    private static string? RowRule(CheckResult r)
     {
-        string? shared = null;
-        foreach (var r in rows)
-        {
-            var m = RuleSuffixRegex().Match(r.Message ?? "");
-            if (!m.Success) continue;
-            var rule = m.Value.Trim().Trim('(', ')');   // "(max 2d)" -> "max 2d"
-            if (shared is null) shared = rule;
-            else if (!string.Equals(shared, rule, StringComparison.Ordinal)) return null;
-        }
-        return shared;
+        var m = RuleSuffixRegex().Match(r.Message ?? "");
+        return m.Success ? m.Value.Trim().Trim('(', ')') : null;   // "(max 2d)" -> "max 2d"
     }
 
     /// <summary>Drops the rule suffix from a row message, keeping it terminated: "Stale: 4.5d old (max 2d)." → "Stale: 4.5d old.".</summary>
@@ -461,6 +480,7 @@ public static partial class DashboardRenderer
     .dot.Pass{background:var(--pass)}.dot.Warn{background:var(--warn)}.dot.Fail{background:var(--fail)}.dot.Error{background:var(--error)}.dot.Skipped{background:#8c959f}
     .bkmsg{color:var(--muted)}
     .bkrule{display:inline-block;margin:0 0 4px;padding:1px 7px;font-size:11px;line-height:16px;color:var(--muted);background:#eef1f4;border-radius:6px}
+    .bk + .bkrule{margin-top:7px}
     .muted{color:var(--muted)}
     .hide{display:none}
     #tip{position:fixed;z-index:50;max-width:340px;background:#0d1117;color:#e6edf3;border:1px solid #30363d;border-radius:8px;padding:8px 11px;font-size:12px;line-height:1.45;box-shadow:0 6px 22px rgba(0,0,0,.3);pointer-events:none;opacity:0;transition:opacity .1s}
