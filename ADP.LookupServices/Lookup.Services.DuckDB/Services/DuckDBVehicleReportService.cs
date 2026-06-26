@@ -943,6 +943,9 @@ public class DuckDBVehicleReportService(
 
     private static VehicleSscReportModel CreateSscRow(string vin, SscDTO ssc)
     {
+        // The flat CSV/Parquet SSC report still caps at 3 labors/parts (columns LaborCode1..3 / PartNumber1..3).
+        // SscDTO.Labors/Parts are now unbounded, so campaigns with >3 are truncated here. Widening the report
+        // schema (or pivoting to one row per part) is a deferred decision — see .shift/repos/adp/ssc-multi-part-labor/.
         var labors = (ssc?.Labors ?? Enumerable.Empty<SSCLaborDTO>()).Take(3).ToList();
         var parts = (ssc?.Parts ?? Enumerable.Empty<SSCPartDTO>()).Take(3).ToList();
 

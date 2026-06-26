@@ -27,20 +27,21 @@ public class VehicleSSCEvaluator
         if (ssc?.Count() == 0)
             return null;
 
-        var data = new List<SscDTO>();
-
-        data = ssc?.Select(x =>
+        var data = ssc?.Select(x =>
         {
-            var parts = new List<SSCPartDTO>();
-            var sscLabors = new List<SSCLaborDTO>();
-
             var isRepared = x.RepairDate is not null;
             DateTime? repairDate = x.RepairDate;
 
             var campaignCode = x.CampaignCode?.Trim();
-            var laborCodes = new[] { x.LaborCode1, x.LaborCode2, x.LaborCode3 }
-                .Select(c => c?.Trim())
+
+            var laborCodes = x.EffectiveLabors
+                .Select(l => l.LaborCode?.Trim())
                 .Where(c => !string.IsNullOrEmpty(c))
+                .ToList();
+
+            var partNumbers = x.EffectivePartNumbers
+                .Select(p => p?.Trim())
+                .Where(p => !string.IsNullOrEmpty(p))
                 .ToList();
 
             var warrantyClaim = warrantyClaims?
@@ -71,58 +72,16 @@ public class VehicleSSCEvaluator
                 }
             }
 
-            var sscData = new SscDTO
+            return new SscDTO
             {
                 Description = x.Description,
                 SSCCode = campaignCode,
                 Repaired = isRepared,
-                RepairDate = repairDate
+                RepairDate = repairDate,
+                Labors = laborCodes.Select(c => new SSCLaborDTO { LaborCode = c }).ToList(),
+                Parts = partNumbers.Select(p => new SSCPartDTO { PartNumber = p }).ToList(),
             };
-
-            if (!string.IsNullOrWhiteSpace(x.LaborCode1))
-                sscLabors.Add(new SSCLaborDTO
-                {
-                    LaborCode = x.LaborCode1.Trim(),
-                });
-
-            if (!string.IsNullOrWhiteSpace(x.LaborCode2))
-                sscLabors.Add(new SSCLaborDTO
-                {
-                    LaborCode = x.LaborCode2.Trim(),
-                });
-
-            if (!string.IsNullOrWhiteSpace(x.LaborCode3))
-                sscLabors.Add(new SSCLaborDTO
-                {
-                    LaborCode = x.LaborCode3.Trim(),
-                });
-
-            if (!string.IsNullOrWhiteSpace(x.PartNumber1))
-                parts.Add(new SSCPartDTO
-                {
-                    PartNumber = x.PartNumber1.Trim(),
-                });
-
-            if (!string.IsNullOrWhiteSpace(x.PartNumber2))
-                parts.Add(new SSCPartDTO
-                {
-                    PartNumber = x.PartNumber2.Trim(),
-                });
-
-            if (!string.IsNullOrWhiteSpace(x.PartNumber3))
-                parts.Add(new SSCPartDTO
-                {
-                    PartNumber = x.PartNumber3.Trim(),
-                });
-
-            sscData.Parts = parts;
-            sscData.Labors = sscLabors;
-
-            return sscData;
         }).ToList();
-
-        // Get partnumbers and format it to match the stock item
-        var partNumbers = data?.SelectMany(x => x.Parts.Select(p => p.PartNumber)).Distinct();
 
         return data;
     }
