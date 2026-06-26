@@ -127,6 +127,14 @@ public class WarrantyAndFreeServiceDateEvaluator
 
         result.FreeServiceStartDate = freeServiceStartDate;
 
+        // Stamp the time-derived warranty flags here (against Options.TimeProvider) instead of computing
+        // them on the DTO against the wall clock, so a fixed provider freezes them for deterministic
+        // sample/doc generation. The DTO is always evaluated fresh per request and read within that same
+        // request, so this is behaviourally equivalent to the previous compute-on-read getters.
+        var nowUtc = Options.GetUtcNow();
+        result.HasActiveWarranty = result.WarrantyEndDate.HasValue && result.WarrantyEndDate.Value >= nowUtc;
+        result.HasExtendedWarranty = result.ExtendedWarrantyEndDate.HasValue && result.ExtendedWarrantyEndDate.Value >= nowUtc;
+
         return result;
     }
 }

@@ -122,8 +122,11 @@ public class LookupOptions
     public string SigningSecretKey { get; set; } = string.Empty;
     /// <summary>How long a generated claim signature remains valid.</summary>
     public TimeSpan SignatureValidityDuration { get; set; }
-    /// <summary>Clock used when stamping <c>SignatureExpiry</c>. Defaults to <see cref="TimeProvider.System"/>; override with a fixed provider to produce deterministic signatures for sample/doc generation or tests.</summary>
+    /// <summary>Clock used for all time-dependent lookup output — service-item status/claimability, warranty-active flags and <c>SignatureExpiry</c>. Defaults to <see cref="TimeProvider.System"/>; override with a fixed provider to produce deterministic output for sample/doc generation or tests.</summary>
     public TimeProvider TimeProvider { get; set; } = TimeProvider.System;
+
+    /// <summary>Current UTC time read from <see cref="TimeProvider"/>. Time-dependent evaluators must derive "now" from here (never <see cref="DateTime.UtcNow"/>/<see cref="DateTime.Now"/>) so a fixed provider can freeze their output. UTC is used deliberately so generated output never depends on the generating machine's time zone.</summary>
+    internal DateTime GetUtcNow() => (TimeProvider ?? TimeProvider.System).GetUtcNow().UtcDateTime;
 
     /// <summary>Resolver delegate that generates a pre-claim voucher printing URL for vehicle inspection-based claims.</summary>
     public Func<LookupOptionResolverModel<(string VehicleInspectionID, string ServiceItemID)>, ValueTask<string?>>? VehicleInspectionPreClaimVoucherPrintingURLResolver { get; set; }

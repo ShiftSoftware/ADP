@@ -13,11 +13,13 @@ namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 [Docable]
 public class VehicleWarrantyDTO
 {
+    // Stored (not a wall-clock getter): stamped by WarrantyAndFreeServiceDateEvaluator from
+    // LookupOptions.TimeProvider so generated sample/doc data stays byte-stable. Do not convert
+    // back to `=> WarrantyEndDate >= DateTime.UtcNow` — that reintroduces date-drift in the samples.
     /// <summary>
     /// Whether the vehicle currently has an active standard warranty (end date is in the future).
     /// </summary>
-    public bool HasActiveWarranty =>
-        WarrantyEndDate.HasValue && WarrantyEndDate.Value >= DateTime.UtcNow;
+    public bool HasActiveWarranty { get; set; }
 
     /// <summary>
     /// The start date of the standard warranty period.
@@ -50,11 +52,11 @@ public class VehicleWarrantyDTO
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public WarrantyActivationStatus ActivationStatus { get; set; }
 
+    // Stored (not a wall-clock getter): see note on HasActiveWarranty.
     /// <summary>
     /// Whether the vehicle currently has an active extended warranty (end date is in the future).
     /// </summary>
-    public bool HasExtendedWarranty =>
-        ExtendedWarrantyEndDate.HasValue && ExtendedWarrantyEndDate.Value >= DateTime.UtcNow;
+    public bool HasExtendedWarranty { get; set; }
 
     /// <summary>
     /// The start date of the extended warranty period.

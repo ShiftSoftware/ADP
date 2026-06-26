@@ -121,7 +121,7 @@ public partial class VehicleServiceItemEvaluator
             freeServiceStartDate = shiftDay.NewDate;
 
         if (options.IncludeInactivatedFreeServiceItems && freeServiceStartDate is null)
-            return (DateTime.Now.Date, showingInactivatedItems: true);
+            return (options.GetUtcNow().Date, showingInactivatedItems: true);
 
         return (freeServiceStartDate, showingInactivatedItems: false);
     }
@@ -284,7 +284,7 @@ public partial class VehicleServiceItemEvaluator
 
         foreach (var item in serviceItems)
         {
-            var reason = ApplyClaimability(item);
+            var reason = ApplyClaimability(item, options.GetUtcNow());
             Trace.RecordStatus(item, reason);
         }
 
@@ -295,9 +295,9 @@ public partial class VehicleServiceItemEvaluator
     /// Mutates <paramref name="item"/>'s <c>Claimable</c> flag based on its status and validity
     /// mode, returning the reason text for the trace.
     /// </summary>
-    private static string ApplyClaimability(VehicleServiceItemDTO item)
+    private static string ApplyClaimability(VehicleServiceItemDTO item, DateTime nowUtc)
     {
-        if (item.ValidityModeEnum == ClaimableItemValidityMode.FixedDateRange && item.ActivatedAt > DateTime.Now)
+        if (item.ValidityModeEnum == ClaimableItemValidityMode.FixedDateRange && item.ActivatedAt > nowUtc)
         {
             item.Claimable = false;
             return $"FixedDateRange item with future ActivatedAt={item.ActivatedAt:yyyy-MM-dd} → not yet claimable.";
@@ -445,7 +445,7 @@ public partial class VehicleServiceItemEvaluator
         string languageCode,
         VehicleBrokerSaleInformation brokerSaleInformation)
     {
-        var now = (options?.TimeProvider ?? TimeProvider.System).GetUtcNow().UtcDateTime;
+        var now = options.GetUtcNow();
         var itemSignatureExpiry = options?.SignatureValidityDuration is { } d
             ? now.Add(d)
             : now;
@@ -783,7 +783,7 @@ public partial class VehicleServiceItemEvaluator
     {
         foreach (var item in serviceItems)
         {
-            var verdict = ResolveItemStatus(item, companyDataAggregate.ItemClaims, showingInactivatedItems);
+            var verdict = ResolveItemStatus(item, companyDataAggregate.ItemClaims, showingInactivatedItems, options.GetUtcNow());
 
             item.Status = verdict.statusText;
             item.StatusEnum = verdict.status;
@@ -806,7 +806,8 @@ public partial class VehicleServiceItemEvaluator
     ResolveItemStatus(
         VehicleServiceItemDTO item,
         IEnumerable<ItemClaimModel> serviceClaimLines,
-        bool showingInactivatedItems)
+        bool showingInactivatedItems,
+        DateTime nowUtc)
     {
         var claimLine = serviceClaimLines?
             .Where(x => x?.ServiceItemID == item.ServiceItemID.ToString())
@@ -819,7 +820,7 @@ public partial class VehicleServiceItemEvaluator
                 claimLine.ClaimDate, claimLine.JobNumber, claimLine.InvoiceNumber,
                 claimLine.CompanyID, claimLine.PackageCode, claimLine.Cost);
 
-        if (item.ExpiresAt is not null && item.ExpiresAt < DateTime.Now)
+        if (item.ExpiresAt is not null && item.ExpiresAt < nowUtc)
             return ("expired", VehcileServiceItemStatuses.Expired, null, null, null, null, null, null);
 
         if (showingInactivatedItems && item.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.WarrantyActivation)
