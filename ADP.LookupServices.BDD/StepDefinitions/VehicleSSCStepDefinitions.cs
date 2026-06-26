@@ -23,7 +23,7 @@ public class VehicleSSCStepDefinitions
     {
         // Gherkin trims table cells, so pad here to simulate untrimmed source data (e.g. "AURCM ").
         var ssc = _context.Aggregate.SSCAffectedVINs.First(x => x.CampaignCode == campaignCode);
-        ssc.LaborCode1 += " ";
+        ssc.Labors[0].LaborCode += " ";
     }
 
     private void EnsureEvaluated()

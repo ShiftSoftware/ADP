@@ -155,14 +155,14 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table230 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table237 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "VariantCode",
                             "Katashiki",
                             "ExteriorColorCode",
                             "InteriorColorCode",
                             "BrandID"});
-                table230.AddRow(new string[] {
+                table237.AddRow(new string[] {
                             "1FDKF37GXVEB34368",
                             "VAR001",
                             "KAT-123",
@@ -170,34 +170,34 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "BLK",
                             "1"});
 #line 6
- await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table230, "Given ");
+ await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table237, "Given ");
 #line hidden
 #line 9
  await testRunner.WhenAsync("Checking \"1FDKF37GXVEB34368\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-                global::Reqnroll.Table table231 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table238 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table231.AddRow(new string[] {
+                table238.AddRow(new string[] {
                             "VIN",
                             "1FDKF37GXVEB34368"});
-                table231.AddRow(new string[] {
+                table238.AddRow(new string[] {
                             "Variant",
                             "VAR001"});
-                table231.AddRow(new string[] {
+                table238.AddRow(new string[] {
                             "Katashiki",
                             "KAT-123"});
-                table231.AddRow(new string[] {
+                table238.AddRow(new string[] {
                             "Color",
                             "WHT"});
-                table231.AddRow(new string[] {
+                table238.AddRow(new string[] {
                             "Trim",
                             "BLK"});
-                table231.AddRow(new string[] {
+                table238.AddRow(new string[] {
                             "BrandID",
                             "1"});
 #line 10
- await testRunner.ThenAsync("the vehicle identifiers are:", ((string)(null)), table231, "Then ");
+ await testRunner.ThenAsync("the vehicle identifiers are:", ((string)(null)), table238, "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -227,29 +227,29 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 20
  await testRunner.WhenAsync("Checking \"1FDKF37GXVEB34368\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-                global::Reqnroll.Table table232 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table239 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Value"});
-                table232.AddRow(new string[] {
+                table239.AddRow(new string[] {
                             "VIN",
                             "1FDKF37GXVEB34368"});
-                table232.AddRow(new string[] {
+                table239.AddRow(new string[] {
                             "Variant",
                             ""});
-                table232.AddRow(new string[] {
+                table239.AddRow(new string[] {
                             "Katashiki",
                             ""});
-                table232.AddRow(new string[] {
+                table239.AddRow(new string[] {
                             "Color",
                             ""});
-                table232.AddRow(new string[] {
+                table239.AddRow(new string[] {
                             "Trim",
                             ""});
-                table232.AddRow(new string[] {
+                table239.AddRow(new string[] {
                             "BrandID",
                             ""});
 #line 21
- await testRunner.ThenAsync("the vehicle identifiers are:", ((string)(null)), table232, "Then ");
+ await testRunner.ThenAsync("the vehicle identifiers are:", ((string)(null)), table239, "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();

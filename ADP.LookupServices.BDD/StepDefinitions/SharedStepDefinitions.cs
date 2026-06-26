@@ -108,6 +108,25 @@ public class SharedStepDefinitions
     [Given("SSC affected vehicles:")]
     public void GivenTheFollowingVehiclesInSsc(DataTable dataTable)
     {
+        // Reads any number of LaborCode{n}/LaborHour{n}/PartNumber{n} columns into the modern array shape.
+        _context.Aggregate.SSCAffectedVINs.AddRange(
+            dataTable.Rows.Select(row => new SSCAffectedVINModel
+            {
+                VIN = GetOptionalString(row, "VIN"),
+                CampaignCode = GetOptionalString(row, "CampaignCode"),
+                Description = GetOptionalString(row, "Description"),
+                Labors = BuildSscLabors(row),
+                PartNumbers = BuildSscPartNumbers(row),
+                RepairDate = GetOptionalDate(row, "RepairDate"),
+                CompanyID = GetOptionalLong(row, "CompanyID"),
+            }));
+    }
+
+    [Given("SSC affected vehicles in legacy numbered format:")]
+    public void GivenTheFollowingVehiclesInSscLegacy(DataTable dataTable)
+    {
+        // Populates ONLY the legacy numbered fields (Labors/PartNumbers left null) to exercise the back-compat
+        // fallback in SSCAffectedVINModel.EffectiveLabors / EffectivePartNumbers.
         _context.Aggregate.SSCAffectedVINs.AddRange(
             dataTable.Rows.Select(row => new SSCAffectedVINModel
             {
@@ -145,6 +164,35 @@ public class SharedStepDefinitions
                 VIN = GetOptionalString(row, "VIN"),
                 CompanyID = GetOptionalLong(row, "CompanyID"),
             }));
+    }
+
+    private const int MaxSscNumberedColumns = 10;
+
+    private static List<SSCLaborLineModel> BuildSscLabors(DataTableRow row)
+    {
+        var labors = new List<SSCLaborLineModel>();
+        for (var i = 1; i <= MaxSscNumberedColumns; i++)
+        {
+            var laborCode = GetOptionalString(row, $"LaborCode{i}");
+            var laborHour = GetOptionalDouble(row, $"LaborHour{i}");
+            if (!string.IsNullOrWhiteSpace(laborCode) || laborHour.HasValue)
+                labors.Add(new SSCLaborLineModel { LaborCode = laborCode, LaborHour = laborHour });
+        }
+
+        return labors;
+    }
+
+    private static List<string> BuildSscPartNumbers(DataTableRow row)
+    {
+        var partNumbers = new List<string>();
+        for (var i = 1; i <= MaxSscNumberedColumns; i++)
+        {
+            var partNumber = GetOptionalString(row, $"PartNumber{i}");
+            if (!string.IsNullOrWhiteSpace(partNumber))
+                partNumbers.Add(partNumber);
+        }
+
+        return partNumbers;
     }
 
     private static IEnumerable<WarrantyClaimLaborLineModel> BuildWarrantyClaimLaborLines(DataTableRow row)

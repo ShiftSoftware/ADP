@@ -191,14 +191,14 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table14 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table21 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CompanyID"});
-                table14.AddRow(new string[] {
+                table21.AddRow(new string[] {
                             "1FDKF37GXVEB34368",
                             "1"});
 #line 13
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table14, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table21, "Given ");
 #line hidden
 #line 16
   await testRunner.AndAsync("LookupOptions has require-allocation-for-activation enabled", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -240,14 +240,14 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table15 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table22 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CompanyID"});
-                table15.AddRow(new string[] {
+                table22.AddRow(new string[] {
                             "1FDKF37GXVEB34368",
                             "1"});
 #line 23
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table15, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table22, "Given ");
 #line hidden
 #line 26
   await testRunner.AndAsync("LookupOptions has require-allocation-for-activation enabled", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -289,14 +289,14 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table16 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table23 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CompanyID"});
-                table16.AddRow(new string[] {
+                table23.AddRow(new string[] {
                             "1FDKF37GXVEB34368",
                             "1"});
 #line 33
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table16, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table23, "Given ");
 #line hidden
 #line 36
   await testRunner.AndAsync("LookupOptions has require-allocation-for-activation enabled", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -335,14 +335,14 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table17 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table24 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "CompanyID"});
-                table17.AddRow(new string[] {
+                table24.AddRow(new string[] {
                             "1FDKF37GXVEB34368",
                             "1"});
 #line 42
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table17, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table24, "Given ");
 #line hidden
 #line 45
   await testRunner.AndAsync("LookupOptions has require-allocation-for-activation enabled", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");

@@ -125,3 +125,32 @@ Scenario: SSC parts and labor codes appear in result
 	When Checking "1G1ZC5E17BF283048"
 	Then SSC "SSC-001" has 2 labor codes
 	And SSC "SSC-001" has 2 part numbers
+
+Scenario: SSC exposes more than three parts and labor codes
+	Given SSC affected vehicles:
+		| VIN               | CampaignCode | Description   | LaborCode1 | LaborCode2 | LaborCode3 | LaborCode4 | LaborCode5 | LaborCode6 | PartNumber1 | PartNumber2 | PartNumber3 | PartNumber4 | PartNumber5 | PartNumber6 |
+		| 1G1ZC5E17BF283048 | SSC-001      | Airbag recall | LAB001     | LAB002     | LAB003     | LAB004     | LAB005     | LAB006     | PRT001      | PRT002      | PRT003      | PRT004      | PRT005      | PRT006      |
+	When Checking "1G1ZC5E17BF283048"
+	Then SSC "SSC-001" has 6 labor codes
+	And SSC "SSC-001" has 6 part numbers
+
+Rule: Backward compatibility with legacy numbered fields
+
+Scenario: SSC stored in legacy numbered fields is still evaluated
+	Given SSC affected vehicles in legacy numbered format:
+		| VIN               | CampaignCode | Description   | LaborCode1 | LaborCode2 | PartNumber1 |
+		| 1G1ZC5E17BF283048 | SSC-001      | Airbag recall | LAB001     | LAB002     | PRT001      |
+	When Checking "1G1ZC5E17BF283048"
+	Then SSC "SSC-001" has 2 labor codes
+	And SSC "SSC-001" has 1 part numbers
+
+Scenario: Legacy labor code still drives repair detection
+	Given SSC affected vehicles in legacy numbered format:
+		| VIN               | CampaignCode | Description   | LaborCode1 |
+		| 1G1ZC5E17BF283048 | SSC-001      | Airbag recall | LAB001     |
+	And labor lines:
+		| LaborCode | InvoiceDate | InvoiceStatus |
+		| LAB001    | 2024-06-01  | X             |
+	When Checking "1G1ZC5E17BF283048"
+	Then SSC "SSC-001" is marked as repaired
+	And SSC "SSC-001" has repair date "2024-06-01"
