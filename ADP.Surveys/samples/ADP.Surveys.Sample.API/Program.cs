@@ -5,10 +5,8 @@ using ShiftSoftware.ADP.Surveys.Sample.API.Data.Seed;
 using ShiftSoftware.ADP.Surveys.Sample.API.Services;
 using ShiftSoftware.ShiftEntity.Core;
 using ShiftSoftware.ShiftEntity.Model.Enums;
-using ShiftSoftware.ShiftIdentity.AspNetCore;
-using ShiftSoftware.ShiftIdentity.AspNetCore.Models;
 using ShiftSoftware.ShiftIdentity.Core;
-using ShiftSoftware.ShiftIdentity.Dashboard.AspNetCore;
+using ShiftSoftware.ShiftIdentity.Core.Models;
 using ShiftSoftware.ShiftIdentity.Dashboard.AspNetCore.Extentsions;
 using ShiftSoftware.TypeAuth.AspNetCore.Extensions;
 
@@ -68,6 +66,7 @@ mvcBuilder.AddShiftIdentityDashboard<DB>(
             Issuer = builder.Configuration.GetValue<string>("Settings:TokenSettings:Issuer")!,
             RSAPrivateKeyBase64 = builder.Configuration.GetValue<string>("Settings:TokenSettings:PrivateKey")!,
         },
+        MfaSettings = new(),
         Security = new SecuritySettingsModel
         {
             LockDownInMinutes = 0,

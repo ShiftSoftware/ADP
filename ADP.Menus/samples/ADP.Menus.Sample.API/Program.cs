@@ -1,20 +1,17 @@
+using Microsoft.AspNetCore.Localization;
+using Microsoft.Azure.Cosmos;
+using Microsoft.EntityFrameworkCore;
+using ShiftSoftware.ADP.Menus.API.Extensions;
+using ShiftSoftware.ADP.Menus.Data.DataServices;
 using ShiftSoftware.ADP.Menus.Sample.API.Data;
 using ShiftSoftware.ADP.Menus.Sample.API.DataServices;
 using ShiftSoftware.ADP.Menus.Sample.API.Services;
-using ShiftSoftware.ADP.Menus.API.Extensions;
-using ShiftSoftware.ADP.Menus.Data.DataServices;
 using ShiftSoftware.ADP.Menus.Shared;
-using Microsoft.AspNetCore.Localization;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.Cosmos;
-using Microsoft.EntityFrameworkCore;
 using ShiftSoftware.ShiftEntity.Core;
 using ShiftSoftware.ShiftEntity.Core.Services;
 using ShiftSoftware.ShiftEntity.Model.Enums;
-using ShiftSoftware.ShiftIdentity.AspNetCore;
-using ShiftSoftware.ShiftIdentity.AspNetCore.Models;
 using ShiftSoftware.ShiftIdentity.Core;
-using ShiftSoftware.ShiftIdentity.Dashboard.AspNetCore;
+using ShiftSoftware.ShiftIdentity.Core.Models;
 using ShiftSoftware.ShiftIdentity.Dashboard.AspNetCore.Extentsions;
 using ShiftSoftware.TypeAuth.AspNetCore.Extensions;
 using System.Globalization;
@@ -93,6 +90,7 @@ mvcBuilder.AddShiftIdentityDashboard<DB>(
             LoginAttemptsForLockDown = 1000000,
             RequirePasswordChange = false
         },
+        MfaSettings = new(),
         RefreshToken = new RefreshTokenSettingsModel
         {
             Audience = "adp-menus",
