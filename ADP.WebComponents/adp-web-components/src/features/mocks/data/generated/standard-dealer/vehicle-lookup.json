@@ -16,7 +16,16 @@
       "companyName": "Sample Motors",
       "branchID": "10",
       "branchName": "Main Branch 2",
-      "invoiceDate": "2024-01-15"
+      "invoiceDate": "2024-01-15",
+      "distributor": {
+        "companyID": "100",
+        "companyName": "Sample Distributor",
+        "branchID": "1000",
+        "branchName": "Distributor HQ",
+        "invoiceNumber": "DIST-2024-0042",
+        "invoiceDate": "2024-01-12"
+      },
+      "intermediaries": []
     },
     "paintThicknessInspections": [
       {
@@ -418,13 +427,18 @@
       "companyName": "Sample Motors",
       "branchID": "20",
       "branchName": "Service Center",
-      "invoiceDate": "2023-06-20"
+      "invoiceDate": "2023-06-20",
+      "distributor": {
+        "companyID": "100",
+        "companyName": "Sample Distributor"
+      },
+      "intermediaries": []
     },
     "paintThicknessInspections": [],
     "paintThicknessCertificateAvailable": false,
     "isAuthorized": true,
     "warranty": {
-      "hasActiveWarranty": true,
+      "hasActiveWarranty": false,
       "warrantyStartDate": "2023-06-20",
       "warrantyEndDate": "2026-06-20",
       "activationIsRequired": false,
@@ -515,24 +529,19 @@
         "typeEnum": "Free",
         "activatedAt": "2024-12-20",
         "expiresAt": "2026-06-20",
-        "status": "pending",
-        "statusEnum": "Pending",
+        "status": "expired",
+        "statusEnum": "Expired",
         "serviceItemID": "SI-003",
         "maximumMileage": 12000,
-        "claimable": true,
+        "claimable": false,
         "claimingMethodEnum": "ClaimByEnteringInvoiceAndJobNumber",
         "vehicleInspectionTypeID": "",
-        "signature": "P1o8S4Rn\u002BnCAztps9KA79c0PEm\u002BM2EXtei/7/NV4vFs=",
+        "signature": "rmU/VMjLuthBJQRQJsCdUNDJlaN54Wye74QT3bTISoo=",
         "signatureExpiry": "2026-01-01T00:00:00Z"
       },
       {
         "showDocumentUploader": false,
         "warnings": [
-          {
-            "key": "skipped-items-warning",
-            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002720,000 KM Service\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E10,000 KM Service\u003C/li\u003E\u003C/ul\u003E",
-            "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
-          },
           {
             "key": "attachment-warning",
             "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
@@ -560,7 +569,7 @@
         "warnings": [
           {
             "key": "skipped-items-warning",
-            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002730,000 KM Service\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E10,000 KM Service\u003C/li\u003E\u003Cli\u003E20,000 KM Service\u003C/li\u003E\u003C/ul\u003E",
+            "bodyContent": "The following Services are still \u0027Pending\u0027. Claiming \u002730,000 KM Service\u0027 will mark them as \u0027Cancelled\u0027.\u003Cul\u003E\u003Cli\u003E20,000 KM Service\u003C/li\u003E\u003C/ul\u003E",
             "confirmationText": "Confirm Marking the above Services as \u0027Cancelled\u0027."
           },
           {

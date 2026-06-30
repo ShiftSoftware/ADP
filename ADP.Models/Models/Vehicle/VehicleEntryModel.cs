@@ -222,4 +222,18 @@ public class VehicleEntryModel :
     /// An external identifier used for branch-level system-to-system integration.
     /// </summary>
     public string BranchIntegrationID { get; set; }
+
+    /// <summary>
+    /// The embedded intermediary supply-chain leg, for sources that emit a single entry per VIN and carry the
+    /// chain inline. Null for multi-entry sources, which instead emit a
+    /// separate <see cref="VehicleEntryModel"/> per supply-chain leg.
+    /// </summary>
+    public IntermediarySaleLeg Intermediary { get; set; }
+
+    /// <summary>
+    /// The embedded distributor supply-chain leg (the distributor's own sale to the dealer), for single-entry
+    /// sources on a direct route (distributor→dealer). Null otherwise. The distributor's company comes from
+    /// <c>LookupOptions.DistributorCompanyID</c>; this carries only its invoice number + date.
+    /// </summary>
+    public DistributorSaleLeg Distributor { get; set; }
 }

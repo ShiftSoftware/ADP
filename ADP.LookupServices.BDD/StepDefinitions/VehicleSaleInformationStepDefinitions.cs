@@ -1,6 +1,7 @@
 using Reqnroll;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using ShiftSoftware.ADP.Lookup.Services.Evaluators;
+using ShiftSoftware.ADP.Models.Vehicle;
 using Xunit;
 
 namespace LookupServices.BDD.StepDefinitions;
@@ -130,5 +131,117 @@ public class VehicleSaleInformationStepDefinitions
     {
         Assert.True(_evaluated);
         Assert.Null(_result);
+    }
+
+    // --- Supply chain (distributor + intermediaries) ---
+
+    // The "vehicles in dealer stock" table builds flat entries; this attaches the inline intermediary
+    // leg that single-entry sources carry, so the embedded-shape assembler path can be exercised.
+    [Given("vehicle {string} has an embedded intermediary leg with company {long} invoice {string} dated {string}")]
+    public void GivenVehicleHasEmbeddedIntermediaryLeg(string vin, long companyId, string invoiceNumber, string invoiceDate)
+    {
+        var entry = _context.Aggregate.VehicleEntries.FirstOrDefault(e => e.VIN == vin)
+            ?? throw new InvalidOperationException($"No vehicle entry found for VIN '{vin}'.");
+
+        entry.Intermediary = new IntermediarySaleLeg
+        {
+            CompanyID = companyId,
+            InvoiceNumber = invoiceNumber,
+            InvoiceDate = DateTime.Parse(invoiceDate),
+        };
+    }
+
+    // Attaches the inline distributor leg a single-entry direct (distributor→dealer) source carries.
+    [Given("vehicle {string} has an embedded distributor leg with invoice {string} dated {string}")]
+    public void GivenVehicleHasEmbeddedDistributorLeg(string vin, string invoiceNumber, string invoiceDate)
+    {
+        var entry = _context.Aggregate.VehicleEntries.FirstOrDefault(e => e.VIN == vin)
+            ?? throw new InvalidOperationException($"No vehicle entry found for VIN '{vin}'.");
+
+        entry.Distributor = new DistributorSaleLeg
+        {
+            InvoiceNumber = invoiceNumber,
+            InvoiceDate = DateTime.Parse(invoiceDate),
+        };
+    }
+
+    [Then("the distributor is {string}")]
+    public void ThenTheDistributorIs(string expectedName)
+    {
+        Assert.NotNull(_result);
+        Assert.NotNull(_result.Distributor);
+        Assert.Equal(expectedName, _result.Distributor.CompanyName);
+    }
+
+    [Then("the distributor invoice number is {string}")]
+    public void ThenTheDistributorInvoiceNumberIs(string expectedInvoiceNumber)
+    {
+        Assert.NotNull(_result);
+        Assert.NotNull(_result.Distributor);
+        Assert.Equal(expectedInvoiceNumber, _result.Distributor.InvoiceNumber);
+    }
+
+    [Then("the distributor invoice date is {string}")]
+    public void ThenTheDistributorInvoiceDateIs(string expectedDate)
+    {
+        Assert.NotNull(_result);
+        Assert.NotNull(_result.Distributor);
+        Assert.Equal(DateTime.Parse(expectedDate), _result.Distributor.InvoiceDate);
+    }
+
+    [Then("there is no distributor")]
+    public void ThenThereIsNoDistributor()
+    {
+        Assert.NotNull(_result);
+        Assert.Null(_result.Distributor);
+    }
+
+    [Then("the distributor invoice number is empty")]
+    public void ThenTheDistributorInvoiceNumberIsEmpty()
+    {
+        Assert.NotNull(_result);
+        Assert.NotNull(_result.Distributor);
+        Assert.Null(_result.Distributor.InvoiceNumber);
+    }
+
+    [Then("the intermediaries count is {int}")]
+    public void ThenTheIntermediariesCountIs(int expectedCount)
+    {
+        Assert.NotNull(_result);
+        Assert.Equal(expectedCount, _result.Intermediaries.Count);
+    }
+
+    [Then("there are no intermediaries")]
+    public void ThenThereAreNoIntermediaries()
+    {
+        Assert.NotNull(_result);
+        Assert.Empty(_result.Intermediaries);
+    }
+
+    [Then("intermediary {int} is {string}")]
+    public void ThenIntermediaryIs(int position, string expectedName)
+    {
+        Assert.NotNull(_result);
+        Assert.True(_result.Intermediaries.Count >= position,
+            $"Expected at least {position} intermediaries but found {_result.Intermediaries.Count}.");
+        Assert.Equal(expectedName, _result.Intermediaries[position - 1].CompanyName);
+    }
+
+    [Then("intermediary {int} invoice number is {string}")]
+    public void ThenIntermediaryInvoiceNumberIs(int position, string expectedInvoiceNumber)
+    {
+        Assert.NotNull(_result);
+        Assert.True(_result.Intermediaries.Count >= position,
+            $"Expected at least {position} intermediaries but found {_result.Intermediaries.Count}.");
+        Assert.Equal(expectedInvoiceNumber, _result.Intermediaries[position - 1].InvoiceNumber);
+    }
+
+    [Then("intermediary {int} invoice date is {string}")]
+    public void ThenIntermediaryInvoiceDateIs(int position, string expectedDate)
+    {
+        Assert.NotNull(_result);
+        Assert.True(_result.Intermediaries.Count >= position,
+            $"Expected at least {position} intermediaries but found {_result.Intermediaries.Count}.");
+        Assert.Equal(DateTime.Parse(expectedDate), _result.Intermediaries[position - 1].InvoiceDate);
     }
 }

@@ -77,7 +77,7 @@ export class VehicleSaleInformation implements MultiLingual, VehicleInfoLayoutIn
   @State() errorMessage?: ErrorKeys;
   @State() isLoading: boolean = false;
   @State() vehicleLookup?: VehicleLookupDTO;
-  @Prop() hiddenFields: string = 'customerAccountNumber,customerID,brokerInvoiceNumber,brokerInvoiceDate,warrantyActivationDate,invoiceDate,invoiceNumber';
+  @Prop() hiddenFields: string = 'customerAccountNumber,customerID,brokerInvoiceNumber,brokerInvoiceDate,distributorInvoiceNumber,distributorInvoiceDate,warrantyActivationDate,invoiceDate,invoiceNumber';
 
   @Element() el: HTMLElement;
 
@@ -190,6 +190,22 @@ export class VehicleSaleInformation implements MultiLingual, VehicleInfoLayoutIn
         title: texts.brokerInvoiceDate,
         value: this.formatDate(sale?.broker?.invoiceDate),
       },
+      // Distributor (upstream supply-chain leg; mirrors the broker block)
+      {
+        fieldName: 'distributorName',
+        title: texts.distributorName,
+        value: getText(sale?.distributor?.companyName),
+      },
+      {
+        fieldName: 'distributorInvoiceNumber',
+        title: texts.distributorInvoiceNumber,
+        value: getText(sale?.distributor?.invoiceNumber),
+      },
+      {
+        fieldName: 'distributorInvoiceDate',
+        title: texts.distributorInvoiceDate,
+        value: this.formatDate(sale?.distributor?.invoiceDate),
+      },
       {
         fieldName: 'warrantyActivationDate',
         title: texts.warrantyActivationDate,
@@ -269,6 +285,11 @@ export class VehicleSaleInformation implements MultiLingual, VehicleInfoLayoutIn
               {filteredFields.map(field => (
                 <MaterialCard title={field.title} desc={field.value} minWidth="250px" />
               ))}
+              {/* Intermediary legs (0..n) — one card per intermediary; suppressed by hiddenFields="intermediaries" */}
+              {!hiddenFields.includes('intermediaries') &&
+                (sale?.intermediaries || []).map(intermediary => (
+                  <MaterialCard title={texts.intermediaryName} desc={getText(intermediary?.companyName)} minWidth="250px" />
+                ))}
             </div>
           </flexible-container>
         </VehicleInfoLayout>

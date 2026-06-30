@@ -1,0 +1,67 @@
+{
+  "JTMAB7BJ0T4224184": {
+    "vin": "JTMAB7BJ0T4224184",
+    "identifiers": {
+      "vin": "JTMAB7BJ0T4224184",
+      "variant": "VAR001",
+      "katashiki": "MXAA52L-ANXGP",
+      "color": "1G3",
+      "trim": "LA20",
+      "brandID": "1"
+    },
+    "saleInformation": {
+      "countryID": "1",
+      "countryName": "Iraq",
+      "companyID": "10",
+      "companyName": "Sample Dealer",
+      "branchID": "100",
+      "branchName": "Main Showroom",
+      "invoiceDate": "2026-05-25",
+      "invoiceNumber": "11000191",
+      "distributor": {
+        "companyID": "5",
+        "companyName": "Sample Distributor",
+        "branchID": "500",
+        "branchName": "Distributor HQ",
+        "invoiceNumber": "30018218",
+        "invoiceDate": "2026-05-20"
+      },
+      "intermediaries": [
+        {
+          "companyID": "7",
+          "companyName": "Regional Importer",
+          "branchID": "700",
+          "branchName": "Importer Hub",
+          "invoiceNumber": "70000001",
+          "invoiceDate": "2026-05-22"
+        }
+      ],
+      "regionID": "20"
+    },
+    "paintThicknessInspections": [],
+    "paintThicknessCertificateAvailable": false,
+    "isAuthorized": true,
+    "warranty": {
+      "hasActiveWarranty": true,
+      "warrantyStartDate": "2026-05-26",
+      "warrantyEndDate": "2029-05-26",
+      "activationIsRequired": false,
+      "activationStatus": "NotRequired",
+      "hasExtendedWarranty": false,
+      "freeServiceStartDate": "2026-05-26"
+    },
+    "serviceHistory": [],
+    "vehicleSpecification": {
+      "modelDescription": "RAV4 2.0L 4WD",
+      "bodyType": "SUV",
+      "engine": "2.0L M20A-FKS",
+      "doors": "5",
+      "fuel": "Petrol",
+      "transmission": "CVT",
+      "side": "LHD"
+    },
+    "serviceItems": [],
+    "accessories": [],
+    "basicModelCode": "MXAA52"
+  }
+}

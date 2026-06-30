@@ -109,6 +109,21 @@ public class VehicleSaleInformation
     public VehicleBrokerSaleInformation Broker { get; set; }
 
     /// <summary>
+    /// The <see cref="VehicleDistributorSaleInformation">distributor leg</see> of the supply chain, when the
+    /// vehicle passed through a configured distributor before the dealer's sale. Null when there is no
+    /// distributor leg (or none is configured). The distributor never makes the end-customer sale; this is
+    /// informational context for the dealer sale above.
+    /// </summary>
+    public VehicleDistributorSaleInformation Distributor { get; set; }
+
+    /// <summary>
+    /// The <see cref="VehicleIntermediarySaleInformation">intermediary legs</see> (0..n) the vehicle passed
+    /// through between the distributor and the dealer. Empty when there are none. Intermediaries never make
+    /// the end-customer sale; this is informational context for the dealer sale above.
+    /// </summary>
+    public List<VehicleIntermediarySaleInformation> Intermediaries { get; set; } = new();
+
+    /// <summary>
     /// The Region Hash ID from the Identity System.
     /// </summary>
     [ShiftSoftware.ShiftEntity.Model.HashIds.RegionHashIdConverter]

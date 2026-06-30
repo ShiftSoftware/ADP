@@ -21,7 +21,8 @@
       "broker": {
         "brokerID": 100,
         "brokerName": "Hawler Auto Broker"
-      }
+      },
+      "intermediaries": []
     },
     "paintThicknessInspections": [],
     "paintThicknessCertificateAvailable": false,
@@ -70,7 +71,8 @@
         "brokerName": "Suli Trade Broker",
         "invoiceNumber": 90001,
         "invoiceDate": "2024-02-10"
-      }
+      },
+      "intermediaries": []
     },
     "paintThicknessInspections": [],
     "paintThicknessCertificateAvailable": false,
@@ -269,7 +271,8 @@
       "broker": {
         "brokerID": 300,
         "brokerName": "Duhok Vehicle Trader"
-      }
+      },
+      "intermediaries": []
     },
     "paintThicknessInspections": [],
     "paintThicknessCertificateAvailable": false,
@@ -451,7 +454,8 @@
       "companyName": "Gulf Auto Services",
       "branchID": "30",
       "branchName": "Basra Center",
-      "invoiceDate": "2024-06-01"
+      "invoiceDate": "2024-06-01",
+      "intermediaries": []
     },
     "paintThicknessInspections": [
       {

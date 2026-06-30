@@ -197,6 +197,147 @@ public class VehicleSaleInformationEvaluator
         //            };
         //}
 
+        await PopulateSupplyChainAsync(result, vehicle, languageCode);
+
         return result;
+    }
+
+    /// <summary>
+    /// Surfaces the upstream supply-chain legs (distributor + intermediaries) beside the dealer's sale. These
+    /// companies never make the end-customer sale — they only move the vehicle toward the dealer — so the block
+    /// is informational; it never changes the resolved sale, warranty, or eligibility. Additive and a no-op
+    /// when nothing is configured/present. Handles both source shapes:
+    /// <list type="bullet">
+    /// <item><b>Multi-entry</b> (per-dealer DMS feeds): the VIN has a separate
+    /// <see cref="VehicleEntryModel"/> per leg; classify them by company role against
+    /// <see cref="LookupOptions.DistributorCompanyID"/> / <see cref="LookupOptions.IntermediaryCompanyIDs"/>.</item>
+    /// <item><b>Single-entry</b>: the one selected entry carries the intermediary leg inline on
+    /// <see cref="VehicleEntryModel.Intermediary"/>.</item>
+    /// </list>
+    /// </summary>
+    private async Task PopulateSupplyChainAsync(VehicleSaleInformation result, VehicleEntryModel vehicle, string languageCode)
+    {
+        var entries = CompanyDataAggregate.VehicleEntries ?? Enumerable.Empty<VehicleEntryModel>();
+
+        // Distributor leg. Two source shapes:
+        //  * Multi-entry (per-dealer DMS feeds): a separate entry carries the distributor's invoice + dates;
+        //    classify it by company. Latest invoiced wins if the distributor has more than one entry.
+        //  * Single-entry: the distributor is implicit — every vehicle ships through it
+        //    and there is no distributor entry — so surface it from the configured DistributorCompanyID.
+        if (Options.DistributorCompanyID is { } distributorCompanyID)
+        {
+            var distributorEntry = entries
+                .Where(e => e.CompanyID == distributorCompanyID)
+                .OrderByDescending(e => e.InvoiceDate)
+                .FirstOrDefault();
+
+            if (distributorEntry is not null)
+            {
+                var (companyName, branchName, cityID, cityName) =
+                    await ResolveLegLocationAsync(distributorEntry.CompanyID, distributorEntry.BranchID, languageCode);
+
+                result.Distributor = new VehicleDistributorSaleInformation
+                {
+                    CompanyID = distributorEntry.CompanyID?.ToString(),
+                    CompanyName = companyName,
+                    BranchID = distributorEntry.BranchID?.ToString(),
+                    BranchName = branchName,
+                    InvoiceNumber = distributorEntry.InvoiceNumber,
+                    InvoiceDate = distributorEntry.InvoiceDate,
+                    CityID = cityID,
+                    CityName = cityName,
+                };
+            }
+            else if (entries.Count() == 1)
+            {
+                // Single-entry source: no distributor entry exists; the configured distributor is the
+                // implicit upstream. Its company comes from config; its invoice/date — the distributor's own
+                // sale (distributor→dealer on a direct route, distributor→intermediary on a two-leg route) — ride inline on the
+                // single entry's Distributor leg when present.
+                var (companyName, _, _, _) = await ResolveLegLocationAsync(distributorCompanyID, null, languageCode);
+
+                result.Distributor = new VehicleDistributorSaleInformation
+                {
+                    CompanyID = distributorCompanyID.ToString(),
+                    CompanyName = companyName,
+                    InvoiceNumber = vehicle?.Distributor?.InvoiceNumber,
+                    InvoiceDate = vehicle?.Distributor?.InvoiceDate,
+                };
+            }
+        }
+
+        // Intermediary legs (0..n): entries whose company is a configured intermediary, earliest-invoiced
+        // first (closest to the distributor). The distributor takes precedence (mirroring
+        // IsEndCustomerSaleCompany), so a company configured as both is surfaced only as the distributor.
+        foreach (var intermediaryEntry in entries
+            .Where(e => e.CompanyID is { } cid
+                && (Options.IntermediaryCompanyIDs?.Contains(cid) ?? false)
+                && Options.DistributorCompanyID != cid)
+            .OrderBy(e => e.InvoiceDate))
+        {
+            var (companyName, branchName, cityID, cityName) =
+                await ResolveLegLocationAsync(intermediaryEntry.CompanyID, intermediaryEntry.BranchID, languageCode);
+
+            result.Intermediaries.Add(new VehicleIntermediarySaleInformation
+            {
+                CompanyID = intermediaryEntry.CompanyID?.ToString(),
+                CompanyName = companyName,
+                BranchID = intermediaryEntry.BranchID?.ToString(),
+                BranchName = branchName,
+                InvoiceNumber = intermediaryEntry.InvoiceNumber,
+                InvoiceDate = intermediaryEntry.InvoiceDate,
+                CityID = cityID,
+                CityName = cityName,
+            });
+        }
+
+        // Single-entry embedded intermediary leg — only when the multi-entry classification found
+        // none, so the two shapes never double-count. The selected dealer entry carries it inline; its
+        // InvoiceNumber/InvoiceDate are the intermediary's own sale to the dealer.
+        if (result.Intermediaries.Count == 0 && vehicle?.Intermediary is { } leg)
+        {
+            var (companyName, branchName, cityID, cityName) =
+                await ResolveLegLocationAsync(leg.CompanyID, leg.BranchID, languageCode);
+
+            result.Intermediaries.Add(new VehicleIntermediarySaleInformation
+            {
+                CompanyID = leg.CompanyID?.ToString(),
+                CompanyName = companyName,
+                BranchID = leg.BranchID?.ToString(),
+                BranchName = branchName,
+                InvoiceNumber = leg.InvoiceNumber,
+                InvoiceDate = leg.InvoiceDate,
+                CityID = cityID,
+                CityName = cityName,
+            });
+        }
+    }
+
+    /// <summary>
+    /// Resolves a supply-chain leg's display fields (company name, branch name, city id + name) from its raw
+    /// company/branch ids using the same host resolvers the dealer sale uses. Each resolver is optional;
+    /// unconfigured ones leave the corresponding field null.
+    /// </summary>
+    private async Task<(string CompanyName, string BranchName, string CityID, string CityName)> ResolveLegLocationAsync(
+        long? companyID, long? branchID, string languageCode)
+    {
+        string companyName = null, branchName = null, cityID = null, cityName = null;
+
+        if (Options.CompanyNameResolver is not null)
+            companyName = await Options.CompanyNameResolver(new(companyID, languageCode, ServiceProvider));
+
+        if (Options.CompanyBranchNameResolver is not null)
+            branchName = await Options.CompanyBranchNameResolver(new(branchID, languageCode, ServiceProvider));
+
+        if (Options.CityFromBranchIDResolver is not null)
+        {
+            var cityId = await Options.CityFromBranchIDResolver(new(branchID, languageCode, ServiceProvider));
+            cityID = cityId?.ToString();
+
+            if (cityId.HasValue && Options.CityNameResolver is not null)
+                cityName = await Options.CityNameResolver(new(cityId, languageCode, ServiceProvider));
+        }
+
+        return (companyName, branchName, cityID, cityName);
     }
 }

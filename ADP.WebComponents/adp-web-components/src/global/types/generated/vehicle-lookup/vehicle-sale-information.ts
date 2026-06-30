@@ -1,4 +1,6 @@
 import type { VehicleBrokerSaleInformation } from './vehicle-broker-sale-information';
+import type { VehicleDistributorSaleInformation } from './vehicle-distributor-sale-information';
+import type { VehicleIntermediarySaleInformation } from './vehicle-intermediary-sale-information';
 import type { VehicleSaleEndCustomerInformationDTO } from './vehicle-sale-end-customer-information-dto';
 export type VehicleSaleInformation = {
     countryID: string;
@@ -13,6 +15,8 @@ export type VehicleSaleInformation = {
     warrantyActivationDate?: string;
     invoiceNumber: string;
     broker: VehicleBrokerSaleInformation;
+    distributor: VehicleDistributorSaleInformation;
+    intermediaries: VehicleIntermediarySaleInformation[];
     regionID: string;
     endCustomer: VehicleSaleEndCustomerInformationDTO;
     cityID: string;

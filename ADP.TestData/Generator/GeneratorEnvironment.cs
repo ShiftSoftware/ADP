@@ -39,6 +39,13 @@ public class GeneratorLookupOptions
     /// </summary>
     public long? DistributorCompanyID { get; set; }
 
+    /// <summary>
+    /// CompanyIDs of any intermediary companies (e.g. a regional importer between the distributor and the
+    /// dealer). Like the distributor, they never make the end-customer sale; they are surfaced as
+    /// intermediary supply-chain legs on the sale information.
+    /// </summary>
+    public List<long> IntermediaryCompanyIDs { get; set; } = new();
+
     public int? DistributorStockPartLookupQuantityThreshold { get; set; }
     public bool ShowPartLookupStockQauntity { get; set; }
     public bool EnableManufacturerLookup { get; set; }
@@ -73,6 +80,7 @@ public class GeneratorLookupOptions
             LookupBrokerStock = LookupBrokerStock,
             IncludeInactivatedFreeServiceItems = IncludeInactivatedFreeServiceItems,
             DistributorCompanyID = DistributorCompanyID,
+            IntermediaryCompanyIDs = IntermediaryCompanyIDs,
             DistributorStockPartLookupQuantityThreshold = DistributorStockPartLookupQuantityThreshold,
             ShowPartLookupStockQauntity = ShowPartLookupStockQauntity,
             EnableManufacturerLookup = EnableManufacturerLookup,

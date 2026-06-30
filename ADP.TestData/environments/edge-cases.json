@@ -1,0 +1,131 @@
+{
+  "LookupOptions": {
+    "WarrantyStartDateDefaultsToInvoiceDate": true,
+    "DistributorCompanyID": 5,
+    "IntermediaryCompanyIDs": [7],
+    "BrandStandardWarrantyPeriodsInYears": { "1": 3 },
+    "LookupBrokerStock": false
+  },
+  "Companies": [
+    {
+      "CompanyId": 5,
+      "CompanyName": "Sample Distributor",
+      "Branches": [
+        { "BranchId": 500, "BranchName": "Distributor HQ" }
+      ]
+    },
+    {
+      "CompanyId": 7,
+      "CompanyName": "Regional Importer",
+      "Branches": [
+        { "BranchId": 700, "BranchName": "Importer Hub" }
+      ]
+    },
+    {
+      "CompanyId": 10,
+      "CompanyName": "Sample Dealer",
+      "Branches": [
+        { "BranchId": 100, "BranchName": "Main Showroom" }
+      ]
+    }
+  ],
+  "Countries": [
+    { "CountryId": 1, "CountryName": "Iraq" }
+  ],
+  "Regions": [
+    { "RegionId": 20, "RegionName": "Central Iraq" }
+  ],
+  "Vehicles": {
+    "JTMAB7BJ0T4224184": {
+      "VehicleEntries": [
+        {
+          "VIN": "JTMAB7BJ0T4224184",
+          "InvoiceDate": "2026-05-20",
+          "InvoiceNumber": "30018218",
+          "CompanyID": 5,
+          "BranchID": 500,
+          "CountryID": 1,
+          "BrandID": 1,
+          "VariantCode": "VAR001",
+          "Katashiki": "MXAA52L-ANXGP",
+          "ExteriorColorCode": "1G3",
+          "InteriorColorCode": "LA20",
+          "ModelDescription": "RAV4 2.0L 4WD",
+          "ModelCode": "42605",
+          "ModelYear": 2026
+        },
+        {
+          "VIN": "JTMAB7BJ0T4224184",
+          "InvoiceDate": "2026-05-22",
+          "InvoiceNumber": "70000001",
+          "CompanyID": 7,
+          "BranchID": 700,
+          "CountryID": 1,
+          "BrandID": 1,
+          "VariantCode": "VAR001",
+          "Katashiki": "MXAA52L-ANXGP",
+          "ExteriorColorCode": "1G3",
+          "InteriorColorCode": "LA20"
+        },
+        {
+          "VIN": "JTMAB7BJ0T4224184",
+          "InvoiceDate": "2026-05-25",
+          "InvoiceNumber": "11000191",
+          "CompanyID": 10,
+          "BranchID": 100,
+          "CountryID": 1,
+          "BrandID": 1,
+          "VariantCode": "VAR001",
+          "Katashiki": "MXAA52L-ANXGP",
+          "ExteriorColorCode": "1G3",
+          "InteriorColorCode": "LA20"
+        }
+      ],
+      "InitialOfficialVINs": [
+        { "VIN": "JTMAB7BJ0T4224184", "CompanyID": 10 }
+      ],
+      "SSCAffectedVINs": [],
+      "WarrantyClaims": [],
+      "LaborLines": [],
+      "PartLines": [],
+      "VehicleServiceActivations": [
+        {
+          "VIN": "JTMAB7BJ0T4224184",
+          "WarrantyActivationDate": "2026-05-26",
+          "CompanyID": 10,
+          "CountryID": 1,
+          "RegionID": 20,
+          "BranchID": 100
+        }
+      ],
+      "Accessories": [],
+      "PaintThicknessInspections": [],
+      "ExtendedWarrantyEntries": [],
+      "WarrantyDateShifts": [],
+      "FreeServiceItemDateShifts": [],
+      "ItemClaims": [],
+      "PaidServiceInvoices": [],
+      "FreeServiceItemExcludedVINs": [],
+      "VehicleInspections": []
+    }
+  },
+  "BrokerInitialVehicles": [],
+  "BrokerInvoices": [],
+  "VehicleModels": [
+    {
+      "BrandID": 1,
+      "VariantCode": "VAR001",
+      "Katashiki": "MXAA52L-ANXGP",
+      "ModelDescription": "RAV4 2.0L 4WD",
+      "BasicModelCode": "MXAA52L",
+      "BodyType": "SUV",
+      "Engine": "2.0L M20A-FKS",
+      "Fuel": "Petrol",
+      "Transmission": "CVT",
+      "Doors": "5",
+      "Side": "LHD"
+    }
+  ],
+  "ServiceItems": [],
+  "Parts": {}
+}

@@ -43,3 +43,9 @@ Represents a vehicle entry in the dealer stock. Each entry corresponds to a vehi
 | InvoiceStatus <div><strong>``string``</strong></div> | The status of the invoice (e.g., Paid, Pending). |
 | CompanyIntegrationID <div><strong>``string``</strong></div> | An external identifier used for company-level system-to-system integration. |
 | BranchIntegrationID <div><strong>``string``</strong></div> | An external identifier used for branch-level system-to-system integration. |
+| Intermediary <div><strong>``IntermediarySaleLeg``</strong></div> | The embedded intermediary supply-chain leg, for sources that emit a single entry per VIN and carry the
+ chain inline. Null for multi-entry sources, which instead emit a
+ separate [VehicleEntryModel](/generated/Models/Vehicle/VehicleEntryModel.html) per supply-chain leg. |
+| Distributor <div><strong>``DistributorSaleLeg``</strong></div> | The embedded distributor supply-chain leg (the distributor's own sale to the dealer), for single-entry
+ sources on a direct route (distributor→dealer). Null otherwise. The distributor's company comes from
+ `LookupOptions.DistributorCompanyID`; this carries only its invoice number + date. |
