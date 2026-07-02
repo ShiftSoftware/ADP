@@ -45,6 +45,18 @@ public static class IServiceCollectionExtensions
     }
 
     /// <summary>
+    /// Registers the read-only DuckDB check source with a connection string resolved per measure — for hosts
+    /// whose database file changes between runs, e.g. versioned read snapshots resolved latest-by-name. A
+    /// factory failure (no snapshot published yet) surfaces as a per-measure source error while the run still
+    /// completes. Chain after <c>AddRastgoCore</c>.
+    /// </summary>
+    public static IServiceCollection AddRastgoDuckDb(this IServiceCollection services, Func<string> connectionStringFactory)
+    {
+        services.AddSingleton<ICheckSource>(_ => new DuckDbCheckSource(connectionStringFactory));
+        return services;
+    }
+
+    /// <summary>
     /// Registers the read-only Cosmos check source (source name <c>cosmos</c>) from a connection string. A
     /// null/blank string registers a no-client source: cosmos checks report a source error but the run still
     /// completes (mirrors the incubated HealthRunner behaviour). Chain after <c>AddRastgoCore</c>.

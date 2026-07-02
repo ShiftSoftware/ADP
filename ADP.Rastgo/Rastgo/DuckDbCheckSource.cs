@@ -10,25 +10,34 @@ namespace ShiftSoftware.ADP.Rastgo;
 /// source column stores local/naive time, normalize it in the measure SQL — e.g.
 /// <c>MAX(InvoiceDate) AT TIME ZONE 'Asia/Baghdad' AT TIME ZONE 'UTC'</c>.
 /// </para>
+/// <para>
+/// A fresh connection is opened per measure and disposed right after, with the connection string
+/// resolved through a factory each time. Two reasons: hosts that publish versioned snapshots (a
+/// new file per publish, resolved latest-by-name) always measure the newest one, and no long-lived
+/// handle pins a snapshot file open on an SMB share — a held-open target is what turned the
+/// sync-agent's old fixed-name snapshot replacement into a delete. Measures within one run may
+/// therefore span a publish boundary; for health checks that read-consistency trade is fine.
+/// </para>
 /// </summary>
-public sealed class DuckDbCheckSource(string connectionString) : ICheckSource, IDisposable
+public sealed class DuckDbCheckSource : ICheckSource
 {
+    private readonly Func<string> connectionStringFactory;
+
     public string Name => "duckdb";
 
-    private DuckDBConnection? _conn;
-
-    private DuckDBConnection Connection
+    /// <summary>Fixed connection string — a single static database file.</summary>
+    public DuckDbCheckSource(string connectionString)
+        : this(() => connectionString)
     {
-        get
-        {
-            if (_conn is null)
-            {
-                _conn = new DuckDBConnection(connectionString);
-                _conn.Open();
-            }
-            return _conn;
-        }
     }
+
+    /// <summary>
+    /// Connection string resolved per measure — for hosts whose database path changes between
+    /// runs (e.g. versioned read snapshots resolved latest-by-name). A factory failure (no
+    /// snapshot published yet) surfaces as that measure's source error; the run still completes.
+    /// </summary>
+    public DuckDbCheckSource(Func<string> connectionStringFactory)
+        => this.connectionStringFactory = connectionStringFactory;
 
     public Task<MeasureOutcome> MeasureAsync(MeasureSpec spec, bool grouped, CancellationToken ct)
     {
@@ -40,7 +49,10 @@ public sealed class DuckDbCheckSource(string connectionString) : ICheckSource, I
             var cells = new Dictionary<string, MeasureCell>();
             var isTimestamp = string.Equals(spec.ValueKind, "timestamp", StringComparison.OrdinalIgnoreCase);
 
-            using var cmd = Connection.CreateCommand();
+            using var connection = new DuckDBConnection(connectionStringFactory());
+            connection.Open();
+
+            using var cmd = connection.CreateCommand();
             cmd.CommandText = spec.Sql;
             using var reader = cmd.ExecuteReader();
 
@@ -71,6 +83,4 @@ public sealed class DuckDbCheckSource(string connectionString) : ICheckSource, I
             return Task.FromResult(new MeasureOutcome { Error = ex.Message });
         }
     }
-
-    public void Dispose() => _conn?.Dispose();
 }
