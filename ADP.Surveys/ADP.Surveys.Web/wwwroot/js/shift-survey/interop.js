@@ -83,6 +83,30 @@ export async function setLocale(element, locale) {
   else element.removeAttribute('locale');
 }
 
+/** Jump the preview to a screen (editor-selection sync). If the preview is
+ *  sitting in its done state (auto-submitted thank-you), the renderer's done
+ *  flag would swallow the jump — remount fresh first with the same schema
+ *  (same 80ms dance as setSchema) and apply the jump after the remount. */
+export async function setActiveScreen(element, screenId) {
+  if (!element) return;
+  await ensureDefined();
+
+  const rootEl = element.shadowRoot?.querySelector('.survey-root');
+  const renderedDone = !!rootEl && rootEl.classList.contains('survey-root--done');
+  if (renderedDone && element.schema) {
+    const schema = element.schema;
+    remountAfterNextSchema.delete(element);
+    element.schema = null;
+    setTimeout(() => {
+      if (element.schema === null) element.schema = schema;
+      element.activeScreenId = screenId ?? null;
+    }, 80);
+    return;
+  }
+
+  element.activeScreenId = screenId ?? null;
+}
+
 /** Attach a submit handler for preview mode.
  *
  *  Preview should never lock into `done=true`. That happens when the renderer

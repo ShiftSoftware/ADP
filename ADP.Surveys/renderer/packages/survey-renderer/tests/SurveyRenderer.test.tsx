@@ -217,4 +217,43 @@ describe('SurveyRenderer', () => {
     expect(call.meta?.startedAt).toBeTruthy();
     expect(call.meta?.completedAt).toBeTruthy();
   });
+
+  it('blocks Next on a constraint violation with a localized inline error, clears once fixed', async () => {
+    const schema = fixture();
+    // Tighten the name question: minLength 5.
+    (schema.screens[0]!.questions![0] as Record<string, unknown>)['minLength'] = 5;
+    render(<SurveyRenderer schema={schema} onSubmit={vi.fn()} />);
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText('Your name'), 'Aza');
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+
+    // Still on the first screen, localized template rendered with n=5.
+    expect(screen.getByRole('heading', { name: 'Welcome' })).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('Must be at least 5 characters.');
+
+    // Fixing the answer clears the error live (no Next needed)...
+    await user.type(screen.getByLabelText('Your name'), 'nya');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+
+    // ...and Next now advances.
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    expect(screen.getByRole('heading', { name: 'How was it?' })).toBeInTheDocument();
+  });
+
+  it('jumps to activeScreenId when the prop changes (builder preview sync)', () => {
+    const schema = fixture();
+    const { rerender } = render(
+      <SurveyRenderer schema={schema} onSubmit={vi.fn()} activeScreenId="feedback" />,
+    );
+    // Mount-time jump straight to the selected screen.
+    expect(screen.getByRole('heading', { name: 'How was it?' })).toBeInTheDocument();
+
+    rerender(<SurveyRenderer schema={schema} onSubmit={vi.fn()} activeScreenId="brand" />);
+    expect(screen.getByRole('heading', { name: 'Which brand?' })).toBeInTheDocument();
+
+    // Unknown ids are ignored — stay put.
+    rerender(<SurveyRenderer schema={schema} onSubmit={vi.fn()} activeScreenId="nope" />);
+    expect(screen.getByRole('heading', { name: 'Which brand?' })).toBeInTheDocument();
+  });
 });

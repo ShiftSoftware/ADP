@@ -1,15 +1,22 @@
 @namespace ShiftSoftware.ADP.Surveys.Web.Components
 @using ShiftSoftware.ADP.Surveys.Shared.DTOs
 @using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions
+@using ShiftSoftware.ADP.Surveys.Web.WebServices
 @using LocalizedString = ShiftSoftware.ADP.Surveys.Shared.DTOs.LocalizedString
+
+@inject SurveyService SurveySvc
 
 @*
     Visual editor for a QuestionEntryDto that carries a QuestionRef. Per
     Decision #9, only presentation-surface fields are overridable: title,
-    help, and required. Order is a technical positioning field the entry
-    list already handles via move up/down, so we don't expose it here.
-    Per-option labels deferred to a later slice — authors can still tweak
-    them via the Raw JSON tab.
+    help, required, and per-option labels. Order is a technical positioning
+    field the entry list already handles via move up/down, so we don't
+    expose it here.
+
+    The option-label section loads lazily: on first open it resolves the
+    banked question through the Preview endpoint (synthetic one-question
+    draft) so the editor can show the real option ids + bank labels. If the
+    resolve fails the editor degrades to id-keyed rows.
 *@
 
 <div class="bank-ref">
@@ -55,12 +62,37 @@
         <MudSelectItem T="string" Value="@("false")">Optional</MudSelectItem>
     </MudSelect>
 
-    @if (HasOptionLabelOverrides)
+    <div class="bank-ref__section-title mt-4">Option labels</div>
+
+    @if (!optionsOpen)
     {
-        <MudAlert Severity="Severity.Warning" Dense="true" Class="mt-3">
-            This reference has per-option label overrides. Edit them via the
-            <b>Raw JSON</b> tab — a visual editor for option labels lands in a later slice.
-        </MudAlert>
+        <MudButton Size="Size.Small"
+                   Variant="Variant.Text"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.EditNote"
+                   OnClick="OpenOptionLabels">
+            @(HasOptionLabelOverrides
+                ? $"Edit option label overrides ({Entry.Ref!.Overrides!.OptionLabels!.Count})"
+                : "Edit option label overrides…")
+        </MudButton>
+    }
+    else if (optionsLoading)
+    {
+        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="ml-2" />
+    }
+    else if (resolvedOptions is { Count: 0 } && !HasOptionLabelOverrides)
+    {
+        <div class="bank-ref__no-options">
+            This banked question has no options to override.
+        </div>
+    }
+    else
+    {
+        <OptionLabelOverridesEditor Options="@resolvedOptions"
+                                    Value="@(Entry.Ref?.Overrides?.OptionLabels)"
+                                    ValueChanged="OnOptionLabelsChanged"
+                                    Locales="@Locales"
+                                    ReadOnly="@ReadOnly" />
     }
 </div>
 
@@ -95,6 +127,12 @@
         padding-bottom: 4px;
         border-bottom: 1px solid #e0e5ec;
     }
+    .bank-ref__no-options {
+        font-size: 0.85rem;
+        color: #666;
+        font-style: italic;
+        padding: 4px 0;
+    }
 </style>
 
 @code {
@@ -122,6 +160,28 @@
 
     bool HasOptionLabelOverrides =>
         Entry.Ref?.Overrides?.OptionLabels is { Count: > 0 };
+
+    bool optionsOpen;
+    bool optionsLoading;
+    IReadOnlyList<OptionLabelOverridesEditor.OptionInfo>? resolvedOptions;
+
+    async Task OpenOptionLabels()
+    {
+        optionsOpen = true;
+        optionsLoading = true;
+        var question = await SurveySvc.ResolveBankQuestionAsync(Entry.Ref!.BankRef, Locales);
+        resolvedOptions = question is null
+            ? null
+            : OptionLabelOverridesEditor.ExtractOptions(question, Locales?.FirstOrDefault());
+        optionsLoading = false;
+    }
+
+    async Task OnOptionLabelsChanged(Dictionary<string, LocalizedString>? value)
+    {
+        EnsureOverrides().OptionLabels = value;
+        PruneIfEmpty();
+        await Changed.InvokeAsync();
+    }
 
     async Task OnTitleChanged(LocalizedString? value)
     {

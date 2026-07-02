@@ -31,6 +31,18 @@ export interface UiStrings {
   couldNotSubmit: string;
   /** Inline error under a required question the user tried to Next past. */
   requiredError: string;
+  /** Inline constraint errors (client-side AnswerValidator mirror). `{n}` /
+   *  `{min}` / `{max}` placeholders are substituted by `formatUi`. */
+  minLengthError: string;
+  maxLengthError: string;
+  patternError: string;
+  minError: string;
+  maxError: string;
+  rangeError: string;
+  minSelectedError: string;
+  maxSelectedError: string;
+  /** Generic fallback for constraint codes without a dedicated template. */
+  invalidAnswerError: string;
   /** Default labels for YesNoQuestion when the schema doesn't supply `yesLabel` / `noLabel`. */
   yes: string;
   no: string;
@@ -55,6 +67,15 @@ const en: LocaleConfig = {
     unsupportedQuestion: 'Unsupported question type:',
     couldNotSubmit: 'Could not submit:',
     requiredError: 'This question is required.',
+    minLengthError: 'Must be at least {n} characters.',
+    maxLengthError: 'Must be at most {n} characters.',
+    patternError: 'Does not match the required format.',
+    minError: 'Must be at least {n}.',
+    maxError: 'Must be at most {n}.',
+    rangeError: 'Must be between {min} and {max}.',
+    minSelectedError: 'Select at least {n} option(s).',
+    maxSelectedError: 'Select at most {n} option(s).',
+    invalidAnswerError: 'Please check this answer.',
     yes: 'Yes',
     no: 'No',
   },
@@ -73,6 +94,15 @@ const ar: LocaleConfig = {
     unsupportedQuestion: 'نوع سؤال غير مدعوم:',
     couldNotSubmit: 'تعذر الإرسال:',
     requiredError: 'هذا السؤال مطلوب.',
+    minLengthError: 'يجب ألا يقل عن {n} حرفاً.',
+    maxLengthError: 'يجب ألا يزيد عن {n} حرفاً.',
+    patternError: 'لا يطابق التنسيق المطلوب.',
+    minError: 'يجب ألا يقل عن {n}.',
+    maxError: 'يجب ألا يزيد عن {n}.',
+    rangeError: 'يجب أن يكون بين {min} و {max}.',
+    minSelectedError: 'اختر {n} خيارات على الأقل.',
+    maxSelectedError: 'اختر {n} خيارات كحد أقصى.',
+    invalidAnswerError: 'يرجى التحقق من هذه الإجابة.',
     yes: 'نعم',
     no: 'لا',
   },
@@ -83,6 +113,15 @@ const ar: LocaleConfig = {
  *  overriding `ar` with a partial object would require supplying a full
  *  `LocaleConfig`. If this becomes limiting, deep-merge here. */
 export const builtInLocales: Record<string, LocaleConfig> = { en, ar };
+
+/** Substitute `{name}` placeholders in a UI string template. Kept deliberately
+ *  tiny — no plurals, no nesting; consumers needing more override `uiLocales`. */
+export function formatUi(template: string, params?: Record<string, string | number>): string {
+  if (!params) return template;
+  return template.replace(/\{(\w+)\}/g, (match, key: string) =>
+    key in params ? String(params[key]) : match,
+  );
+}
 
 /** Resolve the active LocaleConfig for a survey. Priority:
  *   1. The requested `locale` (user or schema.defaultLocale).

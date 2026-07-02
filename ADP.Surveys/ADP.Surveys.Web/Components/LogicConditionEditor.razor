@@ -2,17 +2,20 @@
 @using ShiftSoftware.ADP.Surveys.Shared.DTOs.Logic
 
 @*
-    Dispatches on the three condition shapes. For simple mode, composites
-    only contain predicate children at one nesting level — nested composites
-    are read-only with a pointer to the Raw JSON tab. Expressions likewise
-    display read-only; switching to/from expression mode drops the previous
-    content (because a free-form expression can't be mapped back to a
-    predicate without parsing it).
+    Dispatches on the three condition shapes and recurses into composite
+    children — every node in the condition tree gets the same editor, so
+    composites nest to arbitrary depth (visually capped at MaxVisualDepth;
+    deeper trees fall back to the Raw JSON pointer).
 
-    The component mutates the parent's rule in place through OnReplaceRoot
-    when the user switches shapes — the root LogicConditionDto reference
-    changes, so the parent receives the new one and stores it back on the
-    LogicRuleDto.If.
+    Depth 0 is the rule root: it renders the IF label and the full labeled
+    shape menu, and shape switches propagate through OnReplaceRoot so the
+    parent stores the new reference on LogicRuleDto.If. Children (Depth > 0)
+    render a compact icon shape menu and replace themselves in-place inside
+    the parent composite's child list.
+
+    Switching to/from expression mode drops the previous content (a
+    free-form expression can't be mapped back to a predicate without
+    parsing it).
 *@
 
 @{
@@ -28,13 +31,16 @@
     // top of the template so the @if branches below can invoke it; pure
     // Razor so EventCallback types land correctly (an earlier
     // RenderTreeBuilder version tripped InvalidCastException setting
-    // OnClick on MudMenuItem).
+    // OnClick on MudMenuItem). Compact (icon-only) at child depths, labeled
+    // at the root.
     RenderFragment<string> ShapeMenu = (current) => @<text>
-        <MudMenu Label="@ShapeLabel(current)"
-                 EndIcon="@Icons.Material.Filled.KeyboardArrowDown"
+        <MudMenu Label="@(Depth == 0 ? ShapeLabel(current) : null)"
+                 Icon="@(Depth == 0 ? null : Icons.Material.Filled.SwapHoriz)"
+                 EndIcon="@(Depth == 0 ? Icons.Material.Filled.KeyboardArrowDown : null)"
                  Variant="Variant.Outlined"
                  Size="Size.Small"
                  Disabled="@ReadOnly"
+                 title="Change condition shape"
                  Dense="true">
             <MudMenuItem Disabled="@(current == "predicate")"
                          OnClick="@(() => SwitchShape("predicate"))">
@@ -52,27 +58,56 @@
     </text>;
 }
 
-@if (Condition is PredicateConditionDto pred)
+@if (Depth > MaxVisualDepth)
 {
-    <div class="cond-shell">
-        <div class="cond-shell__toolbar">
-            <span class="cond-shell__mode-label">IF</span>
+    <MudAlert Severity="Severity.Warning" Dense="true">
+        Condition nested deeper than the visual editor supports.
+        Edit via the <b>Raw JSON</b> tab.
+    </MudAlert>
+}
+else if (Condition is PredicateConditionDto pred)
+{
+    @if (Depth == 0)
+    {
+        <div class="cond-shell" style="@ShellStyle">
+            <div class="cond-shell__toolbar">
+                <span class="cond-shell__mode-label">IF</span>
+                @ShapeMenu(currentShape)
+            </div>
+            <LogicPredicateEditor Predicate="pred"
+                                  QuestionChoices="QuestionChoices"
+                                  FreeKeyMode="@FreeKeyMode"
+                                  ReadOnly="@ReadOnly"
+                                  Changed="Changed" />
+        </div>
+    }
+    else
+    {
+        @* Child predicate: single row, compact convert menu inline so a
+           composite of N predicates stays N rows tall. *@
+        <div class="cond-inline">
+            <div class="cond-inline__body">
+                <LogicPredicateEditor Predicate="pred"
+                                      QuestionChoices="QuestionChoices"
+                                      FreeKeyMode="@FreeKeyMode"
+                                      ReadOnly="@ReadOnly"
+                                      Changed="Changed" />
+            </div>
             @ShapeMenu(currentShape)
         </div>
-        <LogicPredicateEditor Predicate="pred"
-                              QuestionChoices="QuestionChoices"
-                              ReadOnly="@ReadOnly"
-                              Changed="Changed" />
-    </div>
+    }
 }
 else if (Condition is CompositeConditionDto comp)
 {
     var children = comp.All ?? comp.Any ?? new List<LogicConditionDto>();
     var mode = comp.All is not null ? "all" : "any";
 
-    <div class="cond-shell">
+    <div class="cond-shell" style="@ShellStyle">
         <div class="cond-shell__toolbar">
-            <span class="cond-shell__mode-label">IF</span>
+            @if (Depth == 0)
+            {
+                <span class="cond-shell__mode-label">IF</span>
+            }
             <MudToggleGroup T="string"
                             SelectionMode="SelectionMode.SingleSelection"
                             Value="@mode"
@@ -92,23 +127,16 @@ else if (Condition is CompositeConditionDto comp)
             {
                 var idx = i;
                 var child = children[idx];
-                <div class="cond-shell__child">
+                <div class="cond-shell__child" @key="child" style="@ChildStyle">
                     <div class="cond-shell__child-handle">@(idx + 1)</div>
                     <div class="cond-shell__child-body">
-                        @if (child is PredicateConditionDto p)
-                        {
-                            <LogicPredicateEditor Predicate="p"
-                                                  QuestionChoices="QuestionChoices"
-                                                  ReadOnly="@ReadOnly"
-                                                  Changed="Changed" />
-                        }
-                        else
-                        {
-                            <MudAlert Severity="Severity.Warning" Dense="true">
-                                Nested @(child is CompositeConditionDto ? "composite" : "expression") child.
-                                Edit via the <b>Raw JSON</b> tab — the visual editor only edits one nesting level.
-                            </MudAlert>
-                        }
+                        <LogicConditionEditor Condition="child"
+                                              QuestionChoices="QuestionChoices"
+                                              FreeKeyMode="@FreeKeyMode"
+                                              ReadOnly="@ReadOnly"
+                                              Depth="@(Depth + 1)"
+                                              OnReplaceRoot="@((LogicConditionDto v) => ReplaceChild(comp, idx, v))"
+                                              Changed="Changed" />
                     </div>
                     @if (!ReadOnly)
                     {
@@ -122,22 +150,37 @@ else if (Condition is CompositeConditionDto comp)
             }
             @if (!ReadOnly)
             {
-                <MudButton StartIcon="@Icons.Material.Filled.Add"
-                           Size="Size.Small"
-                           Variant="Variant.Text"
-                           Color="Color.Primary"
-                           OnClick="@(() => AddChild(comp))">
-                    Add condition
-                </MudButton>
+                <div class="cond-shell__add-row">
+                    <MudButton StartIcon="@Icons.Material.Filled.Add"
+                               Size="Size.Small"
+                               Variant="Variant.Text"
+                               Color="Color.Primary"
+                               OnClick="@(() => AddChild(comp))">
+                        Add condition
+                    </MudButton>
+                    @if (Depth < MaxVisualDepth)
+                    {
+                        <MudButton StartIcon="@Icons.Material.Filled.AccountTree"
+                                   Size="Size.Small"
+                                   Variant="Variant.Text"
+                                   Color="Color.Primary"
+                                   OnClick="@(() => AddGroup(comp))">
+                            Add nested group
+                        </MudButton>
+                    }
+                </div>
             }
         </div>
     </div>
 }
 else if (Condition is ExpressionConditionDto expr)
 {
-    <div class="cond-shell">
+    <div class="cond-shell" style="@ShellStyle">
         <div class="cond-shell__toolbar">
-            <span class="cond-shell__mode-label">IF</span>
+            @if (Depth == 0)
+            {
+                <span class="cond-shell__mode-label">IF</span>
+            }
             @ShapeMenu(currentShape)
         </div>
         <LogicExpressionEditor Condition="expr"
@@ -153,7 +196,6 @@ else if (Condition is ExpressionConditionDto expr)
         display: flex;
         flex-direction: column;
         gap: 8px;
-        background: #f7f8fa;
         border: 1px solid #e0e5ec;
         border-radius: 8px;
         padding: 10px 12px;
@@ -178,7 +220,6 @@ else if (Condition is ExpressionConditionDto expr)
         grid-template-columns: 20px 1fr auto;
         gap: 6px;
         align-items: start;
-        background: #fff;
         border: 1px solid #e0e5ec;
         border-radius: 6px;
         padding: 8px;
@@ -193,9 +234,28 @@ else if (Condition is ExpressionConditionDto expr)
     .cond-shell__child-body {
         min-width: 0;
     }
+    .cond-shell__add-row {
+        display: flex;
+        gap: 4px;
+    }
+    .cond-inline {
+        display: flex;
+        align-items: start;
+        gap: 6px;
+    }
+    .cond-inline__body {
+        flex: 1;
+        min-width: 0;
+    }
 </style>
 
 @code {
+    /// <summary>
+    /// Beyond this nesting depth the editor stops recursing and points at the
+    /// Raw JSON tab. Keeps pathological trees from producing unusable UI.
+    /// </summary>
+    const int MaxVisualDepth = 4;
+
     [Parameter, EditorRequired]
     public LogicConditionDto Condition { get; set; } = default!;
 
@@ -207,14 +267,35 @@ else if (Condition is ExpressionConditionDto expr)
     public bool ReadOnly { get; set; }
 
     /// <summary>
-    /// Invoked when the root condition reference changes (shape switch).
-    /// Parent writes the new value back onto the LogicRuleDto.If.
+    /// Open key domain (trigger-filter context paths) — passed through to
+    /// every <see cref="LogicPredicateEditor"/> in the tree.
+    /// </summary>
+    [Parameter]
+    public bool FreeKeyMode { get; set; }
+
+    /// <summary>
+    /// Nesting level of this node. 0 = rule root (renders the IF label);
+    /// deeper levels are children of a composite and replace themselves
+    /// inside the parent's child list on shape switch.
+    /// </summary>
+    [Parameter]
+    public int Depth { get; set; }
+
+    /// <summary>
+    /// Invoked when this node's condition reference changes (shape switch).
+    /// At the root the parent writes the new value back onto LogicRuleDto.If;
+    /// at child depths the parent composite replaces the child in its list.
     /// </summary>
     [Parameter]
     public EventCallback<LogicConditionDto> OnReplaceRoot { get; set; }
 
     [Parameter]
     public EventCallback Changed { get; set; }
+
+    // Alternate shell backgrounds by depth parity so nested groups read as
+    // distinct layers.
+    string ShellStyle => Depth % 2 == 0 ? "background: #f7f8fa;" : "background: #fff;";
+    string ChildStyle => Depth % 2 == 0 ? "background: #fff;" : "background: #f7f8fa;";
 
     static string ShapeLabel(string shape) => shape switch
     {
@@ -255,13 +336,35 @@ else if (Condition is ExpressionConditionDto expr)
 
     async Task AddChild(CompositeConditionDto comp)
     {
+        GetOrCreateChildren(comp).Add(new PredicateConditionDto());
+        await Changed.InvokeAsync();
+    }
+
+    async Task AddGroup(CompositeConditionDto comp)
+    {
+        GetOrCreateChildren(comp).Add(new CompositeConditionDto
+        {
+            All = new List<LogicConditionDto> { new PredicateConditionDto() },
+        });
+        await Changed.InvokeAsync();
+    }
+
+    static List<LogicConditionDto> GetOrCreateChildren(CompositeConditionDto comp)
+    {
         var children = comp.All ?? comp.Any;
         if (children is null)
         {
             children = new List<LogicConditionDto>();
             comp.All = children;
         }
-        children.Add(new PredicateConditionDto());
+        return children;
+    }
+
+    async Task ReplaceChild(CompositeConditionDto comp, int index, LogicConditionDto replacement)
+    {
+        var children = comp.All ?? comp.Any;
+        if (children is null || index < 0 || index >= children.Count) return;
+        children[index] = replacement;
         await Changed.InvokeAsync();
     }
 

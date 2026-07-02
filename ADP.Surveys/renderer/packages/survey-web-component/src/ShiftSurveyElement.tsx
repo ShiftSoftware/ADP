@@ -43,7 +43,7 @@ import {
  */
 export class ShiftSurveyElement extends HTMLElement {
   static get observedAttributes(): string[] {
-    return ['instance-id', 'api-base', 'locale', 'mode'];
+    return ['instance-id', 'api-base', 'locale', 'mode', 'active-screen-id'];
   }
 
   /** Schema-mode setter. Assigning this swaps the element into schema mode and
@@ -129,6 +129,19 @@ export class ShiftSurveyElement extends HTMLElement {
     this.#renderIfReady();
   }
 
+  /** Builder-preview jump target. Assigning a screen id makes the renderer
+   *  jump to that screen (answers preserved); the user can navigate freely
+   *  afterwards. Mirrors the `active-screen-id` attribute; the property wins
+   *  when both are set. */
+  #activeScreenId: string | null = null;
+  get activeScreenId(): string | null {
+    return this.#activeScreenId ?? this.getAttribute('active-screen-id');
+  }
+  set activeScreenId(value: string | null) {
+    this.#activeScreenId = value;
+    this.#renderIfReady();
+  }
+
   // ─── Internals ───────────────────────────────────────────────────────────
 
   #maybeFetchSchema(): void {
@@ -195,11 +208,14 @@ export class ShiftSurveyElement extends HTMLElement {
           await client.submitResponse(instanceId, submission);
         };
 
+    const activeScreenId = this.activeScreenId;
+
     this.#root.render(
       createElement(SurveyRenderer, {
         schema,
         onSubmit,
         ...(locale ? { locale } : {}),
+        ...(activeScreenId ? { activeScreenId } : {}),
         // Let the element be the resume key in API mode so two surveys on the
         // same host page don't clobber each other.
         ...(instanceId ? { resumeKey: instanceId } : {}),

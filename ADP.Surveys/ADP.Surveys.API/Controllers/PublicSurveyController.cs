@@ -9,6 +9,7 @@ using ShiftSoftware.ADP.Surveys.Shared.Answers;
 using ShiftSoftware.ADP.Surveys.Shared.DTOs;
 using ShiftSoftware.ADP.Surveys.Shared.DTOs.Responses;
 using ShiftSoftware.ADP.Surveys.Shared.Json;
+using ShiftSoftware.ADP.Surveys.Shared.Personalization;
 using ShiftSoftware.ShiftEntity.Core;
 using ShiftSoftware.ShiftEntity.EFCore;
 
@@ -52,16 +53,34 @@ public class PublicSurveyController : ControllerBase
         if (instance.Status == SurveyInstanceStatus.Expired)
             return StatusCode(StatusCodes.Status410Gone, new { Message = "This survey link has expired." });
 
-        // No deployment branding configured → serve the raw schema JSON untouched so
-        // the renderer hydrates against the exact bytes frozen at publish time.
-        if (options.DefaultBranding is null)
-            return Content(instance.SurveyVersion.ResolvedJson, "application/json");
+        var rawJson = instance.SurveyVersion.ResolvedJson;
+        var applyTokens = PersonalizationTokens.MightContainTokens(rawJson);
+        var applyBranding = options.DefaultBranding is not null;
 
-        // Deployment branding overlay — applied at serve time (never baked into the
-        // immutable version) so a rebrand reaches in-flight instances immediately.
-        // The survey's own branding wins field-by-field.
-        var resolved = JsonSerializer.Deserialize<SurveyDto>(instance.SurveyVersion.ResolvedJson, SurveySchemaSerializer.Options)!;
-        resolved.Branding = BrandingDto.Merge(options.DefaultBranding, resolved.Branding);
+        // Nothing to overlay → serve the raw schema JSON untouched so the renderer
+        // hydrates against the exact bytes frozen at publish time.
+        if (!applyBranding && !applyTokens)
+            return Content(rawJson, "application/json");
+
+        // Serve-time overlays — applied to the served copy, never baked into the
+        // immutable version:
+        //   - Deployment branding: a rebrand reaches in-flight instances
+        //     immediately; the survey's own branding wins field-by-field.
+        //   - Personalization tokens: {{recipient.*}} / {{candidate.*}} in
+        //     LocalizedString values filled from this instance's snapshot;
+        //     unknown tokens stay verbatim.
+        var resolved = JsonSerializer.Deserialize<SurveyDto>(rawJson, SurveySchemaSerializer.Options)!;
+        if (applyBranding)
+            resolved.Branding = BrandingDto.Merge(options.DefaultBranding, resolved.Branding);
+        if (applyTokens)
+        {
+            var context = PersonalizationTokens.BuildContext(
+                instance.CustomerRef,
+                instance.RecipientAddress,
+                instance.RecipientLocale,
+                instance.MetaDataJson);
+            PersonalizationTokens.Substitute(resolved, context);
+        }
         return Content(JsonSerializer.Serialize(resolved, SurveySchemaSerializer.Options), "application/json");
     }
 

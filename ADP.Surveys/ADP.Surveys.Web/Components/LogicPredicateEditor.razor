@@ -23,24 +23,46 @@
 
 <div class="predicate">
     <div class="predicate__row">
-        <MudSelect T="string"
-                   Label="Question"
-                   Value="@Predicate.QuestionId"
-                   ValueChanged="OnQuestionIdChanged"
-                   ReadOnly="@ReadOnly"
-                   Dense="true"
-                   Class="predicate__q">
-            @if (!pickerContainsSelected)
-            {
-                <MudSelectItem T="string" Value="@Predicate.QuestionId">@($"{Predicate.QuestionId} (unknown)")</MudSelectItem>
-            }
-            @foreach (var q in QuestionChoices)
-            {
-                <MudSelectItem T="string" Value="@q.Id">
-                    @($"{q.ScreenNumber}.{q.ScreenId} / {q.Id} — {q.TypeLabel}")
-                </MudSelectItem>
-            }
-        </MudSelect>
+        @if (FreeKeyMode)
+        {
+            @* Open key domain (e.g. trigger-filter context paths like
+               candidate.wip) — suggestions from QuestionChoices, free text
+               accepted. Mirrors the Channel autocomplete in TriggersPanel. *@
+            <MudAutocomplete T="string"
+                             Label="Field"
+                             Value="@Predicate.QuestionId"
+                             ValueChanged="OnQuestionIdChanged"
+                             SearchFunc="SearchKeys"
+                             CoerceText="false"
+                             CoerceValue="true"
+                             Clearable="false"
+                             ResetValueOnEmptyText="false"
+                             ReadOnly="@ReadOnly"
+                             Dense="true"
+                             AnchorOrigin="Origin.BottomCenter"
+                             Class="predicate__q" />
+        }
+        else
+        {
+            <MudSelect T="string"
+                       Label="Question"
+                       Value="@Predicate.QuestionId"
+                       ValueChanged="OnQuestionIdChanged"
+                       ReadOnly="@ReadOnly"
+                       Dense="true"
+                       Class="predicate__q">
+                @if (!pickerContainsSelected)
+                {
+                    <MudSelectItem T="string" Value="@Predicate.QuestionId">@($"{Predicate.QuestionId} (unknown)")</MudSelectItem>
+                }
+                @foreach (var q in QuestionChoices)
+                {
+                    <MudSelectItem T="string" Value="@q.Id">
+                        @q.Display
+                    </MudSelectItem>
+                }
+            </MudSelect>
+        }
 
         <MudSelect T="LogicOperator"
                    Label="Operator"
@@ -103,8 +125,25 @@
     [Parameter]
     public bool ReadOnly { get; set; }
 
+    /// <summary>
+    /// When true the key domain is open (trigger-filter context paths):
+    /// the question picker becomes an autocomplete that accepts free text,
+    /// and changing the key preserves the value (no question type to
+    /// invalidate against).
+    /// </summary>
+    [Parameter]
+    public bool FreeKeyMode { get; set; }
+
     [Parameter]
     public EventCallback Changed { get; set; }
+
+    Task<IEnumerable<string>> SearchKeys(string? value, CancellationToken ct)
+    {
+        var pool = QuestionChoices.Select(q => q.Id);
+        if (!string.IsNullOrWhiteSpace(value))
+            pool = pool.Where(k => k.Contains(value, StringComparison.OrdinalIgnoreCase));
+        return Task.FromResult(pool);
+    }
 
     static readonly LogicOperator[] AllOperators = new[]
     {
@@ -149,8 +188,11 @@
     {
         Predicate.QuestionId = value ?? "";
         // Changing the question can invalidate the value shape — clear it so
-        // the type-aware editor starts from a clean slate.
-        Predicate.Value = null;
+        // the type-aware editor starts from a clean slate. In free-key mode
+        // there is no question type to invalidate against, and clearing would
+        // punish fixing a typo in the path.
+        if (!FreeKeyMode)
+            Predicate.Value = null;
         await Changed.InvokeAsync();
     }
 
@@ -424,5 +466,14 @@
         public string Id { get; set; } = "";
         public string TypeLabel { get; set; } = "";
         public QuestionDto? Question { get; set; }
+
+        /// <summary>
+        /// Picker/menu display text. Screen-less choices (trigger-filter
+        /// context paths) render as the bare key so they don't pick up a
+        /// meaningless "0. /" prefix.
+        /// </summary>
+        public string Display => string.IsNullOrEmpty(ScreenId)
+            ? (string.IsNullOrEmpty(TypeLabel) ? Id : $"{Id} — {TypeLabel}")
+            : $"{ScreenNumber}.{ScreenId} / {Id} — {TypeLabel}";
     }
 }

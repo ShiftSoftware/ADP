@@ -7,11 +7,17 @@ import type {
   SurveySubmission,
   SubmissionMeta,
 } from '@shiftsoftware/survey-sdk';
-import { computeNext, resolveNavigationListTarget } from '@shiftsoftware/survey-sdk';
+import {
+  computeNext,
+  resolveNavigationListTarget,
+  validateAnswerValue,
+  validatePresentAnswers,
+  type AnswerValidationError,
+} from '@shiftsoftware/survey-sdk';
 import { brandingToCssVars } from './branding.js';
 import { SurveyContextProvider } from './SurveyContext.js';
 import { localize } from './locale.js';
-import { resolveLocaleConfig, type LocaleConfig } from './i18n.js';
+import { resolveLocaleConfig, formatUi, type LocaleConfig, type UiStrings } from './i18n.js';
 import { createHostBridge, type HostBridge } from './postMessage.js';
 import {
   clearResumeState,
@@ -38,6 +44,32 @@ import { DateTimeQuestion } from './questions/DateTimeQuestion.js';
 import { FileQuestion } from './questions/FileQuestion.js';
 import { SignatureQuestion } from './questions/SignatureQuestion.js';
 import { YesNoQuestion } from './questions/YesNoQuestion.js';
+
+/** Map a constraint-validation code onto the locale's message templates.
+ *  Codes without a dedicated template fall back to the generic string —
+ *  they're type-shape errors the widgets themselves normally prevent. */
+function localizeConstraintError(error: AnswerValidationError, ui: UiStrings): string {
+  switch (error.code) {
+    case 'minLength':
+      return formatUi(ui.minLengthError, error.params);
+    case 'maxLength':
+      return formatUi(ui.maxLengthError, error.params);
+    case 'pattern':
+      return ui.patternError;
+    case 'min':
+      return formatUi(ui.minError, error.params);
+    case 'max':
+      return formatUi(ui.maxError, error.params);
+    case 'range':
+      return formatUi(ui.rangeError, error.params);
+    case 'minSelected':
+      return formatUi(ui.minSelectedError, error.params);
+    case 'maxSelected':
+      return formatUi(ui.maxSelectedError, error.params);
+    default:
+      return ui.invalidAnswerError;
+  }
+}
 
 /** Built-in registry — callers can override or extend via the `registry` prop.
  *  Add a new question type by landing a component + adding it here. */
@@ -93,6 +125,11 @@ export interface SurveyRendererProps {
   hostMessageOrigin?: string;
   /** Override the host-message `target` (for tests). Default `window.parent`. */
   hostMessageTarget?: Window | null;
+  /** Builder-preview hook: when this prop changes to a screen id that exists
+   *  in the schema, the renderer jumps there (answer state preserved). A
+   *  "jump signal", not a controlled value — the user can still navigate
+   *  freely afterwards. `undefined` = feature unused. */
+  activeScreenId?: string | null;
 }
 
 export function SurveyRenderer({
@@ -110,6 +147,7 @@ export function SurveyRenderer({
   emitHostMessages,
   hostMessageOrigin,
   hostMessageTarget,
+  activeScreenId,
 }: SurveyRendererProps) {
   const effectiveLocale = locale ?? schema.defaultLocale ?? 'en';
   const effectiveRegistry = registry ?? defaultRegistry;
@@ -169,7 +207,25 @@ export function SurveyRenderer({
   // Flagged ids render an inline error; the flag set resets on navigation and
   // each entry hides itself as soon as its question gains an answer.
   const [requiredFlags, setRequiredFlags] = useState<ReadonlySet<string>>(new Set());
+  // Same mechanics for per-type constraint violations (min/max/length/pattern —
+  // the client-side AnswerValidator mirror). Flag on Next, re-validate live at
+  // render so the error clears the moment the answer becomes valid.
+  const [constraintFlags, setConstraintFlags] = useState<ReadonlySet<string>>(new Set());
   const [done, setDone] = useState(false);
+
+  // Builder-preview jump: when the host pushes a distinct activeScreenId,
+  // snap to it. Ref-guarded so each push fires exactly once — re-renders that
+  // carry the same prop value don't fight the user's own navigation.
+  const lastAppliedJumpRef = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (activeScreenId === undefined) return;
+    if (lastAppliedJumpRef.current === activeScreenId) return;
+    lastAppliedJumpRef.current = activeScreenId;
+    if (activeScreenId === null || done) return;
+    if (!schema.screens.some((s) => s.id === activeScreenId)) return;
+    setRequiredFlags(new Set());
+    setCurrentScreenId(activeScreenId);
+  }, [activeScreenId, schema, done]);
   const startedAtRef = useRef<string>(new Date().toISOString());
 
   // Host bridge — iframe embed protocol. Created once per mount; the
@@ -235,6 +291,7 @@ export function SurveyRenderer({
     (screenId: string | null) => {
       if (screenId === null) return;
       setRequiredFlags(new Set());
+      setConstraintFlags(new Set());
       setCurrentScreenId(screenId);
     },
     [],
@@ -287,6 +344,13 @@ export function SurveyRenderer({
     const missing = screenQuestions.filter(isAnswerMissing).map((q) => q['id'] as string);
     if (missing.length > 0) {
       setRequiredFlags(new Set(missing));
+      return;
+    }
+    // Constraint gate — same server rules (AnswerValidator mirror), surfaced
+    // inline on the screen where they're fixable instead of a 400 at submit.
+    const constraintErrors = validatePresentAnswers(screen?.questions, answers);
+    if (constraintErrors.length > 0) {
+      setConstraintFlags(new Set(constraintErrors.map((e) => e.questionId)));
       return;
     }
     const step = computeNext(schema, currentScreenId, answers);
@@ -453,12 +517,24 @@ export function SurveyRenderer({
               // The flag self-clears visually once the question gains an answer —
               // no bookkeeping on answer change, just re-evaluate at render.
               const flagged = qid !== undefined && requiredFlags.has(qid) && isAnswerMissing(q);
+              // Constraint flags re-validate live so the error disappears the
+              // moment the value becomes valid. Required takes precedence.
+              const constraintError =
+                !flagged && qid !== undefined && constraintFlags.has(qid) && answers[qid] != null
+                  ? validateAnswerValue(q, answers[qid])[0] ?? null
+                  : null;
+              const invalid = flagged || constraintError !== null;
               return (
-                <div key={qid ?? idx} className={flagged ? 'survey-question-slot survey-question-slot--invalid' : 'survey-question-slot'}>
+                <div key={qid ?? idx} className={invalid ? 'survey-question-slot survey-question-slot--invalid' : 'survey-question-slot'}>
                   <QuestionHost question={q} registry={effectiveRegistry} />
                   {flagged && (
                     <p className="survey-question__required-error" role="alert">
                       {localeConfig.strings.requiredError}
+                    </p>
+                  )}
+                  {constraintError && (
+                    <p className="survey-question__required-error" role="alert">
+                      {localizeConstraintError(constraintError, localeConfig.strings)}
                     </p>
                   )}
                 </div>

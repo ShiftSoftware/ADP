@@ -65,8 +65,21 @@
                 <MudExpansionPanel Expanded="@(idx == expandedIndex)"
                                    ExpandedChanged="@(b => OnExpandedChanged(idx, b))">
                     <TitleContent>
-                        <div class="ql__row">
+                        <div class="ql__row @(dragIndex == idx ? "ql__row--dragging" : "") @(dragOverIndex == idx && dragIndex != idx ? "ql__row--dragover" : "")"
+                             draggable="@(ReadOnly ? "false" : "true")"
+                             @ondragstart="@(() => OnDragStart(idx))"
+                             @ondragenter="@(() => OnDragEnter(idx))"
+                             @ondragover:preventDefault="true"
+                             @ondrop="@(() => OnDrop(idx))"
+                             @ondrop:preventDefault="true"
+                             @ondragend="OnDragEnd">
                             <div class="ql__row-label">
+                                @if (!ReadOnly)
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.DragIndicator"
+                                             Size="Size.Small"
+                                             Class="ql__drag-handle" />
+                                }
                                 <span class="ql__row-number">@(idx + 1).</span>
                                 <span class="ql__row-type">@typeBadge</span>
                                 <span class="ql__row-title">@label</span>
@@ -170,6 +183,17 @@
         display: flex;
         gap: 2px;
         flex-shrink: 0;
+    }
+    .ql__drag-handle {
+        color: #a0a8b8;
+        cursor: grab;
+        flex-shrink: 0;
+    }
+    .ql__row--dragging {
+        opacity: 0.4;
+    }
+    .ql__row--dragover {
+        box-shadow: inset 0 2px 0 0 #4338ca;
     }
     /* MudMenu handles open/close + outside-click on its own; no scrim needed. */
 </style>
@@ -346,6 +370,52 @@
         (Screen.Questions[index + 1], Screen.Questions[index]) = (Screen.Questions[index], Screen.Questions[index + 1]);
         if (expandedIndex == index) expandedIndex = index + 1;
         else if (expandedIndex == index + 1) expandedIndex = index;
+        await Changed.InvokeAsync();
+    }
+
+    // ---- Drag to reorder (HTML5 DnD on the panel title row; arrows above
+    // remain the keyboard / Firefox fallback — Firefox won't start a drag
+    // without dataTransfer.setData, which Blazor can't call) ----
+
+    int dragIndex = -1;
+    int dragOverIndex = -1;
+
+    void OnDragStart(int index)
+    {
+        dragIndex = index;
+        dragOverIndex = -1;
+    }
+
+    void OnDragEnter(int index)
+    {
+        if (dragIndex >= 0)
+            dragOverIndex = index;
+    }
+
+    void OnDragEnd()
+    {
+        dragIndex = -1;
+        dragOverIndex = -1;
+    }
+
+    async Task OnDrop(int targetIndex)
+    {
+        var source = dragIndex;
+        dragIndex = -1;
+        dragOverIndex = -1;
+        if (source < 0 || source == targetIndex
+            || source >= Screen.Questions.Count || targetIndex < 0 || targetIndex >= Screen.Questions.Count)
+            return;
+
+        var item = Screen.Questions[source];
+        Screen.Questions.RemoveAt(source);
+        Screen.Questions.Insert(targetIndex, item);
+
+        // Expansion follows the question it was on.
+        if (expandedIndex == source) expandedIndex = targetIndex;
+        else if (source < expandedIndex && targetIndex >= expandedIndex) expandedIndex--;
+        else if (source > expandedIndex && targetIndex <= expandedIndex) expandedIndex++;
+
         await Changed.InvokeAsync();
     }
 

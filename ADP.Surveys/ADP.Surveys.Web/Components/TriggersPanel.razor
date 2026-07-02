@@ -1,6 +1,7 @@
 @namespace ShiftSoftware.ADP.Surveys.Web.Components
 @using System.Text.RegularExpressions
 @using ShiftSoftware.ADP.Surveys.Shared.DTOs
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Logic
 @using ShiftSoftware.ADP.Surveys.Shared.DTOs.Triggers
 @using ShiftSoftware.ADP.Surveys.Web.WebServices
 
@@ -48,7 +49,7 @@
     <MudAlert Severity="Severity.Info" Dense="true" Class="mb-3">
         Triggers fire when an upstream event of <b>eventKind</b> arrives. Each materializes a
         survey instance, dedup'd by the recipe, and delivered via the named channel on the
-        schedule below. Filter conditions are currently editable via the <b>Raw JSON</b> tab.
+        schedule below.
     </MudAlert>
 
     @if (Draft is null || Triggers.Count == 0)
@@ -90,6 +91,16 @@
                             @if (!ReadOnly)
                             {
                                 <div class="triggers-panel__row-actions" @onclick:stopPropagation="true">
+                                    <MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowUp"
+                                                   Size="Size.Small"
+                                                   Disabled="@(idx == 0)"
+                                                   OnClick="@(() => MoveTrigger(idx, -1))"
+                                                   title="Move up" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowDown"
+                                                   Size="Size.Small"
+                                                   Disabled="@(idx == Triggers.Count - 1)"
+                                                   OnClick="@(() => MoveTrigger(idx, +1))"
+                                                   title="Move down" />
                                     <MudSwitch T="bool"
                                                Value="@trigger.Enabled"
                                                ValueChanged="@(v => OnEnabledChanged(idx, v))"
@@ -289,11 +300,49 @@
                                 </MudButton>
                             }
 
-                            @if (trigger.Filter is not null)
+                            <div class="triggers-panel__sublabel mt-3">Filter</div>
+                            <div class="triggers-panel__sublabel-help">
+                                Optional condition evaluated at ingest against the event context
+                                (<code>templateId</code>, <code>recipient.*</code>, <code>candidate.*</code>) —
+                                the trigger only fires when it matches.
+                            </div>
+                            @if (trigger.Filter is null)
                             {
-                                <MudAlert Severity="Severity.Info" Dense="true" Variant="Variant.Outlined" Class="mt-3">
-                                    A filter condition is configured. Edit it in the <b>Raw JSON</b> tab.
-                                </MudAlert>
+                                @if (!ReadOnly)
+                                {
+                                    <MudButton StartIcon="@Icons.Material.Filled.FilterAlt"
+                                               Size="Size.Small"
+                                               Variant="Variant.Text"
+                                               Color="Color.Primary"
+                                               OnClick="@(() => AddFilter(idx))">
+                                        Add filter
+                                    </MudButton>
+                                }
+                                else
+                                {
+                                    <div class="triggers-panel__hint">
+                                        No filter — every event of this kind fires the trigger.
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <LogicConditionEditor Condition="trigger.Filter"
+                                                      QuestionChoices="@BuildFilterChoices(trigger)"
+                                                      FreeKeyMode="true"
+                                                      ReadOnly="@ReadOnly"
+                                                      OnReplaceRoot="@((LogicConditionDto v) => OnFilterRootReplaced(idx, v))"
+                                                      Changed="@(() => OnFilterChanged())" />
+                                @if (!ReadOnly)
+                                {
+                                    <MudButton StartIcon="@Icons.Material.Filled.FilterAltOff"
+                                               Size="Size.Small"
+                                               Variant="Variant.Text"
+                                               Color="Color.Error"
+                                               OnClick="@(() => RemoveFilter(idx))">
+                                        Remove filter
+                                    </MudButton>
+                                }
                             }
                         </div>
                     </ChildContent>
@@ -510,6 +559,18 @@
         await DraftChanged.InvokeAsync(draft);
     }
 
+    async Task MoveTrigger(int idx, int delta)
+    {
+        var draft = EnsureDraft();
+        var target = idx + delta;
+        if (idx < 0 || idx >= draft.Triggers.Count || target < 0 || target >= draft.Triggers.Count) return;
+        (draft.Triggers[idx], draft.Triggers[target]) = (draft.Triggers[target], draft.Triggers[idx]);
+        // Keep the expanded panel following the trigger it belonged to.
+        if (expandedIndex == idx) expandedIndex = target;
+        else if (expandedIndex == target) expandedIndex = idx;
+        await DraftChanged.InvokeAsync(draft);
+    }
+
     async Task OnIdChanged(int idx, string value)
     {
         var draft = EnsureDraft();
@@ -565,6 +626,72 @@
     {
         var draft = EnsureDraft();
         draft.Triggers[idx].Schedule.Reminders[rIdx] = value ?? "";
+        await DraftChanged.InvokeAsync(draft);
+    }
+
+    // ---- Filter ----
+
+    static readonly string[] FixedFilterKeys =
+    {
+        "templateId",
+        "recipient.address",
+        "recipient.locale",
+        "recipient.customerRef",
+    };
+
+    /// <summary>
+    /// Suggestion catalog for the filter's field autocomplete: the fixed
+    /// context paths plus any keys already referenced by this trigger's
+    /// filter tree (so previously-authored candidate.* paths round-trip
+    /// into the suggestions).
+    /// </summary>
+    IReadOnlyList<LogicPredicateEditor.QuestionChoice> BuildFilterChoices(TriggerDto trigger)
+    {
+        var keys = new List<string>(FixedFilterKeys);
+        CollectFilterKeys(trigger.Filter, keys);
+        return keys.Distinct()
+            .Select(k => new LogicPredicateEditor.QuestionChoice { Id = k, TypeLabel = "" })
+            .ToList();
+    }
+
+    static void CollectFilterKeys(LogicConditionDto? cond, List<string> into)
+    {
+        switch (cond)
+        {
+            case PredicateConditionDto p when !string.IsNullOrWhiteSpace(p.QuestionId):
+                into.Add(p.QuestionId);
+                break;
+            case CompositeConditionDto c:
+                foreach (var child in c.All ?? c.Any ?? new List<LogicConditionDto>())
+                    CollectFilterKeys(child, into);
+                break;
+        }
+    }
+
+    async Task AddFilter(int idx)
+    {
+        var draft = EnsureDraft();
+        draft.Triggers[idx].Filter = new PredicateConditionDto();
+        await DraftChanged.InvokeAsync(draft);
+    }
+
+    async Task RemoveFilter(int idx)
+    {
+        var draft = EnsureDraft();
+        draft.Triggers[idx].Filter = null;
+        await DraftChanged.InvokeAsync(draft);
+    }
+
+    async Task OnFilterRootReplaced(int idx, LogicConditionDto replacement)
+    {
+        var draft = EnsureDraft();
+        draft.Triggers[idx].Filter = replacement;
+        await DraftChanged.InvokeAsync(draft);
+    }
+
+    async Task OnFilterChanged()
+    {
+        var draft = EnsureDraft();
         await DraftChanged.InvokeAsync(draft);
     }
 

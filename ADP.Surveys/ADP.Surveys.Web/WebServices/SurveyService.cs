@@ -1,4 +1,9 @@
 using System.Net.Http.Json;
+using System.Text.Json;
+using ShiftSoftware.ADP.Surveys.Shared.DTOs;
+using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions;
+using ShiftSoftware.ADP.Surveys.Shared.DTOs.Screens;
+using ShiftSoftware.ADP.Surveys.Shared.Json;
 using ShiftSoftware.ADP.Surveys.Web.Extensions;
 
 namespace ShiftSoftware.ADP.Surveys.Web.WebServices;
@@ -28,6 +33,67 @@ public class SurveyService
     {
         var url = $"{prefix}Publish/{hashedId}";
         return await http.PostAsync(url, content: null, ct);
+    }
+
+    /// <summary>
+    /// Resolves a single banked question into inline form by POSTing a minimal
+    /// synthetic draft at the Preview endpoint (same <c>SchemaResolver</c> the
+    /// live preview and publish use). Returns the resolved <see cref="QuestionDto"/>,
+    /// or null on any failure — callers degrade to free-form editing.
+    /// </summary>
+    public async Task<QuestionDto?> ResolveBankQuestionAsync(
+        string bankRef, List<string>? locales, CancellationToken ct = default)
+    {
+        var probe = BuildProbeDraft(locales);
+        probe.Screens.Add(new InlineScreenDto
+        {
+            Id = "probe",
+            Questions = new List<QuestionEntryDto>
+            {
+                QuestionEntryDto.FromRef(new QuestionRefDto { BankRef = bankRef }),
+            },
+        });
+
+        var resolved = await ResolveProbeAsync(probe, ct);
+        var screen = resolved?.Screens.OfType<InlineScreenDto>().FirstOrDefault();
+        return screen?.Questions.FirstOrDefault()?.Inline;
+    }
+
+    /// <summary>
+    /// Resolves a screen template into inline form via the same synthetic-draft
+    /// probe. Returns the resolved screen (whose questions are all inline), or
+    /// null on any failure.
+    /// </summary>
+    public async Task<InlineScreenDto?> ResolveScreenTemplateAsync(
+        string templateRef, List<string>? locales, CancellationToken ct = default)
+    {
+        var probe = BuildProbeDraft(locales);
+        probe.Screens.Add(new ScreenTemplateRefDto { TemplateRef = templateRef });
+
+        var resolved = await ResolveProbeAsync(probe, ct);
+        return resolved?.Screens.OfType<InlineScreenDto>().FirstOrDefault();
+    }
+
+    static SurveyDto BuildProbeDraft(List<string>? locales) => new()
+    {
+        Locales = locales is { Count: > 0 } ? locales : new List<string> { "en" },
+        DefaultLocale = locales?.FirstOrDefault() ?? "en",
+    };
+
+    async Task<SurveyDto?> ResolveProbeAsync(SurveyDto probe, CancellationToken ct)
+    {
+        try
+        {
+            var response = await http.PostAsJsonAsync(
+                $"{prefix}Preview", probe, SurveySchemaSerializer.Options, ct);
+            if (!response.IsSuccessStatusCode) return null;
+            var json = await response.Content.ReadAsStringAsync(ct);
+            return JsonSerializer.Deserialize<SurveyDto>(json, SurveySchemaSerializer.Options);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     /// <summary>

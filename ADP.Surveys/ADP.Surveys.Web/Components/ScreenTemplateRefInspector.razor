@@ -1,16 +1,26 @@
 @namespace ShiftSoftware.ADP.Surveys.Web.Components
 @using ShiftSoftware.ADP.Surveys.Shared.DTOs
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions
 @using ShiftSoftware.ADP.Surveys.Shared.DTOs.Screens
+@using ShiftSoftware.ADP.Surveys.Web.WebServices
 @using LocalizedString = ShiftSoftware.ADP.Surveys.Shared.DTOs.LocalizedString
+
+@inject SurveyService SurveySvc
 
 @*
     Visual editor for a ScreenTemplateRefDto. Per the template model, the
     question list comes from the template and can't be reshaped per-survey.
     Overrides exposed here: Title, Description, NextScreen (the same
-    numbered screen picker ScreenInspector uses for inline screens).
+    numbered screen picker ScreenInspector uses for inline screens), and
+    per-banked-question presentation overrides (title / help / required /
+    option labels — the same surface BankRefInspector exposes for direct
+    bank refs).
 
-    Per-banked-question overrides (Overrides.Questions) are deferred — a
-    warning surfaces when they exist so authors know to edit via Raw JSON.
+    The per-question section loads lazily: on first open it resolves the
+    template through the Preview endpoint (synthetic one-screen draft) so
+    each question's real type + options are known. Override keys that no
+    longer match a template question render as orphans with a remove
+    action.
 *@
 
 <div class="template-ref">
@@ -61,13 +71,131 @@
         }
     </MudSelect>
 
-    @if (HasQuestionOverrides)
+    <div class="template-ref__section-title mt-4">Per-question overrides</div>
+
+    @if (!questionsOpen)
     {
-        <MudAlert Severity="Severity.Warning" Dense="true" Class="mt-3">
-            This reference has per-question overrides inside the template.
-            Edit them via the <b>Raw JSON</b> tab — a visual editor for template
-            question overrides lands in a later slice.
+        <MudButton Size="Size.Small"
+                   Variant="Variant.Text"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.EditNote"
+                   OnClick="OpenQuestionOverrides">
+            @(HasQuestionOverrides
+                ? $"Edit question overrides ({TemplateRef.Overrides!.Questions!.Count})"
+                : "Edit question overrides…")
+        </MudButton>
+    }
+    else if (questionsLoading)
+    {
+        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="ml-2" />
+    }
+    else if (resolvedQuestions is null && !HasQuestionOverrides)
+    {
+        <MudAlert Severity="Severity.Warning" Dense="true">
+            Couldn't load the template's questions. Edit overrides via the <b>Raw JSON</b> tab.
         </MudAlert>
+    }
+    else
+    {
+        var panelItems = new List<(string Qid, QuestionDto? Question)>();
+        foreach (var q in resolvedQuestions ?? new List<QuestionDto>())
+        {
+            panelItems.Add((q.Id, q));
+        }
+        foreach (var k in OrphanQuestionKeys)
+        {
+            panelItems.Add((k, null));
+        }
+
+        <MudExpansionPanels Elevation="0" Dense="true" MultiExpansion="true" Class="template-ref__q-panels">
+            @foreach (var item in panelItems)
+            {
+                var qid = item.Qid;
+                var question = item.Question;
+                var overridesPresent = GetQuestionOverrides(qid) is not null;
+
+                <MudExpansionPanel @key="@($"qov-{qid}")">
+                    <TitleContent>
+                        <div class="template-ref__q-title">
+                            <code class="template-ref__key">@qid</code>
+                            @if (question is not null)
+                            {
+                                <span class="template-ref__q-type">@question.QuestionType</span>
+                            }
+                            else
+                            {
+                                <MudChip T="string"
+                                         Size="Size.Small"
+                                         Color="Color.Warning"
+                                         Variant="Variant.Outlined">not in template</MudChip>
+                            }
+                            @if (overridesPresent)
+                            {
+                                <MudChip T="string"
+                                         Size="Size.Small"
+                                         Color="Color.Info"
+                                         Variant="Variant.Outlined">customized</MudChip>
+                            }
+                        </div>
+                    </TitleContent>
+                    <ChildContent>
+                        <LocalizedStringField Value="@(GetQuestionOverrides(qid)?.Title)"
+                                              ValueChanged="@(v => OnQuestionTitleChanged(qid, v))"
+                                              Label="Title override"
+                                              Locales="@(Draft?.Locales)"
+                                              ReadOnly="@ReadOnly" />
+
+                        <LocalizedStringField Value="@(GetQuestionOverrides(qid)?.Help)"
+                                              ValueChanged="@(v => OnQuestionHelpChanged(qid, v))"
+                                              Label="Help text override"
+                                              Locales="@(Draft?.Locales)"
+                                              Lines="2"
+                                              MaxLines="4"
+                                              AutoGrow="true"
+                                              ReadOnly="@ReadOnly" />
+
+                        <MudSelect T="string"
+                                   Label="Required override"
+                                   Value="@QuestionRequiredValue(qid)"
+                                   ValueChanged="@(v => OnQuestionRequiredChanged(qid, v))"
+                                   ReadOnly="@ReadOnly"
+                                   Clearable="false"
+                                   Class="mt-3 mb-2">
+                            <MudSelectItem T="string" Value="@("inherit")">Inherit from bank</MudSelectItem>
+                            <MudSelectItem T="string" Value="@("true")">Required</MudSelectItem>
+                            <MudSelectItem T="string" Value="@("false")">Optional</MudSelectItem>
+                        </MudSelect>
+
+                        @{
+                            var options = question is null
+                                ? null
+                                : OptionLabelOverridesEditor.ExtractOptions(question, Draft?.Locales?.FirstOrDefault());
+                            var existingOptionLabels = GetQuestionOverrides(qid)?.OptionLabels;
+                        }
+                        @if (options is { Count: > 0 } || existingOptionLabels is { Count: > 0 })
+                        {
+                            <div class="template-ref__q-optlabels">Option labels</div>
+                            <OptionLabelOverridesEditor Options="@options"
+                                                        Value="@existingOptionLabels"
+                                                        ValueChanged="@(v => OnQuestionOptionLabelsChanged(qid, v))"
+                                                        Locales="@(Draft?.Locales)"
+                                                        ReadOnly="@ReadOnly" />
+                        }
+
+                        @if (overridesPresent && !ReadOnly)
+                        {
+                            <MudButton Size="Size.Small"
+                                       Variant="Variant.Text"
+                                       Color="Color.Error"
+                                       StartIcon="@Icons.Material.Filled.Delete"
+                                       OnClick="@(() => RemoveQuestionOverride(qid))">
+                                Clear overrides for this question
+                            </MudButton>
+                        }
+                    </ChildContent>
+                </MudExpansionPanel>
+            }
+        </MudExpansionPanels>
     }
 </div>
 
@@ -102,6 +230,26 @@
         padding-bottom: 4px;
         border-bottom: 1px solid #e0e5ec;
     }
+    .template-ref__q-panels {
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+    }
+    .template-ref__q-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+    }
+    .template-ref__q-type {
+        font-size: 0.78rem;
+        color: #666;
+    }
+    .template-ref__q-optlabels {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #444;
+        margin: 10px 0 6px;
+    }
 </style>
 
 @code {
@@ -126,6 +274,113 @@
 
     bool HasQuestionOverrides =>
         TemplateRef.Overrides?.Questions is { Count: > 0 };
+
+    bool questionsOpen;
+    bool questionsLoading;
+    List<QuestionDto>? resolvedQuestions;
+
+    IReadOnlyList<string> OrphanQuestionKeys =>
+        (TemplateRef.Overrides?.Questions?.Keys ?? Enumerable.Empty<string>())
+            .Where(k => resolvedQuestions is null || resolvedQuestions.All(q => q.Id != k))
+            .OrderBy(k => k, StringComparer.Ordinal)
+            .ToList();
+
+    async Task OpenQuestionOverrides()
+    {
+        questionsOpen = true;
+        questionsLoading = true;
+        var screen = await SurveySvc.ResolveScreenTemplateAsync(TemplateRef.TemplateRef, Draft?.Locales);
+        resolvedQuestions = screen?.Questions
+            .Select(e => e.Inline)
+            .Where(q => q is not null)
+            .Cast<QuestionDto>()
+            .ToList();
+        questionsLoading = false;
+    }
+
+    QuestionOverridesDto? GetQuestionOverrides(string qid) =>
+        TemplateRef.Overrides?.Questions is { } qs && qs.TryGetValue(qid, out var v) ? v : null;
+
+    QuestionOverridesDto EnsureQuestionOverrides(string qid)
+    {
+        var o = EnsureOverrides();
+        o.Questions ??= new Dictionary<string, QuestionOverridesDto>();
+        if (!o.Questions.TryGetValue(qid, out var v))
+        {
+            v = new QuestionOverridesDto();
+            o.Questions[qid] = v;
+        }
+        return v;
+    }
+
+    static bool IsQuestionOverridesEmpty(QuestionOverridesDto o) =>
+        (o.Title is null || o.Title.Count == 0)
+        && (o.Help is null || o.Help.Count == 0)
+        && o.Required is null
+        && o.Order is null
+        && (o.OptionLabels is null || o.OptionLabels.Count == 0);
+
+    void PruneQuestionOverrides(string qid)
+    {
+        var qs = TemplateRef.Overrides?.Questions;
+        if (qs is null) return;
+        if (qs.TryGetValue(qid, out var o) && IsQuestionOverridesEmpty(o))
+            qs.Remove(qid);
+        if (qs.Count == 0)
+            TemplateRef.Overrides!.Questions = null;
+        PruneIfEmpty();
+    }
+
+    string QuestionRequiredValue(string qid) => GetQuestionOverrides(qid)?.Required switch
+    {
+        true => "true",
+        false => "false",
+        null => "inherit",
+    };
+
+    async Task OnQuestionTitleChanged(string qid, LocalizedString? value)
+    {
+        EnsureQuestionOverrides(qid).Title = value;
+        PruneQuestionOverrides(qid);
+        await Changed.InvokeAsync();
+    }
+
+    async Task OnQuestionHelpChanged(string qid, LocalizedString? value)
+    {
+        EnsureQuestionOverrides(qid).Help = value;
+        PruneQuestionOverrides(qid);
+        await Changed.InvokeAsync();
+    }
+
+    async Task OnQuestionRequiredChanged(string qid, string value)
+    {
+        EnsureQuestionOverrides(qid).Required = value switch
+        {
+            "true" => true,
+            "false" => false,
+            _ => null,
+        };
+        PruneQuestionOverrides(qid);
+        await Changed.InvokeAsync();
+    }
+
+    async Task OnQuestionOptionLabelsChanged(string qid, Dictionary<string, LocalizedString>? value)
+    {
+        EnsureQuestionOverrides(qid).OptionLabels = value;
+        PruneQuestionOverrides(qid);
+        await Changed.InvokeAsync();
+    }
+
+    async Task RemoveQuestionOverride(string qid)
+    {
+        var qs = TemplateRef.Overrides?.Questions;
+        if (qs is null) return;
+        qs.Remove(qid);
+        if (qs.Count == 0)
+            TemplateRef.Overrides!.Questions = null;
+        PruneIfEmpty();
+        await Changed.InvokeAsync();
+    }
 
     async Task OnTitleChanged(LocalizedString? value)
     {

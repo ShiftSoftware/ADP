@@ -19,31 +19,57 @@
     and render a placeholder so the pane isn't a blank white box.
 *@
 
-<div class="survey-preview">
+<div class="survey-preview @($"survey-preview--{previewMode}")">
     @*
-        Mobile device frame — the final UX for surveys is ~99% phone, so the
-        preview defaults to a phone viewport. A desktop/tablet/mobile toggle
-        can wrap this frame in a future slice (Phase 4 remaining item).
+        Device frame with a mobile / tablet / desktop width toggle. Mobile is
+        the primary target (~99% of survey traffic) and renders 1:1. Tablet
+        and desktop render at their true logical widths (768 / 1024 px) and
+        are scaled down with a CSS transform so the sticky preview rail keeps
+        its phone-sized footprint — the renderer sees a real wide viewport,
+        the layout doesn't reflow around a giant frame.
     *@
-    <div class="survey-preview__device">
-        <div class="survey-preview__device-notch"></div>
-        <div class="survey-preview__device-screen">
-            @if (Schema is null)
+    <div class="survey-preview__toolbar">
+        <MudToggleGroup T="string"
+                        SelectionMode="SelectionMode.SingleSelection"
+                        @bind-Value="previewMode"
+                        Color="Color.Primary"
+                        Size="Size.Small"
+                        CheckMark="false">
+            <MudToggleItem T="string" Value="@("mobile")">
+                <MudIcon Icon="@Icons.Material.Filled.Smartphone" Size="Size.Small" title="Mobile (375px)" />
+            </MudToggleItem>
+            <MudToggleItem T="string" Value="@("tablet")">
+                <MudIcon Icon="@Icons.Material.Filled.TabletMac" Size="Size.Small" title="Tablet (768px)" />
+            </MudToggleItem>
+            <MudToggleItem T="string" Value="@("desktop")">
+                <MudIcon Icon="@Icons.Material.Filled.DesktopWindows" Size="Size.Small" title="Desktop (1024px)" />
+            </MudToggleItem>
+        </MudToggleGroup>
+    </div>
+    <div class="survey-preview__scalebox">
+        <div class="survey-preview__device">
+            @if (previewMode == "mobile")
             {
-                <div class="survey-preview__placeholder">
-                    <em>No valid draft to preview.</em>
-                </div>
+                <div class="survey-preview__device-notch"></div>
             }
-            else if (resolveError is not null)
-            {
-                <div class="survey-preview__placeholder">
-                    <em>Preview unavailable: @resolveError</em>
-                </div>
-            }
-            else
-            {
-                <shift-survey @ref="surveyElement" locale="@Locale"></shift-survey>
-            }
+            <div class="survey-preview__device-screen">
+                @if (Schema is null)
+                {
+                    <div class="survey-preview__placeholder">
+                        <em>No valid draft to preview.</em>
+                    </div>
+                }
+                else if (resolveError is not null)
+                {
+                    <div class="survey-preview__placeholder">
+                        <em>Preview unavailable: @resolveError</em>
+                    </div>
+                }
+                else
+                {
+                    <shift-survey @ref="surveyElement" locale="@Locale"></shift-survey>
+                }
+            </div>
         </div>
     </div>
 </div>
@@ -104,11 +130,68 @@
         padding-top: 40px;
         -webkit-overflow-scrolling: touch;
     }
+
+    .survey-preview__toolbar {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 6px;
+    }
+
+    /* The scalebox reserves the SCALED footprint of the frame so the sticky
+       rail (an auto-sized grid column in SurveyForm) sizes itself to what's
+       actually painted rather than the logical 768/1024px frame. Mobile mode
+       is unscaled pass-through. */
+    .survey-preview__scalebox {
+        width: fit-content;
+        max-width: 100%;
+        margin: 0 auto;
+    }
+
+    /* Tablet: true 768px-wide viewport scaled to half size (≈398px painted). */
+    .survey-preview--tablet .survey-preview__scalebox {
+        width: calc((768px + 28px) * 0.5);
+        height: calc((1024px + 28px) * 0.5 + 16px);
+        overflow: hidden;
+    }
+    .survey-preview--tablet .survey-preview__device {
+        --device-radius: 22px;
+        transform: scale(0.5);
+        transform-origin: top left;
+    }
+    .survey-preview--tablet .survey-preview__device-screen {
+        height: 1024px;
+        aspect-ratio: 768 / 1024;
+        padding-top: 14px;
+    }
+
+    /* Desktop: true 1024px-wide viewport scaled to ≈442px painted. */
+    .survey-preview--desktop .survey-preview__scalebox {
+        width: calc((1024px + 28px) * 0.42);
+        height: calc((768px + 28px) * 0.42 + 16px);
+        overflow: hidden;
+    }
+    .survey-preview--desktop .survey-preview__device {
+        --device-radius: 12px;
+        transform: scale(0.42);
+        transform-origin: top left;
+    }
+    .survey-preview--desktop .survey-preview__device-screen {
+        height: 768px;
+        aspect-ratio: 1024 / 768;
+        padding-top: 14px;
+    }
 </style>
 
 @code {
     [Parameter] public SurveyDto? Schema { get; set; }
     [Parameter] public string? Locale { get; set; }
+
+    /// <summary>
+    /// Screen id the editor currently has selected. Pushed to the renderer as
+    /// a jump signal so the preview follows the author's selection. Null =
+    /// don't sync (the preview navigates freely).
+    /// </summary>
+    [Parameter] public string? ActiveScreenId { get; set; }
 
     /// <summary>
     /// Bump this every time the parent mutates <see cref="Schema"/> in place.
@@ -124,11 +207,17 @@
     private static readonly string InteropPath =
         $"./_content/ShiftSoftware.ADP.Surveys.Web/js/shift-survey/interop.js?v={typeof(SurveyPreview).Assembly.GetName().Version}";
 
+    // Preview frame width: mobile (375, 1:1) / tablet (768, scaled) /
+    // desktop (1024, scaled). Pure CSS — the same <shift-survey> element
+    // persists across toggles, so no schema re-push is needed.
+    private string previewMode = "mobile";
+
     private ElementReference surveyElement;
     private IJSObjectReference? interopModule;
     private SurveyDto? lastPushedSource;
     private int lastPushedVersion = -1;
     private string? lastPushedLocale;
+    private string? lastPushedActiveScreen;
     private bool submitHandlerInstalled;
     private string? resolveError;
     private bool disposed;
@@ -178,8 +267,9 @@
 
         var schemaChanged = !ReferenceEquals(Schema, lastPushedSource) || SchemaVersion != lastPushedVersion;
         var localeChanged = Locale != lastPushedLocale;
+        var activeScreenChanged = ActiveScreenId != lastPushedActiveScreen;
 
-        if (!schemaChanged && !localeChanged) return;
+        if (!schemaChanged && !localeChanged && !activeScreenChanged) return;
 
         string? resolvedJson = null;
         if (schemaChanged)
@@ -229,6 +319,12 @@
             {
                 await interopModule.InvokeVoidAsync("setLocale", surveyElement, Locale);
                 lastPushedLocale = Locale;
+            }
+
+            if (ActiveScreenId != lastPushedActiveScreen)
+            {
+                await interopModule.InvokeVoidAsync("setActiveScreen", surveyElement, ActiveScreenId);
+                lastPushedActiveScreen = ActiveScreenId;
             }
         }
         catch (ObjectDisposedException) { /* disposed mid-await; safe to ignore */ }

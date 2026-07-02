@@ -8,6 +8,12 @@ export {
 } from './expression-sandbox/index.js';
 export { computeNext, resolveNavigationListTarget, type NextStep } from './navigation.js';
 export {
+  validateAnswerValue,
+  validatePresentAnswers,
+  type AnswerValidationCode,
+  type AnswerValidationError,
+} from './answer-validator.js';
+export {
   SurveyClient,
   SurveyClientError,
   type SurveyClientOptions,

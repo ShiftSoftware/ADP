@@ -1,0 +1,246 @@
+@namespace ShiftSoftware.ADP.Surveys.Web.Components
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Types
+@using LocalizedString = ShiftSoftware.ADP.Surveys.Shared.DTOs.LocalizedString
+
+@*
+    Embeddable editor for a per-option label override map
+    (Dictionary&lt;optionId, LocalizedString&gt; — QuestionOverridesDto.OptionLabels).
+
+    Known options (resolved from the bank) each get a labeled field showing the
+    bank's default label; clearing a field removes the override. Override keys
+    that don't match any known option render as orphans with a remove button —
+    they usually mean the bank question's options changed after the override
+    was authored. When the option list couldn't be resolved (Options == null),
+    everything is an orphan and a free-form "add by option id" row appears so
+    the editor stays usable offline.
+
+    Emits a NEW dictionary (or null when empty) through ValueChanged — never
+    mutates the incoming reference. Empty labels are never emitted, so the
+    draft JSON stays clean for the publish validators.
+*@
+
+<div class="olo">
+    @if (Options is null)
+    {
+        <MudAlert Severity="Severity.Info" Dense="true" Class="mb-2">
+            Couldn't load the bank question's options — overrides are edited by option id below.
+        </MudAlert>
+    }
+
+    @foreach (var opt in Options ?? (IReadOnlyList<OptionInfo>)Array.Empty<OptionInfo>())
+    {
+        <div class="olo__row" @key="@($"opt-{opt.Id}")">
+            <div class="olo__row-head">
+                <code class="olo__id">@opt.Id</code>
+                @if (!string.IsNullOrEmpty(opt.DefaultLabel))
+                {
+                    <span class="olo__default">bank label: “@opt.DefaultLabel”</span>
+                }
+            </div>
+            <LocalizedStringField Value="@Get(opt.Id)"
+                                  ValueChanged="@(v => Set(opt.Id, v))"
+                                  Label="Label override"
+                                  Locales="@Locales"
+                                  ReadOnly="@ReadOnly" />
+        </div>
+    }
+
+    @foreach (var orphan in OrphanKeys)
+    {
+        <div class="olo__row olo__row--orphan" @key="@($"orphan-{orphan}")">
+            <div class="olo__row-head">
+                <code class="olo__id">@orphan</code>
+                @if (Options is not null)
+                {
+                    <span class="olo__default olo__default--warn">not an option on this question</span>
+                }
+                @if (!ReadOnly)
+                {
+                    <MudIconButton Icon="@Icons.Material.Filled.Close"
+                                   Size="Size.Small"
+                                   OnClick="@(() => Remove(orphan))"
+                                   title="Remove override" />
+                }
+            </div>
+            <LocalizedStringField Value="@Get(orphan)"
+                                  ValueChanged="@(v => Set(orphan, v))"
+                                  Label="Label override"
+                                  Locales="@Locales"
+                                  ReadOnly="@ReadOnly" />
+        </div>
+    }
+
+    @if (!ReadOnly && Options is null)
+    {
+        <div class="olo__add">
+            <MudTextField T="string"
+                          @bind-Value="newKey"
+                          Placeholder="option id"
+                          Margin="Margin.Dense"
+                          Class="olo__add-key" />
+            <MudButton Size="Size.Small"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       Disabled="@(string.IsNullOrWhiteSpace(newKey))"
+                       OnClick="AddKey">
+                Add
+            </MudButton>
+        </div>
+    }
+</div>
+
+<style>
+    .olo__row {
+        padding: 6px 8px;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        margin-bottom: 8px;
+        background: #fff;
+    }
+    .olo__row--orphan {
+        border-color: #fde68a;
+        background: #fffbeb;
+    }
+    .olo__row-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 2px;
+    }
+    .olo__id {
+        background: #eef2ff;
+        color: #4338ca;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 0.8rem;
+    }
+    .olo__default {
+        font-size: 0.75rem;
+        color: #666;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        min-width: 0;
+        flex: 1;
+    }
+    .olo__default--warn {
+        color: #b54708;
+    }
+    .olo__add {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .olo__add-key {
+        max-width: 220px;
+    }
+</style>
+
+@code {
+    /// <summary>
+    /// Known options resolved from the bank. Null = resolution unavailable
+    /// (editor degrades to id-keyed rows); empty = question has no options.
+    /// </summary>
+    [Parameter]
+    public IReadOnlyList<OptionInfo>? Options { get; set; }
+
+    [Parameter]
+    public Dictionary<string, LocalizedString>? Value { get; set; }
+
+    [Parameter]
+    public EventCallback<Dictionary<string, LocalizedString>?> ValueChanged { get; set; }
+
+    [Parameter]
+    public List<string>? Locales { get; set; }
+
+    [Parameter]
+    public bool ReadOnly { get; set; }
+
+    string? newKey;
+
+    // Freshly-added ids that don't have content yet. Kept local so the wire
+    // dict never carries empty LocalizedStrings (publish validators reject
+    // them); promoted into Value on the first keystroke via Set().
+    readonly List<string> pendingKeys = new();
+
+    IReadOnlyList<string> OrphanKeys =>
+        (Value?.Keys ?? Enumerable.Empty<string>())
+            .Concat(pendingKeys)
+            .Distinct()
+            .Where(k => Options is null || Options.All(o => o.Id != k))
+            .OrderBy(k => k, StringComparer.Ordinal)
+            .ToList();
+
+    LocalizedString? Get(string id) =>
+        Value is not null && Value.TryGetValue(id, out var v) ? v : null;
+
+    static bool IsEmptyLabel(LocalizedString? v) =>
+        v is null || v.Count == 0 || v.Values.All(string.IsNullOrWhiteSpace);
+
+    async Task Set(string id, LocalizedString? v)
+    {
+        var next = Value is null
+            ? new Dictionary<string, LocalizedString>()
+            : new Dictionary<string, LocalizedString>(Value);
+
+        if (IsEmptyLabel(v))
+        {
+            next.Remove(id);
+        }
+        else
+        {
+            next[id] = v!;
+            pendingKeys.Remove(id);
+        }
+
+        await ValueChanged.InvokeAsync(next.Count == 0 ? null : next);
+    }
+
+    async Task Remove(string id)
+    {
+        pendingKeys.Remove(id);
+        if (Value?.ContainsKey(id) == true)
+            await Set(id, null);
+    }
+
+    void AddKey()
+    {
+        var key = newKey?.Trim();
+        if (string.IsNullOrEmpty(key)) return;
+        if (!pendingKeys.Contains(key) && Value?.ContainsKey(key) != true)
+            pendingKeys.Add(key);
+        newKey = null;
+    }
+
+    public class OptionInfo
+    {
+        public string Id { get; set; } = "";
+        public string DefaultLabel { get; set; } = "";
+    }
+
+    /// <summary>
+    /// Pulls the (id, default label) pairs off any option-bearing question type —
+    /// mirrors the four cases SchemaResolver.ApplyOptionLabelOverrides handles.
+    /// Returns an empty list for non-choice types.
+    /// </summary>
+    public static List<OptionInfo> ExtractOptions(QuestionDto? question, string? preferredLocale)
+    {
+        static string Pick(LocalizedString? label, string? locale)
+        {
+            if (label is null || label.Count == 0) return "";
+            if (!string.IsNullOrEmpty(locale) && label.TryGetValue(locale, out var v) && !string.IsNullOrEmpty(v))
+                return v;
+            return label.Values.FirstOrDefault(x => !string.IsNullOrEmpty(x)) ?? "";
+        }
+
+        return question switch
+        {
+            SingleChoiceQuestionDto sc => sc.Options.Select(o => new OptionInfo { Id = o.Id, DefaultLabel = Pick(o.Label, preferredLocale) }).ToList(),
+            MultiChoiceQuestionDto mc => mc.Options.Select(o => new OptionInfo { Id = o.Id, DefaultLabel = Pick(o.Label, preferredLocale) }).ToList(),
+            DropdownQuestionDto dd => dd.Options.Select(o => new OptionInfo { Id = o.Id, DefaultLabel = Pick(o.Label, preferredLocale) }).ToList(),
+            NavigationListQuestionDto nl => nl.Options.Select(o => new OptionInfo { Id = o.Id, DefaultLabel = Pick(o.Label, preferredLocale) }).ToList(),
+            _ => new List<OptionInfo>(),
+        };
+    }
+}
