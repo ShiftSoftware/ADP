@@ -7,10 +7,15 @@ namespace ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Types;
 
 public class MultiChoiceQuestionDto : QuestionDto
 {
+    [JsonIgnore]
     public override QuestionType QuestionType => QuestionType.MultiChoice;
 
     [JsonPropertyName("options")]
     public List<OptionDto> Options { get; set; } = new();
+
+    /// <summary>External options endpoint — replaces inline <see cref="Options"/>; fetched client-side at render time.</summary>
+    [JsonPropertyName("optionsSource")]
+    public OptionsSourceDto? OptionsSource { get; set; }
 
     [JsonPropertyName("minSelected")]
     public int? MinSelected { get; set; }
@@ -24,7 +29,10 @@ public class MultiChoiceQuestionDtoValidator : QuestionDtoBaseValidator<MultiCho
     public MultiChoiceQuestionDtoValidator()
     {
         RuleFor(x => x.Options).NotEmpty()
-            .WithMessage("MultiChoice questions must have at least one option.");
+            .When(x => x.OptionsSource is null)
+            .WithMessage("MultiChoice questions must have at least one option (or an optionsSource).");
+        When(x => x.OptionsSource is not null, () =>
+            RuleFor(x => x.OptionsSource!).SetValidator(new OptionsSourceDtoValidator()));
         RuleForEach(x => x.Options).SetValidator(new OptionDtoValidator());
         RuleFor(x => x.Options)
             .Must(options => options.Select(o => o.Id).Distinct().Count() == options.Count)

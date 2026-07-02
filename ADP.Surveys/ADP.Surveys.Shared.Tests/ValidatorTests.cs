@@ -60,6 +60,53 @@ public class ValidatorTests
     }
 
     [Fact]
+    public void SourcedDropdown_WithoutInlineOptions_Passes()
+    {
+        var q = new DropdownQuestionDto
+        {
+            Id = "city",
+            Title = LocalizedString.From("en", "City"),
+            OptionsSource = new OptionsSourceDto { Url = "https://example.test/api/public/city" },
+        };
+        Assert.True(new DropdownQuestionDtoValidator().Validate(q).IsValid);
+
+        // Without a source, empty options stay invalid.
+        q.OptionsSource = null;
+        Assert.False(new DropdownQuestionDtoValidator().Validate(q).IsValid);
+    }
+
+    [Fact]
+    public void OptionsSource_RelativeUrl_Fails()
+    {
+        var q = new DropdownQuestionDto
+        {
+            Id = "city",
+            Title = LocalizedString.From("en", "City"),
+            OptionsSource = new OptionsSourceDto { Url = "/api/public/city" },
+        };
+        var result = new DropdownQuestionDtoValidator().Validate(q);
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, e => e.ErrorMessage.Contains("absolute http(s)"));
+    }
+
+    [Fact]
+    public void SourcedNavigationList_RequiresSourceNextScreen()
+    {
+        var q = new NavigationListQuestionDto
+        {
+            Id = "branch",
+            Title = LocalizedString.From("en", "Branch"),
+            OptionsSource = new OptionsSourceDto { Url = "https://example.test/api/public/company-branch" },
+        };
+        var result = new NavigationListQuestionDtoValidator().Validate(q);
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, e => e.ErrorMessage.Contains("optionsSource.nextScreen"));
+
+        q.OptionsSource.NextScreen = "after-branch";
+        Assert.True(new NavigationListQuestionDtoValidator().Validate(q).IsValid);
+    }
+
+    [Fact]
     public void SingleChoice_DuplicateOptionIds_Fails()
     {
         var q = new SingleChoiceQuestionDto

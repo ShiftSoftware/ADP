@@ -1,5 +1,6 @@
 @namespace ShiftSoftware.ADP.Surveys.Web.Components.QuestionEditors
 @using ShiftSoftware.ADP.Surveys.Shared.DTOs
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Options
 @using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Types
 
 <QuestionCommonFields Question="@Question"
@@ -12,6 +13,12 @@
                              Locales="@Locales"
                              ReadOnly="@ReadOnly"
                              Changed="Changed" />
+
+<OptionsSourceEditor Value="@Question.OptionsSource"
+                     ValueChanged="@((OptionsSourceDto? v) => OnChanged(() => Question.OptionsSource = v))"
+                     ReadOnly="@ReadOnly"
+                     ShowNextScreen="true"
+                     Draft="@Draft" />
 
 @code {
     [Parameter, EditorRequired]
@@ -28,4 +35,10 @@
 
     [Parameter]
     public EventCallback Changed { get; set; }
+
+    async Task OnChanged(Action mutation)
+    {
+        mutation();
+        await Changed.InvokeAsync();
+    }
 }

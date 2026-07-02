@@ -7,6 +7,7 @@ namespace ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Types;
 
 public class DateQuestionDto : QuestionDto
 {
+    [JsonIgnore]
     public override QuestionType QuestionType => QuestionType.Date;
 
     [JsonPropertyName("minDate")]

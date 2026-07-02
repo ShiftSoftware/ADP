@@ -384,3 +384,22 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Sourced-options fetch states (optionsSource questions) */
+.survey-question__options-status {
+  margin: 6px 0;
+  font-size: 0.9rem;
+  color: var(--survey-muted, #667085);
+}
+
+.survey-question--options-error .survey-question__options-status {
+  color: var(--survey-error, #b42318);
+}
+
+.survey-button--retry {
+  background: transparent;
+  color: var(--survey-primary, #4338ca);
+  border: 1px solid currentColor;
+  padding: 4px 14px;
+  font-size: 0.85rem;
+}

@@ -1,4 +1,5 @@
 @namespace ShiftSoftware.ADP.Surveys.Web.Components.QuestionEditors
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Options
 @using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Types
 @using LocalizedString = ShiftSoftware.ADP.Surveys.Shared.DTOs.LocalizedString
 
@@ -17,6 +18,10 @@
                   Locales="@Locales"
                   ReadOnly="@ReadOnly"
                   Changed="Changed" />
+
+<OptionsSourceEditor Value="@Question.OptionsSource"
+                     ValueChanged="@((OptionsSourceDto? v) => OnChanged(() => Question.OptionsSource = v))"
+                     ReadOnly="@ReadOnly" />
 
 @code {
     [Parameter, EditorRequired]

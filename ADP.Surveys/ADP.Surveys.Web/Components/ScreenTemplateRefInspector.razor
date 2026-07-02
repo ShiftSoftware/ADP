@@ -318,7 +318,8 @@
         && (o.Help is null || o.Help.Count == 0)
         && o.Required is null
         && o.Order is null
-        && (o.OptionLabels is null || o.OptionLabels.Count == 0);
+        && (o.OptionLabels is null || o.OptionLabels.Count == 0)
+        && (o.SourceParams is null || o.SourceParams.Count == 0);
 
     void PruneQuestionOverrides(string qid)
     {

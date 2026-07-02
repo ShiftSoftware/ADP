@@ -171,6 +171,11 @@ export function validateAnswerValue(question: WireQuestion, value: unknown): Ans
         errors.push(err(id, 'type', 'Choice answer must be a JSON string (option id).'));
         break;
       }
+      // Sourced questions (optionsSource != null) skip membership — the option
+      // list lives on an external endpoint, unknowable at the schema level.
+      // Mirrors the C# relaxation; the choice widgets themselves only offer
+      // fetched options, so membership is enforced by construction in the UI.
+      if (question['optionsSource'] != null) break;
       const options = Array.isArray(question['options']) ? (question['options'] as WireQuestion[]) : [];
       if (!options.some((o) => o['id'] === value))
         errors.push(err(id, 'invalidOption', `'${value}' is not a valid option id for this question.`, { option: value }));
@@ -195,9 +200,12 @@ export function validateAnswerValue(question: WireQuestion, value: unknown): Ans
         picked.push(item);
       }
       if (badEntry) break;
-      for (const optionId of picked) {
-        if (!validIds.has(optionId))
-          errors.push(err(id, 'invalidOption', `'${optionId}' is not a valid option id for this question.`, { option: optionId }));
+      // Same sourced-question membership relaxation as the single-value choices.
+      if (question['optionsSource'] == null) {
+        for (const optionId of picked) {
+          if (!validIds.has(optionId))
+            errors.push(err(id, 'invalidOption', `'${optionId}' is not a valid option id for this question.`, { option: optionId }));
+        }
       }
       const minSelected = question['minSelected'];
       const maxSelected = question['maxSelected'];

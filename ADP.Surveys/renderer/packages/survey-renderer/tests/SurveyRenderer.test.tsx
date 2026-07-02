@@ -256,4 +256,37 @@ describe('SurveyRenderer', () => {
     rerender(<SurveyRenderer schema={schema} onSubmit={vi.fn()} activeScreenId="nope" />);
     expect(screen.getByRole('heading', { name: 'Which brand?' })).toBeInTheDocument();
   });
+
+  it('labels the ending press Submit instead of Next (answer-aware)', async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    const schema: Survey = {
+      id: 's',
+      version: 1,
+      defaultLocale: 'en',
+      locales: ['en'],
+      screens: [
+        {
+          id: 'one',
+          title: { en: 'One' },
+          questions: [{ type: 'text', id: 'a', title: { en: 'A' }, required: false }],
+        },
+        {
+          id: 'two',
+          title: { en: 'Two' },
+          questions: [{ type: 'text', id: 'b', title: { en: 'B' }, required: false }],
+        },
+      ],
+      logic: [],
+    };
+    render(<SurveyRenderer schema={schema} onSubmit={onSubmit} />);
+    const user = userEvent.setup();
+    // Screen one still has onward flow → Next.
+    expect(screen.getByRole('button', { name: 'Next' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Submit' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    // Screen two is last in flow — this press is the submission.
+    expect(screen.queryByRole('button', { name: 'Next' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Submit' }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+  });
 });

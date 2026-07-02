@@ -105,6 +105,12 @@ public static class SurveyIntegrityValidator
                 errors.Add(new IntegrityError($"{path}.options[{i}].nextScreen",
                     $"nextScreen '{opt.NextScreen}' does not match any screen id in this survey."));
         }
+
+        // Sourced navigationLists route every fetched option through the source's
+        // single nextScreen — same dangling-target check as authored options.
+        if (nav.OptionsSource is { NextScreen: { Length: > 0 } target } && !screenIds.Contains(target))
+            errors.Add(new IntegrityError($"{path}.optionsSource.nextScreen",
+                $"nextScreen '{target}' does not match any screen id in this survey."));
     }
 
     private static void CheckLogicGotos(SurveyDto survey, HashSet<string> screenIds, List<IntegrityError> errors)

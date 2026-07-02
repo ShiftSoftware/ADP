@@ -6,6 +6,7 @@ namespace ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Types;
 
 public class FileQuestionDto : QuestionDto
 {
+    [JsonIgnore]
     public override QuestionType QuestionType => QuestionType.File;
 
     [JsonPropertyName("acceptedTypes")]

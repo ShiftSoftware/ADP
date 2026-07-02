@@ -49,6 +49,24 @@
             }
         </MudSelect>
 
+        @switch (ScreenFlow.Classify(Draft, SelectedIndex))
+        {
+            case ScreenFlow.EndKind.AutoSubmit:
+                <MudAlert Severity="Severity.Success" Dense="true" Class="mt-3" Icon="@Icons.Material.Filled.Flag">
+                    This screen <b>ends the survey</b>: it has no questions and no next screen, so the
+                    survey submits the moment the respondent arrives here, and the title/description
+                    above are shown as the thank-you state.
+                </MudAlert>
+                break;
+            case ScreenFlow.EndKind.SubmitsOnNext:
+                <MudAlert Severity="Severity.Info" Dense="true" Class="mt-3" Icon="@Icons.Material.Filled.Flag">
+                    This is the <b>last screen in the flow</b> — the button here is labeled
+                    "Submit" and pressing it submits the survey. Add an end screen after it
+                    to show a thank-you message instead of the plain fallback.
+                </MudAlert>
+                break;
+        }
+
         <div class="screen-inspector__section-title mt-4">Questions</div>
         <QuestionList Screen="inline"
                       Draft="@Draft"

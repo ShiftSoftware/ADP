@@ -13,6 +13,10 @@
 export interface UiStrings {
   /** Primary button that advances to the next screen. */
   next: string;
+  /** Primary button label when advancing would end the survey — the press that
+   *  actually submits. Answer-aware: swaps in whenever `computeNext` resolves
+   *  to `end` for the current answers, so it's branch-accurate. */
+  submit: string;
   /** Button label while a submission is in flight. */
   submitting: string;
   /** Loading message shown while the schema is fetching (standalone app only). */
@@ -43,6 +47,12 @@ export interface UiStrings {
   maxSelectedError: string;
   /** Generic fallback for constraint codes without a dedicated template. */
   invalidAnswerError: string;
+  /** Inline message while a question's external options are being fetched. */
+  loadingOptions: string;
+  /** Inline message when an external options fetch failed. */
+  optionsLoadError: string;
+  /** Button that re-attempts a failed external options fetch. */
+  retry: string;
   /** Default labels for YesNoQuestion when the schema doesn't supply `yesLabel` / `noLabel`. */
   yes: string;
   no: string;
@@ -58,6 +68,7 @@ const en: LocaleConfig = {
   direction: 'ltr',
   strings: {
     next: 'Next',
+    submit: 'Submit',
     submitting: 'Submitting…',
     loading: 'Loading survey…',
     thankYou: 'Thank you.',
@@ -76,6 +87,9 @@ const en: LocaleConfig = {
     minSelectedError: 'Select at least {n} option(s).',
     maxSelectedError: 'Select at most {n} option(s).',
     invalidAnswerError: 'Please check this answer.',
+    loadingOptions: 'Loading options…',
+    optionsLoadError: 'Could not load the options.',
+    retry: 'Retry',
     yes: 'Yes',
     no: 'No',
   },
@@ -85,6 +99,7 @@ const ar: LocaleConfig = {
   direction: 'rtl',
   strings: {
     next: 'التالي',
+    submit: 'إرسال',
     submitting: 'جاري الإرسال…',
     loading: 'جاري تحميل الاستبيان…',
     thankYou: 'شكراً لك.',
@@ -103,6 +118,9 @@ const ar: LocaleConfig = {
     minSelectedError: 'اختر {n} خيارات على الأقل.',
     maxSelectedError: 'اختر {n} خيارات كحد أقصى.',
     invalidAnswerError: 'يرجى التحقق من هذه الإجابة.',
+    loadingOptions: 'جاري تحميل الخيارات…',
+    optionsLoadError: 'تعذر تحميل الخيارات.',
+    retry: 'إعادة المحاولة',
     yes: 'نعم',
     no: 'لا',
   },

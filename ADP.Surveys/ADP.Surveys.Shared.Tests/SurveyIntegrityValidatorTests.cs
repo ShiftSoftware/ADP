@@ -56,6 +56,30 @@ public class SurveyIntegrityValidatorTests
     }
 
     [Fact]
+    public void Validate_SourcedNavigationListNextScreen_ChecksTargetExists()
+    {
+        var survey = BuildTwoScreenSurvey();
+        var nav = new NavigationListQuestionDto
+        {
+            Id = "branch",
+            Title = LocalizedString.From("en", "?"),
+            OptionsSource = new OptionsSourceDto
+            {
+                Url = "https://example.test/api/public/company-branch",
+                NextScreen = "missing-screen",
+            },
+        };
+        ((InlineScreenDto)survey.Screens[0]).Questions.Add(QuestionEntryDto.FromInline(nav));
+        var errors = SurveyIntegrityValidator.Validate(survey);
+        Assert.Contains(errors, e => e.Path.Contains("optionsSource.nextScreen"));
+
+        // Pointing at a real screen clears it.
+        nav.OptionsSource.NextScreen = ((InlineScreenDto)survey.Screens[1]).Id;
+        Assert.DoesNotContain(SurveyIntegrityValidator.Validate(survey),
+            e => e.Path.Contains("optionsSource.nextScreen"));
+    }
+
+    [Fact]
     public void Validate_LogicGotoMissing_ReportsError()
     {
         var survey = BuildTwoScreenSurvey();

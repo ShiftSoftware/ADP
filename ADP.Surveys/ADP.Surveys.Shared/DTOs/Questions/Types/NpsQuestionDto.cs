@@ -6,6 +6,7 @@ namespace ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Types;
 
 public class NpsQuestionDto : QuestionDto
 {
+    [JsonIgnore]
     public override QuestionType QuestionType => QuestionType.Nps;
 
     [JsonPropertyName("min")]

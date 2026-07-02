@@ -203,3 +203,29 @@ describe('validatePresentAnswers', () => {
     expect(errors[0]!.questionId).toBe('a');
   });
 });
+
+describe('sourced questions (optionsSource)', () => {
+  const source = { url: 'https://example.test/api/public/city' };
+
+  it('choice accepts any string id but keeps the shape check (C#: Validate_SourcedChoice_AcceptsAnyStringId_ButKeepsShapeCheck)', () => {
+    const q = { type: 'dropdown', id: 'branch', optionsSource: source };
+    expect(codes(q, 'MJLGr')).toEqual([]);
+    expect(codes(q, 42)).toEqual(['type']);
+  });
+
+  it('navigationList membership is skipped when sourced', () => {
+    const q = { type: 'navigationList', id: 'branch', optionsSource: { ...source, nextScreen: 's2' } };
+    expect(codes(q, 'any-fetched-id')).toEqual([]);
+  });
+
+  it('multiChoice skips membership but keeps selection bounds (C#: Validate_SourcedMultiChoice_SkipsMembership_KeepsSelectionBounds)', () => {
+    const q = { type: 'multiChoice', id: 'cities', maxSelected: 1, optionsSource: source };
+    expect(codes(q, ['L0VEX'])).toEqual([]);
+    expect(codes(q, ['L0VEX', 'MWjQ0'])).toEqual(['maxSelected']);
+  });
+
+  it('inline-option questions still enforce membership', () => {
+    const q = { type: 'dropdown', id: 'd', options: [{ id: 'a' }] };
+    expect(codes(q, 'b')).toEqual(['invalidOption']);
+  });
+});

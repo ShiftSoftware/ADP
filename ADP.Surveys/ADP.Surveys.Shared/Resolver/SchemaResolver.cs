@@ -147,6 +147,20 @@ public static class SchemaResolver
 
         if (overrides.OptionLabels is { Count: > 0 })
             ApplyOptionLabelOverrides(question, overrides.OptionLabels);
+
+        if (overrides.SourceParams is { Count: > 0 })
+            ApplySourceParamOverrides(question, overrides.SourceParams);
+    }
+
+    private static void ApplySourceParamOverrides(QuestionDto question, Dictionary<string, string> overrides)
+    {
+        // Merged over the bank's queryParams, override wins per key. The URL and
+        // headers are the trusted part and stay locked at the bank. Questions
+        // without an optionsSource silently ignore the override — same convention
+        // as option-label overrides on non-choice types.
+        var source = OptionsSourceDto.Of(question);
+        if (source is null) return;
+        source.QueryParams = MergeDictionaries(source.QueryParams, overrides);
     }
 
     private static void ApplyOptionLabelOverrides(QuestionDto question, Dictionary<string, LocalizedString> overrides)
@@ -185,16 +199,17 @@ public static class SchemaResolver
             Required = higher.Required ?? lower.Required,
             Order = higher.Order ?? lower.Order,
             OptionLabels = MergeDictionaries(lower.OptionLabels, higher.OptionLabels),
+            SourceParams = MergeDictionaries(lower.SourceParams, higher.SourceParams),
         };
     }
 
-    private static Dictionary<string, LocalizedString>? MergeDictionaries(
-        Dictionary<string, LocalizedString>? lower,
-        Dictionary<string, LocalizedString>? higher)
+    private static Dictionary<string, TValue>? MergeDictionaries<TValue>(
+        Dictionary<string, TValue>? lower,
+        Dictionary<string, TValue>? higher)
     {
         if (lower is null) return higher;
         if (higher is null) return lower;
-        var merged = new Dictionary<string, LocalizedString>(lower);
+        var merged = new Dictionary<string, TValue>(lower);
         foreach (var (k, v) in higher) merged[k] = v;
         return merged;
     }

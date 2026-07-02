@@ -14,21 +14,36 @@
                  Title="Screen Template"
                  T="ScreenTemplateAdminDTO"
                  TypeAuthAction="SurveysActionTree.ScreenTemplates"
-                 OnResult="EntityLoaded"
                  @bind-Key="@Key">
+
+    @{
+        // Seed the JSON view in the same render pass TheItem materializes —
+        // OnResult + MudTextFieldExtended silently showed an empty editor for
+        // loaded rows (see the "OnResult is unreliable" + "MudTextFieldExtended
+        // caches its internal value" gotchas).
+        if (!ReferenceEquals(seededFor, TheItem))
+        {
+            seededFor = TheItem;
+            templateJson = TheItem?.Template is null
+                ? ""
+                : JsonSerializer.Serialize(TheItem!.Template, SurveySchemaSerializer.Pretty);
+            parseError = null;
+        }
+        var isReadOnly = Mode == FormModes.View;
+    }
 
     <MudTextFieldExtended OnlyValidateIfDirty="true"
                           Label="Key (reference id used by surveys via templateRef)"
                           @bind-Value="TheItem.Key"
                           For="@(() => TheItem.Key)" />
 
-    <MudTextFieldExtended T="string"
-                          Label="Template (JSON — schema-level ScreenTemplateDto)"
-                          @bind-Value:get="TemplateJson"
-                          @bind-Value:set="OnTemplateJsonChanged"
-                          Lines="16"
-                          Variant="Variant.Outlined"
-                          HelperText="Paste a ScreenTemplateDto JSON payload (title, description, banked question refs)." />
+    <div class="stf__label mt-3">Template (JSON — schema-level ScreenTemplateDto)</div>
+    <textarea class="stf__json"
+              value="@templateJson"
+              @oninput="@((ChangeEventArgs e) => OnTemplateJsonChanged((string?)e.Value ?? ""))"
+              disabled="@isReadOnly"
+              spellcheck="false"></textarea>
+    <div class="stf__hint">Paste a ScreenTemplateDto JSON payload (title, description, banked question refs).</div>
 
     @if (parseError is not null)
     {
@@ -39,24 +54,40 @@
 
 </ShiftEntityForm>
 
-@code {
-    string TemplateJson { get; set; } = "";
-    string? parseError;
-
-    async ValueTask<bool> EntityLoaded(ShiftEntityResponse<ScreenTemplateAdminDTO> response)
-    {
-        TemplateJson = TheItem.Template is null
-            ? ""
-            : JsonSerializer.Serialize(TheItem.Template, SurveySchemaSerializer.Pretty);
-        parseError = null;
-        // See SurveyForm.EntityLoaded for the reason this is InvokeAsync'd.
-        await InvokeAsync(StateHasChanged);
-        return true;
+<style>
+    .stf__label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 4px;
     }
+    .stf__json {
+        width: 100%;
+        min-height: 320px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.82rem;
+        line-height: 1.5;
+        border: 1px solid #d0d5dd;
+        border-radius: 6px;
+        padding: 10px;
+        resize: vertical;
+        box-sizing: border-box;
+    }
+    .stf__hint {
+        font-size: 0.75rem;
+        color: #888;
+        margin-top: 2px;
+    }
+</style>
+
+@code {
+    ScreenTemplateAdminDTO? seededFor;
+    string templateJson = "";
+    string? parseError;
 
     void OnTemplateJsonChanged(string value)
     {
-        TemplateJson = value;
+        templateJson = value;
         if (string.IsNullOrWhiteSpace(value))
         {
             TheItem.Template = null;

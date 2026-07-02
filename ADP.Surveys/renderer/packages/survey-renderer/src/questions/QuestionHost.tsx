@@ -1,6 +1,7 @@
 import type { QuestionType } from '@shiftsoftware/survey-sdk';
 import { useSurveyContext } from '../SurveyContext.js';
 import type { QuestionRegistry } from './registry.js';
+import { SourcedOptionsGate } from './SourcedOptionsGate.js';
 
 /** Dispatches to the right question component for the question's `type`
  *  discriminator. Unknown types render a placeholder so a missing registry
@@ -21,6 +22,13 @@ export function QuestionHost({
         <em>{ui.unsupportedQuestion} {String(type ?? 'missing')}</em>
       </div>
     );
+  }
+  // Sourced questions route through the fetch gate; authored inline options
+  // (if any) win over the source so a hybrid question degrades gracefully.
+  const hasInlineOptions =
+    Array.isArray(question['options']) && (question['options'] as unknown[]).length > 0;
+  if (question['optionsSource'] != null && !hasInlineOptions) {
+    return <SourcedOptionsGate question={question} Component={Component} />;
   }
   return <Component question={question} />;
 }

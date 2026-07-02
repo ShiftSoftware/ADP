@@ -1,6 +1,7 @@
 export { SurveyRenderer, defaultRegistry, type SurveyRendererProps } from './SurveyRenderer.js';
 export { useSurveyContext, type SurveyContextValue } from './SurveyContext.js';
 export { QuestionHost } from './questions/QuestionHost.js';
+export { SourcedOptionsGate, clearSourcedOptionsCache } from './questions/SourcedOptionsGate.js';
 export { TextQuestion } from './questions/TextQuestion.js';
 export { ParagraphQuestion } from './questions/ParagraphQuestion.js';
 export { NumberQuestion } from './questions/NumberQuestion.js';

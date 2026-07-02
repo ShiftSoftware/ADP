@@ -10,6 +10,7 @@
     "resume": "tsx resume.ts",
     "trigger-ingest": "tsx trigger-ingest.ts",
     "personalization": "tsx personalization.ts",
+    "options-source": "tsx options-source.ts",
     "preview-create": "tsx preview-create.ts",
     "seed-demo": "tsx seed-demo.ts",
     "unseed-demo": "tsx unseed-demo.ts",

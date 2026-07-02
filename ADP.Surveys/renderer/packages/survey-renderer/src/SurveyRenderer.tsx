@@ -495,6 +495,13 @@ export function SurveyRenderer({
   // which is confusing UX.
   const isAutoSubmitScreen = questions.length === 0 && !currentScreen.nextScreen;
   const showNextButton = !hasTerminalNavList && !isAutoSubmitScreen;
+  // The press that ends the survey is labeled Submit, not Next — respondents
+  // otherwise can't tell which press submits. Answer-aware via computeNext so
+  // the label stays correct on branching flows.
+  const nextWouldEnd =
+    showNextButton &&
+    currentScreenId !== null &&
+    computeNext(schema, currentScreenId, answers).kind === 'end';
 
   return (
     <SurveyContextProvider value={contextValue}>
@@ -549,7 +556,11 @@ export function SurveyRenderer({
                 disabled={submitting}
                 onClick={advance}
               >
-                {submitting ? localeConfig.strings.submitting : localeConfig.strings.next}
+                {submitting
+                  ? localeConfig.strings.submitting
+                  : nextWouldEnd
+                    ? localeConfig.strings.submit
+                    : localeConfig.strings.next}
               </button>
             </div>
           )}

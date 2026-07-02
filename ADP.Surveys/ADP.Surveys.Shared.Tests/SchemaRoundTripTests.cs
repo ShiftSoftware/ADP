@@ -174,4 +174,45 @@ public class SchemaRoundTripTests
 
         Assert.Contains("\"type\":\"navigationList\"", json);
     }
+
+    [Fact]
+    public void OptionsSource_RoundTripsExactly()
+    {
+        var q = new NavigationListQuestionDto
+        {
+            Id = "branch",
+            Title = LocalizedString.From("en", "Preferred branch"),
+            OptionsSource = new OptionsSourceDto
+            {
+                Url = "https://example.test/api/public/company-branch",
+                QueryParams = new() { ["services"] = "body-and-paint" },
+                Headers = new() { ["X-Public-Key"] = "demo" },
+                ItemsPath = "items",
+                ValuePath = "IntegrationId",
+                LabelPath = "Name",
+                NextScreen = "after-branch",
+            },
+        };
+
+        var json = JsonSerializer.Serialize<QuestionDto>(q, Json);
+        var back = Assert.IsType<NavigationListQuestionDto>(JsonSerializer.Deserialize<QuestionDto>(json, Json));
+
+        Assert.NotNull(back.OptionsSource);
+        Assert.Equal(q.OptionsSource.Url, back.OptionsSource!.Url);
+        Assert.Equal("body-and-paint", back.OptionsSource.QueryParams!["services"]);
+        Assert.Equal("demo", back.OptionsSource.Headers!["X-Public-Key"]);
+        Assert.Equal("items", back.OptionsSource.ItemsPath);
+        Assert.Equal("IntegrationId", back.OptionsSource.ValuePath);
+        Assert.Equal("Name", back.OptionsSource.LabelPath);
+        Assert.Equal("after-branch", back.OptionsSource.NextScreen);
+        Assert.Equal(json, JsonSerializer.Serialize<QuestionDto>(back, Json));
+
+        // Questions without a source keep it out of the payload entirely.
+        var plain = JsonSerializer.Serialize<QuestionDto>(new NavigationListQuestionDto
+        {
+            Id = "x",
+            Title = LocalizedString.From("en", "x"),
+        }, Json);
+        Assert.DoesNotContain("optionsSource", plain);
+    }
 }

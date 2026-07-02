@@ -2,6 +2,7 @@
 @using ShiftSoftware.ADP.Surveys.Shared.DTOs.Admin.ScreenTemplate
 @using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions
 @using ShiftSoftware.ADP.Surveys.Shared.DTOs.Screens
+@using LocalizedString = ShiftSoftware.ADP.Surveys.Shared.DTOs.LocalizedString
 @inject IDialogService DialogService
 
 <div class="screen-list">
@@ -18,6 +19,9 @@
                      title="Add screen">
                 <MudMenuItem OnClick="AddScreen" Icon="@Icons.Material.Filled.ViewCarousel">
                     New inline screen
+                </MudMenuItem>
+                <MudMenuItem OnClick="AddEndScreen" Icon="@Icons.Material.Filled.Flag">
+                    New end screen
                 </MudMenuItem>
                 <MudDivider />
                 <MudMenuItem OnClick="InsertFromTemplate" Icon="@Icons.Material.Filled.Link">
@@ -41,6 +45,7 @@
                 var selected = idx == SelectedIndex;
                 var label = GetLabel(screen, idx);
                 var isRef = screen is ScreenTemplateRefDto;
+                var endKind = ScreenFlow.Classify(Draft, idx);
 
                 <div class="screen-list__row @(selected ? "screen-list__row--selected" : "") @(dragIndex == idx ? "screen-list__row--dragging" : "") @(dragOverIndex == idx && dragIndex != idx ? "screen-list__row--dragover" : "")"
                      draggable="@(ReadOnly ? "false" : "true")"
@@ -89,6 +94,27 @@
                                            title="Remove" />
                         </div>
                     }
+                    @if (endKind != ScreenFlow.EndKind.None)
+                    {
+                        @* Declared last so flex-wrap puts the badge on its own line
+                           UNDER label + actions instead of pushing the actions down. *@
+                        <div class="screen-list__end-badge-row">
+                            @if (endKind == ScreenFlow.EndKind.AutoSubmit)
+                            {
+                                <span class="screen-list__end-badge screen-list__end-badge--hard"
+                                      title="No questions and no next screen — the survey submits when the respondent arrives here, and this screen's title/description become the thank-you state.">
+                                    ⚑ Ends survey
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="screen-list__end-badge screen-list__end-badge--soft"
+                                      title="Last screen in the flow — the Next press here submits the survey.">
+                                    ⚑ Submits on Next
+                                </span>
+                            }
+                        </div>
+                    }
                 </div>
             }
         </MudList>
@@ -132,11 +158,12 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
+        flex-wrap: wrap;
         padding: 6px 8px;
         border-radius: 6px;
         cursor: pointer;
         transition: background-color 0.12s ease;
-        gap: 8px;
+        gap: 0 8px;
     }
     .screen-list__row:hover {
         background: #f0f4ff;
@@ -174,6 +201,30 @@
         color: #a0a8b8;
         cursor: grab;
         flex-shrink: 0;
+    }
+    .screen-list__end-badge-row {
+        flex-basis: 100%;
+        padding-left: 46px;
+        margin-top: 2px;
+    }
+    .screen-list__end-badge {
+        display: inline-block;
+        font-size: 0.66rem;
+        font-weight: 600;
+        line-height: 1.6;
+        padding: 0 7px;
+        border-radius: 10px;
+        white-space: nowrap;
+    }
+    .screen-list__end-badge--hard {
+        background: #e6f4ea;
+        color: #1e7e34;
+        border: 1px solid #b7e1c1;
+    }
+    .screen-list__end-badge--soft {
+        background: #fff4e0;
+        color: #9a6700;
+        border: 1px solid #f0d9a8;
     }
     .screen-list__row--dragging {
         opacity: 0.4;
@@ -227,6 +278,28 @@
         Draft ??= SurveyDraftFactory.CreateSkeleton();
         var nextId = GenerateScreenId(Draft);
         Draft.Screens.Add(new InlineScreenDto { Id = nextId, Questions = new List<QuestionEntryDto>() });
+        var newIndex = Draft.Screens.Count - 1;
+        await DraftChanged.InvokeAsync(Draft);
+        await SelectedIndexChanged.InvokeAsync(newIndex);
+    }
+
+    /// <summary>
+    /// One-click end-screen preset: a zero-question screen with no nextScreen
+    /// is the renderer's terminal shape — it auto-submits on arrival and shows
+    /// its title/description as the thank-you state.
+    /// </summary>
+    async Task AddEndScreen()
+    {
+        Draft ??= SurveyDraftFactory.CreateSkeleton();
+        var locale = !string.IsNullOrWhiteSpace(Draft.DefaultLocale)
+            ? Draft.DefaultLocale
+            : Draft.Locales?.FirstOrDefault() ?? "en";
+        Draft.Screens.Add(new InlineScreenDto
+        {
+            Id = GenerateEndScreenId(Draft),
+            Title = LocalizedString.From(locale, "Thank you!"),
+            Questions = new List<QuestionEntryDto>(),
+        });
         var newIndex = Draft.Screens.Count - 1;
         await DraftChanged.InvokeAsync(Draft);
         await SelectedIndexChanged.InvokeAsync(newIndex);
@@ -335,6 +408,17 @@
         for (int n = draft.Screens.Count + 1; ; n++)
         {
             var candidate = $"screen-{n}";
+            if (!existing.Contains(candidate)) return candidate;
+        }
+    }
+
+    static string GenerateEndScreenId(SurveyDto draft)
+    {
+        var existing = draft.Screens.OfType<InlineScreenDto>().Select(s => s.Id).ToHashSet();
+        if (!existing.Contains("thank-you")) return "thank-you";
+        for (int n = 2; ; n++)
+        {
+            var candidate = $"thank-you-{n}";
             if (!existing.Contains(candidate)) return candidate;
         }
     }

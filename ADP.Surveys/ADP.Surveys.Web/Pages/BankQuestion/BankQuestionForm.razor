@@ -1,7 +1,12 @@
 @attribute [Route($"{SurveyRoutes.Prefix}/{nameof(BankQuestionForm)}/{{Key?}}")]
 @attribute [Authorize]
 @using System.Text.Json
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Types
+@using ShiftSoftware.ADP.Surveys.Shared.Enums
 @using ShiftSoftware.ADP.Surveys.Shared.Json
+@using LocalizedString = ShiftSoftware.ADP.Surveys.Shared.DTOs.LocalizedString
 
 @inherits ShiftForm<BankQuestionForm, BankQuestionAdminDTO>
 
@@ -14,13 +19,41 @@
                  Title="Bank Question"
                  T="BankQuestionAdminDTO"
                  TypeAuthAction="SurveysActionTree.BankQuestions"
-                 OnResult="EntityLoaded"
                  @bind-Key="@Key">
 
-    <MudTextFieldExtended OnlyValidateIfDirty="true"
+    @{
+        var isReadOnly = Mode == FormModes.View;
+        // Seed per-loaded-item state in the same render pass TheItem materializes —
+        // ShiftEntityForm's OnResult fires at the wrong lifecycle point for this
+        // (see the "OnResult is unreliable" gotcha; same pattern as SurveyForm).
+        if (!ReferenceEquals(seededFor, TheItem))
+        {
+            seededFor = TheItem;
+            rawJson = TheItem?.Question is null
+                ? ""
+                : JsonSerializer.Serialize<QuestionDto>(TheItem!.Question, SurveySchemaSerializer.Pretty);
+            parseError = null;
+            editLocales = DetectLocales(TheItem?.Question);
+        }
+        // The inspector wrapper must track the live Question reference — a type
+        // change or a raw-JSON parse swaps the object.
+        if (TheItem?.Question is null)
+        {
+            entry = null;
+        }
+        else if (entry is null || !ReferenceEquals(entry.Inline, TheItem.Question))
+        {
+            entry = QuestionEntryDto.FromInline(TheItem.Question);
+        }
+    }
+
+    <MudTextFieldExtended T="string"
+                          OnlyValidateIfDirty="true"
                           Label="Key (stable cross-survey id)"
-                          @bind-Value="TheItem.Key"
-                          For="@(() => TheItem.Key)" />
+                          Value="@TheItem.Key"
+                          ValueChanged="OnKeyChanged"
+                          For="@(() => TheItem.Key)"
+                          HelperText="Also used as the question's ID — the answer key and BI join anchor." />
 
     <MudTextFieldExtended OnlyValidateIfDirty="true"
                           Label="BI Column (optional)"
@@ -35,44 +68,310 @@
     <MudCheckBoxExtended Label="Retired"
                          @bind-Value="TheItem.Retired" />
 
-    @* JSON editor for the canonical question definition. Text changes deserialize
-       straight into TheItem.Question so FluentValidation sees the real value and
-       never silently blocks save on a validator it can't surface. *@
-    <MudTextFieldExtended T="string"
-                          Label="Question (JSON — schema-level QuestionDto)"
-                          @bind-Value:get="QuestionJson"
-                          @bind-Value:set="OnQuestionJsonChanged"
-                          Lines="14"
-                          Variant="Variant.Outlined"
-                          HelperText="Paste a QuestionDto JSON payload. The server validates shape on save." />
+    <div class="bqf__section-title mt-4">Question definition</div>
 
-    @if (parseError is not null)
+    @if (TheItem.Question is null)
     {
-        <MudAlert Severity="Severity.Error" Dense="true" Class="mt-2">
-            JSON parse error: @parseError
-        </MudAlert>
+        @if (isReadOnly)
+        {
+            <MudAlert Severity="Severity.Warning" Dense="true">This bank entry has no question definition.</MudAlert>
+        }
+        else
+        {
+            <div class="bqf__type-pick">
+                <MudMenu Label="Choose question type"
+                         StartIcon="@Icons.Material.Filled.Add"
+                         Variant="Variant.Filled"
+                         Color="Color.Primary"
+                         AnchorOrigin="Origin.BottomLeft">
+                    @foreach (var type in visuallyEditableTypes)
+                    {
+                        <MudMenuItem OnClick="@(() => CreateQuestion(type))">@FormatType(type)</MudMenuItem>
+                    }
+                </MudMenu>
+            </div>
+        }
     }
+    else
+    {
+        <div class="bqf__type-row">
+            <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Text">
+                @FormatType(TheItem.Question.QuestionType)
+            </MudChip>
+            @if (!isReadOnly)
+            {
+                <MudMenu Label="Change type…"
+                         Variant="Variant.Text"
+                         Size="Size.Small"
+                         Disabled="@TheItem.Locked"
+                         AnchorOrigin="Origin.BottomLeft"
+                         title="@(TheItem.Locked ? "Type is frozen — a published survey references this entry." : null)">
+                    @foreach (var type in visuallyEditableTypes.Where(t => t != TheItem.Question!.QuestionType))
+                    {
+                        <MudMenuItem OnClick="@(() => ConvertQuestion(type))">@FormatType(type)</MudMenuItem>
+                    }
+                </MudMenu>
+            }
+            <MudSpacer />
+            <MudSelect T="string"
+                       Label="Locales to edit"
+                       MultiSelection="true"
+                       SelectedValues="@editLocales"
+                       SelectedValuesChanged="@OnEditLocalesChanged"
+                       Dense="true"
+                       Class="bqf__locales"
+                       HelperText="Which locale inputs the editors show — stored data is unaffected.">
+                @foreach (var loc in LocaleCatalog.Union(editLocales))
+                {
+                    <MudSelectItem T="string" Value="@loc">@loc</MudSelectItem>
+                }
+            </MudSelect>
+        </div>
+
+        <QuestionInspector Entry="@entry"
+                           Locales="@(editLocales.ToList())"
+                           ReadOnly="@isReadOnly"
+                           Changed="OnQuestionEdited" />
+    }
+
+    <details class="bqf__raw mt-4">
+        <summary>Raw JSON (advanced)</summary>
+        @* Native textarea, not MudTextFieldExtended — the latter drops external
+           value updates after first render (see gotchas), which is exactly what
+           this field needs when the visual editor mutates the question. *@
+        <textarea class="bqf__rawtext"
+                  value="@rawJson"
+                  @oninput="@((ChangeEventArgs e) => OnRawJsonInput((string?)e.Value ?? ""))"
+                  disabled="@isReadOnly"
+                  spellcheck="false"></textarea>
+        @if (parseError is not null)
+        {
+            <MudAlert Severity="Severity.Error" Dense="true" Class="mt-2">
+                JSON parse error: @parseError
+            </MudAlert>
+        }
+    </details>
 
 </ShiftEntityForm>
 
-@code {
-    string QuestionJson { get; set; } = "";
-    string? parseError;
+<style>
+    .bqf__section-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 10px;
+        padding-bottom: 4px;
+        border-bottom: 1px solid #e0e5ec;
+    }
+    .bqf__type-pick {
+        padding: 8px 0;
+    }
+    .bqf__type-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+    .bqf__locales {
+        max-width: 220px;
+    }
+    .bqf__raw summary {
+        cursor: pointer;
+        font-size: 0.85rem;
+        color: #666;
+        user-select: none;
+    }
+    .bqf__rawtext {
+        width: 100%;
+        min-height: 260px;
+        margin-top: 8px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.82rem;
+        line-height: 1.5;
+        border: 1px solid #d0d5dd;
+        border-radius: 6px;
+        padding: 10px;
+        resize: vertical;
+        box-sizing: border-box;
+    }
+</style>
 
-    async ValueTask<bool> EntityLoaded(ShiftEntityResponse<BankQuestionAdminDTO> response)
+@code {
+    static readonly string[] LocaleCatalog = new[] { "en", "ar", "ku" };
+
+    BankQuestionAdminDTO? seededFor;
+    QuestionEntryDto? entry;
+    string rawJson = "";
+    string? parseError;
+    List<string> editLocales = new() { "en" };
+
+    static readonly QuestionType[] visuallyEditableTypes = new[]
     {
-        QuestionJson = TheItem.Question is null
+        QuestionType.Text,
+        QuestionType.Paragraph,
+        QuestionType.Number,
+        QuestionType.Rating,
+        QuestionType.Nps,
+        QuestionType.SingleChoice,
+        QuestionType.MultiChoice,
+        QuestionType.Dropdown,
+        QuestionType.Date,
+        QuestionType.DateTime,
+        QuestionType.File,
+        QuestionType.Signature,
+        QuestionType.YesNo,
+        QuestionType.NavigationList,
+    };
+
+    static string FormatType(QuestionType t) => t switch
+    {
+        QuestionType.Text => "Text (single line)",
+        QuestionType.Paragraph => "Paragraph (multi-line)",
+        QuestionType.Number => "Number",
+        QuestionType.Rating => "Rating (stars)",
+        QuestionType.Nps => "NPS score",
+        QuestionType.SingleChoice => "Single choice (radio)",
+        QuestionType.MultiChoice => "Multi choice (checkbox)",
+        QuestionType.Dropdown => "Dropdown",
+        QuestionType.Date => "Date",
+        QuestionType.DateTime => "Date & time",
+        QuestionType.File => "File upload",
+        QuestionType.Signature => "Signature",
+        QuestionType.YesNo => "Yes / No",
+        QuestionType.NavigationList => "Navigation list",
+        _ => t.ToString(),
+    };
+
+    static QuestionDto NewQuestionOfType(QuestionType type) => type switch
+    {
+        QuestionType.Text => new TextQuestionDto(),
+        QuestionType.Paragraph => new ParagraphQuestionDto(),
+        QuestionType.Number => new NumberQuestionDto(),
+        QuestionType.Rating => new RatingQuestionDto { Max = 5 },
+        QuestionType.Nps => new NpsQuestionDto { Min = 0, Max = 10 },
+        QuestionType.SingleChoice => new SingleChoiceQuestionDto(),
+        QuestionType.MultiChoice => new MultiChoiceQuestionDto(),
+        QuestionType.Dropdown => new DropdownQuestionDto(),
+        QuestionType.Date => new DateQuestionDto(),
+        QuestionType.DateTime => new DateTimeQuestionDto(),
+        QuestionType.File => new FileQuestionDto(),
+        QuestionType.Signature => new SignatureQuestionDto(),
+        QuestionType.YesNo => new YesNoQuestionDto(),
+        QuestionType.NavigationList => new NavigationListQuestionDto(),
+        _ => throw new NotSupportedException($"Unsupported question type: {type}"),
+    };
+
+    /// <summary>Locales already present in the question's LocalizedStrings — seeds
+    /// the edit-locale selector so existing translations are visible by default.</summary>
+    static List<string> DetectLocales(QuestionDto? question)
+    {
+        var found = new HashSet<string> { "en" };
+        if (question is not null)
+        {
+            void Collect(LocalizedString? ls)
+            {
+                if (ls is null) return;
+                foreach (var key in ls.Keys) found.Add(key);
+            }
+            Collect(question.Title);
+            Collect(question.Help);
+            switch (question)
+            {
+                case SingleChoiceQuestionDto q: foreach (var o in q.Options) Collect(o.Label); break;
+                case MultiChoiceQuestionDto q: foreach (var o in q.Options) Collect(o.Label); break;
+                case DropdownQuestionDto q: foreach (var o in q.Options) Collect(o.Label); break;
+                case NavigationListQuestionDto q: foreach (var o in q.Options) Collect(o.Label); break;
+            }
+        }
+        return found.ToList();
+    }
+
+    void OnEditLocalesChanged(IEnumerable<string> values)
+    {
+        editLocales = values?.ToList() ?? new List<string>();
+    }
+
+    void OnKeyChanged(string value)
+    {
+        TheItem.Key = value ?? "";
+        // Bank invariant: the inner question's Id always equals the Key (it's the
+        // answer key + BI anchor; the resolver stamps it at publish regardless).
+        if (TheItem.Question is not null)
+            TheItem.Question.Id = TheItem.Key;
+        SyncRawFromQuestion();
+    }
+
+    void CreateQuestion(QuestionType type)
+    {
+        var q = NewQuestionOfType(type);
+        q.Id = TheItem.Key ?? "";
+        q.Title = new LocalizedString();
+        TheItem.Question = q;
+        SyncRawFromQuestion();
+    }
+
+    /// <summary>Swap the question's type, carrying over the shared fields (and the
+    /// options/source where the shapes are compatible). Type-specific knobs reset.</summary>
+    void ConvertQuestion(QuestionType type)
+    {
+        var old = TheItem.Question!;
+        var q = NewQuestionOfType(type);
+        q.Id = old.Id;
+        q.Title = old.Title;
+        q.Help = old.Help;
+        q.Required = old.Required;
+        q.BiColumn = old.BiColumn;
+
+        // Options carry over between the OptionDto-based choice types.
+        var oldOptions = old switch
+        {
+            SingleChoiceQuestionDto s => s.Options,
+            MultiChoiceQuestionDto m => m.Options,
+            DropdownQuestionDto d => d.Options,
+            _ => null,
+        };
+        switch (q)
+        {
+            case SingleChoiceQuestionDto s when oldOptions is not null: s.Options = oldOptions; break;
+            case MultiChoiceQuestionDto m when oldOptions is not null: m.Options = oldOptions; break;
+            case DropdownQuestionDto d when oldOptions is not null: d.Options = oldOptions; break;
+        }
+
+        var oldSource = ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Options.OptionsSourceDto.Of(old);
+        if (oldSource is not null)
+        {
+            switch (q)
+            {
+                case SingleChoiceQuestionDto s: s.OptionsSource = oldSource; break;
+                case MultiChoiceQuestionDto m: m.OptionsSource = oldSource; break;
+                case DropdownQuestionDto d: d.OptionsSource = oldSource; break;
+                case NavigationListQuestionDto n: n.OptionsSource = oldSource; break;
+            }
+        }
+
+        TheItem.Question = q;
+        SyncRawFromQuestion();
+    }
+
+    void OnQuestionEdited()
+    {
+        // Editors mutate the question in place; keep the invariant + the raw view current.
+        if (TheItem.Question is not null && !string.IsNullOrWhiteSpace(TheItem.Key))
+            TheItem.Question.Id = TheItem.Key;
+        SyncRawFromQuestion();
+    }
+
+    void SyncRawFromQuestion()
+    {
+        rawJson = TheItem.Question is null
             ? ""
             : JsonSerializer.Serialize<QuestionDto>(TheItem.Question, SurveySchemaSerializer.Pretty);
         parseError = null;
-        // See SurveyForm.EntityLoaded for the reason this is InvokeAsync'd.
-        await InvokeAsync(StateHasChanged);
-        return true;
     }
 
-    void OnQuestionJsonChanged(string value)
+    void OnRawJsonInput(string value)
     {
-        QuestionJson = value;
+        rawJson = value;
         if (string.IsNullOrWhiteSpace(value))
         {
             TheItem.Question = null;
@@ -81,7 +380,10 @@
         }
         try
         {
-            TheItem.Question = JsonSerializer.Deserialize<QuestionDto>(value, SurveySchemaSerializer.Options);
+            var parsed = JsonSerializer.Deserialize<QuestionDto>(value, SurveySchemaSerializer.Options);
+            if (parsed is not null && !string.IsNullOrWhiteSpace(TheItem.Key))
+                parsed.Id = TheItem.Key;
+            TheItem.Question = parsed;
             parseError = null;
         }
         catch (JsonException ex)

@@ -28,6 +28,7 @@ public static class SampleSurveys
         MultiLocaleBranding(),
         ScreenTemplatesAndBank(),
         TriggerDriven(),
+        ExternalApiOptions(),
         Sf4PurchaseFollowUp.Recipe(),
     };
 
@@ -589,6 +590,176 @@ public static class SampleSurveys
             },
             Banks: new[] { fullNameBank, phoneBank, npsBank },
             Templates: new[] { customerInfoTemplate });
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // 7. External API options — choice questions whose options come from the
+    //    TIQ public endpoints (fetched in the respondent's browser at render
+    //    time, Accept-Language = survey locale). Demonstrates all three usage
+    //    styles:
+    //      • inline sourced navigationLists with per-screen query-param
+    //        variations of the same endpoint (services=new-vehicle-sale vs
+    //        body-and-paint) — only the branch the user takes gets fetched;
+    //      • a banked sourced dropdown reused with a per-reference
+    //        sourceParams override (services=auto-repair-and-maintenance);
+    //      • a banked sourced dropdown used as-is (city list).
+    //    All three branch questions share the `preferred_branch` BI column.
+    // ──────────────────────────────────────────────────────────────────────
+    private static SampleSurveyRecipe ExternalApiOptions()
+    {
+        const string TiqBase = "https://tiq-identity-server.azurewebsites.net/api/public";
+
+        var cityBank = new BankRecipe(
+            Key: "tiq-city",
+            Question: new DropdownQuestionDto
+            {
+                Id = "tiq-city",
+                Title = LocalizedString.From("en", "Which city are you in?"),
+                Placeholder = LocalizedString.From("en", "Select your city…"),
+                OptionsSource = new OptionsSourceDto { Url = $"{TiqBase}/city" },
+            },
+            BiColumn: "city",
+            Tags: "tiq,external");
+
+        var branchBank = new BankRecipe(
+            Key: "tiq-preferred-branch",
+            Question: new DropdownQuestionDto
+            {
+                Id = "tiq-preferred-branch",
+                Title = LocalizedString.From("en", "Preferred branch"),
+                Placeholder = LocalizedString.From("en", "Select a branch…"),
+                // No services filter at the bank — each referencing survey narrows
+                // via overrides.sourceParams, keeping one bank entry (and one BI
+                // column) across all variations.
+                OptionsSource = new OptionsSourceDto { Url = $"{TiqBase}/company-branch" },
+            },
+            BiColumn: "preferred_branch",
+            Tags: "tiq,external");
+
+        return new SampleSurveyRecipe(
+            IntegrationId: "sample-external-api-options",
+            Name: "Sample: External API options (TIQ)",
+            Draft: new SurveyDto
+            {
+                Title = LocalizedString.From("en", "Book with your nearest branch"),
+                Description = LocalizedString.From("en",
+                    "Branch and city lists come live from the TIQ public APIs — nothing is authored inline."),
+                Locales = new() { "en" },
+                DefaultLocale = "en",
+                Screens =
+                {
+                    new InlineScreenDto
+                    {
+                        Id = "what-next",
+                        Title = LocalizedString.From("en", "What do you want to do next?"),
+                        Questions =
+                        {
+                            QuestionEntryDto.FromInline(new NavigationListQuestionDto
+                            {
+                                Id = "intent",
+                                Title = LocalizedString.From("en", "Pick one"),
+                                Required = true,
+                                BiColumn = "intent",
+                                Options =
+                                {
+                                    new() { Id = "quotation",  Label = LocalizedString.From("en", "Request Quotation"), NextScreen = "branch-sales" },
+                                    new() { Id = "inspection", Label = LocalizedString.From("en", "Book Inspection"),   NextScreen = "branch-bodywork" },
+                                    new() { Id = "service",    Label = LocalizedString.From("en", "Book Service"),      NextScreen = "branch-service" },
+                                }
+                            })
+                        }
+                    },
+
+                    // Same endpoint, different query-string per branch of the flow.
+                    // Inline sourced navigationLists: the tap is both the answer and
+                    // the transition; every fetched option routes to "city".
+                    new InlineScreenDto
+                    {
+                        Id = "branch-sales",
+                        Title = LocalizedString.From("en", "Choose a sales showroom"),
+                        Questions =
+                        {
+                            QuestionEntryDto.FromInline(new NavigationListQuestionDto
+                            {
+                                Id = "branch-sales-pick",
+                                Title = LocalizedString.From("en", "Showrooms offering new vehicle sales"),
+                                Required = true,
+                                BiColumn = "preferred_branch",
+                                OptionsSource = new OptionsSourceDto
+                                {
+                                    Url = $"{TiqBase}/company-branch",
+                                    QueryParams = new() { ["services"] = "new-vehicle-sale" },
+                                    NextScreen = "city",
+                                },
+                            })
+                        }
+                    },
+                    new InlineScreenDto
+                    {
+                        Id = "branch-bodywork",
+                        Title = LocalizedString.From("en", "Choose an inspection center"),
+                        Questions =
+                        {
+                            QuestionEntryDto.FromInline(new NavigationListQuestionDto
+                            {
+                                Id = "branch-bodywork-pick",
+                                Title = LocalizedString.From("en", "Centers offering body & paint"),
+                                Required = true,
+                                BiColumn = "preferred_branch",
+                                OptionsSource = new OptionsSourceDto
+                                {
+                                    Url = $"{TiqBase}/company-branch",
+                                    QueryParams = new() { ["services"] = "body-and-paint" },
+                                    NextScreen = "city",
+                                },
+                            })
+                        }
+                    },
+
+                    // Banked variant: same bank entry as any other survey would use,
+                    // narrowed here via overrides.sourceParams.
+                    new InlineScreenDto
+                    {
+                        Id = "branch-service",
+                        Title = LocalizedString.From("en", "Choose a service center"),
+                        Questions =
+                        {
+                            QuestionEntryDto.FromRef(new QuestionRefDto
+                            {
+                                BankRef = branchBank.Key,
+                                Overrides = new QuestionOverridesDto
+                                {
+                                    Title = LocalizedString.From("en", "Centers offering repair & maintenance"),
+                                    Required = true,
+                                    SourceParams = new() { ["services"] = "auto-repair-and-maintenance" },
+                                }
+                            })
+                        },
+                        NextScreen = "city",
+                    },
+
+                    new InlineScreenDto
+                    {
+                        Id = "city",
+                        Title = LocalizedString.From("en", "And your city?"),
+                        Questions =
+                        {
+                            QuestionEntryDto.FromRef(new QuestionRefDto { BankRef = cityBank.Key })
+                        },
+                        NextScreen = "done",
+                    },
+
+                    // Zero questions + no next screen → ends the survey (auto-submit).
+                    new InlineScreenDto
+                    {
+                        Id = "done",
+                        Title = LocalizedString.From("en", "Thank you!"),
+                        Description = LocalizedString.From("en", "Our team will contact you shortly."),
+                    },
+                }
+            },
+            Banks: new[] { cityBank, branchBank },
+            Templates: Array.Empty<TemplateRecipe>());
     }
 
     // ──────────────────────────────────────────────────────────────────────

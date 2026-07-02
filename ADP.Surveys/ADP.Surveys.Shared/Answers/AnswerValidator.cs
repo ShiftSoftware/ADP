@@ -94,6 +94,10 @@ public static class AnswerValidator
             var option = nav.Options.FirstOrDefault(o => o.Id == picked.GetString());
             if (option?.NextScreen is not null && byId.ContainsKey(option.NextScreen))
                 return option.NextScreen;
+            // Sourced navigationLists have no inline options — every fetched option
+            // shares the source's single nextScreen, so any answer routes there.
+            if (option is null && nav.OptionsSource?.NextScreen is { } sourced && byId.ContainsKey(sourced))
+                return sourced;
         }
 
         // 1. Logic rule — ignore self-targets and unknown screens.
@@ -136,15 +140,18 @@ public static class AnswerValidator
             case NumberQuestionDto n: ValidateNumber(n, value, errors); break;
             case RatingQuestionDto r: ValidateRating(r, value, errors); break;
             case NpsQuestionDto nps: ValidateNps(nps, value, errors); break;
-            case SingleChoiceQuestionDto sc: ValidateOptionId(sc.Id, sc.Options.Select(o => o.Id), value, errors); break;
+            // Sourced choice questions (optionsSource != null) validate shape-only:
+            // the options are fetched client-side at render time, so the server never
+            // sees them — the membership check runs in the SDK's client-side mirror.
+            case SingleChoiceQuestionDto sc: ValidateOptionId(sc.Id, sc.Options.Select(o => o.Id), value, errors, skipMembership: sc.OptionsSource is not null); break;
             case MultiChoiceQuestionDto mc: ValidateMultiChoice(mc, value, errors); break;
-            case DropdownQuestionDto dd: ValidateOptionId(dd.Id, dd.Options.Select(o => o.Id), value, errors); break;
+            case DropdownQuestionDto dd: ValidateOptionId(dd.Id, dd.Options.Select(o => o.Id), value, errors, skipMembership: dd.OptionsSource is not null); break;
             case DateQuestionDto d: ValidateDate(d, value, errors); break;
             case DateTimeQuestionDto dt: ValidateDateTime(dt, value, errors); break;
             case FileQuestionDto f: ValidateString(f.Id, value, errors, "file reference"); break;
             case SignatureQuestionDto s: ValidateString(s.Id, value, errors, "signature data url"); break;
             case YesNoQuestionDto yn: ValidateYesNo(yn, value, errors); break;
-            case NavigationListQuestionDto nl: ValidateOptionId(nl.Id, nl.Options.Select(o => o.Id), value, errors); break;
+            case NavigationListQuestionDto nl: ValidateOptionId(nl.Id, nl.Options.Select(o => o.Id), value, errors, skipMembership: nl.OptionsSource is not null); break;
         }
     }
 
@@ -218,13 +225,14 @@ public static class AnswerValidator
             errors.Add(new AnswerError(q.Id, $"NPS answer {n} is outside {q.Min}..{q.Max}."));
     }
 
-    private static void ValidateOptionId(string questionId, IEnumerable<string> validIds, JsonElement value, List<AnswerError> errors)
+    private static void ValidateOptionId(string questionId, IEnumerable<string> validIds, JsonElement value, List<AnswerError> errors, bool skipMembership = false)
     {
         if (value.ValueKind != JsonValueKind.String)
         {
             errors.Add(new AnswerError(questionId, "Choice answer must be a JSON string (option id)."));
             return;
         }
+        if (skipMembership) return;
         var id = value.GetString()!;
         if (!validIds.Contains(id))
             errors.Add(new AnswerError(questionId, $"'{id}' is not a valid option id for this question."));
@@ -248,9 +256,10 @@ public static class AnswerValidator
             }
             picked.Add(item.GetString()!);
         }
-        foreach (var id in picked)
-            if (!validIds.Contains(id))
-                errors.Add(new AnswerError(q.Id, $"'{id}' is not a valid option id for this question."));
+        if (q.OptionsSource is null)
+            foreach (var id in picked)
+                if (!validIds.Contains(id))
+                    errors.Add(new AnswerError(q.Id, $"'{id}' is not a valid option id for this question."));
         if (q.MinSelected.HasValue && picked.Count < q.MinSelected.Value)
             errors.Add(new AnswerError(q.Id, $"At least {q.MinSelected.Value} option(s) must be selected."));
         if (q.MaxSelected.HasValue && picked.Count > q.MaxSelected.Value)

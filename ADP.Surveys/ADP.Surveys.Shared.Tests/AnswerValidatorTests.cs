@@ -287,6 +287,90 @@ public class AnswerValidatorTests
         }
     };
 
+    [Fact]
+    public void Validate_SourcedChoice_AcceptsAnyStringId_ButKeepsShapeCheck()
+    {
+        // Options are fetched client-side at render time; the server never sees
+        // them, so membership is not checkable here — shape still is.
+        var q = new DropdownQuestionDto
+        {
+            Id = "branch",
+            Title = LocalizedString.From("en", "Branch"),
+            OptionsSource = new OptionsSourceDto { Url = "https://example.test/api/public/company-branch" },
+        };
+        Assert.Empty(AnswerValidator.Validate(SurveyWith(q), AnswerMap(("branch", "\"MJLGr\""))));
+        var errors = AnswerValidator.Validate(SurveyWith(q), AnswerMap(("branch", "42")));
+        Assert.Contains(errors, e => e.QuestionId == "branch" && e.Message.Contains("JSON string"));
+    }
+
+    [Fact]
+    public void Validate_SourcedMultiChoice_SkipsMembership_KeepsSelectionBounds()
+    {
+        var q = new MultiChoiceQuestionDto
+        {
+            Id = "cities",
+            Title = LocalizedString.From("en", "Cities"),
+            MaxSelected = 1,
+            OptionsSource = new OptionsSourceDto { Url = "https://example.test/api/public/city" },
+        };
+        Assert.Empty(AnswerValidator.Validate(SurveyWith(q), AnswerMap(("cities", "[\"L0VEX\"]"))));
+        var errors = AnswerValidator.Validate(SurveyWith(q), AnswerMap(("cities", "[\"L0VEX\",\"MWjQ0\"]")));
+        Assert.Contains(errors, e => e.Message.Contains("At most"));
+        Assert.DoesNotContain(errors, e => e.Message.Contains("not a valid option id"));
+    }
+
+    [Fact]
+    public void Validate_SourcedNavigationList_ReplaysPathViaSourceNextScreen()
+    {
+        var survey = new SurveyDto
+        {
+            SurveyId = "s",
+            Title = LocalizedString.From("en", "S"),
+            Locales = new() { "en" },
+            DefaultLocale = "en",
+            Screens =
+            {
+                new InlineScreenDto
+                {
+                    Id = "pick",
+                    Questions =
+                    {
+                        QuestionEntryDto.FromInline(new NavigationListQuestionDto
+                        {
+                            Id = "branch",
+                            Title = LocalizedString.From("en", "Branch"),
+                            OptionsSource = new OptionsSourceDto
+                            {
+                                Url = "https://example.test/api/public/company-branch",
+                                NextScreen = "details",
+                            },
+                        })
+                    }
+                },
+                // Sequential decoy: a terminal zero-question screen. Without the
+                // sourced dispatch the replay stops here and never enforces "details".
+                new InlineScreenDto { Id = "dead-end" },
+                new InlineScreenDto
+                {
+                    Id = "details",
+                    Questions =
+                    {
+                        QuestionEntryDto.FromInline(new TextQuestionDto
+                        {
+                            Id = "notes",
+                            Title = LocalizedString.From("en", "Notes"),
+                            Required = true,
+                        })
+                    }
+                },
+            }
+        };
+
+        var errors = AnswerValidator.Validate(survey, AnswerMap(("branch", "\"any-fetched-id\"")));
+
+        Assert.Contains(errors, e => e.QuestionId == "notes" && e.Message.Contains("required"));
+    }
+
     private static SurveyDto SurveyWith(params QuestionDto[] questions) => new()
     {
         SurveyId = "s",

@@ -2,6 +2,7 @@ using ShiftSoftware.ADP.Surveys.Shared.Bank;
 using ShiftSoftware.ADP.Surveys.Shared.DTOs;
 using ShiftSoftware.ADP.Surveys.Shared.DTOs.Bank;
 using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions;
+using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Options;
 using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Types;
 using ShiftSoftware.ADP.Surveys.Shared.DTOs.Screens;
 using ShiftSoftware.ADP.Surveys.Shared.Resolver;
@@ -194,5 +195,62 @@ public class SchemaResolverTests
         SchemaResolver.Resolve(draft, source);
 
         Assert.Equal("Original", bank.Question.Title["en"]);
+    }
+
+    [Fact]
+    public void Resolve_SourceParamsOverride_MergesOverBankQueryParams()
+    {
+        var bank = new BankQuestionDto
+        {
+            Id = "preferred-branch",
+            Question = new DropdownQuestionDto
+            {
+                Id = "preferred-branch",
+                Title = LocalizedString.From("en", "Preferred branch"),
+                OptionsSource = new OptionsSourceDto
+                {
+                    Url = "https://example.test/api/public/company-branch",
+                    QueryParams = new() { ["services"] = "new-vehicle-sale", ["top"] = "50" },
+                },
+            }
+        };
+        var source = new InMemoryBankSource(new[] { bank });
+
+        var draft = new SurveyDto
+        {
+            SurveyId = "s",
+            Title = LocalizedString.From("en", "S"),
+            Locales = new() { "en" },
+            DefaultLocale = "en",
+            Screens =
+            {
+                new InlineScreenDto
+                {
+                    Id = "screen-1",
+                    Questions =
+                    {
+                        QuestionEntryDto.FromRef(new QuestionRefDto
+                        {
+                            BankRef = "preferred-branch",
+                            Overrides = new QuestionOverridesDto
+                            {
+                                SourceParams = new() { ["services"] = "body-and-paint" },
+                            }
+                        })
+                    }
+                }
+            }
+        };
+
+        var result = SchemaResolver.Resolve(draft, source);
+
+        Assert.True(result.Success);
+        var dd = Assert.IsType<DropdownQuestionDto>(((InlineScreenDto)result.Survey!.Screens[0]).Questions[0].Inline);
+        Assert.NotNull(dd.OptionsSource);
+        Assert.Equal("https://example.test/api/public/company-branch", dd.OptionsSource!.Url); // bank-locked
+        Assert.Equal("body-and-paint", dd.OptionsSource.QueryParams!["services"]);             // override wins
+        Assert.Equal("50", dd.OptionsSource.QueryParams["top"]);                               // bank param retained
+        // The bank's own definition stays untouched (deep-cloned before overrides).
+        Assert.Equal("new-vehicle-sale", ((DropdownQuestionDto)bank.Question).OptionsSource!.QueryParams!["services"]);
     }
 }

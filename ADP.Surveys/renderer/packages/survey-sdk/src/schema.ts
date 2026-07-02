@@ -88,6 +88,24 @@ export interface NavigationOption {
   nextScreen?: string;
 }
 
+/** External options endpoint for choice-type questions — matches `OptionsSourceDto`
+ *  on the C# side. Fetched client-side at render time with `Accept-Language` set
+ *  from the active locale; the endpoints must be public and CORS-open (this block
+ *  ships verbatim in the public schema — no secrets). `nextScreen` applies to
+ *  `navigationList` only: every fetched option shares it as its destination. */
+export interface OptionsSource {
+  url: string;
+  queryParams?: Record<string, string>;
+  headers?: Record<string, string>;
+  /** Dot-path to the item array inside the response; empty when the body IS the array. */
+  itemsPath?: string;
+  /** Dot-path to each item's answer value. Default: `ID`. */
+  valuePath?: string;
+  /** Dot-path to each item's display label. Default: `Name`. */
+  labelPath?: string;
+  nextScreen?: string;
+}
+
 /** Branding block served with the schema — per-survey authored branding merged
  *  over the deployment's `SurveyApiOptions.DefaultBranding` by the API at serve
  *  time. The renderer maps colors onto CSS custom properties and shows the logo. */

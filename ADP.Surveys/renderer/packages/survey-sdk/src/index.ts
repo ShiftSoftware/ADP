@@ -14,6 +14,13 @@ export {
   type AnswerValidationError,
 } from './answer-validator.js';
 export {
+  buildOptionsUrl,
+  mapOptionsResponse,
+  fetchOptions,
+  type FetchedOption,
+  type FetchOptionsInit,
+} from './options-source.js';
+export {
   SurveyClient,
   SurveyClientError,
   type SurveyClientOptions,

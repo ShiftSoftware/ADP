@@ -94,6 +94,53 @@
                                     Locales="@Locales"
                                     ReadOnly="@ReadOnly" />
     }
+
+    <div class="bank-ref__section-title mt-4">API parameters</div>
+
+    @if (!sourceOpen)
+    {
+        <MudButton Size="Size.Small"
+                   Variant="Variant.Text"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Tune"
+                   OnClick="OpenSourceParams">
+            @(HasSourceParamOverrides
+                ? $"Edit API parameter overrides ({Entry.Ref!.Overrides!.SourceParams!.Count})"
+                : "Edit API parameter overrides…")
+        </MudButton>
+    }
+    else if (sourceLoading)
+    {
+        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="ml-2" />
+    }
+    else if (resolvedSource is null && !HasSourceParamOverrides)
+    {
+        <div class="bank-ref__no-options">
+            This banked question doesn't fetch its options from an API.
+        </div>
+    }
+    else
+    {
+        @if (resolvedSource is not null)
+        {
+            <div class="bank-ref__source-context">
+                <code class="bank-ref__key">@resolvedSource.Url</code>
+                @if (resolvedSource.QueryParams is { Count: > 0 })
+                {
+                    <MudText Typo="Typo.caption" Class="bank-ref__hint">
+                        Bank defaults: @(string.Join(", ", resolvedSource.QueryParams.Select(kv => $"{kv.Key}={kv.Value}")))
+                    </MudText>
+                }
+            </div>
+        }
+        <KeyValueListEditor Title="Query parameter overrides"
+                            Value="@(Entry.Ref?.Overrides?.SourceParams)"
+                            ValueChanged="OnSourceParamsChanged"
+                            ReadOnly="@ReadOnly"
+                            KeyPlaceholder="services"
+                            ValuePlaceholder="body-and-paint"
+                            EmptyText="No overrides — the bank's own parameters are used." />
+    }
 </div>
 
 <style>
@@ -133,6 +180,12 @@
         font-style: italic;
         padding: 4px 0;
     }
+    .bank-ref__source-context {
+        margin-bottom: 8px;
+    }
+    .bank-ref__source-context code {
+        word-break: break-all;
+    }
 </style>
 
 @code {
@@ -161,9 +214,16 @@
     bool HasOptionLabelOverrides =>
         Entry.Ref?.Overrides?.OptionLabels is { Count: > 0 };
 
+    bool HasSourceParamOverrides =>
+        Entry.Ref?.Overrides?.SourceParams is { Count: > 0 };
+
     bool optionsOpen;
     bool optionsLoading;
     IReadOnlyList<OptionLabelOverridesEditor.OptionInfo>? resolvedOptions;
+
+    bool sourceOpen;
+    bool sourceLoading;
+    ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Options.OptionsSourceDto? resolvedSource;
 
     async Task OpenOptionLabels()
     {
@@ -174,6 +234,24 @@
             ? null
             : OptionLabelOverridesEditor.ExtractOptions(question, Locales?.FirstOrDefault());
         optionsLoading = false;
+    }
+
+    async Task OpenSourceParams()
+    {
+        sourceOpen = true;
+        sourceLoading = true;
+        var question = await SurveySvc.ResolveBankQuestionAsync(Entry.Ref!.BankRef, Locales);
+        resolvedSource = question is null
+            ? null
+            : ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Options.OptionsSourceDto.Of(question);
+        sourceLoading = false;
+    }
+
+    async Task OnSourceParamsChanged(Dictionary<string, string>? value)
+    {
+        EnsureOverrides().SourceParams = value;
+        PruneIfEmpty();
+        await Changed.InvokeAsync();
     }
 
     async Task OnOptionLabelsChanged(Dictionary<string, LocalizedString>? value)
@@ -228,8 +306,9 @@
         var titleEmpty = o.Title is null || o.Title.Count == 0;
         var helpEmpty = o.Help is null || o.Help.Count == 0;
         var optionsEmpty = o.OptionLabels is null || o.OptionLabels.Count == 0;
+        var sourceParamsEmpty = o.SourceParams is null || o.SourceParams.Count == 0;
         var orderEmpty = o.Order is null;
-        if (titleEmpty && helpEmpty && optionsEmpty && orderEmpty && o.Required is null)
+        if (titleEmpty && helpEmpty && optionsEmpty && sourceParamsEmpty && orderEmpty && o.Required is null)
             Entry.Ref!.Overrides = null;
     }
 }

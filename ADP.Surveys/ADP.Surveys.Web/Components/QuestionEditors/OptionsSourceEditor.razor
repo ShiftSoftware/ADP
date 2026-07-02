@@ -1,0 +1,159 @@
+@namespace ShiftSoftware.ADP.Surveys.Web.Components.QuestionEditors
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Options
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Screens
+@using ShiftSoftware.ADP.Surveys.Web.Components
+
+@*
+    Editor for a choice question's optionsSource — the "fetch options from a
+    public API" alternative to authoring options inline. The fetch happens in
+    the respondent's browser (Accept-Language = survey locale), so the endpoint
+    must be public and CORS-open; this block ships in the public schema.
+*@
+
+<div class="qte-section">
+    <div class="qte-section__title">External options (API)</div>
+
+    <MudSwitch T="bool"
+               Value="@(Value is not null)"
+               ValueChanged="OnToggle"
+               Label="Fetch options from an API"
+               Color="Color.Primary"
+               Size="Size.Small"
+               Disabled="@ReadOnly" />
+
+    @if (Value is not null)
+    {
+        <MudAlert Severity="Severity.Info" Dense="true" Class="my-2 ose-hint">
+            Options are fetched in the respondent's browser when this screen is shown, with
+            <code>Accept-Language</code> set to the active survey locale. The endpoint must be
+            public and CORS-open — never put secrets here. Authored options above take
+            precedence when both are present.
+        </MudAlert>
+
+        <MudTextField T="string"
+                      Label="Endpoint URL"
+                      Value="@Value.Url"
+                      ValueChanged="@((string v) => OnFieldChanged(() => Value.Url = v ?? ""))"
+                      ReadOnly="@ReadOnly"
+                      Placeholder="https://…/api/public/company-branch"
+                      HelperText="Absolute http(s) URL returning a JSON array."
+                      Class="mb-2" />
+
+        <KeyValueListEditor Title="Query parameters"
+                            Value="@Value.QueryParams"
+                            ValueChanged="@((Dictionary<string, string>? v) => OnFieldChanged(() => Value.QueryParams = v))"
+                            ReadOnly="@ReadOnly"
+                            KeyPlaceholder="services"
+                            ValuePlaceholder="body-and-paint"
+                            EmptyText="No query parameters." />
+
+        <KeyValueListEditor Title="Headers"
+                            Value="@Value.Headers"
+                            ValueChanged="@((Dictionary<string, string>? v) => OnFieldChanged(() => Value.Headers = v))"
+                            ReadOnly="@ReadOnly"
+                            KeyPlaceholder="X-Public-Key"
+                            ValuePlaceholder="value"
+                            EmptyText="No extra headers (Accept-Language is sent automatically)." />
+
+        <div class="ose-paths">
+            <MudTextField T="string"
+                          Label="Items path"
+                          Value="@Value.ItemsPath"
+                          ValueChanged="@((string v) => OnFieldChanged(() => Value.ItemsPath = Blank(v)))"
+                          ReadOnly="@ReadOnly"
+                          Placeholder="(response is the array)"
+                          Class="ose-path" />
+            <MudTextField T="string"
+                          Label="Value path"
+                          Value="@Value.ValuePath"
+                          ValueChanged="@((string v) => OnFieldChanged(() => Value.ValuePath = Blank(v)))"
+                          ReadOnly="@ReadOnly"
+                          Placeholder="ID"
+                          Class="ose-path" />
+            <MudTextField T="string"
+                          Label="Label path"
+                          Value="@Value.LabelPath"
+                          ValueChanged="@((string v) => OnFieldChanged(() => Value.LabelPath = Blank(v)))"
+                          ReadOnly="@ReadOnly"
+                          Placeholder="Name"
+                          Class="ose-path" />
+        </div>
+
+        @if (ShowNextScreen)
+        {
+            <MudSelect T="string"
+                       Label="Next screen for every fetched option"
+                       Value="@(Value.NextScreen ?? "")"
+                       ValueChanged="@((string v) => OnFieldChanged(() => Value.NextScreen = Blank(v)))"
+                       ReadOnly="@ReadOnly"
+                       HelperText="Fetched options can't route individually — selecting any of them goes here."
+                       Class="mt-2">
+                <MudSelectItem T="string" Value="@("")">(not set)</MudSelectItem>
+                @foreach (var (sid, index) in ScreenIdsNumbered())
+                {
+                    <MudSelectItem T="string" Value="@sid">@($"{index + 1}. {sid}")</MudSelectItem>
+                }
+            </MudSelect>
+        }
+    }
+</div>
+
+<style>
+    /* .qte-section is also declared by MultiChoiceQuestionEditor — declared here
+       too so the section styling holds when this editor renders without it. */
+    .qte-section { margin-top: 14px; padding-top: 10px; border-top: 1px dashed #e0e5ec; }
+    .qte-section__title { font-size: 0.8rem; font-weight: 600; color: #4b5563; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+    .ose-hint {
+        font-size: 0.8rem;
+    }
+    .ose-paths {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 4px;
+    }
+    .ose-path {
+        flex: 1 1 140px;
+        min-width: 130px;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public OptionsSourceDto? Value { get; set; }
+
+    [Parameter]
+    public EventCallback<OptionsSourceDto?> ValueChanged { get; set; }
+
+    [Parameter]
+    public bool ReadOnly { get; set; }
+
+    /// <summary>navigationList only — exposes the shared nextScreen picker.</summary>
+    [Parameter]
+    public bool ShowNextScreen { get; set; }
+
+    /// <summary>Needed for the nextScreen picker's screen-id choices.</summary>
+    [Parameter]
+    public SurveyDto? Draft { get; set; }
+
+    async Task OnToggle(bool enabled)
+    {
+        if (enabled == (Value is not null)) return;
+        await ValueChanged.InvokeAsync(enabled ? new OptionsSourceDto() : null);
+    }
+
+    async Task OnFieldChanged(Action mutation)
+    {
+        mutation();
+        await ValueChanged.InvokeAsync(Value);
+    }
+
+    static string? Blank(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
+
+    IEnumerable<(string Id, int Index)> ScreenIdsNumbered() =>
+        (Draft?.Screens ?? new List<ScreenDto>())
+            .Select((s, i) => (s, i))
+            .Where(t => t.s is InlineScreenDto inline && !string.IsNullOrWhiteSpace(inline.Id))
+            .Select(t => (((InlineScreenDto)t.s).Id, t.i));
+}

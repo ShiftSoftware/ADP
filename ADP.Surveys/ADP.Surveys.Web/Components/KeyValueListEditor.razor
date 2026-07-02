@@ -1,0 +1,160 @@
+@namespace ShiftSoftware.ADP.Surveys.Web.Components
+
+@*
+    Small key/value dictionary editor (query params, headers, sourceParams).
+    Emits a NEW dictionary (or null when empty) via ValueChanged on every edit —
+    rows with blank keys are kept locally while typing but never hit the wire.
+*@
+
+<div class="kv-editor">
+    <div class="kv-editor__head">
+        <span class="kv-editor__title">@Title</span>
+        @if (!ReadOnly)
+        {
+            <MudIconButton Icon="@Icons.Material.Filled.Add"
+                           Size="Size.Small"
+                           Color="Color.Primary"
+                           OnClick="AddRow"
+                           title="@($"Add {Title.ToLowerInvariant()} entry")" />
+        }
+    </div>
+    @if (rows.Count == 0)
+    {
+        <div class="kv-editor__empty">@EmptyText</div>
+    }
+    @for (int i = 0; i < rows.Count; i++)
+    {
+        var row = rows[i];
+        var idx = i;
+        <div class="kv-editor__row">
+            <MudTextField T="string"
+                          Value="@row.Key"
+                          ValueChanged="@((string v) => OnRowEdited(row, v, isKey: true))"
+                          Placeholder="@KeyPlaceholder"
+                          ReadOnly="@ReadOnly"
+                          Margin="Margin.Dense"
+                          Variant="Variant.Outlined"
+                          Class="kv-editor__key" />
+            <MudTextField T="string"
+                          Value="@row.Val"
+                          ValueChanged="@((string v) => OnRowEdited(row, v, isKey: false))"
+                          Placeholder="@ValuePlaceholder"
+                          ReadOnly="@ReadOnly"
+                          Margin="Margin.Dense"
+                          Variant="Variant.Outlined"
+                          Class="kv-editor__value" />
+            @if (!ReadOnly)
+            {
+                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                               Size="Size.Small"
+                               OnClick="@(() => RemoveRow(idx))"
+                               title="Remove" />
+            }
+        </div>
+    }
+</div>
+
+<style>
+    .kv-editor {
+        margin: 8px 0;
+    }
+    .kv-editor__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 2px;
+    }
+    .kv-editor__title {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #4b5563;
+    }
+    .kv-editor__empty {
+        font-size: 0.8rem;
+        color: #98a2b3;
+        font-style: italic;
+        padding: 2px 0 4px;
+    }
+    .kv-editor__row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 6px;
+    }
+    .kv-editor__key {
+        flex: 2 1 120px;
+    }
+    .kv-editor__value {
+        flex: 3 1 160px;
+    }
+</style>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = "";
+
+    [Parameter]
+    public Dictionary<string, string>? Value { get; set; }
+
+    [Parameter]
+    public EventCallback<Dictionary<string, string>?> ValueChanged { get; set; }
+
+    [Parameter]
+    public bool ReadOnly { get; set; }
+
+    [Parameter]
+    public string KeyPlaceholder { get; set; } = "key";
+
+    [Parameter]
+    public string ValuePlaceholder { get; set; } = "value";
+
+    [Parameter]
+    public string EmptyText { get; set; } = "None.";
+
+    sealed class KvRow
+    {
+        public string Key = "";
+        public string Val = "";
+    }
+
+    List<KvRow> rows = new();
+    bool synced;
+
+    protected override void OnParametersSet()
+    {
+        // Seed rows from the incoming dictionary once; afterwards the rows are
+        // the source of truth (re-seeding on every parameter set would clobber
+        // a row whose key is momentarily blank while the user types).
+        if (synced) return;
+        synced = true;
+        rows = Value?.Select(kv => new KvRow { Key = kv.Key, Val = kv.Value }).ToList() ?? new();
+    }
+
+    void AddRow() => rows.Add(new KvRow());
+
+    async Task RemoveRow(int index)
+    {
+        if (index < 0 || index >= rows.Count) return;
+        rows.RemoveAt(index);
+        await EmitAsync();
+    }
+
+    async Task OnRowEdited(KvRow row, string value, bool isKey)
+    {
+        if (isKey) row.Key = value ?? "";
+        else row.Val = value ?? "";
+        await EmitAsync();
+    }
+
+    async Task EmitAsync()
+    {
+        var dict = new Dictionary<string, string>();
+        foreach (var row in rows)
+        {
+            var key = row.Key.Trim();
+            if (key.Length == 0) continue;
+            dict[key] = row.Val;
+        }
+        await ValueChanged.InvokeAsync(dict.Count == 0 ? null : dict);
+    }
+}
