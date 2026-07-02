@@ -1,6 +1,7 @@
 @attribute [Route($"{SurveyRoutes.Prefix}/{nameof(SurveyList)}")]
 @attribute [Authorize]
 @inject SurveysWebOptions SurveysOptions
+@inject NavigationManager Nav
 
 <ShiftList EntitySet="@($"{SurveysOptions.ResolvedRoutePrefix}Survey")"
            Title="Surveys"
@@ -15,4 +16,27 @@
     <PropertyColumn Property="x => x.IntegrationId" Title="Integration ID" />
     <PropertyColumn Property="x => x.PublishedVersionNumber" Title="Published Version" />
 
+    @* Row click opens the editor; this column is the direct path to the answers.
+       stopPropagation so the button doesn't also trigger the row's form nav. *@
+    <TemplateColumn T="SurveyListDTO" Title="Responses" Sortable="false" Filterable="false">
+        <CellTemplate Context="cell">
+            <div @onclick:stopPropagation="true">
+                <MudTooltip Text="View responses & test-run this survey">
+                    <MudIconButton Icon="@Icons.Material.Filled.Quiz"
+                                   Size="Size.Small"
+                                   Color="Color.Primary"
+                                   OnClick="@(() => GoToResponses(cell.Item))" />
+                </MudTooltip>
+            </div>
+        </CellTemplate>
+    </TemplateColumn>
+
 </ShiftList>
+
+@code {
+    void GoToResponses(SurveyListDTO row)
+    {
+        if (string.IsNullOrEmpty(row?.ID)) return;
+        Nav.NavigateTo($"{SurveyRoutes.Prefix}/{nameof(SurveyResponses)}/{row.ID}");
+    }
+}

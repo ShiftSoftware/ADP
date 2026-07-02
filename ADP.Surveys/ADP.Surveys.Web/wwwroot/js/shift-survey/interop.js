@@ -123,6 +123,19 @@ export async function setActiveScreen(element, screenId) {
  *  schedule another remount, which would ... — a tight loop. By deferring
  *  remount to the next Blazor-initiated setSchema, we only remount on
  *  authoring intent, never on the renderer's own lifecycle. */
+/** Test-run dialog: notify .NET when the embedded survey completes. In API mode
+ *  the element only fires `survey:completed` after the public submit endpoint
+ *  accepted the response, so this is a reliable "answer recorded" signal. */
+export async function installCompletionHandler(element, dotNetRef) {
+  if (!element || !dotNetRef) return;
+  await ensureDefined();
+  element.addEventListener('survey:completed', () => {
+    dotNetRef.invokeMethodAsync('OnEmbeddedSurveyCompleted').catch(() => {
+      /* dialog already closed / .NET ref disposed — nothing to notify */
+    });
+  });
+}
+
 export async function installPreviewSubmitHandler(element) {
   if (!element) return;
   await ensureDefined();

@@ -100,6 +100,15 @@ public static class AnswerValidator
                 return sourced;
         }
 
+        // 0b. Zero-question screens without an explicit nextScreen are ABSOLUTELY
+        // terminal — checked before the logic tier, mirroring computeNext. A sticky
+        // global rule keeps matching the final answer map, so evaluating logic here
+        // would walk the replay out of the end screen onto branches the (fixed)
+        // renderer can never reach — enforcing Required on screens the respondent
+        // never saw.
+        if (screen.Questions.Count == 0 && screen.NextScreen is null)
+            return null;
+
         // 1. Logic rule — ignore self-targets and unknown screens.
         var logicTarget = LogicEvaluator.EvaluateNext(resolved, answers);
         if (logicTarget is not null && logicTarget != screen.Id && byId.ContainsKey(logicTarget))
@@ -108,10 +117,6 @@ public static class AnswerValidator
         // 2. Explicit nextScreen.
         if (screen.NextScreen is not null && screen.NextScreen != screen.Id && byId.ContainsKey(screen.NextScreen))
             return screen.NextScreen;
-
-        // 2b. Zero-question screens without an explicit nextScreen are terminal.
-        if (screen.Questions.Count == 0 && screen.NextScreen is null)
-            return null;
 
         // 3. Sequential order.
         var idx = screens.FindIndex(s => s.Id == screen.Id);

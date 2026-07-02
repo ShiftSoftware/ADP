@@ -59,6 +59,7 @@ public static class SurveyApiExtensions
         services.AddScoped<SurveyRepository>();
         services.AddScoped<BankQuestionRepository>();
         services.AddScoped<ScreenTemplateRepository>();
+        services.AddScoped<SurveyInstanceRepository>();
         services.AddScoped<Services.TriggerIngestService>();
         services.AddScoped<Services.TriggerSchedulerService>();
         services.AddScoped<Services.OutboxDispatchService>();

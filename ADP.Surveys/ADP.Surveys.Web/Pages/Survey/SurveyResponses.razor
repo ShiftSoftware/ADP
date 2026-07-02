@@ -1,0 +1,337 @@
+@attribute [Route($"{SurveyRoutes.Prefix}/{nameof(SurveyResponses)}/{{Key}}")]
+@attribute [Authorize]
+@using System.Text.Json
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Admin.Responses
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Admin.SurveyInstance
+@using ShiftSoftware.ADP.Surveys.Web.Components.Responses
+@inject SurveysWebOptions SurveysOptions
+@inject SurveyService SurveySvc
+@inject HttpClient Http
+@inject IDialogService DialogService
+@inject IJSRuntime JS
+@inject MudBlazor.ISnackbar Snackbar
+
+@*
+    Per-survey answers hub: every SurveyInstance (triggered, manual, or test) with
+    its lifecycle status, and the recorded answers behind each. Backed by the
+    read-only OData SurveyInstance resource so the grid is a stock ShiftList
+    (sorting/filters/paging/export like every other admin list); "Test run"
+    closes the authoring loop without leaving the dashboard.
+*@
+
+<ShiftList @ref="list"
+           EntitySet="@($"{SurveysOptions.ResolvedRoutePrefix}SurveyInstance")"
+           T="SurveyInstanceListDTO"
+           Title="@(surveyName is null ? "Responses" : $"Responses — {surveyName}")"
+           IconSvg="@Icons.Material.Filled.Quiz"
+           Dense
+           DisableAdd
+           ShowIDColumn="false"
+           Sort="@defaultSort"
+           Filter="@(f => f.Add(nameof(SurveyInstanceListDTO.SurveyID), ShiftBlazor.Enums.ODataOperator.Equal, Key))"
+           OnRowClick="OnRowClick">
+
+    <ToolbarStartTemplate>
+        <MudIconButton Icon="@Icons.Material.Filled.ArrowBack"
+                       Size="Size.Small"
+                       Href="@($"{SurveyRoutes.Prefix}/{nameof(SurveyForm)}/{Key}")"
+                       title="Back to the survey editor" />
+        @if (publishedVersion is not null)
+        {
+            <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Outlined"
+                     Icon="@Icons.Material.Filled.Publish">
+                v@(publishedVersion)
+            </MudChip>
+        }
+    </ToolbarStartTemplate>
+
+    <ToolbarEndTemplate>
+        <MudTooltip Text="@(publishedVersion is null ? "Publish the survey first — test instances pin to the latest published version." : "Create a test instance and answer it right here. Test responses never fan out to subscribers.")">
+            <MudButton StartIcon="@Icons.Material.Filled.PlayCircle"
+                       Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       Size="Size.Small"
+                       Disabled="@(creatingTest || publishedVersion is null)"
+                       OnClick="OnTestRun">
+                @(creatingTest ? "Creating…" : "Test run")
+            </MudButton>
+        </MudTooltip>
+    </ToolbarEndTemplate>
+
+    <ChildContent>
+        <PropertyColumn Property="x => x.TriggeredAt" Title="Triggered">
+            <CellTemplate Context="cell">
+                <span title="@cell.Item.TriggeredAt.ToString("O")">
+                    @cell.Item.TriggeredAt.LocalDateTime.ToString("yyyy-MM-dd HH:mm")
+                </span>
+            </CellTemplate>
+        </PropertyColumn>
+
+        <PropertyColumn Property="x => x.TriggeredBy" Title="Source">
+            <CellTemplate Context="cell">
+                <div class="responses-page__source">
+                    @if (cell.Item.IsTest)
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Outlined">TEST</MudChip>
+                    }
+                    else
+                    {
+                        <span>@(cell.Item.TriggeredBy ?? "—")</span>
+                        @if (!string.IsNullOrEmpty(cell.Item.RecipientAddress))
+                        {
+                            <span class="responses-page__recipient">@cell.Item.Channel → @cell.Item.RecipientAddress</span>
+                        }
+                    }
+                </div>
+            </CellTemplate>
+        </PropertyColumn>
+
+        <PropertyColumn Property="x => x.Status" Title="Status">
+            <CellTemplate Context="cell">
+                <MudChip T="string" Size="Size.Small" Color="@StatusColor(cell.Item.Status)" Variant="Variant.Filled">
+                    @StatusLabel(cell.Item.Status)
+                </MudChip>
+            </CellTemplate>
+        </PropertyColumn>
+
+        <PropertyColumn Property="x => x.SchemaVersion" Title="Version">
+            <CellTemplate Context="cell">v@(cell.Item.SchemaVersion)</CellTemplate>
+        </PropertyColumn>
+
+        <PropertyColumn Property="x => x.CompletedAt" Title="Response">
+            <CellTemplate Context="cell">
+                @if (cell.Item.CompletedAt is { } completed)
+                {
+                    <span title="@completed.ToString("O")">@completed.LocalDateTime.ToString("yyyy-MM-dd HH:mm")</span>
+                    @if (cell.Item.ResponseCount > 1)
+                    {
+                        <span class="responses-page__recipient">(@cell.Item.ResponseCount responses)</span>
+                    }
+                }
+                else
+                {
+                    <span class="responses-page__muted">—</span>
+                }
+            </CellTemplate>
+        </PropertyColumn>
+
+        <TemplateColumn T="SurveyInstanceListDTO" Title="" Sortable="false" Filterable="false">
+            <CellTemplate Context="cell">
+                <div class="responses-page__actions" @onclick:stopPropagation="true">
+                    @if (CanAnswer(cell.Item))
+                    {
+                        <MudTooltip Text="Answer this test instance here">
+                            <MudIconButton Icon="@Icons.Material.Filled.PlayArrow"
+                                           Size="Size.Small"
+                                           Color="Color.Primary"
+                                           OnClick="@(() => OpenTestRun(cell.Item.PublicID))" />
+                        </MudTooltip>
+                    }
+                    <MudTooltip Text="@(cell.Item.ResponseCount > 0 ? "View recorded answers" : "No response recorded yet")">
+                        <MudIconButton Icon="@Icons.Material.Filled.Quiz"
+                                       Size="Size.Small"
+                                       Disabled="@(cell.Item.ResponseCount == 0)"
+                                       OnClick="@(() => OpenAnswers(cell.Item.PublicID))" />
+                    </MudTooltip>
+                    @if (publicUrlTemplate is not null)
+                    {
+                        <MudTooltip Text="Copy the public survey link">
+                            <MudIconButton Icon="@Icons.Material.Filled.ContentCopy"
+                                           Size="Size.Small"
+                                           OnClick="@(() => CopyLink(cell.Item.PublicID))" />
+                        </MudTooltip>
+                    }
+                </div>
+            </CellTemplate>
+        </TemplateColumn>
+    </ChildContent>
+</ShiftList>
+
+<style>
+    .responses-page__source {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+    .responses-page__recipient,
+    .responses-page__muted {
+        font-size: 0.75rem;
+        color: var(--mud-palette-text-secondary);
+    }
+    .responses-page__actions {
+        white-space: nowrap;
+        text-align: end;
+    }
+</style>
+
+@code {
+    [Parameter] public string? Key { get; set; }
+
+    ShiftList<SurveyInstanceListDTO>? list;
+    string? surveyName;
+    int? publishedVersion;
+    string? publicUrlTemplate;
+    bool creatingTest;
+
+    readonly Dictionary<string, SortDirection> defaultSort = new()
+    {
+        [nameof(SurveyInstanceListDTO.TriggeredAt)] = SortDirection.Descending,
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSurveyHeader();
+        publicUrlTemplate = await SurveySvc.GetPublicUrlTemplateAsync();
+    }
+
+    /// <summary>
+    /// Header info (name + published version) via the stock Survey admin endpoint.
+    /// Read as JsonElement — the ShiftEntity envelope type isn't worth referencing
+    /// for two fields.
+    /// </summary>
+    async Task LoadSurveyHeader()
+    {
+        if (string.IsNullOrEmpty(Key)) return;
+        try
+        {
+            var doc = await Http.GetFromJsonAsync<JsonElement>(
+                $"{SurveysOptions.ResolvedRoutePrefix}Survey/{Key}");
+            if (doc.TryGetProperty("Entity", out var entity) || doc.TryGetProperty("entity", out entity))
+            {
+                if (entity.TryGetProperty("Name", out var name) || entity.TryGetProperty("name", out name))
+                    surveyName = name.GetString();
+                if ((entity.TryGetProperty("PublishedVersionNumber", out var v) || entity.TryGetProperty("publishedVersionNumber", out v))
+                    && v.ValueKind == JsonValueKind.Number)
+                    publishedVersion = v.GetInt32();
+            }
+        }
+        catch
+        {
+            // Non-fatal — the page still works without the pretty header.
+        }
+    }
+
+    // SurveyInstanceStatus ordinals — the enum lives in the Data assembly, which
+    // this WASM project doesn't reference. Values are pinned by the wire contract
+    // documented on SurveyInstanceListDTO.Status.
+    static string StatusLabel(int status) => status switch
+    {
+        0 => "Pending",
+        1 => "Sent",
+        2 => "Opened",
+        3 => "Completed",
+        4 => "Expired",
+        _ => $"({status})",
+    };
+
+    static Color StatusColor(int status) => status switch
+    {
+        3 => Color.Success,
+        2 => Color.Warning,
+        1 => Color.Info,
+        4 => Color.Dark,
+        _ => Color.Default,
+    };
+
+    /// <summary>
+    /// In-dashboard answering is deliberately limited to TEST instances — completing
+    /// a real recipient's pending instance from the admin UI would consume their
+    /// one-shot link. 0/1/2 = Pending/Sent/Opened.
+    /// </summary>
+    static bool CanAnswer(SurveyInstanceListDTO row) =>
+        row.IsTest && row.Status is 0 or 1 or 2;
+
+    void OnRowClick(ShiftBlazor.Utils.ShiftEvent<MudBlazor.DataGridRowClickEventArgs<SurveyInstanceListDTO>> evt)
+    {
+        // No form to open (ComponentType unset) — a row tap goes straight to the
+        // recorded answers when there are any.
+        evt.ShouldPreventDefault = true;
+        var item = evt.Data.Item;
+        if (item.ResponseCount > 0)
+            _ = OpenAnswers(item.PublicID);
+    }
+
+    async Task OnTestRun()
+    {
+        if (string.IsNullOrEmpty(Key)) return;
+
+        // The busy flag covers only the create round-trip — the dialogs that
+        // follow are modal, and holding the flag through them leaves the header
+        // button stuck on "Creating…" behind the overlay.
+        CreateTestInstanceResultDTO? created;
+        creatingTest = true;
+        try
+        {
+            var response = await SurveySvc.CreateTestInstanceAsync(Key);
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                Snackbar.Add($"Test instance failed: {(body.Length > 300 ? body[..300] + "…" : body)}", MudBlazor.Severity.Error);
+                return;
+            }
+            created = await response.Content.ReadFromJsonAsync<CreateTestInstanceResultDTO>();
+            if (created is null)
+            {
+                Snackbar.Add("Test instance failed: empty response.", MudBlazor.Severity.Error);
+                return;
+            }
+        }
+        finally
+        {
+            creatingTest = false;
+            // Repaint before the dialog chain — Blazor only re-renders when the whole
+            // handler completes, and the modal keeps it pending; without this the
+            // header button sits on "Creating…" behind the dialog the entire time.
+            StateHasChanged();
+        }
+
+        list?.Reload();
+        await OpenTestRun(created.PublicId);
+    }
+
+    async Task OpenTestRun(Guid publicId)
+    {
+        var parameters = new DialogParameters<TestRunDialog>
+        {
+            { x => x.PublicId, publicId },
+        };
+        // Bare-phone presentation: no header/paper (the dialog styles itself
+        // transparent); dismissal is the floating ✕, ESC, or backdrop click.
+        var options = new DialogOptions { NoHeader = true, CloseOnEscapeKey = true };
+        var dialog = await DialogService.ShowAsync<TestRunDialog>("", parameters, options);
+        var result = await dialog.Result;
+
+        // Refresh regardless of how it closed — a submit may have landed even if
+        // the user dismissed via backdrop/ESC afterwards.
+        list?.Reload();
+        if (result is { Canceled: false, Data: true })
+            await OpenAnswers(publicId);
+    }
+
+    async Task OpenAnswers(Guid publicId)
+    {
+        var parameters = new DialogParameters<ResponseAnswersDialog>
+        {
+            { x => x.PublicId, publicId },
+        };
+        var options = new DialogOptions { CloseButton = true };
+        var dialog = await DialogService.ShowAsync<ResponseAnswersDialog>("", parameters, options);
+        await dialog.Result;
+    }
+
+    async Task CopyLink(Guid publicId)
+    {
+        if (publicUrlTemplate is null) return;
+        var url = publicUrlTemplate.Replace("{publicId}", publicId.ToString());
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", url);
+            Snackbar.Add("Link copied.", MudBlazor.Severity.Success);
+        }
+        catch
+        {
+            Snackbar.Add("Could not copy the link.", MudBlazor.Severity.Warning);
+        }
+    }
+}

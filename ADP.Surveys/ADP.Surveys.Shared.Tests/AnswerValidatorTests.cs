@@ -206,6 +206,23 @@ public class AnswerValidatorTests
         Assert.Contains(errors, e => e.QuestionId == "second");
     }
 
+    [Fact]
+    public void Validate_StickyRule_EndScreenTerminatesReplay()
+    {
+        // Mirrors the SDK's "sticky logic rule cannot drag navigation out of a
+        // zero-question end screen" — a global rule matches the final answer map
+        // forever, so the replay's terminal tier must run BEFORE the logic tier
+        // or the walk would leave the end screen. A complete low-score submission
+        // (rule fired, detour answered) validates clean.
+        var answers = new Dictionary<string, JsonElement>
+        {
+            ["nps"] = JsonDocument.Parse("0").RootElement.Clone(),
+            ["details"] = JsonDocument.Parse("\"it was slow\"").RootElement.Clone(),
+        };
+        var errors = AnswerValidator.Validate(LogicSurvey(), answers);
+        Assert.Empty(errors);
+    }
+
     /// <summary>pick (navList: a → branch-a, b → branch-b) → required paragraph per branch → end.</summary>
     private static SurveyDto BranchingSurvey() => new()
     {

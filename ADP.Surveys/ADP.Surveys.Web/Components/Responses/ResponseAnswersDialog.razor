@@ -1,0 +1,442 @@
+@namespace ShiftSoftware.ADP.Surveys.Web.Components.Responses
+@using System.Text.Json
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Admin.Responses
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Types
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Screens
+@using ShiftSoftware.ADP.Surveys.Shared.Json
+@using LocalizedString = ShiftSoftware.ADP.Surveys.Shared.DTOs.LocalizedString
+@inject SurveyService SurveySvc
+
+@*
+    Read-only view of everything recorded against one SurveyInstance. Answers are
+    labeled against the instance's PINNED version schema (not the current draft) —
+    the titles and option labels shown here are exactly what the respondent saw,
+    even if the survey has been edited or republished since.
+*@
+
+<MudDialog>
+    <TitleContent>
+        <div class="rad__title-row">
+            <MudText Typo="Typo.h6">
+                <MudIcon Icon="@Icons.Material.Filled.Quiz" Class="mr-2" />
+                Recorded answers
+            </MudText>
+            @if (localeChoices.Count > 1)
+            {
+                <MudSelect T="string"
+                           Value="@locale"
+                           ValueChanged="@OnLocaleChanged"
+                           Dense="true"
+                           Margin="Margin.Dense"
+                           Variant="Variant.Outlined"
+                           Class="rad__locale-select">
+                    @foreach (var l in localeChoices)
+                    {
+                        <MudSelectItem T="string" Value="@l">@l</MudSelectItem>
+                    }
+                </MudSelect>
+            }
+        </div>
+    </TitleContent>
+    <DialogContent>
+        <div class="rad__body">
+            @if (loading)
+            {
+                <div class="rad__center"><MudProgressCircular Indeterminate="true" /></div>
+            }
+            else if (detail is null || schema is null)
+            {
+                <MudAlert Severity="Severity.Error" Dense="true">Could not load this instance's answers.</MudAlert>
+            }
+            else
+            {
+                <div class="rad__meta">
+                    <MudChip T="string" Size="Size.Small" Color="@StatusColor(detail.Instance.Status)" Variant="Variant.Filled">
+                        @detail.Instance.Status
+                    </MudChip>
+                    @if (detail.Instance.IsTest)
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Outlined">TEST</MudChip>
+                    }
+                    <span class="rad__meta-item">Schema v@(detail.Instance.SchemaVersion)</span>
+                    @if (!string.IsNullOrEmpty(detail.Instance.CustomerRef))
+                    {
+                        <span class="rad__meta-item">Customer: @detail.Instance.CustomerRef</span>
+                    }
+                    @if (!string.IsNullOrEmpty(detail.Instance.RecipientAddress))
+                    {
+                        <span class="rad__meta-item">@detail.Instance.Channel → @detail.Instance.RecipientAddress</span>
+                    }
+                </div>
+
+                @if (detail.Responses.Count == 0)
+                {
+                    <MudAlert Severity="Severity.Info" Dense="true" Class="mt-2">
+                        No response recorded yet — the survey hasn't been submitted for this instance.
+                    </MudAlert>
+                }
+
+                @foreach (var response in detail.Responses)
+                {
+                    var answers = ParseAnswers(response);
+                    var unmapped = new HashSet<string>(answers.Keys);
+
+                    <div class="rad__response">
+                        <div class="rad__response-meta">
+                            @if (response.CompletedAt is { } completed)
+                            {
+                                <span title="@completed.ToString("O")">Completed @completed.LocalDateTime.ToString("yyyy-MM-dd HH:mm")</span>
+                            }
+                            @if (Duration(response) is { } dur)
+                            {
+                                <span>· took @dur</span>
+                            }
+                            @if (!string.IsNullOrEmpty(response.AgentId))
+                            {
+                                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Info">agent: @response.AgentId</MudChip>
+                            }
+                        </div>
+
+                        @foreach (var screen in schema.Screens.OfType<InlineScreenDto>())
+                        {
+                            var answered = screen.Questions
+                                .Select(entry => entry.Inline)
+                                .Where(q => q is not null && answers.ContainsKey(q.Id))
+                                .Cast<Shared.DTOs.Questions.QuestionDto>()
+                                .ToList();
+                            if (answered.Count == 0) continue;
+
+                            <div class="rad__screen">
+                                <div class="rad__screen-title">@(Loc(screen.Title) is { Length: > 0 } st ? st : screen.Id)</div>
+                                @foreach (var q in answered)
+                                {
+                                    unmapped.Remove(q.Id);
+                                    <div class="rad__qa">
+                                        <div class="rad__q">@(Loc(q.Title) is { Length: > 0 } qt ? qt : q.Id)</div>
+                                        <div class="rad__a">@RenderAnswer(q, answers[q.Id])</div>
+                                    </div>
+                                }
+                            </div>
+                        }
+
+                        @if (unmapped.Count > 0)
+                        {
+                            <div class="rad__screen">
+                                <div class="rad__screen-title">Other answers</div>
+                                @foreach (var key in unmapped)
+                                {
+                                    <div class="rad__qa">
+                                        <div class="rad__q">@key</div>
+                                        <div class="rad__a"><code>@answers[key].ToString()</code></div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            }
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Close">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+<style>
+    .rad__title-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .rad__locale-select {
+        max-width: 90px;
+        margin-inline-start: auto;
+    }
+    .rad__body {
+        min-width: min(620px, 80vw);
+        max-width: 720px;
+        max-height: 65vh;
+        overflow-y: auto;
+    }
+    .rad__center {
+        display: flex;
+        justify-content: center;
+        padding: 32px;
+    }
+    .rad__meta {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        font-size: 0.8rem;
+        color: var(--mud-palette-text-secondary);
+    }
+    .rad__response {
+        margin-top: 10px;
+        border: 1px solid var(--mud-palette-lines-default);
+        border-radius: 8px;
+        padding: 12px 14px;
+    }
+    .rad__response + .rad__response {
+        margin-top: 14px;
+    }
+    .rad__response-meta {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.78rem;
+        color: var(--mud-palette-text-secondary);
+        margin-bottom: 4px;
+    }
+    .rad__screen {
+        margin-top: 10px;
+    }
+    .rad__screen-title {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--mud-palette-text-secondary);
+        border-bottom: 1px solid var(--mud-palette-lines-default);
+        padding-bottom: 2px;
+        margin-bottom: 6px;
+    }
+    .rad__qa {
+        display: grid;
+        grid-template-columns: minmax(160px, 38%) 1fr;
+        gap: 4px 16px;
+        padding: 5px 0;
+    }
+    .rad__qa + .rad__qa {
+        border-top: 1px dashed var(--mud-palette-lines-default);
+    }
+    .rad__q {
+        font-size: 0.85rem;
+        color: var(--mud-palette-text-secondary);
+    }
+    .rad__a {
+        font-size: 0.9rem;
+        overflow-wrap: anywhere;
+    }
+    .rad__a .rad__chips {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+    }
+    .rad__signature {
+        max-height: 90px;
+        max-width: 100%;
+        border: 1px solid var(--mud-palette-lines-default);
+        border-radius: 4px;
+        background: #fff;
+    }
+    .rad__external-hint {
+        font-size: 0.72rem;
+        color: var(--mud-palette-text-secondary);
+        margin-inline-start: 6px;
+    }
+</style>
+
+@code {
+    [CascadingParameter]
+    public IMudDialogInstance MudDialogInstance { get; set; } = default!;
+
+    /// <summary>Instance to display, by its public GUID.</summary>
+    [Parameter] public Guid PublicId { get; set; }
+
+    bool loading = true;
+    SurveyInstanceDetailDTO? detail;
+    SurveyDto? schema;
+    string locale = "en";
+    List<string> localeChoices = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        detail = await SurveySvc.GetInstanceDetailAsync(PublicId);
+        if (detail is not null)
+        {
+            try
+            {
+                schema = JsonSerializer.Deserialize<SurveyDto>(detail.ResolvedJson, SurveySchemaSerializer.Options);
+            }
+            catch
+            {
+                schema = null;
+            }
+        }
+        localeChoices = schema?.Locales is { Count: > 0 } locs ? locs : new List<string> { "en" };
+        locale = detail?.Instance.RecipientLocale is { Length: > 0 } rl && localeChoices.Contains(rl)
+            ? rl
+            : schema?.DefaultLocale is { Length: > 0 } dl && localeChoices.Contains(dl) ? dl : localeChoices[0];
+        loading = false;
+    }
+
+    void OnLocaleChanged(string value)
+    {
+        locale = value;
+    }
+
+    void Close() => MudDialogInstance.Close(DialogResult.Ok(true));
+
+    static Dictionary<string, JsonElement> ParseAnswers(SurveyResponseItemDTO response)
+    {
+        var map = new Dictionary<string, JsonElement>();
+        foreach (var a in response.Answers)
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(a.ValueJson);
+                map[a.Key] = doc.RootElement.Clone();
+            }
+            catch
+            {
+                // Corrupt stored value — surface it raw rather than dropping it.
+                map[a.Key] = JsonSerializer.SerializeToElement(a.ValueJson);
+            }
+        }
+        return map;
+    }
+
+    static string? Duration(SurveyResponseItemDTO r)
+    {
+        if (r.StartedAt is not { } start || r.CompletedAt is not { } end) return null;
+        var span = end - start;
+        if (span < TimeSpan.Zero || span > TimeSpan.FromDays(1)) return null;
+        return span.TotalMinutes >= 1
+            ? $"{(int)span.TotalMinutes}m {span.Seconds}s"
+            : $"{span.Seconds}s";
+    }
+
+    string Loc(LocalizedString? s)
+    {
+        if (s is null || s.Count == 0) return "";
+        if (s.TryGetValue(locale, out var v) && !string.IsNullOrEmpty(v)) return v;
+        if (schema?.DefaultLocale is { Length: > 0 } dl && s.TryGetValue(dl, out var d) && !string.IsNullOrEmpty(d)) return d;
+        return s.Values.FirstOrDefault(x => !string.IsNullOrEmpty(x)) ?? "";
+    }
+
+    static Color StatusColor(string status) => status switch
+    {
+        "Completed" => Color.Success,
+        "Opened" => Color.Warning,
+        "Sent" => Color.Info,
+        "Expired" => Color.Dark,
+        _ => Color.Default,
+    };
+
+    /// <summary>
+    /// Option id → label, across the four choice-question shapes. Returns null when
+    /// the id isn't among the inline options (sourced questions have none).
+    /// </summary>
+    string? OptionLabel(Shared.DTOs.Questions.QuestionDto q, string id)
+    {
+        var label = q switch
+        {
+            SingleChoiceQuestionDto sc => sc.Options.FirstOrDefault(o => o.Id == id)?.Label,
+            MultiChoiceQuestionDto mc => mc.Options.FirstOrDefault(o => o.Id == id)?.Label,
+            DropdownQuestionDto dd => dd.Options.FirstOrDefault(o => o.Id == id)?.Label,
+            NavigationListQuestionDto nl => nl.Options.FirstOrDefault(o => o.Id == id)?.Label,
+            _ => null,
+        };
+        var resolved = Loc(label);
+        return string.IsNullOrEmpty(resolved) ? null : resolved;
+    }
+
+    static bool HasExternalSource(Shared.DTOs.Questions.QuestionDto q) => q switch
+    {
+        SingleChoiceQuestionDto sc => sc.OptionsSource is not null,
+        MultiChoiceQuestionDto mc => mc.OptionsSource is not null,
+        DropdownQuestionDto dd => dd.OptionsSource is not null,
+        NavigationListQuestionDto nl => nl.OptionsSource is not null,
+        _ => false,
+    };
+
+    RenderFragment RenderAnswer(Shared.DTOs.Questions.QuestionDto q, JsonElement value) => builder =>
+    {
+        switch (q)
+        {
+            case SignatureQuestionDto when value.ValueKind == JsonValueKind.String
+                                           && value.GetString() is { } sig
+                                           && sig.StartsWith("data:image", StringComparison.OrdinalIgnoreCase):
+                builder.OpenElement(0, "img");
+                builder.AddAttribute(1, "src", sig);
+                builder.AddAttribute(2, "class", "rad__signature");
+                builder.AddAttribute(3, "alt", "signature");
+                builder.CloseElement();
+                return;
+
+            case FileQuestionDto when value.ValueKind == JsonValueKind.String:
+                var fileRef = value.GetString()!;
+                if (Uri.IsWellFormedUriString(fileRef, UriKind.Absolute))
+                {
+                    builder.OpenElement(0, "a");
+                    builder.AddAttribute(1, "href", fileRef);
+                    builder.AddAttribute(2, "target", "_blank");
+                    builder.AddAttribute(3, "rel", "noopener");
+                    builder.AddContent(4, fileRef);
+                    builder.CloseElement();
+                }
+                else
+                {
+                    builder.AddContent(0, fileRef);
+                }
+                return;
+
+            case YesNoQuestionDto when value.ValueKind is JsonValueKind.True or JsonValueKind.False:
+                builder.AddContent(0, value.ValueKind == JsonValueKind.True ? "Yes" : "No");
+                return;
+
+            case RatingQuestionDto r when value.ValueKind == JsonValueKind.Number:
+                builder.AddContent(0, $"{value.GetDecimal():0.#} / {r.Max}");
+                return;
+
+            case NpsQuestionDto nps when value.ValueKind == JsonValueKind.Number:
+                builder.AddContent(0, $"{value.GetInt32()} / {nps.Max}");
+                return;
+
+            case MultiChoiceQuestionDto when value.ValueKind == JsonValueKind.Array:
+                builder.OpenElement(0, "span");
+                builder.AddAttribute(1, "class", "rad__chips");
+                var i = 2;
+                foreach (var item in value.EnumerateArray())
+                {
+                    var id = item.ValueKind == JsonValueKind.String ? item.GetString()! : item.ToString();
+                    builder.OpenComponent<MudChip<string>>(i++);
+                    builder.AddComponentParameter(i++, "Size", Size.Small);
+                    builder.AddComponentParameter(i++, "Variant", Variant.Outlined);
+                    builder.AddComponentParameter(i++, "ChildContent",
+                        (RenderFragment)(b => b.AddContent(0, OptionLabel(q, id) ?? id)));
+                    builder.CloseComponent();
+                }
+                builder.CloseElement();
+                AppendExternalHint(builder, q, 1000);
+                return;
+
+            case SingleChoiceQuestionDto or DropdownQuestionDto or NavigationListQuestionDto
+                when value.ValueKind == JsonValueKind.String:
+                var optionId = value.GetString()!;
+                builder.AddContent(0, OptionLabel(q, optionId) ?? optionId);
+                AppendExternalHint(builder, q, 1);
+                return;
+
+            default:
+                builder.AddContent(0, value.ValueKind == JsonValueKind.String ? value.GetString() : value.ToString());
+                return;
+        }
+    };
+
+    /// <summary>
+    /// Sourced questions store the external system's raw id — flag it so a bare
+    /// GUID/number in the answers view reads as intentional, not broken.
+    /// </summary>
+    void AppendExternalHint(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder builder,
+        Shared.DTOs.Questions.QuestionDto q, int sequence)
+    {
+        if (!HasExternalSource(q)) return;
+        builder.OpenElement(sequence + 100000, "span");
+        builder.AddAttribute(sequence + 100001, "class", "rad__external-hint");
+        builder.AddAttribute(sequence + 100002, "title", "This question's options come from an external API — the stored value is the external system's id.");
+        builder.AddContent(sequence + 100003, "(external id)");
+        builder.CloseElement();
+    }
+}

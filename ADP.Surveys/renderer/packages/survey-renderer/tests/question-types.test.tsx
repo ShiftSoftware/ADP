@@ -25,7 +25,9 @@ function schemaWith(question: Record<string, unknown>): Survey {
 
 async function advance() {
   const user = userEvent.setup();
-  await user.click(screen.getByRole('button', { name: 'Next' }));
+  // The single question screen routes to the zero-question 'thanks' screen,
+  // which auto-submits on arrival — so the committing press reads Submit.
+  await user.click(screen.getByRole('button', { name: 'Submit' }));
 }
 
 describe('question-type smoke tests', () => {

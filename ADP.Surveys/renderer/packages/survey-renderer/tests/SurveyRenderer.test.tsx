@@ -83,7 +83,9 @@ describe('SurveyRenderer', () => {
     await user.click(screen.getByRole('button', { name: 'Next' }));
     // On "feedback": pick NPS = 3.
     await user.click(screen.getByRole('radio', { name: '3' }));
-    await user.click(screen.getByRole('button', { name: 'Next' }));
+    // With NPS=3 the logic rule routes to thanks-default — a zero-question end
+    // screen — so the answer-aware label already reads Submit, not Next.
+    await user.click(screen.getByRole('button', { name: 'Submit' }));
     // Logic rule routes us to thanks-default, skipping brand.
     expect(screen.getByRole('heading', { name: 'Thanks!' })).toBeInTheDocument();
     expect(onScreenChange).toHaveBeenCalledWith('thanks-default');
@@ -205,7 +207,7 @@ describe('SurveyRenderer', () => {
     await user.type(screen.getByLabelText('Your name'), 'Aza');
     await user.click(screen.getByRole('button', { name: 'Next' })); // → feedback
     await user.click(screen.getByRole('radio', { name: '3' }));
-    await user.click(screen.getByRole('button', { name: 'Next' })); // → thanks-default, auto-submits
+    await user.click(screen.getByRole('button', { name: 'Submit' })); // → thanks-default, auto-submits
     // No more Next button on a zero-question terminal screen.
     expect(screen.queryByRole('button', { name: /Next/ })).not.toBeInTheDocument();
     // onSubmit fires on arrival via useEffect — wait for the async submission.
@@ -216,6 +218,49 @@ describe('SurveyRenderer', () => {
     expect(call.schemaVersion).toBe(1);
     expect(call.meta?.startedAt).toBeTruthy();
     expect(call.meta?.completedAt).toBeTruthy();
+  });
+
+  it('low-score sticky-rule flow still auto-submits on the end screen', async () => {
+    // Regression for the "Service Visit Feedback" strand: a global rule
+    // (nps<=6 → recover) matches the final answer map forever; the end screen
+    // must terminate anyway or auto-submit never fires and the respondent is
+    // stuck on a buttonless thanks screen with no API call.
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    const schema: Survey = {
+      id: 's',
+      version: 1,
+      defaultLocale: 'en',
+      locales: ['en'],
+      screens: [
+        {
+          id: 'overall',
+          title: { en: 'Overall' },
+          questions: [{ type: 'nps', id: 'nps', title: { en: 'Score' }, required: true }],
+          nextScreen: 'thanks',
+        },
+        {
+          id: 'recover',
+          title: { en: 'We want to make it right' },
+          questions: [
+            { type: 'paragraph', id: 'recover-details', title: { en: 'What went wrong?' }, required: true },
+          ],
+        },
+        { id: 'thanks', title: { en: 'Thank you!' }, questions: [] },
+      ],
+      logic: [{ if: { questionId: 'nps', op: '<=', value: 6 }, then: { goto: 'recover' } }],
+    };
+    render(<SurveyRenderer schema={schema} onSubmit={onSubmit} />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('radio', { name: '0' }));
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    expect(screen.getByRole('heading', { name: 'We want to make it right' })).toBeInTheDocument();
+    await user.type(screen.getByLabelText(/What went wrong/), 'Slow service');
+    // Recover falls through sequentially to the zero-question thanks screen —
+    // that press is the commit (labeled Submit) and arrival auto-submits.
+    await user.click(screen.getByRole('button', { name: 'Submit' }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    expect(onSubmit.mock.calls[0]![0].answers.nps).toBe(0);
+    expect(screen.getByRole('heading', { name: 'Thank you!' })).toBeInTheDocument();
   });
 
   it('blocks Next on a constraint violation with a localized inline error, clears once fixed', async () => {
@@ -288,5 +333,32 @@ describe('SurveyRenderer', () => {
     expect(screen.queryByRole('button', { name: 'Next' })).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Submit' }));
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+  });
+
+  it('labels the press Submit when it routes to a zero-question end screen', async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    const schema: Survey = {
+      id: 's',
+      version: 1,
+      defaultLocale: 'en',
+      locales: ['en'],
+      screens: [
+        {
+          id: 'q',
+          title: { en: 'Q' },
+          questions: [{ type: 'text', id: 'a', title: { en: 'A' }, required: false }],
+          nextScreen: 'done',
+        },
+        { id: 'done', title: { en: 'Thanks!' }, questions: [] },
+      ],
+      logic: [],
+    };
+    render(<SurveyRenderer schema={schema} onSubmit={onSubmit} />);
+    // The press routes to 'done', which auto-submits on arrival — from the
+    // respondent's seat this IS the committing press, so it must read Submit.
+    expect(screen.queryByRole('button', { name: 'Next' })).not.toBeInTheDocument();
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Submit' }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole('heading', { name: 'Thanks!' })).toBeInTheDocument();
   });
 });

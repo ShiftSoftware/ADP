@@ -132,6 +132,17 @@ export interface SurveyRendererProps {
   activeScreenId?: string | null;
 }
 
+/** Mirrors the arrival-time auto-submit rule (zero questions + computeNext →
+ *  'end'): a Next press that routes here commits the survey, so the button
+ *  that triggers the hop must already read "Submit". */
+function screenAutoSubmitsOnArrival(schema: Survey, screenId: string, answers: AnswerMap): boolean {
+  const screen = schema.screens.find((s) => s.id === screenId);
+  if (!screen) return false;
+  const questions = (screen.questions as unknown[] | undefined) ?? [];
+  if (questions.length > 0) return false;
+  return computeNext(schema, screenId, answers).kind === 'end';
+}
+
 export function SurveyRenderer({
   schema,
   onSubmit,
@@ -496,12 +507,17 @@ export function SurveyRenderer({
   const isAutoSubmitScreen = questions.length === 0 && !currentScreen.nextScreen;
   const showNextButton = !hasTerminalNavList && !isAutoSubmitScreen;
   // The press that ends the survey is labeled Submit, not Next — respondents
-  // otherwise can't tell which press submits. Answer-aware via computeNext so
-  // the label stays correct on branching flows.
+  // otherwise can't tell which press submits. Two shapes end it: computeNext
+  // says 'end' outright, or it routes to a zero-question screen that will
+  // auto-submit on arrival (the per-branch thank-you pattern) — from the
+  // respondent's seat both are the committing press. Answer-aware via
+  // computeNext so the label stays correct on branching flows.
+  const nextStep =
+    showNextButton && currentScreenId !== null ? computeNext(schema, currentScreenId, answers) : null;
   const nextWouldEnd =
-    showNextButton &&
-    currentScreenId !== null &&
-    computeNext(schema, currentScreenId, answers).kind === 'end';
+    nextStep !== null &&
+    (nextStep.kind === 'end' ||
+      (nextStep.kind === 'screen' && screenAutoSubmitsOnArrival(schema, nextStep.screenId, answers)));
 
   return (
     <SurveyContextProvider value={contextValue}>

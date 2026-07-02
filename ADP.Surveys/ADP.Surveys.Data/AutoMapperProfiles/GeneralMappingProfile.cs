@@ -26,6 +26,7 @@ public class GeneralMappingProfile : Profile
         MapSurvey();
         MapBankQuestion();
         MapScreenTemplate();
+        MapSurveyInstance();
     }
 
     private void MapSurvey()
@@ -92,6 +93,25 @@ public class GeneralMappingProfile : Profile
                 src.Template == null ? "" : JsonSerializer.Serialize(src.Template, SurveySchemaSerializer.Options)))
             .ForMember(e => e.Tags, opt => opt.MapFrom(src =>
                 src.Tags == null || src.Tags.Count == 0 ? null : string.Join(",", src.Tags)));
+    }
+
+    private void MapSurveyInstance()
+    {
+        // List projection runs through ProjectTo — every member below must stay
+        // EF-translatable (subquery count/max, nav join, enum→int cast, constant
+        // comparison). No method calls here.
+        CreateMap<SurveyInstance, Shared.DTOs.Admin.SurveyInstance.SurveyInstanceListDTO>()
+            .ForMember(d => d.IsTest, opt => opt.MapFrom(s =>
+                s.TriggeredBy == ShiftSoftware.ADP.Surveys.Shared.SurveysConstants.DashboardTestTriggerSource))
+            .ForMember(d => d.Status, opt => opt.MapFrom(s => (int)s.Status))
+            .ForMember(d => d.SchemaVersion, opt => opt.MapFrom(s => s.SurveyVersion.Version))
+            .ForMember(d => d.ResponseCount, opt => opt.MapFrom(s => s.Responses.Count(r => !r.IsDeleted)))
+            .ForMember(d => d.CompletedAt, opt => opt.MapFrom(s =>
+                s.Responses.Where(r => !r.IsDeleted).Max(r => r.CompletedAt)));
+
+        // Framework-required pair for the ViewAndUpsert generic; the controller 405s
+        // every path that would exercise it.
+        CreateMap<SurveyInstance, Shared.DTOs.Admin.SurveyInstance.SurveyInstanceAdminDTO>().ReverseMap();
     }
 
     private static QuestionType ExtractQuestionType(string questionJson)

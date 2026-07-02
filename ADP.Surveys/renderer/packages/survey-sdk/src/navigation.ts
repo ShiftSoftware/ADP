@@ -22,6 +22,21 @@ export function computeNext(
   answers: AnswerMap,
 ): NextStep {
   const screenIds = new Set(schema.screens.map((s) => s.id));
+  const current = schema.screens.find((s) => s.id === currentScreenId);
+
+  // 0. Zero-question screens without an explicit nextScreen are ABSOLUTELY
+  // terminal — checked before the logic tier on purpose. A sticky global rule
+  // (e.g. `nps <= 6 → recover`) matches the final answer map forever, so once
+  // the respondent reaches an end screen the rule would otherwise re-route
+  // them out of it: auto-submit sees "next is a screen" and never fires, the
+  // Next button is hidden on such screens, and the survey strands with no
+  // submission. Author intent: a screen with no questions and no onward path
+  // is the end of the flow, full stop. (Sequential fallback is skipped for
+  // the same reason — per-branch thank-you screens must not chain. A splash
+  // screen that needs to chain sets `nextScreen` explicitly.)
+  if (current && (!current.questions || current.questions.length === 0) && !current.nextScreen) {
+    return { kind: 'end' };
+  }
 
   // 1. Logic rule. A rule pointing back at the current screen is a no-op —
   // after the rule fires it has served its purpose and we should move on.
@@ -33,18 +48,8 @@ export function computeNext(
   }
 
   // 2. Current screen's explicit nextScreen.
-  const current = schema.screens.find((s) => s.id === currentScreenId);
   if (current?.nextScreen && current.nextScreen !== currentScreenId && screenIds.has(current.nextScreen)) {
     return { kind: 'screen', screenId: current.nextScreen };
-  }
-
-  // 2b. Zero-question screens without an explicit nextScreen are terminal.
-  // Author intent: a screen with no questions and no onward path is the end of
-  // the flow. Sequential fallback would chain into the next thanks screen — which
-  // is never what authors want when they have per-branch thank-you pages. A
-  // splash screen that needs to chain must set `nextScreen` explicitly.
-  if (current && (!current.questions || current.questions.length === 0) && !current.nextScreen) {
-    return { kind: 'end' };
   }
 
   // 3. Sequential array order.

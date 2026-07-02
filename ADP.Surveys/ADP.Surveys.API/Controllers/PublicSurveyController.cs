@@ -181,31 +181,39 @@ public class PublicSurveyController : ControllerBase
         // fans this out to registered ISurveyResponseSubscribers on its next tick.
         // The in-same-transaction write is what gives us at-least-once delivery: if
         // SaveChanges throws, neither the response nor the outbox event lands.
-        var payload = new Shared.Triggers.SurveyOutboxPayload
+        //
+        // Dashboard test instances are exempt: their responses stay queryable in the
+        // admin views but never fan out — subscribers (BI forwarders, CRM hooks)
+        // must not receive test data.
+        var isTestInstance = instance.TriggeredBy == Shared.SurveysConstants.DashboardTestTriggerSource;
+        if (!isTestInstance)
         {
-            SurveyId = instance.SurveyID,
-            SurveyVersion = instance.SurveyVersion.Version,
-            SurveyIntegrationId = instance.Survey.IntegrationId,
-            InstancePublicId = instance.PublicID,
-            TriggerId = instance.TriggerId,
-            CustomerRef = instance.CustomerRef,
-            RecipientAddress = instance.RecipientAddress,
-            RecipientLocale = instance.RecipientLocale,
-            EventType = "response-completed",
-            CompletedAt = response.CompletedAt ?? DateTimeOffset.UtcNow,
-            AgentId = response.AgentId,
-            Answers = body.Answers,
-            CandidateMetadataJson = instance.MetaDataJson,
-        };
+            var payload = new Shared.Triggers.SurveyOutboxPayload
+            {
+                SurveyId = instance.SurveyID,
+                SurveyVersion = instance.SurveyVersion.Version,
+                SurveyIntegrationId = instance.Survey.IntegrationId,
+                InstancePublicId = instance.PublicID,
+                TriggerId = instance.TriggerId,
+                CustomerRef = instance.CustomerRef,
+                RecipientAddress = instance.RecipientAddress,
+                RecipientLocale = instance.RecipientLocale,
+                EventType = "response-completed",
+                CompletedAt = response.CompletedAt ?? DateTimeOffset.UtcNow,
+                AgentId = response.AgentId,
+                Answers = body.Answers,
+                CandidateMetadataJson = instance.MetaDataJson,
+            };
 
-        db.Set<SurveyOutboxEvent>().Add(new SurveyOutboxEvent
-        {
-            SurveyResponse = response,
-            SurveyInstance = instance,
-            EventType = "response-completed",
-            PayloadJson = JsonSerializer.Serialize(payload, SurveySchemaSerializer.Options),
-            Status = SurveyOutboxEventStatus.Pending,
-        });
+            db.Set<SurveyOutboxEvent>().Add(new SurveyOutboxEvent
+            {
+                SurveyResponse = response,
+                SurveyInstance = instance,
+                EventType = "response-completed",
+                PayloadJson = JsonSerializer.Serialize(payload, SurveySchemaSerializer.Options),
+                Status = SurveyOutboxEventStatus.Pending,
+            });
+        }
 
         await db.SaveChangesAsync();
 

@@ -89,6 +89,29 @@ describe('computeNext', () => {
     expect(computeNext(schema, 'thanks-b', noAnswers)).toEqual({ kind: 'end' });
   });
 
+  it('sticky logic rule cannot drag navigation out of a zero-question end screen', () => {
+    // A global rule keeps matching the final answer map forever. Once the
+    // respondent reaches a terminal screen, re-firing it would strand the
+    // survey: auto-submit sees "next is a screen" and never runs, and the
+    // Next button is hidden on zero-question screens. Shape from the
+    // "Service Visit Feedback" demo: nps<=6 → recover, recover falls through
+    // sequentially to a zero-question thanks.
+    const schema = makeSchema({
+      screens: [
+        { id: 'overall', nextScreen: 'comments', questions: [{ type: 'nps', id: 'nps' }] },
+        { id: 'comments', questions: [{ type: 'paragraph', id: 'open-comments' }] },
+        { id: 'recover', questions: [{ type: 'paragraph', id: 'recover-details' }] },
+        { id: 'thanks' },
+      ],
+      logic: [{ if: { questionId: 'nps', op: '<=', value: 6 }, then: { goto: 'recover' } }],
+    });
+    const lowScore: AnswerMap = { nps: 0, 'recover-details': 'it was slow' };
+    // From recover the rule self-guards → sequential → thanks…
+    expect(computeNext(schema, 'recover', lowScore)).toEqual({ kind: 'screen', screenId: 'thanks' });
+    // …and thanks must END even though the rule still matches and points elsewhere.
+    expect(computeNext(schema, 'thanks', lowScore)).toEqual({ kind: 'end' });
+  });
+
   it('zero-question splash screen WITH explicit nextScreen still chains', () => {
     const schema = makeSchema({
       screens: [

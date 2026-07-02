@@ -1,0 +1,225 @@
+@namespace ShiftSoftware.ADP.Surveys.Web.Components.Responses
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+@inject HttpClient Http
+@inject SurveysWebOptions SurveysOptions
+
+@*
+    Answer a survey instance without leaving the dashboard. Unlike the builder's
+    live preview (schema pushed in, submit swallowed), this hosts <shift-survey>
+    in API mode: the element fetches the pinned schema from the PUBLIC endpoint
+    and submits through the PUBLIC responses endpoint — the exact pipeline a real
+    recipient goes through, including answer validation and the status flip.
+
+    Presentation: a BARE phone floating over the page — no dialog paper, title,
+    or action bar (per user direction; MudDialog still hosts it for the modal
+    overlay, focus trap, ESC/backdrop dismissal, and the result contract, but
+    the paper is styled fully transparent). Dismissal: floating ✕ on the device
+    corner, ESC, or backdrop click. The public link is deliberately absent —
+    the copy action lives on the instance row in the list.
+*@
+
+<MudDialog Class="trd__dialog">
+    <DialogContent>
+        <div class="trd__device">
+            <div class="trd__device-notch"></div>
+            <div class="trd__device-screen">
+                <shift-survey @ref="surveyElement"
+                              instance-id="@PublicId.ToString()"
+                              api-base="@ApiBase"></shift-survey>
+            </div>
+
+            <button type="button" class="trd__close" title="Close" @onclick="Close">
+                <MudIcon Icon="@Icons.Material.Filled.Close" Size="Size.Small" />
+            </button>
+
+            @if (completed)
+            {
+                <div class="trd__done-pill">
+                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Color="Color.Success" />
+                    <span>Response recorded</span>
+                    <MudButton Size="Size.Small"
+                               Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               OnClick="ViewAnswers">
+                        View answers
+                    </MudButton>
+                </div>
+            }
+        </div>
+    </DialogContent>
+</MudDialog>
+
+<style>
+    /* Naked dialog: the paper is invisible — only the phone shows. Everything
+       is overflow-visible so the ✕ can float beside the device. Margins and
+       max-height are zeroed so the DEVICE height rule below is the single
+       source of truth for the footprint. */
+    .trd__dialog {
+        width: fit-content !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        overflow: visible !important;
+        margin: 0 !important;
+        max-height: none !important;
+    }
+    .trd__dialog .mud-dialog-content {
+        padding: 0;
+        overflow: visible;
+    }
+    /* Phone frame — the same aspect-preserved iPhone-13-mini silhouette as
+       SurveyPreview's mobile device. Sized as the WHOLE device (bezel included)
+       against the viewport so the bottom can never trim: 840px = a full-size
+       812px screen + 2×14px bezel; the 40px budget leaves breathing room above
+       and below when centered. Width flows from the screen's aspect ratio so
+       short viewports get a proportionally smaller phone, never a squat or
+       clipped one. */
+    .trd__device {
+        --trd-device-radius: 42px;
+        width: fit-content;
+        height: min(840px, calc(100vh - 40px));
+        margin: 0 auto;
+        background: #111827;
+        border-radius: var(--trd-device-radius);
+        padding: 14px;
+        box-shadow: 0 18px 40px -12px rgba(17, 24, 39, 0.35),
+                    0 8px 16px -8px rgba(17, 24, 39, 0.25),
+                    inset 0 0 0 1.5px #2d3748;
+        position: relative;
+    }
+    .trd__device-notch {
+        position: absolute;
+        top: 18px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 110px;
+        height: 22px;
+        background: #000;
+        border-radius: 14px;
+        z-index: 2;
+    }
+    .trd__device-screen {
+        background: #ffffff;
+        border-radius: calc(var(--trd-device-radius) - 14px);
+        overflow: auto;
+        /* Fill the explicitly-sized device — border-box (MudBlazor global), so
+           100% is the content box inside the 14px bezel padding; width derives
+           from the real device ratio. */
+        height: 100%;
+        aspect-ratio: 375 / 812;
+        width: auto;
+        padding-top: 40px;
+        -webkit-overflow-scrolling: touch;
+    }
+    /* Thin scrollbar inside the phone so long screens don't wear a desktop
+       scrollbar across the device art. */
+    .trd__device-screen::-webkit-scrollbar {
+        width: 5px;
+    }
+    .trd__device-screen::-webkit-scrollbar-thumb {
+        background: rgba(17, 24, 39, 0.25);
+        border-radius: 3px;
+    }
+    /* Floating ✕ beside the device, clear of the bezel (story-viewer style). */
+    .trd__close {
+        position: absolute;
+        top: 0;
+        inset-inline-end: -50px;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: none;
+        background: #ffffff;
+        color: #111827;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+        z-index: 3;
+    }
+    .trd__close:hover {
+        background: #f1f5f9;
+    }
+    /* Completed toast docked over the bottom of the device — no chrome height,
+       no layout shift; the thank-you screen stays visible behind it. */
+    .trd__done-pill {
+        position: absolute;
+        bottom: 26px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+        background: #ffffff;
+        border-radius: 999px;
+        padding: 6px 8px 6px 14px;
+        font-size: 0.85rem;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+        z-index: 3;
+    }
+</style>
+
+@code {
+    [CascadingParameter]
+    public IMudDialogInstance MudDialogInstance { get; set; } = default!;
+
+    /// <summary>Instance to answer, by its public GUID.</summary>
+    [Parameter] public Guid PublicId { get; set; }
+
+    // Same cache-busted module the live preview uses.
+    private static readonly string InteropPath =
+        $"./_content/ShiftSoftware.ADP.Surveys.Web/js/shift-survey/interop.js?v={typeof(TestRunDialog).Assembly.GetName().Version}";
+
+    ElementReference surveyElement;
+    IJSObjectReference? interopModule;
+    DotNetObjectReference<TestRunDialog>? selfRef;
+    bool completed;
+    bool handlerInstalled;
+
+    /// <summary>
+    /// Absolute Surveys API base for the web component (it fetches with plain
+    /// <c>fetch</c>, so we can't rely on the Blazor HttpClient's BaseAddress).
+    /// </summary>
+    string ApiBase =>
+        new Uri(Http.BaseAddress!, SurveysOptions.ResolvedRoutePrefix).ToString().TrimEnd('/');
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (handlerInstalled) return;
+        try
+        {
+            interopModule ??= await JS.InvokeAsync<IJSObjectReference>("import", InteropPath);
+            selfRef ??= DotNetObjectReference.Create(this);
+            await interopModule.InvokeVoidAsync("installCompletionHandler", surveyElement, selfRef);
+            handlerInstalled = true;
+        }
+        catch (JSDisconnectedException) { /* page navigated away */ }
+    }
+
+    [JSInvokable]
+    public Task OnEmbeddedSurveyCompleted()
+    {
+        completed = true;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    /// <summary>Result contract: Ok(true) = completed → caller refreshes and opens answers; Ok(false) = just refresh.</summary>
+    void ViewAnswers() => MudDialogInstance.Close(DialogResult.Ok(true));
+
+    void Close() => MudDialogInstance.Close(completed ? DialogResult.Ok(false) : DialogResult.Cancel());
+
+    public async ValueTask DisposeAsync()
+    {
+        selfRef?.Dispose();
+        if (interopModule is not null)
+        {
+            try { await interopModule.DisposeAsync(); }
+            catch (JSDisconnectedException) { }
+            catch (ObjectDisposedException) { }
+            interopModule = null;
+        }
+    }
+}

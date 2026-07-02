@@ -105,6 +105,13 @@
 
                     @if (Mode != FormModes.Create && Key is not null)
                     {
+                        <MudButton StartIcon="@Icons.Material.Filled.Quiz"
+                                   Variant="Variant.Text"
+                                   Color="Color.Primary"
+                                   Size="Size.Small"
+                                   Href="@($"{SurveyRoutes.Prefix}/{nameof(SurveyResponses)}/{Key}")">
+                            Responses
+                        </MudButton>
                         <MudButton StartIcon="@Icons.Material.Filled.Publish"
                                    Variant="Variant.Text"
                                    Color="Color.Primary"

@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using ShiftSoftware.ADP.Surveys.Shared.DTOs;
+using ShiftSoftware.ADP.Surveys.Shared.DTOs.Admin.Responses;
 using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions;
 using ShiftSoftware.ADP.Surveys.Shared.DTOs.Screens;
 using ShiftSoftware.ADP.Surveys.Shared.Json;
@@ -94,6 +95,53 @@ public class SurveyService
         {
             return null;
         }
+    }
+
+    /// <summary>
+    /// GET <c>{prefix}SurveyResponses/public-url-template</c> — lets the dashboard
+    /// compose recipient links client-side (the OData instance list can't carry
+    /// them). Null when unset or on failure; callers hide the copy action.
+    /// </summary>
+    public async Task<string?> GetPublicUrlTemplateAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            var dto = await http.GetFromJsonAsync<PublicUrlTemplateDTO>(
+                $"{prefix}SurveyResponses/public-url-template", ct);
+            return dto?.Template;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// GET <c>{prefix}SurveyResponses/instance/{publicId}</c> — instance metadata,
+    /// recorded responses with answers, and the pinned resolved schema JSON.
+    /// </summary>
+    public async Task<SurveyInstanceDetailDTO?> GetInstanceDetailAsync(
+        Guid publicId, CancellationToken ct = default)
+    {
+        try
+        {
+            return await http.GetFromJsonAsync<SurveyInstanceDetailDTO>(
+                $"{prefix}SurveyResponses/instance/{publicId}", ct);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// POST <c>{prefix}SurveyResponses/{surveyId}/test-instances</c>. Returns the raw
+    /// response so callers can surface the API's error copy (e.g. "publish first").
+    /// </summary>
+    public async Task<HttpResponseMessage> CreateTestInstanceAsync(
+        string hashedSurveyId, CancellationToken ct = default)
+    {
+        return await http.PostAsync($"{prefix}SurveyResponses/{hashedSurveyId}/test-instances", content: null, ct);
     }
 
     /// <summary>

@@ -91,9 +91,10 @@ describe('postMessage host bridge', () => {
       ).toBeTruthy();
     });
 
-    // Pick NPS + advance → auto-submit on thanks.
+    // Pick NPS + advance → auto-submit on thanks. The press routes to a
+    // zero-question end screen, so it's labeled Submit.
     await user.click(screen.getByRole('radio', { name: '8' }));
-    await user.click(screen.getByRole('button', { name: 'Next' }));
+    await user.click(screen.getByRole('button', { name: 'Submit' }));
     await waitFor(() => expect(onSubmit).toHaveBeenCalled());
 
     // Completed message fired with the answers.
@@ -127,7 +128,7 @@ describe('postMessage host bridge', () => {
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Next' })); // → rate
     await user.click(screen.getByRole('radio', { name: '8' }));
-    await user.click(screen.getByRole('button', { name: 'Next' })); // → thanks, submit throws
+    await user.click(screen.getByRole('button', { name: 'Submit' })); // → thanks, submit throws
     await waitFor(() => {
       const err = posts.find((p) => (p.msg as { type: string }).type === 'survey:error');
       expect(err).toBeTruthy();
@@ -211,7 +212,7 @@ describe('localStorage resume', () => {
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Next' })); // → rate
     await user.click(screen.getByRole('radio', { name: '9' }));
-    await user.click(screen.getByRole('button', { name: 'Next' })); // → thanks, auto-submit
+    await user.click(screen.getByRole('button', { name: 'Submit' })); // → thanks, auto-submit
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalled());
     await waitFor(() => {
