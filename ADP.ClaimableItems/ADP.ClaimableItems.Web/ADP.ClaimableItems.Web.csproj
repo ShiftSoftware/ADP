@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+	<Import Project="..\..\GlobalSettings.props" />
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<RootNamespace>ShiftSoftware.ADP.ClaimableItems.Web</RootNamespace>
+		<BlazorWebAssemblyLoadAllGlobalizationData>true</BlazorWebAssemblyLoadAllGlobalizationData>
+		<Authors>Shift Software</Authors>
+		<Product>ADP.ClaimableItems</Product>
+		<Version>$(ADPVersion)</Version>
+		<AssemblyName>ShiftSoftware.ADP.ClaimableItems.Web</AssemblyName>
+		<PackageId>ShiftSoftware.ADP.ClaimableItems.Web</PackageId>
+		<Title>ShiftSoftware ADP.ClaimableItems — Web</Title>
+		<Description>Blazor WebAssembly pages, forms and services for the ShiftSoftware ADP.ClaimableItems package — the claimable-items / service-campaign authoring module.</Description>
+		<Copyright>Copyright (c) Shift Software 2026</Copyright>
+		<PackageProjectUrl>https://github.com/ShiftSoftware/ADP</PackageProjectUrl>
+		<PackageIcon>icon.png</PackageIcon>
+		<RepositoryUrl>https://github.com/ShiftSoftware/ADP</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageTags>shift;shiftsoftware;adp;claimableitems;campaign;automotive;service;blazor</PackageTags>
+		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="Images\icon.png" Pack="true" PackagePath="\" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.9" />
+		<PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="10.0.9" />
+		<PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.9" />
+		<PackageReference Include="ShiftSoftware.ShiftBlazor" Version="2026.7.3.1" />
+		<!-- Campaign form/list use ADP.Models enums + ClaimableItemCampaignActivationRules directly.
+		     ADP-internal convention: source project in-repo, published package when packed standalone. -->
+		<PackageReference Include="ShiftSoftware.ADP.Models" Version="$(ADPVersion)" Condition="!Exists('..\..\ADP.Models\Models\Models.csproj')" />
+		<ProjectReference Include="..\..\ADP.Models\Models\Models.csproj" Condition="Exists('..\..\ADP.Models\Models\Models.csproj')" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\ADP.ClaimableItems.Shared\ADP.ClaimableItems.Shared.csproj" />
+	</ItemGroup>
+</Project>

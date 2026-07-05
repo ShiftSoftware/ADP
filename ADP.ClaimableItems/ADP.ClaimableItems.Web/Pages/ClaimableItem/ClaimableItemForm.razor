@@ -1,0 +1,225 @@
+@attribute [Route($"/{nameof(ClaimableItemForm)}/{{Key?}}")]
+
+@inherits ShiftForm<ClaimableItemForm, ClaimableItemDTO>
+@inject IOptions<ClaimableItemsWebOptions> CIOptions
+
+<ShiftEntityForm @bind-Mode="Mode"
+                 @bind-Value="TheItem"
+                 @ref="FormContainer"
+                 AllowSaveAsNew
+                 Endpoint="ClaimableItem"
+                 Title="Claimable Item"
+                 TypeAuthAction="CIOptions.Value.ClaimableItemSetupAction"
+                 @bind-Key="@Key">
+    <MudGrid Spacing="8" Class="pt-4">
+        <MudItem Class="pt-2 pb-2" lg="12" md="12" sm="12" xs="12">
+            <LocalizedTextField Label="Name"
+                                For="() => TheItem.Name"
+                                @bind-Value="TheItem.Name" />
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="12" md="12" sm="12" xs="12">
+            <LocalizedTextField Label="Printout Title"
+                                For="() => TheItem.PrintoutTitle"
+                                @bind-Value="TheItem.PrintoutTitle" />
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="12" md="12" sm="12" xs="12">
+            <LocalizedTextField Label="Printout Description"
+                                Lines="4"
+                                For="() => TheItem.PrintoutDescription"
+                                @bind-Value="TheItem.PrintoutDescription" />
+        </MudItem>
+
+
+
+        <MudItem Class="pt-2 pb-2" lg="4" md="4" sm="6" xs="12">
+            <MudTextFieldExtended Label="Unique Reference"
+                                  For="() => TheItem.UniqueReference"
+                                  @bind-Value="TheItem.UniqueReference" />
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="4" md="4" sm="6" xs="12">
+            <MudTextFieldExtended Label="Package Code"
+                                  For="() => TheItem.PackageCode"
+                                  @bind-Value="TheItem.PackageCode" />
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="4" md="4" sm="6" xs="12">
+            <MudNumericField Label="Maximum Mileage"
+                             Min="1"
+                             For="() => TheItem.MaximumMileage"
+                             @bind-Value="TheItem.MaximumMileage" />
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="4" md="4" sm="6" xs="12">
+            <ShiftAutocomplete Label="Campaign"
+                               TEntitySet="ShiftSoftware.ADP.ClaimableItems.Shared.DTOs.Campaign.CampaignListDTO"
+                               EntitySet="ServiceCampaign"
+                               For="() => TheItem.Campaign"
+                               @bind-Value="TheItem.Campaign" />
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="4" md="4" sm="6" xs="12">
+            <MudSelectExtended OnlyValidateIfDirty="true"
+                               T="ShiftSoftware.ADP.Models.Enums.ClaimableItemClaimingMethod"
+                               Label="Claiming Method"
+                               AnchorOrigin="Origin.BottomCenter"
+                               @bind-Value="TheItem.ClaimingMethod"
+                               For="@(() => TheItem.ClaimingMethod)">
+                @foreach (var x in Enum.GetValues<ShiftSoftware.ADP.Models.Enums.ClaimableItemClaimingMethod>())
+                {
+                    <MudSelectItem Value="@x">@x.Describe()</MudSelectItem>
+                }
+            </MudSelectExtended>
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="4" md="4" sm="6" xs="12">
+            <MudSelectExtended OnlyValidateIfDirty="true"
+                               T="ShiftSoftware.ADP.Models.Enums.ClaimableItemAttachmentFieldBehavior"
+                               Label="Attachment Field Behavior"
+                               AnchorOrigin="Origin.BottomCenter"
+                               @bind-Value="TheItem.AttachmentFieldBehavior"
+                               For="@(() => TheItem.AttachmentFieldBehavior)">
+                @foreach (var x in Enum.GetValues<ShiftSoftware.ADP.Models.Enums.ClaimableItemAttachmentFieldBehavior>())
+                {
+                    <MudSelectItem Value="@x">@x.Describe()</MudSelectItem>
+                }
+            </MudSelectExtended>
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="6" md="6" sm="12" xs="12">
+            <MudSelectExtended OnlyValidateIfDirty="true"
+                               T="ShiftSoftware.ADP.Models.Enums.ClaimableItemValidityMode"
+                               Label="Validity Mode"
+                               AnchorOrigin="Origin.BottomCenter"
+                               @bind-Value="TheItem.ValidityMode"
+                               For="@(() => TheItem.ValidityMode)">
+                @foreach (var x in Enum.GetValues<ShiftSoftware.ADP.Models.Enums.ClaimableItemValidityMode>())
+                {
+                    <MudSelectItem Value="@x">@x.Describe()</MudSelectItem>
+                }
+            </MudSelectExtended>
+        </MudItem>
+
+        @if (TheItem.ValidityMode == ShiftSoftware.ADP.Models.Enums.ClaimableItemValidityMode.RelativeToActivation)
+        {
+            <MudItem Class="pt-2 pb-2" lg="3" md="4" sm="12" xs="12">
+                <MudNumericField Label="Active For"
+                                 Min="1"
+                                 For="() => TheItem.ActiveFor"
+                                 @bind-Value="TheItem.ActiveFor" />
+            </MudItem>
+
+            <MudItem Class="pt-2 pb-2" lg="3" md="4" sm="12" xs="12">
+                <MudSelectExtended OnlyValidateIfDirty="true"
+                                   T="ShiftSoftware.ADP.Models.Enums.DurationType"
+                                   Label="Duration"
+                                   AnchorOrigin="Origin.BottomCenter"
+                                   @bind-Value="TheItem.ActiveForDurationType"
+                                   For="@(() => TheItem.ActiveForDurationType)">
+                    @foreach (var x in Enum.GetValues<ShiftSoftware.ADP.Models.Enums.DurationType>().Where(x => x > ShiftSoftware.ADP.Models.Enums.DurationType.Hours))
+                    {
+                        <MudSelectItem Value="@x">@x.Describe()</MudSelectItem>
+                    }
+                </MudSelectExtended>
+            </MudItem>
+        }
+        else if (TheItem.ValidityMode == ShiftSoftware.ADP.Models.Enums.ClaimableItemValidityMode.FixedDateRange)
+        {
+            <MudItem Class="pt-2 pb-2" lg="3" md="4" sm="12" xs="12">
+                <MudDatePickerExtended Label="Start Date"
+                                       Clearable="true"
+                                       @bind-Date="TheItem.ValidFrom"
+                                       For="() => TheItem.ValidFrom" />
+            </MudItem>
+
+            <MudItem Class="pt-2 pb-2" lg="3" md="4" sm="12" xs="12">
+                <MudDatePickerExtended Label="Expire Date"
+                                       Clearable="true"
+                                       @bind-Date="TheItem.ValidTo"
+                                       For="() => TheItem.ValidTo" />
+            </MudItem>
+        }
+    </MudGrid>
+
+    <MudItem lg="12" md="12" sm="12" xs="12" Class="pt-6">
+        <MudCard Elevation="2">
+            <MudCardHeader Class="pt-1 pb-1 background-gray">
+                <CardHeaderContent>
+                    <MudText Typo="Typo.subtitle2">Costing</MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+
+            <MudCardContent Class="pt-2 pb-2">
+                <MudRadioGroup @bind-Value="TheItem.CostingType" For="@(() => TheItem.CostingType)">
+                    @foreach (var x in Enum.GetValues<ClaimableItemCostingType>())
+                    {
+                        <MudRadio Value="x" Color="Color.Primary" Dense="false">@x.Describe()</MudRadio>
+                    }
+                </MudRadioGroup>
+
+                @if (TheItem.CostingType == ClaimableItemCostingType.Fixed)
+                {
+                    <MudNumericField Label="Fixed Cost"
+                                     Min="1"
+                                     For="() => TheItem.FixedCost"
+                                     @bind-Value="TheItem.FixedCost" />
+                }
+                else if (TheItem.CostingType == ClaimableItemCostingType.PerModel)
+                {
+                    <MultiItemField Title="Lines" @bind-Value="TheItem.Costs" T="ClaimableItemCostDTO">
+                        <FieldHeader Context="Field">
+                            <MudGrid Spacing="3" Style="align-items: baseline;">
+                                <MudItem lg="3" md="3" sm="3" xs="3">
+                                    <MudText Class="mud-text-with-border pb-3" Typo="Typo.subtitle2">Katashiki</MudText>
+                                </MudItem>
+
+                                <MudItem lg="3" md="3" sm="3" xs="3">
+                                    <MudText Class="mud-text-with-border pb-3" Typo="Typo.subtitle2">Variant</MudText>
+                                </MudItem>
+
+                                <MudItem lg="3" md="3" sm="3" xs="3">
+                                    <MudText Class="mud-text-with-border pb-3" Typo="Typo.subtitle2">Package Code</MudText>
+                                </MudItem>
+
+                                <MudItem lg="3" md="3" sm="3" xs="3">
+                                    <MudText Class="mud-text-with-border pb-3" Typo="Typo.subtitle2">Cost</MudText>
+                                </MudItem>
+                            </MudGrid>
+                        </FieldHeader>
+
+                        <FieldBody Context="line">
+                            <MudGrid Spacing="3" Style="align-items: baseline;">
+                                <MudItem Class="" lg="3" md="3" sm="3" xs="3">
+                                    <MudTextFieldExtended Label="Katashiki"
+                                                          For="() => line.Katashiki"
+                                                          @bind-Value="line.Katashiki" />
+                                </MudItem>
+
+                                <MudItem Class="" lg="3" md="3" sm="3" xs="3">
+                                    <MudTextFieldExtended Label="Variant"
+                                                          For="() => line.Variant"
+                                                          @bind-Value="line.Variant" />
+                                </MudItem>
+
+                                <MudItem Class="" lg="3" md="3" sm="3" xs="3">
+                                    <MudTextFieldExtended Label="Package Code"
+                                                          For="() => line.PackageCode"
+                                                          @bind-Value="line.PackageCode" />
+                                </MudItem>
+
+                                <MudItem Class="" lg="3" md="3" sm="3" xs="3">
+                                    <MudNumericFieldExtended Label="Cost"
+                                                             Min="0"
+                                                             For="() => line.Cost"
+                                                             @bind-Value="line.Cost" />
+                                </MudItem>
+                            </MudGrid>
+                        </FieldBody>
+                    </MultiItemField>
+                }
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+</ShiftEntityForm>

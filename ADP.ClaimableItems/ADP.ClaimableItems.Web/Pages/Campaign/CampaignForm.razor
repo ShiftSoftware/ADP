@@ -1,0 +1,179 @@
+@attribute [Route($"/{nameof(CampaignForm)}/{{Key?}}")]
+
+@inherits ShiftForm<CampaignForm, CampaignDTO>
+@inject IEnumerable<ICampaignTriggerFormFields> TriggerFields
+
+<ShiftEntityForm @bind-Mode="Mode"
+                 @bind-Value="TheItem"
+                 @ref="FormContainer"
+                 AllowSaveAsNew
+                 Endpoint="ServiceCampaign"
+                 Title="ServiceCampaign"
+                 TypeAuthAction="null"
+                 @bind-Key="@Key">
+    <MudGrid Spacing="8" Class="pt-4">
+        <MudItem Class="pt-2 pb-2" lg="12" md="12" sm="12" xs="12">
+            <LocalizedTextField Label="Name"
+                                For="() => TheItem.Name"
+                                @bind-Value="TheItem.Name" />
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="3" md="4" sm="6" xs="12">
+            <MudTextFieldExtended Label="Unique Reference"
+                                  For="() => TheItem.UniqueReference"
+                                  @bind-Value="TheItem.UniqueReference" />
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="3" md="4" sm="6" xs="12">
+            <MudTextFieldExtended Label="Distributor Certificate Number Prefix"
+                                  For="() => TheItem.DistributorCertificateNumberPrefix"
+                                  @bind-Value="TheItem.DistributorCertificateNumberPrefix" />
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="3" md="3" sm="6" xs="12">
+            <MudDatePickerExtended Label="Start Date"
+                                   Clearable="true"
+                                   @bind-Date="TheItem.StartDate"
+                                   For="() => TheItem.StartDate" />
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="3" md="3" sm="6" xs="12">
+            <MudDatePickerExtended Label="Expire Date"
+                                   Clearable="true"
+                                   @bind-Date="TheItem.ExpireDate"
+                                   For="() => TheItem.ExpireDate" />
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="4" md="4" sm="6" xs="12">
+            <ShiftAutocomplete Label="Brands"
+                               TEntitySet="ShiftSoftware.ShiftIdentity.Core.DTOs.Brand.BrandListDTO"
+                               EntitySet="IdentityBrand"
+                               BaseUrlKey="ShiftIdentityApi"
+                               MultiSelect
+                               @bind-SelectedValues="TheItem.Brands" />
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="4" md="4" sm="6" xs="12">
+            <ShiftAutocomplete Label="Countries (Leave empty to target All)"
+                               TEntitySet="ShiftSoftware.ShiftIdentity.Core.DTOs.Country.CountryListDTO"
+                               EntitySet="IdentityCountry"
+                               BaseUrlKey="ShiftIdentityApi"
+                               MultiSelect
+                               @bind-SelectedValues="TheItem.Countries" />
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="4" md="4" sm="6" xs="12">
+            <ShiftAutocomplete Label="Companies (Leave empty to target All)"
+                               TEntitySet="ShiftSoftware.ShiftIdentity.Core.DTOs.Company.CompanyListDTO"
+                               EntitySet="IdentityCompany"
+                               BaseUrlKey="ShiftIdentityApi"
+                               Clearable
+                               MultiSelect
+                               @bind-SelectedValues="TheItem.Companies" />
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="6" md="6" sm="6" xs="12">
+            <MudSelectExtended OnlyValidateIfDirty="true"
+                               T="ClaimableItemCampaignActivationTrigger"
+                               Label="Activation Trigger"
+                               Value="TheItem.ActivationTrigger"
+                               For="@(() => TheItem.ActivationTrigger)"
+                               ValueChanged="@(e => OnTriggerChanged(e))">
+                @foreach (var x in Enum.GetValues<ClaimableItemCampaignActivationTrigger>())
+                {
+                    <MudSelectItem Value="@x">@x.Describe()</MudSelectItem>
+                }
+            </MudSelectExtended>
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="6" md="6" sm="6" xs="12">
+            <MudSelectExtended OnlyValidateIfDirty="true"
+                               T="ClaimableItemCampaignActivationTypes"
+                               Label="Activation Type"
+                               @bind-Value="TheItem.ActivationType"
+                               For="@(() => TheItem.ActivationType)">
+                @foreach (var x in FilteredActivationTypes)
+                {
+                    <MudSelectItem Value="@x">@x.Describe()</MudSelectItem>
+                }
+            </MudSelectExtended>
+        </MudItem>
+
+        @* Consumer-supplied, trigger-specific fields (e.g. TCA's VehicleInspectionType picker for the
+           VehicleInspection trigger). Each registered ICampaignTriggerFormFields that AppliesTo the current
+           trigger renders its component here, receiving the CampaignDTO as a two-way-bound "Campaign" param.
+           The module itself knows nothing about any specific trigger's UI. *@
+        @foreach (var contributor in TriggerFields.Where(c => c.AppliesTo(TheItem.ActivationTrigger)))
+        {
+            <DynamicComponent Type="contributor.ComponentType" Parameters="@GetTriggerFieldParameters()" />
+        }
+
+        <MudItem Class="pt-2 pb-2 mb-2 mt-2" lg="12" md="12" sm="12" xs="12">
+            <MudCard Elevation="3">
+                <MudCardHeader Style="background: var(--mud-palette-divider); font-weight: bold;">
+                    Certificate Printout
+                </MudCardHeader>
+
+                <MudCardContent>
+                    <MudStack Spacing="10">
+                        <MudTextFieldExtended Label="Header"
+                                              AutoGrow
+                                              Lines="3"
+                                              MaxLines="10"
+                                              For="() => TheItem.CertificatePrintoutHeader"
+                                              @bind-Value="TheItem.CertificatePrintoutHeader" />
+
+                        <MudTextFieldExtended Label="Body"
+                                              AutoGrow
+                                              Lines="10"
+                                              MaxLines="20"
+                                              For="() => TheItem.CertificatePrintoutBody"
+                                              @bind-Value="TheItem.CertificatePrintoutBody" />
+
+                        <MudAlert Severity="Severity.Warning">
+                            Below are the available variables that can be used in Both (Header, Body). Variables should be inside curly brackets. Example: <strong>{CertificateDate}</strong>
+
+                            <ul class="mt-5">
+                                <li><strong>CertificateDate</strong></li>
+                                <li><strong>CertificateNo</strong></li>
+                                <li><strong>Dealer</strong></li>
+                                <li><strong>Distributor</strong></li>
+                                <li><strong>StartDate</strong></li>
+                                <li><strong>EndDate</strong></li>
+                                <li><strong>InvoiceDate</strong></li>
+                            </ul>
+                        </MudAlert>
+
+                        <MudStack Row>
+                            <MudCheckBoxExtended Label="Show Sign/Stamp on Certificate Footer"
+                                                 For="() => TheItem.CertificatePrintoutSignStampVisibility"
+                                                 @bind-Value="TheItem.CertificatePrintoutSignStampVisibility" />
+
+                            <MudCheckBoxExtended Label="Show Model/Katashiki Column"
+                                                 For="() => TheItem.CertificatePrintoutKatashikiAndModelColumnVisibility"
+                                                 @bind-Value="TheItem.CertificatePrintoutKatashikiAndModelColumnVisibility" />
+                        </MudStack>
+                    </MudStack>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+</ShiftEntityForm>
+
+@code {
+    private ClaimableItemCampaignActivationTypes[] FilteredActivationTypes =>
+            ClaimableItemCampaignActivationRules.GetValidTypes(TheItem.ActivationTrigger);
+
+    private Dictionary<string, object> GetTriggerFieldParameters() => new() { ["Campaign"] = TheItem };
+
+    private void OnTriggerChanged(ClaimableItemCampaignActivationTrigger newTrigger)
+    {
+        TheItem.ActivationTrigger = newTrigger;
+
+        // Reset the activation type if it's not valid anymore
+        if (!FilteredActivationTypes.Contains(TheItem.ActivationType))
+        {
+            TheItem.ActivationType = FilteredActivationTypes.FirstOrDefault();
+        }
+    }
+}

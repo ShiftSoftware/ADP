@@ -1,0 +1,88 @@
+@attribute [Route($"/{nameof(CampaignVinEntryForm)}/{{Key?}}")]
+
+@using ShiftSoftware.ShiftIdentity.Core.DTOs.Company
+@using ShiftSoftware.ShiftIdentity.Core.DTOs.CompanyBranch
+@using ShiftSoftware.ShiftIdentity.Core.DTOs.Country
+
+@inherits ShiftForm<CampaignVinEntryForm, CampaignVinEntryDTO>
+@inject IStringLocalizer<ClaimableItemsResource> Loc
+@inject IOptions<ClaimableItemsWebOptions> CIOptions
+
+<ShiftEntityForm @bind-Mode="Mode"
+                 @bind-Value="TheItem"
+                 @ref="FormContainer"
+                 Endpoint="CampaignVinEntry"
+                 Title="@Loc["Campaign VIN Entry"]"
+                 TypeAuthAction="CIOptions.Value.CampaignVinEntriesAction"
+                 @bind-Key="@Key">
+    <MudGrid Spacing="8" Class="pt-4">
+
+        <MudItem Class="pt-2 pb-2" lg="4" md="4" sm="12" xs="12">
+            <MudTextFieldExtended Label="@Loc["VIN"]"
+                                  For="() => TheItem.VIN"
+                                  @bind-Value="TheItem.VIN" />
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="4" md="4" sm="12" xs="12">
+            <ShiftAutocomplete Label="@Loc["Campaign"]"
+                               TEntitySet="CampaignListDTO"
+                               EntitySet="ServiceCampaign"
+                               For="() => TheItem.Campaign"
+                               Filter="x => x.Add(f => { f.Field = nameof(CampaignListDTO.ActivationTrigger); f.Value = ClaimableItemCampaignActivationTrigger.ManualVinEntry; })"
+                               @bind-Value="TheItem.Campaign" />
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="4" md="4" sm="12" xs="12">
+            <MudDatePickerExtended Label="Date"
+                                   Clearable="true"
+                                   @bind-Date="TheItem.RecordedDate"
+                                   For="() => TheItem.RecordedDate" />
+        </MudItem>
+
+        @if (Mode < FormModes.Edit)
+        {
+            <MudItem Class="pt-1 pb-1" lg="4" md="4" sm="6" xs="12">
+                <ShiftAutocomplete Label="Country"
+                                   TEntitySet="ShiftSoftware.ShiftIdentity.Core.DTOs.Country.CountryListDTO"
+                                   EntitySet="IdentityCountry"
+                                   BaseUrlKey="ShiftIdentityApi"
+                                   For="() => TheItem.Country"
+                                   @bind-Value="TheItem.Country" />
+            </MudItem>
+
+            <MudItem Class="pt-1 pb-1" lg="4" md="4" sm="6" xs="12">
+                <ShiftAutocomplete Label="Company"
+                                   TEntitySet="ShiftSoftware.ShiftIdentity.Core.DTOs.Company.CompanyListDTO"
+                                   EntitySet="IdentityCompany"
+                                   BaseUrlKey="ShiftIdentityApi"
+                                   For="() => TheItem.Company"
+                                   @bind-Value="TheItem.Company" />
+            </MudItem>
+
+            <MudItem Class="pt-1 pb-1" lg="4" md="4" sm="6" xs="12">
+                <ShiftAutocomplete Label="Branch"
+                                   TEntitySet="ShiftSoftware.ShiftIdentity.Core.DTOs.CompanyBranch.CompanyBranchListDTO"
+                                   EntitySet="IdentityCompanyBranch"
+                                   BaseUrlKey="ShiftIdentityApi"
+                                   For="() => TheItem.CompanyBranch"
+                                   @bind-Value="TheItem.CompanyBranch" />
+            </MudItem>
+        }
+    </MudGrid>
+</ShiftEntityForm>
+
+
+@code {
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            if (Mode == FormModes.Create)
+            {
+                TheItem.RecordedDate = DateTime.Now.Date;
+            }
+
+            StateHasChanged();
+        }
+    }
+}

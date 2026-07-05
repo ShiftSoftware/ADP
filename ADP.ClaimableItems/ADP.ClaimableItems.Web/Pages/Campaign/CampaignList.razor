@@ -1,0 +1,32 @@
+@attribute [Authorize]
+@attribute [Route($"/{nameof(CampaignList)}")]
+
+<ShiftList EntitySet="ServiceCampaign"
+           Title="ServiceCampaign List"
+           T="CampaignListDTO"
+           Dense
+           DisableActionColumn
+           ComponentType="typeof(CampaignForm)"
+           ShowIDColumn="true"
+           HighlightSortedColumn
+           TypeAuthAction="null"
+           FilterPanelDefaultOpen
+           EnableFilterPanel
+           EnableExport>
+
+    <Sort Property="x => x.StartDate" Direction="SortDirection.Descending" />
+
+    <StringFilter Order="0" Property="x => x.Name" Label="Name" Operator="ShiftSoftware.ShiftBlazor.Enums.ODataOperator.Contains" lg="4" md="6" sm="12" xs="12" />
+    <StringFilter Order="1" Property="x => x.UniqueReference" Label="Unique Reference" Operator="ShiftSoftware.ShiftBlazor.Enums.ODataOperator.Contains" lg="4" md="6" sm="12" xs="12" />
+    <DateTimeFilter Order="3" Property="x => x.StartDate" Label="Start Date" lg="4" md="6" sm="12" xs="12" />
+    <DateTimeFilter Order="4" Property="x => x.ExpireDate" Label="Expire Date" lg="4" md="6" sm="12" xs="12" />
+    <EnumFilter Order="6" Property="x => x.ActivationTrigger" Label="Activation Trigger" lg="4" md="6" sm="12" xs="12" />
+    <EnumFilter Order="7" Property="x => x.ActivationType" Label="Activation Type" lg="4" md="6" sm="12" xs="12" />
+
+    <PropertyColumn Filterable="false" Property="x => x.Name" Title="Name" CellClass="whitespace-nowrap" />
+    <PropertyColumn Filterable="false" Property="x => x.UniqueReference" Title="Unique Reference" CellClass="whitespace-nowrap" HeaderClass="whitespace-nowrap" />
+    <PropertyColumn Filterable="false" Format="yyyy-MM-dd" Property="x => x.StartDate" Title="Start Date" HeaderClass="whitespace-nowrap" />
+    <PropertyColumn Filterable="false" Format="yyyy-MM-dd" Property="x => x.ExpireDate" Title="Expire Date" HeaderClass="whitespace-nowrap" />
+    <PropertyColumn Filterable="false" Property="x => x.ActivationTriggerText" Title="Activation Trigger" CellClass="whitespace-nowrap" HeaderClass="whitespace-nowrap" />
+    <PropertyColumn Filterable="false" Property="x => x.ActivationTypeText" Title="Activation Type" CellClass="whitespace-nowrap" HeaderClass="whitespace-nowrap" />
+</ShiftList>

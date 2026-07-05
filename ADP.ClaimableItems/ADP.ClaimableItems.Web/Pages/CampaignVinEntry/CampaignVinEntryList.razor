@@ -1,0 +1,60 @@
+@attribute [Authorize]
+@attribute [Route($"/{nameof(CampaignVinEntryList)}")]
+
+@using ShiftSoftware.ShiftIdentity.Core.DTOs.Company
+@using ShiftSoftware.ShiftIdentity.Core.DTOs.CompanyBranch
+@using ShiftSoftware.ShiftIdentity.Core.DTOs.Country
+
+@inject IStringLocalizer<ClaimableItemsResource> Loc
+@inject IOptions<ClaimableItemsWebOptions> CIOptions
+
+<ShiftList EntitySet="CampaignVinEntry"
+           Title="@Loc["Campaign VIN Entry List"]"
+           T="CampaignVinEntryListDTO"
+           Dense
+           DisableActionColumn
+           ComponentType="typeof(CampaignVinEntryForm)"
+           ShowIDColumn="true"
+           HighlightSortedColumn
+           TypeAuthAction="CIOptions.Value.CampaignVinEntriesAction"
+           FilterPanelDefaultOpen
+           EnableFilterPanel
+           EnableExport>
+
+    <Sort Property="x => x.RecordedDate" Direction="SortDirection.Descending" />
+
+    <StringFilter Order="0" Property="x => x.VIN" Label="VIN" Operator="ShiftSoftware.ShiftBlazor.Enums.ODataOperator.Contains" lg="4" md="6" sm="12" xs="12" />
+    <DateTimeFilter Order="1" Property="x => x.RecordedDate" Label="Recorded Date" lg="4" md="6" sm="12" xs="12" />
+    <ForeignFilter @ref="CompanyFilter" Order="2" AdditionalParameters='new() { [nameof(ShiftAutocomplete<CampaignVinEntryListDTO>.GroupSelectedValues)] = false }' Property="x => x.CompanyID" Label="Company" DTOType="typeof(CompanyListDTO)" EntitySet="IdentityCompany" BaseUrlKey="ShiftIdentityApi" lg="4" md="6" sm="12" xs="12" />
+    <ForeignFilter Order="3" AdditionalParameters='new() { [nameof(ShiftAutocomplete<CampaignVinEntryListDTO>.GroupSelectedValues)] = false }' Property="x => x.CompanyBranchID" AutocompleteFilter="x => x.Add(CompanyFilter?.Filter)" Label="Branch" DTOType="typeof(CompanyBranchListDTO)" EntitySet="IdentityCompanyBranch" BaseUrlKey="ShiftIdentityApi" lg="4" md="6" sm="12" xs="12" />
+    <ForeignFilter Order="4" AdditionalParameters='new() { [nameof(ShiftAutocomplete<CampaignVinEntryListDTO>.GroupSelectedValues)] = false }' Property="x => x.CampaignID" Label="Campaign" DTOType="typeof(CampaignListDTO)" EntitySet="ServiceCampaign" lg="4" md="6" sm="12" xs="12" />
+
+    <PropertyColumn Filterable="false" Property="x => x.VIN" Title="@Loc["VIN"]" CellClass="whitespace-nowrap" HeaderClass="whitespace-nowrap" />
+    <PropertyColumn Filterable="false" Property="x => x.CampaignName" Title="@Loc["Campaign"]" CellClass="whitespace-nowrap" HeaderClass="whitespace-nowrap" />
+    <PropertyColumn Filterable="false" Property="x => x.CampaignUniqueReference" Title="@Loc["Unique Reference"]" CellClass="whitespace-nowrap" HeaderClass="whitespace-nowrap" />
+    <PropertyColumn Filterable="false" Format="F" Property="x => x.RecordedDate" Title="@Loc["Recorded Date"]" HeaderClass="whitespace-nowrap" />
+
+    <ForeignColumn Title="@Loc["Company"]"
+                   T="CampaignVinEntryListDTO"
+                   CellClass="whitespace-nowrap"
+                   Filterable="false"
+                   TEntity="CompanyListDTO"
+                   EntitySet="IdentityCompany"
+                   BaseUrlKey="ShiftIdentityApi"
+                   TProperty="string"
+                   Property="x => x.CompanyID" />
+
+    <ForeignColumn Title="@Loc["Branch"]"
+                   T="CampaignVinEntryListDTO"
+                   CellClass="whitespace-nowrap"
+                   Filterable="false"
+                   TEntity="CompanyBranchListDTO"
+                   EntitySet="IdentityCompanyBranch"
+                   BaseUrlKey="ShiftIdentityApi"
+                   TProperty="string"
+                   Property="x => x.CompanyBranchID" />
+</ShiftList>
+
+@code {
+    public ForeignFilter<CampaignVinEntryListDTO, string?>? CompanyFilter { get; set; }
+}
