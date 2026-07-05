@@ -1,4 +1,4 @@
-import { Component, Element, Host, Prop, State, Watch, h } from '@stencil/core';
+import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 
 import distributerSchema from '~locales/partLookup/distributor/type';
 import { ComponentLocale, getLocaleLanguage, getSharedLocal, LanguageKeys, MultiLingual, sharedLocalesSchema } from '~features/multi-lingual';
@@ -10,6 +10,7 @@ import cn from '~lib/cn';
 import { Endpoint, fetchFrom } from '~lib/fetch-from';
 import { ManufacturerPartLookupRequestDTO } from '~types/generated/part/manufacturer-part-lookup-request-dto';
 import { ManufacturerPartLookupResponseDTO } from '~types/generated/part/manufacturer-part-lookup-response-dto';
+import { BlazorInvokable, BlazorInvokableFunction, DotNetObjectReference, smartInvokable } from '~features/blazor-ref';
 
 const manufacturerOrderTypesFetcher: FormSelectFetcher = async ({}): Promise<FormSelectItem[]> => {
   return [
@@ -47,7 +48,7 @@ export type Locale = ComponentLocale<typeof distributerSchema>;
   tag: 'manufacturer-part-lookup',
   styleUrl: 'manufacturer-part-lookup.css',
 })
-export class ManufacturerPartLookup implements MultiLingual, FormHookInterface<ManufacturerPartLookupValidation> {
+export class ManufacturerPartLookup implements MultiLingual, FormHookInterface<ManufacturerPartLookupValidation>, BlazorInvokable {
   // #region Localization
 
   @Prop({ mutable: true }) language: LanguageKeys;
@@ -108,7 +109,12 @@ export class ManufacturerPartLookup implements MultiLingual, FormHookInterface<M
         // @ts-ignore
         orderType: +payload.orderType as 'Sea' | 'Airplane',
       };
-      const response = await fetchFrom(this.manufacturerPartLookupEndpoint, { language: this.language, body: requestPayload, method: 'POST' });
+      // Pull fresh headers (e.g. a short-lived bearer token) at submit time. The component owns its own
+      // search button, so the host can't refresh the endpoint before each request the way it does for the
+      // other lookups — instead it hands us a callback we invoke on every submit.
+      const headers = await smartInvokable.bind(this)(this.getHeaders);
+
+      const response = await fetchFrom(this.manufacturerPartLookupEndpoint, { language: this.language, body: requestPayload, method: 'POST', headers });
 
       if (!response.ok) {
         throw new Error(`Request failed with status ${response.status}`);
@@ -138,10 +144,23 @@ export class ManufacturerPartLookup implements MultiLingual, FormHookInterface<M
   @Prop() closeManufacturerPartLookup?: boolean;
   @Prop() manufacturerPartLookupEndpoint: Endpoint;
 
+  // Optional callback (Blazor method name or JS function) invoked on every submit to obtain fresh
+  // request headers. Returned headers win over `manufacturerPartLookupEndpoint.headers` in fetchFrom.
+  @Prop() getHeaders?: BlazorInvokableFunction<() => any>;
+
   @State() manufacturerResponse?: ManufacturerPartLookupResponseDTO;
 
   form = new FormHook(this, manufacturerPartLookupValidation);
 
+  // #endregion
+
+  // #region Blazor Invokable logic
+  @State() blazorRef?: DotNetObjectReference;
+
+  @Method()
+  async setBlazorRef(newBlazorRef: DotNetObjectReference) {
+    this.blazorRef = newBlazorRef;
+  }
   // #endregion
 
   render() {
