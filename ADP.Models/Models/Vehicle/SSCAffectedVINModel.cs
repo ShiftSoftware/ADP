@@ -97,7 +97,14 @@ public class SSCAffectedVINModel : IPartitionedItem, ICompanyProps
     /// The effective labor operations for this campaign — <see cref="Labors"/> when populated, otherwise the
     /// legacy numbered fields. Always read this instead of either source directly.
     /// </summary>
+    /// <remarks>
+    /// Computed accessor only — never persisted. Without <c>[JsonIgnore]</c> the getter is serialized into the
+    /// stored document, and on read-back Newtonsoft (Cosmos path) re-populates the <see cref="Labors"/> list the
+    /// getter returns, duplicating every labor. See .shift/repos/adp/ssc-multi-part-labor/.
+    /// </remarks>
     [DocIgnore]
+    [Newtonsoft.Json.JsonIgnore]
+    [System.Text.Json.Serialization.JsonIgnore]
     public IEnumerable<SSCLaborLineModel> EffectiveLabors =>
         Labors != null && Labors.Count > 0
             ? Labors
@@ -112,7 +119,13 @@ public class SSCAffectedVINModel : IPartitionedItem, ICompanyProps
     /// The effective part numbers for this campaign — <see cref="PartNumbers"/> when populated, otherwise the
     /// legacy numbered fields. Always read this instead of either source directly.
     /// </summary>
+    /// <remarks>
+    /// Computed accessor only — never persisted. See the note on <see cref="EffectiveLabors"/>: without
+    /// <c>[JsonIgnore]</c> the persisted array is re-appended onto <see cref="PartNumbers"/> on read-back.
+    /// </remarks>
     [DocIgnore]
+    [Newtonsoft.Json.JsonIgnore]
+    [System.Text.Json.Serialization.JsonIgnore]
     public IEnumerable<string> EffectivePartNumbers =>
         PartNumbers != null && PartNumbers.Count > 0
             ? PartNumbers
