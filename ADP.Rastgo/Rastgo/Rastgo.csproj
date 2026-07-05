@@ -13,12 +13,13 @@
 		<PackageId>ShiftSoftware.ADP.Rastgo</PackageId>
 		<AssemblyName>ShiftSoftware.ADP.Rastgo</AssemblyName>
 		<RootNamespace>ShiftSoftware.ADP.Rastgo</RootNamespace>
-		<Description>Rastgo — a declarative, federated data-reliability framework for the ADP platform: YAML-defined checks (freshness / reconciliation / quality / flow), an assert engine, a partitioned result sink, a static dashboard, and read-only DuckDB / Cosmos / file-share sources. Ships as a single package for now; the source connectors are kept isolation-ready so they can be split into separate packages later if a consumer needs to avoid a heavy dependency.</Description>
+		<Description>Rastgo — a declarative, federated data-reliability framework for the ADP platform: YAML-defined checks (freshness / reconciliation / quality / flow), an assert engine, a partitioned result sink, a static dashboard, and read-only DuckDB / Cosmos / SQL Server / file-share sources. Ships as a single package for now; the source connectors are kept isolation-ready so they can be split into separate packages later if a consumer needs to avoid a heavy dependency.</Description>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="DuckDB.NET.Data.Full" Version="1.5.3" />
 		<PackageReference Include="Microsoft.Azure.Cosmos" Version="3.61.0" />
+		<PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.1" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
 		<PackageReference Include="YamlDotNet" Version="18.1.0" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.9" />

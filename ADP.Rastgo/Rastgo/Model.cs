@@ -31,8 +31,8 @@ public sealed class CheckDefinition
 public sealed class MeasureSpec
 {
     public string Key { get; set; } = "value";
-    public string Source { get; set; } = "duckdb";       // duckdb | cosmos | fileshare
-    public string? Sql { get; set; }                     // duckdb / cosmos
+    public string Source { get; set; } = "duckdb";       // duckdb | cosmos | sql | fileshare
+    public string? Sql { get; set; }                     // duckdb / cosmos / sql
     public string? Path { get; set; }                    // fileshare (relative to configured base)
     public string? Database { get; set; }                // cosmos
     public string? Container { get; set; }               // cosmos

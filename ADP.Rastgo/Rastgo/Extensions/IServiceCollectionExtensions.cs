@@ -73,4 +73,17 @@ public static class IServiceCollectionExtensions
         services.AddSingleton<ICheckSource>(_ => new CosmosCheckSource(client));
         return services;
     }
+
+    /// <summary>
+    /// Registers the read-only SQL Server check source (source name <c>sql</c>) from a connection string —
+    /// for flow / backlog / funnel checks whose data lives in a relational store. A null/blank string
+    /// registers a no-op source: sql checks report a source error but the run still completes (mirrors
+    /// <see cref="AddRastgoCosmos(IServiceCollection, string?)"/>). Point it at a <b>read-only</b> credential;
+    /// Rastgo only ever issues SELECTs. Chain after <c>AddRastgoCore</c>.
+    /// </summary>
+    public static IServiceCollection AddRastgoSql(this IServiceCollection services, string? connectionString)
+    {
+        services.AddSingleton<ICheckSource>(_ => new SqlCheckSource(connectionString));
+        return services;
+    }
 }
