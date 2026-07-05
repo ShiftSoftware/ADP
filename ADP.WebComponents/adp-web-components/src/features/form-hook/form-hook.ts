@@ -56,16 +56,31 @@ export class FormHook<T> {
     }
 
     if (formElement?.validate) {
-      this.schemaObject = this.schemaObject.shape({
-        [formName]: formElement?.validate(),
-      });
+      const validation = formElement.validate();
+
+      // Only shape in a real schema. A falsy validation would set fields[name] = undefined,
+      // which later crashes yup describe() during getInputState.
+      if (validation) {
+        this.schemaObject = this.schemaObject.shape({
+          [formName]: validation,
+        });
+      }
     }
   };
 
   unsubscribe = (formName: string) => {
-    this.schemaObject = this.schemaObject.shape({
-      [formName]: this.basicSchemaObject?.fields[formName] ? this.basicSchemaObject?.fields[formName] : undefined,
-    });
+    const baseField = this.basicSchemaObject?.fields[formName];
+
+    if (baseField) {
+      // restore the field's original definition from the base schema
+      this.schemaObject = this.schemaObject.shape({ [formName]: baseField });
+    } else if (this.schemaObject?.fields?.[formName]) {
+      // Field was added dynamically and isn't part of the base schema (e.g. a submit-button
+      // subscriber, which is not a real field). Remove it instead of shaping in `undefined` —
+      // an `undefined` entry in schema.fields crashes yup describe() on the next getInputState
+      // ("Cannot read properties of undefined (reading 'describe')").
+      this.schemaObject = this.schemaObject.omit([formName]) as AnyObjectSchema;
+    }
 
     this.subscribers = this.subscribers.filter(({ name }) => name !== formName);
   };
