@@ -322,6 +322,35 @@
   background: #f7d7d8;
 }
 
+/* SSC part availability chips — three states matching the repair-status icon language. */
+.table-cell-parts-container .part-chip {
+  gap: 5px;
+  display: inline-flex;
+  font-weight: 600;
+  align-items: center;
+}
+
+.part-chip-icon {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+.table-cell-parts-container .part-chip.available {
+  color: #0b3521;
+  background: #d0e7de;
+}
+
+.table-cell-parts-container .part-chip.unavailable {
+  color: #58151c;
+  background: #f7d7d8;
+}
+
+.table-cell-parts-container .part-chip.unchecked {
+  color: rgb(217 217 217);
+  background: #eceef0;
+}
+
 .table-status-icon {
   width: 20px;
   height: 20px;

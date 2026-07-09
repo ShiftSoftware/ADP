@@ -139,6 +139,13 @@ public class VehicleLookupService
             SaleInformation = await new VehicleSaleInformationEvaluator(companyDataAggregate, lookupOptions, serviceProvider, vehicleLookupStorageService).Evaluate(vehicle, ownership, requestOptions),
         };
 
+        // Enrich SSC recall parts with in-stock availability. This only does anything when the host has wired
+        // LookupOptions.SSCPartStockScopeResolver (i.e. a Hub request that carries a region/branch scope);
+        // anonymous, bulk and reporting callers leave it unset, so no stock read runs and IsAvailable stays
+        // null (not checked). All availability business rules live in the enricher, not the host.
+        await new SSCPartAvailabilityEnricher(lookupOptions)
+            .EnrichAsync(data.SSC, vin, requestOptions, serviceProvider);
+
         // The certificate's signed public URLs (one per language the host supports): produced
         // only when the certificate is available, the endpoint opted in (its server-side
         // permission check), and the host wired a resolver. An empty result stays null so

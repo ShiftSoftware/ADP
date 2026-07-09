@@ -35,6 +35,29 @@ The main configuration class for the lookup services.
 | CompanyLogoResolver <div><strong>``Func<LookupOptionResolverModel<long?>, ValueTask<string?>>?``</strong></div> | Resolver delegate that resolves a company ID to its logo URL. |
 | PartLookupPriceResolver <div><strong>``Func<LookupOptionResolverModel<PartLookupPriceResoulverModel>, ValueTask<(decimal? distributorPurchasePrice, IEnumerable<PartPriceDTO> prices)>>?``</strong></div> | Resolver delegate that processes and returns part pricing (distributor purchase price and per-region prices). |
 | PartLookupStocksResolver <div><strong>``Func<LookupOptionResolverModel<IEnumerable<StockPartDTO>>, ValueTask<IEnumerable<StockPartDTO>>>?``</strong></div> | Resolver delegate that processes and returns part stock availability data. |
+| EnableSSCPartAvailability <div><strong>``bool``</strong></div> | Master on/off switch for SSC (safety recall) part stock-availability enrichment. Defaults to `false`
+ (off): even when `SSCPartStockScopeResolver` is wired, no stock is read and every
+ `ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup.SSCPartDTO.IsAvailable` is left
+ `null` — the UI renders a neutral "not checked" chip. Set to `true` to turn the feature on for a
+ deployment once its stock-scope mapping is confirmed. This lets the resolver ship wired but dormant, so the
+ NuGet can be deployed and hosts upgraded without changing behaviour until a host opts in. |
+| SSCPartStockScopeResolver <div><strong>``Func<LookupOptionResolverModel<SSCPartAvailabilityScopeRequest>, ValueTask<IReadOnlyCollection<string>?>>?``</strong></div> | Resolves the stock `ShiftSoftware.ADP.Models.Part.StockPartModel.Location` key(s) whose
+ inventory counts as "in stock" for the current requester when checking SSC (safety recall) part
+ availability. This is a deployment-specific, logic-free identity→scope mapping and the ONLY host
+ responsibility for SSC part availability: e.g. a region-keyed deployment returns the requester's region
+ key (its stock rows carry `Location = the region key`); a warehouse-keyed one returns the
+ requester's warehouse / business-unit `Location`(s). The resolver must perform NO stock query and NO
+ availability math — ADP owns those decisions (see the SSC part-availability enricher). Return
+ `null` or an empty collection for requesters who should not see stock availability (anonymous, bulk
+ and reporting callers); their SSC parts are left unchecked (`IsAvailable = null`) and no stock read
+ runs. Obtain the current requester's region/branch from `LookupOptionResolverModel{T}.Services`. |
+| PartNumberStorageKeyResolver <div><strong>``Func<string, string>?``</strong></div> | Optional map from a part number in its standard / manufacturer form (as it appears on an SSC recall, e.g.
+ `04007-07212`) to the exact key used to store that part in this deployment's Cosmos Parts container,
+ so SSC part availability can be matched against stock. Deployments whose stored key differs from the
+ manufacturer form must set this — e.g. a deployment that stores parts T-prefixed and dash-stripped maps
+ (`04007-07212` → `T0400707212`); one that keeps the hyphen maps (`04007-07212` →
+ `04007-07212`). When unset, ADP applies a neutral default (dashes removed, upper-cased). Must be a
+ pure, deterministic function; ADP calls it once per distinct SSC part number. |
 | IncludeInactivatedFreeServiceItems <div><strong>``bool``</strong></div> | Whether to include free service items that have not yet been activated (e.g., awaiting warranty activation). |
 | RequireAllocationForActivation <div><strong>``bool``</strong></div> | When enabled, warranty activation is only offered to a requester whose company has a vehicle entry for the
  vehicle (i.e. it has been allocated/shipped/delivered to them). When activation is due but the vehicle is not

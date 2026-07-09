@@ -102,7 +102,11 @@
         "repaired": false,
         "parts": [
           {
-            "partNumber": "PRT-BRK-001",
+            "partNumber": "47201-0K090",
+            "isAvailable": true
+          },
+          {
+            "partNumber": "04465-0K240",
             "isAvailable": false
           }
         ]
@@ -579,7 +583,11 @@
           }
         ],
         "repaired": true,
-        "parts": []
+        "parts": [
+          {
+            "partNumber": "89661-0K720"
+          }
+        ]
       }
     ],
     "vehicleSpecification": {

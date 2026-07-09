@@ -118,7 +118,8 @@
           "CampaignCode": "SSC-2024-010",
           "Description": "Brake booster inspection",
           "LaborCode1": "LAB-BRK-01",
-          "PartNumber1": "PRT-BRK-001",
+          "PartNumber1": "47201-0K090",
+          "PartNumber2": "04465-0K240",
           "RepairDate": null
         }
       ],
@@ -271,7 +272,7 @@
           "CampaignCode": "SSC-2024-020",
           "Description": "ECU software update",
           "LaborCode1": "LAB-ECU-01",
-          "PartNumber1": null,
+          "PartNumber1": "89661-0K720",
           "RepairDate": "2024-08-10"
         }
       ],

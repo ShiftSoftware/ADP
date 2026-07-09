@@ -99,7 +99,8 @@
           "CampaignCode": "SSC-2024-001",
           "Description": "Airbag inflator replacement",
           "LaborCode1": "LAB-AIR-01",
-          "PartNumber1": "PRT-AIR-001",
+          "PartNumber1": "89170-0K010",
+          "PartNumber2": "04007-07212",
           "RepairDate": null
         },
         {
@@ -107,7 +108,7 @@
           "CampaignCode": "SSC-2023-005",
           "Description": "Fuel pump relay",
           "LaborCode1": "LAB-FP-01",
-          "PartNumber1": "PRT-FP-001",
+          "PartNumber1": "90987-02027",
           "RepairDate": "2024-03-20"
         }
       ],

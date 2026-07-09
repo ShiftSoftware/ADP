@@ -193,7 +193,11 @@
         "repaired": false,
         "parts": [
           {
-            "partNumber": "PRT-AIR-001",
+            "partNumber": "89170-0K010",
+            "isAvailable": true
+          },
+          {
+            "partNumber": "04007-07212",
             "isAvailable": false
           }
         ]
@@ -209,8 +213,7 @@
         "repaired": true,
         "parts": [
           {
-            "partNumber": "PRT-FP-001",
-            "isAvailable": false
+            "partNumber": "90987-02027"
           }
         ]
       }

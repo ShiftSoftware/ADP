@@ -84,4 +84,84 @@ public class VehicleSSCStepDefinitions
         EnsureEvaluated();
         Assert.Null(_result);
     }
+
+    [Given("stock part numbers are stored T-prefixed and dash-stripped")]
+    public void GivenStockPartNumbersAreStoredTPrefixedAndDashStripped()
+    {
+        // Mirrors a deployment that stores parts T-prefixed and dash-stripped (04007-07212 -> T0400707212).
+        _context.Options.PartNumberStorageKeyResolver =
+            pn => "T" + (pn ?? string.Empty).Replace("-", string.Empty).Trim().ToUpperInvariant();
+    }
+
+    [When("SSC part availability is applied for stock scope {string}")]
+    public void WhenSSCPartAvailabilityIsAppliedForStockScope(string scope)
+    {
+        EnsureEvaluated();
+
+        var scopeKeys = (scope ?? string.Empty)
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        SSCPartAvailabilityEnricher.ApplyAvailability(
+            _result, _context.PartAggregate.StockParts, scopeKeys, _context.Options.PartNumberStorageKeyResolver);
+    }
+
+    private SSCPartDTO GetPart(string sscCode, string partNumber)
+    {
+        var ssc = GetSsc(sscCode);
+        var part = ssc.Parts.FirstOrDefault(p => p.PartNumber == partNumber);
+        Assert.NotNull(part);
+        return part!;
+    }
+
+    [Then("SSC {string} part {string} is available")]
+    public void ThenSSCPartIsAvailable(string sscCode, string partNumber)
+    {
+        var part = GetPart(sscCode, partNumber);
+        Assert.True(part.IsAvailable, $"Expected SSC '{sscCode}' part '{partNumber}' to be available, but it was not.");
+    }
+
+    [Then("SSC {string} part {string} is not available")]
+    public void ThenSSCPartIsNotAvailable(string sscCode, string partNumber)
+    {
+        var part = GetPart(sscCode, partNumber);
+        Assert.False(part.IsAvailable, $"Expected SSC '{sscCode}' part '{partNumber}' to be not available, but it was.");
+    }
+
+    [Then("SSC {string} part {string} availability is not checked")]
+    public void ThenSSCPartAvailabilityIsNotChecked(string sscCode, string partNumber)
+    {
+        var part = GetPart(sscCode, partNumber);
+        Assert.True(part.IsAvailable is null, $"Expected SSC '{sscCode}' part '{partNumber}' availability to be not checked (null), but it was {part.IsAvailable}.");
+    }
+
+    [Given("SSC part availability is globally disabled")]
+    public void GivenSSCPartAvailabilityIsGloballyDisabled()
+    {
+        _context.Options.EnableSSCPartAvailability = false;
+    }
+
+    [Given("the SSC stock scope resolver must not be called")]
+    public void GivenTheSSCStockScopeResolverMustNotBeCalled()
+    {
+        // If the master switch fails to short-circuit, EnrichAsync will invoke this and the test throws.
+        _context.Options.SSCPartStockScopeResolver = _ =>
+            throw new Xunit.Sdk.XunitException("SSCPartStockScopeResolver must not be called when the feature is disabled.");
+    }
+
+    [When("SSC part availability enrichment runs")]
+    public async Task WhenSSCPartAvailabilityEnrichmentRuns()
+    {
+        EnsureEvaluated();
+
+        // Exercises the real EnrichAsync gate (not the pure ApplyAvailability). With the feature off it must
+        // return before touching the resolver or any stock service, so an empty provider is enough.
+        await new SSCPartAvailabilityEnricher(_context.Options)
+            .EnrichAsync(_result, "VIN", new VehicleLookupRequestOptions(), NullServiceProvider.Instance);
+    }
+
+    private sealed class NullServiceProvider : IServiceProvider
+    {
+        public static readonly NullServiceProvider Instance = new();
+        public object? GetService(Type serviceType) => null;
+    }
 }

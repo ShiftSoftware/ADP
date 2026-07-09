@@ -75,6 +75,44 @@ public class PartLookupCosmosService(LookUpCosmosClient client, LookupOptions lo
         return result;
     }
 
+    /// <summary>
+    /// Batched stock lookup for many part numbers at once: returns the <see cref="StockPartModel"/> rows (across
+    /// all locations) for the given part numbers from the CompanyData/Parts container. Used to resolve SSC recall
+    /// part availability without a per-part round-trip. The keys are matched verbatim (only trimmed) against the
+    /// stored <c>c.PartNumber</c> — callers pass the deployment's storage keys (see
+    /// <see cref="LookupOptions.PartNumberStorageKeyResolver"/>), not raw manufacturer part numbers.
+    /// </summary>
+    public async Task<IEnumerable<StockPartModel>> GetStockPartsAsync(IEnumerable<string> partNumbers)
+    {
+        var keys = (partNumbers ?? Enumerable.Empty<string>())
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x.Trim())
+            .Distinct()
+            .ToList();
+
+        if (keys.Count == 0)
+            return new List<StockPartModel>();
+
+        var container = client.GetContainer(
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Databases.CompanyData,
+            ShiftSoftware.ADP.Models.Constants.NoSQLConstants.Containers.Parts
+        );
+
+        var query = new QueryDefinition(
+            "SELECT * FROM c WHERE ARRAY_CONTAINS(@partNumbers, c.PartNumber) AND c.ItemType = @stockItemType");
+        query.WithParameter("@partNumbers", keys);
+        query.WithParameter("@stockItemType", new StockPartModel().ItemType);
+
+        var iterator = container.GetItemQueryIterator<dynamic>(query);
+
+        var stockParts = new List<StockPartModel>();
+        while (iterator.HasMoreResults)
+            stockParts.AddRange((await iterator.ReadNextAsync())
+                .Select(x => ((JObject)x).ToObject<StockPartModel>()));
+
+        return stockParts;
+    }
+
     public async Task InsertManufacturerPartLookupAsync(ManufacturerPartLookupModel model)
     {
         var manufacturerLookupcontainer = client.GetContainer(

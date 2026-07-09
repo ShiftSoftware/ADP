@@ -13,6 +13,11 @@ public class SSCPartDTO
     public string PartNumber { get; set; } = default!;
     /// <summary>A description of the part.</summary>
     public string PartDescription { get; set; }
-    /// <summary>Whether this part is currently available in stock.</summary>
-    public bool IsAvailable { get; set; }
+    /// <summary>
+    /// Whether this part is currently in stock for the requester: <c>true</c> = in stock, <c>false</c> = not in
+    /// stock, <c>null</c> = availability was not checked (the requester has no Hub stock scope, or the recall is
+    /// already repaired). The UI renders these three states as a green check, a red cross, and a neutral grey
+    /// chip respectively.
+    /// </summary>
+    public bool? IsAvailable { get; set; }
 }

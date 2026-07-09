@@ -323,27 +323,24 @@ export class VehicleWarrantyDetails implements MultiLingual, VehicleInfoLayoutIn
   render() {
     const tableHeaders: InformationTableColumn[] = [
       {
-        width: 200,
+        nowrap: true,
         key: 'sscTableCode',
         label: this.locale.sscTableCode,
       },
       {
-        width: 400,
         key: 'sscTableDescription',
         label: this.locale.sscTableDescription,
       },
       {
-        width: 200,
+        nowrap: true,
         key: 'sscTableRepairStatus',
         label: this.locale.sscTableRepairStatus,
       },
       {
-        width: 200,
         key: 'sscTableOPCode',
         label: this.locale.sscTableOPCode,
       },
       {
-        width: 200,
         key: 'sscTablePartNumber',
         label: this.locale.sscTablePartNumber,
       },
@@ -373,11 +370,17 @@ export class VehicleWarrantyDetails implements MultiLingual, VehicleInfoLayoutIn
           sscTablePartNumber: () => (
             <div class="table-cell-container table-cell-parts-container">
               {!!sscItem?.parts.length
-                ? sscItem?.parts.map(part => (
-                    <div key={part?.partNumber} class={part?.isAvailable ? 'success' : 'reject'}>
-                      {part?.partNumber}
-                    </div>
-                  ))
+                ? sscItem?.parts.map(part => {
+                    // Three availability states: in stock (green check), not in stock (red cross), or not checked
+                    // — no Hub stock scope, or a repaired recall — which shows neutral grey with no icon.
+                    const state = part?.isAvailable === true ? 'available' : part?.isAvailable === false ? 'unavailable' : 'unchecked';
+                    return (
+                      <div key={part?.partNumber} class={cn('part-chip', state)}>
+                        {state !== 'unchecked' && <img class="part-chip-icon" src={state === 'available' ? CheckIcon : XIcon} />}
+                        <span>{part?.partNumber}</span>
+                      </div>
+                    );
+                  })
                 : '...'}
             </div>
           ),
@@ -451,10 +454,10 @@ export class VehicleWarrantyDetails implements MultiLingual, VehicleInfoLayoutIn
             </div>
           </flexible-container>
           {this.showSsc && (
-            <div class="mt-[32px] mx-auto w-fit max-w-full">
+            <div class="mt-[32px] w-full">
               <div class="bg-[#f6f6f6] h-[50px] flex items-center justify-center px-[16px] font-bold text-[18px]">{this.locale.sscCampings}</div>
               <div class="overflow-x-auto">
-                <information-table isLoading={this.isLoading} templateRow={templateRow} rows={rows} headers={tableHeaders}></information-table>
+                <information-table allowAutoWidth isLoading={this.isLoading} templateRow={templateRow} rows={rows} headers={tableHeaders}></information-table>
               </div>
             </div>
           )}

@@ -66,6 +66,38 @@ public class LookupOptions
     public Func<LookupOptionResolverModel<PartLookupPriceResoulverModel>, ValueTask<(decimal? distributorPurchasePrice, IEnumerable<PartPriceDTO> prices)>>? PartLookupPriceResolver { get; set; }
     /// <summary>Resolver delegate that processes and returns part stock availability data.</summary>
     public Func<LookupOptionResolverModel<IEnumerable<StockPartDTO>>, ValueTask<IEnumerable<StockPartDTO>>>? PartLookupStocksResolver { get; set; }
+    /// <summary>
+    /// Master on/off switch for SSC (safety recall) part stock-availability enrichment. Defaults to <c>false</c>
+    /// (off): even when <see cref="SSCPartStockScopeResolver"/> is wired, no stock is read and every
+    /// <see cref="ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup.SSCPartDTO.IsAvailable"/> is left
+    /// <c>null</c> — the UI renders a neutral "not checked" chip. Set to <c>true</c> to turn the feature on for a
+    /// deployment once its stock-scope mapping is confirmed. This lets the resolver ship wired but dormant, so the
+    /// NuGet can be deployed and hosts upgraded without changing behaviour until a host opts in.
+    /// </summary>
+    public bool EnableSSCPartAvailability { get; set; }
+    /// <summary>
+    /// Resolves the stock <see cref="ShiftSoftware.ADP.Models.Part.StockPartModel.Location"/> key(s) whose
+    /// inventory counts as "in stock" for the current requester when checking SSC (safety recall) part
+    /// availability. This is a deployment-specific, logic-free identity→scope mapping and the ONLY host
+    /// responsibility for SSC part availability: e.g. a region-keyed deployment returns the requester's region
+    /// key (its stock rows carry <c>Location = the region key</c>); a warehouse-keyed one returns the
+    /// requester's warehouse / business-unit <c>Location</c>(s). The resolver must perform NO stock query and NO
+    /// availability math — ADP owns those decisions (see the SSC part-availability enricher). Return
+    /// <c>null</c> or an empty collection for requesters who should not see stock availability (anonymous, bulk
+    /// and reporting callers); their SSC parts are left unchecked (<c>IsAvailable = null</c>) and no stock read
+    /// runs. Obtain the current requester's region/branch from <see cref="LookupOptionResolverModel{T}.Services"/>.
+    /// </summary>
+    public Func<LookupOptionResolverModel<SSCPartAvailabilityScopeRequest>, ValueTask<IReadOnlyCollection<string>?>>? SSCPartStockScopeResolver { get; set; }
+    /// <summary>
+    /// Optional map from a part number in its standard / manufacturer form (as it appears on an SSC recall, e.g.
+    /// <c>04007-07212</c>) to the exact key used to store that part in this deployment's Cosmos Parts container,
+    /// so SSC part availability can be matched against stock. Deployments whose stored key differs from the
+    /// manufacturer form must set this — e.g. a deployment that stores parts T-prefixed and dash-stripped maps
+    /// (<c>04007-07212</c> → <c>T0400707212</c>); one that keeps the hyphen maps (<c>04007-07212</c> →
+    /// <c>04007-07212</c>). When unset, ADP applies a neutral default (dashes removed, upper-cased). Must be a
+    /// pure, deterministic function; ADP calls it once per distinct SSC part number.
+    /// </summary>
+    public Func<string, string>? PartNumberStorageKeyResolver { get; set; }
     /// <summary>Whether to include free service items that have not yet been activated (e.g., awaiting warranty activation).</summary>
     public bool IncludeInactivatedFreeServiceItems { get; set; }
     /// <summary>
@@ -173,6 +205,26 @@ public class PartLocationNameResolverModel
         this.PartNumber = partNumber;
         this.ItemType = itemType;
         this.LocationID = locationID;
+    }
+}
+
+/// <summary>
+/// Input to <see cref="LookupOptions.SSCPartStockScopeResolver"/>: the vehicle and the distinct SSC part
+/// numbers whose availability is being resolved (so the host can scope by them if it wants). The resolver
+/// returns the stock <see cref="ShiftSoftware.ADP.Models.Part.StockPartModel.Location"/> key(s) the current
+/// requester may see.
+/// </summary>
+public class SSCPartAvailabilityScopeRequest
+{
+    /// <summary>The VIN being looked up.</summary>
+    public string VIN { get; }
+    /// <summary>The distinct SSC part numbers (as they appear on the recall) whose availability is resolved.</summary>
+    public IReadOnlyCollection<string> PartNumbers { get; }
+
+    public SSCPartAvailabilityScopeRequest(string vin, IReadOnlyCollection<string> partNumbers)
+    {
+        this.VIN = vin;
+        this.PartNumbers = partNumbers ?? System.Array.Empty<string>();
     }
 }
 

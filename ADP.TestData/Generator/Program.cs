@@ -194,6 +194,26 @@ static async Task<VehicleLookupDTO> GenerateVehicleLookup(
             .Evaluate(vehicle, ownership, requestOptions),
     };
 
+    // Seed demonstrative SSC part availability so the generated mocks exercise all three UI states without a live
+    // stock lookup. In production SSCPartAvailabilityEnricher sets these for a scoped Hub request; the generator
+    // has no stock scope, so it alternates each open recall's parts between in-stock (true) and out-of-stock
+    // (false) and leaves repaired recalls "not checked" (null) — the same Repaired gate the enricher applies.
+    var sscInStock = true;
+    foreach (var sscRecall in data.SSC ?? [])
+    {
+        if (sscRecall is null || sscRecall.Repaired || sscRecall.Parts is null)
+            continue;
+
+        foreach (var sscPart in sscRecall.Parts)
+        {
+            if (sscPart is null)
+                continue;
+
+            sscPart.IsAvailable = sscInStock;
+            sscInStock = !sscInStock;
+        }
+    }
+
     // Mirrors VehicleLookupService.LookupFromAggregateAsync: the signed certificate URLs
     // (one per print language) ride the lookup when the certificate is available and a
     // resolver is wired (the generator always opts in so mocks carry the print menu).
