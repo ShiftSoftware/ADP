@@ -24,7 +24,6 @@ ADP.WebComponents/adp-web-components/.versions/
 ADP.WebComponents/adp-web-components/node_modules/
 ADP.WebComponents/adp-web-components/$RECYCLE.BIN/
 
-ADP.WebComponents/adp-web-components/.DS_Store
 ADP.WebComponents/adp-web-components/Thumbs.db
 ADP.WebComponents/adp-web-components/UserInterfaceState.xcuserstate
 ADP.WebComponents/adp-web-components/.env
@@ -402,3 +401,6 @@ FodyWeavers.xsd
 
 ## === ADP.Docs (mkdocs) ===
 ADP.Docs/Docs/site/
+
+## === macOS ===
+.DS_Store
