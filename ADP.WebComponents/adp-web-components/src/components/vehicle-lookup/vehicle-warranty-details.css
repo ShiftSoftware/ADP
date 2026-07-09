@@ -347,8 +347,8 @@
 }
 
 .table-cell-parts-container .part-chip.unchecked {
-  color: rgb(210 210 210);
-  background: #eceef0;
+  color: #4b5563;
+  background: #e5e7eb;
 }
 
 .table-status-icon {
