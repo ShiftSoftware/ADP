@@ -147,4 +147,10 @@
   <data name="Branch" xml:space="preserve">
     <value>Branch</value>
   </data>
+  <data name="Expired Signature. Please reload the items and claim again." xml:space="preserve">
+    <value>Expired Signature. Please reload the items and claim again.</value>
+  </data>
+  <data name="Invalid signature." xml:space="preserve">
+    <value>Invalid signature.</value>
+  </data>
 </root>

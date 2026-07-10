@@ -1,0 +1,179 @@
+@attribute [Authorize]
+@attribute [Route($"/{nameof(FinancialList)}")]
+
+@inject IWarrantyClaimsCapabilityProvider CapabilityProvider
+@inject MessageService MessageService
+@inject IConfiguration Configuration
+@inject IJSRuntime JSRuntime
+@inject IOptions<WarrantyClaimsWebOptions> WCOptions
+
+@using ShiftSoftware.ADP.WarrantyClaims.Shared.DTOs.Financial
+
+<ShiftList Title="Warranty Claims"
+           T="DistributorFinancialListDTO"
+           Dense
+           EntitySet="@(isDistributor ? "DistributorFinancial" : "DealerFinancial")"
+           DisableActionColumn
+           ShowIDColumn="false"
+           FilterPanelDefaultOpen
+           EnableFilterPanel
+           EnableExport
+           EnableSelection
+           HighlightSortedColumn
+           TypeAuthAction="WCOptions.Value.WarrantyClaimFinancialAction">
+
+    <ToolbarStartTemplate>
+        @if (isDistributor)
+        {
+            <MudStack Row Class="claim-list-actions">
+                <ActionButton Color="Color.Warning"
+                              Variant="Variant.Outlined"
+                              Size="Size.Small"
+                              StartIcon="@Icons.Material.Filled.Download"
+                              DialogIcon="@Icons.Material.Filled.Check"
+                              DialogColor="Color.Success"
+                              OnResponse="ExportResponse"
+                              Endpoint="@($"DistributorFinancial/Export")"
+                              T="DistributorFinancialListDTO">
+                    Generate Financial Report
+                </ActionButton>
+            </MudStack>
+        }
+    </ToolbarStartTemplate>
+
+    <ChildContent>
+        <Sort Property="x => x.RepairDate" Direction="SortDirection.Descending" />
+
+        <StringFilter Order="0" Property="x => x.ClaimNumber" Label="Claim No." Operator="ShiftSoftware.ShiftBlazor.Enums.ODataOperator.Contains" lg="3" md="6" sm="12" xs="12" />
+        <StringFilter Order="1" Property="x => x.InvoiceNo" Label="Invoice No." Operator="ShiftSoftware.ShiftBlazor.Enums.ODataOperator.Contains" lg="3" md="6" sm="12" xs="12" />
+        <StringFilter Order="2" Property="x => x.WarrantyType" Label="Warranty Type" Operator="ShiftSoftware.ShiftBlazor.Enums.ODataOperator.Contains" lg="3" md="6" sm="12" xs="12" />
+        <StringFilter Order="3" Property="x => x.RepairOrderNo" Label="Order No" Operator="ShiftSoftware.ShiftBlazor.Enums.ODataOperator.Contains" lg="3" md="6" sm="12" xs="12" />
+        <StringFilter Order="4" Property="x => x.CertificateCertificateNo" Label="Certificate No" Operator="ShiftSoftware.ShiftBlazor.Enums.ODataOperator.Contains" lg="3" md="6" sm="12" xs="12" />
+        <DateTimeFilter Order="5" Property="x => x.CertificateInvoiceDate" Label="Invoice Date" lg="4" md="6" sm="12" xs="12" />
+        <DateTimeFilter Order="6" Property="x => x.RepairDate" Label="Repair Date" lg="4" md="6" sm="12" xs="12" />
+        <DateTimeFilter Order="7" Property="x => x.DeliveryDate" Label="Delivery Date" lg="4" md="6" sm="12" xs="12" />
+        <StringFilter Order="8" Property="x => x.VIN" Label="VIN" Operator="ShiftSoftware.ShiftBlazor.Enums.ODataOperator.Contains" lg="4" md="6" sm="12" xs="12" />
+        <EnumFilter Order="9" Property="x => x.ClaimStatus" Label="Status" lg="3" md="6" sm="12" xs="12" />
+        @if (isDistributor)
+        {
+            <EnumFilter Order="10" Property="x => x.ManufacturerStatus" Label="Manufacturer Status" lg="3" md="6" sm="12" xs="12" />
+        }
+
+        <PropertyColumn Filterable="false" Property="x => x.ClaimNumber" Title="Claim No." Class="whitespace-nowrap" />
+        <PropertyColumn Filterable="false" Property="x => x.InvoiceNo" Title="Invoice No." Class="whitespace-nowrap" />
+        <PropertyColumn Filterable="false" Property="x => x.WarrantyType" Title="Warranty Type" Class="whitespace-nowrap" />
+        <PropertyColumn Filterable="false" Property="x => x.RepairOrderNo" Title="Order No" Class="whitespace-nowrap" />
+        <PropertyColumn Property="x => x.CertificateCertificateNo" Title="Certificate No" Class="whitespace-nowrap" />
+        <PropertyColumn Filterable="false" Format="yyyy-MM-dd" Property="x => x.CertificateInvoiceDate" Title="Invoice Date" HeaderClass="whitespace-nowrap" />
+        <PropertyColumn Filterable="false" Format="yyyy-MM-dd" Property="x => x.RepairDate" Title="Repair Date" HeaderClass="whitespace-nowrap" />
+        <PropertyColumn Property="x => x.DealerCode" Title="Dealer Code" Class="whitespace-nowrap" />
+        <PropertyColumn Property="x => x.DealerClaimNo" Title="Dealer Claim No." Class="whitespace-nowrap" />
+        <PropertyColumn Filterable="false" Property="x => x.DeliveryDate" Title="Delivery Date" HeaderClass="whitespace-nowrap">
+            <CellTemplate Context="TheItem">
+                @(TheItem.Item.PreDelivery ? "Pre-Delivery" : TheItem.Item.DeliveryDate?.ToString("yyyy-MM-dd"))
+            </CellTemplate>
+        </PropertyColumn>
+        <PropertyColumn Format="F" Property="x => x.ProcessDate" Title="Process Date" HeaderClass="whitespace-nowrap" />
+        <PropertyColumn Format="F" Property="x => x.DistributorProcessDate" Title="Distributor Process Date" HeaderClass="whitespace-nowrap" />
+
+        <PropertyColumn Property="x => x.DealerRepairDays" Title="Dealer Process Days" Class="whitespace-nowrap" />
+        <PropertyColumn Property="x => x.DistributorRepairDays" Title="Distributor Process Days" Class="whitespace-nowrap" />
+        <PropertyColumn Property="x => x.Odometer" Format="#,0" Title="Odometer" Class="whitespace-nowrap" />
+        <PropertyColumn Property="x => x.VIN" Title="VIN" Class="whitespace-nowrap" />
+
+        <PropertyColumn Filterable="false" Property="x => x.ClaimStatus" Title="Status" Class="whitespace-nowrap">
+            <CellTemplate Context="TheItem">
+                <ClaimStatusChip ClaimStatus="@TheItem.Item.ClaimStatus" />
+            </CellTemplate>
+        </PropertyColumn>
+
+        @if (isDistributor)
+        {
+            <PropertyColumn Filterable="false" Property="x => x.ManufacturerStatus" Title="Manufacturer Status" Class="whitespace-nowrap">
+                <CellTemplate Context="TheItem">
+                    <ManufacturerStatusChip ManufacturerStatus="@TheItem.Item.ManufacturerStatus" />
+                </CellTemplate>
+            </PropertyColumn>
+        }
+
+        <PropertyColumn Property="x => x.LaborOperationNoMain" Title="Main Op Code" Class="whitespace-nowrap" />
+        <PropertyColumn Property="x => x.OFP" Title="OFP" Class="whitespace-nowrap" />
+
+
+        <PropertyColumn Property="x => x.Condition" Title="Condition" Class="whitespace-nowrap" />
+        <PropertyColumn Property="x => x.T1" Title="T1" Class="whitespace-nowrap" />
+        <PropertyColumn Property="x => x.T2" Title="T2" Class="whitespace-nowrap" />
+        <PropertyColumn Property="x => x.DealerComments" Title="Dealer Comment" Class="whitespace-nowrap" />
+
+        @if (isDistributor)
+        {
+            <PropertyColumn Property="x => x.DistComment1" Title="Distributor Comment" Class="whitespace-nowrap" />
+        }
+
+        <PropertyColumn Format="#,0.0" Property="x => x.HourTotal" Title="Hours" Class="whitespace-nowrap" />
+        <PropertyColumn Format="#,0.00" Property="x => x.LaborTotalAmount" Title="Labor Total" Class="whitespace-nowrap" />
+
+
+        @if (isDistributor)
+        {
+            <PropertyColumn Format="#,0.0" Property="x => x.HourTotalDistributor" Title="Hours (Distributor)" Class="whitespace-nowrap" />
+            <PropertyColumn Format="#,0.00" Property="x => x.LaborTotalAmountDistributor" Title="Labor Total (Distributor)" Class="whitespace-nowrap" />
+        }
+
+        <PropertyColumn Format="#,0.00" Property="x => x.SubletTotalAmount" Title="Sublet Total" Class="whitespace-nowrap" />
+
+        @if (isDistributor)
+        {
+            <PropertyColumn Format="#,0.00" Property="x => x.SubletTotalAmountDistributor" Title="Sublet Total (Distributor)" Class="whitespace-nowrap" />
+        }
+
+        <PropertyColumn Format="#,0.00" Property="x => x.PartsTotalAmount" Title="Parts Total" Class="whitespace-nowrap" />
+
+        @if (isDistributor)
+        {
+            <PropertyColumn Format="#,0.00" Property="x => x.PartsTotalAmountDistributor" Title="Parts Total (Distributor)" Class="whitespace-nowrap" />
+        }
+
+        <PropertyColumn Format="#,0.00" Property="x => x.TotalClaimAmount" Title="Claim Total" Class="whitespace-nowrap" />
+
+        <PropertyColumn Format="#,0.00" Property="x => x.OutstandingDealerPayment" Title="Outstanding Dealer Payment" Class="whitespace-nowrap" />
+
+        @if (isDistributor)
+        {
+            <PropertyColumn Format="#,0.00" Property="x => x.TotalClaimAmountDistributor" Title="Claim Total (Distributor)" Class="whitespace-nowrap" />
+            <PropertyColumn Format="#,0.00" Property="x => x.DistributorMargin" Title="Distributor Margins" Class="whitespace-nowrap" />
+            <PropertyColumn Format="#,0.00" Property="x => x.ManufacturerSettledTotalClaimAmount" Title="Received From Manufacturer" Class="whitespace-nowrap" />
+            <PropertyColumn Format="#,0.00" Property="x => x.RealizedGainsAndLosses" Title="Gains/Losses" Class="whitespace-nowrap" />
+        }
+
+    </ChildContent>
+</ShiftList>
+
+@code {
+    private bool isDistributor = false;
+    private string? inputText;
+
+    protected override async Task OnInitializedAsync()
+    {
+        this.isDistributor = CapabilityProvider.IsDistributor;
+
+        await base.OnInitializedAsync();
+    }
+
+    private async ValueTask<bool> ExportResponse(HttpResponseMessage httpResponseMessage)
+    {
+        if (httpResponseMessage.IsSuccessStatusCode)
+        {
+            var stream = await httpResponseMessage.Content.ReadAsStreamAsync();
+
+            using var streamRef = new DotNetStreamReference(stream);
+            await JSRuntime.InvokeVoidAsync("downloadFileFromStream", "FinancialReport.pdf", streamRef);
+        }
+        else
+        {
+            // Handle error
+        }
+
+        return true;
+    }
+}

@@ -1,0 +1,57 @@
+﻿@attribute [Route($"/{nameof(ItemClaimInvoiceForm)}/{{Key?}}")]
+
+
+@using global::ShiftSoftware.ADP.Cases.Shared.DTOs.Certificate
+
+
+
+
+@inherits ShiftForm<ItemClaimInvoiceForm, ItemClaimCertificateDTO>
+
+@inject IOptions<ClaimableItemsWebOptions> CIOptions
+
+<ShiftEntityForm @bind-Mode="Mode"
+                 @bind-Value="TheItem"
+                 @ref="FormContainer"
+                 Endpoint="ItemClaimInvoice"
+                 Title="Item Claiming Invoice"
+                 TypeAuthAction="CIOptions.Value.InvoicingAction"
+                 ShowPrint
+                 HideEdit
+                 HideRevisions
+                 @bind-Key="@Key">
+    <MudGrid Spacing="4">
+        @if (Mode != FormModes.Create)
+        {
+            <MudItem lg="12" md="12" sm="12" xs="12">
+                <MudAlert Icon="@Icons.Material.Filled.Numbers" Severity="Severity.Info">Invoice No: <strong>@(TheItem.CertificateNo)</strong></MudAlert>
+            </MudItem>
+        }
+
+        <MudItem lg="12" md="12" sm="12" xs="12">
+            <MudDatePickerExtended Label="Invoice Date"
+                                   Clearable="true"
+                                   @bind-Date="TheItem.InvoiceDate"
+                                   For="() => TheItem.InvoiceDate" />
+        </MudItem>
+
+        <MudItem lg="6" md="6" sm="6" xs="6">
+            <MudDatePickerExtended Label="Period Start"
+                                   Clearable="true"
+                                   @bind-Date="TheItem.PeriodStartDate"
+                                   For="() => TheItem.PeriodStartDate" />
+        </MudItem>
+
+        <MudItem lg="6" md="6" sm="6" xs="6">
+            <MudDatePickerExtended Label="Period End"
+                                   Clearable="true"
+                                   @bind-Date="TheItem.PeriodEndDate"
+                                   For="() => TheItem.PeriodEndDate" />
+        </MudItem>
+    </MudGrid>
+
+</ShiftEntityForm>
+
+@code {
+   
+}

@@ -1,0 +1,60 @@
+﻿@attribute [Route($"/{nameof(ManufacturerSettlmentSheetForm)}/{{Key?}}")]
+
+@using ShiftSoftware.ADP.WarrantyClaims.Shared.DTOs.ManufacturerSettlmentSheet
+
+@inherits ShiftForm<ManufacturerSettlmentSheetForm, ManufacturerSettlmentSheetDTO>
+
+@inject IOptions<WarrantyClaimsWebOptions> WCOptions
+
+<ShiftEntityForm @bind-Mode="Mode"
+                 @bind-Value="TheItem"
+                 @ref="FormContainer"
+                 Endpoint="ManufacturerSettlmentSheet"
+                 Title="ManufacturerSettlmentSheet"
+                 DisableDelete
+                 DisableEdit
+                 BaseUrlKey="StockPluPlus"
+                 TypeAuthAction="WCOptions.Value.ManufacturerSettlmentsAction"
+                 @bind-Key="@Key">
+
+    <MudStack Spacing="4">
+        @if (Mode < FormModes.Edit)
+        {
+            <MudPaper Elevation="2" Class="pa-6">
+                <MudText Class="mb-4" Typo="Typo.h6">Invoice Number(s)</MudText>
+
+                <MudAlert Icon="@Icons.Material.Filled.Numbers" Severity="Severity.Info"> <strong>@(TheItem.InvoiceNumbers)</strong></MudAlert>
+            </MudPaper>
+        }
+
+        <MudPaper Elevation="2" Class="pa-6">
+            <MudText Class="mb-4" Typo="Typo.h6">Unrecognized Claim/Invoice Numbers</MudText>
+
+            <MudRadioGroup @bind-Value="TheItem.PreventSubmittingUnrecognizedClaimNumbers"
+                           For="@(() => TheItem.PreventSubmittingUnrecognizedClaimNumbers)">
+                <MudRadio Value="true" Color="Color.Primary" Dense="false">Prevent Submission and Provide a Detailed Warning.</MudRadio>
+                <MudRadio Value="false" Color="Color.Warning" Dense="false">Ignore and Continue. The file can be uploaded again.</MudRadio>
+            </MudRadioGroup>
+        </MudPaper>
+
+        <MudPaper Elevation="2" Class="pa-6">
+            <MudText Class="mb-4" Typo="Typo.h6">Exchange Rate</MudText>
+
+            <MudNumericFieldExtended Label="USD -> JPY"
+                                     @bind-Value="TheItem.ExchangeRate"
+                                     For="() => TheItem.ExchangeRate" />
+        </MudPaper>
+
+        <MudPaper Elevation="2" Class="pa-6">
+            <MudText Class="mb-4" Typo="Typo.h6">Settlement CSV File</MudText>
+
+            <FileUploader ShowThumbnail="true"
+                          Label="Attachments"
+                          MaxFileCount="10"
+                          MaxFileSizeInMegaBytes="32"
+                          TypeAuthAction="ShiftSoftware.ShiftEntity.Core.AzureStorageActionTree.UploadFiles"
+                          For="() => TheItem.Attachments"
+                          @bind-Values="TheItem.Attachments" />
+        </MudPaper>
+    </MudStack>
+</ShiftEntityForm>

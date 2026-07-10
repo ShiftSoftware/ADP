@@ -1,0 +1,23 @@
+@attribute [Authorize]
+@attribute [Route($"/{nameof(WarrantyRatesList)}")]
+
+@* The warranty-rates admin list. Moved from the original host application's Setting pages and
+   renamed with its entity (Phase 3 Slice 3.6, D24 — the /SettingList → /WarrantyRatesList page URL
+   change is an authorized break, lock-step with the api/Setting → api/WarrantyRates route). Rates
+   rows are create-only audit rows, so the list stays ID-only, newest first, exactly like the host
+   page it absorbed. *@
+
+@inject IOptions<WarrantyClaimsWebOptions> WCOptions
+
+<ShiftList EntitySet="WarrantyRates"
+           Title="Warranty Rates"
+           T="WarrantyRatesListDTO"
+           Dense
+           DisableActionColumn
+           ComponentType="typeof(WarrantyRatesForm)"
+           ShowIDColumn="true"
+           HighlightSortedColumn
+           TypeAuthAction="WCOptions.Value.WarrantyRatesAction"
+           EnableExport>
+    <Sort Property="x => x.ID" Direction="SortDirection.Descending" />
+</ShiftList>

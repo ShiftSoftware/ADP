@@ -1,0 +1,52 @@
+@using ShiftSoftware.ADP.Models.Enums
+
+@if (ClaimStatus is not null)
+{
+    string icon = string.Empty;
+    Color color = Color.Default;
+
+    switch (ClaimStatus)
+    {
+        case ShiftSoftware.ADP.Models.Enums.ClaimStatus.Draft:
+            icon = Icons.Material.Outlined.Drafts;
+            color = Color.Default;
+            break;
+
+        case ShiftSoftware.ADP.Models.Enums.ClaimStatus.PendingProcess:
+            icon = Icons.Material.Outlined.Pending;
+            color = Color.Info;
+            break;
+
+        case ShiftSoftware.ADP.Models.Enums.ClaimStatus.Accepted:
+            icon = Icons.Material.Outlined.Check;
+            color = Color.Success;
+            break;
+
+        case ShiftSoftware.ADP.Models.Enums.ClaimStatus.RejectedWithError:
+            icon = Icons.Material.Outlined.Warning;
+            color = Color.Warning;
+            break;
+
+        case ShiftSoftware.ADP.Models.Enums.ClaimStatus.RejectedPermanently:
+            icon = Icons.Material.Outlined.Dangerous;
+            color = Color.Error;
+            break;
+
+        case ShiftSoftware.ADP.Models.Enums.ClaimStatus.Certified:
+            icon = Icons.Material.Outlined.BookmarkAdded;
+            color = Color.Primary;
+            break;
+
+        case ShiftSoftware.ADP.Models.Enums.ClaimStatus.Invoiced:
+            icon = Icons.Material.Outlined.InsertDriveFile;
+            color = Color.Tertiary;
+            break;
+    }
+
+    <MudChip T="string" Variant="Variant.Filled" Size="@Size.Small" Icon="@icon" Color="@color">@ClaimStatus.Describe()</MudChip>
+}
+
+@code {
+    [Parameter]
+    public ClaimStatus? ClaimStatus { get; set; }
+}

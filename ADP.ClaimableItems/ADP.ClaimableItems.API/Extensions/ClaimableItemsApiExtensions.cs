@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using ShiftSoftware.ADP.Cases.Shared.Printing;
 using ShiftSoftware.ADP.ClaimableItems.Data.Extensions;
 using ShiftSoftware.ADP.ClaimableItems.Shared.ActionTrees;
 using ShiftSoftware.ShiftEntity.Core;
@@ -53,12 +55,31 @@ public static class ClaimableItemsApiExtensions
             services.Configure<TypeAuthAspNetCoreOptions>(o => o.AddActionTree<ClaimableItemsActionTree>());
 
         // Contribute the module's entity configuration to the consumer's DbContext at model-build time.
-        // The schema is captured here (null for TCA → keep dbo; "ClaimableItems" for the sample).
+        // The schema is captured here (null for the original host application → keep dbo; "ClaimableItems" for the sample).
         services.AddSingleton<IModelBuildingContributor>(new ClaimableItemsModelBuildingContributor(options.Schema));
 
         services.Configure<MvcOptions>(mvcOptions =>
         {
             mvcOptions.Conventions.Add(new ClaimableItemsRoutePrefixConvention(options.RoutePrefix));
+        });
+
+        // Print seams (Phase 3 Slice 3.2). The date formatter ships a module default; TryAdd makes a
+        // consumer registration win deterministically — an earlier consumer AddScoped turns this into
+        // a no-op, and a later one wins at resolution time (MS DI resolves the last registration).
+        // ICompanyInfoProvider deliberately has NO default: print methods throw with registration
+        // guidance when it is missing.
+        services.TryAddScoped<IPrintoutDateFormatter>(_ => new DefaultPrintoutDateFormatter());
+
+        // Per-report frx override paths, captured as a singleton value object so the Data-layer print
+        // methods can read it without referencing this options type (same capture-at-registration
+        // pattern as the model-building contributor above). All-null = embedded defaults.
+        services.AddSingleton(options.ReportOverrides);
+
+        // Data-layer consumer options (Phase 3 Slice 3.6), captured the same way: the ItemClaim
+        // repository's CanModifyPostClaim default reads the consumer's TypeAuth node from this object.
+        services.AddSingleton(new Data.ClaimableItemsDataOptions
+        {
+            PostClaimModificationAction = options.PostClaimModificationAction,
         });
 
         mvcBuilder.AddApplicationPart(typeof(ClaimableItemsApiExtensions).Assembly);
@@ -78,11 +99,16 @@ public static class ClaimableItemsApiExtensions
     private static void CopyOptions(ClaimableItemsApiOptions source, ClaimableItemsApiOptions target)
     {
         if (source is null) return;
+        target.ReportOverrides = source.ReportOverrides;
         target.RoutePrefix = source.RoutePrefix;
         target.EnableClaimableItemsActionTreeAuthorization = source.EnableClaimableItemsActionTreeAuthorization;
         target.RegisterModuleActionTree = source.RegisterModuleActionTree;
         target.Schema = source.Schema;
         target.ClaimableItemSetupAction = source.ClaimableItemSetupAction;
         target.CampaignVinEntriesAction = source.CampaignVinEntriesAction;
+        target.ClaimingAction = source.ClaimingAction;
+        target.CertifyingAction = source.CertifyingAction;
+        target.InvoicingAction = source.InvoicingAction;
+        target.PostClaimModificationAction = source.PostClaimModificationAction;
     }
 }

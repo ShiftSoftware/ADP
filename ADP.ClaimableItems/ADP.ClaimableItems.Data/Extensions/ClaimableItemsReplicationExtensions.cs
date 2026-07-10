@@ -14,7 +14,7 @@ public static class ClaimableItemsReplicationExtensions
     /// Campaign → ServiceCampaignModel (+ fan-out UpdateReference onto ServiceItemModel), and
     /// CampaignVinEntry → CampaignVinEntryModel. Call this from inside the consumer's
     /// <c>AddShiftEntityCosmosDbReplicationTrigger</c> callback, passing the org Cosmos client.
-    /// A read-only consumer (e.g. a Toyota Iraq that is fed by its sync agent) simply does NOT call this,
+    /// A read-only consumer (e.g. a consumer that is fed by its sync agent) simply does NOT call this,
     /// so the module replicates nothing — the extension point that keeps the module usable both ways.
     /// </summary>
     public static ShiftEntityCosmosDbOptions AddClaimableItemsReplication<TDbContext>(
@@ -53,6 +53,34 @@ public static class ClaimableItemsReplicationExtensions
                 null
             )
             .Replicate<CampaignVinEntryModel>(
+                NoSQLConstants.Containers.Vehicles,
+                partitionKeyLevel1Expression: e => e.VIN,
+                partitionKeyLevel2Expression: e => e.ItemType
+            );
+
+        return x;
+    }
+
+    /// <summary>
+    /// Opt-in Cosmos replication for the claim record: ItemClaim → ItemClaimModel into
+    /// CompanyData/Vehicles (Phase 2 Slice 5 — moved verbatim from the original host's
+    /// SetUpReplication block). Registered separately from the catalog replication because a
+    /// consumer may author the catalog without hosting the claim flow (or vice versa).
+    /// NOTE: partition keys are registered 2-level (VIN, ItemType) exactly as the original host always
+    /// did, although NoSQLConstants defines the Vehicles container as 3-level — pre-existing
+    /// behavior, reproduced deliberately (see goldens-phase2.md §3).
+    /// </summary>
+    public static ShiftEntityCosmosDbOptions AddItemClaimReplication<TDbContext>(
+        this ShiftEntityCosmosDbOptions x,
+        CosmosClient cosmosClient)
+        where TDbContext : ShiftDbContext
+    {
+        x.SetUpReplication<TDbContext, ItemClaim>(
+                cosmosClient,
+                NoSQLConstants.Databases.CompanyData,
+                null
+            )
+            .Replicate<ItemClaimModel>(
                 NoSQLConstants.Containers.Vehicles,
                 partitionKeyLevel1Expression: e => e.VIN,
                 partitionKeyLevel2Expression: e => e.ItemType

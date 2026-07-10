@@ -1,0 +1,28 @@
+@attribute [Authorize]
+@attribute [Route($"/{nameof(AdditionalLaborOperationCodeList)}")]
+
+@using ShiftSoftware.ADP.WarrantyClaims.Shared.DTOs.AdditionalLaborOperationCode
+
+@inject IOptions<WarrantyClaimsWebOptions> WCOptions
+
+<ShiftList EntitySet="AdditionalLaborOperationCode"
+           Title="Additional Labor Operation Codes"
+           T="AdditionalLaborOperationCodeListDTO"
+           Dense
+           ComponentType="typeof(AdditionalLaborOperationCodeForm)"
+           ShowIDColumn="true"
+           FilterPanelDefaultOpen
+           EnableFilterPanel
+           HighlightSortedColumn
+           TypeAuthAction="WCOptions.Value.AdditionalLaborOperationCodesAction"
+           EnableExport>
+
+    <Sort Property="x => x.Code" Direction="SortDirection.Ascending" />
+
+    <StringFilter Order="0" Property="x => x.Code" Label="Code" Operator="ShiftSoftware.ShiftBlazor.Enums.ODataOperator.Contains" lg="4" md="6" sm="12" xs="12" />
+    <StringFilter Order="1" Property="x => x.Description" Label="Description" Operator="ShiftSoftware.ShiftBlazor.Enums.ODataOperator.Contains" lg="4" md="6" sm="12" xs="12" />
+
+    <PropertyColumn Property="x => x.Code" Title="Code" CellClass="whitespace-nowrap" HeaderClass="whitespace-nowrap" />
+    <PropertyColumn Filterable="false" Property="x => x.Time" Title="Time (Hours)" HeaderClass="whitespace-nowrap" />
+    <PropertyColumn Filterable="false" Property="x => x.Description" Title="Description" />
+</ShiftList>

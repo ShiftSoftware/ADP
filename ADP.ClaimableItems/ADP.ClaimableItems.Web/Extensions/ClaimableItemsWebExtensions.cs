@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using ShiftSoftware.ADP.ClaimableItems.Shared.ActionTrees;
 using ShiftSoftware.ShiftBlazor.Extensions;
 using ShiftSoftware.TypeAuth.Blazor;
@@ -25,13 +26,18 @@ public static class ClaimableItemsWebExtensions
             services.Configure(configure);
 
         // Register the module's default action tree only when the consumer opts in (fresh consumers /
-        // sample). TCA supplies its own TCA.ActionTrees nodes via the options, so it leaves this false (D9).
+        // sample). The original host application supplies its own action-tree nodes via the options, so it leaves this false (D9).
         if (options.RegisterModuleActionTree)
             services.Configure<TypeAuthBlazorOptions>(o => o.AddActionTree<ClaimableItemsActionTree>());
 
         // Expose the module assembly for Blazor routing discovery (AdditionalAssemblies) — this is what
         // makes the catalog pages (which keep their original routes) resolve from the consumer's router.
         services.Configure<AppStartupOptions>(o => o.AddAssembly(typeof(ClaimableItemsWebExtensions).Assembly));
+
+        // Capability seam for the claim pages (Slice 7): consumers register their own adapter BEFORE
+        // or AFTER this call (TryAdd keeps a consumer registration when it came first; a later
+        // consumer AddScoped also wins at resolution). Default = dealer-safe (no distributor actions).
+        services.TryAddScoped<IClaimableItemsCapabilityProvider, DefaultClaimableItemsCapabilityProvider>();
 
         return services;
     }

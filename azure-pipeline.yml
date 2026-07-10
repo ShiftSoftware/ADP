@@ -70,9 +70,52 @@ steps:
    condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-nuget'))
    displayName: 'pack ADP.Surveys.Web'
 
+ - script: dotnet pack ADP.ClaimableItems/ADP.ClaimableItems.Shared --configuration Release --output $(Build.ArtifactStagingDirectory)/ADP
+   condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-nuget'))
+   displayName: 'pack ADP.ClaimableItems.Shared'
+
+ - script: dotnet pack ADP.ClaimableItems/ADP.ClaimableItems.Data --configuration Release --output $(Build.ArtifactStagingDirectory)/ADP
+   condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-nuget'))
+   displayName: 'pack ADP.ClaimableItems.Data'
+
+ - script: dotnet pack ADP.ClaimableItems/ADP.ClaimableItems.API --configuration Release --output $(Build.ArtifactStagingDirectory)/ADP
+   condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-nuget'))
+   displayName: 'pack ADP.ClaimableItems.API'
+
+ - script: dotnet pack ADP.ClaimableItems/ADP.ClaimableItems.Web --configuration Release --output $(Build.ArtifactStagingDirectory)/ADP
+   condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-nuget'))
+   displayName: 'pack ADP.ClaimableItems.Web'
+
+ - script: dotnet pack ADP.Cases/ADP.Cases.Shared --configuration Release --output $(Build.ArtifactStagingDirectory)/ADP
+   condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-nuget'))
+   displayName: 'pack ADP.Cases.Shared'
+
+ - script: dotnet pack ADP.Cases/ADP.Cases.Data --configuration Release --output $(Build.ArtifactStagingDirectory)/ADP
+   condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-nuget'))
+   displayName: 'pack ADP.Cases.Data'
+
+ - script: dotnet pack ADP.WarrantyClaims/ADP.WarrantyClaims.Shared --configuration Release --output $(Build.ArtifactStagingDirectory)/ADP
+   condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-nuget'))
+   displayName: 'pack ADP.WarrantyClaims.Shared'
+
+ - script: dotnet pack ADP.WarrantyClaims/ADP.WarrantyClaims.Data --configuration Release --output $(Build.ArtifactStagingDirectory)/ADP
+   condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-nuget'))
+   displayName: 'pack ADP.WarrantyClaims.Data'
+
+ - script: dotnet pack ADP.WarrantyClaims/ADP.WarrantyClaims.API --configuration Release --output $(Build.ArtifactStagingDirectory)/ADP
+   condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-nuget'))
+   displayName: 'pack ADP.WarrantyClaims.API'
+
+ - script: dotnet pack ADP.WarrantyClaims/ADP.WarrantyClaims.Web --configuration Release --output $(Build.ArtifactStagingDirectory)/ADP
+   condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-nuget'))
+   displayName: 'pack ADP.WarrantyClaims.Web'
+
 
  - script: dotnet test ADP.LookupServices.BDD
    displayName: 'ADP.LookupServices BDD Tests'
+
+ - script: dotnet test ADP.Cases/ADP.Cases.Shared.Tests
+   displayName: 'ADP.Cases engine tests'
 
 
  - task: NuGetToolInstaller@1

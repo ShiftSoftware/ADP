@@ -1,0 +1,50 @@
+﻿@attribute [Authorize]
+@attribute [Route($"/{nameof(WarrantyInvoiceList)}")]
+
+@using ShiftSoftware.ADP.WarrantyClaims.Shared.DTOs.Certificate
+@using ShiftSoftware.ShiftEntity.Model
+@using ShiftSoftware.ShiftIdentity.Core.DTOs.Company
+@using ShiftSoftware.ShiftIdentity.Core.DTOs.User
+@using ShiftSoftware.ADP.WarrantyClaims.Shared.Enums
+
+@inject IConfiguration Configuration
+@inject IOptions<WarrantyClaimsWebOptions> WCOptions
+
+<ShiftList Title="Invoices"
+           T="CertificateListDTO"
+           Dense
+           EntitySet="WarrantyInvoice"
+           DisableActionColumn
+           FilterPanelDefaultOpen
+           EnableFilterPanel
+           ShowIDColumn="false"
+           DisableAdd
+           DisableDeleteFilter
+           ComponentType="typeof(WarrantyInvoiceForm)"
+           HighlightSortedColumn
+           TypeAuthAction="WCOptions.Value.InvoicesAction">
+
+    <Sort Property="x => x.InvoiceDate" Direction="SortDirection.Descending" />
+
+    <StringFilter Order="0" Property="x => x.CertificateNo" Label="No." Operator="ShiftSoftware.ShiftBlazor.Enums.ODataOperator.Contains" lg="3" md="6" sm="12" xs="12" />
+    <ForeignFilter Order="1" AdditionalParameters='new() { [nameof(ShiftAutocomplete<CertificateListDTO>.GroupSelectedValues)] = false }' Property="x => x.CompanyID" Label="Company" DTOType="typeof(CompanyListDTO)" EntitySet="IdentityCompany" BaseUrlKey="ShiftIdentityApi" lg="9" md="6" sm="12" xs="12" />
+    <DateTimeFilter Order="5" Property="x => x.InvoiceDate" Label="Invoice Date" lg="4" md="6" sm="12" xs="12" />
+    <DateTimeFilter Order="3" Property="x => x.PeriodStartDate" Label="Period Start" lg="4" md="6" sm="12" xs="12" />
+    <DateTimeFilter Order="4" Property="x => x.PeriodEndDate" Label="Period End" lg="4" md="6" sm="12" xs="12" />
+
+    <ButtonColumn Filterable="false" StickyLeft Property="x => x.CertificateNo" Title="No." HeaderClass="whitespace-nowrap" />
+
+    <ForeignColumn Title="Company"
+                   Filterable="false"
+                   T="CertificateListDTO"
+                   CellClass="whitespace-nowrap"
+                   TEntity="ShiftSoftware.ShiftIdentity.Core.DTOs.Company.CompanyListDTO"
+                   EntitySet="IdentityCompany"
+                   BaseUrl="@(Configuration.GetValue<string>("ShiftIdentity:BaseUrl"))"
+                   TProperty="string"
+                   Property="x=> x.CompanyID" />
+
+    <PropertyColumn Filterable="false" Format="yyyy-MM-dd" Property="x => x.InvoiceDate" Title="Invoice Date" HeaderClass="whitespace-nowrap" />
+    <PropertyColumn Filterable="false" Format="yyyy-MM-dd" Property="x => x.PeriodStartDate" Title="Period Start" HeaderClass="whitespace-nowrap" />
+    <PropertyColumn Filterable="false" Format="yyyy-MM-dd" Property="x => x.PeriodEndDate" Title="Period End" HeaderClass="whitespace-nowrap" />
+</ShiftList>

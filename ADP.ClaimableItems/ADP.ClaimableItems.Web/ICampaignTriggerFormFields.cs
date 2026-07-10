@@ -6,8 +6,8 @@ namespace ShiftSoftware.ADP.ClaimableItems.Web;
 /// Consumer plug-in for campaign-form UI that is specific to a particular activation trigger.
 ///
 /// Activation triggers (VehicleInspection, ManualVinEntry, …) are shared, but the extra form UI a trigger
-/// needs is consumer-specific (e.g. Toyota Central Asia's VehicleInspection trigger needs a
-/// VehicleInspectionType picker that references a TCA-owned DTO; Toyota Iraq will have its own triggers
+/// needs is consumer-specific (e.g. the original host application's VehicleInspection trigger needs a
+/// VehicleInspectionType picker that references a host-owned DTO; other consumers will have their own triggers
 /// with their own UI). A consumer registers one or more implementations in DI; the module's
 /// <c>CampaignForm</c> renders each applicable contributor's <see cref="ComponentType"/> inline for the
 /// currently-selected trigger, passing the campaign form model as a <c>Campaign</c> parameter (a

@@ -1,0 +1,176 @@
+﻿@attribute [Route($"/{nameof(ItemClaimCertificateForm)}/{{Key?}}")]
+
+
+@using global::ShiftSoftware.ADP.Cases.Shared.DTOs.Certificate
+
+
+
+
+@inherits ShiftForm<ItemClaimCertificateForm, ItemClaimCertificateDTO>
+
+@inject IOptions<ClaimableItemsWebOptions> CIOptions
+
+<ShiftEntityForm @bind-Mode="Mode"
+                 @bind-Value="TheItem"
+                 @ref="FormContainer"
+                 Endpoint="ItemClaimCertificate"
+                 Title="Item Claiming Certificate"
+                 DisableDelete="TheItem.InvoiceDate is not null"
+                 DisableEdit="TheItem.InvoiceDate is not null"
+                 TypeAuthAction="CIOptions.Value.CertifyingAction"
+                 ShowPrint
+                 @bind-Key="@Key">
+    <MudGrid Spacing="4">
+        @if (Mode != FormModes.Create)
+        {
+            <MudItem lg="12" md="12" sm="12" xs="12">
+                <MudAlert Icon="@Icons.Material.Filled.Numbers" Severity="Severity.Warning">Distributor Certificate No: <strong>@(TheItem.DisplayDistributorCertificateNo)</strong></MudAlert>
+            </MudItem>
+
+            <MudItem lg="12" md="12" sm="12" xs="12">
+                <MudAlert Icon="@Icons.Material.Filled.Numbers" Severity="Severity.Info">Certificate No: <strong>@(TheItem.CertificateNo)</strong></MudAlert>
+            </MudItem>
+        }
+
+        <MudItem lg="12" md="12" sm="12" xs="12">
+            <MudDatePickerExtended Label="Certificate Date"
+                                   Clearable="true"
+                                   @bind-Date="TheItem.CertificateDate"
+                                   For="() => TheItem.CertificateDate" />
+        </MudItem>
+
+        <MudItem lg="6" md="6" sm="6" xs="6">
+            <MudDatePickerExtended Label="Period Start"
+                                   Clearable="true"
+                                   @bind-Date="TheItem.PeriodStartDate"
+                                   For="() => TheItem.PeriodStartDate" />
+        </MudItem>
+
+        <MudItem lg="6" md="6" sm="6" xs="6">
+            <MudDatePickerExtended Label="Period End"
+                                   Clearable="true"
+                                   @bind-Date="TheItem.PeriodEndDate"
+                                   For="() => TheItem.PeriodEndDate" />
+        </MudItem>
+
+        @if (TheItem.InvoiceDate is not null)
+        {
+            <MudItem lg="12" md="12" sm="12" xs="12">
+                <MudAlert Icon="@Icons.Material.Filled.CalendarMonth" Severity="Severity.Warning">Invoiced on <strong>@(TheItem.InvoiceDate!.Value.ToString("yyyy-MM-dd"))</strong></MudAlert>
+            </MudItem>
+        }
+
+        <MudItem lg="12" md="12" sm="12" xs="12" Class="">
+            <MudCard Elevation="2">
+                <MudCardHeader Class="pt-1 pb-1 background-gray">
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.subtitle2">Claims</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+
+                <MudCardContent Class="pt-2 pb-2">
+                    <MudGrid Spacing="3">
+                        <MudItem lg="11" md="11" sm="11" xs="11">
+                            <MudGrid Spacing="3" Style="align-items: baseline;">
+                                <MudItem lg="3" md="3" sm="3" xs="3">
+                                    <MudText Class="mud-text-with-border pb-3" Typo="Typo.subtitle2">ID</MudText>
+                                </MudItem>
+
+                                <MudItem lg="3" md="3" sm="3" xs="3">
+                                    <MudText Class="mud-text-with-border pb-3" Typo="Typo.subtitle2">VIN</MudText>
+                                </MudItem>
+
+                                <MudItem lg="3" md="3" sm="3" xs="3">
+                                    <MudText Class="mud-text-with-border pb-3" Typo="Typo.subtitle2">Item</MudText>
+                                </MudItem>
+
+                                <MudItem lg="3" md="3" sm="3" xs="3">
+                                    <MudText Class="mud-text-with-border pb-3" Typo="Typo.subtitle2">Claim Date</MudText>
+                                </MudItem>
+                            </MudGrid>
+                        </MudItem>
+
+                        <MudItem lg="1" md="1" sm="1" xs="1"></MudItem>
+
+                        @foreach (var line in TheItem.ReimbursementItemClaims)
+                        {
+                            <MudItem lg="11" md="11" sm="11" xs="11">
+                                <MudGrid Spacing="3" Style="align-items: baseline;">
+                                    <MudItem Class="pt-1 pb-1" lg="3" md="3" sm="3" xs="3">
+                                        <MudTextField Label=""
+                                                      ReadOnly
+                                                      Value="line.ID" />
+                                    </MudItem>
+
+                                    <MudItem Class="pt-1 pb-1" lg="3" md="3" sm="3" xs="3">
+                                        <MudTextField Label=""
+                                                      ReadOnly
+                                                      Value="line.VIN" />
+                                    </MudItem>
+
+                                    <MudItem Class="pt-1 pb-1" lg="3" md="3" sm="3" xs="3">
+                                        <MudTextField Label=""
+                                                      ReadOnly
+                                                      Value="line.ClaimableItemName" />
+                                    </MudItem>
+
+                                    <MudItem Class="pt-1 pb-1" lg="3" md="3" sm="3" xs="3">
+                                        <MudDatePicker Label=""
+                                                       ReadOnly
+                                                       AdornmentIcon=""
+                                                       Date="line.ClaimDate.DateTime"
+                                                       DateFormat="yyyy-MM-dd" />
+                                    </MudItem>
+                                </MudGrid>
+                            </MudItem>
+                        }
+                    </MudGrid>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <MudItem lg="12" md="12" sm="12" xs="12">
+            <MudTextFieldExtended Label="Notes"
+                                  Lines="5"
+                                  @bind-Value="TheItem.Notes"
+                                  For="() => TheItem.Notes" />
+        </MudItem>
+    </MudGrid>
+
+</ShiftEntityForm>
+
+@code {
+    [Parameter]
+    public SelectState<ShiftSoftware.ADP.ClaimableItems.Shared.DTOs.ItemClaim.ItemClaimListDTO>? Selected { get; set; }
+
+
+    protected override Task OnParametersSetAsync()
+    {
+        if (Selected is not null)
+        {
+            TheItem.ReimbursementItemClaims = Selected.Items;
+
+            this.Selected = null;
+        }
+
+        return base.OnParametersSetAsync();
+    }
+
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            if (Mode == FormModes.Create)
+            {
+                TheItem.CertificateDate = DateTime.Now.Date;
+
+                TheItem.PeriodStartDate = new DateTime(TheItem.CertificateDate.Value.Year, TheItem.CertificateDate.Value.Month, 1);
+                TheItem.PeriodEndDate = TheItem.PeriodStartDate.Value.AddDays(-1);
+
+                StateHasChanged();
+            }
+        }
+
+        return base.OnAfterRenderAsync(firstRender);
+    }
+}

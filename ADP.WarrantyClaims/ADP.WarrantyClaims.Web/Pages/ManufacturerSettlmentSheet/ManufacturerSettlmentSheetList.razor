@@ -1,0 +1,24 @@
+﻿@attribute [Authorize]
+@attribute [Route($"/{nameof(ManufacturerSettlmentSheetList)}")]
+
+@using ShiftSoftware.ADP.WarrantyClaims.Shared.DTOs.ManufacturerSettlmentSheet
+@using ShiftSoftware.ShiftIdentity.Core.DTOs.User
+
+@inject IOptions<WarrantyClaimsWebOptions> WCOptions
+
+<ShiftList EntitySet="ManufacturerSettlmentSheet"
+           Title="ManufacturerSettlmentSheet List"
+           T="ManufacturerSettlmentSheetListDTO"
+           Dense
+           DisableActionColumn
+           ComponentType="typeof(ManufacturerSettlmentSheetForm)"
+           ShowIDColumn="true"
+           HighlightSortedColumn
+           TypeAuthAction="WCOptions.Value.ManufacturerSettlmentsAction"
+           EnableExport>
+    <Sort Property="x => x.ID" Direction="SortDirection.Descending" />
+
+    <StringFilter Order="0" Property="x => x.InvoiceNumbers" Label="Invoice Number(s)" Operator="ShiftSoftware.ShiftBlazor.Enums.ODataOperator.Contains" lg="12" md="12" sm="12" xs="12" />
+
+    <PropertyColumnExtended Property="x => x.InvoiceNumbers" Title="Invoice Number(s)" HeaderClass="whitespace-nowrap" />
+</ShiftList>

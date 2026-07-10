@@ -40,5 +40,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\ADP.ClaimableItems.Shared\ADP.ClaimableItems.Shared.csproj" />
+		<!-- Claim pages (Phase 2 Slice 7) render the shared certificate list DTO from the Cases engine. -->
+		<ProjectReference Include="..\..\ADP.Cases\ADP.Cases.Shared\ADP.Cases.Shared.csproj" />
 	</ItemGroup>
 </Project>

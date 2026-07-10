@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<Import Project="..\..\GlobalSettings.props" />
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<LangVersion>latest</LangVersion>
+		<RootNamespace>ShiftSoftware.ADP.WarrantyClaims.Shared</RootNamespace>
+		<Authors>Shift Software</Authors>
+		<Product>ADP.WarrantyClaims</Product>
+		<Version>$(ADPVersion)</Version>
+		<AssemblyName>ShiftSoftware.ADP.WarrantyClaims.Shared</AssemblyName>
+		<PackageId>ShiftSoftware.ADP.WarrantyClaims.Shared</PackageId>
+		<Title>ShiftSoftware ADP.WarrantyClaims — Shared</Title>
+		<Description>Shared DTOs and contracts for the ShiftSoftware ADP.WarrantyClaims package — the warranty claim module: claims with labor/sublet/part lines, certification, invoicing and manufacturer settlement.</Description>
+		<Copyright>Copyright (c) Shift Software 2026</Copyright>
+		<PackageProjectUrl>https://github.com/ShiftSoftware/ADP</PackageProjectUrl>
+		<PackageIcon>icon.png</PackageIcon>
+		<RepositoryUrl>https://github.com/ShiftSoftware/ADP</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageTags>shift;shiftsoftware;adp;warranty;warranty-claims;claims;automotive</PackageTags>
+		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="Images\icon.png" Pack="true" PackagePath="\" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- WarrantyClaimValidator + line-item validators live colocated with the DTOs. -->
+		<PackageReference Include="FluentValidation" Version="12.1.1" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.Model" Version="2026.7.3.1" />
+		<!-- ClaimStatus / WarrantyManufacturerClaimStatus enums + WarrantyClaimModel (replication).
+		     ADP-internal convention: source project in-repo, published package when packed standalone. -->
+		<PackageReference Include="ShiftSoftware.ADP.Models" Version="$(ADPVersion)" Condition="!Exists('..\..\ADP.Models\Models\Models.csproj')" />
+		<ProjectReference Include="..\..\ADP.Models\Models\Models.csproj" Condition="Exists('..\..\ADP.Models\Models\Models.csproj')" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- The shared Case/Claim engine: warranty claims implement IClaim and certify via the shared
+		     Certificate; the certificate list DTO comes from Cases. -->
+		<ProjectReference Include="..\..\ADP.Cases\ADP.Cases.Shared\ADP.Cases.Shared.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- IFlatRateProvider / IPartLookupProvider seams (Phase 3 Slice 3.3) speak FlatRateDTO +
+		     PartLookupDTO. ADP-internal convention: source project in-repo, published package when
+		     packed standalone (same conditional as ADP.WarrantyClaims.Web / ADP.ClaimableItems.API). -->
+		<PackageReference Include="ShiftSoftware.ADP.Lookup.Services" Version="$(ADPVersion)" Condition="!Exists('..\..\ADP.LookupServices\Lookup.Services\Lookup.Services.csproj')" />
+		<ProjectReference Include="..\..\ADP.LookupServices\Lookup.Services\Lookup.Services.csproj" Condition="Exists('..\..\ADP.LookupServices\Lookup.Services\Lookup.Services.csproj')" />
+	</ItemGroup>
+
+</Project>

@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<Import Project="..\..\GlobalSettings.props" />
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<LangVersion>latest</LangVersion>
+		<RootNamespace>ShiftSoftware.ADP.Cases.Data</RootNamespace>
+		<Authors>Shift Software</Authors>
+		<Product>ADP.Cases</Product>
+		<Version>$(ADPVersion)</Version>
+		<AssemblyName>ShiftSoftware.ADP.Cases.Data</AssemblyName>
+		<PackageId>ShiftSoftware.ADP.Cases.Data</PackageId>
+		<Title>ShiftSoftware ADP.Cases — Data</Title>
+		<Description>Entities and model-building contributors for the ShiftSoftware ADP.Cases package — the shared Case/Claim engine's persisted surface (certificates, case status history).</Description>
+		<Copyright>Copyright (c) Shift Software 2026</Copyright>
+		<PackageProjectUrl>https://github.com/ShiftSoftware/ADP</PackageProjectUrl>
+		<PackageIcon>icon.png</PackageIcon>
+		<RepositoryUrl>https://github.com/ShiftSoftware/ADP</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageTags>shift;shiftsoftware;adp;cases;claims;workflow;automotive;efcore</PackageTags>
+		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="Images\icon.png" Pack="true" PackagePath="\" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="ShiftSoftware.ShiftEntity.EFCore" Version="2026.7.3.1" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\ADP.Cases.Shared\ADP.Cases.Shared.csproj" />
+	</ItemGroup>
+
+</Project>

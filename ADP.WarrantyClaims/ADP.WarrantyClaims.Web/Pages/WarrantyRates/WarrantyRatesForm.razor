@@ -1,0 +1,44 @@
+@attribute [Route($"/{nameof(WarrantyRatesForm)}/{{Key?}}")]
+
+@* The warranty-rates admin form. Moved from the original host application's Setting pages and
+   renamed with its entity (Phase 3 Slice 3.6, D24). HideEdit is a preserved host quirk: every save
+   is a new audit row (the controller's Put throws), so existing rows are view-only. *@
+
+@inherits ShiftForm<WarrantyRatesForm, WarrantyRatesDTO>
+
+@inject IOptions<WarrantyClaimsWebOptions> WCOptions
+
+<ShiftEntityForm @bind-Mode="Mode"
+                 @bind-Value="TheItem"
+                 @ref="FormContainer"
+                 Endpoint="WarrantyRates"
+                 Title="Warranty Rates"
+                 HideEdit
+                 TypeAuthAction="WCOptions.Value.WarrantyRatesAction"
+                 @bind-Key="@Key">
+    <MudGrid>
+        <MudItem lg="12" md="12" sm="12" xs="12">
+            <MudNumericFieldExtended Label="P.W.R / P.R.R"
+                                     @bind-Value="TheItem.PRR"
+                                     For="() => TheItem.PRR" />
+        </MudItem>
+
+        <MudItem lg="12" md="12" sm="12" xs="12">
+            <MudNumericFieldExtended Label="Exchange Rate (Labor)"
+                                     @bind-Value="TheItem.LaborExchangeRate"
+                                     For="() => TheItem.LaborExchangeRate" />
+        </MudItem>
+
+        <MudItem lg="12" md="12" sm="12" xs="12">
+            <MudNumericFieldExtended Label="Exchange Rate (Sublet)"
+                                     @bind-Value="TheItem.SubletExchangeRate"
+                                     For="() => TheItem.SubletExchangeRate" />
+        </MudItem>
+
+        <MudItem lg="12" md="12" sm="12" xs="12">
+            <MudNumericFieldExtended Label="Exchange Rate (Part)"
+                                     @bind-Value="TheItem.PartExchangeRate"
+                                     For="() => TheItem.PartExchangeRate" />
+        </MudItem>
+    </MudGrid>
+</ShiftEntityForm>

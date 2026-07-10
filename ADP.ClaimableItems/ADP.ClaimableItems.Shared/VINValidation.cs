@@ -1,7 +1,7 @@
 namespace ShiftSoftware.ADP.ClaimableItems.Shared;
 
-// Standard ISO-3779 VIN check-digit validation. Module-local copy of the generic helper (the TCA consumer
-// keeps its own Services.Shared.VINValidation, used by other TCA DTOs). Pure/self-contained.
+// Standard ISO-3779 VIN check-digit validation. Module-local copy of the generic helper (the original host application
+// keeps its own Services.Shared.VINValidation, used by other host DTOs). Pure/self-contained.
 public static class VINValidation
 {
     public static bool IsValidVIN(string vin)

@@ -1,0 +1,111 @@
+﻿@attribute [Authorize]
+@attribute [Route($"/{nameof(WarrantyCertificateList)}")]
+
+@using ShiftSoftware.ADP.WarrantyClaims.Shared.DTOs.Certificate
+@using ShiftSoftware.ShiftEntity.Model
+@using ShiftSoftware.ShiftIdentity.Core.DTOs.Company
+@using ShiftSoftware.ShiftIdentity.Core.DTOs.User
+@using ShiftSoftware.ADP.WarrantyClaims.Shared.Enums
+
+
+@inject MessageService MessageService
+@inject IWarrantyClaimsCapabilityProvider CapabilityProvider
+@inject IOptions<WarrantyClaimsWebOptions> WCOptions
+@inject IConfiguration Configuration
+
+<ShiftList Title="Certificates"
+           T="CertificateListDTO"
+           Dense
+           EntitySet="WarrantyCertificate"
+           DisableActionColumn
+           EnableSelection
+           FilterPanelDefaultOpen
+           EnableFilterPanel
+           ShowIDColumn="false"
+           ComponentType="typeof(WarrantyCertificateForm)"
+           HighlightSortedColumn
+           TypeAuthAction="WCOptions.Value.CertificatesAction">
+
+    <ToolbarStartTemplate>
+        @if (CapabilityProvider.IsDistributor)
+        {
+            <MudStack Row Class="claim-list-actions">
+                <ActionButton Color="Color.Tertiary"
+                              Variant="Variant.Outlined"
+                              Size="Size.Small"
+                              StartIcon="@Icons.Material.Filled.Check"
+                              DialogIcon="@Icons.Material.Filled.Check"
+                              Confirm
+                              DialogTitle="Invoice"
+                              DialogConfirmText="Save"
+                              DialogColor="Color.Tertiary"
+                              OnResult="StatusUpdateResponse"
+                              Endpoint="@($"WarrantyCertificate/Invoice/{invoiceDate!.Value.ToString("O")}")"
+                              T="CertificateListDTO">
+                    <DialogBodyTemplate>
+                        <MudDatePickerExtended Required Color="Color.Tertiary" @bind-Date="invoiceDate" Label="Invoice Date" />
+                    </DialogBodyTemplate>
+                    <ChildContent>
+                        Invoice
+                    </ChildContent>
+                </ActionButton>
+            </MudStack>
+        }
+    </ToolbarStartTemplate>
+
+    <ChildContent>
+        <Sort Property="x => x.CertificateDate" Direction="SortDirection.Descending" />
+
+        <StringFilter Order="0" Property="x => x.CertificateNo" Label="No." Operator="ShiftSoftware.ShiftBlazor.Enums.ODataOperator.Contains" lg="4" md="6" sm="12" xs="12" />
+        <StringFilter Order="1" Property="x => x.DisplayDistributorCertificateNo" Label="Dist No." Operator="ShiftSoftware.ShiftBlazor.Enums.ODataOperator.Contains" lg="4" md="6" sm="12" xs="12" />
+        <ForeignFilter Order="2" AdditionalParameters='new() { [nameof(ShiftAutocomplete<CertificateListDTO>.GroupSelectedValues)] = false }' Property="x => x.CompanyID" Label="Company" DTOType="typeof(CompanyListDTO)" EntitySet="IdentityCompany" BaseUrlKey="ShiftIdentityApi" lg="4" md="6" sm="12" xs="12" />
+        <DateTimeFilter Order="3" Property="x => x.CertificateDate" Label="Certificate Date" lg="4" md="6" sm="12" xs="12" />
+        <DateTimeFilter Order="4" Property="x => x.PeriodStartDate" Label="Period Start" lg="4" md="6" sm="12" xs="12" />
+        <DateTimeFilter Order="5" Property="x => x.PeriodEndDate" Label="Period End" lg="4" md="6" sm="12" xs="12" />
+        <DateTimeFilter Order="6" Property="x => x.InvoiceDate" Label="Invoice Date" lg="4" md="6" sm="12" xs="12" />
+
+        <ButtonColumn Filterable="false" StickyLeft Property="x => x.CertificateNo" Title="No." HeaderClass="whitespace-nowrap" />
+        <ButtonColumn Filterable="false" Property="x => x.DisplayDistributorCertificateNo" Title="Dist No." HeaderClass="whitespace-nowrap" />
+
+        <ForeignColumn Title="Company"
+                       Filterable="false"
+                       T="CertificateListDTO"
+                       CellClass="whitespace-nowrap"
+                       TEntity="ShiftSoftware.ShiftIdentity.Core.DTOs.Company.CompanyListDTO"
+                       EntitySet="IdentityCompany"
+                       BaseUrl="@(Configuration.GetValue<string>("ShiftIdentity:BaseUrl"))"
+                       TProperty="string"
+                       Property="x=> x.CompanyID" />
+
+        <PropertyColumn Filterable="false" Format="yyyy-MM-dd" Property="x => x.CertificateDate" Title="Certificate Date" HeaderClass="whitespace-nowrap" />
+        <PropertyColumn Filterable="false" Format="yyyy-MM-dd" Property="x => x.PeriodStartDate" Title="Period Start" HeaderClass="whitespace-nowrap" />
+        <PropertyColumn Filterable="false" Format="yyyy-MM-dd" Property="x => x.PeriodEndDate" Title="Period End" HeaderClass="whitespace-nowrap" />
+        <ButtonColumn Filterable="false" Format="yyyy-MM-dd" Property="x => x.InvoiceDate" Title="Invoice Date" KeyPropertyName="ID" HeaderClass="whitespace-nowrap" ComponentType="typeof(WarrantyInvoiceForm)" />
+    </ChildContent>
+</ShiftList>
+
+@code {
+    private DateTime? invoiceDate = DateTime.UtcNow.Date;
+
+    private ValueTask<bool> StatusUpdateResponse(ShiftEntityResponse<IList<CertificateListDTO>> data)
+    {
+        this.invoiceDate = DateTime.UtcNow.Date;
+
+        var res = data;
+
+        if (res.Entity?.Count > 0)
+        {
+            this.MessageService.Warning($"({res.Entity!.Count}) certificates has been updated.");
+        }
+        else if (res.Entity?.Count == 0)
+        {
+            this.MessageService.Error($"No certificates were updated.");
+        }
+        else if (res.Message is null)
+        {
+            this.MessageService.Error("An error occurred while updating the certificates.");
+        }
+
+        return new(true);
+    }
+}

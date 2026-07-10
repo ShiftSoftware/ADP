@@ -1,0 +1,198 @@
+﻿@attribute [Authorize]
+@inject IOptions<ClaimableItemsWebOptions> CIOptions
+@attribute [Route($"/{nameof(ItemClaimList)}")]
+
+
+@using global::ShiftSoftware.ADP.ClaimableItems.Shared.DTOs.ItemClaim
+
+
+
+@using ShiftSoftware.ShiftIdentity.Core.DTOs.Company
+@using ShiftSoftware.ShiftIdentity.Core.DTOs.CompanyBranch
+@using ShiftSoftware.ShiftIdentity.Core.DTOs.User
+@using ItemClaimCertificate
+@inject MessageService MessageService
+
+@inject ShiftSoftware.TypeAuth.Core.ITypeAuthService TypeAuthService
+
+<ShiftList EntitySet="ItemClaim"
+           Title="Item Claims"
+           T="ItemClaimListDTO"
+           Dense
+           Context="listContext"
+           DisableAdd
+           EnableSelection
+           DisableActionColumn
+           ComponentType="typeof(ItemClaimForm)"
+           ShowIDColumn="false"
+           FilterPanelDefaultOpen
+           EnableFilterPanel
+           HighlightSortedColumn
+           TypeAuthAction="CIOptions.Value.ClaimingAction"
+           EnableExport>
+
+    <ToolbarStartTemplate>
+        <MudStack Class="claim-list-actions" Row>
+            @if ((CIOptions.Value.CertifyingAction is not null && TypeAuthService.CanWrite(CIOptions.Value.CertifyingAction)))
+            {
+                <ActionButton Color="Color.Success"
+                              Variant="Variant.Outlined"
+                              Size="Size.Small"
+                              StartIcon="@Icons.Material.Filled.Check"
+                              DialogIcon="@Icons.Material.Filled.Check"
+                              Confirm
+                              DialogColor="Color.Success"
+                              OnResult="StatusUpdateResponse"
+                              EndPoint="@($"ItemClaim/UpdateStatus/{UpdateStatusActionTypes.DistributorAccepted}")"
+                              T="ItemClaimListDTO">
+                    Accept
+                </ActionButton>
+
+                <ActionButton Color="Color.Warning"
+                              Variant="Variant.Outlined"
+                              Size="Size.Small"
+                              StartIcon="@Icons.Material.Filled.Warning"
+                              DialogIcon="@Icons.Material.Filled.Warning"
+                              Confirm
+                              DialogTitle="Mark as Error"
+                              DialogConfirmText="Save"
+                              DialogColor="Color.Warning"
+                              OnResult="StatusUpdateResponse"
+                              EndPoint="@($"ItemClaim/UpdateStatus/{UpdateStatusActionTypes.DistributorError}/{Uri.EscapeDataString(inputText ?? "")}")"
+                              T="ItemClaimListDTO">
+                    <DialogBodyTemplate>
+                        <MudTextFieldExtended @bind-Value="inputText" Label="Error Message" />
+                    </DialogBodyTemplate>
+                    <ChildContent>
+                        Error
+                    </ChildContent>
+                </ActionButton>
+
+                <ActionButton Color="Color.Error"
+                              Variant="Variant.Outlined"
+                              Size="Size.Small"
+                              StartIcon="@Icons.Material.Filled.Error"
+                              DialogIcon="@Icons.Material.Filled.Error"
+                              Confirm
+                              DialogColor="Color.Error"
+                              OnResult="StatusUpdateResponse"
+                              EndPoint="@($"ItemClaim/UpdateStatus/{UpdateStatusActionTypes.DistributorRejected}")"
+                              T="ItemClaimListDTO">
+                    Reject
+                </ActionButton>
+
+                <ActionButton Color="Color.Primary"
+                              Variant="Variant.Outlined"
+                              Size="Size.Small"
+                              StartIcon="@Icons.Material.Filled.BookmarkAdded"
+                              ComponentType="typeof(ItemClaimCertificateForm)"
+                              T="ItemClaimListDTO">
+                    Certify
+                </ActionButton>
+            }
+        </MudStack>
+    </ToolbarStartTemplate>
+
+    <ChildContent>
+        <Sort Property="x => x.ClaimDate" Direction="SortDirection.Descending" />
+
+        <StringFilter Order="0" Property="x => x.ClaimNumber" Label="No." Operator="ShiftSoftware.ShiftBlazor.Enums.ODataOperator.Contains" lg="4" md="6" sm="12" xs="12" />
+        <StringFilter Order="1" Property="x => x.VIN" Label="VIN" Operator="ShiftSoftware.ShiftBlazor.Enums.ODataOperator.Contains" lg="4" md="6" sm="12" xs="12" />
+        <DateTimeFilter Order="2" Property="x => x.ClaimDate" Label="Claim Date" lg="4" md="6" sm="12" xs="12" />
+        <ForeignFilter @ref="CompanyFilter" Order="3" AdditionalParameters='new() { [nameof(ShiftAutocomplete<ItemClaimListDTO>.GroupSelectedValues)] = false }' Property="x => x.CompanyID" Label="Company" DTOType="typeof(CompanyListDTO)" EntitySet="IdentityCompany" BaseUrlKey="ShiftIdentityApi" lg="4" md="6" sm="12" xs="12" />
+        <ForeignFilter Order="4" AdditionalParameters='new() { [nameof(ShiftAutocomplete<ItemClaimListDTO>.GroupSelectedValues)] = false }' Property="x => x.CompanyBranchID" AutocompleteFilter="x => x.Add(CompanyFilter?.Filter)" Label="Branch" DTOType="typeof(CompanyBranchListDTO)" EntitySet="IdentityCompanyBranch" BaseUrlKey="ShiftIdentityApi" lg="4" md="6" sm="12" xs="12" />
+        
+        <ForeignFilter Order="5" AdditionalParameters='new() { [nameof(ShiftAutocomplete<ItemClaimListDTO>.GroupSelectedValues)] = false }' Property="x => x.CampaignID" Label="Campaign" DTOType="typeof(CompanyListDTO)" EntitySet="ServiceCampaign" lg="4" md="6" sm="12" xs="12" />
+        <ForeignFilter Order="6" AdditionalParameters='new() { [nameof(ShiftAutocomplete<ItemClaimListDTO>.GroupSelectedValues)] = false }' Property="x => x.ClaimableItemID" Label="Item" DTOType="typeof(ClaimableItemListDTO)" EntitySet="ClaimableItem" lg="4" md="6" sm="12" xs="12" />
+        <EnumFilter Order="7" Property="x => x.ClaimStatus" Label="Status" lg="4" md="6" sm="12" xs="12" />
+        <EnumFilter Order="8" Property="x => x.HasAttachment" Label="Has Attachment" lg="4" md="6" sm="12" xs="12" />
+        
+        <DateTimeFilter Order="9" Property="x => x.ProcessDate" Label="Reimbursement Certificate Date" lg="4" md="6" sm="12" xs="12" />
+        <DateTimeFilter Order="10" Property="x => x.ReimbursementCertificateCertificateDate" Label="Reimbursement Certificate Date" lg="4" md="6" sm="12" xs="12" />
+        <DateTimeFilter Order="11" Property="x => x.ReimbursementCertificateInvoiceDate" Label="Reimbursement Invoice Date" lg="4" md="6" sm="12" xs="12" />
+
+        <ButtonColumn Filterable="false" ComponentType="typeof(ItemClaimForm)" Property="x => x.ClaimNumber" StickyLeft Title="Claim Number" Class="whitespace-nowrap" />
+
+        <PropertyColumn Filterable="false" Property="x => x.VIN" Title="VIN" HeaderClass="whitespace-nowrap" />
+        <PropertyColumn Filterable="false" Format="yyyy-MM-dd" Property="x => x.ClaimDate" Title="Claim Date" HeaderClass="whitespace-nowrap" />
+        <PropertyColumn Filterable="false" Property="x => x.ClaimableItemName" Title="Item" HeaderClass="whitespace-nowrap" CellClass="whitespace-nowrap" />
+
+        <PropertyColumn Format="F" Property="x => x.ProcessDate" Title="Process Date" HeaderClass="whitespace-nowrap" />
+        <PropertyColumn Filterable="false" Property="x => x.ClaimStatus" Title="Status" Class="whitespace-nowrap">
+            <CellTemplate>
+                @if (context.Item.DistributorErrorMessage is not null && context.Item.ClaimStatus == ClaimStatus.RejectedWithError)
+                {
+                    <MudTooltip Text="@context.Item.DistributorErrorMessage" Placement="Placement.Left">
+                        <ClaimStatusChip ClaimStatus="@context.Item.ClaimStatus" />
+                    </MudTooltip>
+                }
+                else
+                {
+                    <ClaimStatusChip ClaimStatus="@context.Item.ClaimStatus" />
+                }
+            </CellTemplate>
+        </PropertyColumn>
+
+        <PropertyColumn Filterable="false" Property="x => x.HasAttachment" Title="Has Attachment" Class="whitespace-nowrap" />
+
+        <ForeignColumn Title="Company"
+                       T="ItemClaimListDTO"
+                       Filterable="false"
+                       CellClass="whitespace-nowrap"
+                       TEntity="ShiftSoftware.ShiftIdentity.Core.DTOs.Company.CompanyListDTO"
+                       EntitySet="IdentityCompany"
+                       BaseUrlKey="ShiftIdentityApi"
+                       TProperty="string"
+                       Property="x=> x.CompanyID" />
+
+        <ForeignColumn Title="Branch"
+                       T="ItemClaimListDTO"
+                       Filterable="false"
+                       CellClass="whitespace-nowrap"
+                       TEntity="ShiftSoftware.ShiftIdentity.Core.DTOs.CompanyBranch.CompanyBranchListDTO"
+                       EntitySet="IdentityCompanyBranch"
+                       BaseUrlKey="ShiftIdentityApi"
+                       TProperty="string"
+                       Property="x=> x.CompanyBranchID" />
+
+        <PropertyColumn Property="x => x.Cost" Format="$#,0.00" Title="Cost" HeaderClass="whitespace-nowrap" />
+        <PropertyColumn Property="x => x.InvoiceNumber" Title="Invoice Number" HeaderClass="whitespace-nowrap" />
+        <PropertyColumn Property="x => x.JobNumber" Title="Job Number" HeaderClass="whitespace-nowrap" />
+        <PropertyColumn Filterable="false" Property="x => x.CampaignName" Title="Campaign" HeaderClass="whitespace-nowrap" CellClass="whitespace-nowrap" />
+        <PropertyColumn Filterable="false" Property="x => x.VehicleInspectionResultVehicleInspectionTypeName" Title="Insepction" HeaderClass="whitespace-nowrap" CellClass="whitespace-nowrap" />
+
+        <ButtonColumn Filterable="false" Format="yyyy-MM-dd" Property="x => x.ReimbursementCertificateCertificateDate" Title="Reimbursement Certificate Date" KeyPropertyName="ReimbursementCertificateID" HeaderClass="whitespace-nowrap" ComponentType="typeof(ItemClaimCertificateForm)" />
+        <ButtonColumn Filterable="false" Format="yyyy-MM-dd" Property="x => x.ReimbursementCertificateInvoiceDate" Title="Reimbursement Invoice Date" KeyPropertyName="ReimbursementCertificateID" HeaderClass="whitespace-nowrap" ComponentType="typeof(ItemClaimInvoiceForm)" />
+
+        @* <PropertyColumn Format="yyyy-MM-dd" Property="x => x.ContributionCertificateCertificateDate" Title="Contribution Certificate Date" HeaderClass="whitespace-nowrap" />
+        <PropertyColumn Format="yyyy-MM-dd" Property="x => x.ContributionCertificateInvoiceDate" Title="Contribution Invoice Date" HeaderClass="whitespace-nowrap" /> *@
+    </ChildContent>
+</ShiftList>
+
+@code {
+    public ForeignFilter<ItemClaimListDTO, string?>? CompanyFilter { get; set; }
+
+    private string? inputText;
+
+    private ValueTask<bool> StatusUpdateResponse(ShiftEntityResponse<IList<ItemClaimListDTO>> data)
+    {
+        this.inputText = null;
+
+        var res = data;
+
+        if (res.Entity?.Count > 0)
+        {
+            this.MessageService.Warning($"({res.Entity!.Count}) claims has been updated.");
+        }
+        else if (res.Entity?.Count == 0)
+        {
+            this.MessageService.Error($"No claims were updated.");
+        }
+        else if (res.Message is null)
+        {
+            this.MessageService.Error("An error occurred while updating the claims.");
+        }
+
+        return new ValueTask<bool>(true);
+    }
+}

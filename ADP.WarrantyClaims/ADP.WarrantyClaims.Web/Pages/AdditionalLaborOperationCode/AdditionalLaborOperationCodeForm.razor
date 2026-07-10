@@ -1,0 +1,36 @@
+@attribute [Route($"/{nameof(AdditionalLaborOperationCodeForm)}/{{Key?}}")]
+
+@using ShiftSoftware.ADP.WarrantyClaims.Shared.DTOs.AdditionalLaborOperationCode
+
+@inherits ShiftForm<AdditionalLaborOperationCodeForm, AdditionalLaborOperationCodeDTO>
+
+@inject IOptions<WarrantyClaimsWebOptions> WCOptions
+
+<ShiftEntityForm @bind-Mode="Mode"
+                 @bind-Value="TheItem"
+                 @ref="FormContainer"
+                 Endpoint="AdditionalLaborOperationCode"
+                 Title="Additional Labor Operation Code"
+                 TypeAuthAction="WCOptions.Value.AdditionalLaborOperationCodesAction"
+                 @bind-Key="@Key">
+    <MudGrid Spacing="8" Class="pt-4">
+        <MudItem Class="pt-2 pb-2" lg="6" md="6" sm="6" xs="12">
+            <MudTextFieldExtended Label="Code"
+                                  For="() => TheItem.Code"
+                                  @bind-Value="TheItem.Code" />
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="6" md="6" sm="6" xs="12">
+            <MudNumericFieldExtended Label="Time (Hours)"
+                                     For="() => TheItem.Time"
+                                     @bind-Value="TheItem.Time" />
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="12" md="12" sm="12" xs="12">
+            <MudTextFieldExtended Label="Description"
+                                  Lines="2"
+                                  For="() => TheItem.Description"
+                                  @bind-Value="TheItem.Description" />
+        </MudItem>
+    </MudGrid>
+</ShiftEntityForm>

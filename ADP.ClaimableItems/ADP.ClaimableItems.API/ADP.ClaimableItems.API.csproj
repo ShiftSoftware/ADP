@@ -31,6 +31,11 @@
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />
 		<PackageReference Include="ShiftSoftware.ShiftEntity.Web" Version="2026.7.3.1" />
 		<PackageReference Include="ShiftSoftware.TypeAuth.AspNetCore" Version="1.6.26" />
+		<!-- The claim hot path deserializes/validates the LookupServices ItemClaimDTO payload + HMAC
+		     signature (Phase 2 Slice 5). The contract stays on LookupServices untouched (D15).
+		     ADP-internal convention: source project in-repo, published package when packed standalone. -->
+		<PackageReference Include="ShiftSoftware.ADP.Lookup.Services" Version="$(ADPVersion)" Condition="!Exists('..\..\ADP.LookupServices\Lookup.Services\Lookup.Services.csproj')" />
+		<ProjectReference Include="..\..\ADP.LookupServices\Lookup.Services\Lookup.Services.csproj" Condition="Exists('..\..\ADP.LookupServices\Lookup.Services\Lookup.Services.csproj')" />
 	</ItemGroup>
 
 	<ItemGroup>

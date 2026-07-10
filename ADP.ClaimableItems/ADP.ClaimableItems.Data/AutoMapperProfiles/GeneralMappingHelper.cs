@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace ShiftSoftware.ADP.ClaimableItems.Data.AutoMapperProfiles;
 
-// Module-local copy of the trivial localized-name deserializer (the TCA consumer keeps its own
+// Module-local copy of the trivial localized-name deserializer (the original host application keeps its own
 // Services.Data.AutoMapperProfiles.GeneralMappingHelper for its remaining profiles).
 public class GeneralMappingHelper
 {

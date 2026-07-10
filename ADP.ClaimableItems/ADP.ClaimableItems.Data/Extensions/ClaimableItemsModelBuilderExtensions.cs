@@ -11,7 +11,7 @@ public static class ClaimableItemsModelBuilderExtensions
     /// </summary>
     /// <param name="schema">
     /// SQL schema to place every module-owned entity (and its temporal history table) under.
-    /// The sample host passes <c>"ClaimableItems"</c>; the Toyota Central Asia consumer passes
+    /// The sample host passes <c>"ClaimableItems"</c>; the original host application passes
     /// <c>null</c> so the existing year-old <c>dbo</c> temporal tables are NOT renamed under
     /// SYSTEM_VERSIONING (see risk R1 / decision D3 in the extraction plan). When null the
     /// entities keep the model's default schema.
@@ -27,6 +27,12 @@ public static class ClaimableItemsModelBuilderExtensions
         modelBuilder.Entity<ClaimableItem>();
         modelBuilder.Entity<Campaign>();
         modelBuilder.Entity<CampaignVinEntry>();
+        // Claim record (Phase 2 Slice 5). ItemClaim's intra-module FKs (Campaign/ClaimableItem/
+        // CampaignVinEntry/ClaimableItemContract) and its cross-module Certificate FKs (ADP.Cases)
+        // come from its navigations; ItemClaim->VehicleInspectionResult is a plain FK column the
+        // consumer configures from its side (module-dependent -> consumer-principal; spike-proven).
+        modelBuilder.Entity<ClaimableItemContract>();
+        modelBuilder.Entity<ItemClaim>();
 
         if (!string.IsNullOrWhiteSpace(schema))
         {

@@ -1,0 +1,47 @@
+@using ShiftSoftware.ADP.Models.Enums
+
+@if (ManufacturerStatus is not null)
+{
+    string icon = string.Empty;
+    Color color = Color.Default;
+
+    switch (ManufacturerStatus)
+    {
+        case WarrantyManufacturerClaimStatus.NA:
+            icon = Icons.Material.Outlined.MoreHoriz;
+            color = Color.Default;
+            break;
+
+        case WarrantyManufacturerClaimStatus.Exported:
+            icon = Icons.Material.Outlined.DownloadDone;
+            color = Color.Warning;
+            break;
+
+        @* case WarrantyManufacturerClaimStatus.Downloaded:
+            icon = Icons.Material.Outlined.DownloadDone;
+            color = Color.Warning;
+            break; *@
+
+        case WarrantyManufacturerClaimStatus.Paid:
+            icon = Icons.Material.Outlined.Paid;
+            color = Color.Success;
+            break;
+
+        case WarrantyManufacturerClaimStatus.Rejected:
+            icon = Icons.Material.Outlined.Dangerous;
+            color = Color.Error;
+            break;
+
+        case WarrantyManufacturerClaimStatus.OnHold:
+            icon = Icons.Material.Outlined.Pause;
+            color = Color.Default;
+            break;
+    }
+
+    <MudChip T="string" Variant="Variant.Filled" Size="@Size.Small" Icon="@icon" Color="@color">@ManufacturerStatus.Describe()</MudChip>
+}
+
+@code {
+    [Parameter]
+    public WarrantyManufacturerClaimStatus? ManufacturerStatus { get; set; }
+}

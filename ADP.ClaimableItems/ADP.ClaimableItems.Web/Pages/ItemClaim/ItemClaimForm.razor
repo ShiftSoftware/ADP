@@ -1,0 +1,128 @@
+﻿@attribute [Route($"/{nameof(ItemClaimForm)}/{{Key?}}")]
+
+@using global::ShiftSoftware.ADP.ClaimableItems.Shared.DTOs.ItemClaim
+
+@using ShiftSoftware.TypeAuth.Core
+
+@inherits ShiftForm<ItemClaimForm, ItemClaimDTO>
+
+@inject IOptions<ClaimableItemsWebOptions> CIOptions
+
+@inject ITypeAuthService TypeAuthService
+
+<ShiftEntityForm @bind-Mode="Mode"
+                 @bind-Value="TheItem"
+                 @ref="FormContainer"
+                 Endpoint="ItemClaim"
+                 Title="Item Claim"
+                 ShowPrint
+                 OnResult="(r) => { this.postClaimModification = ((CIOptions.Value.PostClaimModificationAction is not null && this.TypeAuthService.CanAccess(CIOptions.Value.PostClaimModificationAction)) && r.Entity!.ClaimStatus == ClaimStatus.Draft); return ValueTask.FromResult(true); }"
+                 TypeAuthAction="CIOptions.Value.ClaimingAction"
+                 @bind-Key="@Key">
+    <MudGrid Spacing="8" Class="pt-4">
+        <MudItem Class="pt-2 pb-2" lg="6" md="6" sm="12" xs="12">
+            <MudAlert Severity="Severity.Info" Icon="@Icons.Material.Filled.Numbers">
+                <strong>@TheItem.ClaimNumber</strong>
+            </MudAlert>
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="6" md="6" sm="12" xs="12">
+            <MudText Typo="Typo.body2">Claim Status</MudText>
+            <MudDivider />
+            <ClaimStatusChip ClaimStatus="TheItem.ClaimStatus" />
+        </MudItem>
+
+        @if (TheItem.ClaimStatus == ClaimStatus.RejectedWithError)
+        {
+            <MudItem Class="pt-2 pb-2" lg="12" md="12" sm="12" xs="12">
+                <MudAlert Severity="Severity.Warning" Icon="@Icons.Material.Filled.Warning">
+                    <strong>@TheItem.DistributorErrorMessage</strong>
+                </MudAlert>
+            </MudItem>
+        }
+
+        <MudItem Class="pt-2 pb-2" lg="4" md="4" sm="6" xs="12">
+            <MudTextFieldExtended Label="VIN" ReadOnly Disabled="Mode == FormModes.Edit"
+                                  @bind-Value="TheItem.VIN" />
+        </MudItem>
+        <MudItem Class="pt-2 pb-2" lg="4" md="4" sm="6" xs="12">
+            <ShiftAutocomplete Label="Item" ReadOnly Disabled="Mode == FormModes.Edit"
+                               TEntitySet="ShiftSoftware.ADP.ClaimableItems.Shared.DTOs.ClaimableItem.ClaimableItemListDTO"
+                               EntitySet="ClaimableItem"
+                               @bind-Value="TheItem.ClaimableItem" />
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="4" md="4" sm="6" xs="12">
+            <ShiftAutocomplete Label="Campaign" ReadOnly Disabled="Mode == FormModes.Edit"
+                               TEntitySet="ShiftSoftware.ADP.ClaimableItems.Shared.DTOs.Campaign.CampaignListDTO"
+                               EntitySet="ServiceCampaign"
+                               @bind-Value="TheItem.Campaign" />
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="4" md="4" sm="6" xs="12">
+            <ShiftDateTimePicker Label="Claim Date"
+                                 ReadOnly="!postClaimModification"
+                                 Disabled="!postClaimModification && (Mode == FormModes.Edit)"
+                                 @bind-DateTimeOffset='TheItem.ClaimDate' />
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="4" md="4" sm="6" xs="12">
+            <ShiftAutocomplete Label="Company" ReadOnly Disabled="Mode == FormModes.Edit"
+                               TEntitySet="ShiftSoftware.ShiftIdentity.Core.DTOs.Company.CompanyListDTO"
+                               EntitySet="IdentityCompany"
+                               BaseUrlKey="ShiftIdentityApi"
+                               @bind-Value="TheItem.Company" />
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="4" md="4" sm="6" xs="12">
+            <ShiftAutocomplete Label="Branch" ReadOnly Disabled="Mode == FormModes.Edit"
+                               TEntitySet="ShiftSoftware.ShiftIdentity.Core.DTOs.CompanyBranch.CompanyBranchListDTO"
+                               EntitySet="IdentityCompanyBranch"
+                               BaseUrlKey="ShiftIdentityApi"
+                               @bind-Value="TheItem.CompanyBranch" />
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="4" md="4" sm="6" xs="12">
+            <MudNumericFieldExtended Label="Cost"
+                                     ReadOnly="!postClaimModification"
+                                     Disabled="!postClaimModification && (Mode == FormModes.Edit)"
+                                     @bind-Value='TheItem.Cost' />
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="4" md="4" sm="6" xs="12">
+            <MudTextFieldExtended Label="Invoice Number"
+                                  @bind-Value='TheItem.InvoiceNumber' />
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="4" md="4" sm="6" xs="12">
+            <MudTextFieldExtended Label="Job Number"
+                                  @bind-Value='TheItem.JobNumber' />
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="12" md="12" sm="12" xs="12">
+            <FileUploader ShowThumbnail="true"
+                          Label="Attachments"
+                          MaxFileCount="10"
+                          MaxFileSizeInMegaBytes="32"
+                          TypeAuthAction="ShiftSoftware.ShiftEntity.Core.AzureStorageActionTree.UploadFiles"
+                          For="() => TheItem.Attachments"
+                          @bind-Values="TheItem.Attachments" />
+        </MudItem>
+
+        @if (TheItem.ClaimStatus == ClaimStatus.RejectedWithError && Mode > FormModes.Archive)
+        {
+            <MudItem Class="pt-2 pb-2" lg="12" md="12" sm="12" xs="12">
+                <MudAlert Severity="Severity.Warning" NoIcon>
+                    <MudCheckBoxExtended Label="Re-Submit for Distributor Review"
+                                         @bind-Value="TheItem.ReSubmitForDistributorReview"
+                                         For="() => TheItem.ReSubmitForDistributorReview" />
+                </MudAlert>
+            </MudItem>
+        }
+    </MudGrid>
+</ShiftEntityForm>
+
+
+@code {
+    private bool postClaimModification = false;
+}
