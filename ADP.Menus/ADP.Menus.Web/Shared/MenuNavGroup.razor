@@ -1,0 +1,20 @@
+<AuthorizedMudNavGroup Icon="@Icons.Material.Filled.MenuBook"
+                       IconColor="Color.Primary"
+                       Title="Menu"
+                       TypeAuthActions="GroupActions">
+    <MenuNavLinks />
+</AuthorizedMudNavGroup>
+
+@code {
+    private static List<ShiftSoftware.TypeAuth.Core.Actions.Action> GroupActions => new()
+    {
+        MenuActionTree.BrandMappings,
+        MenuActionTree.LabourRateMappings,
+        MenuActionTree.ServiceIntervalGroups,
+        MenuActionTree.ServiceIntervals,
+        MenuActionTree.StandaloneReplacementItemGroups,
+        MenuActionTree.ReplacementItems,
+        MenuActionTree.VehicleModels,
+        MenuActionTree.Menus,
+    };
+}

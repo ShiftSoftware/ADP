@@ -1,0 +1,71 @@
+@inject IOptions<WarrantyClaimsWebOptions> WarrantyClaimsWebOptionsAccessor
+
+<AuthorizedMudNavGroup Icon="@Icons.Material.Filled.SafetyCheck"
+                       IconColor="Color.Primary"
+                       Title="Warranty"
+                       TypeAuthActions="GroupActions">
+
+    <AuthorizedMudNavLink Href="@($"/{nameof(WarrantyClaimList)}")"
+                          IconColor="Color.Primary"
+                          TypeAuthAction="Options.WarrantyClaimAction"
+                          Match="NavLinkMatch.All"
+                          Icon="@Icons.Material.Filled.Assignment">Warranty Claims</AuthorizedMudNavLink>
+
+    <AuthorizedMudNavLink Href="@($"/{nameof(WarrantyCertificateList)}")"
+                          IconColor="Color.Primary"
+                          Match="NavLinkMatch.All"
+                          TypeAuthAction="Options.CertificatesAction"
+                          Icon="@Icons.Material.Filled.BookmarkAdded">Certificates</AuthorizedMudNavLink>
+
+    <AuthorizedMudNavLink Href="@($"/{nameof(WarrantyInvoiceList)}")"
+                          IconColor="Color.Primary"
+                          TypeAuthAction="Options.InvoicesAction"
+                          Match="NavLinkMatch.All"
+                          Icon="@Icons.Material.Filled.InsertDriveFile">Invoices</AuthorizedMudNavLink>
+
+    <AuthorizedMudNavLink Href="@($"/{nameof(FinancialList)}")"
+                          IconColor="Color.Primary"
+                          TypeAuthAction="Options.WarrantyClaimFinancialAction"
+                          Match="NavLinkMatch.All"
+                          Icon="@Icons.Material.Filled.AttachMoney">Financial Report</AuthorizedMudNavLink>
+
+    <AuthorizedMudNavLink Href="@($"/{nameof(ManufacturerSettlmentSheetList)}")"
+                          IconColor="Color.Primary"
+                          TypeAuthAction="Options.ManufacturerSettlmentsAction"
+                          Match="NavLinkMatch.All"
+                          Icon="@Icons.Material.Filled.PrecisionManufacturing">Manufacturer Settlments</AuthorizedMudNavLink>
+
+    <AuthorizedMudNavLink Href="@($"/{nameof(AdditionalLaborOperationCodeList)}")"
+                          IconColor="Color.Primary"
+                          TypeAuthAction="Options.AdditionalLaborOperationCodesAction"
+                          Match="NavLinkMatch.All"
+                          Icon="@Icons.Material.Filled.Handyman">Additional Labor Operation Codes</AuthorizedMudNavLink>
+
+    <AuthorizedMudNavLink Href="@($"/{nameof(WarrantyRatesList)}")"
+                          IconColor="Color.Primary"
+                          TypeAuthAction="Options.WarrantyRatesAction"
+                          Match="NavLinkMatch.All"
+                          Icon="@Icons.Material.Filled.Tune">Warranty Rates</AuthorizedMudNavLink>
+
+    @ChildContent
+</AuthorizedMudNavGroup>
+
+@code {
+    /// <summary>
+    /// Extra links the consumer wants rendered inside this same nav group.
+    /// </summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private WarrantyClaimsWebOptions Options => WarrantyClaimsWebOptionsAccessor.Value;
+
+    private List<ShiftSoftware.TypeAuth.Core.Actions.Action> GroupActions => new List<ShiftSoftware.TypeAuth.Core.Actions.Action?>
+    {
+        Options.WarrantyClaimAction,
+        Options.CertificatesAction,
+        Options.InvoicesAction,
+        Options.WarrantyClaimFinancialAction,
+        Options.ManufacturerSettlmentsAction,
+        Options.AdditionalLaborOperationCodesAction,
+        Options.WarrantyRatesAction,
+    }.Where(a => a is not null).Select(a => a!).ToList();
+}

@@ -1,0 +1,65 @@
+@inject IOptions<ClaimableItemsWebOptions> ClaimableItemsWebOptionsAccessor
+
+<AuthorizedMudNavGroup Icon="@Icons.Material.Filled.AutoAwesomeMosaic"
+                       IconColor="Color.Primary"
+                       Title="Claimable Items"
+                       TypeAuthActions="GroupActions">
+
+    <AuthorizedMudNavLink Href="@($"/{nameof(CampaignList)}")"
+                          IconColor="Color.Primary"
+                          TypeAuthAction="Options.ClaimableItemSetupAction"
+                          Match="NavLinkMatch.All"
+                          Icon="@Icons.Material.Filled.AdsClick">Campaigns</AuthorizedMudNavLink>
+
+    <AuthorizedMudNavLink Href="@($"/{nameof(ClaimableItemList)}")"
+                          IconColor="Color.Primary"
+                          TypeAuthAction="Options.ClaimableItemSetupAction"
+                          Match="NavLinkMatch.All"
+                          Icon="@Icons.Material.Filled.Storage">Item Setup</AuthorizedMudNavLink>
+
+    <AuthorizedMudNavLink Href="@($"/{nameof(CampaignVinEntryList)}")"
+                          IconColor="Color.Primary"
+                          TypeAuthAction="Options.CampaignVinEntriesAction"
+                          Match="NavLinkMatch.All"
+                          Icon="@Icons.Material.Filled.PlaylistAddCheck">Campaign VIN Entries</AuthorizedMudNavLink>
+
+    @ChildContent
+
+    <AuthorizedMudNavLink Href="@($"/{nameof(ItemClaimList)}")"
+                          IconColor="Color.Primary"
+                          TypeAuthAction="Options.ClaimingAction"
+                          Match="NavLinkMatch.All"
+                          Icon="@Icons.Material.Filled.Receipt">Claims</AuthorizedMudNavLink>
+
+    <AuthorizedMudNavLink Href="@($"/{nameof(ItemClaimCertificateList)}")"
+                          IconColor="Color.Primary"
+                          TypeAuthAction="Options.CertifyingAction"
+                          Match="NavLinkMatch.All"
+                          Icon="@Icons.Material.Filled.BookmarkAdded">Certificates</AuthorizedMudNavLink>
+
+    <AuthorizedMudNavLink Href="@($"/{nameof(ItemClaimInvoiceList)}")"
+                          IconColor="Color.Primary"
+                          TypeAuthAction="Options.InvoicingAction"
+                          Match="NavLinkMatch.All"
+                          Icon="@Icons.Material.Filled.InsertDriveFile">Invoices</AuthorizedMudNavLink>
+</AuthorizedMudNavGroup>
+
+@code {
+    /// <summary>
+    /// Extra links the consumer wants rendered inside this same nav group, positioned where the
+    /// original host application's Service Activation link sits today (between Campaign VIN Entries
+    /// and Claims) — lets a host slot its own related pages in without forking this component.
+    /// </summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private ClaimableItemsWebOptions Options => ClaimableItemsWebOptionsAccessor.Value;
+
+    private List<ShiftSoftware.TypeAuth.Core.Actions.Action> GroupActions => new List<ShiftSoftware.TypeAuth.Core.Actions.Action?>
+    {
+        Options.ClaimableItemSetupAction,
+        Options.CampaignVinEntriesAction,
+        Options.ClaimingAction,
+        Options.CertifyingAction,
+        Options.InvoicingAction,
+    }.Where(a => a is not null).Select(a => a!).ToList();
+}
