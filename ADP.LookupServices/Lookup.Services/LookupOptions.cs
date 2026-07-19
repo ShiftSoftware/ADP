@@ -102,6 +102,23 @@ public class LookupOptions
     /// <summary>Whether to include free service items that have not yet been activated (e.g., awaiting warranty activation).</summary>
     public bool IncludeInactivatedFreeServiceItems { get; set; }
     /// <summary>
+    /// When enabled, a service item stays claimable through the whole of its expiry date — until
+    /// <c>23:59:59.9999999</c> UTC — instead of expiring the moment that date begins.
+    /// <para>Expiry is a calendar date everywhere it is produced: <c>FixedDateRange</c> items take
+    /// <c>ValidTo</c> straight off the catalog, and <c>RelativeToActivation</c> items derive theirs by adding
+    /// the configured interval to the free-service start date — both land on midnight. The status check
+    /// compares that instant against "now", so by default an item labelled <c>expires 2028-01-15</c> is
+    /// already <c>Expired</c> at <c>2028-01-15 00:00 UTC</c> and can never be claimed on the date shown for
+    /// it. Enable this to make the date shown the last claimable day rather than the first expired one.</para>
+    /// <para>Only the expired/pending verdict moves — <c>ExpiresAt</c> itself is left untouched, so the
+    /// serialized date, the claim signature and the sequential-item chain (each item activating when the
+    /// previous one expires) are all unchanged.</para>
+    /// <para>Defaults to <c>false</c> so existing hosts keep their current behaviour until they opt in.
+    /// Leave it off in deployments that use sub-day <c>ActiveFor</c> durations (Seconds/Minutes/Hours):
+    /// it rounds those out to the end of the day.</para>
+    /// </summary>
+    public bool TreatServiceItemExpiryAsEndOfDay { get; set; }
+    /// <summary>
     /// When enabled, warranty activation is only offered to a requester whose company has a vehicle entry for the
     /// vehicle (i.e. it has been allocated/shipped/delivered to them). When activation is due but the vehicle is not
     /// allocated to the requesting company, <c>VehicleWarrantyDTO.ActivationStatus</c> becomes <c>BlockedNotAllocated</c>

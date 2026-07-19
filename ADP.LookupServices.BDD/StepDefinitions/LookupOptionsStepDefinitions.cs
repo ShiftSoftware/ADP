@@ -1,3 +1,4 @@
+using System.Globalization;
 using LookupServices.BDD.Support;
 using Reqnroll;
 using ShiftSoftware.ADP.Lookup.Services;
@@ -26,6 +27,23 @@ public class LookupOptionsStepDefinitions
     public void GivenIncludeInactivatedFreeServiceItemsEnabled()
     {
         _context.Options.IncludeInactivatedFreeServiceItems = true;
+    }
+
+    [Given("LookupOptions has end-of-day service item expiry enabled")]
+    public void GivenEndOfDayServiceItemExpiryEnabled()
+    {
+        _context.Options.TreatServiceItemExpiryAsEndOfDay = true;
+    }
+
+    /// <summary>
+    /// Freezes the lookup clock. The timestamp is read as UTC, so "2028-01-15 09:00:00" is
+    /// 09:00 UTC on that date regardless of where the test runs.
+    /// </summary>
+    [Given("the current UTC time is {string}")]
+    public void GivenTheCurrentUtcTimeIs(string timestamp)
+    {
+        var instant = DateTime.Parse(timestamp, CultureInfo.InvariantCulture, DateTimeStyles.None);
+        _context.Options.TimeProvider = new FixedTimeProvider(new DateTimeOffset(instant, TimeSpan.Zero));
     }
 
     [Given("LookupOptions has signature validity duration of {int} minutes")]

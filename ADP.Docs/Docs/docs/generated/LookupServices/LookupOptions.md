@@ -59,6 +59,8 @@ The main configuration class for the lookup services.
  `04007-07212`). When unset, ADP applies a neutral default (dashes removed, upper-cased). Must be a
  pure, deterministic function; ADP calls it once per distinct SSC part number. |
 | IncludeInactivatedFreeServiceItems <div><strong>``bool``</strong></div> | Whether to include free service items that have not yet been activated (e.g., awaiting warranty activation). |
+| TreatServiceItemExpiryAsEndOfDay <div><strong>``bool``</strong></div> | When enabled, a service item stays claimable through the whole of its expiry date — until
+ `23:59:59.9999999` UTC — instead of expiring the moment that date begins. |
 | RequireAllocationForActivation <div><strong>``bool``</strong></div> | When enabled, warranty activation is only offered to a requester whose company has a vehicle entry for the
  vehicle (i.e. it has been allocated/shipped/delivered to them). When activation is due but the vehicle is not
  allocated to the requesting company, `VehicleWarrantyDTO.ActivationStatus` becomes `BlockedNotAllocated`
