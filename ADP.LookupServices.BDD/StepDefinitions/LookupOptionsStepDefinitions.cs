@@ -82,6 +82,16 @@ public class LookupOptionsStepDefinitions
             .ToList();
     }
 
+    // Comma-separated account numbers that (with ItemStatus "D") mark an entry as a direct sale to an end
+    // customer even though its company is a supply-chain one. Configuring this turns the feature on.
+    [Given("the direct end-customer sale account numbers are {string}")]
+    public void GivenDirectEndCustomerSaleAccountNumbersAre(string commaSeparatedAccounts)
+    {
+        _context.Options.DirectEndCustomerSaleAccountNumbers = commaSeparatedAccounts
+            .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+    }
+
     [Given("the accessory image resolver maps {string} to {string}")]
     public void GivenAccessoryImageResolverMaps(string from, string to)
     {

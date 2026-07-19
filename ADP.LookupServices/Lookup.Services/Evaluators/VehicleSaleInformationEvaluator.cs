@@ -203,10 +203,12 @@ public class VehicleSaleInformationEvaluator
     }
 
     /// <summary>
-    /// Surfaces the upstream supply-chain legs (distributor + intermediaries) beside the dealer's sale. These
-    /// companies never make the end-customer sale — they only move the vehicle toward the dealer — so the block
-    /// is informational; it never changes the resolved sale, warranty, or eligibility. Additive and a no-op
-    /// when nothing is configured/present. Handles both source shapes:
+    /// Surfaces the supply-chain legs (distributor + intermediaries) beside the resolved sale. These are role
+    /// facts — which entity imported the vehicle and which moved it onward — so the block is informational; it
+    /// never changes the resolved sale, warranty, or eligibility. A company keeps its supply-chain role even
+    /// when it also made the end-customer sale (a distributor selling straight to a customer is still the
+    /// distributor), so classification here is by company alone. Additive and a no-op when nothing is
+    /// configured/present. Handles both source shapes:
     /// <list type="bullet">
     /// <item><b>Multi-entry</b> (per-dealer DMS feeds): the VIN has a separate
     /// <see cref="VehicleEntryModel"/> per leg; classify them by company role against
@@ -226,6 +228,10 @@ public class VehicleSaleInformationEvaluator
         //    and there is no distributor entry — so surface it from the configured DistributorCompanyID.
         if (Options.DistributorCompanyID is { } distributorCompanyID)
         {
+            // Classified purely by company role: the distributor is the entity that imported the vehicle, which is
+            // true regardless of who it went on to sell to. So a distributor entry that is itself the end-customer
+            // sale (it sold straight to the customer) is still surfaced here — its invoice is simply the
+            // distributor's own outbound sale, which in that case is the sale to the customer.
             var distributorEntry = entries
                 .Where(e => e.CompanyID == distributorCompanyID)
                 .OrderByDescending(e => e.InvoiceDate)
@@ -267,8 +273,8 @@ public class VehicleSaleInformationEvaluator
         }
 
         // Intermediary legs (0..n): entries whose company is a configured intermediary, earliest-invoiced
-        // first (closest to the distributor). The distributor takes precedence (mirroring
-        // IsEndCustomerSaleCompany), so a company configured as both is surfaced only as the distributor.
+        // first (closest to the distributor). The distributor takes precedence, so a company configured as
+        // both is surfaced only as the distributor.
         foreach (var intermediaryEntry in entries
             .Where(e => e.CompanyID is { } cid
                 && (Options.IntermediaryCompanyIDs?.Contains(cid) ?? false)

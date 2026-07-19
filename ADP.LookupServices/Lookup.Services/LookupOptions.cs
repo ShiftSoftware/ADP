@@ -2,6 +2,7 @@
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using ShiftSoftware.ADP.Lookup.Services.Enums;
 using ShiftSoftware.ADP.Models;
+using ShiftSoftware.ADP.Models.Vehicle;
 using ShiftSoftware.ShiftEntity.Model.Dtos;
 using System;
 using System.Collections.Generic;
@@ -118,37 +119,70 @@ public class LookupOptions
     /// on the distributor's invoice date, so it selects the entry whose <c>CompanyID</c> equals this value.
     /// <b>Required</b> for the Paint Thickness Certificate: if this is unset, or the VIN has no invoiced entry for
     /// this company, no certificate is produced — it never falls back to a dealer's invoice.
-    /// <para>This company also never makes the end-customer sale (it ships the vehicle to a dealer), so it is
-    /// excluded from end-customer-sale resolution alongside <see cref="IntermediaryCompanyIDs"/> — see
-    /// <see cref="IsEndCustomerSaleCompany"/>.</para>
+    /// <para>This company also normally never makes the end-customer sale (it ships the vehicle to a dealer), so its
+    /// entries are excluded from end-customer-sale resolution alongside <see cref="IntermediaryCompanyIDs"/> — unless
+    /// an individual entry is marked as a direct sale to a customer. See <see cref="IsEndCustomerSale"/>.</para>
     /// </summary>
     public long? DistributorCompanyID { get; set; }
     /// <summary>
     /// The Identity <c>CompanyID</c>s of any intermediary companies (e.g. a regional importer that sits between
     /// the distributor and the dealer). A VIN can pass through more than one, so this is a list. Like the
-    /// distributor, an intermediary only moves the vehicle toward the dealer and never makes the end-customer
-    /// sale, so its <c>VehicleEntry</c> must not anchor warranty/free-service dates or service-item eligibility —
-    /// see <see cref="IsEndCustomerSaleCompany"/>. Defaults to empty (no intermediaries).
+    /// distributor, an intermediary normally only moves the vehicle toward the dealer, so its <c>VehicleEntry</c>
+    /// must not anchor warranty/free-service dates or service-item eligibility — unless that entry is marked as a
+    /// direct sale to a customer. See <see cref="IsEndCustomerSale"/>. Defaults to empty (no intermediaries).
     /// </summary>
     public List<long> IntermediaryCompanyIDs { get; set; } = new();
 
     /// <summary>
-    /// Whether <paramref name="companyID"/> is a company that makes end-customer sales (a dealer), as opposed to a
-    /// supply-chain company — the <see cref="DistributorCompanyID">distributor</see> or an
-    /// <see cref="IntermediaryCompanyIDs">intermediary</see> — that only moves the vehicle toward the dealer.
-    /// Warranty activation, free-service start, and service-item eligibility must anchor on an end-customer sale,
-    /// never on a distributor's or intermediary's leg. A null/unknown company is treated as an end-customer sale,
-    /// so callers with no distributor/intermediary configured behave exactly as before.
+    /// The <c>AccountNumber</c>(s) that mark a <c>VehicleEntry</c> as a <b>direct sale to an end customer</b>, even
+    /// though the selling company is a supply-chain company. Paired with
+    /// <see cref="DirectEndCustomerSaleItemStatus"/>: an entry needs both to be marked. Today this is how a
+    /// distributor selling straight to a customer (instead of shipping to a dealer) is recognised — see
+    /// <see cref="IsEndCustomerSale"/>.
+    /// <para>Deployment-specific and supplied by the host. Empty by default, so deployments where supply-chain
+    /// companies never sell direct are unaffected. Matched case-insensitively.</para>
     /// </summary>
-    public bool IsEndCustomerSaleCompany(long? companyID)
+    public HashSet<string> DirectEndCustomerSaleAccountNumbers { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// The <see cref="VehicleEntryModel.ItemStatus"/> value that, together with an account number in
+    /// <see cref="DirectEndCustomerSaleAccountNumbers"/>, marks an entry as a direct sale to an end customer.
+    /// Defaults to <c>"D"</c>. <c>ItemStatus</c> is otherwise unused today — this is currently its only consumer —
+    /// though it is expected to drive broader vehicle-entry handling later. Matched case-insensitively.
+    /// </summary>
+    public string DirectEndCustomerSaleItemStatus { get; set; } = "D";
+
+    /// <summary>
+    /// Whether <paramref name="entry"/> is a sale to an end customer. This is the single classification the vehicle
+    /// lookup anchors on: warranty activation, free-service start, service-item eligibility and the reported sale
+    /// must all rest on an end-customer sale, never on a supply-chain movement.
+    /// <para>Two layers decide it:</para>
+    /// <list type="number">
+    /// <item><b>Company</b> — the <see cref="DistributorCompanyID">distributor</see> and any
+    /// <see cref="IntermediaryCompanyIDs">intermediary</see> only move the vehicle toward the dealer, so their
+    /// entries are supply-chain movements. Every other company — including a null/unknown one — sells to end
+    /// customers, so deployments with neither configured behave exactly as they did before either was introduced.</item>
+    /// <item><b>Entry</b> — an individual entry can still be marked as a direct sale to an end customer by carrying
+    /// a <see cref="DirectEndCustomerSaleAccountNumbers">direct-sale account number</see> together with the
+    /// <see cref="DirectEndCustomerSaleItemStatus">direct-sale item status</see>. This overrides the company layer,
+    /// which is how a distributor's own sale straight to a customer is recognised.</item>
+    /// </list>
+    /// </summary>
+    public bool IsEndCustomerSale(VehicleEntryModel entry)
     {
-        if (companyID is not { } id)
+        if (entry?.CompanyID is not { } companyID)
             return true;
 
-        if (DistributorCompanyID is not null && id == DistributorCompanyID)
-            return false;
+        var isSupplyChainCompany =
+            companyID == DistributorCompanyID
+            || (IntermediaryCompanyIDs?.Contains(companyID) ?? false);
 
-        return IntermediaryCompanyIDs is null || !IntermediaryCompanyIDs.Contains(id);
+        if (!isSupplyChainCompany)
+            return true;
+
+        return entry.AccountNumber is { } accountNumber
+            && DirectEndCustomerSaleAccountNumbers?.Contains(accountNumber) == true
+            && string.Equals(entry.ItemStatus, DirectEndCustomerSaleItemStatus, StringComparison.OrdinalIgnoreCase);
     }
     /// <summary>The HMAC secret key used for signing service item claim requests.</summary>
     public string SigningSecretKey { get; set; } = string.Empty;
