@@ -101,7 +101,6 @@ public class SharedStepDefinitions
                 CustomerID = GetOptionalString(row, "CustomerID"),
                 InvoiceNumber = GetOptionalString(row, "InvoiceNumber"),
                 AccountNumber = GetOptionalString(row, "AccountNumber"),
-                ItemStatus = GetOptionalString(row, "ItemStatus"),
             }));
     }
 

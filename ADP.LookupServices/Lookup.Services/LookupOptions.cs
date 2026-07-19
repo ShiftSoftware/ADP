@@ -134,23 +134,18 @@ public class LookupOptions
     public List<long> IntermediaryCompanyIDs { get; set; } = new();
 
     /// <summary>
-    /// The <c>AccountNumber</c>(s) that mark a <c>VehicleEntry</c> as a <b>direct sale to an end customer</b>, even
-    /// though the selling company is a supply-chain company. Paired with
-    /// <see cref="DirectEndCustomerSaleItemStatus"/>: an entry needs both to be marked. Today this is how a
-    /// distributor selling straight to a customer (instead of shipping to a dealer) is recognised — see
-    /// <see cref="IsEndCustomerSale"/>.
-    /// <para>Deployment-specific and supplied by the host. Empty by default, so deployments where supply-chain
-    /// companies never sell direct are unaffected. Matched case-insensitively.</para>
+    /// Per company, the <c>AccountNumber</c>(s) that mark a <c>VehicleEntry</c> as a <b>direct sale to an end
+    /// customer</b> even though that company is a supply-chain company. Today this is how a distributor selling
+    /// straight to a customer, instead of shipping to a dealer, is recognised — see <see cref="IsEndCustomerSale"/>.
+    /// <para>Keyed by Identity <c>CompanyID</c> because an account number is only meaningful within the company
+    /// that issued it: the same number can be used by another company for an entirely unrelated purpose, so a
+    /// match counts only for the company it is configured under.</para>
+    /// <para>Deployment-specific and supplied by the host; empty by default, so deployments where supply-chain
+    /// companies never sell direct are unaffected. Account numbers are matched with each supplied set's own
+    /// comparer — build them with <see cref="StringComparer.OrdinalIgnoreCase"/> for case-insensitive
+    /// matching.</para>
     /// </summary>
-    public HashSet<string> DirectEndCustomerSaleAccountNumbers { get; set; } = new(StringComparer.OrdinalIgnoreCase);
-
-    /// <summary>
-    /// The <see cref="VehicleEntryModel.ItemStatus"/> value that, together with an account number in
-    /// <see cref="DirectEndCustomerSaleAccountNumbers"/>, marks an entry as a direct sale to an end customer.
-    /// Defaults to <c>"D"</c>. <c>ItemStatus</c> is otherwise unused today — this is currently its only consumer —
-    /// though it is expected to drive broader vehicle-entry handling later. Matched case-insensitively.
-    /// </summary>
-    public string DirectEndCustomerSaleItemStatus { get; set; } = "D";
+    public Dictionary<long, HashSet<string>> DirectEndCustomerSaleAccountNumbersByCompany { get; set; } = new();
 
     /// <summary>
     /// Whether <paramref name="entry"/> is a sale to an end customer. This is the single classification the vehicle
@@ -162,11 +157,14 @@ public class LookupOptions
     /// <see cref="IntermediaryCompanyIDs">intermediary</see> only move the vehicle toward the dealer, so their
     /// entries are supply-chain movements. Every other company — including a null/unknown one — sells to end
     /// customers, so deployments with neither configured behave exactly as they did before either was introduced.</item>
-    /// <item><b>Entry</b> — an individual entry can still be marked as a direct sale to an end customer by carrying
-    /// a <see cref="DirectEndCustomerSaleAccountNumbers">direct-sale account number</see> together with the
-    /// <see cref="DirectEndCustomerSaleItemStatus">direct-sale item status</see>. This overrides the company layer,
-    /// which is how a distributor's own sale straight to a customer is recognised.</item>
+    /// <item><b>Entry</b> — an individual entry can still be marked as a direct sale to an end customer by its
+    /// <c>AccountNumber</c>, matched against
+    /// <see cref="DirectEndCustomerSaleAccountNumbersByCompany"/> for its own company. This overrides the company
+    /// layer, which is how a supply-chain company's own sale straight to a customer is recognised.</item>
     /// </list>
+    /// <para><c>ItemStatus</c> is deliberately not consulted. Status handling is expected to become a broader,
+    /// per-company/per-deployment concern covering all vehicle entries rather than this one case, so it is left
+    /// to that work instead of being partially anticipated here.</para>
     /// </summary>
     public bool IsEndCustomerSale(VehicleEntryModel entry)
     {
@@ -181,8 +179,9 @@ public class LookupOptions
             return true;
 
         return entry.AccountNumber is { } accountNumber
-            && DirectEndCustomerSaleAccountNumbers?.Contains(accountNumber) == true
-            && string.Equals(entry.ItemStatus, DirectEndCustomerSaleItemStatus, StringComparison.OrdinalIgnoreCase);
+            && DirectEndCustomerSaleAccountNumbersByCompany is not null
+            && DirectEndCustomerSaleAccountNumbersByCompany.TryGetValue(companyID, out var directSaleAccounts)
+            && directSaleAccounts?.Contains(accountNumber) == true;
     }
     /// <summary>The HMAC secret key used for signing service item claim requests.</summary>
     public string SigningSecretKey { get; set; } = string.Empty;

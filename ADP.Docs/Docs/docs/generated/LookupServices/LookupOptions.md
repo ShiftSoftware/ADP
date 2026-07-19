@@ -77,15 +77,8 @@ The main configuration class for the lookup services.
  distributor, an intermediary normally only moves the vehicle toward the dealer, so its `VehicleEntry`
  must not anchor warranty/free-service dates or service-item eligibility — unless that entry is marked as a
  direct sale to a customer. See `IsEndCustomerSale`. Defaults to empty (no intermediaries). |
-| DirectEndCustomerSaleAccountNumbers <div><strong>``HashSet<string>``</strong></div> | The `AccountNumber`(s) that mark a `VehicleEntry` as a , even
- though the selling company is a supply-chain company. Paired with
- `DirectEndCustomerSaleItemStatus`: an entry needs both to be marked. Today this is how a
- distributor selling straight to a customer (instead of shipping to a dealer) is recognised — see
- `IsEndCustomerSale`. |
-| DirectEndCustomerSaleItemStatus <div><strong>``string``</strong></div> | The `VehicleEntryModel.ItemStatus` value that, together with an account number in
- `DirectEndCustomerSaleAccountNumbers`, marks an entry as a direct sale to an end customer.
- Defaults to `"D"`. `ItemStatus` is otherwise unused today — this is currently its only consumer —
- though it is expected to drive broader vehicle-entry handling later. Matched case-insensitively. |
+| DirectEndCustomerSaleAccountNumbersByCompany <div><strong>``Dictionary<long, HashSet<string>>``</strong></div> | Per company, the `AccountNumber`(s) that mark a `VehicleEntry` as a  even though that company is a supply-chain company. Today this is how a distributor selling
+ straight to a customer, instead of shipping to a dealer, is recognised — see `IsEndCustomerSale`. |
 | SigningSecretKey <div><strong>``string``</strong></div> | The HMAC secret key used for signing service item claim requests. |
 | SignatureValidityDuration <div><strong>``TimeSpan``</strong></div> | How long a generated claim signature remains valid. |
 | TimeProvider <div><strong>``TimeProvider``</strong></div> | Clock used for all time-dependent lookup output — service-item status/claimability, warranty-active flags and `SignatureExpiry`. Defaults to `TimeProvider.System`; override with a fixed provider to produce deterministic output for sample/doc generation or tests. |
