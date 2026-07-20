@@ -4,8 +4,8 @@ hide:
 ---
 One intermediary leg of a vehicle's supply chain — a company (e.g. a regional importer) that moved the
  vehicle between the distributor and the selling dealer. A vehicle can pass through more than one, so
- `VehicleSaleInformation.Intermediaries` is a list. Like the distributor, an intermediary never
- makes the end-customer sale (see `LookupOptions.IsEndCustomerSaleCompany`); this block is
+ `VehicleSaleInformation.Intermediaries` is a list. Like the distributor, an intermediary in this
+ role does not make the end-customer sale (see `LookupOptions.IsEndCustomerSale`); this block is
  informational, surfaced alongside the dealer's sale.
 
 | Property | Summary |

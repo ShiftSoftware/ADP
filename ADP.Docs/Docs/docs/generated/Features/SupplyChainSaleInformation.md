@@ -122,4 +122,21 @@ Scenario: No distributor or intermediary legs when none are present
   Then the sale company is "Plain Dealer"
   And there is no distributor
   And there are no intermediaries
+
+# The distributor is the entity that imported the vehicle — a role it keeps however the vehicle was later
+# sold. So when it sells straight to a customer it is reported both as the sale and as the distributor.
+
+Scenario: A distributor that sold straight to a customer is still reported as the distributor
+  Given the distributor company id is 5
+  And company 5 has direct end-customer sale account numbers "DIST-DIRECT-01"
+  And company 5 is named "Sample Distributor"
+  And vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | InvoiceNumber | AccountNumber  |
+    | JTMAB7BJ0T4224184 | 2024-11-01  | 5         | 20024815      | DIST-DIRECT-01 |
+  When evaluating sale information for "JTMAB7BJ0T4224184" with language "en"
+  Then the sale company is "Sample Distributor"
+  And the distributor is "Sample Distributor"
+  And the distributor invoice number is "20024815"
+  And the distributor invoice date is "2024-11-01"
+  And there are no intermediaries
 ```

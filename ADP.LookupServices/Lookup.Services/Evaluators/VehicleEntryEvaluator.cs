@@ -7,10 +7,10 @@ namespace ShiftSoftware.ADP.Lookup.Services.Evaluators;
 /// <summary>
 /// Selects the vehicle entry that anchors a lookup. Preference order:
 /// <list type="number">
-/// <item>An <b>end-customer sale</b> entry — a dealer's, i.e. the company is not the configured distributor
-/// or an intermediary (see <see cref="LookupOptions.IsEndCustomerSaleCompany"/>). Distributor and intermediary
-/// entries are supply-chain movements, not sales to the end customer, so they must not anchor the warranty/
-/// free-service start, service-item eligibility, or the reported sale when a real dealer sale exists.</item>
+/// <item>An <b>end-customer sale</b> entry — a dealer's, or a direct distributor-to-customer sale (see
+/// <see cref="LookupOptions.IsEndCustomerSale"/>). A plain distributor or intermediary entry is a supply-chain
+/// movement, not a sale to the end customer, so it must not anchor the warranty/free-service start, service-item
+/// eligibility, or the reported sale when a real end-customer sale exists.</item>
 /// <item>If no end-customer entry exists yet (e.g. the dealer's entry has not synced), <b>any</b> entry, so the
 /// VIN is still found for spec/identifiers. The warranty evaluator then withholds the start date until a
 /// genuine end-customer sale appears.</item>
@@ -39,9 +39,10 @@ public class VehicleEntryEvaluator
         if (!(vehicles?.Count > 0))
             return null;
 
-        // Prefer the dealer's (end-customer) entries; fall back to the full set only when none exist yet, so
-        // the VIN is still found while the dealer's own entry has not synced.
-        var endCustomerEntries = vehicles.Where(x => Options.IsEndCustomerSaleCompany(x.CompanyID)).ToList();
+        // Prefer the end-customer-sale entries; fall back to the full set only when none exist yet, so the VIN is
+        // still found while the dealer's own entry has not synced. An end-customer sale is a dealer's entry or a
+        // direct distributor-to-customer sale (IsEndCustomerSale); a distributor/intermediary supply-chain leg is not.
+        var endCustomerEntries = vehicles.Where(x => Options.IsEndCustomerSale(x)).ToList();
         var pool = endCustomerEntries.Count > 0 ? endCustomerEntries : vehicles;
 
         // In-stock (no invoice date) takes priority; otherwise the most recently invoiced.

@@ -32,7 +32,9 @@ public class WarrantyAndFreeServiceDateEvaluator
             // warranty-activation/invoice date must never seed the warranty or free-service start. The anchor can
             // still be such an entry when the dealer's own entry has not synced yet (sync delay) or shares the
             // distributor's invoice date — in those cases the start date stays null until the dealer sale appears.
-            if (warrantyStartDate is null && Options.IsEndCustomerSaleCompany(vehicle?.CompanyID))
+            // A direct distributor-to-customer sale is the exception (IsEndCustomerSale): it *is* the sale and does
+            // seed the dates.
+            if (warrantyStartDate is null && Options.IsEndCustomerSale(vehicle))
             {
                 warrantyStartDate = saleInformation?.WarrantyActivationDate;
 
@@ -54,8 +56,8 @@ public class WarrantyAndFreeServiceDateEvaluator
                     freeServiceStartDate = CompanyDataAggregate.VehicleServiceActivations.FirstOrDefault()?.WarrantyActivationDate;
 
                     // Same end-customer-sale guard as the normal branch: a distributor/intermediary entry's
-                    // dates must not seed the free-service start.
-                    if (freeServiceStartDate is null && Options.IsEndCustomerSaleCompany(vehicle?.CompanyID))
+                    // dates must not seed the free-service start (a direct distributor-to-customer sale excepted).
+                    if (freeServiceStartDate is null && Options.IsEndCustomerSale(vehicle))
                     {
                         freeServiceStartDate = saleInformation?.WarrantyActivationDate;
 

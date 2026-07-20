@@ -100,6 +100,7 @@ public class SharedStepDefinitions
                 WarrantyActivationDate = GetOptionalDate(row, "WarrantyActivationDate"),
                 CustomerID = GetOptionalString(row, "CustomerID"),
                 InvoiceNumber = GetOptionalString(row, "InvoiceNumber"),
+                AccountNumber = GetOptionalString(row, "AccountNumber"),
             }));
     }
 
