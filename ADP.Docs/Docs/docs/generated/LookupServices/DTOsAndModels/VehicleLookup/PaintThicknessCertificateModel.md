@@ -8,10 +8,7 @@ The print/display data model for a vehicle's : the readings from the
 
 | Property | Summary |
 |----------|---------|
-| SerialNumber <div><strong>``string``</strong></div> | The certificate's auto-generated serial number (e.g. `"3F09A-12B45"`), derived
- deterministically from the chosen inspection via
- `LookupOptions.PaintThicknessCertificateSerialNumberResolver` — the same inspection
- always yields the same serial, so re-prints match. `null` when no resolver is configured. |
+| SerialNumber <div><strong>``string``</strong></div> | The certificate's auto-generated serial number (e.g. `"3F09A-12B45"`), derived deterministically from the chosen inspection via `LookupOptions.PaintThicknessCertificateSerialNumberResolver` — the same inspection always yields the same serial, so re-prints match. `null` when no resolver is configured. |
 | VIN <div><strong>``string``</strong></div> | The Vehicle Identification Number. |
 | ModelDescription <div><strong>``string``</strong></div> | A human-readable description of the vehicle model. |
 | ModelCode <div><strong>``string``</strong></div> | The model code that identifies the vehicle model. |

@@ -92,7 +92,7 @@ foreach (var file in allFiles)
 
             var name = prop.Identifier.Text;
             var type = prop.Type.ToString();
-            var summary = EscapeMarkdown(GetSummary(prop, semanticModel));
+            var summary = OneLine(EscapeMarkdown(GetSummary(prop, semanticModel)));
             sb.AppendLine($"| {name} <div><strong>``{type}``</strong></div> | {summary} |");
         }
     }
@@ -112,7 +112,7 @@ foreach (var file in allFiles)
         foreach (var member in enumDecl.Members)
         {
             var name = member.Identifier.Text;
-            var summary = EscapeMarkdown(GetSummary(member, semanticModel));
+            var summary = OneLine(EscapeMarkdown(GetSummary(member, semanticModel)));
             sb.AppendLine($"| {name} | {summary} |");
         }
     }
@@ -132,6 +132,11 @@ foreach (var file in allFiles)
 
 
 string EscapeMarkdown(string input) => input.Replace("|", "\\|");
+
+// A markdown table row must occupy exactly one line, so a multi-line <summary> has to be flattened
+// before it goes in a cell — otherwise the continuation lines fall out of the table and render as
+// loose paragraph text. Only cell content needs this; class-level summaries are free-standing prose.
+static string OneLine(string input) => System.Text.RegularExpressions.Regex.Replace(input, @"\s+", " ").Trim();
 
 static string GetSummary(SyntaxNode node, SemanticModel semanticModel)
 {

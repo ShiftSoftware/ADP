@@ -186,6 +186,22 @@ public class LookupOptions
     public bool LookupBrokerStock { get; set; }
     /// <summary>The storage backend to use for vehicle lookups (CosmosDB or DuckDB).</summary>
     public StorageSources VehicleLookupStorageSource { get; set; }
+    /// <summary>
+    /// Normalizes a caller-supplied phone number into the tenant's canonical STORED digit form for
+    /// golden-customer lookups — golden docs carry phones exactly as the tenant's ingestion
+    /// normalized them, and this must match that rule (e.g. one deployment strips its national
+    /// country code, another keeps full international digits because several countries share the
+    /// tenant). When unset, a neutral default applies: digits only, leading international "00"
+    /// stripped. Must be pure and deterministic.
+    /// </summary>
+    public Func<string, string>? GoldenCustomerPhoneNormalizer { get; set; }
+    /// <summary>
+    /// Optional suffix appended to the platform-standard Cosmos database names for ALL lookup
+    /// reads (e.g. "-alt" resolves "Customers" as "Customers-alt"). Intended for shared-emulator
+    /// dev scenarios where more than one projection set coexists on one local emulator; a
+    /// production deployment has its own Cosmos account and keeps the standard names (leave unset).
+    /// </summary>
+    public string? CosmosDatabaseNameSuffix { get; set; }
 }
 
 /// <summary>
