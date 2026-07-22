@@ -1,0 +1,35 @@
+@attribute [Route($"{DarlasticRoutes.Prefix}/{nameof(GoldenCustomerList)}")]
+@attribute [Authorize]
+@inject IOptions<DarlasticWebOptions> DarlasticOptionsAccessor
+
+@*
+    The golden-customer grid over the Darlastic registry — every row is a resolved identity
+    (deduplicated across the tenant's sources), served from the [schema].[GoldenCustomer] view
+    in the HOST's own database via the module's GoldenCustomerController. Read-only on purpose:
+    no ComponentType, so ShiftList renders no add button and no row editor. Goldens are minted
+    by the resolve engine and corrected through stewardship, never hand-edited here.
+*@
+
+<ShiftList EntitySet="@($"{DarlasticOptions.ResolvedRoutePrefix}GoldenCustomer")"
+           Title="Golden Customers"
+           T="GoldenCustomerListDTO"
+           Dense
+           TypeAuthAction="@(DarlasticOptions.EnableDarlasticActionTreeAuthorization ? DarlasticActionTree.GoldenCustomers : null)"
+           ShowIDColumn="true"
+           HighlightSortedColumn
+           EnableExport>
+    @* Most-unified identities first: FullName ascending would float the name-less, phone-only
+       goldens (service records often carry no name) to the top of the first page. *@
+    <Sort Property="x => x.SourceCount" Direction="SortDirection.Descending" />
+
+    <PropertyColumnExtended Property="x => x.FullName" Title="Name" />
+    <PropertyColumnExtended Property="x => x.Phone" Title="Phone" />
+    <PropertyColumnExtended Property="x => x.City" Title="City" />
+    <PropertyColumnExtended Property="x => x.IDNumber" Title="ID Number" />
+    <PropertyColumnExtended Property="x => x.Email" Title="Email" />
+    <PropertyColumnExtended Property="x => x.SourceCount" Title="Sources" />
+</ShiftList>
+
+@code {
+    private DarlasticWebOptions DarlasticOptions => DarlasticOptionsAccessor.Value;
+}

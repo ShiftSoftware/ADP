@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<Import Project="..\..\GlobalSettings.props" />
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<LangVersion>latest</LangVersion>
+		<RootNamespace>ShiftSoftware.ADP.Darlastic.API</RootNamespace>
+		<Authors>Shift Software</Authors>
+		<Product>ADP.Darlastic</Product>
+		<Version>$(ADPVersion)</Version>
+		<AssemblyName>ShiftSoftware.ADP.Darlastic.API</AssemblyName>
+		<PackageId>ShiftSoftware.ADP.Darlastic.API</PackageId>
+		<Title>ShiftSoftware ADP.Darlastic — API</Title>
+		<Description>ASP.NET Core controllers and registration helpers for the ShiftSoftware ADP.Darlastic package — read-through endpoints over the golden-identity registry mounted in the host's database.</Description>
+		<Copyright>Copyright (c) Shift Software 2026</Copyright>
+		<PackageProjectUrl>https://github.com/ShiftSoftware/ADP</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/ShiftSoftware/ADP</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageTags>shift;shiftsoftware;adp;darlastic;customers;mdm;identity;aspnetcore</PackageTags>
+		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.Web" Version="2026.7.3.1" />
+		<PackageReference Include="ShiftSoftware.TypeAuth.AspNetCore" Version="1.6.26" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\ADP.Darlastic.Data\ADP.Darlastic.Data.csproj" />
+	</ItemGroup>
+</Project>

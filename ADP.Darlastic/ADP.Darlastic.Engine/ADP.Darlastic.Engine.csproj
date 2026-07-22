@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<Import Project="..\..\GlobalSettings.props" />
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<LangVersion>latest</LangVersion>
+		<RootNamespace>ShiftSoftware.ADP.Darlastic.Engine</RootNamespace>
+		<Authors>Shift Software</Authors>
+		<Product>ADP.Darlastic</Product>
+		<Version>$(ADPVersion)</Version>
+		<AssemblyName>ShiftSoftware.ADP.Darlastic.Engine</AssemblyName>
+		<PackageId>ShiftSoftware.ADP.Darlastic.Engine</PackageId>
+		<Title>ShiftSoftware ADP.Darlastic — Engine</Title>
+		<Description>Customer identity-resolution engine for the ShiftSoftware ADP.Darlastic package — multi-source matching (name-chain survivorship, transliteration-aware similarity, VIN corroboration), stable golden-ID reconciliation against a SQL Server registry, and delta-only projection staging.</Description>
+		<Copyright>Copyright (c) Shift Software 2026</Copyright>
+		<PackageProjectUrl>https://github.com/ShiftSoftware/ADP</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/ShiftSoftware/ADP</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageTags>shift;shiftsoftware;adp;darlastic;customers;mdm;identity;matching;golden-record</PackageTags>
+		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.2" />
+		<PackageReference Include="Microsoft.Azure.Cosmos" Version="3.54.0" />
+		<PackageReference Include="ShiftSoftware.ADP.Models" Version="$(ADPVersion)" Condition="!Exists('..\..\ADP.Models\Models\Models.csproj')" />
+		<ProjectReference Include="..\..\ADP.Models\Models\Models.csproj" Condition="Exists('..\..\ADP.Models\Models\Models.csproj')" />
+	</ItemGroup>
+</Project>
