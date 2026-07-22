@@ -6,10 +6,10 @@ Scenario: Direct sale with company and branch
   Given vehicles in dealer stock:
     | VIN               | InvoiceDate | CompanyID | BranchID | InvoiceNumber |
     | 1FDKF37GXVEB34368 | 2024-01-15  | 1         | 10       | INV-001       |
-  And company 1 is named "Toyota Motors"
+  And company 1 is named "Distributor A"
   And branch 10 is named "Downtown Branch"
   When evaluating sale information for "1FDKF37GXVEB34368" with language "en"
-  Then the sale company is "Toyota Motors"
+  Then the sale company is "Distributor A"
   And the sale branch is "Downtown Branch"
   And the sale invoice date is "2024-01-15"
 
@@ -17,9 +17,9 @@ Scenario: Country name resolves from vehicle CountryID
   Given vehicles in dealer stock:
     | VIN               | InvoiceDate | CompanyID | BranchID | CountryID |
     | 1FDKF37GXVEB34368 | 2024-01-15  | 1         | 10       | 42        |
-  And country 42 is named "Iraq"
+  And country 42 is named "Country 42"
   When evaluating sale information for "1FDKF37GXVEB34368" with language "en"
-  Then the sale country is "Iraq"
+  Then the sale country is "Country 42"
 
 Scenario: Vehicle at broker stock (no broker invoice)
   Given vehicles in dealer stock:

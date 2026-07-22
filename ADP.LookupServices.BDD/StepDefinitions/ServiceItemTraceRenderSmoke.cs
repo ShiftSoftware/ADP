@@ -21,9 +21,9 @@ public class ServiceItemTraceRenderSmoke
         Assert.Contains("Where items go", html);
         Assert.Contains("sankey-beta", html);
         Assert.Contains("Activation &amp; expiry timeline", html);
-        Assert.Contains("ABC Toyota Erbil", html);
-        Assert.Contains("Toyota", html);
-        Assert.Contains("Iraq", html);
+        Assert.Contains("Distributor A Central", html);
+        Assert.Contains("Brand A", html);
+        Assert.Contains("Country 42", html);
         var path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "adp-trace-sample.html");
         System.IO.File.WriteAllText(path, html);
     }
@@ -34,7 +34,7 @@ public class ServiceItemTraceRenderSmoke
         var trace = BuildSample();
         var mer = ServiceItemTraceRenderer.ToMermaid(trace);
         Assert.StartsWith("flowchart TB", mer);
-        Assert.Contains("ABC Toyota Erbil", mer);
+        Assert.Contains("Distributor A Central", mer);
         Assert.Contains("Different brand", mer);
     }
 
@@ -82,9 +82,9 @@ public class ServiceItemTraceRenderSmoke
             },
             ResolvedNames = new ServiceItemTraceNameResolutions
             {
-                Brands = new() { [2] = "Toyota", [3] = "Lexus" },
-                Companies = new() { [1] = "ABC Toyota Erbil" },
-                Countries = new() { [42] = "Iraq", [1] = "Saudi Arabia", [2] = "UAE" },
+                Brands = new() { [2] = "Brand A", [3] = "Brand B" },
+                Companies = new() { [1] = "Distributor A Central" },
+                Countries = new() { [42] = "Country 42", [1] = "Country 1", [2] = "Country 2" },
             },
         };
 
@@ -96,7 +96,7 @@ public class ServiceItemTraceRenderSmoke
                 new ServiceItemEligibilityDecision { ServiceItemID = "SI-005K", Name = "5,000 km Free Service", Verdict = EligibilityVerdict.Accepted, Item = new ServiceItemSnapshot { BrandIDs = new() { 2 }, MaximumMileage = 5000, ValidityMode = ClaimableItemValidityMode.RelativeToActivation, CampaignActivationTrigger = ClaimableItemCampaignActivationTrigger.WarrantyActivation } },
                 new ServiceItemEligibilityDecision { ServiceItemID = "SI-010K", Name = "10,000 km Free Service", Verdict = EligibilityVerdict.Accepted, Item = new ServiceItemSnapshot { BrandIDs = new() { 2 }, MaximumMileage = 10000, ValidityMode = ClaimableItemValidityMode.RelativeToActivation, CampaignActivationTrigger = ClaimableItemCampaignActivationTrigger.WarrantyActivation } },
                 new ServiceItemEligibilityDecision { ServiceItemID = "SI-INSP1", Name = "Annual Inspection Bonus", Verdict = EligibilityVerdict.Accepted, Item = new ServiceItemSnapshot { BrandIDs = new() { 2 }, ValidityMode = ClaimableItemValidityMode.RelativeToActivation, CampaignActivationTrigger = ClaimableItemCampaignActivationTrigger.VehicleInspection, VehicleInspectionTypeID = 1 } },
-                new ServiceItemEligibilityDecision { ServiceItemID = "SI-LEX01", Name = "Lexus Premium Care", Verdict = EligibilityVerdict.Rejected, RejectionStage = EligibilityRejectionStage.Brand, Reason = "Vehicle BrandID=2 not in item.BrandIDs=[3].", Item = new ServiceItemSnapshot { BrandIDs = new() { 3 } } },
+                new ServiceItemEligibilityDecision { ServiceItemID = "SI-LEX01", Name = "Brand B Premium Care", Verdict = EligibilityVerdict.Rejected, RejectionStage = EligibilityRejectionStage.Brand, Reason = "Vehicle BrandID=2 not in item.BrandIDs=[3].", Item = new ServiceItemSnapshot { BrandIDs = new() { 3 } } },
                 new ServiceItemEligibilityDecision { ServiceItemID = "SI-KSA01", Name = "KSA-only Promotion", Verdict = EligibilityVerdict.Rejected, RejectionStage = EligibilityRejectionStage.Country, Reason = "Sale CountryID=42 not in item.CountryIDs=[1,2].", Item = new ServiceItemSnapshot { CountryIDs = new() { 1, 2 } } },
                 new ServiceItemEligibilityDecision { ServiceItemID = "SI-OLD", Name = "2022 Campaign", Verdict = EligibilityVerdict.Rejected, RejectionStage = EligibilityRejectionStage.CampaignWindow, Reason = "freeServiceStartDate=2024-02-10 not within [2022-01-01, 2022-12-31].", Item = new ServiceItemSnapshot { CampaignStartDate = new DateTime(2022,1,1), CampaignEndDate = new DateTime(2022,12,31), CampaignActivationTrigger = ClaimableItemCampaignActivationTrigger.WarrantyActivation } },
             },

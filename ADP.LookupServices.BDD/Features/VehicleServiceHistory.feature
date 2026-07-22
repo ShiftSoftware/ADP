@@ -9,12 +9,12 @@ Scenario: Labor and part lines grouped into a single invoice
   And part lines:
     | PartNumber | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | SoldQuantity |
     | PRT-001    | 1         | 10       | INV-001       | JOB-001             | 2024-06-01  | 2            |
-  And company 1 is named "Toyota Motors"
+  And company 1 is named "Distributor A"
   And branch 10 is named "Downtown Service"
   When evaluating service history with language "en"
   Then there is 1 service history invoice
   And invoice "INV-001" has 1 labor line and 1 part line
-  And invoice "INV-001" company is "Toyota Motors"
+  And invoice "INV-001" company is "Distributor A"
   And invoice "INV-001" branch is "Downtown Service"
 
 Scenario: Lines from different invoices create separate entries

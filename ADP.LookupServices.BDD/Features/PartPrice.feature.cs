@@ -159,23 +159,23 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 7
   await testRunner.GivenAsync("catalog part \"PRT-001\" with distributor price 25.50", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-                global::Reqnroll.Table table10 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table16 = new global::Reqnroll.Table(new string[] {
                             "RegionID",
                             "RetailPrice",
                             "PurchasePrice",
                             "WarrantyPrice"});
-                table10.AddRow(new string[] {
+                table16.AddRow(new string[] {
                             "10",
                             "35.00",
                             "28.00",
                             "20.00"});
-                table10.AddRow(new string[] {
+                table16.AddRow(new string[] {
                             "20",
                             "30.00",
                             "24.00",
                             "18.00"});
 #line 8
-  await testRunner.AndAsync("catalog part \"PRT-001\" has country 1 with region prices:", ((string)(null)), table10, "And ");
+  await testRunner.AndAsync("catalog part \"PRT-001\" has country 1 with region prices:", ((string)(null)), table16, "And ");
 #line hidden
 #line 12
   await testRunner.AndAsync("country 1 is named \"United States\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -235,36 +235,36 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 24
   await testRunner.GivenAsync("catalog part \"PRT-002\" with distributor price 50.00", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-                global::Reqnroll.Table table11 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table17 = new global::Reqnroll.Table(new string[] {
                             "RegionID",
                             "RetailPrice",
                             "PurchasePrice",
                             "WarrantyPrice"});
-                table11.AddRow(new string[] {
+                table17.AddRow(new string[] {
                             "10",
                             "70.00",
                             "55.00",
                             "40.00"});
 #line 25
-  await testRunner.AndAsync("catalog part \"PRT-002\" has country 1 with region prices:", ((string)(null)), table11, "And ");
+  await testRunner.AndAsync("catalog part \"PRT-002\" has country 1 with region prices:", ((string)(null)), table17, "And ");
 #line hidden
-                global::Reqnroll.Table table12 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table18 = new global::Reqnroll.Table(new string[] {
                             "RegionID",
                             "RetailPrice",
                             "PurchasePrice",
                             "WarrantyPrice"});
-                table12.AddRow(new string[] {
+                table18.AddRow(new string[] {
                             "30",
                             "65.00",
                             "52.00",
                             "38.00"});
-                table12.AddRow(new string[] {
+                table18.AddRow(new string[] {
                             "40",
                             "68.00",
                             "54.00",
                             "39.00"});
 #line 28
-  await testRunner.AndAsync("catalog part \"PRT-002\" has country 2 with region prices:", ((string)(null)), table12, "And ");
+  await testRunner.AndAsync("catalog part \"PRT-002\" has country 2 with region prices:", ((string)(null)), table18, "And ");
 #line hidden
 #line 32
   await testRunner.AndAsync("the part price resolver passes through", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -306,18 +306,18 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 38
   await testRunner.GivenAsync("catalog part \"PRT-001\" with distributor price 25.50", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-                global::Reqnroll.Table table13 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table19 = new global::Reqnroll.Table(new string[] {
                             "RegionID",
                             "RetailPrice",
                             "PurchasePrice",
                             "WarrantyPrice"});
-                table13.AddRow(new string[] {
+                table19.AddRow(new string[] {
                             "10",
                             "35.00",
                             "28.00",
                             "20.00"});
 #line 39
-  await testRunner.AndAsync("catalog part \"PRT-001\" has country 1 with region prices:", ((string)(null)), table13, "And ");
+  await testRunner.AndAsync("catalog part \"PRT-001\" has country 1 with region prices:", ((string)(null)), table19, "And ");
 #line hidden
 #line 42
   await testRunner.WhenAsync("evaluating price for part \"PRT-001\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");

@@ -24,7 +24,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.2" />
-		<PackageReference Include="Microsoft.Azure.Cosmos" Version="3.54.0" />
+		<PackageReference Include="Microsoft.Azure.Cosmos" Version="3.62.0" />
 		<PackageReference Include="ShiftSoftware.ADP.Models" Version="$(ADPVersion)" Condition="!Exists('..\..\ADP.Models\Models\Models.csproj')" />
 		<ProjectReference Include="..\..\ADP.Models\Models\Models.csproj" Condition="Exists('..\..\ADP.Models\Models\Models.csproj')" />
 	</ItemGroup>

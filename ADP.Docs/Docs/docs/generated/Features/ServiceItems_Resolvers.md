@@ -22,11 +22,11 @@ Scenario: Processed item enriches its company name via the resolver
   And item claims:
     | ServiceItemID | ClaimDate  | JobNumber | InvoiceNumber | CompanyID |
     | SI-001        | 2026-06-01 | JOB-001   | INV-001       | 1         |
-  And company 1 is named "Toyota Motors"
+  And company 1 is named "Distributor A"
   And the free service start date is "2026-01-15"
   When evaluating service items for "1FDKF37GXVEB34368" with language "en"
   Then service item "SI-001" has status "processed"
-  And service item "SI-001" has company name "Toyota Motors"
+  And service item "SI-001" has company name "Distributor A"
 
 Scenario: Service activation print URL overrides the inspection print URL
   Given vehicles in dealer stock:

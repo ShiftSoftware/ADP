@@ -17,10 +17,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="NSubstitute" Version="5.*" />
+		<PackageReference Include="NSubstitute" Version="6.0.0" />
 	</ItemGroup>
 
 	<Target Name="RunSelfAfterBuild" AfterTargets="Build">
-		<Exec Command='dotnet "$(TargetPath)"' />
+		<Exec Command="dotnet &quot;$(TargetPath)&quot;" />
 	</Target>
 </Project>

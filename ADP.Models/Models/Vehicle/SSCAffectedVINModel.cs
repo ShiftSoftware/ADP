@@ -45,8 +45,8 @@ public class SSCAffectedVINModel : IPartitionedItem, ICompanyProps
     // --- Legacy numbered fields -------------------------------------------------------------------------------
     // Retained so SSC records produced before the move to the Labors/PartNumbers arrays still deserialize.
     // Readers must go through EffectiveLabors / EffectivePartNumbers (never these directly) so both the old and
-    // new shapes resolve. Remove once every producer (Toyota Central Asia Hub + tiq-sync-agent) emits the array
-    // shape and pre-migration data has aged out. See .shift/repos/adp/ssc-multi-part-labor/.
+    // new shapes resolve. Remove once every upstream producer emits the array shape and pre-migration data has
+    // aged out.
 
     /// <summary>
     /// The first labor operation code required for the recall repair.

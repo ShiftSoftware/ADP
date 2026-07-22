@@ -23,7 +23,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="ShiftSoftware.ShiftEntity.Model" Version="2026.7.3.1" />
-		<PackageReference Include="ShiftSoftware.TypeAuth.Core" Version="1.6.26" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.Model" Version="2026.7.21.1" />
+		<PackageReference Include="ShiftSoftware.TypeAuth.Core" Version="1.6.27" />
 	</ItemGroup>
 </Project>

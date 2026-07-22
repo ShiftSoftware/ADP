@@ -28,10 +28,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.9" />
-		<PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="10.0.9" />
-		<PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.9" />
-		<PackageReference Include="ShiftSoftware.ShiftBlazor" Version="2026.7.3.1" />
+		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.10" />
+		<PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="10.0.10" />
+		<PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.10" />
+		<PackageReference Include="ShiftSoftware.ShiftBlazor" Version="2026.7.21.1" />
 		<PackageReference Include="ShiftSoftware.ADP.Models" Version="$(ADPVersion)" Condition="!Exists('..\..\ADP.Models\Models\Models.csproj')" />
 		<ProjectReference Include="..\..\ADP.Models\Models\Models.csproj" Condition="Exists('..\..\ADP.Models\Models\Models.csproj')" />
 		<!-- WarrantyClaimForm.razor.cs part-lookup / flat-rate use PartLookupDTO + FlatRateDTO. -->

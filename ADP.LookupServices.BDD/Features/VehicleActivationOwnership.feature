@@ -57,9 +57,9 @@ Scenario: Sale information reports the activation company when its entry has not
   And vehicle service activations:
     | CompanyID | CountryID | WarrantyActivationDate |
     | 10        | 7         | 2026-06-02             |
-  And company 10 is named "TMT Tajikistan"
+  And company 10 is named "Distributor C"
   When evaluating sale information for "JTEAAHAJ20K049868" with language "en"
-  Then the sale company is "TMT Tajikistan"
+  Then the sale company is "Distributor C"
 
 # --- Completing the activation: only the activating company's OWN entry may supply location ---
 
@@ -71,7 +71,7 @@ Scenario: An unstamped activation is completed by the activating company's own e
     | CompanyID | WarrantyActivationDate |
     | 10        | 2026-06-02             |
   And company 10 is named "Taj Motors"
-  And country 5 is named "Tajikistan"
+  And country 5 is named "Country 5"
   And branch 40 is named "Dushanbe Showroom"
   And service items:
     | ServiceItemID | Name         | BrandID | CompanyID | CountryID | ActiveForMonths |
@@ -79,7 +79,7 @@ Scenario: An unstamped activation is completed by the activating company's own e
   When evaluating sale information for "JTEAAHAJ20K049868" with language "en"
   And evaluating service items end-to-end for "JTEAAHAJ20K049868" with language "en"
   Then the sale company is "Taj Motors"
-  And the sale country is "Tajikistan"
+  And the sale country is "Country 5"
   And the sale branch is "Dushanbe Showroom"
   And service item "SI-MATCH" is in the result
 
@@ -90,12 +90,12 @@ Scenario: A different company's entry never supplies region or branch
   And vehicle service activations:
     | CompanyID | CountryID | WarrantyActivationDate |
     | 10        | 7         | 2026-06-02             |
-  And company 10 is named "Taj Motors"
-  And country 7 is named "Tajikistan"
-  And branch 10 is named "Erbil Showroom"
+  And company 10 is named "Distributor C"
+  And country 7 is named "Country 7"
+  And branch 10 is named "Central Showroom"
   When evaluating sale information for "JTEAAHAJ20K049868" with language "en"
-  Then the sale company is "Taj Motors"
-  And the sale country is "Tajikistan"
+  Then the sale company is "Distributor C"
+  And the sale country is "Country 7"
   And the sale has no branch
 
 # --- Unresolvable ownership: refuse loudly instead of listing wrong items ---
@@ -167,6 +167,6 @@ Scenario: Sale information reports the activation country when the entry has not
   And vehicle service activations:
     | CompanyID | CountryID | WarrantyActivationDate |
     | 10        | 7         | 2026-06-02             |
-  And country 7 is named "Tajikistan"
+  And country 7 is named "Country 7"
   When evaluating sale information for "JTEAAHAJ20K049868" with language "en"
-  Then the sale country is "Tajikistan"
+  Then the sale country is "Country 7"

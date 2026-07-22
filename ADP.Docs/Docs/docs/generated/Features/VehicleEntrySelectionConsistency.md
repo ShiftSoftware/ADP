@@ -20,11 +20,11 @@ Scenario: Sale information uses the activation company and country when no entry
   And vehicle service activations:
     | CompanyID | CountryID | WarrantyActivationDate |
     | 5         | 7         | 2024-02-01             |
-  And company 5 is named "Toyota Sulaymaniyah"
-  And country 7 is named "Sulaymaniyah"
+  And company 5 is named "Distributor B"
+  And country 7 is named "Country 7"
   When evaluating sale information for "1FDKF37GXVEB34368" with language "en"
-  Then the sale company is "Toyota Sulaymaniyah"
-  And the sale country is "Sulaymaniyah"
+  Then the sale company is "Distributor B"
+  And the sale country is "Country 7"
 
 # --- Company: ownership follows the activation, not the latest-invoiced entry ---
 
@@ -36,16 +36,16 @@ Scenario: Service item company eligibility follows the activation company across
   And vehicle service activations:
     | CompanyID | WarrantyActivationDate |
     | 2         | 2024-02-01             |
-  And company 1 is named "Toyota Iraq"
-  And company 2 is named "Toyota UAE"
+  And company 1 is named "Distributor A"
+  And company 2 is named "Distributor B"
   And service items:
     | ServiceItemID | Name            | BrandID | CompanyID | ActiveForMonths |
-    | SI-CO2        | Oil Change UAE  | 1       | 2         | 24              |
-    | SI-CO1        | Oil Change Iraq | 1       | 1         | 24              |
+    | SI-CO2        | Oil Change C99  | 1       | 2         | 24              |
+    | SI-CO1        | Oil Change C42  | 1       | 1         | 24              |
   And the free service start date is "2024-06-01"
   When evaluating sale information for "1FDKF37GXVEB34368" with language "en"
   And evaluating service items for "1FDKF37GXVEB34368" with language "en"
-  Then the sale company is "Toyota UAE"
+  Then the sale company is "Distributor B"
   And service item "SI-CO2" is in the result
   And service item "SI-CO1" is not in the result
 
@@ -59,16 +59,16 @@ Scenario: Service item country eligibility follows the activation country across
   And vehicle service activations:
     | CompanyID | CountryID | WarrantyActivationDate |
     | 2         | 99        | 2024-02-01             |
-  And country 42 is named "Iraq"
-  And country 99 is named "UAE"
+  And country 42 is named "Country 42"
+  And country 99 is named "Country 99"
   And service items:
     | ServiceItemID | Name            | BrandID | CountryID | ActiveForMonths |
-    | SI-UAE        | Oil Change UAE  | 1       | 99        | 24              |
-    | SI-IRAQ       | Oil Change Iraq | 1       | 42        | 24              |
+    | SI-C99        | Oil Change C99  | 1       | 99        | 24              |
+    | SI-C42        | Oil Change C42  | 1       | 42        | 24              |
   And the free service start date is "2024-06-01"
   When evaluating sale information for "1FDKF37GXVEB34368" with language "en"
   And evaluating service items for "1FDKF37GXVEB34368" with language "en"
-  Then the sale country is "UAE"
-  And service item "SI-UAE" is in the result
-  And service item "SI-IRAQ" is not in the result
+  Then the sale country is "Country 99"
+  And service item "SI-C99" is in the result
+  And service item "SI-C42" is not in the result
 ```

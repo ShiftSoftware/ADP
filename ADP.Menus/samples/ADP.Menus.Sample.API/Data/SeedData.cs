@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ShiftSoftware.ADP.Menus.Data.Entities;
 using ShiftSoftware.ADP.Menus.Shared.Enums;
-using ShiftSoftware.ShiftIdentity.Core.Entities;
+using ShiftSoftware.ShiftIdentity.Data.Entities;
 using System.Text.Json;
 
 using MenuEntity = global::ShiftSoftware.ADP.Menus.Data.Entities.Menu;
