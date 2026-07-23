@@ -304,7 +304,13 @@ export const onFormSubmit = async <T>({ context, formValues, middleware, afterSu
     } else {
       const contentType = response.headers.get('content-type') || '';
 
-      const errorText = contentType.includes('application/json') ? ((await response.json().catch(() => ({})))?.message?.body ?? '') : await response.text().catch(() => '');
+      let errorText;
+      if (contentType.includes('application/json')) {
+        const parsedResponse = await response.json().catch(() => ({}));
+        errorText = parsedResponse?.message?.body ?? parsedResponse?.Message?.Body ?? '';
+      } else {
+        errorText = await response.text().catch(() => '');
+      }
 
       throw new Error(errorText);
     }
