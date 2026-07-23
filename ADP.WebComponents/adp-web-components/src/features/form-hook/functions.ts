@@ -34,7 +34,7 @@ export type FormErrorHandler = {
 };
 
 export const formErrorHandler = async (formContext: FormErrorHandler, error: any) => {
-  const message = error.message || formContext.locale?.sharedFormLocales?.errors?.wildCard || '';
+  const message = error?.message || error?.Message?.Body || error?.message?.body || formContext.locale?.sharedFormLocales?.errors?.wildCard || '';
 
   let openDefaultDialog = true;
   if (formContext?.errorCallback) openDefaultDialog = !!(await formContext.errorCallback(error, message));
