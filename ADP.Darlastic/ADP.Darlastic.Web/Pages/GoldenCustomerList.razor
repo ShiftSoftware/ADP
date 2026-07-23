@@ -1,6 +1,8 @@
 @attribute [Route($"{DarlasticRoutes.Prefix}/{nameof(GoldenCustomerList)}")]
 @attribute [Authorize]
+@using ShiftSoftware.ADP.Darlastic.Web.Components
 @inject IOptions<DarlasticWebOptions> DarlasticOptionsAccessor
+@inject IDialogService DialogService
 
 @*
     The golden-customer grid over the Darlastic registry — every row is a resolved identity
@@ -10,7 +12,8 @@
     by the resolve engine and corrected through stewardship, never hand-edited here.
 *@
 
-<ShiftList EntitySet="@($"{DarlasticOptions.ResolvedRoutePrefix}GoldenCustomer")"
+<ShiftList @ref="_list"
+           EntitySet="@($"{DarlasticOptions.ResolvedRoutePrefix}GoldenCustomer")"
            Title="Golden Customers"
            T="GoldenCustomerListDTO"
            Dense
@@ -18,18 +21,87 @@
            ShowIDColumn="true"
            HighlightSortedColumn
            EnableExport>
-    @* Most-unified identities first: FullName ascending would float the name-less, phone-only
-       goldens (service records often carry no name) to the top of the first page. *@
-    <Sort Property="x => x.SourceCount" Direction="SortDirection.Descending" />
+    @* Naming ToolbarEndTemplate makes every child a named slot, so the columns move into an
+       explicit ChildContent — that is where ShiftList renders them, inside its Columns. *@
+    <ToolbarEndTemplate>
+        @* Most identities are single-source, so the unified ones — the whole point of the registry —
+           are otherwise buried. This is the fastest way to the rows that demonstrate anything. *@
+        <MudTooltip Text="Show only identities assembled from more than one source record">
+            <MudSwitch T="bool"
+                       Value="_multiSourceOnly"
+                       ValueChanged="OnMultiSourceOnlyChanged"
+                       Color="Color.Primary"
+                       Label="Unified only"
+                       Class="ml-2 mr-2" />
+        </MudTooltip>
+    </ToolbarEndTemplate>
 
-    <PropertyColumnExtended Property="x => x.FullName" Title="Name" />
-    <PropertyColumnExtended Property="x => x.Phone" Title="Phone" />
-    <PropertyColumnExtended Property="x => x.City" Title="City" />
-    <PropertyColumnExtended Property="x => x.IDNumber" Title="ID Number" />
-    <PropertyColumnExtended Property="x => x.Email" Title="Email" />
-    <PropertyColumnExtended Property="x => x.SourceCount" Title="Sources" />
+    <ChildContent>
+        @* Most-unified identities first: FullName ascending would float the name-less, phone-only
+           goldens (service records often carry no name) to the top of the first page. *@
+        <Sort Property="x => x.SourceCount" Direction="SortDirection.Descending" />
+
+        <PropertyColumnExtended Property="x => x.FullName" Title="Name" />
+        <PropertyColumnExtended Property="x => x.Phone" Title="Phone" />
+        <PropertyColumnExtended Property="x => x.City" Title="City" />
+        <PropertyColumnExtended Property="x => x.IDNumber" Title="ID Number" />
+        <PropertyColumnExtended Property="x => x.Email" Title="Email" />
+
+        @* Kept a PropertyColumn (not a TemplateColumn) so server-side sort and filter on SourceCount
+           still work — PropertyColumnExtended only supplies its default cell renderer when none is
+           given, so a CellTemplate here costs nothing else. The count IS the button: with most
+           identities single-source, a separate action column would be dead space on most rows. *@
+        <PropertyColumnExtended Property="x => x.SourceCount" Title="Sources">
+            <CellTemplate Context="cell">
+                <MudTooltip Text="See which source records make up this identity">
+                    <MudChip T="string"
+                             Size="Size.Small"
+                             Variant="@(cell.Item.SourceCount > 1 ? Variant.Filled : Variant.Outlined)"
+                             Color="@(cell.Item.SourceCount > 1 ? Color.Primary : Color.Default)"
+                             OnClick="@(() => OpenSources(cell.Item))">
+                        @cell.Item.SourceCount
+                    </MudChip>
+                </MudTooltip>
+            </CellTemplate>
+        </PropertyColumnExtended>
+    </ChildContent>
 </ShiftList>
 
 @code {
+    private ShiftList<GoldenCustomerListDTO>? _list;
+    private bool _multiSourceOnly;
+
+    // Stable id so repeated toggles UPDATE the same filter rather than stacking new ones.
+    private static readonly Guid MultiSourceFilterId = new("6d1f0f9a-2a3e-4a1c-9b57-1c0a5f2d8e41");
+
+    private Task OpenSources(GoldenCustomerListDTO row)
+    {
+        var parameters = new DialogParameters<GoldenSourcesDialog>
+        {
+            { x => x.ID, row.ID! },
+            { x => x.FullName, row.FullName },
+        };
+
+        return DialogService.ShowAsync<GoldenSourcesDialog>(
+            null,
+            parameters,
+            new DialogOptions { MaxWidth = MaxWidth.Medium, CloseOnEscapeKey = true, CloseButton = true });
+    }
+
+    // "Off" is expressed as SourceCount >= 0 rather than by removing the filter: the same filter id
+    // is simply rewritten to a predicate that matches every row, which keeps the toggle symmetric
+    // and avoids depending on removal semantics. >= 0 not > 0 — the view ISNULLs a missing member
+    // array to 0, and a filter must never silently hide a row it doesn't understand.
+    private void OnMultiSourceOnlyChanged(bool on)
+    {
+        _multiSourceOnly = on;
+        _list?.AddFilter(
+            MultiSourceFilterId,
+            nameof(GoldenCustomerListDTO.SourceCount),
+            on ? ODataOperator.GreaterThan : ODataOperator.GreaterThanOrEqual,
+            on ? 1 : 0);
+        _list?.Reload();
+    }
+
     private DarlasticWebOptions DarlasticOptions => DarlasticOptionsAccessor.Value;
 }

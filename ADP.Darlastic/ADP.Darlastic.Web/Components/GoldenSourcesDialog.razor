@@ -1,0 +1,204 @@
+@namespace ShiftSoftware.ADP.Darlastic.Web.Components
+@inject HttpClient Http
+@inject IOptions<DarlasticWebOptions> DarlasticOptionsAccessor
+
+@*
+    What one golden identity is MADE OF: the source records it unifies, grouped by system, plus
+    its lifecycle and any identities merged into it.
+
+    Deliberately framed as provenance, not explanation. The engine's reasoning (why this name
+    survived, what a pair scored, whether a VIN was the decisive bridge) is computed during a
+    resolve and never persisted — the case browser recomputes it from the whole corpus in memory.
+    Promising "why" here and rendering "what" would be the worse outcome, so the wording stays
+    honest and the footer says where the reasoning actually lives.
+
+    Source-system slugs render verbatim (activation / inspection / dms-<dealer> / crm / ticket-*):
+    this package is tenant-agnostic, so mapping them to friendly names is a host's job.
+*@
+
+<MudDialog>
+    <TitleContent>
+        <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+            <MudIcon Icon="@Icons.Material.Filled.AccountTree" />
+            <MudStack Spacing="0">
+                <MudText Typo="Typo.h6">@(string.IsNullOrWhiteSpace(FullName) ? $"Identity {ID}" : FullName)</MudText>
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">Golden ID @ID</MudText>
+            </MudStack>
+        </MudStack>
+    </TitleContent>
+
+    <DialogContent>
+        <div class="golden-sources">
+            @if (_loading)
+            {
+                <MudProgressLinear Indeterminate Color="Color.Primary" />
+            }
+            else if (_error is not null)
+            {
+                <MudAlert Severity="Severity.Error" Dense>@_error</MudAlert>
+            }
+            else if (_data is null)
+            {
+                <MudAlert Severity="Severity.Warning" Dense>This identity no longer exists in the registry.</MudAlert>
+            }
+            else
+            {
+                <MudStack Spacing="3">
+                    <MudStack Row Spacing="1" AlignItems="AlignItems.Center" Class="flex-wrap">
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Filled"
+                                 Color="@StatusColor(_data.Status)">@_data.Status</MudChip>
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Default">
+                            @_data.Sources.Count source@(_data.Sources.Count == 1 ? "" : "s")
+                        </MudChip>
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Default">
+                            minted run @_data.CreatedRunID
+                        </MudChip>
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Default">
+                            last changed run @_data.LastChangedRunID
+                        </MudChip>
+                    </MudStack>
+
+                    @if (_data.Sources.Count == 1)
+                    {
+                        <MudAlert Severity="Severity.Info" Dense>
+                            A single source record — nothing was merged into this identity yet.
+                        </MudAlert>
+                    }
+
+                    @foreach (var group in _data.Sources
+                        .GroupBy(x => x.SourceSystem, StringComparer.Ordinal)
+                        .OrderByDescending(g => g.Count()).ThenBy(g => g.Key, StringComparer.Ordinal))
+                    {
+                        <MudPaper Outlined Class="pa-3">
+                            <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-2">
+                                <MudText Typo="Typo.subtitle2" Style="font-family: monospace;">@group.Key</MudText>
+                                <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Text">
+                                    @group.Count()
+                                </MudChip>
+                            </MudStack>
+                            <MudStack Row Spacing="1" Class="flex-wrap">
+                                @foreach (var record in group)
+                                {
+                                    <MudTooltip Text="@RecordTooltip(record)">
+                                        <MudChip T="string" Size="Size.Small"
+                                                 Variant="@(record.Removed ? Variant.Outlined : Variant.Filled)"
+                                                 Color="@(record.Removed ? Color.Warning : Color.Default)"
+                                                 Style="font-family: monospace;">
+                                            @if (record.Removed)
+                                            {
+                                                <MudIcon Icon="@Icons.Material.Filled.HistoryToggleOff" Size="Size.Small" Class="mr-1" />
+                                            }
+                                            #@record.SourceRecordId
+                                        </MudChip>
+                                    </MudTooltip>
+                                }
+                            </MudStack>
+                        </MudPaper>
+                    }
+
+                    @if (_data.Sources.Any(x => x.Removed))
+                    {
+                        <MudAlert Severity="Severity.Warning" Dense>
+                            Outlined records vanished from their source and are being <b>held, not deleted</b> —
+                            if they come back, this identity revives instead of a new one being minted.
+                        </MudAlert>
+                    }
+
+                    @if (_data.AbsorbedIdentityIDs.Any())
+                    {
+                        <MudPaper Outlined Class="pa-3">
+                            <MudText Typo="Typo.subtitle2" Class="mb-2">Merged into this identity</MudText>
+                            <MudStack Row Spacing="1" Class="flex-wrap mb-2">
+                                @foreach (var old in _data.AbsorbedIdentityIDs)
+                                {
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Secondary" Variant="Variant.Outlined"
+                                             Style="font-family: monospace;">@old</MudChip>
+                                }
+                            </MudStack>
+                            <MudText Typo="Typo.caption" Class="mud-text-secondary">
+                                Anything still holding these IDs resolves here in one hop — a merge redirects, never deletes.
+                            </MudText>
+                        </MudPaper>
+                    }
+
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary">
+                        This is what the identity is assembled <i>from</i>. <b>Why</b> the engine merged these records —
+                        pair scores, match signals, which name chain survived — is computed during a resolve and not
+                        stored, so it can't be shown here; the case browser recomputes it from the full corpus.
+                    </MudText>
+                </MudStack>
+            }
+        </div>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Close">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+<style>
+    .golden-sources {
+        min-width: 480px;
+        max-width: 760px;
+    }
+</style>
+
+@code {
+    [CascadingParameter]
+    public IMudDialogInstance MudDialogInstance { get; set; } = default!;
+
+    /// <summary>Golden identity ID (the cross-system GoldenCustomerID).</summary>
+    [Parameter, EditorRequired]
+    public string ID { get; set; } = default!;
+
+    /// <summary>Display name, passed in by the caller — the endpoint deliberately doesn't carry one.</summary>
+    [Parameter]
+    public string? FullName { get; set; }
+
+    private GoldenCustomerSourcesDTO? _data;
+    private bool _loading = true;
+    private string? _error;
+
+    private DarlasticWebOptions DarlasticOptions => DarlasticOptionsAccessor.Value;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _data = await Http.GetFromJsonAsync<GoldenCustomerSourcesDTO>(
+                $"{DarlasticOptions.ResolvedRoutePrefix}GoldenCustomer/{ID}/sources");
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            _data = null;
+        }
+        catch (Exception ex)
+        {
+            _error = $"Could not load sources: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private static Color StatusColor(IdentityStatus status) => status switch
+    {
+        IdentityStatus.Active => Color.Success,
+        IdentityStatus.Redirected => Color.Info,
+        IdentityStatus.Inactive => Color.Warning,
+        _ => Color.Default,
+    };
+
+    private static string RecordTooltip(GoldenCustomerSourceDTO record)
+    {
+        var lifecycle = record.FirstRunID == record.LastChangedRunID
+            ? $"seen in run {record.FirstRunID}"
+            : $"first seen run {record.FirstRunID}, last changed run {record.LastChangedRunID}";
+        return record.Removed
+            ? $"{record.SourceSystem} #{record.SourceRecordId} — gone from its source, held ({lifecycle})"
+            : $"{record.SourceSystem} #{record.SourceRecordId} — {lifecycle}";
+    }
+
+    private void Close() => MudDialogInstance.Close(DialogResult.Ok(true));
+}
