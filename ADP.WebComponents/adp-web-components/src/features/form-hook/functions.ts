@@ -105,7 +105,10 @@ export const formDidLoadHandler = async <T, B>(formContext: FormDidLoadHandler<B
 
   await formContext.changeLanguage(formContext.language);
 
-  if (!formContext.isMobileForm) {
+  // @ts-ignore
+  const isMobileForm = Object.hasOwn(formContext.structure?.data, 'isMobileForm') ? !!formContext.structure?.data?.isMobileForm : formContext.isMobileForm;
+
+  if (!isMobileForm) {
     try {
       const key = formContext.structure?.data?.recaptchaKey;
       if (key) {
@@ -233,7 +236,10 @@ export const onFormSubmit = async <T>({ context, formValues, middleware, afterSu
     if (!!context.structure?.data?.extraHeader) header = { ...header, ...context.structure?.data?.extraHeader };
 
     let requestEndpoint = '';
-    if (context.isMobileForm) {
+    // @ts-ignore
+    const isMobileForm = Object.hasOwn(context.structure?.data, 'isMobileForm') ? !!context.structure?.data?.isMobileForm : context.isMobileForm;
+
+    if (isMobileForm) {
       const token = await context.getMobileToken();
 
       if (token.toLowerCase().startsWith('bearer')) {

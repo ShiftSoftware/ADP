@@ -9,7 +9,7 @@ namespace ShiftSoftware.ADP.Models.Vehicle;
 /// between the distributor and the selling dealer. The intermediary never makes the end-customer sale.
 /// <para>Null when the entry has no intermediary leg. Multi-entry sources (per-dealer DMS feeds) leave this
 /// null and instead emit a distinct <see cref="VehicleEntryModel"/> for the intermediary, classified by
-/// <c>LookupOptions.IsEndCustomerSaleCompany</c>.</para>
+/// <c>LookupOptions.IsEndCustomerSale</c>.</para>
 /// </summary>
 [Docable]
 public class IntermediarySaleLeg

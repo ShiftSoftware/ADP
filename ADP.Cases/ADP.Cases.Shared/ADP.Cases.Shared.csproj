@@ -29,7 +29,7 @@
 
 	<ItemGroup>
 		<!-- ShiftEntityException/Message + enum Describe() — the engine's error-aggregation contract. -->
-		<PackageReference Include="ShiftSoftware.ShiftEntity.Model" Version="2026.7.3.1" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.Model" Version="2026.7.21.1" />
 		<!-- ClaimStatus / WarrantyManufacturerClaimStatus enums (persisted integer values, frozen).
 		     ADP-internal convention: source project in-repo, published package when packed standalone. -->
 		<PackageReference Include="ShiftSoftware.ADP.Models" Version="$(ADPVersion)" Condition="!Exists('..\..\ADP.Models\Models\Models.csproj')" />

@@ -32,6 +32,8 @@ public static class ModelTypes
 
     public static readonly PartitionedItemType DealerCustomer = new("DealerCustomer");
     public static readonly PartitionedItemType GoldenCustomer = new("GoldenCustomer");
+    public static readonly PartitionedItemType GoldenCustomerVehicleLinks = new("GoldenCustomerVehicleLinks");
+    public static readonly PartitionedItemType VehicleGoldenOwnership = new("VehicleGoldenOwnership");
 
     public static readonly PartitionedItemType ExtendedWarranty = new("ExtendedWarranty");
 }

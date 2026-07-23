@@ -10,11 +10,8 @@ Represents a Special Service Campaign (SSC) / Safety Recall record for a specifi
 | VIN <div><strong>``string``</strong></div> | The Vehicle Identification Number (VIN) affected by this recall campaign. |
 | CampaignCode <div><strong>``string``</strong></div> | The unique code identifying the recall/SSC campaign. |
 | Description <div><strong>``string``</strong></div> | A description of the recall campaign and the issue being addressed. |
-| Labors <div><strong>``List<SSCLaborLineModel>``</strong></div> | The labor operations required for the recall repair. This is the preferred, unbounded representation and
- supersedes the legacy numbered `LaborCode1`…`LaborCode3` /
- `LaborHour1`…`LaborHour3` fields when populated. |
-| PartNumbers <div><strong>``List<string>``</strong></div> | The part numbers required for the recall repair. This is the preferred, unbounded representation and
- supersedes the legacy numbered `PartNumber1`…`PartNumber3` fields when populated. |
+| Labors <div><strong>``List<SSCLaborLineModel>``</strong></div> | The labor operations required for the recall repair. This is the preferred, unbounded representation and supersedes the legacy numbered `LaborCode1`…`LaborCode3` / `LaborHour1`…`LaborHour3` fields when populated. |
+| PartNumbers <div><strong>``List<string>``</strong></div> | The part numbers required for the recall repair. This is the preferred, unbounded representation and supersedes the legacy numbered `PartNumber1`…`PartNumber3` fields when populated. |
 | LaborCode1 <div><strong>``string``</strong></div> | The first labor operation code required for the recall repair. |
 | LaborHour1 <div><strong>``double?``</strong></div> | The estimated hours for the first labor operation. |
 | LaborCode2 <div><strong>``string``</strong></div> | The second labor operation code, if applicable. |

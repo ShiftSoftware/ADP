@@ -44,13 +44,13 @@
 
 	<ItemGroup>
 		<!-- IHttpClientFactory for the settlement-sheet attachment download. -->
-		<PackageReference Include="Microsoft.Extensions.Http" Version="10.0.9" />
-		<PackageReference Include="ShiftSoftware.ShiftEntity.EFCore" Version="2026.7.3.1" />
-		<PackageReference Include="ShiftSoftware.ShiftEntity.CosmosDbReplication" Version="2026.7.3.1" />
+		<PackageReference Include="Microsoft.Extensions.Http" Version="10.0.10" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.EFCore" Version="2026.7.21.1" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.CosmosDbReplication" Version="2026.7.21.1" />
 		<!-- FastReport printing (warranty claim / certificate / invoice + manufacturer invoice)
 		     moved in from the original host (Phase 3 Slice 3.2). -->
-		<PackageReference Include="ShiftSoftware.ShiftEntity.Print" Version="2026.7.3.1" />
-		<PackageReference Include="ShiftSoftware.ShiftIdentity.Core" Version="2026.7.3.1" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.Print" Version="2026.7.21.1" />
+		<PackageReference Include="ShiftSoftware.ShiftIdentity.Core" Version="2026.7.21.1" />
 	</ItemGroup>
 
 	<ItemGroup>

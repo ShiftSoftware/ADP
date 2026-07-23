@@ -783,7 +783,7 @@ public partial class VehicleServiceItemEvaluator
     {
         foreach (var item in serviceItems)
         {
-            var verdict = ResolveItemStatus(item, companyDataAggregate.ItemClaims, showingInactivatedItems, options.GetUtcNow());
+            var verdict = ResolveItemStatus(item, companyDataAggregate.ItemClaims, showingInactivatedItems, options.GetUtcNow(), options.TreatServiceItemExpiryAsEndOfDay);
 
             item.Status = verdict.statusText;
             item.StatusEnum = verdict.status;
@@ -807,7 +807,8 @@ public partial class VehicleServiceItemEvaluator
         VehicleServiceItemDTO item,
         IEnumerable<ItemClaimModel> serviceClaimLines,
         bool showingInactivatedItems,
-        DateTime nowUtc)
+        DateTime nowUtc,
+        bool expiryIsEndOfDay)
     {
         var claimLine = serviceClaimLines?
             .Where(x => x?.ServiceItemID == item.ServiceItemID.ToString())
@@ -820,7 +821,7 @@ public partial class VehicleServiceItemEvaluator
                 claimLine.ClaimDate, claimLine.JobNumber, claimLine.InvoiceNumber,
                 claimLine.CompanyID, claimLine.PackageCode, claimLine.Cost);
 
-        if (item.ExpiresAt is not null && item.ExpiresAt < nowUtc)
+        if (item.ExpiresAt is not null && EffectiveExpiry(item.ExpiresAt.Value, expiryIsEndOfDay) < nowUtc)
             return ("expired", VehcileServiceItemStatuses.Expired, null, null, null, null, null, null);
 
         if (showingInactivatedItems && item.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.WarrantyActivation)
@@ -828,4 +829,15 @@ public partial class VehicleServiceItemEvaluator
 
         return ("pending", VehcileServiceItemStatuses.Pending, null, null, null, null, null, null);
     }
+
+    /// <summary>
+    /// The instant an item actually stops being valid. Expiry is a calendar date everywhere it is
+    /// built, so <see cref="LookupOptions.TreatServiceItemExpiryAsEndOfDay"/> stretches it to the last
+    /// tick of its own day — making the date the item carries the last valid day rather than the first
+    /// expired one. Off (the default), the stored value is used as-is and the item expires as its date
+    /// begins. Deliberately applied at the comparison only: <c>ExpiresAt</c> keeps its midnight value so
+    /// the signature, the serialized date and the sequential rolling chain are unaffected.
+    /// </summary>
+    private static DateTime EffectiveExpiry(DateTime expiresAt, bool endOfDay) =>
+        endOfDay ? expiresAt.Date.AddDays(1).AddTicks(-1) : expiresAt;
 }

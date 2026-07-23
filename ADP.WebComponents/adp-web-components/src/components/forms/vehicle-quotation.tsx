@@ -121,7 +121,10 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
       };
 
       let requestEndpoint = '';
-      if (this.isMobileForm) {
+      // @ts-ignore
+      const isMobileForm = Object.hasOwn(this.structure?.data, 'isMobileForm') ? !!this.structure?.data?.isMobileForm : this.isMobileForm;
+
+      if (isMobileForm) {
         const token = await this.getMobileToken();
 
         if (token.toLowerCase().startsWith('bearer')) {

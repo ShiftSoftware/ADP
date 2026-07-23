@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<Import Project="..\..\GlobalSettings.props" />
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<LangVersion>latest</LangVersion>
+		<RootNamespace>ShiftSoftware.ADP.Darlastic.Data</RootNamespace>
+		<Authors>Shift Software</Authors>
+		<Product>ADP.Darlastic</Product>
+		<Version>$(ADPVersion)</Version>
+		<AssemblyName>ShiftSoftware.ADP.Darlastic.Data</AssemblyName>
+		<PackageId>ShiftSoftware.ADP.Darlastic.Data</PackageId>
+		<Title>ShiftSoftware ADP.Darlastic — Data</Title>
+		<Description>EF Core entity model for the ShiftSoftware ADP.Darlastic package — the golden-identity registry (identities, redirects, source profiles, projection state, resolve runs) hosts run migrations against, under a configurable SQL schema.</Description>
+		<Copyright>Copyright (c) Shift Software 2026</Copyright>
+		<PackageProjectUrl>https://github.com/ShiftSoftware/ADP</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/ShiftSoftware/ADP</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageTags>shift;shiftsoftware;adp;darlastic;customers;mdm;identity;efcore</PackageTags>
+		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\ADP.Darlastic.Shared\ADP.Darlastic.Shared.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="ShiftSoftware.ShiftEntity.EFCore" Version="2026.7.21.1" />
+	</ItemGroup>
+</Project>

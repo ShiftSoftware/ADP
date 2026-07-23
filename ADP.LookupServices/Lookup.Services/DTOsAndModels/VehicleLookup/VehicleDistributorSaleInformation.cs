@@ -5,10 +5,12 @@ using System;
 namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 
 /// <summary>
-/// The distributor leg of a vehicle's supply chain — the company that imported/distributed the vehicle to the
-/// selling dealer. The distributor never makes the end-customer sale (see
-/// <see cref="LookupOptions.IsEndCustomerSaleCompany"/>), so this block is purely informational and is
-/// surfaced alongside the dealer's sale on <see cref="VehicleSaleInformation"/>. Null when the vehicle has no
+/// The distributor leg of a vehicle's supply chain — the company that imported/distributed the vehicle. This is
+/// a role fact and holds however the vehicle was later sold: a distributor that sold straight to a customer is
+/// still the distributor, and is reported here as well as being the resolved sale. The block is purely
+/// informational and surfaced alongside the sale on <see cref="VehicleSaleInformation"/>; it never changes the
+/// resolved sale. <see cref="InvoiceNumber"/>/<see cref="InvoiceDate"/> are the distributor's own outbound
+/// sale — to a dealer, an intermediary, or (on a direct sale) the end customer. Null when the vehicle has no
 /// distributor leg, or none is configured for the deployment.
 /// </summary>
 [TypeScriptModel]

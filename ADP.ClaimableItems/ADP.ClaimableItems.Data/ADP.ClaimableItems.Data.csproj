@@ -45,12 +45,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="ShiftSoftware.ShiftEntity.EFCore" Version="2026.7.3.1" />
-		<PackageReference Include="ShiftSoftware.ShiftEntity.CosmosDbReplication" Version="2026.7.3.1" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.EFCore" Version="2026.7.21.1" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.CosmosDbReplication" Version="2026.7.21.1" />
 		<!-- FastReport printing (item-claim voucher + certificate/invoice) moved in from the
 		     original host (Phase 3 Slice 3.2). -->
-		<PackageReference Include="ShiftSoftware.ShiftEntity.Print" Version="2026.7.3.1" />
-		<PackageReference Include="ShiftSoftware.ShiftIdentity.Core" Version="2026.7.3.1" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.Print" Version="2026.7.21.1" />
+		<PackageReference Include="ShiftSoftware.ShiftIdentity.Core" Version="2026.7.21.1" />
 		<!-- ADP-internal convention: source project in-repo, published package when packed standalone.
 		     A project reference satisfies + wins over the transitive ADP.Models package a consumer gets
 		     from other ADP packages, so there is no source/package conflict (same pattern as ADP.LookupServices). -->

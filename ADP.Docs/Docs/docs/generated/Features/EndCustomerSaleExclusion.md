@@ -5,13 +5,20 @@ hide:
 
 ```gherkin
 Feature: End-Customer Sale Exclusion (Distributor & Intermediary)
-  A distributor and any intermediary only move a vehicle through the supply chain toward the
-  dealer — they never make the end-customer sale. So their VehicleEntry must never anchor the
+  A distributor and any intermediary normally only move a vehicle through the supply chain toward
+  the dealer, rather than selling to the end customer. So their VehicleEntry must not anchor the
   warranty/free-service start date or the reported sale when a real dealer sale exists, and when
   only their entry has synced (sync delay) the start date must stay empty until the dealer's sale
-  appears. The vehicle is still found for spec/identifiers in the meantime. Companies are
-  classified via LookupOptions.DistributorCompanyID + IntermediaryCompanyIDs; with neither
-  configured, behaviour is unchanged (latest-invoiced wins).
+  appears. The vehicle is still found for spec/identifiers in the meantime.
+
+  Two layers decide whether an entry is an end-customer sale. The company layer classifies via
+  LookupOptions.DistributorCompanyID + IntermediaryCompanyIDs; with neither configured, behaviour
+  is unchanged (latest-invoiced wins). The entry layer can then mark an individual entry as a
+  direct sale to a customer via its AccountNumber, matched against
+  DirectEndCustomerSaleAccountNumbersByCompany for that entry's own company — which overrides the
+  company layer. That is how a supply-chain company's own sale straight to a customer is recognised.
+  ItemStatus is deliberately not consulted; status handling is left to the broader, per-company work
+  that will cover all vehicle entries rather than being partially anticipated here.
 
 # --- Entry selection: the dealer's entry anchors the lookup, not the distributor's ---
 
@@ -87,4 +94,82 @@ Scenario: With only distributor and intermediary entries the warranty start stay
     | JTMAB7BJ0T4224184 | 2026-05-28  | 8         | 80000002      |
   When evaluating warranty dates for "JTMAB7BJ0T4224184"
   Then the warranty start date is empty
+
+# --- Direct sale to an end customer: the entry-level marker that overrides the company layer ---
+# A supply-chain company occasionally sells straight to a customer. Such an entry is recognised by its
+# AccountNumber, and must anchor warranty / free-service / the reported sale exactly like a dealer's rather
+# than be excluded. The accounts are configured per company, so configuring them turns the feature on for
+# that company; a deployment that configures none is unaffected (the entry stays excluded).
+
+Scenario: A direct distributor-to-customer sale anchors warranty like a dealer sale
+  Given warranty start date defaults to invoice date
+  And the distributor company id is 5
+  And company 5 has direct end-customer sale account numbers "DIST-DIRECT-01"
+  And vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | InvoiceNumber | AccountNumber  |
+    | JTMAB7BJ0T4224184 | 2024-11-01  | 5         | 20024815      | DIST-DIRECT-01 |
+  When evaluating warranty dates for "JTMAB7BJ0T4224184"
+  Then the warranty start date is "2024-11-01"
+  And the free service start date is "2024-11-01"
+  And the selected vehicle has invoice number "20024815"
+
+Scenario: A distributor entry on any other account stays excluded
+  Given warranty start date defaults to invoice date
+  And the distributor company id is 5
+  And company 5 has direct end-customer sale account numbers "DIST-DIRECT-01"
+  And vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | InvoiceNumber | AccountNumber |
+    | JTMAB7BJ0T4224184 | 2024-11-01  | 5         | 20024815      | DEALER-SHIP-9 |
+  When evaluating warranty dates for "JTMAB7BJ0T4224184"
+  Then the warranty start date is empty
+
+Scenario: With no direct-sale accounts configured the distributor direct sale stays excluded
+  Given warranty start date defaults to invoice date
+  And the distributor company id is 5
+  And vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | InvoiceNumber | AccountNumber  |
+    | JTMAB7BJ0T4224184 | 2024-11-01  | 5         | 20024815      | DIST-DIRECT-01 |
+  When evaluating warranty dates for "JTMAB7BJ0T4224184"
+  Then the warranty start date is empty
+
+Scenario: A real dealer sale still wins over a direct distributor sale on a later invoice
+  Given warranty start date defaults to invoice date
+  And the distributor company id is 5
+  And company 5 has direct end-customer sale account numbers "DIST-DIRECT-01"
+  And vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | InvoiceNumber | AccountNumber  |
+    | JTMAB7BJ0T4224184 | 2024-11-01  | 5         | 20024815      | DIST-DIRECT-01 |
+    | JTMAB7BJ0T4224184 | 2024-11-10  | 10        | 11000191      |                |
+  When evaluating warranty dates for "JTMAB7BJ0T4224184"
+  Then the warranty start date is "2024-11-10"
+  And the selected vehicle has invoice number "11000191"
+
+# An account number only means something within the company that issued it, so the accounts are scoped per
+# company: the same number can be in use elsewhere for an unrelated purpose and must not mark a sale there.
+
+Scenario: The same account number configured for one company does not mark another company's entry
+  Given warranty start date defaults to invoice date
+  And the distributor company id is 5
+  And intermediary companies are "7"
+  And company 5 has direct end-customer sale account numbers "SHARED-ACC"
+  And vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | InvoiceNumber | AccountNumber |
+    | JTMAB7BJ0T4224184 | 2024-11-01  | 7         | 70000001      | SHARED-ACC    |
+  When evaluating warranty dates for "JTMAB7BJ0T4224184"
+  Then the warranty start date is empty
+
+# The marker overrides the company layer, so it is not distributor-specific: an intermediary selling
+# straight to a customer is recognised by the same rule, with no separate handling.
+
+Scenario: An intermediary selling straight to a customer is an end-customer sale too
+  Given warranty start date defaults to invoice date
+  And the distributor company id is 5
+  And intermediary companies are "7"
+  And company 7 has direct end-customer sale account numbers "DIRECT-ACC-07"
+  And vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | InvoiceNumber | AccountNumber |
+    | JTMAB7BJ0T4224184 | 2024-11-01  | 7         | 70000001      | DIRECT-ACC-07 |
+  When evaluating warranty dates for "JTMAB7BJ0T4224184"
+  Then the warranty start date is "2024-11-01"
+  And the selected vehicle has invoice number "70000001"
 ```

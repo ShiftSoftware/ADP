@@ -110,6 +110,28 @@ steps:
    condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-nuget'))
    displayName: 'pack ADP.WarrantyClaims.Web'
 
+ # ADP.Darlastic.CaseBrowser is deliberately not packed: it is the Phase-5 steward prototype
+ # (a planned steward .Web surface replaces it), and hosts should not be able to take a dependency on it.
+ - script: dotnet pack ADP.Darlastic/ADP.Darlastic.Shared --configuration Release --output $(Build.ArtifactStagingDirectory)/ADP
+   condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-nuget'))
+   displayName: 'pack ADP.Darlastic.Shared'
+
+ - script: dotnet pack ADP.Darlastic/ADP.Darlastic.Data --configuration Release --output $(Build.ArtifactStagingDirectory)/ADP
+   condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-nuget'))
+   displayName: 'pack ADP.Darlastic.Data'
+
+ - script: dotnet pack ADP.Darlastic/ADP.Darlastic.Engine --configuration Release --output $(Build.ArtifactStagingDirectory)/ADP
+   condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-nuget'))
+   displayName: 'pack ADP.Darlastic.Engine'
+
+ - script: dotnet pack ADP.Darlastic/ADP.Darlastic.API --configuration Release --output $(Build.ArtifactStagingDirectory)/ADP
+   condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-nuget'))
+   displayName: 'pack ADP.Darlastic.API'
+
+ - script: dotnet pack ADP.Darlastic/ADP.Darlastic.Web --configuration Release --output $(Build.ArtifactStagingDirectory)/ADP
+   condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-nuget'))
+   displayName: 'pack ADP.Darlastic.Web'
+
 
  - script: dotnet test ADP.LookupServices.BDD
    displayName: 'ADP.LookupServices BDD Tests'

@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<Import Project="..\..\GlobalSettings.props" />
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<LangVersion>latest</LangVersion>
+		<RootNamespace>ShiftSoftware.ADP.Darlastic.Shared</RootNamespace>
+		<Authors>Shift Software</Authors>
+		<Product>ADP.Darlastic</Product>
+		<Version>$(ADPVersion)</Version>
+		<AssemblyName>ShiftSoftware.ADP.Darlastic.Shared</AssemblyName>
+		<PackageId>ShiftSoftware.ADP.Darlastic.Shared</PackageId>
+		<Title>ShiftSoftware ADP.Darlastic — Shared</Title>
+		<Description>Shared enums, DTOs and contracts for the ShiftSoftware ADP.Darlastic package — centralized customer identity (golden records, stable IDs, stewardship).</Description>
+		<Copyright>Copyright (c) Shift Software 2026</Copyright>
+		<PackageProjectUrl>https://github.com/ShiftSoftware/ADP</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/ShiftSoftware/ADP</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageTags>shift;shiftsoftware;adp;darlastic;customers;mdm;identity;golden-record</PackageTags>
+		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="ShiftSoftware.ShiftEntity.Model" Version="2026.7.21.1" />
+		<PackageReference Include="ShiftSoftware.TypeAuth.Core" Version="1.6.27" />
+	</ItemGroup>
+</Project>

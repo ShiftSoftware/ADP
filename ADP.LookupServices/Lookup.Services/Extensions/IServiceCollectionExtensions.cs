@@ -16,7 +16,7 @@ public static class IServiceCollectionExtensions
     public static IServiceCollection AddLookupService<TCosmosClient>(this IServiceCollection services, LookupOptions options = null)
         where TCosmosClient : CosmosClient
     {
-        services.AddSingleton<LookUpCosmosClient>(x => new LookUpCosmosClient(x.GetRequiredService<TCosmosClient>()));
+        services.AddSingleton<LookUpCosmosClient>(x => new LookUpCosmosClient(x.GetRequiredService<TCosmosClient>(), options?.CosmosDatabaseNameSuffix));
 
         if (options is not null)
             services.AddScoped(x => options);
@@ -24,6 +24,7 @@ public static class IServiceCollectionExtensions
         services.AddScoped<VehicleLookupService>();
         services.AddScoped<PartLookupService>();
         services.AddScoped<ServiceLookupService>();
+        services.AddScoped<GoldenCustomerLookupService>();
         services.AddScoped<IIdentityCosmosService>(x => new IdentityCosmosService(x.GetRequiredService<LookUpCosmosClient>()));
 
         if (options.VehicleLookupStorageSource == Enums.StorageSources.CosmosDB)

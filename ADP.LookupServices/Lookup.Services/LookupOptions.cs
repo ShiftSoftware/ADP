@@ -2,6 +2,7 @@
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using ShiftSoftware.ADP.Lookup.Services.Enums;
 using ShiftSoftware.ADP.Models;
+using ShiftSoftware.ADP.Models.Vehicle;
 using ShiftSoftware.ShiftEntity.Model.Dtos;
 using System;
 using System.Collections.Generic;
@@ -101,6 +102,23 @@ public class LookupOptions
     /// <summary>Whether to include free service items that have not yet been activated (e.g., awaiting warranty activation).</summary>
     public bool IncludeInactivatedFreeServiceItems { get; set; }
     /// <summary>
+    /// When enabled, a service item stays claimable through the whole of its expiry date — until
+    /// <c>23:59:59.9999999</c> UTC — instead of expiring the moment that date begins.
+    /// <para>Expiry is a calendar date everywhere it is produced: <c>FixedDateRange</c> items take
+    /// <c>ValidTo</c> straight off the catalog, and <c>RelativeToActivation</c> items derive theirs by adding
+    /// the configured interval to the free-service start date — both land on midnight. The status check
+    /// compares that instant against "now", so by default an item labelled <c>expires 2028-01-15</c> is
+    /// already <c>Expired</c> at <c>2028-01-15 00:00 UTC</c> and can never be claimed on the date shown for
+    /// it. Enable this to make the date shown the last claimable day rather than the first expired one.</para>
+    /// <para>Only the expired/pending verdict moves — <c>ExpiresAt</c> itself is left untouched, so the
+    /// serialized date, the claim signature and the sequential-item chain (each item activating when the
+    /// previous one expires) are all unchanged.</para>
+    /// <para>Defaults to <c>false</c> so existing hosts keep their current behaviour until they opt in.
+    /// Leave it off in deployments that use sub-day <c>ActiveFor</c> durations (Seconds/Minutes/Hours):
+    /// it rounds those out to the end of the day.</para>
+    /// </summary>
+    public bool TreatServiceItemExpiryAsEndOfDay { get; set; }
+    /// <summary>
     /// When enabled, warranty activation is only offered to a requester whose company has a vehicle entry for the
     /// vehicle (i.e. it has been allocated/shipped/delivered to them). When activation is due but the vehicle is not
     /// allocated to the requesting company, <c>VehicleWarrantyDTO.ActivationStatus</c> becomes <c>BlockedNotAllocated</c>
@@ -118,37 +136,69 @@ public class LookupOptions
     /// on the distributor's invoice date, so it selects the entry whose <c>CompanyID</c> equals this value.
     /// <b>Required</b> for the Paint Thickness Certificate: if this is unset, or the VIN has no invoiced entry for
     /// this company, no certificate is produced — it never falls back to a dealer's invoice.
-    /// <para>This company also never makes the end-customer sale (it ships the vehicle to a dealer), so it is
-    /// excluded from end-customer-sale resolution alongside <see cref="IntermediaryCompanyIDs"/> — see
-    /// <see cref="IsEndCustomerSaleCompany"/>.</para>
+    /// <para>This company also normally never makes the end-customer sale (it ships the vehicle to a dealer), so its
+    /// entries are excluded from end-customer-sale resolution alongside <see cref="IntermediaryCompanyIDs"/> — unless
+    /// an individual entry is marked as a direct sale to a customer. See <see cref="IsEndCustomerSale"/>.</para>
     /// </summary>
     public long? DistributorCompanyID { get; set; }
     /// <summary>
     /// The Identity <c>CompanyID</c>s of any intermediary companies (e.g. a regional importer that sits between
     /// the distributor and the dealer). A VIN can pass through more than one, so this is a list. Like the
-    /// distributor, an intermediary only moves the vehicle toward the dealer and never makes the end-customer
-    /// sale, so its <c>VehicleEntry</c> must not anchor warranty/free-service dates or service-item eligibility —
-    /// see <see cref="IsEndCustomerSaleCompany"/>. Defaults to empty (no intermediaries).
+    /// distributor, an intermediary normally only moves the vehicle toward the dealer, so its <c>VehicleEntry</c>
+    /// must not anchor warranty/free-service dates or service-item eligibility — unless that entry is marked as a
+    /// direct sale to a customer. See <see cref="IsEndCustomerSale"/>. Defaults to empty (no intermediaries).
     /// </summary>
     public List<long> IntermediaryCompanyIDs { get; set; } = new();
 
     /// <summary>
-    /// Whether <paramref name="companyID"/> is a company that makes end-customer sales (a dealer), as opposed to a
-    /// supply-chain company — the <see cref="DistributorCompanyID">distributor</see> or an
-    /// <see cref="IntermediaryCompanyIDs">intermediary</see> — that only moves the vehicle toward the dealer.
-    /// Warranty activation, free-service start, and service-item eligibility must anchor on an end-customer sale,
-    /// never on a distributor's or intermediary's leg. A null/unknown company is treated as an end-customer sale,
-    /// so callers with no distributor/intermediary configured behave exactly as before.
+    /// Per company, the <c>AccountNumber</c>(s) that mark a <c>VehicleEntry</c> as a <b>direct sale to an end
+    /// customer</b> even though that company is a supply-chain company. Today this is how a distributor selling
+    /// straight to a customer, instead of shipping to a dealer, is recognised — see <see cref="IsEndCustomerSale"/>.
+    /// <para>Keyed by Identity <c>CompanyID</c> because an account number is only meaningful within the company
+    /// that issued it: the same number can be used by another company for an entirely unrelated purpose, so a
+    /// match counts only for the company it is configured under.</para>
+    /// <para>Deployment-specific and supplied by the host; empty by default, so deployments where supply-chain
+    /// companies never sell direct are unaffected. Account numbers are matched with each supplied set's own
+    /// comparer — build them with <see cref="StringComparer.OrdinalIgnoreCase"/> for case-insensitive
+    /// matching.</para>
     /// </summary>
-    public bool IsEndCustomerSaleCompany(long? companyID)
+    public Dictionary<long, HashSet<string>> DirectEndCustomerSaleAccountNumbersByCompany { get; set; } = new();
+
+    /// <summary>
+    /// Whether <paramref name="entry"/> is a sale to an end customer. This is the single classification the vehicle
+    /// lookup anchors on: warranty activation, free-service start, service-item eligibility and the reported sale
+    /// must all rest on an end-customer sale, never on a supply-chain movement.
+    /// <para>Two layers decide it:</para>
+    /// <list type="number">
+    /// <item><b>Company</b> — the <see cref="DistributorCompanyID">distributor</see> and any
+    /// <see cref="IntermediaryCompanyIDs">intermediary</see> only move the vehicle toward the dealer, so their
+    /// entries are supply-chain movements. Every other company — including a null/unknown one — sells to end
+    /// customers, so deployments with neither configured behave exactly as they did before either was introduced.</item>
+    /// <item><b>Entry</b> — an individual entry can still be marked as a direct sale to an end customer by its
+    /// <c>AccountNumber</c>, matched against
+    /// <see cref="DirectEndCustomerSaleAccountNumbersByCompany"/> for its own company. This overrides the company
+    /// layer, which is how a supply-chain company's own sale straight to a customer is recognised.</item>
+    /// </list>
+    /// <para><c>ItemStatus</c> is deliberately not consulted. Status handling is expected to become a broader,
+    /// per-company/per-deployment concern covering all vehicle entries rather than this one case, so it is left
+    /// to that work instead of being partially anticipated here.</para>
+    /// </summary>
+    public bool IsEndCustomerSale(VehicleEntryModel entry)
     {
-        if (companyID is not { } id)
+        if (entry?.CompanyID is not { } companyID)
             return true;
 
-        if (DistributorCompanyID is not null && id == DistributorCompanyID)
-            return false;
+        var isSupplyChainCompany =
+            companyID == DistributorCompanyID
+            || (IntermediaryCompanyIDs?.Contains(companyID) ?? false);
 
-        return IntermediaryCompanyIDs is null || !IntermediaryCompanyIDs.Contains(id);
+        if (!isSupplyChainCompany)
+            return true;
+
+        return entry.AccountNumber is { } accountNumber
+            && DirectEndCustomerSaleAccountNumbersByCompany is not null
+            && DirectEndCustomerSaleAccountNumbersByCompany.TryGetValue(companyID, out var directSaleAccounts)
+            && directSaleAccounts?.Contains(accountNumber) == true;
     }
     /// <summary>The HMAC secret key used for signing service item claim requests.</summary>
     public string SigningSecretKey { get; set; } = string.Empty;
@@ -186,6 +236,22 @@ public class LookupOptions
     public bool LookupBrokerStock { get; set; }
     /// <summary>The storage backend to use for vehicle lookups (CosmosDB or DuckDB).</summary>
     public StorageSources VehicleLookupStorageSource { get; set; }
+    /// <summary>
+    /// Normalizes a caller-supplied phone number into the tenant's canonical STORED digit form for
+    /// golden-customer lookups — golden docs carry phones exactly as the tenant's ingestion
+    /// normalized them, and this must match that rule (e.g. one deployment strips its national
+    /// country code, another keeps full international digits because several countries share the
+    /// tenant). When unset, a neutral default applies: digits only, leading international "00"
+    /// stripped. Must be pure and deterministic.
+    /// </summary>
+    public Func<string, string>? GoldenCustomerPhoneNormalizer { get; set; }
+    /// <summary>
+    /// Optional suffix appended to the platform-standard Cosmos database names for ALL lookup
+    /// reads (e.g. "-alt" resolves "Customers" as "Customers-alt"). Intended for shared-emulator
+    /// dev scenarios where more than one projection set coexists on one local emulator; a
+    /// production deployment has its own Cosmos account and keeps the standard names (leave unset).
+    /// </summary>
+    public string? CosmosDatabaseNameSuffix { get; set; }
 }
 
 /// <summary>

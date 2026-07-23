@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<Import Project="..\..\GlobalSettings.props" />
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<LangVersion>latest</LangVersion>
+		<RootNamespace>ShiftSoftware.ADP.Darlastic.CaseBrowser</RootNamespace>
+		<Authors>Shift Software</Authors>
+		<Product>ADP.Darlastic</Product>
+		<Version>$(ADPVersion)</Version>
+		<AssemblyName>ShiftSoftware.ADP.Darlastic.CaseBrowser</AssemblyName>
+		<PackageId>ShiftSoftware.ADP.Darlastic.CaseBrowser</PackageId>
+		<Title>ShiftSoftware ADP.Darlastic — Case Browser</Title>
+		<Description>Steward case browser for the ShiftSoftware ADP.Darlastic package — categorized match cases over the live engine's own evidence (traces, golden survivorship, VIN bridges), adjudication with corpus provenance, review flags, and registry-joined golden IDs. The Phase-5 steward-surface prototype; a planned .Web module replaces it.</Description>
+		<Copyright>Copyright (c) Shift Software 2026</Copyright>
+		<PackageProjectUrl>https://github.com/ShiftSoftware/ADP</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/ShiftSoftware/ADP</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageTags>shift;shiftsoftware;adp;darlastic;customers;mdm;steward;case-browser</PackageTags>
+		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\ADP.Darlastic.Engine\ADP.Darlastic.Engine.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- The UI ships inside the package; hosts can override with a local web/cases.html for hot-editing. -->
+		<EmbeddedResource Include="web\cases.html" />
+	</ItemGroup>
+</Project>
