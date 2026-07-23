@@ -1,5 +1,6 @@
 @namespace ShiftSoftware.ADP.Surveys.Web.Components
 @using LocalizedString = ShiftSoftware.ADP.Surveys.Shared.DTOs.LocalizedString
+@inject SurveysWebOptions SurveysOptions
 
 @* Survey-level metadata tab — Name, IntegrationId, localized Title, locales,
    default locale. Triggers live in their own toolbar tab (TriggersPanel). *@
@@ -33,7 +34,7 @@
                        SelectedValues="@selectedLocales"
                        SelectedValuesChanged="@OnLocalesChanged"
                        AnchorOrigin="Origin.BottomCenter">
-                @foreach (var loc in SupportedLocales)
+                @foreach (var loc in OfferedLocales)
                 {
                     <MudSelectItem T="string" Value="@loc">@LocaleLabel(loc)</MudSelectItem>
                 }
@@ -109,10 +110,16 @@
     public int SchemaVersion { get; set; }
 
     /// <summary>
-    /// Catalog of locale codes shown in the Locales multiselect. Extend here as
-    /// ADP supports more markets.
+    /// Locale codes offered in the multiselect: the deployment's configured catalog, plus any
+    /// locale this survey ALREADY carries.
+    ///
+    /// The union is not cosmetic. MudSelect rebuilds its selection from the items it rendered,
+    /// so a selected locale with no matching item is dropped the moment the author touches the
+    /// control — silently deleting that language from the schema and its translations from the
+    /// renderer. Any survey authored before a catalog change would be one stray click from that.
     /// </summary>
-    public static readonly string[] SupportedLocales = new[] { "en", "ar", "ku" };
+    IEnumerable<string> OfferedLocales =>
+        SurveysOptions.LocaleCultures.Concat(selectedLocales).Distinct(StringComparer.OrdinalIgnoreCase);
 
     HashSet<string> selectedLocales = new();
 
@@ -123,13 +130,7 @@
             : new HashSet<string>();
     }
 
-    static string LocaleLabel(string code) => code switch
-    {
-        "en" => "English (en)",
-        "ar" => "العربية (ar)",
-        "ku" => "Kurdî (ku)",
-        _ => code,
-    };
+    string LocaleLabel(string code) => SurveysOptions.LocaleLabel(code);
 
     SurveyDto EnsureDraft()
     {

@@ -1,7 +1,40 @@
+using ShiftSoftware.ADP.Surveys.Shared.DTOs;
+
 namespace ShiftSoftware.ADP.Surveys.Web.Extensions;
 
 public class SurveysWebOptions
 {
+    /// <summary>
+    /// Locales the survey builder offers when an author picks a survey's languages, and when a
+    /// bank question is authored. Order here is the order shown.
+    /// </summary>
+    /// <remarks>
+    /// Deployment configuration, because deployments serve different markets and share no common
+    /// language set — one may author in en/ar/ku, another in en/ru. The default preserves the
+    /// catalog this module shipped with before the list was configurable, so an existing host
+    /// that sets nothing sees no change.
+    ///
+    /// A locale already present on a survey or question is always offered even if it is absent
+    /// here — the picker unions the two. Otherwise opening an existing survey authored in a
+    /// since-removed language and touching the control would silently drop that language from
+    /// the schema, taking its translations out of the renderer with it.
+    /// </remarks>
+    public List<SurveyLocaleOption> Locales { get; set; } = new()
+    {
+        new("en", "English (en)"),
+        new("ar", "العربية (ar)"),
+        new("ku", "Kurdî (ku)"),
+    };
+
+    /// <summary>Label for <paramref name="culture"/> from <see cref="Locales"/>, falling back to
+    /// the raw code so a locale carried by existing data still renders sensibly.</summary>
+    public string LocaleLabel(string culture) =>
+        Locales.FirstOrDefault(x => string.Equals(x.Culture, culture, StringComparison.OrdinalIgnoreCase))?.Label
+        ?? culture;
+
+    /// <summary>Culture codes only, in configured order.</summary>
+    public IEnumerable<string> LocaleCultures => Locales.Select(x => x.Culture);
+
     /// <summary>
     /// Optional custom layout for Surveys pages. When null, pages use whatever layout
     /// the consumer's <c>DefaultApp</c> provides.

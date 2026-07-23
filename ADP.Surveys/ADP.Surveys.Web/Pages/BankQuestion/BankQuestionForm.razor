@@ -197,7 +197,10 @@
 </style>
 
 @code {
-    static readonly string[] LocaleCatalog = new[] { "en", "ar", "ku" };
+    // Deployment's configured catalog — markets differ (one deployment authors in en/ar/ku,
+    // another in en/ru). Still unioned with editLocales at the call site, so a locale already on
+    // the question stays offered after a catalog change.
+    IEnumerable<string> LocaleCatalog => SurveysOptions.LocaleCultures;
 
     BankQuestionAdminDTO? seededFor;
     QuestionEntryDto? entry;

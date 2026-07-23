@@ -17,10 +17,14 @@ public class SurveyApiOptions
     public bool EnableSurveysActionTreeAuthorization { get; set; } = false;
 
     /// <summary>
-    /// Locales the builder's <c>LocalizedField</c> editor offers per Decision #5.
-    /// Empty means "no localization UI" — the editor falls back to a single-language
-    /// text input. Order here determines the tab / field order in the builder.
+    /// Locale catalog for server-side consumers.
     /// </summary>
+    /// <remarks>
+    /// NOT what drives the builder UI. The builder is Blazor and reads
+    /// <c>SurveysWebOptions.Locales</c> — setting this alone changes nothing an author sees.
+    /// (It previously claimed otherwise while having no consumer at all, which is a trap worth
+    /// naming rather than leaving to be rediscovered.) Configure BOTH sides to the same list.
+    /// </remarks>
     public List<SurveyLocaleOption> Locales { get; set; } = new();
 
     /// <summary>
@@ -55,5 +59,3 @@ public class SurveyApiOptions
     /// </summary>
     public BrandingDto? DefaultBranding { get; set; }
 }
-
-public record SurveyLocaleOption(string Culture, string Label);

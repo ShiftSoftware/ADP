@@ -41,7 +41,7 @@ public class GoldenCustomerSourcesDTO
 /// <summary>One row of the engine's assignment ledger — a single source record's membership.</summary>
 public class GoldenCustomerSourceDTO
 {
-    /// <summary>Source-system slug as the tenant's feeds emit it (e.g. "activation", "dms-aad").
+    /// <summary>Source-system slug as the tenant's feeds emit it (e.g. "activation", "dms-&lt;dealer&gt;").
     /// Rendered verbatim: this package is tenant-agnostic, so any friendly naming is a host concern.</summary>
     public string SourceSystem { get; set; } = default!;
 
