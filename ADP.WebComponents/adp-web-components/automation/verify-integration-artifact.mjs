@@ -24,6 +24,10 @@ if (!serviceHistory || serviceHistory.modulePath !== 'dist/components/vehicle-se
   throw new Error('The vehicle-service-history manifest entry does not advertise its published flat module path.');
 }
 
+if (!serviceHistory.api?.props?.some(prop => prop.name === 'baseUrl') || !serviceHistory.api?.methods?.some(method => method.name === 'fetchVin')) {
+  throw new Error('The service-history manifest is missing Stencil-generated API metadata.');
+}
+
 const template = readFileSync(templatePath, 'utf8');
 for (const disallowedValue of ['is-dev', 'setMockData', 'mock-data.js', 'loadedResponse', 'JTM']) {
   if (template.includes(disallowedValue)) {

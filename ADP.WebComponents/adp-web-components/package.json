@@ -44,7 +44,7 @@
   "scripts": {
     "test": "stencil test --spec",
     "generate": "stencil generate",
-    "build": "stencil build -- --prod",
+    "build": "stencil build -- --prod && node ./automation/generate-integration-manifest.mjs",
     "start": "stencil build --dev --watch --serve",
     "test.watch": "stencil test --spec --watchAll",
     "create:type": "node ./automation/generate-type.mjs",
@@ -55,6 +55,7 @@
     "purge": "node ./automation/purge-cdn.mjs",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,css,scss,html}\"",
     "prettier": "prettier --check \"src/**/*.{ts,tsx,js,jsx,css,scss,html}\"",
+    "generate:integration-manifest": "node ./automation/generate-integration-manifest.mjs",
     "verify:integration-artifact": "node ./automation/verify-integration-artifact.mjs"
   },
   "devDependencies": {

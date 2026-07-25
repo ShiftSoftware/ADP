@@ -5,6 +5,240 @@
   "outputFamily": "per-component",
   "components": [
     {
+      "tag": "vehicle-lookup",
+      "modulePath": "dist/components/vehicle-lookup.js",
+      "wireContract": "adp.vehicle-lookup.v1",
+      "supportedLocales": ["en", "ar", "ku", "ru"],
+      "host": {
+        "properties": ["activeElement", "baseUrl", "childrenProps", "disableVinValidation", "hiddenTabs", "language", "queryString", "separateSsc"],
+        "methods": ["fetchVin"],
+        "sequence": ["load module", "wait for custom element definition", "set properties", "call a documented method"],
+        "owns": ["vehicle lookup request", "response distribution to child components", "active child rendering"]
+      },
+      "api": {
+        "props": [
+          {
+            "name": "activeElement",
+            "attribute": "active-element",
+            "type": "\"\" | \"vehicle-accessories\" | \"vehicle-claimable-items\" | \"vehicle-paint-thickness\" | \"vehicle-sale-information\" | \"vehicle-service-history\" | \"vehicle-specification\" | \"vehicle-ssc\" | \"vehicle-warranty-details\"",
+            "default": null,
+            "mutable": false,
+            "required": false
+          },
+          { "name": "baseUrl", "attribute": "base-url", "type": "string", "default": null, "mutable": false, "required": false },
+          { "name": "blazorDynamicClaimActivate", "attribute": "blazor-dynamic-claim-activate", "type": "string", "default": null, "mutable": false, "required": false },
+          { "name": "blazorErrorStateListener", "attribute": "blazor-error-state-listener", "type": "string", "default": null, "mutable": false, "required": false },
+          { "name": "blazorOnLoadingStateChange", "attribute": "blazor-on-loading-state-change", "type": "string", "default": null, "mutable": false, "required": false },
+          { "name": "childrenProps", "attribute": "children-props", "type": "Object | string", "default": null, "mutable": false, "required": false },
+          { "name": "disableVinValidation", "attribute": "disable-vin-validation", "type": "boolean", "default": null, "mutable": false, "required": false },
+          {
+            "name": "dynamicClaimActivate",
+            "attribute": "dynamic-claim-activate",
+            "type": "(vehicleInformation: VehicleLookupDTO) => void",
+            "default": null,
+            "mutable": false,
+            "required": false
+          },
+          { "name": "errorStateListener", "attribute": "error-state-listener", "type": "(newError: string) => void", "default": null, "mutable": false, "required": false },
+          { "name": "hiddenTabs", "attribute": "hidden-tabs", "type": "string", "default": null, "mutable": false, "required": false },
+          { "name": "isDev", "attribute": "is-dev", "type": "boolean", "default": null, "mutable": false, "required": false },
+          { "name": "language", "attribute": "language", "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"", "default": null, "mutable": false, "required": false },
+          { "name": "loadingStateChanged", "attribute": "loading-state-changed", "type": "(isLoading: boolean) => void", "default": null, "mutable": false, "required": false },
+          { "name": "mockRecaptcha", "attribute": "mock-recaptcha", "type": "boolean", "default": null, "mutable": false, "required": false },
+          { "name": "mockUrl", "attribute": "mock-url", "type": "string", "default": null, "mutable": false, "required": false },
+          { "name": "queryString", "attribute": "query-string", "type": "string", "default": null, "mutable": false, "required": false },
+          { "name": "separateSsc", "attribute": "separate-ssc", "type": "boolean", "default": null, "mutable": false, "required": false },
+          { "name": "sscQueryString", "attribute": "ssc-query-string", "type": "string", "default": null, "mutable": false, "required": false }
+        ],
+        "methods": [
+          { "name": "fetchVin", "parameters": "(vin: string, headers?: any) => Promise<void>", "returns": "Promise<void>" },
+          { "name": "handleLoadData", "parameters": "(newResponse: VehicleLookupDTO, activeElement: any) => Promise<void>", "returns": "Promise<void>" },
+          { "name": "setBlazorRef", "parameters": "(newBlazorRef: DotNetObjectReference) => Promise<void>", "returns": "Promise<void>" }
+        ],
+        "events": [],
+        "dependencies": [
+          "vehicle-specification",
+          "vehicle-accessories",
+          "vehicle-sale-information",
+          "vehicle-warranty-details",
+          "vehicle-service-history",
+          "vehicle-paint-thickness",
+          "vehicle-claimable-items",
+          "shift-tab-content"
+        ]
+      },
+      "runtimeAssets": { "locales": "dist/locales", "notes": ["The host owns tab navigation and selects the activeElement."] }
+    },
+    {
+      "tag": "vehicle-specification",
+      "modulePath": "dist/components/vehicle-specification.js",
+      "wireContract": "adp.vehicle-specification.v1",
+      "supportedLocales": ["en", "ar", "ku", "ru"],
+      "host": {
+        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "queryString"],
+        "methods": ["fetchVin"],
+        "sequence": ["load module", "wait for custom element definition", "set properties", "call a documented method"],
+        "owns": ["lookup request", "response handling", "loading and error state", "vehicle specification rendering"]
+      },
+      "api": {
+        "props": [
+          { "name": "baseUrl", "attribute": "base-url", "type": "string", "default": null, "mutable": false, "required": false },
+          { "name": "coreOnly", "attribute": "core-only", "type": "boolean", "default": null, "mutable": false, "required": false },
+          { "name": "disableVinValidation", "attribute": "disable-vin-validation", "type": "boolean", "default": null, "mutable": false, "required": false },
+          {
+            "name": "errorCallback",
+            "attribute": "error-callback",
+            "type": "((errorMessage: OptionalKeys<{ noBaseUrl: string; invalidVin: string; vinNumberRequired: string; partNumberRequired: string; wrongResponseFormat: string; noPartsFound: string; noServiceAvailable: string; wrongFormStructure: string; wildCard: string; requestFailedPleaseTryAgainLater: string; }>) => void) | string",
+            "default": null,
+            "mutable": false,
+            "required": false
+          },
+          { "name": "headers", "attribute": "headers", "type": "object", "default": null, "mutable": false, "required": false },
+          { "name": "isDev", "attribute": "is-dev", "type": "boolean", "default": null, "mutable": false, "required": false },
+          { "name": "language", "attribute": "language", "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"", "default": null, "mutable": false, "required": false },
+          {
+            "name": "loadedResponse",
+            "attribute": "loaded-response",
+            "type": "((response: VehicleLookupDTO) => void) | string",
+            "default": null,
+            "mutable": false,
+            "required": false
+          },
+          {
+            "name": "loadingStateChange",
+            "attribute": "loading-state-change",
+            "type": "((isLoading: boolean) => void) | string",
+            "default": null,
+            "mutable": false,
+            "required": false
+          },
+          { "name": "queryString", "attribute": "query-string", "type": "string", "default": null, "mutable": false, "required": false }
+        ],
+        "methods": [
+          { "name": "fetchVin", "parameters": "(newData: VehicleLookupDTO | string, headers?: any) => Promise<void>", "returns": "Promise<void>" },
+          { "name": "setBlazorRef", "parameters": "(newBlazorRef: DotNetObjectReference) => Promise<void>", "returns": "Promise<void>" },
+          { "name": "setErrorMessage", "parameters": "(message: ErrorKeys) => Promise<void>", "returns": "Promise<void>" },
+          { "name": "setMockData", "parameters": "(newMockData: VehicleLookupMock) => Promise<void>", "returns": "Promise<void>" }
+        ],
+        "events": [],
+        "dependencies": ["flexible-container"]
+      },
+      "runtimeAssets": { "locales": "dist/locales", "notes": [] }
+    },
+    {
+      "tag": "vehicle-sale-information",
+      "modulePath": "dist/components/vehicle-sale-information.js",
+      "wireContract": "adp.vehicle-sale-information.v1",
+      "supportedLocales": ["en", "ar", "ku", "ru"],
+      "host": {
+        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "hiddenFields", "queryString"],
+        "methods": ["fetchVin"],
+        "sequence": ["load module", "wait for custom element definition", "set properties", "call a documented method"],
+        "owns": ["lookup request", "response handling", "loading and error state", "sale information rendering"]
+      },
+      "api": {
+        "props": [
+          { "name": "baseUrl", "attribute": "base-url", "type": "string", "default": null, "mutable": false, "required": false },
+          { "name": "coreOnly", "attribute": "core-only", "type": "boolean", "default": null, "mutable": false, "required": false },
+          { "name": "disableVinValidation", "attribute": "disable-vin-validation", "type": "boolean", "default": null, "mutable": false, "required": false },
+          {
+            "name": "errorCallback",
+            "attribute": "error-callback",
+            "type": "((errorMessage: OptionalKeys<{ noBaseUrl: string; invalidVin: string; vinNumberRequired: string; partNumberRequired: string; wrongResponseFormat: string; noPartsFound: string; noServiceAvailable: string; wrongFormStructure: string; wildCard: string; requestFailedPleaseTryAgainLater: string; }>) => void) | string",
+            "default": null,
+            "mutable": false,
+            "required": false
+          },
+          { "name": "headers", "attribute": "headers", "type": "object", "default": null, "mutable": false, "required": false },
+          { "name": "hiddenFields", "attribute": "hidden-fields", "type": "string", "default": null, "mutable": false, "required": false },
+          { "name": "isDev", "attribute": "is-dev", "type": "boolean", "default": null, "mutable": false, "required": false },
+          { "name": "language", "attribute": "language", "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"", "default": null, "mutable": false, "required": false },
+          {
+            "name": "loadedResponse",
+            "attribute": "loaded-response",
+            "type": "((response: VehicleLookupDTO) => void) | string",
+            "default": null,
+            "mutable": false,
+            "required": false
+          },
+          {
+            "name": "loadingStateChange",
+            "attribute": "loading-state-change",
+            "type": "((isLoading: boolean) => void) | string",
+            "default": null,
+            "mutable": false,
+            "required": false
+          },
+          { "name": "queryString", "attribute": "query-string", "type": "string", "default": null, "mutable": false, "required": false }
+        ],
+        "methods": [
+          { "name": "fetchVin", "parameters": "(newData: VehicleLookupDTO | string, headers?: any) => Promise<void>", "returns": "Promise<void>" },
+          { "name": "setBlazorRef", "parameters": "(newBlazorRef: DotNetObjectReference) => Promise<void>", "returns": "Promise<void>" },
+          { "name": "setErrorMessage", "parameters": "(message: ErrorKeys) => Promise<void>", "returns": "Promise<void>" },
+          { "name": "setMockData", "parameters": "(newMockData: VehicleLookupMock) => Promise<void>", "returns": "Promise<void>" }
+        ],
+        "events": [],
+        "dependencies": ["flexible-container"]
+      },
+      "runtimeAssets": { "locales": "dist/locales", "notes": ["The host may use hiddenFields to apply its approved presentation policy."] }
+    },
+    {
+      "tag": "vehicle-accessories",
+      "modulePath": "dist/components/vehicle-accessories.js",
+      "wireContract": "adp.vehicle-accessories.v1",
+      "supportedLocales": ["en", "ar", "ku", "ru"],
+      "host": {
+        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "queryString"],
+        "methods": ["fetchVin"],
+        "sequence": ["load module", "wait for custom element definition", "set properties", "call a documented method"],
+        "owns": ["lookup request", "response handling", "loading and error state", "accessory rendering"]
+      },
+      "api": {
+        "props": [
+          { "name": "baseUrl", "attribute": "base-url", "type": "string", "default": null, "mutable": false, "required": false },
+          { "name": "coreOnly", "attribute": "core-only", "type": "boolean", "default": null, "mutable": false, "required": false },
+          { "name": "disableVinValidation", "attribute": "disable-vin-validation", "type": "boolean", "default": null, "mutable": false, "required": false },
+          {
+            "name": "errorCallback",
+            "attribute": "error-callback",
+            "type": "((errorMessage: OptionalKeys<{ noBaseUrl: string; invalidVin: string; vinNumberRequired: string; partNumberRequired: string; wrongResponseFormat: string; noPartsFound: string; noServiceAvailable: string; wrongFormStructure: string; wildCard: string; requestFailedPleaseTryAgainLater: string; }>) => void) | string",
+            "default": null,
+            "mutable": false,
+            "required": false
+          },
+          { "name": "headers", "attribute": "headers", "type": "object", "default": null, "mutable": false, "required": false },
+          { "name": "isDev", "attribute": "is-dev", "type": "boolean", "default": null, "mutable": false, "required": false },
+          { "name": "language", "attribute": "language", "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"", "default": null, "mutable": false, "required": false },
+          {
+            "name": "loadedResponse",
+            "attribute": "loaded-response",
+            "type": "((response: VehicleLookupDTO) => void) | string",
+            "default": null,
+            "mutable": false,
+            "required": false
+          },
+          {
+            "name": "loadingStateChange",
+            "attribute": "loading-state-change",
+            "type": "((isLoading: boolean) => void) | string",
+            "default": null,
+            "mutable": false,
+            "required": false
+          },
+          { "name": "queryString", "attribute": "query-string", "type": "string", "default": null, "mutable": false, "required": false }
+        ],
+        "methods": [
+          { "name": "fetchVin", "parameters": "(newData: VehicleLookupDTO | string, headers?: any) => Promise<void>", "returns": "Promise<void>" },
+          { "name": "setBlazorRef", "parameters": "(newBlazorRef: DotNetObjectReference) => Promise<void>", "returns": "Promise<void>" },
+          { "name": "setErrorMessage", "parameters": "(message: ErrorKeys) => Promise<void>", "returns": "Promise<void>" },
+          { "name": "setMockData", "parameters": "(newMockData: VehicleLookupMock) => Promise<void>", "returns": "Promise<void>" }
+        ],
+        "events": [],
+        "dependencies": ["information-table"]
+      },
+      "runtimeAssets": { "locales": "dist/locales", "notes": [] }
+    },
+    {
       "tag": "vehicle-service-history",
       "modulePath": "dist/components/vehicle-service-history.js",
       "wireContract": "adp.vehicle-service-history.v1",
@@ -12,12 +246,275 @@
       "host": {
         "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "queryString"],
         "methods": ["fetchVin"],
-        "sequence": ["load module", "wait for custom element definition", "set properties", "call fetchVin"],
+        "sequence": ["load module", "wait for custom element definition", "set properties", "call a documented method"],
         "owns": ["lookup request", "response handling", "loading and error state", "service-history rendering"]
+      },
+      "api": {
+        "props": [
+          { "name": "baseUrl", "attribute": "base-url", "type": "string", "default": null, "mutable": false, "required": false },
+          { "name": "coreOnly", "attribute": "core-only", "type": "boolean", "default": null, "mutable": false, "required": false },
+          { "name": "disableVinValidation", "attribute": "disable-vin-validation", "type": "boolean", "default": null, "mutable": false, "required": false },
+          {
+            "name": "errorCallback",
+            "attribute": "error-callback",
+            "type": "((errorMessage: OptionalKeys<{ noBaseUrl: string; invalidVin: string; vinNumberRequired: string; partNumberRequired: string; wrongResponseFormat: string; noPartsFound: string; noServiceAvailable: string; wrongFormStructure: string; wildCard: string; requestFailedPleaseTryAgainLater: string; }>) => void) | string",
+            "default": null,
+            "mutable": false,
+            "required": false
+          },
+          { "name": "headers", "attribute": "headers", "type": "object", "default": null, "mutable": false, "required": false },
+          { "name": "isDev", "attribute": "is-dev", "type": "boolean", "default": null, "mutable": false, "required": false },
+          { "name": "language", "attribute": "language", "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"", "default": null, "mutable": false, "required": false },
+          {
+            "name": "loadedResponse",
+            "attribute": "loaded-response",
+            "type": "((response: VehicleLookupDTO) => void) | string",
+            "default": null,
+            "mutable": false,
+            "required": false
+          },
+          {
+            "name": "loadingStateChange",
+            "attribute": "loading-state-change",
+            "type": "((isLoading: boolean) => void) | string",
+            "default": null,
+            "mutable": false,
+            "required": false
+          },
+          { "name": "queryString", "attribute": "query-string", "type": "string", "default": null, "mutable": false, "required": false }
+        ],
+        "methods": [
+          { "name": "fetchVin", "parameters": "(newData: VehicleLookupDTO | string, headers?: any) => Promise<void>", "returns": "Promise<void>" },
+          { "name": "setBlazorRef", "parameters": "(newBlazorRef: DotNetObjectReference) => Promise<void>", "returns": "Promise<void>" },
+          { "name": "setErrorMessage", "parameters": "(message: ErrorKeys) => Promise<void>", "returns": "Promise<void>" },
+          { "name": "setMockData", "parameters": "(newMockData: VehicleLookupMock) => Promise<void>", "returns": "Promise<void>" }
+        ],
+        "events": [],
+        "dependencies": ["information-table"]
+      },
+      "runtimeAssets": { "locales": "dist/locales", "notes": ["The current package global script loads shared fonts and browser interop helpers."] }
+    },
+    {
+      "tag": "vehicle-paint-thickness",
+      "modulePath": "dist/components/vehicle-paint-thickness.js",
+      "wireContract": "adp.vehicle-paint-thickness.v1",
+      "supportedLocales": ["en", "ar", "ku", "ru"],
+      "host": {
+        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "queryString", "showCertificateButton"],
+        "methods": ["fetchVin"],
+        "sequence": ["load module", "wait for custom element definition", "set properties", "call a documented method"],
+        "owns": ["lookup request", "response handling", "loading and error state", "paint-thickness rendering"]
+      },
+      "api": {
+        "props": [
+          { "name": "baseUrl", "attribute": "base-url", "type": "string", "default": null, "mutable": false, "required": false },
+          { "name": "coreOnly", "attribute": "core-only", "type": "boolean", "default": null, "mutable": false, "required": false },
+          { "name": "disableVinValidation", "attribute": "disable-vin-validation", "type": "boolean", "default": null, "mutable": false, "required": false },
+          {
+            "name": "errorCallback",
+            "attribute": "error-callback",
+            "type": "((errorMessage: OptionalKeys<{ noBaseUrl: string; invalidVin: string; vinNumberRequired: string; partNumberRequired: string; wrongResponseFormat: string; noPartsFound: string; noServiceAvailable: string; wrongFormStructure: string; wildCard: string; requestFailedPleaseTryAgainLater: string; }>) => void) | string",
+            "default": null,
+            "mutable": false,
+            "required": false
+          },
+          { "name": "headers", "attribute": "headers", "type": "object", "default": null, "mutable": false, "required": false },
+          { "name": "isDev", "attribute": "is-dev", "type": "boolean", "default": null, "mutable": false, "required": false },
+          { "name": "language", "attribute": "language", "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"", "default": null, "mutable": false, "required": false },
+          {
+            "name": "loadedResponse",
+            "attribute": "loaded-response",
+            "type": "((response: VehicleLookupDTO) => void) | string",
+            "default": null,
+            "mutable": false,
+            "required": false
+          },
+          {
+            "name": "loadingStateChange",
+            "attribute": "loading-state-change",
+            "type": "((isLoading: boolean) => void) | string",
+            "default": null,
+            "mutable": false,
+            "required": false
+          },
+          { "name": "queryString", "attribute": "query-string", "type": "string", "default": null, "mutable": false, "required": false },
+          { "name": "showCertificateButton", "attribute": "show-certificate-button", "type": "boolean", "default": null, "mutable": false, "required": false }
+        ],
+        "methods": [
+          { "name": "fetchVin", "parameters": "(newData: VehicleLookupDTO | string, headers?: any) => Promise<void>", "returns": "Promise<void>" },
+          { "name": "setBlazorRef", "parameters": "(newBlazorRef: DotNetObjectReference) => Promise<void>", "returns": "Promise<void>" },
+          { "name": "setErrorMessage", "parameters": "(message: ErrorKeys) => Promise<void>", "returns": "Promise<void>" },
+          { "name": "setMockData", "parameters": "(newMockData: VehicleLookupMock) => Promise<void>", "returns": "Promise<void>" }
+        ],
+        "events": [],
+        "dependencies": ["shift-tabs", "flexible-container"]
+      },
+      "runtimeAssets": { "locales": "dist/locales", "notes": [] }
+    },
+    {
+      "tag": "vehicle-warranty-details",
+      "modulePath": "dist/components/vehicle-warranty-details.js",
+      "wireContract": "adp.vehicle-warranty-details.v1",
+      "supportedLocales": ["en", "ar", "ku", "ru"],
+      "host": {
+        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "queryString", "showSsc", "showWarranty"],
+        "methods": ["fetchVin"],
+        "sequence": ["load module", "wait for custom element definition", "set properties", "call a documented method"],
+        "owns": ["lookup request", "response handling", "loading and error state", "warranty and campaign rendering"]
+      },
+      "api": {
+        "props": [
+          { "name": "baseUrl", "attribute": "base-url", "type": "string", "default": null, "mutable": false, "required": false },
+          { "name": "brandIntegrationId", "attribute": "brand-integration-id", "type": "string", "default": null, "mutable": false, "required": false },
+          { "name": "cityId", "attribute": "city-id", "type": "string", "default": null, "mutable": false, "required": false },
+          { "name": "cityIntegrationId", "attribute": "city-integration-id", "type": "string", "default": null, "mutable": false, "required": false },
+          { "name": "companyBranchId", "attribute": "company-branch-id", "type": "string", "default": null, "mutable": false, "required": false },
+          { "name": "companyBranchIntegrationId", "attribute": "company-branch-integration-id", "type": "string", "default": null, "mutable": false, "required": false },
+          { "name": "companyId", "attribute": "company-id", "type": "string", "default": null, "mutable": false, "required": false },
+          { "name": "companyIntegrationId", "attribute": "company-integration-id", "type": "string", "default": null, "mutable": false, "required": false },
+          { "name": "coreOnly", "attribute": "core-only", "type": "boolean", "default": null, "mutable": false, "required": false },
+          { "name": "customerEmail", "attribute": "customer-email", "type": "string", "default": null, "mutable": false, "required": false },
+          { "name": "customerName", "attribute": "customer-name", "type": "string", "default": null, "mutable": false, "required": false },
+          { "name": "customerPhone", "attribute": "customer-phone", "type": "string", "default": null, "mutable": false, "required": false },
+          { "name": "disableVinValidation", "attribute": "disable-vin-validation", "type": "boolean", "default": null, "mutable": false, "required": false },
+          {
+            "name": "errorCallback",
+            "attribute": "error-callback",
+            "type": "((errorMessage: OptionalKeys<{ noBaseUrl: string; invalidVin: string; vinNumberRequired: string; partNumberRequired: string; wrongResponseFormat: string; noPartsFound: string; noServiceAvailable: string; wrongFormStructure: string; wildCard: string; requestFailedPleaseTryAgainLater: string; }>) => void) | string",
+            "default": null,
+            "mutable": false,
+            "required": false
+          },
+          { "name": "headers", "attribute": "headers", "type": "object", "default": null, "mutable": false, "required": false },
+          { "name": "isDev", "attribute": "is-dev", "type": "boolean", "default": null, "mutable": false, "required": false },
+          { "name": "language", "attribute": "language", "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"", "default": null, "mutable": false, "required": false },
+          {
+            "name": "loadedResponse",
+            "attribute": "loaded-response",
+            "type": "((response: VehicleLookupDTO) => void) | string",
+            "default": null,
+            "mutable": false,
+            "required": false
+          },
+          {
+            "name": "loadingStateChange",
+            "attribute": "loading-state-change",
+            "type": "((isLoading: boolean) => void) | string",
+            "default": null,
+            "mutable": false,
+            "required": false
+          },
+          { "name": "mockRecaptcha", "attribute": "mock-recaptcha", "type": "boolean", "default": null, "mutable": false, "required": false },
+          { "name": "queryString", "attribute": "query-string", "type": "string", "default": null, "mutable": false, "required": false },
+          { "name": "recaptchaKey", "attribute": "recaptcha-key", "type": "string", "default": null, "mutable": false, "required": false },
+          { "name": "showSsc", "attribute": "show-ssc", "type": "boolean", "default": null, "mutable": false, "required": false },
+          { "name": "showWarranty", "attribute": "show-warranty", "type": "boolean", "default": null, "mutable": false, "required": false },
+          { "name": "unauthorizedSscLookupBaseUrl", "attribute": "unauthorized-ssc-lookup-base-url", "type": "string", "default": null, "mutable": false, "required": false },
+          {
+            "name": "unauthorizedSscLookupQueryString",
+            "attribute": "unauthorized-ssc-lookup-query-string",
+            "type": "string",
+            "default": null,
+            "mutable": false,
+            "required": false
+          },
+          {
+            "name": "unauthorizedSscLookupResponse",
+            "attribute": "unauthorized-ssc-lookup-response",
+            "type": "((sscLookupStatus: number) => void) | string",
+            "default": null,
+            "mutable": false,
+            "required": false
+          },
+          { "name": "userId", "attribute": "user-id", "type": "string", "default": null, "mutable": false, "required": false }
+        ],
+        "methods": [
+          { "name": "clearData", "parameters": "() => Promise<void>", "returns": "Promise<void>" },
+          { "name": "fetchVin", "parameters": "(newData: VehicleLookupDTO | string, headers?: any) => Promise<void>", "returns": "Promise<void>" },
+          { "name": "setBlazorRef", "parameters": "(newBlazorRef: DotNetObjectReference) => Promise<void>", "returns": "Promise<void>" },
+          { "name": "setErrorMessage", "parameters": "(message: ErrorKeys) => Promise<void>", "returns": "Promise<void>" },
+          { "name": "setMockData", "parameters": "(newMockData: VehicleLookupMock) => Promise<void>", "returns": "Promise<void>" }
+        ],
+        "events": [],
+        "dependencies": ["flexible-container", "loading-spinner", "information-table"]
+      },
+      "runtimeAssets": { "locales": "dist/locales", "notes": ["Unauthorized campaign lookup and reCAPTCHA configuration are host policy and remain optional raw API properties."] }
+    },
+    {
+      "tag": "vehicle-claimable-items",
+      "modulePath": "dist/components/vehicle-claimable-items.js",
+      "wireContract": "adp.vehicle-claimable-items.v1",
+      "supportedLocales": ["en", "ar", "ku", "ru"],
+      "host": {
+        "properties": ["baseUrl", "coreOnly", "disableVinValidation", "language", "queryString", "showTrace"],
+        "methods": ["fetchVin"],
+        "sequence": ["load module", "wait for custom element definition", "set properties", "call a documented method"],
+        "owns": ["lookup request", "response handling", "loading and error state", "claimable-item rendering"]
+      },
+      "api": {
+        "props": [
+          { "name": "activate", "attribute": "activate", "type": "(vehicleInformation: VehicleLookupDTO) => void", "default": null, "mutable": false, "required": false },
+          { "name": "baseUrl", "attribute": "base-url", "type": "string", "default": null, "mutable": false, "required": false },
+          { "name": "claimEndPoint", "attribute": "claim-end-point", "type": "string", "default": null, "mutable": false, "required": false },
+          { "name": "coreOnly", "attribute": "core-only", "type": "boolean", "default": null, "mutable": false, "required": false },
+          { "name": "disableVinValidation", "attribute": "disable-vin-validation", "type": "boolean", "default": null, "mutable": false, "required": false },
+          {
+            "name": "errorCallback",
+            "attribute": "error-callback",
+            "type": "((errorMessage: OptionalKeys<{ noBaseUrl: string; invalidVin: string; vinNumberRequired: string; partNumberRequired: string; wrongResponseFormat: string; noPartsFound: string; noServiceAvailable: string; wrongFormStructure: string; wildCard: string; requestFailedPleaseTryAgainLater: string; }>) => void) | string",
+            "default": null,
+            "mutable": false,
+            "required": false
+          },
+          { "name": "headers", "attribute": "headers", "type": "object", "default": null, "mutable": false, "required": false },
+          { "name": "isDev", "attribute": "is-dev", "type": "boolean", "default": null, "mutable": false, "required": false },
+          { "name": "language", "attribute": "language", "type": "\"ar\" | \"en\" | \"ku\" | \"ru\"", "default": null, "mutable": false, "required": false },
+          {
+            "name": "loadedResponse",
+            "attribute": "loaded-response",
+            "type": "((response: VehicleLookupDTO) => void) | string",
+            "default": null,
+            "mutable": false,
+            "required": false
+          },
+          {
+            "name": "loadingStateChange",
+            "attribute": "loading-state-change",
+            "type": "((isLoading: boolean) => void) | string",
+            "default": null,
+            "mutable": false,
+            "required": false
+          },
+          { "name": "maximumDocumentFileSizeInMb", "attribute": "maximum-document-file-size-in-mb", "type": "number", "default": null, "mutable": false, "required": false },
+          { "name": "print", "attribute": "print", "type": "(claimResponse: any) => void", "default": null, "mutable": false, "required": false },
+          { "name": "queryString", "attribute": "query-string", "type": "string", "default": null, "mutable": false, "required": false },
+          { "name": "showTrace", "attribute": "show-trace", "type": "boolean", "default": null, "mutable": false, "required": false },
+          {
+            "name": "uploadMultipleDocumentsAtTheForm",
+            "attribute": "upload-multiple-documents-at-the-form",
+            "type": "boolean",
+            "default": null,
+            "mutable": false,
+            "required": false
+          }
+        ],
+        "methods": [
+          { "name": "claim", "parameters": "(item: VehicleServiceItemDTO) => Promise<void>", "returns": "Promise<void>" },
+          { "name": "completeClaim", "parameters": "(response: any) => Promise<void>", "returns": "Promise<void>" },
+          { "name": "fetchVin", "parameters": "(newData: VehicleLookupDTO | string, headers?: any) => Promise<void>", "returns": "Promise<void>" },
+          { "name": "openTrace", "parameters": "() => Promise<void>", "returns": "Promise<void>" },
+          { "name": "setBlazorRef", "parameters": "(newBlazorRef: DotNetObjectReference) => Promise<void>", "returns": "Promise<void>" },
+          { "name": "setErrorMessage", "parameters": "(message: ErrorKeys) => Promise<void>", "returns": "Promise<void>" },
+          { "name": "setMockData", "parameters": "(newMockData: VehicleLookupMock) => Promise<void>", "returns": "Promise<void>" }
+        ],
+        "events": [],
+        "dependencies": ["vehicle-item-claim-form", "shift-tabs"]
       },
       "runtimeAssets": {
         "locales": "dist/locales",
-        "notes": ["The current package global script loads shared fonts and browser interop helpers."]
+        "notes": [
+          "claim, completeClaim, activate, claimEndPoint, and document-upload settings are mutation integration features. They remain raw API metadata until their host contract is reviewed."
+        ]
       }
     }
   ]

@@ -10,7 +10,7 @@ ADP Web Components supports a pinned, per-component integration model. Load only
 - Wait for `customElements.whenDefined(tag)` before calling a component method.
 - Upgrade every ADP component used by one browser document together.
 
-The package publishes an integration manifest at `dist/integration-manifest.json`. It describes the supported component tag, flat module path, host API, and runtime assets for the released package version.
+The package publishes an integration manifest at `dist/integration-manifest.json`. It is generated during the package build from Stencil component metadata plus the ADP-owned stable integration contract. It describes the supported component tag, flat module path, host API, runtime assets, and the full emitted component API for the released package version.
 
 ## Browser host example
 

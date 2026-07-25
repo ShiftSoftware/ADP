@@ -58,6 +58,10 @@ export const config: Config = {
       customElementsExportBehavior: 'auto-define-custom-elements',
     },
     {
+      type: 'docs-json',
+      file: 'dist/stencil-docs.json',
+    },
+    {
       type: 'www',
       serviceWorker: null,
       copy: [{ src: 'index.html' }, { src: 'templates' }, { src: 'locales', dest: 'locales' }, { src: 'features/mocks/data', dest: 'mocks' }],

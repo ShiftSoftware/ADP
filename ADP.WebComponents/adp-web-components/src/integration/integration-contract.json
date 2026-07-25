@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "outputFamily": "per-component",
+  "components": {
+    "vehicle-lookup": {
+      "wireContract": "adp.vehicle-lookup.v1",
+      "supportedLocales": ["en", "ar", "ku", "ru"],
+      "host": {
+        "properties": ["activeElement", "baseUrl", "childrenProps", "disableVinValidation", "hiddenTabs", "language", "queryString", "separateSsc"],
+        "methods": ["fetchVin"],
+        "owns": ["vehicle lookup request", "response distribution to child components", "active child rendering"]
+      },
+      "runtimeAssets": {
+        "locales": "dist/locales",
+        "notes": ["The host owns tab navigation and selects the activeElement."]
+      }
+    },
+    "vehicle-specification": {
+      "wireContract": "adp.vehicle-specification.v1",
+      "supportedLocales": ["en", "ar", "ku", "ru"],
+      "host": {
+        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "queryString"],
+        "methods": ["fetchVin"],
+        "owns": ["lookup request", "response handling", "loading and error state", "vehicle specification rendering"]
+      },
+      "runtimeAssets": {
+        "locales": "dist/locales",
+        "notes": []
+      }
+    },
+    "vehicle-sale-information": {
+      "wireContract": "adp.vehicle-sale-information.v1",
+      "supportedLocales": ["en", "ar", "ku", "ru"],
+      "host": {
+        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "hiddenFields", "queryString"],
+        "methods": ["fetchVin"],
+        "owns": ["lookup request", "response handling", "loading and error state", "sale information rendering"]
+      },
+      "runtimeAssets": {
+        "locales": "dist/locales",
+        "notes": ["The host may use hiddenFields to apply its approved presentation policy."]
+      }
+    },
+    "vehicle-accessories": {
+      "wireContract": "adp.vehicle-accessories.v1",
+      "supportedLocales": ["en", "ar", "ku", "ru"],
+      "host": {
+        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "queryString"],
+        "methods": ["fetchVin"],
+        "owns": ["lookup request", "response handling", "loading and error state", "accessory rendering"]
+      },
+      "runtimeAssets": {
+        "locales": "dist/locales",
+        "notes": []
+      }
+    },
+    "vehicle-service-history": {
+      "wireContract": "adp.vehicle-service-history.v1",
+      "supportedLocales": ["en", "ar", "ku", "ru"],
+      "host": {
+        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "queryString"],
+        "methods": ["fetchVin"],
+        "owns": ["lookup request", "response handling", "loading and error state", "service-history rendering"]
+      },
+      "runtimeAssets": {
+        "locales": "dist/locales",
+        "notes": ["The current package global script loads shared fonts and browser interop helpers."]
+      }
+    },
+    "vehicle-paint-thickness": {
+      "wireContract": "adp.vehicle-paint-thickness.v1",
+      "supportedLocales": ["en", "ar", "ku", "ru"],
+      "host": {
+        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "queryString", "showCertificateButton"],
+        "methods": ["fetchVin"],
+        "owns": ["lookup request", "response handling", "loading and error state", "paint-thickness rendering"]
+      },
+      "runtimeAssets": {
+        "locales": "dist/locales",
+        "notes": []
+      }
+    },
+    "vehicle-warranty-details": {
+      "wireContract": "adp.vehicle-warranty-details.v1",
+      "supportedLocales": ["en", "ar", "ku", "ru"],
+      "host": {
+        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "queryString", "showSsc", "showWarranty"],
+        "methods": ["fetchVin"],
+        "owns": ["lookup request", "response handling", "loading and error state", "warranty and campaign rendering"]
+      },
+      "runtimeAssets": {
+        "locales": "dist/locales",
+        "notes": ["Unauthorized campaign lookup and reCAPTCHA configuration are host policy and remain optional raw API properties."]
+      }
+    },
+    "vehicle-claimable-items": {
+      "wireContract": "adp.vehicle-claimable-items.v1",
+      "supportedLocales": ["en", "ar", "ku", "ru"],
+      "host": {
+        "properties": ["baseUrl", "coreOnly", "disableVinValidation", "language", "queryString", "showTrace"],
+        "methods": ["fetchVin"],
+        "owns": ["lookup request", "response handling", "loading and error state", "claimable-item rendering"]
+      },
+      "runtimeAssets": {
+        "locales": "dist/locales",
+        "notes": [
+          "claim, completeClaim, activate, claimEndPoint, and document-upload settings are mutation integration features. They remain raw API metadata until their host contract is reviewed."
+        ]
+      }
+    }
+  }
+}
