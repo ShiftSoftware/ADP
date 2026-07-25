@@ -7,9 +7,10 @@ variables:
 - group: Deployment
 
 steps:
-  - task: NodeTool@0
+  - task: UseNode@1
     inputs:
-      versionSpec: '22.x'
+      version: '22.x'
+      checkLatest: false
     displayName: 'Set up Node.js'
 
   - task: Npm@1
