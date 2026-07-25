@@ -9,7 +9,7 @@ variables:
 steps:
   - task: NodeTool@0
     inputs:
-      versionSpec: '16.x' # Use your desired Node.js version
+      versionSpec: '22.x'
     displayName: 'Set up Node.js'
 
   - task: Npm@1
@@ -28,7 +28,7 @@ steps:
 
   - task: Npm@1
     displayName: 'Publish to npm'
-    condition: contains(variables['Build.SourceBranch'], 'refs/tags/release')
+    condition: and(succeeded(), contains(variables['Build.SourceBranch'], 'refs/tags/release'))
     inputs:
       command: 'publish'
       workingDir: 'ADP.WebComponents/adp-web-components'
