@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "package": "adp-web-components",
+  "packageVersion": "0.3.9",
+  "outputFamily": "per-component",
+  "components": [
+    {
+      "tag": "vehicle-service-history",
+      "modulePath": "dist/components/vehicle-service-history.js",
+      "wireContract": "adp.vehicle-service-history.v1",
+      "supportedLocales": ["en", "ar", "ku", "ru"],
+      "host": {
+        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "queryString"],
+        "methods": ["fetchVin"],
+        "sequence": ["load module", "wait for custom element definition", "set properties", "call fetchVin"],
+        "owns": ["lookup request", "response handling", "loading and error state", "service-history rendering"]
+      },
+      "runtimeAssets": {
+        "locales": "dist/locales",
+        "notes": ["The current package global script loads shared fonts and browser interop helpers."]
+      }
+    }
+  ]
+}

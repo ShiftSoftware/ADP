@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vehicle service history host</title>
+  </head>
+  <body>
+    <label for="vin">VIN</label>
+    <input id="vin" name="vin" autocomplete="off" />
+    <button id="lookup" type="button">Look up</button>
+
+    <vehicle-service-history id="service-history" language="en" base-url="{{VEHICLE_LOOKUP_BASE_URL}}"></vehicle-service-history>
+
+    <script type="module">
+      import { loadComponent } from 'https://cdn.jsdelivr.net/npm/adp-web-components@{{ADP_WEB_COMPONENTS_VERSION}}/dist/host-loader.js';
+
+      const packageVersion = '{{ADP_WEB_COMPONENTS_VERSION}}';
+      const component = document.getElementById('service-history');
+      const vin = document.getElementById('vin');
+
+      await loadComponent({
+        moduleUrl: `https://cdn.jsdelivr.net/npm/adp-web-components@${packageVersion}/dist/components/vehicle-service-history.js`,
+        tag: 'vehicle-service-history',
+        packageVersion,
+      });
+
+      document.getElementById('lookup').addEventListener('click', () => component.fetchVin(vin.value.trim()));
+    </script>
+  </body>
+</html>

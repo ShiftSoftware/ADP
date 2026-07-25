@@ -1,6 +1,6 @@
 {
   "name": "adp-web-components",
-  "version": "0.3.8",
+  "version": "0.3.9",
   "description": "ADP Platform Web Components",
   "main": "dist/index.cjs.js",
   "module": "dist/index.js",
@@ -19,6 +19,14 @@
       "import": "./dist/components/my-component.js",
       "types": "./dist/components/my-component.d.ts"
     },
+    "./components/*": {
+      "import": "./dist/components/*.js",
+      "types": "./dist/components/*.d.ts"
+    },
+    "./host-loader": {
+      "import": "./dist/host-loader.js"
+    },
+    "./integration-manifest": "./dist/integration-manifest.json",
     "./loader": {
       "import": "./loader/index.js",
       "require": "./loader/index.cjs",
@@ -46,7 +54,8 @@
     "create:locale-mapper": "node ./automation/generate-locale-mapper.mjs",
     "purge": "node ./automation/purge-cdn.mjs",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,css,scss,html}\"",
-    "prettier": "prettier --check \"src/**/*.{ts,tsx,js,jsx,css,scss,html}\""
+    "prettier": "prettier --check \"src/**/*.{ts,tsx,js,jsx,css,scss,html}\"",
+    "verify:integration-artifact": "node ./automation/verify-integration-artifact.mjs"
   },
   "devDependencies": {
     "@rollup/plugin-alias": "^5.1.1",

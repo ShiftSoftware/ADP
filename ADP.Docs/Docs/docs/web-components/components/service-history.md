@@ -1,68 +1,39 @@
 # Service History
 
-The `<vehicle-service-history>` component displays a vehicle's service history, including service visits with labor lines, part lines, mileage, and invoice details.
+`<vehicle-service-history>` displays a vehicle's service visits, including labor lines, part lines, mileage, and invoice details. It is a self-contained lookup component.
 
-## Live Demo
+## Host responsibilities
 
-<div markdown="0">
-  <script type="module" src="https://cdn.jsdelivr.net/npm/adp-web-components@0.1.85/dist/shift-components/shift-components.esm.js"></script>
+The host loads the pinned component module, supplies its approved base URL and language, and calls `fetchVin(vin)`. It does not call the lookup endpoint, construct a request payload, parse the lookup DTO, or render service-history rows.
 
-  <p style="margin-bottom:8px">
-    <strong>Try a VIN:</strong>
-    <button onclick="document.getElementById('demo-service-history').fetchVin('JTMHX01J8L4198293')" style="cursor:pointer;padding:4px 12px;margin:4px;border:1px solid #ccc;border-radius:4px;background:#f5f5f5">JTMHX01J8L4198293</button>
-    <button onclick="document.getElementById('demo-service-history').fetchVin('JTMW43FV10D123456')" style="cursor:pointer;padding:4px 12px;margin:4px;border:1px solid #ccc;border-radius:4px;background:#f5f5f5">JTMW43FV10D123456</button>
-  </p>
+The component owns request handling, response interpretation, loading and error state, localization, and service-history presentation.
 
-  <vehicle-service-history id="demo-service-history" language="en"></vehicle-service-history>
+## Production sequence
 
-  <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      fetch('../demo-data/standard-dealer/vehicle-lookup.json')
-        .then(function (res) { return res.json(); })
-        .then(function (mockData) {
-          var el = document.getElementById('demo-service-history');
-          el.isDev = true;
-          el.setMockData(mockData);
-        });
-    });
-  </script>
-</div>
+1. Read `dist/integration-manifest.json` for the released package version.
+2. Load the flat `dist/components/vehicle-service-history.js` module through the package host loader.
+3. Wait for the `vehicle-service-history` custom element definition.
+4. Configure properties and call `fetchVin(vin)`.
 
----
-
-## Standalone Usage
-
-```html
-<vehicle-service-history
-  base-url="https://your-api.com/"
-  language="en">
-</vehicle-service-history>
-```
-
-When used inside `<vehicle-lookup>`, no additional props are needed.
-
----
+Do not mix this per-component module with the general `shift-components` bundle in one browser document.
 
 ## Properties
 
-| Property               | Attribute                | Type      | Default | Description                                          |
-|------------------------|--------------------------|-----------|---------|------------------------------------------------------|
-| `isDev`                | `is-dev`                 | `boolean` | `false` | Enables development mode                              |
-| `baseUrl`              | `base-url`               | `string`  | `''`    | Base URL for the vehicle lookup API                    |
-| `language`             | `language`               | `string`  | `'en'`  | Language code for localization                          |
-| `disableVinValidation` | `disable-vin-validation` | `boolean` | `false` | Disables VIN format validation                         |
-| `queryString`          | `query-string`           | `string`  | `''`    | Additional query string for API requests               |
-| `coreOnly`             | `core-only`              | `boolean` | `false` | Renders a slim layout without the search input         |
+| Property               | Attribute                | Default | Description                                                                                          |
+| ---------------------- | ------------------------ | ------- | ---------------------------------------------------------------------------------------------------- |
+| `baseUrl`              | `base-url`               | `''`    | The host-approved vehicle lookup base URL. It must include the separator required by the host route. |
+| `language`             | `language`               | `'en'`  | Component locale. The current component supports `en`, `ar`, `ku`, and `ru`.                         |
+| `coreOnly`             | `core-only`              | `false` | Uses the slim component layout.                                                                      |
+| `disableVinValidation` | `disable-vin-validation` | `false` | Disables built-in VIN validation.                                                                    |
+| `queryString`          | `query-string`           | `''`    | Adds a host-controlled query string to a lookup request.                                             |
 
----
+## Methods
 
-## Data Displayed
+| Method                      | Description                                     |
+| --------------------------- | ----------------------------------------------- |
+| `fetchVin(vin)`             | Looks up and renders service history for a VIN. |
+| `setErrorMessage(errorKey)` | Shows a component-supported error state.        |
 
-Each service record shows:
+## Development fixtures
 
-- Service type / job description
-- Service date and mileage (odometer)
-- Company and branch name
-- Invoice and work order numbers
-- Labor lines with codes and descriptions
-- Part lines with part numbers and quantities
+The source development template includes mocks and debugging controls. It is for package development only. Do not copy it into a production host. Use the published production template and integration manifest instead.
