@@ -1,0 +1,62 @@
+# Builds and deploys the customer-facing survey app to an Azure Static Web App.
+#
+# One deployment per consumer: the app is a thin shell around the renderer, and the
+# only per-deployment input is which API it talks to. That address is supplied by the
+# pipeline (SURVEY_API_BASE) rather than committed, because this repo is generic and
+# multi-tenant — no consumer's hostnames belong in it.
+#
+# Required variables (from the `Deployment` variable group or a pipeline override):
+#   SURVEY_API_BASE          e.g. https://<host>/api/Surveys — no trailing slash needed
+#   SURVEY_APP_SWA_TOKEN     deployment token of the target Static Web App
+#
+# The app serves `/s/{publicId}`, a client-side route. `public/staticwebapp.config.json`
+# carries the rewrite that makes a direct hit on that path resolve instead of 404.
+
+trigger:
+  tags:
+    include:
+      - release-survey-app-*
+
+variables:
+  - group: Deployment
+
+steps:
+  - task: UseNode@1
+    inputs:
+      version: '22.x'
+      checkLatest: false
+    displayName: 'Set up Node.js'
+
+  # Install from the WORKSPACE root, not the app folder — the app resolves
+  # @shiftsoftware/survey-{sdk,renderer} through npm workspace links.
+  - task: Npm@1
+    displayName: 'Install workspace dependencies'
+    inputs:
+      command: 'custom'
+      workingDir: 'ADP.Surveys/renderer'
+      customCommand: 'install --ignore-scripts'
+
+  # The app's Vite config aliases the workspace packages to their `src/`, so it
+  # compiles them itself — no prior `build --workspaces` pass is needed here.
+  # (That pass is also not topologically ordered; see the renderer README.)
+  - task: Npm@1
+    displayName: 'Build survey app'
+    env:
+      VITE_API_BASE: $(SURVEY_API_BASE)
+    inputs:
+      command: 'custom'
+      workingDir: 'ADP.Surveys/renderer'
+      customCommand: 'run build --workspace @shiftsoftware/adp-surveys-standalone'
+
+  # No explicit "was the API base supplied?" step: the app's vite.config.ts fails
+  # the production build outright when VITE_API_BASE is missing, which is both
+  # earlier and agent-OS-independent.
+
+  - task: AzureStaticWebApp@0
+    displayName: 'Deploy to Azure Static Web Apps'
+    condition: and(succeeded(), contains(variables['Build.SourceBranch'], 'refs/tags/release'))
+    inputs:
+      app_location: 'ADP.Surveys/renderer/apps/standalone/dist'
+      output_location: ''
+      skip_app_build: true
+      azure_static_web_apps_api_token: $(SURVEY_APP_SWA_TOKEN)

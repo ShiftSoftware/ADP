@@ -87,9 +87,17 @@ export async function setLocale(element, locale) {
  *  sitting in its done state (auto-submitted thank-you), the renderer's done
  *  flag would swallow the jump — remount fresh first with the same schema
  *  (same 80ms dance as setSchema) and apply the jump after the remount. */
-export async function setActiveScreen(element, screenId) {
+export async function setActiveScreen(element, screenId, token) {
   if (!element) return;
   await ensureDefined();
+
+  // The token makes a repeat request for the SAME screen count as a new jump —
+  // the renderer's guard is keyed on (token, id), not id alone. Set it before the
+  // id so the single render triggered by the id assignment already sees it.
+  const applyJump = () => {
+    if (typeof token === 'number') element.activeScreenJumpToken = token;
+    element.activeScreenId = screenId ?? null;
+  };
 
   const rootEl = element.shadowRoot?.querySelector('.survey-root');
   const renderedDone = !!rootEl && rootEl.classList.contains('survey-root--done');
@@ -99,12 +107,12 @@ export async function setActiveScreen(element, screenId) {
     element.schema = null;
     setTimeout(() => {
       if (element.schema === null) element.schema = schema;
-      element.activeScreenId = screenId ?? null;
+      applyJump();
     }, 80);
     return;
   }
 
-  element.activeScreenId = screenId ?? null;
+  applyJump();
 }
 
 /** Attach a submit handler for preview mode.
@@ -144,4 +152,31 @@ export async function installPreviewSubmitHandler(element) {
     console.log('[preview] submission (not sent):', submission);
     remountAfterNextSchema.add(element);
   };
+}
+
+/**
+ * Triggers a browser download from base64 content.
+ *
+ * Blazor WASM can't hand the browser a file directly, and a plain <a href> to the export
+ * endpoint would arrive without the bearer token (the endpoint is authenticated), so the
+ * page fetches the bytes through HttpClient and passes them here. Base64 rather than a
+ * byte[] marshal because the JS interop boundary turns byte arrays into a JSON number
+ * array — orders of magnitude larger for the same payload.
+ */
+export function downloadFile(fileName, contentType, base64) {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+
+  const url = URL.createObjectURL(new Blob([bytes], { type: contentType }));
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = fileName;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+
+  // Give the click a tick to start before releasing the object URL; revoking
+  // synchronously cancels the download in Safari.
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

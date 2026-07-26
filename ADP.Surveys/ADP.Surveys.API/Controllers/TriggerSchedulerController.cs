@@ -43,7 +43,10 @@ public class TriggerSchedulerController : ControllerBase
             schedulerResult.Processed,
             schedulerResult.Expired,
             outboxResult.Dispatched,
+            // Failed = will be retried on a later tick; DeadLettered = gave up. Alerting
+            // belongs on the second one — a non-zero Failed is often just a blip mid-recovery.
             OutboxFailed = outboxResult.Failed,
+            OutboxDeadLettered = outboxResult.DeadLettered,
         });
     }
 }

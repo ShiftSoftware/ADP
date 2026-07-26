@@ -92,12 +92,15 @@ public static class SurveyModelBuilderExtensions
                 .HasForeignKey(e => e.SurveyInstanceID)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Drives the outbox dispatch poll: SELECT TOP N WHERE Status = Pending
-            // ORDER BY CreateDate. Filtered to keep the index small as dispatched
-            // rows accumulate. Status enum: Pending=0, Dispatched=1, Failed=2.
+            // Drives the outbox dispatch poll: SELECT TOP N WHERE Status IN (Pending, Failed)
+            // ORDER BY CreateDate. Filtered to keep the index small as dispatched rows
+            // accumulate. Status enum: Pending=0, Dispatched=1, Failed=2, DeadLettered=3 —
+            // Failed is in the filter because it is retryable; DeadLettered deliberately
+            // is not, since nothing polls it. Positive IN, because SQL Server filtered
+            // indexes reject NOT IN (same constraint as the scheduler's active index).
             x.HasIndex(e => new { e.Status, e.CreateDate })
                 .HasDatabaseName("IX_SurveyOutboxEvent_Status_CreateDate_Pending")
-                .HasFilter($"{nameof(SurveyOutboxEvent.Status)} = 0 AND {nameof(SurveyOutboxEvent.IsDeleted)} = 0");
+                .HasFilter($"{nameof(SurveyOutboxEvent.Status)} IN (0, 2) AND {nameof(SurveyOutboxEvent.IsDeleted)} = 0");
         });
 
         modelBuilder.Entity<SurveyAnswer>(x =>

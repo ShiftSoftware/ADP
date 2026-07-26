@@ -194,6 +194,13 @@
     [Parameter] public string? ActiveScreenId { get; set; }
 
     /// <summary>
+    /// Changes on every jump request from the editor, including a re-request for the screen
+    /// already shown. Without it, an author who walked the preview forward couldn't get it
+    /// back by clicking the still-highlighted row — the id hadn't changed, so no jump fired.
+    /// </summary>
+    [Parameter] public int ActiveScreenToken { get; set; }
+
+    /// <summary>
     /// Bump this every time the parent mutates <see cref="Schema"/> in place.
     /// Reference equality isn't enough — the visual editor updates fields on the
     /// same <c>SurveyDto</c> instance, so the preview would otherwise skip
@@ -218,6 +225,7 @@
     private int lastPushedVersion = -1;
     private string? lastPushedLocale;
     private string? lastPushedActiveScreen;
+    private int lastPushedActiveScreenToken;
     private bool submitHandlerInstalled;
     private string? resolveError;
     private bool disposed;
@@ -267,7 +275,8 @@
 
         var schemaChanged = !ReferenceEquals(Schema, lastPushedSource) || SchemaVersion != lastPushedVersion;
         var localeChanged = Locale != lastPushedLocale;
-        var activeScreenChanged = ActiveScreenId != lastPushedActiveScreen;
+        var activeScreenChanged = ActiveScreenId != lastPushedActiveScreen
+            || ActiveScreenToken != lastPushedActiveScreenToken;
 
         if (!schemaChanged && !localeChanged && !activeScreenChanged) return;
 
@@ -321,10 +330,11 @@
                 lastPushedLocale = Locale;
             }
 
-            if (ActiveScreenId != lastPushedActiveScreen)
+            if (ActiveScreenId != lastPushedActiveScreen || ActiveScreenToken != lastPushedActiveScreenToken)
             {
-                await interopModule.InvokeVoidAsync("setActiveScreen", surveyElement, ActiveScreenId);
+                await interopModule.InvokeVoidAsync("setActiveScreen", surveyElement, ActiveScreenId, ActiveScreenToken);
                 lastPushedActiveScreen = ActiveScreenId;
+                lastPushedActiveScreenToken = ActiveScreenToken;
             }
         }
         catch (ObjectDisposedException) { /* disposed mid-await; safe to ignore */ }

@@ -130,6 +130,12 @@ export interface SurveyRendererProps {
    *  "jump signal", not a controlled value — the user can still navigate
    *  freely afterwards. `undefined` = feature unused. */
   activeScreenId?: string | null;
+
+  /** Changes to re-issue a jump to the SAME `activeScreenId`. Without it the jump is
+   *  once-per-distinct-id: an author who walked the preview forward, then re-clicked the
+   *  screen they were already on in the editor, got nothing. Any changing value works —
+   *  the host just needs it to differ per request. */
+  activeScreenJumpToken?: number;
 }
 
 /** Mirrors the arrival-time auto-submit rule (zero questions + computeNext →
@@ -159,6 +165,7 @@ export function SurveyRenderer({
   hostMessageOrigin,
   hostMessageTarget,
   activeScreenId,
+  activeScreenJumpToken,
 }: SurveyRendererProps) {
   const effectiveLocale = locale ?? schema.defaultLocale ?? 'en';
   const effectiveRegistry = registry ?? defaultRegistry;
@@ -224,19 +231,21 @@ export function SurveyRenderer({
   const [constraintFlags, setConstraintFlags] = useState<ReadonlySet<string>>(new Set());
   const [done, setDone] = useState(false);
 
-  // Builder-preview jump: when the host pushes a distinct activeScreenId,
-  // snap to it. Ref-guarded so each push fires exactly once — re-renders that
-  // carry the same prop value don't fight the user's own navigation.
-  const lastAppliedJumpRef = useRef<string | null | undefined>(undefined);
+  // Builder-preview jump: when the host pushes a new jump request, snap to it.
+  // Ref-guarded so each request fires exactly once — re-renders carrying the same
+  // values don't fight the user's own navigation. The guard key includes the token
+  // so the host can re-request the screen the preview is already sitting on.
+  const lastAppliedJumpRef = useRef<string | undefined>(undefined);
   useEffect(() => {
     if (activeScreenId === undefined) return;
-    if (lastAppliedJumpRef.current === activeScreenId) return;
-    lastAppliedJumpRef.current = activeScreenId;
+    const jumpKey = `${activeScreenJumpToken ?? ''}:${activeScreenId ?? ''}`;
+    if (lastAppliedJumpRef.current === jumpKey) return;
+    lastAppliedJumpRef.current = jumpKey;
     if (activeScreenId === null || done) return;
     if (!schema.screens.some((s) => s.id === activeScreenId)) return;
     setRequiredFlags(new Set());
     setCurrentScreenId(activeScreenId);
-  }, [activeScreenId, schema, done]);
+  }, [activeScreenId, activeScreenJumpToken, schema, done]);
   const startedAtRef = useRef<string>(new Date().toISOString());
 
   // Host bridge — iframe embed protocol. Created once per mount; the

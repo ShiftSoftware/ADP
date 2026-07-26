@@ -2,15 +2,20 @@ import { useRef } from 'react';
 import type { LocalizedString } from '@shiftsoftware/survey-sdk';
 import { useSurveyContext } from '../SurveyContext.js';
 import { localize } from '../locale.js';
+import { formatUi } from '../i18n.js';
 import type { QuestionProps } from './registry.js';
 
-/** First-slice File implementation: records `{ name, size, type }` of the selected
- *  file into the answer map. Actual upload via a provider-supplied presigned URL
- *  is deferred — see Phase 3 Part B.3. The recorded shape is enough for the
- *  builder to show "one file attached" previews and for the API to reject files
- *  that exceed `maxSizeBytes` on the server side. */
+/** Records `{ name, size, type }` of the selected file into the answer map. The file's
+ *  CONTENT is not uploaded anywhere — presigned-URL upload (Phase 3 Part B.3) was never
+ *  built.
+ *
+ *  The metadata-only shape is fine as a stepping stone but silently loses data if a real
+ *  survey ships with it, so publishing a survey containing a file question is blocked
+ *  server-side unless the deployment sets `FileUploadsSupported`. A deployment that opts
+ *  in has taken on the upload path itself; the note below tells its respondents what
+ *  actually happens rather than implying the file was received. */
 export function FileQuestion({ question }: QuestionProps) {
-  const { locale, schema, answers, setAnswer } = useSurveyContext();
+  const { locale, schema, answers, setAnswer, ui } = useSurveyContext();
   const id = question['id'] as string;
   const title = question['title'] as LocalizedString | undefined;
   const help = question['help'] as LocalizedString | undefined;
@@ -47,7 +52,9 @@ export function FileQuestion({ question }: QuestionProps) {
         }}
       />
       {current?.name && (
-        <p className="survey-question__file-name">Selected: {current.name}</p>
+        <p className="survey-question__file-name">
+          {formatUi(ui.fileRecordedName, { name: current.name })}
+        </p>
       )}
     </div>
   );

@@ -31,6 +31,10 @@ public static class SurveysWebExtensions
         services.Configure<AppStartupOptions>(o => o.AddAssembly(typeof(SurveysWebExtensions).Assembly));
 
         services.AddScoped<SurveyService>();
+
+        // Scoped so its id→label cache lives as long as the user's session rather than
+        // being rebuilt for every answers dialog.
+        services.AddScoped<SourcedOptionsResolver>();
         services.AddScoped<BankQuestionService>();
         services.AddScoped<ScreenTemplateService>();
 

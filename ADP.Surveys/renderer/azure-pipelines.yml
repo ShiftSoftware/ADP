@@ -1,0 +1,101 @@
+# Publishes the three survey renderer packages to npm.
+#
+#   @shiftsoftware/survey-sdk            runtime contract, expression sandbox, logic evaluator
+#   @shiftsoftware/survey-renderer       React renderer (depends on the sdk)
+#   @shiftsoftware/survey-web-component  <shift-survey> custom element (bundles both)
+#
+# They version and release together — the renderer and web-component pin the sdk by
+# caret range, and the sandbox/evaluator parity discipline means a mixed-version install
+# is a bug waiting to happen. Bump all three `version` fields in the same commit, then
+# tag `release-survey-renderer-<version>`.
+#
+# Note the deliberate per-package build order. `npm run build --workspaces` is NOT
+# topologically sorted: the renderer typechecks against the sdk's emitted `dist/`, so a
+# single workspace-wide pass fails on a cold agent. Building explicitly in dependency
+# order is the fix, not a retry.
+
+trigger:
+  tags:
+    include:
+      - release-survey-renderer-*
+
+variables:
+  - group: Deployment
+
+steps:
+  - task: UseNode@1
+    inputs:
+      version: '22.x'
+      checkLatest: false
+    displayName: 'Set up Node.js'
+
+  - task: Npm@1
+    displayName: 'Install workspace dependencies'
+    inputs:
+      command: 'custom'
+      workingDir: 'ADP.Surveys/renderer'
+      customCommand: 'install --ignore-scripts'
+
+  - task: Npm@1
+    displayName: 'Build survey-sdk'
+    inputs:
+      command: 'custom'
+      workingDir: 'ADP.Surveys/renderer'
+      customCommand: 'run build --workspace @shiftsoftware/survey-sdk'
+
+  - task: Npm@1
+    displayName: 'Build survey-renderer'
+    inputs:
+      command: 'custom'
+      workingDir: 'ADP.Surveys/renderer'
+      customCommand: 'run build --workspace @shiftsoftware/survey-renderer'
+
+  - task: Npm@1
+    displayName: 'Build survey-web-component'
+    inputs:
+      command: 'custom'
+      workingDir: 'ADP.Surveys/renderer'
+      customCommand: 'run build --workspace @shiftsoftware/survey-web-component'
+
+  # Gate the publish on green tests. The sandbox and logic evaluator are mirrors of their
+  # C# counterparts; shipping a renderer whose parity tests fail means the two halves of
+  # the platform disagree about navigation, which surfaces as respondents stuck mid-survey.
+  - task: Npm@1
+    displayName: 'Test all packages'
+    inputs:
+      command: 'custom'
+      workingDir: 'ADP.Surveys/renderer'
+      customCommand: 'test --workspaces --if-present'
+
+  # vitest does not typecheck, so this catches drift the test run can't — e.g. a UiStrings
+  # fixture that silently fell behind the interface.
+  - task: Npm@1
+    displayName: 'Typecheck all packages'
+    inputs:
+      command: 'custom'
+      workingDir: 'ADP.Surveys/renderer'
+      customCommand: 'run typecheck --workspaces --if-present'
+
+  - task: Npm@1
+    displayName: 'Publish @shiftsoftware/survey-sdk'
+    condition: and(succeeded(), contains(variables['Build.SourceBranch'], 'refs/tags/release'))
+    inputs:
+      command: 'publish'
+      workingDir: 'ADP.Surveys/renderer/packages/survey-sdk'
+      publishEndpoint: 'NPM'
+
+  - task: Npm@1
+    displayName: 'Publish @shiftsoftware/survey-renderer'
+    condition: and(succeeded(), contains(variables['Build.SourceBranch'], 'refs/tags/release'))
+    inputs:
+      command: 'publish'
+      workingDir: 'ADP.Surveys/renderer/packages/survey-renderer'
+      publishEndpoint: 'NPM'
+
+  - task: Npm@1
+    displayName: 'Publish @shiftsoftware/survey-web-component'
+    condition: and(succeeded(), contains(variables['Build.SourceBranch'], 'refs/tags/release'))
+    inputs:
+      command: 'publish'
+      workingDir: 'ADP.Surveys/renderer/packages/survey-web-component'
+      publishEndpoint: 'NPM'

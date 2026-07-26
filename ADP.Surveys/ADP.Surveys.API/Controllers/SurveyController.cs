@@ -13,7 +13,7 @@ namespace ShiftSoftware.ADP.Surveys.API.Controllers;
 public class SurveyController : ShiftEntitySecureControllerAsync<SurveyRepository, Survey, SurveyListDTO, SurveyAdminDTO>
 {
     public SurveyController(SurveyApiOptions options)
-        : base(options.EnableSurveysActionTreeAuthorization ? SurveysActionTree.Surveys : null)
+        : base(options.EnableSurveysActionTreeAuthorization ? options.Actions.ResolvedSurveys : null)
     {
     }
 }

@@ -231,7 +231,8 @@
         <div class="survey-form-page__preview-sticky">
             <SurveyPreview Schema="@TheItem?.Draft"
                            SchemaVersion="schemaVersion"
-                           ActiveScreenId="@SelectedScreenPreviewId" />
+                           ActiveScreenId="@SelectedScreenPreviewId"
+                           ActiveScreenToken="@screenJumpToken" />
         </div>
     </aside>
 </div>
@@ -439,6 +440,12 @@
     // instead of clicking Save and getting nothing.
     List<string> validationErrors = new();
     int selectedScreenIndex = -1;
+
+    /// <summary>
+    /// Increments on every screen-row click. Paired with <see cref="SelectedScreenPreviewId"/>
+    /// so a re-click of the already-selected screen still reads as a new jump request.
+    /// </summary>
+    int screenJumpToken;
     // "general" | "visual" | "logic" | "raw" — toggled via the MudToggleGroup
     // in the toolbar end slot. Defaults to General on Create (Key is null) and
     // Visual on Edit so returning to a survey lands on the builder surface.
@@ -511,6 +518,11 @@
     void OnSelectedScreenChanged(int index)
     {
         selectedScreenIndex = index;
+
+        // Bumped on every selection click, not just changes of screen. The preview jumps
+        // on a change of (id, token), so re-clicking the already-selected row still pulls
+        // the preview back to it.
+        screenJumpToken++;
     }
 
     /// <summary>

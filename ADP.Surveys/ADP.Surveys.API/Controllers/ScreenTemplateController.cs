@@ -13,7 +13,7 @@ namespace ShiftSoftware.ADP.Surveys.API.Controllers;
 public class ScreenTemplateController : ShiftEntitySecureControllerAsync<ScreenTemplateRepository, ScreenTemplate, ScreenTemplateListDTO, ScreenTemplateAdminDTO>
 {
     public ScreenTemplateController(SurveyApiOptions options)
-        : base(options.EnableSurveysActionTreeAuthorization ? SurveysActionTree.ScreenTemplates : null)
+        : base(options.EnableSurveysActionTreeAuthorization ? options.Actions.ResolvedScreenTemplates : null)
     {
     }
 }

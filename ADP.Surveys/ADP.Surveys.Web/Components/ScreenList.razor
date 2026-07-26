@@ -269,8 +269,11 @@
 
     async Task SelectScreen(int index)
     {
-        if (index != SelectedIndex)
-            await SelectedIndexChanged.InvokeAsync(index);
+        // Fires even when the row is already selected. The parent uses each click as a
+        // "jump the preview here" signal, and after the author has walked the preview to
+        // another screen, re-clicking the highlighted row is the natural way to ask for it
+        // back — guarding on a changed index made that click do nothing.
+        await SelectedIndexChanged.InvokeAsync(index);
     }
 
     async Task AddScreen()

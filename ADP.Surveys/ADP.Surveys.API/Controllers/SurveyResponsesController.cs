@@ -1,3 +1,4 @@
+using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -30,12 +31,18 @@ public class SurveyResponsesController : ControllerBase
     private readonly ShiftDbContext db;
     private readonly IHashIdService hashIdService;
     private readonly SurveyApiOptions options;
+    private readonly Services.SurveyResponseExporter exporter;
 
-    public SurveyResponsesController(ShiftDbContext db, IHashIdService hashIdService, SurveyApiOptions options)
+    public SurveyResponsesController(
+        ShiftDbContext db,
+        IHashIdService hashIdService,
+        SurveyApiOptions options,
+        Services.SurveyResponseExporter exporter)
     {
         this.db = db;
         this.hashIdService = hashIdService;
         this.options = options;
+        this.exporter = exporter;
     }
 
     /// <summary>
@@ -48,10 +55,12 @@ public class SurveyResponsesController : ControllerBase
     [HttpGet("public-url-template")]
     public IActionResult GetPublicUrlTemplate()
     {
-        if (Forbidden(SurveysActionTree.Operations.ViewResponses, out var forbid)) return forbid!;
+        if (Forbidden(options.Actions.ResolvedViewResponses, out var forbid)) return forbid!;
+        var template = options.PublicSurveyUrlTemplate;
         return Ok(new PublicUrlTemplateDTO
         {
-            Template = string.IsNullOrWhiteSpace(options.PublicSurveyUrlTemplate) ? null : options.PublicSurveyUrlTemplate,
+            Template = string.IsNullOrWhiteSpace(template) ? null : template,
+            Warning = PublicSurveyUrl.IsDeployable(template) ? null : PublicSurveyUrl.DescribeProblem(template),
         });
     }
 
@@ -63,7 +72,7 @@ public class SurveyResponsesController : ControllerBase
     [HttpGet("instance/{publicId:guid}")]
     public async Task<IActionResult> GetInstanceDetail([FromRoute] Guid publicId)
     {
-        if (Forbidden(SurveysActionTree.Operations.ViewResponses, out var forbid)) return forbid!;
+        if (Forbidden(options.Actions.ResolvedViewResponses, out var forbid)) return forbid!;
 
         var instance = await db.Set<SurveyInstance>().AsNoTracking()
             .Include(i => i.SurveyVersion)
@@ -128,7 +137,7 @@ public class SurveyResponsesController : ControllerBase
     [HttpPost("{surveyId}/test-instances")]
     public async Task<IActionResult> CreateTestInstance([FromRoute] string surveyId)
     {
-        if (Forbidden(SurveysActionTree.Operations.CreateTestInstances, out var forbid)) return forbid!;
+        if (Forbidden(options.Actions.ResolvedCreateTestInstances, out var forbid)) return forbid!;
         if (!TryDecodeSurveyId(surveyId, out var id, out var bad)) return bad!;
 
         var survey = await db.Set<Survey>()
@@ -163,10 +172,51 @@ public class SurveyResponsesController : ControllerBase
         });
     }
 
+    /// <summary>
+    /// Wide CSV of every submitted response for this survey — one row per response, one
+    /// column per answer key, anchored on the current bank key so a corrected key re-labels
+    /// history rather than splitting a question in two.
+    /// </summary>
+    /// <remarks>
+    /// Test instances are excluded by default: they are authoring noise, and quietly
+    /// including them skews any ratio computed from the export. Pass
+    /// <c>includeTests=true</c> to get them, which is occasionally what you want when
+    /// debugging a survey rather than reporting on it.
+    /// </remarks>
+    [HttpGet("{surveyId}/export")]
+    public async Task<IActionResult> Export(
+        [FromRoute] string surveyId,
+        [FromQuery] bool includeTests = false,
+        CancellationToken ct = default)
+    {
+        if (Forbidden(options.Actions.ResolvedExportResponses, out var forbid)) return forbid!;
+        if (!TryDecodeSurveyId(surveyId, out var id, out var error)) return error!;
+
+        var survey = await db.Set<Survey>().FirstOrDefaultAsync(s => s.ID == id && !s.IsDeleted, ct);
+        if (survey is null) return NotFound();
+
+        var csv = await exporter.BuildCsvAsync(id, includeTests, ct);
+
+        // UTF-8 BOM: without it Excel reads the file as the system codepage and mangles
+        // every non-ASCII label — which for a Russian- or Arabic-authored survey is
+        // all of them.
+        var bytes = new byte[] { 0xEF, 0xBB, 0xBF }.Concat(Encoding.UTF8.GetBytes(csv)).ToArray();
+        var fileName = $"{Slug(survey.Name)}-responses-{DateTimeOffset.UtcNow:yyyyMMdd}.csv";
+
+        return File(bytes, "text/csv; charset=utf-8", fileName);
+    }
+
+    /// <summary>Filename-safe survey name — the raw name can contain anything an author typed.</summary>
+    private static string Slug(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "survey";
+        var cleaned = new string(name.Select(c => char.IsLetterOrDigit(c) ? char.ToLowerInvariant(c) : '-').ToArray());
+        cleaned = string.Join('-', cleaned.Split('-', StringSplitOptions.RemoveEmptyEntries));
+        return cleaned.Length == 0 ? "survey" : cleaned[..Math.Min(cleaned.Length, 60)];
+    }
+
     private string? ComposePublicUrl(Guid publicId) =>
-        string.IsNullOrWhiteSpace(options.PublicSurveyUrlTemplate)
-            ? null
-            : options.PublicSurveyUrlTemplate.Replace("{publicId}", publicId.ToString());
+        PublicSurveyUrl.Compose(options.PublicSurveyUrlTemplate, publicId);
 
     private bool TryDecodeSurveyId(string surveyId, out long id, out IActionResult? error)
     {

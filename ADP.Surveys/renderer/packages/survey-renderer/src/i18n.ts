@@ -56,6 +56,12 @@ export interface UiStrings {
   /** Default labels for YesNoQuestion when the schema doesn't supply `yesLabel` / `noLabel`. */
   yes: string;
   no: string;
+  /**
+   * Confirmation under a file input. Deliberately says the file's DETAILS were recorded,
+   * not the file — the platform stores `{name, size, type}` and discards the bytes.
+   * `{name}` is substituted by `formatUi`.
+   */
+  fileRecordedName: string;
 }
 
 export interface LocaleConfig {
@@ -92,6 +98,7 @@ const en: LocaleConfig = {
     retry: 'Retry',
     yes: 'Yes',
     no: 'No',
+    fileRecordedName: 'Recorded file details: {name}',
   },
 };
 
@@ -123,6 +130,7 @@ const ar: LocaleConfig = {
     retry: 'إعادة المحاولة',
     yes: 'نعم',
     no: 'لا',
+    fileRecordedName: 'تم تسجيل تفاصيل الملف: {name}',
   },
 };
 

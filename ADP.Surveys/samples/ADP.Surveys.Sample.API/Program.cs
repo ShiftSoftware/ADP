@@ -143,6 +143,23 @@ var app = builder.Build();
 
 app.MapControllers();
 
+// ShiftIdentity's auth + identity-server endpoints (login / refresh / MFA / auth-code,
+// users, company calendar, …). These used to be classic controllers picked up by
+// MapControllers() above; the 2026-07 framework release moved them to minimal APIs, which
+// the host has to map explicitly. Without this call POST api/Auth/Login doesn't exist —
+// the request falls through to MapFallbackToFile below and the Blazor router answers with
+// its "nothing at this address" page, which looks like a routing bug rather than a missing
+// endpoint. Only hosts running ShiftIdentityHostingTypes.Internal need it; hosts that
+// validate tokens from a separate identity service (e.g. the TCA apps) do not, which is
+// why nothing else in the estate caught this.
+app.MapShiftIdentityDashboard();
+
+// Attribute-driven CRUD for [ShiftEntityEndpoint<>] / [ShiftEntitySecureEndpoint<>]
+// entities — the identity dashboard's own resources. Registered in DI by
+// RegisterShiftRepositories; this maps the routes. The Surveys module's controllers are
+// classic ShiftEntitySecureControllerAsync and stay on MapControllers().
+app.MapShiftEntityEndpoints<DB>();
+
 // ---------- Database create + identity seed (idempotent, dev-safe) ----------
 using (var scope = app.Services.CreateScope())
 {

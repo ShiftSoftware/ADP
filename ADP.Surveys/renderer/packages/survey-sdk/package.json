@@ -16,6 +16,15 @@
     "src",
     "README.md"
   ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ShiftSoftware/ADP",
+    "directory": "ADP.Surveys/renderer/packages/survey-sdk"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",

@@ -1,11 +1,18 @@
 /** Resolve the API base URL in this priority:
  *   1. `?api=` query-string override (dev-only escape hatch)
  *   2. `VITE_API_BASE` compile-time env var
- *   3. Hard-coded dev default.
+ *   3. Hard-coded dev default — **development builds only**.
+ *
+ * Returns `null` when a PRODUCTION build has no `VITE_API_BASE`. That is a
+ * deployment misconfiguration, and it must surface as a visible error rather
+ * than fall through to `localhost`: a respondent hitting a localhost-pointed
+ * build sees an unexplained "could not reach the server" against their own
+ * machine, which reads as their problem instead of ours. The build pipeline
+ * supplies `VITE_API_BASE` per deployment.
  *
  * Trailing slashes are trimmed so the SDK can append `/SurveyInstances/...` cleanly.
  */
-export function resolveApiBase(): string {
+export function resolveApiBase(): string | null {
   const search = typeof window !== 'undefined' ? window.location.search : '';
   const params = new URLSearchParams(search);
   const override = params.get('api');
@@ -14,7 +21,9 @@ export function resolveApiBase(): string {
   const envBase = import.meta.env.VITE_API_BASE as string | undefined;
   if (envBase) return envBase.replace(/\/+$/, '');
 
-  return 'http://localhost:5134/api/Surveys';
+  if (import.meta.env.DEV) return 'http://localhost:5134/api/Surveys';
+
+  return null;
 }
 
 /** Parse `/s/:publicId` from the current path. Returns null for any other path. */

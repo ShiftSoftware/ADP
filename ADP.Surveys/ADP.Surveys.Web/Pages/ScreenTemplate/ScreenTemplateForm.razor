@@ -1,11 +1,28 @@
 @attribute [Route($"{SurveyRoutes.Prefix}/{nameof(ScreenTemplateForm)}/{{Key?}}")]
 @attribute [Authorize]
 @using System.Text.Json
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Bank
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Admin.BankQuestion
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions
 @using ShiftSoftware.ADP.Surveys.Shared.Json
+@using ShiftSoftware.ADP.Surveys.Web.Components
+@using LocalizedString = ShiftSoftware.ADP.Surveys.Shared.DTOs.LocalizedString
 
 @inherits ShiftForm<ScreenTemplateForm, ScreenTemplateAdminDTO>
 
 @inject SurveysWebOptions SurveysOptions
+@inject IDialogService DialogService
+
+@*
+    Visual editor for a screen template: identity, localized title/description, and the
+    ordered list of banked questions it composes. Templates reference the bank only —
+    inline questions inside a template aren't a thing — so the question list is a list of
+    keys, not an embedded question editor.
+
+    Raw JSON stays available underneath for the shapes the visual editor doesn't cover
+    (tags, per-ref overrides), same arrangement as the Bank Question form.
+*@
 
 <ShiftEntityForm @bind-Mode="Mode"
                  @bind-Value="TheItem"
@@ -17,10 +34,9 @@
                  @bind-Key="@Key">
 
     @{
-        // Seed the JSON view in the same render pass TheItem materializes —
-        // OnResult + MudTextFieldExtended silently showed an empty editor for
-        // loaded rows (see the "OnResult is unreliable" + "MudTextFieldExtended
-        // caches its internal value" gotchas).
+        // Seed per-loaded-item state in the same render pass TheItem materializes —
+        // OnResult fires at the wrong lifecycle point (see the "OnResult is unreliable"
+        // gotcha), which is what left this form showing an empty editor for loaded rows.
         if (!ReferenceEquals(seededFor, TheItem))
         {
             seededFor = TheItem;
@@ -28,42 +44,197 @@
                 ? ""
                 : JsonSerializer.Serialize(TheItem!.Template, SurveySchemaSerializer.Pretty);
             parseError = null;
+            editLocales = DetectLocales(TheItem?.Template);
         }
         var isReadOnly = Mode == FormModes.View;
     }
 
-    <MudTextFieldExtended OnlyValidateIfDirty="true"
+    <MudTextFieldExtended T="string"
+                          OnlyValidateIfDirty="true"
                           Label="Key (reference id used by surveys via templateRef)"
-                          @bind-Value="TheItem.Key"
-                          For="@(() => TheItem.Key)" />
+                          Value="@TheItem.Key"
+                          ValueChanged="OnKeyChanged"
+                          For="@(() => TheItem.Key)"
+                          HelperText="Also stamped as the template's ID — the resolver expands refs by this key." />
 
-    <div class="stf__label mt-3">Template (JSON — schema-level ScreenTemplateDto)</div>
-    <textarea class="stf__json"
-              value="@templateJson"
-              @oninput="@((ChangeEventArgs e) => OnTemplateJsonChanged((string?)e.Value ?? ""))"
-              disabled="@isReadOnly"
-              spellcheck="false"></textarea>
-    <div class="stf__hint">Paste a ScreenTemplateDto JSON payload (title, description, banked question refs).</div>
+    <div class="stf__section-title mt-4">Template definition</div>
 
-    @if (parseError is not null)
+    @if (TheItem.Template is null)
     {
-        <MudAlert Severity="Severity.Error" Dense="true" Class="mt-2">
-            JSON parse error: @parseError
-        </MudAlert>
+        @if (isReadOnly)
+        {
+            <MudAlert Severity="Severity.Warning" Dense="true">This entry has no template definition.</MudAlert>
+        }
+        else
+        {
+            <MudButton StartIcon="@Icons.Material.Filled.Add"
+                       Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       OnClick="CreateTemplate">
+                Start a template
+            </MudButton>
+        }
     }
+    else
+    {
+        <div class="stf__locales-row">
+            <MudSpacer />
+            <MudSelect T="string"
+                       Label="Locales to edit"
+                       MultiSelection="true"
+                       SelectedValues="@editLocales"
+                       SelectedValuesChanged="@OnEditLocalesChanged"
+                       Dense="true"
+                       Class="stf__locales"
+                       HelperText="Which locale inputs show — stored data is unaffected.">
+                @* Union with what's already on the record: MudSelect rebuilds its selection
+                   from rendered items, so a selected locale with no item would be dropped
+                   the moment the author touches the control — deleting that translation. *@
+                @foreach (var loc in LocaleCatalog.Union(editLocales))
+                {
+                    <MudSelectItem T="string" Value="@loc">@loc</MudSelectItem>
+                }
+            </MudSelect>
+        </div>
+
+        <LocalizedStringField Value="@TheItem.Template.Title"
+                              ValueChanged="OnTitleChanged"
+                              Label="Title"
+                              Locales="@editLocales"
+                              ReadOnly="@isReadOnly" />
+
+        <LocalizedStringField Value="@TheItem.Template.Description"
+                              ValueChanged="OnDescriptionChanged"
+                              Label="Description (optional)"
+                              Locales="@editLocales"
+                              ReadOnly="@isReadOnly" />
+
+        <div class="stf__section-title mt-4">
+            Banked questions
+            <span class="stf__count">@TheItem.Template.Questions.Count</span>
+        </div>
+
+        @if (TheItem.Template.Questions.Count == 0)
+        {
+            <MudAlert Severity="Severity.Info" Dense="true" Class="mb-2">
+                A template needs at least one banked question before it can be published.
+            </MudAlert>
+        }
+
+        @for (var i = 0; i < TheItem.Template.Questions.Count; i++)
+        {
+            var index = i;
+            var qref = TheItem.Template.Questions[index];
+            <div class="stf__qrow">
+                <span class="stf__qindex">@(index + 1).</span>
+                <code class="stf__qkey">@(string.IsNullOrWhiteSpace(qref.BankRef) ? "(unset)" : qref.BankRef)</code>
+                <MudSpacer />
+                @if (!isReadOnly)
+                {
+                    <MudIconButton Icon="@Icons.Material.Filled.ArrowUpward"
+                                   Size="Size.Small"
+                                   Disabled="@(index == 0)"
+                                   OnClick="@(() => MoveQuestion(index, -1))"
+                                   title="Move up" />
+                    <MudIconButton Icon="@Icons.Material.Filled.ArrowDownward"
+                                   Size="Size.Small"
+                                   Disabled="@(index == TheItem.Template.Questions.Count - 1)"
+                                   OnClick="@(() => MoveQuestion(index, 1))"
+                                   title="Move down" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                   Size="Size.Small"
+                                   Color="Color.Error"
+                                   OnClick="@(() => RemoveQuestion(index))"
+                                   title="Remove from template" />
+                }
+            </div>
+        }
+
+        @if (!isReadOnly)
+        {
+            <MudButton StartIcon="@Icons.Material.Filled.LibraryAdd"
+                       Variant="Variant.Text"
+                       Color="Color.Primary"
+                       Size="Size.Small"
+                       Class="mt-1"
+                       OnClick="AddFromBank">
+                Add from bank…
+            </MudButton>
+        }
+    }
+
+    <details class="stf__raw mt-4">
+        <summary>Raw JSON (advanced)</summary>
+        @* Native textarea, not MudTextFieldExtended — the latter caches its value on
+           first render and drops external updates, which is exactly what seeding from a
+           loaded row does. *@
+        <textarea class="stf__json"
+                  value="@templateJson"
+                  @oninput="@((ChangeEventArgs e) => OnTemplateJsonChanged((string?)e.Value ?? ""))"
+                  disabled="@isReadOnly"
+                  spellcheck="false"></textarea>
+        <div class="stf__hint">Covers what the visual editor doesn't — tags, and any per-ref overrides.</div>
+
+        @if (parseError is not null)
+        {
+            <MudAlert Severity="Severity.Error" Dense="true" Class="mt-2">
+                JSON parse error: @parseError
+            </MudAlert>
+        }
+    </details>
 
 </ShiftEntityForm>
 
 <style>
-    .stf__label {
-        font-size: 0.85rem;
+    .stf__section-title {
+        font-size: 0.9rem;
         font-weight: 600;
         color: #333;
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .stf__count {
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: #666;
+        background: #eef1f5;
+        border-radius: 10px;
+        padding: 1px 8px;
+    }
+    .stf__locales-row {
+        display: flex;
+        align-items: center;
         margin-bottom: 4px;
+    }
+    .stf__locales {
+        max-width: 260px;
+    }
+    .stf__qrow {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 8px;
+        border: 1px solid #e3e6ea;
+        border-radius: 6px;
+        margin-bottom: 4px;
+    }
+    .stf__qindex {
+        font-size: 0.78rem;
+        color: #888;
+        min-width: 20px;
+    }
+    .stf__qkey {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.8rem;
+        background: #f4f6f8;
+        border-radius: 4px;
+        padding: 1px 6px;
     }
     .stf__json {
         width: 100%;
-        min-height: 320px;
+        min-height: 260px;
         font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
         font-size: 0.82rem;
         line-height: 1.5;
@@ -78,12 +249,113 @@
         color: #888;
         margin-top: 2px;
     }
+    .stf__raw > summary {
+        cursor: pointer;
+        font-size: 0.82rem;
+        color: #555;
+        margin-bottom: 6px;
+    }
 </style>
 
 @code {
     ScreenTemplateAdminDTO? seededFor;
     string templateJson = "";
     string? parseError;
+    List<string> editLocales = new() { "en" };
+
+    IEnumerable<string> LocaleCatalog => SurveysOptions.LocaleCultures;
+
+    void CreateTemplate()
+    {
+        TheItem.Template = new ScreenTemplateDto
+        {
+            Id = TheItem.Key ?? "",
+            Title = new LocalizedString(),
+            Questions = new List<QuestionRefDto>(),
+        };
+        SyncJson();
+    }
+
+    /// <summary>
+    /// The Key is the id surveys reference, and the resolver matches on the template's own
+    /// <c>Id</c> — keeping them in lockstep here means an author renaming the key can't
+    /// silently produce a template nothing can resolve.
+    /// </summary>
+    void OnKeyChanged(string? value)
+    {
+        TheItem.Key = value;
+        if (TheItem.Template is not null)
+        {
+            TheItem.Template.Id = value ?? "";
+            SyncJson();
+        }
+    }
+
+    void OnTitleChanged(LocalizedString? value)
+    {
+        if (TheItem.Template is null) return;
+        TheItem.Template.Title = value ?? new LocalizedString();
+        SyncJson();
+    }
+
+    void OnDescriptionChanged(LocalizedString? value)
+    {
+        if (TheItem.Template is null) return;
+        // Prune an emptied dictionary so the wire shape stays clean rather than carrying
+        // an empty object that reads as "described, with nothing in it".
+        TheItem.Template.Description = value is { Count: > 0 } ? value : null;
+        SyncJson();
+    }
+
+    void OnEditLocalesChanged(IEnumerable<string> values)
+    {
+        editLocales = values?.ToList() ?? new List<string>();
+    }
+
+    async Task AddFromBank()
+    {
+        var options = new DialogOptions
+        {
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true,
+            CloseButton = true,
+        };
+        var dialog = await DialogService.ShowAsync<BankPickerDialog>("", options);
+        var result = await dialog.Result;
+        if (result is null || result.Canceled || result.Data is not BankQuestionListDTO picked) return;
+        if (string.IsNullOrWhiteSpace(picked.Key)) return;
+        if (TheItem.Template is null) CreateTemplate();
+
+        TheItem.Template!.Questions.Add(new QuestionRefDto { BankRef = picked.Key });
+        SyncJson();
+    }
+
+    void MoveQuestion(int index, int delta)
+    {
+        var list = TheItem.Template?.Questions;
+        if (list is null) return;
+        var target = index + delta;
+        if (target < 0 || target >= list.Count) return;
+        (list[index], list[target]) = (list[target], list[index]);
+        SyncJson();
+    }
+
+    void RemoveQuestion(int index)
+    {
+        var list = TheItem.Template?.Questions;
+        if (list is null || index < 0 || index >= list.Count) return;
+        list.RemoveAt(index);
+        SyncJson();
+    }
+
+    /// <summary>Re-serializes after a visual edit so the raw view never shows stale JSON.</summary>
+    void SyncJson()
+    {
+        templateJson = TheItem.Template is null
+            ? ""
+            : JsonSerializer.Serialize(TheItem.Template, SurveySchemaSerializer.Pretty);
+        parseError = null;
+    }
 
     void OnTemplateJsonChanged(string value)
     {
@@ -98,10 +370,24 @@
         {
             TheItem.Template = JsonSerializer.Deserialize<ScreenTemplateDto>(value, SurveySchemaSerializer.Options);
             parseError = null;
+            editLocales = DetectLocales(TheItem.Template);
         }
         catch (JsonException ex)
         {
             parseError = ex.Message;
         }
+    }
+
+    /// <summary>
+    /// Locales actually present on the record, unioned with the deployment catalog when the
+    /// record carries none. Without this an author opening a ru-authored template in an
+    /// en/ar deployment sees no Russian input at all.
+    /// </summary>
+    static List<string> DetectLocales(ScreenTemplateDto? template)
+    {
+        var found = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var key in template?.Title?.Keys ?? Enumerable.Empty<string>()) found.Add(key);
+        foreach (var key in template?.Description?.Keys ?? Enumerable.Empty<string>()) found.Add(key);
+        return found.Count > 0 ? found.ToList() : new List<string> { "en" };
     }
 }

@@ -142,6 +142,17 @@ export class ShiftSurveyElement extends HTMLElement {
     this.#renderIfReady();
   }
 
+  /** Bump to re-issue a jump to the screen already set on {@link activeScreenId}.
+   *  Property-only (no attribute) — it is a transient signal, not page state. */
+  #activeScreenJumpToken = 0;
+  get activeScreenJumpToken(): number {
+    return this.#activeScreenJumpToken;
+  }
+  set activeScreenJumpToken(value: number) {
+    this.#activeScreenJumpToken = value;
+    this.#renderIfReady();
+  }
+
   // ─── Internals ───────────────────────────────────────────────────────────
 
   #maybeFetchSchema(): void {
@@ -215,7 +226,9 @@ export class ShiftSurveyElement extends HTMLElement {
         schema,
         onSubmit,
         ...(locale ? { locale } : {}),
-        ...(activeScreenId ? { activeScreenId } : {}),
+        ...(activeScreenId
+          ? { activeScreenId, activeScreenJumpToken: this.#activeScreenJumpToken }
+          : {}),
         // Let the element be the resume key in API mode so two surveys on the
         // same host page don't clobber each other.
         ...(instanceId ? { resumeKey: instanceId } : {}),

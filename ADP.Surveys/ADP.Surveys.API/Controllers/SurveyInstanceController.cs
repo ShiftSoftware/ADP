@@ -42,7 +42,7 @@ public class SurveyInstanceController : ShiftEntitySecureControllerAsync<SurveyI
         if (options.EnableSurveysActionTreeAuthorization)
         {
             var typeAuth = HttpContext.RequestServices.GetRequiredService<ITypeAuthService>();
-            if (!typeAuth.CanAccess(SurveysActionTree.Operations.ViewResponses))
+            if (!typeAuth.CanAccess(options.Actions.ResolvedViewResponses))
                 return Forbid();
         }
 

@@ -13,7 +13,7 @@ namespace ShiftSoftware.ADP.Surveys.API.Controllers;
 public class BankQuestionController : ShiftEntitySecureControllerAsync<BankQuestionRepository, BankQuestion, BankQuestionListDTO, BankQuestionAdminDTO>
 {
     public BankQuestionController(SurveyApiOptions options)
-        : base(options.EnableSurveysActionTreeAuthorization ? SurveysActionTree.BankQuestions : null)
+        : base(options.EnableSurveysActionTreeAuthorization ? options.Actions.ResolvedBankQuestions : null)
     {
     }
 }

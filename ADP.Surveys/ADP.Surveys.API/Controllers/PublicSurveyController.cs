@@ -2,6 +2,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using ShiftSoftware.ADP.Surveys.API.Extensions;
 using ShiftSoftware.ADP.Surveys.Data.Entities;
@@ -18,11 +19,18 @@ namespace ShiftSoftware.ADP.Surveys.API.Controllers;
 /// <summary>
 /// Anonymous public endpoints consumed by the renderer and agent-assist iframe.
 /// Per Decision #7, there is <b>no auth</b> on these — the instance's public GUID
-/// is the capability. Rate-limiting / captcha is an orthogonal concern.
+/// is the capability.
+///
+/// Because there is no auth, the two abuse controls are opt-in deployment settings
+/// rather than code-level guarantees: <see cref="SurveyApiOptions.PublicEndpointRateLimit"/>
+/// (needs the host's <c>UseRateLimiter()</c>) and
+/// <see cref="SurveyApiOptions.MaxResponseBodyBytes"/>. Both are off by default so a
+/// deployment behind a WAF isn't limited twice.
 /// </summary>
 [Route("SurveyInstances")]
 [ApiController]
 [AllowAnonymous]
+[EnableRateLimiting(SurveysRateLimitPolicy.Name)]
 public class PublicSurveyController : ControllerBase
 {
     private readonly ShiftDbContext db;
@@ -90,6 +98,7 @@ public class PublicSurveyController : ControllerBase
     /// answers are keyed by <see cref="BankQuestion.BankEntryID"/> per Decision #11.
     /// </summary>
     [HttpPost("{publicId:guid}/responses")]
+    [SurveyResponseSizeLimit]
     public async Task<IActionResult> SubmitResponse(
         [FromRoute] Guid publicId,
         [FromBody] SurveyResponseSubmissionDto body)

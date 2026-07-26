@@ -1,6 +1,8 @@
+using System.Threading.RateLimiting;
 using FluentValidation;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.DependencyInjection;
 using ShiftSoftware.ADP.Surveys.Data.Extensions;
 using ShiftSoftware.ADP.Surveys.Data.Repositories;
@@ -43,7 +45,10 @@ public static class SurveyApiExtensions
             o.AddAutoMapper(typeof(Data.Marker).Assembly);
         });
 
-        services.Configure<TypeAuthAspNetCoreOptions>(o => o.AddActionTree<SurveysActionTree>());
+        // Skippable so a host gating entirely on its own actions (see SurveyActionOverrides)
+        // doesn't surface a second, unused tree in its permissions UI.
+        if (options.RegisterSurveysActionTree)
+            services.Configure<TypeAuthAspNetCoreOptions>(o => o.AddActionTree<SurveysActionTree>());
 
         // Lets the consumer's DbContext pick up Surveys' entity configuration without
         // having to call ConfigureSurveyEntities() themselves.
@@ -63,6 +68,34 @@ public static class SurveyApiExtensions
         services.AddScoped<Services.TriggerIngestService>();
         services.AddScoped<Services.TriggerSchedulerService>();
         services.AddScoped<Services.OutboxDispatchService>();
+        services.AddScoped<Services.SurveyResponseExporter>();
+
+        // Surfaces deployment settings whose defaults are only wrong in production —
+        // the link template above all. Logs at startup; never throws.
+        services.AddHostedService<Services.SurveyOptionsStartupCheck>();
+
+        // Rate-limit policy for the anonymous endpoints. Registered unconditionally so the
+        // policy name on PublicSurveyController always resolves; it is a no-op partition
+        // unless the deployment sets a limit. Requires the host's app.UseRateLimiter().
+        services.AddRateLimiter(rl =>
+        {
+            rl.AddPolicy(SurveysRateLimitPolicy.Name, httpContext =>
+            {
+                var limit = options.PublicEndpointRateLimit;
+                if (limit is not > 0)
+                    return RateLimitPartition.GetNoLimiter("adp-surveys-disabled");
+
+                // Partition by caller IP. The instance id is the capability here, so there
+                // is no user to key on — IP is the only signal available.
+                var key = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                return RateLimitPartition.GetFixedWindowLimiter(key, _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = limit.Value,
+                    Window = options.PublicEndpointRateLimitWindow,
+                    QueueLimit = 0,
+                });
+            });
+        });
 
         // Trigger channels — register the in-memory mock by default so dev / e2e harnesses
         // have a working channel out of the box. Real deployments add their WhatsApp / SMS

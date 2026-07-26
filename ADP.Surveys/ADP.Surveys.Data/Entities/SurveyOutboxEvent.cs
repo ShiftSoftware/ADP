@@ -33,6 +33,14 @@ public class SurveyOutboxEvent : ShiftEntity<SurveyOutboxEvent>
     /// <summary>Number of dispatch attempts. 0 until the first tick picks it up.</summary>
     public int Attempts { get; set; }
 
+    /// <summary>
+    /// When a <see cref="SurveyOutboxEventStatus.Failed"/> event becomes eligible for another
+    /// attempt. Null on Pending (dispatch immediately), on Dispatched, and on DeadLettered
+    /// (never again). Backoff grows with <see cref="Attempts"/> so a subscriber that is down
+    /// isn't hammered once a tick.
+    /// </summary>
+    public DateTimeOffset? NextAttemptAt { get; set; }
+
     public DateTimeOffset? DispatchedAt { get; set; }
 
     /// <summary>JSON array of per-subscriber outcomes: <c>[{key, success, error?, dispatchedAt}, ...]</c>.</summary>

@@ -11,6 +11,14 @@ public class PublicUrlTemplateDTO
 {
     /// <summary><c>SurveyApiOptions.PublicSurveyUrlTemplate</c> with its <c>{publicId}</c> placeholder; null when unset.</summary>
     public string? Template { get; set; }
+
+    /// <summary>
+    /// Operator-facing explanation when the template can't produce a link a recipient could
+    /// open — unset, missing the placeholder, or still pointing at localhost. Null when the
+    /// template is fine. The dashboard shows this next to its copy-link actions so nobody
+    /// hands out a dead link believing it works.
+    /// </summary>
+    public string? Warning { get; set; }
 }
 
 public class SurveyInstanceSummaryDTO

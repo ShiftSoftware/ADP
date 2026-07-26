@@ -63,7 +63,7 @@ public class PublishController : ControllerBase
         if (options.EnableSurveysActionTreeAuthorization)
         {
             var typeAuth = HttpContext.RequestServices.GetRequiredService<ITypeAuthService>();
-            if (!typeAuth.CanAccess(SurveysActionTree.Operations.PublishSurvey))
+            if (!typeAuth.CanAccess(options.Actions.ResolvedPublishSurvey))
                 return Forbid();
         }
 
@@ -124,6 +124,25 @@ public class PublishController : ControllerBase
                 Message = "Resolved schema failed integrity checks.",
                 Errors = integrityErrors.Select(e => new { e.Path, e.Message })
             });
+        }
+
+        // 3b. File questions collect nothing. Blocking here — rather than at answer time —
+        // means the author finds out while editing, not after a respondent has "attached"
+        // a document that was never stored. Runs on the resolved schema so banked and
+        // templated file questions are caught, not just ones visible in this draft.
+        if (!options.FileUploadsSupported)
+        {
+            var filePaths = FileQuestionScanner.FindFileQuestionPaths(resolve.Survey!);
+            if (filePaths.Count > 0)
+            {
+                return BadRequest(new
+                {
+                    Message = "This deployment cannot store uploaded files, so a survey with file questions "
+                        + "would discard whatever respondents attach. Remove the file question(s), or enable "
+                        + "SurveyApiOptions.FileUploadsSupported once an upload path exists.",
+                    Errors = filePaths.Select(p => new { Path = p, Message = "file questions are not supported by this deployment." }),
+                });
+            }
         }
 
         // 4. Serialize + hash

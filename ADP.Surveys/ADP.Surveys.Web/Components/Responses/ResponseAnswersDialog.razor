@@ -1,11 +1,13 @@
 @namespace ShiftSoftware.ADP.Surveys.Web.Components.Responses
 @using System.Text.Json
 @using ShiftSoftware.ADP.Surveys.Shared.DTOs.Admin.Responses
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Options
 @using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Types
 @using ShiftSoftware.ADP.Surveys.Shared.DTOs.Screens
 @using ShiftSoftware.ADP.Surveys.Shared.Json
 @using LocalizedString = ShiftSoftware.ADP.Surveys.Shared.DTOs.LocalizedString
 @inject SurveyService SurveySvc
+@inject SourcedOptionsResolver SourcedOptions
 
 @*
     Read-only view of everything recorded against one SurveyInstance. Answers are
@@ -269,12 +271,52 @@
             ? rl
             : schema?.DefaultLocale is { Length: > 0 } dl && localeChoices.Contains(dl) ? dl : localeChoices[0];
         loading = false;
+
+        // Fire-and-forget: the answers render immediately with raw ids, and re-render with
+        // labels once the external endpoints answer. Blocking the dialog on a third-party
+        // fetch would make an unreachable endpoint feel like a broken dashboard.
+        _ = LoadSourcedLabelsAsync();
     }
 
     void OnLocaleChanged(string value)
     {
         locale = value;
+        // Labels are locale-specific (the source is re-fetched with a new Accept-Language),
+        // so a locale switch needs a fresh resolve.
+        _ = LoadSourcedLabelsAsync();
     }
+
+    /// <summary>
+    /// Resolves external option ids to labels for every sourced question in the schema.
+    /// Best-effort — anything that fails just leaves the raw id showing.
+    /// </summary>
+    async Task LoadSourcedLabelsAsync()
+    {
+        if (schema is null) return;
+
+        var sourced = schema.Screens
+            .OfType<Shared.DTOs.Screens.InlineScreenDto>()
+            .SelectMany(s => s.Questions)
+            .Select(q => q.Inline)
+            .Where(q => q is not null)
+            .Select(q => (Question: q!, Source: OptionsSourceDto.Of(q!)))
+            .Where(x => x.Source is not null)
+            .ToList();
+
+        if (sourced.Count == 0) return;
+
+        foreach (var (question, source) in sourced)
+        {
+            var map = await SourcedOptions.ResolveAsync(source!, locale);
+            if (map.Count == 0) continue;
+            sourcedLabels[question.Id] = map;
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>Question id → (external option id → label), filled in after the dialog opens.</summary>
+    readonly Dictionary<string, Dictionary<string, string>> sourcedLabels = new(StringComparer.Ordinal);
 
     void Close() => MudDialogInstance.Close(DialogResult.Ok(true));
 
@@ -339,7 +381,14 @@
             _ => null,
         };
         var resolved = Loc(label);
-        return string.IsNullOrEmpty(resolved) ? null : resolved;
+        if (!string.IsNullOrEmpty(resolved)) return resolved;
+
+        // Nothing inline — for a sourced question the options were fetched in the
+        // respondent's browser, so fall back to the labels we re-fetched here.
+        if (sourcedLabels.TryGetValue(q.Id, out var external) && external.TryGetValue(id, out var externalLabel))
+            return externalLabel;
+
+        return null;
     }
 
     static bool HasExternalSource(Shared.DTOs.Questions.QuestionDto q) => q switch

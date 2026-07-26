@@ -8,10 +8,9 @@ import {
 } from '@shiftsoftware/survey-sdk';
 import { SurveyRenderer } from '@shiftsoftware/survey-renderer';
 import { ErrorState } from './ErrorState.js';
-import { isAgentMode, resolveApiBase, resolveLocale } from './config.js';
+import { isAgentMode, resolveLocale } from './config.js';
 
-export function SurveyRoute({ publicId }: { publicId: string }) {
-  const apiBase = useMemo(() => resolveApiBase(), []);
+export function SurveyRoute({ publicId, apiBase }: { publicId: string; apiBase: string }) {
   const locale = useMemo(() => resolveLocale(), []);
   const client = useMemo(() => new SurveyClient({ baseUrl: apiBase }), [apiBase]);
 

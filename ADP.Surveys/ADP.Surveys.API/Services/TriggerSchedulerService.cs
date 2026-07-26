@@ -1,9 +1,11 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ShiftSoftware.ADP.Surveys.API.Channels;
 using ShiftSoftware.ADP.Surveys.API.Extensions;
 using ShiftSoftware.ADP.Surveys.Data.Entities;
+using ShiftSoftware.ADP.Surveys.Shared;
 using ShiftSoftware.ADP.Surveys.Shared.DTOs;
 using ShiftSoftware.ADP.Surveys.Shared.DTOs.Triggers;
 using ShiftSoftware.ADP.Surveys.Shared.Json;
@@ -30,17 +32,20 @@ public class TriggerSchedulerService
     private readonly ShiftDbContext db;
     private readonly SurveyChannelRegistry channels;
     private readonly SurveyApiOptions options;
+    private readonly IHostEnvironment environment;
     private readonly ILogger<TriggerSchedulerService> logger;
 
     public TriggerSchedulerService(
         ShiftDbContext db,
         SurveyChannelRegistry channels,
         SurveyApiOptions options,
+        IHostEnvironment environment,
         ILogger<TriggerSchedulerService> logger)
     {
         this.db = db;
         this.channels = channels;
         this.options = options;
+        this.environment = environment;
         this.logger = logger;
     }
 
@@ -132,8 +137,25 @@ public class TriggerSchedulerService
             return;
         }
 
+        // Refuse to send a link the recipient can't open. Outside Development an
+        // unconfigured template means the deployment never overrode the dev default, and
+        // delivering that to a customer is worse than not delivering at all — the message
+        // is spent, the reminder count is consumed, and the failure is invisible until
+        // someone asks why nobody responded. Same halt shape as the no-channel path.
+        if (!environment.IsDevelopment() && !PublicSurveyUrl.IsDeployable(options.PublicSurveyUrlTemplate))
+        {
+            logger.LogError(
+                "SurveyInstance {PublicId} not sent: {Problem}",
+                instance.PublicID, PublicSurveyUrl.DescribeProblem(options.PublicSurveyUrlTemplate));
+            AppendDeliveryLog(instance, attempt: 0, status: "no-public-url",
+                error: PublicSurveyUrl.DescribeProblem(options.PublicSurveyUrlTemplate));
+            instance.NextSendAt = null;
+            await db.SaveChangesAsync(ct);
+            return;
+        }
+
         var attemptNumber = ComputeAttemptNumber(instance);
-        var url = options.PublicSurveyUrlTemplate.Replace("{publicId}", instance.PublicID.ToString());
+        var url = PublicSurveyUrl.Compose(options.PublicSurveyUrlTemplate, instance.PublicID)!;
 
         var result = await channel.SendAsync(new ChannelSendRequest
         {

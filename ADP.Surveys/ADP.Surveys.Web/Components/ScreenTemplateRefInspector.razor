@@ -1,6 +1,7 @@
 @namespace ShiftSoftware.ADP.Surveys.Web.Components
 @using ShiftSoftware.ADP.Surveys.Shared.DTOs
 @using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs.Questions.Options
 @using ShiftSoftware.ADP.Surveys.Shared.DTOs.Screens
 @using ShiftSoftware.ADP.Surveys.Web.WebServices
 @using LocalizedString = ShiftSoftware.ADP.Surveys.Shared.DTOs.LocalizedString
@@ -182,6 +183,36 @@
                                                         ReadOnly="@ReadOnly" />
                         }
 
+                        @{
+                            // The question is already resolved for this panel, so the source
+                            // block comes for free — no second probe like BankRefInspector needs.
+                            var questionSource = question is null ? null : OptionsSourceDto.Of(question);
+                            var existingSourceParams = GetQuestionOverrides(qid)?.SourceParams;
+                        }
+                        @if (questionSource is not null || existingSourceParams is { Count: > 0 })
+                        {
+                            <div class="template-ref__q-optlabels">API parameters</div>
+                            @if (questionSource is not null)
+                            {
+                                <div class="template-ref__source-context">
+                                    <code class="template-ref__key">@questionSource.Url</code>
+                                    @if (questionSource.QueryParams is { Count: > 0 })
+                                    {
+                                        <MudText Typo="Typo.caption" Class="template-ref__hint">
+                                            Template defaults: @(string.Join(", ", questionSource.QueryParams.Select(kv => $"{kv.Key}={kv.Value}")))
+                                        </MudText>
+                                    }
+                                </div>
+                            }
+                            <KeyValueListEditor Title="Query parameter overrides"
+                                                Value="@existingSourceParams"
+                                                ValueChanged="@(v => OnQuestionSourceParamsChanged(qid, v))"
+                                                ReadOnly="@ReadOnly"
+                                                KeyPlaceholder="services"
+                                                ValuePlaceholder="body-and-paint"
+                                                EmptyText="No overrides — the template's own parameters are used." />
+                        }
+
                         @if (overridesPresent && !ReadOnly)
                         {
                             <MudButton Size="Size.Small"
@@ -249,6 +280,10 @@
         font-weight: 600;
         color: #444;
         margin: 10px 0 6px;
+    }
+
+    .template-ref__source-context {
+        margin-bottom: 6px;
     }
 </style>
 
@@ -368,6 +403,19 @@
     async Task OnQuestionOptionLabelsChanged(string qid, Dictionary<string, LocalizedString>? value)
     {
         EnsureQuestionOverrides(qid).OptionLabels = value;
+        PruneQuestionOverrides(qid);
+        await Changed.InvokeAsync();
+    }
+
+    /// <summary>
+    /// Per-reference query-parameter overrides for a templated question that sources its
+    /// options from an API. Same variation axis as the bank-ref path — one canonical
+    /// question, different filters per placement (<c>?services=body-and-paint</c> vs
+    /// <c>new-vehicle-sale</c>). URL and headers stay template-locked.
+    /// </summary>
+    async Task OnQuestionSourceParamsChanged(string qid, Dictionary<string, string>? value)
+    {
+        EnsureQuestionOverrides(qid).SourceParams = value;
         PruneQuestionOverrides(qid);
         await Changed.InvokeAsync();
     }

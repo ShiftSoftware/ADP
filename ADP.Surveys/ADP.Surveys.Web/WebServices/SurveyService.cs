@@ -37,6 +37,25 @@ public class SurveyService
     }
 
     /// <summary>
+    /// GET <c>{prefix}SurveyResponses/{id}/export</c> — the wide response CSV. Returns the
+    /// raw bytes plus the server's filename so the caller can hand both to the browser's
+    /// download path; null when the request failed or the caller lacks the export action.
+    /// </summary>
+    public async Task<SurveyCsvExport?> ExportResponsesCsvAsync(string hashedId, bool includeTests = false, CancellationToken ct = default)
+    {
+        var response = await http.GetAsync(
+            $"{prefix}SurveyResponses/{hashedId}/export?includeTests={(includeTests ? "true" : "false")}", ct);
+
+        if (!response.IsSuccessStatusCode) return null;
+
+        return new SurveyCsvExport(
+            response.Content.Headers.ContentDisposition?.FileNameStar
+                ?? response.Content.Headers.ContentDisposition?.FileName?.Trim('"')
+                ?? "responses.csv",
+            await response.Content.ReadAsByteArrayAsync(ct));
+    }
+
+    /// <summary>
     /// Resolves a single banked question into inline form by POSTing a minimal
     /// synthetic draft at the Preview endpoint (same <c>SchemaResolver</c> the
     /// live preview and publish use). Returns the resolved <see cref="QuestionDto"/>,
@@ -100,15 +119,16 @@ public class SurveyService
     /// <summary>
     /// GET <c>{prefix}SurveyResponses/public-url-template</c> — lets the dashboard
     /// compose recipient links client-side (the OData instance list can't carry
-    /// them). Null when unset or on failure; callers hide the copy action.
+    /// them). Null template when unset or on failure; callers hide the copy action.
+    /// A non-null <c>Warning</c> means links can be composed but wouldn't open for a
+    /// recipient — surface it rather than silently handing out dead links.
     /// </summary>
-    public async Task<string?> GetPublicUrlTemplateAsync(CancellationToken ct = default)
+    public async Task<PublicUrlTemplateDTO?> GetPublicUrlTemplateAsync(CancellationToken ct = default)
     {
         try
         {
-            var dto = await http.GetFromJsonAsync<PublicUrlTemplateDTO>(
+            return await http.GetFromJsonAsync<PublicUrlTemplateDTO>(
                 $"{prefix}SurveyResponses/public-url-template", ct);
-            return dto?.Template;
         }
         catch
         {
@@ -162,3 +182,6 @@ public class SurveyService
         }
     }
 }
+
+/// <summary>A downloaded CSV export: the server-chosen filename plus the raw bytes (BOM included).</summary>
+public record SurveyCsvExport(string FileName, byte[] Content);

@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Survey } from '@shiftsoftware/survey-sdk';
 import { SurveyRenderer } from '../src/SurveyRenderer.js';
+import { builtInLocales } from '../src/i18n.js';
 
 function fixture(): Survey {
   return {
@@ -121,22 +122,16 @@ describe('SurveyRenderer', () => {
       <SurveyRenderer
         schema={fixture()}
         onSubmit={vi.fn()}
+        // Spread the built-ins and override only what's under test. Restating every
+        // string meant this fixture silently rotted out of date every time a new one
+        // was added — it had drifted 14 behind and only `npm test` (which doesn't
+        // typecheck) kept passing.
         uiLocales={{
           en: {
             direction: 'ltr',
             strings: {
+              ...builtInLocales['en']!.strings,
               next: 'Continue',
-              submitting: 'Submitting…',
-              loading: 'Loading…',
-              thankYou: 'Thanks!',
-              selectPlaceholder: 'Select…',
-              clearSignature: 'Clear',
-              noScreens: 'No screens.',
-              unsupportedQuestion: 'Unsupported:',
-              couldNotSubmit: 'Error:',
-              requiredError: 'Required!',
-              yes: 'Yes',
-              no: 'No',
             },
           },
         }}
@@ -300,6 +295,39 @@ describe('SurveyRenderer', () => {
     // Unknown ids are ignored — stay put.
     rerender(<SurveyRenderer schema={schema} onSubmit={vi.fn()} activeScreenId="nope" />);
     expect(screen.getByRole('heading', { name: 'Which brand?' })).toBeInTheDocument();
+  });
+
+  it('re-jumps to the same activeScreenId when the jump token changes', async () => {
+    // The builder case: author selects a screen, walks the preview forward, then clicks
+    // the still-highlighted row expecting to be taken back. Without the token the id is
+    // unchanged, so nothing fires.
+    const user = userEvent.setup();
+    const schema = fixture();
+    const { rerender } = render(
+      <SurveyRenderer
+        schema={schema}
+        onSubmit={vi.fn()}
+        activeScreenId="feedback"
+        activeScreenJumpToken={1}
+      />,
+    );
+    expect(screen.getByRole('heading', { name: 'How was it?' })).toBeInTheDocument();
+
+    // Answer first — the screen's NPS question is required, so Next is gated.
+    await user.click(screen.getByRole('radio', { name: '9' }));
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    expect(screen.getByRole('heading', { name: 'Which brand?' })).toBeInTheDocument();
+
+    // Same id, new token → jump re-fires.
+    rerender(
+      <SurveyRenderer
+        schema={schema}
+        onSubmit={vi.fn()}
+        activeScreenId="feedback"
+        activeScreenJumpToken={2}
+      />,
+    );
+    expect(screen.getByRole('heading', { name: 'How was it?' })).toBeInTheDocument();
   });
 
   it('labels the ending press Submit instead of Next (answer-aware)', async () => {

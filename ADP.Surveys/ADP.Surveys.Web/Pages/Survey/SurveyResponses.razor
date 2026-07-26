@@ -19,6 +19,18 @@
     closes the authoring loop without leaving the dashboard.
 *@
 
+@*
+    A composable-but-unusable link template is worse than none: the copy action looks like
+    it worked and the operator only finds out when a recipient can't open it.
+*@
+@if (publicUrlWarning is not null)
+{
+    <MudAlert Severity="Severity.Warning" Dense Class="mb-2">
+        Survey links from this deployment will not open for recipients. @publicUrlWarning
+        Set <code>SurveyApiOptions.PublicSurveyUrlTemplate</code> to the deployed survey app.
+    </MudAlert>
+}
+
 <ShiftList @ref="list"
            EntitySet="@($"{SurveysOptions.ResolvedRoutePrefix}SurveyInstance")"
            T="SurveyInstanceListDTO"
@@ -28,7 +40,7 @@
            DisableAdd
            ShowIDColumn="false"
            Sort="@defaultSort"
-           Filter="@(f => f.Add(nameof(SurveyInstanceListDTO.SurveyID), ShiftBlazor.Enums.ODataOperator.Equal, Key))"
+           Filter="@ApplyFilters"
            OnRowClick="OnRowClick">
 
     <ToolbarStartTemplate>
@@ -46,6 +58,53 @@
     </ToolbarStartTemplate>
 
     <ToolbarEndTemplate>
+        @* Quick filters for the three questions people actually ask of this list. The
+           per-column header filters still work for everything else. *@
+        <MudTextField T="string"
+                      Value="@recipientSearch"
+                      ValueChanged="OnRecipientSearchChanged"
+                      DebounceInterval="350"
+                      Placeholder="Search recipient…"
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search"
+                      Margin="Margin.Dense"
+                      Variant="Variant.Outlined"
+                      Clearable
+                      Class="responses-page__search" />
+
+        <MudSelect T="int?"
+                   Value="@statusFilter"
+                   ValueChanged="OnStatusFilterChanged"
+                   Placeholder="Any status"
+                   Clearable
+                   Dense
+                   Margin="Margin.Dense"
+                   Variant="Variant.Outlined"
+                   Class="responses-page__statusfilter">
+            @foreach (var (ordinal, label) in StatusOptions)
+            {
+                <MudSelectItem T="int?" Value="@ordinal">@label</MudSelectItem>
+            }
+        </MudSelect>
+
+        <MudTooltip Text="Test runs are authoring noise — hide them to see only real recipients.">
+            <MudSwitch T="bool"
+                       Value="@hideTests"
+                       ValueChanged="OnHideTestsChanged"
+                       Color="Color.Primary"
+                       Size="Size.Small"
+                       Label="Hide tests" />
+        </MudTooltip>
+
+        <MudTooltip Text="Download every submitted response as a CSV, one column per question. Test responses are excluded.">
+            <MudButton StartIcon="@Icons.Material.Filled.Download"
+                       Variant="Variant.Text"
+                       Size="Size.Small"
+                       Disabled="@exporting"
+                       OnClick="OnExport">
+                @(exporting ? "Exporting…" : "Export")
+            </MudButton>
+        </MudTooltip>
         <MudTooltip Text="@(publishedVersion is null ? "Publish the survey first — test instances pin to the latest published version." : "Create a test instance and answer it right here. Test responses never fan out to subscribers.")">
             <MudButton StartIcon="@Icons.Material.Filled.PlayCircle"
                        Variant="Variant.Filled"
@@ -163,6 +222,12 @@
         white-space: nowrap;
         text-align: end;
     }
+    .responses-page__search {
+        max-width: 190px;
+    }
+    .responses-page__statusfilter {
+        max-width: 140px;
+    }
 </style>
 
 @code {
@@ -172,7 +237,61 @@
     string? surveyName;
     int? publishedVersion;
     string? publicUrlTemplate;
+    string? publicUrlWarning;
     bool creatingTest;
+    bool exporting;
+
+    // Quick-filter state. The Filter delegate closes over these; ShiftList re-invokes it on
+    // every parameter set and reloads when the generated filter string differs, so changing
+    // one of these plus a re-render is all that's needed.
+    string? recipientSearch;
+    int? statusFilter;
+    bool hideTests;
+
+    /// <summary>
+    /// Status ordinals as sent by <c>SurveyInstanceListDTO.Status</c> — the enum itself lives
+    /// in the Data assembly, which the WASM client can't reference.
+    /// </summary>
+    static readonly (int Ordinal, string Label)[] StatusOptions =
+    [
+        (0, "Pending"), (1, "Sent"), (2, "Opened"), (3, "Completed"), (4, "Expired"),
+    ];
+
+    void ApplyFilters(ShiftBlazor.Utils.ODataFilterGenerator f)
+    {
+        f.Add(nameof(SurveyInstanceListDTO.SurveyID), ShiftBlazor.Enums.ODataOperator.Equal, Key);
+
+        if (statusFilter is int status)
+            f.Add(nameof(SurveyInstanceListDTO.Status), ShiftBlazor.Enums.ODataOperator.Equal, status);
+
+        if (hideTests)
+            f.Add(nameof(SurveyInstanceListDTO.IsTest), ShiftBlazor.Enums.ODataOperator.Equal, false);
+
+        if (!string.IsNullOrWhiteSpace(recipientSearch))
+            f.Add(nameof(SurveyInstanceListDTO.RecipientAddress), ShiftBlazor.Enums.ODataOperator.Contains, recipientSearch.Trim());
+    }
+
+    void OnRecipientSearchChanged(string? value)
+    {
+        recipientSearch = value;
+        StateHasChanged();
+    }
+
+    void OnStatusFilterChanged(int? value)
+    {
+        statusFilter = value;
+        StateHasChanged();
+    }
+
+    void OnHideTestsChanged(bool value)
+    {
+        hideTests = value;
+        StateHasChanged();
+    }
+
+    // Same cache-busted module the preview and test-run dialog use.
+    private static readonly string InteropPath =
+        $"./_content/ShiftSoftware.ADP.Surveys.Web/js/shift-survey/interop.js?v={typeof(SurveyResponses).Assembly.GetName().Version}";
 
     readonly Dictionary<string, SortDirection> defaultSort = new()
     {
@@ -182,7 +301,9 @@
     protected override async Task OnInitializedAsync()
     {
         await LoadSurveyHeader();
-        publicUrlTemplate = await SurveySvc.GetPublicUrlTemplateAsync();
+        var urlTemplate = await SurveySvc.GetPublicUrlTemplateAsync();
+        publicUrlTemplate = urlTemplate?.Template;
+        publicUrlWarning = urlTemplate?.Warning;
     }
 
     /// <summary>
@@ -318,6 +439,39 @@
         var options = new DialogOptions { CloseButton = true };
         var dialog = await DialogService.ShowAsync<ResponseAnswersDialog>("", parameters, options);
         await dialog.Result;
+    }
+
+    /// <summary>
+    /// Downloads the wide CSV. Goes through JS interop rather than a plain anchor because
+    /// the endpoint is authenticated — a bare href sends no bearer token and would 401.
+    /// </summary>
+    async Task OnExport()
+    {
+        exporting = true;
+        try
+        {
+            var csv = await SurveySvc.ExportResponsesCsvAsync(Key?.ToString() ?? "");
+            if (csv is null)
+            {
+                Snackbar.Add("Export failed.", MudBlazor.Severity.Error);
+                return;
+            }
+
+            var interop = await JS.InvokeAsync<IJSObjectReference>("import", InteropPath);
+            await interop.InvokeVoidAsync(
+                "downloadFile",
+                csv.FileName,
+                "text/csv;charset=utf-8",
+                Convert.ToBase64String(csv.Content));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Export failed: {ex.Message}", MudBlazor.Severity.Error);
+        }
+        finally
+        {
+            exporting = false;
+        }
     }
 
     async Task CopyLink(Guid publicId)

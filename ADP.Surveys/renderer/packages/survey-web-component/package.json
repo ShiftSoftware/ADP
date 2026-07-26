@@ -16,6 +16,15 @@
     "src",
     "README.md"
   ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ShiftSoftware/ADP",
+    "directory": "ADP.Surveys/renderer/packages/survey-web-component"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "vite build && tsc -p tsconfig.build.json --emitDeclarationOnly",
     "typecheck": "tsc --noEmit",
@@ -23,8 +32,8 @@
     "test.watch": "vitest"
   },
   "dependencies": {
-    "@shiftsoftware/survey-renderer": "*",
-    "@shiftsoftware/survey-sdk": "*",
+    "@shiftsoftware/survey-renderer": "^0.1.0",
+    "@shiftsoftware/survey-sdk": "^0.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
