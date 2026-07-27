@@ -165,39 +165,39 @@ internal static class MenuGraphFixture
         };
 
         // ---- replacement-item ↔ vehicle-model links ----------------------------------------------
-        var rivmA = Rivm(700, itemAReplacement, vehicleModel, 0.25m);
-        var rivmB = Rivm(701, itemBReplacement, vehicleModel, 0.75m);
-        var rivmC = Rivm(702, itemCReplacement, vehicleModel, 0.90m);
-        var rivmDeleted = Rivm(704, deletedReplacement, vehicleModel, 0.15m);
-        rivmDeleted.IsDeleted = true;   // soft-deleted link → its menu item must be excluded
+        var replacementLinkA = CreateReplacementItemVehicleModel(700, itemAReplacement, vehicleModel, 0.25m);
+        var replacementLinkB = CreateReplacementItemVehicleModel(701, itemBReplacement, vehicleModel, 0.75m);
+        var replacementLinkC = CreateReplacementItemVehicleModel(702, itemCReplacement, vehicleModel, 0.90m);
+        var replacementLinkDeleted = CreateReplacementItemVehicleModel(704, deletedReplacement, vehicleModel, 0.15m);
+        replacementLinkDeleted.IsDeleted = true;   // soft-deleted link → its menu item must be excluded
 
         // ---- menu items + parts ------------------------------------------------------------------
-        var itemA = MenuItem(900, rivmA, standaloneAllowedTime: 0.25m, parts:
+        var itemA = MenuItem(900, replacementLinkA, standaloneAllowedTime: 0.25m, parts:
         [
-            Part(9001, "PN-0001", periodicQuantity: 2m, standaloneQuantity: 1m, prices:
+            Part(9001, "PN-0001", periodicQuantity: 2m, standaloneQuantity: 1m, sortOrder: 0, prices:
             [
                 Price(90011, countryId: 2, partPrice: 5.500m, finalPrice: 7.250m),
                 Price(90012, countryId: 3, partPrice: 6.000m, finalPrice: 8.000m),
                 Price(90013, countryId: 2, partPrice: 999m, finalPrice: 999m, isDeleted: true),   // excluded
             ]),
             // Zero periodic quantity → excluded from the periodic line, present in the standalone one.
-            Part(9002, "PN-0002", periodicQuantity: 0m, standaloneQuantity: 3m, prices:
+            Part(9002, "PN-0002", periodicQuantity: 0m, standaloneQuantity: 3m, sortOrder: 1, prices:
             [
                 Price(90021, countryId: 2, partPrice: 2.000m, finalPrice: 3.000m),
             ]),
             // Soft-deleted part → excluded everywhere.
-            Part(9003, "PN-0003", periodicQuantity: 5m, standaloneQuantity: 5m, isDeleted: true, prices:
+            Part(9003, "PN-0003", periodicQuantity: 5m, standaloneQuantity: 5m, isDeleted: true, sortOrder: 2, prices:
             [
                 Price(90031, countryId: 2, partPrice: 50m, finalPrice: 60m),
             ]),
             // Null periodic quantity → excluded from the periodic line.
-            Part(9004, "PN-0004", periodicQuantity: null, standaloneQuantity: 2m, prices:
+            Part(9004, "PN-0004", periodicQuantity: null, standaloneQuantity: 2m, sortOrder: 3, prices:
             [
                 Price(90041, countryId: 2, partPrice: 1.250m, finalPrice: 1.750m),
             ]),
         ]);
 
-        var itemB = MenuItem(901, rivmB, standaloneAllowedTime: 0.75m, parts:
+        var itemB = MenuItem(901, replacementLinkB, standaloneAllowedTime: 0.75m, parts:
         [
             Part(9011, "PN-0011", periodicQuantity: 1m, standaloneQuantity: 2m, prices:
             [
@@ -205,7 +205,7 @@ internal static class MenuGraphFixture
             ]),
         ]);
 
-        var itemC = MenuItem(902, rivmC, standaloneAllowedTime: 0.90m, parts:
+        var itemC = MenuItem(902, replacementLinkC, standaloneAllowedTime: 0.90m, parts:
         [
             Part(9021, "PN-0021", periodicQuantity: 4m, standaloneQuantity: 1m, prices:
             [
@@ -213,7 +213,7 @@ internal static class MenuGraphFixture
             ]),
         ]);
 
-        var itemDeletedRow = MenuItem(903, rivmA, standaloneAllowedTime: 0.10m, parts:
+        var itemDeletedRow = MenuItem(903, replacementLinkA, standaloneAllowedTime: 0.10m, parts:
         [
             Part(9031, "PN-0031", periodicQuantity: 9m, standaloneQuantity: 9m, prices:
             [
@@ -222,7 +222,7 @@ internal static class MenuGraphFixture
         ]);
         itemDeletedRow.IsDeleted = true;    // soft-deleted menu item → excluded
 
-        var itemDeletedLink = MenuItem(904, rivmDeleted, standaloneAllowedTime: 0.10m, parts:
+        var itemDeletedLink = MenuItem(904, replacementLinkDeleted, standaloneAllowedTime: 0.10m, parts:
         [
             Part(9041, "PN-0041", periodicQuantity: 9m, standaloneQuantity: 9m, prices:
             [
@@ -317,9 +317,9 @@ internal static class MenuGraphFixture
 
     // ---- small construction helpers --------------------------------------------------------------
 
-    private static ReplacementItemVehicleModel Rivm(long id, ReplacementItem replacementItem, VehicleModel model, decimal standaloneAllowedTime)
+    private static ReplacementItemVehicleModel CreateReplacementItemVehicleModel(long id, ReplacementItem replacementItem, VehicleModel model, decimal standaloneAllowedTime)
     {
-        var rivm = new ReplacementItemVehicleModel
+        var replacementLink = new ReplacementItemVehicleModel
         {
             ReplacementItemID = replacementItem.ID,
             ReplacementItem = replacementItem,
@@ -327,16 +327,16 @@ internal static class MenuGraphFixture
             VehicleModel = model,
             StandaloneAllowedTime = standaloneAllowedTime,
         };
-        rivm.ID = id;
-        return rivm;
+        replacementLink.ID = id;
+        return replacementLink;
     }
 
-    private static MenuItem MenuItem(long id, ReplacementItemVehicleModel? rivm, decimal standaloneAllowedTime, List<MenuItemPart> parts)
+    private static MenuItem MenuItem(long id, ReplacementItemVehicleModel? replacementLink, decimal standaloneAllowedTime, List<MenuItemPart> parts)
     {
         var item = new MenuItem
         {
-            ReplacementItemVehicleModelID = rivm?.ID,
-            ReplacementItemVehicleModel = rivm,
+            ReplacementItemVehicleModelID = replacementLink?.ID,
+            ReplacementItemVehicleModel = replacementLink,
             StandaloneAllowedTime = standaloneAllowedTime,
             Parts = parts,
         };
@@ -355,12 +355,13 @@ internal static class MenuGraphFixture
         decimal? periodicQuantity,
         decimal? standaloneQuantity,
         List<MenuItemPartCountryPrice> prices,
-        bool isDeleted = false)
+        bool isDeleted = false,
+        int sortOrder = 0)
     {
         var part = new MenuItemPart
         {
             PartNumber = partNumber,
-            SortOrder = 0,
+            SortOrder = sortOrder,
             PeriodicQuantity = periodicQuantity,
             StandaloneQuantity = standaloneQuantity,
             CountryPrices = prices,

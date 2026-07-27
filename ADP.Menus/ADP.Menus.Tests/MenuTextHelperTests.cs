@@ -59,16 +59,17 @@ public class MenuTextHelperTests
     }
 
     /// <summary>
-    /// CHARACTERISATION of open item O7 — <see cref="Utility.GetAllowedTimeText"/> formats the decimal
-    /// with the AMBIENT culture, so the same allowed time produces a different labour code under a
-    /// culture whose decimal separator is not '.'. Today the export runs in a request whose culture
-    /// happens to work; the Phase 5 lookup would run this in a different process.
+    /// Open item O7 — <see cref="Utility.GetAllowedTimeText"/> formats the decimal with the AMBIENT
+    /// culture, so the same allowed time produces a different labour code under a culture whose
+    /// decimal separator is not '.'.
     ///
-    /// Phase 1 pins <see cref="CultureInfo.InvariantCulture"/> in the ported helper (for BOTH paths).
-    /// When it lands, this test must be replaced by one asserting the output is now culture-stable.
+    /// DECIDED: leave as-is. Pinning the culture would change labour codes already issued to a DMS,
+    /// for a case the deployments do not hit. The shared generator's ported helper reproduces this
+    /// exactly. This test exists so the behaviour is visible rather than latent — if a future
+    /// deployment DOES run under such a culture, this is the note that explains the symptom.
     /// </summary>
     [Fact]
-    public void GetAllowedTimeText_IsCultureSensitiveToday_O7()
+    public void GetAllowedTimeText_IsCultureSensitive_O7()
     {
         var original = CultureInfo.CurrentCulture;
         try

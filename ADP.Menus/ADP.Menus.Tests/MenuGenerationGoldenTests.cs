@@ -21,8 +21,10 @@ namespace ShiftSoftware.ADP.Menus.Tests;
 /// A snapshot change is therefore a BEHAVIOUR CHANGE and must be deliberate. Do not re-baseline one
 /// to make a build green without confirming the new value is the intended output.
 ///
-/// See COSMOS_REPLICATION_PLAN.md §12 (Phase 0) and the open items O1 / O7 / O8, several of which are
-/// characterised below as they behave TODAY (not as they should behave after Phase 1).
+/// See COSMOS_REPLICATION_PLAN.md §13. The quirks these tests pin (O1, O7, O10 and the whole-hour
+/// allowed-time collision) were all reviewed and DECIDED as "preserve verbatim" — they affect rare
+/// cases, and changing any of them would alter menu codes a DMS has already received. These
+/// assertions are therefore permanent, not temporary scaffolding.
 /// </summary>
 public class MenuGenerationGoldenTests
 {
@@ -131,17 +133,16 @@ public class MenuGenerationGoldenTests
     }
 
     /// <summary>
-    /// CHARACTERISATION of open item O1 — today a missing <see cref="LabourRateMapping"/> for the
-    /// (brand, primary labour rate) pair makes generation THROW, because the generator indexes the
-    /// dictionary directly. The DMS export tolerates this only because it pre-checks the whole
-    /// catalogue and fails the export up front.
+    /// Open item O1 — a missing <see cref="LabourRateMapping"/> for the (brand, primary labour rate)
+    /// pair makes generation THROW, because the generator indexes the dictionary directly. The DMS
+    /// export tolerates this only because it pre-checks the whole catalogue and fails up front.
     ///
-    /// The plan proposes softening this in the shared generator (TryGetValue → empty labour code +
-    /// flag) so one unmapped rate cannot fail an entire vehicle lookup. When that lands, this test
-    /// must be REPLACED by one asserting the new tolerant behaviour — deliberately, not silently.
+    /// DECIDED: keep this behaviour. Softening it to a tolerant lookup was considered and rejected —
+    /// the case does not arise in practice, and failing loudly beats silently emitting a menu line
+    /// with a wrong labour code. The Phase 1 port throws identically.
     /// </summary>
     [Fact]
-    public void MissingLabourRateMapping_ThrowsToday_O1()
+    public void MissingLabourRateMapping_Throws_O1()
     {
         var fixture = MenuGraphFixture.Build(includeLabourRateMapping: false);
 
@@ -164,8 +165,8 @@ public class MenuGenerationGoldenTests
            LabourCost=5.00 LabourPrice=10.0000 LabourTotalPrice=14.0000 LabourProfit=5.0000
            PartsCost=21.000 PartsPrice=27.000 PartsProfit=6.000 PartsProfitPercentage=28.57
            GrossProfit=11.0000 GrossProfitPercentage=29.73 MenuProfit=15.0000 MenuTotalPrice=36.90000
-           part "PN-0001" Qty=2 Cost=5.500 Price=7.250 TotalCost=11.000 TotalPrice=14.500
-           part "PN-0011" Qty=1 Cost=10.000 Price=12.500 TotalCost=10.000 TotalPrice=12.500
+           part "PN-0001" Quantity=2 Cost=5.500 Price=7.250 TotalCost=11.000 TotalPrice=14.500
+           part "PN-0011" Quantity=1 Cost=10.000 Price=12.500 TotalCost=10.000 TotalPrice=12.500
         #2 PERIODIC
            Code="MEN ABC12 S02 PX"
            LabourCode="GRPA05LR1A"
@@ -175,8 +176,8 @@ public class MenuGenerationGoldenTests
            LabourCost=5.00 LabourPrice=10.0000 LabourTotalPrice=14.0000 LabourProfit=5.0000
            PartsCost=21.000 PartsPrice=27.000 PartsProfit=6.000 PartsProfitPercentage=28.57
            GrossProfit=11.0000 GrossProfitPercentage=29.73 MenuProfit=15.0000 MenuTotalPrice=36.90000
-           part "PN-0001" Qty=2 Cost=5.500 Price=7.250 TotalCost=11.000 TotalPrice=14.500
-           part "PN-0011" Qty=1 Cost=10.000 Price=12.500 TotalCost=10.000 TotalPrice=12.500
+           part "PN-0001" Quantity=2 Cost=5.500 Price=7.250 TotalCost=11.000 TotalPrice=14.500
+           part "PN-0011" Quantity=1 Cost=10.000 Price=12.500 TotalCost=10.000 TotalPrice=12.500
         #3 STANDALONE
            Code="STD OPA ABC12 SPX"
            LabourCode="SLA025LR1A"
@@ -186,9 +187,9 @@ public class MenuGenerationGoldenTests
            LabourCost=2.50 LabourPrice=5.0000 LabourTotalPrice=5.0000 LabourProfit=2.5000
            PartsCost=14.000 PartsPrice=19.750 PartsProfit=5.750 PartsProfitPercentage=41.07
            GrossProfit=8.2500 GrossProfitPercentage=33.33 MenuProfit=8.2500 MenuTotalPrice=22.27500
-           part "PN-0001" Qty=1 Cost=5.500 Price=7.250 TotalCost=5.500 TotalPrice=7.250
-           part "PN-0002" Qty=3 Cost=2.000 Price=3.000 TotalCost=6.000 TotalPrice=9.000
-           part "PN-0004" Qty=2 Cost=1.250 Price=1.750 TotalCost=2.500 TotalPrice=3.500
+           part "PN-0001" Quantity=1 Cost=5.500 Price=7.250 TotalCost=5.500 TotalPrice=7.250
+           part "PN-0002" Quantity=3 Cost=2.000 Price=3.000 TotalCost=6.000 TotalPrice=9.000
+           part "PN-0004" Quantity=2 Cost=1.250 Price=1.750 TotalCost=2.500 TotalPrice=3.500
         #4 STANDALONE
            Code="STD GMC ABC12 SPX"
            LabourCode="GLC075LR1A"
@@ -198,8 +199,8 @@ public class MenuGenerationGoldenTests
            LabourCost=7.50 LabourPrice=15.0000 LabourTotalPrice=15.0000 LabourProfit=7.5000
            PartsCost=21.000 PartsPrice=27.000 PartsProfit=6.000 PartsProfitPercentage=28.57
            GrossProfit=13.5000 GrossProfitPercentage=32.14 MenuProfit=13.5000 MenuTotalPrice=37.80000
-           part "PN-0011" Qty=2 Cost=10.000 Price=12.500 TotalCost=20.000 TotalPrice=25.000
-           part "PN-0021" Qty=1 Cost=1.000 Price=2.000 TotalCost=1.000 TotalPrice=2.000
+           part "PN-0011" Quantity=2 Cost=10.000 Price=12.500 TotalCost=20.000 TotalPrice=25.000
+           part "PN-0021" Quantity=1 Cost=1.000 Price=2.000 TotalCost=1.000 TotalPrice=2.000
         """;
 
     private const string GoldenCountry0Arabic =
@@ -213,8 +214,8 @@ public class MenuGenerationGoldenTests
            LabourCost=5.00 LabourPrice=6.2500 LabourTotalPrice=16.2500 LabourProfit=1.2500
            PartsCost=0 PartsPrice=0 PartsProfit=0 PartsProfitPercentage=0
            GrossProfit=1.2500 GrossProfitPercentage=20.0 MenuProfit=11.2500 MenuTotalPrice=14.62500
-           part "PN-0001" Qty=2 Cost=0 Price=0 TotalCost=0 TotalPrice=0
-           part "PN-0011" Qty=1 Cost=0 Price=0 TotalCost=0 TotalPrice=0
+           part "PN-0001" Quantity=2 Cost=0 Price=0 TotalCost=0 TotalPrice=0
+           part "PN-0011" Quantity=1 Cost=0 Price=0 TotalCost=0 TotalPrice=0
         #2 PERIODIC
            Code="MENA ABC12 S02 PX"
            LabourCode="GRPA05LR1A"
@@ -224,8 +225,8 @@ public class MenuGenerationGoldenTests
            LabourCost=5.00 LabourPrice=6.2500 LabourTotalPrice=16.2500 LabourProfit=1.2500
            PartsCost=0 PartsPrice=0 PartsProfit=0 PartsProfitPercentage=0
            GrossProfit=1.2500 GrossProfitPercentage=20.0 MenuProfit=11.2500 MenuTotalPrice=14.62500
-           part "PN-0001" Qty=2 Cost=0 Price=0 TotalCost=0 TotalPrice=0
-           part "PN-0011" Qty=1 Cost=0 Price=0 TotalCost=0 TotalPrice=0
+           part "PN-0001" Quantity=2 Cost=0 Price=0 TotalCost=0 TotalPrice=0
+           part "PN-0011" Quantity=1 Cost=0 Price=0 TotalCost=0 TotalPrice=0
         #3 STANDALONE
            Code="STDA OPAA ABC12 SPX"
            LabourCode="SLA025LR1A"
@@ -235,9 +236,9 @@ public class MenuGenerationGoldenTests
            LabourCost=2.50 LabourPrice=3.1250 LabourTotalPrice=3.1250 LabourProfit=0.6250
            PartsCost=0 PartsPrice=0 PartsProfit=0 PartsProfitPercentage=0
            GrossProfit=0.6250 GrossProfitPercentage=20.0 MenuProfit=0.6250 MenuTotalPrice=2.81250
-           part "PN-0001" Qty=1 Cost=0 Price=0 TotalCost=0 TotalPrice=0
-           part "PN-0002" Qty=3 Cost=0 Price=0 TotalCost=0 TotalPrice=0
-           part "PN-0004" Qty=2 Cost=0 Price=0 TotalCost=0 TotalPrice=0
+           part "PN-0001" Quantity=1 Cost=0 Price=0 TotalCost=0 TotalPrice=0
+           part "PN-0002" Quantity=3 Cost=0 Price=0 TotalCost=0 TotalPrice=0
+           part "PN-0004" Quantity=2 Cost=0 Price=0 TotalCost=0 TotalPrice=0
         #4 STANDALONE
            Code="STDA GMCA ABC12 SPX"
            LabourCode="GLC075LR1A"
@@ -247,8 +248,8 @@ public class MenuGenerationGoldenTests
            LabourCost=7.50 LabourPrice=9.3750 LabourTotalPrice=9.3750 LabourProfit=1.8750
            PartsCost=0 PartsPrice=0 PartsProfit=0 PartsProfitPercentage=0
            GrossProfit=1.8750 GrossProfitPercentage=20.0 MenuProfit=1.8750 MenuTotalPrice=8.43750
-           part "PN-0011" Qty=2 Cost=0 Price=0 TotalCost=0 TotalPrice=0
-           part "PN-0021" Qty=1 Cost=0 Price=0 TotalCost=0 TotalPrice=0
+           part "PN-0011" Quantity=2 Cost=0 Price=0 TotalCost=0 TotalPrice=0
+           part "PN-0021" Quantity=1 Cost=0 Price=0 TotalCost=0 TotalPrice=0
         """;
 
     private const string GoldenUnmappedBrand =
@@ -262,8 +263,8 @@ public class MenuGenerationGoldenTests
            LabourCost=5.00 LabourPrice=10.0000 LabourTotalPrice=14.0000 LabourProfit=5.0000
            PartsCost=21.000 PartsPrice=27.000 PartsProfit=6.000 PartsProfitPercentage=28.57
            GrossProfit=11.0000 GrossProfitPercentage=29.73 MenuProfit=15.0000 MenuTotalPrice=36.90000
-           part "PN-0001" Qty=2 Cost=5.500 Price=7.250 TotalCost=11.000 TotalPrice=14.500
-           part "PN-0011" Qty=1 Cost=10.000 Price=12.500 TotalCost=10.000 TotalPrice=12.500
+           part "PN-0001" Quantity=2 Cost=5.500 Price=7.250 TotalCost=11.000 TotalPrice=14.500
+           part "PN-0011" Quantity=1 Cost=10.000 Price=12.500 TotalCost=10.000 TotalPrice=12.500
         #2 PERIODIC
            Code="MEN ABC12 S02 PX"
            LabourCode="GRPA05LR1Z"
@@ -273,8 +274,8 @@ public class MenuGenerationGoldenTests
            LabourCost=5.00 LabourPrice=10.0000 LabourTotalPrice=14.0000 LabourProfit=5.0000
            PartsCost=21.000 PartsPrice=27.000 PartsProfit=6.000 PartsProfitPercentage=28.57
            GrossProfit=11.0000 GrossProfitPercentage=29.73 MenuProfit=15.0000 MenuTotalPrice=36.90000
-           part "PN-0001" Qty=2 Cost=5.500 Price=7.250 TotalCost=11.000 TotalPrice=14.500
-           part "PN-0011" Qty=1 Cost=10.000 Price=12.500 TotalCost=10.000 TotalPrice=12.500
+           part "PN-0001" Quantity=2 Cost=5.500 Price=7.250 TotalCost=11.000 TotalPrice=14.500
+           part "PN-0011" Quantity=1 Cost=10.000 Price=12.500 TotalCost=10.000 TotalPrice=12.500
         #3 STANDALONE
            Code="STD OPA ABC12 SPX"
            LabourCode="SLA025LR1Z"
@@ -284,9 +285,9 @@ public class MenuGenerationGoldenTests
            LabourCost=2.50 LabourPrice=5.0000 LabourTotalPrice=5.0000 LabourProfit=2.5000
            PartsCost=14.000 PartsPrice=19.750 PartsProfit=5.750 PartsProfitPercentage=41.07
            GrossProfit=8.2500 GrossProfitPercentage=33.33 MenuProfit=8.2500 MenuTotalPrice=22.27500
-           part "PN-0001" Qty=1 Cost=5.500 Price=7.250 TotalCost=5.500 TotalPrice=7.250
-           part "PN-0002" Qty=3 Cost=2.000 Price=3.000 TotalCost=6.000 TotalPrice=9.000
-           part "PN-0004" Qty=2 Cost=1.250 Price=1.750 TotalCost=2.500 TotalPrice=3.500
+           part "PN-0001" Quantity=1 Cost=5.500 Price=7.250 TotalCost=5.500 TotalPrice=7.250
+           part "PN-0002" Quantity=3 Cost=2.000 Price=3.000 TotalCost=6.000 TotalPrice=9.000
+           part "PN-0004" Quantity=2 Cost=1.250 Price=1.750 TotalCost=2.500 TotalPrice=3.500
         #4 STANDALONE
            Code="STD GMC ABC12 SPX"
            LabourCode="GLC075LR1Z"
@@ -296,7 +297,7 @@ public class MenuGenerationGoldenTests
            LabourCost=7.50 LabourPrice=15.0000 LabourTotalPrice=15.0000 LabourProfit=7.5000
            PartsCost=21.000 PartsPrice=27.000 PartsProfit=6.000 PartsProfitPercentage=28.57
            GrossProfit=13.5000 GrossProfitPercentage=32.14 MenuProfit=13.5000 MenuTotalPrice=37.80000
-           part "PN-0011" Qty=2 Cost=10.000 Price=12.500 TotalCost=20.000 TotalPrice=25.000
-           part "PN-0021" Qty=1 Cost=1.000 Price=2.000 TotalCost=1.000 TotalPrice=2.000
+           part "PN-0011" Quantity=2 Cost=10.000 Price=12.500 TotalCost=20.000 TotalPrice=25.000
+           part "PN-0021" Quantity=1 Cost=1.000 Price=2.000 TotalCost=1.000 TotalPrice=2.000
         """;
 }

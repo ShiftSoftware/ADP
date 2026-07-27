@@ -85,7 +85,7 @@ write time; no `UpdateReference` recompute cascade.
 | Generation input | **neutral generic model** (layer 1), not Cosmos/EF types | one shared service, many adapters |
 | Storage | one container, per-row docs, `ItemType`-discriminated, partitioned by `/BasicModelCode` | one query returns a whole model's graph |
 | Document `id` | the source row's DB id | soft-delete safe |
-| Shared reference tables | replicated to a `__REF__` partition, **cached** in the reader | keeps replication pure per-row (no denormalization fan-out) |
+| Shared reference tables | replicated to a `__REFERENCE__` partition, **cached** in the reader | keeps replication pure per-row (no denormalization fan-out) |
 | Mapping | **manual** everywhere (no AutoMapper) | explicit, reviewable |
 | Fields | menu code, labour code, labour rate/allowed-time/consumable/labour-total, parts (number/qty/price/line-total), parts-total, discount, menu-total | DMS margin/cost/profit excluded |
 
@@ -98,7 +98,7 @@ ADP.Menus/ADP.Menus.Generation/  (NEW — netstandard2.0, menu-owned, reachable 
   Generation/                            # LAYER 1 — the shared contract + logic
     MenuGenerationRequest.cs             #   generic input (nested variant graph + reference data)
     MenuGenerationConfig.cs              #   country / transferRate / language / usePrimaryLabourRate
-    GeneratedMenuLine.cs                 #   generic result (core fields only)
+    GeneratedMenuLine.cs                 #   generic result (codes + every component that composed them)
     MenuCodeGenerator.cs                 #   the fold, ported from MenuExportService (source-agnostic)
     MenuTextHelpers.cs                   #   ported GetAllowedTimeText + LocalizedText (netstandard2.0, single source)
   Cosmos/
@@ -110,7 +110,7 @@ ADP.Models/  (netstandard2.0 — reachable by the lookup AND the menus host)
     MenuLabourCosmosModel.cs   MenuItemCosmosModel.cs
     ServiceIntervalCosmosModel.cs  ServiceIntervalGroupCosmosModel.cs
     LabourRateMappingCosmosModel.cs  BrandMappingCosmosModel.cs
-  Models/Constants/NoSQLConstants.cs     # EDIT — Containers.ServiceMenus + PartitionKeys + __REF__
+  Models/Constants/NoSQLConstants.cs     # EDIT — Containers.ServiceMenus + PartitionKeys + __REFERENCE__
   Models/ModelTypes.cs                   # EDIT — one PartitionedItemType per itemType
 
 ADP.Menus/ADP.Menus.Data/  (net10.0 — the export + the replication producer)
@@ -127,7 +127,7 @@ ADP.Menus/ADP.Menus.Data/  (net10.0 — the export + the replication producer)
     MenuReplicationExtensions.cs         # NEW — one Add*Replication per table + AddMenuReplications
 
 ADP.LookupServices/Lookup.Services/  (netstandard2.0 — the reader, FUTURE phase)
-  Services/ServiceMenuReferenceCache.cs  # NEW — caches the __REF__ partition
+  Services/ServiceMenuReferenceCache.cs  # NEW — caches the __REFERENCE__ partition
   Services/ServiceMenuLookupService.cs   # NEW — read partition → CosmosToGenerationAggregator → generate → lookup DTO
 ```
 
@@ -196,21 +196,21 @@ netstandard2.0 via package if `LocalizedText` keeps its JSON parsing.)
 | `MenuLabour` | `MenuLabourDetails` | row id |
 | `MenuItem` | `MenuItem` (+ `MenuItemPart` + prices embedded, + replacement-item slice) | item id |
 
-**Reference documents** (layer 2) — small, shared, in the sentinel `__REF__` partition, cached by the reader:
+**Reference documents** (layer 2) — small, shared, in the sentinel `__REFERENCE__` partition, cached by the reader:
 
 | ItemType | From table | `id` |
 |---|---|---|
-| `SvcInterval` | `ServiceInterval` | interval id |
-| `SvcIntervalGroup` | `ServiceIntervalGroup` (+ interval-id membership) | group id |
-| `LabourRateMap` | `LabourRateMapping` | `{brandId}:{rate}` |
-| `BrandMap` | `BrandMapping` | brand id |
+| `ServiceInterval` | `ServiceInterval` | interval id |
+| `ServiceIntervalGroup` | `ServiceIntervalGroup` (+ interval-id membership) | group id |
+| `LabourRateMapping` | `LabourRateMapping` | `{brandId}:{rate}` |
+| `BrandMapping` | `BrandMapping` | brand id |
 
 **Why:** `Menu.BasicModelCode` is uniquely indexed
 ([`MenuModelBuilderExtensions.cs`](ADP.Menus.Data/Extensions/MenuModelBuilderExtensions.cs)), so all of
 a model's rows share one L1 partition; `WHERE c.BasicModelCode = @code` is single-partition. `ItemType`
 as L2 is the repo convention (`Vehicles` = VIN/ItemType/CompanyID). Reference tables have no
 `BasicModelCode`, so instead of denormalizing their fields onto every model-scoped doc (which would
-force a fan-out on every shared edit), they get the `__REF__` partition and are cached in the reader — a
+force a fan-out on every shared edit), they get the `__REFERENCE__` partition and are cached in the reader — a
 shared edit updates exactly one reference doc and touches no model-scoped doc. `id` = DB row id is
 soft-delete safe and gives `LastReplicationStamp` a stable key (§9).
 
@@ -219,9 +219,9 @@ soft-delete safe and gives `LastReplicationStamp` a stable key (§9).
 ```
 id="4471"  pk=["ABC12","MenuVariant"]
 id="9082"  pk=["ABC12","MenuPeriod"]      { variantId:4471, serviceIntervalId:501 }
-id="501"   pk=["__REF__","SvcInterval"]   { code:"...", valueInMeter:10000, groupId:77 }
+id="501"   pk=["__REFERENCE__","ServiceInterval"]   { code:"...", valueInMeter:10000, groupId:77 }
 
-Lookup:  SELECT * FROM c WHERE c.BasicModelCode="ABC12"   (+ cached __REF__)
+Lookup:  SELECT * FROM c WHERE c.BasicModelCode="ABC12"   (+ cached __REFERENCE__)
          → CosmosToGenerationAggregator → MenuCodeGenerator → lines
 ```
 
@@ -239,11 +239,11 @@ namespace ShiftSoftware.ADP.Menus.Generation;
 
 public class MenuGenerationRequest
 {
-    public List<GenVariant> Variants { get; set; } = [];
-    public GenReferenceData Reference { get; set; } = new();
+    public List<MenuGenerationVariant> Variants { get; set; } = [];
+    public MenuGenerationReferenceData Reference { get; set; } = new();
 }
 
-public class GenVariant
+public class MenuGenerationVariant
 {
     public long VariantID { get; set; }
     public string BasicModelCode { get; set; }
@@ -255,36 +255,36 @@ public class GenVariant
     public decimal LabourRate { get; set; }                    // primary
     public decimal? DiscountPercentage { get; set; }
     public bool HasStandaloneItems { get; set; }
-    public List<GenCountryLabourRate> CountryLabourRates { get; set; } = [];
-    public List<GenPeriod> Periods { get; set; } = [];
-    public List<GenLabour> Labours { get; set; } = [];
-    public List<GenItem>   Items   { get; set; } = [];
+    public List<MenuGenerationCountryLabourRate> CountryLabourRates { get; set; } = [];
+    public List<MenuGenerationPeriod> Periods { get; set; } = [];
+    public List<MenuGenerationLabour> Labours { get; set; } = [];
+    public List<MenuGenerationItem>   Items   { get; set; } = [];
 }
-public class GenCountryLabourRate { public long CountryID; public decimal LabourRate; }
-public class GenPeriod { public long ServiceIntervalID; }
-public class GenLabour { public long ServiceIntervalGroupID; public decimal AllowedTime, Consumable; }
-public class GenItem
+public class MenuGenerationCountryLabourRate { public long CountryID; public decimal LabourRate; }
+public class MenuGenerationPeriod { public long ServiceIntervalID; }
+public class MenuGenerationLabour { public long ServiceIntervalGroupID; public decimal AllowedTime, Consumable; }
+public class MenuGenerationItem
 {
     public long ReplacementItemVehicleModelID; public bool ReplacementItemDeleted;
     public decimal StandaloneAllowedTime;
     public List<long> ReplacementItemServiceIntervalGroupIDs = [];
     public string StandaloneOperationCode, StandaloneLabourCode, FriendlyName;
-    public GenStandaloneGroup StandaloneGroup;                  // null when ungrouped
-    public List<GenPart> Parts = [];
+    public MenuGenerationStandaloneGroup StandaloneGroup;                  // null when ungrouped
+    public List<MenuGenerationPart> Parts = [];
 }
-public class GenStandaloneGroup { public long ID; public string MenuCode, LabourCode, Name; }
-public class GenPart { public string PartNumber; public decimal? PeriodicQuantity, StandaloneQuantity; public List<GenPartPrice> CountryPrices = []; }
-public class GenPartPrice { public long CountryID; public decimal PartPrice, PartFinalPrice; }
+public class MenuGenerationStandaloneGroup { public long ID; public string MenuCode, LabourCode, Name; }
+public class MenuGenerationPart { public string PartNumber; public decimal? PeriodicQuantity, StandaloneQuantity; public List<MenuGenerationPartPrice> CountryPrices = []; }
+public class MenuGenerationPartPrice { public long CountryID; public decimal PartPrice, PartFinalPrice; }
 
-public class GenReferenceData
+public class MenuGenerationReferenceData
 {
-    public IReadOnlyDictionary<long, GenServiceInterval> Intervals { get; set; }
-    public IReadOnlyDictionary<long, GenServiceIntervalGroup> Groups { get; set; }
+    public IReadOnlyDictionary<long, MenuGenerationServiceInterval> Intervals { get; set; }
+    public IReadOnlyDictionary<long, MenuGenerationServiceIntervalGroup> Groups { get; set; }
     public IReadOnlyDictionary<string, string> LabourRateCodes { get; set; }   // key "{brandId}:{rate}" → Code
     public IReadOnlyDictionary<long, string> BrandAbbreviations { get; set; }  // brandId → abbreviation
 }
-public class GenServiceInterval { public string Code, Description; public int ValueInMeter; public long GroupID; }
-public class GenServiceIntervalGroup { public string LabourCode; public HashSet<long> ServiceIntervalIDs = []; }
+public class MenuGenerationServiceInterval { public string Code, Description; public int ValueInMeter; public long GroupID; }
+public class MenuGenerationServiceIntervalGroup { public string LabourCode; public HashSet<long> ServiceIntervalIDs = []; }
 ```
 
 Config and result:
@@ -351,7 +351,7 @@ namespace ShiftSoftware.ADP.Models.Service.Cosmos;
 // LabourRateMappingCosmosModel { BrandID, LabourRate, Code } / BrandMappingCosmosModel { BrandID, Abbreviation }
 ```
 
-Reference models set `public string BasicModelCode => NoSQLConstants.ServiceMenuRefPartition;` ("__REF__")
+Reference models set `public string BasicModelCode => NoSQLConstants.ServiceMenuReferencePartition;` ("__REFERENCE__")
 and their own `ItemType`.
 
 **`CosmosToGenerationAggregator`** (static, in `ADP.Menus.Generation`, which references `ADP.Models` for
@@ -368,9 +368,9 @@ public static MenuGenerationRequest Build(
 **Constants:**
 
 ```csharp
-public const string ServiceMenuRefPartition = "__REF__";
+public const string ServiceMenuReferencePartition = "__REFERENCE__";
 // Containers.ServiceMenus = "ServiceMenus";  PartitionKeys.ServiceMenus.{Level1="/BasicModelCode",Level2="/ItemType"}
-// ModelTypes: MenuVariant, MenuPeriod, MenuLabour, MenuItem, SvcInterval, SvcIntervalGroup, LabourRateMap, BrandMap
+// ModelTypes: MenuVariant, MenuPeriod, MenuLabour, MenuItem, ServiceInterval, ServiceIntervalGroup, LabourRateMapping, BrandMapping
 ```
 
 None of these carry `[TypeScriptModel]`; the TS type is generated later from the lookup DTO (§8).
@@ -468,7 +468,7 @@ public interface IMenuReplicationService
 
 `ADP.LookupServices/Lookup.Services` (netstandard2.0):
 
-- **`ServiceMenuReferenceCache`** loads the `__REF__` partition once into a `ServiceMenuReferenceSnapshot`;
+- **`ServiceMenuReferenceCache`** loads the `__REFERENCE__` partition once into a `ServiceMenuReferenceSnapshot`;
   TTL + explicit invalidate (O4/O10).
 - **`ServiceMenuLookupService`** (modelled on
   [`GoldenCustomerLookupService`](../ADP.LookupServices/Lookup.Services/Services/GoldenCustomerLookupService.cs)):
@@ -518,17 +518,18 @@ a health endpoint.
 
 ## 11. Open items / decisions
 
-| # | Item | Recommendation |
+| # | Item | Status / recommendation |
 |---|---|---|
-| O1 | Missing `LabourRateMapping` `(brand,rate)` in the port (original throws). | `TryGetValue`; emit line with empty `LabourCode` + flag. Note divergence from the export's fail-closed pre-check. |
-| O2 | Do item/part edits touch the `MenuItem` row (so its doc + replacement-item slice re-replicate)? | Trace save paths; add targeted re-replication if not. |
-| O3 | Derived Katashiki code vs authored `Menu.BasicModelCode` match rate in real data. | Measure first (host-side/ad-hoc; keep report in private planning). |
-| O4 | Reference-cache freshness/invalidation in the reader. | TTL + explicit invalidate; alert on cache age. |
-| O5 | Do all replicated tables need the two `IShiftEntityReplication` columns? | Confirm against the trigger before migrations. |
-| O6 | `transferRate` / country at read time. | `LookupOptions` resolver → `MenuGenerationConfig`; `Consumable` stored unscaled, scaled in the generator. |
-| O7 | `GetAllowedTimeText` culture/scale sensitivity (feeds labour code). | Pin `InvariantCulture` + fix scale in the port; apply to export too. |
-| O8 | `MenuLabourDetails.FirstOrDefault` nondeterminism. | Deterministic order (by ID) in the port; export inherits it. |
-| O9 | Read-time cost: full fold every lookup. | Warm reference cache; optional short per-model result cache. |
+| O1 | Missing `LabourRateMapping` `(brand,rate)` — the source throws. | **DECIDED (Phase 1): keep throwing.** Ported verbatim; the failure mode is preserved rather than softened. Revisit only if a real deployment hits it — it is a one-line change in `ResolveLabourRateCode`. |
+| O2 | Do item/part edits touch the `MenuItem` row (so its doc + replacement-item slice re-replicate)? | Trace save paths; add targeted re-replication if not. **Still open — needed for Phase 3.** |
+| O3 | Derived Katashiki code vs authored `Menu.BasicModelCode` match rate in real data. | Measure first (host-side/ad-hoc; keep report in private planning). **Gates Phase 6.** |
+| O4 | Reference-cache freshness/invalidation in the reader. | TTL + explicit invalidate; alert on cache age. **Phase 5.** |
+| O5 | Do all replicated tables need the two `IShiftEntityReplication` columns? | Confirm against the trigger before migrations. **Phase 3.** |
+| O6 | `transferRate` / country at read time. | `LookupOptions` resolver → `MenuGenerationConfig`; `Consumable` stored unscaled, scaled in the generator (the generic model already does this). **Phase 5.** |
+| O7 | `GetAllowedTimeText` culture sensitivity (feeds labour code). | **DECIDED: leave as-is.** Ported verbatim, ambient culture included. Judged not worth the risk of changing codes already issued to a DMS for a case the deployments do not hit. Pinned by test so the behaviour is at least visible. |
+| O8 | `MenuLabourDetails.FirstOrDefault` nondeterminism. | **RESOLVED structurally, no behaviour change.** The generic input is `List<>`-ordered, so "first match" is now a function of the aggregator's ordering rather than of EF/`HashSet` iteration. No `OrderBy` was added — that would have changed output. |
+| O9 | Read-time cost: full fold every lookup. | Warm reference cache; optional short per-model result cache. **Phase 5.** |
+| O10 | Raw (non-language-resolved) `ServiceInterval.Description` on periodic lines. | **DECIDED: leave as-is**, ported verbatim. Only bites if an interval description is ever authored multi-language. |
 
 ---
 
@@ -537,17 +538,17 @@ a health endpoint.
 - **Phase 0 — golden contract test (prerequisite). ✅ DONE.** [`ADP.Menus.Tests`](ADP.Menus.Tests/)
   (in `ADP.sln`, and run in CI via `azure-pipeline.yml`). 29 tests, all green. See §13 for exactly
   what is pinned and which open items are now characterised.
-- **Phase 1 — layer 1 (new `ADP.Menus.Generation`, netstandard2.0).** Create the project (+ `.sln`,
-  `azure-pipeline.yml` pack/push, packable metadata). `MenuGenerationRequest`/config/result; port
-  `MenuCodeGenerator` + `MenuTextHelpers` (O1/O7/O8). Add `NoSQLConstants` + `ModelTypes` entries in
-  `ADP.Models`. Prove `Generate` == Phase-0 golden output for a hand-built request.
+- **Phase 1 — layer 1 (new `ADP.Menus.Generation`, netstandard2.0). ✅ DONE.** See §14.
 - **Phase 2 — export refactor.** `EfToGenerationAggregator` (EF → generic); `MenuExportService` calls
   `MenuCodeGenerator`; margins move to the Excel report layer. No output change (Phase 0 green).
-- **Phase 3 — layer 2 + replication.** Cosmos models (`ADP.Models`) + `CosmosToGenerationAggregator`
-  (`ADP.Menus.Generation`); entities implement
-  `IShiftEntityReplication` (+ migrations); `PrepareForReplicationAsync` where denormalizing;
-  `MenuCosmosMappers`; `MenuReplicationExtensions` (per-table + `AddMenuReplications`);
-  `MenuReplicationService`.
+- **Phase 3 — layer 2 + replication.** Cosmos models in `ADP.Models`, **together with the
+  `NoSQLConstants` (`Containers.ServiceMenus`, `PartitionKeys.ServiceMenus`,
+  `ServiceMenuReferencePartition`) and the eight `ModelTypes` discriminators** — they belong with the
+  models they describe, and the partition-key paths can then use `nameof(...)` against real Cosmos
+  types instead of string literals. Plus `CosmosToGenerationAggregator` (`ADP.Menus.Generation`, which
+  gains its `ADP.Models` reference here); entities implement `IShiftEntityReplication` (+ migrations);
+  `PrepareForReplicationAsync` where denormalizing; `MenuCosmosMappers`; `MenuReplicationExtensions`
+  (per-table + `AddMenuReplications`); `MenuReplicationService`.
 - **Phase 4 — host wiring + backfill + provisioning.** Provision `ServiceMenus` (2-level PK); register the
   trigger + `AddMenuReplications`; run `ReplicateAllAsync` + `ReplicateReferenceDataAsync`; verify.
 - **Phase 5 — read side (lookup, future).** `ServiceMenuReferenceCache` + `ServiceMenuLookupService`
@@ -593,24 +594,128 @@ an interval whose group has no labour details.
   `MenuTotalPrice` discount arithmetic) — so the Phase 2 move of margins into the report layer is
   provably output-preserving.
 
-### Open items now *characterised* (each has a test that must be deliberately replaced when fixed)
+### Open items characterised here — all subsequently DECIDED as "preserve verbatim"
 
-- **O1** — `MissingLabourRateMapping_ThrowsToday_O1`: a missing `(brand, rate)` pair makes generation
-  throw `KeyNotFoundException`. When the shared generator softens this to `TryGetValue` + flag,
-  replace this test with one asserting the tolerant behaviour.
-- **O7** — `GetAllowedTimeText_IsCultureSensitiveToday_O7`: **confirmed defect**. `0.5` yields `"05"`
-  under invariant culture but `"0,5"` under `de-DE`, so a comma can reach the labour code. Harmless
-  today (the export runs in a request whose culture happens to work); a real hazard once the lookup
-  process runs the same code. Phase 1 pins `InvariantCulture` in the ported helper for both paths.
-- Also pinned as a **known quirk, not a bug to fix silently**: the trailing-zero trim makes
-  `1` and `10` (and `2` and `20`) collide onto the same allowed-time text, so two different allowed
-  times can produce the *same* labour code. "Fixing" it would change codes the DMS has already
-  received.
+Phase 0 surfaced three quirks. The decision taken before Phase 1 was to **preserve all of them**: they
+affect rare cases the deployments do not hit, and changing any would alter menu codes a DMS has
+already received. The tests below therefore assert current behaviour permanently, not temporarily.
 
-### One behaviour worth a product decision (not yet an open item)
+- **O1** — `MissingLabourRateMapping_Throws_O1`: a missing `(brand, rate)` pair makes generation
+  throw `KeyNotFoundException`. Kept: the port throws identically.
+- **O7** — `GetAllowedTimeText_IsCultureSensitive_O7`: `0.5` yields `"05"` under invariant
+  culture but `"0,5"` under `de-DE`, so a comma can reach the labour code. Kept as-is by decision;
+  the test documents it so it is at least visible rather than latent.
+- **Whole-hour collision** — the trailing-zero trim makes `1` and `10` (and `2` and `20`) collide onto
+  the same allowed-time text, so two different allowed times can produce the *same* labour code. Kept.
+- **Raw interval description** (O10) — the periodic line assigns `ServiceInterval.Description`
+  verbatim, without language resolution, so a multi-language JSON blob surfaces raw. The golden pins
+  `Description="{"en":"Description EN","ar":"Description AR"}"`. Kept; only bites if an interval
+  description is ever authored multi-language.
 
-The periodic line assigns `ServiceInterval.Description` **raw**, without `LocalizedText.Resolve`. A
-multi-language JSON blob stored in that column therefore surfaces verbatim — the golden pins
-`Description="{"en":"Description EN","ar":"Description AR"}"`. Harmless while descriptions are plain
-strings, but it means the lookup would serve raw JSON to end users if any interval is ever authored
-multi-language. Confirm whether that column is intended to be localisable before Phase 5.
+---
+
+## 14. Phase 1 — the shared generation service (DONE)
+
+New project **[`ADP.Menus.Generation`](ADP.Menus.Generation/)** — netstandard2.0, in `ADP.sln`, packed
+in CI as `ShiftSoftware.ADP.Menus.Generation`. **61 tests green** (Phase 0's 29 + 32 new).
+No production behaviour changed: `MenuExportService` is untouched — Phase 2 repoints it.
+
+| File | Role |
+|---|---|
+| [`MenuGenerationRequest.cs`](ADP.Menus.Generation/Generation/MenuGenerationRequest.cs) | The neutral input: `MenuGenerationVariant` graph + `MenuGenerationReferenceData`. No EF, no Cosmos, no report types. |
+| [`MenuGenerationConfig.cs`](ADP.Menus.Generation/Generation/MenuGenerationConfig.cs) | Country / transfer rate / language / primary-rate switch. |
+| [`GeneratedMenuLine.cs`](ADP.Menus.Generation/Generation/GeneratedMenuLine.cs) | The generic result. |
+| [`MenuTextHelpers.cs`](ADP.Menus.Generation/Generation/MenuTextHelpers.cs) | `GetAllowedTimeText` + `Resolve`, ported verbatim. |
+| [`MenuCodeGenerator.cs`](ADP.Menus.Generation/Generation/MenuCodeGenerator.cs) | The fold. Pure, deterministic, no ambient state. |
+
+**`ADP.Models` is untouched by this phase.** An earlier draft of the checklist put the `NoSQLConstants`
+and `ModelTypes` entries here, but nothing in Phase 1 uses them — `ADP.Menus.Generation` does not even
+reference `ADP.Models` — so they were dead constants describing types that did not exist yet (which is
+why their partition-key paths had to be string literals rather than `nameof`). They moved to Phase 3,
+alongside the Cosmos models they describe.
+
+### How the port is proven
+
+[`MenuCodeGeneratorPortTests`](ADP.Menus.Tests/MenuCodeGeneratorPortTests.cs) are **differential**: the
+same logical data goes to the original `MenuExportService.GenerateMenuLines` as EF entities and to
+`MenuCodeGenerator` as a hand-built request, and the outputs are compared field by field across 10
+configurations (countries with/without price rows, both languages, null and unknown language, transfer
+rates including a rounding case, primary vs country labour rate, unmapped brand).
+
+Two fixtures are maintained independently *on purpose* — a shared adapter would let a bug cancel out on
+both sides and prove nothing. **Keep [`MenuGraphFixture`](ADP.Menus.Tests/MenuGraphFixture.cs) and
+[`MenuGenerationRequestFixture`](ADP.Menus.Tests/MenuGenerationRequestFixture.cs) in lockstep.**
+
+The suite was mutation-checked: removing the consumable rounding from the generator fails 3 tests, so
+the comparison has real teeth rather than passing trivially.
+
+### The result carries every input that composed a code
+
+`GeneratedMenuLine` is deliberately **detail-rich**, not minimal. Its consumers live outside this
+package — the report exporter is in the host application, the lookup is in `ADP.LookupServices` — so
+they must be able to render or re-compose a line without re-reading the menus database or being handed
+the mapping dictionaries on the side. (Today `IMenuReportExporter` takes `BrandMappings` and
+`LabourRateMappings` as separate context precisely because the line does not carry them.)
+
+So alongside `Code` / `LabourCode` / `Description`, the line carries:
+
+| Group | Fields |
+|---|---|
+| Menu-code components | `MenuCodePrefix`, `MenuCodeSegment`, `MenuCodePostfix` (+ `BasicModelCode`) |
+| Labour-code components | `LabourOperationCode`, `AllowedTimeText`, `LabourRateCode`, `BrandAbbreviation` |
+| Brand | `BrandID`, `BrandCode` (the company code — feeds no generated code, but the DMS export writes it as a column), `BrandAbbreviation` |
+| Shape + source rows | `LineType`, `ServiceIntervalID`, `ServiceIntervalGroupID`, `MenuItemID`, `StandaloneGroupID` |
+| Money inputs | `LabourRate`, `PrimaryLabourRate` (the mapping key — fixed while the line rate follows the country), `AllowedTime`, `Consumable`, `RawConsumable` (unscaled), `DiscountPercentage` |
+| Config echo | `CountryID`, `TransferRate`, `Language` — so lines merged from several runs stay self-describing |
+| Per part | `MenuItemID` (which item it came from — grouped lines fold several), `SortOrder`, `HasCountryPrice` (distinguishes "priced 0" from "no price row"), `Cost`/`TotalCost` (nullable, opt-in — see below) |
+
+**Dealer cost is opt-in and OFF by default.** `GeneratedMenuPart.Cost` and `TotalCost` are `decimal?`
+and stay null unless the caller sets `MenuGenerationConfig.IncludePartCost`. Dealer cost belongs to the
+DMS export only and must never reach the vehicle lookup or a public web component, so the *safe* case
+is the default: a consumer can leak cost only by explicitly asking for it, never by forgetting to strip
+it. The export sets the flag; the lookup leaves it alone. Note `null` therefore means "not requested" —
+when cost IS requested, an unpriced part falls back to `0` exactly as the export does, and
+`HasCountryPrice` is what distinguishes "no price row".
+
+Recomposition is covered by tests: the components really do rebuild `Code` and `LabourCode` exactly.
+Note the menu-code segment and the model code **swap places** between periodic and standalone shapes,
+so reconstruction needs `LineType`:
+
+```
+Periodic:            "{MenuCodePrefix} {BasicModelCode} {MenuCodeSegment} {MenuCodePostfix}".Trim()
+Standalone (either): "{MenuCodePrefix} {MenuCodeSegment} {BasicModelCode} {MenuCodePostfix}".Trim()
+Labour code:         "{LabourOperationCode}{AllowedTimeText}{LabourRateCode}{BrandAbbreviation}".Trim()
+```
+
+`MenuLineType` also recovers a distinction the old `IsStandalone` flag lost — ungrouped vs grouped
+standalone. `IsStandalone` remains as a computed convenience.
+
+Still deliberately absent: the DMS report's derived margin/profit arithmetic. Those are pure functions
+of the fields above, so the report layer computes them rather than the generator carrying presentation.
+
+### Three deliberate refinements to the §4 sketch
+
+1. **`GeneratedMenuPart.Cost` exists but is opt-in** (the sketch omitted it entirely). Cost comes from
+   the same country-price row as the retail price, so excluding it outright would force the DMS export
+   to re-resolve prices and duplicate the very logic this type exists to share. Instead it is nullable
+   and gated behind `MenuGenerationConfig.IncludePartCost`, defaulting to OFF — so the lookup never
+   receives dealer cost even by accident, rather than relying on a layer-3 DTO to remember to drop it.
+2. **`MenuGenerationLabourRateKey` is a struct, not a `"{brand}:{rate}"` string.** The source keys this lookup by
+   `decimal` equality, under which `12.5` and `12.50` are the *same* key; a string key would treat them
+   as different and silently miss mappings the export resolves. Pinned by `LabourRateKey_IgnoresDecimalScale`.
+3. **Layer 1 does not reference `ADP.Models`.** It needs nothing from it, and staying free of the Cosmos
+   assembly keeps the dependency direction honest. Phase 3 adds the reference (or a separate small
+   project) when `CosmosToGenerationAggregator` lands.
+
+### One fidelity trap found and avoided
+
+The labour-rate lookup **must not be hoisted out of the standalone loops**. It throws when the mapping
+is missing, and the source only performs it once it has a line to emit — so hoisting makes a variant
+with `HasStandaloneItems = true` but no qualifying items throw where the source does not. Caught during
+implementation and locked by `PortedGenerator_DoesNotResolveLabourRate_WhenNoLinesAreProduced`.
+
+### `LineKey`
+
+`GeneratedMenuLine.LineKey` (`P|{variant}|{interval}`, `S|{variant}|{item}`, `G|{variant}|{group}`)
+identifies a line **independently of language**, so the same line can be correlated across language
+runs. Never key on `Code` for that — it is language-dependent by construction.

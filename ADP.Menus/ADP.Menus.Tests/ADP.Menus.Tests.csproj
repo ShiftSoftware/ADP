@@ -25,6 +25,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\ADP.Menus.Data\ADP.Menus.Data.csproj" />
+		<ProjectReference Include="..\ADP.Menus.Generation\ADP.Menus.Generation.csproj" />
 	</ItemGroup>
 
 </Project>
