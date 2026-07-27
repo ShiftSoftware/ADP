@@ -534,10 +534,9 @@ a health endpoint.
 
 ## 12. Phased checklist
 
-- **Phase 0 — golden contract test (prerequisite).** `ADP.Menus/ADP.Menus.Tests` (solution + CI).
-  Synthetic `MenuVariant` graph (periodic + standalone ungrouped + grouped; multi-language prefixes;
-  JSON-blob description; 0-country and ≥2-country). Pin the `(LineKey, Code, LabourCode, prices)` set
-  from today's `GenerateMenuLines`. This is the equality target.
+- **Phase 0 — golden contract test (prerequisite). ✅ DONE.** [`ADP.Menus.Tests`](ADP.Menus.Tests/)
+  (in `ADP.sln`, and run in CI via `azure-pipeline.yml`). 29 tests, all green. See §13 for exactly
+  what is pinned and which open items are now characterised.
 - **Phase 1 — layer 1 (new `ADP.Menus.Generation`, netstandard2.0).** Create the project (+ `.sln`,
   `azure-pipeline.yml` pack/push, packable metadata). `MenuGenerationRequest`/config/result; port
   `MenuCodeGenerator` + `MenuTextHelpers` (O1/O7/O8). Add `NoSQLConstants` + `ModelTypes` entries in
@@ -556,3 +555,62 @@ a health endpoint.
   aggregation equals the golden generic request; normalization; stale cache; missing container.
 - **Phase 6 — vehicle-lookup integration** (gated on O3): evaluator + flat `[TypeScriptModel]` DTO +
   web-component section; measure/monitor the join-key hit rate.
+
+---
+
+## 13. Phase 0 — what the golden contract pins (DONE)
+
+Project [`ADP.Menus.Tests`](ADP.Menus.Tests/) — net10.0, xunit.v3, referenced from `ADP.sln`, run in CI
+(`azure-pipeline.yml`, step *"ADP.Menus menu-code generation golden tests"*). **29 tests, all green.**
+No production code was changed in this phase — it only characterises current behaviour.
+
+| File | Role |
+|---|---|
+| [`MenuGraphFixture.cs`](ADP.Menus.Tests/MenuGraphFixture.cs) | Builds the synthetic in-memory `MenuVariant` graph. `GenerateMenuLines` is a pure static over object graphs, so **no database or EF is needed**. Every navigation collection is a `List<>` (not the entities' default `HashSet`) so the fixture adds no ordering nondeterminism. |
+| [`MenuLineFormatter.cs`](ADP.Menus.Tests/MenuLineFormatter.cs) | Canonical, diffable rendering of the generated lines. Invariant-culture, decimals unformatted so **scale is pinned**, line order preserved (never sorted). |
+| [`MenuGenerationGoldenTests.cs`](ADP.Menus.Tests/MenuGenerationGoldenTests.cs) | Three full-output snapshots + behavioural assertions. |
+| [`MenuTextHelperTests.cs`](ADP.Menus.Tests/MenuTextHelperTests.cs) | Pins `Utility.GetAllowedTimeText` and `LocalizedText.Resolve` — both feed generated codes and both are ported verbatim in Phase 1. |
+
+**Graph coverage:** periodic lines; standalone ungrouped; standalone grouped (folded from two items);
+multi-language JSON prefixes / operation code / group menu code; a JSON-blob interval description;
+0-country and multi-country price rows; soft-deleted item / replacement-item link / part / country
+price / country labour rate; zero and null periodic quantities; an item with no replacement-item link;
+an interval whose group has no labour details.
+
+**Three snapshots:** (1) country 2 / rate 1 / `en` / country labour rate; (2) country 0 / rate 2.5 /
+`ar` / primary labour rate; (3) unmapped brand → `Z` abbreviation fallback.
+
+### Behaviours now locked (Phase 1's port must reproduce these exactly)
+
+- Periodic code shape `"{prefix} {basicModelCode} {intervalCode} {postfix}"`, trimmed; labour code
+  shape `"{groupLabourCode}{allowedTimeText}{labourRateCode}{brandAbbrev}"`.
+- An interval whose group has **no** `MenuLabourDetails` is silently skipped (`continue`) — a missing
+  `Include` in a later refactor would drop lines exactly this quietly, hence an explicit test.
+- The standalone **grouped** line takes its allowed time from the **first** item in the group.
+- `Consumable` is scaled by `transferRate` and rounded to 2dp; parts collapse to price 0 when no
+  country price row matches (no throw, no skip).
+- All `MenuLineDTO` computed getters (`LabourCost = 10 × AllowedTime`, margin/profit percentages,
+  `MenuTotalPrice` discount arithmetic) — so the Phase 2 move of margins into the report layer is
+  provably output-preserving.
+
+### Open items now *characterised* (each has a test that must be deliberately replaced when fixed)
+
+- **O1** — `MissingLabourRateMapping_ThrowsToday_O1`: a missing `(brand, rate)` pair makes generation
+  throw `KeyNotFoundException`. When the shared generator softens this to `TryGetValue` + flag,
+  replace this test with one asserting the tolerant behaviour.
+- **O7** — `GetAllowedTimeText_IsCultureSensitiveToday_O7`: **confirmed defect**. `0.5` yields `"05"`
+  under invariant culture but `"0,5"` under `de-DE`, so a comma can reach the labour code. Harmless
+  today (the export runs in a request whose culture happens to work); a real hazard once the lookup
+  process runs the same code. Phase 1 pins `InvariantCulture` in the ported helper for both paths.
+- Also pinned as a **known quirk, not a bug to fix silently**: the trailing-zero trim makes
+  `1` and `10` (and `2` and `20`) collide onto the same allowed-time text, so two different allowed
+  times can produce the *same* labour code. "Fixing" it would change codes the DMS has already
+  received.
+
+### One behaviour worth a product decision (not yet an open item)
+
+The periodic line assigns `ServiceInterval.Description` **raw**, without `LocalizedText.Resolve`. A
+multi-language JSON blob stored in that column therefore surfaces verbatim — the golden pins
+`Description="{"en":"Description EN","ar":"Description AR"}"`. Harmless while descriptions are plain
+strings, but it means the lookup would serve raw JSON to end users if any interval is ever authored
+multi-language. Confirm whether that column is intended to be localisable before Phase 5.

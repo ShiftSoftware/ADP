@@ -139,6 +139,9 @@ steps:
  - script: dotnet test ADP.Cases/ADP.Cases.Shared.Tests
    displayName: 'ADP.Cases engine tests'
 
+ - script: dotnet test ADP.Menus/ADP.Menus.Tests
+   displayName: 'ADP.Menus menu-code generation golden tests'
+
 
  - task: NuGetToolInstaller@1
    inputs:
