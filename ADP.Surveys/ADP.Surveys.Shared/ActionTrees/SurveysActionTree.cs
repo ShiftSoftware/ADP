@@ -17,5 +17,7 @@ public class SurveysActionTree
         public readonly static BooleanAction ViewResponses = new("View Survey Responses");
         public readonly static BooleanAction ExportResponses = new("Export Responses To Excel");
         public readonly static BooleanAction CreateTestInstances = new("Create Test Survey Instances");
+        public readonly static BooleanAction IngestTriggerEvents = new("Ingest Trigger Events");
+        public readonly static BooleanAction RunScheduler = new("Run Trigger Scheduler");
     }
 }

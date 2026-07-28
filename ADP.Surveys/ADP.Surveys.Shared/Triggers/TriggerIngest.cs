@@ -63,6 +63,15 @@ public class TriggerIngestResult
     [JsonPropertyName("failed")]
     public int Failed { get; set; }
 
+    /// <summary>
+    /// How many enabled triggers across published surveys carry this batch's
+    /// <c>eventKind</c>. Zero means every item was <see cref="TriggerIngestOutcome.NoMatch"/>
+    /// because nothing is live — pullers use this to HOLD their cursor instead of
+    /// consuming candidates that a soon-to-be-published trigger should still see.
+    /// </summary>
+    [JsonPropertyName("publishedTriggers")]
+    public int PublishedTriggers { get; set; }
+
     [JsonPropertyName("items")]
     public List<TriggerIngestItemResult> Items { get; set; } = new();
 }

@@ -16,12 +16,13 @@
     <PropertyColumn Property="x => x.IntegrationId" Title="Integration ID" />
     <PropertyColumn Property="x => x.PublishedVersionNumber" Title="Published Version" />
 
-    @* Row click opens the editor; this column is the direct path to the answers.
+    @* Row click opens the editor; this column is the direct path to the instances hub
+       (every SurveyInstance — pending, sent, completed — with delivery state and answers).
        stopPropagation so the button doesn't also trigger the row's form nav. *@
-    <TemplateColumn T="SurveyListDTO" Title="Responses" Sortable="false" Filterable="false">
+    <TemplateColumn T="SurveyListDTO" Title="Instances & Responses" Sortable="false" Filterable="false">
         <CellTemplate Context="cell">
             <div @onclick:stopPropagation="true">
-                <MudTooltip Text="View responses & test-run this survey">
+                <MudTooltip Text="View instances & responses, test-run this survey">
                     <MudIconButton Icon="@Icons.Material.Filled.Quiz"
                                    Size="Size.Small"
                                    Color="Color.Primary"

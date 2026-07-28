@@ -238,6 +238,7 @@ public class PublicSurveyController : ControllerBase
     {
         var instance = await db.Set<SurveyInstance>()
             .AsNoTracking()
+            .Include(i => i.SurveyVersion)
             .FirstOrDefaultAsync(i => i.PublicID == publicId && !i.IsDeleted);
 
         if (instance is null) return NotFound();

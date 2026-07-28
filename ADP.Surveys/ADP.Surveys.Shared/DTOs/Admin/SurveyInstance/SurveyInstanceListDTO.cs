@@ -46,4 +46,17 @@ public class SurveyInstanceListDTO : ShiftEntityListDTO
 
     /// <summary>Latest response's completion time, when any.</summary>
     public DateTimeOffset? CompletedAt { get; set; }
+
+    /// <summary>Trigger that produced this instance, when event-driven; null for manual/test rows.</summary>
+    public string? TriggerId { get; set; }
+
+    /// <summary>
+    /// Next scheduled send (initial or reminder). Null when the schedule is exhausted,
+    /// the instance completed, or nothing schedules sends for it (e.g. test rows).
+    /// </summary>
+    public DateTimeOffset? NextSendAt { get; set; }
+
+    public DateTimeOffset? LastSentAt { get; set; }
+
+    public int RemindersRemaining { get; set; }
 }

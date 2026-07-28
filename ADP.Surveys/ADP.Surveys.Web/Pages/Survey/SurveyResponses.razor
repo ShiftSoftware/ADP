@@ -34,7 +34,7 @@
 <ShiftList @ref="list"
            EntitySet="@($"{SurveysOptions.ResolvedRoutePrefix}SurveyInstance")"
            T="SurveyInstanceListDTO"
-           Title="@(surveyName is null ? "Responses" : $"Responses — {surveyName}")"
+           Title="@(surveyName is null ? "Instances & Responses" : $"Instances & Responses — {surveyName}")"
            IconSvg="@Icons.Material.Filled.Quiz"
            Dense
            DisableAdd
@@ -140,6 +140,10 @@
                         {
                             <span class="responses-page__recipient">@cell.Item.Channel → @cell.Item.RecipientAddress</span>
                         }
+                        @if (!string.IsNullOrEmpty(cell.Item.TriggerId))
+                        {
+                            <span class="responses-page__recipient">trigger: @cell.Item.TriggerId</span>
+                        }
                     }
                 </div>
             </CellTemplate>
@@ -150,6 +154,36 @@
                 <MudChip T="string" Size="Size.Small" Color="@StatusColor(cell.Item.Status)" Variant="Variant.Filled">
                     @StatusLabel(cell.Item.Status)
                 </MudChip>
+            </CellTemplate>
+        </PropertyColumn>
+
+        <PropertyColumn Property="x => x.NextSendAt" Title="Delivery">
+            <CellTemplate Context="cell">
+                @* Delivery is only a live concept on active rows — Completed/Expired have
+                   nothing pending and the scheduler ignores them. *@
+                @if (cell.Item.Status is 3 or 4)
+                {
+                    <span class="responses-page__muted">—</span>
+                }
+                else if (cell.Item.NextSendAt is { } next)
+                {
+                    <div class="responses-page__delivery">
+                        <span title="@next.ToString("O")">next @next.LocalDateTime.ToString("yyyy-MM-dd HH:mm")</span>
+                        <span class="responses-page__recipient">
+                            @(cell.Item.RemindersRemaining) reminder@(cell.Item.RemindersRemaining == 1 ? "" : "s") left@(cell.Item.LastSentAt is { } sent ? $" · last sent {sent.LocalDateTime:yyyy-MM-dd HH:mm}" : "")
+                        </span>
+                    </div>
+                }
+                else
+                {
+                    <div class="responses-page__delivery">
+                        <span class="responses-page__muted">no sends scheduled</span>
+                        @if (cell.Item.LastSentAt is { } sent)
+                        {
+                            <span class="responses-page__recipient">last sent @sent.LocalDateTime.ToString("yyyy-MM-dd HH:mm")</span>
+                        }
+                    </div>
+                }
             </CellTemplate>
         </PropertyColumn>
 
@@ -221,6 +255,11 @@
     .responses-page__actions {
         white-space: nowrap;
         text-align: end;
+    }
+    .responses-page__delivery {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
     }
     .responses-page__search {
         max-width: 190px;

@@ -36,6 +36,7 @@ public class TriggerIngestService
     {
         var result = new TriggerIngestResult();
         var matches = await LoadPublishedTriggersForEventKindAsync(request.EventKind, ct);
+        result.PublishedTriggers = matches.Count(m => m.Trigger.Enabled);
 
         foreach (var item in request.Items)
         {

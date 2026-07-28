@@ -93,6 +93,17 @@ async function main() {
     assert(state!.token.length > 50, 'got a token');
   })();
 
+  await step('anonymous trigger surface rejected (401)', async () => {
+    const ingest = await api('POST', '/api/Surveys/Triggers/ingest', {
+      body: { eventKind: EVENT_KIND, items: [buildCandidate()] },
+    });
+    assertEq(ingest.status, 401, 'anonymous ingest is rejected');
+    const tick = await api('POST', '/api/Surveys/Triggers/scheduler/tick', {});
+    assertEq(tick.status, 401, 'anonymous scheduler tick is rejected');
+    const channels = await api('GET', '/api/Surveys/Triggers/channels', {});
+    assertEq(channels.status, 401, 'anonymous channels list is rejected');
+  })();
+
   await step('create survey (placeholder)', async () => {
     const draft = buildSurveyDraft('pending', tag);
     const created = await apiJson<{ Entity: { ID: string } }>('POST', '/api/Surveys/Survey', {
@@ -151,6 +162,15 @@ async function main() {
     assertEq(result.items[0].instances[0].triggerId, TRIGGER_ID, 'instance carries TriggerId');
     createdInstancePublicId = result.items[0].instances[0].publicId;
     assert(/^[0-9a-fA-F-]{36}$/.test(createdInstancePublicId), `publicId looks like a GUID ("${createdInstancePublicId}")`);
+  })();
+
+  await step('public status endpoint reports the created instance', async () => {
+    // Anonymous by design (renderer resume path). Regression guard: this used to NRE
+    // because the SurveyVersion navigation was dereferenced without being loaded.
+    const status = await apiJson<{ status: string; schemaVersion: number }>(
+      'GET', `/api/Surveys/SurveyInstances/${createdInstancePublicId}/status`, {});
+    assertEq(status.status, 'Pending', 'status === Pending (created, nothing sent)');
+    assert(status.schemaVersion >= 1, `schemaVersion is the pinned version (${status.schemaVersion})`);
   })();
 
   await step('verify SurveyInstance row snapshot in DB', () => {

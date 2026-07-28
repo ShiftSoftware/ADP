@@ -124,6 +124,16 @@ public static class SurveyModelBuilderExtensions
             x.HasIndex(a => a.KeyAtSubmission);
         });
 
+        // Pull-ingestion progress cursor — plain operational row, not a ShiftEntity
+        // (no audit/soft-delete/hashid conventions). One row per pull source, keyed
+        // by eventKind. See the entity header for semantics.
+        modelBuilder.Entity<TriggerPullCursor>(x =>
+        {
+            x.ToTable("TriggerPullCursor");
+            x.HasKey(c => c.ID);
+            x.Property(c => c.ID).HasMaxLength(100);
+        });
+
         // Place every entity owned by the Surveys package under the "Surveys" SQL
         // schema (and the matching temporal history table schema for entities that
         // carry [TemporalShiftEntity]). Mirrors the ADP.Menus pattern.

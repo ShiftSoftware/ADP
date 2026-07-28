@@ -3,7 +3,10 @@ using FluentValidation;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using ShiftSoftware.ADP.Surveys.Data.Extensions;
 using ShiftSoftware.ADP.Surveys.Data.Repositories;
 using ShiftSoftware.ADP.Surveys.Shared.ActionTrees;
@@ -132,5 +135,33 @@ public static class SurveyApiExtensions
         var options = new SurveyApiOptions();
         configure(options);
         return services.AddSurveysApiServices<TDbContext>(options, mvcBuilder);
+    }
+
+    /// <summary>
+    /// Registers pull-based trigger ingestion: the given <see cref="Services.ITriggerPullSource"/>
+    /// (the host's ~60-line query-and-project adapter over its upstream data), the shared
+    /// <see cref="Services.TriggerPullOptions"/> bound from the <c>SurveysIngest</c> config
+    /// section, the timer-agnostic <see cref="Services.TriggerPullService"/>, and the
+    /// always-on <see cref="Services.TriggerPullWorker"/> loop. Call once per source —
+    /// options and the worker register once, sources accumulate. Requires
+    /// <see cref="AddSurveysApiServices{TDbContext}(IServiceCollection, SurveyApiOptions, IMvcBuilder)"/>
+    /// to have been called (the engine's ingest service and DbContext alias come from there).
+    /// Serverless hosts wanting their own timer skip this and register
+    /// <c>TriggerPullService</c> + their source directly.
+    /// </summary>
+    public static IServiceCollection AddSurveysTriggerPull<TSource>(
+        this IServiceCollection services,
+        IConfiguration configuration)
+        where TSource : class, Services.ITriggerPullSource
+    {
+        var pullOptions = new Services.TriggerPullOptions();
+        configuration.GetSection(Services.TriggerPullOptions.SectionName).Bind(pullOptions);
+
+        services.TryAddSingleton(pullOptions);
+        services.AddScoped<Services.ITriggerPullSource, TSource>();
+        services.TryAddScoped<Services.TriggerPullService>();
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, Services.TriggerPullWorker>());
+
+        return services;
     }
 }

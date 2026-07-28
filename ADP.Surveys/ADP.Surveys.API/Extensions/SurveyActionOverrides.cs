@@ -35,6 +35,12 @@ public class SurveyActionOverrides
     /// <summary>Gate on creating dashboard test instances. Default <c>Operations.CreateTestInstances</c>.</summary>
     public BooleanAction? CreateTestInstances { get; set; }
 
+    /// <summary>Gate on the trigger ingest endpoint. Default <c>Operations.IngestTriggerEvents</c>.</summary>
+    public BooleanAction? IngestTriggerEvents { get; set; }
+
+    /// <summary>Gate on the scheduler/outbox tick endpoint. Default <c>Operations.RunScheduler</c>.</summary>
+    public BooleanAction? RunScheduler { get; set; }
+
     internal ReadWriteDeleteAction ResolvedSurveys => Surveys ?? SurveysActionTree.Surveys;
     internal ReadWriteDeleteAction ResolvedBankQuestions => BankQuestions ?? SurveysActionTree.BankQuestions;
     internal ReadWriteDeleteAction ResolvedScreenTemplates => ScreenTemplates ?? SurveysActionTree.ScreenTemplates;
@@ -42,4 +48,6 @@ public class SurveyActionOverrides
     internal BooleanAction ResolvedViewResponses => ViewResponses ?? SurveysActionTree.Operations.ViewResponses;
     internal BooleanAction ResolvedExportResponses => ExportResponses ?? SurveysActionTree.Operations.ExportResponses;
     internal BooleanAction ResolvedCreateTestInstances => CreateTestInstances ?? SurveysActionTree.Operations.CreateTestInstances;
+    internal BooleanAction ResolvedIngestTriggerEvents => IngestTriggerEvents ?? SurveysActionTree.Operations.IngestTriggerEvents;
+    internal BooleanAction ResolvedRunScheduler => RunScheduler ?? SurveysActionTree.Operations.RunScheduler;
 }
