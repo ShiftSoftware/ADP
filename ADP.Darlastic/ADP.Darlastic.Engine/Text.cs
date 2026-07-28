@@ -10,6 +10,24 @@ namespace ShiftSoftware.ADP.Darlastic.Engine;
 public static class Flags
 {
     public static readonly bool Baseline = Environment.GetEnvironmentVariable("CC_BASELINE") == "1";
+
+    /// <summary>
+    /// PER-TENANT: does e-mail participate in matching (block key + score + floor)? Ingest and
+    /// survivorship are unconditional — this switch only decides whether e-mail can MOVE a pair.
+    ///
+    /// Off by default, deliberately. E-mail's value is entirely a function of what a tenant's
+    /// sources actually put in the column: TCA's is dominated by dealer-staff mailboxes captured
+    /// on Hub SSC lookups (measured 2026-07-28 — 79 distinct addresses across 2,047 goldens, 84.7%
+    /// of them one-name duplicate groups), so it must be enabled only after that tenant's corpus
+    /// has been measured and its junk source excluded at the feed. A tenant that never sets it
+    /// scores byte-identically to the pre-e-mail engine.
+    ///
+    /// Settable (not readonly like <see cref="Baseline"/>) because it is run-scoped tenant config,
+    /// not a build mode: the host sets it from its own settings before resolving, and tests toggle
+    /// it per case. Env DARLASTIC_EMAIL_MATCHING=1 is the default for a whole process run.
+    /// </summary>
+    public static bool EmailMatching { get; set; } =
+        Environment.GetEnvironmentVariable("DARLASTIC_EMAIL_MATCHING") == "1";
 }
 
 
@@ -136,6 +154,51 @@ public static class Norm
         if (string.IsNullOrWhiteSpace(s)) return null;
         s = s.Trim().ToUpperInvariant();
         return s.Length == 17 && s.All(char.IsLetterOrDigit) && s.Distinct().Count() > 3 ? s : null;
+    }
+
+    /// <summary>
+    /// Canonical e-mail, or "" when the value cannot be one. Every transform here is
+    /// PROVABLY-SAME-MAILBOX — a rewrite two spellings of one mailbox always share — never a guess
+    /// at what the typist meant. Specifically NOT done: domain spell-correction ("gmal.com" →
+    /// "gmail.com"). If the typo'd domain is itself a real mailbox that rewrite merges two
+    /// strangers, and nothing in the corpus can say which case you're in.
+    ///
+    /// Same reasoning makes the matcher compare e-mail EXACTLY and never fuzzily. Name matching can
+    /// be fuzzy because transliteration drift is systematic (see RealMatcher.TokensAlign's skeleton
+    /// and interdental folds); local parts are a dense identifier space where a single edit
+    /// routinely separates two people ("a.smith@" / "b.smith@"). There is no structure to exploit.
+    ///
+    /// Applied:
+    ///   - trim + lowercase (domains are case-insensitive by RFC; every provider in the corpus
+    ///     treats the local part that way too)
+    ///   - drop the "+tag" suffix (universally routed to the base mailbox)
+    ///   - googlemail.com → gmail.com (a documented alias of one mailbox, not a guess)
+    ///   - Gmail ONLY: strip dots from the local part. Google documents them as insignificant; no
+    ///     other provider guarantees it, so this stays provider-gated rather than general.
+    /// </summary>
+    public static string Email(string? s)
+    {
+        if (string.IsNullOrWhiteSpace(s)) return "";
+        string e = s.Trim().ToLowerInvariant();
+        if (e.Length > 254 || e.Any(char.IsWhiteSpace)) return "";
+
+        // Split on the LAST '@' — a quoted local part may legally contain one, and taking the last
+        // keeps the domain correct for every shape that actually appears in the corpus.
+        int at = e.LastIndexOf('@');
+        if (at <= 0 || at == e.Length - 1) return "";
+        string local = e[..at], domain = e[(at + 1)..].TrimEnd('.');
+
+        if (domain == "googlemail.com") domain = "gmail.com";
+
+        // A real dotted host with a >=2-char TLD. Rejects "x@localhost", "x@a.", "x@a..b".
+        int dot = domain.LastIndexOf('.');
+        if (dot <= 0 || domain.Length - dot - 1 < 2 || domain.Contains("..")) return "";
+
+        int plus = local.IndexOf('+');
+        if (plus >= 0) local = local[..plus];
+        if (domain == "gmail.com") local = local.Replace(".", "");
+
+        return local.Length == 0 ? "" : local + "@" + domain;
     }
 }
 

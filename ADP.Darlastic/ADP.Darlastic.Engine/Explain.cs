@@ -34,6 +34,10 @@ public enum MatchFlags
     OrgLine          = 1 << 21,  // exact phone + a business/placeholder name (Company/Stock/Parts/…) — person-merge floor withheld (NOT a veto; identical org names still merge on the base)
     SameAsRef        = 1 << 22,  // one side carries a source-asserted reference to the other (explicit FK, e.g. ticket → DMS customer key)
     SameAsMerge      = 1 << 23,  // same-as floor fired → auto-merge (names consistent/aligned or absent)
+    EmailsBoth       = 1 << 24,  // both sides carry >=1 match-eligible (canonical, non-role) e-mail — a comparison was possible
+    EmailExact       = 1 << 25,  // a canonical address is shared → 1.00 (weight 0.45); never a penalty when they differ
+    EmailMerge       = 1 << 26,  // shared e-mail + names consistent/aligned (or absent) → auto-merge floor fired
+    EmailRoleOnly    = 1 << 27,  // a side's only e-mail was a role/shared mailbox (info@, sales@…) — suppressed from matching, still survives to golden
 }
 
 /// <summary>One step of a pair's scoring story, in engine execution order.</summary>

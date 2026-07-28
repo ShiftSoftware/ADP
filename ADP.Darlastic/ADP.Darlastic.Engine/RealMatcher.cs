@@ -9,24 +9,28 @@ namespace ShiftSoftware.ADP.Darlastic.Engine;
 public static class RealMatcher
 {
     /// <summary>Confidence in [0,1] for a candidate pair.</summary>
-    public static double Score(RealRecord a, RealRecord b) => ScoreCore(a, b, useAddress: true, useVin: true, out _, null);
+    public static double Score(RealRecord a, RealRecord b) => ScoreCore(a, b, useAddress: true, useVin: true, useEmail: true, out _, null);
 
     /// <summary>useAddress:false scores without the address signal — the diagnostic path that
     /// quantifies what address corroboration changed (`dotnet run real` prints the delta).</summary>
-    public static double Score(RealRecord a, RealRecord b, bool useAddress) => ScoreCore(a, b, useAddress, useVin: true, out _, null);
+    public static double Score(RealRecord a, RealRecord b, bool useAddress) => ScoreCore(a, b, useAddress, useVin: true, useEmail: true, out _, null);
 
     /// <summary>useAddress/useVin toggles — the ablation path that quantifies what each lever changed
     /// (`dotnet run real` / `eval` print the with-vs-without delta).</summary>
-    public static double Score(RealRecord a, RealRecord b, bool useAddress, bool useVin) => ScoreCore(a, b, useAddress, useVin, out _, null);
+    public static double Score(RealRecord a, RealRecord b, bool useAddress, bool useVin) => ScoreCore(a, b, useAddress, useVin, useEmail: true, out _, null);
+
+    /// <summary>Full ablation triple. useEmail:false measures what e-mail changed on a tenant that has
+    /// it enabled; on a tenant with <see cref="Flags.EmailMatching"/> off the signal is inert either way.</summary>
+    public static double Score(RealRecord a, RealRecord b, bool useAddress, bool useVin, bool useEmail) => ScoreCore(a, b, useAddress, useVin, useEmail, out _, null);
 
     /// <summary>Score + which rules participated — the case browser's category source. Flags are
     /// bit-ors on the live path, cheap enough for the 12.4M-pair index walk.</summary>
-    public static double Score(RealRecord a, RealRecord b, out MatchFlags flags) => ScoreCore(a, b, useAddress: true, useVin: true, out flags, null);
+    public static double Score(RealRecord a, RealRecord b, out MatchFlags flags) => ScoreCore(a, b, useAddress: true, useVin: true, useEmail: true, out flags, null);
 
     /// <summary>Explain-mode: same scoring, plus a step-by-step trace for ONE pair on demand.</summary>
-    public static double Explain(RealRecord a, RealRecord b, MatchTrace trace) => ScoreCore(a, b, useAddress: true, useVin: true, out _, trace);
+    public static double Explain(RealRecord a, RealRecord b, MatchTrace trace) => ScoreCore(a, b, useAddress: true, useVin: true, useEmail: true, out _, trace);
 
-    private static double ScoreCore(RealRecord a, RealRecord b, bool useAddress, bool useVin, out MatchFlags flags, MatchTrace? trace)
+    private static double ScoreCore(RealRecord a, RealRecord b, bool useAddress, bool useVin, bool useEmail, out MatchFlags flags, MatchTrace? trace)
     {
         flags = MatchFlags.None;
         double score = 0, weight = 0;
@@ -84,6 +88,48 @@ public static class RealMatcher
             score += 0.10 * (idEqual ? 1 : 0);
             weight += 0.10;
             trace?.Add("signal", "National ID", idEqual ? "IDs equal → 1.00 (weight 0.10)" : "IDs present but different → 0.00 here; conflict penalty applies below (weight 0.10)");
+        }
+
+        // E-mail — a contact key like phone, but ASYMMETRIC evidence like VIN and address: weight is
+        // added ONLY when an address is actually shared, and a non-match NEVER penalizes. One person
+        // routinely holds several mailboxes — the TCA corpus has exactly this shape, one human as
+        // 'g.foerster@toyota-centralasia.com' at one source and 'foerster.gerald@gmail.com' at
+        // another — so scoring a non-match as 0.00 at full weight would actively SPLIT true matches.
+        // The same asymmetry makes the signal strictly additive: enabling e-mail on a tenant can only
+        // ever raise a pair's confidence, never lower it, so it cannot regress a prior resolve.
+        //
+        // Comparison is EXACT on the canonical form (see Norm.Email for why fuzzy local-part matching
+        // is unsafe). Role/shared mailboxes are removed by MatchEmails before they get here.
+        string? sharedEmail = null;
+        bool emailExact = false;
+        if (useEmail && Flags.EmailMatching && !Flags.Baseline)
+        {
+            var emailsA = MatchEmails(a);
+            var emailsB = MatchEmails(b);
+            if (emailsA.Count > 0 && emailsB.Count > 0)
+            {
+                flags |= MatchFlags.EmailsBoth;
+                sharedEmail = emailsA.Find(e => emailsB.Contains(e, StringComparer.Ordinal));
+                emailExact = sharedEmail is not null;
+                if (emailExact)
+                {
+                    flags |= MatchFlags.EmailExact;
+                    score += 0.45;
+                    weight += 0.45;
+                    trace?.Add("signal", "E-mail", $"exact shared address ({sharedEmail}) → 1.00 (weight 0.45)");
+                }
+                else trace?.Add("signal", "E-mail",
+                    "addresses on both sides but none shared — no signal (one person holds several mailboxes; never a penalty)");
+            }
+            else if (HasRoleOnlyEmail(a) || HasRoleOnlyEmail(b))
+            {
+                // "Suppressed" is a different answer from "absent", and the steward has to be able to
+                // see which one happened when asking why a pair didn't merge on e-mail.
+                flags |= MatchFlags.EmailRoleOnly;
+                trace?.Add("signal", "E-mail",
+                    "a side's only address is a role/shared mailbox (info@, sales@, …) — one mailbox fronting many people is contact info, not identity evidence; suppressed");
+            }
+            else trace?.Add("signal", "E-mail", "no usable address on one side — signal skipped");
         }
 
         // VIN — the corroborating key that breaks the name-similarity ceiling (build plan step 4).
@@ -145,8 +191,14 @@ public static class RealMatcher
         // A shared (positive) VIN counts as corroboration — name is no longer the ONLY signal — so
         // it lifts the damp the same way a phone/ID does (two records of one hyper-common name on one serviced car are the
         // corroborated case the damp exists to spare, not the common-name-stranger case it targets).
+        // A shared e-mail lifts the damp for the same reason a shared VIN does: name is no longer the
+        // ONLY signal. Without this the damp silently defeats the e-mail rule on the exact pairs it
+        // exists to catch — two records of one person, same name, same address, no phone on either
+        // side (the TCA duplicate-golden shape) would score a perfect 1.00 and then be dragged to
+        // 0.70, below every merge band. Gated on a SHARED address, not on merely having one, since a
+        // non-match contributes nothing.
         bool vinPositive = vinClass is VinClass.SoldOverlap or VinClass.Serviced;
-        if (namesBoth && !phonesBoth && !idsBoth && !vinPositive)
+        if (namesBoth && !phonesBoth && !idsBoth && !vinPositive && !emailExact)
         {
             conf *= 0.70;
             flags |= MatchFlags.NameOnlyDamp;
@@ -343,6 +395,28 @@ public static class RealMatcher
             }
             else trace?.Add("gate", "Same-entity reference held back",
                 "explicit FK but the names point to different people — possibly a ticket raised on the wrong customer record; steward band on the weighted base", conf);
+        }
+
+        // Shared e-mail → auto-merge floor, name-gated exactly like the sold-VIN and same-as rules. A
+        // personal mailbox is near-king-key grade (it belongs to one person by construction), so let it
+        // cross the line with a weak or absent name the way an exact phone does. But data entry puts
+        // the WRONG person's address on a record often enough that a genuinely different name has to
+        // hold the pair in the steward band: TCA's 'b.rustam@gsr.net' carries three distinct staff
+        // names, which is exactly the shape this gate must refuse to merge.
+        // No org-line guard here (unlike the phone path): a shared COMPANY mailbox is already removed
+        // by the role filter, and two records of one company on one address is a legitimate merge.
+        // Sits before the conflict penalties so a national-ID conflict still crushes it (×0.3).
+        if (emailExact)
+        {
+            if (!namesBoth || NameConsistent(a.NormName, b.NormName) || GivenNamesMatch(a.NormName, b.NormName))
+            {
+                conf = Math.Max(conf, namesBoth && NameConsistent(a.NormName, b.NormName) ? 0.95 : 0.91);
+                flags |= MatchFlags.EmailMerge;
+                trace?.Add("gate", "Shared e-mail decisive",
+                    $"shared address ({sharedEmail}) + names consistent/aligned (or no name to contradict) → auto-merge floor", conf);
+            }
+            else trace?.Add("gate", "Shared e-mail held back",
+                $"shared address ({sharedEmail}) but the names point to different people — a mailbox gets entered on the wrong record, and a staff mailbox fronts several people; steward band on the weighted base", conf);
         }
 
         // Conflict penalties — only on strong, plausibility-filtered evidence.
@@ -584,6 +658,55 @@ public static class RealMatcher
     private static bool IsLikelyOrg(string normName) =>
         normName.Split(' ', StringSplitOptions.RemoveEmptyEntries).Any(OrgTokens.Contains);
 
+    // Role / shared mailboxes: ONE address that fronts MANY people, so it is contact information but
+    // never identity evidence. This is the only guard e-mail needs — and, on the real corpus, the only
+    // one that is safe. Both tempting alternatives were measured against TCA (2026-07-28) and both
+    // destroy true matches:
+    //   - demote by DOMAIN: 'g.foerster@toyota-centralasia.com' is one human on the distributor's own
+    //     domain, and it is precisely the duplicate pair e-mail is supposed to merge.
+    //   - demote by FREQUENCY: the highest-frequency addresses in the tenant are ONE staff member
+    //     duplicated hundreds of times (308 goldens under a single distinct name) — the thing that
+    //     should merge, not the thing that should be suppressed.
+    // What actually separates the two is the LOCAL PART naming a function rather than a person, which
+    // is a property of the address itself and needs no corpus statistics to evaluate.
+    private static readonly HashSet<string> RoleLocalParts = new(StringComparer.Ordinal)
+    {
+        "info", "sales", "service", "admin", "office", "reception", "support", "contact",
+        "noreply", "no-reply", "donotreply", "help", "enquiries", "inquiries",
+        "marketing", "hr", "careers", "jobs", "billing", "accounts", "mail", "test",
+    };
+
+    /// <summary>True when a canonical address's local part names a FUNCTION rather than a person.
+    /// Public so a host can audit what its corpus would suppress before enabling e-mail matching.</summary>
+    public static bool IsRoleEmail(string canonicalEmail)
+    {
+        int at = canonicalEmail.IndexOf('@');
+        return at > 0 && RoleLocalParts.Contains(canonicalEmail[..at]);
+    }
+
+    /// <summary>A record's MATCH-ELIGIBLE addresses: canonical form, deduplicated, role mailboxes
+    /// dropped. Ingest and survivorship keep every address (the golden surfaces one for
+    /// contactability) — this is only the subset allowed to move a pair's score.</summary>
+    private static List<string> MatchEmails(RealRecord r)
+    {
+        if (r.Emails is not { Length: > 0 }) return [];
+        var eligible = new List<string>(r.Emails.Length);
+        foreach (var raw in r.Emails)
+        {
+            string canonical = Norm.Email(raw);
+            if (canonical.Length > 0 && !IsRoleEmail(canonical) && !eligible.Contains(canonical, StringComparer.Ordinal))
+                eligible.Add(canonical);
+        }
+        return eligible;
+    }
+
+    /// <summary>Carries e-mail, but every usable one is a role mailbox — the "suppressed, not absent"
+    /// case, which is a different answer to "why didn't these merge" and is traced as such.</summary>
+    private static bool HasRoleOnlyEmail(RealRecord r) =>
+        r.Emails is { Length: > 0 }
+        && r.Emails.Any(e => Norm.Email(e) is { Length: > 0 } c && IsRoleEmail(c))
+        && MatchEmails(r).Count == 0;
+
     private static string Suffix8(string phone) => phone.Length <= 8 ? phone : phone[^8..];
 
     // VIN-share classification + the P7 ownership-period gate (build plan step 4). Strength order
@@ -675,7 +798,9 @@ public static class RealMatcher
             // must not explode the candidate set. Tracked + reported separately, never silently truncated.
             bool isVin = key[0] == 'V';
             if (isVin && list.Count > result.MaxVinBlock) result.MaxVinBlock = list.Count;
-            bool capped = key[0] is 'P' or 'S' or 'I' or 'V';
+            // E-mail blocks are capped with the identifier keys, not the name keys: a shared mailbox
+            // that slipped past the role filter must not explode the candidate set.
+            bool capped = key[0] is 'P' or 'S' or 'I' or 'V' or 'E';
             int cap = capped ? phoneBlockCap : nameBlockCap;
             if (list.Count > cap)
             {
@@ -683,6 +808,7 @@ public static class RealMatcher
                 result.SkippedBlockRecords += list.Count;
                 if (key[0] is 'P' or 'S' or 'I') result.SkippedPhoneBlocks++; // placeholder numbers like '...0000' (54 rows)
                 if (isVin) result.SkippedVinBlocks++;                          // fleet / dealer-plate VINs
+                if (key[0] == 'E') result.SkippedEmailBlocks++;                // an unlisted shared/role mailbox
                 if (keepKeyMap) result.CappedKeys?.Add(key, list.Count);
                 continue;
             }
@@ -721,6 +847,12 @@ public static class RealMatcher
             var seenVin = new HashSet<string>();
             foreach (var l in r.VinLinks) if (seenVin.Add(l.Vin)) yield return "V:" + l.Vin;
         }
+        // E-mail co-blocks every profile sharing a mailbox. Gated on the per-tenant switch so a tenant
+        // with e-mail off emits byte-identical keys to the pre-e-mail engine and pays nothing for the
+        // feature existing. Role mailboxes are already filtered out by MatchEmails — without that, one
+        // 'info@' address would co-block every customer who ever wrote to the company.
+        if (Flags.EmailMatching)
+            foreach (var e in MatchEmails(r)) yield return "E:" + e;
         if (r.NormName.Length >= 6) yield return "N:" + r.NormName[..6];
         var tokens = r.NormName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         if (tokens.Length >= 2)
@@ -741,7 +873,7 @@ public static class RealMatcher
     public sealed class BlockingResult
     {
         public List<List<int>> Blocks = [];
-        public int SkippedBlocks, SkippedPhoneBlocks, SkippedVinBlocks, MaxVinBlock;
+        public int SkippedBlocks, SkippedPhoneBlocks, SkippedVinBlocks, SkippedEmailBlocks, MaxVinBlock;
         public long SkippedBlockRecords;
         /// <summary>key → members, uncapped blocks only; populated when BuildBlocks(keepKeyMap: true) (case browser).</summary>
         public Dictionary<string, List<int>>? KeyBlocks = new();

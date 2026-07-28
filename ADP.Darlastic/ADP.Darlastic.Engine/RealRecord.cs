@@ -39,7 +39,10 @@ public sealed record RealRecord(
     string? Gender = null,    // "m"/"f" when the Gender column is a clean M/F; null otherwise (~75% filled, male-skewed)
     VinLink[]? VinLinks = null,   // VS-sale / Labor-service VIN ties, joined from VSDatas/SOLabordatas by (dealer,magic); null until VinIngest.AttachTo runs
     bool IsOrgPlaceholder = false,   // dealer-self / placeholder org (Parts Stock, the dealer's own name) — excluded from matching (BlockKeysOf yields nothing)
-    string[]? Emails = null,      // normalized (lowercased, trimmed) e-mail addresses; ingested + survived, not yet a matching signal
+    string[]? Emails = null,      // e-mail addresses as the source gave them (feed-level shape validation only).
+                                  // Canonicalized for comparison by Norm.Email at match time, NOT at ingest — the stored
+                                  // value stays the one the customer supplied. Always ingested + survived to the golden;
+                                  // participates in MATCHING only where Flags.EmailMatching is on (per-tenant).
     string[]? SameAsRefs = null); // source-asserted same-entity references to OTHER profiles, as "sourceSystem|sourceRecordId"
                                   // keys (e.g. a CRM ticket carrying the DMS customer key it was raised for). An explicit
                                   // FK the matcher treats as king-key-grade evidence — still name-gated, never blind.
