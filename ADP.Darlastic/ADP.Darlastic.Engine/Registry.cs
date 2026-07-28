@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Data.SqlClient;
+using ShiftSoftware.ADP.Darlastic.Shared;
 
 namespace ShiftSoftware.ADP.Darlastic.Engine;
 
@@ -335,9 +336,15 @@ public static class Registry
     }
 
     /// <summary>Steward-surface tables (Phase 5). AuditEntry records EVERY steward action
-    /// (verdicts, flags, future merges/splits/overrides) — immutable, append-only. StewardDecision
-    /// holds the engine-honored constraints (merge / split / sticky override); empty until the
-    /// real steward mutations ship — the engine will replay Active rows as hard constraints.</summary>
+    /// (verdicts, flags, future splits/overrides) — immutable, append-only. StewardDecision holds
+    /// the engine-honored constraints; <see cref="RecordStewardVerdict"/> writes them and every
+    /// resolve replays the Active rows via <see cref="LoadStewardConstraints"/>.
+    ///
+    /// <para>For a pair verdict (Kind 'merge' / 'separate') the authoritative key is <c>Value</c> —
+    /// the canonical <see cref="Merge.PairKey(RealRecord, RealRecord)"/> — with side A copied into
+    /// SourceSystem/SourceRecordId for record-scoped queries. IdentityID/AttrType stay NULL; those
+    /// carry the sticky attribute overrides of a later steward slice, which is why this table is a
+    /// discriminated union on Kind rather than a pair table.</para></summary>
     private const string StewardDdl = $"""
         IF OBJECT_ID('Darlastic.AuditEntry') IS NULL
         CREATE TABLE Darlastic.AuditEntry (
@@ -432,6 +439,118 @@ public static class Registry
         cmd.Parameters.AddWithValue("@t", targetKey);
         cmd.Parameters.AddWithValue("@p", (object?)payloadJson ?? DBNull.Value);
         cmd.ExecuteNonQuery();
+    }
+
+    /// <summary>
+    /// Load the Active steward constraints for a resolve to replay. Returns
+    /// <see cref="StewardConstraints.None"/> when the table doesn't exist yet, so a registry that
+    /// predates the steward tables still resolves — the constraint set is additive evidence, and a
+    /// missing table means "no verdicts", not "broken registry".
+    /// </summary>
+    public static StewardConstraints LoadStewardConstraints()
+    {
+        using var conn = new SqlConnection(ConnectionString);
+        conn.Open();
+        if (Convert.ToInt32(Scalar(conn, "SELECT CASE WHEN OBJECT_ID('Darlastic.StewardDecision') IS NULL THEN 0 ELSE 1 END")) == 0)
+            return StewardConstraints.None;
+
+        var c = new StewardConstraints();
+        using var cmd = new SqlCommand(
+            "SELECT Kind, Value FROM Darlastic.StewardDecision WHERE Active = 1 AND Kind IN ('merge','separate') AND Value IS NOT NULL", conn);
+        using var r = cmd.ExecuteReader();
+        while (r.Read()) c.Add(r.GetString(0), r.GetString(1));
+        return c;
+    }
+
+    /// <summary>
+    /// Record one steward verdict on a queued pair: the immutable <c>AuditEntry</c> always, plus an
+    /// Active <c>StewardDecision</c> when the verdict constrains the engine
+    /// (<see cref="StewardVerdict.IsConstraint"/>).
+    ///
+    /// <para>Both writes share one transaction, because the pair (audit, constraint) is the record
+    /// of a human decision: an audit row without its constraint says a steward decided something
+    /// the engine will ignore, and a constraint without its audit row is an unattributed change to
+    /// identity resolution. Neither half is worth keeping alone.</para>
+    ///
+    /// <para>A new verdict SUPERSEDES the pair's prior decisions (Active → 0) rather than stacking,
+    /// so <see cref="LoadStewardConstraints"/> can read Active rows without tie-breaking on
+    /// timestamps. The superseded rows stay for history.</para>
+    /// </summary>
+    /// <returns>The number of prior decisions this verdict superseded.</returns>
+    public static int RecordStewardVerdict(string actor, string verdict, string pairKey, float score, string? note)
+    {
+        if (!StewardVerdict.IsKnown(verdict))
+            throw new ArgumentException($"Unknown steward verdict '{verdict}'.", nameof(verdict));
+        if (string.IsNullOrWhiteSpace(pairKey))
+            throw new ArgumentException("A steward verdict needs the canonical pair key.", nameof(pairKey));
+
+        using var conn = new SqlConnection(ConnectionString);
+        conn.Open();
+        if (!HostManagedSchema)
+        {
+            Exec(conn, "IF SCHEMA_ID('Darlastic') IS NULL EXEC('CREATE SCHEMA Darlastic')");
+            Exec(conn, StewardDdl);
+        }
+        else if (Convert.ToInt32(Scalar(conn, "SELECT CASE WHEN OBJECT_ID('Darlastic.StewardDecision') IS NULL THEN 0 ELSE 1 END")) == 0)
+            throw new InvalidOperationException(
+                "DARLASTIC_SCHEMA_MANAGED=1 but Darlastic.StewardDecision does not exist — apply the host's migrations before steward actions.");
+
+        var payload = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            pairKey,
+            verdict,
+            score,
+            note,
+        });
+
+        using var tx = conn.BeginTransaction();
+        int superseded;
+        using (var sup = new SqlCommand(
+            "UPDATE Darlastic.StewardDecision SET Active = 0 WHERE Active = 1 AND Value = @k AND Kind IN ('merge','separate')", conn, tx))
+        {
+            sup.Parameters.AddWithValue("@k", pairKey);
+            superseded = sup.ExecuteNonQuery();
+        }
+
+        if (StewardVerdict.IsConstraint(verdict))
+        {
+            // Side A goes into the indexed source columns so "every decision touching this record"
+            // is answerable; Value stays the authoritative key the engine replays on.
+            var (srcA, idA) = SplitPairSideA(pairKey);
+            using var ins = new SqlCommand("""
+                INSERT INTO Darlastic.StewardDecision (AtUtc, Actor, Kind, IdentityID, SourceSystem, SourceRecordId, AttrType, Value, Active, Payload)
+                VALUES (SYSUTCDATETIME(), @a, @k, NULL, @src, @rid, NULL, @v, 1, @p)
+                """, conn, tx);
+            ins.Parameters.AddWithValue("@a", actor);
+            ins.Parameters.AddWithValue("@k", verdict);
+            ins.Parameters.AddWithValue("@src", (object?)srcA ?? DBNull.Value);
+            ins.Parameters.AddWithValue("@rid", (object?)idA ?? DBNull.Value);
+            ins.Parameters.AddWithValue("@v", pairKey);
+            ins.Parameters.AddWithValue("@p", payload);
+            ins.ExecuteNonQuery();
+        }
+
+        using (var aud = new SqlCommand(
+            "INSERT INTO Darlastic.AuditEntry (AtUtc, Actor, Action, TargetKey, Payload) VALUES (SYSUTCDATETIME(), @a, @ac, @t, @p)", conn, tx))
+        {
+            aud.Parameters.AddWithValue("@a", actor);
+            aud.Parameters.AddWithValue("@ac", verdict);
+            aud.Parameters.AddWithValue("@t", pairKey);
+            aud.Parameters.AddWithValue("@p", payload);
+            aud.ExecuteNonQuery();
+        }
+
+        tx.Commit();
+        return superseded;
+    }
+
+    /// <summary>Source system + record id of the pair key's first side; (null, null) if malformed.</summary>
+    private static (string? Src, string? Id) SplitPairSideA(string pairKey)
+    {
+        int tilde = pairKey.IndexOf('~');
+        var side = tilde > 0 ? pairKey[..tilde] : pairKey;
+        int colon = side.IndexOf(':');
+        return colon > 0 && colon < side.Length - 1 ? (side[..colon], side[(colon + 1)..]) : (null, null);
     }
 
     // ------------------------------------------------------------------ the resolve run
@@ -1070,19 +1189,11 @@ public static class Registry
             ("SourceSystemB", typeof(string)), ("SourceRecordIdB", typeof(string)));
         foreach (var (a, b, score) in pairs)
         {
-            var (x, y) = CanonicalPair(records[a], records[b]);
-            qt.Rows.Add($"{x.SourceSystem}:{x.SourceRecordId}~{y.SourceSystem}:{y.SourceRecordId}",
+            var (x, y) = Merge.CanonicalPair(records[a], records[b]);
+            qt.Rows.Add(Merge.PairKey(x, y),
                 runId, score, x.SourceSystem, x.SourceRecordId, y.SourceSystem, y.SourceRecordId);
         }
         BulkInto(conn, tx, qt, "Darlastic.StewardQueue");
-    }
-
-    /// <summary>Same canonical pair order the case browser's PairKey/audit keys use.</summary>
-    private static (RealRecord X, RealRecord Y) CanonicalPair(RealRecord a, RealRecord b)
-    {
-        int c = string.CompareOrdinal(a.SourceSystem, b.SourceSystem);
-        if (c == 0) c = string.CompareOrdinal(a.SourceRecordId, b.SourceRecordId);
-        return c <= 0 ? (a, b) : (b, a);
     }
 
     /// <summary>

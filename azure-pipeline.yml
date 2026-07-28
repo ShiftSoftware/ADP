@@ -146,6 +146,9 @@ steps:
  - script: dotnet test ADP.Menus/ADP.Menus.Tests
    displayName: 'ADP.Menus menu-code generation golden tests'
 
+ - script: dotnet test ADP.Darlastic/ADP.Darlastic.Engine.Tests
+   displayName: 'ADP.Darlastic engine tests'
+
 
  - task: NuGetToolInstaller@1
    inputs:

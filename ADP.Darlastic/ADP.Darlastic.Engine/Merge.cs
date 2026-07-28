@@ -49,23 +49,83 @@ public static class Merge
         /// queue. Collected here (the only full pair walk a resolve does) so the registry can
         /// PERSIST the queue and a steward surface can serve it without re-scoring the corpus.</summary>
         public List<(int A, int B, float Score)> StewardPairs = [];
+
+        /// <summary>Edges unioned because a steward said "same", not because the score cleared the
+        /// line — the human's contribution to this run's clustering, worth reporting separately so
+        /// a resolve's metrics never credit the matcher for a person's judgement.</summary>
+        public int StewardForcedEdges;
+        /// <summary>Auto-merge edges dropped because a steward said "different".</summary>
+        public int StewardVetoedEdges;
+        /// <summary>Band pairs kept out of the queue because they were already decided.</summary>
+        public int StewardSuppressedPairs;
+        /// <summary>Active constraints that matched no candidate pair this run — the source record
+        /// went away, or blocking no longer brings the two together. Surfaced because a constraint
+        /// set that silently stops applying is indistinguishable from one that never worked.</summary>
+        public int StewardUnmatchedConstraints;
     }
 
     /// <summary>The steward band's lower edge — pairs at or above it (but below auto-merge) queue
     /// for human adjudication.</summary>
     public const double StewardThreshold = 0.80;
 
+    /// <summary>The canonical key for a record pair: "src:id~src:id", ordered so either argument
+    /// order yields the same string. THE identifier for a pair across the whole system — the
+    /// persisted queue, the case browser's audit rows, and the steward decisions the engine
+    /// replays all key on this, and they must be built here so the formats cannot drift.</summary>
+    public static string PairKey(RealRecord a, RealRecord b)
+    {
+        var (x, y) = CanonicalPair(a, b);
+        return $"{x.SourceSystem}:{x.SourceRecordId}~{y.SourceSystem}:{y.SourceRecordId}";
+    }
+
+    /// <summary>Canonical (stable) ordering of a record pair — ordinal by source, then record id.</summary>
+    public static (RealRecord X, RealRecord Y) CanonicalPair(RealRecord a, RealRecord b)
+    {
+        int c = string.CompareOrdinal(a.SourceSystem, b.SourceSystem);
+        if (c == 0) c = string.CompareOrdinal(a.SourceRecordId, b.SourceRecordId);
+        return c <= 0 ? (a, b) : (b, a);
+    }
+
     /// <summary>
     /// Exhaustive merge: walk the blocks, union every pair scoring >= threshold. The earlier
     /// scoring pass only kept a per-band SAMPLE, so we re-score here for a faithful clustering
     /// (the score function is cheap and deterministic).
+    ///
+    /// <para><paramref name="constraints"/> carries the steward verdicts this run must honor (see
+    /// <see cref="StewardConstraints"/>). They are resolved to record INDICES once, up front, so
+    /// the inner loop — which runs into the tens of millions of pairs — stays a packed-long set
+    /// probe and never builds a pair-key string per candidate.</para>
     /// </summary>
-    public static Result ClusterFromBlocks(IReadOnlyList<RealRecord> records, RealMatcher.BlockingResult blocking, double mergeThreshold = 0.90)
+    public static Result ClusterFromBlocks(IReadOnlyList<RealRecord> records, RealMatcher.BlockingResult blocking,
+        double mergeThreshold = 0.90, StewardConstraints? constraints = null)
     {
         int n = records.Count;
         var uf = new UnionFind(n);
 
+        // Resolve pair-key constraints to packed index pairs. Records are keyed by (source, id);
+        // a decision naming a record this run didn't load simply doesn't apply — counted, not fatal,
+        // because sources legitimately come and go between runs.
+        var forcedMerge = new List<(int A, int B)>();
+        var forcedSeparate = new HashSet<long>();
+        var decided = new HashSet<long>();
+        int unmatched = 0;
+        if (constraints is not null && !constraints.IsEmpty)
+        {
+            var byKey = new Dictionary<(string, string), int>(records.Count);
+            for (int i = 0; i < records.Count; i++) byKey[(records[i].SourceSystem, records[i].SourceRecordId)] = i;
+
+            foreach (var pairKey in constraints.DecidedPairKeys)
+            {
+                if (!TryResolvePair(pairKey, byKey, out int a, out int b)) { unmatched++; continue; }
+                long packed = ((long)a << 32) | (uint)b;
+                decided.Add(packed);
+                if (constraints.ForcesSeparate(pairKey)) forcedSeparate.Add(packed);
+                else forcedMerge.Add((a, b));
+            }
+        }
+
         long edges = 0;
+        int vetoed = 0, suppressed = 0;
         var steward = new List<(int, int, float)>();
         var seen = new HashSet<long>();
         foreach (var block in blocking.Blocks)
@@ -73,16 +133,32 @@ public static class Merge
                 for (int j = i + 1; j < block.Count; j++)
                 {
                     int a = Math.Min(block[i], block[j]), b = Math.Max(block[i], block[j]);
-                    if (a == b || !seen.Add(((long)a << 32) | (uint)b)) continue;
+                    if (a == b) continue;
+                    long packed = ((long)a << 32) | (uint)b;
+                    if (!seen.Add(packed)) continue;
                     double s = RealMatcher.Score(records[a], records[b]);
-                    if (s >= mergeThreshold) { uf.Union(a, b); edges++; }
-                    else if (s >= StewardThreshold) steward.Add((a, b, (float)s));
+                    if (s >= mergeThreshold)
+                    {
+                        // A steward who said "different" outranks the score on THIS edge.
+                        if (forcedSeparate.Contains(packed)) { vetoed++; continue; }
+                        uf.Union(a, b); edges++;
+                    }
+                    else if (s >= StewardThreshold)
+                    {
+                        if (decided.Contains(packed)) { suppressed++; continue; }
+                        steward.Add((a, b, (float)s));
+                    }
                 }
+
+        // Steward "same" verdicts union AFTER the score walk and BEFORE the transitive filter
+        // below, so a pair the steward settled also settles every band pair it transitively
+        // resolves — the human's decision propagates exactly as an auto-merge edge would.
+        foreach (var (a, b) in forcedMerge) if (uf.Union(a, b)) edges++;
 
         // A pair judged [0.80,0.90) can still land in the SAME identity via other edges
         // (transitive auto-merge) — that is a settled question, not steward work. Filter when
         // the union-find is final (adversarial review 2026-07-19 measured 32% of the raw band
-        // already-merged on the full TIQ corpus).
+        // already-merged on a full tenant corpus).
         steward.RemoveAll(p => uf.Find(p.Item1) == uf.Find(p.Item2));
 
         var parent = uf.Parent;
@@ -97,6 +173,10 @@ public static class Merge
             MultiRecordIdentities = size.Values.Count(v => v > 1),
             LargestCluster = size.Count == 0 ? 0 : size.Values.Max(),
             StewardPairs = steward,
+            StewardForcedEdges = forcedMerge.Count,
+            StewardVetoedEdges = vetoed,
+            StewardSuppressedPairs = suppressed,
+            StewardUnmatchedConstraints = unmatched,
         };
         foreach (var v in size.Values) result.ClusterSizeHistogram[v] = result.ClusterSizeHistogram.GetValueOrDefault(v) + 1;
         return result;
@@ -141,6 +221,38 @@ public static class Merge
         return (clusters.Count, records.Count);
 
         static string Q(string s) => $"\"{s.Replace("\"", "\"\"")}\"";
+    }
+
+    /// <summary>
+    /// Map a canonical pair key back to the two record indices of THIS run, normalized to
+    /// (min, max) index order so the result packs identically to the keys the scoring loop builds.
+    /// Returns false when the key is malformed or either side names a record this run didn't load.
+    /// </summary>
+    private static bool TryResolvePair(string pairKey, Dictionary<(string, string), int> byKey, out int a, out int b)
+    {
+        a = b = -1;
+        int tilde = pairKey.IndexOf('~');
+        if (tilde <= 0 || tilde == pairKey.Length - 1) return false;
+        if (pairKey.IndexOf('~', tilde + 1) >= 0) return false;   // ambiguous — refuse rather than guess
+
+        if (!TrySide(pairKey.AsSpan(0, tilde), out var left)) return false;
+        if (!TrySide(pairKey.AsSpan(tilde + 1), out var right)) return false;
+        if (!byKey.TryGetValue(left, out int x) || !byKey.TryGetValue(right, out int y)) return false;
+        if (x == y) return false;
+
+        a = Math.Min(x, y);
+        b = Math.Max(x, y);
+        return true;
+
+        // Source systems are slugs and never contain ':', so the FIRST colon splits source from id.
+        static bool TrySide(ReadOnlySpan<char> side, out (string Src, string Id) parsed)
+        {
+            parsed = default;
+            int colon = side.IndexOf(':');
+            if (colon <= 0 || colon == side.Length - 1) return false;
+            parsed = (new string(side[..colon]), new string(side[(colon + 1)..]));
+            return true;
+        }
     }
 
     public sealed record GoldenAttr(string AttrType, string Value, string WonBy);

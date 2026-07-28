@@ -1,0 +1,307 @@
+@attribute [Route($"{DarlasticRoutes.Prefix}/{nameof(StewardQueue)}")]
+@attribute [Authorize]
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+@inject IOptions<DarlasticWebOptions> DarlasticOptionsAccessor
+
+@*
+    The stewardship queue — the pairs the engine scored close enough to be plausible but not close
+    enough to merge, presented side by side so a human can answer the question the matcher refused
+    to guess at.
+
+    Hardest cases first (highest score = nearest the auto-merge line, where a wrong call costs most).
+
+    Two things this surface is careful about:
+
+    1. It shows EVIDENCE, not reasoning. The score is staged by the resolve; the matcher's trace
+       (which rule fired, how the name blend resolved) is recomputed in memory during a run and
+       never persisted, so it cannot be shown here without a new staged artifact family. Saying
+       "why" and rendering "what" would be worse than being explicit about the gap.
+
+    2. A verdict takes effect on the NEXT resolve, not on save. The engine replays decisions while
+       clustering, so the golden list keeps showing the old shape until then. The page says so —
+       a steward who thinks nothing happened will re-decide, and the queue's credibility is the
+       whole asset.
+*@
+
+<MudStack Spacing="4" Class="pa-4">
+    <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="flex-wrap">
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.h5">Steward Queue</MudText>
+            <MudText Typo="Typo.caption" Class="mud-text-secondary">
+                Candidate pairs the engine could not decide — closest calls first
+            </MudText>
+        </MudStack>
+        <MudStack Row Spacing="2" AlignItems="AlignItems.Center">
+            @if (_page is not null)
+            {
+                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Default">
+                    @_page.Total open case@(_page.Total == 1 ? "" : "s")
+                </MudChip>
+            }
+            <MudTooltip Text="Reload the queue from the last resolve run">
+                <MudIconButton Icon="@Icons.Material.Filled.Refresh" OnClick="@(() => Load(_skip))" Disabled="_loading" />
+            </MudTooltip>
+        </MudStack>
+    </MudStack>
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate Color="Color.Primary" />
+    }
+    else if (_error is not null)
+    {
+        <MudAlert Severity="Severity.Error" Dense>@_error</MudAlert>
+    }
+    else if (_page is null || _page.Cases.Count == 0)
+    {
+        <MudAlert Severity="Severity.Success" Dense>
+            Nothing queued. Either every candidate pair was decisive enough for the engine to settle on its
+            own, or no resolve run has staged a queue into this database yet.
+        </MudAlert>
+    }
+    else
+    {
+        <MudAlert Severity="Severity.Info" Dense>
+            Verdicts are replayed by the <b>next resolve run</b> — golden records keep their current shape
+            until then. Decided pairs never return to this queue.
+        </MudAlert>
+
+        @foreach (var c in _page.Cases)
+        {
+            <MudPaper Outlined Class="pa-3">
+                <MudStack Spacing="3">
+                    <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="flex-wrap">
+                        <MudStack Row Spacing="1" AlignItems="AlignItems.Center" Class="flex-wrap">
+                            <MudTooltip Text="The engine's confidence that these are the same person">
+                                <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Color="@ScoreColor(c.Score)">
+                                    @c.Score.ToString("F3")
+                                </MudChip>
+                            </MudTooltip>
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Default">
+                                run @c.RunID
+                            </MudChip>
+                            @if (c.StandingVerdict is not null)
+                            {
+                                <MudTooltip Text="Recorded since the last resolve — not replayed yet">
+                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Info">
+                                        @c.StandingVerdict — awaiting next run
+                                    </MudChip>
+                                </MudTooltip>
+                            }
+                        </MudStack>
+                        <MudText Typo="Typo.caption" Class="mud-text-secondary" Style="font-family: monospace;">
+                            @c.PairKey
+                        </MudText>
+                    </MudStack>
+
+                    <MudGrid Spacing="2">
+                        <MudItem xs="12" md="6">@RecordCard(c.A, c.B)</MudItem>
+                        <MudItem xs="12" md="6">@RecordCard(c.B, c.A)</MudItem>
+                    </MudGrid>
+
+                    <MudStack Row Spacing="2" AlignItems="AlignItems.Center" Class="flex-wrap">
+                        <MudButton Variant="Variant.Filled" Color="Color.Success"
+                                   StartIcon="@Icons.Material.Filled.Merge"
+                                   Disabled="@(_busy == c.PairKey)"
+                                   OnClick="@(() => Decide(c, StewardVerdict.Merge))">
+                            Same person
+                        </MudButton>
+                        <MudButton Variant="Variant.Filled" Color="Color.Error"
+                                   StartIcon="@Icons.Material.Filled.CallSplit"
+                                   Disabled="@(_busy == c.PairKey)"
+                                   OnClick="@(() => Decide(c, StewardVerdict.Separate))">
+                            Different people
+                        </MudButton>
+                        <MudButton Variant="Variant.Outlined" Color="Color.Default"
+                                   StartIcon="@Icons.Material.Filled.Schedule"
+                                   Disabled="@(_busy == c.PairKey)"
+                                   OnClick="@(() => Decide(c, StewardVerdict.Defer))">
+                            Can't tell yet
+                        </MudButton>
+                        @if (c.StandingVerdict is not null)
+                        {
+                            <MudButton Variant="Variant.Text" Color="Color.Warning"
+                                       StartIcon="@Icons.Material.Filled.Undo"
+                                       Disabled="@(_busy == c.PairKey)"
+                                       OnClick="@(() => Decide(c, StewardVerdict.Release))">
+                                Undo
+                            </MudButton>
+                        }
+                        <MudSpacer />
+                        <MudTextField T="string" @bind-Value="_notes[c.PairKey]"
+                                      Placeholder="Why? (optional, audited with the verdict)"
+                                      Variant="Variant.Outlined" Margin="Margin.Dense"
+                                      Style="min-width: 260px;" />
+                    </MudStack>
+                </MudStack>
+            </MudPaper>
+        }
+
+        <MudStack Row Spacing="2" AlignItems="AlignItems.Center" Justify="Justify.Center">
+            <MudButton Disabled="@(_skip == 0 || _loading)" OnClick="@(() => Load(Math.Max(0, _skip - PageSize)))"
+                       StartIcon="@Icons.Material.Filled.ChevronLeft">Previous</MudButton>
+            <MudText Typo="Typo.body2">
+                @(_skip + 1)–@(_skip + _page.Cases.Count) of @_page.Total
+            </MudText>
+            <MudButton Disabled="@(_skip + _page.Cases.Count >= _page.Total || _loading)"
+                       OnClick="@(() => Load(_skip + PageSize))"
+                       EndIcon="@Icons.Material.Filled.ChevronRight">Next</MudButton>
+        </MudStack>
+    }
+</MudStack>
+
+@code {
+    private const int PageSize = 10;
+
+    private StewardQueuePageDTO? _page;
+    private readonly Dictionary<string, string> _notes = new(StringComparer.Ordinal);
+    private bool _loading = true;
+    private string? _error;
+    private string? _busy;
+    private int _skip;
+
+    private DarlasticWebOptions DarlasticOptions => DarlasticOptionsAccessor.Value;
+
+    protected override Task OnInitializedAsync() => Load(0);
+
+    private async Task Load(int skip)
+    {
+        _loading = true;
+        _error = null;
+        StateHasChanged();
+        try
+        {
+            _page = await Http.GetFromJsonAsync<StewardQueuePageDTO>(
+                $"{DarlasticOptions.ResolvedRoutePrefix}StewardQueue?skip={skip}&top={PageSize}");
+            _skip = skip;
+            foreach (var c in _page?.Cases ?? [])
+                _notes.TryAdd(c.PairKey, string.Empty);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Could not load the queue: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task Decide(StewardCaseDTO c, string verdict)
+    {
+        _busy = c.PairKey;
+        try
+        {
+            var response = await Http.PostAsJsonAsync(
+                $"{DarlasticOptions.ResolvedRoutePrefix}StewardQueue/verdict",
+                new StewardVerdictDTO
+                {
+                    PairKey = c.PairKey,
+                    Verdict = verdict,
+                    Note = string.IsNullOrWhiteSpace(_notes.GetValueOrDefault(c.PairKey)) ? null : _notes[c.PairKey],
+                });
+
+            if (!response.IsSuccessStatusCode)
+            {
+                Snackbar.Add($"Could not record the verdict ({(int)response.StatusCode}).", Severity.Error);
+                return;
+            }
+
+            var result = await response.Content.ReadFromJsonAsync<StewardVerdictResultDTO>();
+
+            // Reflect the new state in place rather than re-fetching: the queue itself only changes
+            // when the engine next runs, so a reload would return the same rows and read as a no-op.
+            c.StandingVerdict = verdict == StewardVerdict.Release ? null : verdict;
+
+            Snackbar.Add(
+                result?.IsConstraint == true
+                    ? "Recorded — the next resolve run will apply it."
+                    : verdict == StewardVerdict.Release
+                        ? "Verdict withdrawn — the engine decides this pair again."
+                        : "Noted. The case stays open.",
+                Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Could not record the verdict: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _busy = null;
+        }
+    }
+
+    private static Color ScoreColor(float score) => score switch
+    {
+        >= 0.88f => Color.Warning,   // nearly auto-merged — the closest calls
+        >= 0.84f => Color.Info,
+        _ => Color.Default,
+    };
+
+    /// <summary>One side of a case. <paramref name="other"/> is passed so shared values can be
+    /// highlighted — an exact phone match on both sides is usually the whole reason the pair is
+    /// here, and making the steward hunt for it is how real differences get missed.</summary>
+    private RenderFragment RecordCard(StewardCaseRecordDTO? r, StewardCaseRecordDTO? other) => __builder =>
+    {
+        if (r is null) return;
+
+        <MudPaper Outlined Class="pa-3" Style="height: 100%;">
+            <MudStack Spacing="2">
+                <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                    <MudText Typo="Typo.subtitle2" Style="font-family: monospace;">@r.SourceSystem</MudText>
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary" Style="font-family: monospace;">
+                        #@r.SourceRecordId
+                    </MudText>
+                </MudStack>
+
+                <MudText Typo="Typo.h6">@(string.IsNullOrWhiteSpace(r.RawName) ? "(no name)" : r.RawName)</MudText>
+                @if (!string.IsNullOrWhiteSpace(r.NormName) && !string.Equals(r.NormName, r.RawName, StringComparison.OrdinalIgnoreCase))
+                {
+                    <MudTooltip Text="How the matcher reads this name — transliterated and normalized">
+                        <MudText Typo="Typo.caption" Class="mud-text-secondary" Style="font-family: monospace;">
+                            @r.NormName
+                        </MudText>
+                    </MudTooltip>
+                }
+
+                @if (r.Phones.Count > 0)
+                {
+                    <MudStack Row Spacing="1" Class="flex-wrap">
+                        @foreach (var phone in r.Phones)
+                        {
+                            var shared = other?.Phones.Contains(phone) == true;
+                            <MudTooltip Text="@(shared ? "Both records carry this number" : "Only on this record")">
+                                <MudChip T="string" Size="Size.Small"
+                                         Variant="@(shared ? Variant.Filled : Variant.Outlined)"
+                                         Color="@(shared ? Color.Primary : Color.Default)"
+                                         Style="font-family: monospace;">@phone</MudChip>
+                            </MudTooltip>
+                        }
+                    </MudStack>
+                }
+
+                @Field("City", r.City, string.Equals(r.City, other?.City, StringComparison.OrdinalIgnoreCase))
+                @Field("Address", r.Address, false)
+                @Field("National ID", r.NationalId, string.Equals(r.NationalId, other?.NationalId, StringComparison.Ordinal))
+
+                @if (r.IdentityID is not null)
+                {
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary">
+                        Currently identity <b>@r.IdentityID</b>
+                    </MudText>
+                }
+            </MudStack>
+        </MudPaper>
+    };
+
+    private RenderFragment Field(string label, string? value, bool shared) => __builder =>
+    {
+        if (string.IsNullOrWhiteSpace(value)) return;
+
+        <MudStack Row Spacing="1" AlignItems="AlignItems.Center">
+            <MudText Typo="Typo.caption" Class="mud-text-secondary" Style="min-width: 78px;">@label</MudText>
+            <MudText Typo="Typo.body2" Color="@(shared ? Color.Primary : Color.Default)">@value</MudText>
+        </MudStack>
+    };
+}
