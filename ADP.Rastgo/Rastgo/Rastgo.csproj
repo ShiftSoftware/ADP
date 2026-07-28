@@ -17,7 +17,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="DuckDB.NET.Data.Full" Version="1.5.3" />
+		<PackageReference Include="DuckDB.NET.Data.Full" Version="1.5.5" />
 		<PackageReference Include="Microsoft.Azure.Cosmos" Version="3.62.0" />
 		<PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.2" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
