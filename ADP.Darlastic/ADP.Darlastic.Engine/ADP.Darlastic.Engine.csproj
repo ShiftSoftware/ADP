@@ -16,11 +16,16 @@
 		<Description>Customer identity-resolution engine for the ShiftSoftware ADP.Darlastic package — multi-source matching (name-chain survivorship, transliteration-aware similarity, VIN corroboration), stable golden-ID reconciliation against a SQL Server registry, and delta-only projection staging.</Description>
 		<Copyright>Copyright (c) Shift Software 2026</Copyright>
 		<PackageProjectUrl>https://github.com/ShiftSoftware/ADP</PackageProjectUrl>
+		<PackageIcon>icon.png</PackageIcon>
 		<RepositoryUrl>https://github.com/ShiftSoftware/ADP</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>shift;shiftsoftware;adp;darlastic;customers;mdm;identity;matching;golden-record</PackageTags>
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="Images\icon.png" Pack="true" PackagePath="\" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\ADP.Darlastic.Shared\ADP.Darlastic.Shared.csproj" />

@@ -16,11 +16,16 @@
 		<Description>EF Core entity model for the ShiftSoftware ADP.Darlastic package — the golden-identity registry (identities, redirects, source profiles, projection state, resolve runs) hosts run migrations against, under a configurable SQL schema.</Description>
 		<Copyright>Copyright (c) Shift Software 2026</Copyright>
 		<PackageProjectUrl>https://github.com/ShiftSoftware/ADP</PackageProjectUrl>
+		<PackageIcon>icon.png</PackageIcon>
 		<RepositoryUrl>https://github.com/ShiftSoftware/ADP</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>shift;shiftsoftware;adp;darlastic;customers;mdm;identity;efcore</PackageTags>
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="Images\icon.png" Pack="true" PackagePath="\" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\ADP.Darlastic.Shared\ADP.Darlastic.Shared.csproj" />

@@ -16,11 +16,16 @@
 		<Description>Steward case browser for the ShiftSoftware ADP.Darlastic package — categorized match cases over the live engine's own evidence (traces, golden survivorship, VIN bridges), adjudication with corpus provenance, review flags, and registry-joined golden IDs. The Phase-5 steward-surface prototype; a planned .Web module replaces it.</Description>
 		<Copyright>Copyright (c) Shift Software 2026</Copyright>
 		<PackageProjectUrl>https://github.com/ShiftSoftware/ADP</PackageProjectUrl>
+		<PackageIcon>icon.png</PackageIcon>
 		<RepositoryUrl>https://github.com/ShiftSoftware/ADP</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>shift;shiftsoftware;adp;darlastic;customers;mdm;steward;case-browser</PackageTags>
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="Images\icon.png" Pack="true" PackagePath="\" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />

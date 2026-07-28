@@ -16,11 +16,16 @@
 		<Description>ASP.NET Core controllers and registration helpers for the ShiftSoftware ADP.Darlastic package — read-through endpoints over the golden-identity registry mounted in the host's database.</Description>
 		<Copyright>Copyright (c) Shift Software 2026</Copyright>
 		<PackageProjectUrl>https://github.com/ShiftSoftware/ADP</PackageProjectUrl>
+		<PackageIcon>icon.png</PackageIcon>
 		<RepositoryUrl>https://github.com/ShiftSoftware/ADP</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>shift;shiftsoftware;adp;darlastic;customers;mdm;identity;aspnetcore</PackageTags>
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="Images\icon.png" Pack="true" PackagePath="\" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />
