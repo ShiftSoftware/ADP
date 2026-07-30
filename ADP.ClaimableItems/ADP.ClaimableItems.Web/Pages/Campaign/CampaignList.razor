@@ -1,7 +1,8 @@
 @attribute [Authorize]
 @attribute [Route($"/{nameof(CampaignList)}")]
+@inject IOptions<ClaimableItemsWebOptions> CIOptions
 
-<ShiftList EntitySet="ServiceCampaign"
+<ShiftList EntitySet="@(CIOptions.Value.ResolvedRoutePrefix + "ServiceCampaign")"
            Title="ServiceCampaign List"
            T="CampaignListDTO"
            Dense

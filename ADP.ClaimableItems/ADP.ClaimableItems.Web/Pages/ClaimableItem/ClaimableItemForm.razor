@@ -7,7 +7,7 @@
                  @bind-Value="TheItem"
                  @ref="FormContainer"
                  AllowSaveAsNew
-                 Endpoint="ClaimableItem"
+                 Endpoint="@(CIOptions.Value.ResolvedRoutePrefix + "ClaimableItem")"
                  Title="Claimable Item"
                  TypeAuthAction="CIOptions.Value.ClaimableItemSetupAction"
                  @bind-Key="@Key">
@@ -55,7 +55,7 @@
         <MudItem Class="pt-2 pb-2" lg="4" md="4" sm="6" xs="12">
             <ShiftAutocomplete Label="Campaign"
                                TEntitySet="ShiftSoftware.ADP.ClaimableItems.Shared.DTOs.Campaign.CampaignListDTO"
-                               EntitySet="ServiceCampaign"
+                               EntitySet="@(CIOptions.Value.ResolvedRoutePrefix + "ServiceCampaign")"
                                For="() => TheItem.Campaign"
                                @bind-Value="TheItem.Campaign" />
         </MudItem>

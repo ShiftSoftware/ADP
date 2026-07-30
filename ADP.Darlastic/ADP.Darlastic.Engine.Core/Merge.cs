@@ -62,11 +62,53 @@ public static class Merge
         /// went away, or blocking no longer brings the two together. Surfaced because a constraint
         /// set that silently stops applying is indistinguishable from one that never worked.</summary>
         public int StewardUnmatchedConstraints;
+
+        // ---------------------------------------------------------------- case evidence
+        // The resolve's pair walk is the ONLY pass that sees the whole corpus. Everything below is
+        // collected during it because no later query can recover it: a surface that re-derives
+        // categories from the persisted queue sees the queue's neighbourhood (~10⁴ records) and
+        // reports it as the corpus (~10⁶) — measured 2026-07-29, where the browsable auto-merge
+        // count read 13,591 against the 437,238 that actually fired.
+
+        /// <summary>Every auto-merge edge, with the flags that justified it — the record of HOW each
+        /// identity was assembled. Deliberately not sampled: dropping edges makes assembly a guess.</summary>
+        public List<MergeEdge> AutoMergeEdgeList = [];
+
+        /// <summary>Exact corpus-wide count per category. Always complete, never sampled — the size
+        /// of a category is the one thing a browsing surface must not under-report.</summary>
+        public Dictionary<CaseCat, long> CategoryCounts = [];
+
+        /// <summary>A capped, browsable sample per category. The counts above say how big a category
+        /// is; these let you look inside it.</summary>
+        public List<CatalogEntry> Catalog = [];
+
+        /// <summary>The per-category cap applied to <see cref="Catalog"/>. Recorded so a surface can
+        /// say "showing 500 of 437,238" instead of implying it holds everything.</summary>
+        public int CatalogCap;
     }
+
+    /// <summary>One auto-merge edge: two records joined, and the evidence that joined them.</summary>
+    public readonly record struct MergeEdge(int A, int B, float Score, MatchFlags Flags);
+
+    /// <summary>One catalogued case — a decision-relevant pair with its category tags.</summary>
+    public readonly record struct CatalogEntry(int A, int B, float Score, MatchFlags Flags, CaseCat Cats);
 
     /// <summary>The steward band's lower edge — pairs at or above it (but below auto-merge) queue
     /// for human adjudication.</summary>
     public const double StewardThreshold = 0.80;
+
+    /// <summary>
+    /// Cases retained per category for browsing. Counts stay exact regardless; this bounds only
+    /// what a human can click into.
+    ///
+    /// <para><b>The sample is first-encountered, not random.</b> Block order is deterministic, so
+    /// the sample is reproducible run-to-run (which the zero-delta acceptance requires — a random
+    /// sample would rewrite this table every run and make write volume useless as a health metric).
+    /// The cost is that the sample is biased by blocking order, not representative. That is the
+    /// right trade for "show me examples of this category"; it is the wrong basis for any statistic,
+    /// which is why the counts are kept separately and exactly.</para>
+    /// </summary>
+    public const int DefaultCatalogCap = 500;
 
     /// <summary>The canonical key for a record pair: "src:id~src:id", ordered so either argument
     /// order yields the same string. THE identifier for a pair across the whole system — the
@@ -97,7 +139,8 @@ public static class Merge
     /// probe and never builds a pair-key string per candidate.</para>
     /// </summary>
     public static Result ClusterFromBlocks(IReadOnlyList<RealRecord> records, RealMatcher.BlockingResult blocking,
-        double mergeThreshold = 0.90, StewardConstraints? constraints = null)
+        double mergeThreshold = 0.90, StewardConstraints? constraints = null,
+        int catalogCap = DefaultCatalogCap)
     {
         int n = records.Count;
         var uf = new UnionFind(n);
@@ -128,6 +171,16 @@ public static class Merge
         int vetoed = 0, suppressed = 0;
         var steward = new List<(int, int, float)>();
         var seen = new HashSet<long>();
+
+        // Case evidence, collected in this same walk. The flags overload of Score costs nothing —
+        // MatchFlags are bit-ors already set on ScoreCore's own path — so categorising here is a
+        // dictionary bump per decision-relevant pair, not a second scoring pass.
+        var mergeEdges = new List<MergeEdge>(1 << 16);
+        var catCounts = new Dictionary<CaseCat, long>(CaseCategories.All.Length);
+        var catKept = new Dictionary<CaseCat, int>(CaseCategories.All.Length);
+        var catalog = new List<CatalogEntry>(1 << 13);
+        foreach (var c in CaseCategories.All) { catCounts[c] = 0; catKept[c] = 0; }
+
         foreach (var block in blocking.Blocks)
             for (int i = 0; i < block.Count; i++)
                 for (int j = i + 1; j < block.Count; j++)
@@ -136,12 +189,33 @@ public static class Merge
                     if (a == b) continue;
                     long packed = ((long)a << 32) | (uint)b;
                     if (!seen.Add(packed)) continue;
-                    double s = RealMatcher.Score(records[a], records[b]);
+                    double s = RealMatcher.Score(records[a], records[b], out var flags);
+
+                    var cats = CaseCategories.Categorize(records[a], records[b], s, flags);
+                    if (cats != CaseCat.None)
+                    {
+                        // Count every category the pair carries; retain the pair if ANY of its
+                        // categories still has room. A pair kept for one category carries its other
+                        // tags along, so a rare category riding on a common one stays reachable.
+                        bool keep = false;
+                        foreach (var c in CaseCategories.All)
+                            if ((cats & c) != 0)
+                            {
+                                catCounts[c]++;
+                                if (catKept[c] < catalogCap) { catKept[c]++; keep = true; }
+                            }
+                        if (keep) catalog.Add(new CatalogEntry(a, b, (float)s, flags, cats));
+                    }
+
                     if (s >= mergeThreshold)
                     {
                         // A steward who said "different" outranks the score on THIS edge.
                         if (forcedSeparate.Contains(packed)) { vetoed++; continue; }
                         uf.Union(a, b); edges++;
+                        // Recorded even when the Union is redundant (both already joined via a
+                        // third record): corroborating edges are evidence a steward reads, and
+                        // dropping them would misrepresent how strongly a cluster is held together.
+                        mergeEdges.Add(new MergeEdge(a, b, (float)s, flags));
                     }
                     else if (s >= StewardThreshold)
                     {
@@ -177,6 +251,10 @@ public static class Merge
             StewardVetoedEdges = vetoed,
             StewardSuppressedPairs = suppressed,
             StewardUnmatchedConstraints = unmatched,
+            AutoMergeEdgeList = mergeEdges,
+            CategoryCounts = catCounts,
+            Catalog = catalog,
+            CatalogCap = catalogCap,
         };
         foreach (var v in size.Values) result.ClusterSizeHistogram[v] = result.ClusterSizeHistogram.GetValueOrDefault(v) + 1;
         return result;

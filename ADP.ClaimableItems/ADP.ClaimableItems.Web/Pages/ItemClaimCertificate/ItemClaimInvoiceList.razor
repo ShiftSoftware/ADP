@@ -14,7 +14,7 @@
 <ShiftList Title="Item Claiming Invoices"
            T="CertificateListDTO"
            Dense
-           EntitySet="ItemClaimInvoice"
+           EntitySet="@(CIOptions.Value.ResolvedRoutePrefix + "ItemClaimInvoice")"
            DisableActionColumn
            ShowIDColumn="false"
            DisableAdd

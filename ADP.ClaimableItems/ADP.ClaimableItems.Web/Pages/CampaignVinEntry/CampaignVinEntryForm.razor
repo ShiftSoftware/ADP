@@ -11,7 +11,7 @@
 <ShiftEntityForm @bind-Mode="Mode"
                  @bind-Value="TheItem"
                  @ref="FormContainer"
-                 Endpoint="CampaignVinEntry"
+                 Endpoint="@(CIOptions.Value.ResolvedRoutePrefix + "CampaignVinEntry")"
                  Title="@Loc["Campaign VIN Entry"]"
                  TypeAuthAction="CIOptions.Value.CampaignVinEntriesAction"
                  @bind-Key="@Key">
@@ -26,7 +26,7 @@
         <MudItem Class="pt-2 pb-2" lg="4" md="4" sm="12" xs="12">
             <ShiftAutocomplete Label="@Loc["Campaign"]"
                                TEntitySet="CampaignListDTO"
-                               EntitySet="ServiceCampaign"
+                               EntitySet="@(CIOptions.Value.ResolvedRoutePrefix + "ServiceCampaign")"
                                For="() => TheItem.Campaign"
                                Filter="x => x.Add(f => { f.Field = nameof(CampaignListDTO.ActivationTrigger); f.Value = ClaimableItemCampaignActivationTrigger.ManualVinEntry; })"
                                @bind-Value="TheItem.Campaign" />

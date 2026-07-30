@@ -13,7 +13,7 @@
 		<AssemblyName>ShiftSoftware.ADP.Darlastic.Engine</AssemblyName>
 		<PackageId>ShiftSoftware.ADP.Darlastic.Engine</PackageId>
 		<Title>ShiftSoftware ADP.Darlastic — Engine</Title>
-		<Description>Customer identity-resolution engine for the ShiftSoftware ADP.Darlastic package — multi-source matching (name-chain survivorship, transliteration-aware similarity, VIN corroboration), stable golden-ID reconciliation against a SQL Server registry, and delta-only projection staging.</Description>
+		<Description>The storage half of the ShiftSoftware ADP.Darlastic identity-resolution engine: stable golden-ID reconciliation against a SQL Server registry, steward-decision replay, case-evidence staging, and delta-only Cosmos projection. The matching and scoring themselves live in ShiftSoftware.ADP.Darlastic.Engine.Core, which takes no storage dependency — reference that one if you only need to score or explain a pair.</Description>
 		<Copyright>Copyright (c) Shift Software 2026</Copyright>
 		<PackageProjectUrl>https://github.com/ShiftSoftware/ADP</PackageProjectUrl>
 		<PackageIcon>icon.png</PackageIcon>
@@ -29,6 +29,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\ADP.Darlastic.Shared\ADP.Darlastic.Shared.csproj" />
+		<ProjectReference Include="..\ADP.Darlastic.Engine.Core\ADP.Darlastic.Engine.Core.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

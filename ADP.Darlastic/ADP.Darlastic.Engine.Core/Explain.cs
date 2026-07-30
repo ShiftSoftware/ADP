@@ -40,6 +40,45 @@ public enum MatchFlags
     EmailRoleOnly    = 1 << 27,  // a side's only e-mail was a role/shared mailbox (info@, sales@…) — suppressed from matching, still survives to golden
 }
 
+/// <summary>What normalization did to one record, before any comparison happened.</summary>
+/// <param name="Stage">repair | arabizi | name | phone | address.</param>
+/// <param name="Detail">Human-readable before → after.</param>
+public sealed record NormalizeStep(string Stage, string Detail);
+
+/// <summary>
+/// The record-level half of the explanation: how raw source text became the text the matcher
+/// compares. Lives in the Engine rather than a browsing surface for the same reason the category
+/// rules do — it describes what the normalizer actually did, and a copy living next to a UI would
+/// eventually describe a transformation the engine no longer performs.
+/// </summary>
+public static class Normalization
+{
+    public static List<NormalizeStep> Steps(RealRecord r)
+    {
+        var steps = new List<NormalizeStep>();
+        if (r.RawName.Length > 0)
+        {
+            if (r.NameWasMojibake)
+                steps.Add(new("repair", $"CP1256 mojibake repaired: \"{r.RawName}\" → \"{Mojibake.TryRepair(r.RawName)}\" → transliterated"));
+            if (r.NameHadArabizi)
+                steps.Add(new("arabizi", "chat-numeral letters folded (3→a · 7→h · 5→kh …) before transliteration"));
+            steps.Add(new("name", r.NormName.Length > 0
+                ? $"\"{r.RawName}\" → \"{r.NormName}\""
+                : $"\"{r.RawName}\" → dropped (junk/blocklist)"));
+        }
+        else steps.Add(new("name", "no name in source"));
+
+        if (r.Phones.Length + r.WeakPhones.Length > 0)
+            steps.Add(new("phone", string.Join(" · ",
+                r.Phones.Select(p => p + " (strong)").Concat(r.WeakPhones.Select(p => p + " (weak 9-digit)")))));
+
+        if (r.NormAddress.Length > 0)
+            steps.Add(new("address", $"\"{r.RawAddress.Replace('|', ' ')}\" → \"{r.NormAddress}\" · city slot \"{r.NormCity}\""));
+
+        return steps;
+    }
+}
+
 /// <summary>One step of a pair's scoring story, in engine execution order.</summary>
 /// <param name="Stage">Machine key the UI maps to a station: signal | base | gate | address | conflict | decide.</param>
 /// <param name="Title">Short human label ("Name similarity", "Chain-slice rescue").</param>

@@ -38,6 +38,12 @@
   #q:focus{border-color:var(--brand)}
   .stats{margin-left:auto;display:flex;gap:16px;font-size:12px;color:rgba(255,255,255,.65);white-space:nowrap}
   .stats b{color:#fff;font-size:13px}
+  /* Registry totals read as the headline; the index-scoped counts are visibly demoted so the two
+     populations can never be mistaken for one another. */
+  .stats .sep{color:rgba(255,255,255,.38);font-size:11px;letter-spacing:.4px;text-transform:uppercase}
+  .stats .scoped{color:rgba(255,255,255,.45);font-size:11.5px;padding-left:14px;
+                 border-left:1px solid rgba(255,255,255,.18)}
+  .stats .scoped b{color:rgba(255,255,255,.72);font-size:11.5px;font-weight:600}
 
   .layout{display:grid;grid-template-columns:248px 1fr;gap:14px;padding:14px 18px;max-width:1500px;margin:0 auto}
   aside{position:sticky;top:70px;align-self:start;max-height:calc(100vh - 84px);overflow:auto}
@@ -50,6 +56,11 @@
   .catbtn.on{background:var(--brand);color:#111}
   .catbtn .n{margin-left:auto;font-size:11.5px;color:var(--ink-soft);font-family:var(--mono)}
   .catbtn.on .n{color:rgba(17,17,17,.6)}
+  /* The count is corpus-wide; when only part of it is loaded here, say so under the label rather
+     than quietly showing the smaller number. */
+  .catbtn .clabel{display:flex;flex-direction:column;gap:1px;min-width:0}
+  .catbtn .sub{font-size:10px;color:var(--ink-soft);font-family:var(--mono);opacity:.75}
+  .catbtn.on .sub{color:rgba(17,17,17,.55)}
   .fl{display:flex;flex-direction:column;gap:7px;padding:0 3px}
   .fl label{font-size:11.5px;color:var(--ink-soft)}
   .fl select,.fl input{border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:12.5px;font-family:inherit;background:#fff;width:100%}
@@ -175,7 +186,32 @@
   .linky{color:var(--brand-d);cursor:pointer;text-decoration:underline dotted}
   .small{font-size:11.5px;color:var(--ink-soft)}
   .mono{font-family:var(--mono)}
+  /* ---------- narrow / embedded ---------- */
+  /* This page was written for a full browser window. Hosted, it lives inside a host's content area,
+     and on a tablet-sized laptop that is narrow enough to matter. The header is what breaks first:
+     brandmark, search and stats are all nowrap in one flex row, so the header's min-content width —
+     not the grid — is what forced a horizontal scrollbar across the whole page, which then hid the
+     left edge of the sidebar and read as a broken deployment.
+
+     Wrapped rather than hidden. Every number in that header is deliberate, and the registry totals
+     especially: they are the reason the in-view counts beside them cannot be mistaken for the
+     corpus. Dropping them to save width would undo that. */
+  @media (max-width:1240px){
+    header.top{height:auto;min-height:56px;flex-wrap:wrap;padding-top:8px;padding-bottom:8px;row-gap:6px}
+    .stats{margin-left:0;width:100%;flex-wrap:wrap;gap:8px 14px}
+    .stats .scoped{padding-left:0;border-left:0}
+    #q{max-width:none}
+    aside{top:8px}            /* the header is no longer a fixed 56px, so stop guessing its height */
+  }
+  @media (max-width:1120px){
+    .layout{grid-template-columns:208px 1fr;padding:12px 12px;gap:12px}
+    .chips{max-width:210px}   /* let the names have the room instead; chips already wrap */
+  }
   @media (max-width:1020px){ .layout{grid-template-columns:1fr} aside{position:static;max-height:none} .dbody{grid-template-columns:1fr} }
+
+  /* Backstop: never scroll the page sideways. `clip` rather than `hidden` on purpose — `hidden`
+     would make body a scroll container and silently kill the sticky header and sidebar. */
+  body{overflow-x:clip}
 </style>
 </head>
 <body>
@@ -242,12 +278,48 @@
 
 <script>
 "use strict";
+// Where this page's data comes from. The standalone server (dotnet run cases) serves /api/* from
+// its own process; a host that mounts ADP.Darlastic injects DARLASTIC_API_BASE pointing at the
+// module's compat routes, which speak this same contract. One page, two hosts, one code path —
+// so the local dev loop cannot quietly diverge from what the team sees in the browser.
+const API = (window.DARLASTIC_API_BASE || "/api").replace(/\/+$/, "");
+// A host that authenticates with bearer tokens cannot be reached by a plain HTML page: a browser
+// navigation sends no Authorization header, and this page has no auth stack to attach one. So the
+// host hands it a signed, expiring, single-purpose token in the URL (the same shape ShiftEntity
+// uses for printing) and it rides along on every call from here. Absent locally, where the
+// standalone server is the only caller and localhost is the security model.
+const authQs = (t, x, a) =>
+  (t && x && a) ? `token=${encodeURIComponent(t)}&expires=${encodeURIComponent(x)}&actor=${encodeURIComponent(a)}` : "";
+
+let API_AUTH = (() => {
+  const p = new URLSearchParams(location.search);
+  return authQs(p.get("token"), p.get("expires"), p.get("actor"));
+})();
+
+// A token minted at load would expire mid-session and start failing calls with nothing on screen to
+// explain it. A host that embeds this page can post a fresh one in before that happens, so the
+// reader is never interrupted and never loses the case they had open. Same-origin only, and only
+// ever used to replace the credential — nothing here executes what it receives.
+window.addEventListener("message", e => {
+  if (e.origin !== location.origin) return;
+  const d = e.data;
+  if (d && d.type === "darlastic-token") {
+    const qs = authQs(d.token, d.expires, d.actor);
+    if (qs) API_AUTH = qs;
+  }
+});
+const api = path => API + path + (API_AUTH ? (path.includes("?") ? "&" : "?") + API_AUTH : "");
 const $ = s => document.querySelector(s);
 const esc = s => (s ?? "").toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 const CAT_LABELS = {
   AutoMerged:      ["Auto-merged", "score ≥ 0.90 — unified into one identity"],
-  StewardBand:     ["Steward queue", "0.80–0.90 — genuine uncertainty (Phase 5 queue)"],
+  // The corpus count here is the RAW band — every pair that scored 0.80–0.90. The work list is
+  // smaller: pairs whose two records ended up in one identity anyway (via a third record) are
+  // dropped, because there is nothing left to ask. Measured on TIQ: 19,727 band → 13,355 queued,
+  // a 32% drop that matches the 2026-07-19 adversarial review exactly. Labelling the band as the
+  // queue overstates the steward's workload by a third.
+  StewardBand:     ["Steward band (0.80–0.90)", "every pair scored in the uncertain band. The steward QUEUE is smaller — pairs already merged transitively via a third record are dropped (~32%)"],
   NearMiss:        ["Near miss", "0.70–0.80 — kept separate, close"],
   ConflictVetoed:  ["Conflict-vetoed", "exact phone, but a hard rule HELD them apart — kept below auto-merge (name conflict / ID conflict)"],
   OrgLine:         ["Business / placeholder line", "exact phone + a business name (Parts Stock, …Company) — person floor withheld; identical org names still merge (needs the dealer-self/placeholder filter)"],
@@ -303,7 +375,7 @@ const state = {
 
 // ---------- boot ----------
 (async function boot(){
-  state.summary = await (await fetch("/api/summary")).json();
+  state.summary = await (await fetch(api("/summary"))).json();
   await loadFlags();
   renderStats(); renderSidebar(); fillDealers();
   $("#q").addEventListener("keydown", e => { if (e.key === "Enter") doSearch($("#q").value); });
@@ -317,26 +389,45 @@ const state = {
 })();
 
 async function loadFlags(){
-  const r = await (await fetch("/api/flags")).json();
+  const r = await (await fetch(api("/flags"))).json();
   state.flagsByTarget = new Map(r.items.map(f => [f.target, f]));
   state.flagCount = r.total;
   const el = $("#flagcount"); if (el) el.textContent = r.total;
 }
 const isFlagged = t => state.flagsByTarget.has(t);
 
+// Two populations, never to be conflated: the REGISTRY (the whole tenant corpus as of the last
+// resolve) and the INDEX (what this process actually loaded — the full corpus under `cases`, only
+// the queue's neighbourhood under `queue`). Showing the index's identity count unlabelled is how a
+// 16k-identity view gets read as a 919k-identity corpus.
 function renderStats(){
   const s = state.summary;
-  $("#stats").innerHTML =
-    `<span><b>${s.records.toLocaleString()}</b> records</span>` +
-    `<span><b>${s.totalPairs.toLocaleString()}</b> scored pairs</span>` +
-    `<span><b>${s.identities.toLocaleString()}</b> identities</span>` +
-    `<span><b>${s.indexedCases.toLocaleString()}</b> indexed cases</span>`;
+  const reg = s.registryIdentities != null
+    ? `<span title="the whole tenant corpus, as of resolve run ${s.registryRun}"><b>${s.registryIdentities.toLocaleString()}</b> identities</span>` +
+      `<span title="source profiles in the registry"><b>${s.registryProfiles.toLocaleString()}</b> source records</span>` +
+      `<span class="sep">registry · run ${s.registryRun}</span>`
+    : `<span class="sep">no registry — in-memory only</span>`;
+  $("#stats").innerHTML = reg +
+    `<span class="scoped" title="what this browser loaded and scored — NOT the whole corpus">` +
+      `in view: <b>${s.records.toLocaleString()}</b> records · ` +
+      `<b>${s.totalPairs.toLocaleString()}</b> pairs · ` +
+      `<b>${s.identities.toLocaleString()}</b> clusters · ` +
+      `<b>${s.indexedCases.toLocaleString()}</b> cases</span>`;
 }
+// The count beside a category is the CORPUS total staged by the resolve, not the number of cases
+// this process happens to hold. Where the two differ (always, under `queue` mode) the browsable
+// subset is shown underneath, so "500" can never be mistaken for "that is all there is".
 function renderSidebar(){
   const cats = state.summary.categories, clcats = state.summary.clusterCategories;
-  $("#catlist").innerHTML = Object.keys(CAT_LABELS).map(k =>
-    `<button class="catbtn ${state.mode==='cases'&&state.cat===k?'on':''}" data-cat="${k}" title="${esc(CAT_LABELS[k][1])}">
-       ${CAT_LABELS[k][0]} <span class="n">${(cats[k]??0).toLocaleString()}</span></button>`).join("");
+  const corpus = state.summary.corpusCategories;
+  $("#catlist").innerHTML = Object.keys(CAT_LABELS).map(k => {
+    const c = corpus?.[k], inView = cats[k] ?? 0;
+    const total = c ? c.total : inView;
+    const partial = c && c.total > inView;
+    return `<button class="catbtn ${state.mode==='cases'&&state.cat===k?'on':''}" data-cat="${k}" title="${esc(CAT_LABELS[k][1])}${c?`\n\ncorpus-wide: ${c.total.toLocaleString()} · browsable here: ${inView.toLocaleString()}`:""}">
+       <span class="clabel">${CAT_LABELS[k][0]}${partial?`<span class="sub">${inView.toLocaleString()} browsable</span>`:""}</span>
+       <span class="n">${total.toLocaleString()}</span></button>`;
+  }).join("");
   $("#clcatlist").innerHTML = Object.keys(CLCAT_LABELS).map(k =>
     `<button class="catbtn ${state.mode==='clusters'&&state.clcat===k?'on':''}" data-clcat="${k}" title="${esc(CLCAT_LABELS[k][1])}">
        ${CLCAT_LABELS[k][0]} <span class="n">${(clcats[k]??0).toLocaleString()}</span></button>`).join("");
@@ -368,14 +459,14 @@ async function loadList(){
   const host = $("#list");
   host.innerHTML = `<div class="empty">Loading…</div>`;
   if (state.mode === "cases"){
-    const r = await (await fetch("/api/cases?" + filterQuery())).json();
+    const r = await (await fetch(api("/cases?" + filterQuery()))).json();
     state.total = r.total;
     $("#title").textContent = CAT_LABELS[state.cat]?.[0] ?? "Cases";
     $("#subtitle").textContent = CAT_LABELS[state.cat]?.[1] ?? "";
     host.innerHTML = r.items.length ? r.items.map(caseRow).join("") : `<div class="empty">No cases match this filter.</div>`;
     host.querySelectorAll("[data-a]").forEach(el => el.onclick = () => openCase(+el.dataset.a, +el.dataset.b));
   } else if (state.mode === "clusters"){
-    const r = await (await fetch("/api/clusters?" + filterQuery())).json();
+    const r = await (await fetch(api("/clusters?" + filterQuery()))).json();
     state.total = r.total;
     $("#title").textContent = CLCAT_LABELS[state.clcat]?.[0] ?? "Identities";
     $("#subtitle").textContent = CLCAT_LABELS[state.clcat]?.[1] ?? "";
@@ -392,7 +483,7 @@ async function loadList(){
       : `<div class="empty">No flagged cases yet. Open any case and use “Flag for review (Claude)”.</div>`;
     host.querySelectorAll("[data-target]").forEach(el => el.onclick = () => openTarget(el.dataset.target));
   } else { // search
-    const r = await (await fetch("/api/search?q=" + encodeURIComponent(state.q))).json();
+    const r = await (await fetch(api("/search?q=" + encodeURIComponent(state.q)))).json();
     state.total = r.length;
     $("#title").textContent = `Search “${state.q}”`;
     $("#subtitle").textContent = `${r.length} record(s)${r.length===50?" (capped at 50)":""} — click one to see its candidates`;
@@ -507,7 +598,7 @@ function flagPanelHtml(target, live){
 function wireFlag(kind, ids, target){
   $("#fl-save").onclick = async () => {
     const body = {kind, topic: $("#fl-topic").value, comment: $("#fl-comment").value.trim(), author: judgeName(), ...ids};
-    const r = await (await fetch("/api/flag", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body)})).json();
+    const r = await (await fetch(api("/flag"), {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body)})).json();
     if (!r.ok) { $("#fl-status").textContent = "✖ " + (r.error||"failed"); return; }
     await loadFlags();
     $("#fl-remove").style.display = "inline-block";
@@ -515,7 +606,7 @@ function wireFlag(kind, ids, target){
     $("#fl-status").innerHTML = `⚑ flagged → <span class="mono">review_notes.jsonl</span> (full engine trace captured for Claude)`;
   };
   $("#fl-remove").onclick = async () => {
-    await fetch("/api/unflag", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({target})});
+    await fetch(api("/unflag"), {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({target})});
     await loadFlags();
     $("#fl-remove").style.display = "none";
     $("#fl-save").textContent = "⚑ Flag for review";
@@ -526,7 +617,7 @@ function wireFlag(kind, ids, target){
 
 // ---------- case walkthrough ----------
 async function openCase(a, b){
-  const d = await (await fetch(`/api/case?a=${a}&b=${b}`)).json();
+  const d = await (await fetch(api(`/case?a=${a}&b=${b}`))).json();
   renderDetail(d);
   window.scrollTo({top:0, behavior:"smooth"});
 }
@@ -734,7 +825,7 @@ async function sendVerdict(v){
   const judge = $("#v-judge").value.trim();
   localStorage.setItem("cc_judge", judge);
   const body = {a: a.detail.a.idx, b: a.detail.b.idx, verdict: v, rationale: $("#v-note").value.trim(), judge};
-  const r = await fetch("/api/audit", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body)});
+  const r = await fetch(api("/audit"), {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body)});
   const j = await r.json();
   $("#v-status").innerHTML = r.ok
     ? `✔ recorded <b>${esc(v)}</b> → label_audits.csv (status: pending application to labels)`
@@ -743,7 +834,7 @@ async function sendVerdict(v){
 
 // ---------- record + cluster views ----------
 async function openRecord(idx){
-  const d = await (await fetch(`/api/record/${idx}`)).json();
+  const d = await (await fetch(api(`/record/${idx}`))).json();
   const host = $("#detailhost");
   stopPlay(); state.anim = null;
   host.innerHTML = `
@@ -773,7 +864,7 @@ async function openRecord(idx){
 }
 
 async function openCluster(root){
-  const d = await (await fetch(`/api/cluster/${root}`)).json();
+  const d = await (await fetch(api(`/cluster/${root}`))).json();
   if (d.error) return;
   const host = $("#detailhost");
   stopPlay(); state.anim = null;

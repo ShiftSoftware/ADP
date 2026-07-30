@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<Import Project="..\..\GlobalSettings.props" />
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<LangVersion>latest</LangVersion>
+		<!-- Same namespace as ADP.Darlastic.Engine on purpose: this is a packaging split, not an
+		     API split. Callers referencing either assembly see one coherent Engine namespace, so
+		     nothing outside the csprojs had to change when the pure half moved out. -->
+		<RootNamespace>ShiftSoftware.ADP.Darlastic.Engine</RootNamespace>
+		<Authors>Shift Software</Authors>
+		<Product>ADP.Darlastic</Product>
+		<Version>$(ADPVersion)</Version>
+		<AssemblyName>ShiftSoftware.ADP.Darlastic.Engine.Core</AssemblyName>
+		<PackageId>ShiftSoftware.ADP.Darlastic.Engine.Core</PackageId>
+		<Title>ShiftSoftware ADP.Darlastic — Engine Core</Title>
+		<Description>The dependency-free half of the ADP.Darlastic identity-resolution engine: scoring, normalization (transliteration, mojibake recovery, name skeletons), clustering with name-chain survivorship, case categorisation, and the scorer's own explain trace. No SQL Server, no Cosmos — so a serving surface can compute a pair's score and derivation at read time without taking a storage dependency.</Description>
+		<Copyright>Copyright (c) Shift Software 2026</Copyright>
+		<PackageProjectUrl>https://github.com/ShiftSoftware/ADP</PackageProjectUrl>
+		<PackageIcon>icon.png</PackageIcon>
+		<RepositoryUrl>https://github.com/ShiftSoftware/ADP</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageTags>shift;shiftsoftware;adp;darlastic;customers;mdm;identity;matching;golden-record</PackageTags>
+		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="Images\icon.png" Pack="true" PackagePath="\" />
+	</ItemGroup>
+
+	<!-- Shared carries the steward verdict vocabulary StewardConstraints validates against. It is a
+	     DTO/constants package with no storage dependencies, so it does not compromise this project's
+	     reason for existing. Nothing else may be added here without re-reading that sentence. -->
+	<ItemGroup>
+		<ProjectReference Include="..\ADP.Darlastic.Shared\ADP.Darlastic.Shared.csproj" />
+	</ItemGroup>
+</Project>

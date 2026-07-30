@@ -32,6 +32,24 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="ShiftSoftware.ShiftEntity.EFCore" Version="2026.7.28.1" />
+		<!-- COMPATIBILITY FLOOR, not "the current version". A PackageReference version is a MINIMUM,
+		     and for a module that deploys into whatever host a tenant already runs, that minimum is a
+		     compatibility contract. Set it to the newest package sitting on the build machine and
+		     every host that hasn't upgraded is silently excluded.
+
+		     Measured 2026-07-30: of the five candidate Toyota Iraq hosts, Customers was the most
+		     current at 2026.6.24.1 and NONE was on 2026.7.28.1 — so the previous floor excluded all
+		     of them. Referencing Darlastic from Customers failed restore outright (NU1605: "Detected
+		     package downgrade"), and raising Customers to match cascaded well past the Shift stack —
+		     TypeAuth, ASP.NET Core WebAssembly, the Azure Functions worker, libphonenumber — i.e. a
+		     dependency upgrade of the Tiq mobile-app backend in order to add a read-only internal
+		     browser.
+
+		     2026.6.24.1 (with TypeAuth 1.6.25 in .Shared / .API) is the oldest pair VERIFIED to
+		     build: full ADP.sln green, 49/49 engine tests. Hosts above the floor still resolve their
+		     own higher version — TCA Tickets stays on 2026.7.28.1 — because a floor only ever widens.
+		     Lower it further only with a build to prove it; raise it only when Darlastic genuinely
+		     needs a newer API, deliberately, knowing that drops every host below the new floor. -->
+		<PackageReference Include="ShiftSoftware.ShiftEntity.EFCore" Version="2026.6.24.1" />
 	</ItemGroup>
 </Project>

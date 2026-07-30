@@ -18,7 +18,7 @@
 <ShiftList Title="Item Claiming Certificates"
            T="CertificateListDTO"
            Dense
-           EntitySet="ItemClaimCertificate"
+           EntitySet="@(CIOptions.Value.ResolvedRoutePrefix + "ItemClaimCertificate")"
            DisableActionColumn
            DisableAdd
            FilterPanelDefaultOpen
@@ -43,7 +43,7 @@
                               DialogConfirmText="Save"
                               DialogColor="Color.Tertiary"
                               OnResult="StatusUpdateResponse"
-                              Endpoint="@($"ItemClaimCertificate/Invoice/{invoiceDate!.Value.ToString("O")}")"
+                              Endpoint="@($"{CIOptions.Value.ResolvedRoutePrefix}ItemClaimCertificate/Invoice/{invoiceDate!.Value.ToString("O")}")"
                               T="CertificateListDTO">
                     <DialogBodyTemplate>
                         <MudDatePickerExtended Required Color="Color.Tertiary" @bind-Date="invoiceDate" Label="Invoice Date" />
@@ -62,7 +62,7 @@
         <StringFilter Order="0" Property="x => x.CertificateNo" Label="No." Operator="ShiftSoftware.ShiftBlazor.Enums.ODataOperator.Contains" lg="4" md="6" sm="12" xs="12" />
         <StringFilter Order="1" Property="x => x.DisplayDistributorCertificateNo" Label="Dist No." Operator="ShiftSoftware.ShiftBlazor.Enums.ODataOperator.Contains" lg="4" md="6" sm="12" xs="12" />
         <ForeignFilter Order="2" AdditionalParameters='new() { [nameof(ShiftAutocomplete<CertificateListDTO>.GroupSelectedValues)] = false }' Property="x => x.CompanyID" Label="Company" DTOType="typeof(CompanyListDTO)" EntitySet="IdentityCompany" BaseUrlKey="ShiftIdentityApi" lg="4" md="6" sm="12" xs="12" />
-        <ForeignFilter Order="3" AdditionalParameters='new() { [nameof(ShiftAutocomplete<CertificateListDTO>.GroupSelectedValues)] = false }' Property="x => x.CampaignID" Label="Campaign" DTOType="typeof(CampaignListDTO)" EntitySet="ServiceCampaign" lg="4" md="6" sm="12" xs="12" />
+        <ForeignFilter Order="3" AdditionalParameters='new() { [nameof(ShiftAutocomplete<CertificateListDTO>.GroupSelectedValues)] = false }' Property="x => x.CampaignID" Label="Campaign" DTOType="typeof(CampaignListDTO)" EntitySet="@(CIOptions.Value.ResolvedRoutePrefix + "ServiceCampaign")" lg="4" md="6" sm="12" xs="12" />
         <DateTimeFilter Order="4" Property="x => x.CertificateDate" Label="Certificate Date" lg="4" md="6" sm="12" xs="12" />
         <DateTimeFilter Order="5" Property="x => x.PeriodStartDate" Label="Period Start" lg="4" md="6" sm="12" xs="12" />
         <DateTimeFilter Order="6" Property="x => x.PeriodEndDate" Label="Period End" lg="4" md="6" sm="12" xs="12" />
@@ -86,7 +86,7 @@
                        Filterable="false"
                        CellClass="whitespace-nowrap"
                        TEntity="CampaignListDTO"
-                       EntitySet="ServiceCampaign"
+                       EntitySet="@(CIOptions.Value.ResolvedRoutePrefix + "ServiceCampaign")"
                        TProperty="string"
                        Property="x=> x.CampaignID" />
 

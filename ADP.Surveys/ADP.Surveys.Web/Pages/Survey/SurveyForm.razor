@@ -17,9 +17,10 @@
     (ShiftEntityForm.@bind-Value populates it before the outer markup reads
     it).
 
-    Name field + General/Visual/Logic/Raw toggle live inside the form's
-    toolbar slots (start + end) so Name is always visible across tabs and
-    the row that used to sit between toolbar and editor body is reclaimed.
+    The General/Visual/Logic/Triggers/Raw toggle lives in the form's toolbar
+    end slot; the whole header row is otherwise left to the framework's own
+    controls (edit / maximize / close), which is why Name is edited on the
+    General tab rather than inline in the header.
 *@
 
 <div class="survey-form-page">
@@ -46,18 +47,6 @@
                                  Icon="@Icons.Material.Filled.Publish">
                             v@(TheItem.PublishedVersionNumber)
                         </MudChip>
-                    }
-                    @if (TheItem is not null)
-                    {
-                        <div class="survey-form__toolbar-name">
-                            <MudTextFieldExtended T="string"
-                                                  OnlyValidateIfDirty="true"
-                                                  Placeholder="Survey name"
-                                                  Margin="Margin.Dense"
-                                                  Variant="Variant.Outlined"
-                                                  @bind-Value="TheItem.Name"
-                                                  For="@(() => TheItem.Name)" />
-                        </div>
                     }
                 </div>
             </ToolbarStartTemplate>
@@ -329,9 +318,25 @@
     }
 
     /*
-        Toolbar slots. Keep them compact so the form header stays small.
-        Name field pulled into the start slot; General/Visual/Logic/Raw
-        toggle pulled into the end slot.
+        Modal mode. ShiftEntityForm marks its scroll container with
+        .shift-scrollable-content-wrapper only when the form is hosted in a
+        dialog, which makes it a reliable "am I in a modal?" signal from CSS.
+        Inside a dialog the AppBar is not overhead — the dialog's own header
+        toolbar is, and it already sits ABOVE this scroller — so the 72px
+        clearance the page layout needs is just dead space at the top of both
+        pinned rails. 8px keeps them off the edge and hands the rest of the
+        column back to the phone.
+    */
+    .shift-scrollable-content-wrapper .survey-form-page__preview-sticky,
+    .shift-scrollable-content-wrapper .survey-form__visual-screens {
+        top: 8px;
+    }
+
+    /*
+        Toolbar slots. Keep them compact so the form header stays small — the
+        end slot carries the tab toggle plus Responses/Publish, and it competes
+        with the framework's own header controls, so the start slot is kept to
+        the published-version chip only.
     */
     .survey-form__toolbar-start {
         display: flex;
@@ -339,12 +344,6 @@
         gap: 8px;
         flex-wrap: nowrap;
         min-width: 0;
-        flex: 1 1 auto;
-    }
-    .survey-form__toolbar-name {
-        flex: 1 1 240px;
-        min-width: 160px;
-        max-width: 420px;
     }
     .survey-form__toolbar-end {
         display: flex;
@@ -378,8 +377,15 @@
         position: sticky;
         top: 72px;
         align-self: start;
-        max-height: calc(100vh - 88px);
+        max-height: calc(100dvh - 88px);
         overflow-y: auto;
+    }
+    /* In a modal the dialog has already eaten 176px of the viewport's height
+       budget before this scroller starts (MudBlazor's 64px appbar-height gutter
+       on .mud-dialog + the form's 48px dense header toolbar + its 64px footer
+       toolbar), plus the 8px sticky offset above. */
+    .shift-scrollable-content-wrapper .survey-form__visual-screens {
+        max-height: calc(100dvh - 190px);
     }
     .survey-form__visual-screens .screen-list__items {
         max-height: none;
@@ -464,6 +470,33 @@
     {
         if (Mode == FormModes.Create || Key is null)
             currentView = "general";
+    }
+
+    /// <summary>
+    /// Widens the hosting dialog past the app-wide modal-size preference (Large,
+    /// 1280px by default) as soon as the form mounts. The builder puts three
+    /// columns side by side — screens rail, inspector, phone preview — and at
+    /// 1280px the preview rail is pushed outside the dialog's own paper. Ignored
+    /// when the form is opened as a page: no dialog to resize.
+    /// </summary>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        if (!firstRender) return;
+
+        var dialog = FormContainer?.MudDialog;
+        if (dialog is null) return;
+
+        await dialog.SetOptionsAsync(dialog.Options with
+        {
+            // MaxWidth.False is the widest option MudBlazor offers — it drops the
+            // pixel cap entirely, leaving the dialog at the viewport minus a 64px
+            // gutter (every named size, up to ExtraExtraLarge's 2560px, caps
+            // narrower than that on a normal display).
+            MaxWidth = MaxWidth.False,
+            FullWidth = true,
+        });
     }
 
     void OnDraftJsonInput(ChangeEventArgs e)
