@@ -120,6 +120,15 @@ steps:
    condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-nuget'))
    displayName: 'pack ADP.Darlastic.Shared'
 
+ # Engine.Core is the pure scorer, split out of Engine so ADP.Darlastic.API can recompute a pair's
+ # derivation without dragging SqlClient + Cosmos + ADP.Models into a package that reads two tables.
+ # It MUST be packed: ADP.Darlastic.API depends on it, so leaving it out publishes an API package
+ # whose dependency does not exist on the feed, and every consuming host fails restore with NU1101 —
+ # "no packages exist with this id" — which reads like a feed problem rather than a missing step here.
+ - script: dotnet pack ADP.Darlastic/ADP.Darlastic.Engine.Core --configuration Release --output $(Build.ArtifactStagingDirectory)/ADP
+   condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-nuget'))
+   displayName: 'pack ADP.Darlastic.Engine.Core'
+
  - script: dotnet pack ADP.Darlastic/ADP.Darlastic.Data --configuration Release --output $(Build.ArtifactStagingDirectory)/ADP
    condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-nuget'))
    displayName: 'pack ADP.Darlastic.Data'
@@ -159,4 +168,9 @@ steps:
    condition: or(contains(variables['Build.SourceBranch'], 'refs/tags/release-all'), contains(variables['Build.SourceBranch'], 'refs/tags/release-nuget'))
    inputs:
     command: 'custom'
-    arguments: 'push "$(Build.ArtifactStagingDirectory)/ADP/**/*.nupkg" -Source https://api.nuget.org/v3/index.json -ApiKey $(ShiftSoftwareNugetApiKey)'
+    # -SkipDuplicate makes this step retryable. It pushes many packages in one call, so without it a
+    # single already-published version aborts the whole step — which is exactly the position a
+    # partial release leaves you in: on 2026-07-30 ADP.Darlastic.Engine.Core was missing from the
+    # pack steps, so 1.14.14 shipped for five packages and not the sixth, and there was no way to
+    # publish the missing one without bumping every version and re-tagging.
+    arguments: 'push "$(Build.ArtifactStagingDirectory)/ADP/**/*.nupkg" -Source https://api.nuget.org/v3/index.json -ApiKey $(ShiftSoftwareNugetApiKey) -SkipDuplicate'
