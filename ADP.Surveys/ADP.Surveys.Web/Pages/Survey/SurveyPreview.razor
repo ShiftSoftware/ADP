@@ -19,72 +19,49 @@
     and render a placeholder so the pane isn't a blank white box.
 *@
 
-<div class="survey-preview @($"survey-preview--{previewMode}")">
+<div class="survey-preview">
     @*
-        Device frame with a mobile / tablet / desktop width toggle. Mobile is
-        the primary target (~99% of survey traffic) and renders 1:1. Tablet
-        and desktop render at their true logical widths (768 / 1024 px) and
-        are scaled down with a CSS transform so the sticky preview rail keeps
-        its phone-sized footprint — the renderer sees a real wide viewport,
-        the layout doesn't reflow around a giant frame.
+        Phone frame only. Surveys are a ~99% mobile surface, and the tablet /
+        desktop frames that used to sit behind a width toggle rendered at their
+        true logical widths (768 / 1024 px) scaled down with a CSS transform —
+        a silhouette that clipped against its own scalebox and cost the phone a
+        toolbar row of vertical space for a preview nobody needed. Removed; the
+        renderer is responsive, so a wide viewport is not worth previewing here.
     *@
-    <div class="survey-preview__toolbar">
-        <MudToggleGroup T="string"
-                        SelectionMode="SelectionMode.SingleSelection"
-                        @bind-Value="previewMode"
-                        Color="Color.Primary"
-                        Size="Size.Small"
-                        CheckMark="false">
-            <MudToggleItem T="string" Value="@("mobile")">
-                <MudIcon Icon="@Icons.Material.Filled.Smartphone" Size="Size.Small" title="Mobile (375px)" />
-            </MudToggleItem>
-            <MudToggleItem T="string" Value="@("tablet")">
-                <MudIcon Icon="@Icons.Material.Filled.TabletMac" Size="Size.Small" title="Tablet (768px)" />
-            </MudToggleItem>
-            <MudToggleItem T="string" Value="@("desktop")">
-                <MudIcon Icon="@Icons.Material.Filled.DesktopWindows" Size="Size.Small" title="Desktop (1024px)" />
-            </MudToggleItem>
-        </MudToggleGroup>
-    </div>
-    <div class="survey-preview__scalebox">
-        <div class="survey-preview__device">
-            @if (previewMode == "mobile")
+    <div class="survey-preview__device">
+        <div class="survey-preview__device-notch"></div>
+        <div class="survey-preview__device-screen">
+            @if (Schema is null)
             {
-                <div class="survey-preview__device-notch"></div>
+                <div class="survey-preview__placeholder">
+                    <em>No valid draft to preview.</em>
+                </div>
             }
-            <div class="survey-preview__device-screen">
-                @if (Schema is null)
-                {
-                    <div class="survey-preview__placeholder">
-                        <em>No valid draft to preview.</em>
-                    </div>
-                }
-                else if (resolveError is not null)
-                {
-                    <div class="survey-preview__placeholder">
-                        <em>Preview unavailable: @resolveError</em>
-                    </div>
-                }
-                else
-                {
-                    <shift-survey @ref="surveyElement" locale="@Locale"></shift-survey>
-                }
-            </div>
+            else if (resolveError is not null)
+            {
+                <div class="survey-preview__placeholder">
+                    <em>Preview unavailable: @resolveError</em>
+                </div>
+            }
+            else
+            {
+                <shift-survey @ref="surveyElement" locale="@Locale"></shift-survey>
+            }
         </div>
     </div>
 </div>
 
 <style>
     /* Phone-shaped frame so authors preview the survey at a real mobile
-       viewport. 375×740 roughly matches iPhone 13 mini / SE3. The screen
-       area scrolls internally so long surveys behave like they would on a
-       real device. Width is derived from the (clamped) height via
-       aspect-ratio on .survey-preview__device-screen — the outer frame
+       viewport. 375×812 matches iPhone 13 mini — the frame reaches that 1:1
+       whenever the column is tall enough, and shrinks proportionally when it
+       isn't. The screen area scrolls internally so long surveys behave like
+       they would on a real device. Width is derived from the (clamped) height
+       via aspect-ratio on .survey-preview__device-screen — the outer frame
        wraps its child so it stays phone-shaped at any viewport. The
        parent sticky column centers it with flex (see SurveyForm.razor). */
     .survey-preview__device {
-        --device-width: 375px;
-        --device-height: 740px;
+        --device-height: 812px;
         --device-radius: 42px;
         width: fit-content;
         max-width: 100%;
@@ -113,72 +90,30 @@
         border-radius: calc(var(--device-radius) - 14px);
         overflow: auto;
         /* Adapt to available viewport when the sticky container can't show
-           the full --device-height. The 140px subtracts the AppBar-aware
-           sticky offset (72) + breathing (16) + device frame margin (16) +
-           device frame vertical padding (28) + a small safety margin. Falls
-           back to 280px minimum so the phone is still usable at extreme
-           zoom levels, and caps at the nominal 740px so a wide viewport
-           doesn't stretch the device beyond its intended silhouette. */
-        height: clamp(280px, calc(100vh - 140px), var(--device-height));
+           the full --device-height. The 120px subtracts the AppBar-aware
+           sticky offset (72) + device frame margin (16) + device frame
+           vertical padding (28) + a small safety margin. Falls back to 280px
+           minimum so the phone is still usable at extreme zoom levels, and
+           caps at --device-height so a tall viewport doesn't stretch the
+           device past a real phone's silhouette. */
+        height: clamp(280px, calc(100dvh - 120px), var(--device-height));
         /* Width flows from height at a fixed phone ratio so shrinking
            the viewport produces a shorter-AND-narrower phone rather than
-           a squat tablet silhouette. 375/812 matches iPhone 13 mini —
-           slimmer than the older 375/740 so the device reads as a modern
-           phone, not a 2015-era one. */
+           a squat tablet silhouette. 375/812 matches iPhone 13 mini. */
         aspect-ratio: 375 / 812;
         width: auto;
         padding-top: 40px;
         -webkit-overflow-scrolling: touch;
     }
 
-    .survey-preview__toolbar {
-        display: flex;
-        justify-content: center;
-        margin-bottom: 6px;
-    }
-
-    /* The scalebox reserves the SCALED footprint of the frame so the sticky
-       rail (an auto-sized grid column in SurveyForm) sizes itself to what's
-       actually painted rather than the logical 768/1024px frame. Mobile mode
-       is unscaled pass-through. */
-    .survey-preview__scalebox {
-        width: fit-content;
-        max-width: 100%;
-        margin: 0 auto;
-    }
-
-    /* Tablet: true 768px-wide viewport scaled to half size (≈398px painted). */
-    .survey-preview--tablet .survey-preview__scalebox {
-        width: calc((768px + 28px) * 0.5);
-        height: calc((1024px + 28px) * 0.5 + 16px);
-        overflow: hidden;
-    }
-    .survey-preview--tablet .survey-preview__device {
-        --device-radius: 22px;
-        transform: scale(0.5);
-        transform-origin: top left;
-    }
-    .survey-preview--tablet .survey-preview__device-screen {
-        height: 1024px;
-        aspect-ratio: 768 / 1024;
-        padding-top: 14px;
-    }
-
-    /* Desktop: true 1024px-wide viewport scaled to ≈442px painted. */
-    .survey-preview--desktop .survey-preview__scalebox {
-        width: calc((1024px + 28px) * 0.42);
-        height: calc((768px + 28px) * 0.42 + 16px);
-        overflow: hidden;
-    }
-    .survey-preview--desktop .survey-preview__device {
-        --device-radius: 12px;
-        transform: scale(0.42);
-        transform-origin: top left;
-    }
-    .survey-preview--desktop .survey-preview__device-screen {
-        height: 768px;
-        aspect-ratio: 1024 / 768;
-        padding-top: 14px;
+    /* Modal mode (see the .shift-scrollable-content-wrapper note in
+       SurveyForm.razor). A dialog starts 176px into the viewport's height
+       budget — MudBlazor's 64px appbar-height gutter on .mud-dialog, the
+       form's 48px dense header toolbar, its 64px footer toolbar — and the
+       rails only clear 8px there instead of 72px. Net 240px against the
+       page mode's 120px. */
+    .shift-scrollable-content-wrapper .survey-preview__device-screen {
+        height: clamp(280px, calc(100dvh - 240px), var(--device-height));
     }
 </style>
 
@@ -213,11 +148,6 @@
     // browser had pinned from a previous deploy.
     private static readonly string InteropPath =
         $"./_content/ShiftSoftware.ADP.Surveys.Web/js/shift-survey/interop.js?v={typeof(SurveyPreview).Assembly.GetName().Version}";
-
-    // Preview frame width: mobile (375, 1:1) / tablet (768, scaled) /
-    // desktop (1024, scaled). Pure CSS — the same <shift-survey> element
-    // persists across toggles, so no schema re-push is needed.
-    private string previewMode = "mobile";
 
     private ElementReference surveyElement;
     private IJSObjectReference? interopModule;

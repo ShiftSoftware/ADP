@@ -6,11 +6,20 @@
    default locale. Triggers live in their own toolbar tab (TriggersPanel). *@
 
 <div class="general-tab">
-    @* Name lives in the form's toolbar-start slot (always visible across
-       tabs), so this tab only surfaces the optional external identifier. *@
+    @* Name used to live in the form's toolbar-start slot; it was crowding the
+       tab toggle and the framework's header controls, so it sits here now —
+       the form's validation summary still surfaces a blank Name from any tab. *@
     <MudPaper Class="pa-4 mb-3" Elevation="0" Outlined="true">
         <div class="general-tab__section-title">Identity</div>
         <div class="general-tab__row">
+            <MudTextFieldExtended OnlyValidateIfDirty="true"
+                                  Label="Name"
+                                  HelperText="Internal name for this survey. Shown in the survey list."
+                                  Margin="Margin.Dense"
+                                  @bind-Value="Item.Name"
+                                  T="string"
+                                  ReadOnly="@ReadOnly"
+                                  For="@(() => Item.Name)" />
             <MudTextFieldExtended OnlyValidateIfDirty="true"
                                   Label="Integration ID"
                                   HelperText="Optional external reference. Must be unique across non-deleted surveys."
