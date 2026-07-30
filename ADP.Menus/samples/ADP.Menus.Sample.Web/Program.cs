@@ -69,7 +69,13 @@ builder.Services.AddShiftIdentity(
 
 builder.Services.AddShiftIdentityDashboardBlazor(x =>
 {
-    x.ShiftIdentityHostingType = ShiftIdentityHostingTypes.External;
+    // Must match the API side, which registers AddShiftIdentityDashboard<DB> with
+    // ShiftIdentityHostingTypes.Internal — this sample hosts identity in-process, and
+    // appsettings.Development.json points ShiftIdentity:BaseUrl at this same app.
+    // Set to External the client treats identity as a separate front-end and routes the
+    // dashboard away to FrontEndBaseUrl instead of rendering it here, so the identity
+    // dashboard endpoints the API maps are never called.
+    x.ShiftIdentityHostingType = ShiftIdentityHostingTypes.Internal;
     x.LogoPath = "/img/shift-full.png";
     x.Title = "ADP.Menus";
     x.DynamicTypeAuthActionExpander = () => Task.CompletedTask;

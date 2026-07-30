@@ -1,5 +1,16 @@
-﻿namespace ShiftSoftware.ADP.Menus.Shared.DTOs.Menu;
+namespace ShiftSoftware.ADP.Menus.Shared.DTOs.Menu;
 
+/// <summary>
+/// One generated menu line, as the DMS export's report rows see it.
+///
+/// PLAIN DATA. The derived margin / cost / profit arithmetic that used to live here now lives with the
+/// report layer (<c>ShiftSoftware.ADP.Menus.Data.DataServices.MenuLineMargins</c>) as extension
+/// members — import that namespace to keep reading <c>line.MenuTotalPrice</c> and friends, and see
+/// that type for why it moved and for the one caveat (serializers do not see extension members).
+///
+/// This type is the export's own shape (layer 3). It is mapped FROM
+/// <c>ShiftSoftware.ADP.Menus.Generation.GeneratedMenuLine</c> — see COSMOS_REPLICATION_PLAN.md §1.1.
+/// </summary>
 public class MenuLineDTO
 {
     public string Code { get; set; }
@@ -14,51 +25,19 @@ public class MenuLineDTO
     public decimal? DiscountPercentage { get; set; }
     public bool IsStandalone { get; set; }
     public IEnumerable<MenuLinePartDTO> Parts { get; set; }
-    public decimal PartsCost => Parts?.Sum(x => x.TotalCost) ?? 0;
-    public decimal PartsPrice => Parts?.Sum(x => x.TotalPrice) ?? 0;
-    public decimal PartsProfit => PartsPrice - PartsCost;
-    public decimal PartsProfitPercentage {
-        get
-        {
-            if(PartsCost == 0)
-                return 0; 
-
-            return Math.Round((PartsProfit / PartsCost) * 100, 2);
-        }
-    }
-    public decimal LabourCost => 10 * AllowedTime;
-    public decimal LabourPrice => LabourRate * AllowedTime;
-    public decimal LabourTotalPrice => LabourPrice + Consumable;
-    public decimal LabourProfit => LabourPrice - LabourCost;
-    public decimal GrossProfit => PartsProfit + LabourProfit;
-    public decimal GrossProfitPercentage { get
-        {
-            decimal revenue = PartsPrice + LabourPrice;
-            if (revenue == 0)
-                return 0;
-
-            return Math.Round((GrossProfit / revenue) * 100, 2);
-        }
-    }
-    public decimal MenuProfit => PartsProfit + LabourProfit + Consumable;
-    public decimal MenuTotalPrice { get
-        {
-            decimal totalPrice = LabourTotalPrice + PartsPrice;
-
-            // Calculate discount
-            totalPrice = totalPrice - (DiscountPercentage.GetValueOrDefault() / 100 * totalPrice);
-
-            return totalPrice;
-        }
-    }
 }
 
 public class MenuLinePartDTO
 {
     public string PartNumber { get; set; }
     public decimal Quantity { get; set; }
+
+    /// <summary>Dealer cost. Export-only — never expose this outside the report layer.</summary>
     public decimal Cost { get; set; }
+
+    /// <summary>Retail price.</summary>
     public decimal Price { get; set; }
+
     public decimal TotalPrice => Price * Quantity;
     public decimal TotalCost => Cost * Quantity;
 }

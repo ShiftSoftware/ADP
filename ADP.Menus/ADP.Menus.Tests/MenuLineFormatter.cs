@@ -1,6 +1,10 @@
 using System.Globalization;
 using System.Text;
 
+// MenuLineMargins lives in the report layer and supplies the derived margin/profit figures below as
+// extension members. Importing it here (rather than reimplementing the arithmetic in the formatter) is
+// what makes the golden snapshots prove the Phase 2 move was output-preserving.
+using ShiftSoftware.ADP.Menus.Data.DataServices;
 using ShiftSoftware.ADP.Menus.Generation;
 using ShiftSoftware.ADP.Menus.Shared.DTOs.Menu;
 

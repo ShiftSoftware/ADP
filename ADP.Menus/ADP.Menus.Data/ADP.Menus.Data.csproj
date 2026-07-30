@@ -29,6 +29,12 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\ADP.Menus.Shared\ADP.Menus.Shared.csproj" />
+		<!--
+		  The shared, source-agnostic menu-code generator. The export aggregates its EF graph into the
+		  generator's neutral request model rather than generating codes itself, so the DMS export and
+		  the vehicle lookup cannot drift. See COSMOS_REPLICATION_PLAN.md §1.1.
+		-->
+		<ProjectReference Include="..\ADP.Menus.Generation\ADP.Menus.Generation.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

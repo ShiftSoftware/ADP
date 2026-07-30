@@ -1,6 +1,6 @@
 # Menu → Cosmos Replication — Implementation Plan
 
-> Status: **plan / not yet implemented.** Agreed design for projecting the service-menu catalog into
+> Status: **Phases 0–2 implemented; Phases 3–6 still plan.** Agreed design for projecting the service-menu catalog into
 > Cosmos DB so a vehicle lookup can turn a **basic model code** into a set of **menu codes + prices**.
 >
 > **Chosen model: read-time generation, with a shared source-agnostic generation service.**
@@ -114,12 +114,13 @@ ADP.Models/  (netstandard2.0 — reachable by the lookup AND the menus host)
   Models/ModelTypes.cs                   # EDIT — one PartitionedItemType per itemType
 
 ADP.Menus/ADP.Menus.Data/  (net10.0 — the export + the replication producer)
-  ADP.Menus.Data.csproj                  # EDIT — add CosmosDbReplication + ADP.Models refs
+  ADP.Menus.Data.csproj                  # EDIT — ADP.Menus.Generation ref (P2); CosmosDbReplication + ADP.Models refs (P3)
   Entities/*.cs                          # EDIT — replicated tables implement IShiftEntityReplication
   Repositories/*Repository.cs            # EDIT — IShiftEntityPrepareForReplicationAsync where denormalizing
   DataServices/
     MenuExportService.cs                 # EDIT — EF → generic input → MenuCodeGenerator → report rows
     EfToGenerationAggregator.cs          # NEW — EF entities → MenuGenerationRequest (export's adapter)
+    MenuLineMargins.cs                   # NEW — the report's derived margin/profit arithmetic (moved off the DTO)
   Replication/
     MenuCosmosMappers.cs                 # NEW — manual EF-entity → Cosmos model (per table)
     MenuReplicationService.cs            # NEW — reusable replicate: per-table + all (backfill)
@@ -539,8 +540,8 @@ a health endpoint.
   (in `ADP.sln`, and run in CI via `azure-pipeline.yml`). 29 tests, all green. See §13 for exactly
   what is pinned and which open items are now characterised.
 - **Phase 1 — layer 1 (new `ADP.Menus.Generation`, netstandard2.0). ✅ DONE.** See §14.
-- **Phase 2 — export refactor.** `EfToGenerationAggregator` (EF → generic); `MenuExportService` calls
-  `MenuCodeGenerator`; margins move to the Excel report layer. No output change (Phase 0 green).
+- **Phase 2 — export refactor. ✅ DONE.** `EfToGenerationAggregator` (EF → generic); `MenuExportService`
+  calls `MenuCodeGenerator`; margins moved to the report layer. No output change — Phase 0 green. See §15.
 - **Phase 3 — layer 2 + replication.** Cosmos models in `ADP.Models`, **together with the
   `NoSQLConstants` (`Containers.ServiceMenus`, `PartitionKeys.ServiceMenus`,
   `ServiceMenuReferencePartition`) and the eight `ModelTypes` discriminators** — they belong with the
@@ -719,3 +720,103 @@ implementation and locked by `PortedGenerator_DoesNotResolveLabourRate_WhenNoLin
 `GeneratedMenuLine.LineKey` (`P|{variant}|{interval}`, `S|{variant}|{item}`, `G|{variant}|{group}`)
 identifies a line **independently of language**, so the same line can be correlated across language
 runs. Never key on `Code` for that — it is language-dependent by construction.
+
+---
+
+## 15. Phase 2 — the export refactor (DONE)
+
+The DMS export now goes through the shared generator. **81 tests green** (Phase 0's 29 + Phase 1's 32 +
+20 new). **The Phase 0 golden snapshots were not touched**, and they run through the new path — which is
+precisely the proof that the export's output did not change.
+
+```
+BEFORE:  EF entities ──MenuExportService.GenerateMenuLines (the fold)──▶ MenuLineDTO (+ margin getters)
+AFTER:   EF entities ──EfToGenerationAggregator──▶ MenuGenerationRequest
+                     ──MenuCodeGenerator (SHARED)──▶ GeneratedMenuLine
+                     ──MenuExportService.MapToReportLine──▶ MenuLineDTO (plain data)
+                                                            + MenuLineMargins (report layer)
+```
+
+| File | Change |
+|---|---|
+| [`EfToGenerationAggregator.cs`](ADP.Menus.Data/DataServices/EfToGenerationAggregator.cs) | NEW — the export's EF → layer-1 adapter. A pure projection: no filtering, no reordering. |
+| [`MenuExportService.cs`](ADP.Menus.Data/DataServices/MenuExportService.cs) | The ~200-line fold is gone. Aggregate → generate → map, and nothing else. Signature unchanged, so `MenuController` is untouched. |
+| [`MenuLineMargins.cs`](ADP.Menus.Data/DataServices/MenuLineMargins.cs) | NEW — the derived margin/cost/profit arithmetic, moved verbatim off `MenuLineDTO`. |
+| [`MenuLineDTO.cs`](ADP.Menus.Shared/DTOs/Menu/MenuLineDTO.cs) | Now plain data — 12 computed getters removed. |
+| `ADP.Menus.Data.csproj` | References `ADP.Menus.Generation`. CI already packs Generation before Data, so the published `ShiftSoftware.ADP.Menus.Data` picks the dependency up automatically. |
+
+### Margins: why they moved, and why nothing broke
+
+They were computed properties on the DTO. Layer 1 (`GeneratedMenuLine`) already refuses to carry margin
+arithmetic — it is presentation, and a pure function of fields the line already has (§14). With layer 1
+refusing it, leaving it on layer 3 gave the same arithmetic two plausible homes; it now has one, in the
+assembly that owns `IMenuReportExporter`, while `MenuLineDTO` stays plain data in the DTO package.
+
+Be precise about the dealer-cost angle, because it is easy to overstate: `MenuLineDTO` is **export-only**
+and was never itself a leak path. The concern is forward-looking — when Phase 6 writes the lookup's line
+DTO, this type is the obvious template, and `PartsCost` / `PartsProfit` / `GrossProfit` cannot be copied
+across without dragging dealer cost with them. Cost is kept out of the lookup at its real chokepoint,
+`MenuGenerationConfig.IncludePartCost`.
+
+They are now **C# 14 extension members** on `MenuLineDTO`, in the namespace that already holds
+`IMenuReportExporter` and `MenuExportContext`. So a host exporter reading `line.MenuTotalPrice` — or
+`oldLine?.MenuTotalPrice`, which also still binds — keeps compiling unchanged: any implementer of
+`IMenuReportExporter` necessarily imports that namespace. A breaking change was available and was not
+needed.
+
+Every formula is the previous implementation verbatim, rounding and divide-by-zero guards included. The
+golden snapshots render all twelve, and the test formatter now reaches them through the extension —
+so "the move changed no value" is asserted, not assumed.
+
+**One caveat.** Extension members are invisible to serializers and to reflection-driven mapping (JSON,
+AutoMapper, reflection-based Excel writers). Nothing serializes `MenuLineDTO` today — every export
+endpoint returns a byte array — but a host that starts doing so would get a payload without these
+twelve figures, *silently*, rather than a compile error. That is the only way this move is not free.
+
+### One fidelity bug found and fixed in the adapter
+
+An early draft of the aggregator inferred interval-group membership from
+`ServiceInterval.ServiceIntervalGroupID` **in addition to** `ServiceIntervalGroup.ServiceIntervals`. The
+fold only ever consulted the latter, so on a partially-loaded graph the inference would resurrect
+periodic lines the export never emitted — issuing menu codes no DMS had received. Membership now comes
+exclusively from `ServiceIntervalGroup.ServiceIntervals`, pinned by
+`GroupMembership_ComesFromTheServiceIntervalsNavigation_NotTheForeignKey`.
+
+That test needs its own minimal graph, and the reason is worth remembering: in `MenuGraphFixture` the
+group is reachable through both a labour detail *and* a replacement item, and the second `AddGroup`
+overwrites — and therefore **masks** — any foreign-key inference. Written against the shared fixture the
+test passes with the bug present. Verified by re-introducing the inference and watching it fail.
+
+### Deliberate, output-neutral changes
+
+- **The result is materialised** (`.ToList()`), where it used to be a lazily-`Append`ed chain. Report
+  exporters walk the sequence twice — once to size the parts columns, once to write rows — so the fold
+  used to run **twice** per export. It now runs once. The only observable difference is that a missing
+  labour-rate mapping (O1) throws at the call rather than at first enumeration; both callers already
+  propagate it identically.
+- `MenuExportService.GetPartPriceByCountry` / `GetPartFinalPriceByCountry` were deleted — `internal`,
+  and country price resolution now lives in the generator.
+- `IncludePartCost = true` is set on the export's config, and only there. Cost still reaches the report;
+  it stays off by default for everyone else (§14).
+
+### What the new tests add
+
+[`EfToGenerationAggregatorTests`](ADP.Menus.Tests/EfToGenerationAggregatorTests.cs) — the adapter's
+output must generate **identically to the hand-built `MenuGenerationRequestFixture`** across the Phase 1
+configuration matrix, so a disagreement means the adapter mis-reads the EF graph. Plus: membership comes
+from the navigation not the FK; soft-delete state is *carried* rather than filtered; collection order is
+preserved (O8 depends on it); the labour-rate key keeps its decimal-value semantics across the hop.
+
+[`MenuLineMarginsTests`](ADP.Menus.Tests/MenuLineMarginsTests.cs) — the edges a snapshot cannot reach:
+both divide-by-zero guards, the 2dp rounding scale, null `Parts`, null discount, and `LabourCost` being
+a flat 10/hour rather than the dealer's labour rate.
+
+Mutation-checked: dropping the part soft-delete flag from the adapter fails 20 tests — including the
+Phase 0 goldens, which now guard the adapter as well as the generator.
+
+### Note for Phase 3
+
+The aggregator's class comment lists the EF navigations it reads. **A missing `Include` there loses menu
+lines silently** — an unloaded interval group is an empty interval group, and an empty group emits no
+periodic line. The same trap applies to the Cosmos reader in Phase 5: a partition read that misses a
+document type degrades to "no lines" rather than an error.

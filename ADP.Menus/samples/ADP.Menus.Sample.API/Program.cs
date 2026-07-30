@@ -62,6 +62,15 @@ mvcBuilder.AddShiftEntityWeb(x =>
 
     x.AddAzureStorage(azureStorageAccounts.ToArray());
     x.AddShiftIdentityAutoMapper();
+
+    // Registers ShiftSoftware.ShiftIdentity.Data as a data assembly. That assembly holds the 13
+    // [ShiftEntitySecureEndpoint<>] identity entities (User, Company, Brand, City, Region,
+    // Department, Service, Team, App, CompanyBranch, AccessTree, Country, CompanyCalendar), and
+    // MapShiftEntityEndpoints<DB>() below discovers its routes from the REGISTERED data assemblies.
+    // Without this the dashboard's CRUD endpoints are never created: requests to api/User,
+    // api/Company, … fall through to MapFallbackToFile and come back as the Blazor index.html
+    // with a 200, which reads like a broken page rather than a missing route.
+    x.AddShiftIdentityDataAssembly();
 });
 
 // ---------- ShiftIdentity token validation ----------
@@ -179,6 +188,21 @@ app.UseRequestLocalization(options =>
 });
 
 app.MapControllers();
+
+// ShiftIdentity's auth + identity-server endpoints (login / refresh / MFA / auth-code, users,
+// company calendar, …). These used to be classic controllers picked up by MapControllers() above;
+// the 2026-07 framework release moved them to minimal APIs, which the host has to map explicitly.
+// Without this call POST api/Auth/Login does not exist — the request falls through to the
+// MapFallbackToFile below, so login fails in a way that looks like a routing bug rather than a
+// missing endpoint. Only hosts running ShiftIdentityHostingTypes.Internal (as this sample does)
+// need it; hosts that merely validate tokens issued by a separate identity service do not.
+app.MapShiftIdentityDashboard();
+
+// Attribute-driven CRUD for [ShiftEntityEndpoint<>] / [ShiftEntitySecureEndpoint<>] entities —
+// the identity dashboard's own resources. DI registration happens in RegisterShiftRepositories;
+// this maps the routes. The Menus module's own controllers are classic
+// ShiftEntitySecureControllerAsync and stay on MapControllers() above.
+app.MapShiftEntityEndpoints<DB>();
 
 using (var scope = app.Services.CreateScope())
 {

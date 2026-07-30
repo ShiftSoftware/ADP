@@ -1,11 +1,39 @@
-﻿using ShiftSoftware.ADP.Menus.Data.Entities;
+using ShiftSoftware.ADP.Menus.Data.Entities;
+using ShiftSoftware.ADP.Menus.Generation;
 using ShiftSoftware.ADP.Menus.Shared;
 using ShiftSoftware.ADP.Menus.Shared.DTOs.Menu;
 
 namespace ShiftSoftware.ADP.Menus.Data.DataServices;
 
+/// <summary>
+/// The DMS export's entry point into menu-code generation.
+///
+/// It no longer generates anything itself. It aggregates the EF graph into the source-agnostic
+/// <see cref="MenuGenerationRequest"/>, calls the shared <see cref="MenuCodeGenerator"/> — the very
+/// same service the vehicle lookup calls over Cosmos data — and maps the generic result onto the
+/// export's report rows. That is what makes "the lookup's menu codes are identical to the export's" a
+/// property of the build rather than a promise someone has to keep. See COSMOS_REPLICATION_PLAN.md §1.1.
+///
+/// Generation rules therefore belong in <see cref="MenuCodeGenerator"/> and nowhere else; the derived
+/// margin / profit arithmetic belongs to the report layer (<see cref="MenuLineMargins"/>). This class
+/// is only the adapter between them.
+///
+/// Behaviour is pinned by the Phase 0 golden snapshots, which run through this method: if they are
+/// green, the export's output is byte-identical to what it produced before the refactor.
+/// </summary>
 public class MenuExportService
 {
+    /// <summary>
+    /// Generates the export's report rows for one country / language configuration.
+    ///
+    /// Ordering is unchanged: all periodic lines (variant order, then interval order), then all
+    /// standalone lines (ungrouped before grouped, per variant).
+    /// </summary>
+    /// <exception cref="KeyNotFoundException">
+    /// A variant's (brand, primary labour rate) pair has no <see cref="LabourRateMapping"/>. Callers
+    /// pre-check the catalogue and fail up front with a friendlier message; this is the backstop, and
+    /// it is deliberately preserved (open item O1).
+    /// </exception>
     public static IEnumerable<MenuLineDTO> GenerateMenuLines(
             List<MenuVariant> menuVariants,
             Dictionary<CompositeKey<long?, decimal>, LabourRateMapping> labourRateMapping,
@@ -15,215 +43,47 @@ public class MenuExportService
             string? language = null,
             bool usePrimaryLabourRate = false)
     {
-        IEnumerable<MenuLineDTO> result = [];
+        var request = EfToGenerationAggregator.Build(menuVariants, labourRateMapping, brandMapping);
 
-        foreach (var menuVariant in menuVariants)
+        var config = new MenuGenerationConfig
         {
-            var menuPrefix = LocalizedText.Resolve(menuVariant.MenuPrefix, language);
-            var menuPostfix = LocalizedText.Resolve(menuVariant.MenuPostfix, language);
+            CountryID = countryId,
+            TransferRate = transferRate,
+            Language = language,
+            UsePrimaryLabourRate = usePrimaryLabourRate,
 
-            foreach (var serviceInterval in menuVariant.PeriodicAvailabilities)
-            {
-                var code = $"{menuPrefix} {menuVariant.Menu.BasicModelCode} {serviceInterval.ServiceInterval.Code} {menuPostfix}".Trim();
+            // The DMS export is the only consumer allowed to see dealer cost, and it needs it for the
+            // detail report's margin columns. The vehicle lookup leaves this off.
+            IncludePartCost = true,
+        };
 
-                string labourCode = "";
-                decimal allowedTime = 0;
-                decimal consumable = 0;
-
-                var labourDetail = menuVariant.LabourDetails.FirstOrDefault(x => x.ServiceIntervalGroup.ServiceIntervals.Any(s => s.ID == serviceInterval.ServiceIntervalID));
-                if (labourDetail is not null)
-                {
-                    consumable = Math.Round(labourDetail.Consumable * transferRate, 2);
-                    allowedTime = labourDetail.AllowedTime;
-
-                    var allowedTimeText = Utility.GetAllowedTimeText(labourDetail.AllowedTime);
-
-                    var primaryLabourRate = menuVariant.LabourRate;
-                    var labourRateMap = labourRateMapping[new CompositeKey<long?, decimal>(menuVariant.Menu.VehicleModel!.BrandID, primaryLabourRate)];
-                    var brandAbbreviation = brandMapping.GetValueOrDefault(menuVariant.Menu.VehicleModel!.BrandID)?.BrandAbbreviation ?? "Z";
-
-                    labourCode = $"{labourDetail.ServiceIntervalGroup.LabourCode}{allowedTimeText}{labourRateMap.Code}{brandAbbreviation}".Trim();
-                }
-                else
-                {
-                    continue;
-                }
-
-                var item = new MenuLineDTO
-                {
-                    Code = code,
-                    BrandID = menuVariant.Menu.VehicleModel!.BrandID,
-                    BasicModelCode = menuVariant.Menu.BasicModelCode,
-                    Model = menuVariant.Menu.VehicleModel!.Name,
-                    Description = serviceInterval.ServiceInterval.Description,
-                    LabourCode = labourCode,
-                    Consumable = consumable,
-                    AllowedTime = allowedTime,
-                    LabourRate = ResolveLabourRate(menuVariant, countryId, usePrimaryLabourRate),
-                    DiscountPercentage = menuVariant.DiscountPercentage,
-                    IsStandalone = false,
-                    Parts = menuVariant.Items
-                        .Where(x => !x.IsDeleted
-                            && x.ReplacementItemVehicleModel != null
-                            && !x.ReplacementItemVehicleModel.IsDeleted)
-                        .Where(x => x.ReplacementItemVehicleModel!.ReplacementItem.ReplacementItemServiceIntervalGroups
-                            .Any(a => a.ServiceIntervalGroup.ServiceIntervals.Any(i => i.ID == serviceInterval.ServiceIntervalID)))
-                        .SelectMany(x => x.Parts.Where(p => !p.IsDeleted && p.PeriodicQuantity.GetValueOrDefault() > 0).Select(p => new MenuLinePartDTO
-                        {
-                            PartNumber = p.PartNumber,
-                            Quantity = p.PeriodicQuantity.GetValueOrDefault(),
-                            Price = GetPartFinalPriceByCountry(p, countryId),
-                            Cost = GetPartPriceByCountry(p, countryId),
-                        }))
-                };
-
-                result = result.Append(item);
-            }
-        }
-
-        result = result.Concat(GenerateStandaloneMenuLines(menuVariants, labourRateMapping, brandMapping, countryId, language, usePrimaryLabourRate));
-
-        return result;
+        // Materialised rather than returned lazily: report exporters walk the sequence more than once
+        // (once to size the parts columns, once to write the rows), and the fold is not cheap.
+        return MenuCodeGenerator.Generate(request, config).Select(MapToReportLine).ToList();
     }
 
-    private static decimal ResolveLabourRate(MenuVariant menuVariant, long countryId, bool usePrimary)
+    private static MenuLineDTO MapToReportLine(GeneratedMenuLine line) => new()
     {
-        if (usePrimary)
-            return menuVariant.LabourRate;
-        return menuVariant.LabourRates.FirstOrDefault(x => !x.IsDeleted && x.CountryID == countryId)?.LabourRate
-            ?? menuVariant.LabourRate;
-    }
-
-    private static IEnumerable<MenuLineDTO> GenerateStandaloneMenuLines(
-            List<MenuVariant> menuVariants,
-            Dictionary<CompositeKey<long?, decimal>, LabourRateMapping> labourRateMapping,
-            Dictionary<long?, BrandMapping> brandMapping,
-            long countryId,
-            string? language = null,
-            bool usePrimaryLabourRate = false)
-    {
-        IEnumerable<MenuLineDTO> result = [];
-
-        // Get only menus that include standalone items
-        var standaloneMenus = menuVariants.Where(x => x.HasStandaloneItems).ToList();
-
-        foreach (var menuVariant in standaloneMenus)
+        Code = line.Code,
+        BrandID = line.BrandID,
+        BasicModelCode = line.BasicModelCode,
+        Model = line.Model,
+        Description = line.Description,
+        LabourCode = line.LabourCode,
+        LabourRate = line.LabourRate,
+        AllowedTime = line.AllowedTime,
+        Consumable = line.Consumable,
+        DiscountPercentage = line.DiscountPercentage,
+        IsStandalone = line.IsStandalone,
+        Parts = line.Parts.Select(part => new MenuLinePartDTO
         {
-            var standalonePrefix = LocalizedText.Resolve(menuVariant.StandaloneMenuPrefix, language);
-            var standalonePostfix = LocalizedText.Resolve(menuVariant.StandaloneMenuPostfix, language);
+            PartNumber = part.PartNumber,
+            Quantity = part.Quantity,
 
-            // Create menu for non grouped items
-            var nonGroupedItems = menuVariant.Items
-                .Where(x => !x.IsDeleted
-                    && x.ReplacementItemVehicleModel != null
-                    && !x.ReplacementItemVehicleModel.IsDeleted
-                    && x.ReplacementItemVehicleModel.ReplacementItem.StandaloneReplacementItemGroup is null
-                    && x.Parts.Any(p => !p.IsDeleted && p.StandaloneQuantity.GetValueOrDefault() > 0))
-                .ToList();
-
-            foreach (var item in nonGroupedItems)
-            {
-                var standaloneOperationCode = LocalizedText.Resolve(item.ReplacementItemVehicleModel!.ReplacementItem.StandaloneOperationCode, language);
-                var code = $"{standalonePrefix} {standaloneOperationCode} {menuVariant.Menu.BasicModelCode} {standalonePostfix}".Trim();
-
-                decimal allowedTime = item.StandaloneAllowedTime;
-
-                var allowedTimeText = Utility.GetAllowedTimeText(item.StandaloneAllowedTime);
-
-                var primaryLabourRate = menuVariant.LabourRate;
-                var labourRate = ResolveLabourRate(menuVariant, countryId, usePrimaryLabourRate);
-                var labourRateMap = labourRateMapping[new CompositeKey<long?, decimal>(menuVariant.Menu.VehicleModel!.BrandID, primaryLabourRate)];
-                var brandAbbreviation = brandMapping.GetValueOrDefault(menuVariant.Menu.VehicleModel!.BrandID)?.BrandAbbreviation ?? "Z";
-
-                var labourCode = $"{item.ReplacementItemVehicleModel!.ReplacementItem.StandaloneLabourCode}{allowedTimeText}{labourRateMap.Code}{brandAbbreviation}".Trim();
-
-                var line = new MenuLineDTO
-                {
-                    Code = code,
-                    Model = menuVariant.Menu.VehicleModel!.Name,
-                    AllowedTime = allowedTime,
-                    Consumable = 0,
-                    LabourRate = labourRate,
-                    LabourCode = labourCode,
-                    BasicModelCode = menuVariant.Menu.BasicModelCode,
-                    BrandID = menuVariant.Menu.VehicleModel!.BrandID,
-                    Description = item.ReplacementItemVehicleModel!.ReplacementItem.FriendlyName,
-                    DiscountPercentage = menuVariant.DiscountPercentage,
-                    IsStandalone = true,
-                    Parts = item.Parts
-                        .Where(x => !x.IsDeleted && x.StandaloneQuantity.GetValueOrDefault() > 0)
-                        .Select(x => new MenuLinePartDTO
-                        {
-                            PartNumber = x.PartNumber,
-                            Price = GetPartFinalPriceByCountry(x, countryId),
-                            Quantity = x.StandaloneQuantity.GetValueOrDefault(),
-                            Cost = GetPartPriceByCountry(x, countryId),
-                        })
-                };
-                result = result.Append(line);
-            }
-
-            // Create menu for grouped items
-            var groupedItems = menuVariant.Items.Where(x => !x.IsDeleted
-                && x.ReplacementItemVehicleModel != null
-                && !x.ReplacementItemVehicleModel.IsDeleted
-                && x.ReplacementItemVehicleModel.ReplacementItem?.StandaloneReplacementItemGroup is not null
-                && x.Parts.Any(p => !p.IsDeleted && p.StandaloneQuantity.GetValueOrDefault() > 0))
-                .GroupBy(x => x.ReplacementItemVehicleModel!.ReplacementItem!.StandaloneReplacementItemGroup!.ID).ToList();
-
-            foreach (var item in groupedItems)
-            {
-                var menuCode = LocalizedText.Resolve(item.First().ReplacementItemVehicleModel!.ReplacementItem!.StandaloneReplacementItemGroup!.MenuCode, language);
-                var code = $"{standalonePrefix} {menuCode} {menuVariant.Menu.BasicModelCode} {standalonePostfix}".Trim();
-
-                decimal allowedTime = item.First().StandaloneAllowedTime;
-
-                var allowedTimeText = Utility.GetAllowedTimeText(allowedTime);
-
-                var primaryLabourRate = menuVariant.LabourRate;
-                var labourRate = ResolveLabourRate(menuVariant, countryId, usePrimaryLabourRate);
-                var labourRateMap = labourRateMapping[new CompositeKey<long?, decimal>(menuVariant.Menu.VehicleModel!.BrandID, primaryLabourRate)];
-                var brandAbbreviation = brandMapping.GetValueOrDefault(menuVariant.Menu.VehicleModel!.BrandID)?.BrandAbbreviation ?? "Z";
-
-                var labourCode = $"{item.First().ReplacementItemVehicleModel!.ReplacementItem!.StandaloneReplacementItemGroup!.LabourCode}{allowedTimeText}{labourRateMap.Code}{brandAbbreviation}".Trim();
-
-                var line = new MenuLineDTO
-                {
-                    Code = code,
-                    Model = menuVariant.Menu.VehicleModel!.Name,
-                    AllowedTime = allowedTime,
-                    Consumable = 0,
-                    LabourRate = labourRate,
-                    LabourCode = labourCode,
-                    BasicModelCode = menuVariant.Menu.BasicModelCode,
-                    BrandID = menuVariant.Menu.VehicleModel!.BrandID,
-                    Description = item.First().ReplacementItemVehicleModel!.ReplacementItem!.StandaloneReplacementItemGroup!.Name,
-                    DiscountPercentage = menuVariant.DiscountPercentage,
-                    IsStandalone = true,
-                    Parts = item.SelectMany(x => x.Parts.Where(p => !p.IsDeleted && p.StandaloneQuantity.GetValueOrDefault() > 0).Select(p => new MenuLinePartDTO
-                    {
-                        PartNumber = p.PartNumber,
-                        Quantity = p.StandaloneQuantity.GetValueOrDefault(),
-                        Price = GetPartFinalPriceByCountry(p, countryId),
-                        Cost = GetPartPriceByCountry(p, countryId),
-                    }))
-                };
-                result = result.Append(line);
-            }
-        }
-
-        return result;
-    }
-
-    internal static decimal GetPartPriceByCountry(MenuItemPart part, long countryId)
-    {
-        var row = part.CountryPrices?.FirstOrDefault(x => !x.IsDeleted && x.CountryID == countryId);
-        return row?.PartPrice ?? 0;
-    }
-
-    internal static decimal GetPartFinalPriceByCountry(MenuItemPart part, long countryId)
-    {
-        var row = part.CountryPrices?.FirstOrDefault(x => !x.IsDeleted && x.CountryID == countryId);
-        return row?.PartFinalPrice ?? 0;
-    }
+            // Never null here — IncludePartCost is set above. An unpriced part already resolves to 0
+            // inside the generator, which is the export's historical fallback.
+            Cost = part.Cost.GetValueOrDefault(),
+            Price = part.Price,
+        }).ToList(),
+    };
 }
