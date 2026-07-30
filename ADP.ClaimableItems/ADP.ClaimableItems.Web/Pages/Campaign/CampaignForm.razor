@@ -2,12 +2,13 @@
 
 @inherits ShiftForm<CampaignForm, CampaignDTO>
 @inject IEnumerable<ICampaignTriggerFormFields> TriggerFields
+@inject IOptions<ClaimableItemsWebOptions> CIOptions
 
 <ShiftEntityForm @bind-Mode="Mode"
                  @bind-Value="TheItem"
                  @ref="FormContainer"
                  AllowSaveAsNew
-                 Endpoint="ServiceCampaign"
+                 Endpoint="@(CIOptions.Value.ResolvedRoutePrefix + "ServiceCampaign")"
                  Title="ServiceCampaign"
                  TypeAuthAction="null"
                  @bind-Key="@Key">

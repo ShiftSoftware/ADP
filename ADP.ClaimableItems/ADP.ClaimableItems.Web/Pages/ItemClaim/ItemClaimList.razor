@@ -15,7 +15,7 @@
 
 @inject ShiftSoftware.TypeAuth.Core.ITypeAuthService TypeAuthService
 
-<ShiftList EntitySet="ItemClaim"
+<ShiftList EntitySet="@(CIOptions.Value.ResolvedRoutePrefix + "ItemClaim")"
            Title="Item Claims"
            T="ItemClaimListDTO"
            Dense
@@ -102,8 +102,8 @@
         <ForeignFilter @ref="CompanyFilter" Order="3" AdditionalParameters='new() { [nameof(ShiftAutocomplete<ItemClaimListDTO>.GroupSelectedValues)] = false }' Property="x => x.CompanyID" Label="Company" DTOType="typeof(CompanyListDTO)" EntitySet="IdentityCompany" BaseUrlKey="ShiftIdentityApi" lg="4" md="6" sm="12" xs="12" />
         <ForeignFilter Order="4" AdditionalParameters='new() { [nameof(ShiftAutocomplete<ItemClaimListDTO>.GroupSelectedValues)] = false }' Property="x => x.CompanyBranchID" AutocompleteFilter="x => x.Add(CompanyFilter?.Filter)" Label="Branch" DTOType="typeof(CompanyBranchListDTO)" EntitySet="IdentityCompanyBranch" BaseUrlKey="ShiftIdentityApi" lg="4" md="6" sm="12" xs="12" />
         
-        <ForeignFilter Order="5" AdditionalParameters='new() { [nameof(ShiftAutocomplete<ItemClaimListDTO>.GroupSelectedValues)] = false }' Property="x => x.CampaignID" Label="Campaign" DTOType="typeof(CompanyListDTO)" EntitySet="ServiceCampaign" lg="4" md="6" sm="12" xs="12" />
-        <ForeignFilter Order="6" AdditionalParameters='new() { [nameof(ShiftAutocomplete<ItemClaimListDTO>.GroupSelectedValues)] = false }' Property="x => x.ClaimableItemID" Label="Item" DTOType="typeof(ClaimableItemListDTO)" EntitySet="ClaimableItem" lg="4" md="6" sm="12" xs="12" />
+        <ForeignFilter Order="5" AdditionalParameters='new() { [nameof(ShiftAutocomplete<ItemClaimListDTO>.GroupSelectedValues)] = false }' Property="x => x.CampaignID" Label="Campaign" DTOType="typeof(CompanyListDTO)" EntitySet="@(CIOptions.Value.ResolvedRoutePrefix + "ServiceCampaign")" lg="4" md="6" sm="12" xs="12" />
+        <ForeignFilter Order="6" AdditionalParameters='new() { [nameof(ShiftAutocomplete<ItemClaimListDTO>.GroupSelectedValues)] = false }' Property="x => x.ClaimableItemID" Label="Item" DTOType="typeof(ClaimableItemListDTO)" EntitySet="@(CIOptions.Value.ResolvedRoutePrefix + "ClaimableItem")" lg="4" md="6" sm="12" xs="12" />
         <EnumFilter Order="7" Property="x => x.ClaimStatus" Label="Status" lg="4" md="6" sm="12" xs="12" />
         <EnumFilter Order="8" Property="x => x.HasAttachment" Label="Has Attachment" lg="4" md="6" sm="12" xs="12" />
         

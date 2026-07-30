@@ -13,7 +13,7 @@
 <ShiftEntityForm @bind-Mode="Mode"
                  @bind-Value="TheItem"
                  @ref="FormContainer"
-                 Endpoint="ItemClaimCertificate"
+                 Endpoint="@(CIOptions.Value.ResolvedRoutePrefix + "ItemClaimCertificate")"
                  Title="Item Claiming Certificate"
                  DisableDelete="TheItem.InvoiceDate is not null"
                  DisableEdit="TheItem.InvoiceDate is not null"

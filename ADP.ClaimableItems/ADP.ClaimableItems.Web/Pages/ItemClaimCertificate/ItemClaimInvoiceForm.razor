@@ -13,7 +13,7 @@
 <ShiftEntityForm @bind-Mode="Mode"
                  @bind-Value="TheItem"
                  @ref="FormContainer"
-                 Endpoint="ItemClaimInvoice"
+                 Endpoint="@(CIOptions.Value.ResolvedRoutePrefix + "ItemClaimInvoice")"
                  Title="Item Claiming Invoice"
                  TypeAuthAction="CIOptions.Value.InvoicingAction"
                  ShowPrint

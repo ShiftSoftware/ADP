@@ -3,7 +3,7 @@
 
 @inject IOptions<ClaimableItemsWebOptions> CIOptions
 
-<ShiftList EntitySet="ClaimableItem"
+<ShiftList EntitySet="@(CIOptions.Value.ResolvedRoutePrefix + "ClaimableItem")"
            Title="Claimable Items"
            T="ClaimableItemListDTO"
            Dense
@@ -20,7 +20,7 @@
 
     <StringFilter Order="0" Property="x => x.Name" Label="Name" Operator="ShiftSoftware.ShiftBlazor.Enums.ODataOperator.Contains" lg="3" md="6" sm="12" xs="12" />
     <StringFilter Order="1" Property="x => x.UniqueReference" Label="Unique Reference" Operator="ShiftSoftware.ShiftBlazor.Enums.ODataOperator.Contains" lg="3" md="6" sm="12" xs="12" />
-    <ForeignFilter Order="2" AdditionalParameters='new() { [nameof(ShiftAutocomplete<ClaimableItemListDTO>.GroupSelectedValues)] = false }' Property="x => x.CampaignID" Label="Campaign" DTOType="typeof(CampaignListDTO)" EntitySet="ServiceCampaign" lg="6" md="6" sm="12" xs="12" />
+    <ForeignFilter Order="2" AdditionalParameters='new() { [nameof(ShiftAutocomplete<ClaimableItemListDTO>.GroupSelectedValues)] = false }' Property="x => x.CampaignID" Label="Campaign" DTOType="typeof(CampaignListDTO)" EntitySet="@(CIOptions.Value.ResolvedRoutePrefix + "ServiceCampaign")" lg="6" md="6" sm="12" xs="12" />
     <DateTimeFilter Order="3" Property="x => x.CampaignStartDate" Label="Campaign Start Date" lg="4" md="6" sm="12" xs="12" />
     <DateTimeFilter Order="4" Property="x => x.CampaignExpireDate" Label="Campaign Expire Date" lg="4" md="6" sm="12" xs="12" />
     <NumberFilter Order="5" Property="x => x.MaximumMileage" Label="Maximum Mileage" Operator="ShiftSoftware.ShiftBlazor.Enums.ODataOperator.GreaterThan" lg="4" md="6" sm="12" xs="12" />

@@ -13,7 +13,7 @@
 <ShiftEntityForm @bind-Mode="Mode"
                  @bind-Value="TheItem"
                  @ref="FormContainer"
-                 Endpoint="ItemClaim"
+                 Endpoint="@(CIOptions.Value.ResolvedRoutePrefix + "ItemClaim")"
                  Title="Item Claim"
                  ShowPrint
                  OnResult="(r) => { this.postClaimModification = ((CIOptions.Value.PostClaimModificationAction is not null && this.TypeAuthService.CanAccess(CIOptions.Value.PostClaimModificationAction)) && r.Entity!.ClaimStatus == ClaimStatus.Draft); return ValueTask.FromResult(true); }"
@@ -48,14 +48,14 @@
         <MudItem Class="pt-2 pb-2" lg="4" md="4" sm="6" xs="12">
             <ShiftAutocomplete Label="Item" ReadOnly Disabled="Mode == FormModes.Edit"
                                TEntitySet="ShiftSoftware.ADP.ClaimableItems.Shared.DTOs.ClaimableItem.ClaimableItemListDTO"
-                               EntitySet="ClaimableItem"
+                               EntitySet="@(CIOptions.Value.ResolvedRoutePrefix + "ClaimableItem")"
                                @bind-Value="TheItem.ClaimableItem" />
         </MudItem>
 
         <MudItem Class="pt-2 pb-2" lg="4" md="4" sm="6" xs="12">
             <ShiftAutocomplete Label="Campaign" ReadOnly Disabled="Mode == FormModes.Edit"
                                TEntitySet="ShiftSoftware.ADP.ClaimableItems.Shared.DTOs.Campaign.CampaignListDTO"
-                               EntitySet="ServiceCampaign"
+                               EntitySet="@(CIOptions.Value.ResolvedRoutePrefix + "ServiceCampaign")"
                                @bind-Value="TheItem.Campaign" />
         </MudItem>
 
