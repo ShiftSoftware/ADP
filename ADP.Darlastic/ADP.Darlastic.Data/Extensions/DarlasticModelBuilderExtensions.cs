@@ -104,6 +104,78 @@ public static class DarlasticModelBuilderExtensions
             x.Property(e => e.SourceRecordId).HasMaxLength(64).UseCollation(KeyCollation);
         });
 
+        modelBuilder.Entity<IdentityEdge>(x =>
+        {
+            x.ToTable("IdentityEdge", schema);
+            x.HasKey(e => e.EdgeID);
+            x.Property(e => e.EdgeID).UseIdentityColumn();
+            x.Property(e => e.SourceSystemA).HasMaxLength(64).UseCollation(KeyCollation);
+            x.Property(e => e.SourceRecordIdA).HasMaxLength(64).UseCollation(KeyCollation);
+            x.Property(e => e.SourceSystemB).HasMaxLength(64).UseCollation(KeyCollation);
+            x.Property(e => e.SourceRecordIdB).HasMaxLength(64).UseCollation(KeyCollation);
+            // The only read that matters: "how was identity N assembled".
+            x.HasIndex(e => e.IdentityID).HasDatabaseName("IX_IdentityEdge_Identity");
+        });
+
+        modelBuilder.Entity<CaseCatalogEntry>(x =>
+        {
+            x.ToTable("CaseCatalog", schema);
+            x.HasKey(e => e.PairKey);
+            x.Property(e => e.PairKey).HasMaxLength(300).UseCollation(KeyCollation);
+            x.Property(e => e.SourceSystemA).HasMaxLength(64).UseCollation(KeyCollation);
+            x.Property(e => e.SourceRecordIdA).HasMaxLength(64).UseCollation(KeyCollation);
+            x.Property(e => e.SourceSystemB).HasMaxLength(64).UseCollation(KeyCollation);
+            x.Property(e => e.SourceRecordIdB).HasMaxLength(64).UseCollation(KeyCollation);
+            // Sidebar filtering is a bitmask test, so this index earns its place only on the
+            // score ordering the case list defaults to.
+            x.HasIndex(e => e.Score).HasDatabaseName("IX_CaseCatalog_Score");
+        });
+
+        modelBuilder.Entity<IdentitySummary>(x =>
+        {
+            x.ToTable("IdentitySummary", schema);
+            x.HasKey(e => e.IdentityID);
+            x.Property(e => e.IdentityID).ValueGeneratedNever();
+            x.Property(e => e.GoldenName).HasMaxLength(400);
+            // The identities list defaults to biggest-first.
+            x.HasIndex(e => e.MemberCount).HasDatabaseName("IX_IdentitySummary_MemberCount");
+        });
+
+        modelBuilder.Entity<ReviewFlag>(x =>
+        {
+            x.ToTable("ReviewFlag", schema);
+            x.HasKey(e => e.FlagID);
+            x.Property(e => e.FlagID).UseIdentityColumn();
+            x.Property(e => e.Target).HasMaxLength(300).UseCollation(KeyCollation);
+            x.Property(e => e.Topic).HasMaxLength(64);
+            x.Property(e => e.Author).HasMaxLength(128);
+            x.Property(e => e.ResponseBy).HasMaxLength(128);
+            // One open flag per target — re-flagging edits rather than accumulating duplicates.
+            x.HasIndex(e => e.Target).IsUnique().HasDatabaseName("UX_ReviewFlag_Target");
+        });
+
+        modelBuilder.Entity<LabelAudit>(x =>
+        {
+            x.ToTable("LabelAudit", schema);
+            x.HasKey(e => e.AuditID);
+            x.Property(e => e.AuditID).UseIdentityColumn();
+            x.Property(e => e.PairKey).HasMaxLength(300).UseCollation(KeyCollation);
+            x.Property(e => e.OldLabel).HasMaxLength(16);
+            x.Property(e => e.NewLabel).HasMaxLength(16);
+            x.Property(e => e.AuditedBy).HasMaxLength(128);
+            x.Property(e => e.PanelVotes).HasMaxLength(32);
+            x.Property(e => e.Status).HasMaxLength(16);
+            // Deliberately NOT unique: a pair can be re-adjudicated, and the history is the point.
+            x.HasIndex(e => e.PairKey).HasDatabaseName("IX_LabelAudit_PairKey");
+        });
+
+        modelBuilder.Entity<CaseCategoryCount>(x =>
+        {
+            x.ToTable("CaseCategoryCount", schema);
+            x.HasKey(e => e.Category);
+            x.Property(e => e.Category).HasMaxLength(32).UseCollation(KeyCollation);
+        });
+
         modelBuilder.Entity<TenantMarker>(x =>
         {
             x.ToTable("TenantMarker", schema);

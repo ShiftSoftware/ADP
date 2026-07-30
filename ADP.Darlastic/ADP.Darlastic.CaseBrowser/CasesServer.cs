@@ -80,11 +80,25 @@ public static class CasesServer
         // last resolve and a live cluster now spans records the registry assigned to >1 identity.
         // No registry (resolve never ran / SQL down) → degrade to memory-only, exactly as before.
         RegistrySnap = null;
+        CategoryTotals = null;
         try
         {
             RegistrySnap = Registry.LoadSnapshot();
             Console.WriteLine($"Registry join: {RegistrySnap.ProfileToIdentity.Count:N0} profiles -> " +
                               $"{RegistrySnap.ActiveIdentities:N0} active identities (resolve run {RegistrySnap.LastRunId})");
+
+            // Corpus-wide category totals, staged by the resolve's own full pair walk. Without
+            // them the sidebar can only count what this process loaded and silently presents that
+            // as the corpus.
+            var totals = Registry.LoadCategoryTotals();
+            if (totals.Count > 0)
+            {
+                CategoryTotals = totals;
+                Console.WriteLine($"Category totals: {totals.Values.Sum(v => v.Total):N0} categorised pairs corpus-wide " +
+                                  $"({totals.Values.Sum(v => v.Sampled):N0} browsable)");
+            }
+            else
+                Console.WriteLine("Category totals unavailable (registry predates the catalog) — sidebar counts describe this view only.");
         }
         catch (Exception ex)
         {
@@ -129,9 +143,9 @@ public static class CasesServer
         // ---- summary: category counts (computed once per request — a linear pass over ~10⁵ entries) ----
         app.MapGet("/api/summary", () =>
         {
-            var catCounts = Enum.GetValues<CaseIndex.Cat>().Where(c => c != CaseIndex.Cat.None)
+            var catCounts = Enum.GetValues<CaseCat>().Where(c => c != CaseCat.None)
                 .ToDictionary(c => c.ToString(), c => ix.Entries.Count(e => (e.Cats & c) != 0));
-            var clusterCatCounts = Enum.GetValues<CaseIndex.ClusterCat>().Where(c => c != CaseIndex.ClusterCat.None)
+            var clusterCatCounts = Enum.GetValues<ClusterCat>().Where(c => c != ClusterCat.None)
                 .ToDictionary(c => c.ToString(), c => ix.Clusters.Count(s => (s.Cats & c) != 0));
             return Results.Json(new
             {
@@ -140,6 +154,19 @@ public static class CasesServer
                 identities = ix.IdentityCount,
                 multiRecordIdentities = ix.ClusterMembers.Count,
                 indexedCases = ix.Entries.Count,
+                // Registry totals — the WHOLE tenant corpus, as of the last resolve. Reported
+                // separately because everything above describes only what this process indexed:
+                // in `queue` mode that is the queue's neighbourhood (~10⁴ records), not the corpus
+                // (~10⁶). A header that shows the index's identity count unlabelled reads as
+                // "our results" and is wrong by two orders of magnitude.
+                registryProfiles = RegistrySnap?.ProfileToIdentity.Count,
+                registryIdentities = RegistrySnap?.ActiveIdentities,
+                registryRun = RegistrySnap?.LastRunId,
+                // Corpus-wide category totals staged by the resolve. `categories` above counts only
+                // what THIS process indexed; under `queue` mode that is the queue's neighbourhood,
+                // which under-reported auto-merges 82× before these were staged. When present these
+                // are what the sidebar shows, with the in-view counts kept for the browsable subset.
+                corpusCategories = CategoryTotals?.ToDictionary(kv => kv.Key, kv => new { total = kv.Value.Total, sampled = kv.Value.Sampled }),
                 categories = catCounts,
                 clusterCategories = clusterCatCounts,
                 sources = ix.Records.GroupBy(r => r.SourceSystem).ToDictionary(g => g.Key, g => g.Count()),
@@ -195,16 +222,16 @@ public static class CasesServer
         // ---- paged cluster (identity) list ----
         app.MapGet("/api/clusters", (string? cat, string? q, int page = 0, int size = 50) =>
         {
-            CaseIndex.ClusterCat catMask = CaseIndex.ClusterCat.None;
+            ClusterCat catMask = ClusterCat.None;
             if (!string.IsNullOrWhiteSpace(cat))
                 foreach (var c in cat.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-                    if (Enum.TryParse<CaseIndex.ClusterCat>(c, true, out var pc)) catMask |= pc;
+                    if (Enum.TryParse<ClusterCat>(c, true, out var pc)) catMask |= pc;
             string? qn = string.IsNullOrWhiteSpace(q) ? null : Norm.Name(q);
             int total = 0;
             var items = new List<object>(size);
             foreach (var s in ix.Clusters)
             {
-                if (catMask != CaseIndex.ClusterCat.None && (s.Cats & catMask) == 0) continue;
+                if (catMask != ClusterCat.None && (s.Cats & catMask) == 0) continue;
                 if (qn is { Length: > 0 } && !s.GoldenName.Contains(qn)) continue;
                 if (total >= page * size && total < (page + 1) * size)
                     items.Add(new { s.Root, s.Size, s.Sources, s.GoldenName, cats = ClusterCatNames(s.Cats), highlight = Highlight(ix, s), registry = RegistryInfo(ix, s.Root) });
@@ -426,10 +453,10 @@ public static class CasesServer
         Dictionary<string, GoldInfo> gold, Dictionary<string, List<AuditRow>> audits,
         string? cat, string? flag, string? dealer, string? dob, string? q, double? minScore, double? maxScore)
     {
-        CaseIndex.Cat catMask = CaseIndex.Cat.None;
+        CaseCat catMask = CaseCat.None;
         if (!string.IsNullOrWhiteSpace(cat))
             foreach (var c in cat.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-                if (Enum.TryParse<CaseIndex.Cat>(c, true, out var pc)) catMask |= pc;
+                if (Enum.TryParse<CaseCat>(c, true, out var pc)) catMask |= pc;
         MatchFlags flagMask = MatchFlags.None;
         if (!string.IsNullOrWhiteSpace(flag))
             foreach (var f in flag.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
@@ -440,7 +467,7 @@ public static class CasesServer
 
         foreach (var e in ix.Entries)
         {
-            if (catMask != CaseIndex.Cat.None && (e.Cats & catMask) == 0) continue;
+            if (catMask != CaseCat.None && (e.Cats & catMask) == 0) continue;
             if (flagMask != MatchFlags.None && (e.Flags & flagMask) != flagMask) continue;
             if (minScore is not null && e.Score < minScore) continue;
             if (maxScore is not null && e.Score >= maxScore) continue;
@@ -532,6 +559,7 @@ public static class CasesServer
 
     /// <summary>Last loaded registry snapshot; null = memory-only mode. Set once at startup.</summary>
     private static Registry.Snapshot? RegistrySnap;
+    private static Dictionary<string, Registry.CategoryTotal>? CategoryTotals;
 
     /// <summary>The cluster's stable golden ID from the registry, with drift surfaced: if the LIVE
     /// cluster spans records the registry assigned to more than one identity (the engine changed
@@ -609,7 +637,7 @@ public static class CasesServer
     /// name+phone alone could NOT have made (cross-dealer + VIN-decisive), then weaker VIN/cross-dealer notes.</summary>
     private static string? Highlight(CaseIndex.Index ix, CaseIndex.ClusterSummary s)
     {
-        if ((s.Cats & (CaseIndex.ClusterCat.VinBridged | CaseIndex.ClusterCat.CrossDealer)) == 0) return null;
+        if ((s.Cats & (ClusterCat.VinBridged | ClusterCat.CrossDealer)) == 0) return null;
         var vinEdges = ix.ClusterEdges.GetValueOrDefault(s.Root, [])
             .Where(e => (e.Flags & MatchFlags.VinSoldMerge) != 0)
             .Select(e =>
@@ -632,7 +660,7 @@ public static class CasesServer
             if (v.xDealer)
                 return $"Cross-dealer identity ({v.a.SourceSystem}↔{v.b.SourceSystem}) corroborated by a shared sold VIN ({vin}).";
         }
-        if ((s.Cats & CaseIndex.ClusterCat.CrossDealer) != 0)
+        if ((s.Cats & ClusterCat.CrossDealer) != 0)
             return $"Cross-dealer identity — one customer known to {s.Sources} dealers.";
         return null;
     }
@@ -741,10 +769,10 @@ public static class CasesServer
 
     private static List<string> FlagNames(MatchFlags f) =>
         Enum.GetValues<MatchFlags>().Where(v => v != MatchFlags.None && (f & v) != 0).Select(v => v.ToString()).ToList();
-    private static List<string> CatNames(CaseIndex.Cat c) =>
-        Enum.GetValues<CaseIndex.Cat>().Where(v => v != CaseIndex.Cat.None && (c & v) != 0).Select(v => v.ToString()).ToList();
-    private static List<string> ClusterCatNames(CaseIndex.ClusterCat c) =>
-        Enum.GetValues<CaseIndex.ClusterCat>().Where(v => v != CaseIndex.ClusterCat.None && (c & v) != 0).Select(v => v.ToString()).ToList();
+    private static List<string> CatNames(CaseCat c) =>
+        Enum.GetValues<CaseCat>().Where(v => v != CaseCat.None && (c & v) != 0).Select(v => v.ToString()).ToList();
+    private static List<string> ClusterCatNames(ClusterCat c) =>
+        Enum.GetValues<ClusterCat>().Where(v => v != ClusterCat.None && (c & v) != 0).Select(v => v.ToString()).ToList();
 
     // ---------- search ----------
 

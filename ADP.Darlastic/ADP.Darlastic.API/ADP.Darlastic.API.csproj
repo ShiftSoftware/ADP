@@ -28,12 +28,33 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<!-- The case browser UI, embedded by LINK rather than copied. It physically lives in
+		     ADP.Darlastic.CaseBrowser (the standalone tool that has always served it) and both
+		     assemblies embed the same file, so the page a tenant host serves and the page the local
+		     dev loop serves cannot drift apart.
+
+		     Not a ProjectReference to that package on purpose: it depends on ADP.Darlastic.Engine,
+		     which would pull SqlClient, Cosmos and ADP.Models into every web host that wanted an
+		     HTML string — the exact dependency weight the Engine.Core split exists to keep out. -->
+		<EmbeddedResource Include="..\ADP.Darlastic.CaseBrowser\web\cases.html" Link="web\cases.html" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />
-		<PackageReference Include="ShiftSoftware.ShiftEntity.Web" Version="2026.7.28.1" />
-		<PackageReference Include="ShiftSoftware.TypeAuth.AspNetCore" Version="1.6.28" />
+		<!-- COMPATIBILITY FLOOR, not "the current version" — see the note in ADP.Darlastic.Data.csproj
+		     before changing either. -->
+		<PackageReference Include="ShiftSoftware.ShiftEntity.Web" Version="2026.6.24.1" />
+		<PackageReference Include="ShiftSoftware.TypeAuth.AspNetCore" Version="1.6.25" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\ADP.Darlastic.Data\ADP.Darlastic.Data.csproj" />
+		<!-- The scorer, without its storage half. This is what lets a steward surface show WHY the
+		     engine reached a score: the derivation is a pure function of the two staged records, so
+		     it is recomputed per request rather than staged (a staged trace goes stale against an
+		     engine change with nothing to signal it). Referencing ADP.Darlastic.Engine here instead
+		     would drag SqlClient + Cosmos + ADP.Models into a package that reads two tables — which
+		     is why the derivation was previously written off as needing a new staged artifact. -->
+		<ProjectReference Include="..\ADP.Darlastic.Engine.Core\ADP.Darlastic.Engine.Core.csproj" />
 	</ItemGroup>
 </Project>

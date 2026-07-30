@@ -86,6 +86,8 @@ public static class Registry
         "Identity", "IdentityRedirect", "SourceProfile", "ProjectionState",
         "AuditEntry", "StewardDecision", "StewardQueue", "StewardRecord",
         "ResolveRun", "TenantMarker",
+        "IdentityEdge", "CaseCatalog", "CaseCategoryCount",
+        "ReviewFlag", "LabelAudit", "IdentitySummary",
     ];
 
     // ------------------------------------------------------------------ bootstrap
@@ -312,7 +314,131 @@ public static class Registry
                 Minted          INT NULL, Inherited  INT NULL, Redirected INT NULL, Deactivated INT NULL, Reactivated INT NULL,
                 ProfilesNew     INT NULL, ProfilesReassigned INT NULL, ProfilesRehashed INT NULL, ProfilesRemoved INT NULL,
                 ArtifactsPending INT NULL,
+                AutoMergeEdges  INT NULL,
                 Notes           NVARCHAR(400) NULL)
+            """);
+        // Pre-existing registries get the column added rather than recreated — the run history is
+        // real data and this table is the one place it lives.
+        Exec(conn, """
+            IF COL_LENGTH('Darlastic.ResolveRun', 'AutoMergeEdges') IS NULL
+            ALTER TABLE Darlastic.ResolveRun ADD AutoMergeEdges INT NULL
+            """);
+
+        // ---- case evidence (2026-07-29) -------------------------------------------------
+        // Collected by the resolve's own pair walk — the only pass that sees the whole corpus.
+        // All three are derived state, rewritten wholesale each run like StewardQueue.
+        //
+        // Index guards below test sys.indexes, NOT OBJECT_ID(name, 'I') — an index is not a
+        // schema-scoped object, so OBJECT_ID never finds one and the guard reads "absent" forever.
+        // That mistake creates the index on the first run and throws 1913 on the second, which is
+        // the worst possible shape: a bootstrap that looks correct until the second resolve.
+        Exec(conn, $"""
+            IF OBJECT_ID('Darlastic.IdentityEdge') IS NULL
+            CREATE TABLE Darlastic.IdentityEdge (
+                EdgeID          BIGINT IDENTITY(1,1) PRIMARY KEY,
+                RunID           INT NOT NULL,
+                IdentityID      BIGINT NOT NULL,
+                SourceSystemA   NVARCHAR(64) COLLATE {KeyCollation} NOT NULL,
+                SourceRecordIdA NVARCHAR(64) COLLATE {KeyCollation} NOT NULL,
+                SourceSystemB   NVARCHAR(64) COLLATE {KeyCollation} NOT NULL,
+                SourceRecordIdB NVARCHAR(64) COLLATE {KeyCollation} NOT NULL,
+                Score           REAL NOT NULL,
+                Flags           BIGINT NOT NULL)
+            """);
+        Exec(conn, """
+            IF OBJECT_ID('Darlastic.IdentityEdge') IS NOT NULL
+            AND NOT EXISTS (SELECT 1 FROM sys.indexes
+                            WHERE name = 'IX_IdentityEdge_Identity' AND object_id = OBJECT_ID('Darlastic.IdentityEdge'))
+            CREATE INDEX IX_IdentityEdge_Identity ON Darlastic.IdentityEdge (IdentityID)
+            """);
+        Exec(conn, $"""
+            IF OBJECT_ID('Darlastic.CaseCatalog') IS NULL
+            CREATE TABLE Darlastic.CaseCatalog (
+                PairKey         NVARCHAR(300) COLLATE {KeyCollation} NOT NULL,
+                RunID           INT NOT NULL,
+                Score           REAL NOT NULL,
+                Categories      BIGINT NOT NULL,
+                Flags           BIGINT NOT NULL,
+                SourceSystemA   NVARCHAR(64) COLLATE {KeyCollation} NOT NULL,
+                SourceRecordIdA NVARCHAR(64) COLLATE {KeyCollation} NOT NULL,
+                SourceSystemB   NVARCHAR(64) COLLATE {KeyCollation} NOT NULL,
+                SourceRecordIdB NVARCHAR(64) COLLATE {KeyCollation} NOT NULL,
+                CONSTRAINT PK_CaseCatalog PRIMARY KEY (PairKey))
+            """);
+        Exec(conn, """
+            IF OBJECT_ID('Darlastic.CaseCatalog') IS NOT NULL
+            AND NOT EXISTS (SELECT 1 FROM sys.indexes
+                            WHERE name = 'IX_CaseCatalog_Score' AND object_id = OBJECT_ID('Darlastic.CaseCatalog'))
+            CREATE INDEX IX_CaseCatalog_Score ON Darlastic.CaseCatalog (Score DESC)
+            """);
+        Exec(conn, """
+            IF OBJECT_ID('Darlastic.IdentitySummary') IS NULL
+            CREATE TABLE Darlastic.IdentitySummary (
+                IdentityID      BIGINT NOT NULL PRIMARY KEY,
+                RunID           INT NOT NULL,
+                MemberCount     INT NOT NULL,
+                SourceCount     INT NOT NULL,
+                GoldenName      NVARCHAR(400) NULL,
+                Categories      BIGINT NOT NULL)
+            """);
+        Exec(conn, """
+            IF OBJECT_ID('Darlastic.IdentitySummary') IS NOT NULL
+            AND NOT EXISTS (SELECT 1 FROM sys.indexes
+                            WHERE name = 'IX_IdentitySummary_MemberCount' AND object_id = OBJECT_ID('Darlastic.IdentitySummary'))
+            CREATE INDEX IX_IdentitySummary_MemberCount ON Darlastic.IdentitySummary (MemberCount DESC)
+            """);
+
+        // Human-decision state — the two artifacts that were files on one laptop. Unlike everything
+        // else in this section they are NOT derived and NEVER rewritten by a resolve: they are the
+        // corpus-growth ledger and the review queue, and losing them loses human work.
+        Exec(conn, $"""
+            IF OBJECT_ID('Darlastic.ReviewFlag') IS NULL
+            CREATE TABLE Darlastic.ReviewFlag (
+                FlagID          BIGINT IDENTITY(1,1) PRIMARY KEY,
+                Target          NVARCHAR(300) COLLATE {KeyCollation} NOT NULL,
+                Topic           NVARCHAR(64) NOT NULL,
+                Comment         NVARCHAR(MAX) NOT NULL,
+                Author          NVARCHAR(128) NOT NULL,
+                CreatedUtc      DATETIME2 NOT NULL,
+                UpdatedUtc      DATETIME2 NULL,
+                Snapshot        NVARCHAR(MAX) NOT NULL,
+                Response        NVARCHAR(MAX) NULL,
+                ResponseBy      NVARCHAR(128) NULL,
+                ResponseUtc     DATETIME2 NULL)
+            """);
+        Exec(conn, """
+            IF OBJECT_ID('Darlastic.ReviewFlag') IS NOT NULL
+            AND NOT EXISTS (SELECT 1 FROM sys.indexes
+                            WHERE name = 'UX_ReviewFlag_Target' AND object_id = OBJECT_ID('Darlastic.ReviewFlag'))
+            CREATE UNIQUE INDEX UX_ReviewFlag_Target ON Darlastic.ReviewFlag (Target)
+            """);
+        Exec(conn, $"""
+            IF OBJECT_ID('Darlastic.LabelAudit') IS NULL
+            CREATE TABLE Darlastic.LabelAudit (
+                AuditID         BIGINT IDENTITY(1,1) PRIMARY KEY,
+                PairKey         NVARCHAR(300) COLLATE {KeyCollation} NOT NULL,
+                OldLabel        NVARCHAR(16) NULL,
+                NewLabel        NVARCHAR(16) NULL,   -- empty/NULL = pending an expert call
+                AuditedBy       NVARCHAR(128) NOT NULL,
+                AuditedUtc      DATETIME2 NOT NULL,
+                PanelVotes      NVARCHAR(32) NULL,
+                Rationale       NVARCHAR(MAX) NULL,
+                Status          NVARCHAR(16) NOT NULL)
+            """);
+        Exec(conn, """
+            IF OBJECT_ID('Darlastic.LabelAudit') IS NOT NULL
+            AND NOT EXISTS (SELECT 1 FROM sys.indexes
+                            WHERE name = 'IX_LabelAudit_PairKey' AND object_id = OBJECT_ID('Darlastic.LabelAudit'))
+            CREATE INDEX IX_LabelAudit_PairKey ON Darlastic.LabelAudit (PairKey)
+            """);
+        Exec(conn, $"""
+            IF OBJECT_ID('Darlastic.CaseCategoryCount') IS NULL
+            CREATE TABLE Darlastic.CaseCategoryCount (
+                Category        NVARCHAR(32) COLLATE {KeyCollation} NOT NULL,
+                RunID           INT NOT NULL,
+                Total           BIGINT NOT NULL,   -- exact, corpus-wide; never sampled
+                Sampled         INT NOT NULL,      -- how many of them CaseCatalog holds
+                CONSTRAINT PK_CaseCategoryCount PRIMARY KEY (Category))
             """);
     }
 
@@ -377,6 +503,29 @@ public static class Registry
         public required Dictionary<long, byte> IdentityStatus { get; init; }
         public int ActiveIdentities { get; init; }
         public int LastRunId { get; init; }
+    }
+
+    /// <summary>Corpus-wide category totals as of the last resolve, plus how many of each the
+    /// catalog holds. Keyed by <c>CaseCat</c> member name.</summary>
+    public sealed record CategoryTotal(long Total, int Sampled);
+
+    /// <summary>
+    /// Read the staged category counts. These are the ONLY trustworthy category numbers: a surface
+    /// that counts its own loaded cases is describing its sample, not the corpus. Returns an empty
+    /// dictionary on a registry that predates the table, so callers can fall back and say so.
+    /// </summary>
+    public static Dictionary<string, CategoryTotal> LoadCategoryTotals()
+    {
+        var result = new Dictionary<string, CategoryTotal>(StringComparer.Ordinal);
+        using var conn = new SqlConnection(ConnectionString);
+        conn.Open();
+        AssertTenant(conn, stampIfMissing: false);
+        if (Convert.ToInt32(Scalar(conn, "SELECT CASE WHEN OBJECT_ID('Darlastic.CaseCategoryCount') IS NULL THEN 0 ELSE 1 END")) == 0)
+            return result;
+        using var cmd = new SqlCommand("SELECT Category, Total, Sampled FROM Darlastic.CaseCategoryCount", conn);
+        using var r = cmd.ExecuteReader();
+        while (r.Read()) result[r.GetString(0)] = new CategoryTotal(r.GetInt64(1), r.GetInt32(2));
+        return result;
     }
 
     /// <summary>
@@ -759,12 +908,49 @@ public static class Registry
         // evidence aggregates + GoldenCustomerID stamps.
         var goldenName = new Dictionary<long, string>();
         var vinAgg = new Dictionary<(long IdentityId, string Vin), VinEvidence>();
+
+        // Cluster-level categories are computed HERE because this is the only place the facts
+        // exist: survivorship's WonBy reasons are alive for the length of this loop and are then
+        // discarded, and the VIN edges come from the pair walk. No later query can recover either.
+        var edgesByRoot = new Dictionary<int, List<Merge.MergeEdge>>();
+        foreach (var e in merge.AutoMergeEdgeList)
+        {
+            int r = Root(e.A);
+            (edgesByRoot.TryGetValue(r, out var l) ? l : edgesByRoot[r] = []).Add(e);
+        }
+        var summaryRows = new List<(long Id, int Members, int Sources, string Name, long Cats)>();
+
         foreach (var root in orderedRoots)
         {
             long id = finalId[root];
-            var survived = Merge.SurviveGolden(clusters[root].Select(i => records[i]).ToList());
+            var members = clusters[root].Select(i => records[i]).ToList();
+            var survived = Merge.SurviveGolden(members);
             goldenName[id] = survived.FirstOrDefault(g => g.AttrType == "full_name")?.Value ?? "";
             Stage(ArtGolden, id.ToString(CultureInfo.InvariantCulture), GoldenCanonical(id, survived, Key, clusters[root]));
+
+            // Multi-record identities only: a single-record identity has nothing to explain.
+            if (members.Count > 1)
+            {
+                var cc = ClusterCat.None;
+                if (survived.Any(g => g.AttrType == "full_name" && g.WonBy == "longest-chain")) cc |= ClusterCat.LongestChain;
+                if (survived.Any(g => g.AttrType == "phone" && g.WonBy == "weak-fallback")) cc |= ClusterCat.WeakPhoneFallback;
+                int srcCount = members.Select(r => r.SourceSystem).Distinct(StringComparer.Ordinal).Count();
+                if (srcCount >= 2) cc |= ClusterCat.CrossDealer;
+                if (members.Count >= 5) cc |= ClusterCat.Large;
+
+                var vinEdges = edgesByRoot.GetValueOrDefault(root, [])
+                    .Where(e => (e.Flags & MatchFlags.VinSoldMerge) != 0).ToList();
+                if (vinEdges.Count > 0)
+                {
+                    cc |= ClusterCat.VinBridged;
+                    // VIN-decisive: an edge that would NOT have cleared the auto-merge line without
+                    // the VIN. Bounded by the sold-VIN edge count, so the extra scoring is cheap.
+                    if (vinEdges.Any(e => RealMatcher.Score(records[e.A], records[e.B], useAddress: true, useVin: false) < 0.90))
+                        cc |= ClusterCat.VinDecisive;
+                }
+
+                summaryRows.Add((id, members.Count, srcCount, goldenName[id], (long)cc));
+            }
 
             string gid = id.ToString(CultureInfo.InvariantCulture);
             foreach (var idx in clusters[root])
@@ -926,12 +1112,18 @@ public static class Registry
         WriteIdentities(conn, tx, newIdentities, redirects, deactivated, reactivated, m.RunId);
         WriteProfiles(conn, tx, profileRows, removedKeys, m.RunId);
         WriteArtifacts(conn, tx, artifactRows, m.RunId);
-        WriteStewardQueue(conn, tx, records, merge.StewardPairs, m.RunId);
+        WriteStewardQueue(conn, tx, records, merge.StewardPairs, merge.Catalog, m.RunId);
         m.StewardQueued = merge.StewardPairs.Count;
+        // Case evidence rides in the same transaction as the queue: both are derived state from the
+        // same walk, and a run that committed one without the other would leave a surface showing
+        // categories from one resolve against records from another.
+        WriteCaseEvidence(conn, tx, records, merge, root => finalId[root], Root, m.RunId);
+        WriteIdentitySummaries(conn, tx, summaryRows, m.RunId);
         using (var cmd = new SqlCommand("""
             UPDATE Darlastic.ResolveRun SET FinishedUtc = SYSUTCDATETIME(),
                 Records=@r, Identities=@i, Minted=@mi, Inherited=@in, Redirected=@rd, Deactivated=@da, Reactivated=@ra,
-                ProfilesNew=@pn, ProfilesReassigned=@pa, ProfilesRehashed=@ph, ProfilesRemoved=@pr, ArtifactsPending=@ap, Notes=@no
+                ProfilesNew=@pn, ProfilesReassigned=@pa, ProfilesRehashed=@ph, ProfilesRemoved=@pr, ArtifactsPending=@ap,
+                AutoMergeEdges=@ame, Notes=@no
             WHERE RunID=@run
             """, conn, tx))
         {
@@ -942,6 +1134,7 @@ public static class Registry
             cmd.Parameters.AddWithValue("@pn", m.ProfilesNew); cmd.Parameters.AddWithValue("@pa", m.ProfilesReassigned);
             cmd.Parameters.AddWithValue("@ph", m.ProfilesRehashed); cmd.Parameters.AddWithValue("@pr", m.ProfilesRemoved);
             cmd.Parameters.AddWithValue("@ap", m.ArtifactsPending); cmd.Parameters.AddWithValue("@run", m.RunId);
+            cmd.Parameters.AddWithValue("@ame", merge.AutoMergeEdges);
             cmd.Parameters.AddWithValue("@no", m.AbsentSources.Count > 0 ? $"absent sources frozen: {string.Join(",", m.AbsentSources)}" : (object)DBNull.Value);
             cmd.ExecuteNonQuery();
         }
@@ -1168,13 +1361,18 @@ public static class Registry
     /// function of the run, not a delta-disciplined source artifact; IsZeroDelta ignores it.
     /// </summary>
     private static void WriteStewardQueue(SqlConnection conn, SqlTransaction tx,
-        IReadOnlyList<RealRecord> records, List<(int A, int B, float Score)> pairs, int runId)
+        IReadOnlyList<RealRecord> records, List<(int A, int B, float Score)> pairs,
+        List<Merge.CatalogEntry> catalog, int runId)
     {
         Exec(conn, tx, "DELETE FROM Darlastic.StewardQueue; DELETE FROM Darlastic.StewardRecord");
-        if (pairs.Count == 0) return;
+        if (pairs.Count == 0 && catalog.Count == 0) return;
 
+        // StewardRecord backs BOTH the queue and the catalog: a catalogued case is unreadable
+        // without its two records, and re-reading the sources to render one is exactly the cost
+        // this staging exists to avoid.
         var recIdxs = new HashSet<int>();
         foreach (var p in pairs) { recIdxs.Add(p.A); recIdxs.Add(p.B); }
+        foreach (var c in catalog) { recIdxs.Add(c.A); recIdxs.Add(c.B); }
 
         var rt = NewTable(("SourceSystem", typeof(string)), ("SourceRecordId", typeof(string)), ("RunID", typeof(int)), ("Payload", typeof(string)));
         foreach (var i in recIdxs.OrderBy(i => i))
@@ -1194,6 +1392,95 @@ public static class Registry
                 runId, score, x.SourceSystem, x.SourceRecordId, y.SourceSystem, y.SourceRecordId);
         }
         BulkInto(conn, tx, qt, "Darlastic.StewardQueue");
+    }
+
+    /// <summary>
+    /// Persist the resolve's case evidence: every auto-merge edge, exact per-category counts, and a
+    /// capped browsable sample per category.
+    ///
+    /// <para><b>Why this has to happen here.</b> The resolve's pair walk is the only pass that sees
+    /// the whole corpus. A browsing surface that re-derives categories from whatever records it
+    /// happens to hold reports the size of its own sample as the size of the corpus — measured
+    /// 2026-07-29 on TIQ, where a queue-backed browser showed 13,591 auto-merges against the
+    /// 437,238 that actually fired, with nothing on screen to suggest the number was wrong.</para>
+    ///
+    /// <para>All three tables are derived state, rewritten wholesale each run — the same discipline
+    /// StewardQueue follows. They are deliberately NOT delta-guarded like ProjectionState: that
+    /// ledger's hashes are the basis of the zero-delta acceptance, and mixing wholesale-rewritten
+    /// families into it would make per-run write volume useless as a health metric.</para>
+    /// </summary>
+    /// <summary>
+    /// Persist the per-identity browsing summary. Multi-record identities only — at TIQ scale that
+    /// is ~249K rows out of 919K identities, and the 670K single-record ones have nothing to say.
+    /// </summary>
+    private static void WriteIdentitySummaries(SqlConnection conn, SqlTransaction tx,
+        List<(long Id, int Members, int Sources, string Name, long Cats)> rows, int runId)
+    {
+        Exec(conn, tx, "DELETE FROM Darlastic.IdentitySummary");
+        if (rows.Count == 0) return;
+
+        var t = NewTable(("IdentityID", typeof(long)), ("RunID", typeof(int)),
+            ("MemberCount", typeof(int)), ("SourceCount", typeof(int)),
+            ("GoldenName", typeof(string)), ("Categories", typeof(long)));
+        foreach (var r in rows)
+            t.Rows.Add(r.Id, runId, r.Members, r.Sources,
+                r.Name.Length > 400 ? r.Name[..400] : r.Name, r.Cats);
+        BulkInto(conn, tx, t, "Darlastic.IdentitySummary");
+    }
+
+    private static void WriteCaseEvidence(SqlConnection conn, SqlTransaction tx,
+        IReadOnlyList<RealRecord> records, Merge.Result merge,
+        Func<int, long> identityOfRoot, Func<int, int> rootOf, int runId)
+    {
+        Exec(conn, tx, "DELETE FROM Darlastic.IdentityEdge; DELETE FROM Darlastic.CaseCatalog; DELETE FROM Darlastic.CaseCategoryCount");
+
+        // ---- counts: exact, always written, even at zero -------------------------------
+        // A category with no rows this run must still report 0 rather than vanish: a missing row
+        // reads as "not measured" and a sidebar cannot tell that apart from "not present".
+        var ct = NewTable(("Category", typeof(string)), ("RunID", typeof(int)),
+            ("Total", typeof(long)), ("Sampled", typeof(int)));
+        var sampled = new Dictionary<CaseCat, int>();
+        foreach (var e in merge.Catalog)
+            foreach (var c in CaseCategories.All)
+                if ((e.Cats & c) != 0) sampled[c] = sampled.GetValueOrDefault(c) + 1;
+        foreach (var c in CaseCategories.All)
+            ct.Rows.Add(c.ToString(), runId, merge.CategoryCounts.GetValueOrDefault(c), sampled.GetValueOrDefault(c));
+        BulkInto(conn, tx, ct, "Darlastic.CaseCategoryCount");
+
+        // ---- catalog: the capped sample ------------------------------------------------
+        if (merge.Catalog.Count > 0)
+        {
+            var kt = NewTable(("PairKey", typeof(string)), ("RunID", typeof(int)), ("Score", typeof(float)),
+                ("Categories", typeof(long)), ("Flags", typeof(long)),
+                ("SourceSystemA", typeof(string)), ("SourceRecordIdA", typeof(string)),
+                ("SourceSystemB", typeof(string)), ("SourceRecordIdB", typeof(string)));
+            foreach (var e in merge.Catalog)
+            {
+                var (x, y) = Merge.CanonicalPair(records[e.A], records[e.B]);
+                kt.Rows.Add(Merge.PairKey(x, y), runId, e.Score, (long)e.Cats, (long)e.Flags,
+                    x.SourceSystem, x.SourceRecordId, y.SourceSystem, y.SourceRecordId);
+            }
+            BulkInto(conn, tx, kt, "Darlastic.CaseCatalog");
+        }
+
+        // ---- edges: how each identity was assembled ------------------------------------
+        if (merge.AutoMergeEdgeList.Count > 0)
+        {
+            var et = NewTable(("RunID", typeof(int)), ("IdentityID", typeof(long)),
+                ("SourceSystemA", typeof(string)), ("SourceRecordIdA", typeof(string)),
+                ("SourceSystemB", typeof(string)), ("SourceRecordIdB", typeof(string)),
+                ("Score", typeof(float)), ("Flags", typeof(long)));
+            foreach (var e in merge.AutoMergeEdgeList)
+            {
+                // Both endpoints are in one cluster by construction (the edge is what unioned them),
+                // so either side resolves to the same identity.
+                long identityId = identityOfRoot(rootOf(e.A));
+                var (x, y) = Merge.CanonicalPair(records[e.A], records[e.B]);
+                et.Rows.Add(runId, identityId,
+                    x.SourceSystem, x.SourceRecordId, y.SourceSystem, y.SourceRecordId, e.Score, (long)e.Flags);
+            }
+            BulkInto(conn, tx, et, "Darlastic.IdentityEdge");
+        }
     }
 
     /// <summary>

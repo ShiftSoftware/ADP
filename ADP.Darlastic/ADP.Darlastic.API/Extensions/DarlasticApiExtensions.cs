@@ -37,7 +37,12 @@ public static class DarlasticApiExtensions
 
         // Registry model (tables + the GoldenCustomer view) lands in the host's DbContext model;
         // the host's own migrations create and version everything under options.Schema.
-        services.AddSingleton<IModelBuildingContributor>(new DarlasticModelBuildingContributor(options.Schema));
+        //
+        // Skipped for a dedicated-database host, which configures the model on its own context: this
+        // registration is read from the application service provider, so it reaches every
+        // ShiftDbContext in the process, not just TDbContext. See DarlasticApiOptions.
+        if (options.RegisterModelContributor)
+            services.AddSingleton<IModelBuildingContributor>(new DarlasticModelBuildingContributor(options.Schema));
 
         services.Configure<TypeAuthAspNetCoreOptions>(o => o.AddActionTree<DarlasticActionTree>());
 
