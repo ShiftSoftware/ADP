@@ -1,4 +1,6 @@
+using ShiftSoftware.ADP.Surveys.Shared.ActionTrees;
 using ShiftSoftware.ADP.Surveys.Shared.DTOs;
+using ShiftSoftware.TypeAuth.Core.Actions;
 
 namespace ShiftSoftware.ADP.Surveys.Web.Extensions;
 
@@ -42,10 +44,66 @@ public class SurveysWebOptions
     public Type? Layout { get; set; }
 
     /// <summary>
-    /// When true, Surveys Blazor UI hides actions / nav items the user lacks
-    /// <c>SurveysActionTree</c> permission for. Default false — only authentication required.
+    /// When true (default), the Surveys pages gate their add / edit / delete / submit controls
+    /// on <see cref="Actions"/>: a user without write access on the Survey action gets a
+    /// read-only list and form. When false, no action is handed to the underlying components
+    /// and every control renders for any authenticated user.
     /// </summary>
-    public bool EnableSurveysActionTreeAuthorization { get; set; } = false;
+    /// <remarks>
+    /// This is presentation, not protection — the endpoints are reachable directly whatever
+    /// this says, so <c>SurveyApiOptions.EnableSurveysActionTreeAuthorization</c> is the flag
+    /// that decides who can actually read and change data. Keep the two in agreement, and see
+    /// <see cref="Actions"/> for pointing the pages at a host's own action tree.
+    ///
+    /// Defaults to <c>true</c>, unlike its API counterpart, because the pages passed their
+    /// action unconditionally before this flag was read at all: <c>true</c> is what every
+    /// existing consumer already runs, and defaulting to <c>false</c> would silently un-gate
+    /// their UI on upgrade. The API defaults to <c>false</c> for the opposite reason — there,
+    /// switching on without granting the actions first locks the authoring team out of the
+    /// data, which is a worse first experience than an over-permissive default.
+    /// </remarks>
+    public bool EnableSurveysActionTreeAuthorization { get; set; } = true;
+
+    /// <summary>
+    /// Lets the host gate the pages on <b>its own</b> action tree instead of
+    /// <see cref="SurveysActionTree"/>. Anything left null falls back to the module's own
+    /// action. Mirrors <c>SurveyApiOptions.Actions</c>; set both sides to the same actions.
+    /// </summary>
+    /// <remarks>
+    /// Without this, a host that already has, say, a <c>CRM.Survey</c> action would have to
+    /// deploy and grant a second tree purely because the module ships one — which is enough
+    /// friction that deployments turn authorization off instead.
+    /// </remarks>
+    public SurveyEntityActionOverrides Actions { get; set; } = new();
+
+    /// <summary>
+    /// Whether <c>AddSurveysBlazorServices</c> registers <see cref="SurveysActionTree"/> with
+    /// TypeAuth. Set false when the host gates entirely on its own actions via
+    /// <see cref="Actions"/>, so the module's unused tree doesn't clutter the permissions UI.
+    /// Default true.
+    /// </summary>
+    /// <remarks>
+    /// TypeAuth is fail-closed for actions it wasn't given: turning this off while any gate
+    /// still resolves to <see cref="SurveysActionTree"/> renders that surface read-only for
+    /// everyone rather than leaving it ungated.
+    /// </remarks>
+    public bool RegisterSurveysActionTree { get; set; } = true;
+
+    /// <summary>
+    /// Action the Survey list and form gate on, or null when
+    /// <see cref="EnableSurveysActionTreeAuthorization"/> is off — ShiftBlazor reads a null
+    /// <c>TypeAuthAction</c> as "no gate" and renders every control.
+    /// </summary>
+    public ReadWriteDeleteAction? SurveysAction =>
+        EnableSurveysActionTreeAuthorization ? Actions.ResolvedSurveys : null;
+
+    /// <summary>Bank Question counterpart of <see cref="SurveysAction"/>.</summary>
+    public ReadWriteDeleteAction? BankQuestionsAction =>
+        EnableSurveysActionTreeAuthorization ? Actions.ResolvedBankQuestions : null;
+
+    /// <summary>Screen Template counterpart of <see cref="SurveysAction"/>.</summary>
+    public ReadWriteDeleteAction? ScreenTemplatesAction =>
+        EnableSurveysActionTreeAuthorization ? Actions.ResolvedScreenTemplates : null;
 
     /// <summary>
     /// Route prefix the Surveys API controllers are mounted under (relative to the

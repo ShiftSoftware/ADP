@@ -11,18 +11,13 @@ namespace ShiftSoftware.ADP.Surveys.API.Extensions;
 /// The point is to make <see cref="SurveyApiOptions.EnableSurveysActionTreeAuthorization"/>
 /// switchable for a host that already has an action covering surveys in its own tree.
 /// Requiring them to adopt a second tree first is the reason authorization stays off.
+///
+/// The three CRUD surfaces come from <see cref="SurveyEntityActionOverrides"/>, which the
+/// Blazor side configures too (<c>SurveysWebOptions.Actions</c>) — the operations below are
+/// endpoints with no UI control gated on them, so they are API-only.
 /// </summary>
-public class SurveyActionOverrides
+public class SurveyActionOverrides : SurveyEntityActionOverrides
 {
-    /// <summary>Gate on the Survey CRUD surface. Default <see cref="SurveysActionTree.Surveys"/>.</summary>
-    public ReadWriteDeleteAction? Surveys { get; set; }
-
-    /// <summary>Gate on the Question Bank CRUD surface. Default <see cref="SurveysActionTree.BankQuestions"/>.</summary>
-    public ReadWriteDeleteAction? BankQuestions { get; set; }
-
-    /// <summary>Gate on the Screen Template CRUD surface. Default <see cref="SurveysActionTree.ScreenTemplates"/>.</summary>
-    public ReadWriteDeleteAction? ScreenTemplates { get; set; }
-
     /// <summary>Gate on publishing a survey version. Default <c>Operations.PublishSurvey</c>.</summary>
     public BooleanAction? PublishSurvey { get; set; }
 
@@ -41,9 +36,6 @@ public class SurveyActionOverrides
     /// <summary>Gate on the scheduler/outbox tick endpoint. Default <c>Operations.RunScheduler</c>.</summary>
     public BooleanAction? RunScheduler { get; set; }
 
-    internal ReadWriteDeleteAction ResolvedSurveys => Surveys ?? SurveysActionTree.Surveys;
-    internal ReadWriteDeleteAction ResolvedBankQuestions => BankQuestions ?? SurveysActionTree.BankQuestions;
-    internal ReadWriteDeleteAction ResolvedScreenTemplates => ScreenTemplates ?? SurveysActionTree.ScreenTemplates;
     internal BooleanAction ResolvedPublishSurvey => PublishSurvey ?? SurveysActionTree.Operations.PublishSurvey;
     internal BooleanAction ResolvedViewResponses => ViewResponses ?? SurveysActionTree.Operations.ViewResponses;
     internal BooleanAction ResolvedExportResponses => ExportResponses ?? SurveysActionTree.Operations.ExportResponses;

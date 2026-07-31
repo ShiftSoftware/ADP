@@ -25,7 +25,10 @@ public static class SurveysWebExtensions
 
         services.AddSingleton(options);
 
-        services.Configure<TypeAuthBlazorOptions>(o => o.AddActionTree<SurveysActionTree>());
+        // Skipped when the host gates the pages on its own actions via SurveysWebOptions.Actions,
+        // so the module's unused tree stays out of the permissions UI. Mirrors the API side.
+        if (options.RegisterSurveysActionTree)
+            services.Configure<TypeAuthBlazorOptions>(o => o.AddActionTree<SurveysActionTree>());
 
         // Lets ShiftBlazor's DefaultApp discover routes in this assembly.
         services.Configure<AppStartupOptions>(o => o.AddAssembly(typeof(SurveysWebExtensions).Assembly));

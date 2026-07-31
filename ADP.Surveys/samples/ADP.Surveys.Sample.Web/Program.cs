@@ -86,7 +86,10 @@ builder.Services.AddTypeAuth(x =>
 
 builder.Services.AddSurveysBlazorServices(options =>
 {
-    options.EnableSurveysActionTreeAuthorization = false;
+    // Matches the API sample, which enforces the same tree. Gating the UI more loosely than
+    // the API only hands the user buttons that come back 403; gating it more tightly hides
+    // work they're allowed to do.
+    options.EnableSurveysActionTreeAuthorization = true;
     // BaseURL already ends in "/api/", so we only pass the per-module segment here.
     // Must match the tail of SurveyApiOptions.RoutePrefix on the API side ("api/Surveys").
     options.RoutePrefix = "Surveys";
