@@ -1,20 +1,33 @@
-<AuthorizedMudNavGroup Icon="@Icons.Material.Filled.MenuBook"
-                       IconColor="Color.Primary"
-                       Title="Menu"
-                       TypeAuthActions="GroupActions">
-    <MenuNavLinks />
-</AuthorizedMudNavGroup>
+@inject global::ShiftSoftware.ADP.Menus.Web.Services.MenuAuthService MenuAuth
+
+@* The menu module as a single collapsible entry in a CONSUMER's navigation. Renders collapsed; the
+   consumer's user clicks the group to expand it and reach every menu page.
+
+   Gated through MenuAuthService for the same reason as MenuNavLinks: MenuActionTree authorization is
+   opt-in, and a consumer that leaves it off need not register MenuActionTree with TypeAuth at all.
+   When authorization IS enabled and the user can read nothing in the module, the whole group is
+   hidden — matching the previous AuthorizedMudNavGroup behaviour. *@
+
+@if (HasAnyReadableSection)
+{
+    <MudNavGroup Icon="@Icons.Material.Filled.MenuBook"
+                 IconColor="Color.Primary"
+                 Title="@Title">
+        <MenuNavLinks />
+    </MudNavGroup>
+}
 
 @code {
-    private static List<ShiftSoftware.TypeAuth.Core.Actions.Action> GroupActions => new()
-    {
-        MenuActionTree.BrandMappings,
-        MenuActionTree.LabourRateMappings,
-        MenuActionTree.ServiceIntervalGroups,
-        MenuActionTree.ServiceIntervals,
-        MenuActionTree.StandaloneReplacementItemGroups,
-        MenuActionTree.ReplacementItems,
-        MenuActionTree.VehicleModels,
-        MenuActionTree.Menus,
-    };
+    /// <summary>Group label. Defaults to "Menu"; override to match the consumer's own wording.</summary>
+    [Parameter] public string Title { get; set; } = "Menu";
+
+    private bool HasAnyReadableSection =>
+        MenuAuth.CanReadMenus
+        || MenuAuth.CanReadVehicleModels
+        || MenuAuth.CanReadReplacementItems
+        || MenuAuth.CanReadStandaloneReplacementItemGroups
+        || MenuAuth.CanReadServiceIntervals
+        || MenuAuth.CanReadServiceIntervalGroups
+        || MenuAuth.CanReadLabourRateMappings
+        || MenuAuth.CanReadBrandMappings;
 }

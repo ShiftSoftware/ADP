@@ -1,4 +1,9 @@
-@* Consumer-owned navigation. Shown when the user is NOT inside the /Menu module. *@
+@* Consumer-owned navigation.
+
+   The menu module is surfaced as a collapsible group rather than a single link into /Menu: clicking
+   "Menu" expands it and every menu page is reachable from the consumer's own navigation, without
+   having to enter the module first. MenuNavGroup is shipped by ADP.Menus.Web precisely so a consumer
+   can drop the whole module into its nav in one line. *@
 
 <MudNavMenu>
     <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">
@@ -9,7 +14,5 @@
         Todos
     </MudNavLink>
 
-    <MudNavLink Href="@ShiftSoftware.ADP.Menus.Web.MenuRoutes.Prefix" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.MenuBook">
-        Menu Module
-    </MudNavLink>
+    <MenuNavGroup />
 </MudNavMenu>
