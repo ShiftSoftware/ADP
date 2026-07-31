@@ -70,18 +70,24 @@ public class CaseBrowserCompatController : ControllerBase
     /// <summary>
     /// Two ways in, and a caller needs exactly one of them.
     ///
-    /// <para>A valid case browser token: signed, expiring, and scoped by descriptor to this surface.
-    /// It was minted by an authenticated caller, so possession of it stands in for that session for
-    /// as long as it lasts. Action-tree checks are skipped for it deliberately — the grant was made
-    /// at mint time by someone who held the session, and the token names the person it was minted
-    /// for, so authority is not being invented here.</para>
+    /// <para>A valid case browser token: signed, expiring, and scoped by descriptor both to this
+    /// surface and to what its holder may do. It was minted by an authenticated caller, so possession
+    /// of it stands in for that session for as long as it lasts. The action tree is not consulted
+    /// again — it was already consulted at mint time, by a request that had a real session to ask
+    /// about, and the answer is what chose the descriptor. Re-deriving it here would mean guessing at
+    /// the permissions of a principal who is not present.</para>
+    ///
+    /// <para>Which is why the token has to carry the write bit rather than simply proving a session
+    /// existed: the read and write surfaces are one action at two levels
+    /// (<c>StewardQueue</c> Read to see cases, Write to record verdicts), and a token that skipped
+    /// straight past that distinction would hand a read-only steward the flag and audit buttons.</para>
     ///
     /// <para>Otherwise the ordinary path: an authenticated principal, filtered by the action tree.
     /// An anonymous caller with no token has neither and is refused.</para>
     /// </summary>
     private bool Denied(bool write)
     {
-        if (TokenActor is not null) return false;
+        if (TokenGrant is not null) return write && !TokenGrant.CanWrite;
 
         if (User?.Identity?.IsAuthenticated != true) return true;
 
@@ -90,19 +96,19 @@ public class CaseBrowserCompatController : ControllerBase
         return !typeAuth.Can(options.Actions.ResolvedStewardQueue, write ? Access.Write : Access.Read);
     }
 
-    /// <summary>The person a valid token names, or null. Read once per request.</summary>
-    private string? tokenActor;
-    private bool tokenActorRead;
-    private string? TokenActor
+    /// <summary>What a valid token on this request grants, or null. Read once per request.</summary>
+    private CaseBrowserGrant? tokenGrant;
+    private bool tokenGrantRead;
+    private CaseBrowserGrant? TokenGrant
     {
         get
         {
-            if (!tokenActorRead)
+            if (!tokenGrantRead)
             {
-                tokenActor = CaseBrowserSas.ActorOf(Request, options);
-                tokenActorRead = true;
+                tokenGrant = CaseBrowserSas.GrantOf(Request, options);
+                tokenGrantRead = true;
             }
-            return tokenActor;
+            return tokenGrant;
         }
     }
 
@@ -113,7 +119,7 @@ public class CaseBrowserCompatController : ControllerBase
     /// review note as anyone.
     /// </summary>
     private string Actor() =>
-        TokenActor
+        TokenGrant?.Actor
         ?? User?.FindFirstValue(ClaimTypes.Email)
         ?? User?.FindFirstValue(ClaimTypes.NameIdentifier)
         ?? User?.Identity?.Name

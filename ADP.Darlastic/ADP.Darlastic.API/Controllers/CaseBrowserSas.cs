@@ -19,8 +19,19 @@ namespace ShiftSoftware.ADP.Darlastic.API.Controllers;
 /// </summary>
 internal static class CaseBrowserSas
 {
-    /// <summary>Scopes a token to this surface. Changing it invalidates every outstanding token.</summary>
-    public const string Descriptor = "ADP.Darlastic.CaseBrowser";
+    /// <summary>
+    /// Scopes a token to this surface, and — by being one of two — to what the caller could do at the
+    /// moment it was minted. Changing either value invalidates every outstanding token of that kind.
+    ///
+    /// <para>The alternative was to pack a scope marker into the signed <c>id</c> alongside the actor,
+    /// which would put <c>rw:</c> in front of a person's name in the URL and, worse, in front of the
+    /// name written into <c>ReviewFlag.FlaggedBy</c> unless every read remembered to strip it. Two
+    /// descriptors keep the signed identity a plain actor and leave no way to forget.</para>
+    /// </summary>
+    public const string ReadDescriptor = "ADP.Darlastic.CaseBrowser";
+
+    /// <summary>Read-plus-write counterpart of <see cref="ReadDescriptor"/>.</summary>
+    public const string WriteDescriptor = "ADP.Darlastic.CaseBrowser.Write";
 
     public const string TokenParam = "token";
     public const string ExpiresParam = "expires";
@@ -29,16 +40,22 @@ internal static class CaseBrowserSas
     public static bool Enabled(DarlasticApiOptions options) =>
         !string.IsNullOrWhiteSpace(options.CaseBrowserSigningKey);
 
-    public static (string token, string expires) Mint(DarlasticApiOptions options, string actor) =>
+    /// <summary>
+    /// Signs a token for <paramref name="actor"/> carrying no more than the access the minting caller
+    /// held. <paramref name="canWrite"/> comes from the action tree at mint time, which is the only
+    /// moment a real session is present to ask about.
+    /// </summary>
+    public static (string token, string expires) Mint(DarlasticApiOptions options, string actor, bool canWrite) =>
         TokenService.GenerateSASToken(
-            Descriptor, actor, DateTime.UtcNow.Add(options.CaseBrowserTokenLifetime), options.CaseBrowserSigningKey!);
+            canWrite ? WriteDescriptor : ReadDescriptor,
+            actor, DateTime.UtcNow.Add(options.CaseBrowserTokenLifetime), options.CaseBrowserSigningKey!);
 
     /// <summary>
-    /// The actor a valid token names, or <see langword="null"/> when the request carries no usable
-    /// token. Returning the actor rather than a bool keeps the caller from having to re-read and
-    /// re-trust the query string separately — the name is only ever taken from data that was signed.
+    /// What a valid token grants, or <see langword="null"/> when the request carries no usable token.
+    /// Returning the grant rather than a bool keeps the caller from having to re-read and re-trust the
+    /// query string separately — the name and the access level are only ever taken from signed data.
     /// </summary>
-    public static string? ActorOf(HttpRequest request, DarlasticApiOptions options)
+    public static CaseBrowserGrant? GrantOf(HttpRequest request, DarlasticApiOptions options)
     {
         if (!Enabled(options)) return null;
 
@@ -51,10 +68,13 @@ internal static class CaseBrowserSas
 
         // ValidateSASToken re-derives the signature and checks the expiry, and compares in fixed
         // time. A tampered actor or a stretched expiry changes the signed data, so both are covered
-        // by the signature rather than by trusting the query string.
-        return TokenService.ValidateSASToken(Descriptor, actor, expires, token, options.CaseBrowserSigningKey!)
-            ? actor
-            : null;
+        // by the signature rather than by trusting the query string. The descriptor is signed too,
+        // so a read token cannot be re-presented as a write one — try the stronger grant first and
+        // fall back, rather than letting the query string say which kind it is.
+        string key = options.CaseBrowserSigningKey!;
+        if (TokenService.ValidateSASToken(WriteDescriptor, actor, expires, token, key)) return new(actor, true);
+        if (TokenService.ValidateSASToken(ReadDescriptor, actor, expires, token, key)) return new(actor, false);
+        return null;
     }
 
     /// <summary>The query string that carries a token onto a URL.</summary>
@@ -63,3 +83,10 @@ internal static class CaseBrowserSas
         $"&{ExpiresParam}={Uri.EscapeDataString(expires)}" +
         $"&{ActorParam}={Uri.EscapeDataString(actor)}";
 }
+
+/// <summary>
+/// Who a case browser token names and what it lets them do. <paramref name="CanWrite"/> is a property
+/// of the token itself — a steward with read-only access gets a token that cannot flag or audit, so
+/// the handoff to a page with no auth stack of its own does not quietly widen what they may do.
+/// </summary>
+internal sealed record CaseBrowserGrant(string Actor, bool CanWrite);

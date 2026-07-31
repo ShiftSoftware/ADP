@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using ShiftSoftware.ADP.Darlastic.API.Extensions;
+using ShiftSoftware.TypeAuth.Core;
 using System.Reflection;
 using System.Security.Claims;
 using System.Text;
@@ -49,6 +51,14 @@ public class CaseBrowserUiController : Controller
     /// <para>Meant to be called by a host UI that already holds a session (a Blazor page's
     /// <c>HttpClient</c>, say), which is what lets the page inherit that app's token refresh without
     /// implementing any: when this token nears expiry the caller simply mints another.</para>
+    ///
+    /// <para><b>This is the only place the action tree is consulted for a token-borne request</b>, so
+    /// it has to be consulted properly. The token that leaves here bypasses every later action check
+    /// — deliberately, since the principal is gone by then — which means minting is where a caller's
+    /// access is measured, and it must be measured on both levels: Read decides whether they get a
+    /// token at all, Write decides which kind. Leaving this endpoint at bare <c>[Authorize]</c> would
+    /// make the case browser the one Darlastic surface that ignores
+    /// <c>EnableDarlasticActionTreeAuthorization</c>, reachable by anyone with a login.</para>
     /// </summary>
     [HttpGet("token")]
     [Authorize]
@@ -62,12 +72,25 @@ public class CaseBrowserUiController : Controller
                 detail: "Set DarlasticApiOptions.CaseBrowserSigningKey on this host to enable them.",
                 statusCode: StatusCodes.Status501NotImplemented);
 
+        // Authorization off means every authenticated caller has the run of the registry — the same
+        // reading CaseBrowserCompatController.Denied takes, and the shape every Darlastic host has
+        // run in so far. Mint accordingly rather than inventing a stricter rule for this one door.
+        bool canRead = true, canWrite = true;
+        if (options.EnableDarlasticActionTreeAuthorization)
+        {
+            var typeAuth = HttpContext.RequestServices.GetRequiredService<ITypeAuthService>();
+            canRead = typeAuth.Can(options.Actions.ResolvedStewardQueue, Access.Read);
+            canWrite = typeAuth.Can(options.Actions.ResolvedStewardQueue, Access.Write);
+        }
+
+        if (!canRead) return Forbid();
+
         string actor = User.FindFirstValue(ClaimTypes.Email)
             ?? User.FindFirstValue(ClaimTypes.NameIdentifier)
             ?? User.Identity?.Name
             ?? "unknown";
 
-        var (token, expires) = CaseBrowserSas.Mint(options, actor);
+        var (token, expires) = CaseBrowserSas.Mint(options, actor, canWrite);
         string prefix = (options.RoutePrefix ?? "api").Trim('/');
 
         return new JsonResult(new
@@ -78,6 +101,9 @@ public class CaseBrowserUiController : Controller
             // Handed back assembled so a caller never has to know how the parameters are spelled.
             url = $"/{prefix}/CaseBrowserUi?{CaseBrowserSas.QueryString(token, expires, actor)}",
             lifetimeSeconds = (int)options.CaseBrowserTokenLifetime.TotalSeconds,
+            // Presentation only — the token itself is what enforces this. Lets a host UI say so up
+            // front instead of leaving a read-only steward to discover it by clicking Flag.
+            canWrite,
         });
     }
 

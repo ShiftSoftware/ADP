@@ -298,10 +298,14 @@ let API_AUTH = (() => {
 
 // A token minted at load would expire mid-session and start failing calls with nothing on screen to
 // explain it. A host that embeds this page can post a fresh one in before that happens, so the
-// reader is never interrupted and never loses the case they had open. Same-origin only, and only
-// ever used to replace the credential — nothing here executes what it receives.
+// reader is never interrupted and never loses the case they had open.
+//
+// Accepted only from the window that framed us, which is tighter than an origin check (that would
+// admit any page on the same host) and, unlike one, still correct when a host serves its SPA from a
+// different origin than its API. Nothing here executes what it receives — the message can only ever
+// replace the credential this page sends, and a token is something the framer already holds.
 window.addEventListener("message", e => {
-  if (e.origin !== location.origin) return;
+  if (e.source !== window.parent) return;
   const d = e.data;
   if (d && d.type === "darlastic-token") {
     const qs = authQs(d.token, d.expires, d.actor);
