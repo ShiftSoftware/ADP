@@ -128,7 +128,65 @@ public class MenuVariantRepository : ShiftRepository<ShiftDbContext, MenuVariant
         ValidateLabourRates(dto, countries);
         ValidatePartCountryPrices(dto, countries);
 
+        DeleteChildrenDroppedByTheDto(entity, dto);
+
         return await base.UpsertAsync(entity, dto, actionType, userId, idempotencyKey, disableDefaultDataLevelAccess, disableGlobalFilters);
+    }
+
+    /// <summary>
+    /// Deletes the child rows this save drops, before the mapper detaches them from the variant.
+    ///
+    /// The mapping profile syncs these collections by REMOVING entries the DTO no longer carries. Each
+    /// of these children has a non-nullable <c>MenuVariantID</c>, so removing one severs a required
+    /// relationship: EF records a "conceptual null" on the foreign key and plans to resolve it by
+    /// cascade-deleting the orphan during <c>SaveChanges</c>. It never gets that far — ShiftEntity's
+    /// repository calls <c>ChangeTracker.Entries()</c> first, to run the registered
+    /// <c>IShiftEntitySaveValidator</c>s (ShiftIdentity's dashboard always registers one), and that
+    /// call detects changes and throws <see cref="InvalidOperationException"/> on the unresolved
+    /// conceptual null. Removing a service interval from a variant fails exactly this way, and so do
+    /// labour details and country labour rates.
+    ///
+    /// Deleting the orphans up front settles the foreign key before anything can trip over it.
+    /// <c>MenuItem</c> needs no entry here: the profile never removes from that collection — see the
+    /// comment on <c>Items</c> in <c>GeneralMappingProfile</c>, which describes this same trap.
+    ///
+    /// The delete is HARD rather than soft on purpose. These are join rows, and the unique index on
+    /// (MenuVariantID, ServiceIntervalID) carries no <c>IsDeleted</c> filter, so a soft-deleted row
+    /// would permanently block re-adding that interval to the variant. It also replicates correctly:
+    /// a hard delete is the one case that REMOVES the Cosmos document rather than upserting it.
+    /// </summary>
+    private void DeleteChildrenDroppedByTheDto(MenuVariant entity, MenuVariantDTO dto)
+    {
+        DeleteDropped(entity.PeriodicAvailabilities, x => x.ServiceIntervalID,
+            dto.PeriodicAvailabilities?.Select(x => x.ID.ToLong()));
+
+        DeleteDropped(entity.LabourDetails, x => x.ServiceIntervalGroupID,
+            dto.LabourDetails?.Select(x => x.ServiceIntervalGroupID.ToLong()));
+
+        DeleteDropped(entity.LabourRates, x => x.CountryID,
+            dto.LabourRates?.Select(x => x.CountryID.GetValueOrDefault()));
+    }
+
+    /// <param name="keptKeys">
+    /// The keys the DTO still carries. Null is treated as "none kept", matching the mapper — it syncs
+    /// against the DTO's collection whatever it holds.
+    /// </param>
+    private void DeleteDropped<TChild>(
+        ICollection<TChild> children,
+        Func<TChild, long> keySelector,
+        IEnumerable<long>? keptKeys)
+        where TChild : class
+    {
+        if (children is null || children.Count == 0)
+            return;
+
+        var kept = (keptKeys ?? []).ToHashSet();
+
+        // Materialised before deleting: EF's fixup mutates the navigation as entries become Deleted.
+        var dropped = children.Where(child => !kept.Contains(keySelector(child))).ToList();
+
+        foreach (var child in dropped)
+            db.Remove(child);
     }
 
     private static void ValidateLabourRates(MenuVariantDTO dto, IReadOnlyList<CountryInfo> countries)
