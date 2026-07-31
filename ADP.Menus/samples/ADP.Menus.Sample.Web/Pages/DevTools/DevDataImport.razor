@@ -1,0 +1,215 @@
+@page "/DevTools/DataImport"
+@attribute [Authorize]
+
+@using ShiftSoftware.ADP.Menus.Sample.Web.DTOs.DevTools
+
+@inject HttpClient Http
+@inject IDialogService DialogService
+@inject MessageService MessageService
+
+@* DEVELOPMENT-ONLY sample tooling: repopulates this sample's database from another local database.
+   The API refuses these calls outside Development, and each source database is configured locally
+   (user-secrets) rather than committed. Not part of any ADP.Menus package. *@
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="pa-4">
+
+    <MudText Typo="Typo.h5" GutterBottom>Development data import</MudText>
+
+    <MudAlert Severity="Severity.Warning" Dense Class="mb-4">
+        Each button <b>deletes everything</b> in the target schema of this sample's database and replaces
+        it with a copy from your configured source database. Local sample use only — there is no undo.
+    </MudAlert>
+
+    @if (availability is null)
+    {
+        <MudProgressLinear Indeterminate Color="Color.Primary" Class="my-4" />
+    }
+    else
+    {
+        <MudStack Spacing="4">
+
+            <MudPaper Class="pa-4" Outlined>
+                <MudText Typo="Typo.h6">Identity data</MudText>
+                <MudText Typo="Typo.body2" Class="mb-3">
+                    Replaces the <code>ShiftIdentity</code> schema. The seeded superuser is kept, so you can
+                    still sign in — restart the API afterwards to re-link it to a company and branch.
+                </MudText>
+
+                @if (!availability.IdentityConfigured)
+                {
+                    <MudAlert Severity="Severity.Info" Dense Class="mb-3">
+                        No source configured. @availability.ConfigurationHint
+                    </MudAlert>
+                }
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           Disabled="@(busy || !availability.IdentityConfigured)"
+                           StartIcon="@(identityRunning ? null : Icons.Material.Filled.Group)"
+                           OnClick="ImportIdentityAsync">
+                    @if (identityRunning)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate Class="mr-2" />
+                    }
+                    Import identity data
+                </MudButton>
+            </MudPaper>
+
+            <MudPaper Class="pa-4" Outlined>
+                <MudText Typo="Typo.h6">Menu data</MudText>
+                <MudText Typo="Typo.body2" Class="mb-3">
+                    Replaces the <code>Menu</code> schema, including the sample's own demo menus.
+                </MudText>
+
+                @if (!availability.MenuConfigured)
+                {
+                    <MudAlert Severity="Severity.Info" Dense Class="mb-3">
+                        No source configured. @availability.ConfigurationHint
+                    </MudAlert>
+                }
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Secondary"
+                           Disabled="@(busy || !availability.MenuConfigured)"
+                           StartIcon="@(menuRunning ? null : Icons.Material.Filled.MenuBook)"
+                           OnClick="ImportMenuAsync">
+                    @if (menuRunning)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate Class="mr-2" />
+                    }
+                    Import menu data
+                </MudButton>
+            </MudPaper>
+
+            @if (lastResult is not null)
+            {
+                <MudPaper Class="pa-4" Outlined>
+                    <MudText Typo="Typo.h6" GutterBottom>@lastRunTitle</MudText>
+
+                    <MudAlert Severity="@(lastResult.Succeeded ? Severity.Success : Severity.Error)" Dense Class="mb-3">
+                        @lastResult.Message (@lastResult.ElapsedMilliseconds ms)
+                    </MudAlert>
+
+                    @if (lastResult.Warnings.Count > 0)
+                    {
+                        <MudText Typo="Typo.subtitle2">Notes</MudText>
+                        <MudList T="string" Dense>
+                            @foreach (var warning in lastResult.Warnings)
+                            {
+                                <MudListItem T="string" Icon="@Icons.Material.Filled.Info">@warning</MudListItem>
+                            }
+                        </MudList>
+                    }
+
+                    @if (lastResult.Tables.Count > 0)
+                    {
+                        <MudSimpleTable Dense Striped Class="mt-3">
+                            <thead>
+                                <tr>
+                                    <th>Table</th>
+                                    <th style="text-align:right">Deleted</th>
+                                    <th style="text-align:right">Copied</th>
+                                    <th>Note</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var table in lastResult.Tables)
+                                {
+                                    <tr>
+                                        <td>@table.Table</td>
+                                        <td style="text-align:right">@table.RowsDeleted.ToString("N0")</td>
+                                        <td style="text-align:right">@table.RowsCopied.ToString("N0")</td>
+                                        <td>@table.Note</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </MudSimpleTable>
+                    }
+                </MudPaper>
+            }
+
+        </MudStack>
+    }
+
+</MudContainer>
+
+@code {
+    private DevDataImportAvailabilityDTO? availability;
+    private DevDataImportResultDTO? lastResult;
+    private string lastRunTitle = string.Empty;
+
+    private bool identityRunning;
+    private bool menuRunning;
+    private bool busy => identityRunning || menuRunning;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            availability = await Http.GetFromJsonAsync<DevDataImportAvailabilityDTO>("DevDataImport/availability")
+                           ?? new DevDataImportAvailabilityDTO();
+        }
+        catch (Exception ex)
+        {
+            // A 404 here means the API is not running in Development — the endpoints are gated off.
+            availability = new DevDataImportAvailabilityDTO
+            {
+                ConfigurationHint = $"Import endpoints unavailable ({ex.Message}). They only exist when the API runs in Development.",
+            };
+        }
+    }
+
+    private Task ImportIdentityAsync() => RunAsync(
+        title: "Identity data import",
+        confirmation: "This deletes ALL identity data in the sample database (except the seeded superuser) and replaces it from your configured source. Continue?",
+        endpoint: "DevDataImport/identity",
+        setRunning: value => identityRunning = value);
+
+    private Task ImportMenuAsync() => RunAsync(
+        title: "Menu data import",
+        confirmation: "This deletes ALL menu data in the sample database and replaces it from your configured source. Continue?",
+        endpoint: "DevDataImport/menu",
+        setRunning: value => menuRunning = value);
+
+    private async Task RunAsync(string title, string confirmation, string endpoint, Action<bool> setRunning)
+    {
+        var confirmed = await DialogService.ShowMessageBoxAsync(
+            "Are you sure?",
+            confirmation,
+            yesText: "Yes, replace the data",
+            cancelText: "Cancel");
+
+        if (confirmed is not true)
+            return;
+
+        setRunning(true);
+        lastResult = null;
+        lastRunTitle = title;
+
+        try
+        {
+            var response = await Http.PostAsync(endpoint, null);
+            var result = await response.Content.ReadFromJsonAsync<DevDataImportResultDTO>();
+
+            lastResult = result ?? new DevDataImportResultDTO
+            {
+                Succeeded = false,
+                Message = $"The API returned {(int)response.StatusCode} with no readable body.",
+            };
+
+            if (lastResult.Succeeded)
+                MessageService.Success(lastResult.Message, title);
+            else
+                MessageService.Error(title, title, lastResult.Message);
+        }
+        catch (Exception ex)
+        {
+            lastResult = new DevDataImportResultDTO { Succeeded = false, Message = ex.Message };
+            MessageService.Error(title, title, ex.Message);
+        }
+        finally
+        {
+            setRunning(false);
+        }
+    }
+}

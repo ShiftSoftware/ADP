@@ -15,4 +15,9 @@
     </MudNavLink>
 
     <MenuNavGroup />
+
+    @* Development-only sample tooling; the API gates the endpoints to Development. *@
+    <MudNavLink Href="/DevTools/DataImport" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.CloudDownload">
+        Data Import (dev)
+    </MudNavLink>
 </MudNavMenu>

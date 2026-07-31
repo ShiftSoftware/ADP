@@ -165,6 +165,12 @@ builder.Services.AddMenuApiServices<DB>(mvcBuilder, options =>
 // ---------- Consumer Todo repository ----------
 builder.Services.AddScoped<ShiftSoftware.ADP.Menus.Sample.API.Data.Repositories.TodoItemRepository>();
 
+// ---------- Development-only data import ----------
+// Sample scaffolding for loading a realistic dataset into the local sample database. The endpoints
+// refuse to run outside Development; sources come from ConnectionStrings:IdentityImportSource and
+// ConnectionStrings:MenuImportSource. Not part of any ADP.Menus package.
+builder.Services.AddScoped<ShiftSoftware.ADP.Menus.Sample.API.DevTools.SchemaCopyService>();
+
 builder.Services.AddRazorPages();
 
 var app = builder.Build();
