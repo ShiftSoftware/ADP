@@ -92,9 +92,9 @@ public static class RealMatcher
 
         // E-mail — a contact key like phone, but ASYMMETRIC evidence like VIN and address: weight is
         // added ONLY when an address is actually shared, and a non-match NEVER penalizes. One person
-        // routinely holds several mailboxes — the TCA corpus has exactly this shape, one human as
-        // 'g.foerster@toyota-centralasia.com' at one source and 'foerster.gerald@gmail.com' at
-        // another — so scoring a non-match as 0.00 at full weight would actively SPLIT true matches.
+        // routinely holds several mailboxes — measured corpora have exactly this shape, one human on a
+        // work address at one source and a personal one at another — so scoring a non-match as 0.00 at
+        // full weight would actively SPLIT true matches.
         // The same asymmetry makes the signal strictly additive: enabling e-mail on a tenant can only
         // ever raise a pair's confidence, never lower it, so it cannot regress a prior resolve.
         //
@@ -194,7 +194,7 @@ public static class RealMatcher
         // A shared e-mail lifts the damp for the same reason a shared VIN does: name is no longer the
         // ONLY signal. Without this the damp silently defeats the e-mail rule on the exact pairs it
         // exists to catch — two records of one person, same name, same address, no phone on either
-        // side (the TCA duplicate-golden shape) would score a perfect 1.00 and then be dragged to
+        // side (the duplicate-golden shape) would score a perfect 1.00 and then be dragged to
         // 0.70, below every merge band. Gated on a SHARED address, not on merely having one, since a
         // non-match contributes nothing.
         bool vinPositive = vinClass is VinClass.SoldOverlap or VinClass.Serviced;
@@ -401,8 +401,8 @@ public static class RealMatcher
         // personal mailbox is near-king-key grade (it belongs to one person by construction), so let it
         // cross the line with a weak or absent name the way an exact phone does. But data entry puts
         // the WRONG person's address on a record often enough that a genuinely different name has to
-        // hold the pair in the steward band: TCA's 'b.rustam@gsr.net' carries three distinct staff
-        // names, which is exactly the shape this gate must refuse to merge.
+        // hold the pair in the steward band: in a measured corpus one dealer-staff mailbox carried
+        // three distinct staff names, which is exactly the shape this gate must refuse to merge.
         // No org-line guard here (unlike the phone path): a shared COMPANY mailbox is already removed
         // by the role filter, and two records of one company on one address is a legitimate merge.
         // Sits before the conflict penalties so a national-ID conflict still crushes it (×0.3).
@@ -660,10 +660,10 @@ public static class RealMatcher
 
     // Role / shared mailboxes: ONE address that fronts MANY people, so it is contact information but
     // never identity evidence. This is the only guard e-mail needs — and, on the real corpus, the only
-    // one that is safe. Both tempting alternatives were measured against TCA (2026-07-28) and both
-    // destroy true matches:
-    //   - demote by DOMAIN: 'g.foerster@toyota-centralasia.com' is one human on the distributor's own
-    //     domain, and it is precisely the duplicate pair e-mail is supposed to merge.
+    // one that is safe. Both tempting alternatives were measured against a real corpus (2026-07-28)
+    // and both destroy true matches:
+    //   - demote by DOMAIN: a personal mailbox on the distributor's own domain is one human, and it
+    //     is precisely the duplicate pair e-mail is supposed to merge.
     //   - demote by FREQUENCY: the highest-frequency addresses in the tenant are ONE staff member
     //     duplicated hundreds of times (308 goldens under a single distinct name) — the thing that
     //     should merge, not the thing that should be suppressed.

@@ -5,7 +5,7 @@ namespace ShiftSoftware.ADP.Darlastic.Engine;
 /// (AutoMerged / StewardBand / NearMiss) are mutually exclusive.
 ///
 /// <para>These live in the Engine, not in a browsing surface, because the resolve itself is the
-/// only pass that sees every pair — 12.4M of them at TIQ scale. Categorising there and staging the
+/// only pass that sees every pair — 12.4M of them at production scale. Categorising there and staging the
 /// result is what lets a hosted surface serve real corpus numbers from a table instead of
 /// rebuilding an in-memory index it cannot afford. Keeping the rules here also means there is
 /// exactly one definition: a second copy in a UI project is how a category silently comes to mean

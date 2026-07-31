@@ -23,7 +23,7 @@ public class DarlasticApiOptions
     ///
     /// <para>Leave <see langword="true"/> (the default) when the registry shares the host's
     /// application database: the host adds nothing and its existing migrations version the
-    /// registry. That is the TCA Tickets shape.</para>
+    /// registry. That is the usual shape for a CRM/ticketing host.</para>
     ///
     /// <para>Set <see langword="false"/> when the registry lives in a DEDICATED database behind its
     /// own <see cref="ShiftSoftware.ShiftEntity.EFCore.ShiftDbContext"/>, and call

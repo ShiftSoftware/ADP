@@ -423,13 +423,13 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
   await testRunner.AndAsync("vehicle service activations:", ((string)(null)), table226, "And ");
 #line hidden
 #line 73
-  await testRunner.AndAsync("company 10 is named \"Taj Motors\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+  await testRunner.AndAsync("company 10 is named \"Distributor C\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 74
   await testRunner.AndAsync("country 5 is named \"Country 5\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 75
-  await testRunner.AndAsync("branch 40 is named \"Dushanbe Showroom\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+  await testRunner.AndAsync("branch 40 is named \"North Showroom\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
                 global::Reqnroll.Table table227 = new global::Reqnroll.Table(new string[] {
                             "ServiceItemID",
@@ -455,13 +455,13 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
   await testRunner.AndAsync("evaluating service items end-to-end for \"JTEAAHAJ20K049868\" with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 81
-  await testRunner.ThenAsync("the sale company is \"Taj Motors\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+  await testRunner.ThenAsync("the sale company is \"Distributor C\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 82
   await testRunner.AndAsync("the sale country is \"Country 5\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 83
-  await testRunner.AndAsync("the sale branch is \"Dushanbe Showroom\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+  await testRunner.AndAsync("the sale branch is \"North Showroom\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 84
   await testRunner.AndAsync("service item \"SI-MATCH\" is in the result", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");

@@ -1,7 +1,7 @@
 /**
  * E2E for external option sources (`optionsSource`), server-side half:
  *
- *   1. Seeds two sourced bank questions (TIQ-style dropdown) + a survey mixing
+ *   1. Seeds two sourced bank questions (ShiftEntity-shaped dropdown) + a survey mixing
  *      an inline sourced navigationList with bankRef usages, one of which
  *      narrows the bank's endpoint via `overrides.sourceParams`.
  *   2. Publishes and asserts the resolver merged sourceParams over the bank's
@@ -26,7 +26,7 @@ import { api, apiJson, assert, assertEq, sql, step } from './lib/util.js';
 const TAG = `e2e-src-${Date.now()}`;
 const CITY_BANK = `${TAG}-city`;
 const BRANCH_BANK = `${TAG}-branch`;
-const TIQ = 'https://tiq-identity-server.azurewebsites.net/api/public';
+const REF_API = 'https://tiq-identity-server.azurewebsites.net/api/public';
 
 let token = '';
 let surveyHashId = '';
@@ -51,7 +51,7 @@ function draft(surveyId: string) {
             title: { en: 'Branches' },
             required: true,
             optionsSource: {
-              url: `${TIQ}/company-branch`,
+              url: `${REF_API}/company-branch`,
               queryParams: { services: 'body-and-paint' },
               nextScreen: 'branch-banked',
             },
@@ -102,7 +102,7 @@ async function seed() {
           id: CITY_BANK,
           title: { en: 'Which city?' },
           required: true,
-          optionsSource: { url: `${TIQ}/city` },
+          optionsSource: { url: `${REF_API}/city` },
         },
       },
     });
@@ -118,7 +118,7 @@ async function seed() {
           title: { en: 'Preferred branch' },
           required: false,
           optionsSource: {
-            url: `${TIQ}/company-branch`,
+            url: `${REF_API}/company-branch`,
             queryParams: { services: 'new-vehicle-sale', top: '50' },
           },
         },
@@ -212,7 +212,7 @@ async function verifySchema() {
       'sourceParams override won over the bank param',
     );
     assertEq(banked!.optionsSource!.queryParams?.['top'], '50', 'bank param without override retained');
-    assertEq(banked!.optionsSource!.url, `${TIQ}/company-branch`, 'url stays bank-locked');
+    assertEq(banked!.optionsSource!.url, `${REF_API}/company-branch`, 'url stays bank-locked');
 
     const city = byId.get('city')?.questions?.[0];
     assert(city?.optionsSource, 'city bank resolved with its optionsSource');

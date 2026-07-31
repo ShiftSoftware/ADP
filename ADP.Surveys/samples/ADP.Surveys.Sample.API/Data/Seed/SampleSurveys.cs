@@ -593,10 +593,10 @@ public static class SampleSurveys
     }
 
     // ──────────────────────────────────────────────────────────────────────
-    // 7. External API options — choice questions whose options come from the
-    //    TIQ public endpoints (fetched in the respondent's browser at render
-    //    time, Accept-Language = survey locale). Demonstrates all three usage
-    //    styles:
+    // 7. External API options — choice questions whose options come from a
+    //    deployment's own public reference endpoints (fetched in the respondent's
+    //    browser at render time, Accept-Language = survey locale). Demonstrates
+    //    all three usage styles:
     //      • inline sourced navigationLists with per-screen query-param
     //        variations of the same endpoint (services=new-vehicle-sale vs
     //        body-and-paint) — only the branch the user takes gets fetched;
@@ -607,43 +607,43 @@ public static class SampleSurveys
     // ──────────────────────────────────────────────────────────────────────
     private static SampleSurveyRecipe ExternalApiOptions()
     {
-        const string TiqBase = "https://tiq-identity-server.azurewebsites.net/api/public";
+        const string PublicRefApiBase = "https://tiq-identity-server.azurewebsites.net/api/public";
 
         var cityBank = new BankRecipe(
-            Key: "tiq-city",
+            Key: "ref-city",
             Question: new DropdownQuestionDto
             {
-                Id = "tiq-city",
+                Id = "ref-city",
                 Title = LocalizedString.From("en", "Which city are you in?"),
                 Placeholder = LocalizedString.From("en", "Select your city…"),
-                OptionsSource = new OptionsSourceDto { Url = $"{TiqBase}/city" },
+                OptionsSource = new OptionsSourceDto { Url = $"{PublicRefApiBase}/city" },
             },
             BiColumn: "city",
-            Tags: "tiq,external");
+            Tags: "reference,external");
 
         var branchBank = new BankRecipe(
-            Key: "tiq-preferred-branch",
+            Key: "ref-preferred-branch",
             Question: new DropdownQuestionDto
             {
-                Id = "tiq-preferred-branch",
+                Id = "ref-preferred-branch",
                 Title = LocalizedString.From("en", "Preferred branch"),
                 Placeholder = LocalizedString.From("en", "Select a branch…"),
                 // No services filter at the bank — each referencing survey narrows
                 // via overrides.sourceParams, keeping one bank entry (and one BI
                 // column) across all variations.
-                OptionsSource = new OptionsSourceDto { Url = $"{TiqBase}/company-branch" },
+                OptionsSource = new OptionsSourceDto { Url = $"{PublicRefApiBase}/company-branch" },
             },
             BiColumn: "preferred_branch",
-            Tags: "tiq,external");
+            Tags: "reference,external");
 
         return new SampleSurveyRecipe(
             IntegrationId: "sample-external-api-options",
-            Name: "Sample: External API options (TIQ)",
+            Name: "Sample: External API options",
             Draft: new SurveyDto
             {
                 Title = LocalizedString.From("en", "Book with your nearest branch"),
                 Description = LocalizedString.From("en",
-                    "Branch and city lists come live from the TIQ public APIs — nothing is authored inline."),
+                    "Branch and city lists come live from the deployment's public APIs — nothing is authored inline."),
                 Locales = new() { "en" },
                 DefaultLocale = "en",
                 Screens =
@@ -687,7 +687,7 @@ public static class SampleSurveys
                                 BiColumn = "preferred_branch",
                                 OptionsSource = new OptionsSourceDto
                                 {
-                                    Url = $"{TiqBase}/company-branch",
+                                    Url = $"{PublicRefApiBase}/company-branch",
                                     QueryParams = new() { ["services"] = "new-vehicle-sale" },
                                     NextScreen = "city",
                                 },
@@ -708,7 +708,7 @@ public static class SampleSurveys
                                 BiColumn = "preferred_branch",
                                 OptionsSource = new OptionsSourceDto
                                 {
-                                    Url = $"{TiqBase}/company-branch",
+                                    Url = $"{PublicRefApiBase}/company-branch",
                                     QueryParams = new() { ["services"] = "body-and-paint" },
                                     NextScreen = "city",
                                 },

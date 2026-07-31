@@ -6,8 +6,8 @@
  * one endpoint across its branches).
  *
  * `Accept-Language` is sent from the active locale so endpoints that localize
- * server-side (e.g. the TIQ public APIs) return pre-localized labels; an
- * explicit `source.headers` entry wins over the automatic one.
+ * server-side (as a deployment's own public reference APIs typically do) return
+ * pre-localized labels; an explicit `source.headers` entry wins over the automatic one.
  */
 
 import type { OptionsSource } from './schema.js';

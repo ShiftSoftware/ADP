@@ -340,7 +340,7 @@ public class CaseBrowserCompatController : ControllerBase
 
         var sides = await LoadSides(memberKeys.Select(m => (m.SourceSystem, m.SourceRecordId)), ct);
 
-        // Bounded: one identity in the TIQ corpus carries 28,622 edges, and no human reads past the
+        // Bounded: one identity in a measured corpus carries 28,622 edges, and no human reads past the
         // strongest few dozen.
         var edges = await db.Set<IdentityEdge>().AsNoTracking()
             .Where(e => e.IdentityID == root)

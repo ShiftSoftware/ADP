@@ -126,8 +126,8 @@ builder.Services.AddSurveysApiServices<DB>(mvcBuilder, options =>
     options.RoutePrefix = "api/Surveys";
     options.EnableSurveysActionTreeAuthorization = true;
 
-    // Deployment-wide branding — every survey this install serves gets the Toyota
-    // identity unless the survey's own Branding overrides a field (see
+    // Deployment-wide branding — every survey this install serves gets this sample's
+    // own identity unless the survey's own Branding overrides a field (see
     // "Sample: Multi-locale + branding" for the override case). Real consumers set
     // their own colors/logo here; the logo is served from this app's wwwroot.
     options.DefaultBranding = new ShiftSoftware.ADP.Surveys.Shared.DTOs.BrandingDto
@@ -150,8 +150,8 @@ app.MapControllers();
 // the request falls through to MapFallbackToFile below and the Blazor router answers with
 // its "nothing at this address" page, which looks like a routing bug rather than a missing
 // endpoint. Only hosts running ShiftIdentityHostingTypes.Internal need it; hosts that
-// validate tokens from a separate identity service (e.g. the TCA apps) do not, which is
-// why nothing else in the estate caught this.
+// validate tokens from a separate identity service do not, which is why nothing else in
+// the estate caught this.
 app.MapShiftIdentityDashboard();
 
 // Attribute-driven CRUD for [ShiftEntityEndpoint<>] / [ShiftEntitySecureEndpoint<>]

@@ -6,7 +6,7 @@ namespace ShiftSoftware.ADP.Darlastic.Sample.API.Data;
 /// <summary>
 /// The sample host's context. Deliberately empty of entities of its own: the Darlastic model
 /// contributor registered by <c>AddDarlasticApiServices</c> adds the registry tables and the
-/// golden view, which is exactly what a real host (TCA Tickets, TIQ Customers) gets.
+/// golden view, which is exactly what a real host (a CRM's tickets or customers store) gets.
 ///
 /// <para><b>No migrations here, on purpose.</b> The module ships no DDL and hosts own their schema;
 /// this sample points at a registry the engine already created (<c>dotnet run resolve</c> in the

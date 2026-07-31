@@ -26,26 +26,26 @@ describe('buildOptionsUrl', () => {
 });
 
 describe('mapOptionsResponse', () => {
-  // The confirmed TIQ public-endpoint shape: flat array of { ID, Name, … }.
-  const tiqBody = [
-    { ID: 'L0VEX', Name: 'Erbil', IntegrationId: 'Erbil' },
-    { ID: 'MWjQ0', Name: 'Baghdad', IntegrationId: 'Baghdad' },
+  // The confirmed public-endpoint shape: flat array of { ID, Name, … }.
+  const publicBody = [
+    { ID: 'L0VEX', Name: 'North City', IntegrationId: 'North City' },
+    { ID: 'MWjQ0', Name: 'Capital City', IntegrationId: 'Capital City' },
   ];
 
   it('defaults to ID/Name paths (ShiftEntity public shape)', () => {
-    expect(mapOptionsResponse(tiqBody, { url: 'https://x.test' })).toEqual([
-      { id: 'L0VEX', label: 'Erbil' },
-      { id: 'MWjQ0', label: 'Baghdad' },
+    expect(mapOptionsResponse(publicBody, { url: 'https://x.test' })).toEqual([
+      { id: 'L0VEX', label: 'North City' },
+      { id: 'MWjQ0', label: 'Capital City' },
     ]);
   });
 
   it('honors custom value/label paths', () => {
-    const options = mapOptionsResponse(tiqBody, {
+    const options = mapOptionsResponse(publicBody, {
       url: 'https://x.test',
       valuePath: 'IntegrationId',
       labelPath: 'Name',
     });
-    expect(options[0]).toEqual({ id: 'Erbil', label: 'Erbil' });
+    expect(options[0]).toEqual({ id: 'North City', label: 'North City' });
   });
 
   it('digs into itemsPath for wrapped responses and supports nested paths', () => {

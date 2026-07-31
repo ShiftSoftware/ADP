@@ -12,7 +12,7 @@ using ShiftSoftware.TypeAuth.AspNetCore.Extensions;
 // What it is for: running the whole loop on one machine — a registry the spike's `resolve` filled,
 // the module's API over it, and the case browser UI on top — so the surface is exercised before it
 // is mounted in a tenant host. It is the harness that made the hosted controller testable without
-// TCA Tickets or a TIQ host being available.
+// any tenant host being available.
 //
 // What it is NOT: a deployment. It authenticates nobody (see DevAuthenticationHandler) and reads
 // real customer records straight out of whatever registry you point it at.
@@ -21,7 +21,7 @@ using ShiftSoftware.TypeAuth.AspNetCore.Extensions;
 var builder = WebApplication.CreateBuilder(args);
 
 // The registry to serve. Point it at a tenant registry the engine has already resolved into
-// (`DARLASTIC_DB=Darlastic-TIQ dotnet run resolve` in the spike), or at a scratch one.
+// (`DARLASTIC_DB=Darlastic-<tenant> dotnet run resolve` in the spike), or at a scratch one.
 string? connection = builder.Configuration.GetConnectionString("Registry")
     ?? Environment.GetEnvironmentVariable("DARLASTIC_SAMPLE_SQL");
 

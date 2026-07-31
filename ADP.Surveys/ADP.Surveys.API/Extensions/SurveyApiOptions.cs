@@ -140,12 +140,12 @@ public class SurveyApiOptions
 
     /// <summary>
     /// Deployment-wide branding (logo, colors, favicon) applied to every survey this
-    /// install serves — the "Toyota Iraq looks Toyota Iraq, TCA looks TCA" knob. A
-    /// survey's own <c>SurveyDto.Branding</c> overrides it field-by-field at serve
-    /// time (<see cref="BrandingDto.Merge"/>), so per-survey brands (e.g. a Lexus
-    /// survey inside a Toyota deployment) still work. Serve-time means a rebrand here
-    /// reaches in-flight instances without republishing anything. Null (default) =
-    /// schemas are served byte-for-byte as frozen at publish.
+    /// install serves — the knob that makes each deployment's surveys carry that
+    /// deployment's own brand. A survey's own <c>SurveyDto.Branding</c> overrides it
+    /// field-by-field at serve time (<see cref="BrandingDto.Merge"/>), so per-survey
+    /// brands (e.g. a sub-brand's survey inside a parent-brand deployment) still work.
+    /// Serve-time means a rebrand here reaches in-flight instances without republishing
+    /// anything. Null (default) = schemas are served byte-for-byte as frozen at publish.
     /// </summary>
     public BrandingDto? DefaultBranding { get; set; }
 }

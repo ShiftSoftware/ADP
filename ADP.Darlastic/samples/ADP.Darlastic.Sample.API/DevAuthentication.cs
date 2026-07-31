@@ -20,8 +20,9 @@ namespace ShiftSoftware.ADP.Darlastic.Sample.API;
 /// registry to anonymous callers — which is the failure mode that actually matters, because this
 /// reads real customer records.</para>
 ///
-/// <para>Real hosts do not use this. TCA mounts the module behind the CRM's identity server and TIQ
-/// behind its own; the action-tree grants then decide who may see the queue and who may act on it.</para>
+/// <para>Real hosts do not use this. A deployment mounts the module behind its own identity server —
+/// the CRM's, or a dedicated one; the action-tree grants then decide who may see the queue and who
+/// may act on it.</para>
 /// </summary>
 public sealed class DevAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>
 {

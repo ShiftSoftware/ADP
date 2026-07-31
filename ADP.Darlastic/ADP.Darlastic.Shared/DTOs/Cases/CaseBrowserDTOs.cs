@@ -9,7 +9,7 @@ namespace ShiftSoftware.ADP.Darlastic.Shared.DTOs.Cases;
 /// <para>The distinction between <see cref="Categories"/> and <see cref="RegistryIdentities"/> on
 /// one hand and the browsable counts on the other is the whole point of this shape. A surface that
 /// counts the cases it happens to hold and presents that as the corpus is wrong by orders of
-/// magnitude and looks entirely plausible while doing it — measured on TIQ, where a queue-backed
+/// magnitude and looks entirely plausible while doing it — measured in production, where a queue-backed
 /// browser reported 13,591 auto-merges against the 1,111,426 the resolve actually made.</para>
 /// </summary>
 public class CaseSummaryDTO

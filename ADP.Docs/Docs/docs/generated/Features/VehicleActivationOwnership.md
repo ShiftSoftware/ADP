@@ -76,17 +76,17 @@ Scenario: An unstamped activation is completed by the activating company's own e
   And vehicle service activations:
     | CompanyID | WarrantyActivationDate |
     | 10        | 2026-06-02             |
-  And company 10 is named "Taj Motors"
+  And company 10 is named "Distributor C"
   And country 5 is named "Country 5"
-  And branch 40 is named "Dushanbe Showroom"
+  And branch 40 is named "North Showroom"
   And service items:
     | ServiceItemID | Name         | BrandID | CompanyID | CountryID | ActiveForMonths |
     | SI-MATCH      | Free Service | 2       | 10        | 5         | 24              |
   When evaluating sale information for "JTEAAHAJ20K049868" with language "en"
   And evaluating service items end-to-end for "JTEAAHAJ20K049868" with language "en"
-  Then the sale company is "Taj Motors"
+  Then the sale company is "Distributor C"
   And the sale country is "Country 5"
-  And the sale branch is "Dushanbe Showroom"
+  And the sale branch is "North Showroom"
   And service item "SI-MATCH" is in the result
 
 Scenario: A different company's entry never supplies region or branch

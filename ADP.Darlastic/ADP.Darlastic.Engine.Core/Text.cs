@@ -16,11 +16,11 @@ public static class Flags
     /// survivorship are unconditional — this switch only decides whether e-mail can MOVE a pair.
     ///
     /// Off by default, deliberately. E-mail's value is entirely a function of what a tenant's
-    /// sources actually put in the column: TCA's is dominated by dealer-staff mailboxes captured
-    /// on Hub SSC lookups (measured 2026-07-28 — 79 distinct addresses across 2,047 goldens, 84.7%
-    /// of them one-name duplicate groups), so it must be enabled only after that tenant's corpus
-    /// has been measured and its junk source excluded at the feed. A tenant that never sets it
-    /// scores byte-identically to the pre-e-mail engine.
+    /// sources actually put in the column: on some deployments it is dominated by dealer-staff
+    /// mailboxes captured during self-service lookups (one measured corpus, 2026-07-28 — 79 distinct
+    /// addresses across 2,047 goldens, 84.7% of them one-name duplicate groups), so it must be
+    /// enabled only after that tenant's corpus has been measured and its junk source excluded at
+    /// the feed. A tenant that never sets it scores byte-identically to the pre-e-mail engine.
     ///
     /// Settable (not readonly like <see cref="Baseline"/>) because it is run-scoped tenant config,
     /// not a build mode: the host sets it from its own settings before resolving, and tests toggle

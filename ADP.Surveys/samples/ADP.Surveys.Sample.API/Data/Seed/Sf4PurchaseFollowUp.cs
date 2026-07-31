@@ -44,10 +44,10 @@ internal static class Sf4PurchaseFollowUp
                 new InlineScreenDto
                 {
                     Id = "welcome",
-                    Title = LocalizedString.From("en", "Warm greetings from Toyota 😊"),
+                    Title = LocalizedString.From("en", "Warm greetings from your dealer 😊"),
                     Description = LocalizedString.From("en",
-                        "Dear valued customer, being part of the Toyota family means a lot to us. " +
-                        "This is your Toyota dealer team — we hope you are satisfied with your vehicle " +
+                        "Dear valued customer, being part of our family of owners means a lot to us. " +
+                        "This is your dealer team — we hope you are satisfied with your vehicle " +
                         "and that it has been serving you well over the past six months. " +
                         "We'd love to hear your experience so far! It only takes a minute!"),
                     NextScreen = "experience",
@@ -58,7 +58,7 @@ internal static class Sf4PurchaseFollowUp
                 new InlineScreenDto
                 {
                     Id = "experience",
-                    Title = LocalizedString.From("en", "How is your experience with your Toyota?"),
+                    Title = LocalizedString.From("en", "How is your experience with your vehicle?"),
                     Questions =
                     {
                         QuestionEntryDto.FromInline(new NavigationListQuestionDto
@@ -123,7 +123,7 @@ internal static class Sf4PurchaseFollowUp
                                 new() { Id = "explore-models",    Label = LocalizedString.From("en", "Explore Our Car Models"),      NextScreen = "handoff-quotation" },
                                 new() { Id = "book-service",      Label = LocalizedString.From("en", "Book a Service Appointment"),  NextScreen = "handoff-service" },
                                 new() { Id = "parts-accessories", Label = LocalizedString.From("en", "Request Parts & Accessories"), NextScreen = "handoff-parts" },
-                                new() { Id = "happy-with-toyota", Label = LocalizedString.From("en", "I'm Happy with My Toyota"),    NextScreen = "happy" },
+                                new() { Id = "happy-with-vehicle", Label = LocalizedString.From("en", "I'm Happy with My Vehicle"),  NextScreen = "happy" },
                                 new() { Id = "sold-vehicle",      Label = LocalizedString.From("en", "I've Sold My Vehicle"),        NextScreen = "sold-why" },
                                 new() { Id = "end-chat",          Label = LocalizedString.From("en", "End Chat"),                    NextScreen = "final-thanks" },
                             }
@@ -162,7 +162,7 @@ internal static class Sf4PurchaseFollowUp
                     Id = "happy",
                     Title = LocalizedString.From("en", "We are pleased to know that you are satisfied with your vehicle 🙏"),
                     Description = LocalizedString.From("en",
-                        "Your satisfaction is our priority. Thank you for being part of our journey and for choosing Toyota. " +
+                        "Your satisfaction is our priority. Thank you for being part of our journey and for choosing us. " +
                         "To keep your vehicle in top condition, kindly schedule your upcoming appointment at the nearest dealer branch!"),
                     Questions =
                     {
@@ -224,7 +224,7 @@ internal static class Sf4PurchaseFollowUp
                 {
                     Id = "sold-ack",
                     Title = LocalizedString.From("en", "Thank you for sharing your feedback 🙏"),
-                    Description = LocalizedString.From("en", "Since you've driven Toyota and know the experience, we thought you might like to check our current models."),
+                    Description = LocalizedString.From("en", "Since you know the experience of driving with us, we thought you might like to check our current models."),
                     Questions =
                     {
                         QuestionEntryDto.FromInline(new NavigationListQuestionDto
@@ -251,8 +251,8 @@ internal static class Sf4PurchaseFollowUp
                     Title = LocalizedString.From("en", "Thank you for your time!"),
                     Description = LocalizedString.From("en",
                         "We wish you a wonderful day 👋 If you're thinking about upgrading, trade in your " +
-                        "current vehicle with Toyota and get the best value! Thank you for being part of the " +
-                        "Toyota family. We truly value your trust and look forward to serving you again. " +
+                        "current vehicle with us and get the best value! Thank you for being part of our " +
+                        "family of owners. We truly value your trust and look forward to serving you again. " +
                         "DRIVE WITH CONFIDENCE 🚗"),
                 },
             },

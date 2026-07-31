@@ -1401,7 +1401,7 @@ public static class Registry
     /// <para><b>Why this has to happen here.</b> The resolve's pair walk is the only pass that sees
     /// the whole corpus. A browsing surface that re-derives categories from whatever records it
     /// happens to hold reports the size of its own sample as the size of the corpus — measured
-    /// 2026-07-29 on TIQ, where a queue-backed browser showed 13,591 auto-merges against the
+    /// 2026-07-29 in production, where a queue-backed browser showed 13,591 auto-merges against the
     /// 437,238 that actually fired, with nothing on screen to suggest the number was wrong.</para>
     ///
     /// <para>All three tables are derived state, rewritten wholesale each run — the same discipline
@@ -1410,7 +1410,7 @@ public static class Registry
     /// families into it would make per-run write volume useless as a health metric.</para>
     /// </summary>
     /// <summary>
-    /// Persist the per-identity browsing summary. Multi-record identities only — at TIQ scale that
+    /// Persist the per-identity browsing summary. Multi-record identities only — at production scale that
     /// is ~249K rows out of 919K identities, and the 670K single-record ones have nothing to say.
     /// </summary>
     private static void WriteIdentitySummaries(SqlConnection conn, SqlTransaction tx,

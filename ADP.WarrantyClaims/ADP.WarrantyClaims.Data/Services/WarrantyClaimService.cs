@@ -520,7 +520,7 @@ public class WarrantyClaimService
                 csvEntry.LaborOperationNo3 = currentLaborItem.OperationNumber;
 
                 //Enter the Flat Rate Time (Hour) of each operation to the first decimal place, WPP Manual, P76
-                csvEntry.LaborHour3 = currentLaborItem.DistributorHour!.Value; // (int)(currentLaborItem.LaborHourTIQ * 1m);
+                csvEntry.LaborHour3 = currentLaborItem.DistributorHour!.Value;
 
                 consumedLaborCount++;
             }

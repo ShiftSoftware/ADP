@@ -4,9 +4,9 @@ using Xunit;
 namespace ShiftSoftware.ADP.Darlastic.Engine.Tests;
 
 /// <summary>
-/// E-mail as a matching signal (2026-07-28). Every fixture is a shape MEASURED on the TCA corpus,
-/// named for the real case it stands in for, so a scoring change that breaks one fails against
-/// something that actually happened rather than an invented example.
+/// E-mail as a matching signal (2026-07-28). Every fixture is a shape MEASURED on a real corpus and
+/// named for the case it stands in for (with placeholder names and domains), so a scoring change that
+/// breaks one fails against something that actually happened rather than an invented example.
 ///
 /// The corpus facts these encode: 2,047 of 24,067 goldens carried an e-mail across just 79 distinct
 /// addresses; 84.7% of those goldens sat in a group sharing ONE name (a duplicated person, not many
@@ -41,7 +41,7 @@ public class EmailMatchingTests
 
     [Theory]
     // Case and surrounding whitespace are not identity.
-    [InlineData("  G.Foerster@Toyota-CentralAsia.COM ", "g.foerster@toyota-centralasia.com")]
+    [InlineData("  M.Keller@Distributor.EXAMPLE ", "m.keller@distributor.example")]
     // +tag is universally routed to the base mailbox.
     [InlineData("aza+crm@shift.software", "aza@shift.software")]
     // Gmail documents local-part dots as insignificant...
@@ -87,8 +87,8 @@ public class EmailMatchingTests
     {
         // The zero-delta guarantee: a tenant that never enables e-mail must score and block exactly
         // as it did before the feature existed. This is the regression guard for every other tenant.
-        var a = Rec(0, "ticket-gen", "1", "gerald foerster", emails: ["g.foerster@toyota-centralasia.com"]);
-        var b = Rec(1, "activation", "2", "gerald foerster", emails: ["g.foerster@toyota-centralasia.com"]);
+        var a = Rec(0, "ticket-gen", "1", "martin keller", emails: ["m.keller@distributor.example"]);
+        var b = Rec(1, "activation", "2", "martin keller", emails: ["m.keller@distributor.example"]);
 
         using var off = new EmailMatchingOn(false);
 
@@ -104,11 +104,11 @@ public class EmailMatchingTests
     [Fact]
     public void SharedMailboxAndOneName_AutoMerges_TheDuplicateGoldenShape()
     {
-        // Golden 10573 / 10574 in the TCA dev registry: one human, two identities, same name, same
-        // address, NO phone on either side. Pre-e-mail this pair could not merge — name was the only
-        // signal, so the damp parked it at 0.70, below every band.
-        var a = Rec(0, "ticket-gen", "10573", "gerald foerster", emails: ["g.foerster@toyota-centralasia.com"]);
-        var b = Rec(1, "activation", "10574", "gerald foerster", emails: ["G.Foerster@Toyota-CentralAsia.com"]);
+        // A duplicate-golden pair measured in a dev registry: one human, two identities, same name,
+        // same address, NO phone on either side. Pre-e-mail this pair could not merge — name was the
+        // only signal, so the damp parked it at 0.70, below every band.
+        var a = Rec(0, "ticket-gen", "10573", "martin keller", emails: ["m.keller@distributor.example"]);
+        var b = Rec(1, "activation", "10574", "martin keller", emails: ["M.Keller@Distributor.Example"]);
 
         using var on = new EmailMatchingOn();
 
@@ -124,8 +124,8 @@ public class EmailMatchingTests
         // Directly asserts the name-only-damp exclusion. Remove `&& !emailExact` from the damp
         // condition in ScoreCore and this goes red: the engine would be claiming name is the only
         // evidence while it is simultaneously scoring a shared mailbox.
-        var a = Rec(0, "ticket-gen", "1", "gerald foerster", emails: ["g.foerster@toyota-centralasia.com"]);
-        var b = Rec(1, "activation", "2", "gerald foerster", emails: ["g.foerster@toyota-centralasia.com"]);
+        var a = Rec(0, "ticket-gen", "1", "martin keller", emails: ["m.keller@distributor.example"]);
+        var b = Rec(1, "activation", "2", "martin keller", emails: ["m.keller@distributor.example"]);
 
         using var on = new EmailMatchingOn();
 
@@ -136,10 +136,10 @@ public class EmailMatchingTests
     [Fact]
     public void SharedMailbox_MergesNameChainSlices()
     {
-        // 'farkhod.o@tajmotors.tj' carried both of these in the corpus — one person recorded at two
+        // One dealer mailbox carried both of these in the corpus — one person recorded at two
         // lengths of the same name chain, which NameConsistent already understands.
-        var a = Rec(0, "dms-taj", "1", "farkhod otaev", emails: ["farkhod.o@tajmotors.tj"]);
-        var b = Rec(1, "ticket-gen", "2", "farkhodzhon mukhammadzhonovich otaev", emails: ["farkhod.o@tajmotors.tj"]);
+        var a = Rec(0, "dms-alpha", "1", "karim aliev", emails: ["karim.a@dealer.example"]);
+        var b = Rec(1, "ticket-gen", "2", "karimjon rustamovich aliev", emails: ["karim.a@dealer.example"]);
 
         using var on = new EmailMatchingOn();
 
@@ -150,7 +150,7 @@ public class EmailMatchingTests
     public void SharedMailbox_WithNoNameToContradictIt_StillMerges()
     {
         var a = Rec(0, "ticket-gen", "1", "", emails: ["someone@example.com"]);
-        var b = Rec(1, "activation", "2", "nodir shaazizov", emails: ["someone@example.com"]);
+        var b = Rec(1, "activation", "2", "rustam qodirov", emails: ["someone@example.com"]);
 
         using var on = new EmailMatchingOn();
 
@@ -162,11 +162,11 @@ public class EmailMatchingTests
     [Fact]
     public void SharedMailbox_ButDifferentPeople_IsHeldInTheStewardBand()
     {
-        // 'b.rustam@gsr.net' carried three distinct staff names in the corpus — a mailbox typed onto
+        // One dealer mailbox carried three distinct staff names in the corpus — a mailbox typed onto
         // the wrong record. This is the one shape that makes e-mail dangerous, and the name gate is
         // what refuses it. It must NOT auto-merge.
-        var a = Rec(0, "ticket-ssc", "1", "babayev rustam", emails: ["b.rustam@gsr.net"]);
-        var b = Rec(1, "ticket-ssc", "2", "ayna pashieva", emails: ["b.rustam@gsr.net"]);
+        var a = Rec(0, "ticket-ssc", "1", "nazarov bekzod", emails: ["b.nazarov@dealer.example"]);
+        var b = Rec(1, "ticket-ssc", "2", "helena schmidt", emails: ["b.nazarov@dealer.example"]);
 
         using var on = new EmailMatchingOn();
 
@@ -179,10 +179,10 @@ public class EmailMatchingTests
     [Fact]
     public void RoleMailbox_IsNeverIdentityEvidence()
     {
-        // 'info@toyota-centralasia.com' fronted five different people. A role local part is
+        // One distributor 'info@' address fronted five different people. A role local part is
         // suppressed outright: no block key, no signal, no floor.
-        var a = Rec(0, "ticket-gen", "1", "anton dzhulikov", emails: ["info@toyota-centralasia.com"]);
-        var b = Rec(1, "ticket-gen", "2", "madina", emails: ["info@toyota-centralasia.com"]);
+        var a = Rec(0, "ticket-gen", "1", "sergei ivanov", emails: ["info@distributor.example"]);
+        var b = Rec(1, "ticket-gen", "2", "dilnoza", emails: ["info@distributor.example"]);
 
         using var on = new EmailMatchingOn();
 
@@ -199,9 +199,9 @@ public class EmailMatchingTests
         // Both alternatives were measured against the corpus and both destroy true matches:
         // a corporate DOMAIN hosts real individual mailboxes, and the highest-FREQUENCY addresses
         // are one duplicated person. Only the local part naming a function is safe.
-        Assert.True(RealMatcher.IsRoleEmail("info@toyota-centralasia.com"));
-        Assert.False(RealMatcher.IsRoleEmail("g.foerster@toyota-centralasia.com"));
-        Assert.False(RealMatcher.IsRoleEmail("abdulloh_uzin@mail.ru"));
+        Assert.True(RealMatcher.IsRoleEmail("info@distributor.example"));
+        Assert.False(RealMatcher.IsRoleEmail("m.keller@distributor.example"));
+        Assert.False(RealMatcher.IsRoleEmail("personal_user@mail.ru"));
     }
 
     [Fact]
@@ -212,10 +212,10 @@ public class EmailMatchingTests
         // non-match must contribute nothing rather than score zero at full weight — otherwise
         // enabling the feature would SPLIT true matches. Also what makes the change strictly
         // additive: turning e-mail on can raise a pair's confidence, never lower it.
-        var aNoMail = Rec(0, "dms-taj", "1", "hazim jabir", "9931234567");
-        var bNoMail = Rec(1, "activation", "2", "hazim jabir", "9931234567");
-        var aMail = aNoMail with { Emails = ["hazim@gmail.com"] };
-        var bMail = bNoMail with { Emails = ["h.jabir@tajmotors.tj"] };
+        var aNoMail = Rec(0, "dms-alpha", "1", "omar salim", "9931234567");
+        var bNoMail = Rec(1, "activation", "2", "omar salim", "9931234567");
+        var aMail = aNoMail with { Emails = ["omar@gmail.com"] };
+        var bMail = bNoMail with { Emails = ["o.salim@dealer.example"] };
 
         using var on = new EmailMatchingOn();
 
@@ -227,8 +227,8 @@ public class EmailMatchingTests
     {
         // Hard evidence of two people outranks the e-mail floor, exactly as it does the sold-VIN
         // and same-as floors — the ×0.3 penalty is applied after them by construction.
-        var a = Rec(0, "dms-taj", "1", "nodir shaazizov", emails: ["n.shaazizov@uzinauto.uz"], nationalId: "12345678901");
-        var b = Rec(1, "dms-uzin", "2", "nodir shaazizov", emails: ["n.shaazizov@uzinauto.uz"], nationalId: "99999999999");
+        var a = Rec(0, "dms-alpha", "1", "rustam qodirov", emails: ["r.qodirov@dealer.example"], nationalId: "12345678901");
+        var b = Rec(1, "dms-beta", "2", "rustam qodirov", emails: ["r.qodirov@dealer.example"], nationalId: "99999999999");
 
         using var on = new EmailMatchingOn();
 

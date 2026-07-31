@@ -37,7 +37,7 @@ public class SurveyInstance : ShiftEntity<SurveyInstance>, IEntityHasUniqueHash<
     /// <summary>
     /// JSON blob of pre-fill / pre-context the trigger captured at creation
     /// (ticket id, appointment details, whatever the consumer wants to correlate).
-    /// Follows TIQ's proven pattern.
+    /// Follows the pattern already proven in production deployments.
     /// </summary>
     public string? MetaDataJson { get; set; }
 
