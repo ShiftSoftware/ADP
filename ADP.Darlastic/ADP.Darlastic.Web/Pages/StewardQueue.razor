@@ -1,8 +1,10 @@
 @attribute [Route($"{DarlasticRoutes.Prefix}/{nameof(StewardQueue)}")]
 @attribute [Authorize]
+@using ShiftSoftware.TypeAuth.Core
 @inject HttpClient Http
 @inject ISnackbar Snackbar
 @inject IOptions<DarlasticWebOptions> DarlasticOptionsAccessor
+@inject ITypeAuthService TypeAuth
 
 @*
     The stewardship queue — the pairs the engine scored close enough to be plausible but not close
@@ -100,40 +102,45 @@
                         <MudItem xs="12" md="6">@RecordCard(c.B, c.A)</MudItem>
                     </MudGrid>
 
-                    <MudStack Row Spacing="2" AlignItems="AlignItems.Center" Class="flex-wrap">
-                        <MudButton Variant="Variant.Filled" Color="Color.Success"
-                                   StartIcon="@Icons.Material.Filled.Merge"
-                                   Disabled="@(_busy == c.PairKey)"
-                                   OnClick="@(() => Decide(c, StewardVerdict.Merge))">
-                            Same person
-                        </MudButton>
-                        <MudButton Variant="Variant.Filled" Color="Color.Error"
-                                   StartIcon="@Icons.Material.Filled.CallSplit"
-                                   Disabled="@(_busy == c.PairKey)"
-                                   OnClick="@(() => Decide(c, StewardVerdict.Separate))">
-                            Different people
-                        </MudButton>
-                        <MudButton Variant="Variant.Outlined" Color="Color.Default"
-                                   StartIcon="@Icons.Material.Filled.Schedule"
-                                   Disabled="@(_busy == c.PairKey)"
-                                   OnClick="@(() => Decide(c, StewardVerdict.Defer))">
-                            Can't tell yet
-                        </MudButton>
-                        @if (c.StandingVerdict is not null)
-                        {
-                            <MudButton Variant="Variant.Text" Color="Color.Warning"
-                                       StartIcon="@Icons.Material.Filled.Undo"
+                    @* Read on the queue action shows the cases; Write is what records a verdict. A
+                       reader gets the evidence and no controls, rather than buttons that 403. *@
+                    @if (CanDecide)
+                    {
+                        <MudStack Row Spacing="2" AlignItems="AlignItems.Center" Class="flex-wrap">
+                            <MudButton Variant="Variant.Filled" Color="Color.Success"
+                                       StartIcon="@Icons.Material.Filled.Merge"
                                        Disabled="@(_busy == c.PairKey)"
-                                       OnClick="@(() => Decide(c, StewardVerdict.Release))">
-                                Undo
+                                       OnClick="@(() => Decide(c, StewardVerdict.Merge))">
+                                Same person
                             </MudButton>
-                        }
-                        <MudSpacer />
-                        <MudTextField T="string" @bind-Value="_notes[c.PairKey]"
-                                      Placeholder="Why? (optional, audited with the verdict)"
-                                      Variant="Variant.Outlined" Margin="Margin.Dense"
-                                      Style="min-width: 260px;" />
-                    </MudStack>
+                            <MudButton Variant="Variant.Filled" Color="Color.Error"
+                                       StartIcon="@Icons.Material.Filled.CallSplit"
+                                       Disabled="@(_busy == c.PairKey)"
+                                       OnClick="@(() => Decide(c, StewardVerdict.Separate))">
+                                Different people
+                            </MudButton>
+                            <MudButton Variant="Variant.Outlined" Color="Color.Default"
+                                       StartIcon="@Icons.Material.Filled.Schedule"
+                                       Disabled="@(_busy == c.PairKey)"
+                                       OnClick="@(() => Decide(c, StewardVerdict.Defer))">
+                                Can't tell yet
+                            </MudButton>
+                            @if (c.StandingVerdict is not null)
+                            {
+                                <MudButton Variant="Variant.Text" Color="Color.Warning"
+                                           StartIcon="@Icons.Material.Filled.Undo"
+                                           Disabled="@(_busy == c.PairKey)"
+                                           OnClick="@(() => Decide(c, StewardVerdict.Release))">
+                                    Undo
+                                </MudButton>
+                            }
+                            <MudSpacer />
+                            <MudTextField T="string" @bind-Value="_notes[c.PairKey]"
+                                          Placeholder="Why? (optional, audited with the verdict)"
+                                          Variant="Variant.Outlined" Margin="Margin.Dense"
+                                          Style="min-width: 260px;" />
+                        </MudStack>
+                    }
                 </MudStack>
             </MudPaper>
         }
@@ -162,6 +169,12 @@
     private int _skip;
 
     private DarlasticWebOptions DarlasticOptions => DarlasticOptionsAccessor.Value;
+
+    // Null action means authorization is off for this host — the behaviour every consumer had
+    // before the gate existed: the verdict controls render for any authenticated user.
+    private bool CanDecide =>
+        DarlasticOptions.StewardQueueAction is null
+        || TypeAuth.Can(DarlasticOptions.StewardQueueAction, Access.Write);
 
     protected override Task OnInitializedAsync() => Load(0);
 

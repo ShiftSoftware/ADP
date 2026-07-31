@@ -17,4 +17,18 @@ public class DarlasticActionTree
     /// different grants — most operators want the first and should not have the second.
     /// </summary>
     public readonly static ReadWriteDeleteAction StewardQueue = new("Steward Queue");
+
+    /// <summary>
+    /// Whether the golden grid offers its export button. A grid export is the tenant's whole
+    /// customer base — name, phone, email, national ID — in one file, which is a different decision
+    /// from reading the grid a page at a time, so it is a grant of its own rather than something
+    /// every reader of <see cref="GoldenCustomers"/> inherits.
+    ///
+    /// <para>Presentation, not protection: a caller holding Read on <see cref="GoldenCustomers"/>
+    /// can page the OData feed directly whatever this says. What it removes is the one-click bulk
+    /// convenience, which is what a host asking to "hide export on golden" is asking for.</para>
+    ///
+    /// <para>Booleans resolve through <c>Access.Maximum</c> — a Read grant does not turn one on.</para>
+    /// </summary>
+    public readonly static BooleanAction ExportGoldenCustomers = new("Export Golden Customers");
 }

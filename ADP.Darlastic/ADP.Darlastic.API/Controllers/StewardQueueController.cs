@@ -51,9 +51,7 @@ public class StewardQueueController : ControllerBase
     {
         if (!options.EnableDarlasticActionTreeAuthorization) return false;
         var typeAuth = HttpContext.RequestServices.GetRequiredService<ITypeAuthService>();
-        return write
-            ? !typeAuth.CanWrite(DarlasticActionTree.StewardQueue)
-            : !typeAuth.CanRead(DarlasticActionTree.StewardQueue);
+        return !typeAuth.Can(options.Actions.ResolvedStewardQueue, write ? Access.Write : Access.Read);
     }
 
     /// <summary>

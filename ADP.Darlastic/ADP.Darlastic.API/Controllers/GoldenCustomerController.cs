@@ -49,7 +49,7 @@ public class GoldenCustomerController : ControllerBase
         if (options.EnableDarlasticActionTreeAuthorization)
         {
             var typeAuthService = HttpContext.RequestServices.GetRequiredService<ITypeAuthService>();
-            if (!typeAuthService.CanRead(DarlasticActionTree.GoldenCustomers))
+            if (!typeAuthService.Can(options.Actions.ResolvedGoldenCustomers, Access.Read))
                 return Forbid();
         }
 
@@ -90,7 +90,7 @@ public class GoldenCustomerController : ControllerBase
         if (options.EnableDarlasticActionTreeAuthorization)
         {
             var typeAuthService = HttpContext.RequestServices.GetRequiredService<ITypeAuthService>();
-            if (!typeAuthService.CanRead(DarlasticActionTree.GoldenCustomers))
+            if (!typeAuthService.Can(options.Actions.ResolvedGoldenCustomers, Access.Read))
                 return Forbid();
         }
 
@@ -189,7 +189,7 @@ public class GoldenCustomerController : ControllerBase
         if (options.EnableDarlasticActionTreeAuthorization)
         {
             var typeAuthService = HttpContext.RequestServices.GetRequiredService<ITypeAuthService>();
-            if (!typeAuthService.CanRead(DarlasticActionTree.GoldenCustomers))
+            if (!typeAuthService.Can(options.Actions.ResolvedGoldenCustomers, Access.Read))
                 return Forbid();
         }
 

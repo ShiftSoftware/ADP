@@ -44,7 +44,10 @@ public static class DarlasticApiExtensions
         if (options.RegisterModelContributor)
             services.AddSingleton<IModelBuildingContributor>(new DarlasticModelBuildingContributor(options.Schema));
 
-        services.Configure<TypeAuthAspNetCoreOptions>(o => o.AddActionTree<DarlasticActionTree>());
+        // Skipped for a host that gates entirely on its own actions (options.Actions) — the module's
+        // tree would otherwise sit unused and unusable in that host's permissions UI.
+        if (options.RegisterDarlasticActionTree)
+            services.Configure<TypeAuthAspNetCoreOptions>(o => o.AddActionTree<DarlasticActionTree>());
 
         services.Configure<MvcOptions>(mvcOptions =>
         {

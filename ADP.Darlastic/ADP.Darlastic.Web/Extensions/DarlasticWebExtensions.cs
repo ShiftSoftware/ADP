@@ -18,11 +18,16 @@ public static class DarlasticWebExtensions
         this IServiceCollection services,
         Action<DarlasticWebOptions>? configure = null)
     {
+        var options = new DarlasticWebOptions();
+        configure?.Invoke(options);
+
         if (configure is not null)
             services.Configure(configure);
 
-        // Register DarlasticActionTree so the consumer doesn't have to
-        services.Configure<TypeAuthBlazorOptions>(o => o.AddActionTree<DarlasticActionTree>());
+        // Register DarlasticActionTree so the consumer doesn't have to — unless it gates entirely
+        // on its own actions, in which case the module's tree is dead weight in the permissions UI.
+        if (options.RegisterDarlasticActionTree)
+            services.Configure<TypeAuthBlazorOptions>(o => o.AddActionTree<DarlasticActionTree>());
 
         // Register ADP.Darlastic.Web assembly for Blazor routing discovery
         services.Configure<AppStartupOptions>(o => o.AddAssembly(typeof(DarlasticWebExtensions).Assembly));

@@ -1,3 +1,5 @@
+using ShiftSoftware.ADP.Darlastic.Shared.ActionTrees;
+
 namespace ShiftSoftware.ADP.Darlastic.API.Extensions;
 
 public class DarlasticApiOptions
@@ -12,11 +14,31 @@ public class DarlasticApiOptions
     public string Schema { get; set; } = "Darlastic";
 
     /// <summary>
-    /// When true, Darlastic endpoints are protected by per-action DarlasticActionTree permissions.
-    /// When false (default), only authentication is required — for hosts whose identity server
-    /// doesn't grant the Darlastic tree yet.
+    /// When true, Darlastic endpoints are protected by the per-action permissions in
+    /// <see cref="Actions"/>. When false (default), only authentication is required — for hosts
+    /// whose identity server doesn't grant the Darlastic tree yet.
     /// </summary>
     public bool EnableDarlasticActionTreeAuthorization { get; set; } = false;
+
+    /// <summary>
+    /// Lets the host gate the endpoints on <b>its own</b> action tree instead of
+    /// <see cref="DarlasticActionTree"/>. Anything left null falls back to the module's own action.
+    /// Mirrors <c>DarlasticWebOptions.Actions</c>; set both sides to the same actions, or the UI and
+    /// the API disagree about who may do what.
+    /// </summary>
+    public DarlasticActionOverrides Actions { get; set; } = new();
+
+    /// <summary>
+    /// Whether <c>AddDarlasticApiServices</c> registers <see cref="DarlasticActionTree"/> with
+    /// TypeAuth. Set false when the host gates entirely on its own actions via <see cref="Actions"/>,
+    /// so the module's unused tree doesn't clutter the permissions UI. Default true.
+    /// </summary>
+    /// <remarks>
+    /// TypeAuth is fail-closed for actions it wasn't given: turning this off while any gate still
+    /// resolves to <see cref="DarlasticActionTree"/> 403s that surface for everyone rather than
+    /// leaving it ungated. Override every action before setting this false.
+    /// </remarks>
+    public bool RegisterDarlasticActionTree { get; set; } = true;
 
     /// <summary>
     /// Whether <c>AddDarlasticApiServices</c> registers the registry model itself.

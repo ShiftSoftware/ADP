@@ -87,9 +87,7 @@ public class CaseBrowserCompatController : ControllerBase
 
         if (!options.EnableDarlasticActionTreeAuthorization) return false;
         var typeAuth = HttpContext.RequestServices.GetRequiredService<ITypeAuthService>();
-        return write
-            ? !typeAuth.CanWrite(DarlasticActionTree.StewardQueue)
-            : !typeAuth.CanRead(DarlasticActionTree.StewardQueue);
+        return !typeAuth.Can(options.Actions.ResolvedStewardQueue, write ? Access.Write : Access.Read);
     }
 
     /// <summary>The person a valid token names, or null. Read once per request.</summary>

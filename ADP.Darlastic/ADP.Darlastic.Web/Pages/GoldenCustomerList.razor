@@ -1,8 +1,10 @@
 @attribute [Route($"{DarlasticRoutes.Prefix}/{nameof(GoldenCustomerList)}")]
 @attribute [Authorize]
 @using ShiftSoftware.ADP.Darlastic.Web.Components
+@using ShiftSoftware.TypeAuth.Core
 @inject IOptions<DarlasticWebOptions> DarlasticOptionsAccessor
 @inject IDialogService DialogService
+@inject ITypeAuthService TypeAuth
 
 @*
     The golden-customer grid over the Darlastic registry — every row is a resolved identity
@@ -17,10 +19,10 @@
            Title="Golden Customers"
            T="GoldenCustomerListDTO"
            Dense
-           TypeAuthAction="@(DarlasticOptions.EnableDarlasticActionTreeAuthorization ? DarlasticActionTree.GoldenCustomers : null)"
+           TypeAuthAction="@DarlasticOptions.GoldenCustomersAction"
            ShowIDColumn="true"
            HighlightSortedColumn
-           EnableExport>
+           EnableExport="@CanExport">
     @* Naming ToolbarEndTemplate makes every child a named slot, so the columns move into an
        explicit ChildContent — that is where ShiftList renders them, inside its Columns. *@
     <ToolbarEndTemplate>
@@ -104,4 +106,11 @@
     }
 
     private DarlasticWebOptions DarlasticOptions => DarlasticOptionsAccessor.Value;
+
+    // A grid export is every golden the filter matches — the tenant's customer base in one file —
+    // so it is its own grant rather than something Read carries. Null action means authorization is
+    // off for this host, which is how every consumer behaved before the gate existed: export on.
+    private bool CanExport =>
+        DarlasticOptions.ExportGoldenCustomersAction is null
+        || TypeAuth.CanAccess(DarlasticOptions.ExportGoldenCustomersAction);
 }
