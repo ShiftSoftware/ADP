@@ -3,6 +3,8 @@ using Microsoft.Azure.Cosmos;
 using Microsoft.EntityFrameworkCore;
 using ShiftSoftware.ADP.Menus.API.Extensions;
 using ShiftSoftware.ADP.Menus.Data.DataServices;
+using ShiftSoftware.ADP.Menus.Data.Extensions;
+using ShiftSoftware.ADP.Menus.Data.Replication;
 using ShiftSoftware.ADP.Menus.Sample.API.Data;
 using ShiftSoftware.ADP.Menus.Sample.API.DataServices;
 using ShiftSoftware.ADP.Menus.Sample.API.Services;
@@ -22,8 +24,11 @@ builder.Services.AddDbContext<DB>(db =>
     db.UseSqlServer(builder.Configuration.GetConnectionString("SQLServer")));
 
 // ---------- Cosmos / Menu interface implementations ----------
+// Whether Cosmos is configured also gates the menu replication further down.
 var cosmosConnectionString = builder.Configuration.GetConnectionString("Cosmos");
-if (!string.IsNullOrWhiteSpace(cosmosConnectionString))
+var cosmosIsConfigured = !string.IsNullOrWhiteSpace(cosmosConnectionString);
+
+if (cosmosIsConfigured)
     builder.Services.AddSingleton(new CosmosClient(cosmosConnectionString));
 
 builder.Services.AddScoped<IMenuPartPriceService, CosmosService>();
@@ -162,6 +167,23 @@ builder.Services.AddMenuApiServices<DB>(mvcBuilder, options =>
     };
 });
 
+// ---------- Menu → Cosmos replication (opt-in) ----------
+// Projects the menu catalog into Cosmos on every SaveChanges: the variant graph into ServiceMenus
+// (partitioned by basic model code, fully denormalized) and each master entity into its own
+// container. A consumer that never calls AddMenuReplications replicates nothing — which is what a
+// read-only host, fed by its own sync agent, wants. See COSMOS_REPLICATION_PLAN.md §16/§17.
+//
+// Replication is fire-and-forget: failures are logged and never surface to the save that triggered
+// them, so watch the log rather than the HTTP response when checking whether it worked.
+//
+// This call also enables EFCore.Triggered on DB — the after-save hook replication rides on — so the
+// AddDbContext above does not need to. Both option actions apply, whichever order they run in.
+if (cosmosIsConfigured)
+{
+    builder.Services.AddShiftEntityCosmosDbReplicationTrigger<DB>(x =>
+        x.AddMenuReplications<DB>(x.Services.GetRequiredService<CosmosClient>()));
+}
+
 // ---------- Consumer Todo repository ----------
 builder.Services.AddScoped<ShiftSoftware.ADP.Menus.Sample.API.Data.Repositories.TodoItemRepository>();
 
@@ -222,6 +244,50 @@ using (var scope = app.Services.CreateScope())
     }
     await db.Database.EnsureCreatedAsync();
     await db.SeedAsync();
+}
+
+// Create the containers the menu replication writes to. Without them every replication attempt fails,
+// and because replication is fire-and-forget that failure is only a log line — the sample would look
+// wired up and quietly write nothing.
+//
+// A real host provisions through its deployment pipeline; the sample does it at startup so a clean
+// checkout plus a running emulator is a working setup. Best effort by design: appsettings.Development
+// points at the emulator unconditionally, so a developer who does not have one running must still be
+// able to boot the sample.
+if (cosmosIsConfigured)
+{
+    var cosmosLogger = app.Services.GetRequiredService<ILogger<Program>>();
+
+    try
+    {
+        using var provisioning = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+
+        var cosmosClient = app.Services.GetRequiredService<CosmosClient>();
+
+        var cosmosDatabase = (await cosmosClient.CreateDatabaseIfNotExistsAsync(
+            MenuCosmosContainers.DatabaseName,
+            cancellationToken: provisioning.Token)).Database;
+
+        // MenuCosmosContainers.All is the single declaration of what to create and with which
+        // partition key — a key cannot be changed after creation, so it is not retyped here.
+        foreach (var container in MenuCosmosContainers.All)
+            await cosmosDatabase.CreateContainerIfNotExistsAsync(
+                new ContainerProperties(container.Name, container.PartitionKeyPaths),
+                cancellationToken: provisioning.Token);
+
+        cosmosLogger.LogInformation(
+            "Menu replication: {ContainerCount} containers ready in the {Database} database.",
+            MenuCosmosContainers.All.Count,
+            MenuCosmosContainers.DatabaseName);
+    }
+    catch (Exception exception)
+    {
+        cosmosLogger.LogWarning(
+            exception,
+            "Menu replication: could not provision the Cosmos containers. The sample will run, but menu "
+            + "changes will not reach Cosmos. Start the emulator (or point ConnectionStrings:Cosmos "
+            + "elsewhere) and restart.");
+    }
 }
 
 // Seed identity (SuperUser, Country, Region, Company, Branch) and grant full access.

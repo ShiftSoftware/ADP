@@ -1,9 +1,10 @@
-﻿using ShiftSoftware.ShiftEntity.Core;
+using ShiftSoftware.ShiftEntity.Core;
+using ShiftSoftware.ShiftEntity.Model.Replication;
 
 namespace ShiftSoftware.ADP.Menus.Data.Entities;
 
 [TemporalShiftEntity]
-public class ServiceIntervalGroup : ShiftEntity<ServiceIntervalGroup>
+public class ServiceIntervalGroup : ShiftEntity<ServiceIntervalGroup>, IShiftEntityReplication
 {
     public string Name { get; set; } = default!;
 
@@ -25,5 +26,10 @@ public class ServiceIntervalGroup : ShiftEntity<ServiceIntervalGroup>
     {
         
     }
+
+    // Cosmos replication bookkeeping (IShiftEntityReplication). Written only by the replication
+    // pipeline's MarkReplicated — never by application code.
+    public string? LastReplicationStamp { get; set; }
+    public DateTimeOffset? LastReplicationDate { get; set; }
 }
 

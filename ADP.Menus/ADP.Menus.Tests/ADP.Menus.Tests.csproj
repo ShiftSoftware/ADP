@@ -24,6 +24,11 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<!-- For the opt-in Cosmos provisioning test. Every other test here is pure and offline. -->
+		<PackageReference Include="Microsoft.Azure.Cosmos" Version="3.62.0" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<ProjectReference Include="..\ADP.Menus.Data\ADP.Menus.Data.csproj" />
 		<ProjectReference Include="..\ADP.Menus.Generation\ADP.Menus.Generation.csproj" />
 	</ItemGroup>

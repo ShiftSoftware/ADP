@@ -1,14 +1,19 @@
 # Menu → Cosmos Replication — Implementation Plan
 
-> Status: **Phases 0–2 implemented; Phases 3–6 still plan.** Agreed design for projecting the service-menu catalog into
-> Cosmos DB so a vehicle lookup can turn a **basic model code** into a set of **menu codes + prices**.
+> Status: **Phases 0–2 and Phase 3 step 1 implemented; Phase 3 step 2 and Phases 4–6 still plan.**
+> Agreed design for projecting the service-menu catalog into Cosmos DB so a vehicle lookup can turn a
+> **basic model code** into a set of **menu codes + prices**.
 >
 > **Chosen model: read-time generation, with a shared source-agnostic generation service.**
-> We replicate the menu tables into Cosmos as flat, per-row, itemType-discriminated documents sharing
-> the **basic model code** as their partition key. The menu codes/prices are generated **on lookup** by
-> a *base generation service* whose input is a **neutral generic model** — the same service the DMS
-> export uses. Each consumer adapts its own data in and out; only the generation logic + its generic
-> contract are shared.
+> We replicate the menu tables into Cosmos as per-row documents; the menu codes/prices are generated
+> **on lookup** by a *base generation service* whose input is a **neutral generic model** — the same
+> service the DMS export uses. Each consumer adapts its own data in and out; only the generation logic
+> + its generic contract are shared.
+>
+> **The container design is §16** (one container per master entity + a fully denormalized `ServiceMenus`
+> container). **§16 supersedes §3 and §5**, which describe the single-container `__REFERENCE__` scheme
+> that was built first and has since been replaced — they are kept only as the record of what changed
+> and why. §17 records the rewrite.
 >
 > This repo is public, generic and multi-tenant. Every example value here (`ABC12`, `4471`, brand
 > `Z`, …) is synthetic. Never put real client codes, hostnames, system names or branch/warehouse
@@ -83,9 +88,9 @@ write time; no `UpdateReference` recompute cascade.
 |---|---|---|
 | Generation timing | **read-time** | simple per-row replication; raw data reusable |
 | Generation input | **neutral generic model** (layer 1), not Cosmos/EF types | one shared service, many adapters |
-| Storage | one container, per-row docs, `ItemType`-discriminated, partitioned by `/BasicModelCode` | one query returns a whole model's graph |
+| Storage | **§16:** one container per master entity + `ServiceMenus`, per-row docs, `ItemType`-discriminated, partitioned by `/BasicModelCode` | one query returns a whole model's graph |
 | Document `id` | the source row's DB id | soft-delete safe |
-| Shared reference tables | replicated to a `__REFERENCE__` partition, **cached** in the reader | keeps replication pure per-row (no denormalization fan-out) |
+| Shared master tables | **§16:** own container each, and their fields **denormalized** into the menu documents, kept fresh by `UpdateReference` | the lookup is one partition query; no reader-side cache to go stale |
 | Mapping | **manual** everywhere (no AutoMapper) | explicit, reviewable |
 | Fields | menu code, labour code, labour rate/allowed-time/consumable/labour-total, parts (number/qty/price/line-total), parts-total, discount, menu-total | DMS margin/cost/profit excluded |
 
@@ -105,13 +110,10 @@ ADP.Menus/ADP.Menus.Generation/  (NEW — netstandard2.0, menu-owned, reachable 
     CosmosToGenerationAggregator.cs      #   static: Cosmos docs → MenuGenerationRequest (references ADP.Models)
 
 ADP.Models/  (netstandard2.0 — reachable by the lookup AND the menus host)
-  Models/Service/Cosmos/                 # LAYER 2 — persistence only (sync targets / lookup source)
-    MenuVariantCosmosModel.cs  MenuPeriodCosmosModel.cs
-    MenuLabourCosmosModel.cs   MenuItemCosmosModel.cs
-    ServiceIntervalCosmosModel.cs  ServiceIntervalGroupCosmosModel.cs
-    LabourRateMappingCosmosModel.cs  BrandMappingCosmosModel.cs
-  Models/Constants/NoSQLConstants.cs     # EDIT — Containers.ServiceMenus + PartitionKeys + __REFERENCE__
-  Models/ModelTypes.cs                   # EDIT — one PartitionedItemType per itemType
+  Models/Service/Cosmos/
+    ServiceMenuCosmosModels.cs           # LAYER 2 — all 10 document types in one file (§16/§17)
+  Models/Constants/NoSQLConstants.cs     # EDIT — the 7 containers + their partition keys
+  Models/ModelTypes.cs                   # EDIT — the 4 ServiceMenus itemType discriminators
 
 ADP.Menus/ADP.Menus.Data/  (net10.0 — the export + the replication producer)
   ADP.Menus.Data.csproj                  # EDIT — ADP.Menus.Generation ref (P2); CosmosDbReplication + ADP.Models refs (P3)
@@ -122,13 +124,14 @@ ADP.Menus/ADP.Menus.Data/  (net10.0 — the export + the replication producer)
     EfToGenerationAggregator.cs          # NEW — EF entities → MenuGenerationRequest (export's adapter)
     MenuLineMargins.cs                   # NEW — the report's derived margin/profit arithmetic (moved off the DTO)
   Replication/
-    MenuCosmosMappers.cs                 # NEW — manual EF-entity → Cosmos model (per table)
-    MenuReplicationService.cs            # NEW — reusable replicate: per-table + all (backfill)
+    MenuCosmosMappers.cs                 # NEW — manual EF-entity → Cosmos model + the UpdateReference appliers
+    MenuReplicationReload.cs             # NEW — per-table include graphs + the variant's master-data lookup
+    MenuReplicationFinders.cs            # NEW — the UpdateReference queries, named so they can be pinned
+    MenuReplicationService.cs            # STEP 2 — reusable replicate: per-table + all (backfill)
   Extensions/
     MenuReplicationExtensions.cs         # NEW — one Add*Replication per table + AddMenuReplications
 
 ADP.LookupServices/Lookup.Services/  (netstandard2.0 — the reader, FUTURE phase)
-  Services/ServiceMenuReferenceCache.cs  # NEW — caches the __REFERENCE__ partition
   Services/ServiceMenuLookupService.cs   # NEW — read partition → CosmosToGenerationAggregator → generate → lookup DTO
 ```
 
@@ -178,7 +181,11 @@ netstandard2.0 via package if `LocalizedText` keeps its JSON parsing.)
 
 ---
 
-## 3. Container structure
+## 3. Container structure — SUPERSEDED BY §16
+
+> **This section describes the design that was built in Phase 3 step 1 and then replaced.** It is kept
+> as the record of what changed. The live design — one container per master entity, plus a fully
+> denormalized `ServiceMenus` — is **§16**, implemented as described in **§17**.
 
 | Property | Value |
 |---|---|
@@ -322,7 +329,11 @@ The labour-rate code lookup uses `TryGetValue` (O1). `GetAllowedTimeText` is pin
 
 ---
 
-## 5. Layer 2 — Cosmos sync models (persistence only, `netstandard2.0`, `ADP.Models`)
+## 5. Layer 2 — Cosmos sync models — SUPERSEDED BY §16
+
+> **Superseded.** The model set below is the `__REFERENCE__`-partition one. The live models — six master
+> documents plus four fully denormalized `ServiceMenus` documents — are described in §16 and listed in
+> §17. `ServiceMenuReferencePartition` no longer exists.
 
 Flat, per-row, one class per itemType. Conventions from
 [`ServiceItemModel`](../ADP.Models/Models/Vehicle/ServiceItemModel.cs): `[Docable]`, `[DocIgnore]` on
@@ -467,10 +478,16 @@ public interface IMenuReplicationService
 
 ## 8. Read-time: aggregate → generate → map (the lookup, FUTURE phase)
 
+> **Partly superseded by §16.** `ServiceMenuReferenceCache` is **dropped** — the documents are fully
+> denormalized, so the read is a single partition query and there is no reference partition to cache.
+> The `CosmosToGenerationAggregator` signature below changes accordingly: it takes the four
+> `ServiceMenus` document types and builds `MenuGenerationReferenceData` from what they already carry.
+> Everything else in this section stands.
+
 `ADP.LookupServices/Lookup.Services` (netstandard2.0):
 
-- **`ServiceMenuReferenceCache`** loads the `__REFERENCE__` partition once into a `ServiceMenuReferenceSnapshot`;
-  TTL + explicit invalidate (O4/O10).
+- ~~**`ServiceMenuReferenceCache`** loads the `__REFERENCE__` partition once into a `ServiceMenuReferenceSnapshot`;
+  TTL + explicit invalidate (O4/O10).~~ **Dropped — see §16.**
 - **`ServiceMenuLookupService`** (modelled on
   [`GoldenCustomerLookupService`](../ADP.LookupServices/Lookup.Services/Services/GoldenCustomerLookupService.cs)):
 
@@ -498,22 +515,45 @@ lookup) — keep the reference cache warm; optional short per-model result cache
 
 ---
 
-## 9. Deletes, renames, soft-delete — per-row, free from the framework
+## 9. Deletes, renames, soft-delete
 
-`LastReplicationStamp` stores each row's id + partition-key levels; on the next sync, *"when the document
-id or any partition-key level has changed, the stale document is [removed]."* Per-row, this Just Works
-independently per table: a soft-deleted `MenuItem` removes its doc; a `BasicModelCode` rename moves every
-model-scoped doc and deletes the old. No timer/lease/sweep/generation-stamp/circuit-breaker.
+`LastReplicationStamp` stores each row's id + partition-key levels, so an id or partition-key change
+(e.g. a `BasicModelCode` rename) deletes the stale document before writing the new one. Per-row, that
+works independently per table.
 
----
+**Correction (verified against the framework source in Phase 3):** an earlier draft of this section
+claimed a soft delete removes the document. It does not.
 
-## 10. Reference data staleness
+| Operation | What replication does |
+|---|---|
+| Insert / update | upsert |
+| **Soft delete** (`IsDeleted = true`) | an ordinary UPDATE → the document is **upserted, still present** |
+| **Hard delete** (EF `Remove`) | document deleted, using the coordinates in `LastReplicationStamp` |
+| id / partition-key change | stale document deleted, new one written |
 
-The reference cache is the one read-time correctness dependency. A `ServiceInterval.Code`,
-`ServiceIntervalGroup.LabourCode`/membership, `LabourRateMapping.Code` or `BrandMapping.BrandAbbreviation`
-edit changes generated codes; replication updates the reference doc immediately, but the **reader cache**
-must refresh (TTL + invalidate). A stale cache yields stale codes with **no error** — surface cache age on
-a health endpoint.
+So **every Cosmos model carries `IsDeleted` and readers must filter on it** — that is not optional
+bookkeeping. This costs nothing at read time: the generation contract already carries soft-delete flags
+(§4), because the generator owns every inclusion rule.
+
+Two consequences worth knowing:
+
+- A row whose `LastReplicationStamp` is null (never replicated, or replicated by an older build) has
+  its document **orphaned** on hard delete — there are no coordinates to delete by.
+- Replication runs fire-and-forget on a detached scope. Failures are logged, never surfaced to the
+  user's save, and the request can complete before replication does. Tests must not assert on Cosmos
+  state immediately after `SaveChanges`.
+
+## 10. Master data staleness — RESOLVED BY §16
+
+An earlier design read shared reference data through a reader-side cache, which was the one read-time
+correctness dependency: a `ServiceInterval.Code`, `ServiceIntervalGroup.LabourCode`/membership,
+`LabourRateMapping.Code` or `BrandMapping.BrandAbbreviation` edit changes generated codes, and a stale
+cache yields stale codes with **no error**.
+
+§16 removes the cache entirely: those fields are denormalized into the menu documents and refreshed by
+`UpdateReference` fan-outs when the master row is edited. **Staleness moved from the reader to the
+write path**, where it is bounded and enumerable rather than time-based — the remaining gaps are listed
+in §17 ("Known gaps"), and the backfill service (step 2) is the sweep that closes them.
 
 ---
 
@@ -522,14 +562,14 @@ a health endpoint.
 | # | Item | Status / recommendation |
 |---|---|---|
 | O1 | Missing `LabourRateMapping` `(brand,rate)` — the source throws. | **DECIDED (Phase 1): keep throwing.** Ported verbatim; the failure mode is preserved rather than softened. Revisit only if a real deployment hits it — it is a one-line change in `ResolveLabourRateCode`. |
-| O2 | Do item/part edits touch the `MenuItem` row (so its doc + replacement-item slice re-replicate)? | Trace save paths; add targeted re-replication if not. **Still open — needed for Phase 3.** |
+| O2 | Do item/part edits touch the `MenuItem` row? | **RESOLVED (Phase 3 step 1): mostly yes, with one confirmed bypass.** The variant save stamps `LastPropagatedAt` on every item (so any part/price edit re-replicates the item), and propagation stamps it too. **`MenuController.UpdatePartsPrice` does not** — it mutates country prices without touching `MenuItem`, and it is system-wide, so one run stales every item document. Also, deleting a variant/menu does not cascade to items/parts, orphaning their documents. Both are step-2 work. The third part of this item — the replacement-item slice going stale — is **closed** by §16's `ReplacementItem` fan-out. |
 | O3 | Derived Katashiki code vs authored `Menu.BasicModelCode` match rate in real data. | Measure first (host-side/ad-hoc; keep report in private planning). **Gates Phase 6.** |
-| O4 | Reference-cache freshness/invalidation in the reader. | TTL + explicit invalidate; alert on cache age. **Phase 5.** |
-| O5 | Do all replicated tables need the two `IShiftEntityReplication` columns? | Confirm against the trigger before migrations. **Phase 3.** |
+| O4 | Reference-cache freshness/invalidation in the reader. | **CLOSED by §16.** There is no reader-side cache: the documents are fully denormalized and `UpdateReference` keeps the copies fresh. See §10. |
+| O5 | Do all replicated tables need the two `IShiftEntityReplication` columns? | **RESOLVED (Phase 3 step 1): yes, all 10.** The trigger is constrained on `IShiftEntityReplication`, so a table without the columns is simply never replicated. |
 | O6 | `transferRate` / country at read time. | `LookupOptions` resolver → `MenuGenerationConfig`; `Consumable` stored unscaled, scaled in the generator (the generic model already does this). **Phase 5.** |
 | O7 | `GetAllowedTimeText` culture sensitivity (feeds labour code). | **DECIDED: leave as-is.** Ported verbatim, ambient culture included. Judged not worth the risk of changing codes already issued to a DMS for a case the deployments do not hit. Pinned by test so the behaviour is at least visible. |
 | O8 | `MenuLabourDetails.FirstOrDefault` nondeterminism. | **RESOLVED structurally, no behaviour change.** The generic input is `List<>`-ordered, so "first match" is now a function of the aggregator's ordering rather than of EF/`HashSet` iteration. No `OrderBy` was added — that would have changed output. |
-| O9 | Read-time cost: full fold every lookup. | Warm reference cache; optional short per-model result cache. **Phase 5.** |
+| O9 | Read-time cost: full fold every lookup. | **REDUCED by §16.** The read is one single-partition query with no second round trip; only the generation fold remains per lookup. Optional short per-model result cache. **Phase 5.** |
 | O10 | Raw (non-language-resolved) `ServiceInterval.Description` on periodic lines. | **DECIDED: leave as-is**, ported verbatim. Only bites if an interval description is ever authored multi-language. |
 
 ---
@@ -542,19 +582,17 @@ a health endpoint.
 - **Phase 1 — layer 1 (new `ADP.Menus.Generation`, netstandard2.0). ✅ DONE.** See §14.
 - **Phase 2 — export refactor. ✅ DONE.** `EfToGenerationAggregator` (EF → generic); `MenuExportService`
   calls `MenuCodeGenerator`; margins moved to the report layer. No output change — Phase 0 green. See §15.
-- **Phase 3 — layer 2 + replication.** Cosmos models in `ADP.Models`, **together with the
-  `NoSQLConstants` (`Containers.ServiceMenus`, `PartitionKeys.ServiceMenus`,
-  `ServiceMenuReferencePartition`) and the eight `ModelTypes` discriminators** — they belong with the
-  models they describe, and the partition-key paths can then use `nameof(...)` against real Cosmos
-  types instead of string literals. Plus `CosmosToGenerationAggregator` (`ADP.Menus.Generation`, which
-  gains its `ADP.Models` reference here); entities implement `IShiftEntityReplication` (+ migrations);
-  `PrepareForReplicationAsync` where denormalizing; `MenuCosmosMappers`; `MenuReplicationExtensions`
-  (per-table + `AddMenuReplications`); `MenuReplicationService`.
-- **Phase 4 — host wiring + backfill + provisioning.** Provision `ServiceMenus` (2-level PK); register the
-  trigger + `AddMenuReplications`; run `ReplicateAllAsync` + `ReplicateReferenceDataAsync`; verify.
-- **Phase 5 — read side (lookup, future).** `ServiceMenuReferenceCache` + `ServiceMenuLookupService`
-  (partition read → `CosmosToGenerationAggregator` → `MenuCodeGenerator` → lookup DTO). Tests:
-  aggregation equals the golden generic request; normalization; stale cache; missing container.
+- **Phase 3 — layer 2 + replication.** Split into two steps.
+  - **Step 1 — trigger replication, on the §16 container design. ✅ DONE.** See §17.
+  - **Step 2 — still to do:** `MenuReplicationService` (per-model / master / full backfill), the
+    `UpdatePartsPrice` and delete-cascade gaps (O2) plus the other gaps §17 lists, and
+    `CosmosToGenerationAggregator`.
+- **Phase 4 — host wiring + backfill + provisioning.** Provision all 7 containers (§17); register the
+  trigger + `AddMenuReplications`; run the backfill; verify.
+- **Phase 5 — read side (lookup, future).** `ServiceMenuLookupService` (one partition read →
+  `CosmosToGenerationAggregator` → `MenuCodeGenerator` → lookup DTO). No reference cache — §16. Tests:
+  aggregation equals the golden generic request; normalization; missing container; a partition missing
+  a document type.
 - **Phase 6 — vehicle-lookup integration** (gated on O3): evaluator + flat `[TypeScriptModel]` DTO +
   web-component section; measure/monitor the join-key hit rate.
 
@@ -820,3 +858,228 @@ The aggregator's class comment lists the EF navigations it reads. **A missing `I
 lines silently** — an unloaded interval group is an empty interval group, and an empty group emits no
 periodic line. The same trap applies to the Cosmos reader in Phase 5: a partition read that misses a
 document type degrades to "no lines" rather than an error.
+
+---
+
+## 16. REVISED container design — follow the ShiftIdentity pattern (supersedes §3 and §5). ✅ IMPLEMENTED
+
+> **Implemented — see §17 for what was built, what deviated, and why.**
+
+Phase 3 step 1 first shipped a single `ServiceMenus` container holding both model-scoped documents and
+the shared reference tables, the latter forced into a synthetic `"__REFERENCE__"` partition. **That was
+wrong and has been replaced.** A container's partition key must be something every document in it
+genuinely has; the reference documents have no basic model code, and inventing a sentinel to force them
+in was the tell.
+
+### The pattern being followed
+
+`ShiftIdentity`'s `CompanyBranches` container, which solves the identical problem:
+
+```
+Identity database
+├── Companies / Countries / Brands / Teams / Users / Departments / Services
+│        ← every master entity gets its OWN container, keyed by its own id
+└── CompanyBranches            partition: /BranchID + /ItemType
+      ItemType="Branch"        → CompanyBranchModel        (root; EMBEDS City + Company)
+      ItemType="Service"    ┐
+      ItemType="Department" ├─→ CompanyBranchSubItemModel  (the many-to-many links, in the
+      ItemType="Brand"      ┘                               ROOT'S OWN PARTITION, carrying the
+                                                            related entity's denormalized fields)
+```
+
+Three rules:
+
+1. **Every master entity gets its own container**, keyed by its own id — never forced into another
+   aggregate's partition.
+2. **Parent / lookup references are EMBEDDED** as nested objects on the root document.
+3. **Many-to-many becomes sibling documents in the root's own partition** — same partition key,
+   different `ItemType` — each carrying the related entity's denormalized fields.
+
+### Applied to menus
+
+```
+Services database
+├── ServiceIntervals / ServiceIntervalGroups / ReplacementItems /
+│   StandaloneReplacementItemGroups / LabourRateMappings / BrandMappings
+│        ← master data, one container each
+└── ServiceMenus               partition: /BasicModelCode + /ItemType
+      ItemType="MenuVariant"   → root; embeds menu + vehicle model, owns country labour rates
+      ItemType="MenuPeriod"    ┐
+      ItemType="MenuLabour"    ├─→ sibling documents in the same model-code partition,
+      ItemType="MenuItem"      ┘   fully denormalized (see below); MenuItem owns its parts/prices
+```
+
+`MenuPeriod` / `MenuLabour` / `MenuItem` **are** the many-to-many link documents — variant↔interval,
+variant↔interval-group and variant↔replacement-item respectively — each carrying the related entity's
+denormalized fields, exactly as identity's `CompanyBranchSubItemModel` does. (An earlier draft of this
+section also listed a separate `MenuItemServiceIntervalGroup` link document for the replacement
+item's interval groups. That one cannot exist — see §17.)
+
+### Documents are FULLY denormalized — decided
+
+Like identity's sub-items (which carry `Name` and `IntegrationId`, not just ids), the menu documents
+carry everything generation needs: interval codes and descriptions, group labour codes, replacement-item
+operation codes and friendly names, labour-rate codes, brand abbreviations.
+
+**The lookup is therefore ONE partition query on the basic model code, and nothing else.** No reference
+cache, no second round trip, no cache-staleness window.
+
+Freshness is the replication's job, not the reader's: when a master row changes, `UpdateReference` fans
+the change out to every document that denormalizes it — the mechanism
+[`ClaimableItemsReplicationExtensions`](../ADP.ClaimableItems/ADP.ClaimableItems.Data/Extensions/ClaimableItemsReplicationExtensions.cs)
+already uses (`Campaign` → `ServiceItemModel`). Note the framework runs `UpdateReference` only on
+`ChangeType.Modified`, which is correct here: a newly inserted master row is not yet referenced.
+
+### What this supersedes
+
+- `NoSQLConstants.ServiceMenuReferencePartition` and the four `__REFERENCE__` document types — **gone**,
+  replaced by one master container per entity.
+- **O4 (reference-cache freshness) is closed** — there is no reader-side cache to go stale.
+- **O9 is reduced** — the read is a single partition query; only the generation fold remains per lookup.
+- §8's `ServiceMenuReferenceCache` is **dropped** from the Phase 5 design.
+- Step 1's `MenuItem` no longer embeds a replacement-item copy that could rot; the slice is maintained
+  by `UpdateReference` from `ReplacementItem`, which also closes the "no replication registration at
+  all for ReplacementItem" gap step 1 left open.
+
+---
+
+## 17. Phase 3 step 1 — replication, as built (DONE)
+
+Go-forward replication only: every menu table projects per row into Cosmos on `SaveChanges`, using the
+§16 container design. Backfill, the O2 gaps and the read-side aggregator remain step 2.
+
+**102 tests green.** The first cut of this step (a single `ServiceMenus` container with a synthetic
+`__REFERENCE__` partition, per the then-current §3/§5) was rewritten to §16 before anything shipped, so
+there is no migration to perform — only provisioning (below).
+
+| File | Role |
+|---|---|
+| [`ServiceMenuCosmosModels.cs`](../ADP.Models/Models/Service/Cosmos/ServiceMenuCosmosModels.cs) | Layer 2 — 6 master documents + 4 `ServiceMenus` documents + owned parts/prices/labour rates |
+| [`MenuCosmosMappers.cs`](ADP.Menus.Data/Replication/MenuCosmosMappers.cs) | Manual EF → document projection (`Map`) + the fan-out appliers (`ApplyTo`) |
+| [`MenuReplicationReload.cs`](ADP.Menus.Data/Replication/MenuReplicationReload.cs) | Re-fetches each row with the navigations its projection needs; resolves the variant's master data |
+| [`MenuReplicationFinders.cs`](ADP.Menus.Data/Replication/MenuReplicationFinders.cs) | "Which documents embed this master row?" — the `UpdateReference` queries |
+| [`MenuCosmosContainers.cs`](ADP.Menus.Data/Replication/MenuCosmosContainers.cs) | The 7 containers and their partition keys — one declaration, read by hosts, the sample and the test |
+| [`MenuReplicationExtensions.cs`](ADP.Menus.Data/Extensions/MenuReplicationExtensions.cs) | One `Add…Replication` per table + `AddMenuReplications` |
+| [`Program.cs`](samples/ADP.Menus.Sample.API/Program.cs) | The sample host: registers the trigger and provisions the containers |
+| [`ServiceMenusProvisioningTests.cs`](ADP.Menus.Tests/ServiceMenusProvisioningTests.cs) | Provisions and asserts all 7 containers; offline guards on the document shapes |
+| [`MenuReplicationFinderTests.cs`](ADP.Menus.Tests/MenuReplicationFinderTests.cs) | Renders every finder to Cosmos SQL, offline |
+
+Plus: `NoSQLConstants` (7 containers + their partition keys) and 4 `ModelTypes` discriminators in
+`ADP.Models`; `IShiftEntityReplication` on the 10 replicated entities.
+
+### The ten registrations
+
+| Entity | Own document | Fan-outs (`UpdateReference`) |
+|---|---|---|
+| `MenuVariant` | `ServiceMenus` / `MenuVariant` | — |
+| `MenuPeriodicAvailability` | `ServiceMenus` / `MenuPeriod` | — |
+| `MenuLabourDetails` | `ServiceMenus` / `MenuLabour` | — |
+| `MenuItem` | `ServiceMenus` / `MenuItem` | — |
+| `ServiceInterval` | `ServiceIntervals` | → `MenuPeriod` |
+| `ServiceIntervalGroup` | `ServiceIntervalGroups` | → `MenuLabour`, → `MenuItem` |
+| `ReplacementItem` | `ReplacementItems` | → `MenuItem` (whole slice) |
+| `StandaloneReplacementItemGroup` | `StandaloneReplacementItemGroups` | → `MenuItem` |
+| `LabourRateMapping` | `LabourRateMappings` | → `MenuVariant` |
+| `BrandMapping` | `BrandMappings` | → `MenuVariant` |
+
+### Three things §16 did not anticipate
+
+**1. The `MenuItemServiceIntervalGroup` link document cannot exist.** §16's sketch listed the replacement
+item's interval-group membership as sibling link documents. It cannot be built: the source row
+(`ReplacementItemServiceIntervalGroup`) has no basic model code, so no `Replicate` registration can
+place it in a model partition, and `UpdateReference` only ever *updates documents it finds* — it cannot
+create one. The membership is therefore **embedded on the `MenuItem` document** as
+`ServiceIntervalGroups`, each entry carrying the group's labour code and full interval membership.
+
+That membership has to travel with the item, not be recovered from the sibling `MenuLabour` documents:
+generation asks "does group G contain interval I" for *every* group the item serves — including groups
+the variant has no labour detail for — and it asks with a dictionary **indexer**, so a missing group
+throws rather than degrading. The flat `ReplacementItem.ServiceIntervalGroupIDs` list alongside it is
+what makes the group fan-out an `ARRAY_CONTAINS` rather than a full scan.
+
+**2. The variant's master data needs a synchronous lookup.** A variant document embeds the labour-rate
+mapping for its (brand, primary rate) pair and its brand's mapping, but has no navigation to either, so
+the async reload hook cannot carry them. `MenuReplicationReload.VariantMasterData` resolves them inside
+the (synchronous) `Replicate` mapper. Replication runs fire-and-forget on a background task with no
+synchronization context, so a blocking query there cannot deadlock a request. A missing labour-rate
+mapping is recorded as **null**, not as an invented code — that is what preserves O1's "generation
+throws on a missing pair" once the reader builds its dictionary.
+
+**3. The step-1 mappers were filtering soft-deletes, and that changed menu codes.** The export applies
+**no** soft-delete filter to any of its includes and there are no global query filters anywhere, so its
+generic input carries deleted interval memberships and deleted replacement-item links. The first cut
+filtered them out, which silently dropped whole periodic lines the export still emits. The mappers are
+now pure projections — they copy, they do not decide — matching `EfToGenerationAggregator` exactly. The
+only filtering left is on the labour-rate and brand mapping catalogues, which the export filters too.
+
+### The reload hook
+
+`SetUpReplication`'s third argument is an **async entity pre-processor** that replaces the entity
+everything downstream sees. That is what `MenuReplicationReload` uses. It matters because the trigger
+hands the mapper whatever EF had tracked at save time — for a child row, usually the row alone with
+every navigation null — while the projections denormalize heavily. Without it the documents would have
+holes, silently.
+
+It is also why no repository was added: the alternative,
+`IShiftEntityPrepareForReplicationAsync<T>`, requires the derived repository to **re-declare the
+interface** or the override is never called — and most of these tables have no repository at all.
+
+Query filters are ignored so soft-deleted rows still re-read, and a row that has vanished (hard delete)
+falls back to the passed-in entity, which still carries the stamp the pipeline deletes by.
+
+### Why the finders are named methods with their own test
+
+`UpdateReference` finders are the mechanism the whole §16 design rests on, and they are the one part
+that **cannot fail loudly**: they run as translated SQL inside fire-and-forget replication, so a
+predicate that stops translating, or that names a property the document no longer has, produces no error
+anywhere. The query matches nothing, master edits quietly stop propagating, and the lookup serves stale
+codes with no signal. As ordinary methods they can be rendered to SQL offline — which is what
+`MenuReplicationFinderTests` does, no emulator required.
+
+### Host wiring
+
+```csharp
+services.AddShiftEntityCosmosDbReplicationTrigger<DB>(x => x.AddMenuReplications<DB>(cosmosClient));
+```
+
+A consumer that never calls it replicates nothing — the same opt-in shape as
+`AddClaimableItemsReplication`. The call also enables EFCore.Triggered on the context (the after-save
+hook replication rides on), so the host's own `AddDbContext` does not need to — both option actions
+apply whichever order they run in.
+
+Before first run the host must:
+
+- provision the **7 containers** in the `Services` database.
+  [`MenuCosmosContainers.All`](ADP.Menus.Data/Replication/MenuCosmosContainers.cs) declares each one's
+  partition key, so it is never retyped: `ServiceMenus` is `["/BasicModelCode", "/ItemType"]` and the
+  six master containers are each `"/id"`. Both `ServiceMenusProvisioningTests` (which additionally
+  asserts the keys — they cannot be changed after creation) and the sample read that list;
+- add the two `IShiftEntityReplication` columns to the **10** replicated tables (the sample uses
+  `EnsureCreatedAsync`, so an existing sample database needs recreating).
+
+[`ADP.Menus.Sample.API/Program.cs`](samples/ADP.Menus.Sample.API/Program.cs) is the worked example: it
+registers the trigger and provisions the containers at startup, both gated on
+`ConnectionStrings:Cosmos` being set, with provisioning failures logged rather than fatal so the sample
+still boots without an emulator.
+
+### Known gaps, carried to step 2
+
+- **`MenuController.UpdatePartsPrice` is a confirmed bypass.** It mutates country prices without
+  touching `MenuItem`, and it is system-wide — one run stales every item document. Fix by stamping the
+  owning item, or by re-driving the item from the backfill service afterwards. (O2)
+- **Deletes do not cascade.** Deleting a variant or menu leaves items/parts/periods/labour-details
+  untouched, so their documents outlive the parent. (O2)
+- **`UpdateReference` fires only on `Modified`.** A newly INSERTED master row reaches no existing
+  document — correct for a genuinely new row, but it also means a hard-DELETED master row leaves its
+  embedded copies behind. The backfill service is the answer to both.
+- **`ReplacementItemServiceIntervalGroup` edits reach Cosmos only via their parent.** Adding or removing
+  a link refreshes the menu items only if the `ReplacementItem` row is itself saved (see deviation 1).
+- **Re-keying a mapping strands the documents it used to serve.** The labour-rate and brand fan-outs
+  find variants by the mapping's key — (brand, rate) and brand — not by "which document currently
+  embeds this row". Editing a mapping's `BrandID` or `LabourRate` therefore refreshes the variants that
+  match the NEW key, while the ones that matched the old key keep a copy that no longer applies to
+  them. The right shape for the catalogue is insert + soft-delete rather than re-key; the backfill
+  service is the sweep for when it happens anyway.
+- **A labour-rate or brand mapping whose `BrandID` is NULL fans out to nothing** — Cosmos SQL evaluates
+  `c.BrandID = null` to undefined, not true. Left as-is deliberately: a variant with no brand is
+  excluded from the export by construction, so it generates no lines to keep fresh.

@@ -1,11 +1,12 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using ShiftSoftware.ShiftEntity.Core;
+using ShiftSoftware.ShiftEntity.Model.Replication;
 using ShiftSoftware.ShiftEntity.Model.Flags;
 
 namespace ShiftSoftware.ADP.Menus.Data.Entities;
 
 [TemporalShiftEntity]
-public class MenuVariant : ShiftEntity<MenuVariant>
+public class MenuVariant : ShiftEntity<MenuVariant>, IShiftEntityReplication
 {
     public long MenuID { get; set; }
     public Menu Menu { get; set; } = default!;
@@ -32,4 +33,9 @@ public class MenuVariant : ShiftEntity<MenuVariant>
     public virtual ICollection<MenuLabourDetails> LabourDetails { get; set; } = new HashSet<MenuLabourDetails>();
     public virtual ICollection<MenuPeriodicAvailability> PeriodicAvailabilities { get; set; } = new HashSet<MenuPeriodicAvailability>();
     public virtual ICollection<MenuItem> Items { get; set; } = new HashSet<MenuItem>();
+
+    // Cosmos replication bookkeeping (IShiftEntityReplication). Written only by the replication
+    // pipeline's MarkReplicated — never by application code.
+    public string? LastReplicationStamp { get; set; }
+    public DateTimeOffset? LastReplicationDate { get; set; }
 }

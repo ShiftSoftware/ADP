@@ -36,4 +36,14 @@ public static class ModelTypes
     public static readonly PartitionedItemType VehicleGoldenOwnership = new("VehicleGoldenOwnership");
 
     public static readonly PartitionedItemType ExtendedWarranty = new("ExtendedWarranty");
+
+    // Service menus. These discriminate the documents of the ServiceMenus container ONLY — the root
+    // variant and the three link documents that share its basic-model-code partition. The master
+    // entities (service intervals, interval groups, replacement items, standalone replacement-item
+    // groups, labour-rate and brand mappings) each have their own container partitioned by their own
+    // id, so they need no discriminator. See ADP.Menus/COSMOS_REPLICATION_PLAN.md §16.
+    public static readonly PartitionedItemType MenuVariant = new("MenuVariant");
+    public static readonly PartitionedItemType MenuPeriod = new("MenuPeriod");
+    public static readonly PartitionedItemType MenuLabour = new("MenuLabour");
+    public static readonly PartitionedItemType MenuItem = new("MenuItem");
 }

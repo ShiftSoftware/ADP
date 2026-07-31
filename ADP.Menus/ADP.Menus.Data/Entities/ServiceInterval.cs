@@ -1,5 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using ShiftSoftware.ShiftEntity.Core;
+using ShiftSoftware.ShiftEntity.Model.Replication;
 
 namespace ShiftSoftware.ADP.Menus.Data.Entities;
 
@@ -7,7 +8,7 @@ namespace ShiftSoftware.ADP.Menus.Data.Entities;
 [Index(nameof(Code), IsUnique = true)]
 [Index(nameof(FullName), IsUnique = true)]
 [Index(nameof(ValueInMeter), IsUnique = true)]
-public class ServiceInterval : ShiftEntity<ServiceInterval>
+public class ServiceInterval : ShiftEntity<ServiceInterval>, IShiftEntityReplication
 {
     public string Code { get; set; }
     public string FullName { get; set; }
@@ -27,4 +28,9 @@ public class ServiceInterval : ShiftEntity<ServiceInterval>
     {
         
     }
+
+    // Cosmos replication bookkeeping (IShiftEntityReplication). Written only by the replication
+    // pipeline's MarkReplicated — never by application code.
+    public string? LastReplicationStamp { get; set; }
+    public DateTimeOffset? LastReplicationDate { get; set; }
 }

@@ -1,11 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ShiftSoftware.ADP.Menus.Shared.Enums;
 using ShiftSoftware.ShiftEntity.Core;
+using ShiftSoftware.ShiftEntity.Model.Replication;
 
 namespace ShiftSoftware.ADP.Menus.Data.Entities;
 
 [TemporalShiftEntity]
-public class ReplacementItem : ShiftEntity<ReplacementItem>
+public class ReplacementItem : ShiftEntity<ReplacementItem>, IShiftEntityReplication
 {
     public string Name { get; set; } = default!;
     public string FriendlyName { get; set; } = default!;
@@ -32,4 +33,9 @@ public class ReplacementItem : ShiftEntity<ReplacementItem>
     {
 
     }
+
+    // Cosmos replication bookkeeping (IShiftEntityReplication). Written only by the replication
+    // pipeline's MarkReplicated — never by application code.
+    public string? LastReplicationStamp { get; set; }
+    public DateTimeOffset? LastReplicationDate { get; set; }
 }

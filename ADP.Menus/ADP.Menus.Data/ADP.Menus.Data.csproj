@@ -40,5 +40,19 @@
 	<ItemGroup>
 		<PackageReference Include="ShiftSoftware.ShiftEntity.EFCore" Version="2026.7.28.1" />
 		<PackageReference Include="ShiftSoftware.ShiftIdentity.Core" Version="2026.7.28.1" />
+		<!--
+		  Cosmos replication of the menu catalog (Extensions/MenuReplicationExtensions.cs). Opt-in:
+		  a consumer that never calls AddMenuReplications replicates nothing.
+		-->
+		<PackageReference Include="ShiftSoftware.ShiftEntity.CosmosDbReplication" Version="2026.7.28.1" />
+	</ItemGroup>
+
+	<!--
+	  The Cosmos document models (layer 2) live in ADP.Models so both this project and the
+	  netstandard2.0 vehicle lookup can see them. Project reference locally, package elsewhere.
+	-->
+	<ItemGroup>
+		<ProjectReference Include="..\..\ADP.Models\Models\Models.csproj" Condition="Exists('..\..\ADP.Models\Models\Models.csproj')" />
+		<PackageReference Include="ShiftSoftware.ADP.Models" Version="$(ADPVersion)" Condition="!Exists('..\..\ADP.Models\Models\Models.csproj')" />
 	</ItemGroup>
 </Project>

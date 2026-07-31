@@ -116,20 +116,21 @@ public static class SeedData
         if (!db.Set<ReplacementItemServiceIntervalGroup>().Any())
             await SaveWithIdentityInsertAsync(db, "[Menu].[ReplacementItemServiceIntervalGroup]", GetReplacementItemServiceIntervalGroupData());
 
-        var existingLabourRateKeys = await db.Set<LabourRateMapping>()
-            .Where(x => !x.IsDeleted)
-            .Select(x => new { x.BrandID, x.LabourRate })
-            .ToListAsync();
-
-        var existingLabourRateSet = existingLabourRateKeys
-            .Select(x => (x.BrandID, x.LabourRate))
-            .ToHashSet();
-        var missingLabourRateMappings = LabourRateMappingData()
-            .Where(x => !existingLabourRateSet.Contains((x.BrandID, x.LabourRate)))
-            .ToList();
-
-        if (missingLabourRateMappings.Any())
-            await SaveWithIdentityInsertAsync(db, "[Menu].[LabourRateMapping]", missingLabourRateMappings);
+        // Seed only when the catalogue is empty, exactly like every other table here.
+        //
+        // This used to top the table up per missing (brand, labour rate) PAIR, which broke against a
+        // database populated any other way than by this seeder — the dev data import, for instance.
+        // LabourRateMappingData() carries authored IDs and is written with IDENTITY_INSERT, so as soon
+        // as those IDs belong to somebody else's rows the top-up is a primary-key violation and the
+        // sample cannot start.
+        //
+        // Letting SQL assign the IDs instead would fix the crash and introduce a worse problem: it
+        // would inject synthetic demo mappings into a real imported catalogue, and a (brand, rate) pair
+        // that genuinely has no mapping is supposed to make generation THROW rather than quietly
+        // resolve to a code that deployment never issued. An imported catalogue is not this seeder's to
+        // complete.
+        if (!db.Set<LabourRateMapping>().Any())
+            await SaveWithIdentityInsertAsync(db, "[Menu].[LabourRateMapping]", LabourRateMappingData());
 
         if (!db.Set<BrandMapping>().Any())
             await SaveWithIdentityInsertAsync(db, "[Menu].[BrandMapping]", BrandMappingData());

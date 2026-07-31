@@ -1,6 +1,7 @@
-﻿using ShiftSoftware.ADP.Models.Customer;
+using ShiftSoftware.ADP.Models.Customer;
 using ShiftSoftware.ADP.Models.Part;
 using ShiftSoftware.ADP.Models.Service;
+using ShiftSoftware.ADP.Models.Service.Cosmos;
 using ShiftSoftware.ADP.Models.TBP;
 using ShiftSoftware.ADP.Models.Vehicle;
 
@@ -28,6 +29,24 @@ public class NoSQLConstants
         public const string ExteriorColors = "ExteriorColors";
         public const string InteriorColors = "InteriorColors";
         public const string VehicleModels = "VehicleModels";
+
+        /// <summary>
+        /// Service menus, replicated per row from the menus database. Hierarchical partition key: the
+        /// basic model code, then the item type — so one single-partition query returns a whole model's
+        /// menu graph, fully denormalized. See ADP.Menus/COSMOS_REPLICATION_PLAN.md §16.
+        /// </summary>
+        public const string ServiceMenus = "ServiceMenus";
+
+        // The menu catalog's master entities. Each gets its own container partitioned by its own id,
+        // rather than being forced into the ServiceMenus partition scheme with a key it does not have.
+        // Their fields are denormalized into the ServiceMenus documents, so the lookup reads these only
+        // for maintenance/backfill — never on the read path.
+        public const string ServiceIntervals = "ServiceIntervals";
+        public const string ServiceIntervalGroups = "ServiceIntervalGroups";
+        public const string ReplacementItems = "ReplacementItems";
+        public const string StandaloneReplacementItemGroups = "StandaloneReplacementItemGroups";
+        public const string LabourRateMappings = "LabourRateMappings";
+        public const string BrandMappings = "BrandMappings";
 
         public const string PartLookupLogs = "PartLookup";
         public const string ManufacturerPartLookupLogs = "ManufacturerPartLookup";
@@ -80,6 +99,49 @@ public class NoSQLConstants
         //    public const string Level1 = "/" + nameof(StockPartModel.PartNumber);
         //    public const string Level2 = "/" + nameof(StockPartModel.Location);
         //}
+
+        /// <summary>
+        /// Partition-key paths for <see cref="Containers.ServiceMenus"/>. Every document in it — the
+        /// root variant and its sibling link documents — carries a real basic model code.
+        /// </summary>
+        public class ServiceMenus
+        {
+            public const string Level1 = "/" + nameof(MenuVariantCosmosModel.BasicModelCode);
+            public const string Level2 = "/" + nameof(MenuVariantCosmosModel.ItemType);
+        }
+
+        // The menu catalog's master containers. One document type each, partitioned by its own id —
+        // the same shape the Services database already uses for ServiceItems and ClaimableItemCampaigns.
+
+        public class ServiceIntervals
+        {
+            public const string Level1 = "/" + nameof(ServiceIntervalCosmosModel.id);
+        }
+
+        public class ServiceIntervalGroups
+        {
+            public const string Level1 = "/" + nameof(ServiceIntervalGroupCosmosModel.id);
+        }
+
+        public class ReplacementItems
+        {
+            public const string Level1 = "/" + nameof(ReplacementItemCosmosModel.id);
+        }
+
+        public class StandaloneReplacementItemGroups
+        {
+            public const string Level1 = "/" + nameof(StandaloneReplacementItemGroupCosmosModel.id);
+        }
+
+        public class LabourRateMappings
+        {
+            public const string Level1 = "/" + nameof(LabourRateMappingCosmosModel.id);
+        }
+
+        public class BrandMappings
+        {
+            public const string Level1 = "/" + nameof(BrandMappingCosmosModel.id);
+        }
 
         public class PartLookupLogs
         {
