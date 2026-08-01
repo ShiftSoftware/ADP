@@ -1,0 +1,9 @@
+@host = http://localhost:7071
+
+### Full backfill — re-syncs EVERY menu row into Cosmos, not just the dirty ones.
+### Run this to switch replication on for an existing catalogue, after rebuilding a container, or
+### after the system-wide parts-price update (which leaves MenuItem rows clean, so only a full pass
+### repairs their documents).
+###
+### The hourly timers are disabled locally; this endpoint is how you replicate while developing.
+POST {{host}}/api/replicate-all

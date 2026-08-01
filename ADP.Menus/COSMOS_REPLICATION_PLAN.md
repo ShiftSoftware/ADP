@@ -584,9 +584,10 @@ in §17 ("Known gaps"), and the backfill service (step 2) is the sweep that clos
   calls `MenuCodeGenerator`; margins moved to the report layer. No output change — Phase 0 green. See §15.
 - **Phase 3 — layer 2 + replication.** Split into two steps.
   - **Step 1 — trigger replication, on the §16 container design. ✅ DONE.** See §17.
-  - **Step 2 — still to do:** `MenuReplicationService` (per-model / master / full backfill), the
-    `UpdatePartsPrice` and delete-cascade gaps (O2) plus the other gaps §17 lists, and
-    `CosmosToGenerationAggregator`.
+  - **Step 2 — catch-up replication (the backfill). ✅ DONE.** See §18. What remains of the original
+    step-2 list: the `UpdatePartsPrice` and delete-cascade gaps (O2) — now *recoverable* by a full
+    sweep rather than fixed at source — and `CosmosToGenerationAggregator`, which belongs with the
+    read side (Phase 5).
 - **Phase 4 — host wiring + backfill + provisioning.** Provision all 7 containers (§17); register the
   trigger + `AddMenuReplications`; run the backfill; verify.
 - **Phase 5 — read side (lookup, future).** `ServiceMenuLookupService` (one partition read →
@@ -1083,3 +1084,84 @@ still boots without an emulator.
 - **A labour-rate or brand mapping whose `BrandID` is NULL fans out to nothing** — Cosmos SQL evaluates
   `c.BrandID = null` to undefined, not true. Left as-is deliberately: a variant with no brand is
   excluded from the export by construction, so it generates no lines to keep fresh.
+
+---
+
+## 18. Phase 3 step 2 — catch-up replication (DONE)
+
+The save trigger only ever sees rows as they are saved. A catalogue that existed before replication was
+switched on never reaches Cosmos at all, and neither does anything missed while Cosmos was unreachable.
+Catch-up replication is the sweep that closes that, and it is also the recovery path for every gap §17
+lists. Modelled on ShiftIdentity's `IdentityCatchUpReplicationExtensions`.
+
+| File | Role |
+|---|---|
+| [`MenuCatchUpReplicationExtensions.cs`](ADP.Menus.Data/Replication/MenuCatchUpReplicationExtensions.cs) | One `ReplicateXAsync` per table + `ReplicateAllAsync` |
+| [`MenuReplicationIncludes.cs`](ADP.Menus.Data/Replication/MenuReplicationIncludes.cs) | The include graphs, now shared by BOTH paths |
+| [`ADP.Menus.Sample.Functions`](samples/ADP.Menus.Sample.Functions/) | The sample host: 10 hourly timers + 1 on-demand HTTP backfill |
+
+### Dirty-only by default, full on demand
+
+`updateAll: false` (the hourly timers) syncs only rows whose `LastReplicationDate` is behind their
+`LastSaveDate`, or absent — cheap, and the normal case. `updateAll: true` (`POST api/replicate-all`)
+re-syncs every row: first switch-on, a rebuilt container, or after the system-wide parts-price update,
+which leaves `MenuItem` rows **clean** and therefore invisible to a dirty-only pass.
+
+### Nothing is written twice
+
+The sweep shares everything with the trigger: include graphs from `MenuReplicationIncludes`,
+projections from `MenuCosmosMappers`, fan-out queries from `MenuReplicationFinders`. Two
+independently-written replication paths would drift, and the drift would stay invisible until a lookup
+returned a wrong menu code. The include graphs were extracted from `MenuReplicationReload` for exactly
+this reason — that file now wraps the shared shapers rather than owning its own copies.
+
+### The one asymmetry: the variant's master data
+
+A variant document embeds the labour-rate mapping for its (brand, primary rate) pair and its brand's
+mapping, and a variant has **no navigation to either** — no include can bring them along. The trigger
+resolves them with one query per row (it only ever handles one); a sweep would turn that into a query
+per variant, so `ReplicateMenuVariantAsync` takes the `DbContext`, loads both catalogues **once**, and
+applies the same selection rule in memory. The rule itself lives in one place
+(`MenuReplicationReload.SelectLabourRateMapping` / `SelectBrandMapping`, taking an `IQueryable` so the
+trigger runs it server-side and the sweep runs it over a list).
+
+### Verified against the sample
+
+`POST api/replicate-all` on a 27-variant imported catalogue, ~30s per run against the emulator:
+
+| | Cosmos | SQL |
+|---|---|---|
+| `ServiceMenus`/`MenuVariant` | 57 | 57 |
+| `ServiceMenus`/`MenuPeriod` | 2120 | 2120 |
+| `ServiceMenus`/`MenuLabour` | 399 | 399 |
+| `ServiceMenus`/`MenuItem` | 1188 | 1188 |
+| `ServiceIntervals` | 40 | 40 |
+| `ServiceIntervalGroups` | 7 | 7 |
+| `ReplacementItems` | 57 | 57 |
+| `StandaloneReplacementItemGroups` | 1 | 1 |
+| `LabourRateMappings` | 2 | 2 |
+| `BrandMappings` | 2 | 2 |
+
+**The first run wrote only 1060 of the 1188 menu items** — the largest documents, written concurrently
+with `AllowBulkExecution` into a 400 RU/s emulator container. The framework catches a failed row,
+marks it unsuccessful and leaves `LastReplicationStamp` null, so the second run picked up exactly those
+128 and the counts then matched. Worth knowing rather than being surprised by: **a single sweep is not
+a guarantee**, it is idempotent and self-healing across runs. It is also silent — nothing is logged for
+a row that fails this way, so `SELECT COUNT(*) … WHERE LastReplicationStamp IS NULL` is the way to see
+whether a backfill actually finished.
+
+### The sample Functions host
+
+Ten hourly timers (one per table) plus `POST api/replicate-all`. Timers are disabled in dev **twice
+over**: the host-honoured `AzureWebJobs.<FunctionName>.Disabled` entries in `local.settings.json` stop
+them firing locally, and `RunTimerAsync` additionally no-ops in a Development host. A deployed host
+reads neither, so replication runs there. The HTTP endpoint always works, which is how you replicate
+while developing.
+
+It maps the menu tables through its own [`MenuReplicationDB`](samples/ADP.Menus.Sample.Functions/MenuReplicationDB.cs)
+rather than the module's `MenuDB`, and the reason is a trap worth recording: `MenuDB` declares `DbSet`
+properties, and EF Core names a table after its DbSet property when one exists. The API host has no
+menu DbSets — it picks the entities up through `MenuModelBuildingContributor` — so its tables are named
+after the ENTITY types (`Menu.LabourRateMapping`, singular). Pointing `MenuDB` at that database fails
+with *"Invalid object name 'Menu.LabourRateMappings'"*. **A sweep host must map the tables the same way
+the writing host does.**

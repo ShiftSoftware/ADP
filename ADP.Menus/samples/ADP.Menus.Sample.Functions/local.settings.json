@@ -1,0 +1,26 @@
+{
+  "IsEncrypted": false,
+  "ConnectionStrings": {
+    "SQLServer": "Server=localhost\\sqlexpress;Initial Catalog=MenuSample;Persist Security Info=True;Integrated Security=SSPI;TrustServerCertificate=True;",
+    "Cosmos": "AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="
+  },
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+
+    "_comment_ReplicationTimers": "The hourly menu Cosmos-replication timers are disabled locally via the host-honoured AzureWebJobs.<FunctionName>.Disabled settings below, so they do NOT fire in local dev. A deployed host never reads local.settings.json, so replication runs there. To test one locally, set its value to false AND run the host outside Development (the function also self-skips in a Development host). POST api/replicate-all always works regardless.",
+    "AzureWebJobs.ReplicateMenuVariantsTimer.Disabled": "true",
+    "AzureWebJobs.ReplicateMenuPeriodsTimer.Disabled": "true",
+    "AzureWebJobs.ReplicateMenuLabourDetailsTimer.Disabled": "true",
+    "AzureWebJobs.ReplicateMenuItemsTimer.Disabled": "true",
+    "AzureWebJobs.ReplicateServiceIntervalsTimer.Disabled": "true",
+    "AzureWebJobs.ReplicateServiceIntervalGroupsTimer.Disabled": "true",
+    "AzureWebJobs.ReplicateReplacementItemsTimer.Disabled": "true",
+    "AzureWebJobs.ReplicateStandaloneReplacementItemGroupsTimer.Disabled": "true",
+    "AzureWebJobs.ReplicateLabourRateMappingsTimer.Disabled": "true",
+    "AzureWebJobs.ReplicateBrandMappingsTimer.Disabled": "true"
+  },
+  "Host": {
+    "CORS": "*"
+  }
+}

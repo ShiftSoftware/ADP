@@ -10,13 +10,16 @@ using ShiftSoftware.ShiftEntity.Model.Replication;
 namespace ShiftSoftware.ADP.Menus.Data.Replication;
 
 /// <summary>
-/// Loads what a Cosmos projection needs beyond the row the trigger hands it.
+/// Loads what a Cosmos projection needs beyond the row the save trigger hands it.
 ///
 /// The trigger supplies whatever EF happened to have tracked when the row was saved — which for a child
 /// row is usually just the row itself, with every navigation null. Since the projections denormalize
 /// heavily (a period needs its variant's menu for the partition key AND the interval's own code; an
 /// item needs its parts, its replacement item and every interval group that item serves), they would
 /// otherwise produce documents with holes, silently.
+///
+/// The include graphs themselves live in <see cref="MenuReplicationIncludes"/>, shared with the
+/// catch-up sweep so the two paths cannot load different graphs.
 ///
 /// Two mechanisms live here:
 ///
@@ -56,70 +59,32 @@ public static class MenuReplicationReload
         };
     }
 
-    // ---- per-table include graphs --------------------------------------------------------------
-    // Each must cover exactly what the matching MenuCosmosMappers.Map reads, and each mirrors the
-    // export's own query (MenuController.GenerateLinesAsync) so the two paths see the same graph.
-    // Keep them in step: a missing include does not throw, it produces a document with holes.
+    // ---- per-table reload hooks ------------------------------------------------------------------
+    // Each is the matching MenuReplicationIncludes shaper, wrapped in the reload above.
 
-    /// <summary>Menu (partition key) + vehicle model (brand, model name) + the embedded country rates.</summary>
     public static Func<EntityWrapper<MenuVariant>, ValueTask<MenuVariant>> Variant<TDbContext>()
         where TDbContext : ShiftDbContext =>
-        With<TDbContext, MenuVariant>(query => query
-            .Include(variant => variant.Menu).ThenInclude(menu => menu.VehicleModel)
-            .Include(variant => variant.LabourRates));
+        With<TDbContext, MenuVariant>(MenuReplicationIncludes.Variant);
 
-    /// <summary>Parent chain for the partition key, plus the interval the document denormalizes.</summary>
     public static Func<EntityWrapper<MenuPeriodicAvailability>, ValueTask<MenuPeriodicAvailability>> Period<TDbContext>()
         where TDbContext : ShiftDbContext =>
-        With<TDbContext, MenuPeriodicAvailability>(query => query
-            .Include(period => period.MenuVariant).ThenInclude(variant => variant.Menu)
-            .Include(period => period.ServiceInterval));
+        With<TDbContext, MenuPeriodicAvailability>(MenuReplicationIncludes.Period);
 
-    /// <summary>
-    /// Parent chain for the partition key, plus the interval group AND its interval membership — the
-    /// membership is what decides which periodic line this labour detail supplies.
-    /// </summary>
     public static Func<EntityWrapper<MenuLabourDetails>, ValueTask<MenuLabourDetails>> Labour<TDbContext>()
         where TDbContext : ShiftDbContext =>
-        With<TDbContext, MenuLabourDetails>(query => query
-            .Include(labour => labour.MenuVariant).ThenInclude(variant => variant.Menu)
-            .Include(labour => labour.ServiceIntervalGroup).ThenInclude(group => group.ServiceIntervals));
+        With<TDbContext, MenuLabourDetails>(MenuReplicationIncludes.Labour);
 
-    /// <summary>
-    /// The widest graph: parent chain for the partition key, the embedded parts and prices, and the
-    /// whole replacement-item slice — the item itself, its standalone group, and every interval group
-    /// it serves with that group's own interval membership.
-    /// </summary>
     public static Func<EntityWrapper<MenuItem>, ValueTask<MenuItem>> Item<TDbContext>()
         where TDbContext : ShiftDbContext =>
-        With<TDbContext, MenuItem>(query => query
-            .Include(item => item.MenuVariant).ThenInclude(variant => variant.Menu)
-            .Include(item => item.Parts).ThenInclude(part => part.CountryPrices)
-            .Include(item => item.ReplacementItemVehicleModel!).ThenInclude(link => link.ReplacementItem)
-                .ThenInclude(replacementItem => replacementItem.StandaloneReplacementItemGroup)
-            .Include(item => item.ReplacementItemVehicleModel!).ThenInclude(link => link.ReplacementItem)
-                .ThenInclude(replacementItem => replacementItem.ReplacementItemServiceIntervalGroups)
-                .ThenInclude(link => link.ServiceIntervalGroup).ThenInclude(group => group.ServiceIntervals)
-            .AsSplitQuery());
+        With<TDbContext, MenuItem>(MenuReplicationIncludes.Item);
 
-    /// <summary>Interval membership — what lets generation match an interval to this group's labour.</summary>
     public static Func<EntityWrapper<ServiceIntervalGroup>, ValueTask<ServiceIntervalGroup>> IntervalGroup<TDbContext>()
         where TDbContext : ShiftDbContext =>
-        With<TDbContext, ServiceIntervalGroup>(query => query
-            .Include(group => group.ServiceIntervals));
+        With<TDbContext, ServiceIntervalGroup>(MenuReplicationIncludes.IntervalGroup);
 
-    /// <summary>
-    /// The standalone group and the interval groups (with their membership) a replacement item serves.
-    /// Both travel with the item because its fan-out refreshes the menu item's whole replacement-item
-    /// slice, not just its scalar fields.
-    /// </summary>
     public static Func<EntityWrapper<Entities.ReplacementItem>, ValueTask<Entities.ReplacementItem>> ReplacementItem<TDbContext>()
         where TDbContext : ShiftDbContext =>
-        With<TDbContext, Entities.ReplacementItem>(query => query
-            .Include(replacementItem => replacementItem.StandaloneReplacementItemGroup)
-            .Include(replacementItem => replacementItem.ReplacementItemServiceIntervalGroups)
-                .ThenInclude(link => link.ServiceIntervalGroup).ThenInclude(group => group.ServiceIntervals)
-            .AsSplitQuery());
+        With<TDbContext, Entities.ReplacementItem>(MenuReplicationIncludes.ReplacementItem);
 
     // ServiceInterval, StandaloneReplacementItemGroup, LabourRateMapping and BrandMapping project
     // scalars only, so they need no reload — the tracked entity the trigger supplies is complete.
@@ -136,18 +101,16 @@ public static class MenuReplicationReload
         BrandMapping? BrandMapping);
 
     /// <summary>
-    /// Resolves <see cref="MenuVariantMasterData"/> for a variant.
+    /// Resolves <see cref="MenuVariantMasterData"/> for a variant, straight from the database.
     ///
     /// SYNCHRONOUS, deliberately: it is called from the <c>Replicate</c> mapper, which the framework
     /// defines as a synchronous delegate, and there is no navigation from a variant to either mapping
     /// so the async reload hook cannot carry them. Replication runs fire-and-forget on a background
     /// task with no synchronization context, so a blocking query here cannot deadlock a request.
     ///
-    /// Only LIVE mappings count, matching the catalogues the export builds
-    /// (<c>MenuController</c> filters both with <c>!IsDeleted</c>). Ordered by id so a catalogue that
-    /// somehow holds duplicates resolves the same way every time instead of at the database's whim —
-    /// the export would throw on such a duplicate, and quietly picking a different row on each save is
-    /// the one outcome worse than either.
+    /// The catch-up sweep resolves the same thing against pre-loaded catalogues rather than one query
+    /// per variant — both go through <see cref="SelectLabourRateMapping"/> and
+    /// <see cref="SelectBrandMapping"/> so the selection rule itself is shared.
     /// </summary>
     public static MenuVariantMasterData VariantMasterData<TDbContext>(EntityWrapper<MenuVariant> wrapper)
         where TDbContext : ShiftDbContext
@@ -155,20 +118,42 @@ public static class MenuReplicationReload
         var database = wrapper.Services.GetRequiredService<TDbContext>();
 
         var brandId = wrapper.Entity.Menu?.VehicleModel?.BrandID;
-        var labourRate = wrapper.Entity.LabourRate;
 
-        var labourRateMapping = database.Set<LabourRateMapping>()
-            .AsNoTracking()
+        return new MenuVariantMasterData(
+            SelectLabourRateMapping(database.Set<LabourRateMapping>().AsNoTracking(), brandId, wrapper.Entity.LabourRate),
+            SelectBrandMapping(database.Set<BrandMapping>().AsNoTracking(), brandId));
+    }
+
+    /// <summary>
+    /// The mapping a variant's labour code resolves through, or null when the pair is unmapped — which
+    /// is meaningful: generation throws on a missing pair (open item O1), so a null must be recorded
+    /// rather than papered over.
+    ///
+    /// Only LIVE mappings count, matching the catalogue the export builds (<c>MenuController</c>
+    /// filters with <c>!IsDeleted</c>). Ordered by id so a catalogue that somehow holds duplicates
+    /// resolves the same way every time instead of at the database's whim — the export would throw on
+    /// such a duplicate, and quietly picking a different row on each run is the one outcome worse than
+    /// either.
+    /// </summary>
+    /// <param name="candidates">
+    /// The catalogue to search. An <see cref="IQueryable"/> so the trigger can pass a DbSet and have
+    /// this run as one server-side query, while the sweep passes a pre-loaded list.
+    /// </param>
+    public static LabourRateMapping? SelectLabourRateMapping(
+        IQueryable<LabourRateMapping> candidates, long? brandId, decimal labourRate) =>
+        candidates
             .Where(mapping => !mapping.IsDeleted && mapping.BrandID == brandId && mapping.LabourRate == labourRate)
             .OrderBy(mapping => mapping.ID)
             .FirstOrDefault();
 
-        var brandMapping = database.Set<BrandMapping>()
-            .AsNoTracking()
+    /// <summary>
+    /// The brand's mapping, or null when the brand is unmapped — valid, and the generator falls back to
+    /// the "Z" abbreviation. Same live-only, deterministic-order rules as
+    /// <see cref="SelectLabourRateMapping"/>.
+    /// </summary>
+    public static BrandMapping? SelectBrandMapping(IQueryable<BrandMapping> candidates, long? brandId) =>
+        candidates
             .Where(mapping => !mapping.IsDeleted && mapping.BrandID == brandId)
             .OrderBy(mapping => mapping.ID)
             .FirstOrDefault();
-
-        return new MenuVariantMasterData(labourRateMapping, brandMapping);
-    }
 }
