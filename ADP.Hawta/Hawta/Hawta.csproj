@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<Import Project="..\..\GlobalSettings.props" />
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<LangVersion>latest</LangVersion>
+		<RootNamespace>ShiftSoftware.ADP.Hawta</RootNamespace>
+		<Authors>Shift Software</Authors>
+		<Product>ADP.Hawta</Product>
+		<Version>$(ADPVersion)</Version>
+		<IsPackable>true</IsPackable>
+		<AssemblyName>ShiftSoftware.ADP.Hawta</AssemblyName>
+		<PackageId>ShiftSoftware.ADP.Hawta</PackageId>
+		<Title>ShiftSoftware ADP.Hawta</Title>
+		<Description>Hawta is the ADP data-alignment engine for snapshot ingestion, change detection, publishing, and downstream replication.</Description>
+		<Copyright>Copyright (c) Shift Software 2026</Copyright>
+		<PackageProjectUrl>https://github.com/ShiftSoftware/ADP</PackageProjectUrl>
+		<PackageIcon>icon.png</PackageIcon>
+		<RepositoryUrl>https://github.com/ShiftSoftware/ADP</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageTags>shift;shiftsoftware;adp;hawta;data;ingestion;snapshot;alignment;sync</PackageTags>
+		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="Images\icon.png" Pack="true" PackagePath="\" />
+	</ItemGroup>
+</Project>

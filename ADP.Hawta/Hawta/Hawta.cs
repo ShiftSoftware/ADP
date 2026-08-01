@@ -1,0 +1,2 @@
+namespace ShiftSoftware.ADP.Hawta;
+
