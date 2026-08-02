@@ -48,6 +48,17 @@ public class ServiceMenusProvisioningTests
     /// <summary>Kept short so a misconfigured endpoint skips promptly instead of stalling a test run.</summary>
     private static readonly TimeSpan ConnectTimeout = TimeSpan.FromSeconds(10);
 
+    /// <summary>
+    /// RU/s the Services database is created with — shared across all seven containers rather than each
+    /// needing its own. Sized for the backfill: <c>replicate-all</c> writes the whole catalogue
+    /// concurrently with bulk execution on, and a small pool makes it fail rows silently and take
+    /// several runs to converge (COSMOS_REPLICATION_PLAN.md §18).
+    ///
+    /// Matches the sample API's own provisioning, so a developer's emulator comes out the same way
+    /// whichever one created the database first.
+    /// </summary>
+    private const int DatabaseThroughput = 25000;
+
     [Fact]
     public async Task CreatesEveryServiceMenuContainerIfMissing()
     {
@@ -76,8 +87,12 @@ public class ServiceMenusProvisioningTests
         {
             // The same call a host makes. A container that exists with the wrong partition key makes
             // this THROW InvalidOperationException — which is a test failure, not a skip.
+            //
+            // The throughput only applies when this call CREATES the database; it is ignored for one
+            // that already exists, so re-running against a provisioned account changes nothing.
             report = await MenuCosmosProvisioning.EnsureContainersAsync(
                 client,
+                databaseThroughput: ThroughputProperties.CreateManualThroughput(DatabaseThroughput),
                 cancellationToken: cancellation.Token);
         }
         catch (Exception exception) when (exception is CosmosException or HttpRequestException or TaskCanceledException)

@@ -24,8 +24,16 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<!-- For the opt-in Cosmos provisioning test. Every other test here is pure and offline. -->
+		<!-- For the opt-in Cosmos provisioning test. Most tests here are pure and offline. -->
 		<PackageReference Include="Microsoft.Azure.Cosmos" Version="3.62.0" />
+
+		<!--
+		  For the opt-in sample-data seeding test, which writes the demo catalogue into the sample's SQL
+		  database. ShiftIdentity.Data supplies ShiftIdentityDbContext and the Brand entity, so
+		  SampleSeedDB can reproduce the sample API's model without referencing the web app itself.
+		-->
+		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.10" />
+		<PackageReference Include="ShiftSoftware.ShiftIdentity.Data" Version="2026.7.28.1" />
 	</ItemGroup>
 
 	<ItemGroup>

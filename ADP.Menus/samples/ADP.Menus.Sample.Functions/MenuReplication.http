@@ -1,7 +1,7 @@
 @host = http://localhost:7071
 
 ### A basic model code that exists in your imported catalogue. Everything below uses it.
-@basicModelCode = AALH10
+@basicModelCode = AXAA54
 
 ### ─────────────────────────────── replicate ───────────────────────────────
 

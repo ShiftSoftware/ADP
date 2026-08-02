@@ -28,7 +28,7 @@ Projecting the menu catalog into Cosmos DB for the vehicle lookup — provisioni
 
 ## Sample app
 
-A working end-to-end sample lives in [`samples/ADP.Menus.Sample.API`](samples/ADP.Menus.Sample.API) and [`samples/ADP.Menus.Sample.Web`](samples/ADP.Menus.Sample.Web). It hosts ShiftIdentity internally (login with `SuperUser` / `OneTwo`) and seeds demo data on first run.
+A working end-to-end sample lives in [`samples/ADP.Menus.Sample.API`](samples/ADP.Menus.Sample.API) and [`samples/ADP.Menus.Sample.Web`](samples/ADP.Menus.Sample.Web). It hosts ShiftIdentity internally (login with `SuperUser` / `OneTwo`) and creates its schema on first run. Demo data is not seeded at startup — load it when you want it with `dotnet test ADP.Menus/ADP.Menus.Tests --filter SampleDataSeeding`, which adds only the rows the database is missing.
 
 ## License
 

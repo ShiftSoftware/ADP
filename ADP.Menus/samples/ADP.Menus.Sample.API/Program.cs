@@ -243,8 +243,28 @@ using (var scope = app.Services.CreateScope())
         //await db.Database.EnsureDeletedAsync();
     }
     await db.Database.EnsureCreatedAsync();
-    await db.SeedAsync();
+
+    // Nothing is seeded here any more, deliberately.
+    //
+    // Seeding at startup put demo rows into the database silently, and the replication trigger then
+    // copied them into Cosmos. Removing them again is the problem: the dev data import empties the
+    // [Menu] schema in raw SQL, so no trigger fires and the documents are left behind — a basic model
+    // code the lookup keeps serving that is nowhere in the database. Startup was also the wrong moment
+    // for it, since it ran against whatever catalogue happened to be loaded.
+    //
+    // The same data now lives in ADP.Menus.Tests as SampleDataSeedingTests, which you trigger yourself
+    // and which inserts only the rows that are missing:
+    //
+    //     dotnet test ADP.Menus/ADP.Menus.Tests --filter SampleDataSeeding
 }
+
+// RU/s the Services database is created with. Kept in step with ServiceMenusProvisioningTests, which
+// provisions the same way — a developer's emulator and this sample should not differ.
+//
+// Manual, and therefore billed flat: fine against the emulator this sample points at, and a real cost
+// on a real account. A host copying this should decide its own number (and consider autoscale, where
+// CreateAutoscaleThroughput reads the value as the MAXIMUM rather than a floor).
+const int MenuDatabaseThroughput = 25000;
 
 // Create the containers the menu replication writes to. Without them every replication attempt fails,
 // and because replication is fire-and-forget that failure is only a log line — the sample would look
@@ -265,8 +285,18 @@ if (cosmosIsConfigured)
         // One call creates the database and all seven containers and verifies each partition key.
         // MenuCosmosContainers.All is the single declaration of what to create and with which key —
         // a key cannot be changed after creation, so it is never retyped at a call site.
+        //
+        // Shared database throughput, so all seven containers draw from one pool rather than each
+        // needing its own. The backfill is what sizes it: replicate-all writes the whole catalogue
+        // concurrently with bulk execution on, and a small pool makes it fail rows silently and need
+        // several runs to converge (COSMOS_REPLICATION_PLAN.md §18 recorded 1060 of 1188 written).
+        //
+        // Applied ONLY when this call CREATES the database. CreateDatabaseIfNotExistsAsync ignores it
+        // for one that already exists, so raising it here does not re-scale an existing database —
+        // change that one on the account.
         var report = await MenuCosmosProvisioning.EnsureContainersAsync(
             app.Services.GetRequiredService<CosmosClient>(),
+            databaseThroughput: ThroughputProperties.CreateManualThroughput(MenuDatabaseThroughput),
             cancellationToken: provisioning.Token);
 
         cosmosLogger.LogInformation(
