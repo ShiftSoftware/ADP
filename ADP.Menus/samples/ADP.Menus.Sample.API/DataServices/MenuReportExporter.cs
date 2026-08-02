@@ -38,23 +38,30 @@ public class MenuReportExporter : IMenuReportExporter
             worksheet.Cell(index + 2, 8).Value = "";
             worksheet.Cell(index + 2, 9).Value = line.LabourCode;
 
+            // The labour the line bills, as the DMS layout carries it: the time, then what that time
+            // costs at this run's country rate. The rate itself is not a column — it is already folded
+            // into the price, and the labour code encodes the time — but both are what a DMS reconciles
+            // a menu against, so the sheet has to state them.
+            worksheet.Cell(index + 2, 10).Value = line.AllowedTime;
+            worksheet.Cell(index + 2, 11).Value = line.AllowedTime * line.LabourRate;
+
             for (int i = 0; i < numberOfParts; i++)
             {
                 var part = line.Parts.ElementAtOrDefault(i);
                 if (part is not null)
                 {
-                    worksheet.Cell(index + 2, 10 + i).Value = part.PartNumber;
-                    worksheet.Cell(index + 2, 10 + i + numberOfParts).Value = part.Quantity;
+                    worksheet.Cell(index + 2, 12 + i).Value = part.PartNumber;
+                    worksheet.Cell(index + 2, 12 + i + numberOfParts).Value = part.Quantity;
                 }
                 else
                 {
-                    worksheet.Cell(index + 2, 10 + i).Value = "";
-                    worksheet.Cell(index + 2, 10 + i + numberOfParts).Value = 0;
+                    worksheet.Cell(index + 2, 12 + i).Value = "";
+                    worksheet.Cell(index + 2, 12 + i + numberOfParts).Value = 0;
                 }
             }
 
-            worksheet.Cell(index + 2, 9 + (numberOfParts * 2) + 1).Value = "";
-            worksheet.Cell(index + 2, 9 + (numberOfParts * 2) + 2).Value = line.MenuTotalPrice;
+            worksheet.Cell(index + 2, 11 + (numberOfParts * 2) + 1).Value = "";
+            worksheet.Cell(index + 2, 11 + (numberOfParts * 2) + 2).Value = line.MenuTotalPrice;
         }
 
         // Save the workbook to a byte array
@@ -308,7 +315,13 @@ public class MenuReportExporter : IMenuReportExporter
         worksheet.Cell(1, 9).Value = "Labour RTS codes_1";
         worksheet.Cell(2, 9).Value = "LABOUR";
 
-        var lastColumnIndex = 9;
+        worksheet.Cell(1, 10).Value = "Allowed Time";
+        worksheet.Cell(2, 10).Value = "ALLOWED";
+
+        worksheet.Cell(1, 11).Value = "Labour Price";
+        worksheet.Cell(2, 11).Value = "LABPRICE";
+
+        var lastColumnIndex = 11;
 
         for (int i = 1; i <= numberOfParts; i++)
         {

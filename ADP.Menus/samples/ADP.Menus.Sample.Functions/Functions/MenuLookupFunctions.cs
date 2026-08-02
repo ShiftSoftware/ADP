@@ -44,10 +44,17 @@ public class MenuLookupFunctions
     /// a 404 — "this model has no menu" is an ordinary answer. It is also the first thing to check when
     /// the catalogue clearly HAS one: it means nothing has been replicated for that code yet, so run
     /// <c>POST api/replicate-all</c>.</para>
+    ///
+    /// <para><b>The route parameter is a catch-all, and has to be.</b> A basic model code is authored
+    /// free-text and real catalogues contain codes with a SLASH in them (a code covering two variants,
+    /// e.g. <c>ABC210/211</c>). Under an ordinary <c>{basicModelCode}</c> segment those codes are
+    /// unreachable — the slash splits the segment and the request 404s — so the models that need the
+    /// lookup most are exactly the ones it cannot answer for, silently. A catch-all takes the rest of
+    /// the path verbatim, which is what the partition key holds.</para>
     /// </summary>
     [Function(nameof(GetMenuByBasicModelCode))]
     public async Task<IActionResult> GetMenuByBasicModelCode(
-        [HttpTrigger(AuthorizationLevel.Function, "get", Route = "menu/{basicModelCode}")] HttpRequest request,
+        [HttpTrigger(AuthorizationLevel.Function, "get", Route = "menu/{*basicModelCode}")] HttpRequest request,
         string basicModelCode)
     {
         if (string.IsNullOrWhiteSpace(basicModelCode))
