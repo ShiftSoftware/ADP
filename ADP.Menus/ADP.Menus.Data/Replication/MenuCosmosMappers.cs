@@ -26,14 +26,14 @@ namespace ShiftSoftware.ADP.Menus.Data.Replication;
 ///    the replication stamp has a stable key.
 ///  • <c>IsDeleted</c> is carried, because soft deleting a row upserts its document rather than removing
 ///    it — only a hard delete removes one. Readers filter on it, embedded copies included.
-///  • Collections are carried UNFILTERED. These are pure projections, exactly like the export's
-///    <c>EfToGenerationAggregator</c>: they copy, they do not decide, so every inclusion rule stays in
-///    the generator where both consumers share it. That is not a stylistic preference — the export's
-///    query applies no soft-delete filter to any of its includes, so filtering here would silently give
-///    the lookup different menu codes from the export. (Dropping a soft-deleted interval from a group's
-///    membership, for instance, drops the whole periodic line the export still emits.) The two places
-///    the source itself filters — the labour-rate and brand mapping catalogues — are filtered by the
-///    caller that resolves them, matching the export.
+///  • Collections are carried UNFILTERED, and soft-deleted rows are REPLICATED rather than skipped.
+///    These are pure projections, exactly like the export's <c>EfToGenerationAggregator</c>: they copy,
+///    they do not decide. Whether a soft-deleted row contributes to a menu is decided once, by
+///    <c>MenuCodeGenerator</c>, so the DMS export and the vehicle lookup cannot disagree.
+///    Not replicating a deleted row would be worse than useless: the document already in Cosmos would
+///    simply go stale, since only a HARD delete removes one. The two places the source itself filters —
+///    the labour-rate and brand mapping catalogues — are filtered by the caller that resolves them,
+///    matching the export.
 ///
 /// Every navigation these methods touch must be loaded by the matching reload in
 /// <see cref="MenuReplicationReload"/>; a missing include silently produces a document with holes.
@@ -137,6 +137,11 @@ public static class MenuCosmosMappers
         LabourRate = variant.LabourRate,
         DiscountPercentage = variant.DiscountPercentage,
         HasStandaloneItems = variant.HasStandaloneItems,
+
+        // The export selects on BOTH flags, and deleting a menu does not cascade to its variants — so
+        // without this copy a deleted menu keeps serving menu codes from the lookup. See the field's
+        // remarks on MenuVariantCosmosModel.
+        MenuIsDeleted = variant.Menu?.IsDeleted ?? false,
 
         // Owned by the variant and never queried alone. Carried with their delete flags so the
         // generator, not this projection, decides which country rate applies.
@@ -319,11 +324,24 @@ public static class MenuCosmosMappers
             .ToList();
 
     /// <summary>
-    /// Every link, soft-deleted ones included — the export reads this navigation unfiltered, and the
-    /// generation contract carries the result as bare ids with no delete flag, so filtering here would
-    /// drop parts from periodic lines the export still prices.
+    /// The replacement item's LIVE interval-group links.
+    ///
+    /// <para><b>The one place this file filters a soft delete, and it has to.</b> Everywhere else the
+    /// projection carries the flag and the reader decides — but a link row has no document and no flag
+    /// anywhere in the document shape: it contributes only its group id to a flat
+    /// <c>List&lt;long&gt;</c>. So a deleted link that is projected is indistinguishable from a live one,
+    /// and the lookup would keep pricing parts onto periodic lines the export has stopped pricing.</para>
+    ///
+    /// <para>Filtering here rather than widening the shape is deliberate: the flat id list is what makes
+    /// the interval-group fan-out an <c>ARRAY_CONTAINS</c> instead of a scan (§17), and a deleted link's
+    /// group genuinely should no longer find this document.</para>
+    ///
+    /// <para>Mirrors <c>EfToGenerationAggregator.LiveIntervalGroupLinks</c>, minus the group's own flag —
+    /// that one stays a read-time decision, because a group can be deleted long after the item was last
+    /// replicated. <b>Note the usual caveat (§17): editing a link does not re-replicate its parent
+    /// replacement item, so this takes effect on the next save of that item or on a catch-up sweep.</b></para>
     /// </summary>
     private static IEnumerable<ReplacementItemServiceIntervalGroup> IntervalGroupLinks(
         ReplacementItem? replacementItem) =>
-        replacementItem?.ReplacementItemServiceIntervalGroups ?? [];
+        (replacementItem?.ReplacementItemServiceIntervalGroups ?? []).Where(link => !link.IsDeleted);
 }

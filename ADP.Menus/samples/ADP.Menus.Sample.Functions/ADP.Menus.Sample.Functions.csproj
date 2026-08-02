@@ -22,13 +22,17 @@
 	</ItemGroup>
 
 	<!--
-	  Only ADP.Menus.Data is needed: it ships both MenuDB (the menu tables' own DbContext) and the
-	  reusable catch-up replication. The sample API owns the write side (the save trigger) and this
-	  project owns the sweep side, but both drive the SAME projections — so there is nothing to
-	  reference between them.
+	  ADP.Menus.Data ships MenuDB (the menu tables' own DbContext) and the reusable catch-up
+	  replication. The sample API owns the write side (the save trigger) and this project owns the sweep
+	  side, but both drive the SAME projections — so there is nothing to reference between them.
+
+	  Lookup.Services is the READ side: it turns a basic model code back into menu codes and prices out
+	  of the documents the sweep above writes. Having both in one host is what makes this sample a full
+	  round trip — replicate, then read back what was replicated.
 	-->
 	<ItemGroup>
 		<ProjectReference Include="..\..\ADP.Menus.Data\ADP.Menus.Data.csproj" />
+		<ProjectReference Include="..\..\..\ADP.LookupServices\Lookup.Services\Lookup.Services.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

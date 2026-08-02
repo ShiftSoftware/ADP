@@ -36,6 +36,10 @@ public static class IServiceCollectionExtensions
         services.AddScoped(x => new PartLookupCosmosService(x.GetRequiredService<LookUpCosmosClient>(), options));
         services.AddScoped(x => new ServiceCosmosService(x.GetRequiredService<LookUpCosmosClient>()));
 
+        // Service menus are NOT registered here. They are a self-contained feature over their own Cosmos
+        // containers with their own ServiceMenuLookupOptions, so a host opts in with AddServiceMenuLookup.
+        // This registration will call it once menus become part of the vehicle lookup result.
+
         return services;
     }
 

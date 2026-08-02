@@ -10,11 +10,20 @@ namespace ShiftSoftware.ADP.Menus.Data.DataServices;
 /// built from Cosmos documents — feeding the one shared <see cref="MenuCodeGenerator"/>. See
 /// COSMOS_REPLICATION_PLAN.md §1.1.
 ///
-/// A PURE PROJECTION, and that is the whole point: it copies, it does not decide. In particular it
-/// does NOT filter soft-deleted rows and does not reorder anything, so every inclusion rule and every
-/// "first match wins" tie-break stays in the generator where both consumers share it. Adding a
-/// <c>Where(x =&gt; !x.IsDeleted)</c> here would silently give the export different rules from the
-/// lookup — exactly the drift this design exists to prevent.
+/// <b>SOFT-DELETED ROWS ARE FILTERED OUT HERE</b>, on every table, so the generator receives live rows
+/// only and never reasons about deletion. Its Cosmos twin does the identical filtering, and the two are
+/// held in step by <c>ReplicateThenRead_AgreesWithTheExport_WhenARowIsSoftDeleted</c>, which
+/// soft-deletes one row of each table in turn and asserts both paths still produce identical output.
+/// <b>Add a table to the replication and you must add it to both adapters and to that test.</b>
+///
+/// This is also the point where the filtering can be pushed down into the caller's SQL query as a load
+/// optimisation. It cannot be pushed down entirely — EF filtered includes only work on collection
+/// navigations, and "keep the item but drop its deleted standalone group" is not expressible that way —
+/// so this method stays the authority either way.
+///
+/// Beyond the delete filter it is a PURE PROJECTION: it copies, it does not decide, and it reorders
+/// nothing, so every remaining inclusion rule and every "first match wins" tie-break stays in the
+/// generator where both consumers share it.
 ///
 /// Two consequences worth knowing:
 ///
@@ -48,7 +57,11 @@ public static class EfToGenerationAggregator
         ArgumentNullException.ThrowIfNull(labourRateMappings);
         ArgumentNullException.ThrowIfNull(brandMappings);
 
-        var variants = menuVariants.ToList();
+        // The two row-level filters the export's own query applies, repeated here so the rule holds for
+        // any caller — including one that loads variants without them.
+        var variants = menuVariants
+            .Where(variant => !variant.IsDeleted && !variant.Menu.IsDeleted)
+            .ToList();
         var intervals = new Dictionary<long, MenuGenerationServiceInterval>();
         var groups = new Dictionary<long, MenuGenerationServiceIntervalGroup>();
 
@@ -59,19 +72,19 @@ public static class EfToGenerationAggregator
         // partially-loaded graph produce periodic lines the export never emitted.
         foreach (var variant in variants)
         {
-            foreach (var period in variant.PeriodicAvailabilities)
+            foreach (var period in LivePeriods(variant))
                 AddInterval(period.ServiceInterval, intervals);
 
-            foreach (var labour in variant.LabourDetails)
+            foreach (var labour in LiveLabours(variant))
                 AddGroup(labour.ServiceIntervalGroup, groups);
 
-            foreach (var item in variant.Items)
+            foreach (var item in LiveItems(variant))
             {
                 var replacementItem = item.ReplacementItemVehicleModel?.ReplacementItem;
                 if (replacementItem is null)
                     continue;
 
-                foreach (var membership in replacementItem.ReplacementItemServiceIntervalGroups)
+                foreach (var membership in LiveIntervalGroupLinks(replacementItem))
                     AddGroup(membership.ServiceIntervalGroup, groups);
             }
         }
@@ -111,24 +124,59 @@ public static class EfToGenerationAggregator
         LabourRate = source.LabourRate,
         DiscountPercentage = source.DiscountPercentage,
         HasStandaloneItems = source.HasStandaloneItems,
-        CountryLabourRates = source.LabourRates.Select(x => new MenuGenerationCountryLabourRate
-        {
-            CountryID = x.CountryID,
-            LabourRate = x.LabourRate,
-            IsDeleted = x.IsDeleted,
-        }).ToList(),
-        Periods = source.PeriodicAvailabilities.Select(x => new MenuGenerationPeriod
+        CountryLabourRates = source.LabourRates
+            .Where(x => !x.IsDeleted)
+            .Select(x => new MenuGenerationCountryLabourRate
+            {
+                CountryID = x.CountryID,
+                LabourRate = x.LabourRate,
+            }).ToList(),
+        Periods = LivePeriods(source).Select(x => new MenuGenerationPeriod
         {
             ServiceIntervalID = x.ServiceIntervalID,
         }).ToList(),
-        Labours = source.LabourDetails.Select(x => new MenuGenerationLabour
+        Labours = LiveLabours(source).Select(x => new MenuGenerationLabour
         {
             ServiceIntervalGroupID = x.ServiceIntervalGroupID,
             AllowedTime = x.AllowedTime,
             Consumable = x.Consumable,
         }).ToList(),
-        Items = source.Items.Select(MapItem).ToList(),
+        Items = LiveItems(source).Select(MapItem).ToList(),
     };
+
+    // ---- the delete filters ------------------------------------------------------------------------
+    // One named method per table, so the Cosmos adapter's equivalents can be read against them side by
+    // side. These are the whole of the export's soft-delete rule.
+
+    /// <summary>A deleted availability, or one whose service interval is deleted, produces no line.</summary>
+    private static IEnumerable<MenuPeriodicAvailability> LivePeriods(MenuVariant variant) =>
+        variant.PeriodicAvailabilities.Where(x => !x.IsDeleted && !x.ServiceInterval.IsDeleted);
+
+    /// <summary>A deleted labour detail — or one whose interval group is deleted — supplies nothing.</summary>
+    private static IEnumerable<MenuLabourDetails> LiveLabours(MenuVariant variant) =>
+        variant.LabourDetails.Where(x => !x.IsDeleted && !x.ServiceIntervalGroup.IsDeleted);
+
+    /// <summary>
+    /// An item participates only when the item row, its replacement-item LINK and the replacement item
+    /// ITSELF are all live. An item with no link at all is excluded too — the source's null guard.
+    /// </summary>
+    private static IEnumerable<MenuItem> LiveItems(MenuVariant variant) =>
+        variant.Items.Where(item =>
+            !item.IsDeleted
+            && item.ReplacementItemVehicleModel is not null
+            && !item.ReplacementItemVehicleModel.IsDeleted
+            && !(item.ReplacementItemVehicleModel.ReplacementItem?.IsDeleted ?? false));
+
+    /// <summary>
+    /// A replacement item's live interval-group links.
+    ///
+    /// This MUST be the same set the reference dictionary is built from. The generator looks a group up
+    /// with an INDEXER, so an id left on the item without a matching dictionary entry throws instead of
+    /// being skipped — one method used by both is what stops the two diverging.
+    /// </summary>
+    private static IEnumerable<ReplacementItemServiceIntervalGroup> LiveIntervalGroupLinks(ReplacementItem replacementItem) =>
+        replacementItem.ReplacementItemServiceIntervalGroups
+            .Where(x => !x.IsDeleted && !x.ServiceIntervalGroup.IsDeleted);
 
     private static MenuGenerationItem MapItem(MenuItem source)
     {
@@ -139,18 +187,16 @@ public static class EfToGenerationAggregator
         return new MenuGenerationItem
         {
             MenuItemID = source.ID,
-            IsDeleted = source.IsDeleted,
-            HasReplacementItem = replacementVehicleModel is not null,
-            ReplacementItemDeleted = replacementVehicleModel?.IsDeleted ?? false,
             StandaloneAllowedTime = source.StandaloneAllowedTime,
-            ReplacementItemServiceIntervalGroupIDs = replacementItem?
-                .ReplacementItemServiceIntervalGroups
-                .Select(x => x.ServiceIntervalGroupID)
-                .ToList() ?? [],
+            ReplacementItemServiceIntervalGroupIDs = replacementItem is null
+                ? []
+                : LiveIntervalGroupLinks(replacementItem).Select(x => x.ServiceIntervalGroupID).ToList(),
             StandaloneOperationCode = replacementItem?.StandaloneOperationCode,
             StandaloneLabourCode = replacementItem?.StandaloneLabourCode,
             FriendlyName = replacementItem?.FriendlyName,
-            StandaloneGroup = standaloneGroup is null
+            // A deleted group counts as NO group, so the item falls back to an ungrouped standalone line
+            // rather than disappearing: deleting a grouping withdraws the grouping, not the items.
+            StandaloneGroup = standaloneGroup is null || standaloneGroup.IsDeleted
                 ? null
                 : new MenuGenerationStandaloneGroup
                 {
@@ -159,20 +205,20 @@ public static class EfToGenerationAggregator
                     LabourCode = standaloneGroup.LabourCode,
                     Name = standaloneGroup.Name,
                 },
-            Parts = source.Parts.Select(x => new MenuGenerationPart
+            Parts = source.Parts.Where(x => !x.IsDeleted).Select(x => new MenuGenerationPart
             {
                 PartNumber = x.PartNumber,
-                IsDeleted = x.IsDeleted,
                 SortOrder = x.SortOrder,
                 PeriodicQuantity = x.PeriodicQuantity,
                 StandaloneQuantity = x.StandaloneQuantity,
-                CountryPrices = (x.CountryPrices ?? []).Select(price => new MenuGenerationPartPrice
-                {
-                    CountryID = price.CountryID,
-                    IsDeleted = price.IsDeleted,
-                    PartPrice = price.PartPrice,
-                    PartFinalPrice = price.PartFinalPrice,
-                }).ToList(),
+                CountryPrices = (x.CountryPrices ?? [])
+                    .Where(price => !price.IsDeleted)
+                    .Select(price => new MenuGenerationPartPrice
+                    {
+                        CountryID = price.CountryID,
+                        PartPrice = price.PartPrice,
+                        PartFinalPrice = price.PartFinalPrice,
+                    }).ToList(),
             }).ToList(),
         };
     }
@@ -184,7 +230,9 @@ public static class EfToGenerationAggregator
         groups[source.ID] = new MenuGenerationServiceIntervalGroup
         {
             LabourCode = source.LabourCode,
-            ServiceIntervalIDs = (source.ServiceIntervals ?? []).Select(x => x.ID).ToHashSet(),
+            // Deleted intervals are not members. A period naming one is already gone, but the membership
+            // is also what a labour detail matches on, so leaving it here would resurrect the line.
+            ServiceIntervalIDs = (source.ServiceIntervals ?? []).Where(x => !x.IsDeleted).Select(x => x.ID).ToHashSet(),
         };
     }
 

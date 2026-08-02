@@ -54,7 +54,7 @@ public class CountryProvider : IMenuCountryProvider
 }
 ```
 
-The package adapts its UI and exports to the **size** of this list — see [Country modes](#country-modes-0--1--n) below.
+The package adapts its UI and exports to the **size** of this list — see [Country modes](#country-modes-0-1-n) below.
 
 ### 2. Wire it up in `Program.cs`
 

@@ -216,23 +216,27 @@ public class EfToGenerationAggregatorTests
     }
 
     /// <summary>
-    /// Soft-delete state is carried into the generic request rather than filtered out by the adapter, so
-    /// the generator stays the single owner of every inclusion rule (see
-    /// <see cref="MenuGenerationRequest"/>). The rows must be PRESENT in the request and ABSENT from the
-    /// generated lines.
+    /// Soft-deleted rows are filtered out BY THE ADAPTER, so the generation request holds live rows only
+    /// and the generator never reasons about deletion (see <see cref="MenuGenerationRequest"/>).
+    ///
+    /// The rows must therefore be ABSENT from the request itself — not merely absent from the generated
+    /// lines, which a generator-side filter would also achieve. Asserting on the request is what pins
+    /// WHERE the rule lives.
     /// </summary>
     [Fact]
-    public void SoftDeleteState_IsCarriedIntoTheRequest_NotFilteredByTheAdapter()
+    public void SoftDeletedRows_AreFilteredOutByTheAdapter_NotLeftToTheGenerator()
     {
         var request = Aggregate(MenuGraphFixture.Build());
         var variant = request.Variants.Single();
 
-        Assert.Contains(variant.Items, item => item.MenuItemID == 903 && item.IsDeleted);
-        Assert.Contains(variant.Items, item => item.MenuItemID == 904 && item.ReplacementItemDeleted);
-        Assert.Contains(variant.Items, item => item.MenuItemID == 905 && !item.HasReplacementItem);
-        Assert.Contains(variant.CountryLabourRates, rate => rate.IsDeleted);
-        Assert.Contains(variant.Items.SelectMany(item => item.Parts), part => part.IsDeleted);
-        Assert.Contains(variant.Items.SelectMany(item => item.Parts).SelectMany(part => part.CountryPrices), price => price.IsDeleted);
+        // 903 soft-deleted, 904 behind a soft-deleted link, 905 has no replacement item at all.
+        Assert.Equal([900, 901, 902], variant.Items.Select(item => item.MenuItemID));
+
+        Assert.Equal([2, 3], variant.CountryLabourRates.Select(rate => rate.CountryID));
+
+        var parts = variant.Items.SelectMany(item => item.Parts).ToList();
+        Assert.DoesNotContain(parts, part => part.PartNumber == "PN-0003");        // soft-deleted part
+        Assert.Equal(2, parts.Single(part => part.PartNumber == "PN-0001").CountryPrices.Count);   // one price soft-deleted
 
         var partNumbers = MenuCodeGenerator.Generate(request, Config())
             .SelectMany(line => line.Parts)
@@ -256,9 +260,9 @@ public class EfToGenerationAggregatorTests
         var variant = Aggregate(MenuGraphFixture.Build()).Variants.Single();
 
         Assert.Equal([501, 502, 503], variant.Periods.Select(x => x.ServiceIntervalID));
-        Assert.Equal([900, 901, 902, 903, 904, 905], variant.Items.Select(x => x.MenuItemID));
+        Assert.Equal([900, 901, 902], variant.Items.Select(x => x.MenuItemID));
         Assert.Equal(
-            ["PN-0001", "PN-0002", "PN-0003", "PN-0004"],
+            ["PN-0001", "PN-0002", "PN-0004"],
             variant.Items.Single(x => x.MenuItemID == 900).Parts.Select(x => x.PartNumber));
     }
 

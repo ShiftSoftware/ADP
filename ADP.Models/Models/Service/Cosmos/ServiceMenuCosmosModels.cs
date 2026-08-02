@@ -223,6 +223,21 @@ public class MenuVariantCosmosModel : IPartitionedItem
     public bool HasStandaloneItems { get; set; }
 
     /// <summary>
+    /// The PARENT MENU's soft-delete flag, flattened onto the variant.
+    ///
+    /// The DMS export selects variants with <c>!variant.IsDeleted &amp;&amp; !variant.Menu.IsDeleted</c>, so a
+    /// reader needs both to reproduce its line set. Deleting a menu does not cascade to its variants
+    /// (COSMOS_REPLICATION_PLAN.md §17, "deletes do not cascade"), so without this the variant document
+    /// stays <c>IsDeleted = false</c> and the lookup keeps serving menu codes for a deleted menu — with
+    /// no error anywhere. Carried here rather than resolved at read time because the reader sees one
+    /// partition and never the Menu row.
+    ///
+    /// Defaults to <c>false</c>, so documents written before this field existed keep their previous
+    /// behaviour until a catch-up sweep refreshes them.
+    /// </summary>
+    public bool MenuIsDeleted { get; set; }
+
+    /// <summary>
     /// Per-country labour rates, embedded — they are owned by the variant and never queried alone.
     /// Carried unfiltered, soft-delete flag and all, so the generator keeps owning the inclusion rule.
     /// </summary>

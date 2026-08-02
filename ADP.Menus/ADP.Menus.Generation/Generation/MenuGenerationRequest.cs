@@ -12,10 +12,17 @@ namespace ShiftSoftware.ADP.Menus.Generation;
 /// and maps <see cref="GeneratedMenuLine"/> back OUT to its own models, so the only thing shared
 /// between the DMS export and the vehicle lookup is the generation logic itself.
 ///
-/// Soft-delete flags are carried here (rather than expecting pre-filtered input) so that every
-/// inclusion/exclusion rule lives in the generator and cannot drift between consumers. A consumer
-/// whose source cannot contain deleted rows (e.g. the Cosmos reader, where replication has already
-/// removed them) simply leaves them at their <c>false</c> default.
+/// <b>This contains LIVE ROWS ONLY.</b> Every adapter filters soft-deleted rows out on the way in, so
+/// nothing here carries an <c>IsDeleted</c> and the generator never reasons about deletion — it applies
+/// menu rules to the data it is given. That keeps the generator about menu generation, and puts the
+/// "what counts as deleted" question where the data is loaded, which is where it can also be pushed
+/// down into the query.
+///
+/// The cost of that split is real and worth naming: the two adapters must agree, and nothing in the type
+/// system makes them. What holds them together is
+/// <c>ReplicateThenRead_AgreesWithTheExport_WhenARowIsSoftDeleted</c>, which soft-deletes one row of
+/// each table in turn and asserts the export and the lookup still produce identical output. Add a table
+/// to the replication and you must add it there too.
 /// </summary>
 public class MenuGenerationRequest
 {
@@ -77,7 +84,6 @@ public class MenuGenerationCountryLabourRate
 {
     public long CountryID { get; set; }
     public decimal LabourRate { get; set; }
-    public bool IsDeleted { get; set; }
 }
 
 /// <summary>A service interval the variant is periodically available for.</summary>
@@ -100,16 +106,6 @@ public class MenuGenerationLabour
 public class MenuGenerationItem
 {
     public long MenuItemID { get; set; }
-    public bool IsDeleted { get; set; }
-
-    /// <summary>
-    /// False when the item has no replacement-item link at all. Such items are excluded, mirroring the
-    /// source's null-navigation guard.
-    /// </summary>
-    public bool HasReplacementItem { get; set; }
-
-    /// <summary>True when the replacement-item link is soft-deleted; such items are excluded.</summary>
-    public bool ReplacementItemDeleted { get; set; }
 
     public decimal StandaloneAllowedTime { get; set; }
 
@@ -149,7 +145,6 @@ public class MenuGenerationStandaloneGroup
 public class MenuGenerationPart
 {
     public string PartNumber { get; set; }
-    public bool IsDeleted { get; set; }
 
     /// <summary>Authored order within the item. Carried through to the result; not used for sorting.</summary>
     public int SortOrder { get; set; }
@@ -166,7 +161,6 @@ public class MenuGenerationPart
 public class MenuGenerationPartPrice
 {
     public long CountryID { get; set; }
-    public bool IsDeleted { get; set; }
 
     /// <summary>Dealer cost.</summary>
     public decimal? PartPrice { get; set; }

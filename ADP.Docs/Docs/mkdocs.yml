@@ -60,6 +60,7 @@ nav:
       - Menu Generation: menus/menu-generation.md
       - Integration: menus/integration.md
       - Cosmos Replication: menus/cosmos-replication.md
+      - Service Menu Lookup: menus/service-menu-lookup.md
   - Surveys:
       - Triggers & Scheduler: surveys/triggers-and-scheduler.md
   - Architecture:
@@ -163,6 +164,7 @@ nav:
       - Lookup Services:
           - Configuration:
               - Lookup Options: generated/LookupServices/LookupOptions.md
+              - Service Menu Lookup Options: generated/LookupServices/ServiceMenuLookupOptions.md
           - Vehicle Lookup:
               - Vehicle Lookup Result: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleLookupDTO.md
               - Vehicle Identifiers: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleIdentifiersDTO.md
@@ -200,6 +202,14 @@ nav:
               - Update Manufacturer Lookup Status: generated/LookupServices/DTOsAndModels/Part/UpdateManufacturerPartLookupStatusDTO.md
           - Service Lookup:
               - Flat Rate: generated/LookupServices/DTOsAndModels/Service/FlatRateDTO.md
+          - Service Menu Lookup:
+              - Service Menu Result: generated/LookupServices/DTOsAndModels/ServiceMenu/ServiceMenuLookupDTO.md
+              - Menu Variant: generated/LookupServices/DTOsAndModels/ServiceMenu/ServiceMenuVariantDTO.md
+              - Menu Line: generated/LookupServices/DTOsAndModels/ServiceMenu/ServiceMenuLineDTO.md
+              - Menu Line Part: generated/LookupServices/DTOsAndModels/ServiceMenu/ServiceMenuPartDTO.md
+              - Menu Line Type: generated/LookupServices/DTOsAndModels/ServiceMenu/ServiceMenuLineType.md
+              - Lookup Request: generated/LookupServices/DTOsAndModels/ServiceMenu/ServiceMenuLookupRequest.md
+              - Country Settings: generated/LookupServices/DTOsAndModels/ServiceMenu/ServiceMenuCountrySettings.md
           - SSC Lookup:
               - SSC Lookup Statuses: generated/LookupServices/DTOsAndModels/SSC/SSCLookupStatuses.md
               - TMC SaRII Response: generated/LookupServices/DTOsAndModels/SSC/TMCSaRIIResponse.md

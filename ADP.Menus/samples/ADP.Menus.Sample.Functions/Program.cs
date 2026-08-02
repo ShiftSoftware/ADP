@@ -1,9 +1,11 @@
+using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
+using ShiftSoftware.ADP.Lookup.Services.Extensions;
 using ShiftSoftware.ADP.Menus.Sample.Functions;
 
 // The sweep half of the menu → Cosmos replication. The sample API replicates on save (the trigger);
@@ -32,6 +34,42 @@ var host = new HostBuilder()
 
         // Registers the CosmosDBReplication service the timers and the HTTP endpoint drive.
         services.AddShiftEntityCosmosDbReplication<MenuReplicationDB>();
+
+        // ---------- the READ side ----------
+        // The lookup turns a basic model code back into menu codes and prices, out of the very
+        // documents the sweep above writes — so this host is a full round trip.
+
+        // Registered UNCONDITIONALLY, unlike the replication timers. Those fire on a schedule, so an
+        // unconfigured host would log an error every hour for something nobody asked for; the lookup
+        // only runs when someone calls it, and then a missing connection string is a fault worth
+        // hearing about. Gating this instead would mean either a service the function cannot inject, or
+        // a cheerful 200 saying "no menu" — which is exactly the misconfiguration-hiding answer the
+        // lookup already refuses to give for an unprovisioned container.
+        //
+        // The factory defers reading the connection string until something actually needs Cosmos, and
+        // says what to do about it rather than failing as an opaque DI error.
+        services.AddSingleton(provider =>
+        {
+            var connectionString = provider.GetRequiredService<IConfiguration>().GetConnectionString("Cosmos");
+
+            if (string.IsNullOrWhiteSpace(connectionString))
+                throw new InvalidOperationException(
+                    "ConnectionStrings:Cosmos is not set, so the service-menu lookup cannot read. Set it in "
+                    + "local.settings.json (the Azure Cosmos DB Emulator's endpoint and key are already there "
+                    + "by default) and restart the host.");
+
+            return new CosmosClient(connectionString);
+        });
+
+        // Its own registration and its own options — service menus are self-contained over their own
+        // containers, so a host opts into them without taking the whole vehicle lookup.
+        services.AddServiceMenuLookup(options =>
+        {
+            // The sample's data is authored without country-specific prices, so country 0 is what its
+            // part prices are stored under. A multi-country deployment sets this to its own id and wires
+            // ServiceMenuLookupOptions.CountrySettingsResolver.
+            options.DefaultCountryID = 0;
+        });
     })
     .Build();
 

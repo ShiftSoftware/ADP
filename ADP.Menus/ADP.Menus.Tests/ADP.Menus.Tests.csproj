@@ -31,6 +31,15 @@
 	<ItemGroup>
 		<ProjectReference Include="..\ADP.Menus.Data\ADP.Menus.Data.csproj" />
 		<ProjectReference Include="..\ADP.Menus.Generation\ADP.Menus.Generation.csproj" />
+
+		<!--
+		  The vehicle lookup's read side. It lives here rather than in Lookup.Services.Tests because the
+		  test that matters most is DIFFERENTIAL — it runs one menu graph through the DMS export and
+		  through the whole replicate-then-read path and compares the menu codes. That comparison needs
+		  both sides visible in one assembly, and this project already has the export side and the
+		  fixtures. It is also the project CI runs.
+		-->
+		<ProjectReference Include="..\..\ADP.LookupServices\Lookup.Services\Lookup.Services.csproj" />
 	</ItemGroup>
 
 </Project>

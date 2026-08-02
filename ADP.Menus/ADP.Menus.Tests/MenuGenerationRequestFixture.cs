@@ -17,6 +17,13 @@ namespace ShiftSoftware.ADP.Menus.Tests;
 ///
 /// Keep the two fixtures in lockstep: a change to one without the other makes the differential tests
 /// fail for the wrong reason.
+///
+/// <b>This holds LIVE ROWS ONLY</b>, which is why it is not a row-for-row copy of the EF fixture. The
+/// contract carries no <c>IsDeleted</c> — the adapters filter — so the soft-deleted rows
+/// <see cref="MenuGraphFixture"/> deliberately contains (a deleted item, link, part, country price and
+/// country labour rate) simply have no representation here. That the ADAPTER removes them is tested by
+/// <see cref="EfToGenerationAggregatorTests"/> and by the Phase 0 goldens, which run the EF graph
+/// end to end.
 /// </summary>
 internal static class MenuGenerationRequestFixture
 {
@@ -52,7 +59,6 @@ internal static class MenuGenerationRequestFixture
             [
                 new MenuGenerationCountryLabourRate { CountryID = 2, LabourRate = 20.00m },
                 new MenuGenerationCountryLabourRate { CountryID = 3, LabourRate = 30.00m },
-                new MenuGenerationCountryLabourRate { CountryID = 2, LabourRate = 999.00m, IsDeleted = true },
             ],
 
             // 503 belongs to group 20, for which there are no labour details → no periodic line.
@@ -74,7 +80,6 @@ internal static class MenuGenerationRequestFixture
                 new MenuGenerationItem
                 {
                     MenuItemID = 900,
-                    HasReplacementItem = true,
                     StandaloneAllowedTime = 0.25m,
                     ReplacementItemServiceIntervalGroupIDs = [10],
                     StandaloneOperationCode = """{"en":"OPA","ar":"OPAA"}""",
@@ -90,18 +95,12 @@ internal static class MenuGenerationRequestFixture
                             [
                                 new MenuGenerationPartPrice { CountryID = 2, PartPrice = 5.500m, PartFinalPrice = 7.250m },
                                 new MenuGenerationPartPrice { CountryID = 3, PartPrice = 6.000m, PartFinalPrice = 8.000m },
-                                new MenuGenerationPartPrice { CountryID = 2, PartPrice = 999m, PartFinalPrice = 999m, IsDeleted = true },
                             ],
                         },
                         new MenuGenerationPart
                         {
                             PartNumber = "PN-0002", SortOrder = 1, PeriodicQuantity = 0m, StandaloneQuantity = 3m,
                             CountryPrices = [new MenuGenerationPartPrice { CountryID = 2, PartPrice = 2.000m, PartFinalPrice = 3.000m }],
-                        },
-                        new MenuGenerationPart
-                        {
-                            PartNumber = "PN-0003", IsDeleted = true, SortOrder = 2, PeriodicQuantity = 5m, StandaloneQuantity = 5m,
-                            CountryPrices = [new MenuGenerationPartPrice { CountryID = 2, PartPrice = 50m, PartFinalPrice = 60m }],
                         },
                         new MenuGenerationPart
                         {
@@ -116,7 +115,6 @@ internal static class MenuGenerationRequestFixture
                 new MenuGenerationItem
                 {
                     MenuItemID = 901,
-                    HasReplacementItem = true,
                     StandaloneAllowedTime = 0.75m,
                     ReplacementItemServiceIntervalGroupIDs = [10],
                     StandaloneOperationCode = "OPB",
@@ -138,7 +136,6 @@ internal static class MenuGenerationRequestFixture
                 new MenuGenerationItem
                 {
                     MenuItemID = 902,
-                    HasReplacementItem = true,
                     StandaloneAllowedTime = 0.90m,
                     ReplacementItemServiceIntervalGroupIDs = [20],
                     StandaloneOperationCode = "OPC",
@@ -155,63 +152,6 @@ internal static class MenuGenerationRequestFixture
                     ],
                 },
 
-                // Soft-deleted menu item → excluded.
-                new MenuGenerationItem
-                {
-                    MenuItemID = 903,
-                    IsDeleted = true,
-                    HasReplacementItem = true,
-                    StandaloneAllowedTime = 0.10m,
-                    ReplacementItemServiceIntervalGroupIDs = [10],
-                    StandaloneOperationCode = "OPA",
-                    StandaloneLabourCode = "SLA",
-                    FriendlyName = "Item A Friendly",
-                    Parts =
-                    [
-                        new MenuGenerationPart
-                        {
-                            PartNumber = "PN-0031", PeriodicQuantity = 9m, StandaloneQuantity = 9m,
-                            CountryPrices = [new MenuGenerationPartPrice { CountryID = 2, PartPrice = 90m, PartFinalPrice = 90m }],
-                        },
-                    ],
-                },
-
-                // Soft-deleted replacement-item link → excluded.
-                new MenuGenerationItem
-                {
-                    MenuItemID = 904,
-                    HasReplacementItem = true,
-                    ReplacementItemDeleted = true,
-                    StandaloneAllowedTime = 0.10m,
-                    ReplacementItemServiceIntervalGroupIDs = [10],
-                    StandaloneOperationCode = "OPD",
-                    StandaloneLabourCode = "SLD",
-                    FriendlyName = "Item D Friendly",
-                    Parts =
-                    [
-                        new MenuGenerationPart
-                        {
-                            PartNumber = "PN-0041", PeriodicQuantity = 9m, StandaloneQuantity = 9m,
-                            CountryPrices = [new MenuGenerationPartPrice { CountryID = 2, PartPrice = 91m, PartFinalPrice = 91m }],
-                        },
-                    ],
-                },
-
-                // No replacement-item link at all → excluded.
-                new MenuGenerationItem
-                {
-                    MenuItemID = 905,
-                    HasReplacementItem = false,
-                    StandaloneAllowedTime = 0.10m,
-                    Parts =
-                    [
-                        new MenuGenerationPart
-                        {
-                            PartNumber = "PN-0051", PeriodicQuantity = 9m, StandaloneQuantity = 9m,
-                            CountryPrices = [new MenuGenerationPartPrice { CountryID = 2, PartPrice = 92m, PartFinalPrice = 92m }],
-                        },
-                    ],
-                },
             ],
         };
 

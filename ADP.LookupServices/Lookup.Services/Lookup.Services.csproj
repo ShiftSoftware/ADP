@@ -31,6 +31,7 @@
 		<PackageReference Include="Microsoft.Azure.Cosmos" Version="3.62.0" />
 		<PackageReference Include="Microsoft.Bcl.TimeProvider" Version="10.0.10" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.10" />
+		<PackageReference Include="Microsoft.Extensions.Options" Version="10.0.10" />
 		<PackageReference Include="ShiftSoftware.ADP.Models" Version="$(ADPVersion)" Condition="!Exists('..\..\ADP.Models\Models\Models.csproj')" />
 		<PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
 	</ItemGroup>
@@ -48,5 +49,18 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\ADP.Models\Models\Models.csproj" Condition="Exists('..\..\ADP.Models\Models\Models.csproj')" />
+	</ItemGroup>
+
+	<!--
+	  The shared service-menu generator. The lookup MUST produce menu codes byte-identical to the DMS
+	  export, so it calls the very same MenuCodeGenerator the export calls rather than reimplementing
+	  the fold — which is the whole reason that assembly exists and is netstandard2.0.
+	  See ADP.Menus/COSMOS_REPLICATION_PLAN.md §1.1 and §1.2.
+	-->
+	<ItemGroup>
+		<ProjectReference Include="..\..\ADP.Menus\ADP.Menus.Generation\ADP.Menus.Generation.csproj"
+		                  Condition="Exists('..\..\ADP.Menus\ADP.Menus.Generation\ADP.Menus.Generation.csproj')" />
+		<PackageReference Include="ShiftSoftware.ADP.Menus.Generation" Version="$(ADPVersion)"
+		                  Condition="!Exists('..\..\ADP.Menus\ADP.Menus.Generation\ADP.Menus.Generation.csproj')" />
 	</ItemGroup>
 </Project>

@@ -33,12 +33,28 @@
 	</ItemGroup>
 
 	<!--
-	  Deliberately dependency-light: POCO models + pure logic only. No FluentValidation, no EF, no
-	  ShiftEntity. The lookup takes a hard dependency on this assembly, so anything added here is added
-	  to the lookup too.
+	  Deliberately dependency-light: POCO models + pure logic only. No FluentValidation, no EF. The
+	  lookup takes a hard dependency on this assembly, so anything added here is added to the lookup too.
 	-->
 	<ItemGroup>
 		<PackageReference Include="System.Text.Json" Version="10.0.10" />
+	</ItemGroup>
+
+	<!--
+	  ADP.Models, for the layer-2 Cosmos document types that CosmosToGenerationAggregator reads
+	  (COSMOS_REPLICATION_PLAN.md §1.2/§2.1). One-way: ADP.Models knows nothing about menus.
+
+	  Note this is not quite as free as §2.1 assumed — ADP.Models itself carries ShiftEntity.Model,
+	  FileHelpers, libphonenumber and BouncyCastle. It costs the two real consumers nothing (the DMS
+	  export and the vehicle lookup both already reference ADP.Models), but a consumer that wanted ONLY
+	  the pure generator now pulls that chain too. Accepted deliberately: the alternative is a third
+	  package for one file, or duplicating the adapter in every Cosmos consumer.
+	-->
+	<ItemGroup>
+		<ProjectReference Include="..\..\ADP.Models\Models\Models.csproj"
+		                  Condition="Exists('..\..\ADP.Models\Models\Models.csproj')" />
+		<PackageReference Include="ShiftSoftware.ADP.Models" Version="$(ADPVersion)"
+		                  Condition="!Exists('..\..\ADP.Models\Models\Models.csproj')" />
 	</ItemGroup>
 
 </Project>

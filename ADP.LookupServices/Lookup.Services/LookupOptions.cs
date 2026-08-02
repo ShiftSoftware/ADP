@@ -252,6 +252,11 @@ public class LookupOptions
     /// production deployment has its own Cosmos account and keeps the standard names (leave unset).
     /// </summary>
     public string? CosmosDatabaseNameSuffix { get; set; }
+
+    // Service-menu settings are NOT here — see ServiceMenuLookupOptions, registered separately by
+    // AddServiceMenuLookup. The menu lookup is self-contained over its own Cosmos containers, so a host
+    // can want one feature without the other; folding its settings in here would make every host carry
+    // them and tie turning menus on to the whole lookup registration.
 }
 
 /// <summary>

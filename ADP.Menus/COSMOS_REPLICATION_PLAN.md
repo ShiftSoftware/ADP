@@ -1,6 +1,6 @@
 # Menu → Cosmos Replication — Implementation Plan
 
-> Status: **Phases 0–4 implemented; Phases 5–6 still plan.**
+> Status: **Phases 0–5 implemented; Phase 6 still plan.**
 > Agreed design for projecting the service-menu catalog into Cosmos DB so a vehicle lookup can turn a
 > **basic model code** into a set of **menu codes + prices**.
 >
@@ -131,8 +131,22 @@ ADP.Menus/ADP.Menus.Data/  (net10.0 — the export + the replication producer)
   Extensions/
     MenuReplicationExtensions.cs         # NEW — one Add*Replication per table + AddMenuReplications
 
-ADP.LookupServices/Lookup.Services/  (netstandard2.0 — the reader, FUTURE phase)
-  Services/ServiceMenuLookupService.cs   # NEW — read partition → CosmosToGenerationAggregator → generate → lookup DTO
+ADP.LookupServices/Lookup.Services/  (netstandard2.0 — the reader; §20)
+  Lookup.Services.csproj                 # EDIT — ADP.Menus.Generation ref; Microsoft.Extensions.Options
+  ServiceMenuLookupOptions.cs            # NEW — the menu lookup's OWN options (O6). Not on LookupOptions
+  ServiceMenuExceptions.cs               # NEW — container-not-provisioned + generation-failed, both named
+  DTOsAndModels/ServiceMenu/             # LAYER 3 — one type per file. No cost/margin/profit fields
+    ServiceMenuLookupDTO.cs  ServiceMenuVariantDTO.cs  ServiceMenuLineDTO.cs  ServiceMenuPartDTO.cs
+    ServiceMenuLineType.cs   ServiceMenuLookupRequest.cs  ServiceMenuCountrySettings.cs
+  Services/
+    ServiceMenuCosmosService.cs          # NEW — the single-partition prefix read, split by ItemType
+    ServiceMenuLookupService.cs          # NEW — read → generate → schedule/price → DTO
+  Evaluators/
+    ServiceMenuGenerationEvaluator.cs    # NEW — config resolution + aggregate + the SHARED generator
+    ServiceMenuPricingEvaluator.cs       # NEW — parts/labour/discount/total; the export's formulas, cost-free
+    ServiceMenuScheduleEvaluator.cs      # NEW — group by variant, order the schedule by distance
+  Extensions/
+    ServiceMenuLookupServiceCollectionExtensions.cs  # NEW — AddServiceMenuLookup, its own registration
 ```
 
 ### 2.1 New project `ADP.Menus.Generation` (netstandard2.0, published package)
@@ -476,13 +490,14 @@ public interface IMenuReplicationService
 
 ---
 
-## 8. Read-time: aggregate → generate → map (the lookup, FUTURE phase)
+## 8. Read-time: aggregate → generate → map (the lookup) — IMPLEMENTED, see §20
 
-> **Partly superseded by §16.** `ServiceMenuReferenceCache` is **dropped** — the documents are fully
-> denormalized, so the read is a single partition query and there is no reference partition to cache.
-> The `CosmosToGenerationAggregator` signature below changes accordingly: it takes the four
-> `ServiceMenus` document types and builds `MenuGenerationReferenceData` from what they already carry.
-> Everything else in this section stands.
+> **Partly superseded by §16, and now built — §20 is what actually shipped.** `ServiceMenuReferenceCache`
+> is **dropped**: the documents are fully denormalized, so the read is a single partition query and there
+> is no reference partition to cache. The `CosmosToGenerationAggregator` signature below changed
+> accordingly — it takes the four `ServiceMenus` document types and builds `MenuGenerationReferenceData`
+> from what they already carry. The sketch below is otherwise accurate; §20 records the four things it
+> did not anticipate.
 
 `ADP.LookupServices/Lookup.Services` (netstandard2.0):
 
@@ -566,10 +581,10 @@ in §17 ("Known gaps"), and the backfill service (step 2) is the sweep that clos
 | O3 | Derived Katashiki code vs authored `Menu.BasicModelCode` match rate in real data. | Measure first (host-side/ad-hoc; keep report in private planning). **Gates Phase 6.** |
 | O4 | Reference-cache freshness/invalidation in the reader. | **CLOSED by §16.** There is no reader-side cache: the documents are fully denormalized and `UpdateReference` keeps the copies fresh. See §10. |
 | O5 | Do all replicated tables need the two `IShiftEntityReplication` columns? | **RESOLVED (Phase 3 step 1): yes, all 10.** The trigger is constrained on `IShiftEntityReplication`, so a table without the columns is simply never replicated. |
-| O6 | `transferRate` / country at read time. | `LookupOptions` resolver → `MenuGenerationConfig`; `Consumable` stored unscaled, scaled in the generator (the generic model already does this). **Phase 5.** |
+| O6 | `transferRate` / country at read time. | **RESOLVED (Phase 5).** `LookupOptions.ServiceMenuCountrySettingsResolver` (+ `ServiceMenuDefaultCountryID`) → `MenuGenerationConfig`; `Consumable` stays unscaled in Cosmos and is scaled in the generator, pinned by test. The resolver exists because a menus host normalizes these two settings from its *configured country list*, which the lookup cannot see. Getting it wrong moves money, never codes. |
 | O7 | `GetAllowedTimeText` culture sensitivity (feeds labour code). | **DECIDED: leave as-is.** Ported verbatim, ambient culture included. Judged not worth the risk of changing codes already issued to a DMS for a case the deployments do not hit. Pinned by test so the behaviour is at least visible. |
 | O8 | `MenuLabourDetails.FirstOrDefault` nondeterminism. | **RESOLVED structurally, no behaviour change.** The generic input is `List<>`-ordered, so "first match" is now a function of the aggregator's ordering rather than of EF/`HashSet` iteration. No `OrderBy` was added — that would have changed output. |
-| O9 | Read-time cost: full fold every lookup. | **REDUCED by §16.** The read is one single-partition query with no second round trip; only the generation fold remains per lookup. Optional short per-model result cache. **Phase 5.** |
+| O9 | Read-time cost: full fold every lookup. | **CLOSED (Phase 5), no cache added.** The read is one single-partition prefix query and then a pure in-memory fold over one model's documents. A per-model result cache was deliberately NOT built: it would need an invalidation story that replication does not provide (documents change without the reader being told), and it would re-introduce the staleness §16 removed at some remove. A caller sweeping many models caches its own results. |
 | O10 | Raw (non-language-resolved) `ServiceInterval.Description` on periodic lines. | **DECIDED: leave as-is**, ported verbatim. Only bites if an interval description is ever authored multi-language. |
 
 ---
@@ -592,10 +607,9 @@ in §17 ("Known gaps"), and the backfill service (step 2) is the sweep that clos
   needs are now one call each — `MenuCosmosProvisioning.EnsureContainersAsync`,
   `AddMenuReplications`, `ReplicateAllAsync` — plus `MenuReplicationStatus.ReadAsync`, which is the
   verification step the plan asked for and nothing in the pipeline provided.
-- **Phase 5 — read side (lookup, future).** `ServiceMenuLookupService` (one partition read →
-  `CosmosToGenerationAggregator` → `MenuCodeGenerator` → lookup DTO). No reference cache — §16. Tests:
-  aggregation equals the golden generic request; normalization; missing container; a partition missing
-  a document type.
+- **Phase 5 — read side (the lookup). ✅ DONE.** See §20. `ServiceMenuLookupService` (one partition read
+  → `CosmosToGenerationAggregator` → `MenuCodeGenerator` → lookup DTO), four evaluators, and a
+  round-trip test that proves the read path reproduces the export's lines. No reference cache — §16.
 - **Phase 6 — vehicle-lookup integration** (gated on O3): evaluator + flat `[TypeScriptModel]` DTO +
   web-component section; measure/monitor the join-key hit rate.
 
@@ -1011,9 +1025,15 @@ throws on a missing pair" once the reader builds its dictionary.
 **3. The step-1 mappers were filtering soft-deletes, and that changed menu codes.** The export applies
 **no** soft-delete filter to any of its includes and there are no global query filters anywhere, so its
 generic input carries deleted interval memberships and deleted replacement-item links. The first cut
-filtered them out, which silently dropped whole periodic lines the export still emits. The mappers are
+filtered them out, which silently dropped whole periodic lines the export still emitted. The mappers are
 now pure projections — they copy, they do not decide — matching `EfToGenerationAggregator` exactly. The
 only filtering left is on the labour-rate and brand mapping catalogues, which the export filters too.
+
+> **The conclusion still stands; the premise it rested on has since changed.** §21 makes soft-deleted
+> rows excluded from generated menus on BOTH paths — so the export no longer emits those lines either.
+> The mappers are unchanged and still must be: they carry the flags, and the *generator* applies them.
+> Filtering in a mapper would still be wrong, now for the further reason that a soft-deleted row must
+> reach Cosmos to take effect at all (only a hard delete removes a document).
 
 ### The reload hook
 
@@ -1267,3 +1287,382 @@ Two things cannot live in this repo, and the docs page says so rather than imply
 - **when** to provision and **how often** to sweep. The sample provisions at startup and sweeps hourly
   because that makes "clean checkout + emulator" a working setup; a real host provisions through its
   deployment pipeline.
+
+---
+
+## 20. Phase 5 — the read side, as built (DONE)
+
+**157 tests green** (Phase 4's 107 + 50 new). A vehicle lookup can now turn a basic model code into menu
+codes, labour codes and prices, and those codes are the DMS export's codes.
+
+```
+GetMenuAsync("ABC12")
+  ─▶ ServiceMenuCosmosService        one prefix query on /BasicModelCode → ServiceMenuDocuments
+  ─▶ ServiceMenuGenerationEvaluator  CosmosToGenerationAggregator → MenuCodeGenerator (SHARED)
+  ─▶ ServiceMenuScheduleEvaluator    group by variant; schedule by distance
+  ─▶ ServiceMenuPricingEvaluator     parts / labour / discount / total  → ServiceMenuLookupDTO
+```
+
+| File | Role |
+|---|---|
+| [`CosmosToGenerationAggregator.cs`](ADP.Menus.Generation/Cosmos/CosmosToGenerationAggregator.cs) | LAYER 2 → LAYER 1. The mirror of `EfToGenerationAggregator`; where export parity is won or lost |
+| [`ServiceMenuDocuments.cs`](ADP.Menus.Generation/Cosmos/ServiceMenuDocuments.cs) | One partition's documents, split by item type — the read path's single shape |
+| `ServiceMenuCosmosService.cs` | The single-partition prefix read |
+| `ServiceMenuLookupService.cs` | The three-step orchestration, plus `GetGeneratedLinesAsync` for callers wanting raw lines |
+| `ServiceMenuGenerationEvaluator` / `…PricingEvaluator` / `…ScheduleEvaluator` | One decision each — see below |
+| `DTOsAndModels/ServiceMenu/*` | Layer 3, one type per file, plus the request and country-settings contract |
+| `ServiceMenuLookupOptions.cs` + `ServiceMenuLookupServiceCollectionExtensions.cs` | The feature's own options and its own `AddServiceMenuLookup` |
+| `ServiceMenuExceptions.cs` | Provisioning fault and generation fault, each named and actionable |
+| [`CosmosToGenerationAggregatorTests.cs`](ADP.Menus.Tests/CosmosToGenerationAggregatorTests.cs) | The round trip, plus every filtering/ordering rule |
+| [`ServiceMenuEvaluatorTests.cs`](ADP.Menus.Tests/ServiceMenuEvaluatorTests.cs) | The evaluators, the pricing differential, and the cost guard |
+| [`ServiceMenuLookupRegistrationTests.cs`](ADP.Menus.Tests/ServiceMenuLookupRegistrationTests.cs) | The DI wiring — offline, since a `CosmosClient` connects lazily |
+| [`MenuCosmosDocumentFixture.cs`](ADP.Menus.Tests/MenuCosmosDocumentFixture.cs) | EF graph → documents, through the production mappers |
+| `menus/service-menu-lookup.md` (ADP.Docs) | The host-facing page, in the docs nav |
+
+### The test that matters: replicate, then read, then compare
+
+`ReplicateThenRead_ProducesTheExportsLines` sends one menu graph two ways — straight to
+`MenuExportService`, and through the production replication mappers into Cosmos documents, back out
+through `CosmosToGenerationAggregator`, into the generator — and asserts the two outputs are identical
+character for character, across the Phase-1 configuration matrix plus the unmapped-brand case.
+
+That is a materially stronger claim than "both call the same generator", which is true by construction
+and proves nothing: **the generator cannot disagree with itself, but the two adapters can.** Every
+soft-delete and ordering rule in the Cosmos adapter exists to mirror one on the EF side, and this is
+where a divergence surfaces — as a wrong menu code, at the point one would actually be issued.
+
+The fixture goes through the production mappers **on purpose**, unlike `MenuGenerationRequestFixture`,
+which is hand-built precisely so it cannot cancel out a bug. The two answer different questions: the
+hand-built one asks "is the generator a faithful port?", where an independent second opinion is the whole
+value; this one asks "does the round trip preserve the codes?", where the mappers are part of the round
+trip being tested. Hand-authoring documents here would test a shape nothing writes.
+
+### Four things §8 did not anticipate
+
+**1. A deleted MENU was still serving menu codes.** The export selects
+`!variant.IsDeleted && !variant.Menu.IsDeleted`. Only the first was on the document, and deleting a menu
+does not cascade to its variants (§17), so the variant document stayed `IsDeleted = false` and the lookup
+would have kept generating for a deleted menu — silently, indefinitely. Fixed by flattening the parent's
+flag onto the variant document as `MenuIsDeleted`, projected by `MenuCosmosMappers`. Additive and
+defaulting to `false`, so pre-existing documents keep their current behaviour until a sweep refreshes them.
+
+*Remaining gap:* a menu soft-delete touches no `MenuVariant` row, so the row stays clean and a
+**dirty-only sweep will not pick it up** — `updateAll: true` will. Same shape as O2's parts-price bypass.
+The complete fix is to register `Menu` for replication with an `UpdateReference` fan-out onto its
+variants, which needs the two bookkeeping columns on `Menu` and therefore a host migration; deliberately
+not done here.
+
+**2. Soft-deleted period and labour documents must STILL generate their lines** — matching the export,
+which applies no soft-delete predicate to any of its includes. Exactly two things were filtered, because
+exactly two are filtered by the export: the variant (its own flag and its menu's), and the labour-rate /
+brand mapping catalogues.
+
+> **Superseded by §21**, which changes the EXPORT's rule rather than the reader's: a soft-deleted row is
+> now excluded from generated menus on both paths. The reasoning above was right about parity and wrong
+> about which behaviour to standardise on.
+
+**3. A Cosmos partition query has no order, and order is behaviour.** The periodic pass takes the FIRST
+matching labour detail, and a grouped standalone line takes its allowed time from the FIRST item in its
+group (O8). The aggregator therefore imposes its own total order — source row id ascending, everywhere —
+which is both deterministic and the closest available match to how EF returns included collections.
+`DocumentOrder_DoesNotAffectOutput` feeds the documents reversed and asserts the output is unchanged;
+without the sorts, generated codes would depend on document layout.
+
+**4. Where the read-side adapter lives.** §14 left this open ("Phase 3 adds the reference, or a separate
+small project"). It went into `ADP.Menus.Generation`, per §2's layout, which required the `ADP.Models`
+reference §2.1 had already sketched. Worth being honest that §2.1 undersold the cost: `ADP.Models` itself
+carries ShiftEntity.Model, FileHelpers, libphonenumber and BouncyCastle, so "dependency-light" is no
+longer quite true of the Generation package. It costs the two real consumers nothing — the export and the
+lookup both already reference `ADP.Models` — and the alternatives were a third package for one file, or
+duplicating the adapter in every Cosmos consumer. The symmetry argument for putting it in the lookup
+instead (the export's adapter lives with the export) was the close call; keeping it beside the generator
+won because it is then testable and reusable without dragging in the lookup.
+
+### The evaluators
+
+One cohesive decision per evaluator, composed by a thin service — the convention the repo's existing
+evaluators already follow (`VehicleServiceItemEvaluator`, `PartPriceEvaluator`, …).
+
+| Evaluator | Decides |
+|---|---|
+| `ServiceMenuGenerationEvaluator` | the `MenuGenerationConfig` (O6), then aggregate + generate |
+| `ServiceMenuPricingEvaluator` | parts total, labour price/total, discount, menu total |
+| `ServiceMenuScheduleEvaluator` | grouping by variant; schedule ordered by distance, standalone ungrouped-before-grouped |
+
+**There is no variant-selection evaluator, and there should not be one.** A first cut had a
+`ServiceMenuVariantEvaluator` narrowing the result to caller-supplied variant ids, with
+`ServiceMenuLookupRequest.VariantIDs` to feed it. That was wrong on its face: **a menu variant's id is a
+primary key inside the menus database and nothing outside it holds one** — a caller has a VIN or a model
+code. It was a parameter no caller could populate. Removed; every live variant of the model is returned
+and the caller picks from `ServiceMenuVariantDTO`, which carries the id and the authored name.
+
+What the evaluator also did — dropping children orphaned by an uncascaded variant delete — was already
+done by the aggregator, which groups children under variants so an orphan can never contribute
+(`OrphanedChildDocuments_AreIgnored`). Deleting it lost no behaviour. If a rule for "which variant applies
+to THIS vehicle" is ever established, it belongs in the request as that rule, shaped by what the rule
+actually needs; `EveryVariantOfTheModel_IsReturned` pins that a filter is not reintroduced as a
+convenience in the meantime.
+
+**The variant does not echo the model name either.** `GeneratedMenuLine` carries it (the export writes it
+as a report column), but `ServiceMenuVariantDTO` drops it: the caller looked the menu up BY the model, so
+it already has a name for it — and the menus catalog's vehicle-model name is authored separately from the
+vehicle database's, so returning it would put a second, occasionally disagreeing name next to the one the
+caller is displaying. Layer 3 is the lookup's shape, not a mirror of layer 1; carrying a field only
+because the generator happens to produce it is how a DTO accumulates fields nobody can safely use.
+
+**Pricing is a differential test, not a snapshot.** `Pricing_MatchesTheExportsOwnArithmetic` computes each
+line's money both ways — through `ServiceMenuPricingEvaluator` and through the export's own
+`MenuLineMargins` extension members — and asserts they agree, over four country / transfer-rate
+combinations. The two implementations live in different assemblies and would otherwise drift the first
+time someone tidied one of them.
+
+`DiscountAmount` is derived back OUT of the discounted total rather than computed separately, so the
+reported amount always reconciles with the reported total instead of being a second rounding that can
+disagree with it by a fraction.
+
+### Its own options, its own registration, and no `IServiceProvider`
+
+The first cut folded three settings onto `LookupOptions`, registered the service inside
+`AddLookupService`, and passed `(LookupOptions, IServiceProvider)` into a constructor that then `new`-ed
+its own evaluator. That copied the shape of the surrounding lookup services without asking whether the
+menu lookup needed it — it does not, and the shape was wrong for it three times over. Replaced with:
+
+- **`ServiceMenuLookupOptions`** — its own class, registered through the options pattern
+  (`AddOptions<T>().Configure(...)`) and injected as `IOptions<ServiceMenuLookupOptions>`. Service menus
+  are a self-contained feature over their own containers: a host can want menus without the vehicle
+  lookup, or the vehicle lookup without menus. Folding the settings into the general options would make
+  every host carry them and tie turning menus on to the whole lookup registration.
+- **`AddServiceMenuLookup` / `AddServiceMenuLookup<TCosmosClient>`** — a separate opt-in call. It builds
+  its own `LookUpCosmosClient` rather than the container-registered one, because each registration
+  carries its own database-name suffix and sharing one instance would make the resolved suffix depend on
+  which registration ran first. Everything is `TryAdd`, so it composes and is idempotent.
+- **No `IServiceProvider` anywhere.** `CountrySettingsResolver` is `Func<long, ValueTask<…>>`. A host that
+  needs its own services inside it configures the option *with* them —
+  `AddOptions<ServiceMenuLookupOptions>().Configure<ICountryProvider>(…)` — which is what the options
+  pattern exists for, and is pinned by
+  `OptionsCanBeConfiguredFromTheHostsOwnServices_WithoutAServiceProviderParameter` so it stays the
+  documented migration path for anyone reaching for a provider parameter.
+
+`AddLookupService` therefore does **not** register the menu lookup today, and
+`AddLookupService_DoesNotRegisterTheMenuLookup` pins that: a deployment that never provisioned the menu
+containers must not be affected until it opts in. **Phase 6 flips this** — once menus are part of the
+vehicle lookup result, the general registration calls `AddServiceMenuLookup` itself and
+`ServiceMenuLookupOptions` is reachable from the general options. That day is a deliberate edit to those
+two tests, not a surprise.
+
+### Dealer cost: guarded at the chokepoint, and the guard is tested
+
+`MenuGenerationConfig.IncludePartCost` is left at its `false` default, so cost is never populated on a
+generated part — it is absent from the object graph rather than stripped from the output, and no mapper
+has to remember anything. `DealerCost_NeverReachesTheLookup` asserts both halves: the evaluator never
+requests cost, **and** the lookup DTOs have no property whose name contains Cost, Profit or Margin. The
+second half is the one that survives a future refactor, since it fails if someone copies a field across
+from `MenuLineDTO` — which §15 predicted would be the obvious template.
+
+### Failure modes, and what stays silent
+
+| Condition | Behaviour |
+|---|---|
+| Model has no documents | `NotFound = true`, no variants — an ordinary answer, not an exception |
+| Container not provisioned | `ServiceMenuContainerNotFoundException`, naming `MenuCosmosProvisioning.EnsureContainersAsync` |
+| Missing labour-rate mapping / interval / interval group | `ServiceMenuGenerationException` wrapping the generator's `KeyNotFoundException` (O1 preserved) |
+| Partition missing a whole document type | **silent** — no periodic lines at all, no error |
+
+`NotFound` describes the PARTITION, not the outcome: a menu whose every variant is deleted, or whose
+intervals carry no labour details, exists and generates nothing — a different thing from having no menu,
+and a UI renders the two differently.
+
+The container fault is raised rather than folded into an empty result deliberately: an unprovisioned
+deployment would otherwise be told "this model has no menu" for every model, permanently, with nothing
+anywhere to indicate why. **Phase 6 must decide what the vehicle lookup does with that** — an
+unprovisioned menu container should not be able to fail a whole VIN lookup.
+
+The last row is the trap §15 predicted for this reader, now pinned by test
+(`PartitionMissingLabourDocuments_LosesPeriodicLinesSilently`): with no `MenuLabour` documents there is
+nothing to match an interval against, so every scheduled line disappears quietly — the same way a missing
+`Include` loses lines on the export side. A model returning standalone services but no scheduled ones
+means incomplete replication before it means anything about the catalog.
+
+### Not done here, and why
+
+- **`[TypeScriptModel]` on the lookup DTOs.** They carry `[Docable]` only. Adding the TS attribute
+  regenerates web-component types on every build, which belongs with the component that consumes them —
+  Phase 6.
+- **Vehicle-lookup integration.** Still gated on O3 (the derived-Katashiki → authored `BasicModelCode`
+  hit rate), which is a measurement against real data and cannot be made from here.
+- **A per-model result cache.** See O9 — deliberately refused.
+- **Verification against a real catalogue.** Phases 3 and 4 were each verified against the 27-variant
+  sample; Phase 5's tests are offline by construction (the round trip needs no Cosmos). The sample
+  Functions host now exposes `GET api/menu/{basicModelCode}` alongside its replication endpoints, so
+  replicate-then-look-up is one `.http` file away — but it has NOT been run against the emulator yet.
+  That is the obvious next confidence step.
+
+---
+
+## 21. Soft deletes now exclude rows from generated menus (BEHAVIOUR CHANGE)
+
+> **This changes the DMS export's output**, not only the lookup's. Read the first section before
+> deploying it. **191 tests green** (Phase 5's 161 + 30 new).
+
+Until now a soft-deleted **periodic availability, labour detail, service interval, interval group,
+replacement item or standalone group still produced menu lines** — the export's query applies no
+soft-delete predicate to any of its includes, and there are no global query filters, so those rows were
+folded like live ones. Only the menu item, the replacement-item link, the part, the part country price
+and the country labour rate were ever excluded, because those are the only flags the generation contract
+carried.
+
+That is now uniform: **a soft-deleted row of ANY replicated table is excluded from generated menus.**
+
+### What a deployment should expect
+
+A catalogue containing soft-deleted rows of the newly-covered tables will see **menu lines disappear from
+the next export**, not only from the lookup. That is the intent of the change, but it is a change to
+output a DMS has already received, so:
+
+- a catalogue with no soft-deleted rows in those tables is unaffected — the Phase 0 golden snapshots are
+  untouched and still pass, which is the evidence;
+- a catalogue that does have them should be diffed (export before/after) before the release goes out;
+- soft-deleting is now a genuinely destructive act on a menu, where it used to be inert for those tables.
+
+### Where the rule lives: the two adapters, and the generator got cleaner
+
+**The adapters filter; the generation contract holds live rows only.** `MenuGenerationRequest` carries no
+`IsDeleted` at all now — not on the variant, period, labour, item, part, price, country rate, interval,
+interval group or standalone group — and `MenuCodeGenerator` never mentions deletion. It applies menu
+rules (quantity > 0, country matching, code composition) to the data it is handed. Each adapter has a
+short, named filter per table — `LivePeriods`, `LiveLabours`, `LiveItems`, `LiveIntervalGroupLinks` — so
+the EF and Cosmos versions can be read against each other side by side.
+
+> **This reverses a first attempt** that put the flags on the contract and the rule in the generator. The
+> argument for that was drift: two adapters, one rule, nothing structural keeping them equal. The
+> argument against — and the one that won — is that the generator should be about generating menus, and
+> that "what counts as deleted" belongs where the data is loaded, which is also the only place it can be
+> pushed down into a query. Both readings are defensible; what makes this one safe is the test below.
+
+The drift risk is real and is not designed away — it is **tested** away.
+`ReplicateThenRead_AgreesWithTheExport_WhenARowIsSoftDeleted` soft-deletes one row of each of the nine
+tables in turn, runs the graph through the export AND through replicate-then-read, and asserts identical
+output — then asserts the delete actually changed the output, so a rule that silently does nothing on
+both sides cannot pass by agreeing on unchanged text. **Add a table to the replication and you must add
+it to both adapters and to that test.** The ninth case exists because the eight did not cover the
+interval-group link, and that omission was a live bug — see below.
+
+Two things the Cosmos adapter needs that the EF one does not:
+
+- **Deletion is decided once, across every embedded copy.** A master row rides on several documents, so a
+  partially landed fan-out leaves them disagreeing (see below). `DeletedMasterIds` collects the ids any
+  copy reports as deleted before anything is filtered.
+- **A deleted interval group must be stripped from the item's id list as well as from the reference
+  dictionary.** The generator resolves those ids with an indexer, so leaving one behind throws instead of
+  skipping — which is the correct signal for a *missing* group and the wrong one for a deleted one. Both
+  adapters route the ids and the dictionary through one method for exactly this reason.
+
+### The export also filters in SQL now
+
+The include graph moved out of `MenuController.GenerateLinesAsync` into
+[`MenuExportIncludes`](ADP.Menus.Data/DataServices/MenuExportIncludes.cs) — next to the
+`EfToGenerationAggregator` predicates it mirrors — and every collection it loads is now filtered at the
+database. **16 of the 18 tables the query touches carry a delete predicate**, verified from the generated
+SQL. Deleted rows no longer travel.
+
+The controller keeps only the ROOT filters (the two delete flags and the brand selection, which is a
+per-run choice, not part of the shape).
+
+**The adapter still filters, and that is not redundancy for its own sake** — the two do different amounts
+of work:
+
+- Only the database can avoid *loading* a deleted row. That is the whole win.
+- Only the adapter can express **"keep the item, drop its deleted standalone group"**. That is a
+  reference navigation, and the rule is not "drop the item" — no query can express it. It is
+  unavoidably adapter-side, and it is one of the two tables the SQL deliberately does not filter (the
+  other is `VehicleModels`, which the export never scoped by deletion).
+- The agreement test builds its graph in memory and never runs this query. Move the rule to SQL *alone*
+  and that test silently stops guarding the export.
+
+Because the adapter re-applies the same rule, the SQL predicates can only remove rows it would remove
+anyway: they cannot change the export's output, only how much of it travels.
+
+**[`MenuExportIncludesTests`](ADP.Menus.Tests/MenuExportIncludesTests.cs) compiles the query to SQL
+offline** — `ToQueryString()` runs model building, include expansion and translation, then stops before
+opening a connection, so a fake connection string is enough. That closes the two failure modes a compiler
+cannot see: `Items` is included three times (a chain must restart from `Include` to branch) and EF throws
+at query time if repeated includes carry *different* filters; and a predicate reaching through a
+reference navigation has to be translatable or EF throws rather than evaluating client-side. Without it,
+the first sign of either would be a 500 from a live export.
+
+Two details worth knowing about that test. `ToQueryString()` returns only the FIRST statement of a
+split query, so it collapses the query with `AsSingleQuery()` to assert on the whole graph — which changes
+how rows are fetched, never which. And it checks for a delete *predicate* per alias rather than for the
+string `IsDeleted`, because every soft-deletable table has that column in its SELECT list; matching on the
+column name would pass on a completely unfiltered query.
+
+**Replication is unchanged and must stay unchanged.** Soft-deleted rows are still projected into Cosmos,
+flag and all. Skipping them would be worse than useless: only a HARD delete removes a document, so a
+skipped soft delete leaves the existing document untouched and stale, still generating its line. Carrying
+the flag to Cosmos is what lets the reader's filter take effect at all.
+
+### The one row replication has to filter: the interval-group link
+
+Everywhere else the projection carries the flag and the reader decides. `ReplacementItemServiceIntervalGroup`
+— the replacement-item ↔ interval-group link — is the exception, and it was a **bug found by asking
+"is every flag mapped?"** rather than by a test.
+
+That link has no document and no flag anywhere in the document shape: it contributes only its group id to
+a flat `List<long>`. So a deleted link that gets projected is indistinguishable from a live one, and the
+lookup kept pricing parts onto periodic lines the export had stopped pricing. Menu and labour CODES were
+unaffected — the id list only decides which items' parts join a periodic line — but the parts and totals
+diverged.
+
+`MenuCosmosMappers.IntervalGroupLinks` now filters deleted links at projection. Widening the document
+shape to carry a per-link flag was the alternative and was rejected: the flat id list is what makes the
+interval-group fan-out an `ARRAY_CONTAINS` rather than a scan (§17), and a deleted link's group genuinely
+should stop finding the document. The GROUP's own deletion stays a read-time decision, because a group
+can be deleted long after the item was last replicated.
+
+**Two things follow.** Deployments need a re-sweep for this to take effect on existing documents — and
+editing a link still does not re-replicate its parent replacement item (§17's known gap), so it lands on
+the item's next save or a catch-up pass. And the round-trip theory gained a ninth case,
+`intervalGroupLink`; it was verified to FAIL without the mapper fix and pass with it, so the gap cannot
+reopen silently.
+
+### The one judgement call: a deleted standalone group
+
+A soft-deleted standalone item group is treated as **no group**, so its items fall back to individual
+standalone lines rather than disappearing. Deleting a *grouping* withdraws the grouping, not the items —
+they are separate rows, still sellable, and still carry their own operation and labour codes. The
+alternative (dropping them entirely) would silently remove sellable services because someone tidied up a
+grouping. Pinned by `SoftDeletedStandaloneGroup_FallsBackToUngroupedLines` so it is a decision rather
+than an accident.
+
+### One thing the change exposed: disagreeing embedded copies
+
+A master row is embedded in several documents — an interval group rides on every `MenuLabour` and every
+`MenuItem` that serves it — and the reference dictionaries are last-write-wins. The first version of
+`SoftDeletedIntervalGroup_…` failed because of it: flagging the group on the labour document alone was
+undone by a stale item copy written later in the walk.
+
+That is not a test artefact. A fan-out can land partially — §18 recorded a sweep silently writing 1060 of
+1188 documents — so disagreeing copies are a real state, and deciding per copy would make the answer
+depend on which document a given code path happened to be holding.
+
+**Deletion is therefore decided once and stickily: any copy saying deleted wins** (`DeletedMasterIds`,
+computed across every embedded copy before anything is filtered). A delete is monotonic — nothing
+un-deletes — so this cannot be wrong in the way "whichever copy we read last" can, and it errs toward
+withholding a menu code rather than issuing one for a withdrawn row. Other fields stay last-write-wins;
+they have no safe direction to err in.
+`PartiallyPropagatedDelete_IsStickyRegardlessOfDocumentOrder` runs it in both document orders. The EF
+adapter needs none of this: its graph has one instance per row, so its copies cannot disagree.
+
+### What the fixtures now say
+
+`MenuGraphFixture` (the EF graph) is unchanged — it still contains a soft-deleted item, link, part,
+country price and country labour rate, and the Phase 0 goldens still run through it. That they are
+untouched and green is the evidence the change is surgical.
+
+`MenuGenerationRequestFixture` (the hand-built layer-1 request) **lost those rows entirely**, because
+there is no longer anywhere to express them: the contract has no `IsDeleted`. It is no longer a
+row-for-row twin of the EF fixture, and that asymmetry is the design showing through rather than a
+mistake — the deleted rows are the adapter's business now, asserted by
+`SoftDeletedRows_AreFilteredOutByTheAdapter_NotLeftToTheGenerator`, which checks they are absent from the
+REQUEST rather than merely absent from the lines. Asserting on the request is what pins where the rule
+lives; asserting on the lines would pass either way.

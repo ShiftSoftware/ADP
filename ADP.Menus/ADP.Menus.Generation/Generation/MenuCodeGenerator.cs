@@ -133,11 +133,10 @@ public static class MenuCodeGenerator
                 Language = config.Language,
 
                 Parts = variant.Items
-                    .Where(IsLive)
                     .Where(item => item.ReplacementItemServiceIntervalGroupIDs
                         .Any(groupId => reference.Groups[groupId].ServiceIntervalIDs.Contains(period.ServiceIntervalID)))
                     .SelectMany(item => item.Parts
-                        .Where(part => !part.IsDeleted && part.PeriodicQuantity.GetValueOrDefault() > 0)
+                        .Where(part => part.PeriodicQuantity.GetValueOrDefault() > 0)
                         .Select(part => MapPart(part, part.PeriodicQuantity.GetValueOrDefault(), config, item.MenuItemID)))
                     .ToList(),
             };
@@ -161,8 +160,7 @@ public static class MenuCodeGenerator
         // is missing, and the source only performs it once it has a line to emit. Hoisting it would
         // make a variant that produces no standalone lines throw where the source does not.
         var standaloneItems = variant.Items
-            .Where(IsLive)
-            .Where(item => item.Parts.Any(part => !part.IsDeleted && part.StandaloneQuantity.GetValueOrDefault() > 0))
+            .Where(item => item.Parts.Any(part => part.StandaloneQuantity.GetValueOrDefault() > 0))
             .ToList();
 
         // --- ungrouped -------------------------------------------------------------------------
@@ -282,18 +280,14 @@ public static class MenuCodeGenerator
     // Shared resolution
     // -------------------------------------------------------------------------------------------
 
-    /// <summary>An item participates only when it is live and its replacement-item link is live.</summary>
-    private static bool IsLive(MenuGenerationItem item) =>
-        !item.IsDeleted && item.HasReplacementItem && !item.ReplacementItemDeleted;
-
     private static IEnumerable<GeneratedMenuPart> StandaloneParts(MenuGenerationItem item, MenuGenerationConfig config) =>
         item.Parts
-            .Where(part => !part.IsDeleted && part.StandaloneQuantity.GetValueOrDefault() > 0)
+            .Where(part => part.StandaloneQuantity.GetValueOrDefault() > 0)
             .Select(part => MapPart(part, part.StandaloneQuantity.GetValueOrDefault(), config, item.MenuItemID));
 
     private static GeneratedMenuPart MapPart(MenuGenerationPart part, decimal quantity, MenuGenerationConfig config, long menuItemId)
     {
-        var price = part.CountryPrices?.FirstOrDefault(x => !x.IsDeleted && x.CountryID == config.CountryID);
+        var price = part.CountryPrices?.FirstOrDefault(x => x.CountryID == config.CountryID);
 
         return new GeneratedMenuPart
         {
@@ -321,7 +315,7 @@ public static class MenuCodeGenerator
             return variant.LabourRate;
 
         var countryRate = variant.CountryLabourRates
-            .FirstOrDefault(x => !x.IsDeleted && x.CountryID == config.CountryID);
+            .FirstOrDefault(x => x.CountryID == config.CountryID);
 
         return countryRate?.LabourRate ?? variant.LabourRate;
     }

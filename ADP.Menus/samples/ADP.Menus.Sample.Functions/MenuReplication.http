@@ -1,5 +1,10 @@
 @host = http://localhost:7071
 
+### A basic model code that exists in your imported catalogue. Everything below uses it.
+@basicModelCode = AALH10
+
+### ─────────────────────────────── replicate ───────────────────────────────
+
 ### Full backfill — re-syncs EVERY menu row into Cosmos, not just the dirty ones.
 ### Run this to switch replication on for an existing catalogue, after rebuilding a container, or
 ### after the system-wide parts-price update (which leaves MenuItem rows clean, so only a full pass
@@ -15,3 +20,32 @@ POST {{host}}/api/replicate-all
 ### How far replication has got — per table: total rows, never replicated, still pending.
 ### `isUpToDate: true` is what a finished backfill looks like.
 GET {{host}}/api/replication-status
+
+### ──────────────────────────── then read it back ────────────────────────────
+
+### The service menu for one basic model code — the read side of everything above.
+### One single-partition query, then the SAME generator the DMS export uses, so the codes here are the
+### codes the dealer's DMS received. Run this after replicate-all and compare against the export.
+###
+### Returns the variants of the model, each with:
+###   periodicServices  — the scheduled services, ordered by distance
+###   standaloneServices — the ones sold on their own
+### and per line: code, labourCode, parts with prices, and the discounted totalPrice.
+###
+### `notFound: true` means nothing is replicated under this model code — run replicate-all first.
+### It is NOT the same as a menu that exists but generates no lines (every variant deleted, or
+### intervals whose groups carry no labour detail), which returns notFound: false with no services.
+###
+### There is no dealer cost anywhere in the response, by construction — the lookup never asks the
+### generator for it.
+GET {{host}}/api/menu/{{basicModelCode}}
+
+### The same menu in another language. Menu codes are language-dependent (the prefixes, postfixes and
+### operation codes are multi-language), so correlate lines across languages by `lineKey`, never by
+### `code`.
+GET {{host}}/api/menu/{{basicModelCode}}?language=ar
+
+### A specific country: selects the part prices and the labour rate on each line.
+### An unmatched country is valid — parts fall back to price 0 and the line is flagged
+### `hasUnpricedParts: true`, so the total is understated rather than silently wrong.
+GET {{host}}/api/menu/{{basicModelCode}}?countryId=2

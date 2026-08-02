@@ -461,18 +461,14 @@ public class MenuController : ShiftEntitySecureControllerAsync<MenuRepository, M
         else
             query = dbSet.AsQueryable();
 
-        var menus = await query.AsNoTracking()
-            .Where(x => !x.IsDeleted)
-            .Where(x => !x.Menu.IsDeleted)
-            .Where(x => x.Menu.VehicleModel!.BrandID.HasValue ? brandIDs.Contains(x.Menu.VehicleModel!.BrandID.Value) : false)
-            .Include(x => x.Items).ThenInclude(x => x.Parts).ThenInclude(x => x.CountryPrices)
-            .Include(x => x.Items).ThenInclude(x => x.ReplacementItemVehicleModel!.ReplacementItem).ThenInclude(x => x.ReplacementItemServiceIntervalGroups).ThenInclude(x => x.ServiceIntervalGroup).ThenInclude(x => x.ServiceIntervals)
-            .Include(x => x.Items).ThenInclude(x => x.ReplacementItemVehicleModel!.ReplacementItem).ThenInclude(x => x.StandaloneReplacementItemGroup)
-            .Include(x => x.PeriodicAvailabilities).ThenInclude(x => x.ServiceInterval)
-            .Include(x => x.LabourDetails).ThenInclude(x => x.ServiceIntervalGroup).ThenInclude(x => x.ServiceIntervals)
-            .Include(x => x.LabourRates)
-            .Include(x => x.Menu).ThenInclude(x => x.VehicleModel)
-            .AsSplitQuery()
+        // The include graph — and the soft-delete filtering on every table in it — lives in
+        // MenuExportIncludes, next to the EfToGenerationAggregator predicates it mirrors. Only the ROOT
+        // filters stay here: the two delete flags and the brand selection, which is a per-run choice.
+        var menus = await MenuExportIncludes.Apply(
+                query.AsNoTracking()
+                    .Where(x => !x.IsDeleted)
+                    .Where(x => !x.Menu.IsDeleted)
+                    .Where(x => x.Menu.VehicleModel!.BrandID.HasValue ? brandIDs.Contains(x.Menu.VehicleModel!.BrandID.Value) : false))
             .ToListAsync();
 
         var laborRates = menus.Select(x => new
