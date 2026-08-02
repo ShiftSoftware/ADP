@@ -6,4 +6,12 @@
 ### repairs their documents).
 ###
 ### The hourly timers are disabled locally; this endpoint is how you replicate while developing.
+###
+### The response carries the same per-table counts as replication-status below. A sweep that failed
+### to write some rows finishes exactly like one that wrote them all, so read `status.pending` rather
+### than the status code — and if it is non-zero, just run this again.
 POST {{host}}/api/replicate-all
+
+### How far replication has got — per table: total rows, never replicated, still pending.
+### `isUpToDate: true` is what a finished backfill looks like.
+GET {{host}}/api/replication-status

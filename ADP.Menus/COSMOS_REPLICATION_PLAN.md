@@ -1,6 +1,6 @@
 # Menu → Cosmos Replication — Implementation Plan
 
-> Status: **Phases 0–2 and Phase 3 step 1 implemented; Phase 3 step 2 and Phases 4–6 still plan.**
+> Status: **Phases 0–4 implemented; Phases 5–6 still plan.**
 > Agreed design for projecting the service-menu catalog into Cosmos DB so a vehicle lookup can turn a
 > **basic model code** into a set of **menu codes + prices**.
 >
@@ -588,8 +588,10 @@ in §17 ("Known gaps"), and the backfill service (step 2) is the sweep that clos
     step-2 list: the `UpdatePartsPrice` and delete-cascade gaps (O2) — now *recoverable* by a full
     sweep rather than fixed at source — and `CosmosToGenerationAggregator`, which belongs with the
     read side (Phase 5).
-- **Phase 4 — host wiring + backfill + provisioning.** Provision all 7 containers (§17); register the
-  trigger + `AddMenuReplications`; run the backfill; verify.
+- **Phase 4 — host wiring + backfill + provisioning. ✅ DONE.** See §19. The three moving parts a host
+  needs are now one call each — `MenuCosmosProvisioning.EnsureContainersAsync`,
+  `AddMenuReplications`, `ReplicateAllAsync` — plus `MenuReplicationStatus.ReadAsync`, which is the
+  verification step the plan asked for and nothing in the pipeline provided.
 - **Phase 5 — read side (lookup, future).** `ServiceMenuLookupService` (one partition read →
   `CosmosToGenerationAggregator` → `MenuCodeGenerator` → lookup DTO). No reference cache — §16. Tests:
   aggregation equals the golden generic request; normalization; missing container; a partition missing
@@ -1165,3 +1167,103 @@ menu DbSets — it picks the entities up through `MenuModelBuildingContributor` 
 after the ENTITY types (`Menu.LabourRateMapping`, singular). Pointing `MenuDB` at that database fails
 with *"Invalid object name 'Menu.LabourRateMappings'"*. **A sweep host must map the tables the same way
 the writing host does.**
+
+---
+
+## 19. Phase 4 — host wiring, provisioning and verification (DONE)
+
+**107 tests green** (Phase 3's 102 + 5 new).
+
+Most of what this phase was scoped to do already existed when it started, which is worth stating plainly:
+step 1 shipped `AddMenuReplications` and the `MenuCosmosContainers.All` declaration, step 2 shipped the
+catch-up sweep, and both sample hosts were wired and verified against a 27-variant catalogue (§18). What
+was *not* there was the difference between "a host can do this" and "a host calls one method": the
+provisioning was a recipe, and the verification was a manual `SELECT COUNT(*)` recorded in prose.
+
+| File | Role |
+|---|---|
+| [`MenuCosmosProvisioning.cs`](ADP.Menus.Data/Replication/MenuCosmosProvisioning.cs) | NEW — create the database + 7 containers, and **verify** every partition key |
+| [`MenuReplicationStatus.cs`](ADP.Menus.Data/Replication/MenuReplicationStatus.cs) | NEW — per-table in-sync / pending / never-replicated counts |
+| [`Program.cs`](samples/ADP.Menus.Sample.API/Program.cs) | The startup provisioning loop is now that one call |
+| [`MenuReplicationFunctions.cs`](samples/ADP.Menus.Sample.Functions/Functions/MenuReplicationFunctions.cs) | `GET api/replication-status`; `replicate-all` now returns the status it finished at |
+| [`ServiceMenusProvisioningTests.cs`](ADP.Menus.Tests/ServiceMenusProvisioningTests.cs) | Exercises the shipped provisioner, then re-reads every container independently |
+| [`MenuReplicationStatusTests.cs`](ADP.Menus.Tests/MenuReplicationStatusTests.cs) | NEW — the reader must count every entity that opts into replication |
+| `menus/cosmos-replication.md` (ADP.Docs) | NEW — the host-facing integration page, in the docs nav |
+
+### Provisioning verifies rather than trusting
+
+`CreateContainerIfNotExists` is a no-op when the container exists — including when it exists with a
+**different partition key**, which it then accepts silently. Every document afterwards lands in the wrong
+partition, and a partition key cannot be altered: the only repair is dropping and recreating the container
+once real data is in it. So `EnsureContainersAsync` compares the key it got back against
+`MenuCosmosContainers.All` and throws, naming every wrong container in one message rather than making an
+operator rediscover them one restart at a time.
+
+That check is also why the provisioning **test** did not simply become a call to the new method. If the
+test only called it, a provisioner that compared the expected key against itself would pass on any
+container. It calls the provisioner *and* re-reads each container's properties independently.
+
+Worth being precise about what this buys, because it is not hypothetical: the step-1 design (§3) put every
+document in one container and §16 replaced it with seven. Any environment provisioned against the older
+shape is exactly the case this refuses to run on.
+
+### Verification: reading the watermark, and what it cannot see
+
+§18 recorded that a sweep silently wrote 1060 of 1188 menu items, and that
+`SELECT COUNT(*) … WHERE LastReplicationStamp IS NULL` is how you notice. `MenuReplicationStatus` is that
+query as a shipped call, per table; the `replicate-all` endpoint now runs it automatically and logs a
+warning when the sweep it just finished left rows behind.
+
+`LastReplicationDate` is a **watermark, not a timestamp** — the pipeline copies the replicated version's
+`LastSaveDate` into it, so exact equality means "in sync". `Pending` therefore counts precisely what a
+dirty-only sweep would pick up, and `NeverReplicated` (no stamp at all) is the sharper signal: after a full
+pass it means the write for that row *failed*, not that a later edit outran it.
+
+Both bookkeeping columns are reached through `EF.Property` with `nameof`, because they are declared on
+interfaces rather than on the entity base — a direct member access is not reliably translatable for an open
+generic, and a string literal would move a framework rename from a build error to a runtime query failure.
+
+**What it cannot see, and this is the honest limit:** it compares SQL against SQL, so it reports what the
+pipeline *believes*. A document staled by an edit that bypassed its owning row — O2's system-wide
+parts-price update — leaves that row clean, so the report says "up to date" while the document is wrong.
+That gap is unchanged from §17/§18, and `updateAll: true` remains its only answer.
+
+`MenuReplicationStatusTests` guards the reader against the failure mode that would make it worse than
+useless: a table added to the replication but forgotten in the reader is never counted, so the report would
+say "up to date" about a table that had never reached Cosmos at all. The test derives the expected set from
+`IShiftEntityReplication` — the same opt-in both replication paths constrain on — rather than restating the
+list.
+
+### Verified against the sample
+
+`MenuCosmosProvisioning.EnsureContainersAsync` was run against a local emulator through
+`ServiceMenusProvisioningTests` — all seven containers present, every partition key read back and
+asserted — and `MenuReplicationStatus.ReadAsync` against the imported sample database:
+
+| Table | Total | Never replicated | Pending |
+|---|---|---|---|
+| `MenuVariant` | 57 | 0 | 0 |
+| `MenuPeriodicAvailability` | 2120 | 0 | 0 |
+| `MenuLabourDetails` | 399 | 0 | 0 |
+| `MenuItem` | 1188 | 0 | 0 |
+| `ServiceInterval` | 40 | 0 | 0 |
+| `ServiceIntervalGroup` | 7 | 0 | 0 |
+| `ReplacementItem` | 57 | 0 | 0 |
+| `StandaloneReplacementItemGroup` | 1 | 0 | 0 |
+| `LabourRateMapping` | 2 | 0 | 0 |
+| `BrandMapping` | 2 | 0 | 0 |
+| **Total** | **3873** | **0** | **0** — `IsUpToDate` |
+
+Those totals are the same ten numbers §18 counted **in Cosmos** after its backfill, which is the point:
+the check now reports from SQL what previously had to be counted by hand in the Data Explorer, and the two
+agree.
+
+### What stays host-side
+
+Two things cannot live in this repo, and the docs page says so rather than implying otherwise:
+
+- the **EF migration** adding the two bookkeeping columns to the ten tables (the sample has one; a host
+  needs its own);
+- **when** to provision and **how often** to sweep. The sample provisions at startup and sweeps hourly
+  because that makes "clean checkout + emulator" a working setup; a real host provisions through its
+  deployment pipeline.

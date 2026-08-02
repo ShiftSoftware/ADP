@@ -8,9 +8,9 @@ using ShiftSoftware.ADP.Models.Service.Cosmos;
 namespace ShiftSoftware.ADP.Menus.Tests;
 
 /// <summary>
-/// Provisions the Cosmos database and the SEVEN containers the menu replication writes to, creating
-/// them only if they are missing, then verifies each container's partition key is the one the code
-/// expects.
+/// Runs the shipped provisioner — <see cref="MenuCosmosProvisioning.EnsureContainersAsync"/>, the same
+/// call a host makes — against a real endpoint, then verifies each of the SEVEN containers came out
+/// with the partition key the code expects.
 ///
 /// The seven are the design in COSMOS_REPLICATION_PLAN.md §16: one container per master entity, keyed
 /// by its own id, plus <c>ServiceMenus</c> keyed by (BasicModelCode, ItemType) for the variant graph.
@@ -28,11 +28,10 @@ namespace ShiftSoftware.ADP.Menus.Tests;
 /// Unlike every other test here — which are pure and offline — this one talks to a real endpoint, so it
 /// SKIPS (never fails) when none is reachable. CI therefore stays green without an emulator.
 ///
-/// Why a test rather than startup code: a container's partition key CANNOT be changed after creation.
-/// Getting it wrong means dropping and recreating the container once real data exists, so it is worth
-/// asserting up front — and the assertion is what makes this more than a provisioning script. Hosts
-/// still provision through their own deployment path; this exists so a developer can stand a local
-/// environment up and prove it matches.
+/// Why a test as well as the provisioner: a container's partition key CANNOT be changed after
+/// creation, so the provisioner refuses to accept a wrong one — and this is what proves that refusal
+/// works against a real Cosmos endpoint rather than only in principle. It also lets a developer stand a
+/// local environment up and see it match.
 /// </summary>
 public class ServiceMenusProvisioningTests
 {
@@ -72,11 +71,13 @@ public class ServiceMenusProvisioningTests
 
         using var cancellation = new CancellationTokenSource(ConnectTimeout * MenuCosmosContainers.All.Count);
 
-        DatabaseResponse database;
+        MenuCosmosProvisioningReport report;
         try
         {
-            database = await client.CreateDatabaseIfNotExistsAsync(
-                MenuCosmosContainers.DatabaseName,
+            // The same call a host makes. A container that exists with the wrong partition key makes
+            // this THROW InvalidOperationException — which is a test failure, not a skip.
+            report = await MenuCosmosProvisioning.EnsureContainersAsync(
+                client,
                 cancellationToken: cancellation.Token);
         }
         catch (Exception exception) when (exception is CosmosException or HttpRequestException or TaskCanceledException)
@@ -90,18 +91,22 @@ public class ServiceMenusProvisioningTests
         }
 
         Assert.Equal(7, MenuCosmosContainers.All.Count);
+        Assert.Equal(MenuCosmosContainers.All.Count, report.Containers.Count);
+
+        // Read every container back INDEPENDENTLY rather than trusting the report. The report's own
+        // comparison is the thing under test here: were it to compare the expected key against itself
+        // it would pass on any container, so the assertion that matters has to re-read the resource.
+        // CreateContainerIfNotExists is a no-op when the container already exists, so a container
+        // created earlier with the WRONG key is silently accepted — and a partition key cannot be
+        // altered afterwards, only dropped and recreated.
+        var database = client.GetDatabase(MenuCosmosContainers.DatabaseName);
 
         foreach (var expected in MenuCosmosContainers.All)
         {
-            var container = await database.Database.CreateContainerIfNotExistsAsync(
-                new ContainerProperties(expected.Name, expected.PartitionKeyPaths),
-                cancellationToken: cancellation.Token);
+            var properties = await database
+                .GetContainer(expected.Name)
+                .ReadContainerAsync(cancellationToken: cancellation.Token);
 
-            var properties = await container.Container.ReadContainerAsync(cancellationToken: cancellation.Token);
-
-            // The real assertion. CreateContainerIfNotExists is a no-op when the container already
-            // exists, so a container created earlier with the WRONG key would be silently accepted —
-            // and a partition key cannot be altered afterwards. Failing here is the whole point.
             Assert.Equal(expected.PartitionKeyPaths, properties.Resource.PartitionKeyPaths);
         }
     }

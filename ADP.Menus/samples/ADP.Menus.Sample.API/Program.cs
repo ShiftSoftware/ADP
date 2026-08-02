@@ -262,23 +262,26 @@ if (cosmosIsConfigured)
     {
         using var provisioning = new CancellationTokenSource(TimeSpan.FromSeconds(30));
 
-        var cosmosClient = app.Services.GetRequiredService<CosmosClient>();
-
-        var cosmosDatabase = (await cosmosClient.CreateDatabaseIfNotExistsAsync(
-            MenuCosmosContainers.DatabaseName,
-            cancellationToken: provisioning.Token)).Database;
-
-        // MenuCosmosContainers.All is the single declaration of what to create and with which
-        // partition key — a key cannot be changed after creation, so it is not retyped here.
-        foreach (var container in MenuCosmosContainers.All)
-            await cosmosDatabase.CreateContainerIfNotExistsAsync(
-                new ContainerProperties(container.Name, container.PartitionKeyPaths),
-                cancellationToken: provisioning.Token);
+        // One call creates the database and all seven containers and verifies each partition key.
+        // MenuCosmosContainers.All is the single declaration of what to create and with which key —
+        // a key cannot be changed after creation, so it is never retyped at a call site.
+        var report = await MenuCosmosProvisioning.EnsureContainersAsync(
+            app.Services.GetRequiredService<CosmosClient>(),
+            cancellationToken: provisioning.Token);
 
         cosmosLogger.LogInformation(
-            "Menu replication: {ContainerCount} containers ready in the {Database} database.",
-            MenuCosmosContainers.All.Count,
-            MenuCosmosContainers.DatabaseName);
+            "Menu replication: {ContainerCount} containers ready in the {Database} database ({CreatedCount} created now).",
+            report.Containers.Count,
+            report.DatabaseName,
+            report.CreatedCount);
+    }
+    catch (InvalidOperationException exception)
+    {
+        // A container that exists with the WRONG partition key. Not a missing emulator and not
+        // fixable by restarting — it has to be dropped and recreated — so it is logged as an error.
+        cosmosLogger.LogError(
+            exception,
+            "Menu replication: the Cosmos containers are provisioned with the wrong partition key.");
     }
     catch (Exception exception)
     {

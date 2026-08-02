@@ -24,6 +24,8 @@ dotnet add package ShiftSoftware.ADP.Menus.Web     # in your Blazor WASM project
 
 Full integration guide — registration, endpoints, country modes, authorization, domain model — lives in the ADP docs site under **Menus → Integration**. The conceptual overview of menus and menu generation is under **Menus → Intro / Menu Generation**.
 
+Projecting the menu catalog into Cosmos DB for the vehicle lookup — provisioning, the save trigger, the catch-up backfill and how to verify it — is under **Menus → Cosmos Replication**.
+
 ## Sample app
 
 A working end-to-end sample lives in [`samples/ADP.Menus.Sample.API`](samples/ADP.Menus.Sample.API) and [`samples/ADP.Menus.Sample.Web`](samples/ADP.Menus.Sample.Web). It hosts ShiftIdentity internally (login with `SuperUser` / `OneTwo`) and seeds demo data on first run.

@@ -59,6 +59,7 @@ nav:
       - Intro: menus/intro.md
       - Menu Generation: menus/menu-generation.md
       - Integration: menus/integration.md
+      - Cosmos Replication: menus/cosmos-replication.md
   - Surveys:
       - Triggers & Scheduler: surveys/triggers-and-scheduler.md
   - Architecture:

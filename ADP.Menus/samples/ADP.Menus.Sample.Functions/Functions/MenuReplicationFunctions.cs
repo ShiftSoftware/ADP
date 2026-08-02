@@ -14,9 +14,10 @@ namespace ShiftSoftware.ADP.Menus.Sample.Functions.Functions;
 
 /// <summary>
 /// Scheduled Cosmos catch-up replication for the menu catalog: ONE hourly timer per table (an
-/// incremental, dirty-only re-sync) plus ONE on-demand HTTP endpoint that re-syncs EVERYTHING (a full
-/// backfill). All of it runs through the reusable <c>MenuCatchUpReplicationExtensions</c>, so the
-/// documents are byte-identical to the ones the sample API's save trigger writes.
+/// incremental, dirty-only re-sync), an on-demand HTTP endpoint that re-syncs EVERYTHING (a full
+/// backfill), and one that reports how far replication has got. All of it runs through the reusable
+/// <c>MenuCatchUpReplicationExtensions</c>, so the documents are byte-identical to the ones the sample
+/// API's save trigger writes.
 ///
 /// <para><b>Timers are disabled in local dev, two ways.</b> (1) The host-honoured
 /// <c>AzureWebJobs.&lt;FunctionName&gt;.Disabled</c> settings in <c>local.settings.json</c> stop them
@@ -111,11 +112,17 @@ public class MenuReplicationFunctions
     // ─────────────────────── on-demand: replicate EVERYTHING (full backfill) ───────────────────────
 
     /// <summary>
-    /// Re-syncs every menu table with <c>updateAll: true</c> — every row, not just the dirty ones.
+    /// Re-syncs every menu table with <c>updateAll: true</c> — every row, not just the dirty ones —
+    /// then reports what is still outstanding.
     ///
     /// This is what to run when switching replication on for an existing catalogue, after rebuilding a
     /// container, or after the system-wide parts-price update (which changes prices without touching
     /// the MenuItem rows, so they are never dirty and only a full pass repairs their documents).
+    ///
+    /// <para><b>Read the response, not just the status code.</b> A row the sweep failed to write is
+    /// marked unsuccessful and skipped silently — no exception, no log line — so a run that wrote 1060
+    /// of 1188 documents finishes exactly like one that wrote all of them. The sweep is idempotent and
+    /// self-healing, so the fix is to run it again; the counts below are how you know you need to.</para>
     /// </summary>
     [Function(nameof(ReplicateAllHttp))]
     public async Task<IActionResult> ReplicateAllHttp(
@@ -128,8 +135,32 @@ public class MenuReplicationFunctions
         await cosmos.ReplicateAllAsync(database, connectionString, databaseId, updateAll: true);
         logger.LogInformation("Menu full replication finished at {end}.", DateTime.UtcNow);
 
-        return new OkObjectResult(new { replicated = true });
+        var status = await MenuReplicationStatus.ReadAsync(database, request.HttpContext.RequestAborted);
+
+        if (!status.IsUpToDate)
+            logger.LogWarning(
+                "Menu full replication finished with {pending} of {total} rows still outstanding "
+                + "({neverReplicated} never written). Run it again — the sweep picks up exactly those rows.",
+                status.Pending,
+                status.Total,
+                status.NeverReplicated);
+
+        return new OkObjectResult(new { replicated = true, status });
     }
+
+    // ─────────────────────── on-demand: how far replication has got ───────────────────────
+
+    /// <summary>
+    /// Per-table counts of what is replicated and what is not — the check that a backfill actually
+    /// finished, and the cheap way to watch the hourly timers keep up.
+    ///
+    /// Reads SQL only: it reports what the pipeline believes, so it cannot see a document staled by an
+    /// edit that bypassed its owning row. That case is what <c>replicate-all</c> is for.
+    /// </summary>
+    [Function(nameof(ReplicationStatusHttp))]
+    public async Task<IActionResult> ReplicationStatusHttp(
+        [HttpTrigger(AuthorizationLevel.Function, "get", Route = "replication-status")] HttpRequest request)
+        => new OkObjectResult(await MenuReplicationStatus.ReadAsync(database, request.HttpContext.RequestAborted));
 
     // ─────────────────────── helpers ───────────────────────
 
