@@ -199,31 +199,50 @@ public class ServiceMenuEvaluatorTests
     }
 
     /// <summary>
-    /// With no resolver the request's transfer rate applies and per-country labour rates are used; with
-    /// one, the host is the authority — which is how a single-country deployment reproduces its own
-    /// export's "primary labour rate, transfer rate 1" normalisation.
+    /// The resolver supplies the deployment's transfer rate and owns the labour-rate mode outright — which
+    /// is how a single-country deployment reproduces its own export's "primary labour rate, transfer rate 1"
+    /// normalisation. A request that says nothing gets exactly that.
     /// </summary>
     [Fact]
-    public async Task CountrySettingsResolver_OverridesTheRequest()
+    public async Task CountrySettingsResolver_SuppliesTheDefaults()
     {
         var withoutResolver = await Evaluator()
-            .ResolveConfigAsync(new ServiceMenuLookupRequest { TransferRate = 2.5m });
+            .ResolveConfigAsync(new ServiceMenuLookupRequest());
 
-        Assert.Equal(2.5m, withoutResolver.TransferRate);
+        Assert.Equal(1m, withoutResolver.TransferRate);
         Assert.False(withoutResolver.UsePrimaryLabourRate);
 
-        var options = new ServiceMenuLookupOptions
-        {
-            CountrySettingsResolver = _ =>
-                new ValueTask<ServiceMenuCountrySettings>(new ServiceMenuCountrySettings { TransferRate = 1m, UsePrimaryLabourRate = true }),
-        };
+        var withResolver = await Evaluator(SingleCountryDeployment())
+            .ResolveConfigAsync(new ServiceMenuLookupRequest());
 
-        var withResolver = await Evaluator(options)
-            .ResolveConfigAsync(new ServiceMenuLookupRequest { TransferRate = 2.5m });
-
-        Assert.Equal(1m, withResolver.TransferRate);
+        Assert.Equal(3m, withResolver.TransferRate);
         Assert.True(withResolver.UsePrimaryLabourRate);
     }
+
+    /// <summary>
+    /// An explicitly supplied transfer rate wins over the resolver. The alternative — the caller sets a
+    /// value and quietly gets a different one — is the worse failure: it surfaces only as money that does
+    /// not add up. A host that wants the resolver to be the sole authority does not expose the field.
+    ///
+    /// <para><see cref="MenuGenerationConfig.UsePrimaryLabourRate"/> is NOT overridable and stays the
+    /// resolver's, because the request has no way to express it — asserted here so the two halves are not
+    /// quietly merged into one rule later.</para>
+    /// </summary>
+    [Fact]
+    public async Task AnExplicitTransferRate_WinsOverTheResolver()
+    {
+        var config = await Evaluator(SingleCountryDeployment())
+            .ResolveConfigAsync(new ServiceMenuLookupRequest { TransferRate = 2.5m });
+
+        Assert.Equal(2.5m, config.TransferRate);
+        Assert.True(config.UsePrimaryLabourRate);
+    }
+
+    private static ServiceMenuLookupOptions SingleCountryDeployment() => new()
+    {
+        CountrySettingsResolver = _ =>
+            new ValueTask<ServiceMenuCountrySettings>(new ServiceMenuCountrySettings { TransferRate = 3m, UsePrimaryLabourRate = true }),
+    };
 
     [Fact]
     public async Task DefaultTransferRate_IsOne()

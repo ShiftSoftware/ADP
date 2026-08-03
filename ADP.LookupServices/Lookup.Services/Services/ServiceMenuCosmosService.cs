@@ -48,7 +48,13 @@ public class ServiceMenuCosmosService
     /// host that has never provisioned would otherwise be told "this model has no menu" for every model
     /// forever, with nothing anywhere to indicate why.
     /// </exception>
-    public async Task<ServiceMenuDocuments> GetMenuDocumentsAsync(string basicModelCode, CancellationToken cancellationToken = default)
+    /// <remarks>
+    /// Virtual as a deliberate test seam. It is the one place the read path touches Cosmos, so overriding it
+    /// lets everything above — the aggregator, the shared generator, the pricing and the vehicle-lookup
+    /// section — run for real against fixture documents, offline. A fake one layer higher would test the
+    /// wiring and skip the codes, which are the part worth testing.
+    /// </remarks>
+    public virtual async Task<ServiceMenuDocuments> GetMenuDocumentsAsync(string basicModelCode, CancellationToken cancellationToken = default)
     {
         var documents = new ServiceMenuDocuments { BasicModelCode = basicModelCode };
 

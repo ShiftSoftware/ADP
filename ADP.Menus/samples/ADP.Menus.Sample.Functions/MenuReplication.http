@@ -3,6 +3,10 @@
 ### A basic model code that exists in your imported catalogue. Everything below uses it.
 @basicModelCode = AXAA54
 
+### A VIN to reach the same menu from the other end. Only used by the vehicle section at the bottom,
+### which needs the CompanyData/Vehicles containers this sample does not provision.
+@vin = JTMHX01J8L4198293
+
 ### ─────────────────────────────── replicate ───────────────────────────────
 
 ### Full backfill — re-syncs EVERY menu row into Cosmos, not just the dirty ones.
@@ -49,3 +53,43 @@ GET {{host}}/api/menu/{{basicModelCode}}?language=ar
 ### An unmatched country is valid — parts fall back to price 0 and the line is flagged
 ### `hasUnpricedParts: true`, so the total is understated rather than silently wrong.
 GET {{host}}/api/menu/{{basicModelCode}}?countryId=2
+
+### ─────────────────── or reach the same menu from a VIN ───────────────────
+
+### PREREQUISITE: these need the CompanyData/Vehicles containers, which this sample does NOT provision —
+### menu replication only fills the Services database. Against a menus-only emulator they answer 503 and
+### say so. Point ConnectionStrings:Cosmos at an account that also has vehicle data to run them.
+
+### The vehicle lookup with the model's service menu attached.
+###
+### Everything above takes a basic model code as given. A vehicle lookup does not have one: it DERIVES it
+### from the vehicle's Katashiki (first segment before the hyphen, trailing L/R dropped past five
+### characters) and matches that against a code an author typed into the menus database. Nothing
+### guarantees the two agree — that is open item O3 — so the response echoes all three:
+###
+###   katashiki       what the vehicle carries
+###   basicModelCode  what was derived from it, and looked for — echoed even on a miss
+###   serviceMenu.status  whether it matched, and if not, why
+###
+### status is the measurement: hit rate = Found / (Found + NotFound) over a real VIN population.
+### NoBasicModelCode is NOT a miss — the vehicle had no Katashiki, so there was no key to join on.
+### Unavailable / NotRegistered mean the menu subsystem could not be consulted; note the vehicle lookup
+### still succeeded, because a menu fault is never allowed to fail it.
+###
+### An unknown VIN is an ordinary answer here, not a 404: no Katashiki, so NoBasicModelCode.
+GET {{host}}/api/vehicle/{{vin}}
+
+### Same vehicle, Arabic. Menu codes are language-dependent; correlate by `lineKey`, never by `code`.
+GET {{host}}/api/vehicle/{{vin}}?language=ar
+
+### A specific country for the part prices and labour rate on each line.
+GET {{host}}/api/vehicle/{{vin}}?countryId=2
+
+### An explicit transfer rate. It scales the consumable, so it moves the price quoted to a customer — and
+### a caller-supplied value WINS over the host's CountrySettingsResolver, by design: a value that is
+### silently ignored is worse than one that is absent. It moves no menu or labour CODE, because the
+### labour-rate mapping is always keyed by the variant's primary rate.
+###
+### Bound from the query string here only because this sample is function-key protected. A public
+### endpoint must fix it server-side, or leave it unset and let the resolver decide.
+GET {{host}}/api/vehicle/{{vin}}?transferRate=1.15

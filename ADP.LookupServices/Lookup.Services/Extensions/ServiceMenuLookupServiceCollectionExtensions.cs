@@ -11,11 +11,12 @@ namespace ShiftSoftware.ADP.Lookup.Services.Extensions;
 /// <summary>
 /// Registers the service-menu lookup.
 ///
-/// <para><b>Separate from <c>AddLookupService</c> on purpose.</b> Service menus are a self-contained
-/// feature over their own Cosmos containers — a host can want menus without the vehicle lookup, or the
-/// vehicle lookup without menus — so turning them on is its own call with its own
-/// <see cref="ServiceMenuLookupOptions"/>. The general lookup registration will call this itself in a
-/// later phase, once menus are part of the vehicle lookup result; until then a host opts in here.</para>
+/// <para><b>Its own call, and still worth having.</b> <c>AddLookupService</c> now calls this itself — service
+/// menus are part of the vehicle lookup result — and forwards
+/// <see cref="LookupOptions.ConfigureServiceMenu"/>, so a host with both features configures everything in
+/// one place. This call remains the entry point for menus <i>without</i> the vehicle lookup, and composes
+/// with the general registration in either order: both are <c>Configure</c> actions on the same options
+/// builder, applied in registration order.</para>
 ///
 /// <para>Everything registers with <c>TryAdd</c>, so calling this alongside (or twice with) another
 /// registration is safe and the first one wins.</para>

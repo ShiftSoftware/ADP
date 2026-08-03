@@ -187,7 +187,12 @@ nav:
               - Paint Thickness Inspection: generated/LookupServices/DTOsAndModels/VehicleLookup/PaintThicknessInspectionDTO.md
               - Paint Thickness Panel: generated/LookupServices/DTOsAndModels/VehicleLookup/PaintThicknessInspectionPanelDTO.md
               - Accessory: generated/LookupServices/DTOsAndModels/VehicleLookup/AccessoryDTO.md
+              - Service Menu: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleServiceMenuDTO.md
+              - Service Menu Status: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleServiceMenuStatus.md
+              - Service Menu Line: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleServiceMenuLineDTO.md
+              - Service Menu Line Part: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleServiceMenuPartDTO.md
               - Request Options: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleLookupRequestOptions.md
+              - Service Menu Request Options: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleServiceMenuRequestOptions.md
           - Part Lookup:
               - Part Lookup Result: generated/LookupServices/DTOsAndModels/Part/PartLookupDTO.md
               - Stock Part: generated/LookupServices/DTOsAndModels/Part/StockPartDTO.md

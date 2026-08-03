@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
+using ShiftSoftware.ADP.Lookup.Services.Enums;
 using ShiftSoftware.ADP.Lookup.Services.Extensions;
 using ShiftSoftware.ADP.Menus.Sample.Functions;
 
@@ -61,14 +62,29 @@ var host = new HostBuilder()
             return new CosmosClient(connectionString);
         });
 
-        // Its own registration and its own options — service menus are self-contained over their own
-        // containers, so a host opts into them without taking the whole vehicle lookup.
-        services.AddServiceMenuLookup(options =>
+        // AddLookupService brings the vehicle lookup AND the service-menu lookup, because the menu is part
+        // of the vehicle lookup result. That is what lets this host serve both reads: GET api/menu/{code}
+        // straight off ServiceMenuLookupService, and GET api/vehicle/{vin} through VehicleLookupService
+        // with the menu attached — the join the menu lookup alone cannot demonstrate.
+        //
+        // A host that wants menus WITHOUT the vehicle lookup calls AddServiceMenuLookup(…) instead; it takes
+        // the same options action and registers only the menu half.
+        services.AddLookupService(options =>
         {
-            // The sample's data is authored without country-specific prices, so country 0 is what its
-            // part prices are stored under. A multi-country deployment sets this to its own id and wires
-            // ServiceMenuLookupOptions.CountrySettingsResolver.
-            options.DefaultCountryID = 0;
+            // The vehicle half reads CompanyData/Vehicles out of Cosmos. Required — without it
+            // IVehicleLookupStorageService is never registered and VehicleLookupService cannot resolve.
+            // Note this sample does not PROVISION those containers; see VehicleMenuLookupFunctions.
+            options.VehicleLookupStorageSource = StorageSources.CosmosDB;
+
+            // The menu half's own options, reached from this one call so a host cannot end up with the
+            // menu lookup registered and silently running on defaults.
+            options.ConfigureServiceMenu = menu =>
+            {
+                // The sample's data is authored without country-specific prices, so country 0 is what its
+                // part prices are stored under. A multi-country deployment sets this to its own id and wires
+                // ServiceMenuLookupOptions.CountrySettingsResolver.
+                menu.DefaultCountryID = 0;
+            };
         });
     })
     .Build();

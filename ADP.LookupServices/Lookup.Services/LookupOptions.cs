@@ -253,10 +253,30 @@ public class LookupOptions
     /// </summary>
     public string? CosmosDatabaseNameSuffix { get; set; }
 
-    // Service-menu settings are NOT here — see ServiceMenuLookupOptions, registered separately by
-    // AddServiceMenuLookup. The menu lookup is self-contained over its own Cosmos containers, so a host
-    // can want one feature without the other; folding its settings in here would make every host carry
-    // them and tie turning menus on to the whole lookup registration.
+    /// <summary>
+    /// Configures the service-menu lookup, which <c>AddLookupService</c> registers because service menus are
+    /// part of the vehicle lookup result. Without this a host has to know to make a second
+    /// <c>AddServiceMenuLookup</c> call, and the menu silently runs on defaults — country 0 and no
+    /// <see cref="ServiceMenuLookupOptions.CountrySettingsResolver"/>, which is the wrong money for a
+    /// single-country deployment.
+    /// <code>
+    /// services.AddLookupService(options =>
+    /// {
+    ///     options.ConfigureServiceMenu = menu => menu.DefaultCountryID = 2;
+    /// });
+    /// </code>
+    /// <para>An <see cref="Action{T}"/> rather than a <see cref="ServiceMenuLookupOptions"/> instance, and
+    /// that is the whole point: the menu options are registered through the options pattern, so this is
+    /// simply one more <c>Configure</c> step on the same builder. Holding an instance here instead would
+    /// give the menu settings two homes to merge and would break
+    /// <c>AddOptions&lt;ServiceMenuLookupOptions&gt;().Configure&lt;TDependency&gt;(…)</c> — the supported
+    /// way to build a resolver out of the host's own services, since this object is constructed before DI
+    /// exists.</para>
+    /// <para>A host may still call <c>AddServiceMenuLookup</c> directly — it is the only option for menus
+    /// WITHOUT the vehicle lookup, and it composes with this: both are <c>Configure</c> actions and run in
+    /// registration order, last writer winning.</para>
+    /// </summary>
+    public Action<ServiceMenuLookupOptions>? ConfigureServiceMenu { get; set; }
 }
 
 /// <summary>

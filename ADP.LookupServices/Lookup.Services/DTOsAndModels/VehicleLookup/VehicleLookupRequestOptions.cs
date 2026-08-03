@@ -48,6 +48,15 @@ public class VehicleLookupRequestOptions
     public bool TraceServiceItemEvaluation { get; set; }
 
     /// <summary>
+    /// The model's service menu — whether to include it
+    /// (<see cref="VehicleServiceMenuRequestOptions.Include"/>) and how to generate it. Null means no menu,
+    /// which is the default. The switch lives beside the settings it governs so the two cannot disagree: a
+    /// caller cannot set a country or transfer rate here and have them silently ignored because a separate
+    /// flag was missed. See <see cref="VehicleServiceMenuRequestOptions"/>.
+    /// </summary>
+    public VehicleServiceMenuRequestOptions ServiceMenuOptions { get; set; }
+
+    /// <summary>
     /// The Identity <c>CompanyID</c> of the user/company making the lookup. The authenticated host sets it from
     /// <c>IdentityClaimProvider.GetCompanyID()</c>. Used by the allocation guard
     /// (<c>LookupOptions.RequireAllocationForActivation</c>) to decide whether warranty activation may be offered:

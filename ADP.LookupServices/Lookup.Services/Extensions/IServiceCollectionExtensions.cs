@@ -36,9 +36,26 @@ public static class IServiceCollectionExtensions
         services.AddScoped(x => new PartLookupCosmosService(x.GetRequiredService<LookUpCosmosClient>(), options));
         services.AddScoped(x => new ServiceCosmosService(x.GetRequiredService<LookUpCosmosClient>()));
 
-        // Service menus are NOT registered here. They are a self-contained feature over their own Cosmos
-        // containers with their own ServiceMenuLookupOptions, so a host opts in with AddServiceMenuLookup.
-        // This registration will call it once menus become part of the vehicle lookup result.
+        // Service menus ARE registered here now: they are part of the vehicle lookup result
+        // (VehicleLookupDTO.ServiceMenu), so the vehicle lookup has to be able to resolve them. This is safe
+        // for a deployment that never provisioned the menu containers — registration touches no Cosmos, and
+        // the section is only read when a request opts in with ServiceMenuOptions.Include, which reports the
+        // fault rather than raising it. Everything inside is TryAdd, so a host that also calls
+        // AddServiceMenuLookup itself still gets exactly one registration.
+        //
+        // ConfigureServiceMenu is forwarded so the menu settings are reachable from the ONE call every host
+        // already makes. Registering menus without a way to configure them here would leave the dangerous
+        // configuration as the default: country 0 and no CountrySettingsResolver, which charges a
+        // single-country deployment the wrong labour rate (open item O6) unless the host happens to know a
+        // second registration call exists.
+        services.AddServiceMenuLookup<TCosmosClient>(options?.ConfigureServiceMenu);
+
+        // One suffix, two option classes. A dev pointing the whole lookup at "-alt" databases means the menu
+        // containers too; the menu options simply do not know about LookupOptions. Coalescing rather than
+        // assigning means an explicit suffix — set in ConfigureServiceMenu above, or in an
+        // AddServiceMenuLookup(o => …) call in either order — still wins.
+        services.AddOptions<ServiceMenuLookupOptions>()
+                .Configure(menuOptions => menuOptions.CosmosDatabaseNameSuffix ??= options?.CosmosDatabaseNameSuffix);
 
         return services;
     }

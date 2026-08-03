@@ -1,0 +1,24 @@
+import type { VehicleServiceMenuPartDTO } from './vehicle-service-menu-part-dto';
+export type VehicleServiceMenuLineDTO = {
+    variantID: number;
+    variantName: string;
+    lineKey: string;
+    code: string;
+    labourCode: string;
+    description: string;
+    lineType: 'Periodic' | 'StandaloneUngrouped' | 'StandaloneGrouped';
+    isStandalone: boolean;
+    serviceIntervalCode: string;
+    serviceIntervalValueInMeter?: number;
+    labourRate: number;
+    allowedTime: number;
+    labourPrice: number;
+    consumable: number;
+    labourTotalPrice: number;
+    parts: VehicleServiceMenuPartDTO[];
+    partsTotalPrice: number;
+    discountPercentage?: number;
+    discountAmount: number;
+    totalPrice: number;
+    hasUnpricedParts: boolean;
+};

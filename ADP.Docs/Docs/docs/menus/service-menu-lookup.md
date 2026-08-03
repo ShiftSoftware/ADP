@@ -20,9 +20,28 @@ flowchart LR
 
 ## Registering it
 
-Service menus are their own registration with their own options, because they are a self-contained feature
-over their own Cosmos containers — a host can want menus without the vehicle lookup, or the vehicle lookup
-without menus.
+`AddLookupService` registers the menu lookup for you — service menus are part of the vehicle lookup result
+(see [In the vehicle lookup](#in-the-vehicle-lookup)) — and configuring it is part of the same call:
+
+```csharp
+services.AddLookupService(options =>
+{
+    options.CosmosDatabaseNameSuffix = "-alt";
+
+    options.ConfigureServiceMenu = menu =>
+    {
+        menu.DefaultCountryID = 2;
+    };
+});
+```
+
+!!! warning "Configure it, or accept the defaults"
+    Registering happens whether you configure or not, and the defaults are country `0` with no
+    `CountrySettingsResolver`. For a **single-country deployment that is the wrong money** — it charges a
+    country labour rate where the DMS export charges the variant's primary one. See
+    [Country, transfer rate and labour rate](#country-transfer-rate-and-labour-rate).
+
+For menus **without** the vehicle lookup, register them directly:
 
 ```csharp
 services.AddServiceMenuLookup(options =>
@@ -31,14 +50,32 @@ services.AddServiceMenuLookup(options =>
 });
 ```
 
-That is all a host needs: it registers `ServiceMenuLookupService` and its dependencies against the
-registered `CosmosClient`. Use `AddServiceMenuLookup<TCosmosClient>` when the host keeps more than one
-client. Everything registers with `TryAdd`, so calling it twice is harmless.
+That registers `ServiceMenuLookupService` and its dependencies against the registered `CosmosClient`. Use
+`AddServiceMenuLookup<TCosmosClient>` when the host keeps more than one client. Everything registers with
+`TryAdd`, so the two calls compose in either order and you still get one registration — both are `Configure`
+steps on the same options builder, applied in registration order.
 
-!!! note "The general lookup registration does not include it yet"
-    `AddLookupService` deliberately does **not** register the menu lookup today — a host opts in above. It
-    will register it once service menus become part of the vehicle lookup result, so that a deployment
-    which never provisioned the menu containers is not affected until it chooses to be.
+!!! note "Registering costs a deployment nothing until it opts in"
+    Nothing in the registration touches Cosmos, and a vehicle lookup only reads the menu when the request
+    sets `ServiceMenuOptions.Include`. A deployment that never provisioned the menu containers is unaffected —
+    and if it does opt in without provisioning, the section reports `Unavailable` rather than failing the
+    lookup.
+
+`ConfigureServiceMenu` is an `Action<ServiceMenuLookupOptions>`, not a settings object held on
+`LookupOptions`. That is deliberate: it becomes one more `Configure` step on the same options builder, so it
+composes with everything else instead of giving the menu settings a second home to merge. It also keeps the
+path below working — `LookupOptions` is built before DI exists, so an instance there could never carry a
+resolver made from the host's own services.
+
+```csharp
+services.AddOptions<ServiceMenuLookupOptions>()
+        .Configure<ICountryProvider>((options, countries) => …);
+```
+
+`AddLookupService` also seeds `ServiceMenuLookupOptions.CosmosDatabaseNameSuffix` from
+`LookupOptions.CosmosDatabaseNameSuffix`, so a dev pointing the whole lookup at suffixed databases gets the
+menu containers too. An explicit menu suffix — from `ConfigureServiceMenu` or `AddServiceMenuLookup` — still
+wins.
 
 ## Using it
 
@@ -94,6 +131,93 @@ A UI usually renders those two differently.
 requested country, so it was priced 0 rather than dropped. Worth surfacing before quoting the total to a
 customer.
 
+!!! warning "`ServiceIntervalValueInMeter` is in kilometres"
+    The name is the source column's (`ServiceInterval.ValueInMeter`) and is not a unit — the catalogue
+    authors `20000` there for the interval it also names *"20,000 KM"*. Render it as it is; dividing by
+    1000 quotes a 20,000 km service as 20 km.
+
+## In the vehicle lookup
+
+A VIN lookup can carry the model's menu with it. This is the same read and the same generator; what it adds
+is a **join**, from the vehicle to the catalog.
+
+```csharp
+var vehicle = await vehicleLookupService.LookupAsync(vin, new VehicleLookupRequestOptions
+{
+    LanguageCode = "en",
+    ServiceMenuOptions = new VehicleServiceMenuRequestOptions
+    {
+        Include = true,        // the switch; everything below is optional
+        CountryID = 2,
+        TransferRate = 1.15m,
+    },
+});
+
+foreach (var service in vehicle.ServiceMenu.Services)
+    Console.WriteLine($"{service.VariantName}  {service.Code}  {service.TotalPrice}");
+```
+
+`VehicleLookupDTO.ServiceMenu` is null unless the request asked for it. It is **opt-in per request**, not
+per deployment, because it costs an extra single-partition read and a fold *per vehicle* — a bulk lookup
+would otherwise pay it once per VIN.
+
+`Include = true` on its own is the common call: it generates in the request's language, for the menu
+options' default country, at transfer rate 1. A null `ServiceMenuOptions` and `Include = false` both mean no
+menu — the switch sits beside the settings it governs so the two cannot disagree, which is what stops a
+caller setting a country and having it silently ignored.
+
+The menu's **language** is deliberately not in there: it is `LanguageCode`, because a vehicle lookup
+rendering in one language with menu codes in another would be a bug.
+
+!!! warning "`TransferRate` moves money, and the caller wins"
+    A transfer rate supplied here overrides the host's `CountrySettingsResolver` — an explicit value is
+    honoured rather than silently replaced. It scales the consumable, so it changes the price quoted to a
+    customer; it changes no menu or labour **code**, because the labour-rate mapping is always keyed by the
+    variant's primary rate. An endpoint that binds this straight from a query string is letting its callers
+    move the quoted price. A host serving a public web component should fix it server-side, or leave it null
+    and let the resolver decide.
+
+The services arrive **flat**: one list, each line carrying its `VariantID` and `VariantName`, in the nested
+shape's order (per variant, scheduled by distance, then standalone). A caller that started from a VIN wants
+a list it can render; grouping is one `GroupBy` away if it wants the nested shape back.
+
+### The join is on a derived key, and it can miss
+
+`VehicleLookupDTO.BasicModelCode` is reduced from the vehicle's Katashiki — first segment before the
+hyphen, trailing `L`/`R` removed past five characters. The catalog's `BasicModelCode` is typed by an author.
+Nothing guarantees the two agree, and a miss is an ordinary outcome rather than an error.
+
+`ServiceMenu.Status` is what tells them apart, and it is the instrument for measuring how often the join
+lands:
+
+| `Status` | Meaning | What to do |
+|---|---|---|
+| `Found` | a menu exists for the derived code | — (`Services` can still be empty; see below) |
+| `NotFound` | the derived code matched no menu | either nobody authored one, or the codes disagree |
+| `NoBasicModelCode` | the vehicle has no Katashiki | not a miss — there was no key to join on |
+| `Unavailable` | the menu lookup could not be consulted | provision the containers, then sweep |
+| `NotRegistered` | the menu lookup is not registered | call `AddServiceMenuLookup` (or `AddLookupService`) |
+
+**Hit rate = `Found / (Found + NotFound)`.** Log `Status` alongside the VIN and the code that was tried
+(`ServiceMenu.BasicModelCode` is echoed even on a miss) and the rate falls out. `NoBasicModelCode` is
+excluded from both sides on purpose: a vehicle with no Katashiki is not evidence about the codes.
+
+`Found` with an empty `Services` list is a menu that exists but generates nothing — every variant deleted,
+or intervals whose groups carry no labour detail. A UI usually renders that differently from "no menu".
+
+### A menu fault never fails the VIN lookup
+
+Everything the menu subsystem can raise — an unprovisioned container, documents referencing master data
+they do not carry, a Cosmos read failure — is contained and reported as `Unavailable`. A section that is
+additive must not be able to take down a lookup that has nothing to do with menus.
+
+Containment stops there. A bug in the lookup itself, **or in your `CountrySettingsResolver`**, propagates:
+a section that is quietly "unavailable" forever is a worse failure than a loud one. That resolver now runs
+inside the VIN lookup — keep it total.
+
+`ServiceMenuLookupService.GetMenuAsync` is unchanged and still throws. A caller asking for a menu and
+nothing else *should* hear about a provisioning fault; a caller asking about a vehicle should not.
+
 ## Country, transfer rate and labour rate
 
 A menus host normalises two settings from its configured country list before exporting: a deployment with
@@ -129,6 +253,18 @@ Leaving it unset uses the request's transfer rate (default 1) and per-country la
 multi-country deployment. **Generated menu and labour codes are unaffected either way**: the labour-rate
 mapping that feeds the labour code is always keyed by the variant's primary rate, never the country one. Only
 the money on the line moves.
+
+The resolver's transfer rate is a **default, not a veto**: a request that supplies its own wins over it. The
+labour-rate mode has no request counterpart, so that half is always the host's.
+
+| Setting | Precedence |
+|---|---|
+| Country | request → `DefaultCountryID` → `0` |
+| Transfer rate | request → `CountrySettingsResolver` → `1` |
+| Labour-rate mode | `CountrySettingsResolver` → per-country rates |
+
+A host that wants the resolver to be the only authority over the transfer rate simply does not expose the
+field to its callers — the lookup honours what it is given rather than second-guessing it.
 
 ## Cost of a lookup
 
@@ -186,10 +322,38 @@ selling individually rather than vanishing.
     a soft-deleted row would leave the document already in Cosmos untouched and stale, still generating its
     line. Carrying the flag is what makes the delete take effect.
 
+## Rendering it
+
+There is no ADP web component for the service menu — rendering is the host's. The response is shaped for it:
+`Services` is a flat list in display order (per variant, scheduled by odometer reading, then standalone), and
+each line carries its variant so a UI can group client-side. `VehicleServiceMenuLineDTO` and
+`VehicleServiceMenuPartDTO` are generated into the NPM package's TypeScript types alongside the rest of the
+vehicle lookup, so a TS front end gets the shape for free.
+
+Three things a renderer should get right:
+
+- **Word each `Status` differently.** Collapsing all of them into "no data" throws away the only signal that
+  separates "no menu published for this model" from "the menu subsystem is misconfigured".
+- **Mark a line with `HasUnpricedParts`, do not quote it clean.** A part with no price row for the country is
+  priced 0 rather than dropped, so the total is understated. Quoting it as if it were complete is the failure
+  that flag exists to prevent.
+- **Do not divide `ServiceIntervalValueInMeter` by 1000.** It is already kilometres, whatever the name says.
+
 ## Sample
 
 [`samples/ADP.Menus.Sample.Functions`](https://github.com/ShiftSoftware/ADP/tree/master/ADP.Menus/samples/ADP.Menus.Sample.Functions)
 is the full round trip in one host: it replicates the catalogue into Cosmos (hourly timers plus
-`POST api/replicate-all`) and reads it back with `GET api/menu/{basicModelCode}`. `MenuReplication.http`
-has all of them ready to run — replicate, check the status, then look the model up and compare the codes
-against the DMS export.
+`POST api/replicate-all`) and reads it back two ways.
+
+| Endpoint | What it shows |
+|---|---|
+| `GET api/menu/{basicModelCode}` | the read path — codes, labour codes and prices for a model you name |
+| `GET api/vehicle/{vin}` | the **join** — Katashiki → derived code → `status`, with the menu attached |
+
+`MenuReplication.http` has all of them ready to run: replicate, check the status, then look the model up and
+compare the codes against the DMS export.
+
+!!! note "The vehicle endpoint needs containers the sample does not provision"
+    Menu replication fills the `Services` database; a vehicle lookup reads `CompanyData`/`Vehicles`, which
+    comes from a different pipeline entirely. Against a menus-only emulator `GET api/vehicle/{vin}` answers
+    503 and says so. The menu endpoint needs only the menu containers and always works.

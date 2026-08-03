@@ -55,6 +55,11 @@ public class ServiceMenuLookupOptions
     /// that leaves it unset will charge a country labour rate where its export charges the primary one.
     /// <b>Generated menu and labour codes are unaffected either way</b>: the labour-rate mapping is
     /// always keyed by the primary rate.</para>
+    ///
+    /// <para><b>The transfer rate half is a default, not a veto.</b> A request that supplies its own
+    /// transfer rate wins over this resolver — an explicit caller value is honoured rather than silently
+    /// replaced. <see cref="ServiceMenuCountrySettings.UsePrimaryLabourRate"/> has no request counterpart,
+    /// so that half is always the host's.</para>
     /// </summary>
     public Func<long, ValueTask<ServiceMenuCountrySettings>> CountrySettingsResolver { get; set; }
 }

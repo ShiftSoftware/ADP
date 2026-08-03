@@ -31,10 +31,18 @@ public class ServiceMenuGenerationEvaluator
     }
 
     /// <summary>
-    /// Resolves the config a request generates under: the country from the request, then
-    /// <see cref="ServiceMenuLookupOptions.DefaultCountryID"/>, then 0; the transfer rate and
-    /// labour-rate mode from <see cref="ServiceMenuLookupOptions.CountrySettingsResolver"/> when the
-    /// host wired one, otherwise from the request.
+    /// Resolves the config a request generates under.
+    ///
+    /// <para><b>Country:</b> the request, then <see cref="ServiceMenuLookupOptions.DefaultCountryID"/>, then 0.</para>
+    ///
+    /// <para><b>Transfer rate:</b> the request when it supplies one, then
+    /// <see cref="ServiceMenuLookupOptions.CountrySettingsResolver"/>, then 1. An explicitly supplied rate
+    /// wins over the host's resolver on purpose: a caller that sets a value and gets a different one back is
+    /// the worse failure — silent, and only visible as money that does not add up. A host that wants the
+    /// resolver to be the sole authority simply does not expose the field to its callers.</para>
+    ///
+    /// <para><b>Labour-rate mode:</b> the resolver only. The request has no way to express it, which is
+    /// deliberate — it mirrors the menus host's country normalisation, not a caller's preference.</para>
     /// </summary>
     public async Task<MenuGenerationConfig> ResolveConfigAsync(ServiceMenuLookupRequest request)
     {
@@ -47,7 +55,7 @@ public class ServiceMenuGenerationEvaluator
         return new MenuGenerationConfig
         {
             CountryID = countryID,
-            TransferRate = settings?.TransferRate ?? request?.TransferRate ?? 1m,
+            TransferRate = request?.TransferRate ?? settings?.TransferRate ?? 1m,
             UsePrimaryLabourRate = settings?.UsePrimaryLabourRate ?? false,
             Language = request?.Language,
 

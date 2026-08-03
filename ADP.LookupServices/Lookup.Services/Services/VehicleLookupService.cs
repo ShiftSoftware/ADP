@@ -16,18 +16,27 @@ public class VehicleLookupService
     private readonly LookupOptions lookupOptions;
     private readonly IServiceProvider serviceProvider;
     private readonly ILogCosmosService logCosmosService;
+    private readonly ServiceMenuLookupService serviceMenuLookupService;
 
+    /// <param name="serviceMenuLookupService">
+    /// Optional. <c>AddLookupService</c> registers it, but a host that builds this service by hand — or one on
+    /// an older wiring — can leave it null; the service-menu section then reports
+    /// <c>VehicleServiceMenuStatus.NotRegistered</c> rather than throwing. It is only ever consulted when a
+    /// request sets <c>VehicleServiceMenuRequestOptions.Include</c>.
+    /// </param>
     public VehicleLookupService(
         IVehicleLookupStorageService vehicleLookupStorageService,
         IServiceProvider services = null,
         ILogCosmosService logCosmosService = null,
-        LookupOptions options = null
+        LookupOptions options = null,
+        ServiceMenuLookupService serviceMenuLookupService = null
     )
     {
         this.vehicleLookupStorageService = vehicleLookupStorageService;
         this.lookupOptions = options;
         this.serviceProvider = services;
         this.logCosmosService = logCosmosService;
+        this.serviceMenuLookupService = serviceMenuLookupService;
     }
 
     public async Task<CompanyDataAggregateModel> GetAggregatedCompanyDataAsync(string vin)
@@ -210,6 +219,13 @@ public class VehicleLookupService
 
         if (requestOptions.TraceServiceItemEvaluation)
             data.ServiceItemTrace = traceCollector.Build();
+
+        // The model's service menu, joined on the basic model code the Katashiki reduces to. The evaluator
+        // owns the opt-in and returns null when the request did not ask, so there is no gate to keep in step
+        // here. It also contains every menu-side fault, so an unprovisioned or half-replicated menu catalog
+        // can only empty this section, never fail the vehicle lookup.
+        data.ServiceMenu = await new VehicleServiceMenuEvaluator(this.serviceMenuLookupService)
+            .EvaluateAsync(data.BasicModelCode, requestOptions);
 
         if (data.Warranty is not null)
         {

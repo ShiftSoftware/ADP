@@ -1,6 +1,6 @@
 # Menu → Cosmos Replication — Implementation Plan
 
-> Status: **Phases 0–5 implemented; Phase 6 still plan.**
+> Status: **Phases 0–6 implemented.** (§22 is Phase 6.)
 > Agreed design for projecting the service-menu catalog into Cosmos DB so a vehicle lookup can turn a
 > **basic model code** into a set of **menu codes + prices**.
 >
@@ -578,10 +578,10 @@ in §17 ("Known gaps"), and the backfill service (step 2) is the sweep that clos
 |---|---|---|
 | O1 | Missing `LabourRateMapping` `(brand,rate)` — the source throws. | **DECIDED (Phase 1): keep throwing.** Ported verbatim; the failure mode is preserved rather than softened. Revisit only if a real deployment hits it — it is a one-line change in `ResolveLabourRateCode`. |
 | O2 | Do item/part edits touch the `MenuItem` row? | **RESOLVED (Phase 3 step 1): mostly yes, with one confirmed bypass.** The variant save stamps `LastPropagatedAt` on every item (so any part/price edit re-replicates the item), and propagation stamps it too. **`MenuController.UpdatePartsPrice` does not** — it mutates country prices without touching `MenuItem`, and it is system-wide, so one run stales every item document. Also, deleting a variant/menu does not cascade to items/parts, orphaning their documents. Both are step-2 work. The third part of this item — the replacement-item slice going stale — is **closed** by §16's `ReplacementItem` fan-out. |
-| O3 | Derived Katashiki code vs authored `Menu.BasicModelCode` match rate in real data. | Measure first (host-side/ad-hoc; keep report in private planning). **Gates Phase 6.** |
+| O3 | Derived Katashiki code vs authored `Menu.BasicModelCode` match rate in real data. | **STILL OPEN, no longer a gate (Phase 6).** It gated Phase 6 on the assumption that a bad hit rate would make the section not worth building. That was the wrong shape: the measurement needs the join to exist, and the join is what Phase 6 builds. Phase 6 ships the *instrument* instead — `VehicleServiceMenuStatus` reports `Found` / `NotFound` / `NoBasicModelCode` per lookup, so hit rate is `Found / (Found + NotFound)` over a deployment's own traffic — and makes the section **opt-in per request**, so shipping it before the number is known costs a deployment nothing. Measure host-side; keep the report in private planning. |
 | O4 | Reference-cache freshness/invalidation in the reader. | **CLOSED by §16.** There is no reader-side cache: the documents are fully denormalized and `UpdateReference` keeps the copies fresh. See §10. |
 | O5 | Do all replicated tables need the two `IShiftEntityReplication` columns? | **RESOLVED (Phase 3 step 1): yes, all 10.** The trigger is constrained on `IShiftEntityReplication`, so a table without the columns is simply never replicated. |
-| O6 | `transferRate` / country at read time. | **RESOLVED (Phase 5).** `LookupOptions.ServiceMenuCountrySettingsResolver` (+ `ServiceMenuDefaultCountryID`) → `MenuGenerationConfig`; `Consumable` stays unscaled in Cosmos and is scaled in the generator, pinned by test. The resolver exists because a menus host normalizes these two settings from its *configured country list*, which the lookup cannot see. Getting it wrong moves money, never codes. |
+| O6 | `transferRate` / country at read time. | **RESOLVED (Phase 5), amended (Phase 6).** `ServiceMenuLookupOptions.CountrySettingsResolver` (+ `DefaultCountryID`) → `MenuGenerationConfig`; `Consumable` stays unscaled in Cosmos and is scaled in the generator, pinned by test. The resolver exists because a menus host normalizes these two settings from its *configured country list*, which the lookup cannot see. Getting it wrong moves money, never codes. **Phase 6 made the resolver's transfer rate a default rather than a veto** — a caller that supplies one wins, so the vehicle lookup can take it from the UI (§22). `UsePrimaryLabourRate` stays the host's outright. (The Phase-5 note here named these on `LookupOptions`; they were on `ServiceMenuLookupOptions` from the start — §20.) |
 | O7 | `GetAllowedTimeText` culture sensitivity (feeds labour code). | **DECIDED: leave as-is.** Ported verbatim, ambient culture included. Judged not worth the risk of changing codes already issued to a DMS for a case the deployments do not hit. Pinned by test so the behaviour is at least visible. |
 | O8 | `MenuLabourDetails.FirstOrDefault` nondeterminism. | **RESOLVED structurally, no behaviour change.** The generic input is `List<>`-ordered, so "first match" is now a function of the aggregator's ordering rather than of EF/`HashSet` iteration. No `OrderBy` was added — that would have changed output. |
 | O9 | Read-time cost: full fold every lookup. | **CLOSED (Phase 5), no cache added.** The read is one single-partition prefix query and then a pure in-memory fold over one model's documents. A per-model result cache was deliberately NOT built: it would need an invalidation story that replication does not provide (documents change without the reader being told), and it would re-introduce the staleness §16 removed at some remove. A caller sweeping many models caches its own results. |
@@ -610,8 +610,12 @@ in §17 ("Known gaps"), and the backfill service (step 2) is the sweep that clos
 - **Phase 5 — read side (the lookup). ✅ DONE.** See §20. `ServiceMenuLookupService` (one partition read
   → `CosmosToGenerationAggregator` → `MenuCodeGenerator` → lookup DTO), four evaluators, and a
   round-trip test that proves the read path reproduces the export's lines. No reference cache — §16.
-- **Phase 6 — vehicle-lookup integration** (gated on O3): evaluator + flat `[TypeScriptModel]` DTO +
-  web-component section; measure/monitor the join-key hit rate.
+- **Phase 6 — vehicle-lookup integration. ✅ DONE (back end).** See §22. `VehicleServiceMenuEvaluator`, the
+  flat `[TypeScriptModel]` DTOs, and `AddLookupService` now registering the menu lookup. **The
+  web-component section is deliberately not built** — the response is shaped for a renderer and the
+  TypeScript types are generated, but the rendering stays host-side (§22). O3 is **not** closed by this
+  phase — Phase 6 ships the instrument (`VehicleServiceMenuStatus`) and makes the section opt-in so it can
+  ship before the measurement, which only a real deployment can make.
 
 ---
 
@@ -1450,6 +1454,10 @@ vehicle lookup result, the general registration calls `AddServiceMenuLookup` its
 `ServiceMenuLookupOptions` is reachable from the general options. That day is a deliberate edit to those
 two tests, not a surprise.
 
+> **That day came — §22.** The test is now `AddLookupService_RegistersTheMenuLookup`. What kept it safe was
+> not the registration staying out, but the *section* being opt-in per request: registering touches no
+> Cosmos, and an unprovisioned deployment that opts in gets a status rather than an exception.
+
 ### Dealer cost: guarded at the chokepoint, and the guard is tested
 
 `MenuGenerationConfig.IncludePartCost` is left at its `false` default, so cost is never populated on a
@@ -1477,6 +1485,9 @@ deployment would otherwise be told "this model has no menu" for every model, per
 anywhere to indicate why. **Phase 6 must decide what the vehicle lookup does with that** — an
 unprovisioned menu container should not be able to fail a whole VIN lookup.
 
+> **Decided in §22:** the vehicle lookup contains it and reports `VehicleServiceMenuStatus.Unavailable`.
+> This table is unchanged — `GetMenuAsync` still throws for a caller asking about a menu and nothing else.
+
 The last row is the trap §15 predicted for this reader, now pinned by test
 (`PartitionMissingLabourDocuments_LosesPeriodicLinesSilently`): with no `MenuLabour` documents there is
 nothing to match an interval against, so every scheduled line disappears quietly — the same way a missing
@@ -1487,9 +1498,12 @@ means incomplete replication before it means anything about the catalog.
 
 - **`[TypeScriptModel]` on the lookup DTOs.** They carry `[Docable]` only. Adding the TS attribute
   regenerates web-component types on every build, which belongs with the component that consumes them —
-  Phase 6.
+  Phase 6. *(§22: the attribute went on the vehicle lookup's own FLAT types instead, not on these — the
+  generator emits same-directory imports, so anything reachable from `VehicleLookupDTO` has to live
+  beside it.)*
 - **Vehicle-lookup integration.** Still gated on O3 (the derived-Katashiki → authored `BasicModelCode`
-  hit rate), which is a measurement against real data and cannot be made from here.
+  hit rate), which is a measurement against real data and cannot be made from here. *(§22: the gate was
+  wrong round — the measurement needs the join. Built, opt-in, with the hit rate reported per lookup.)*
 - **A per-model result cache.** See O9 — deliberately refused.
 - **Verification against a real catalogue.** Phases 3 and 4 were each verified against the 27-variant
   sample; Phase 5's tests are offline by construction (the round trip needs no Cosmos). The sample
@@ -1666,3 +1680,280 @@ mistake — the deleted rows are the adapter's business now, asserted by
 `SoftDeletedRows_AreFilteredOutByTheAdapter_NotLeftToTheGenerator`, which checks they are absent from the
 REQUEST rather than merely absent from the lines. Asserting on the request is what pins where the rule
 lives; asserting on the lines would pass either way.
+
+---
+
+## 22. Phase 6 — the vehicle lookup carries the menu (DONE)
+
+**225 tests green** (§21's 191 + 34 new; plus 2 opt-in sample-seeding tests that need a local SQL database).
+A VIN lookup can now return the model's service menu.
+
+```
+LookupAsync(vin, { ServiceMenuOptions = { Include = true } })
+  ─▶ VehicleLookupDTO.BasicModelCode      the derived join key (Katashiki → basic model code)
+  ─▶ VehicleServiceMenuEvaluator          → ServiceMenuLookupService (the Phase-5 pipeline, unchanged)
+                                          → flatten variants into one list, stamp a Status
+  ─▶ VehicleLookupDTO.ServiceMenu         → the host's own UI
+```
+
+**Back end only — no web component.** The original Phase-6 line called for one; it was built and then removed
+deliberately (below). Everything a renderer needs ships: a flat list already in display order, a status that
+distinguishes the empty cases, and generated TypeScript types.
+
+| File | Role |
+|---|---|
+| `DTOsAndModels/VehicleLookup/VehicleServiceMenuDTO.cs` | The section: `Status`, the key it tried, country/language/rate, the flat services |
+| `…/VehicleServiceMenuLineDTO.cs` + `…PartDTO.cs` | LAYER 3, flat. `[TypeScriptModel]` — the generated TS contract for the response |
+| `…/VehicleServiceMenuStatus.cs` | Found / NotFound / NoBasicModelCode / Unavailable / NotRegistered |
+| `…/VehicleServiceMenuRequestOptions.cs` | Include + country + transfer rate, grouped on `VehicleLookupRequestOptions.ServiceMenuOptions` |
+| `Evaluators/VehicleServiceMenuEvaluator.cs` | The opt-in, the join, the containment, the flattening |
+| `Extensions/IServiceCollectionExtensions.cs` | `AddLookupService` now calls `AddServiceMenuLookup` |
+| [`VehicleServiceMenuEvaluatorTests.cs`](ADP.Menus.Tests/VehicleServiceMenuEvaluatorTests.cs) | The join, the containment, the contract a renderer sees |
+| [`VehicleMenuLookupFunctions.cs`](samples/ADP.Menus.Sample.Functions/Functions/VehicleMenuLookupFunctions.cs) | `GET api/vehicle/{vin}` — the join, end to end, in the sample |
+| `menus/service-menu-lookup.md` (ADP.Docs) | The host-facing page |
+
+### The section is opt-in, and that is the whole safety story
+
+`VehicleLookupRequestOptions.ServiceMenuOptions` is null by default, so upgrading the package changes no
+existing response. It is per-**request** rather than per-deployment because the cost is per **vehicle**: one
+single-partition read plus a fold. A bulk lookup would otherwise pay that once per VIN, silently, for a
+section most of its callers never render.
+
+That default is also what let this ship ahead of O3. A deployment turns the section on for the request that
+renders a menu, measures its own hit rate from the responses, and decides. Nothing had to be measured
+first, which is the trap the original gating created — the measurement needs the join, and the join is what
+this phase builds.
+
+### Where the switch lives
+
+`ServiceMenuOptions.Include` turns the section on, and the country and transfer rate sit beside it on the
+same object. `Include = true` alone is the common call: request's language, menu options' default country,
+transfer rate 1.
+
+The first cut put the flag on `VehicleLookupRequestOptions` as `IncludeServiceMenu`, beside the options
+object — which is how the file already pairs a gate with a payload (`InsertSSCLog` + `SSCLogInfo`,
+`InsertCustomerVehcileLookupLog` + `CustomerVehicleLookupLogInfo`). **That shape lets the two disagree**,
+and the disagreement is silent in the worst way: fill in a country and a transfer rate, miss the flag on the
+other object, and the settings do nothing. It is the same failure this phase argued against for the transfer
+rate itself — "a value that is silently ignored is worse than one that is absent" — so reproducing it a
+level up was inconsistent. The convention was not a good enough reason.
+
+The cost is that "off" has two spellings: a null object, and an object with `Include` false. They mean the
+same thing and the DTO says so. That redundancy is cheap; a caller that configures a menu and gets none
+is not.
+
+The gate itself moved into `VehicleServiceMenuEvaluator`, which now returns **null** when the request did
+not ask. That keeps "did the caller want a menu" with every other menu decision instead of inline in
+`VehicleLookupService`, and — the practical reason — makes it testable without standing up a whole vehicle
+lookup. `NoSection_UnlessTheRequestAsksForOne` covers the case that matters: options supplied with
+`Include` false must stay OFF. "Options were provided, so they must want it" is the obvious simplification
+of that line, and it would quietly add a partition read per vehicle for every caller that set a country
+without asking for a menu.
+
+Language is deliberately **not** on the options object — it is `LanguageCode`, because a vehicle lookup
+rendering in one language with menu codes in another is a bug, not a configuration.
+
+### Transfer rate: the caller wins, and that is a change to the existing path
+
+`ServiceMenuOptions.TransferRate` is caller-supplied and reaches the fold. Making it *work* required
+inverting the precedence `ResolveConfigAsync` had used since Phase 5:
+
+```
+BEFORE:  settings?.TransferRate ?? request?.TransferRate ?? 1m     // the resolver always won
+AFTER:   request?.TransferRate ?? settings?.TransferRate ?? 1m     // an explicit value wins
+```
+
+Without the inversion the field would be a no-op for exactly the deployments that configure things
+properly — a setting that looks wired and does nothing, visible only as money that does not add up. The old
+rule also meant a `GetMenuAsync` caller could set a transfer rate and be silently ignored, which was its own
+trap; `ServiceMenuLookupRequest.TransferRate` documented that as intended behaviour and no longer does.
+
+**This changes the existing menu-only path too**, and one rule for the setting is the point — a second
+precedence for the vehicle path would be a bug waiting to happen. The blast radius is a host that both wires
+a `CountrySettingsResolver` *and* passes a transfer rate, which previously got the resolver's value.
+`CountrySettingsResolver_OverridesTheRequest` became `CountrySettingsResolver_SuppliesTheDefaults` plus
+`AnExplicitTransferRate_WinsOverTheResolver`.
+
+`UsePrimaryLabourRate` stays resolver-owned outright. The request has no way to express it, and it mirrors
+the menus host's country normalisation rather than a caller's preference — the two halves of
+`ServiceMenuCountrySettings` are deliberately no longer symmetric, and a test says so.
+
+**The exposure is real and is the host's to manage.** The transfer rate scales the consumable, so it moves
+the price quoted to a customer; it moves no menu or labour CODE, because the labour-rate mapping is always
+keyed by the variant's primary rate. An endpoint that binds it from a query string is letting its callers
+move the price. Both the DTO and the docs page say so, and a host that wants the resolver to be the sole
+authority simply does not expose the field. That is a better boundary than the lookup silently discarding
+what it was handed.
+`TheRequestsTransferRate_ScalesTheConsumable` asserts on the generated LINE, not merely on the echoed
+`TransferRate` — echoing a number the fold never saw would pass the weaker assertion.
+
+### A menu fault cannot fail a VIN lookup
+
+§20 left this open in as many words: *"an unprovisioned menu container should not be able to fail a whole
+VIN lookup."* It cannot. The evaluator contains `ServiceMenuContainerNotFoundException`,
+`ServiceMenuGenerationException` and `CosmosException`, and reports `Status = Unavailable`.
+
+**Contained, not swallowed** — the status is in the response, so an unprovisioned deployment says so on
+every vehicle rather than looking like a catalog nobody authored. And `ServiceMenuLookupService.GetMenuAsync`
+is unchanged: a caller asking for a menu *and nothing else* still gets the exception. The asymmetry is the
+point. The same fault is worth raising to one caller and not the other.
+
+Containment stops at the menu subsystem's enumerated faults. Anything else propagates, and one case of that
+is worth stating plainly: a host's `CountrySettingsResolver` now runs inside the VIN lookup, so a resolver
+that throws takes the lookup with it. That is deliberate — a section quietly "unavailable" forever is a
+worse failure than a loud one — and it is documented rather than defended against.
+`AnUnexpectedFault_IsNotContained` pins the boundary.
+
+### Five statuses, because an empty list means five things
+
+`NotFound` is the O3 miss. `NoBasicModelCode` is **not** a miss — the vehicle never had a key to join on,
+and counting it as one would understate the code agreement. `Unavailable` and `NotRegistered` are both
+"could not be consulted" but their fixes differ (provision + sweep, versus register the lookup), which is
+the only reason they are separate; a UI should word them identically, because the difference means nothing
+to a customer. `Found` with an empty list is a menu that exists and generates nothing — the
+distinction §20 built `NotFound` for, carried through.
+
+Zero is `NoBasicModelCode`, not `Found`. A default-constructed or older-payload section must not claim a
+menu it never looked up.
+
+### Flat, and why it is a separate type rather than a reuse
+
+The nested shape (`ServiceMenuLookupDTO` → variants → lines) is right for a caller *choosing* a variant.
+A caller that started from a VIN is not choosing one; it wants a list it can render, so the variant travels
+on the line and a UI groups client-side if it wants to. Order is preserved exactly — per variant, scheduled
+by distance, then standalone — so a UI can render the list straight through.
+
+It is a **separate type** for a mechanical reason worth recording, because it looks like duplication:
+**the TypeScript generator emits same-directory imports.** Every type reachable from `VehicleLookupDTO` has
+to live in `DTOsAndModels/VehicleLookup/`, or the generated `.ts` imports a path that does not exist — and
+it fails in the browser, not at build. Enums are the exception: they are inlined as string unions, so
+`ServiceMenuLineType` is reused as-is. `EveryTypeScriptTypeReachableFromTheVehicleLookup_LivesBesideIt`
+pins this so a later "simplification" cannot quietly break the generated model.
+
+Duplication of a DTO shape is a real cost and it is paid deliberately, with a test:
+`TheFlatShape_CarriesEveryFieldOfTheNestedOne` fails if a field is added to the menu lookup's line or part
+and not to the vehicle's. Without it, a new field would simply never reach the vehicle lookup's callers —
+data loss with no error anywhere.
+
+### Two bugs this phase surfaced
+
+**1. `ServiceIntervalValueInMeter` is in KILOMETRES.** The name is `ServiceInterval.ValueInMeter`'s, carried
+through five layers, and §20's DTO documented it as *"the interval's distance in metres"*. It is not: the
+catalogue authors `ValueInMeter = 20000` next to `FullName = "20,000 KM"` (see the sample seed data). A
+renderer that trusted the doc comment and divided by 1000 would quote a 20,000 km service as **20 km** — to
+a customer. Nothing before this phase displayed the value, which is why it survived. The doc comments are
+corrected on both DTOs, and `formatDistance` is a named function carrying the reason rather than an inline
+expression. The property is **not renamed**: it matches the source column, and a rename would break every
+consumer to fix a comment.
+
+**2. `ServiceMenuLineDTO.LineType` serialized as a number.** Harmless while nothing typed it — but the
+generated TypeScript renders an enum as a string union (`'Periodic' | …`), so the first `[TypeScriptModel]`
+on this chain would have made the generated model quietly wrong: a `switch` that never matches. Both line
+types now carry `[JsonConverter(typeof(JsonStringEnumConverter))]`, matching the repo's own convention on
+every other enum a lookup DTO exposes. `TheEnumsSerializeAsStrings_MatchingTheGeneratedTypeScript` pins it.
+
+### The registration flip, and the one thing it had to carry across
+
+`AddLookupService` now calls `AddServiceMenuLookup<TCosmosClient>()`. §20 predicted this would be *"a
+deliberate edit to those two tests"*; `AddLookupService_DoesNotRegisterTheMenuLookup` became
+`AddLookupService_RegistersTheMenuLookup`, which also asserts `VehicleLookupService` resolves — the menu
+service is an **optional** constructor parameter, so a registration the container cannot satisfy does not
+fail, it silently passes null and every section reports `NotRegistered` forever.
+
+The non-obvious part: `CosmosDatabaseNameSuffix` exists on **both** option classes and they do not know
+about each other. A dev pointing the whole lookup at `-alt` databases means the menu containers too, so the
+general registration seeds the menu one — with `??=`, so an explicit setting wins in either registration
+order. Pinned both ways round.
+
+### Registering menus without a way to configure them was a money bug
+
+The first cut registered the menu lookup from `AddLookupService` and left configuring it to a second,
+separate `AddServiceMenuLookup` call. That looks tidy and is quietly dangerous: **the defaults then apply to
+any host that does not know the second call exists** — country 0 and no `CountrySettingsResolver`, which per
+O6 charges a single-country deployment a country labour rate where its own DMS export charges the variant's
+primary rate. Registering a feature while hiding its configuration makes the wrong answer the one you get
+for doing nothing.
+
+`LookupOptions.ConfigureServiceMenu` closes that: the settings are reachable from the one call every host
+already makes, and `AddLookupService` forwards it into `AddServiceMenuLookup`.
+
+**It is an `Action<ServiceMenuLookupOptions>`, not a `ServiceMenuLookupOptions` instance**, and the
+distinction is load-bearing rather than stylistic:
+
+- An instance would give the menu settings **two homes** — `LookupOptions.ServiceMenu` and
+  `AddServiceMenuLookup(o => …)` — with order-dependent merge semantics, and either a field-by-field copy
+  that silently drops whatever member is added next, or a whole-instance assignment that bypasses
+  `AddOptions` entirely.
+- Bypassing `AddOptions` would break
+  `AddOptions<ServiceMenuLookupOptions>().Configure<TDependency>(…)`, which is the *supported* way to build
+  a `CountrySettingsResolver` out of the host's own services without an `IServiceProvider` parameter (§20,
+  and `OptionsCanBeConfiguredFromTheHostsOwnServices_WithoutAServiceProviderParameter` pins it).
+  `LookupOptions` is constructed by the caller's lambda before DI exists, so an instance living there could
+  never carry such a resolver.
+
+As a delegate it is simply one more `Configure` step on the same builder: it composes with
+`AddServiceMenuLookup` and with `.Configure<TDependency>` in registration order, last writer winning, and
+there is still exactly one home for the settings themselves.
+
+`AddServiceMenuLookup` stays — it is the only entry point for menus *without* the vehicle lookup, and
+`AddLookupService_ComposesWithAnExplicitMenuRegistration` keeps the two working together in either order.
+
+### The web component was built, then removed
+
+A `<vehicle-service-menu>` Stencil component shipped in the first cut of this phase — variant picker,
+scheduled services in odometer order, standalone services, parts behind an expander, four locales. It was
+**deliberately removed**: rendering a service menu is the host's, and a component in this repo would fix
+choices (a currency, a layout, a variant-picker idiom) that belong to whoever is quoting the customer.
+
+What the back end keeps, because it is the part a renderer cannot re-derive:
+
+- **`Services` is already in display order** — per variant, scheduled by odometer reading, then standalone —
+  so a UI can render the list straight through. The variant travels on each line for client-side grouping.
+- **`Status` distinguishes the empty cases.** Collapsing them into "no data" throws away the only signal
+  separating "no menu published" from "the menu subsystem is misconfigured".
+- **`HasUnpricedParts` marks an understated total.** A part with no price row is priced 0 rather than
+  dropped. Quoting that total as if it were complete is the failure the whole chain exists to prevent, and
+  the last mile of that chain is now the host's.
+- **Generated TypeScript types.** `[TypeScriptModel]` stays on the flat DTOs — not for a component, but
+  because the response carries them and the NPM package's `VehicleLookupDTO` type would otherwise import a
+  file that does not exist. That is a hard constraint of the generator, not a preference.
+
+Three renderer traps are written up on the docs page rather than lost with the component: word each status
+separately, mark rather than quote an understated total, and do **not** divide
+`ServiceIntervalValueInMeter` by 1000.
+
+### Not done here, and why
+
+- **The real-data hit rate (O3).** Unchanged: it needs a deployment's own catalogue and traffic. The
+  instrument ships; the number does not.
+- **A menu on the bulk lookup by default.** `ServiceMenuOptions.Include` is honoured there, so a caller
+  *can* — but it is N partition reads, and nothing suggests a reporting caller wants menu codes.
+- **`[TypeScriptModel]` on the nested `ServiceMenu` DTOs.** Only the flat types are generated, because only
+  they are on the vehicle lookup's response. Generating a second, unused TS shape of the same data is how a
+  generated folder starts accumulating types nobody imports.
+- **A web component.** Removed on purpose — see above. Nothing in `ADP.WebComponents` changed except the
+  three generated type files the `[TypeScriptModel]` attributes produce.
+- **A demo mock carrying a menu.** `mocks/generated/standard-dealer/vehicle-lookup.json` comes from the test
+  data generator, which has no menu Cosmos, so it has no `serviceMenu`. Nothing depends on one today; a host
+  building a UI wants its own fixture anyway.
+- **Vehicle containers in the sample.** `GET api/vehicle/{vin}` reads `CompanyData`/`Vehicles`, which menu
+  replication does not fill — that data comes from a different pipeline. The endpoint answers 503 naming the
+  missing containers rather than pretending; provisioning a second pipeline's containers to make one sample
+  endpoint runnable would be its own project.
+
+### The sample reaches the menu from both ends
+
+`GET api/menu/{basicModelCode}` was already the read path. `GET api/vehicle/{vin}` adds the part that path
+cannot show: the derived key. The response is trimmed to `katashiki` → `basicModelCode` → `serviceMenu`,
+because those three next to each other are the whole O3 question, and a full `VehicleLookupDTO` would bury
+them. `Program.cs` moved from `AddServiceMenuLookup` to `AddLookupService` with `ConfigureServiceMenu`,
+which is also the worked example of that option.
+
+### One thing found while the component existed, worth keeping
+
+Re-running `npm run create:locale-mapper` **drops the `forms*` entry**, and `getSharedFormLocal` requests
+exactly that key — every form would throw *"Locale file not found for component: forms\*"*. The generator
+only emits a `<name>*` alias for a folder with more than one locale sub-folder, and `locales/forms/` no
+longer has any, so the checked-in mapper is deliberately ahead of the generator. Nothing in this phase
+touches that file any more, but the landmine is real and unrelated to menus: **do not regenerate
+`src/locale-mapper.ts` until the generator emits `forms*` again.**

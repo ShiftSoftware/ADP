@@ -10,6 +10,7 @@ import type { VehicleVariantInfoDTO } from './vehicle-variant-info-dto';
 import type { VehicleSpecificationDTO } from './vehicle-specification-dto';
 import type { VehicleServiceItemDTO } from './vehicle-service-item-dto';
 import type { AccessoryDTO } from './accessory-dto';
+import type { VehicleServiceMenuDTO } from './vehicle-service-menu-dto';
 export type VehicleLookupDTO = {
     vin: string;
     identifiers: VehicleIdentifiersDTO;
@@ -28,5 +29,6 @@ export type VehicleLookupDTO = {
     vehicleSpecification: VehicleSpecificationDTO;
     serviceItems: VehicleServiceItemDTO[];
     accessories: AccessoryDTO[];
+    serviceMenu: VehicleServiceMenuDTO;
     basicModelCode: string;
 };

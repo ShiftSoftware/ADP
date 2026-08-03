@@ -3,9 +3,9 @@ using ShiftSoftware.ADP.Models;
 namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.ServiceMenu;
 
 /// <summary>
-/// What to generate a service menu for. Everything except the basic model code is optional; the
-/// defaults are resolved from <see cref="LookupOptions"/> (see
-/// <see cref="LookupOptions.ServiceMenuCountrySettingsResolver"/>).
+/// What to generate a service menu for. Everything except the basic model code is optional; the defaults come
+/// from <see cref="ServiceMenuLookupOptions"/>, the feature's own options — not from
+/// <see cref="LookupOptions"/>.
 /// </summary>
 [Docable]
 public class ServiceMenuLookupRequest
@@ -19,7 +19,7 @@ public class ServiceMenuLookupRequest
 
     /// <summary>
     /// The country whose part prices and labour rate apply. When null, falls back to
-    /// <see cref="LookupOptions.ServiceMenuDefaultCountryID"/> and then to 0 — which is the
+    /// <see cref="ServiceMenuLookupOptions.DefaultCountryID"/> and then to 0 — which is the
     /// single-country deployment's own convention, not a magic value: a deployment with one country
     /// stores its prices under whatever id it uses, and one with none uses 0.
     /// </summary>
@@ -34,9 +34,12 @@ public class ServiceMenuLookupRequest
     public string Language { get; set; }
 
     /// <summary>
-    /// Scales the consumable charge. Ignored when
-    /// <see cref="LookupOptions.ServiceMenuCountrySettingsResolver"/> is configured — the host's resolver
-    /// is then the authority, exactly as the export's country normalisation is. Defaults to 1 (no scaling).
+    /// Scales the consumable charge. When set, it WINS over
+    /// <see cref="ServiceMenuLookupOptions.CountrySettingsResolver"/>; when null the resolver applies, then
+    /// 1 (no scaling). Setting a value and silently getting a different one back is the worse failure, so an
+    /// explicit choice is honoured — a host that wants the resolver to be the sole authority does not expose
+    /// this to its callers. It moves money, never codes: the labour-rate mapping is always keyed by the
+    /// variant's primary rate.
     /// </summary>
     public decimal? TransferRate { get; set; }
 

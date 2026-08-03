@@ -164,13 +164,27 @@ public class VehicleLookupDTO
     public ServiceItemTrace ServiceItemTrace { get; set; }
 
     /// <summary>
+    /// The model's <see cref="VehicleServiceMenuDTO">service menu</see> — the DMS menu codes, labour codes and
+    /// prices for every service this vehicle's model offers, looked up by <see cref="BasicModelCode"/>. Null
+    /// unless the request asked for it via <see cref="VehicleServiceMenuRequestOptions.Include"/>. When
+    /// present, read <see cref="VehicleServiceMenuDTO.Status"/> first: an empty service list has several
+    /// distinct causes and only the status tells them apart. A menu fault never fails the vehicle lookup.
+    /// </summary>
+    [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+    [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public VehicleServiceMenuDTO ServiceMenu { get; set; }
+
+    /// <summary>
     /// The basic model code extracted from the Katashiki (first segment before the hyphen, with trailing L/R removed).
+    /// Also the key the <see cref="ServiceMenu">service menu</see> joins on.
     /// </summary>
     public string BasicModelCode
     {
         get
         {
-            if (string.IsNullOrWhiteSpace(Identifiers.Katashiki))
+            // Null-safe on Identifiers: this getter is read on the lookup path (the service-menu join) and is
+            // also reachable on a deserialized DTO, where nothing guarantees the identifiers survived.
+            if (string.IsNullOrWhiteSpace(Identifiers?.Katashiki))
                 return null;
 
             var partOne = Identifiers.Katashiki.Split('-')[0];

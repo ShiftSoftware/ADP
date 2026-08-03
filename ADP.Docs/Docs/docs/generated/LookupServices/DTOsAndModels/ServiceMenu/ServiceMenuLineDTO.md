@@ -14,10 +14,10 @@ One menu line: the DMS menu code and labour code, plus the priced parts and labo
 | Code <div><strong>``string``</strong></div> | The generated menu code, as the DMS knows it. |
 | LabourCode <div><strong>``string``</strong></div> | The generated labour operation code. |
 | Description <div><strong>``string``</strong></div> | The service interval's description for a scheduled line; the item's or group's name for a standalone one. |
-| LineType <div><strong>``ServiceMenuLineType``</strong></div> | What produced this line. |
+| LineType <div><strong>``ServiceMenuLineType``</strong></div> | What produced this line. Serialized as a string, matching `VehicleLookup.VehicleServiceMenuLineDTO.LineType` — the same enum reaching a caller as `"Periodic"` on one endpoint and `0` on another would be a trap. |
 | IsStandalone <div><strong>``bool``</strong></div> | Convenience over `LineType`; both standalone shapes report true. |
 | ServiceIntervalCode <div><strong>``string``</strong></div> | The service interval's code. Null on standalone lines. |
-| ServiceIntervalValueInMeter <div><strong>``int?``</strong></div> | The interval's distance in metres, and the sort key for the schedule. Null on standalone lines. |
+| ServiceIntervalValueInMeter <div><strong>``int?``</strong></div> | The odometer reading this service is due at, and the sort key for the schedule. Null on standalone lines. DESPITE THE NAME THIS IS IN KILOMETRES, not metres — do not divide by 1000 to render it, or a 20,000 km service is quoted to a customer as 20 km. The name is the source column's (`ServiceInterval.ValueInMeter`), carried through verbatim so the two can be matched up; it is not a unit. The catalogue authors `ValueInMeter = 20000` alongside `FullName = "20,000 KM"`. |
 | LabourRate <div><strong>``decimal``</strong></div> | The labour rate charged, per hour — the country rate, or the variant's primary rate. |
 | AllowedTime <div><strong>``decimal``</strong></div> | Allowed time in hours. |
 | LabourPrice <div><strong>``decimal``</strong></div> | `LabourRate` × `AllowedTime`. |

@@ -1,5 +1,6 @@
 using ShiftSoftware.ADP.Models;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.ServiceMenu;
 
@@ -31,7 +32,12 @@ public class ServiceMenuLineDTO
     /// </summary>
     public string Description { get; set; }
 
-    /// <summary>What produced this line.</summary>
+    /// <summary>
+    /// What produced this line. Serialized as a string, matching
+    /// <see cref="VehicleLookup.VehicleServiceMenuLineDTO.LineType"/> — the same enum reaching a caller as
+    /// <c>"Periodic"</c> on one endpoint and <c>0</c> on another would be a trap.
+    /// </summary>
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public ServiceMenuLineType LineType { get; set; }
 
     /// <summary>Convenience over <see cref="LineType"/>; both standalone shapes report true.</summary>
@@ -41,7 +47,11 @@ public class ServiceMenuLineDTO
     public string ServiceIntervalCode { get; set; }
 
     /// <summary>
-    /// The interval's distance in metres, and the sort key for the schedule. Null on standalone lines.
+    /// The odometer reading this service is due at, and the sort key for the schedule. Null on standalone
+    /// lines. DESPITE THE NAME THIS IS IN KILOMETRES, not metres — do not divide by 1000 to render it, or a
+    /// 20,000 km service is quoted to a customer as 20 km. The name is the source column's
+    /// (<c>ServiceInterval.ValueInMeter</c>), carried through verbatim so the two can be matched up; it is
+    /// not a unit. The catalogue authors <c>ValueInMeter = 20000</c> alongside <c>FullName = "20,000 KM"</c>.
     /// </summary>
     public int? ServiceIntervalValueInMeter { get; set; }
 
