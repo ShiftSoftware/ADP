@@ -432,7 +432,12 @@
                                 }
 
                                 <MudPaper Outlined="true" Class="menu-section-card">
-                                    <MudText Typo="Typo.subtitle1" Class="menu-section-title">Discount</MudText>
+                                    <MudText Typo="Typo.subtitle1" Class="menu-section-title">Pricing</MudText>
+                                    <div class="menu-field-row">
+                                        <MudCheckBoxExtended Label="Free Menu"
+                                                             @bind-Value="selectedVariant.IsFree"
+                                                             Disabled="!CanManageVariants" />
+                                    </div>
                                     <div class="menu-field-row menu-field-row--narrow">
                                         <MudTextFieldExtended Label="Discount Percentage" @bind-Value="selectedVariant.DiscountPercentage" />
                                     </div>
@@ -1704,6 +1709,7 @@
             LabourRate = source.LabourRate,
             LabourRates = source.LabourRates.Select(CloneLabourRate).ToList(),
             DiscountPercentage = source.DiscountPercentage,
+            IsFree = source.IsFree,
             HasStandaloneItems = source.HasStandaloneItems,
             LabourDetails = source.LabourDetails.Select(x => new LabourDetailsDTO
             {

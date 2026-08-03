@@ -37,6 +37,9 @@ public class MenuVariantDTO : ShiftEntityViewAndUpsertDTO
 
     public decimal? DiscountPercentage { get; set; }
 
+    /// <summary>The variant's menu is offered free of charge. A flag only — it changes no price.</summary>
+    public bool IsFree { get; set; }
+
     public bool HasStandaloneItems { get; set; }
 
     [Required]

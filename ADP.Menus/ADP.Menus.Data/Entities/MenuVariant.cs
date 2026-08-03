@@ -27,6 +27,12 @@ public class MenuVariant : ShiftEntity<MenuVariant>, IShiftEntityReplication
     [Precision(5, 2)]
     public decimal? DiscountPercentage { get; set; }
 
+    /// <summary>
+    /// The variant's menu is offered free of charge. Authored here and carried as a flag only — it does
+    /// not change any generated price, so a consumer that shows "free" decides that for itself.
+    /// </summary>
+    public bool IsFree { get; set; }
+
     public bool HasStandaloneItems { get; set; }
 
     public virtual ICollection<MenuVariantLabourRate> LabourRates { get; set; } = new HashSet<MenuVariantLabourRate>();
