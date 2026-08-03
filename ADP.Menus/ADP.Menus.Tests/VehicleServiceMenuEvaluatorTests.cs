@@ -65,7 +65,17 @@ public class VehicleServiceMenuEvaluatorTests
             ? MenuCosmosDocumentFixture.Build()
             : new ServiceMenuDocuments { BasicModelCode = basicModelCode };
 
-    private static VehicleLookupRequestOptions Request(string language = "en", long? countryId = 2, decimal? transferRate = null) =>
+    /// <summary>The same catalogue, but the fixture model has a free variant beside its paid one.</summary>
+    private static ServiceMenuDocuments TheOnlyModel_WithAFreeVariant(string basicModelCode) =>
+        basicModelCode == MenuGraphFixture.BasicModelCode
+            ? MenuCosmosDocumentFixture.WithFreeAndPaidVariants()
+            : new ServiceMenuDocuments { BasicModelCode = basicModelCode };
+
+    private static VehicleLookupRequestOptions Request(
+        string language = "en",
+        long? countryId = 2,
+        decimal? transferRate = null,
+        ServiceMenuFreeFilter freeFilter = ServiceMenuFreeFilter.All) =>
         new()
         {
             LanguageCode = language,
@@ -74,6 +84,7 @@ public class VehicleServiceMenuEvaluatorTests
                 Include = true,
                 CountryID = countryId,
                 TransferRate = transferRate,
+                FreeFilter = freeFilter,
             },
         };
 
@@ -379,6 +390,107 @@ public class VehicleServiceMenuEvaluatorTests
         Assert.Equal(2.5m, overridden.TransferRate);
     }
 
+    // ---- the free-of-charge flag and its filter -------------------------------------------------------
+
+    /// <summary>
+    /// The flat shape has no variant to hang a variant-level fact on, so the flag rides every line the
+    /// variant produced — exactly as its name does. A caller grouping by <c>VariantID</c> gets it either
+    /// way; one rendering the flat list straight through needs it here.
+    /// </summary>
+    [Fact]
+    public async Task TheFreeFlag_TravelsOnEveryLine()
+    {
+        var section = await Evaluator(TheOnlyModel_WithAFreeVariant).EvaluateAsync(MenuGraphFixture.BasicModelCode, Request());
+
+        Assert.Equal(VehicleServiceMenuStatus.Found, section.Status);
+        Assert.All(section.Services, line =>
+            Assert.Equal(line.VariantID == MenuCosmosDocumentFixture.FreeVariantID, line.IsFree));
+
+        Assert.Contains(section.Services, line => line.IsFree);
+        Assert.Contains(section.Services, line => !line.IsFree);
+    }
+
+    /// <summary>The request's filter is the menu lookup's filter — the option is not quietly dropped.</summary>
+    [Theory]
+    [InlineData(ServiceMenuFreeFilter.All, true, true)]
+    [InlineData(ServiceMenuFreeFilter.FreeOnly, true, false)]
+    [InlineData(ServiceMenuFreeFilter.PaidOnly, false, true)]
+    public async Task TheFreeFilter_ReachesTheMenuLookup(ServiceMenuFreeFilter filter, bool expectFree, bool expectPaid)
+    {
+        var section = await Evaluator(TheOnlyModel_WithAFreeVariant)
+            .EvaluateAsync(MenuGraphFixture.BasicModelCode, Request(freeFilter: filter));
+
+        Assert.Equal(VehicleServiceMenuStatus.Found, section.Status);
+        Assert.Equal(expectFree, section.Services.Any(line => line.VariantID == MenuCosmosDocumentFixture.FreeVariantID));
+        Assert.Equal(expectPaid, section.Services.Any(line => line.VariantID == MenuCosmosDocumentFixture.PaidVariantID));
+
+        // Whatever came back, every line agrees with the filter that asked for it.
+        if (filter != ServiceMenuFreeFilter.All)
+            Assert.All(section.Services, line => Assert.Equal(filter == ServiceMenuFreeFilter.FreeOnly, line.IsFree));
+    }
+
+    /// <summary>
+    /// A filter that excludes every variant is <see cref="VehicleServiceMenuStatus.Found"/> with nothing in
+    /// it — NOT <see cref="VehicleServiceMenuStatus.NotFound"/>. The model HAS a menu; this request asked
+    /// for a part of it that is empty. Conflating the two would corrupt the O3 miss rate, which counts
+    /// NotFound as "the derived key matched no authored menu".
+    /// </summary>
+    [Fact]
+    public async Task AFilterThatExcludesEveryVariant_IsFoundWithNoServices()
+    {
+        // The single-variant fixture is not free, so FreeOnly leaves nothing.
+        var section = await Evaluator(TheOnlyModel)
+            .EvaluateAsync(MenuGraphFixture.BasicModelCode, Request(freeFilter: ServiceMenuFreeFilter.FreeOnly));
+
+        Assert.Equal(VehicleServiceMenuStatus.Found, section.Status);
+        Assert.Empty(section.Services);
+
+        // The menu lookup underneath says the same thing its own way: the partition exists.
+        var nested = await new ServiceMenuLookupService(
+                new StubCosmosService(TheOnlyModel),
+                new ServiceMenuGenerationEvaluator(Options.Create(new ServiceMenuLookupOptions())))
+            .GetMenuAsync(new ServiceMenuLookupRequest
+            {
+                BasicModelCode = MenuGraphFixture.BasicModelCode,
+                CountryID = 2,
+                Language = "en",
+                FreeFilter = ServiceMenuFreeFilter.FreeOnly,
+            });
+
+        Assert.False(nested.NotFound);
+        Assert.Empty(nested.Variants);
+    }
+
+    /// <summary>
+    /// Filtering changes which variants come back and nothing else. A line served under a filter is the
+    /// same line, code and price, that comes back unfiltered.
+    /// </summary>
+    [Fact]
+    public async Task Filtering_ChangesNothingAboutTheLinesItKeeps()
+    {
+        var all = await Evaluator(TheOnlyModel_WithAFreeVariant).EvaluateAsync(MenuGraphFixture.BasicModelCode, Request());
+        var freeOnly = await Evaluator(TheOnlyModel_WithAFreeVariant)
+            .EvaluateAsync(MenuGraphFixture.BasicModelCode, Request(freeFilter: ServiceMenuFreeFilter.FreeOnly));
+
+        var expected = all.Services.Where(line => line.IsFree).ToList();
+
+        Assert.NotEmpty(expected);
+        Assert.Equal(expected.Select(line => line.LineKey), freeOnly.Services.Select(line => line.LineKey));
+        Assert.Equal(expected.Select(line => line.Code), freeOnly.Services.Select(line => line.Code));
+        Assert.Equal(expected.Select(line => line.TotalPrice), freeOnly.Services.Select(line => line.TotalPrice));
+    }
+
+    /// <summary>
+    /// The default is "everything". A caller that never sets the filter — and every call written before it
+    /// existed — sees what it always saw.
+    /// </summary>
+    [Fact]
+    public void TheFreeFilter_DefaultsToAll()
+    {
+        Assert.Equal(ServiceMenuFreeFilter.All, new VehicleServiceMenuRequestOptions().FreeFilter);
+        Assert.Equal(ServiceMenuFreeFilter.All, default(ServiceMenuFreeFilter));
+    }
+
     // ---- the contract the web components see ---------------------------------------------------------
 
     /// <summary>
@@ -395,9 +507,15 @@ public class VehicleServiceMenuEvaluatorTests
         Assert.Empty(Names(typeof(ServiceMenuLineDTO)).Except(Names(typeof(VehicleServiceMenuLineDTO))));
         Assert.Empty(Names(typeof(ServiceMenuPartDTO)).Except(Names(typeof(VehicleServiceMenuPartDTO))));
 
-        Assert.Equal(
-            ["VariantID", "VariantName"],
-            Names(typeof(VehicleServiceMenuLineDTO)).Except(Names(typeof(ServiceMenuLineDTO))).OrderBy(name => name));
+        // What the flat line adds is exactly the variant-level facts, which it carries ON the line because
+        // it has no variant object to hang them on.
+        var variantLevel = Names(typeof(VehicleServiceMenuLineDTO)).Except(Names(typeof(ServiceMenuLineDTO))).ToHashSet();
+
+        Assert.Equal(["IsFree", "VariantID", "VariantName"], variantLevel.OrderBy(name => name));
+
+        // ...and each of them is a field the nested shape's VARIANT really has, so this list cannot become
+        // a place where the flat shape invents fields the menu lookup never returns.
+        Assert.Empty(variantLevel.Except(Names(typeof(ServiceMenuVariantDTO))));
 
         Assert.Empty(Names(typeof(VehicleServiceMenuPartDTO)).Except(Names(typeof(ServiceMenuPartDTO))));
     }

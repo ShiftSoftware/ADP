@@ -3,11 +3,7 @@ hide:
     - toc
 ---
 The service menu offered for this vehicle's model: the DMS menu codes, labour codes and prices for every
- service the model's menu offers, flattened into one list. Read `Status` before reading
- `Services` — an empty list means four different things (no join key, no menu authored for the
- model, a menu that generates nothing, or a menu subsystem that could not be consulted) and only the
- status separates them. A menu fault never fails the vehicle lookup; it arrives here as
- `VehicleServiceMenuStatus.Unavailable`.
+ service the model's menu offers, flattened into one list.
 
 | Property | Summary |
 |----------|---------|

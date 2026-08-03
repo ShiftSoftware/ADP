@@ -283,9 +283,14 @@ public class ServiceMenuEvaluatorTests
     }
 
     /// <summary>
-    /// Every live variant of the model is returned — there is no variant filter, because nothing outside
-    /// the menus database holds a variant id. Pinned so a filter is not quietly reintroduced as a
+    /// Every live variant of the model is returned — there is no variant filter BY ID, because nothing
+    /// outside the menus database holds a variant id. Pinned so one is not quietly introduced as a
     /// convenience: it would be a parameter no caller could populate.
+    ///
+    /// <para><see cref="ServiceMenuLookupRequest.FreeFilter"/> is not that, and is deliberately allowed:
+    /// it is a RULE a caller can express about which variants it wants, which is what the request's own
+    /// remarks reserve room for. The assertion below still holds — it bans "Variant" in a property name,
+    /// i.e. the id list, not the rule.</para>
     /// </summary>
     [Fact]
     public void EveryVariantOfTheModel_IsReturned()
@@ -305,6 +310,117 @@ public class ServiceMenuEvaluatorTests
         Assert.DoesNotContain(
             typeof(ServiceMenuLookupRequest).GetProperties(),
             property => property.Name.Contains("Variant", StringComparison.OrdinalIgnoreCase));
+    }
+
+    // ---- the free-of-charge flag and its filter -------------------------------------------------------
+
+    private static List<long> VariantIDs(ServiceMenuFreeFilter filter) =>
+        Evaluator()
+            .Evaluate(MenuCosmosDocumentFixture.WithFreeAndPaidVariants(), new MenuGenerationConfig { CountryID = 2, Language = "en" }, filter)
+            .Select(line => line.VariantID)
+            .Distinct()
+            .OrderBy(id => id)
+            .ToList();
+
+    /// <summary>
+    /// The filter selects VARIANTS, and a variant it excludes contributes nothing — not its scheduled
+    /// services and not its standalone ones.
+    /// </summary>
+    [Theory]
+    [InlineData(ServiceMenuFreeFilter.All, new[] { MenuCosmosDocumentFixture.PaidVariantID, MenuCosmosDocumentFixture.FreeVariantID })]
+    [InlineData(ServiceMenuFreeFilter.FreeOnly, new[] { MenuCosmosDocumentFixture.FreeVariantID })]
+    [InlineData(ServiceMenuFreeFilter.PaidOnly, new[] { MenuCosmosDocumentFixture.PaidVariantID })]
+    public void FreeFilter_SelectsVariantsByTheirFlag(ServiceMenuFreeFilter filter, long[] expected)
+    {
+        Assert.Equal(expected.OrderBy(id => id), VariantIDs(filter));
+    }
+
+    /// <summary>
+    /// The default is <see cref="ServiceMenuFreeFilter.All"/>, so a caller that never heard of the option
+    /// — and every call written before it existed — keeps returning every variant.
+    /// </summary>
+    [Fact]
+    public void NoFilter_MeansAll()
+    {
+        Assert.Equal(ServiceMenuFreeFilter.All, new ServiceMenuLookupRequest().FreeFilter);
+
+        var withoutArgument = Evaluator()
+            .Evaluate(MenuCosmosDocumentFixture.WithFreeAndPaidVariants(), new MenuGenerationConfig { CountryID = 2, Language = "en" })
+            .Select(line => line.VariantID)
+            .Distinct()
+            .OrderBy(id => id);
+
+        Assert.Equal(VariantIDs(ServiceMenuFreeFilter.All), withoutArgument);
+    }
+
+    /// <summary>
+    /// A filter that matches nothing generates nothing. That is a legitimate answer, not a fault — and
+    /// the caller, holding the filter, is the one that can tell it apart from a model with no menu.
+    /// </summary>
+    [Fact]
+    public void AFilterMatchingNoVariant_GeneratesNothing()
+    {
+        // The single-variant fixture is not free, so FreeOnly excludes the only variant there is.
+        var lines = Evaluator().Evaluate(
+            Documents(),
+            new MenuGenerationConfig { CountryID = 2, Language = "en" },
+            ServiceMenuFreeFilter.FreeOnly);
+
+        Assert.Empty(lines);
+    }
+
+    /// <summary>
+    /// The flag is carried, never computed on. The two fixture variants differ ONLY in their id and the
+    /// flag, so every generated code and every figure must be identical between them — if the flag ever
+    /// starts zeroing a total, this is what fails.
+    /// </summary>
+    [Fact]
+    public void TheFreeFlag_ChangesNoCodeAndNoMoney()
+    {
+        var lines = Evaluator().Evaluate(
+            MenuCosmosDocumentFixture.WithFreeAndPaidVariants(),
+            new MenuGenerationConfig { CountryID = 2, Language = "en" });
+
+        var free = ServiceMenuPricingEvaluator.Evaluate(lines.Where(line => line.VariantID == MenuCosmosDocumentFixture.FreeVariantID).ToList());
+        var paid = ServiceMenuPricingEvaluator.Evaluate(lines.Where(line => line.VariantID == MenuCosmosDocumentFixture.PaidVariantID).ToList());
+
+        Assert.NotEmpty(free);
+        Assert.Equal(paid.Count, free.Count);
+
+        Assert.Equal(paid.Select(line => line.Code), free.Select(line => line.Code));
+        Assert.Equal(paid.Select(line => line.LabourCode), free.Select(line => line.LabourCode));
+        Assert.Equal(paid.Select(line => line.LabourTotalPrice), free.Select(line => line.LabourTotalPrice));
+        Assert.Equal(paid.Select(line => line.PartsTotalPrice), free.Select(line => line.PartsTotalPrice));
+        Assert.Equal(paid.Select(line => line.DiscountAmount), free.Select(line => line.DiscountAmount));
+        Assert.Equal(paid.Select(line => line.TotalPrice), free.Select(line => line.TotalPrice));
+    }
+
+    /// <summary>
+    /// Filtering runs BEFORE generation, so an excluded variant is never generated — which also means it
+    /// cannot fail. Here the free variant is the one with the missing labour-rate mapping: asking for the
+    /// paid one succeeds, and asking for everything still throws.
+    /// </summary>
+    [Fact]
+    public void AnExcludedVariant_IsNeverGenerated_SoItCannotFail()
+    {
+        var documents = MenuCosmosDocumentFixture.WithFreeAndPaidVariants();
+
+        // Move the free variant onto a primary labour rate nothing maps, and drop the mapping it embedded.
+        // Nulling the embedded mapping alone would not do it: the paid variant embeds the SAME (brand, rate)
+        // row, and one live copy anywhere in the partition supplies the dictionary entry for all of them.
+        foreach (var variant in documents.Variants.Where(variant => variant.VariantID == MenuCosmosDocumentFixture.FreeVariantID))
+        {
+            variant.LabourRate = 99.99m;
+            variant.LabourRateMapping = null;
+        }
+
+        var evaluator = Evaluator();
+        var config = new MenuGenerationConfig { CountryID = 2, Language = "en" };
+
+        Assert.NotEmpty(evaluator.Evaluate(documents, config, ServiceMenuFreeFilter.PaidOnly));
+
+        Assert.Throws<ServiceMenuGenerationException>(() => evaluator.Evaluate(documents, config, ServiceMenuFreeFilter.All));
+        Assert.Throws<ServiceMenuGenerationException>(() => evaluator.Evaluate(documents, config, ServiceMenuFreeFilter.FreeOnly));
     }
 
     // ---- schedule evaluator --------------------------------------------------------------------------
@@ -331,6 +447,23 @@ public class ServiceMenuEvaluatorTests
 
         Assert.Equal(2, variant.StandaloneServices.Count);
         Assert.All(variant.StandaloneServices, line => Assert.True(line.IsStandalone));
+    }
+
+    /// <summary>
+    /// The variant's free-of-charge flag reaches the shape a caller reads, on the variant — where the
+    /// nested shape keeps variant-level facts. The prices beside it are untouched by it.
+    /// </summary>
+    [Fact]
+    public void Schedule_CarriesTheFreeFlagOntoTheVariant()
+    {
+        var lines = MenuCodeGenerator.Generate(
+            CosmosToGenerationAggregator.Build(MenuCosmosDocumentFixture.WithFreeAndPaidVariants()),
+            new MenuGenerationConfig { CountryID = 2, Language = "en" }).ToList();
+
+        var variants = ServiceMenuScheduleEvaluator.Evaluate(lines);
+
+        Assert.True(Assert.Single(variants, variant => variant.VariantID == MenuCosmosDocumentFixture.FreeVariantID).IsFree);
+        Assert.False(Assert.Single(variants, variant => variant.VariantID == MenuCosmosDocumentFixture.PaidVariantID).IsFree);
     }
 
     /// <summary>Scheduled services are read along the distance axis, so that is what they sort by.</summary>

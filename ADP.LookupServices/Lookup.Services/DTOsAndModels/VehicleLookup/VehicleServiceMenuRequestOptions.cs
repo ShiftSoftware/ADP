@@ -1,4 +1,6 @@
+using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.ServiceMenu;
 using ShiftSoftware.ADP.Models;
+using System.Text.Json.Serialization;
 
 namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 
@@ -40,6 +42,22 @@ public class VehicleServiceMenuRequestOptions
     /// deployment with no configured countries stores its prices under, not a magic value.
     /// </summary>
     public long? CountryID { get; set; }
+
+    /// <summary>
+    /// Which of the model's variants to include, by their free-of-charge flag: all of them (the default),
+    /// only the free ones, or only the ones that are not free. See <see cref="ServiceMenuFreeFilter"/>.
+    ///
+    /// <para>The filter selects variants, and every line carries its variant's flag as
+    /// <see cref="VehicleServiceMenuLineDTO.IsFree"/> — so a caller can equally ask for everything and
+    /// group client-side. Filtering here is cheaper (an excluded variant is never generated), and it is
+    /// the honest choice for an endpoint that must not disclose the other kind at all.</para>
+    ///
+    /// <para>A filter that excludes every variant leaves <c>Services</c> empty with
+    /// <c>Status = Found</c>: the model HAS a menu, and this request asked for a part of it that is empty.
+    /// That is not the same as <c>NotFound</c>, which means no menu is replicated for the model at all.</para>
+    /// </summary>
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public ServiceMenuFreeFilter FreeFilter { get; set; }
 
     /// <summary>
     /// Scales the consumable charge on every generated line; 1 leaves it unscaled. When set, this WINS over

@@ -71,6 +71,72 @@ internal static class MenuCosmosDocumentFixture
         return documents;
     }
 
+    /// <summary>The re-keyed copy's variant id in <see cref="WithFreeAndPaidVariants"/>.</summary>
+    internal const long FreeVariantID = 4472;
+
+    /// <summary>The fixture's own variant id — left exactly as authored, and NOT free.</summary>
+    internal const long PaidVariantID = 4471;
+
+    /// <summary>
+    /// One partition holding TWO variants: the fixture's own (<see cref="PaidVariantID"/>, not free) and a
+    /// re-keyed copy of it (<see cref="FreeVariantID"/>) flagged free.
+    ///
+    /// <para>A copy rather than a second hand-authored variant on purpose: the two differ in their id and
+    /// in the flag and in NOTHING else, so a test can assert both that the filter selects the right one and
+    /// that the flag moved no money — the free variant's lines must price identically to the paid one's.
+    /// Adding a second variant to <see cref="MenuGraphFixture"/> itself would re-baseline every golden.</para>
+    /// </summary>
+    internal static ServiceMenuDocuments WithFreeAndPaidVariants()
+    {
+        var paid = MenuGraphFixture.Build();
+        var free = MenuGraphFixture.Build();
+
+        MakeFree(free.Variants.Single());
+
+        var documents = From(paid);
+        var freeDocuments = From(free);
+
+        documents.Variants.AddRange(freeDocuments.Variants);
+        documents.Periods.AddRange(freeDocuments.Periods);
+        documents.Labours.AddRange(freeDocuments.Labours);
+        documents.Items.AddRange(freeDocuments.Items);
+
+        return documents;
+    }
+
+    /// <summary>
+    /// Flags a freshly built copy of the fixture variant free and moves it, with its children, onto its own
+    /// ids — the child rows carry the variant id AND supply their own document ids, and two documents
+    /// cannot share an id in one partition.
+    /// </summary>
+    private static void MakeFree(MenuVariant variant)
+    {
+        const long idOffset = 1000;
+
+        variant.ID = FreeVariantID;
+        variant.IsFree = true;
+
+        // The children's MenuVariant navigation already points at this same object, so only the foreign
+        // key and their own ids need moving.
+        foreach (var period in variant.PeriodicAvailabilities)
+        {
+            period.ID += idOffset;
+            period.MenuVariantID = variant.ID;
+        }
+
+        foreach (var labour in variant.LabourDetails)
+        {
+            labour.ID += idOffset;
+            labour.MenuVariantID = variant.ID;
+        }
+
+        foreach (var item in variant.Items)
+        {
+            item.ID += idOffset;
+            item.MenuVariantID = variant.ID;
+        }
+    }
+
     /// <summary>
     /// The same documents in reverse order, standing in for the fact that a Cosmos partition query
     /// makes NO ordering guarantee. Used to prove the aggregator's ordering is its own, not the

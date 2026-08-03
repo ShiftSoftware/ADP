@@ -6,21 +6,20 @@ namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 
 /// <summary>
 /// The service menu offered for this vehicle's model: the DMS menu codes, labour codes and prices for every
-/// service the model's menu offers, flattened into one list. Read <see cref="Status"/> before reading
-/// <see cref="Services"/> — an empty list means four different things (no join key, no menu authored for the
-/// model, a menu that generates nothing, or a menu subsystem that could not be consulted) and only the
-/// status separates them. A menu fault never fails the vehicle lookup; it arrives here as
-/// <see cref="VehicleServiceMenuStatus.Unavailable"/>.
+/// service the model's menu offers, flattened into one list.
 ///
 /// <para>Present only when the request asked for it
 /// (<see cref="VehicleServiceMenuRequestOptions.Include"/>); otherwise
 /// <see cref="VehicleLookupDTO.ServiceMenu"/> is null. It costs one extra single-partition Cosmos read plus an
 /// in-memory fold per vehicle, so it is opt-in rather than always-on.</para>
 ///
-/// <para><b>Read <see cref="Status"/> before reading <see cref="Services"/>.</b> An empty list means four
-/// different things — no join key, no menu authored for the model, a menu that generates nothing, or a menu
-/// subsystem that could not be consulted — and only the status separates them. A menu fault never fails the
-/// VIN lookup; it arrives here as <see cref="VehicleServiceMenuStatus.Unavailable"/>.</para>
+/// <para><b>Read <see cref="Status"/> before reading <see cref="Services"/>.</b> An empty list means five
+/// different things — no join key, no menu authored for the model, a menu that generates nothing, every
+/// variant excluded by <see cref="VehicleServiceMenuRequestOptions.FreeFilter"/>, or a menu subsystem that
+/// could not be consulted. The status separates the first, second and last; the filter you sent separates
+/// the other two, which both arrive as <see cref="VehicleServiceMenuStatus.Found"/> with nothing in it. A
+/// menu fault never fails the VIN lookup; it arrives here as
+/// <see cref="VehicleServiceMenuStatus.Unavailable"/>.</para>
 /// </summary>
 [TypeScriptModel]
 [Docable]

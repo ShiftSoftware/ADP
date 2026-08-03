@@ -7,6 +7,7 @@ using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
+using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.ServiceMenu;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using ShiftSoftware.ADP.Lookup.Services.Services;
 
@@ -74,6 +75,13 @@ public class VehicleMenuLookupFunctions
                 CountryID = long.TryParse(request.Query["countryId"].FirstOrDefault(), out var countryId)
                     ? countryId
                     : null,
+
+                // All | FreeOnly | PaidOnly. Unlike the transfer rate below, this one is safe to bind from
+                // an untrusted caller: it narrows which variants come back and moves no money. Anything
+                // unparseable falls back to All rather than 400-ing.
+                FreeFilter = Enum.TryParse<ServiceMenuFreeFilter>(request.Query["freeFilter"].FirstOrDefault(), ignoreCase: true, out var freeFilter)
+                    ? freeFilter
+                    : ServiceMenuFreeFilter.All,
 
                 // Bound from the query string HERE ONLY BECAUSE THIS IS A FUNCTION-KEY-PROTECTED SAMPLE.
                 // The transfer rate scales the consumable and therefore the price quoted to a customer, and

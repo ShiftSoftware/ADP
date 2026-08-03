@@ -71,6 +71,13 @@ public class MenuGenerationVariant
 
     public decimal? DiscountPercentage { get; set; }
 
+    /// <summary>
+    /// The variant's menu is offered free of charge. The generator stamps it onto every line it produces
+    /// and does nothing else with it — no price, code or inclusion rule reads it. A consumer that wants
+    /// "free menus only" filters the variants BEFORE generating rather than asking for it here.
+    /// </summary>
+    public bool IsFree { get; set; }
+
     /// <summary>When false the variant contributes no standalone lines at all.</summary>
     public bool HasStandaloneItems { get; set; }
 

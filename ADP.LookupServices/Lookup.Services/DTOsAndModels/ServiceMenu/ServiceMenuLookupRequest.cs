@@ -1,4 +1,5 @@
 using ShiftSoftware.ADP.Models;
+using System.Text.Json.Serialization;
 
 namespace ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.ServiceMenu;
 
@@ -42,6 +43,19 @@ public class ServiceMenuLookupRequest
     /// variant's primary rate.
     /// </summary>
     public decimal? TransferRate { get; set; }
+
+    /// <summary>
+    /// Which variants to return, by their free-of-charge flag: all of them (the default), only the free
+    /// ones, or only the ones that are not free. See <see cref="ServiceMenuFreeFilter"/>.
+    ///
+    /// <para>Applied BEFORE generation, so an excluded variant is never generated. A filter that excludes
+    /// every variant returns an empty <see cref="ServiceMenuLookupDTO.Variants"/> with
+    /// <see cref="ServiceMenuLookupDTO.NotFound"/> still <c>false</c> — the model HAS a menu, this request
+    /// asked for a part of it that is empty. Those are different answers and a UI usually renders them
+    /// differently.</para>
+    /// </summary>
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public ServiceMenuFreeFilter FreeFilter { get; set; }
 
     // No variant filter, deliberately. A menu variant's id is a primary key in the menus database and
     // nothing outside it has one — a caller holds a VIN or a model code, never a variant id. Every live

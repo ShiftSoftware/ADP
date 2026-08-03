@@ -65,6 +65,7 @@ public static class ServiceMenuScheduleEvaluator
                 BrandID = first.BrandID?.ToString(),
                 BrandCode = first.BrandCode,
                 DiscountPercentage = first.DiscountPercentage,
+                IsFree = first.IsFree,
                 PeriodicServices = periodic,
                 StandaloneServices = standalone,
             });

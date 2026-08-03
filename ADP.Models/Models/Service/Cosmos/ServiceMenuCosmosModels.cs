@@ -220,6 +220,16 @@ public class MenuVariantCosmosModel : IPartitionedItem
     public decimal LabourRate { get; set; }
 
     public decimal? DiscountPercentage { get; set; }
+
+    /// <summary>
+    /// The variant's menu is offered free of charge. Carried, never computed on: it changes no generated
+    /// price, so a reader that filters or renders on it owns that decision.
+    ///
+    /// <para>Defaults to <c>false</c>, so documents written before this field existed read as not-free
+    /// until a catch-up sweep refreshes them.</para>
+    /// </summary>
+    public bool IsFree { get; set; }
+
     public bool HasStandaloneItems { get; set; }
 
     /// <summary>

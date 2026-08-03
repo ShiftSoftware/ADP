@@ -78,8 +78,11 @@ public class ServiceMenuLookupService
         if (documents.IsEmpty)
             return result;
 
+        // NotFound is answered by the partition, above — the free filter runs after it and can legitimately
+        // leave Variants empty on a model that HAS a menu. Do not fold the two together.
         result.NotFound = false;
-        result.Variants = ServiceMenuScheduleEvaluator.Evaluate(generationEvaluator.Evaluate(documents, config));
+        result.Variants = ServiceMenuScheduleEvaluator.Evaluate(
+            generationEvaluator.Evaluate(documents, config, request.FreeFilter));
 
         return result;
     }
@@ -115,6 +118,6 @@ public class ServiceMenuLookupService
         var config = await generationEvaluator.ResolveConfigAsync(request);
         var documents = await cosmosService.GetMenuDocumentsAsync(request.BasicModelCode, cancellationToken);
 
-        return generationEvaluator.Evaluate(documents, config);
+        return generationEvaluator.Evaluate(documents, config, request.FreeFilter);
     }
 }

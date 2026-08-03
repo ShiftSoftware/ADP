@@ -38,6 +38,18 @@ public class VehicleServiceMenuLineDTO
     public string VariantName { get; set; }
 
     /// <summary>
+    /// The variant's menu is offered free of charge. A variant-level flag travelling on the line, like
+    /// <see cref="VariantName"/> — every line of a free variant carries it.
+    ///
+    /// <para><b>The money fields below are unaffected.</b> Nothing zeroes a total for a free variant, so a
+    /// UI that renders <see cref="TotalPrice"/> verbatim quotes a customer for a menu the catalog calls
+    /// free. Read this first and render "free" instead.</para>
+    ///
+    /// <para>Filter by it with <c>VehicleServiceMenuRequestOptions.FreeFilter</c>.</para>
+    /// </summary>
+    public bool IsFree { get; set; }
+
+    /// <summary>
     /// Stable identity of this line, independent of language — use it to correlate the same service across
     /// language requests. Never key on <see cref="Code"/> for that: it is language-dependent by construction.
     /// </summary>

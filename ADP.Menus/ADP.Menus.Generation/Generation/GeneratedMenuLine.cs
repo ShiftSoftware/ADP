@@ -129,6 +129,13 @@ public class GeneratedMenuLine
     public long VariantID { get; set; }
     public string VariantName { get; set; }
 
+    /// <summary>
+    /// The variant's "menu is free of charge" flag, stamped onto every line it produced. It takes part in
+    /// no arithmetic — the money fields below are the same whether it is set or not — so a consumer that
+    /// quotes a free menu as 0 does that itself.
+    /// </summary>
+    public bool IsFree { get; set; }
+
     // ---- source-row correlation ---------------------------------------------------------------
 
     /// <summary>Periodic lines only.</summary>

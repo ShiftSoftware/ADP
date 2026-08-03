@@ -214,6 +214,7 @@ nav:
               - Menu Line Part: generated/LookupServices/DTOsAndModels/ServiceMenu/ServiceMenuPartDTO.md
               - Menu Line Type: generated/LookupServices/DTOsAndModels/ServiceMenu/ServiceMenuLineType.md
               - Lookup Request: generated/LookupServices/DTOsAndModels/ServiceMenu/ServiceMenuLookupRequest.md
+              - Free Filter: generated/LookupServices/DTOsAndModels/ServiceMenu/ServiceMenuFreeFilter.md
               - Country Settings: generated/LookupServices/DTOsAndModels/ServiceMenu/ServiceMenuCountrySettings.md
           - SSC Lookup:
               - SSC Lookup Statuses: generated/LookupServices/DTOsAndModels/SSC/SSCLookupStatuses.md

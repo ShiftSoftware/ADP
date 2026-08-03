@@ -123,6 +123,7 @@ public static class EfToGenerationAggregator
         StandaloneMenuPostfix = source.StandaloneMenuPostfix,
         LabourRate = source.LabourRate,
         DiscountPercentage = source.DiscountPercentage,
+        IsFree = source.IsFree,
         HasStandaloneItems = source.HasStandaloneItems,
         CountryLabourRates = source.LabourRates
             .Where(x => !x.IsDeleted)

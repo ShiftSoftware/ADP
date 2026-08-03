@@ -136,6 +136,7 @@ public static class MenuCosmosMappers
         StandaloneMenuPostfix = variant.StandaloneMenuPostfix,
         LabourRate = variant.LabourRate,
         DiscountPercentage = variant.DiscountPercentage,
+        IsFree = variant.IsFree,
         HasStandaloneItems = variant.HasStandaloneItems,
 
         // The export selects on BOTH flags, and deleting a menu does not cascade to its variants — so

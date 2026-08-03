@@ -176,6 +176,7 @@ public static class CosmosToGenerationAggregator
             StandaloneMenuPostfix = variant.StandaloneMenuPostfix,
             LabourRate = variant.LabourRate,
             DiscountPercentage = variant.DiscountPercentage,
+            IsFree = variant.IsFree,
             HasStandaloneItems = variant.HasStandaloneItems,
 
             CountryLabourRates = (variant.CountryLabourRates ?? [])

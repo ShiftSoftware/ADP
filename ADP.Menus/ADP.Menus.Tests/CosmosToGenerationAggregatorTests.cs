@@ -176,6 +176,46 @@ public class CosmosToGenerationAggregatorTests
             Generate(MenuCosmosDocumentFixture.Build()).Select(line => line.LineKey));
     }
 
+    /// <summary>
+    /// The variant's free-of-charge flag survives every hop: EF row → replication mapper → Cosmos
+    /// document → aggregator → generated line. It is authored per variant and read per line, and there is
+    /// no other way to find out whether the two ends agree.
+    /// </summary>
+    [Fact]
+    public void TheFreeFlag_SurvivesTheRoundTrip()
+    {
+        var documents = MenuCosmosDocumentFixture.WithFreeAndPaidVariants();
+
+        // On the document, as replication wrote it.
+        Assert.True(documents.Variants.Single(variant => variant.VariantID == MenuCosmosDocumentFixture.FreeVariantID).IsFree);
+        Assert.False(documents.Variants.Single(variant => variant.VariantID == MenuCosmosDocumentFixture.PaidVariantID).IsFree);
+
+        // On the neutral request the generator is handed.
+        var request = CosmosToGenerationAggregator.Build(documents);
+        Assert.True(request.Variants.Single(variant => variant.VariantID == MenuCosmosDocumentFixture.FreeVariantID).IsFree);
+        Assert.False(request.Variants.Single(variant => variant.VariantID == MenuCosmosDocumentFixture.PaidVariantID).IsFree);
+
+        // And on every line each variant produced — periodic and standalone alike.
+        var lines = Generate(documents);
+        Assert.NotEmpty(lines);
+        Assert.All(lines, line => Assert.Equal(line.VariantID == MenuCosmosDocumentFixture.FreeVariantID, line.IsFree));
+        Assert.Contains(lines, line => line.IsFree && line.IsStandalone);
+        Assert.Contains(lines, line => line.IsFree && !line.IsStandalone);
+    }
+
+    /// <summary>
+    /// A document written before the field existed reads as not-free rather than throwing or defaulting
+    /// to free — the safe direction, since "free" is the claim that gives something away.
+    /// </summary>
+    [Fact]
+    public void ADocumentWithoutTheFreeFlag_ReadsAsNotFree()
+    {
+        var documents = MenuCosmosDocumentFixture.Build();
+
+        Assert.All(documents.Variants, variant => Assert.False(variant.IsFree));
+        Assert.All(Generate(documents), line => Assert.False(line.IsFree));
+    }
+
     // ---- what the aggregator filters, and what it must not -----------------------------------------
 
     /// <summary>The export selects <c>!variant.IsDeleted</c>; so does the lookup.</summary>

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -120,6 +120,7 @@ public static class MenuCodeGenerator
                 Model = variant.Model,
                 VariantID = variant.VariantID,
                 VariantName = variant.VariantName,
+                IsFree = variant.IsFree,
 
                 LabourRate = ResolveLabourRate(variant, config),
                 PrimaryLabourRate = variant.LabourRate,
@@ -198,6 +199,7 @@ public static class MenuCodeGenerator
                 Model = variant.Model,
                 VariantID = variant.VariantID,
                 VariantName = variant.VariantName,
+                IsFree = variant.IsFree,
 
                 LabourRate = ResolveLabourRate(variant, config),
                 PrimaryLabourRate = variant.LabourRate,
@@ -259,6 +261,7 @@ public static class MenuCodeGenerator
                 Model = variant.Model,
                 VariantID = variant.VariantID,
                 VariantName = variant.VariantName,
+                IsFree = variant.IsFree,
 
                 LabourRate = ResolveLabourRate(variant, config),
                 PrimaryLabourRate = variant.LabourRate,

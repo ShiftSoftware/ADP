@@ -9,6 +9,7 @@ One service on the vehicle's menu — the DMS menu code and labour code, and the
 |----------|---------|
 | VariantID <div><strong>``long``</strong></div> | The menu variant this service belongs to, in the menus catalog. |
 | VariantName <div><strong>``string``</strong></div> | The variant's name as authored (a trim or drivetrain qualifier). A model usually has one variant; when it has several, this is what a UI groups or filters by. |
+| IsFree <div><strong>``bool``</strong></div> | The variant's menu is offered free of charge. A variant-level flag travelling on the line, like `VariantName` — every line of a free variant carries it. |
 | LineKey <div><strong>``string``</strong></div> | Stable identity of this line, independent of language — use it to correlate the same service across language requests. Never key on `Code` for that: it is language-dependent by construction. |
 | Code <div><strong>``string``</strong></div> | The generated menu code, as the DMS knows it. |
 | LabourCode <div><strong>``string``</strong></div> | The generated labour operation code. |

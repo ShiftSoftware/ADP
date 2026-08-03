@@ -290,6 +290,27 @@ public class EfToGenerationAggregatorTests
         Assert.Equal("A", request.Reference.BrandMappings[101].Abbreviation);
     }
 
+    /// <summary>
+    /// The export's adapter carries the variant's free-of-charge flag too. It has no use for it — the DMS
+    /// export neither filters nor prices on it — but the two adapters feed ONE request type, and a field
+    /// only one of them fills is a field that disagrees the moment anything reads it from both.
+    /// </summary>
+    [Fact]
+    public void TheFreeFlag_ReachesTheGenerationRequest()
+    {
+        var fixture = MenuGraphFixture.Build();
+        var variant = fixture.Variants.Single();
+        variant.IsFree = true;
+
+        var request = EfToGenerationAggregator.Build(fixture.Variants, fixture.LabourRateMappings, fixture.BrandMappings);
+
+        Assert.True(request.Variants.Single().IsFree);
+
+        variant.IsFree = false;
+        Assert.False(EfToGenerationAggregator.Build(fixture.Variants, fixture.LabourRateMappings, fixture.BrandMappings)
+            .Variants.Single().IsFree);
+    }
+
     [Fact]
     public void Build_RejectsNullArguments()
     {

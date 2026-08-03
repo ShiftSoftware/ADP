@@ -99,6 +99,11 @@ public class VehicleServiceMenuEvaluator
                     CountryID = menuOptions?.CountryID,
                     TransferRate = menuOptions?.TransferRate,
                     Language = requestOptions?.LanguageCode,
+
+                    // A filter that excludes every variant lands as Found with no services — see the
+                    // remarks on VehicleServiceMenuRequestOptions.FreeFilter. It must not become NotFound:
+                    // that word is reserved for a model with no menu at all, and a deployment counts it.
+                    FreeFilter = menuOptions.FreeFilter,
                 },
                 cancellationToken);
         }
@@ -159,6 +164,7 @@ public class VehicleServiceMenuEvaluator
         {
             VariantID = variant.VariantID,
             VariantName = variant.VariantName,
+            IsFree = variant.IsFree,
 
             LineKey = line.LineKey,
             Code = line.Code,
