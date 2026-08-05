@@ -33,7 +33,7 @@
 		  SampleSeedDB can reproduce the sample API's model without referencing the web app itself.
 		-->
 		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.10" />
-		<PackageReference Include="ShiftSoftware.ShiftIdentity.Data" Version="2026.7.28.1" />
+		<PackageReference Include="ShiftSoftware.ShiftIdentity.Data" Version="2026.7.31.1" />
 	</ItemGroup>
 
 	<ItemGroup>
