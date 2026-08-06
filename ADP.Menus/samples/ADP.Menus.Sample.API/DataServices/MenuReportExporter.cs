@@ -17,14 +17,18 @@ public class MenuReportExporter : IMenuReportExporter
 
         var worksheet = workbook.Worksheets.Add("Sheet1");
 
+        // Walked twice below (sizing pass, then the row loop), so materialize once: the context
+        // hands over an IEnumerable and a lazy one would re-run the whole fold on each pass.
+        var allLines = lines as IList<MenuLineDTO> ?? lines?.ToList() ?? new List<MenuLineDTO>();
+
         // Get the biggest number of parts in a menu code
-        var numberOfParts = lines?.Select(x => x.Parts.Count()).DefaultIfEmpty(0).Max() ?? 0;
+        var numberOfParts = allLines.Count > 0 ? allLines.Max(x => x.Parts?.Count() ?? 0) : 0;
 
         GenerateHeadersForExportMenuToExcel(worksheet, numberOfParts);
 
         var index = 0;
 
-        foreach (var line in lines ?? [])
+        foreach (var line in allLines)
         {
             index++;
 
@@ -45,9 +49,15 @@ public class MenuReportExporter : IMenuReportExporter
             worksheet.Cell(index + 2, 10).Value = line.AllowedTime;
             worksheet.Cell(index + 2, 11).Value = line.AllowedTime * line.LabourRate;
 
+            // Indexed rather than ElementAtOrDefault: that falls back to walking from the start
+            // whenever Parts is not list-backed, which makes this loop quadratic per row.
+            // The empty slots stay written -- this sheet is a positional DMS import where an
+            // explicit 0 quantity is meaningful.
+            var parts = line.Parts as IList<MenuLinePartDTO> ?? line.Parts?.ToList() ?? new List<MenuLinePartDTO>();
+
             for (int i = 0; i < numberOfParts; i++)
             {
-                var part = line.Parts.ElementAtOrDefault(i);
+                var part = i < parts.Count ? parts[i] : null;
                 if (part is not null)
                 {
                     worksheet.Cell(index + 2, 12 + i).Value = part.PartNumber;
@@ -133,16 +143,17 @@ public class MenuReportExporter : IMenuReportExporter
         // Freeze the first row
         worksheet.SheetView.FreezeRows(1);
 
+        // Walked twice below (sizing pass, then the row loop), so materialize once.
+        var lines = newVersionLines as IList<MenuLineDTO> ?? newVersionLines?.ToList() ?? new List<MenuLineDTO>();
+
         // Get the biggest number of parts in a menu code
-        var numberOfParts = (newVersionLines != null && newVersionLines.Any())
-            ? newVersionLines.Select(x => x.Parts?.Count() ?? 0).Max()
-            : 0;
+        var numberOfParts = lines.Count > 0 ? lines.Max(x => x.Parts?.Count() ?? 0) : 0;
 
         GenerateHeadersForExportMenusDetailReportToExcel(worksheet, numberOfParts);
 
         var index = 1;
 
-        foreach (var line in newVersionLines ?? [])
+        foreach (var line in lines)
         {
             index++;
 
@@ -231,59 +242,100 @@ public class MenuReportExporter : IMenuReportExporter
 
             var lastColumnIndex = 24;
 
-            for (int i = 0; i < numberOfParts; i++)
+            // Indexed rather than ElementAtOrDefault (see ExportMenusToExcel). Part slots this line
+            // does not use are left blank rather than filled with empty strings: on a wide sheet
+            // those placeholders are the majority of the cells, and they carry no content.
+            var parts = line.Parts as IList<MenuLinePartDTO> ?? line.Parts?.ToList() ?? new List<MenuLinePartDTO>();
+
+            for (int i = 0; i < parts.Count; i++)
             {
                 var partIndex = lastColumnIndex + (i * 6);
 
-                var part = line.Parts.ElementAtOrDefault(i);
-                if (part is not null)
-                {
-                    worksheet.Cell(index, partIndex + 1).Value = part.PartNumber;
+                var part = parts[i];
 
-                    var partCost = worksheet.Cell(index, partIndex + 2);
-                    partCost.Value = part.Cost;
+                worksheet.Cell(index, partIndex + 1).Value = part.PartNumber;
 
-                    var partPrice = worksheet.Cell(index, partIndex + 3);
-                    partPrice.Value = part.Price;
+                var partCost = worksheet.Cell(index, partIndex + 2);
+                partCost.Value = part.Cost;
 
-                    var partQauntity = worksheet.Cell(index, partIndex + 4);
-                    partQauntity.Value = part.Quantity;
+                var partPrice = worksheet.Cell(index, partIndex + 3);
+                partPrice.Value = part.Price;
 
-                    var partTotalCost = worksheet.Cell(index, partIndex + 5);
-                    partTotalCost.FormulaA1 = $"{partCost.Address} * {partQauntity.Address}";
-                    partTotalCost.Style.Fill.BackgroundColor = XLColor.LightYellow; // Highlight the cell
+                var partQauntity = worksheet.Cell(index, partIndex + 4);
+                partQauntity.Value = part.Quantity;
 
-                    var partTotalPrice = worksheet.Cell(index, partIndex + 6);
-                    partTotalPrice.FormulaA1 = $"{partPrice.Address} * {partQauntity.Address}";
-                    partTotalPrice.Style.Fill.BackgroundColor = XLColor.LightYellow; // Highlight the cell
-                }
-                else
-                {
-                    worksheet.Cell(index, partIndex + 1).Value = "";
-                    worksheet.Cell(index, partIndex + 2).Value = "";
-                    worksheet.Cell(index, partIndex + 3).Value = "";
-                    worksheet.Cell(index, partIndex + 4).Value = "";
+                var partTotalCost = worksheet.Cell(index, partIndex + 5);
+                partTotalCost.FormulaA1 = $"{partCost.Address} * {partQauntity.Address}";
+                partTotalCost.Style.Fill.BackgroundColor = XLColor.LightYellow; // Highlight the cell
 
-                    var partTotalCost = worksheet.Cell(index, partIndex + 5);
-                    partTotalCost.Value = "";
-                    partTotalCost.Style.Fill.BackgroundColor = XLColor.LightYellow; // Highlight the cell
-
-                    var partTotalPrice = worksheet.Cell(index, partIndex + 6);
-                    partTotalPrice.Value = "";
-                    partTotalPrice.Style.Fill.BackgroundColor = XLColor.LightYellow; // Highlight the cell
-                }
+                var partTotalPrice = worksheet.Cell(index, partIndex + 6);
+                partTotalPrice.FormulaA1 = $"{partPrice.Address} * {partQauntity.Address}";
+                partTotalPrice.Style.Fill.BackgroundColor = XLColor.LightYellow; // Highlight the cell
             }
         }
 
-        // Auto-fit columns and rows
-        worksheet.Columns().AdjustToContents();
-        worksheet.Rows().AdjustToContents();
+        // Widths are set explicitly instead of with AdjustToContents(). Auto-fit has to render every
+        // cell to measure it, and this sheet is mostly chained formulas, so it forces ClosedXML to
+        // evaluate the whole formula graph. Measured on an equivalent consumer sheet (6.7k rows):
+        // ~89s of a ~94s report, and still ~89s when restricted to a few columns and rows, because
+        // the recalculation is workbook-wide. Fixed widths cost nothing.
+        SetDetailReportColumnWidths(worksheet, numberOfParts);
 
         // Save the workbook to a byte array
         using var stream = new MemoryStream();
 
         workbook.SaveAs(stream);
         return new ValueTask<byte[]>(stream.ToArray());
+    }
+
+    /// <summary>
+    /// Fixed column widths for the detail report, sized from the header labels and the values they
+    /// carry. See the note at the call site for why auto-fit is not used.
+    /// </summary>
+    private static void SetDetailReportColumnWidths(IXLWorksheet worksheet, int numberOfParts)
+    {
+        // Columns 1-24: the fixed, named part of the report.
+        double[] fixedWidths =
+        [
+            22, // Menu Code
+            18, // Basic Model Code
+            30, // Model
+            13, // Allowed Time
+            12, // Labour Rate
+            12, // Labour Cost
+            13, // Labour Price
+            13, // Labour Profit
+            11, // Parts Cost
+            12, // Parts Price
+            12, // Parts Profit
+            15, // Parts Profit %
+            11, // GP
+            10, // GP %
+            13, // Consumable
+            13, // Labour Total
+            11, // Discount %
+            16, // Old Menu Price
+            16, // New Menu Price
+            17, // Price Difference
+            19, // Price Difference %
+            13, // Menu Profit
+            9,  // Comp
+            16, // RTS Code
+        ];
+
+        for (var i = 0; i < fixedWidths.Length; i++)
+            worksheet.Column(i + 1).Width = fixedWidths[i];
+
+        // Then six repeating columns per part slot.
+        double[] partWidths = [18, 12, 12, 14, 16, 16];
+
+        for (var p = 0; p < numberOfParts; p++)
+        {
+            var baseIndex = fixedWidths.Length + (p * partWidths.Length);
+
+            for (var c = 0; c < partWidths.Length; c++)
+                worksheet.Column(baseIndex + c + 1).Width = partWidths[c];
+        }
     }
 
     private static void GenerateHeadersForExportMenuToExcel(IXLWorksheet worksheet, int numberOfParts)
