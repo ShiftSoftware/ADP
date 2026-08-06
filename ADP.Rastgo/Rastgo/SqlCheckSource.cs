@@ -25,12 +25,43 @@ namespace ShiftSoftware.ADP.Rastgo;
 /// is missing the read-only connection string does not abort every other check in the pack.
 /// </para>
 /// </summary>
-public sealed class SqlCheckSource(string? connectionString) : ICheckSource
+public sealed class SqlCheckSource : ICheckSource
 {
-    /// <summary>Guards a single slow/blocked query from stalling the whole run.</summary>
-    private const int CommandTimeoutSeconds = 60;
+    private readonly string? connectionString;
+    private readonly int commandTimeoutSeconds;
 
-    public string Name => "sql";
+    /// <summary>Guards a single slow/blocked query from stalling the whole run.</summary>
+    public const int DefaultCommandTimeoutSeconds = 60;
+
+    /// <summary>
+    /// Creates the original, unqualified <c>sql</c> source. This constructor is retained
+    /// explicitly for binary compatibility with existing Rastgo hosts.
+    /// </summary>
+    public SqlCheckSource(string? connectionString)
+        : this(connectionString, qualifier: null, DefaultCommandTimeoutSeconds)
+    {
+    }
+
+    /// <summary>
+    /// Creates a SQL source, optionally addressed as <c>sql:&lt;qualifier&gt;</c>. Raising
+    /// <paramref name="commandTimeoutSeconds"/> is useful for measures that wrap wide views.
+    /// </summary>
+    public SqlCheckSource(
+        string? connectionString,
+        string? qualifier,
+        int commandTimeoutSeconds = DefaultCommandTimeoutSeconds)
+    {
+        if (commandTimeoutSeconds <= 0)
+            throw new ArgumentOutOfRangeException(
+                nameof(commandTimeoutSeconds),
+                "SQL command timeout must be positive.");
+
+        this.connectionString = connectionString;
+        this.commandTimeoutSeconds = commandTimeoutSeconds;
+        Name = SourceName.Compose("sql", qualifier);
+    }
+
+    public string Name { get; }
 
     public async Task<MeasureOutcome> MeasureAsync(MeasureSpec spec, bool grouped, CancellationToken ct)
     {
@@ -50,7 +81,7 @@ public sealed class SqlCheckSource(string? connectionString) : ICheckSource
 
             await using var cmd = connection.CreateCommand();
             cmd.CommandText = spec.Sql;
-            cmd.CommandTimeout = CommandTimeoutSeconds;
+            cmd.CommandTimeout = commandTimeoutSeconds;
             await using var reader = await cmd.ExecuteReaderAsync(ct);
 
             var vOrd = reader.GetOrdinal("v");

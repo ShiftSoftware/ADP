@@ -86,4 +86,28 @@ public static class IServiceCollectionExtensions
         services.AddSingleton<ICheckSource>(_ => new SqlCheckSource(connectionString));
         return services;
     }
+
+    /// <summary>
+    /// Registers a read-only SQL Server check source under the qualified name <c>sql:&lt;qualifier&gt;</c> —
+    /// for hosts with one connection string per dealer/tenant, where a single bare <c>sql</c> cannot
+    /// address them all. Call it once per qualifier; YAML then says <c>source: sql:AAD</c>.
+    /// <para>
+    /// Chain after <c>AddRastgoCore</c>, and freely alongside the unqualified
+    /// <see cref="AddRastgoSql(IServiceCollection, string?)"/> — the bare and qualified names are
+    /// distinct registry entries, so a host may register both. A mistyped qualifier in YAML resolves
+    /// to nothing and reports "Unknown source"; it deliberately does NOT fall back to bare <c>sql</c>.
+    /// </para>
+    /// </summary>
+    public static IServiceCollection AddRastgoSql(
+        this IServiceCollection services,
+        string qualifier,
+        string? connectionString,
+        int commandTimeoutSeconds = SqlCheckSource.DefaultCommandTimeoutSeconds)
+    {
+        if (string.IsNullOrWhiteSpace(qualifier))
+            throw new ArgumentException("Qualifier is required; call the single-argument overload for the bare 'sql' source.", nameof(qualifier));
+
+        services.AddSingleton<ICheckSource>(_ => new SqlCheckSource(connectionString, qualifier, commandTimeoutSeconds));
+        return services;
+    }
 }
