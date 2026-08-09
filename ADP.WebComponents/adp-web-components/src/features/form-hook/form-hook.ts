@@ -199,7 +199,7 @@ export class FormHook<T> {
       if (el.type === 'file') {
         // @ts-ignore
         const files: any[] = Array.from(el?.files || []);
-        const signs = (this.subscribers.find(sub => sub.name === el?.name).context as FormFile).sasFiles;
+        const signs = (this.subscribers.find(sub => sub.name === el?.name)?.context as FormFile)?.sasFiles;
 
         const parsed = files.map((file, idx) =>
           signs?.[idx]
@@ -239,7 +239,7 @@ export class FormHook<T> {
 
       if (sortedDomElements[0]) {
         if (sortedDomElements[0].hidden) {
-          sortedDomElements[0].parentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          sortedDomElements[0].parentElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         } else sortedDomElements[0].focus();
       }
     }

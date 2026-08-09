@@ -458,7 +458,7 @@ export class VehicleItemClaimForm implements ImageViewerInterface {
                       {this.vin}
                     </div>
                     {!!this.item?.printUrl && (
-                      <button class="btn-print" onClick={() => window.open(this.item.printUrl, '_blank').focus()}>
+                      <button class="btn-print" onClick={() => window.open(this.item.printUrl, '_blank')?.focus()}>
                         <PrinterIcon />
                         {this.locale.print}
                       </button>

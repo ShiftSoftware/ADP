@@ -302,7 +302,7 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
       this.print(this.lastSuccessfulClaimResponse);
     } else {
       if (this.lastSuccessfulClaimResponse.PrintURL) {
-        window.open(this.lastSuccessfulClaimResponse.PrintURL, '_blank').focus();
+        window.open(this.lastSuccessfulClaimResponse.PrintURL, '_blank')?.focus();
       }
     }
   };

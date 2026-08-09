@@ -1,5 +1,5 @@
 import { Component, Element, Host, Prop, State, h } from '@stencil/core';
-import { FormSelectItem } from 'components';
+import { FormSelectItem } from '../../components';
 import cn from '~lib/cn';
 
 import { ArrowUpIcon } from '~assets/arrow-up-icon';

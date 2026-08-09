@@ -73,10 +73,12 @@ export const formSuccessHandler = async (formContext: FormSuccessHandler, data: 
 
     let targetElement = formDom instanceof ShadowRoot ? formDom.firstElementChild : formDom;
 
-    const yOffset = -100;
-    const y = targetElement.getBoundingClientRect().top + window.pageYOffset + yOffset;
+    if (targetElement) {
+      const yOffset = -100;
+      const y = targetElement.getBoundingClientRect().top + window.pageYOffset + yOffset;
 
-    window.scrollTo({ top: Math.max(y, 0), behavior: 'smooth' });
+      window.scrollTo({ top: Math.max(y, 0), behavior: 'smooth' });
+    }
   }
 };
 

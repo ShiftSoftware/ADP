@@ -44,7 +44,7 @@ export class FormStepper implements FormElement {
   @Watch('language')
   async onLanguageUpdate() {
     forceUpdate(this);
-    this.line.style.width = `${0}px`;
+    if (this.line) this.line.style.width = `${0}px`;
     setTimeout(() => this.updateLine(), 100);
   }
 

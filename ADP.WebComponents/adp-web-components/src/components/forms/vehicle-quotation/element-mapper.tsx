@@ -18,7 +18,7 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Addit
 
   'vehicle': ({ form, language, props }) => {
     const fetcher: FormSelectFetcher = async ({ signal }): Promise<FormSelectItem[]> => {
-      const vehicleEndpoint = form.context.structure?.data.vehicleApi as string;
+      const vehicleEndpoint = form.context.structure?.data?.vehicleApi as string;
 
       const response = await fetch(vehicleEndpoint, { signal, headers: { 'Accept-Language': language } });
 
@@ -48,7 +48,7 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Addit
     if (!props.defaultValue) {
       const params = new URLSearchParams(window.location.search);
 
-      defaultValue = params.get(form.context.structure.data?.vehicleIdQueryParam);
+      defaultValue = params.get(form.context.structure?.data?.vehicleIdQueryParam);
     } else {
       defaultValue = props.defaultValue;
     }
@@ -58,7 +58,7 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Addit
 
   'dealer': ({ form, language, props }) => {
     const fetcher: FormSelectFetcher = async ({ signal }): Promise<FormSelectItem[]> => {
-      const dealerEndpoint = form.context.structure?.data.dealerApi as string;
+      const dealerEndpoint = form.context.structure?.data?.dealerApi as string;
 
       const response = await fetch(dealerEndpoint, { signal, headers: { 'Accept-Language': language } });
 
@@ -138,7 +138,7 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Addit
     const ownVehicle = form.getValue<VehicleQuotation>('ownVehicle') === 'yes';
 
     const fetcher: FormSelectFetcher = async ({ signal }): Promise<FormSelectItem[]> => {
-      const currentVehiclesEndpoint = form.context.structure?.data.currentVehiclesApi as string;
+      const currentVehiclesEndpoint = form.context.structure?.data?.currentVehiclesApi as string;
 
       const response = await fetch(currentVehiclesEndpoint, { signal, headers: { 'Accept-Language': 'en' } });
 
@@ -204,7 +204,7 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Addit
 
   'city': ({ form, language, props }) => {
     const fetcher: FormSelectFetcher = async ({ signal }): Promise<FormSelectItem[]> => {
-      const cityEndpoint = form.context.structure?.data.cityApi as string;
+      const cityEndpoint = form.context.structure?.data?.cityApi as string;
 
       const response = await fetch(cityEndpoint, { signal, headers: { 'Accept-Language': language } });
 

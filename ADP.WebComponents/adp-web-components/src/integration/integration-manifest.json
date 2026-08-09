@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "package": "adp-web-components",
-  "packageVersion": "0.3.9",
+  "packageVersion": "0.3.11",
   "outputFamily": "per-component",
   "components": [
     {
