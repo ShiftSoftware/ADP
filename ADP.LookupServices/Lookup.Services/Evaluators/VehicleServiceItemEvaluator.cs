@@ -557,7 +557,53 @@ public partial class VehicleServiceItemEvaluator
         if (!MatchesCountry(item, ownership)) return EligibilityRejectionStage.Country;
         if (!IsWithinCampaignWindow(item, freeServiceStartDate)) return EligibilityRejectionStage.CampaignWindow;
         if (!IsApplicableToVehicle(item, vehicle)) return EligibilityRejectionStage.VehicleApplicability;
+        if (!MatchesEligibilityConditions(item)) return EligibilityRejectionStage.CustomCondition;
         return EligibilityRejectionStage.None;
+    }
+
+    private bool MatchesEligibilityConditions(ServiceItemModel item)
+    {
+        foreach (var condition in item.EligibilityConditions ?? Enumerable.Empty<ServiceItemEligibilityConditionModel>())
+        {
+            if (condition is null ||
+                condition.Operator != ServiceItemEligibilityConditionOperator.ContainsAll ||
+                condition.Scope?.Selection != ServiceItemEligibilityConditionSelection.Latest ||
+                condition.Scope.Count is null ||
+                condition.Scope.Count <= 0 ||
+                condition.Values is null ||
+                !condition.Values.Any())
+                return false;
+
+            if (!string.Equals(condition.Field, "serviceHistory.laborLines.packageCode", StringComparison.Ordinal))
+                return false;
+
+            var latestInvoices = VehicleServiceHistoryEvaluator.GetInvoices(companyDataAggregate, ConsistencyLevels.Strong)
+                .Select(invoice => new
+                {
+                    Invoice = invoice,
+                    ServiceDate = new[]
+                    {
+                        invoice.LaborLines?.Max(line => line.InvoiceDate),
+                        invoice.PartLines?.Max(line => line.InvoiceDate),
+                    }.Max()
+                })
+                .OrderByDescending(x => x.ServiceDate)
+                .Take(condition.Scope.Count.Value)
+                .ToList();
+
+            if (latestInvoices.Count != condition.Scope.Count.Value)
+                return false;
+
+            var packageCodes = latestInvoices
+                .SelectMany(x => x.Invoice.LaborLines ?? Enumerable.Empty<ShiftSoftware.ADP.Models.Service.OrderLaborLineModel>())
+                .Select(line => line.PackageCode)
+                .Where(code => !string.IsNullOrWhiteSpace(code));
+
+            if (condition.Values.Any(value => !packageCodes.Any(code => string.Equals(code, value, StringComparison.OrdinalIgnoreCase))))
+                return false;
+        }
+
+        return true;
     }
 
     private static bool MatchesBrand(ServiceItemModel item, VehicleEntryModel vehicle) =>

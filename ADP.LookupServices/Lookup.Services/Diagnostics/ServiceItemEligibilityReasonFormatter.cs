@@ -34,6 +34,8 @@ internal static class ServiceItemEligibilityReasonFormatter
             FormatCampaignWindow(item),
         EligibilityRejectionStage.VehicleApplicability =>
             FormatVehicleApplicability(item, vehicle),
+        EligibilityRejectionStage.CustomCondition =>
+            "The item's configured eligibility conditions did not match the vehicle lookup data.",
         _ => "",
     };
 

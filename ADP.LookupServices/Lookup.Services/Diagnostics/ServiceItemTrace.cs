@@ -115,6 +115,7 @@ public enum EligibilityRejectionStage
     Country,
     CampaignWindow,
     VehicleApplicability,
+    CustomCondition,
 }
 
 public class ServiceItemEligibilityDecision

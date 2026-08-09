@@ -12,6 +12,7 @@ namespace LookupServices.BDD.StepDefinitions;
 public class MockStorageStepDefinitions
 {
     private readonly Support.TestContext _context;
+    private List<ServiceItemModel> _serviceItems = [];
 
     public MockStorageStepDefinitions(Support.TestContext context)
     {
@@ -120,7 +121,7 @@ public class MockStorageStepDefinitions
     [Given("service items:")]
     public void GivenServiceItems(DataTable dataTable)
     {
-        var items = dataTable.Rows.Select(row =>
+        _serviceItems = dataTable.Rows.Select(row =>
         {
             var activationTrigger = row.ContainsKey("ActivationTrigger") && !string.IsNullOrWhiteSpace(row["ActivationTrigger"])
                 ? Enum.Parse<ClaimableItemCampaignActivationTrigger>(row["ActivationTrigger"])
@@ -178,7 +179,27 @@ public class MockStorageStepDefinitions
 
         _context.StorageService
             .GetServiceItemsAsync(Arg.Any<bool>())
-            .Returns(items);
+            .Returns(_serviceItems);
+    }
+
+    [Given("service item {string} has eligibility conditions:")]
+    public void GivenServiceItemHasEligibilityConditions(string serviceItemId, DataTable dataTable)
+    {
+        var item = _serviceItems.SingleOrDefault(x => x.IntegrationID == serviceItemId);
+        if (item is null)
+            throw new ReqnrollException($"Service item '{serviceItemId}' was not configured.");
+
+        item.EligibilityConditions = dataTable.Rows.Select(row => new ServiceItemEligibilityConditionModel
+        {
+            Field = row["Field"],
+            Operator = Enum.Parse<ServiceItemEligibilityConditionOperator>(row["Operator"]),
+            Scope = new ServiceItemEligibilityConditionScope
+            {
+                Selection = Enum.Parse<ServiceItemEligibilityConditionSelection>(row["Selection"]),
+                Count = int.Parse(row["Count"]),
+            },
+            Values = row["Values"].Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries),
+        }).ToList();
     }
 
     [Given("LookupOptions has broker stock lookup enabled")]

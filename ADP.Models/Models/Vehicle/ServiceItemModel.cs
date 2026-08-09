@@ -158,4 +158,54 @@ public class ServiceItemModel : IIntegrationProps
     /// An external identifier used for system-to-system integration.
     /// </summary>
     public string IntegrationID { get; set; }
+
+    /// <summary>
+    /// Optional declarative predicates that must match the vehicle lookup data before this
+    /// service item is offered. This is a closed contract, not a general query language: the
+    /// lookup evaluator supports only documented field paths and fails closed for every other path.
+    /// </summary>
+    public IEnumerable<ServiceItemEligibilityConditionModel> EligibilityConditions { get; set; }
+}
+
+/// <summary>
+/// A declarative eligibility predicate evaluated against data exposed by the vehicle lookup.
+/// </summary>
+public class ServiceItemEligibilityConditionModel
+{
+    /// <summary>
+    /// The fully-qualified vehicle lookup field path to evaluate. Supported paths are defined
+    /// by the lookup evaluator; this model does not imply arbitrary vehicle lookup traversal.
+    /// </summary>
+    public string Field { get; set; }
+
+    /// <summary>The comparison to apply to the scoped field values.</summary>
+    public ServiceItemEligibilityConditionOperator Operator { get; set; }
+
+    /// <summary>The values required by the comparison.</summary>
+    public IEnumerable<string> Values { get; set; }
+
+    /// <summary>Optional selection scope for collection-based fields.</summary>
+    public ServiceItemEligibilityConditionScope Scope { get; set; }
+}
+
+/// <summary>Defines how a collection-backed condition selects source entries.</summary>
+public class ServiceItemEligibilityConditionScope
+{
+    /// <summary>The collection selection strategy.</summary>
+    public ServiceItemEligibilityConditionSelection Selection { get; set; }
+
+    /// <summary>The number of latest entries that take part in the comparison.</summary>
+    public int? Count { get; set; }
+}
+
+[System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))]
+public enum ServiceItemEligibilityConditionOperator
+{
+    ContainsAll
+}
+
+[System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))]
+public enum ServiceItemEligibilityConditionSelection
+{
+    Latest
 }
