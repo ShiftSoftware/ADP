@@ -90,7 +90,7 @@ The `WebComponentModelGenerator` (C# console app) uses Roslyn to scan C# models 
 
 ## CI/CD
 - **NuGet pipeline** (`azure-pipeline.yml`): Triggered by `release-nuget-*` tags. Builds, runs BDD tests, packs and publishes NuGet packages.
-- **Web components pipeline** (`ADP.WebComponents/adp-web-components/azure-pipelines.yml`): Triggered by `release-web-components-*` tags. Publishes to NPM.
+- **Web components pipeline** (`ADP.WebComponents/adp-web-components/azure-pipelines.yml`): Triggered by `release-web-components-*` tags. Publishes to NPM, then waits for registry propagation and runs `npm run purge` to flush the `@latest` jsDelivr URLs. The purge step is `continueOnError` — the publish is already irreversible by then, so a CDN hiccup warns instead of failing the release.
 - **Docs pipeline** (`.github/workflows/docs-gh-pages.yml`): Triggered by `release-docs-*` tags. Deploys mkdocs to GitHub Pages.
 
 ## Stencil.js Conventions

@@ -1,10 +1,10 @@
 trigger:
- tags:
+  tags:
     include:
-    - release-web-components-*
+      - release-web-components-*
 
 variables:
-- group: Deployment
+  - group: Deployment
 
 steps:
   - task: UseNode@1
@@ -34,3 +34,17 @@ steps:
       command: 'publish'
       workingDir: 'ADP.WebComponents/adp-web-components'
       publishEndpoint: 'NPM'
+
+  - script: node -e "setTimeout(() => {}, 10000)"
+    displayName: 'Wait for npm registry propagation'
+    condition: and(succeeded(), contains(variables['Build.SourceBranch'], 'refs/tags/release'))
+
+  - task: Npm@1
+    displayName: 'Purge jsDelivr CDN cache'
+    condition: and(succeeded(), contains(variables['Build.SourceBranch'], 'refs/tags/release'))
+    continueOnError: true
+    retryCountOnTaskFailure: 2
+    inputs:
+      command: 'custom'
+      customCommand: 'run purge'
+      workingDir: 'ADP.WebComponents/adp-web-components'
