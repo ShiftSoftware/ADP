@@ -60,7 +60,7 @@ public enum SnapshotMergeStatus
     /// </summary>
     AbortedMassAdoption,
     FailedDuplicateStagingKeys,
-    /// <summary>Staging rows with NULL _PrimaryKey or NULL _RowHash — the ingestor's contract was not met.</summary>
+    /// <summary>Staging rows with a NULL identity or required content/replication hash — the ingestor's contract was not met.</summary>
     FailedInvalidStagingRows,
     /// <summary>The merge threw mid-run; everything rolled back and a Failed:Exception run record was written.</summary>
     Failed,

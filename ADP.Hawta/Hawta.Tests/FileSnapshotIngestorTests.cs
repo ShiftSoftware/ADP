@@ -41,7 +41,7 @@ public sealed class FileSnapshotIngestorTests : IDisposable
             FilePath = path,
             Csv = builder.Csv ?? new CsvReadOptions(),
             SelectSql = builder.SelectSql,
-            PrimaryKeyColumn = builder.PrimaryKeyColumn ?? "Code",
+            LogicalKey = FileLogicalKey.Single("Code"),
             MergeOptions = new SnapshotMergeOptions { Source = "test-file", DeletesEnabled = true },
         };
     }
@@ -50,7 +50,6 @@ public sealed class FileSnapshotIngestorTests : IDisposable
     {
         public CsvReadOptions? Csv;
         public string? SelectSql;
-        public string? PrimaryKeyColumn;
     }
 
     [Fact]

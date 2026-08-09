@@ -13,7 +13,7 @@ namespace ShiftSoftware.ADP.Hawta;
 /// </summary>
 public sealed class SnapshotStore : IDisposable
 {
-    public const int CurrentSchemaVersion = 1;
+    public const int CurrentSchemaVersion = 2;
 
     /// <summary>Rows failing replication this many times leave the dirty predicate (dead-letter) until reset.</summary>
     public const int MaxReplicationAttempts = 5;
@@ -160,8 +160,9 @@ public sealed class SnapshotStore : IDisposable
 
     /// <summary>
     /// Creates (dropping any previous instance) the staging table for one ingest run: the
-    /// family's source columns plus <c>_PrimaryKey</c>, <c>_RowHash</c> (nullable at staging
-    /// time — ingestors fill it in-DB with <see cref="RowHash.Expression"/> after loading, so
+    /// family's source columns plus <c>_PrimaryKey</c>, <c>_RowHash</c>, and
+    /// <c>_ReplicationHash</c> (nullable at staging time — ingestors fill them in-DB with
+    /// <see cref="RowHash.Expression"/> after loading, so
     /// the canonicalization is uniform across source formats), and <c>_SourceModified</c>
     /// (optional per-row source timestamp).
     /// Temp staging (default) is connection-local; persistent staging lives in the
@@ -173,7 +174,7 @@ public sealed class SnapshotStore : IDisposable
         var stagingName = $"staging_{table.Name}";
         var sourceColumns = string.Join(",\n    ", table.Columns.Select(c => $"\"{c.Name}\" {c.DuckDbType}"));
 
-        // _PrimaryKey/_RowHash are nullable AT STAGING TIME so a bad source row lands and
+        // Identity and hashes are nullable AT STAGING TIME so a bad source row lands and
         // fails the merge's validation with a loud Failed:InvalidStagingRows run record —
         // instead of exploding mid-append. The merge validates both before touching data.
         var columnsDdl =
@@ -181,6 +182,7 @@ public sealed class SnapshotStore : IDisposable
             {sourceColumns},
             "{BookkeepingColumns.PrimaryKey}" VARCHAR,
             "{BookkeepingColumns.RowHash}" VARCHAR,
+            "{BookkeepingColumns.ReplicationHash}" VARCHAR,
             "_SourceModified" TIMESTAMP
             """;
 
@@ -201,18 +203,19 @@ public sealed class SnapshotStore : IDisposable
     // ---- Replication state ------------------------------------------------------------------
     // These carry ShiftEntity's replication watermark semantics verbatim (the contract pinned
     // by ShiftEntity.Tests/Replication/ReplicationWatermarkTests.cs and this package's
-    // ReplicationWatermarkTests): the watermark written on success is the _LastModified value
-    // CAPTURED WHEN THE ROW WAS LOADED — never the current time, never the row's latest value.
-    // A row modified while its push was in flight therefore stays dirty.
+    // ReplicationWatermarkTests): the watermark written on success is the _ReplicationModified
+    // value CAPTURED WHEN THE ROW WAS LOADED — never the current time, never the row's latest
+    // value. A document-affecting edit while its push is in flight therefore stays dirty;
+    // source-only edits intentionally do not.
 
     internal static string DirtyPredicate =>
         $"""
-        ("{BookkeepingColumns.LastReplicationDate}" < "{BookkeepingColumns.LastModified}"
+        ("{BookkeepingColumns.LastReplicationDate}" < "{BookkeepingColumns.ReplicationModified}"
          OR "{BookkeepingColumns.LastReplicationDate}" IS NULL)
         AND "{BookkeepingColumns.ReplicationAttempts}" < {MaxReplicationAttempts}
         """;
 
-    /// <summary>Loads a batch of dirty rows, capturing each row's <c>_LastModified</c> at load time.</summary>
+    /// <summary>Loads a batch of dirty rows, capturing each row's <c>_ReplicationModified</c> at load time.</summary>
     public IReadOnlyList<DirtyRow> ReadDirtyRows(SnapshotTableDefinition table, int limit = 1000) =>
         ReadDirtyRows(table, afterPrimaryKey: null, limit);
 
@@ -228,9 +231,9 @@ public sealed class SnapshotStore : IDisposable
         using var command = connection.CreateCommand();
         command.CommandText =
             $"""
-            SELECT "{BookkeepingColumns.PrimaryKey}", "{BookkeepingColumns.LastModified}",
+            SELECT "{BookkeepingColumns.PrimaryKey}", "{BookkeepingColumns.ReplicationModified}",
                    "{BookkeepingColumns.Deleted}", "{BookkeepingColumns.ReplicationStamp}",
-                   "{BookkeepingColumns.SourceScope}",
+                   "{BookkeepingColumns.SourceScope}", "{BookkeepingColumns.ReplicatedAt}",
                    {table.QuotedColumnList}
             FROM {table.QualifiedName}
             WHERE {DirtyPredicate}
@@ -246,7 +249,7 @@ public sealed class SnapshotStore : IDisposable
             var values = new Dictionary<string, object?>(table.Columns.Count);
             for (var i = 0; i < table.Columns.Count; i++)
             {
-                var value = reader.GetValue(i + 5);
+                var value = reader.GetValue(i + 6);
                 values[table.Columns[i].Name] = value is DBNull ? null : value;
             }
 
@@ -259,10 +262,118 @@ public sealed class SnapshotStore : IDisposable
                 Deleted: reader.GetBoolean(2),
                 ReplicationStamp: reader.IsDBNull(3) ? null : reader.GetString(3),
                 Values: values,
-                SourceScope: reader.IsDBNull(4) ? null : reader.GetString(4)));
+                SourceScope: reader.IsDBNull(4) ? null : reader.GetString(4),
+                ReplicatedAt: reader.IsDBNull(5)
+                    ? null
+                    : DateTime.SpecifyKind(reader.GetDateTime(5), DateTimeKind.Utc)));
         }
 
         return rows;
+    }
+
+    /// <summary>
+    /// Loads distinct replication groups and every source row belonging to those groups.
+    /// Group selection and row loading are both set-based: one query selects up to
+    /// <paramref name="limit"/> keys (plus a has-more sentinel), then one query fetches all
+    /// affected rows. There is never one DuckDB query per changed source row or group.
+    /// </summary>
+    internal ReplicationGroupPage ReadReplicationGroups(
+        SnapshotTableDefinition table,
+        CosmosGroupProjection grouping,
+        string? afterGroupKey,
+        int limit,
+        bool dirtyGroupsOnly)
+    {
+        if (limit <= 0)
+            throw new ArgumentOutOfRangeException(nameof(limit));
+        if (!ReferenceEquals(table, grouping.Table))
+            throw new ArgumentException(
+                $"Grouped mapping table '{grouping.Table.Name}' does not match pump table '{table.Name}'.",
+                nameof(grouping));
+
+        var groupExpression = $"coalesce(CAST(\"{grouping.GroupColumn}\" AS VARCHAR), '')";
+        var groupKeys = new List<string>(limit + 1);
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText =
+                $"""
+                SELECT {groupExpression} AS "hawta$group"
+                FROM {table.QualifiedName}
+                WHERE {(dirtyGroupsOnly ? DirtyPredicate : "true")}
+                  {(afterGroupKey is null ? "" : $"AND {groupExpression} > ?")}
+                GROUP BY {groupExpression}
+                ORDER BY "hawta$group"
+                LIMIT {limit + 1}
+                """;
+            AddParameters(command, afterGroupKey is null ? [] : [afterGroupKey]);
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+                groupKeys.Add(reader.GetString(0));
+        }
+
+        var hasMore = groupKeys.Count > limit;
+        if (hasMore)
+            groupKeys.RemoveAt(groupKeys.Count - 1);
+        if (groupKeys.Count == 0)
+            return new ReplicationGroupPage([], HasMore: false, LastGroupKey: null);
+
+        var selectedValues = string.Join(", ", groupKeys.Select(_ => "(CAST(? AS VARCHAR))"));
+        var groups = groupKeys.ToDictionary(
+            key => key,
+            key => new List<ReplicationGroupSourceRow>(),
+            StringComparer.Ordinal);
+
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText =
+                $"""
+                WITH "hawta$selected"("GroupKey") AS (VALUES {selectedValues})
+                SELECT {groupExpression} AS "hawta$group",
+                       t."{BookkeepingColumns.PrimaryKey}",
+                       t."{BookkeepingColumns.ReplicationModified}",
+                       t."{BookkeepingColumns.Deleted}",
+                       t."{BookkeepingColumns.ReplicationStamp}",
+                       t."{BookkeepingColumns.SourceScope}",
+                       t."{BookkeepingColumns.ReplicatedAt}",
+                       ({DirtyPredicate}) AS "hawta$dirty",
+                       {string.Join(", ", table.Columns.Select(column => $"t.\"{column.Name}\""))}
+                FROM {table.QualifiedName} AS t
+                JOIN "hawta$selected" AS selected
+                  ON selected."GroupKey" = {groupExpression}
+                ORDER BY "hawta$group", t."{grouping.OrderColumn}" NULLS LAST,
+                         t."{BookkeepingColumns.PrimaryKey}"
+                """;
+            AddParameters(command, groupKeys.Cast<object?>().ToArray());
+
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                var values = new Dictionary<string, object?>(table.Columns.Count);
+                for (var index = 0; index < table.Columns.Count; index++)
+                {
+                    var value = reader.GetValue(index + 8);
+                    values[table.Columns[index].Name] = value is DBNull ? null : value;
+                }
+
+                var groupKey = reader.GetString(0);
+                var row = new DirtyRow(
+                    PrimaryKey: reader.GetString(1),
+                    CapturedLastModified: DateTime.SpecifyKind(reader.GetDateTime(2), DateTimeKind.Utc),
+                    Deleted: reader.GetBoolean(3),
+                    ReplicationStamp: reader.IsDBNull(4) ? null : reader.GetString(4),
+                    Values: values,
+                    SourceScope: reader.IsDBNull(5) ? null : reader.GetString(5),
+                    ReplicatedAt: reader.IsDBNull(6)
+                        ? null
+                        : DateTime.SpecifyKind(reader.GetDateTime(6), DateTimeKind.Utc));
+                groups[groupKey].Add(new ReplicationGroupSourceRow(row, Dirty: reader.GetBoolean(7)));
+            }
+        }
+
+        return new ReplicationGroupPage(
+            groupKeys.Select(key => new ReplicationGroup(key, groups[key])).ToList(),
+            hasMore,
+            groupKeys[^1]);
     }
 
     /// <summary>
@@ -277,7 +388,7 @@ public sealed class SnapshotStore : IDisposable
         using var command = connection.CreateCommand();
         command.CommandText =
             $"""
-            SELECT "{BookkeepingColumns.PrimaryKey}", "{BookkeepingColumns.LastModified}",
+            SELECT "{BookkeepingColumns.PrimaryKey}", "{BookkeepingColumns.ReplicationModified}",
                    "{BookkeepingColumns.Deleted}", "{BookkeepingColumns.ReplicationStamp}",
                    "{BookkeepingColumns.SourceScope}",
                    ({DirtyPredicate}) AS "hawta$dirty",
@@ -328,10 +439,10 @@ public sealed class SnapshotStore : IDisposable
         Convert.ToInt64(ExecuteScalar($"SELECT count(*) FROM {table.QualifiedName} WHERE {DirtyPredicate}"));
 
     /// <summary>
-    /// Records a successful push: stamps the CAPTURED <c>_LastModified</c> as the watermark and
+    /// Records a successful push: stamps the CAPTURED <c>_ReplicationModified</c> as the watermark and
     /// the replication stamp in the same statement (they can never drift apart), and clears the
     /// failure ledger. If a merge bumped the row mid-flight, captured &lt; current
-    /// <c>_LastModified</c> → the row remains dirty and is re-pushed next cycle.
+    /// <c>_ReplicationModified</c> → the row remains dirty and is re-pushed next cycle.
     /// </summary>
     public void MarkReplicated(SnapshotTableDefinition table, string primaryKey, DateTime capturedLastModified, string? replicationStamp)
     {
@@ -366,7 +477,7 @@ public sealed class SnapshotStore : IDisposable
             SET "{BookkeepingColumns.ReplicationAttempts}" = "{BookkeepingColumns.ReplicationAttempts}" + 1,
                 "{BookkeepingColumns.ReplicationError}" = ?
             WHERE "{BookkeepingColumns.PrimaryKey}" = ?
-              AND "{BookkeepingColumns.LastModified}" = ?
+              AND "{BookkeepingColumns.ReplicationModified}" = ?
               AND ({DirtyPredicate})
             """,
             error, primaryKey, capturedLastModified);
@@ -512,8 +623,8 @@ public sealed class SnapshotStore : IDisposable
                 "{BookkeepingColumns.ReplicationError}" = outcome."Error"
             FROM (VALUES {values}) AS outcome("PrimaryKey", "CapturedLastModified", "Error")
             WHERE target."{BookkeepingColumns.PrimaryKey}" = outcome."PrimaryKey"
-              AND target."{BookkeepingColumns.LastModified}" = outcome."CapturedLastModified"
-              AND (target."{BookkeepingColumns.LastReplicationDate}" < target."{BookkeepingColumns.LastModified}"
+              AND target."{BookkeepingColumns.ReplicationModified}" = outcome."CapturedLastModified"
+              AND (target."{BookkeepingColumns.LastReplicationDate}" < target."{BookkeepingColumns.ReplicationModified}"
                    OR target."{BookkeepingColumns.LastReplicationDate}" IS NULL)
               AND target."{BookkeepingColumns.ReplicationAttempts}" < {MaxReplicationAttempts}
             """,
@@ -590,7 +701,7 @@ public sealed class SnapshotStore : IDisposable
     public void Dispose() => connection.Dispose();
 }
 
-/// <summary>A dirty row loaded for replication, with its <c>_LastModified</c> captured at load time.</summary>
+/// <summary>A dirty row loaded for replication, with its <c>_ReplicationModified</c> captured at load time.</summary>
 /// <param name="ReplicationStamp">The stamp JSON of the last successful push (Cosmos coordinates per family), or null if never replicated.</param>
 /// <param name="SourceScope">The row's <c>_SourceScope</c> — how a mapping shared across
 /// per-scope sources (e.g. one table fed by eight dealers) resolves scope-specific values
@@ -601,7 +712,8 @@ public sealed record DirtyRow(
     bool Deleted,
     string? ReplicationStamp,
     IReadOnlyDictionary<string, object?> Values,
-    string? SourceScope = null);
+    string? SourceScope = null,
+    DateTime? ReplicatedAt = null);
 
 /// <summary>A full-scan row for recon: bookkeeping state plus source values, dirty or not.</summary>
 public sealed record SnapshotRow(
@@ -617,3 +729,25 @@ public sealed record SnapshotRow(
     public DirtyRow AsDirtyRow() =>
         new(PrimaryKey, CapturedLastModified, Deleted, ReplicationStamp, Values, SourceScope);
 }
+
+internal sealed record ReplicationGroupSourceRow(DirtyRow Row, bool Dirty);
+
+internal sealed record ReplicationGroup(
+    string GroupKey,
+    IReadOnlyList<ReplicationGroupSourceRow> Rows)
+{
+    public IReadOnlyList<DirtyRow> LiveRows => Rows
+        .Where(item => !item.Row.Deleted)
+        .Select(item => item.Row)
+        .ToList();
+
+    public IReadOnlyList<DirtyRow> DirtyRows => Rows
+        .Where(item => item.Dirty)
+        .Select(item => item.Row)
+        .ToList();
+}
+
+internal sealed record ReplicationGroupPage(
+    IReadOnlyList<ReplicationGroup> Groups,
+    bool HasMore,
+    string? LastGroupKey);

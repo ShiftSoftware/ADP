@@ -34,12 +34,15 @@ public sealed class CosmosSnapshotReplicatorOptions
     /// <summary>The families this table feeds (one source may fan out to several).</summary>
     public required IReadOnlyList<CosmosFamilyMapping> Families { get; init; }
 
-    /// <summary>Dirty rows loaded per pump cycle.</summary>
+    /// <summary>
+    /// Dirty rows loaded per pump cycle for row mappings; distinct dirty group keys for a
+    /// grouped mapping. A selected group loads all of its source rows set-wise.
+    /// </summary>
     public int BatchSize { get; init; } = 1000;
 
     /// <summary>
-    /// Maximum source rows concurrently performing Cosmos I/O. Default 1 preserves the
-    /// original remote-operation → local-stamp → next-row sequence.
+    /// Maximum source rows (or aggregate groups) concurrently performing Cosmos I/O.
+    /// Default 1 preserves the original remote-operation → local-stamp → next-work sequence.
     /// </summary>
     public int MaxInFlightRows { get; init; } = 1;
 
@@ -77,7 +80,8 @@ public sealed class CosmosSnapshotReplicatorOptions
     public string? RunId { get; init; }
 
     /// <summary>
-    /// Wet mode: read dirty rows with <c>_PrimaryKey</c> strictly above this cursor. A
+    /// Wet mode: read dirty rows with <c>_PrimaryKey</c> strictly above this cursor, or
+    /// grouped work with its normalized group key strictly above this cursor. A
     /// dispatcher draining within ONE cycle passes the previous batch's
     /// <see cref="ReplicationRunResult.LastPrimaryKey"/> so a row that FAILED is not
     /// re-read (and its attempt ledger not re-burned) five times back-to-back in the same
@@ -118,7 +122,13 @@ public sealed record ReplicationRunResult(
     /// <summary>Terminal outcomes included in committed DuckDB transactions.</summary>
     int BookkeepingOutcomeRows = 0,
     /// <summary>Largest terminal-outcome group committed in one DuckDB transaction.</summary>
-    int MaxRowsPerBookkeepingTransaction = 0);
+    int MaxRowsPerBookkeepingTransaction = 0,
+    /// <summary>Distinct aggregate keys selected in this batch (zero for row mappings).</summary>
+    int GroupsRead = 0,
+    /// <summary>All source rows loaded set-wise for the selected groups (zero for row mappings).</summary>
+    int SourceRowsLoaded = 0,
+    /// <summary>Typed reducers executed in this batch (zero for row mappings).</summary>
+    int GroupsRecomputed = 0);
 
 public enum ReplicationDrainStop
 {
@@ -154,7 +164,10 @@ public sealed record ReplicationDrainResult(
     TimeSpan BookkeepingTime = default,
     int BookkeepingTransactions = 0,
     int BookkeepingOutcomeRows = 0,
-    int MaxRowsPerBookkeepingTransaction = 0);
+    int MaxRowsPerBookkeepingTransaction = 0,
+    int GroupsRead = 0,
+    int SourceRowsLoaded = 0,
+    int GroupsRecomputed = 0);
 
 /// <summary>
 /// The snapshot → Cosmos pump. Loads a batch through the dirty predicate (capturing each
@@ -244,6 +257,7 @@ public sealed class CosmosSnapshotReplicator
         int batches = 0, rowsRead = 0, upserted = 0, deleted = 0, excluded = 0, failed = 0;
         int remoteAttempted = 0, remoteFailed = 0, highWater = 0, throttled = 0;
         int bookkeepingTransactions = 0, bookkeepingOutcomeRows = 0, maxRowsPerBookkeepingTransaction = 0;
+        int groupsRead = 0, sourceRowsLoaded = 0, groupsRecomputed = 0;
         double requestCharge = 0;
         TimeSpan retryAfter = default, cosmosTime = default, bookkeepingTime = default;
         var drained = true;
@@ -289,6 +303,9 @@ public sealed class CosmosSnapshotReplicator
             maxRowsPerBookkeepingTransaction = Math.Max(
                 maxRowsPerBookkeepingTransaction,
                 result.MaxRowsPerBookkeepingTransaction);
+            groupsRead += result.GroupsRead;
+            sourceRowsLoaded += result.SourceRowsLoaded;
+            groupsRecomputed += result.GroupsRecomputed;
             cursor = result.LastPrimaryKey;
             onBatch?.Invoke(result);
             cancellationToken.ThrowIfCancellationRequested();
@@ -339,7 +356,7 @@ public sealed class CosmosSnapshotReplicator
             runId, options.DryRun, batches, rowsRead, upserted, deleted, excluded, failed, drained, stopped,
             remoteAttempted, remoteFailed, highWater, requestCharge, throttled, retryAfter, cosmosTime,
             bookkeepingTime, bookkeepingTransactions, bookkeepingOutcomeRows,
-            maxRowsPerBookkeepingTransaction);
+            maxRowsPerBookkeepingTransaction, groupsRead, sourceRowsLoaded, groupsRecomputed);
     }
 
     private async Task<ReplicationRunResult> RunOnceCoreAsync(
@@ -352,8 +369,14 @@ public sealed class CosmosSnapshotReplicator
             throw new InvalidOperationException("A CosmosClient is required unless DryRun is set.");
 
         var runId = options.RunId ?? Guid.NewGuid().ToString("N");
+        var groupedFamily = options.Families.SingleOrDefault(family => family.Grouping is not null);
         if (options.DryRun)
-            return ExecuteDryRun(runId, options, cancellationToken);
+            return groupedFamily is null
+                ? ExecuteDryRun(runId, options, cancellationToken)
+                : ExecuteGroupedDryRun(runId, options, groupedFamily, cancellationToken);
+
+        if (groupedFamily is not null)
+            return await RunGroupedOnceAsync(runId, options, groupedFamily, cancellationToken);
 
         cancellationToken.ThrowIfCancellationRequested();
         var batch = store.ReadDirtyRows(options.Table, options.AfterPrimaryKey, options.BatchSize);
@@ -386,9 +409,132 @@ public sealed class CosmosSnapshotReplicator
             execution.MaxRowsPerBookkeepingTransaction);
     }
 
-    private sealed class RowWork(DirtyRow row, RowPlan? plan, Exception? preflightFailure = null)
+    private async Task<ReplicationRunResult> RunGroupedOnceAsync(
+        string runId,
+        CosmosSnapshotReplicatorOptions options,
+        CosmosFamilyMapping family,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var grouping = family.Grouping!;
+        var page = store.ReadReplicationGroups(
+            options.Table,
+            grouping,
+            options.AfterPrimaryKey,
+            options.BatchSize,
+            dirtyGroupsOnly: true);
+        var prepared = new List<RowWork>(page.Groups.Count);
+        foreach (var group in page.Groups)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var dirtyRows = group.DirtyRows;
+            var representative = dirtyRows[0];
+            try
+            {
+                prepared.Add(new RowWork(
+                    representative,
+                    PlanGroup(group, family),
+                    stateRows: dirtyRows));
+            }
+            catch (Exception exception)
+            {
+                prepared.Add(new RowWork(
+                    representative,
+                    plan: null,
+                    new InvalidOperationException(
+                        $"Cosmos group mapping failed for '{group.GroupKey}': {exception.Message}",
+                        exception),
+                    dirtyRows));
+            }
+        }
+
+        var (work, containers) = PlanAndResolveBatch([], options.Families, prepared);
+        var execution = await ExecuteWetBatchAsync(work, containers, options, cancellationToken);
+        var dirtyRowsRead = page.Groups.Sum(group => group.DirtyRows.Count);
+
+        return new ReplicationRunResult(
+            runId,
+            DryRun: false,
+            RowsRead: dirtyRowsRead,
+            execution.Upserted,
+            execution.Deleted,
+            execution.Excluded,
+            execution.Failed,
+            HasMore: page.HasMore,
+            LastPrimaryKey: page.LastGroupKey,
+            execution.NoOpRows,
+            execution.RemoteAttemptedRows,
+            execution.RemoteFailedRows,
+            execution.MaxObservedInFlightRows,
+            execution.RequestCharge,
+            execution.ThrottledRequests,
+            execution.RetryAfter,
+            execution.CosmosOperationTime,
+            execution.BookkeepingTime,
+            execution.BookkeepingTransactions,
+            execution.BookkeepingOutcomeRows,
+            execution.MaxRowsPerBookkeepingTransaction,
+            GroupsRead: page.Groups.Count,
+            SourceRowsLoaded: page.Groups.Sum(group => group.Rows.Count),
+            GroupsRecomputed: page.Groups.Count);
+    }
+
+    private static RowPlan PlanGroup(ReplicationGroup group, CosmosFamilyMapping family)
+    {
+        var grouping = family.Grouping!;
+        foreach (var sourceRow in group.Rows)
+        {
+            if (!string.Equals(grouping.StorageKey(sourceRow.Row), group.GroupKey, StringComparison.Ordinal))
+            {
+                throw new InvalidDataException(
+                    $"Typed group key disagrees with DuckDB for source row '{sourceRow.Row.PrimaryKey}'.");
+            }
+        }
+
+        var latestState = group.Rows
+            .Where(item => item.Row.ReplicatedAt is not null)
+            .OrderByDescending(item => item.Row.ReplicatedAt)
+            .Select(item => ReplicationStamp.Parse(item.Row.ReplicationStamp))
+            .FirstOrDefault()
+            ?? new ReplicationStamp();
+        latestState.Families.TryGetValue(family.Family, out var oldCoordinates);
+
+        var document = grouping.Project(group.LiveRows);
+        if (document is null)
+        {
+            var deletes = oldCoordinates is null
+                ? new List<(CosmosFamilyMapping, ReplicationStamp.StampCoordinates)>()
+                : [(family, oldCoordinates)];
+            return new RowPlan(
+                deletes,
+                [],
+                IsExcluded: oldCoordinates is null,
+                NewStampJson: new ReplicationStamp().ToJson());
+        }
+
+        var documentHash = CosmosDocHash.Compute(document);
+        var newStamp = new ReplicationStamp();
+        newStamp.Families[family.Family] = ReplicationStamp.ToCoordinates(document, documentHash);
+        var deletesForMove = oldCoordinates is not null
+                             && !ReplicationStamp.CoordinatesEqual(oldCoordinates, document)
+            ? new List<(CosmosFamilyMapping, ReplicationStamp.StampCoordinates)> { (family, oldCoordinates) }
+            : [];
+        var upserts = oldCoordinates is null
+                      || !ReplicationStamp.DocumentEqual(oldCoordinates, document, documentHash)
+            ? new List<(CosmosFamilyMapping, CosmosDocument)> { (family, document) }
+            : [];
+
+        return new RowPlan(deletesForMove, upserts, IsExcluded: false, newStamp.ToJson());
+    }
+
+    private sealed class RowWork(
+        DirtyRow row,
+        RowPlan? plan,
+        Exception? preflightFailure = null,
+        IReadOnlyList<DirtyRow>? stateRows = null)
     {
         public DirtyRow Row { get; } = row;
+        public IReadOnlyList<DirtyRow> StateRows { get; } = stateRows ?? [row];
         public RowPlan? Plan { get; } = plan;
         public Exception? PreflightFailure { get; set; } = preflightFailure;
     }
@@ -465,24 +611,28 @@ public sealed class CosmosSnapshotReplicator
     private (IReadOnlyList<RowWork> Work, FrozenDictionary<CosmosContainerKey, ICosmosSnapshotContainer> Containers)
         PlanAndResolveBatch(
             IReadOnlyList<DirtyRow> batch,
-            IReadOnlyList<CosmosFamilyMapping> families)
+            IReadOnlyList<CosmosFamilyMapping> families,
+            IReadOnlyList<RowWork>? preparedWork = null)
     {
         var familiesByName = families.ToDictionary(family => family.Family, StringComparer.Ordinal);
-        var work = new List<RowWork>(batch.Count);
-        foreach (var row in batch)
+        var work = preparedWork?.ToList() ?? new List<RowWork>(batch.Count);
+        if (preparedWork is null)
         {
-            try
+            foreach (var row in batch)
             {
-                work.Add(new RowWork(row, PlanRow(row, families, familiesByName)));
-            }
-            catch (Exception exception)
-            {
-                work.Add(new RowWork(
-                    row,
-                    plan: null,
-                    new InvalidOperationException(
-                        $"Cosmos mapping failed for source row '{row.PrimaryKey}': {exception.Message}",
-                        exception)));
+                try
+                {
+                    work.Add(new RowWork(row, PlanRow(row, families, familiesByName)));
+                }
+                catch (Exception exception)
+                {
+                    work.Add(new RowWork(
+                        row,
+                        plan: null,
+                        new InvalidOperationException(
+                            $"Cosmos mapping failed for source row '{row.PrimaryKey}': {exception.Message}",
+                            exception)));
+                }
             }
         }
 
@@ -609,40 +759,39 @@ public sealed class CosmosSnapshotReplicator
                     outcomes.Add(await completed);
                 }
 
-                var stateOutcomes = outcomes.Select(outcome =>
-                {
-                    var row = outcome.Work.Row;
-                    return outcome.Failure is null
-                        ? ReplicationStateOutcome.Replicated(
-                            row.PrimaryKey,
-                            row.CapturedLastModified,
-                            outcome.Work.Plan!.NewStampJson)
-                        : ReplicationStateOutcome.Failed(
-                            row.PrimaryKey,
-                            row.CapturedLastModified,
-                            outcome.Failure.Message);
-                }).ToList();
+                var stateOutcomes = outcomes.SelectMany(outcome =>
+                    outcome.Work.StateRows.Select(row =>
+                        outcome.Failure is null
+                            ? ReplicationStateOutcome.Replicated(
+                                row.PrimaryKey,
+                                row.CapturedLastModified,
+                                outcome.Work.Plan!.NewStampJson)
+                            : ReplicationStateOutcome.Failed(
+                                row.PrimaryKey,
+                                row.CapturedLastModified,
+                                outcome.Failure.Message)))
+                    .ToList();
                 var commitStarted = Stopwatch.GetTimestamp();
                 store.CommitReplicationOutcomes(options.Table, stateOutcomes, EnsureCommitAllowed);
                 bookkeepingTime += Stopwatch.GetElapsedTime(commitStarted);
                 bookkeepingTransactions++;
-                bookkeepingOutcomeRows += outcomes.Count;
+                bookkeepingOutcomeRows += stateOutcomes.Count;
                 maxRowsPerBookkeepingTransaction = Math.Max(
                     maxRowsPerBookkeepingTransaction,
-                    outcomes.Count);
+                    stateOutcomes.Count);
 
                 foreach (var outcome in outcomes)
                 {
                     if (outcome.Failure is null)
                     {
                         if (outcome.Work.Plan!.IsExcluded)
-                            excluded++;
+                            excluded += outcome.Work.StateRows.Count;
                         if (!outcome.RemoteAttempted)
-                            noOpRows++;
+                            noOpRows += outcome.Work.StateRows.Count;
                     }
                     else
                     {
-                        failed++;
+                        failed += outcome.Work.StateRows.Count;
                     }
 
                     upserted += outcome.Upserted;
@@ -960,6 +1109,33 @@ public sealed class CosmosSnapshotReplicator
         if (options.MaxInFlightRows <= 0)
             throw new ArgumentOutOfRangeException(nameof(options.MaxInFlightRows), "Max in-flight rows must be positive.");
 
+        foreach (var family in options.Families)
+        {
+            if ((family.Map is null) == (family.Grouping is null))
+            {
+                throw new ArgumentException(
+                    $"Cosmos family '{family.Family}' must configure exactly one of Map or Grouping.",
+                    nameof(options));
+            }
+        }
+
+        var grouped = options.Families.Where(family => family.Grouping is not null).ToList();
+        if (grouped.Count > 0)
+        {
+            if (options.Families.Count != 1)
+                throw new ArgumentException(
+                    "A grouped table currently maps to exactly one Cosmos family.", nameof(options));
+            if (grouped[0].Predicate is not null)
+                throw new ArgumentException(
+                    "Grouped families express exclusion by returning null from their typed reducer; Predicate is row-oriented.",
+                    nameof(options));
+            if (!ReferenceEquals(grouped[0].Grouping!.Table, options.Table))
+                throw new ArgumentException(
+                    $"Grouped family '{grouped[0].Family}' was declared for table " +
+                    $"'{grouped[0].Grouping!.Table.Name}', not '{options.Table.Name}'.",
+                    nameof(options));
+        }
+
         var duplicateFamily = options.Families
             .GroupBy(family => family.Family, StringComparer.Ordinal)
             .FirstOrDefault(group => group.Count() > 1);
@@ -1014,6 +1190,63 @@ public sealed class CosmosSnapshotReplicator
             runId, DryRun: true, rowsRead, upserted, deleted, excluded, Failed: 0, HasMore: false);
     }
 
+    private ReplicationRunResult ExecuteGroupedDryRun(
+        string runId,
+        CosmosSnapshotReplicatorOptions options,
+        CosmosFamilyMapping family,
+        CancellationToken cancellationToken)
+    {
+        if (options.PruneReconOps)
+            store.PruneReconOps(options.Table);
+
+        int dirtyRowsRead = 0, groupsRead = 0, sourceRowsLoaded = 0;
+        int upserted = 0, deleted = 0, excluded = 0;
+        string? cursor = null;
+        while (true)
+        {
+            var page = store.ReadReplicationGroups(
+                options.Table,
+                family.Grouping!,
+                cursor,
+                options.BatchSize,
+                dirtyGroupsOnly: true);
+            if (page.Groups.Count == 0)
+                break;
+
+            foreach (var group in page.Groups)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var plan = PlanGroup(group, family);
+                var dirtyRows = group.DirtyRows;
+                EmitReconOps(runId, options.Table, dirtyRows[0], plan);
+                dirtyRowsRead += dirtyRows.Count;
+                sourceRowsLoaded += group.Rows.Count;
+                groupsRead++;
+                upserted += plan.Upserts.Count;
+                deleted += plan.Deletes.Count;
+                if (plan.IsExcluded)
+                    excluded += dirtyRows.Count;
+            }
+
+            cursor = page.LastGroupKey;
+            if (!page.HasMore)
+                break;
+        }
+
+        return new ReplicationRunResult(
+            runId,
+            DryRun: true,
+            RowsRead: dirtyRowsRead,
+            upserted,
+            deleted,
+            excluded,
+            Failed: 0,
+            HasMore: false,
+            GroupsRead: groupsRead,
+            SourceRowsLoaded: sourceRowsLoaded,
+            GroupsRecomputed: groupsRead);
+    }
+
     // ---- Planning ---------------------------------------------------------------------------
 
     private sealed record RowPlan(
@@ -1044,12 +1277,16 @@ public sealed class CosmosSnapshotReplicator
 
         var matched = families
             .Where(f => f.Predicate?.Invoke(row) != false)
-            .Select(f => (Family: f, Document: f.Map(row)))
+            .Select(f =>
+            {
+                var document = f.Map!(row);
+                return (Family: f, Document: document, DocumentHash: CosmosDocHash.Compute(document));
+            })
             .ToList();
 
         var newStamp = new ReplicationStamp();
-        foreach (var (family, document) in matched)
-            newStamp.Families[family.Family] = ReplicationStamp.ToCoordinates(document);
+        foreach (var (family, document, documentHash) in matched)
+            newStamp.Families[family.Family] = ReplicationStamp.ToCoordinates(document, documentHash);
 
         // Old coordinates that no longer exist (family no longer matches) or that moved
         // (id/PK changed) get deleted; current documents get upserted.
@@ -1064,7 +1301,14 @@ public sealed class CosmosSnapshotReplicator
                 deletes.Add((family, oldCoordinates));
         }
 
-        return new RowPlan(deletes, matched, IsExcluded: matched.Count == 0, newStamp.ToJson());
+        var upserts = matched
+            .Where(current =>
+                !oldStamp.Families.TryGetValue(current.Family.Family, out var previous)
+                || !ReplicationStamp.DocumentEqual(previous, current.Document, current.DocumentHash))
+            .Select(current => (current.Family, current.Document))
+            .ToList();
+
+        return new RowPlan(deletes, upserts, IsExcluded: matched.Count == 0, newStamp.ToJson());
     }
 
     // ---- Dry-run recon ----------------------------------------------------------------------

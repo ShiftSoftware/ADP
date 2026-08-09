@@ -23,6 +23,14 @@ public sealed class ReplicationStamp
 
         [JsonPropertyName("pk")]
         public required List<JsonElement> PartitionKey { get; init; }
+
+        /// <summary>
+        /// Canonical destination document hash written at these coordinates. Optional for
+        /// backward compatibility with stamps created before canonical-change suppression.
+        /// </summary>
+        [JsonPropertyName("hash")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? DocumentHash { get; init; }
     }
 
     private static readonly JsonSerializerOptions SerializerOptions = new() { WriteIndented = false };
@@ -34,12 +42,13 @@ public sealed class ReplicationStamp
 
     public string ToJson() => JsonSerializer.Serialize(this, SerializerOptions);
 
-    public static StampCoordinates ToCoordinates(CosmosDocument document) => new()
+    public static StampCoordinates ToCoordinates(CosmosDocument document, string? documentHash = null) => new()
     {
         Id = document.Id,
         PartitionKey = document.PartitionKey
             .Select(v => JsonSerializer.SerializeToElement(v))
             .ToList(),
+        DocumentHash = documentHash,
     };
 
     public static bool CoordinatesEqual(StampCoordinates a, CosmosDocument b) =>
@@ -47,4 +56,8 @@ public sealed class ReplicationStamp
         && a.PartitionKey.Count == b.PartitionKey.Count
         && a.PartitionKey.Zip(b.PartitionKey).All(pair =>
             pair.First.GetRawText() == JsonSerializer.SerializeToElement(pair.Second).GetRawText());
+
+    public static bool DocumentEqual(StampCoordinates coordinates, CosmosDocument document, string documentHash) =>
+        CoordinatesEqual(coordinates, document)
+        && string.Equals(coordinates.DocumentHash, documentHash, StringComparison.Ordinal);
 }

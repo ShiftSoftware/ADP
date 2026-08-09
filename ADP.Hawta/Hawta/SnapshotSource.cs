@@ -32,6 +32,14 @@ public sealed class SnapshotSource
     public required Func<SnapshotSourceContext, SnapshotMergeResult> Ingest { get; init; }
 
     /// <summary>
+    /// The declarative file configuration when this is a common-path file source. It is the
+    /// same instance closed over by <see cref="Ingest"/>, exposed for diagnostics and tests so
+    /// callers can prove which sources use direct typed binding versus a custom projection.
+    /// Null for non-file sources.
+    /// </summary>
+    public FileSnapshotIngestorOptions? FileIngestion { get; init; }
+
+    /// <summary>
     /// The Cosmos families this source's TABLE feeds, or null for snapshot-only tables.
     /// Sources sharing a table must reference the SAME families list instance — the pump
     /// runs per table, and mappings resolve per-scope values (CompanyID etc.) from
@@ -39,11 +47,11 @@ public sealed class SnapshotSource
     /// </summary>
     public IReadOnlyList<CosmosFamilyMapping>? Families { get; init; }
 
-    /// <summary>Dirty rows per pump cycle for this source's table.</summary>
+    /// <summary>Dirty rows, or distinct aggregate keys for grouped mappings, per pump batch.</summary>
     public int ReplicationBatchSize { get; init; } = 1000;
 
     /// <summary>
-    /// Maximum rows from this table concurrently performing Cosmos I/O. DuckDB
+    /// Maximum rows or aggregate groups from this table concurrently performing Cosmos I/O. DuckDB
     /// bookkeeping remains serialized by the pump owner. Default 1 is compatibility mode.
     /// </summary>
     public int ReplicationMaxInFlightRows { get; init; } = 1;

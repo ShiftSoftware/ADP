@@ -20,8 +20,26 @@ public class SnapshotTableDefinition
 
     public string Name { get; }
     public IReadOnlyList<SnapshotColumn> Columns { get; }
+    /// <summary>
+    /// The persisted columns that can affect a destination document. Ingestors hash these
+    /// separately from <see cref="Columns"/>, allowing source-only changes to be retained
+    /// without re-enqueueing Cosmos replication.
+    /// </summary>
+    public IReadOnlyList<SnapshotColumn> ReplicationColumns { get; }
+
+    /// <summary>The optional audit-only column populated only when raw-source capture is explicitly enabled.</summary>
+    public string? RawSourceColumn { get; }
 
     public SnapshotTableDefinition(string name, IReadOnlyList<SnapshotColumn> columns)
+        : this(name, columns, columns, rawSourceColumn: null)
+    {
+    }
+
+    protected SnapshotTableDefinition(
+        string name,
+        IReadOnlyList<SnapshotColumn> columns,
+        IReadOnlyList<SnapshotColumn> replicationColumns,
+        string? rawSourceColumn)
     {
         if (!IdentifierPattern.IsMatch(name))
             throw new ArgumentException($"'{name}' is not a valid snapshot table name.", nameof(name));
@@ -40,8 +58,28 @@ public class SnapshotTableDefinition
         if (duplicates.Count > 0)
             throw new ArgumentException($"Duplicate column name(s): {string.Join(", ", duplicates)}.");
 
+        if (replicationColumns.Count == 0)
+            throw new ArgumentException("A snapshot table needs at least one replication-tracked column.", nameof(replicationColumns));
+
+        var columnNames = columns.Select(column => column.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var unknownReplicationColumns = replicationColumns
+            .Where(column => !columnNames.Contains(column.Name))
+            .Select(column => column.Name)
+            .ToList();
+        if (unknownReplicationColumns.Count > 0)
+            throw new ArgumentException(
+                $"Replication column(s) are not stored by the table: {string.Join(", ", unknownReplicationColumns)}.",
+                nameof(replicationColumns));
+        if (rawSourceColumn is not null && !columnNames.Contains(rawSourceColumn))
+            throw new ArgumentException($"Raw source column '{rawSourceColumn}' is not stored by the table.", nameof(rawSourceColumn));
+        if (rawSourceColumn is not null
+            && replicationColumns.Any(column => column.Name.Equals(rawSourceColumn, StringComparison.OrdinalIgnoreCase)))
+            throw new ArgumentException("The raw source column cannot participate in replication change tracking.", nameof(rawSourceColumn));
+
         Name = name;
         Columns = columns;
+        ReplicationColumns = replicationColumns;
+        RawSourceColumn = rawSourceColumn;
     }
 
     /// <summary>Fully-qualified, quoted table name under the <c>data</c> schema.</summary>

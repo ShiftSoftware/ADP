@@ -188,6 +188,79 @@ public sealed class SnapshotRecon
                             || f.SourceTable.Equals(table.Name, StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
+            var groupedFamilies = applicable.Where(family => family.Mapping.Grouping is not null).ToList();
+            if (groupedFamilies.Count > 0)
+            {
+                if (applicable.Count != 1)
+                {
+                    throw new ArgumentException(
+                        $"Grouped recon for table '{table.Name}' currently requires exactly one family.",
+                        nameof(options));
+                }
+
+                var family = groupedFamilies[0];
+                string? groupCursor = null;
+                while (true)
+                {
+                    var page = store.ReadReplicationGroups(
+                        table,
+                        family.Mapping.Grouping!,
+                        groupCursor,
+                        options.PageSize,
+                        dirtyGroupsOnly: false);
+                    if (page.Groups.Count == 0)
+                        break;
+
+                    foreach (var group in page.Groups)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        rowsScanned += group.Rows.Count;
+                        tombstoned += group.Rows.Count(row => row.Row.Deleted);
+
+                        var groupDirty = group.Rows.Any(row => row.Dirty);
+                        var latestStamp = group.Rows
+                            .Where(row => row.Row.ReplicatedAt is not null)
+                            .OrderByDescending(row => row.Row.ReplicatedAt)
+                            .Select(row => ReplicationStamp.Parse(row.Row.ReplicationStamp))
+                            .FirstOrDefault()
+                            ?? new ReplicationStamp();
+                        latestStamp.Families.TryGetValue(family.Mapping.Family, out var oldCoordinates);
+                        var document = family.Mapping.Grouping!.Project(group.LiveRows);
+
+                        if (document is not null)
+                        {
+                            var entry = expected.CreateRow();
+                            entry.AppendValue(family.ResolvedLabel);
+                            entry.AppendValue(document.Id);
+                            entry.AppendValue(NormalizePartitionKey(document.PartitionKey));
+                            entry.AppendValue(CosmosDocHash.Compute(document));
+                            entry.AppendValue(group.GroupKey);
+                            entry.AppendValue(groupDirty);
+                            entry.EndRow();
+                        }
+
+                        if (oldCoordinates is not null
+                            && (document is null
+                                || !ReplicationStamp.CoordinatesEqual(oldCoordinates, document)))
+                        {
+                            var entry = absent.CreateRow();
+                            entry.AppendValue(family.ResolvedLabel);
+                            entry.AppendValue(oldCoordinates.Id);
+                            entry.AppendValue(NormalizePartitionKey(oldCoordinates.PartitionKey.Select(FromStampLevel)));
+                            entry.AppendValue(group.GroupKey);
+                            entry.AppendValue(groupDirty);
+                            entry.EndRow();
+                        }
+                    }
+
+                    groupCursor = page.LastGroupKey;
+                    if (!page.HasMore)
+                        break;
+                }
+
+                continue;
+            }
+
             string? cursor = null;
             while (true)
             {
@@ -238,7 +311,7 @@ public sealed class SnapshotRecon
                                 if (family.Mapping.Predicate?.Invoke(mappingRow) == false)
                                     continue;
 
-                                var document = family.Mapping.Map(mappingRow);
+                                var document = family.Mapping.Map!(mappingRow);
                                 var entry = absent.CreateRow();
                                 entry.AppendValue(family.ResolvedLabel);
                                 entry.AppendValue(document.Id);
@@ -259,7 +332,7 @@ public sealed class SnapshotRecon
                         if (family.Mapping.Predicate?.Invoke(mappingRow) == false)
                             continue;
 
-                        var document = family.Mapping.Map(mappingRow);
+                        var document = family.Mapping.Map!(mappingRow);
                         var entry = expected.CreateRow();
                         entry.AppendValue(family.ResolvedLabel);
                         entry.AppendValue(document.Id);
@@ -281,7 +354,7 @@ public sealed class SnapshotRecon
 
                         var matchesCurrent =
                             family.Mapping.Predicate?.Invoke(mappingRow) != false
-                            && ReplicationStamp.CoordinatesEqual(coordinates, family.Mapping.Map(mappingRow));
+                            && ReplicationStamp.CoordinatesEqual(coordinates, family.Mapping.Map!(mappingRow));
                         if (matchesCurrent)
                             continue;
 

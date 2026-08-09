@@ -11,6 +11,7 @@ public sealed class TypedSnapshotTableDefinitionTests
         [SnapshotDecimal(18, 3)]
         public decimal? Quantity { get; set; }
 
+        [SnapshotIgnoreForReplication]
         public DateTime? ChangedAt { get; set; }
     }
 
@@ -20,6 +21,7 @@ public sealed class TypedSnapshotTableDefinitionTests
         var table = new SnapshotTableDefinition<ExampleRow>("Example");
 
         Assert.Equal(["Code", "Quantity", "ChangedAt"], table.Columns.Select(column => column.Name));
+        Assert.Equal(["Code", "Quantity"], table.ReplicationColumns.Select(column => column.Name));
         Assert.Equal(["VARCHAR", "DECIMAL(18,3)", "TIMESTAMP"], table.Columns.Select(column => column.DuckDbType));
         Assert.Equal("Quantity", table.Column(row => row.Quantity));
     }

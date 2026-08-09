@@ -88,7 +88,9 @@ public static class SqlViewSnapshotIngestor
                 var key = reader.IsDBNull(keyOrdinal) ? null : reader.GetValue(keyOrdinal)?.ToString()?.Trim();
                 AppendValue(row, string.IsNullOrEmpty(key) ? null : key);
 
-                // _RowHash — filled in-database below, so canonicalization stays uniform.
+                // Content and replication hashes — filled in-database below, so
+                // canonicalization stays uniform.
+                AppendValue(row, null);
                 AppendValue(row, null);
 
                 AppendValue(row, sourceModifiedOrdinal < 0 || reader.IsDBNull(sourceModifiedOrdinal)
@@ -102,7 +104,8 @@ public static class SqlViewSnapshotIngestor
         store.Execute(
             $"""
             UPDATE {staging.QualifiedName}
-            SET "{BookkeepingColumns.RowHash}" = {RowHash.Expression(options.Table.Columns.Select(c => c.Name))}
+            SET "{BookkeepingColumns.RowHash}" = {RowHash.Expression(options.Table.Columns.Select(c => c.Name))},
+                "{BookkeepingColumns.ReplicationHash}" = {RowHash.Expression(options.Table.ReplicationColumns.Select(c => c.Name))}
             """);
 
         // A full-universe view that returns ZERO rows is presumed torn, never a purge — the

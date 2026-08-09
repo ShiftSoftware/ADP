@@ -4,17 +4,21 @@ namespace ShiftSoftware.ADP.Hawta;
 /// The set-based merge at the heart of the snapshot: staging → one atomic transaction of
 /// guardrail → inserts (anti-join) → updates (<c>IS DISTINCT FROM</c> on <c>_RowHash</c> —
 /// unchanged rows are never touched, which is what keeps <c>_LastModified</c> a truthful
-/// change stamp) → tombstones (scope-bounded anti-join, full-universe sources only) →
+/// source-change stamp) → tombstones (scope-bounded anti-join, full-universe sources only) →
 /// <c>meta.SyncRuns</c> record.
 ///
-/// <para><c>_LastModified</c> is MONOTONIC per row: every stamp is
+/// <para><c>_ReplicationHash</c> covers only the columns declared capable of changing the
+/// destination document. A source-only update still refreshes the stored row and
+/// <c>_LastModified</c>, but leaves <c>_ReplicationModified</c> and the Cosmos queue alone.</para>
+///
+/// <para>Both modified stamps are MONOTONIC per row: every stamp is
 /// <c>greatest(candidate, previous + 1µs)</c>. Without this, an agent-clock tombstone on a
 /// source-stamped row (or a source save-date that regresses) would land at or below the
 /// replicated watermark and silently drop the change from the dirty predicate forever —
 /// clock skew between source and agent must never be able to un-queue a change.</para>
 ///
-/// Callers hold the write gate; staging rows carry <c>_PrimaryKey</c>, <c>_RowHash</c>
-/// (via <see cref="RowHash.Expression"/>), and optionally <c>_SourceModified</c> (the source
+/// Callers hold the write gate; staging rows carry <c>_PrimaryKey</c>, <c>_RowHash</c>,
+/// <c>_ReplicationHash</c> (via <see cref="RowHash.Expression"/>), and optionally <c>_SourceModified</c> (the source
 /// row's own save date — preferred as <c>_LastModified</c> when ahead, else the run's UTC time).
 /// </summary>
 public static class SnapshotMerge
@@ -38,19 +42,26 @@ public static class SnapshotMerge
 
         var pk = $"\"{BookkeepingColumns.PrimaryKey}\"";
         var hash = $"\"{BookkeepingColumns.RowHash}\"";
+        var replicationHash = $"\"{BookkeepingColumns.ReplicationHash}\"";
         var scope = $"\"{BookkeepingColumns.SourceScope}\"";
         var deleted = $"\"{BookkeepingColumns.Deleted}\"";
         var lastModified = $"\"{BookkeepingColumns.LastModified}\"";
+        var replicationModified = $"\"{BookkeepingColumns.ReplicationModified}\"";
 
         long rowsStaged = Convert.ToInt64(store.ExecuteScalar($"SELECT count(*) FROM {staging}"));
 
+        // Hand-built staging used by extension points and older callers has always supplied
+        // _RowHash only. Default the replication hash to it; model-driven ingestors overwrite
+        // this with their narrower declarative hash before entering the merge.
+        store.Execute($"UPDATE {staging} SET {replicationHash} = {hash} WHERE {replicationHash} IS NULL");
+
         var invalidRows = Convert.ToInt64(store.ExecuteScalar(
-            $"SELECT count(*) FROM {staging} WHERE {pk} IS NULL OR {hash} IS NULL"));
+            $"SELECT count(*) FROM {staging} WHERE {pk} IS NULL OR {hash} IS NULL OR {replicationHash} IS NULL"));
         if (invalidRows > 0)
         {
             var invalid = new SnapshotMergeResult(runId, SnapshotMergeStatus.FailedInvalidStagingRows, rowsStaged, 0, 0, 0);
             InsertRunRecord(store, table, options, runId, startedAt, invalid,
-                $"{invalidRows} staging row(s) with NULL _PrimaryKey or NULL _RowHash — the ingestor must fill both before merging.");
+                $"{invalidRows} staging row(s) with NULL identity/content hash — the ingestor contract was not met.");
             return invalid;
         }
 
@@ -157,32 +168,54 @@ public static class SnapshotMerge
                 UPDATE {target}
                 SET {assignments},
                     {hash} = {stg}.{hash},
+                    {replicationHash} = {stg}.{replicationHash},
                     {scope} = ?,
                     {lastModified} = greatest(
                         coalesce({stg}."_SourceModified", ?),
                         {targetRef}.{lastModified} + INTERVAL 1 MICROSECOND),
+                    {replicationModified} = CASE
+                        WHEN {targetRef}.{replicationHash} IS DISTINCT FROM {stg}.{replicationHash}
+                          OR {targetRef}.{deleted} = true
+                          OR {targetRef}.{scope} IS DISTINCT FROM ?
+                        THEN greatest(
+                            coalesce({stg}."_SourceModified", ?),
+                            {targetRef}.{replicationModified} + INTERVAL 1 MICROSECOND)
+                        ELSE {targetRef}.{replicationModified}
+                    END,
                     {deleted} = false,
                     "{BookkeepingColumns.DeletedAt}" = NULL,
-                    "{BookkeepingColumns.ReplicationAttempts}" = 0,
-                    "{BookkeepingColumns.ReplicationError}" = NULL
+                    "{BookkeepingColumns.ReplicationAttempts}" = CASE
+                        WHEN {targetRef}.{replicationHash} IS DISTINCT FROM {stg}.{replicationHash}
+                          OR {targetRef}.{deleted} = true
+                          OR {targetRef}.{scope} IS DISTINCT FROM ? THEN 0
+                        ELSE {targetRef}."{BookkeepingColumns.ReplicationAttempts}" END,
+                    "{BookkeepingColumns.ReplicationError}" = CASE
+                        WHEN {targetRef}.{replicationHash} IS DISTINCT FROM {stg}.{replicationHash}
+                          OR {targetRef}.{deleted} = true
+                          OR {targetRef}.{scope} IS DISTINCT FROM ? THEN NULL
+                        ELSE {targetRef}."{BookkeepingColumns.ReplicationError}" END
                 FROM {staging} AS {stg}
                 WHERE {targetRef}.{pk} = {stg}.{pk}
                   AND ({targetRef}.{hash} IS DISTINCT FROM {stg}.{hash}
                        OR {targetRef}.{deleted} = true
                        OR {targetRef}.{scope} IS DISTINCT FROM ?)
                 """,
-                options.SourceScope, runTimestamp, options.SourceScope);
+                options.SourceScope, runTimestamp,
+                options.SourceScope, runTimestamp,
+                options.SourceScope, options.SourceScope,
+                options.SourceScope);
 
             // Inserts: staging rows with no existing key.
             var rowsInserted = store.Execute(
                 $"""
-                INSERT INTO {target} ({table.QuotedColumnList}, {pk}, {hash}, {scope}, {lastModified}, {deleted})
+                INSERT INTO {target} ({table.QuotedColumnList}, {pk}, {hash}, {replicationHash}, {scope}, {lastModified}, {replicationModified}, {deleted})
                 SELECT {string.Join(", ", table.Columns.Select(c => $"{stg}.\"{c.Name}\""))},
-                       {stg}.{pk}, {stg}.{hash}, ?, coalesce({stg}."_SourceModified", ?), false
+                       {stg}.{pk}, {stg}.{hash}, {stg}.{replicationHash}, ?,
+                       coalesce({stg}."_SourceModified", ?), coalesce({stg}."_SourceModified", ?), false
                 FROM {staging} AS {stg}
                 WHERE NOT EXISTS (SELECT 1 FROM {target} t WHERE t.{pk} = {stg}.{pk})
                 """,
-                options.SourceScope, runTimestamp);
+                options.SourceScope, runTimestamp, runTimestamp);
 
             // Tombstones: in-scope live rows absent from this full-universe staging.
             // NOT IN is NULL-safe here: the Failed:InvalidStagingRows pre-check guarantees
@@ -198,13 +231,14 @@ public static class SnapshotMerge
                     SET {deleted} = true,
                         "{BookkeepingColumns.DeletedAt}" = ?,
                         {lastModified} = greatest(?, {lastModified} + INTERVAL 1 MICROSECOND),
+                        {replicationModified} = greatest(?, {replicationModified} + INTERVAL 1 MICROSECOND),
                         "{BookkeepingColumns.ReplicationAttempts}" = 0,
                         "{BookkeepingColumns.ReplicationError}" = NULL
                     WHERE {deleted} = false
                       AND {scope} IS NOT DISTINCT FROM ?
                       AND {pk} NOT IN (SELECT {pk} FROM {staging})
                     """,
-                    runTimestamp, runTimestamp, options.SourceScope);
+                    runTimestamp, runTimestamp, runTimestamp, options.SourceScope);
             }
 
             var result = new SnapshotMergeResult(runId, SnapshotMergeStatus.Succeeded,

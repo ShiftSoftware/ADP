@@ -171,11 +171,12 @@ public class SnapshotMergeTests : IDisposable
             """
             CREATE OR REPLACE TEMP TABLE "bad_staging" (
                 "Code" VARCHAR, "Quantity" VARCHAR,
-                "_PrimaryKey" VARCHAR NOT NULL, "_RowHash" VARCHAR NOT NULL, "_SourceModified" TIMESTAMP
+                "_PrimaryKey" VARCHAR NOT NULL, "_RowHash" VARCHAR NOT NULL,
+                "_ReplicationHash" VARCHAR, "_SourceModified" TIMESTAMP
             )
             """);
-        snapshot.Store.Execute("INSERT INTO \"bad_staging\" VALUES ('alpha', '777', 'W1', 'changed-hash', NULL)");
-        snapshot.Store.Execute("INSERT INTO \"bad_staging\" VALUES ('beta', 'not-a-number', 'W2', 'h2', NULL)");
+        snapshot.Store.Execute("INSERT INTO \"bad_staging\" VALUES ('alpha', '777', 'W1', 'changed-hash', NULL, NULL)");
+        snapshot.Store.Execute("INSERT INTO \"bad_staging\" VALUES ('beta', 'not-a-number', 'W2', 'h2', NULL, NULL)");
         var badStaging = new StagingTable("bad_staging", "temp.main.\"bad_staging\"");
 
         var options = new SnapshotMergeOptions { Source = "test-source", DeletesEnabled = false };

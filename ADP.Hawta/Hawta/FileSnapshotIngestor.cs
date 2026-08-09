@@ -33,6 +33,84 @@ public sealed class CsvReadOptions
     public bool NullPadding { get; init; }
 }
 
+public enum FileKeyNormalization
+{
+    Trim,
+    TrimUpperInvariant,
+}
+
+public enum FileValueNormalization
+{
+    None,
+    Trim,
+    TrimUpperInvariant,
+}
+
+/// <summary>
+/// Declarative binding from an external file header to one typed snapshot property. The
+/// target is normally obtained through <see cref="SnapshotTableDefinition{TRow}.Column{TValue}"/>,
+/// so renaming the model is a compile-time change while the external header remains an
+/// explicit adapter-boundary string.
+/// </summary>
+public sealed record FileColumnBinding(
+    string TargetColumn,
+    string SourceColumn,
+    FileValueNormalization Normalization = FileValueNormalization.None);
+
+/// <summary>One typed projection column contributing to a generated logical file-row identity.</summary>
+public sealed record FileLogicalKeyPart(string Column, FileKeyNormalization Normalization = FileKeyNormalization.Trim);
+
+/// <summary>
+/// Declarative logical identity for the common file path. Components are trimmed, blank
+/// components fail the staging contract, and composites are joined only after rejecting the
+/// separator inside a component so two different tuples can never alias one key.
+/// </summary>
+public sealed class FileLogicalKey
+{
+    public FileLogicalKey(params FileLogicalKeyPart[] parts)
+    {
+        if (parts.Length == 0)
+            throw new ArgumentException("A logical key needs at least one component.", nameof(parts));
+        if (parts.Any(part => !SnapshotTableDefinition.IsValidIdentifier(part.Column)))
+            throw new ArgumentException("Logical-key columns must be plain snapshot identifiers.", nameof(parts));
+
+        Parts = parts;
+    }
+
+    public IReadOnlyList<FileLogicalKeyPart> Parts { get; }
+
+    /// <summary>Composite separator. Components containing it fail loudly instead of creating an ambiguous key.</summary>
+    public string Separator { get; init; } = "|";
+
+    public static FileLogicalKey Single(string column, FileKeyNormalization normalization = FileKeyNormalization.Trim) =>
+        new(new FileLogicalKeyPart(column, normalization));
+}
+
+/// <summary>
+/// Source-row identity for a file that legitimately contains repeated logical keys. Every
+/// physical row is retained. Hawta assigns a one-based occurrence ordinal within the typed,
+/// normalized group key and persists it in <see cref="OrdinalColumn"/>; the row key is the
+/// unambiguous group tuple plus that ordinal.
+/// </summary>
+public sealed class FileOccurrenceRowIdentity
+{
+    public FileOccurrenceRowIdentity(string ordinalColumn, params FileLogicalKeyPart[] groupParts)
+    {
+        if (!SnapshotTableDefinition.IsValidIdentifier(ordinalColumn))
+            throw new ArgumentException("The occurrence ordinal must be a plain snapshot identifier.", nameof(ordinalColumn));
+        if (groupParts.Length == 0)
+            throw new ArgumentException("Occurrence identity needs at least one group-key component.", nameof(groupParts));
+        if (groupParts.Any(part => !SnapshotTableDefinition.IsValidIdentifier(part.Column)))
+            throw new ArgumentException("Occurrence group-key columns must be plain snapshot identifiers.", nameof(groupParts));
+
+        OrdinalColumn = ordinalColumn;
+        GroupParts = groupParts;
+    }
+
+    public string OrdinalColumn { get; }
+    public IReadOnlyList<FileLogicalKeyPart> GroupParts { get; }
+}
+
 public sealed class FileSnapshotIngestorOptions
 {
     /// <summary>The snapshot table this source feeds.</summary>
@@ -46,18 +124,20 @@ public sealed class FileSnapshotIngestorOptions
     public CsvReadOptions Csv { get; init; } = new();
 
     /// <summary>
-    /// Optional projection over the raw file relation. Must contain the <c>{source}</c>
-    /// placeholder as its FROM target, e.g.
-    /// <c>SELECT "Part No" AS PARTNO, … FROM {source}</c> — the place to rename the file's
-    /// verbatim column headers (spaces and all), compute composite keys, CAST, filter, and
-    /// dedup (QUALIFY). Null = <c>SELECT * FROM {source}</c>; either way the result must
-    /// contain every column in <see cref="Table"/> by name.
-    /// <para>May also use <c>{sourcePath}</c>: the current file's path as a ready-quoted,
-    /// glob-escaped SQL string literal — for projections that need to read the SAME file a
-    /// second way (e.g. a raw-line read joined by row number to carry the verbatim line
-    /// alongside the parsed columns).</para>
+    /// Optional source-specific reshaping over the raw file relation. Must contain the
+    /// <c>{source}</c> placeholder. Null is the normal typed path: the table model binds
+    /// directly by column name. Use SQL only for a real transform such as renamed headers,
+    /// aggregation, joins, filtering, or unusual deduplication.
     /// </summary>
     public string? SelectSql { get; init; }
+
+    /// <summary>
+    /// Optional declarative external-header aliases and value normalization for the common
+    /// typed path. Unlisted model properties bind to same-named source columns. This cannot
+    /// be combined with <see cref="SelectSql"/>: aliases describe binding, SQL describes a
+    /// custom relational transform.
+    /// </summary>
+    public IReadOnlyList<FileColumnBinding>? ColumnBindings { get; init; }
 
     /// <summary>
     /// Expose a <c>"hawta$file_row_number"</c> column (1-based scan-order index) to the
@@ -70,8 +150,31 @@ public sealed class FileSnapshotIngestorOptions
     /// </summary>
     public bool IncludeFileRowNumber { get; init; }
 
-    /// <summary>Result column whose trimmed text value becomes <c>_PrimaryKey</c> (blank → NULL → a loud <c>Failed:InvalidStagingRows</c>).</summary>
-    public required string PrimaryKeyColumn { get; init; }
+    /// <summary>
+    /// Model-driven logical identity. Preferred for the common typed path; Hawta generates
+    /// the key expression and validates every component.
+    /// </summary>
+    public FileLogicalKey? LogicalKey { get; init; }
+
+    /// <summary>
+    /// Identity for repeated logical keys: retains every source row and derives a stable
+    /// occurrence number within each normalized group. Exactly one of this,
+    /// <see cref="LogicalKey"/>, or <see cref="PrimaryKeyColumn"/> must be configured.
+    /// </summary>
+    public FileOccurrenceRowIdentity? OccurrenceRowIdentity { get; init; }
+
+    /// <summary>
+    /// Legacy single-result-column key escape hatch. New file sources should use
+    /// <see cref="LogicalKey"/> even for a one-column identity.
+    /// </summary>
+    public string? PrimaryKeyColumn { get; init; }
+
+    /// <summary>
+    /// Explicitly capture each CSV row's verbatim source line into the table model's
+    /// <see cref="SnapshotRawSourceAttribute"/> property. Default false. This is audit-only,
+    /// unsupported for parquet, and never participates in replication change detection.
+    /// </summary>
+    public bool CaptureRawSource { get; init; }
 
     /// <summary>Optional result column carrying the row's own save date (becomes <c>_SourceModified</c>).</summary>
     public string? SourceModifiedColumn { get; init; }
@@ -126,6 +229,79 @@ public static class FileSnapshotIngestor
 
         if (options.SelectSql is not null && !options.SelectSql.Contains("{source}"))
             throw new ArgumentException("SelectSql must contain the {source} placeholder as its FROM target.", nameof(options));
+        if (options.SelectSql is not null && options.ColumnBindings is { Count: > 0 })
+            throw new ArgumentException("ColumnBindings cannot be combined with SelectSql.", nameof(options));
+        if (options.SelectSql is not null && options.OccurrenceRowIdentity is not null)
+            throw new ArgumentException("OccurrenceRowIdentity belongs to the common typed path and cannot be combined with SelectSql.", nameof(options));
+
+        var identityCount = (options.LogicalKey is null ? 0 : 1)
+                            + (options.OccurrenceRowIdentity is null ? 0 : 1)
+                            + (string.IsNullOrWhiteSpace(options.PrimaryKeyColumn) ? 0 : 1);
+        if (identityCount != 1)
+            throw new ArgumentException(
+                "Configure exactly one of LogicalKey, OccurrenceRowIdentity, or PrimaryKeyColumn.", nameof(options));
+
+        var storedColumns = options.Table.Columns.Select(column => column.Name)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var identityColumns = options.LogicalKey?.Parts.Select(part => part.Column)
+            ?? options.OccurrenceRowIdentity?.GroupParts.Select(part => part.Column)
+            ?? [];
+        var unknownIdentityColumns = identityColumns
+            .Where(column => !storedColumns.Contains(column))
+            .ToList();
+        if (unknownIdentityColumns.Count > 0)
+        {
+            throw new ArgumentException(
+                $"Identity column(s) are not part of the typed table: {string.Join(", ", unknownIdentityColumns)}.",
+                nameof(options));
+        }
+        var occurrence = options.OccurrenceRowIdentity;
+        if (occurrence is not null)
+        {
+            var ordinal = options.Table.Columns.SingleOrDefault(column =>
+                column.Name.Equals(occurrence.OrdinalColumn, StringComparison.OrdinalIgnoreCase));
+            if (ordinal is null)
+                throw new ArgumentException(
+                    $"Occurrence ordinal column '{occurrence.OrdinalColumn}' is not part of the typed table.", nameof(options));
+            if (ordinal.DuckDbType is not ("INTEGER" or "BIGINT"))
+                throw new ArgumentException(
+                    $"Occurrence ordinal column '{occurrence.OrdinalColumn}' must be INTEGER or BIGINT.", nameof(options));
+        }
+
+        if (options.ColumnBindings is { Count: > 0 } bindings)
+        {
+            var duplicateTargets = bindings
+                .GroupBy(binding => binding.TargetColumn, StringComparer.OrdinalIgnoreCase)
+                .Where(group => group.Count() > 1)
+                .Select(group => group.Key)
+                .ToList();
+            if (duplicateTargets.Count > 0)
+                throw new ArgumentException(
+                    $"Column binding target(s) are declared more than once: {string.Join(", ", duplicateTargets)}.",
+                    nameof(options));
+            var unknownTargets = bindings
+                .Where(binding => !storedColumns.Contains(binding.TargetColumn))
+                .Select(binding => binding.TargetColumn)
+                .ToList();
+            if (unknownTargets.Count > 0)
+                throw new ArgumentException(
+                    $"Column binding target(s) are not part of the typed table: {string.Join(", ", unknownTargets)}.",
+                    nameof(options));
+            if (bindings.Any(binding => string.IsNullOrWhiteSpace(binding.SourceColumn)))
+                throw new ArgumentException("Column binding source names must be non-blank.", nameof(options));
+            if (occurrence is not null
+                && bindings.Any(binding => binding.TargetColumn.Equals(
+                    occurrence.OrdinalColumn, StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new ArgumentException(
+                    "The occurrence ordinal is generated by Hawta and cannot have a source-column binding.", nameof(options));
+            }
+        }
+        if (options.CaptureRawSource && format != FileSourceFormat.Csv)
+            throw new ArgumentException("Raw-source capture is available only for CSV files.", nameof(options));
+        if (options.CaptureRawSource && options.Table.RawSourceColumn is null)
+            throw new ArgumentException(
+                "CaptureRawSource requires one [SnapshotRawSource] string property on the typed table model.", nameof(options));
 
         if (!File.Exists(options.FilePath))
         {
@@ -155,17 +331,25 @@ public static class FileSnapshotIngestor
             ? $"read_parquet('{GlobEscape(SqlLiteral(options.FilePath))}')"
             : CsvReader(options.FilePath, options.Csv);
 
+        if (options.CaptureRawSource)
+        {
+            if (SourceColumnNames(store, rawReader).Contains(options.Table.RawSourceColumn!, StringComparer.OrdinalIgnoreCase))
+                throw new ArgumentException(
+                    $"The CSV already contains the audit target column '{options.Table.RawSourceColumn}'.", nameof(options));
+            rawReader = RawCapturedCsvReader(options.FilePath, options.Csv, rawReader, options.Table.RawSourceColumn!);
+        }
+
         // Scan order IS file order (DuckDB preserves insertion order for file scans), so a
         // bare row_number gives the stable physical position — uniformly for CSV and parquet.
         // The $-named alias can't collide with snapshot columns (identifier rules forbid $).
-        var reader = options.IncludeFileRowNumber
+        var includeFileRowNumber = options.IncludeFileRowNumber || options.OccurrenceRowIdentity is not null;
+        var reader = includeFileRowNumber
             ? $"(SELECT *, row_number() OVER () AS \"{FileRowNumberColumn}\" FROM {rawReader})"
             : rawReader;
 
         var projection = options.SelectSql
             ?.Replace("{source}", reader)
-            .Replace("{sourcePath}", $"'{GlobEscape(SqlLiteral(options.FilePath))}'")
-            ?? $"SELECT * FROM {reader}";
+            ?? BuildTypedProjection(options, reader);
 
         var staging = store.CreateStagingTable(options.Table);
 
@@ -175,7 +359,7 @@ public static class FileSnapshotIngestor
             // shadow the scan index (DuckDB renames the alias to *_1 instead of erroring,
             // and dedup order would follow file DATA) — reject that one case loudly.
             // (Schema probe only — LIMIT 0 reads header/metadata, no rows.)
-            if (options.IncludeFileRowNumber
+            if (includeFileRowNumber
                 && SourceColumnNames(store, rawReader).Contains(FileRowNumberColumn, StringComparer.OrdinalIgnoreCase))
                 throw new ArgumentException(
                     $"The source file already has a '{FileRowNumberColumn}' column — it would shadow the synthesized scan index.", nameof(options));
@@ -195,7 +379,10 @@ public static class FileSnapshotIngestor
             // unchanged.
             var textualSources = TextualColumns(store, projection);
             var sourceColumns = string.Join(", ", options.Table.Columns.Select(c =>
-                textualSources.Contains(c.Name) && !IsTextualType(c.DuckDbType)
+                c.Name.Equals(options.Table.RawSourceColumn, StringComparison.OrdinalIgnoreCase)
+                    && !options.CaptureRawSource
+                    ? "NULL"
+                    : textualSources.Contains(c.Name) && !IsTextualType(c.DuckDbType)
                     ? $"nullif(s.\"{c.Name}\", '')"
                     : $"s.\"{c.Name}\""));
             // _SourceModified is a TIMESTAMP target too — same blank-field rule, or a blank
@@ -210,9 +397,10 @@ public static class FileSnapshotIngestor
             store.Execute(
                 $"""
                 INSERT INTO {staging.QualifiedName}
-                    ({options.Table.QuotedColumnList}, "{BookkeepingColumns.PrimaryKey}", "{BookkeepingColumns.RowHash}", "_SourceModified")
+                    ({options.Table.QuotedColumnList}, "{BookkeepingColumns.PrimaryKey}", "{BookkeepingColumns.RowHash}", "{BookkeepingColumns.ReplicationHash}", "_SourceModified")
                 SELECT {sourceColumns},
-                       nullif(trim(CAST(s."{options.PrimaryKeyColumn}" AS VARCHAR), {TrimChars}), ''),
+                       {PrimaryKeyExpression(options)},
+                       NULL,
                        NULL,
                        {sourceModified}
                 FROM ({projection}) AS s
@@ -221,7 +409,8 @@ public static class FileSnapshotIngestor
             store.Execute(
                 $"""
                 UPDATE {staging.QualifiedName}
-                SET "{BookkeepingColumns.RowHash}" = {RowHash.Expression(options.Table.Columns.Select(c => c.Name))}
+                SET "{BookkeepingColumns.RowHash}" = {RowHash.Expression(options.Table.Columns.Select(c => c.Name))},
+                    "{BookkeepingColumns.ReplicationHash}" = {RowHash.Expression(options.Table.ReplicationColumns.Select(c => c.Name))}
                 """);
 
             // A full-universe feed that reads as ZERO rows (0-byte or header-only file —
@@ -281,6 +470,119 @@ public static class FileSnapshotIngestor
     /// </summary>
     public static string CsvReaderSql(string filePath, CsvReadOptions csv) => CsvReader(filePath, csv);
 
+    private static string BuildTypedProjection(FileSnapshotIngestorOptions options, string reader)
+    {
+        var bindings = (options.ColumnBindings ?? [])
+            .ToDictionary(binding => binding.TargetColumn, StringComparer.OrdinalIgnoreCase);
+        var occurrence = options.OccurrenceRowIdentity;
+        var externalSourceModified = options.SourceModifiedColumn is { } sourceModified
+                                     && !options.Table.Columns.Any(column => column.Name.Equals(
+                                         sourceModified, StringComparison.OrdinalIgnoreCase))
+            ? sourceModified
+            : null;
+
+        string BoundColumn(SnapshotColumn column)
+        {
+            if (column.Name.Equals(options.Table.RawSourceColumn, StringComparison.OrdinalIgnoreCase)
+                && !options.CaptureRawSource)
+            {
+                return $"NULL AS {QuoteIdentifier(column.Name)}";
+            }
+
+            var binding = bindings.GetValueOrDefault(column.Name)
+                          ?? new FileColumnBinding(column.Name, column.Name);
+            var source = $"s.{QuoteIdentifier(binding.SourceColumn)}";
+            var expression = binding.Normalization switch
+            {
+                FileValueNormalization.None => source,
+                FileValueNormalization.Trim => KeyTrim($"CAST({source} AS VARCHAR)"),
+                FileValueNormalization.TrimUpperInvariant =>
+                    $"upper({KeyTrim($"CAST({source} AS VARCHAR)")})",
+                _ => throw new ArgumentOutOfRangeException(nameof(options), "Unknown file value normalization."),
+            };
+            return $"{expression} AS {QuoteIdentifier(column.Name)}";
+        }
+
+        if (occurrence is null)
+        {
+            var columns = options.Table.Columns.Select(BoundColumn).ToList();
+            if (externalSourceModified is not null)
+            {
+                columns.Add(
+                    $"s.{QuoteIdentifier(externalSourceModified)} AS {QuoteIdentifier(externalSourceModified)}");
+            }
+            return $"SELECT {string.Join(", ", columns)} FROM {reader} AS s";
+        }
+
+        var sourceColumns = options.Table.Columns
+            .Where(column => !column.Name.Equals(occurrence.OrdinalColumn, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        var boundColumns = string.Join(", ", sourceColumns.Select(BoundColumn));
+        var projectedColumns = string.Join(", ", sourceColumns.Select(column => $"s.{QuoteIdentifier(column.Name)}"));
+        if (externalSourceModified is not null)
+        {
+            boundColumns +=
+                $", s.{QuoteIdentifier(externalSourceModified)} AS {QuoteIdentifier(externalSourceModified)}";
+            projectedColumns += $", s.{QuoteIdentifier(externalSourceModified)}";
+        }
+        var partition = string.Join(", ", occurrence.GroupParts.Select(part =>
+            NormalizeKeyPart($"s.{QuoteIdentifier(part.Column)}", part.Normalization)));
+
+        return
+            $"WITH \"hawta$bound\" AS (" +
+            $"SELECT {boundColumns}, s.{QuoteIdentifier(FileRowNumberColumn)} AS {QuoteIdentifier(FileRowNumberColumn)} " +
+            $"FROM {reader} AS s) " +
+            $"SELECT {projectedColumns}, " +
+            $"row_number() OVER (PARTITION BY {partition} ORDER BY s.{QuoteIdentifier(FileRowNumberColumn)}) " +
+            $"AS {QuoteIdentifier(occurrence.OrdinalColumn)} FROM \"hawta$bound\" AS s";
+    }
+
+    private static string PrimaryKeyExpression(FileSnapshotIngestorOptions options)
+    {
+        if (options.OccurrenceRowIdentity is { } occurrence)
+        {
+            var encodedGroup = occurrence.GroupParts.Select(part =>
+            {
+                var value = NormalizeKeyPart(
+                    $"CAST(s.{QuoteIdentifier(part.Column)} AS VARCHAR)", part.Normalization);
+                return $"CASE WHEN {value} IS NULL THEN 'N;' " +
+                       $"ELSE concat('V', length({value}), ':', {value}, ';') END";
+            });
+            var ordinal = $"s.{QuoteIdentifier(occurrence.OrdinalColumn)}";
+            return $"CASE WHEN {ordinal} IS NULL OR {ordinal} <= 0 THEN NULL ELSE " +
+                   $"concat({string.Join(", ", encodedGroup)}, 'O', " +
+                   $"lpad(CAST({ordinal} AS VARCHAR), 20, '0')) END";
+        }
+
+        if (options.LogicalKey is null)
+            return $"nullif({KeyTrim($"CAST(s.\"{options.PrimaryKeyColumn}\" AS VARCHAR)")}, '')";
+
+        if (string.IsNullOrEmpty(options.LogicalKey.Separator))
+            throw new ArgumentException("A composite logical-key separator cannot be empty.", nameof(options));
+
+        var parts = options.LogicalKey.Parts.Select(part =>
+            $"nullif({NormalizeKeyPart($"CAST(s.{QuoteIdentifier(part.Column)} AS VARCHAR)", part.Normalization)}, '')")
+            .ToList();
+
+        if (parts.Count == 1)
+            return parts[0];
+
+        var separator = SqlLiteral(options.LogicalKey.Separator);
+        var blankGuard = string.Join(" OR ", parts.Select(part => $"{part} IS NULL"));
+        var ambiguityGuard = string.Join(" OR ", parts.Select(part => $"contains({part}, '{separator}')"));
+        return $"CASE WHEN {blankGuard} THEN NULL " +
+               $"WHEN {ambiguityGuard} THEN error('Logical-key component contains reserved separator {separator}') " +
+               $"ELSE concat_ws('{separator}', {string.Join(", ", parts)}) END";
+    }
+
+    private static string NormalizeKeyPart(string expression, FileKeyNormalization normalization) =>
+        normalization switch
+        {
+            FileKeyNormalization.Trim => KeyTrim(expression),
+            FileKeyNormalization.TrimUpperInvariant => $"upper({KeyTrim(expression)})",
+            _ => throw new ArgumentOutOfRangeException(nameof(normalization)),
+        };
+
     private static string CsvReader(string filePath, CsvReadOptions csv)
     {
         var arguments = new List<string>
@@ -306,7 +608,42 @@ public static class FileSnapshotIngestor
         return $"read_csv({string.Join(", ", arguments)})";
     }
 
+    private static string RawCapturedCsvReader(
+        string filePath,
+        CsvReadOptions csv,
+        string parsedReader,
+        string targetColumn)
+    {
+        var path = GlobEscape(SqlLiteral(filePath));
+        var headerOffset = csv.HasHeader ? 1 : 0;
+        return
+            $$"""
+            (WITH parsed AS (
+                SELECT *, row_number() OVER () AS "hawta$parsed_row" FROM {{parsedReader}}
+            ), raw AS (
+                SELECT rawline, row_number() OVER () AS "hawta$raw_row"
+                FROM (
+                    SELECT rawline
+                    FROM read_csv('{{path}}', columns = {'rawline': 'VARCHAR'},
+                                  delim = chr(30), header = false, quote = '', escape = '',
+                                  all_varchar = true, nullstr = chr(1))
+                    WHERE rawline IS NOT NULL AND rawline <> ''
+                )
+            ), alignment AS (
+                SELECT CASE WHEN (SELECT count(*) FROM raw) <> (SELECT count(*) FROM parsed) + {{headerOffset}}
+                    THEN error('Raw-source audit capture could not align physical CSV lines with parsed rows')
+                    ELSE 1 END AS ok
+            )
+            SELECT parsed.* EXCLUDE ("hawta$parsed_row"), raw.rawline AS "{{targetColumn}}"
+            FROM parsed
+            JOIN raw ON raw."hawta$raw_row" = parsed."hawta$parsed_row" + {{headerOffset}}
+            JOIN alignment ON alignment.ok = 1)
+            """;
+    }
+
     private static string SqlLiteral(string value) => value.Replace("'", "''");
+
+    private static string QuoteIdentifier(string value) => $"\"{value.Replace("\"", "\"\"")}\"";
 
     /// <summary>
     /// DuckDB's file readers treat paths as GLOB patterns while <c>File.Exists</c> tests the

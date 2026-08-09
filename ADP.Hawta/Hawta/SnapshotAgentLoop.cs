@@ -76,7 +76,10 @@ public sealed record SnapshotAgentPumpRun(
     double RequestCharge = 0,
     int ThrottledRequests = 0,
     TimeSpan CosmosOperationTime = default,
-    TimeSpan BookkeepingTime = default);
+    TimeSpan BookkeepingTime = default,
+    int GroupsRead = 0,
+    int SourceRowsLoaded = 0,
+    int GroupsRecomputed = 0);
 
 /// <summary>What one cycle did.</summary>
 public sealed record SnapshotAgentCycle(
@@ -359,17 +362,22 @@ public sealed class SnapshotAgentLoop : IDisposable
 
         if (drain.RowsRead > 0)
         {
+            var groupShape = drain.GroupsRead > 0
+                ? $", groups {drain.GroupsRead}, source rows loaded {drain.SourceRowsLoaded}"
+                : string.Empty;
             Emit(SnapshotAgentEventLevel.Info,
                 $"Pump {table.Name}: read {drain.RowsRead} row(s), remote attempted {drain.RemoteAttemptedRows}, " +
                 $"failed {drain.Failed}, max in flight {drain.MaxObservedInFlightRows}/{maxInFlightRows}, " +
-                $"request charge {drain.RequestCharge:F2}, bookkeeping {drain.BookkeepingTime.TotalMilliseconds:F1} ms.");
+                $"request charge {drain.RequestCharge:F2}, bookkeeping {drain.BookkeepingTime.TotalMilliseconds:F1} ms" +
+                $"{groupShape}.");
         }
 
         return new SnapshotAgentPumpRun(
             table.Name, drain.Batches, drain.RowsRead, drain.Upserted, drain.Deleted,
             drain.Excluded, drain.Failed, drain.Drained, drain.RemoteAttemptedRows,
             drain.RemoteFailedRows, drain.MaxObservedInFlightRows, drain.RequestCharge,
-            drain.ThrottledRequests, drain.CosmosOperationTime, drain.BookkeepingTime);
+            drain.ThrottledRequests, drain.CosmosOperationTime, drain.BookkeepingTime,
+            drain.GroupsRead, drain.SourceRowsLoaded, drain.GroupsRecomputed);
     }
 
     /// <summary>Opens (or rebuilds) the write DB. Returns true when this was a cold start that restored from the published set.</summary>

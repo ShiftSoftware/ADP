@@ -26,6 +26,26 @@ public sealed class SnapshotDecimalAttribute : Attribute
 }
 
 /// <summary>
+/// Marks a persisted source property that cannot affect the mapped destination document.
+/// Hawta still stores and publishes changes to the property, but excludes it from the
+/// replication hash so source-only metadata cannot create Cosmos churn.
+/// </summary>
+[AttributeUsage(AttributeTargets.Property)]
+public sealed class SnapshotIgnoreForReplicationAttribute : Attribute
+{
+}
+
+/// <summary>
+/// Marks the optional typed property that receives an explicitly requested verbatim source
+/// line for audit purposes. Raw capture is off by default and this property is always excluded
+/// from replication change detection.
+/// </summary>
+[AttributeUsage(AttributeTargets.Property)]
+public sealed class SnapshotRawSourceAttribute : Attribute
+{
+}
+
+/// <summary>
 /// A snapshot table whose source schema and row access are anchored to a CLR model. Table
 /// columns are generated from the model's writable public properties in declaration order,
 /// and <see cref="Read"/> uses a cached compiled materializer (reflection happens once per
@@ -37,10 +57,16 @@ public sealed class SnapshotTableDefinition<TRow> : SnapshotTableDefinition
     private static readonly IReadOnlyList<PropertyInfo> ModelProperties = GetModelProperties();
     private static readonly IReadOnlyList<SnapshotColumn> ModelColumns =
         [.. ModelProperties.Select(property => new SnapshotColumn(property.Name, DuckDbType(property)))];
+    private static readonly IReadOnlyList<SnapshotColumn> ReplicationModelColumns =
+        [.. ModelProperties
+            .Where(property => property.GetCustomAttribute<SnapshotIgnoreForReplicationAttribute>() is null
+                               && property.GetCustomAttribute<SnapshotRawSourceAttribute>() is null)
+            .Select(property => new SnapshotColumn(property.Name, DuckDbType(property)))];
+    private static readonly string? RawSourceModelColumn = GetRawSourceColumn();
     private static readonly Func<IReadOnlyDictionary<string, object?>, TRow> Materialize = BuildMaterializer();
 
     public SnapshotTableDefinition(string name)
-        : base(name, ModelColumns)
+        : base(name, ModelColumns, ReplicationModelColumns, RawSourceModelColumn)
     {
     }
 
@@ -68,6 +94,16 @@ public sealed class SnapshotTableDefinition<TRow> : SnapshotTableDefinition
         return info.Name;
     }
 
+    /// <summary>
+    /// Declares an external file-header binding for a typed property. The target property is
+    /// compiler-checked; only the external header remains a string at the adapter boundary.
+    /// </summary>
+    public FileColumnBinding Bind<TValue>(
+        Expression<Func<TRow, TValue>> property,
+        string sourceColumn,
+        FileValueNormalization normalization = FileValueNormalization.None) =>
+        new(Column(property), sourceColumn, normalization);
+
     private static IReadOnlyList<PropertyInfo> GetModelProperties()
     {
         var properties = typeof(TRow)
@@ -91,6 +127,23 @@ public sealed class SnapshotTableDefinition<TRow> : SnapshotTableDefinition
                 $"Typed snapshot row {typeof(TRow).Name} has case-insensitive duplicate properties: {string.Join(", ", duplicates)}.");
 
         return properties;
+    }
+
+    private static string? GetRawSourceColumn()
+    {
+        var properties = ModelProperties
+            .Where(property => property.GetCustomAttribute<SnapshotRawSourceAttribute>() is not null)
+            .ToList();
+        if (properties.Count > 1)
+            throw new InvalidOperationException(
+                $"Typed snapshot row {typeof(TRow).Name} has more than one [SnapshotRawSource] property.");
+
+        var property = properties.SingleOrDefault();
+        if (property is not null && property.PropertyType != typeof(string))
+            throw new InvalidOperationException(
+                $"Raw source property {typeof(TRow).Name}.{property.Name} must be a nullable string.");
+
+        return property?.Name;
     }
 
     private static string DuckDbType(PropertyInfo property)

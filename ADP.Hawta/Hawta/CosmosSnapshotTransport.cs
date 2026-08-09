@@ -144,6 +144,14 @@ internal interface IReplicationStateStore
         string? afterPrimaryKey,
         int limit);
 
+    ReplicationGroupPage ReadReplicationGroups(
+        SnapshotTableDefinition table,
+        CosmosGroupProjection grouping,
+        string? afterGroupKey,
+        int limit,
+        bool dirtyGroupsOnly) =>
+        throw new NotSupportedException("This replication-state test double does not support grouped projections.");
+
     void PruneReconOps(SnapshotTableDefinition table);
     void AppendReconOp(ReplicationReconOperation operation);
 
@@ -213,6 +221,14 @@ internal sealed class SnapshotReplicationStateStore(SnapshotStore store) : IRepl
         string? afterPrimaryKey,
         int limit) =>
         store.ReadDirtyRows(table, afterPrimaryKey, limit);
+
+    public ReplicationGroupPage ReadReplicationGroups(
+        SnapshotTableDefinition table,
+        CosmosGroupProjection grouping,
+        string? afterGroupKey,
+        int limit,
+        bool dirtyGroupsOnly) =>
+        store.ReadReplicationGroups(table, grouping, afterGroupKey, limit, dirtyGroupsOnly);
 
     public void PruneReconOps(SnapshotTableDefinition table) => store.PruneReconOps(table);
 
