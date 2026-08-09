@@ -35,7 +35,7 @@ steps:
       workingDir: 'ADP.WebComponents/adp-web-components'
       publishEndpoint: 'NPM'
 
-  - script: node -e "setTimeout(() => {}, 10000)"
+  - script: node -e "setTimeout(() => {}, 60000)"
     displayName: 'Wait for npm registry propagation'
     condition: and(succeeded(), contains(variables['Build.SourceBranch'], 'refs/tags/release'))
 
