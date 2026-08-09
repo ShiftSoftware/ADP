@@ -34,7 +34,13 @@ public sealed class PublishedSnapshot : IDisposable
             return [];
 
         var pattern = ShimPattern(snapshotName);
-        return Directory.EnumerateFiles(publishDirectory, $"{snapshotName}-*.duckdb")
+        // Directory enumeration patterns are case-sensitive on Linux. Keep the narrow shim
+        // search while requesting case-insensitive matching so configured-name casing drift has
+        // the same behavior on local disks, SMB, and CI.
+        return Directory.EnumerateFiles(publishDirectory, $"{snapshotName}-*.duckdb", new EnumerationOptions
+        {
+            MatchCasing = MatchCasing.CaseInsensitive,
+        })
             .Where(path => pattern.IsMatch(Path.GetFileName(path)))
             .OrderByDescending(Path.GetFileName, StringComparer.OrdinalIgnoreCase)
             .ToList();
