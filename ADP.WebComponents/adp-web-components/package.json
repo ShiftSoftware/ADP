@@ -44,6 +44,8 @@
   "scripts": {
     "test": "stencil test --spec",
     "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint",
+    "lint:fix": "eslint --fix",
     "typecheck:ts7": "npx --yes -p typescript@7 tsc --noEmit -p tsconfig.json",
     "generate": "stencil generate",
     "build": "stencil build -- --prod && node ./automation/generate-integration-manifest.mjs",
@@ -61,6 +63,7 @@
     "verify:integration-artifact": "node ./automation/verify-integration-artifact.mjs"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@rollup/plugin-alias": "^5.1.1",
     "@stencil/core": "^4.36.3",
     "@stencil/postcss": "^2.1.0",
@@ -69,12 +72,15 @@
     "@types/node": "^22.10.0",
     "autoprefixer": "^10.4.13",
     "cssnano": "^5.1.14",
+    "eslint": "^9.39.5",
+    "globals": "^17.9.0",
     "jest": "29",
     "jest-cli": "29",
     "prettier": "^3.5.3",
     "stencil-tailwind-plugin": "^1.8.0",
     "tailwindcss": "^3.2.4",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.66.0"
   },
   "license": "MIT",
   "dependencies": {

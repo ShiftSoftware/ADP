@@ -5,7 +5,11 @@
 
 .claimable-item-popover[aria-expanded='true'] {
   @apply !opacity-100 !pointer-events-auto [&_*]:!pointer-events-auto;
-  transition: top 0.3s ease, bottom 0.3s ease, left 0.3s ease, opacity 0.5s ease;
+  transition:
+    top 0.3s ease,
+    bottom 0.3s ease,
+    left 0.3s ease,
+    opacity 0.5s ease;
 }
 
 .claimable-item-popover.fading-out {

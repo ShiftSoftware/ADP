@@ -295,7 +295,10 @@
           // Delayed because fetchVin has a 1s animation timeout before setting data.
           if (vehicleLookup.activeElement !== 'vehicle-ssc') {
             var sscEl = vehicleLookup.shadowRoot.getElementById('vehicle-ssc');
-            if (sscEl) setTimeout(function () { sscEl.clearData(); }, 1500);
+            if (sscEl)
+              setTimeout(function () {
+                sscEl.clearData();
+              }, 1500);
           }
         }
       }

@@ -103,7 +103,7 @@ export class FormSelect implements FormElement {
       if (this.abortController) this.abortController.abort();
 
       let options: FormSelectItem[];
-      if (!!this.staticValue) {
+      if (this.staticValue) {
         const localizedStaticValue = this.staticValue[this.language];
         if (localizedStaticValue && localizedStaticValue?.value && localizedStaticValue?.label) options = [localizedStaticValue];
         else options = [this.staticValue];

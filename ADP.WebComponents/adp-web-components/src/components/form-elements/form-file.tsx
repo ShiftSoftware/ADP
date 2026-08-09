@@ -141,7 +141,7 @@ export class FormFile implements FormElement {
 
     this.fileName = typeof resolved === 'string' ? resolved : resolved?.name;
     // @ts-ignore
-    this.form?.validateForm(this.name, !!value ? value : [], false);
+    this.form?.validateForm(this.name, value ? value : [], false);
     this.form?.rerender({ inputName: this.name, rerenderForm: true });
   }
 

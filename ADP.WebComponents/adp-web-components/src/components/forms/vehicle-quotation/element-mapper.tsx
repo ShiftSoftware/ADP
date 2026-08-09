@@ -25,7 +25,7 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Addit
       if (form.context.structure?.data?.vehiclesApiStrapiFormat) {
         const res = await response.json();
 
-        let options = res.data;
+        const options = res.data;
 
         return options.map(vehicle => ({
           label: vehicle?.GradeName || vehicle?.attributes?.GradeName,
@@ -175,7 +175,7 @@ export const vehicleQuotationElements: FormElementMapper<VehicleQuotation, Addit
       if (!selectedBrand) return [];
 
       return [
-        ...selectedBrand?.Models.map(model => ({ label: model.Name, value: `${model.ID}` })),
+        ...selectedBrand.Models.map(model => ({ label: model.Name, value: `${model.ID}` })),
         {
           value: 'Other',
           label: locale.Other,

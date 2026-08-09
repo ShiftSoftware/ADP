@@ -2784,7 +2784,8 @@ const mockData = {
         ],
       },
       {
-        serviceType: 'Fist Service (1000 KM) Fist Service (1000 KM) Fist Service (1000 KM) Fist Service (1000 KM) Fist Service (1000 KM) Fist Service (1000 KM) Fist Service (1000 KM)',
+        serviceType:
+          'Fist Service (1000 KM) Fist Service (1000 KM) Fist Service (1000 KM) Fist Service (1000 KM) Fist Service (1000 KM) Fist Service (1000 KM) Fist Service (1000 KM)',
         serviceDate: '2023-11-28',
         mileage: 2165,
         companyName: 'SAS',
@@ -4847,7 +4848,7 @@ const mockData = {
     ],
     basicModelCode: null,
   },
-  BLOCKEDNOTALLOC01: {
+  'BLOCKEDNOTALLOC01': {
     saleInformation: {
       countryID: null,
       countryName: null,

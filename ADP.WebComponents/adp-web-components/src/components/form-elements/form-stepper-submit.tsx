@@ -36,7 +36,7 @@ export class FormStepperSubmit implements FormElement {
   render() {
     const [locale, language] = this.form.getFormLocale();
 
-    let step = this.form.getStepLabels(language, this.step);
+    const step = this.form.getStepLabels(language, this.step);
 
     const submitText =
       this.localization?.[language]?.label || step?.submitButton || getNestedValue(locale, this.submitTextKey) || getNestedValue(locale, 'sharedFormLocales.submit') || 'Submit';

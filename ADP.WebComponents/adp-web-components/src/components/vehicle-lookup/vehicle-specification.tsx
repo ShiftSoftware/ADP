@@ -151,7 +151,7 @@ export class VehicleSpecification implements MultiLingual, VehicleInfoLayoutInte
 
               <MaterialCard desc={this?.vehicleLookup?.vehicleVariantInfo?.modelYear?.toString()?.trim() || ''} title={texts?.modelYear} minWidth="250px" />
 
-              <MaterialCard desc={!!productionDate ? productionDate : ''} title={texts?.productionDate} minWidth="250px" />
+              <MaterialCard desc={productionDate ? productionDate : ''} title={texts?.productionDate} minWidth="250px" />
 
               <MaterialCard desc={this?.vehicleLookup?.vehicleVariantInfo?.sfx?.trim() || ''} title={texts?.sfx} minWidth="250px" />
             </div>

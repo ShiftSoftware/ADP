@@ -63,7 +63,7 @@ export default function CardsContainer({ isLoading, vehicleInformation, isAuthor
           fromDesc={warrantyLocale.from}
           desc={vehicleInformation?.warranty?.warrantyStartDate || ''}
           opened={!!vehicleInformation?.warranty?.warrantyStartDate || !vehicleInformation}
-          state={!!vehicleInformation ? (vehicleInformation?.warranty?.hasActiveWarranty ? 'success' : 'reject') : 'idle'}
+          state={vehicleInformation ? (vehicleInformation?.warranty?.hasActiveWarranty ? 'success' : 'reject') : 'idle'}
         />
 
         <StatusCard
@@ -72,7 +72,7 @@ export default function CardsContainer({ isLoading, vehicleInformation, isAuthor
           toDesc={warrantyLocale.to}
           desc={vehicleInformation?.warranty?.warrantyEndDate || ''}
           opened={!!vehicleInformation?.warranty?.warrantyEndDate || !vehicleInformation}
-          state={!!vehicleInformation ? (vehicleInformation?.warranty?.hasActiveWarranty ? 'success' : 'reject') : 'idle'}
+          state={vehicleInformation ? (vehicleInformation?.warranty?.hasActiveWarranty ? 'success' : 'reject') : 'idle'}
         />
 
         <StatusCard
@@ -80,8 +80,8 @@ export default function CardsContainer({ isLoading, vehicleInformation, isAuthor
           icon={false}
           fromDesc={warrantyLocale.extendedWarrantyFrom}
           desc={vehicleInformation?.warranty?.extendedWarrantyStartDate || ''}
-          opened={(!!vehicleInformation && !!vehicleInformation?.warranty?.extendedWarrantyStartDate)}
-          state={(vehicleInformation?.warranty?.hasExtendedWarranty ? 'info' : 'reject')}
+          opened={!!vehicleInformation && !!vehicleInformation?.warranty?.extendedWarrantyStartDate}
+          state={vehicleInformation?.warranty?.hasExtendedWarranty ? 'info' : 'reject'}
         />
 
         <StatusCard
@@ -89,8 +89,8 @@ export default function CardsContainer({ isLoading, vehicleInformation, isAuthor
           icon={false}
           toDesc={warrantyLocale.extendedWarrantyTo}
           desc={vehicleInformation?.warranty?.extendedWarrantyEndDate || ''}
-          opened={(!!vehicleInformation && !!vehicleInformation?.warranty?.extendedWarrantyEndDate)}
-          state={(vehicleInformation?.warranty?.hasExtendedWarranty ? 'info' : 'reject')}
+          opened={!!vehicleInformation && !!vehicleInformation?.warranty?.extendedWarrantyEndDate}
+          state={vehicleInformation?.warranty?.hasExtendedWarranty ? 'info' : 'reject'}
         />
       </div>
     </div>

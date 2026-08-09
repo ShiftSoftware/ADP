@@ -39,7 +39,7 @@ export class FormStepperControl implements FormElement {
     const currentStep = this.form?.formStructure?.currentStep;
     const direction = locale?.sharedFormLocales?.direction;
 
-    let step = this.form.getStepLabels(language, currentStep);
+    const step = this.form.getStepLabels(language, currentStep);
 
     const text = step?.back || '';
 

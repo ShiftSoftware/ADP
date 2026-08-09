@@ -29,7 +29,7 @@ export default function getCustomClassesForPortal(element: any) {
 
     if (root instanceof ShadowRoot) {
       current = root.host;
-      if (!!finaleClass) foundHostParent = true;
+      if (finaleClass) foundHostParent = true;
       continue;
     }
 

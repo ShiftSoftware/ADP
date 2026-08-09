@@ -588,7 +588,7 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
     try {
       if (documents && documents.length > 0) {
         this.claimForm.setFileUploadProgression(0);
-        let uploadChunks = 20;
+        const uploadChunks = 20;
         for (let index = 0; index < uploadChunks; index++) {
           const uploadPercentage = Math.round(((index + 1) / uploadChunks) * 100);
 
@@ -714,13 +714,16 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
                 {
                   'text-[#8a6d3b] bg-[#fcf8e3] border-[#faebcc]': !isBlockedBox,
                   'text-[#58151c] bg-[#f7d7d8] border-[#f2aeb5]': isBlockedBox,
-                  'opacity-100 pointer-events-auto translate-y-0 scale-100':
-                    !this.isLoading && this.vehicleLookup && !this.tabAnimationLoading && showActivationBox,
+                  'opacity-100 pointer-events-auto translate-y-0 scale-100': !this.isLoading && this.vehicleLookup && !this.tabAnimationLoading && showActivationBox,
                 },
               )}
             >
               <span class="font-semibold">
-                {this.showPrintBox ? this.locale.successFulClaimMessage : showActivationBlocked ? this.locale.activationBlockedNotAllocated : this.locale.warrantyAndServicesNotActivated}
+                {this.showPrintBox
+                  ? this.locale.successFulClaimMessage
+                  : showActivationBlocked
+                    ? this.locale.activationBlockedNotAllocated
+                    : this.locale.warrantyAndServicesNotActivated}
               </span>
 
               {showActionButton && (

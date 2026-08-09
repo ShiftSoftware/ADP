@@ -159,7 +159,7 @@ export class VehicleWarrantyDetails implements MultiLingual, VehicleInfoLayoutIn
   @State() checkingUnauthorizedSSC: boolean = false;
   @State() devRecaptchaChecked: boolean = false;
   @State() recaptchaRes: {
-    status: 'noRecall' | 'recallExists' | 'noApplicableVehicleFound'
+    status: 'noRecall' | 'recallExists' | 'noApplicableVehicleFound';
   } | null = null;
 
   private recaptchaIntervalRef: ReturnType<typeof setInterval>;
@@ -189,13 +189,10 @@ export class VehicleWarrantyDetails implements MultiLingual, VehicleInfoLayoutIn
       this.checkingUnauthorizedSSC = false;
 
       const randomValue = Math.random();
-      const devSscLookupStatus = randomValue < 0.33 ? 0 : (randomValue > 0.33 && randomValue < 0.66) ? 2 : 1;
+      const devSscLookupStatus = randomValue < 0.33 ? 0 : randomValue > 0.33 && randomValue < 0.66 ? 2 : 1;
 
       this.recaptchaRes = {
-        status:
-          devSscLookupStatus === 0 ? 'noRecall' :
-            devSscLookupStatus === 2 ? 'noApplicableVehicleFound' :
-              'recallExists'
+        status: devSscLookupStatus === 0 ? 'noRecall' : devSscLookupStatus === 2 ? 'noApplicableVehicleFound' : 'recallExists',
       };
 
       smartInvokable.bind(this)(this.unauthorizedSscLookupResponse, devSscLookupStatus);
@@ -216,9 +213,14 @@ export class VehicleWarrantyDetails implements MultiLingual, VehicleInfoLayoutIn
       this.checkingUnauthorizedSSC = false;
 
       this.recaptchaRes = {
-        status: vinResponse.sscLookupStatus === 0 ? 'noRecall' :
-          vinResponse.sscLookupStatus === 1 ? 'recallExists' :
-          vinResponse.sscLookupStatus === 2 ? 'noApplicableVehicleFound' : null
+        status:
+          vinResponse.sscLookupStatus === 0
+            ? 'noRecall'
+            : vinResponse.sscLookupStatus === 1
+              ? 'recallExists'
+              : vinResponse.sscLookupStatus === 2
+                ? 'noApplicableVehicleFound'
+                : null,
       };
 
       smartInvokable.bind(this)(this.unauthorizedSscLookupResponse, vinResponse.sscLookupStatus);
@@ -358,7 +360,7 @@ export class VehicleWarrantyDetails implements MultiLingual, VehicleInfoLayoutIn
           ),
           sscTableOPCode: () => (
             <div class="table-cell-container table-cell-labors-container">
-              {!!sscItem?.labors.length
+              {sscItem?.labors.length
                 ? sscItem?.labors.map(labor => (
                     <div key={labor?.laborCode} class="success">
                       {labor?.laborCode}
@@ -369,7 +371,7 @@ export class VehicleWarrantyDetails implements MultiLingual, VehicleInfoLayoutIn
           ),
           sscTablePartNumber: () => (
             <div class="table-cell-container table-cell-parts-container">
-              {!!sscItem?.parts.length
+              {sscItem?.parts.length
                 ? sscItem?.parts.map(part => {
                     // Three availability states: in stock (green check), not in stock (red cross), or not checked
                     // — no Hub stock scope, or a repaired recall — which shows neutral grey with no icon.
@@ -437,9 +439,15 @@ export class VehicleWarrantyDetails implements MultiLingual, VehicleInfoLayoutIn
                 )}
               </div>
 
-
               {this.recaptchaRes && (
-                <div class={cn('recaptcha-response', this.recaptchaRes?.status === 'recallExists' ? 'reject-card ' : (this.recaptchaRes?.status === 'noRecall' ? 'success-card ' : 'warning-card '))}>{this.locale[this.recaptchaRes?.status]}</div>
+                <div
+                  class={cn(
+                    'recaptcha-response',
+                    this.recaptchaRes?.status === 'recallExists' ? 'reject-card ' : this.recaptchaRes?.status === 'noRecall' ? 'success-card ' : 'warning-card ',
+                  )}
+                >
+                  {this.locale[this.recaptchaRes?.status]}
+                </div>
               )}
             </flexible-container>
           </div>

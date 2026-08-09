@@ -71,7 +71,7 @@ export const formSuccessHandler = async (formContext: FormSuccessHandler, data: 
   if (!formContext.disableScrollToTop) {
     const formDom = formContext.el.shadowRoot || formContext.el;
 
-    let targetElement = formDom instanceof ShadowRoot ? formDom.firstElementChild : formDom;
+    const targetElement = formDom instanceof ShadowRoot ? formDom.firstElementChild : formDom;
 
     if (targetElement) {
       const yOffset = -100;
@@ -172,7 +172,7 @@ export const getMarketingValues = (structure?: FormHookInterface<any>['structure
 
   const marketingValues = {};
   marketingQueryParams.forEach(param => {
-    if (!!params.get(param)) marketingValues[param] = params.get(param);
+    if (params.get(param)) marketingValues[param] = params.get(param);
   });
 
   return marketingValues;
@@ -190,7 +190,7 @@ export const onFormSubmit = async <T>({ context, formValues, middleware, afterSu
 
     const hasAdditionalData = !!context.structure?.data?.truncatedFields && !!Object.keys(context.structure?.data?.truncatedFields)?.length;
 
-    let additionalData: Record<string, string> = {};
+    const additionalData: Record<string, string> = {};
 
     const marketingValues = getMarketingValues(context?.structure);
 
@@ -200,7 +200,7 @@ export const onFormSubmit = async <T>({ context, formValues, middleware, afterSu
 
     if (hasAdditionalData) payload.additionalData = { ...additionalData };
 
-    if (!!context?.extraPayload) payload = { ...payload, ...context?.extraPayload };
+    if (context?.extraPayload) payload = { ...payload, ...context?.extraPayload };
 
     if (hasAdditionalData) {
       Object.entries(context.structure?.data?.truncatedFields as Record<string, string | string[]>).forEach(([oldKey, truncateValue]) => {
@@ -214,10 +214,10 @@ export const onFormSubmit = async <T>({ context, formValues, middleware, afterSu
           payload = { ...payload, [oldKey]: constructNewValue };
         } else if (typeof truncateValue === 'string' && truncateValue) {
           if (oldKey.startsWith('parse date: ')) {
-            let tempKey = oldKey.replaceAll('parse date: ', '');
+            const tempKey = oldKey.replaceAll('parse date: ', '');
             payload[tempKey] = parse(payload[tempKey], truncateValue, new Date());
           } else if (oldKey.startsWith('format date: ')) {
-            let tempKey = oldKey.replaceAll('format date: ', '');
+            const tempKey = oldKey.replaceAll('format date: ', '');
             payload[tempKey] = formatISO(payload[tempKey]);
           } else {
             additionalData[truncateValue] = payload[oldKey];
@@ -233,9 +233,9 @@ export const onFormSubmit = async <T>({ context, formValues, middleware, afterSu
       'Accept-Language': context.localeLanguage || 'en',
     };
 
-    if (!!context?.extraHeader) header = { ...header, ...context?.extraHeader };
+    if (context?.extraHeader) header = { ...header, ...context?.extraHeader };
 
-    if (!!context.structure?.data?.extraHeader) header = { ...header, ...context.structure?.data?.extraHeader };
+    if (context.structure?.data?.extraHeader) header = { ...header, ...context.structure?.data?.extraHeader };
 
     let requestEndpoint = '';
     // @ts-ignore

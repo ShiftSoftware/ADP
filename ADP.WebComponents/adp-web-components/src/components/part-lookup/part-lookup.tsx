@@ -58,7 +58,7 @@ export class PartLookup implements MultiLingual {
   @Prop() mockUrl = '';
   @Prop() endpoint: Endpoint;
   @Prop() isDev: boolean = false;
-  @Prop() childrenProps?: string | Object;
+  @Prop() childrenProps?: string | object;
 
   @Prop({ mutable: true }) loadedMockDatas?: BlazorInvokableFunction<(response: any) => void>;
   @Prop({ mutable: true }) errorCallback?: BlazorInvokableFunction<(errorMessage: ErrorKeys) => void>;

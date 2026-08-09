@@ -44,7 +44,7 @@ export function parseEndpointObject(endpoint: Endpoint): EndpointObject {
 }
 
 export function fetchFrom(endpoint: Endpoint, props: FetchFromProps = {}) {
-  let endpointObject = parseEndpointObject(endpoint);
+  const endpointObject = parseEndpointObject(endpoint);
 
   const defaultHeaders: Record<string, string> = {
     'Accept': 'application/json',

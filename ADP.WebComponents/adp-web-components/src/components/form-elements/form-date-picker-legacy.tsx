@@ -267,7 +267,17 @@ export class FormDatePicker implements FormElement {
             />
 
             <span part={`${this.name}-icon form-date-picker-icon`} class="form-input-icon form-input-icon-end">
-              <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-full">
+              <svg
+                aria-hidden="true"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="size-full"
+              >
                 <path d="M8 2v4" />
                 <path d="M16 2v4" />
                 <rect width="18" height="18" x="3" y="4" rx="2" />
@@ -283,28 +293,36 @@ export class FormDatePicker implements FormElement {
               })}
             >
               <div class="form-date-picker-header">
-                <button
-                  type="button"
-                  disabled={!this.canGoPrev()}
-                  part={`${this.name}-prev form-date-picker-nav`}
-                  onClick={this.prevMonth}
-                  class="form-date-picker-nav"
-                >
-                  <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4 rtl:rotate-180">
+                <button type="button" disabled={!this.canGoPrev()} part={`${this.name}-prev form-date-picker-nav`} onClick={this.prevMonth} class="form-date-picker-nav">
+                  <svg
+                    aria-hidden="true"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="size-4 rtl:rotate-180"
+                  >
                     <path d="m15 18-6-6 6-6" />
                   </svg>
                 </button>
                 <span part={`${this.name}-title form-date-picker-title`} class="form-date-picker-title">
                   {monthTitle}
                 </span>
-                <button
-                  type="button"
-                  disabled={!this.canGoNext()}
-                  part={`${this.name}-next form-date-picker-nav`}
-                  onClick={this.nextMonth}
-                  class="form-date-picker-nav"
-                >
-                  <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4 rtl:rotate-180">
+                <button type="button" disabled={!this.canGoNext()} part={`${this.name}-next form-date-picker-nav`} onClick={this.nextMonth} class="form-date-picker-nav">
+                  <svg
+                    aria-hidden="true"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="size-4 rtl:rotate-180"
+                  >
                     <path d="m9 18 6-6-6-6" />
                   </svg>
                 </button>

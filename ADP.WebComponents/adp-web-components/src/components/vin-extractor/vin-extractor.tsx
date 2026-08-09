@@ -268,7 +268,7 @@ export class VinExtractor {
       const text = result.getText();
       if (this.verbose) console.log(text);
 
-      if (!!text.trim()) {
+      if (text.trim()) {
         if (this.skipValidation) this.handleExtract(text.trim());
         else {
           const vin = text.replace(/[qo]/g, '0').replace(/i/g, '1').replace(/ /g, '');

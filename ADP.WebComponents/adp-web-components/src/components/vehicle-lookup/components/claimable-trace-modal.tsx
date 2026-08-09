@@ -27,7 +27,7 @@ export const ClaimableTraceModal: FunctionalComponent<ClaimableTraceModalProps> 
       aria-modal="true"
       aria-hidden={(!isOpen).toString()}
       dir={locale.sharedLocales.direction}
-      class={cn('claimable-trace-modal', { open: isOpen, 'fading-out': fadingOut })}
+      class={cn('claimable-trace-modal', { 'open': isOpen, 'fading-out': fadingOut })}
     >
       <div class="trace-modal-header">
         <span class="trace-modal-title">

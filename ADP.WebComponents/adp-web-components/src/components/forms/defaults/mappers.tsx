@@ -39,7 +39,7 @@ export const getFormMappers = (extraMappers: Record<string, (prop: any) => any> 
     const fetcher: FormSelectFetcher = async ({ signal, context }): Promise<FormSelectItem[]> => {
       const params = new URLSearchParams(window.location.search);
 
-      let paramValue = (params.get(props?.vehicleIdQueryParam) || '')?.toLowerCase();
+      const paramValue = (params.get(props?.vehicleIdQueryParam) || '')?.toLowerCase();
 
       const vehicleEndpoint = props.vehicleApi as string;
 
@@ -156,7 +156,7 @@ export const getFormMappers = (extraMappers: Record<string, (prop: any) => any> 
 
       if (Array.isArray(props.span) && Array.isArray(props.min) && Array.isArray(props.max) && props.format) {
         let tempDate = decodeTimeOffset({ offsets: props.min }) as Date;
-        let maxDate = decodeTimeOffset({ offsets: props.max }) as Date;
+        const maxDate = decodeTimeOffset({ offsets: props.max }) as Date;
 
         while (isBefore(tempDate, maxDate) || isEqual(tempDate, maxDate)) {
           options.push({
@@ -241,7 +241,7 @@ export const getFormMappers = (extraMappers: Record<string, (prop: any) => any> 
       if (!selectedBrand) return [];
 
       return [
-        ...selectedBrand?.Models.map(model => ({ label: model.Name, value: `${model.ID}` })),
+        ...selectedBrand.Models.map(model => ({ label: model.Name, value: `${model.ID}` })),
         {
           value: 'Other',
           label: locale.Other,
@@ -323,7 +323,7 @@ export const getFormMappers = (extraMappers: Record<string, (prop: any) => any> 
       if (!selectedBrand) return [];
 
       return [
-        ...selectedBrand?.Models.map(model => ({ label: model.Name, value: props?.useNamedValue ? model.Name : `${model.ID}` })),
+        ...selectedBrand.Models.map(model => ({ label: model.Name, value: props?.useNamedValue ? model.Name : `${model.ID}` })),
         {
           value: 'Other',
           label: locale.Other,

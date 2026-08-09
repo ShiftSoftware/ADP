@@ -48,7 +48,7 @@ export class FormInput implements FormElement {
 
   @Watch('staticValue')
   async onStaticValueChange(newStaticValue?: string, notInitialLoad = true) {
-    if (!!newStaticValue) {
+    if (newStaticValue) {
       const formatted = this.formatter ? this.formatter(newStaticValue) : newStaticValue;
       this.defaultValue = formatted;
       this.inputRef.value = formatted;

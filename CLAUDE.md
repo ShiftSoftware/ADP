@@ -31,9 +31,17 @@ npm run build                # Production build
 npm start                    # Dev server with watch (port 3000)
 npm test                     # Run spec tests (Jest)
 npm run test.watch           # Watch mode tests
+npm run typecheck            # tsc --noEmit
+npm run lint                 # ESLint (flat config in eslint.config.mjs)
+npm run lint:fix             # ESLint with --fix
 npm run format               # Prettier format all source files
 npm run prettier             # Check formatting without writing
 ```
+
+Lint/format policy: ESLint owns code correctness, Prettier owns layout — there is no
+formatting rule in the ESLint config, so run `npm run lint:fix` then `npm run format`.
+Generated output (`src/components.d.ts`, `src/locale-mapper.ts`,
+`src/global/types/generated/`, `dist/`, `loader/`, `www/`) is excluded from linting.
 
 ### Automation scripts (web components directory)
 ```bash

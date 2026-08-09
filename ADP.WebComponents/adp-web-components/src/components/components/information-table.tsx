@@ -292,11 +292,7 @@ export class InformationTable {
             )}
             <tbody>
               {!hasRows && this.renderTableDataRow(this.templateRow, -1)}
-              {hasRows &&
-                this.rows.map((row, idx) => [
-                  this.renderTableDataRow(row, idx),
-                  !!this.subRowRenderer && this.renderTableSubRow(row, idx),
-                ])}
+              {hasRows && this.rows.map((row, idx) => [this.renderTableDataRow(row, idx), !!this.subRowRenderer && this.renderTableSubRow(row, idx)])}
             </tbody>
           </table>
         </div>
@@ -306,10 +302,7 @@ export class InformationTable {
     const headerRow = this.showHeader && (
       <div class="flex">
         {!!this.subRowRenderer && (
-          <div
-            style={{ width: `${this.expandColumnWidth}px` }}
-            class={cn('border-b', this.size === 'small' ? 'py-[10px] px-[6px]' : 'py-[16px] px-[8px]')}
-          />
+          <div style={{ width: `${this.expandColumnWidth}px` }} class={cn('border-b', this.size === 'small' ? 'py-[10px] px-[6px]' : 'py-[16px] px-[8px]')} />
         )}
         {this.headers.map(({ label, width, centeredHorizontally = true, styles = {} }, idx) => {
           const hasWidth = typeof width === 'number' && width > 0;

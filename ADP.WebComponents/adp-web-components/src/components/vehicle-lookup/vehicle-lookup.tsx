@@ -78,7 +78,7 @@ export class VehicleLookup implements MultiLingual {
   @Prop() sscQueryString: string = '';
   @Prop() separateSsc: boolean = false;
   @Prop() hiddenTabs: string = '';
-  @Prop() childrenProps?: string | Object;
+  @Prop() childrenProps?: string | object;
 
   @Prop() blazorErrorStateListener = '';
   @Prop() errorStateListener?: (newError: string) => void;
@@ -267,7 +267,12 @@ export class VehicleLookup implements MultiLingual {
       console.error(error);
     }
 
-    const hiddenSet = new Set(this.hiddenTabs.split(',').map(t => t.trim()).filter(Boolean));
+    const hiddenSet = new Set(
+      this.hiddenTabs
+        .split(',')
+        .map(t => t.trim())
+        .filter(Boolean),
+    );
 
     if (!Object.values(componentTags).includes(this.activeElement as any) || hiddenSet.has(this.activeElement))
       return <div class="w-full h-[200px] text-[26px] text-red-600 flex items-center justify-center">Invalid tag</div>;
@@ -322,8 +327,7 @@ export class VehicleLookup implements MultiLingual {
           query-string={!this.separateSsc && this.sscQueryString ? [this.queryString, this.sscQueryString].filter(Boolean).join('&') : this.queryString}
           id={componentTags.vehicleWarrantyDetails}
           {...props[componentTags.vehicleWarrantyDetails]}
-        >
-        </vehicle-warranty-details>
+        ></vehicle-warranty-details>
       ),
       ...(this.separateSsc
         ? {
@@ -382,9 +386,7 @@ export class VehicleLookup implements MultiLingual {
       ),
     };
 
-    const componentList = Object.fromEntries(
-      Object.entries(allComponents).filter(([key]) => !hiddenSet.has(key))
-    ) as Partial<Record<ActiveElement, Node>>;
+    const componentList = Object.fromEntries(Object.entries(allComponents).filter(([key]) => !hiddenSet.has(key))) as Partial<Record<ActiveElement, Node>>;
 
     const claimableProps = props[componentTags.vehicleClaimableItems] as Record<string, any> | undefined;
     const showClaimableTrace =

@@ -77,7 +77,8 @@ export class VehicleSaleInformation implements MultiLingual, VehicleInfoLayoutIn
   @State() errorMessage?: ErrorKeys;
   @State() isLoading: boolean = false;
   @State() vehicleLookup?: VehicleLookupDTO;
-  @Prop() hiddenFields: string = 'customerAccountNumber,customerID,brokerInvoiceNumber,brokerInvoiceDate,distributorInvoiceNumber,distributorInvoiceDate,warrantyActivationDate,invoiceDate,invoiceNumber';
+  @Prop() hiddenFields: string =
+    'customerAccountNumber,customerID,brokerInvoiceNumber,brokerInvoiceDate,distributorInvoiceNumber,distributorInvoiceDate,warrantyActivationDate,invoiceDate,invoiceNumber';
 
   @Element() el: HTMLElement;
 
@@ -287,9 +288,7 @@ export class VehicleSaleInformation implements MultiLingual, VehicleInfoLayoutIn
               ))}
               {/* Intermediary legs (0..n) — one card per intermediary; suppressed by hiddenFields="intermediaries" */}
               {!hiddenFields.includes('intermediaries') &&
-                (sale?.intermediaries || []).map(intermediary => (
-                  <MaterialCard title={texts.intermediaryName} desc={getText(intermediary?.companyName)} minWidth="250px" />
-                ))}
+                (sale?.intermediaries || []).map(intermediary => <MaterialCard title={texts.intermediaryName} desc={getText(intermediary?.companyName)} minWidth="250px" />)}
             </div>
           </flexible-container>
         </VehicleInfoLayout>

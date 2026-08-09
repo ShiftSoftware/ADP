@@ -35,7 +35,7 @@ export const VehicleImageViewer: FunctionalComponent<VehicleImageViewerProps> = 
 
   let vehicleId = form.getValue<any>('vehicle');
 
-  let openContainer = !!vehicleId;
+  const openContainer = !!vehicleId;
 
   const selectedVehicle = form.context['vehicleList']?.find(vehicle => vehicle.value === vehicleId);
 
