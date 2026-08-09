@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "package": "adp-web-components",
-  "packageVersion": "0.3.11",
+  "packageVersion": "0.3.12",
   "outputFamily": "per-component",
   "components": [
     {
@@ -29,7 +29,7 @@
           { "name": "blazorDynamicClaimActivate", "attribute": "blazor-dynamic-claim-activate", "type": "string", "default": null, "mutable": false, "required": false },
           { "name": "blazorErrorStateListener", "attribute": "blazor-error-state-listener", "type": "string", "default": null, "mutable": false, "required": false },
           { "name": "blazorOnLoadingStateChange", "attribute": "blazor-on-loading-state-change", "type": "string", "default": null, "mutable": false, "required": false },
-          { "name": "childrenProps", "attribute": "children-props", "type": "Object | string", "default": null, "mutable": false, "required": false },
+          { "name": "childrenProps", "attribute": "children-props", "type": "object | string", "default": null, "mutable": false, "required": false },
           { "name": "disableVinValidation", "attribute": "disable-vin-validation", "type": "boolean", "default": null, "mutable": false, "required": false },
           {
             "name": "dynamicClaimActivate",
