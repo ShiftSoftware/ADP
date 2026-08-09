@@ -43,6 +43,13 @@ public sealed class SnapshotPublishOptions
     /// </summary>
     public Action? OnBeforeShimCommit { get; init; }
 
+    /// <summary>
+    /// Fault-injection hook for retention tests only. When supplied, it performs the requested
+    /// delete and returns whether retention should treat it as successful. Production callers
+    /// must leave this unset.
+    /// </summary>
+    public Func<string, bool>? RetentionDelete { get; init; }
+
     internal void Validate()
     {
         if (!SnapshotNamePattern.IsMatch(SnapshotName))

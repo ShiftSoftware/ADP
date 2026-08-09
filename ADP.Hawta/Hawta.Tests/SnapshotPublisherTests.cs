@@ -12,6 +12,7 @@ public sealed class PublisherFixture : IDisposable
     public SnapshotTableDefinition Widget { get; }
     public SnapshotTableDefinition Gadget { get; }
     public string PublishDirectory { get; }
+    public Func<string, bool>? RetentionDelete { get; set; }
 
     public const string SnapshotName = "test-read";
 
@@ -79,12 +80,19 @@ public sealed class PublisherFixture : IDisposable
             Force = force,
             KeepShims = keepShims,
             OnBeforeShimCommit = onBeforeShimCommit,
+            RetentionDelete = RetentionDelete,
         });
 
     public string[] Files(string pattern) =>
         Directory.Exists(PublishDirectory)
             ? Directory.GetFiles(PublishDirectory, pattern).Select(Path.GetFileName).ToArray()!
             : [];
+
+    public static bool DeleteForRetentionTest(string path)
+    {
+        File.Delete(path);
+        return true;
+    }
 
     public void Dispose()
     {
@@ -250,7 +258,10 @@ public class SnapshotPublisherTests : IDisposable
 
         var firstWidgetParquet = Path.Combine(fx.PublishDirectory, fx.Files("Widget-*.parquet").Single()!);
 
-        using (File.Open(firstWidgetParquet, FileMode.Open, FileAccess.Read, FileShare.Read))
+        fx.RetentionDelete = path => string.Equals(path, firstWidgetParquet, StringComparison.OrdinalIgnoreCase)
+            ? false
+            : PublisherFixture.DeleteForRetentionTest(path);
+        try
         {
             fx.MergeWidgets(("W1", "alpha", 2));
             var result = fx.Publish(keepShims: 1);
@@ -259,6 +270,10 @@ public class SnapshotPublisherTests : IDisposable
             Assert.Equal(SnapshotPublishStatus.Published, result.Status);
             Assert.True(result.FilesSkippedByRetention >= 1);
             Assert.True(File.Exists(firstWidgetParquet));
+        }
+        finally
+        {
+            fx.RetentionDelete = null;
         }
 
         // Next publish's retention pass picks it up once the consumer is gone.
@@ -518,23 +533,31 @@ public class SnapshotPublisherTests : IDisposable
         var firstShimPath = Path.Combine(fx.PublishDirectory, first.ShimFile!);
         var firstWidgetParquet = fx.Files("Widget-*.parquet").Single()!;
 
-        // On local NTFS, File.Delete POSIX-deletes even a DuckDB-held file; over the
-        // production SMB share, a consumer's handle makes the delete a sharing violation.
-        // Simulate the SMB behavior with a no-delete-share handle next to the real consumer.
+        // Simulate a sharing violation through the retention delete hook. This avoids relying
+        // on OS-specific file-lock semantics while the real consumer remains open.
         using (var consumer = PublishedSnapshot.Open(firstShimPath))
-        using (File.Open(firstShimPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
         {
-            fx.MergeWidgets(("W1", "alpha", 2));
-            var second = fx.Publish(keepShims: 1);
+            fx.RetentionDelete = path => string.Equals(path, firstShimPath, StringComparison.OrdinalIgnoreCase)
+                ? false
+                : PublisherFixture.DeleteForRetentionTest(path);
+            try
+            {
+                fx.MergeWidgets(("W1", "alpha", 2));
+                var second = fx.Publish(keepShims: 1);
 
-            Assert.Equal(SnapshotPublishStatus.Published, second.Status);
-            Assert.True(second.FilesSkippedByRetention >= 1);                       // the held shim
-            Assert.True(File.Exists(Path.Combine(fx.PublishDirectory, firstWidgetParquet)));
+                Assert.Equal(SnapshotPublishStatus.Published, second.Status);
+                Assert.True(second.FilesSkippedByRetention >= 1);                   // the held shim
+                Assert.True(File.Exists(Path.Combine(fx.PublishDirectory, firstWidgetParquet)));
 
-            // The mid-session consumer still queries its shim successfully.
-            using var query = consumer.Connection.CreateCommand();
-            query.CommandText = "SELECT \"Quantity\" FROM data.\"Widget\" WHERE \"_PrimaryKey\" = 'W1'";
-            Assert.Equal(1, Convert.ToInt32(query.ExecuteScalar()));
+                // The mid-session consumer still queries its shim successfully.
+                using var query = consumer.Connection.CreateCommand();
+                query.CommandText = "SELECT \"Quantity\" FROM data.\"Widget\" WHERE \"_PrimaryKey\" = 'W1'";
+                Assert.Equal(1, Convert.ToInt32(query.ExecuteScalar()));
+            }
+            finally
+            {
+                fx.RetentionDelete = null;
+            }
         }
 
         // Consumer gone → the next publish removes the old shim AND its parquet.

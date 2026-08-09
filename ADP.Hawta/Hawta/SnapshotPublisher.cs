@@ -329,7 +329,7 @@ public static class SnapshotPublisher
         var skipped = 0;
         foreach (var old in shims.Skip(options.KeepShims))
         {
-            if (TryDelete(old)) shimsDeleted++;
+            if (TryDelete(old, options.RetentionDelete)) shimsDeleted++;
             else skipped++;
         }
 
@@ -373,7 +373,7 @@ public static class SnapshotPublisher
             var name = Path.GetFileName(parquet);
             if (!PublishedParquetShape.IsMatch(name) || referenced.Contains(name))
                 continue;
-            if (TryDelete(parquet)) parquetDeleted++;
+            if (TryDelete(parquet, options.RetentionDelete)) parquetDeleted++;
             else skipped++;
         }
 
@@ -395,10 +395,12 @@ public static class SnapshotPublisher
 
     private static string EscapePath(string path) => path.Replace("'", "''");
 
-    private static bool TryDelete(string path)
+    private static bool TryDelete(string path, Func<string, bool>? retentionDelete = null)
     {
         try
         {
+            if (retentionDelete is not null)
+                return retentionDelete(path);
             File.Delete(path);
             return true;
         }
