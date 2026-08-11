@@ -74,7 +74,9 @@ export class FormFile implements FormElement {
   reset() {
     this.stopGlobalLoading();
     if (this.fileInput) this.fileInput.value = '';
+    delete this.form?.pendingRequests?.[this.name];
     this.fileName = '';
+    this.failedText = '';
     this.uploadState = 'idle';
   }
 
@@ -96,7 +98,11 @@ export class FormFile implements FormElement {
   private openFilePicker = () => {
     if (!this.fileInput) return;
 
-    this.reset(); // clears old file + state
+    // Only clear the input value, so re-picking the same file still fires a change event.
+    // Visible state is left alone until a file actually arrives — clearing it here would
+    // swap the upload failure for a "required" error while the picker is still open, and
+    // would wipe a valid selection if the user cancels.
+    this.fileInput.value = '';
     this.fileInput.click();
   };
 
@@ -110,6 +116,58 @@ export class FormFile implements FormElement {
 
   private getFailureText(locale: any, language: string) {
     return this.localization?.[language]?.failure || locale?.sharedFormLocales?.errors?.wildCard || 'Upload failed. Please try again.';
+  }
+
+  // Tagged so setUploadError knows the text came from the server and is safe to show,
+  // unlike a network-level "Failed to fetch".
+  private async responseError(response: Response) {
+    const error = new Error(await this.getResponseError(response));
+    (error as any).fromServer = true;
+
+    return error;
+  }
+
+  private async getResponseError(response: Response) {
+    const [locale, language] = this.form.getFormLocale();
+    const fallback = this.getFailureText(locale, language);
+
+    const raw = await response.text().catch(() => '');
+    if (!raw.trim()) return fallback;
+
+    const contentType = response.headers.get('content-type') || '';
+
+    if (contentType.includes('json') || raw.trimStart().startsWith('{')) {
+      try {
+        const parsed = JSON.parse(raw);
+        const message = parsed?.message ?? parsed?.Message;
+        const text = message?.body ?? message?.Body ?? message?.title ?? message?.Title;
+
+        if (typeof text === 'string' && text.trim()) return text.trim();
+      } catch {
+        // fall through to the localized fallback
+      }
+
+      return fallback;
+    }
+
+    // Blob storage answers with XML: <Error><Code>..</Code><Message>..</Message></Error>
+    const xmlMessage = raw.match(/<Message>([\s\S]*?)<\/Message>/)?.[1];
+    const text = (xmlMessage || raw).trim().split('\n')[0].trim();
+
+    return text && text.length <= 300 ? text : fallback;
+  }
+
+  private setUploadError(error: any) {
+    const [locale, language] = this.form.getFormLocale();
+    const message = typeof error === 'string' ? error : error?.fromServer ? error?.message : '';
+
+    delete this.form?.pendingRequests?.[this.name];
+    this.sasFiles = [];
+    this.uploadState = 'error';
+    this.failedText = message?.trim() || this.getFailureText(locale, language);
+    this.syncValue();
+
+    if (this.fileInput) this.fileInput.value = '';
   }
 
   private matchesAccept(value: File | string) {
@@ -146,7 +204,12 @@ export class FormFile implements FormElement {
   }
 
   private async requestSignedUpload(files: File[]) {
-    const formHeaders = { 'Content-Type': 'application/json' };
+    const [, language] = this.form.getFormLocale();
+
+    // Send an explicit single-value Accept-Language, matching every other backend call.
+    // Left unset, the browser sends its own weighted header (`en-US,en;q=0.9`) whenever more
+    // than one language is configured, which the backend cannot parse.
+    const formHeaders = { 'Content-Type': 'application/json', 'Accept-Language': language || 'en' };
     const recaptchaKey = this.form?.context.structure?.data?.recaptchaKey;
 
     if (grecaptcha && recaptchaKey) {
@@ -171,7 +234,7 @@ export class FormFile implements FormElement {
       method: this.signMethod || 'POST',
     });
 
-    if (!response.ok) throw new Error('Failed to get signed upload URL');
+    if (!response.ok) throw await this.responseError(response);
 
     const json = await response.json();
     const list = json?.entity || json?.Entity || json;
@@ -197,8 +260,8 @@ export class FormFile implements FormElement {
   }
 
   private async uploadToSignedUrl(files: File[], signedFiles: { uploadUrl: string; headers: Record<string, string> }[]) {
-    files?.forEach(async (file, idx) => {
-      try {
+    await Promise.all(
+      (files || []).map(async (file, idx) => {
         const response = await fetch(signedFiles?.[idx]?.uploadUrl, {
           method: 'PUT',
           headers: {
@@ -208,11 +271,10 @@ export class FormFile implements FormElement {
           },
           body: file,
         });
-        if (!response.ok) console.error(response);
-      } catch (error) {
-        console.error(error);
-      }
-    });
+
+        if (!response.ok) throw await this.responseError(response);
+      }),
+    );
   }
 
   private handleFileChange = async (event: Event) => {
@@ -233,7 +295,17 @@ export class FormFile implements FormElement {
     try {
       if (this.signUrl) {
         const signedFiles = await this.requestSignedUpload(limited);
-        this.form.pendingRequests[this.name] = async () => await this.uploadToSignedUrl(limited, signedFiles);
+
+        this.form.pendingRequests[this.name] = async () => {
+          try {
+            await this.uploadToSignedUrl(limited, signedFiles);
+          } catch (error) {
+            console.error(error);
+            this.setUploadError(error);
+            this.form.rerender({ inputName: this.name, rerenderForm: true });
+            throw error;
+          }
+        };
       }
 
       this.uploadState = 'success';
@@ -241,15 +313,9 @@ export class FormFile implements FormElement {
       limited.forEach(file => dataTransfer.items.add(file));
       target.files = dataTransfer.files;
     } catch (error) {
-      this.sasFiles = [];
       console.error(error);
       target.files = dataTransfer.files;
-      const [locale, language] = this.form.getFormLocale();
-      this.uploadState = 'error';
-      this.failedText = this.getFailureText(locale, language);
-      this.syncValue();
-      // @ts-ignore
-      if (this.fileInput) this.fileInput.value = [];
+      this.setUploadError(error);
     } finally {
       this.stopGlobalLoading();
     }
