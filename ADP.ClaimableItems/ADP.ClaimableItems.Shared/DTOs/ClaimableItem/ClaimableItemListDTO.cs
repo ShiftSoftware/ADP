@@ -1,4 +1,5 @@
 using ShiftSoftware.ADP.Models.Enums;
+using ShiftSoftware.ADP.Models.Vehicle;
 using ShiftSoftware.ShiftEntity.Model;
 using ShiftSoftware.ShiftEntity.Model.Dtos;
 using System.Text.Json.Serialization;
@@ -28,6 +29,9 @@ public class ClaimableItemListDTO : ShiftEntityListDTO
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public DurationType ActiveForDurationType { get; set; }
     public long? MaximumMileage { get; set; }
+
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public ServiceItemProgramRole ProgramRole { get; set; } = ServiceItemProgramRole.ScheduledService;
     public string? PackageCode { get; set; }
 
     [JsonConverter(typeof(JsonStringEnumConverter))]

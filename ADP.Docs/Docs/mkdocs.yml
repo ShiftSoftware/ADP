@@ -115,6 +115,7 @@ nav:
           - Warranty Date Shift: generated/Models/Vehicle/WarrantyDateShiftModel.md
           - Service Campaign: generated/Models/Vehicle/ServiceCampaignModel.md
           - Service Item: generated/Models/Vehicle/ServiceItemModel.md
+          - Service Item Program Role: generated/Models/Vehicle/ServiceItemProgramRole.md
           - Service Item Cost: generated/Models/Vehicle/ServiceItemCostModel.md
           - Item Claim: generated/Models/Vehicle/ItemClaimModel.md
           - Free Service Item Date Shift: generated/Models/Vehicle/FreeServiceItemDateShiftModel.md
@@ -251,6 +252,7 @@ nav:
               - Eligibility & Status:
                   - Status & Claimability: generated/Features/ServiceItems_Status.md
                   - Eligibility Filters: generated/Features/ServiceItems_Eligibility.md
+                  - Program Roles & Base Schedule Cap: generated/Features/ServiceItems_ProgramRole.md
                   - Ineligible Items with Existing Claims: generated/Features/ServiceItems_Ineligible.md
                   - Expiration & Activation Dates: generated/Features/ServiceItems_Expiration.md
               - Activation:

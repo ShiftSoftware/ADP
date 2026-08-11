@@ -22,6 +22,7 @@ Represents a claimable service item offered through a Service Campaign.
 | ActiveFor <div><strong>``int?``</strong></div> | The duration for which this service item remains active after activation. |
 | ActiveForDurationType <div><strong>``DurationType?``</strong></div> | The unit of time for the `ActiveFor` duration (e.g., Days, Months, Years). |
 | MaximumMileage <div><strong>``long?``</strong></div> | The maximum mileage up to which this service item is valid. Used in sequential validity calculations. |
+| ProgramRole <div><strong>``ServiceItemProgramRole``</strong></div> | Identifies the item's role in the service program. This catalog-only classification is orthogonal to whether an evaluated item is free or paid. Reward items keep all normal service-item lifecycle behavior but do not define the base scheduled-service mileage cap. |
 | PackageCode <div><strong>``string``</strong></div> | The package code that groups related service items together. |
 | UniqueReference <div><strong>``string``</strong></div> | A unique reference identifier for this service item. |
 | FixedCost <div><strong>``decimal?``</strong></div> | The fixed cost for this service item. Will be null if costing type is 'Per Model'. |

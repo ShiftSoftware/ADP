@@ -305,6 +305,7 @@ public static class ServiceItemTraceRenderer
         }
 
         AppendInputs(sb, t);
+        AppendBaseScheduleCap(sb, t.BaseScheduleCap);
         AppendEligibility(sb, t);
         AppendBuilds(sb, t.FreeBuilds, t.PaidBuilds);
         AppendExpansions(sb, t);
@@ -392,6 +393,9 @@ public static class ServiceItemTraceRenderer
             sb.AppendLine("</div>");
         }
 
+        sb.AppendLine("<h2>Base scheduled-service cap</h2>");
+        sb.AppendLine(BaseScheduleCapHtmlTable(t.BaseScheduleCap));
+
         sb.AppendLine("<h2>Eligibility decisions</h2>");
         sb.AppendLine(EligibilityHtmlTable(t.Eligibility, t.ResolvedNames));
 
@@ -437,6 +441,7 @@ public static class ServiceItemTraceRenderer
         var pp = t.PostProcessing ?? new ServiceItemTracePostProcessing();
         sb.AppendLine("<div class=\"summary\">");
         sb.AppendLine($"  <div class=\"pill\"><b>{elig.InputCount}</b>Catalog items</div>");
+        sb.AppendLine($"  <div class=\"pill\"><b>{t.BaseScheduleCap?.MaximumMileage?.ToString() ?? "none"}</b>Base schedule cap</div>");
         sb.AppendLine($"  <div class=\"pill ok\"><b>{elig.AcceptedCount}</b>Eligible</div>");
         sb.AppendLine($"  <div class=\"pill bad\"><b>{elig.RejectedCount}</b>Skipped</div>");
         sb.AppendLine($"  <div class=\"pill\"><b>{fr.Count}</b>Final list</div>");
@@ -486,6 +491,24 @@ public static class ServiceItemTraceRenderer
             {
                 var verdict = d.Verdict == EligibilityVerdict.Accepted ? "✅ Eligible" : $"❌ {FriendlyRejection(d.RejectionStage)}";
                 sb.AppendLine($"| {verdict} | {IdNameMd(d.ServiceItemID, d.Name)} | {Esc(d.Reason)} |");
+            }
+            sb.AppendLine();
+        }
+    }
+
+    static void AppendBaseScheduleCap(StringBuilder sb, ServiceItemTraceBaseScheduleCap cap)
+    {
+        sb.AppendLine("## Base scheduled-service cap");
+        sb.AppendLine($"Maximum mileage: **{cap?.MaximumMileage?.ToString() ?? "none"}**");
+        sb.AppendLine();
+        if (cap?.Decisions?.Count > 0)
+        {
+            sb.AppendLine("| Membership | Service item | Program role | Maximum mileage | Reason | ");
+            sb.AppendLine("|---|---|---|---|---|");
+            foreach (var d in cap.Decisions)
+            {
+                var reason = d.Included ? "contributor" : FriendlyBaseScheduleExclusion(d);
+                sb.AppendLine($"| {(d.Included ? "Included" : "Excluded")} | {IdNameMd(d.ServiceItemID, d.Name)} | {d.Item?.ProgramRole} | {d.Item?.MaximumMileage} | {Esc(reason)} |");
             }
             sb.AppendLine();
         }
@@ -604,6 +627,20 @@ public static class ServiceItemTraceRenderer
         return sb.ToString();
     }
 
+    static string BaseScheduleCapHtmlTable(ServiceItemTraceBaseScheduleCap cap)
+    {
+        if (cap?.Decisions == null || cap.Decisions.Count == 0)
+            return $"<p>Maximum mileage: <b>{HtmlEsc(cap?.MaximumMileage?.ToString() ?? "none")}</b>. No decisions recorded.</p>";
+
+        var sb = new StringBuilder();
+        sb.AppendLine($"<p>Maximum mileage: <b>{HtmlEsc(cap.MaximumMileage?.ToString() ?? "none")}</b></p>");
+        sb.AppendLine("<table><thead><tr><th>Membership</th><th>Service item</th><th>Program role</th><th>Maximum mileage</th><th>Reason</th></tr></thead><tbody>");
+        foreach (var d in cap.Decisions)
+            sb.AppendLine($"<tr class=\"{(d.Included ? "accepted" : "rejected")}\"><td>{(d.Included ? "Included" : "Excluded")}</td><td>{IdNameHtml(d.ServiceItemID, d.Name)}</td><td>{d.Item?.ProgramRole}</td><td>{d.Item?.MaximumMileage}</td><td>{HtmlEsc(d.Included ? "contributor" : FriendlyBaseScheduleExclusion(d))}</td></tr>");
+        sb.AppendLine("</tbody></table>");
+        return sb.ToString();
+    }
+
     static string SnapshotHtml(ServiceItemSnapshot s, ServiceItemTraceNameResolutions names)
     {
         if (s is null) return "";
@@ -614,6 +651,7 @@ public static class ServiceItemTraceRenderer
         parts.Add($"trigger: {FriendlyTrigger(s.CampaignActivationTrigger)}");
         if (s.CampaignActivationType != default) parts.Add($"rule: {FriendlyActivationType(s.CampaignActivationType)}");
         parts.Add($"validity: {FriendlyValidity(s.ValidityMode)}");
+        parts.Add($"program role: {s.ProgramRole}");
         parts.Add($"campaign window: {Date(s.CampaignStartDate)} → {Date(s.CampaignEndDate)}");
         if (s.ValidFrom.HasValue || s.ValidTo.HasValue) parts.Add($"valid: {Date(s.ValidFrom)} → {Date(s.ValidTo)}");
         if (s.MaximumMileage.HasValue) parts.Add($"max mileage: {s.MaximumMileage}");
@@ -727,6 +765,16 @@ public static class ServiceItemTraceRenderer
         EligibilityRejectionStage.CampaignWindow => "Outside campaign window / no matching trigger",
         EligibilityRejectionStage.VehicleApplicability => "Vehicle model not covered",
         _ => s.ToString(),
+    };
+
+    static string FriendlyBaseScheduleExclusion(ServiceItemBaseScheduleCapDecision decision) => decision.Reason switch
+    {
+        BaseScheduleCapDecisionReason.StaticFilter => $"static filter: {FriendlyRejection(decision.StaticRejectionStage)}",
+        BaseScheduleCapDecisionReason.ProgramRole => $"program role is {decision.Item?.ProgramRole}",
+        BaseScheduleCapDecisionReason.ActivationTrigger => "not warranty activated",
+        BaseScheduleCapDecisionReason.ValidityMode => "not relative to activation",
+        BaseScheduleCapDecisionReason.MissingMaximumMileage => "maximum mileage is missing",
+        _ => decision.Reason.ToString(),
     };
 
     static string FriendlyStatus(VehcileServiceItemStatuses s) => s switch

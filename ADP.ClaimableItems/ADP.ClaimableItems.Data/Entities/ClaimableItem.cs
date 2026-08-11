@@ -1,5 +1,6 @@
 using ShiftSoftware.ADP.ClaimableItems.Shared.Enums;
 using ShiftSoftware.ADP.Models.Enums;
+using ShiftSoftware.ADP.Models.Vehicle;
 using ShiftSoftware.ShiftEntity.Core;
 using ShiftSoftware.ShiftEntity.Core.Flags;
 using ShiftSoftware.ShiftEntity.Model.Replication;
@@ -13,6 +14,7 @@ public class ClaimableItem : ShiftEntity<ClaimableItem>, IEntityHasUniqueHash<Cl
     public string? PrintoutTitle { get; set; }
     public string? PrintoutDescription { get; set; }
     public long? MaximumMileage { get; set; }
+    public ServiceItemProgramRole ProgramRole { get; set; } = ServiceItemProgramRole.ScheduledService;
     public string? UniqueReference { get; set; }
     public string? PackageCode { get; set; }
     public ClaimableItemValidityMode ValidityMode { get; set; }

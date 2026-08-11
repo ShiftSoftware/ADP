@@ -72,6 +72,32 @@ public class ServiceItemTraceStepDefinitions
         Assert.Equal(count, _trace!.FinalResult.Count);
     }
 
+    [Then("the trace base schedule cap is {long}")]
+    public void ThenTraceBaseScheduleCapIs(long maximumMileage)
+    {
+        Assert.NotNull(_trace);
+        Assert.Equal(maximumMileage, _trace!.BaseScheduleCap.MaximumMileage);
+    }
+
+    [Then("the trace records {string} as a base schedule cap contributor")]
+    public void ThenTraceRecordsBaseScheduleContributor(string serviceItemId)
+    {
+        Assert.NotNull(_trace);
+        var decision = _trace!.BaseScheduleCap.Decisions.SingleOrDefault(x => x.ServiceItemID == serviceItemId);
+        Assert.NotNull(decision);
+        Assert.True(decision!.Included);
+    }
+
+    [Then("the trace excludes {string} from the base schedule cap because of {string}")]
+    public void ThenTraceRecordsBaseScheduleExclusion(string serviceItemId, string reason)
+    {
+        Assert.NotNull(_trace);
+        var decision = _trace!.BaseScheduleCap.Decisions.SingleOrDefault(x => x.ServiceItemID == serviceItemId);
+        Assert.NotNull(decision);
+        Assert.False(decision!.Included);
+        Assert.Equal(reason, decision.Reason.ToString());
+    }
+
     [Then("the trace has at least {int} stage timing")]
     [Then("the trace has at least {int} stage timings")]
     public void ThenTraceHasStageTimings(int min)

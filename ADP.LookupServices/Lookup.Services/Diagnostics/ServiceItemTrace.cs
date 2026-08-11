@@ -1,5 +1,6 @@
 using ShiftSoftware.ADP.Lookup.Services.Enums;
 using ShiftSoftware.ADP.Models.Enums;
+using ShiftSoftware.ADP.Models.Vehicle;
 using System;
 using System.Collections.Generic;
 
@@ -21,6 +22,7 @@ public class ServiceItemTrace
     public List<ServiceItemTraceStageTiming> StageTimings { get; set; } = new();
 
     public ServiceItemTraceEligibility Eligibility { get; set; } = new();
+    public ServiceItemTraceBaseScheduleCap BaseScheduleCap { get; set; } = new();
     public List<ServiceItemTraceBuild> FreeBuilds { get; set; } = new();
     public List<ServiceItemTracePaidBuild> PaidBuilds { get; set; } = new();
 
@@ -118,6 +120,32 @@ public enum EligibilityRejectionStage
     CustomCondition,
 }
 
+public class ServiceItemTraceBaseScheduleCap
+{
+    public long? MaximumMileage { get; set; }
+    public List<ServiceItemBaseScheduleCapDecision> Decisions { get; set; } = new();
+}
+
+public class ServiceItemBaseScheduleCapDecision
+{
+    public string ServiceItemID { get; set; }
+    public string Name { get; set; }
+    public bool Included { get; set; }
+    public BaseScheduleCapDecisionReason Reason { get; set; }
+    public EligibilityRejectionStage StaticRejectionStage { get; set; }
+    public ServiceItemSnapshot Item { get; set; }
+}
+
+public enum BaseScheduleCapDecisionReason
+{
+    None,
+    StaticFilter,
+    ProgramRole,
+    ActivationTrigger,
+    ValidityMode,
+    MissingMaximumMileage,
+}
+
 public class ServiceItemEligibilityDecision
 {
     public string ServiceItemID { get; set; }
@@ -144,6 +172,7 @@ public class ServiceItemSnapshot
     public long? CampaignID { get; set; }
     public long? VehicleInspectionTypeID { get; set; }
     public long? MaximumMileage { get; set; }
+    public ServiceItemProgramRole ProgramRole { get; set; }
     public int ModelCostCount { get; set; }
 }
 

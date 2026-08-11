@@ -90,6 +90,13 @@ public class ServiceItemModel : IIntegrationProps
     public long? MaximumMileage { get; set; }
 
     /// <summary>
+    /// Identifies the item's role in the service program. This catalog-only classification is
+    /// orthogonal to whether an evaluated item is free or paid. Reward items keep all normal
+    /// service-item lifecycle behavior but do not define the base scheduled-service mileage cap.
+    /// </summary>
+    public ServiceItemProgramRole ProgramRole { get; set; } = ServiceItemProgramRole.ScheduledService;
+
+    /// <summary>
     /// The package code that groups related service items together.
     /// </summary>
     public string PackageCode { get; set; }
@@ -208,7 +215,8 @@ public class ServiceItemEligibilityConditionScope
 [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))]
 public enum ServiceItemEligibilityConditionOperator
 {
-    ContainsAll
+    ContainsAll,
+    Equals
 }
 
 [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))]

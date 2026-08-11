@@ -53,6 +53,21 @@
         </MudItem>
 
         <MudItem Class="pt-2 pb-2" lg="4" md="4" sm="6" xs="12">
+            <MudSelectExtended OnlyValidateIfDirty="true"
+                               T="ShiftSoftware.ADP.Models.Vehicle.ServiceItemProgramRole"
+                               Label="Service Program Role"
+                               HelperText="Rewards keep normal free-item lifecycle behavior but do not define the base schedule mileage cap."
+                               AnchorOrigin="Origin.BottomCenter"
+                               @bind-Value="TheItem.ProgramRole"
+                               For="@(() => TheItem.ProgramRole)">
+                @foreach (var x in Enum.GetValues<ShiftSoftware.ADP.Models.Vehicle.ServiceItemProgramRole>())
+                {
+                    <MudSelectItem Value="@x">@x</MudSelectItem>
+                }
+            </MudSelectExtended>
+        </MudItem>
+
+        <MudItem Class="pt-2 pb-2" lg="4" md="4" sm="6" xs="12">
             <ShiftAutocomplete Label="Campaign"
                                TEntitySet="ShiftSoftware.ADP.ClaimableItems.Shared.DTOs.Campaign.CampaignListDTO"
                                EntitySet="@(CIOptions.Value.ResolvedRoutePrefix + "ServiceCampaign")"

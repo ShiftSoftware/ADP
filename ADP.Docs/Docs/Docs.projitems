@@ -57,6 +57,7 @@
     <None Include="$(MSBuildThisFileDirectory)docs\generated\Features\ServiceItems_Signature.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\generated\Features\ServiceItems_Status.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\generated\Features\ServiceItems_Trace.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\generated\Features\ServiceItems_ProgramRole.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\generated\Features\SupplyChainSaleInformation.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\generated\Features\VehicleAccessories.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\generated\Features\VehicleActivationOwnership.md" />
@@ -174,6 +175,7 @@
     <None Include="$(MSBuildThisFileDirectory)docs\generated\Models\Vehicle\ServiceCampaignModel.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\generated\Models\Vehicle\ServiceItemCostModel.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\generated\Models\Vehicle\ServiceItemModel.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\generated\Models\Vehicle\ServiceItemProgramRole.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\generated\Models\Vehicle\SSCAffectedVINModel.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\generated\Models\Vehicle\VehicleAccessoryModel.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\generated\Models\Vehicle\VehicleEntryModel.md" />
