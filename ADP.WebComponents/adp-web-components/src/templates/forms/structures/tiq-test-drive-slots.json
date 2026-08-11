@@ -1,0 +1,194 @@
+{
+  "data": {
+    "theme": "tiq",
+    "brandId": "kWrKw",
+    "recaptchaKey": "6Lehq6IpAAAAAETTDS2Zh60nHIT1a8oVkRtJ2WsA",
+    "requestUrl": "https://example.invalid/demo-only-submit-is-disabled",
+    "truncatedFields": {
+      "testDriveDate": ["date", " ", "time"],
+      "parse date: testDriveDate": "yyyy-MM-dd HH:mm"
+    },
+    "localization": {
+      "ku": {
+        "Form submitted successfully.": "فۆڕمەکە بە سەرکەوتوویی پێشکەش کرا."
+      },
+      "ar": {
+        "Form submitted successfully.": "تم إرسال النموذج بنجاح."
+      },
+      "en": {
+        "Form submitted successfully.": "Form submitted successfully."
+      }
+    }
+  },
+  "requiredContext": {
+    "vehicle": true,
+    "name": true,
+    "phone": true,
+    "companyBranchId": true,
+    "bookingSlot": true
+  },
+  "tag": "div",
+  "id": "container",
+  "children": [
+    {
+      "tag": "div",
+      "class": "section-title",
+      "children": {
+        "ku": "هەڵبژێرە",
+        "ar": "اختيار",
+        "en": "Choose"
+      }
+    },
+    {
+      "tag": "div",
+      "id": "vehicle-wrapper",
+      "children": [
+        {
+          "name": "vehicle",
+          "useNamedValue": true,
+          "vehicleIdQueryParam": "cId",
+          "vehicleApi": "https://tiq-publications-functions.azurewebsites.net/api/models",
+          "localization": {
+            "ku": {
+              "label": "ئۆتۆمبێل",
+              "placeholder": "تکایە ئۆتۆمبێلێک هەڵبژێرە",
+              "require": "ئەم بەشە پێویستە"
+            },
+            "ar": {
+              "label": "سيارة",
+              "placeholder": "الرجاء اختيار السيارة",
+              "require": "هذه الحقل مطلوب."
+            },
+            "en": {
+              "label": "Vehicle",
+              "placeholder": "Please select a Vehicle",
+              "require": "This field is required."
+            }
+          }
+        },
+        "vehicleImage"
+      ]
+    },
+    {
+      "tag": "hr"
+    },
+    {
+      "tag": "div",
+      "class": "section-title",
+      "children": {
+        "ku": "زانیاری پەیوەندیکردنت",
+        "ar": "معلومات الاتصال الخاصة بك",
+        "en": "Your Contact Information"
+      }
+    },
+    {
+      "tag": "div",
+      "id": "inputs_wrapper",
+      "children": [
+        {
+          "name": "name",
+          "localization": {
+            "ku": {
+              "label": "ناوی تەواو",
+              "placeholder": "ناوی تەواو",
+              "require": "ناوی تەواو پێویستە.",
+              "format": "ناوی تەواو دەبێت ٣ پیت یان زیاتر بێت."
+            },
+            "ar": {
+              "label": "الاسم الكامل",
+              "placeholder": "الاسم الكامل",
+              "require": "الاسم الكامل مطلوب.",
+              "format": "الاسم الكامل يجب أن يتكون من 3 أحرف أو أكثر."
+            },
+            "en": {
+              "label": "Full name",
+              "placeholder": "Full name",
+              "require": "Full name is required.",
+              "format": "Full Name must be 3 characters or more."
+            }
+          }
+        },
+        {
+          "name": "phone",
+          "countryCode": "IQ",
+          "localization": {
+            "ku": {
+              "label": "ژمارەی مۆبایل",
+              "placeholder": "ژمارەی مۆبایل",
+              "require": "ژمارەی مۆبایل پێویستە.",
+              "format": "فۆرماتی ژمارەی تەلەفۆن نادروستە."
+            },
+            "ar": {
+              "label": "رقم الهاتف",
+              "placeholder": "رقم الهاتف",
+              "require": "رقم الهاتف مطلوب.",
+              "format": "تنسيق رقم الهاتف غير صالح."
+            },
+            "en": {
+              "label": "Phone number",
+              "placeholder": "Phone number",
+              "require": "Phone number is Required.",
+              "format": "Phone number format is invalid."
+            }
+          }
+        },
+        {
+          "name": "companyBranchId",
+          "branchApi": "https://tiq-identity-server.azurewebsites.net/api/public/company-branch?brands=TYT",
+          "localization": {
+            "ku": {
+              "label": "بریکار",
+              "placeholder": "تکایە بریکار هەڵبژێرە",
+              "require": "بریکار پێویستە."
+            },
+            "ar": {
+              "label": "الفرع",
+              "placeholder": "الرجاء تحديد شركة مرخصة",
+              "require": "شركة مرخصة مطلوب."
+            },
+            "en": {
+              "label": "Branch",
+              "placeholder": "Please select an authorized company",
+              "require": "Branch is Required."
+            }
+          }
+        },
+        {
+          "name": "bookingSlot",
+          "calendarApi": "https://tiq-identity-server.azurewebsites.net/api/public/calendar",
+          "departmentPreference": ["showroom", "quick-service-center", "service-center"],
+          "daysAhead": 30,
+          "localization": {
+            "en": {
+              "label": "Preferred date & time",
+              "require": "Please choose a slot"
+            },
+            "ar": {
+              "label": "التاريخ المفضل",
+              "require": "الرجاء اختيار موعد"
+            },
+            "ku": {
+              "label": "بەرواری دیاریکراو",
+              "require": "تکایە کاتێک هەڵبژێرە"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "submit",
+      "id": "Submit",
+      "localization": {
+        "ku": {
+          "label": "ناردن"
+        },
+        "ar": {
+          "label": "إرسال"
+        },
+        "en": {
+          "label": "Submit"
+        }
+      }
+    }
+  ]
+}

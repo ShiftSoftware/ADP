@@ -150,6 +150,45 @@ export const getFormMappers = (extraMappers: Record<string, (prop: any) => any> 
 
   date: ({ props }) => <form-picker-input type="date" {...props} icon={<CalendarDaysIcon />} />,
 
+  /**
+   * Branch-aware booking slot. Unlike `time` below — which builds a fixed ladder
+   * from min/max/span and is therefore identical at every branch on every day —
+   * this asks the branch's own calendar what is actually open.
+   *
+   * The branch comes from the `companyBranchId` field's selected option, whose
+   * `meta` is the whole branch record, so company / department / brand need no
+   * extra configuration. Department resolves against the branch's own list
+   * rather than being hardcoded: asking a branch for a department it does not
+   * have returns an empty calendar.
+   */
+  bookingSlot: ({ form, language, props }) => {
+    form.addWatcher('companyBranchId');
+
+    const branchValue = form?.getValue('companyBranchId');
+    const branch = form.context['companyBranchIdList']?.find(item => item.value === branchValue)?.meta;
+
+    const departments: string[] = (branch?.Departments ?? []).map(d => d.IntegrationId).filter(Boolean);
+    const brands: string[] = (branch?.Brands ?? []).map(b => b.IntegrationId).filter(Boolean);
+
+    const preference: string[] = props?.departmentPreference ?? ['showroom'];
+    const departmentId = preference.find(d => departments.includes(d)) ?? departments[0] ?? '';
+
+    return (
+      <branch-slot-picker
+        {...props}
+        form={form}
+        key={props?.name}
+        language={language}
+        calendarApi={props?.calendarApi}
+        companyId={branch?.CompanyIntegrationId ?? ''}
+        branchId={branch?.IntegrationId ?? ''}
+        departmentId={props?.departmentId ?? departmentId}
+        brandId={props?.brandId ?? brands[0] ?? ''}
+        isDisabled={!branch}
+      />
+    );
+  },
+
   time: ({ language, props }) => {
     const fetcher: FormSelectFetcher = async (): Promise<FormSelectItem[]> => {
       const options: FormSelectItem[] = [];

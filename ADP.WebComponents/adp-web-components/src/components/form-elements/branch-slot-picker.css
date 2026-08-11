@@ -1,0 +1,21 @@
+/*
+  Trigger half of branch-slot-picker.
+
+  Deliberately almost empty: the trigger reuses `form-input-container`,
+  `form-input-style form-input-select` and `form-input-select-icon-container`
+  from form-inputs.css, so it is the same control as every other select in the
+  form and inherits focus, disabled and error styling for free.
+
+  The panel lives in branch-slot-dropdown.css — it is portaled to <body> and
+  cannot be reached from here.
+*/
+
+.branch-slot-trigger {
+  /* The value is chosen in the panel, never typed, so suppress the text caret
+     and any mobile keyboard affordance on a readonly input. */
+  @apply cursor-pointer caret-transparent;
+}
+
+.form-input-container.open .branch-slot-trigger {
+  @apply border-slate-600;
+}

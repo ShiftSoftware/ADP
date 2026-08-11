@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en" x-data="vacancyForm()" x-init="init()">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vacancy Application Form (general-form)</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+
+    <script nomodule src="/build/shift-components.js"></script>
+    <script type="module" src="/build/shift-components.esm.js"></script>
+
+    <!--
+      The host's own form theme. It targets the component through `::part()` off the
+      `.shift-form` class that the host puts on the element, so the page looks like the
+      real site without the component knowing anything about the host.
+    -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tca-website-form-assets@latest/style/form-themes.css" />
+  </head>
+
+  <body class="min-h-screen bg-base-200 flex flex-col items-center py-10 px-4 font-sans">
+    <!-- Floating setting -->
+    <div class="fixed bottom-4 right-4 z-50 group">
+      <button
+        type="button"
+        class="flex items-center justify-center w-11 h-11 rounded-full shadow-lg bg-white text-gray-600 border border-gray-200 group-hover:bg-indigo-500 group-hover:text-white transition-colors duration-200"
+        x-text="isDev ? '🧪' : '💻'"
+      ></button>
+
+      <div
+        class="absolute bottom-10 pb-4 right-0 w-[min(90vw,460px)] opacity-0 scale-95 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:scale-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-200 origin-bottom-right"
+      >
+        <div class="bg-white border border-gray-200 rounded-2xl shadow-xl p-4 space-y-4">
+          <div class="w-full flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl">
+            <h2 class="text-sm sm:text-base font-semibold text-gray-700 flex items-center gap-2">
+              <span>🧭</span> Mode:
+              <span class="font-bold text-indigo-600" x-text="isDev ? 'Development' : 'Production'"></span>
+            </h2>
+            <label class="cursor-pointer flex items-center">
+              <input type="checkbox" x-on:click="switchEnvironment" class="toggle toggle-primary ml-3" x-bind:checked="isDev" />
+            </label>
+          </div>
+
+          <div class="flex flex-col items-center gap-3">
+            <div class="text-center gap-3 flex items-center">
+              <h2 class="text-sm sm:text-base font-semibold text-gray-700">🌐 Language:</h2>
+              <div class="flex flex-wrap justify-center gap-2">
+                <template x-for="lang in languages" :key="lang">
+                  <button class="btn btn-outline btn-xs sm:btn-sm" @click="updateLang(lang)" x-text="lang.toUpperCase()"></button>
+                </template>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <h2 class="text-sm sm:text-base font-semibold text-gray-700">🧩 Structure URL:</h2>
+            <div class="flex gap-2">
+              <input type="text" class="input input-bordered input-sm flex-1 text-xs" x-model="structureUrl" />
+              <button class="btn btn-primary btn-sm" @click="applyStructureUrl">Load</button>
+            </div>
+            <p class="text-[11px] text-gray-500 leading-snug">
+              Reloads the page with <code>?structure=</code>. Drop a JSON next to this file and point it at
+              <code>./my-structure.json</code> to try structure changes without republishing the CDN package.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="w-full max-w-[800px] bg-base-100 shadow-xl rounded-2xl p-8">
+      <div class="flex items-center justify-between mb-4">
+        <a href="#" onclick="history.back()" class="btn btn-ghost text-blue-600 hover:bg-blue-50">← Back</a>
+        <h1 class="text-2xl font-extrabold text-gray-800">Vacancy Application</h1>
+        <div class="w-[80px]"></div>
+      </div>
+
+      <p class="text-center text-sm text-base-content/70 mb-6">
+        <code>general-form</code> driven entirely by a remote structure JSON — first/last name, email, phone, vacancy select (fetched live), message, and a resume upload.
+      </p>
+
+      <!--
+        `class="shift-form"` is what the host theme hooks its `::part()` rules onto.
+        Every field, label, validation message and endpoint comes from `structure-url`;
+        the mapper for the `vacancyId` field fetches its options from the `vacancyApi`
+        declared inside that JSON.
+      -->
+      <general-form
+        id="custom-component"
+        theme="test"
+        :is-dev="isDev"
+        class="shift-form w-full"
+        disable-scroll-to-top="true"
+        structure-url="https://cdn.jsdelivr.net/npm/tca-website-form-assets@latest/js/vacancies.json"
+      ></general-form>
+
+      <div class="mt-6 flex justify-center">
+        <button type="button" class="btn btn-primary btn-lg" @click="submitForm" x-bind:disabled="!componentRef || !isFormReady || isLoading">
+          <span x-show="isLoading || !isFormReady" class="loading loading-spinner loading-sm"></span>
+          Submit Form (External Button)
+        </button>
+      </div>
+    </div>
+
+    <script>
+      // Runs before the deferred module scripts, so the override lands before the
+      // component reads `structure-url` on load.
+      (function () {
+        const structure = new URLSearchParams(location.search).get('structure');
+        if (structure) document.getElementById('custom-component').setAttribute('structure-url', structure);
+      })();
+
+      function vacancyForm() {
+        return {
+          isDev: true,
+          isLoading: false,
+          componentRef: null,
+          isFormReady: false,
+          languages: ['en', 'ru'],
+          structureUrl: '',
+
+          init() {
+            this.componentRef = document.getElementById('custom-component');
+            this.structureUrl = this.componentRef.getAttribute('structure-url');
+
+            if (this.componentRef) {
+              this.componentRef.formReadyCallback = () => this.onFormReady();
+              this.componentRef.loadingChanges = loading => (this.isLoading = loading);
+              this.componentRef.successCallback = data => console.log('success callback', data);
+              this.componentRef.errorCallback = (error, message) => console.error('error callback', error, message);
+            }
+
+            // Prefill / lock fields the host already knows, e.g. when the applicant
+            // opened the form from a specific vacancy listing:
+            //
+            // this.componentRef.fields = {
+            //   vacancyId: { staticValue: '4' }, // static value is auto disabled
+            //   name: { defaultValue: 'Test' },
+            // };
+          },
+
+          updateLang(lang) {
+            if (this.componentRef) {
+              this.componentRef.language = lang;
+
+              const url = new URL(window.location.href);
+
+              url.searchParams.set('lang', lang);
+
+              window.history.replaceState({}, '', url.toString());
+            }
+          },
+
+          applyStructureUrl() {
+            // `structureUrl` is only read once, at load — reload rather than fake a re-init.
+            const url = new URL(window.location.href);
+
+            url.searchParams.set('structure', this.structureUrl);
+
+            window.location.href = url.toString();
+          },
+
+          switchEnvironment() {
+            // The form rewrites `production=true` to `production=false` in the
+            // structure's requestUrl whenever `is-dev` is set.
+            this.isDev = !this.isDev;
+          },
+
+          onFormReady() {
+            this.isFormReady = true;
+          },
+
+          submitForm() {
+            if (this.componentRef && this.isFormReady) {
+              this.componentRef.submit();
+            }
+          },
+        };
+      }
+    </script>
+  </body>
+</html>

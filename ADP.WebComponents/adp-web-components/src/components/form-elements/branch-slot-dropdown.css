@@ -1,0 +1,219 @@
+/*
+  Panel half of branch-slot-picker. Portaled onto document.body by shift-portal,
+  positioned by the picker through the CSS variables below — the same contract
+  shift-select-dropdown uses.
+
+  `all: initial` is required: the panel lives at the end of <body>, outside the
+  form's cascade, so it inherits nothing and must restate its own font.
+*/
+:host {
+  display: block;
+  all: initial !important;
+  font-family: inherit !important;
+  font-family: 'Noto Kufi Arabic', 'Nunito', Roboto, Arial, sans-serif !important;
+}
+
+*,
+:host * {
+  font-family: inherit !important;
+}
+
+.branch-slot-backdrop {
+  /* Only ever visible in sheet mode — see the phone block at the bottom. */
+  @apply pointer-events-none fixed inset-0 z-[9999998] hidden bg-black/40 opacity-0 transition-opacity duration-300;
+}
+
+.branch-slot-container {
+  @apply pointer-events-none fixed z-[9999999] flex flex-col overflow-auto rounded-md border bg-white opacity-0 shadow transition-opacity duration-300;
+  top: var(--branch-slot-top, 0);
+  left: var(--branch-slot-left, 0);
+  width: var(--branch-slot-width, auto);
+  /* The input can be narrower than a usable day strip. */
+  min-width: 288px;
+  /* Never taller than the room the picker measured. A constant here is what put
+     ~150px of panel off-screen in landscape and whenever the keyboard was up,
+     with no way to scroll to it. */
+  max-height: var(--branch-slot-max-height, 320px);
+}
+
+.branch-slot-container-open {
+  @apply pointer-events-auto opacity-100;
+}
+
+.branch-slot-section {
+  @apply flex flex-col gap-2 px-4 py-3;
+}
+
+.branch-slot-section + .branch-slot-section {
+  @apply border-t;
+}
+
+.branch-slot-head {
+  @apply flex items-center justify-between gap-3;
+}
+
+.branch-slot-sublabel {
+  @apply text-xs font-semibold uppercase tracking-wide text-slate-500;
+}
+
+.branch-slot-count {
+  @apply text-xs tabular-nums text-slate-400;
+}
+
+/* ---------- day strip ---------- */
+.branch-slot-strip {
+  @apply flex gap-2 overflow-x-auto py-[3px];
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  /* Stops a flick at either end from triggering PWA back-navigation or the
+     Android WebView pull-to-refresh. */
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
+  -webkit-overflow-scrolling: touch;
+}
+
+.branch-slot-strip::-webkit-scrollbar {
+  @apply hidden;
+}
+
+.branch-slot-day {
+  @apply flex w-[58px] shrink-0 select-none flex-col items-center gap-[1px] rounded-md border border-slate-300 px-1 pb-[7px] pt-[6px] transition duration-300 hover:bg-slate-100;
+  scroll-snap-align: start;
+}
+
+.branch-slot-day-selected {
+  @apply border-slate-600 bg-slate-200;
+}
+
+.branch-slot-day-dow {
+  @apply text-[10px] uppercase tracking-wide text-slate-500;
+}
+
+.branch-slot-day-num {
+  @apply text-[21px] font-semibold leading-tight tabular-nums;
+}
+
+.branch-slot-day-mon {
+  /* Reserved even when blank so chips with and without a month label align. */
+  @apply min-h-[14px] text-[10px] text-slate-500;
+}
+
+/* ---------- times ---------- */
+.branch-slot-times {
+  /* auto-fill beats flex-wrap here: a ragged final row reads as broken, and a
+     fixed column count overflows at 320px. */
+  @apply grid gap-2;
+  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+}
+
+.branch-slot-time {
+  @apply select-none rounded-md border border-slate-300 px-2 py-2 text-sm tabular-nums transition duration-300 hover:bg-slate-100;
+  /* 44px is the smallest reliably tappable target on iOS and Android. */
+  min-height: 44px;
+}
+
+.branch-slot-time-selected {
+  @apply border-slate-600 bg-slate-200;
+}
+
+/* ---------- states ---------- */
+.branch-slot-empty-container {
+  @apply flex h-[100px] items-center justify-center px-4 text-center text-slate-500;
+}
+
+.branch-slot-empty-container-error {
+  @apply text-red-500;
+}
+
+.branch-slot-retry {
+  @apply mt-2 rounded-md border border-slate-300 px-3 py-2 text-sm transition duration-300 hover:bg-slate-100;
+}
+
+.branch-slot-skeleton {
+  @apply animate-pulse rounded-md bg-slate-200;
+}
+
+.branch-slot-skeleton-day {
+  @apply h-[68px] w-[58px] shrink-0;
+}
+
+.branch-slot-skeleton-time {
+  @apply h-[44px];
+}
+
+/*
+  ---------- phones: sheet instead of anchor ----------
+
+  Anchoring a two-section panel to the input cannot work at this size. Even with
+  the height clamp above, the panel either eats the screen or shrinks to a few
+  scrollable rows, and it repositions under the user whenever the page moves.
+
+  So below 600px it stops being anchored and becomes a bottom sheet: full width,
+  thumb-reachable, above a scrim, with the page frozen behind it. The picker
+  detects the same breakpoint and skips positioning entirely, so the variables
+  above go unused here.
+*/
+@media (max-width: 599px) {
+  .branch-slot-backdrop {
+    @apply block;
+  }
+
+  .branch-slot-backdrop-open {
+    @apply pointer-events-auto opacity-100;
+  }
+
+  .branch-slot-container {
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    min-width: 0;
+    /* dvh keeps the sheet clear of the PWA/browser URL bar; vh is the fallback
+       for older WebViews. */
+    max-height: 78vh;
+    max-height: 78dvh;
+    @apply rounded-b-none rounded-t-2xl border-x-0 border-b-0 shadow-2xl transition-transform duration-300;
+    transform: translateY(100%);
+    /* Clear of the home indicator on notched devices. */
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    /* Opacity is doing nothing once the sheet slides; keep it painted. */
+    opacity: 1;
+  }
+
+  .branch-slot-container-open {
+    transform: translateY(0);
+  }
+
+  /* A grabber, so the sheet reads as dismissable rather than stuck. */
+  .branch-slot-container::before {
+    content: '';
+    @apply sticky top-0 z-10 mx-auto mt-2 h-1 w-9 shrink-0 rounded-full bg-slate-300;
+  }
+
+  /* Bigger touch targets and a roomier strip once the width is there. */
+  .branch-slot-section {
+    @apply px-4 py-4;
+  }
+
+  .branch-slot-day {
+    @apply w-[62px] pb-2 pt-2;
+  }
+
+  .branch-slot-times {
+    grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .branch-slot-container,
+  .branch-slot-backdrop,
+  .branch-slot-day,
+  .branch-slot-time {
+    @apply !transition-none;
+  }
+
+  .branch-slot-skeleton {
+    @apply !animate-none;
+  }
+}
