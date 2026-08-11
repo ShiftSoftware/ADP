@@ -565,13 +565,18 @@ public partial class VehicleServiceItemEvaluator
     {
         foreach (var condition in item.EligibilityConditions ?? Enumerable.Empty<ServiceItemEligibilityConditionModel>())
         {
+            var requiredValues = condition?.Values?.ToList();
+
             if (condition is null ||
                 condition.Operator != ServiceItemEligibilityConditionOperator.ContainsAll ||
+                (condition.ValueMatch != ServiceItemEligibilityConditionValueMatch.Exact &&
+                    condition.ValueMatch != ServiceItemEligibilityConditionValueMatch.EndsWith) ||
                 condition.Scope?.Selection != ServiceItemEligibilityConditionSelection.Latest ||
                 condition.Scope.Count is null ||
                 condition.Scope.Count <= 0 ||
-                condition.Values is null ||
-                !condition.Values.Any())
+                requiredValues is null ||
+                requiredValues.Count == 0 ||
+                requiredValues.Any(string.IsNullOrWhiteSpace))
                 return false;
 
             if (!string.Equals(condition.Field, "serviceHistory.laborLines.packageCode", StringComparison.Ordinal))
@@ -597,14 +602,29 @@ public partial class VehicleServiceItemEvaluator
             var packageCodes = latestInvoices
                 .SelectMany(x => x.Invoice.LaborLines ?? Enumerable.Empty<ShiftSoftware.ADP.Models.Service.OrderLaborLineModel>())
                 .Select(line => line.PackageCode)
-                .Where(code => !string.IsNullOrWhiteSpace(code));
+                .Where(code => !string.IsNullOrWhiteSpace(code))
+                .ToList();
 
-            if (condition.Values.Any(value => !packageCodes.Any(code => string.Equals(code, value, StringComparison.OrdinalIgnoreCase))))
+            if (requiredValues.Any(value =>
+                !packageCodes.Any(code => MatchesEligibilityValue(code, value, condition.ValueMatch))))
                 return false;
         }
 
         return true;
     }
+
+    private static bool MatchesEligibilityValue(
+        string actual,
+        string required,
+        ServiceItemEligibilityConditionValueMatch valueMatch) =>
+        valueMatch switch
+        {
+            ServiceItemEligibilityConditionValueMatch.Exact =>
+                string.Equals(actual, required, StringComparison.OrdinalIgnoreCase),
+            ServiceItemEligibilityConditionValueMatch.EndsWith =>
+                actual.EndsWith(required, StringComparison.OrdinalIgnoreCase),
+            _ => false,
+        };
 
     private static bool MatchesBrand(ServiceItemModel item, VehicleEntryModel vehicle) =>
         vehicle is null || item.BrandIDs is null || item.BrandIDs.Any(a => a == vehicle.BrandID);

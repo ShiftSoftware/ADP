@@ -117,7 +117,7 @@ Scenario: Service item with a matching Variant prefix is included even when Mode
 
 # --- Service-history eligibility conditions ---
 
-Scenario: Latest service history package codes satisfy an eligibility condition with exact case-insensitive matching
+Scenario: Omitted value matching preserves exact case-insensitive package-code matching
   Given vehicles in dealer stock:
     | VIN               | InvoiceDate | CompanyID | BranchID | BrandID |
     | 1FDKF37GXVEB34368 | 2026-01-15  | 1         | 10       | 1       |
@@ -134,6 +134,103 @@ Scenario: Latest service history package codes satisfy an eligibility condition 
   And the free service start date is "2026-01-15"
   When evaluating service items for "1FDKF37GXVEB34368" with language "en"
   Then service item "SI-HISTORY" is in the result
+
+Scenario: Package-code suffixes collectively satisfy an eligibility condition
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | BranchID | BrandID |
+    | 1FDKF37GXVEB34368 | 2026-01-15  | 1         | 10       | 1       |
+  And service items:
+    | ServiceItemID | Name                 | BrandID | ActiveForMonths |
+    | SI-HISTORY    | Follow-up inspection | 1       | 24              |
+  And service item "SI-HISTORY" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch | Selection | Count | ValuesJson         |
+    | serviceHistory.laborLines.packageCode | ContainsAll | EndsWith  | Latest    | 2     | [" 45K"," 50K"] |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode |
+    | 1         | 10       | INV-045       | JOB-045             | 2026-02-01  | MODEL 45K   |
+    | 1         | 10       | INV-050       | JOB-050             | 2026-03-01  | MODEL 50K   |
+  And the free service start date is "2026-01-15"
+  When evaluating service items for "1FDKF37GXVEB34368" with language "en"
+  Then service item "SI-HISTORY" is in the result
+
+Scenario: Package-code suffix matching is case-insensitive
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | BranchID | BrandID |
+    | 1FDKF37GXVEB34368 | 2026-01-15  | 1         | 10       | 1       |
+  And service items:
+    | ServiceItemID | Name                 | BrandID | ActiveForMonths |
+    | SI-HISTORY    | Follow-up inspection | 1       | 24              |
+  And service item "SI-HISTORY" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch | Selection | Count | ValuesJson |
+    | serviceHistory.laborLines.packageCode | ContainsAll | EndsWith  | Latest    | 1     | [" 50k"]  |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode |
+    | 1         | 10       | INV-050       | JOB-050             | 2026-03-01  | MODEL 50K   |
+  And the free service start date is "2026-01-15"
+  When evaluating service items for "1FDKF37GXVEB34368" with language "en"
+  Then service item "SI-HISTORY" is in the result
+
+Scenario Outline: A leading-space suffix does not match a longer numeric package code
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | BranchID | BrandID |
+    | 1FDKF37GXVEB34368 | 2026-01-15  | 1         | 10       | 1       |
+  And service items:
+    | ServiceItemID | Name                 | BrandID | ActiveForMonths |
+    | SI-HISTORY    | Follow-up inspection | 1       | 24              |
+  And service item "SI-HISTORY" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch | Selection | Count | ValuesJson |
+    | serviceHistory.laborLines.packageCode | ContainsAll | EndsWith  | Latest    | 1     | [" 50K"]  |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode  |
+    | 1         | 10       | INV-050       | JOB-050             | 2026-03-01  | <PackageCode> |
+  And the free service start date is "2026-01-15"
+  When evaluating service items for "1FDKF37GXVEB34368" with language "en"
+  Then service item "SI-HISTORY" is not in the result
+
+  Examples:
+    | PackageCode |
+    | 150K        |
+    | 250K        |
+
+Scenario Outline: Empty package-code suffixes fail closed
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | BranchID | BrandID |
+    | 1FDKF37GXVEB34368 | 2026-01-15  | 1         | 10       | 1       |
+  And service items:
+    | ServiceItemID | Name                 | BrandID | ActiveForMonths |
+    | SI-HISTORY    | Follow-up inspection | 1       | 24              |
+  And service item "SI-HISTORY" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch | Selection | Count | ValuesJson  |
+    | serviceHistory.laborLines.packageCode | ContainsAll | EndsWith  | Latest    | 1     | <ValuesJson> |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode |
+    | 1         | 10       | INV-050       | JOB-050             | 2026-03-01  | MODEL 50K   |
+  And the free service start date is "2026-01-15"
+  When evaluating service items for "1FDKF37GXVEB34368" with language "en"
+  Then service item "SI-HISTORY" is not in the result
+
+  Examples:
+    | ValuesJson |
+    | [""]       |
+    | ["   "]    |
+    | [null]     |
+
+Scenario: An unsupported package-code value match fails closed
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | BranchID | BrandID |
+    | 1FDKF37GXVEB34368 | 2026-01-15  | 1         | 10       | 1       |
+  And service items:
+    | ServiceItemID | Name                 | BrandID | ActiveForMonths |
+    | SI-HISTORY    | Follow-up inspection | 1       | 24              |
+  And service item "SI-HISTORY" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch | Selection | Count | ValuesJson |
+    | serviceHistory.laborLines.packageCode | ContainsAll | 99         | Latest    | 1     | [" 50K"]  |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode |
+    | 1         | 10       | INV-050       | JOB-050             | 2026-03-01  | MODEL 50K   |
+  And the free service start date is "2026-01-15"
+  When evaluating service items for "1FDKF37GXVEB34368" with language "en"
+  Then service item "SI-HISTORY" is not in the result
 
 Scenario: Latest service history package codes may occur in either order
   Given vehicles in dealer stock:

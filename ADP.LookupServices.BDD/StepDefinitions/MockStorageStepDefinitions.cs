@@ -5,6 +5,7 @@ using ShiftSoftware.ADP.Models.Customer;
 using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ADP.Models.TBP;
 using ShiftSoftware.ADP.Models.Vehicle;
+using System.Text.Json;
 
 namespace LookupServices.BDD.StepDefinitions;
 
@@ -37,6 +38,16 @@ public class MockStorageStepDefinitions
     {
         var value = GetOptionalString(row, column);
         return value is null ? null : long.Parse(value);
+    }
+
+    private static IEnumerable<string> GetEligibilityConditionValues(DataTableRow row)
+    {
+        if (row.ContainsKey("ValuesJson"))
+            return JsonSerializer.Deserialize<string[]>(row["ValuesJson"]) ?? [];
+
+        return row["Values"].Split(
+            ',',
+            StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
     }
 
     [Given("broker stock for brand {long}:")]
@@ -189,16 +200,24 @@ public class MockStorageStepDefinitions
         if (item is null)
             throw new ReqnrollException($"Service item '{serviceItemId}' was not configured.");
 
-        item.EligibilityConditions = dataTable.Rows.Select(row => new ServiceItemEligibilityConditionModel
+        item.EligibilityConditions = dataTable.Rows.Select(row =>
         {
-            Field = row["Field"],
-            Operator = Enum.Parse<ServiceItemEligibilityConditionOperator>(row["Operator"]),
-            Scope = new ServiceItemEligibilityConditionScope
+            var condition = new ServiceItemEligibilityConditionModel
             {
-                Selection = Enum.Parse<ServiceItemEligibilityConditionSelection>(row["Selection"]),
-                Count = int.Parse(row["Count"]),
-            },
-            Values = row["Values"].Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries),
+                Field = row["Field"],
+                Operator = Enum.Parse<ServiceItemEligibilityConditionOperator>(row["Operator"]),
+                Scope = new ServiceItemEligibilityConditionScope
+                {
+                    Selection = Enum.Parse<ServiceItemEligibilityConditionSelection>(row["Selection"]),
+                    Count = int.Parse(row["Count"]),
+                },
+                Values = GetEligibilityConditionValues(row),
+            };
+
+            if (row.ContainsKey("ValueMatch") && !string.IsNullOrWhiteSpace(row["ValueMatch"]))
+                condition.ValueMatch = Enum.Parse<ServiceItemEligibilityConditionValueMatch>(row["ValueMatch"]);
+
+            return condition;
         }).ToList();
     }
 

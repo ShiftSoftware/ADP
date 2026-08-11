@@ -110,7 +110,7 @@ namespace LookupServices.BDD.Features
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
         {
-            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/ServiceItems_Eligibility.feature.ndjson", 15);
+            return new global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages("Features/ServiceItems_Eligibility.feature.ndjson", 23);
         }
         
         async System.Threading.Tasks.ValueTask Xunit.IAsyncLifetime.InitializeAsync()
@@ -741,18 +741,15 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.FactAttribute(DisplayName="Latest service history package codes satisfy an eligibility condition with exact " +
-            "case-insensitive matching")]
+        [global::Xunit.FactAttribute(DisplayName="Omitted value matching preserves exact case-insensitive package-code matching")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Service Item Eligibility Filters")]
-        [global::Xunit.TraitAttribute("Description", "Latest service history package codes satisfy an eligibility condition with exact " +
-            "case-insensitive matching")]
-        public async global::System.Threading.Tasks.Task LatestServiceHistoryPackageCodesSatisfyAnEligibilityConditionWithExactCase_InsensitiveMatching()
+        [global::Xunit.TraitAttribute("Description", "Omitted value matching preserves exact case-insensitive package-code matching")]
+        public async global::System.Threading.Tasks.Task OmittedValueMatchingPreservesExactCase_InsensitivePackage_CodeMatching()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "9";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Latest service history package codes satisfy an eligibility condition with exact " +
-                    "case-insensitive matching", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Omitted value matching preserves exact case-insensitive package-code matching", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
 #line 120
@@ -844,16 +841,16 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             }
             await this.ScenarioCleanupAsync();
         }
-
-        [global::Xunit.FactAttribute(DisplayName="Latest service history package codes may occur in either order")]
+        
+        [global::Xunit.FactAttribute(DisplayName="Package-code suffixes collectively satisfy an eligibility condition")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Service Item Eligibility Filters")]
-        [global::Xunit.TraitAttribute("Description", "Latest service history package codes may occur in either order")]
-        public async global::System.Threading.Tasks.Task LatestServiceHistoryPackageCodesMayOccurInEitherOrder()
+        [global::Xunit.TraitAttribute("Description", "Package-code suffixes collectively satisfy an eligibility condition")]
+        public async global::System.Threading.Tasks.Task Package_CodeSuffixesCollectivelySatisfyAnEligibilityCondition()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "10";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Latest service history package codes may occur in either order", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Package-code suffixes collectively satisfy an eligibility condition", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
 #line 138
@@ -897,15 +894,17 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                 global::Reqnroll.Table table25 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Operator",
+                            "ValueMatch",
                             "Selection",
                             "Count",
-                            "Values"});
+                            "ValuesJson"});
                 table25.AddRow(new string[] {
                             "serviceHistory.laborLines.packageCode",
                             "ContainsAll",
+                            "EndsWith",
                             "Latest",
                             "2",
-                            "45,50"});
+                            "[\" 45K\",\" 50K\"]"});
 #line 145
   await testRunner.AndAsync("service item \"SI-HISTORY\" has eligibility conditions:", ((string)(null)), table25, "And ");
 #line hidden
@@ -919,17 +918,17 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                 table26.AddRow(new string[] {
                             "1",
                             "10",
-                            "INV-050",
-                            "JOB-050",
+                            "INV-045",
+                            "JOB-045",
                             "2026-02-01",
-                            "50"});
+                            "MODEL 45K"});
                 table26.AddRow(new string[] {
                             "1",
                             "10",
-                            "INV-045",
-                            "JOB-045",
+                            "INV-050",
+                            "JOB-050",
                             "2026-03-01",
-                            "45"});
+                            "MODEL 50K"});
 #line 148
   await testRunner.AndAsync("labor lines:", ((string)(null)), table26, "And ");
 #line hidden
@@ -945,16 +944,16 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             }
             await this.ScenarioCleanupAsync();
         }
-
-        [global::Xunit.FactAttribute(DisplayName="A later unrelated service makes a history-dependent item ineligible")]
+        
+        [global::Xunit.FactAttribute(DisplayName="Package-code suffix matching is case-insensitive")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Service Item Eligibility Filters")]
-        [global::Xunit.TraitAttribute("Description", "A later unrelated service makes a history-dependent item ineligible")]
-        public async global::System.Threading.Tasks.Task ALaterUnrelatedServiceMakesAHistory_DependentItemIneligible()
+        [global::Xunit.TraitAttribute("Description", "Package-code suffix matching is case-insensitive")]
+        public async global::System.Threading.Tasks.Task Package_CodeSuffixMatchingIsCase_Insensitive()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "11";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A later unrelated service makes a history-dependent item ineligible", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Package-code suffix matching is case-insensitive", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
 #line 156
@@ -998,15 +997,17 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                 global::Reqnroll.Table table29 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Operator",
+                            "ValueMatch",
                             "Selection",
                             "Count",
-                            "Values"});
+                            "ValuesJson"});
                 table29.AddRow(new string[] {
                             "serviceHistory.laborLines.packageCode",
                             "ContainsAll",
+                            "EndsWith",
                             "Latest",
-                            "2",
-                            "45,50"});
+                            "1",
+                            "[\" 50k\"]"});
 #line 163
   await testRunner.AndAsync("service item \"SI-HISTORY\" has eligibility conditions:", ((string)(null)), table29, "And ");
 #line hidden
@@ -1020,52 +1021,41 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                 table30.AddRow(new string[] {
                             "1",
                             "10",
-                            "INV-045",
-                            "JOB-045",
-                            "2026-01-01",
-                            "45"});
-                table30.AddRow(new string[] {
-                            "1",
-                            "10",
                             "INV-050",
                             "JOB-050",
-                            "2026-02-01",
-                            "50"});
-                table30.AddRow(new string[] {
-                            "1",
-                            "10",
-                            "INV-OTHER",
-                            "JOB-OTHER",
                             "2026-03-01",
-                            "60"});
+                            "MODEL 50K"});
 #line 166
   await testRunner.AndAsync("labor lines:", ((string)(null)), table30, "And ");
 #line hidden
-#line 171
+#line 169
   await testRunner.AndAsync("the free service start date is \"2026-01-15\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 172
+#line 170
   await testRunner.WhenAsync("evaluating service items for \"1FDKF37GXVEB34368\" with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 173
-  await testRunner.ThenAsync("service item \"SI-HISTORY\" is not in the result", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line 171
+  await testRunner.ThenAsync("service item \"SI-HISTORY\" is in the result", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
         }
-
-        [global::Xunit.FactAttribute(DisplayName="A package code containing a required value does not satisfy the condition")]
+        
+        [global::Xunit.TheoryAttribute(DisplayName="A leading-space suffix does not match a longer numeric package code")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Service Item Eligibility Filters")]
-        [global::Xunit.TraitAttribute("Description", "A package code containing a required value does not satisfy the condition")]
-        public async global::System.Threading.Tasks.Task APackageCodeContainingARequiredValueDoesNotSatisfyTheCondition()
+        [global::Xunit.TraitAttribute("Description", "A leading-space suffix does not match a longer numeric package code")]
+        [global::Xunit.InlineDataAttribute("150K", "12", new string[0])]
+        [global::Xunit.InlineDataAttribute("250K", "13", new string[0])]
+        public async global::System.Threading.Tasks.Task ALeading_SpaceSuffixDoesNotMatchALongerNumericPackageCode(string packageCode, string @__pickleIndex, string[] exampleTags)
         {
-            string[] tagsOfScenario = ((string[])(null));
+            string[] tagsOfScenario = exampleTags;
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            string pickleIndex = "12";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A package code containing a required value does not satisfy the condition", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            argumentsOfScenario.Add("PackageCode", packageCode);
+            string pickleIndex = @__pickleIndex;
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A leading-space suffix does not match a longer numeric package code", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 175
+#line 173
 this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -1087,7 +1077,7 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "1",
                             "10",
                             "1"});
-#line 176
+#line 174
   await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table31, "Given ");
 #line hidden
                 global::Reqnroll.Table table32 = new global::Reqnroll.Table(new string[] {
@@ -1100,22 +1090,24 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "Follow-up inspection",
                             "1",
                             "24"});
-#line 179
+#line 177
   await testRunner.AndAsync("service items:", ((string)(null)), table32, "And ");
 #line hidden
                 global::Reqnroll.Table table33 = new global::Reqnroll.Table(new string[] {
                             "Field",
                             "Operator",
+                            "ValueMatch",
                             "Selection",
                             "Count",
-                            "Values"});
+                            "ValuesJson"});
                 table33.AddRow(new string[] {
                             "serviceHistory.laborLines.packageCode",
                             "ContainsAll",
+                            "EndsWith",
                             "Latest",
-                            "2",
-                            "45,50"});
-#line 182
+                            "1",
+                            "[\" 50K\"]"});
+#line 180
   await testRunner.AndAsync("service item \"SI-HISTORY\" has eligibility conditions:", ((string)(null)), table33, "And ");
 #line hidden
                 global::Reqnroll.Table table34 = new global::Reqnroll.Table(new string[] {
@@ -1128,33 +1120,532 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                 table34.AddRow(new string[] {
                             "1",
                             "10",
+                            "INV-050",
+                            "JOB-050",
+                            "2026-03-01",
+                            string.Format("{0}", packageCode)});
+#line 183
+  await testRunner.AndAsync("labor lines:", ((string)(null)), table34, "And ");
+#line hidden
+#line 186
+  await testRunner.AndAsync("the free service start date is \"2026-01-15\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 187
+  await testRunner.WhenAsync("evaluating service items for \"1FDKF37GXVEB34368\" with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 188
+  await testRunner.ThenAsync("service item \"SI-HISTORY\" is not in the result", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.TheoryAttribute(DisplayName="Empty package-code suffixes fail closed")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Service Item Eligibility Filters")]
+        [global::Xunit.TraitAttribute("Description", "Empty package-code suffixes fail closed")]
+        [global::Xunit.InlineDataAttribute("[\"\"]", "14", new string[0])]
+        [global::Xunit.InlineDataAttribute("[\"   \"]", "15", new string[0])]
+        [global::Xunit.InlineDataAttribute("[null]", "16", new string[0])]
+        public async global::System.Threading.Tasks.Task EmptyPackage_CodeSuffixesFailClosed(string valuesJson, string @__pickleIndex, string[] exampleTags)
+        {
+            string[] tagsOfScenario = exampleTags;
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            argumentsOfScenario.Add("ValuesJson", valuesJson);
+            string pickleIndex = @__pickleIndex;
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Empty package-code suffixes fail closed", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 195
+this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+                global::Reqnroll.Table table35 = new global::Reqnroll.Table(new string[] {
+                            "VIN",
+                            "InvoiceDate",
+                            "CompanyID",
+                            "BranchID",
+                            "BrandID"});
+                table35.AddRow(new string[] {
+                            "1FDKF37GXVEB34368",
+                            "2026-01-15",
+                            "1",
+                            "10",
+                            "1"});
+#line 196
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table35, "Given ");
+#line hidden
+                global::Reqnroll.Table table36 = new global::Reqnroll.Table(new string[] {
+                            "ServiceItemID",
+                            "Name",
+                            "BrandID",
+                            "ActiveForMonths"});
+                table36.AddRow(new string[] {
+                            "SI-HISTORY",
+                            "Follow-up inspection",
+                            "1",
+                            "24"});
+#line 199
+  await testRunner.AndAsync("service items:", ((string)(null)), table36, "And ");
+#line hidden
+                global::Reqnroll.Table table37 = new global::Reqnroll.Table(new string[] {
+                            "Field",
+                            "Operator",
+                            "ValueMatch",
+                            "Selection",
+                            "Count",
+                            "ValuesJson"});
+                table37.AddRow(new string[] {
+                            "serviceHistory.laborLines.packageCode",
+                            "ContainsAll",
+                            "EndsWith",
+                            "Latest",
+                            "1",
+                            string.Format("{0}", valuesJson)});
+#line 202
+  await testRunner.AndAsync("service item \"SI-HISTORY\" has eligibility conditions:", ((string)(null)), table37, "And ");
+#line hidden
+                global::Reqnroll.Table table38 = new global::Reqnroll.Table(new string[] {
+                            "CompanyID",
+                            "BranchID",
+                            "InvoiceNumber",
+                            "OrderDocumentNumber",
+                            "InvoiceDate",
+                            "PackageCode"});
+                table38.AddRow(new string[] {
+                            "1",
+                            "10",
+                            "INV-050",
+                            "JOB-050",
+                            "2026-03-01",
+                            "MODEL 50K"});
+#line 205
+  await testRunner.AndAsync("labor lines:", ((string)(null)), table38, "And ");
+#line hidden
+#line 208
+  await testRunner.AndAsync("the free service start date is \"2026-01-15\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 209
+  await testRunner.WhenAsync("evaluating service items for \"1FDKF37GXVEB34368\" with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 210
+  await testRunner.ThenAsync("service item \"SI-HISTORY\" is not in the result", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.FactAttribute(DisplayName="An unsupported package-code value match fails closed")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Service Item Eligibility Filters")]
+        [global::Xunit.TraitAttribute("Description", "An unsupported package-code value match fails closed")]
+        public async global::System.Threading.Tasks.Task AnUnsupportedPackage_CodeValueMatchFailsClosed()
+        {
+            string[] tagsOfScenario = ((string[])(null));
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "17";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("An unsupported package-code value match fails closed", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 218
+this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+                global::Reqnroll.Table table39 = new global::Reqnroll.Table(new string[] {
+                            "VIN",
+                            "InvoiceDate",
+                            "CompanyID",
+                            "BranchID",
+                            "BrandID"});
+                table39.AddRow(new string[] {
+                            "1FDKF37GXVEB34368",
+                            "2026-01-15",
+                            "1",
+                            "10",
+                            "1"});
+#line 219
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table39, "Given ");
+#line hidden
+                global::Reqnroll.Table table40 = new global::Reqnroll.Table(new string[] {
+                            "ServiceItemID",
+                            "Name",
+                            "BrandID",
+                            "ActiveForMonths"});
+                table40.AddRow(new string[] {
+                            "SI-HISTORY",
+                            "Follow-up inspection",
+                            "1",
+                            "24"});
+#line 222
+  await testRunner.AndAsync("service items:", ((string)(null)), table40, "And ");
+#line hidden
+                global::Reqnroll.Table table41 = new global::Reqnroll.Table(new string[] {
+                            "Field",
+                            "Operator",
+                            "ValueMatch",
+                            "Selection",
+                            "Count",
+                            "ValuesJson"});
+                table41.AddRow(new string[] {
+                            "serviceHistory.laborLines.packageCode",
+                            "ContainsAll",
+                            "99",
+                            "Latest",
+                            "1",
+                            "[\" 50K\"]"});
+#line 225
+  await testRunner.AndAsync("service item \"SI-HISTORY\" has eligibility conditions:", ((string)(null)), table41, "And ");
+#line hidden
+                global::Reqnroll.Table table42 = new global::Reqnroll.Table(new string[] {
+                            "CompanyID",
+                            "BranchID",
+                            "InvoiceNumber",
+                            "OrderDocumentNumber",
+                            "InvoiceDate",
+                            "PackageCode"});
+                table42.AddRow(new string[] {
+                            "1",
+                            "10",
+                            "INV-050",
+                            "JOB-050",
+                            "2026-03-01",
+                            "MODEL 50K"});
+#line 228
+  await testRunner.AndAsync("labor lines:", ((string)(null)), table42, "And ");
+#line hidden
+#line 231
+  await testRunner.AndAsync("the free service start date is \"2026-01-15\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 232
+  await testRunner.WhenAsync("evaluating service items for \"1FDKF37GXVEB34368\" with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 233
+  await testRunner.ThenAsync("service item \"SI-HISTORY\" is not in the result", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.FactAttribute(DisplayName="Latest service history package codes may occur in either order")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Service Item Eligibility Filters")]
+        [global::Xunit.TraitAttribute("Description", "Latest service history package codes may occur in either order")]
+        public async global::System.Threading.Tasks.Task LatestServiceHistoryPackageCodesMayOccurInEitherOrder()
+        {
+            string[] tagsOfScenario = ((string[])(null));
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "18";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Latest service history package codes may occur in either order", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 235
+this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+                global::Reqnroll.Table table43 = new global::Reqnroll.Table(new string[] {
+                            "VIN",
+                            "InvoiceDate",
+                            "CompanyID",
+                            "BranchID",
+                            "BrandID"});
+                table43.AddRow(new string[] {
+                            "1FDKF37GXVEB34368",
+                            "2026-01-15",
+                            "1",
+                            "10",
+                            "1"});
+#line 236
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table43, "Given ");
+#line hidden
+                global::Reqnroll.Table table44 = new global::Reqnroll.Table(new string[] {
+                            "ServiceItemID",
+                            "Name",
+                            "BrandID",
+                            "ActiveForMonths"});
+                table44.AddRow(new string[] {
+                            "SI-HISTORY",
+                            "Follow-up inspection",
+                            "1",
+                            "24"});
+#line 239
+  await testRunner.AndAsync("service items:", ((string)(null)), table44, "And ");
+#line hidden
+                global::Reqnroll.Table table45 = new global::Reqnroll.Table(new string[] {
+                            "Field",
+                            "Operator",
+                            "Selection",
+                            "Count",
+                            "Values"});
+                table45.AddRow(new string[] {
+                            "serviceHistory.laborLines.packageCode",
+                            "ContainsAll",
+                            "Latest",
+                            "2",
+                            "45,50"});
+#line 242
+  await testRunner.AndAsync("service item \"SI-HISTORY\" has eligibility conditions:", ((string)(null)), table45, "And ");
+#line hidden
+                global::Reqnroll.Table table46 = new global::Reqnroll.Table(new string[] {
+                            "CompanyID",
+                            "BranchID",
+                            "InvoiceNumber",
+                            "OrderDocumentNumber",
+                            "InvoiceDate",
+                            "PackageCode"});
+                table46.AddRow(new string[] {
+                            "1",
+                            "10",
+                            "INV-050",
+                            "JOB-050",
+                            "2026-02-01",
+                            "50"});
+                table46.AddRow(new string[] {
+                            "1",
+                            "10",
+                            "INV-045",
+                            "JOB-045",
+                            "2026-03-01",
+                            "45"});
+#line 245
+  await testRunner.AndAsync("labor lines:", ((string)(null)), table46, "And ");
+#line hidden
+#line 249
+  await testRunner.AndAsync("the free service start date is \"2026-01-15\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 250
+  await testRunner.WhenAsync("evaluating service items for \"1FDKF37GXVEB34368\" with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 251
+  await testRunner.ThenAsync("service item \"SI-HISTORY\" is in the result", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.FactAttribute(DisplayName="A later unrelated service makes a history-dependent item ineligible")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Service Item Eligibility Filters")]
+        [global::Xunit.TraitAttribute("Description", "A later unrelated service makes a history-dependent item ineligible")]
+        public async global::System.Threading.Tasks.Task ALaterUnrelatedServiceMakesAHistory_DependentItemIneligible()
+        {
+            string[] tagsOfScenario = ((string[])(null));
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "19";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A later unrelated service makes a history-dependent item ineligible", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 253
+this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+                global::Reqnroll.Table table47 = new global::Reqnroll.Table(new string[] {
+                            "VIN",
+                            "InvoiceDate",
+                            "CompanyID",
+                            "BranchID",
+                            "BrandID"});
+                table47.AddRow(new string[] {
+                            "1FDKF37GXVEB34368",
+                            "2026-01-15",
+                            "1",
+                            "10",
+                            "1"});
+#line 254
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table47, "Given ");
+#line hidden
+                global::Reqnroll.Table table48 = new global::Reqnroll.Table(new string[] {
+                            "ServiceItemID",
+                            "Name",
+                            "BrandID",
+                            "ActiveForMonths"});
+                table48.AddRow(new string[] {
+                            "SI-HISTORY",
+                            "Follow-up inspection",
+                            "1",
+                            "24"});
+#line 257
+  await testRunner.AndAsync("service items:", ((string)(null)), table48, "And ");
+#line hidden
+                global::Reqnroll.Table table49 = new global::Reqnroll.Table(new string[] {
+                            "Field",
+                            "Operator",
+                            "Selection",
+                            "Count",
+                            "Values"});
+                table49.AddRow(new string[] {
+                            "serviceHistory.laborLines.packageCode",
+                            "ContainsAll",
+                            "Latest",
+                            "2",
+                            "45,50"});
+#line 260
+  await testRunner.AndAsync("service item \"SI-HISTORY\" has eligibility conditions:", ((string)(null)), table49, "And ");
+#line hidden
+                global::Reqnroll.Table table50 = new global::Reqnroll.Table(new string[] {
+                            "CompanyID",
+                            "BranchID",
+                            "InvoiceNumber",
+                            "OrderDocumentNumber",
+                            "InvoiceDate",
+                            "PackageCode"});
+                table50.AddRow(new string[] {
+                            "1",
+                            "10",
+                            "INV-045",
+                            "JOB-045",
+                            "2026-01-01",
+                            "45"});
+                table50.AddRow(new string[] {
+                            "1",
+                            "10",
+                            "INV-050",
+                            "JOB-050",
+                            "2026-02-01",
+                            "50"});
+                table50.AddRow(new string[] {
+                            "1",
+                            "10",
+                            "INV-OTHER",
+                            "JOB-OTHER",
+                            "2026-03-01",
+                            "60"});
+#line 263
+  await testRunner.AndAsync("labor lines:", ((string)(null)), table50, "And ");
+#line hidden
+#line 268
+  await testRunner.AndAsync("the free service start date is \"2026-01-15\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 269
+  await testRunner.WhenAsync("evaluating service items for \"1FDKF37GXVEB34368\" with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 270
+  await testRunner.ThenAsync("service item \"SI-HISTORY\" is not in the result", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.FactAttribute(DisplayName="A package code containing a required value does not satisfy the condition")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Service Item Eligibility Filters")]
+        [global::Xunit.TraitAttribute("Description", "A package code containing a required value does not satisfy the condition")]
+        public async global::System.Threading.Tasks.Task APackageCodeContainingARequiredValueDoesNotSatisfyTheCondition()
+        {
+            string[] tagsOfScenario = ((string[])(null));
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "20";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("A package code containing a required value does not satisfy the condition", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 272
+this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+                global::Reqnroll.Table table51 = new global::Reqnroll.Table(new string[] {
+                            "VIN",
+                            "InvoiceDate",
+                            "CompanyID",
+                            "BranchID",
+                            "BrandID"});
+                table51.AddRow(new string[] {
+                            "1FDKF37GXVEB34368",
+                            "2026-01-15",
+                            "1",
+                            "10",
+                            "1"});
+#line 273
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table51, "Given ");
+#line hidden
+                global::Reqnroll.Table table52 = new global::Reqnroll.Table(new string[] {
+                            "ServiceItemID",
+                            "Name",
+                            "BrandID",
+                            "ActiveForMonths"});
+                table52.AddRow(new string[] {
+                            "SI-HISTORY",
+                            "Follow-up inspection",
+                            "1",
+                            "24"});
+#line 276
+  await testRunner.AndAsync("service items:", ((string)(null)), table52, "And ");
+#line hidden
+                global::Reqnroll.Table table53 = new global::Reqnroll.Table(new string[] {
+                            "Field",
+                            "Operator",
+                            "Selection",
+                            "Count",
+                            "Values"});
+                table53.AddRow(new string[] {
+                            "serviceHistory.laborLines.packageCode",
+                            "ContainsAll",
+                            "Latest",
+                            "2",
+                            "45,50"});
+#line 279
+  await testRunner.AndAsync("service item \"SI-HISTORY\" has eligibility conditions:", ((string)(null)), table53, "And ");
+#line hidden
+                global::Reqnroll.Table table54 = new global::Reqnroll.Table(new string[] {
+                            "CompanyID",
+                            "BranchID",
+                            "InvoiceNumber",
+                            "OrderDocumentNumber",
+                            "InvoiceDate",
+                            "PackageCode"});
+                table54.AddRow(new string[] {
+                            "1",
+                            "10",
                             "INV-045",
                             "JOB-045",
                             "2026-02-01",
                             "450"});
-                table34.AddRow(new string[] {
+                table54.AddRow(new string[] {
                             "1",
                             "10",
                             "INV-050",
                             "JOB-050",
                             "2026-03-01",
                             "50"});
-#line 185
-  await testRunner.AndAsync("labor lines:", ((string)(null)), table34, "And ");
+#line 282
+  await testRunner.AndAsync("labor lines:", ((string)(null)), table54, "And ");
 #line hidden
-#line 189
+#line 286
   await testRunner.AndAsync("the free service start date is \"2026-01-15\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 190
+#line 287
   await testRunner.WhenAsync("evaluating service items for \"1FDKF37GXVEB34368\" with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 191
+#line 288
   await testRunner.ThenAsync("service item \"SI-HISTORY\" is not in the result", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
         }
-
+        
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Reqnroll", "3.0.0.0")]
         [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
         public class FixtureData : object, Xunit.IAsyncLifetime

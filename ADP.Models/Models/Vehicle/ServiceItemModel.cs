@@ -178,8 +178,15 @@ public class ServiceItemEligibilityConditionModel
     /// </summary>
     public string Field { get; set; }
 
-    /// <summary>The comparison to apply to the scoped field values.</summary>
+    /// <summary>How the configured values are combined across the scoped field values.</summary>
     public ServiceItemEligibilityConditionOperator Operator { get; set; }
+
+    /// <summary>
+    /// How each configured value is matched against a scoped field value. Defaults to exact
+    /// matching so catalogs created before this property was added keep their existing behavior.
+    /// </summary>
+    public ServiceItemEligibilityConditionValueMatch ValueMatch { get; set; } =
+        ServiceItemEligibilityConditionValueMatch.Exact;
 
     /// <summary>The values required by the comparison.</summary>
     public IEnumerable<string> Values { get; set; }
@@ -202,6 +209,13 @@ public class ServiceItemEligibilityConditionScope
 public enum ServiceItemEligibilityConditionOperator
 {
     ContainsAll
+}
+
+[System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))]
+public enum ServiceItemEligibilityConditionValueMatch
+{
+    Exact = 0,
+    EndsWith = 1
 }
 
 [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))]
