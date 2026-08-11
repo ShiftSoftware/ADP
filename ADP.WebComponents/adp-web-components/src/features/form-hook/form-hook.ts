@@ -281,6 +281,10 @@ export class FormHook<T> {
   };
 
   private submitForm = async () => {
+    // Set while a submit is already running and while a file field is uploading. Either way the
+    // form must not be sent yet, and a second click would submit alongside the first.
+    if (this.context.isLoading) return;
+
     try {
       this.isSubmitted = true;
       this.context.isLoading = true;

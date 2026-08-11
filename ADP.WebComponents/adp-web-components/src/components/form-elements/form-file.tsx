@@ -9,7 +9,7 @@ import { FormErrorMessage } from './components/form-error-message';
 import { LoaderIcon } from '~assets/loader-icon';
 import { TickIcon } from '~assets/tick-icon';
 import { AnyObjectSchema, mixed } from 'yup';
-import { meta, format, size, require, max } from '../forms/defaults/validation';
+import { meta, format, size, require, max, upload } from '../forms/defaults/validation';
 import { Grecaptcha } from '~lib/recaptcha';
 
 type UploadState = 'idle' | 'uploading' | 'success' | 'error';
@@ -277,6 +277,22 @@ export class FormFile implements FormElement {
     );
   }
 
+  // The signature is minted when the file is picked, but only spent when the form is submitted,
+  // and an applicant can sit on a long form for longer than the SAS lives. A stale signature is
+  // by far the likeliest failure here, so mint a fresh one and try once more before giving up.
+  // Re-signing also refreshes the blob/url written onto the File objects, and the payload is
+  // serialised after this runs, so the record always points at what was actually uploaded.
+  private async uploadWithRetry(files: File[], signedFiles: { uploadUrl: string; headers: Record<string, string> }[]) {
+    try {
+      await this.uploadToSignedUrl(files, signedFiles);
+    } catch (error) {
+      console.error(error);
+
+      const refreshed = await this.requestSignedUpload(files);
+      await this.uploadToSignedUrl(files, refreshed);
+    }
+  }
+
   private handleFileChange = async (event: Event) => {
     const target = event.target as HTMLInputElement;
     const fileList = Array.from(target?.files || []);
@@ -298,7 +314,7 @@ export class FormFile implements FormElement {
 
         this.form.pendingRequests[this.name] = async () => {
           try {
-            await this.uploadToSignedUrl(limited, signedFiles);
+            await this.uploadWithRetry(limited, signedFiles);
           } catch (error) {
             console.error(error);
             this.setUploadError(error);
@@ -323,6 +339,10 @@ export class FormFile implements FormElement {
 
   validate = (): AnyObjectSchema => {
     let validation = mixed().meta(meta(this.name));
+
+    // The record must never be created without its file, so an in-flight or failed upload blocks
+    // the whole form — including when this field is optional, where nothing else would stop it.
+    validation = validation.test(upload(this.name), upload(this.name), () => this.uploadState !== 'uploading' && this.uploadState !== 'error');
 
     if (this.required) {
       validation = validation.test(require(this.name), require(this.name), (value: File[]) => {

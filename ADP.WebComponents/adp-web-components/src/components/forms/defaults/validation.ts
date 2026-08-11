@@ -7,13 +7,14 @@ export const format = (name: string) => `${name}-format`;
 export const require = (name: string) => `${name}-require`;
 export const size = (name: string) => `${name}-size`;
 export const max = (name: string) => `${name}-max`;
+export const upload = (name: string) => `${name}-upload`;
 export const placeholder = (name: string) => `${name}-placeholder`;
 
 export const meta = (name): FormInputMeta => ({ label: label(name), placeholder: placeholder(name) });
 
 export const condition = (name: string) => `$${name}Required`;
 
-export const y = { label, format, require, condition, placeholder, meta, size, max };
+export const y = { label, format, require, condition, placeholder, meta, size, max, upload };
 
 export const getFormValidations = (extraFields: Record<string, Schema> = {}) => {
   return object({

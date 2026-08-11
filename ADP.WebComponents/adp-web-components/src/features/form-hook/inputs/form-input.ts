@@ -28,6 +28,7 @@ export const getInputLocalization = (context: any, meta: FormInputMeta, errorMes
 
   if (errorMessage?.endsWith(y.format(''))) localizationErrorMessage = context?.localization?.[language]?.format;
   if (errorMessage?.endsWith(y.size(''))) localizationErrorMessage = context?.localization?.[language]?.size;
+  else if (errorMessage?.endsWith(y.upload(''))) localizationErrorMessage = context?.localization?.[language]?.failure;
   else if (errorMessage?.endsWith(y.require(''))) localizationErrorMessage = context?.localization?.[language]?.require;
   else if (errorMessage === 'minMessage') localizationErrorMessage = context?.withSlots(context?.localization?.[language]?.minMessage || 'Min date is $minDate$');
   else if (errorMessage === 'maxMessage') localizationErrorMessage = context?.withSlots(context?.localization?.[language]?.maxMessage || 'Max date is $maxDate$');

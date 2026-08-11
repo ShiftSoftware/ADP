@@ -277,13 +277,8 @@ export const onFormSubmit = async <T>({ context, formValues, middleware, afterSu
       requestEndpoint = middlewareRes.url;
     }
 
-    Object.values(context.form.pendingRequests).forEach(async req => {
-      try {
-        await req();
-      } catch (error) {
-        console.error(error);
-      }
-    });
+    // Deferred uploads must land before the record is created — a failure here aborts the submit.
+    await Promise.all(Object.values(context.form.pendingRequests).map(req => req()));
 
     const response = await fetch(requestEndpoint, {
       headers: header,
