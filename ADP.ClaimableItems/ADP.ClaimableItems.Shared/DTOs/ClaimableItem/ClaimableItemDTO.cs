@@ -1,5 +1,6 @@
 using ShiftSoftware.ADP.ClaimableItems.Shared.Enums;
 using ShiftSoftware.ADP.Models.Enums;
+using ShiftSoftware.ADP.Models.Vehicle;
 using ShiftSoftware.ShiftEntity.Model.Dtos;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
@@ -15,6 +16,9 @@ public class ClaimableItemDTO : ShiftEntityViewAndUpsertDTO
     public string? PrintoutTitle { get; set; }
     public string? PrintoutDescription { get; set; }
     public long? MaximumMileage { get; set; }
+
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public ServiceItemProgramRole ProgramRole { get; set; } = ServiceItemProgramRole.ScheduledService;
     public string? UniqueReference { get; set; }
     public string? PackageCode { get; set; }
     public ClaimableItemCostingType CostingType { get; set; }

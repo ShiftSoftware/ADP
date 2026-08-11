@@ -7,6 +7,7 @@ using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ADP.Models.Vehicle;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -36,7 +37,7 @@ public partial class VehicleServiceItemEvaluator
     }
 
     /// <summary>
-    /// Evaluates the service items available for a vehicle. Reads as a 7-step recipe:
+    /// Evaluates the service items available for a vehicle. Reads as an 8-step recipe:
     /// load catalog → resolve activation mode → build eligible free + paid items →
     /// expand by trigger (warranty rolling expiry, vehicle inspection, manual VIN entry) →
     /// determine status & claimability → post-process (VIN exclusion, ineligible pickup,
@@ -55,7 +56,7 @@ public partial class VehicleServiceItemEvaluator
         VehicleBrokerSaleInformation brokerSaleInformation = null)
     {
         var requestedStartDate = freeServiceStartDate;
-        var serviceItems = await LoadServiceItemCatalog();
+        var serviceItems = (await LoadServiceItemCatalog()).ToList();
         (freeServiceStartDate, var showingInactivatedItems) = ResolveActivationMode(vehicle, freeServiceStartDate);
 
         // De facto date (earliest non-deleted ItemClaim.ClaimDate) — same computation
@@ -77,8 +78,10 @@ public partial class VehicleServiceItemEvaluator
             Trace.Note($"FreeServiceStartDate matches DeFactoServiceStartDate ({deFactoServiceStartDate:yyyy-MM-dd}) — claim-anchored fallback is the most likely source (broker-without-invoice + previously claimed). A coincidental match with broker/activation/sale date is also possible.");
 
         var result = new List<VehicleServiceItemDTO>();
+        long? baseScheduleMaximumMileage;
 
-        using (Trace.Stage("Eligibility"))            result.AddRange(BuildEligibleFreeItems(serviceItems, vehicle, ownership, freeServiceStartDate, languageCode));
+        using (Trace.Stage("BaseScheduleCap"))        baseScheduleMaximumMileage = DeriveBaseScheduleMaximumMileage(serviceItems, vehicle, ownership, freeServiceStartDate);
+        using (Trace.Stage("Eligibility"))            result.AddRange(BuildEligibleFreeItems(serviceItems, vehicle, ownership, freeServiceStartDate, languageCode, baseScheduleMaximumMileage));
         using (Trace.Stage("PaidItems"))              result.AddRange(BuildPaidItems(languageCode));
         using (Trace.Stage("WarrantyRollingExpiry"))  ApplyWarrantyRollingExpiry(result, freeServiceStartDate);
         using (Trace.Stage("InspectionExpansion"))    ApplyVehicleInspectionExpansion(result);
@@ -135,9 +138,10 @@ public partial class VehicleServiceItemEvaluator
         VehicleEntryModel vehicle,
         VehicleOwnership ownership,
         DateTime? freeServiceStartDate,
-        string languageCode)
+        string languageCode,
+        long? baseScheduleMaximumMileage)
     {
-        var eligible = FilterEligibleServiceItems(serviceItems, vehicle, ownership, freeServiceStartDate)
+        var eligible = FilterEligibleServiceItems(serviceItems, vehicle, ownership, freeServiceStartDate, baseScheduleMaximumMileage)
             .OrderByDescending(x => x.MaximumMileage.HasValue)
             .ThenBy(x => x.MaximumMileage);
 
@@ -540,12 +544,82 @@ public partial class VehicleServiceItemEvaluator
     // ===== Eligibility predicates =====
 
     /// <summary>
+    /// Derives the vehicle's base scheduled-service mileage cap from catalog items that pass
+    /// the ordinary static filters. Custom eligibility is deliberately not evaluated here:
+    /// conditions may consume the cap, so making them contributors would introduce an ordering
+    /// dependency. Program role affects only this derivation and no downstream item lifecycle.
+    /// </summary>
+    private long? DeriveBaseScheduleMaximumMileage(
+        IEnumerable<ServiceItemModel> serviceItems,
+        VehicleEntryModel vehicle,
+        VehicleOwnership ownership,
+        DateTime? freeServiceStartDate)
+    {
+        long? maximumMileage = null;
+
+        foreach (var item in serviceItems ?? Enumerable.Empty<ServiceItemModel>())
+        {
+            var staticStage = EvaluateStaticItemEligibility(item, vehicle, ownership, freeServiceStartDate);
+            if (staticStage != EligibilityRejectionStage.None)
+            {
+                Trace.RecordBaseScheduleCapDecision(item, included: false, BaseScheduleCapDecisionReason.StaticFilter, staticStage);
+                continue;
+            }
+
+            if (item.ProgramRole != ServiceItemProgramRole.ScheduledService)
+            {
+                Trace.RecordBaseScheduleCapDecision(item, included: false, BaseScheduleCapDecisionReason.ProgramRole);
+                continue;
+            }
+
+            if (item.CampaignActivationTrigger != ClaimableItemCampaignActivationTrigger.WarrantyActivation)
+            {
+                Trace.RecordBaseScheduleCapDecision(item, included: false, BaseScheduleCapDecisionReason.ActivationTrigger);
+                continue;
+            }
+
+            if (item.ValidityMode != ClaimableItemValidityMode.RelativeToActivation)
+            {
+                Trace.RecordBaseScheduleCapDecision(item, included: false, BaseScheduleCapDecisionReason.ValidityMode);
+                continue;
+            }
+
+            if (item.MaximumMileage is null)
+            {
+                Trace.RecordBaseScheduleCapDecision(item, included: false, BaseScheduleCapDecisionReason.MissingMaximumMileage);
+                continue;
+            }
+
+            maximumMileage = !maximumMileage.HasValue || item.MaximumMileage.Value > maximumMileage.Value
+                ? item.MaximumMileage
+                : maximumMileage;
+            Trace.RecordBaseScheduleCapDecision(item, included: true, BaseScheduleCapDecisionReason.None);
+        }
+
+        Trace.RecordBaseScheduleCap(maximumMileage);
+        return maximumMileage;
+    }
+
+    /// <summary>
     /// Per-item eligibility evaluation. Returns <see cref="EligibilityRejectionStage.None"/>
     /// for accepted items, or the first failing stage (predicates are checked in declaration
     /// order). Reason strings are formatted separately by the trace collector — this method
     /// stays predicate-only and allocation-free.
     /// </summary>
     private EligibilityRejectionStage EvaluateItemEligibility(
+        ServiceItemModel item,
+        VehicleEntryModel vehicle,
+        VehicleOwnership ownership,
+        DateTime? freeServiceStartDate,
+        long? baseScheduleMaximumMileage)
+    {
+        var staticStage = EvaluateStaticItemEligibility(item, vehicle, ownership, freeServiceStartDate);
+        if (staticStage != EligibilityRejectionStage.None) return staticStage;
+        if (!MatchesEligibilityConditions(item, baseScheduleMaximumMileage)) return EligibilityRejectionStage.CustomCondition;
+        return EligibilityRejectionStage.None;
+    }
+
+    private EligibilityRejectionStage EvaluateStaticItemEligibility(
         ServiceItemModel item,
         VehicleEntryModel vehicle,
         VehicleOwnership ownership,
@@ -557,60 +631,89 @@ public partial class VehicleServiceItemEvaluator
         if (!MatchesCountry(item, ownership)) return EligibilityRejectionStage.Country;
         if (!IsWithinCampaignWindow(item, freeServiceStartDate)) return EligibilityRejectionStage.CampaignWindow;
         if (!IsApplicableToVehicle(item, vehicle)) return EligibilityRejectionStage.VehicleApplicability;
-        if (!MatchesEligibilityConditions(item)) return EligibilityRejectionStage.CustomCondition;
         return EligibilityRejectionStage.None;
     }
 
-    private bool MatchesEligibilityConditions(ServiceItemModel item)
+    private bool MatchesEligibilityConditions(ServiceItemModel item, long? baseScheduleMaximumMileage)
     {
         foreach (var condition in item.EligibilityConditions ?? Enumerable.Empty<ServiceItemEligibilityConditionModel>())
         {
-            var requiredValues = condition?.Values?.ToList();
-
-            if (condition is null ||
-                condition.Operator != ServiceItemEligibilityConditionOperator.ContainsAll ||
-                (condition.ValueMatch != ServiceItemEligibilityConditionValueMatch.Exact &&
-                    condition.ValueMatch != ServiceItemEligibilityConditionValueMatch.EndsWith) ||
-                condition.Scope?.Selection != ServiceItemEligibilityConditionSelection.Latest ||
-                condition.Scope.Count is null ||
-                condition.Scope.Count <= 0 ||
-                requiredValues is null ||
-                requiredValues.Count == 0 ||
-                requiredValues.Any(string.IsNullOrWhiteSpace))
+            if (condition is null)
                 return false;
 
-            if (!string.Equals(condition.Field, "serviceHistory.laborLines.packageCode", StringComparison.Ordinal))
-                return false;
+            if (string.Equals(condition.Field, "serviceHistory.laborLines.packageCode", StringComparison.Ordinal))
+            {
+                if (!MatchesServiceHistoryCondition(condition))
+                    return false;
+                continue;
+            }
 
-            var latestInvoices = VehicleServiceHistoryEvaluator.GetInvoices(companyDataAggregate, ConsistencyLevels.Strong)
-                .Select(invoice => new
-                {
-                    Invoice = invoice,
-                    ServiceDate = new[]
-                    {
-                        invoice.LaborLines?.Max(line => line.InvoiceDate),
-                        invoice.PartLines?.Max(line => line.InvoiceDate),
-                    }.Max()
-                })
-                .OrderByDescending(x => x.ServiceDate)
-                .Take(condition.Scope.Count.Value)
-                .ToList();
+            if (string.Equals(condition.Field, "serviceItems.baseSchedule.maximumMileage", StringComparison.Ordinal))
+            {
+                if (!MatchesBaseScheduleMaximumMileageCondition(condition, baseScheduleMaximumMileage))
+                    return false;
+                continue;
+            }
 
-            if (latestInvoices.Count != condition.Scope.Count.Value)
-                return false;
-
-            var packageCodes = latestInvoices
-                .SelectMany(x => x.Invoice.LaborLines ?? Enumerable.Empty<ShiftSoftware.ADP.Models.Service.OrderLaborLineModel>())
-                .Select(line => line.PackageCode)
-                .Where(code => !string.IsNullOrWhiteSpace(code))
-                .ToList();
-
-            if (requiredValues.Any(value =>
-                !packageCodes.Any(code => MatchesEligibilityValue(code, value, condition.ValueMatch))))
-                return false;
+            return false;
         }
 
         return true;
+    }
+
+    private bool MatchesServiceHistoryCondition(ServiceItemEligibilityConditionModel condition)
+    {
+        var requiredValues = condition.Values?.ToList();
+        if (condition.Operator != ServiceItemEligibilityConditionOperator.ContainsAll ||
+            (condition.ValueMatch != ServiceItemEligibilityConditionValueMatch.Exact &&
+                condition.ValueMatch != ServiceItemEligibilityConditionValueMatch.EndsWith) ||
+            condition.Scope?.Selection != ServiceItemEligibilityConditionSelection.Latest ||
+            condition.Scope.Count is null ||
+            condition.Scope.Count <= 0 ||
+            requiredValues is null ||
+            requiredValues.Count == 0 ||
+            requiredValues.Any(string.IsNullOrWhiteSpace))
+            return false;
+
+        var latestInvoices = VehicleServiceHistoryEvaluator.GetInvoices(companyDataAggregate, ConsistencyLevels.Strong)
+            .Select(invoice => new
+            {
+                Invoice = invoice,
+                ServiceDate = new[]
+                {
+                    invoice.LaborLines?.Max(line => line.InvoiceDate),
+                    invoice.PartLines?.Max(line => line.InvoiceDate),
+                }.Max()
+            })
+            .OrderByDescending(x => x.ServiceDate)
+            .Take(condition.Scope.Count.Value)
+            .ToList();
+
+        if (latestInvoices.Count != condition.Scope.Count.Value)
+            return false;
+
+        var packageCodes = latestInvoices
+            .SelectMany(x => x.Invoice.LaborLines ?? Enumerable.Empty<ShiftSoftware.ADP.Models.Service.OrderLaborLineModel>())
+            .Select(line => line.PackageCode)
+            .Where(code => !string.IsNullOrWhiteSpace(code))
+            .ToList();
+
+        return requiredValues.All(value =>
+            packageCodes.Any(code => MatchesEligibilityValue(code, value, condition.ValueMatch)));
+    }
+
+    private static bool MatchesBaseScheduleMaximumMileageCondition(
+        ServiceItemEligibilityConditionModel condition,
+        long? baseScheduleMaximumMileage)
+    {
+        var values = condition.Values?.ToList();
+        return condition.Operator == ServiceItemEligibilityConditionOperator.Equals &&
+            condition.ValueMatch == ServiceItemEligibilityConditionValueMatch.Exact &&
+            condition.Scope is null &&
+            values is { Count: 1 } &&
+            long.TryParse(values[0], NumberStyles.None, CultureInfo.InvariantCulture, out var requiredMileage) &&
+            requiredMileage > 0 &&
+            baseScheduleMaximumMileage == requiredMileage;
     }
 
     private static bool MatchesEligibilityValue(
@@ -700,13 +803,14 @@ public partial class VehicleServiceItemEvaluator
         IEnumerable<ServiceItemModel> serviceItems,
         VehicleEntryModel vehicle,
         VehicleOwnership ownership,
-        DateTime? freeServiceStartDate)
+        DateTime? freeServiceStartDate,
+        long? baseScheduleMaximumMileage)
     {
         Trace.RecordEligibilityInputCount(serviceItems?.Count() ?? 0);
 
         foreach (var item in serviceItems ?? Enumerable.Empty<ServiceItemModel>())
         {
-            var stage = EvaluateItemEligibility(item, vehicle, ownership, freeServiceStartDate);
+            var stage = EvaluateItemEligibility(item, vehicle, ownership, freeServiceStartDate, baseScheduleMaximumMileage);
             Trace.RecordEligibilityDecision(item, stage, vehicle, ownership);
             if (stage == EligibilityRejectionStage.None)
                 yield return item;

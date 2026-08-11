@@ -227,14 +227,14 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table242 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table328 = new global::Reqnroll.Table(new string[] {
                             "VIN"});
-                table242.AddRow(new string[] {
+                table328.AddRow(new string[] {
                             "1FMZU72E12UB00984"});
-                table242.AddRow(new string[] {
+                table328.AddRow(new string[] {
                             "1FMCU0F73AKB12345"});
 #line 22
- await testRunner.GivenAsync("a dealer with the following vehicles as initial stock:", ((string)(null)), table242, "Given ");
+ await testRunner.GivenAsync("a dealer with the following vehicles as initial stock:", ((string)(null)), table328, "Given ");
 #line hidden
 #line 26
  await testRunner.WhenAsync("Checking \"1FMZU72E12UB00984\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -267,15 +267,15 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table243 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table329 = new global::Reqnroll.Table(new string[] {
                             "VIN"});
-                table243.AddRow(new string[] {
+                table329.AddRow(new string[] {
                             "1FDKF37GXVEB34368"});
-                table243.AddRow(new string[] {
+                table329.AddRow(new string[] {
                             "1FTFW1EFXEKD12345"});
 #line 30
  await testRunner.GivenAsync("a dealer with the following vehicles in their dealer stock (coming from their DMS" +
-                        "):", ((string)(null)), table243, "Given ");
+                        "):", ((string)(null)), table329, "Given ");
 #line hidden
 #line 34
  await testRunner.WhenAsync("Checking \"1FDKF37GXVEB34368\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -308,13 +308,13 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table244 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table330 = new global::Reqnroll.Table(new string[] {
                             "VIN"});
-                table244.AddRow(new string[] {
+                table330.AddRow(new string[] {
                             "1G1ZC5E17BF283048"});
 #line 38
  await testRunner.GivenAsync("a dealer with the following vehicles in official SSC Vehicles (Provided by the ve" +
-                        "hicle manufacturer):", ((string)(null)), table244, "Given ");
+                        "hicle manufacturer):", ((string)(null)), table330, "Given ");
 #line hidden
 #line 41
  await testRunner.WhenAsync("Checking \"1G1ZC5E17BF283048\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -347,28 +347,28 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table245 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table331 = new global::Reqnroll.Table(new string[] {
                             "VIN"});
-                table245.AddRow(new string[] {
+                table331.AddRow(new string[] {
                             "2C3CCAGG1DH549029"});
 #line 45
  await testRunner.GivenAsync("a dealer with the following vehicles in their dealer stock (coming from their DMS" +
-                        "):", ((string)(null)), table245, "Given ");
+                        "):", ((string)(null)), table331, "Given ");
 #line hidden
-                global::Reqnroll.Table table246 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table332 = new global::Reqnroll.Table(new string[] {
                             "VIN"});
-                table246.AddRow(new string[] {
+                table332.AddRow(new string[] {
                             "1HGCD5630TA078763"});
 #line 48
  await testRunner.AndAsync("a dealer with the following vehicles in official SSC Vehicles (Provided by the ve" +
-                        "hicle manufacturer):", ((string)(null)), table246, "And ");
+                        "hicle manufacturer):", ((string)(null)), table332, "And ");
 #line hidden
-                global::Reqnroll.Table table247 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table333 = new global::Reqnroll.Table(new string[] {
                             "VIN"});
-                table247.AddRow(new string[] {
+                table333.AddRow(new string[] {
                             "1FDKF37G8VEB34451"});
 #line 51
- await testRunner.AndAsync("a dealer with the following vehicles as initial stock:", ((string)(null)), table247, "And ");
+ await testRunner.AndAsync("a dealer with the following vehicles as initial stock:", ((string)(null)), table333, "And ");
 #line hidden
 #line 54
  await testRunner.WhenAsync("Checking \"WMWZB3C55BWM46667\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");

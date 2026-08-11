@@ -346,6 +346,9 @@ public class SharedStepDefinitions
                 {
                     Name = new Dictionary<string, string> { { "en", GetOptionalString(row, "ServiceItemName") ?? "" } },
                     MaximumMileage = GetOptionalLong(row, "MaximumMileage"),
+                    ProgramRole = row.ContainsKey("ProgramRole") && !string.IsNullOrWhiteSpace(row["ProgramRole"])
+                        ? Enum.Parse<ServiceItemProgramRole>(row["ProgramRole"])
+                        : ServiceItemProgramRole.ScheduledService,
                 },
             }
         };

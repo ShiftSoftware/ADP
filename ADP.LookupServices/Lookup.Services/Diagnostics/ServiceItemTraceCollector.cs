@@ -138,6 +138,28 @@ public class ServiceItemTraceCollector
 
     public virtual void Note(string message) => trace.Notes.Add(message);
 
+    // ---- Base schedule cap ----
+
+    public virtual void RecordBaseScheduleCapDecision(
+        ServiceItemModel item,
+        bool included,
+        BaseScheduleCapDecisionReason reason,
+        EligibilityRejectionStage staticRejectionStage = EligibilityRejectionStage.None)
+    {
+        trace.BaseScheduleCap.Decisions.Add(new ServiceItemBaseScheduleCapDecision
+        {
+            ServiceItemID = item.IntegrationID,
+            Name = item.Name?.Values?.FirstOrDefault(),
+            Included = included,
+            Reason = reason,
+            StaticRejectionStage = staticRejectionStage,
+            Item = Snapshot(item),
+        });
+    }
+
+    public virtual void RecordBaseScheduleCap(long? maximumMileage) =>
+        trace.BaseScheduleCap.MaximumMileage = maximumMileage;
+
     // ---- Eligibility ----
 
     public virtual void RecordEligibilityInputCount(int count) => trace.Eligibility.InputCount = count;
@@ -396,6 +418,7 @@ public class ServiceItemTraceCollector
         CampaignID = item.CampaignID,
         VehicleInspectionTypeID = item.VehicleInspectionTypeID,
         MaximumMileage = item.MaximumMileage,
+        ProgramRole = item.ProgramRole,
         ModelCostCount = item.ModelCosts?.Count() ?? 0,
     };
 
@@ -411,6 +434,8 @@ public class ServiceItemTraceCollector
         public override void RecordInputs(VehicleEntryModel vehicle, VehicleOwnership ownership, DateTime? freeServiceStartDate, DateTime? freeServiceStartDateBeforeShift, bool showingInactivatedItems, IEnumerable<ServiceItemModel> serviceItems, CompanyDataAggregateModel aggregate, DateTime? deFactoServiceStartDate) { }
         public override void RecordFinalResult(List<VehicleServiceItemDTO> result, bool activationRequired) { }
         public override void Note(string message) { }
+        public override void RecordBaseScheduleCapDecision(ServiceItemModel item, bool included, BaseScheduleCapDecisionReason reason, EligibilityRejectionStage staticRejectionStage = EligibilityRejectionStage.None) { }
+        public override void RecordBaseScheduleCap(long? maximumMileage) { }
         public override void RecordEligibilityInputCount(int count) { }
         public override void RecordEligibilityDecision(ServiceItemModel item, EligibilityRejectionStage stage, VehicleEntryModel vehicle, VehicleOwnership ownership) { }
         public override void RecordFreeBuild(ServiceItemModel item, VehicleServiceItemDTO dto, ServiceItemCostModel matchedCost, string languageCode) { }

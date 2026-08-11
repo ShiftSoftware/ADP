@@ -51,6 +51,13 @@ Each campaign contains one or more **Claimable Items** — the actual benefits t
 
 Each item carries its own metadata: name, printout title, description, mileage cap, package code (used downstream on the invoice and job sheet), and a cost — either a fixed cost or a per-model cost keyed by Katashiki or Variant.
 
+An item also has a catalog-only **Service Program Role**:
+
+- **Scheduled Service** (the default) — an ordinary scheduled item that can define the vehicle's base free-service schedule cap.
+- **Reward** — a follow-on reward that may depend on the base schedule and service history.
+
+Program role is independent of **Free** versus **Paid**. A reward selected from the catalog is still a normal free item: it stays in mileage order, contributes its own `ActiveFor` duration to rolling expiry, can be cancelled or produce skipped-item warnings, receives normal status/signature handling, and follows VIN exclusion and claimed-item recovery. The role is not returned on `VehicleServiceItemDTO`; it is consumed while evaluating the catalog. A role embedded in a paid invoice line is ignored.
+
 !!! info "Per-model cost"
     A single item (say, a 5,000 km service) can have different costs by model — typically prefix-matched on the Katashiki or Variant. For example, `TGN121L-` matches every variant starting with that prefix. The distributor configures one item; the model-specific costs flow from it.
 
@@ -141,6 +148,41 @@ The customer sees one window opening as the previous one closes — a simple, pr
 ### Eligibility
 
 A campaign declares **who qualifies** at the catalog level: brand, country, dealer (company), the campaign's own start/end window for when items can be granted, and optional model targeting (Katashiki / Variant prefix). When a vehicle is looked up, the framework filters the catalog down to the items that match.
+
+After those static filters and before custom conditions, the evaluator derives an immutable **base schedule maximum mileage**. It takes the maximum `MaximumMileage` from matching catalog items whose role is `ScheduledService`, trigger is `WarrantyActivation`, and validity mode is `RelativeToActivation`. Reward items, paid invoice items, fixed-date items, other triggers, and items without a mileage cannot contribute. Custom conditions do not decide cap membership, which avoids a condition depending recursively on the value it helps produce.
+
+Custom conditions are a closed, fail-closed contract. The supported fields are:
+
+| Field | Shape | Meaning |
+|---|---|---|
+| `serviceHistory.laborLines.packageCode` | `ContainsAll`, `Latest` scope, positive count, one or more values; `Exact` or `EndsWith` matching | Requires package codes across the selected latest service invoices. |
+| `serviceItems.baseSchedule.maximumMileage` | `Equals`, no scope, exactly one positive invariant-culture integer string | Requires the derived base schedule cap to equal the configured mileage. |
+
+Every declared condition must match. An unknown field or operator, malformed value/scope, missing cap, or insufficient history excludes the item.
+
+Example reward catalog fragment:
+
+```json
+{
+  "maximumMileage": 55000,
+  "activeFor": 3,
+  "activeForDurationType": "Months",
+  "programRole": "Reward",
+  "eligibilityConditions": [
+    {
+      "field": "serviceItems.baseSchedule.maximumMileage",
+      "operator": "Equals",
+      "values": ["40000"]
+    },
+    {
+      "field": "serviceHistory.laborLines.packageCode",
+      "operator": "ContainsAll",
+      "scope": { "selection": "Latest", "count": 2 },
+      "values": ["45000", "50000"]
+    }
+  ]
+}
+```
 
 ```mermaid
 flowchart TB
@@ -270,6 +312,7 @@ The distributor's setup and operational dashboard typically exposes:
 - BDD specs — [Service Items feature suite](../../generated/Features/ServiceItems.md): the live, runnable behaviour contract.
 - DTO — [`VehicleServiceItemDTO`](../../generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleServiceItemDTO.md).
 - Catalog — [`ServiceItemModel`](../../generated/Models/Vehicle/ServiceItemModel.md), [`ServiceItemCostModel`](../../generated/Models/Vehicle/ServiceItemCostModel.md).
+- Program role — [`ServiceItemProgramRole`](../../generated/Models/Vehicle/ServiceItemProgramRole.md).
 - Claim — [`ItemClaimModel`](../../generated/Models/Vehicle/ItemClaimModel.md).
 - Per-VIN overrides — [`FreeServiceItemDateShiftModel`](../../generated/Models/Vehicle/FreeServiceItemDateShiftModel.md), [`FreeServiceItemExcludedVINModel`](../../generated/Models/Vehicle/FreeServiceItemExcludedVINModel.md).
 - Paid — [`PaidServiceInvoiceModel`](../../generated/Models/Vehicle/PaidServiceInvoiceModel.md), [`PaidServiceInvoiceLineModel`](../../generated/Models/Vehicle/PaidServiceInvoiceLineModel.md).

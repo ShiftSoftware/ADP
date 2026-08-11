@@ -146,6 +146,10 @@ public class MockStorageStepDefinitions
                 ? Enum.Parse<ClaimableItemValidityMode>(row["ValidityMode"])
                 : ClaimableItemValidityMode.RelativeToActivation;
 
+            var programRole = row.ContainsKey("ProgramRole") && !string.IsNullOrWhiteSpace(row["ProgramRole"])
+                ? Enum.Parse<ServiceItemProgramRole>(row["ProgramRole"])
+                : ServiceItemProgramRole.ScheduledService;
+
             var brandId = GetOptionalLong(row, "BrandID");
             var companyId = GetOptionalLong(row, "CompanyID");
             var countryId = GetOptionalLong(row, "CountryID");
@@ -165,7 +169,7 @@ public class MockStorageStepDefinitions
             {
                 IntegrationID = GetOptionalString(row, "ServiceItemID"),
                 Name = new Dictionary<string, string> { { "en", GetOptionalString(row, "Name") ?? "" } },
-                IsDeleted = false,
+                IsDeleted = row.ContainsKey("IsDeleted") && !string.IsNullOrWhiteSpace(row["IsDeleted"]) && bool.Parse(row["IsDeleted"]),
                 BrandIDs = brandId is not null ? new List<long?> { brandId } : null,
                 CompanyIDs = companyId is not null ? new List<long?> { companyId } : null,
                 CountryIDs = countryId is not null ? new List<long?> { countryId } : null,
@@ -181,6 +185,7 @@ public class MockStorageStepDefinitions
                 ActiveForDurationType = row.ContainsKey("ActiveForMonths") && !string.IsNullOrWhiteSpace(row["ActiveForMonths"])
                     ? DurationType.Months : null,
                 MaximumMileage = GetOptionalLong(row, "MaximumMileage"),
+                ProgramRole = programRole,
                 PackageCode = GetOptionalString(row, "PackageCode"),
                 VehicleInspectionTypeID = GetOptionalLong(row, "VehicleInspectionTypeID"),
                 CampaignID = GetOptionalLong(row, "CampaignID"),
@@ -202,15 +207,22 @@ public class MockStorageStepDefinitions
 
         item.EligibilityConditions = dataTable.Rows.Select(row =>
         {
+            var hasScope =
+                (row.ContainsKey("Selection") && !string.IsNullOrWhiteSpace(row["Selection"])) ||
+                (row.ContainsKey("Count") && !string.IsNullOrWhiteSpace(row["Count"]));
             var condition = new ServiceItemEligibilityConditionModel
             {
                 Field = row["Field"],
                 Operator = Enum.Parse<ServiceItemEligibilityConditionOperator>(row["Operator"]),
-                Scope = new ServiceItemEligibilityConditionScope
+                Scope = hasScope ? new ServiceItemEligibilityConditionScope
                 {
-                    Selection = Enum.Parse<ServiceItemEligibilityConditionSelection>(row["Selection"]),
-                    Count = int.Parse(row["Count"]),
-                },
+                    Selection = row.ContainsKey("Selection") && !string.IsNullOrWhiteSpace(row["Selection"])
+                        ? Enum.Parse<ServiceItemEligibilityConditionSelection>(row["Selection"])
+                        : default,
+                    Count = row.ContainsKey("Count") && !string.IsNullOrWhiteSpace(row["Count"])
+                        ? int.Parse(row["Count"])
+                        : null,
+                } : null,
                 Values = GetEligibilityConditionValues(row),
             };
 
