@@ -31,7 +31,8 @@
       "hasActiveWarranty": false,
       "activationIsRequired": false,
       "activationStatus": "NotRequired",
-      "hasExtendedWarranty": false
+      "hasExtendedWarranty": false,
+      "extendedWarranties": []
     },
     "serviceHistory": [],
     "vehicleSpecification": {
@@ -86,6 +87,15 @@
       "hasExtendedWarranty": true,
       "extendedWarrantyStartDate": "2027-02-10",
       "extendedWarrantyEndDate": "2029-02-10",
+      "extendedWarranties": [
+        {
+          "id": "EW-JTMHF33P5D5012345-1",
+          "providerCompanyID": "1",
+          "providerCompanyLogo": "https://picsum.photos/seed/company-1/320/160",
+          "startDate": "2027-02-10",
+          "endDate": "2029-02-10"
+        }
+      ],
       "freeServiceStartDate": "2024-02-10"
     },
     "nextServiceDate": "2024-11-15",
@@ -286,6 +296,7 @@
       "activationIsRequired": false,
       "activationStatus": "NotRequired",
       "hasExtendedWarranty": false,
+      "extendedWarranties": [],
       "freeServiceStartDate": "2024-06-15",
       "deFactoServiceStartDate": "2024-06-15"
     },
@@ -552,6 +563,7 @@
       "activationIsRequired": false,
       "activationStatus": "NotRequired",
       "hasExtendedWarranty": false,
+      "extendedWarranties": [],
       "freeServiceStartDate": "2024-07-01"
     },
     "nextServiceDate": "2025-09-25",

@@ -10,6 +10,11 @@
 
   "extendedWarrantyFrom": "گەرەنتی درێژکراوە (دەستپێکردن)",
   "extendedWarrantyTo": "گەرەنتی درێژکراوە (کۆتایی)",
+  "extendedWarranties": "گەرەنتییە درێژکراوەکان",
+  "extendedWarrantyID": "ناسنامەی گەرەنتی",
+  "extendedWarrantyProviderID": "ناسنامەی دابینکەری گەرەنتی",
+  "extendedWarrantyStartDate": "بەرواری دەستپێک",
+  "extendedWarrantyEndDate": "بەرواری کۆتایی",
 
   "recallExists": "ئەم ئۆتۆمبێلە هەڵمەتێکی خزمەتگوزاری تایبەتی چاوەڕوانکراوی هەیە",
   "noRecall": "هیچ هەڵمەتێکی خزمەتگوزاری تایبەتی چاوەڕوانکراو نییە",

@@ -10,6 +10,11 @@
 
   "extendedWarrantyFrom": "Расширенная гарантия (старт)",
   "extendedWarrantyTo": "Расширенная гарантия (конец)",
+  "extendedWarranties": "Расширенные гарантии",
+  "extendedWarrantyID": "Идентификатор гарантии",
+  "extendedWarrantyProviderID": "Идентификатор поставщика",
+  "extendedWarrantyStartDate": "Дата начала",
+  "extendedWarrantyEndDate": "Дата окончания",
 
   "recallExists": "У этого автомобиля ожидается SSC",
   "noRecall": "Нет SSC",

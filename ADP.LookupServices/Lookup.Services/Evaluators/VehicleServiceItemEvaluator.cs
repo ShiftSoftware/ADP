@@ -7,7 +7,6 @@ using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ADP.Models.Vehicle;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -200,7 +199,7 @@ public partial class VehicleServiceItemEvaluator
         foreach (var item in sequential)
         {
             item.ActivatedAt = rollingDate;
-            item.ExpiresAt = AddInterval(rollingDate, item.ActiveFor, item.ActiveForDurationType);
+            item.ExpiresAt = DurationCalculator.AddInterval(rollingDate, item.ActiveFor, item.ActiveForDurationType);
             rollingDate = item.ExpiresAt!.Value;
             Trace.RecordWarrantyRollingItem(sequential: true, item);
         }
@@ -615,7 +614,9 @@ public partial class VehicleServiceItemEvaluator
     {
         var staticStage = EvaluateStaticItemEligibility(item, vehicle, ownership, freeServiceStartDate);
         if (staticStage != EligibilityRejectionStage.None) return staticStage;
-        if (!MatchesEligibilityConditions(item, baseScheduleMaximumMileage)) return EligibilityRejectionStage.CustomCondition;
+        if (!new VehicleEligibilityConditionEvaluator(companyDataAggregate)
+            .MatchesAll(item.EligibilityConditions, baseScheduleMaximumMileage))
+            return EligibilityRejectionStage.CustomCondition;
         return EligibilityRejectionStage.None;
     }
 
@@ -633,101 +634,6 @@ public partial class VehicleServiceItemEvaluator
         if (!IsApplicableToVehicle(item, vehicle)) return EligibilityRejectionStage.VehicleApplicability;
         return EligibilityRejectionStage.None;
     }
-
-    private bool MatchesEligibilityConditions(ServiceItemModel item, long? baseScheduleMaximumMileage)
-    {
-        foreach (var condition in item.EligibilityConditions ?? Enumerable.Empty<ServiceItemEligibilityConditionModel>())
-        {
-            if (condition is null)
-                return false;
-
-            if (string.Equals(condition.Field, "serviceHistory.laborLines.packageCode", StringComparison.Ordinal))
-            {
-                if (!MatchesServiceHistoryCondition(condition))
-                    return false;
-                continue;
-            }
-
-            if (string.Equals(condition.Field, "serviceItems.baseSchedule.maximumMileage", StringComparison.Ordinal))
-            {
-                if (!MatchesBaseScheduleMaximumMileageCondition(condition, baseScheduleMaximumMileage))
-                    return false;
-                continue;
-            }
-
-            return false;
-        }
-
-        return true;
-    }
-
-    private bool MatchesServiceHistoryCondition(ServiceItemEligibilityConditionModel condition)
-    {
-        var requiredValues = condition.Values?.ToList();
-        if (condition.Operator != ServiceItemEligibilityConditionOperator.ContainsAll ||
-            (condition.ValueMatch != ServiceItemEligibilityConditionValueMatch.Exact &&
-                condition.ValueMatch != ServiceItemEligibilityConditionValueMatch.EndsWith) ||
-            condition.Scope?.Selection != ServiceItemEligibilityConditionSelection.Latest ||
-            condition.Scope.Count is null ||
-            condition.Scope.Count <= 0 ||
-            requiredValues is null ||
-            requiredValues.Count == 0 ||
-            requiredValues.Any(string.IsNullOrWhiteSpace))
-            return false;
-
-        var latestInvoices = VehicleServiceHistoryEvaluator.GetInvoices(companyDataAggregate, ConsistencyLevels.Strong)
-            .Select(invoice => new
-            {
-                Invoice = invoice,
-                ServiceDate = new[]
-                {
-                    invoice.LaborLines?.Max(line => line.InvoiceDate),
-                    invoice.PartLines?.Max(line => line.InvoiceDate),
-                }.Max()
-            })
-            .OrderByDescending(x => x.ServiceDate)
-            .Take(condition.Scope.Count.Value)
-            .ToList();
-
-        if (latestInvoices.Count != condition.Scope.Count.Value)
-            return false;
-
-        var packageCodes = latestInvoices
-            .SelectMany(x => x.Invoice.LaborLines ?? Enumerable.Empty<ShiftSoftware.ADP.Models.Service.OrderLaborLineModel>())
-            .Select(line => line.PackageCode)
-            .Where(code => !string.IsNullOrWhiteSpace(code))
-            .ToList();
-
-        return requiredValues.All(value =>
-            packageCodes.Any(code => MatchesEligibilityValue(code, value, condition.ValueMatch)));
-    }
-
-    private static bool MatchesBaseScheduleMaximumMileageCondition(
-        ServiceItemEligibilityConditionModel condition,
-        long? baseScheduleMaximumMileage)
-    {
-        var values = condition.Values?.ToList();
-        return condition.Operator == ServiceItemEligibilityConditionOperator.Equals &&
-            condition.ValueMatch == ServiceItemEligibilityConditionValueMatch.Exact &&
-            condition.Scope is null &&
-            values is { Count: 1 } &&
-            long.TryParse(values[0], NumberStyles.None, CultureInfo.InvariantCulture, out var requiredMileage) &&
-            requiredMileage > 0 &&
-            baseScheduleMaximumMileage == requiredMileage;
-    }
-
-    private static bool MatchesEligibilityValue(
-        string actual,
-        string required,
-        ServiceItemEligibilityConditionValueMatch valueMatch) =>
-        valueMatch switch
-        {
-            ServiceItemEligibilityConditionValueMatch.Exact =>
-                string.Equals(actual, required, StringComparison.OrdinalIgnoreCase),
-            ServiceItemEligibilityConditionValueMatch.EndsWith =>
-                actual.EndsWith(required, StringComparison.OrdinalIgnoreCase),
-            _ => false,
-        };
 
     private static bool MatchesBrand(ServiceItemModel item, VehicleEntryModel vehicle) =>
         vehicle is null || item.BrandIDs is null || item.BrandIDs.Any(a => a == vehicle.BrandID);
@@ -918,7 +824,7 @@ public partial class VehicleServiceItemEvaluator
         if (cloned.ValidityModeEnum == ClaimableItemValidityMode.RelativeToActivation)
         {
             cloned.ActivatedAt = inspection.InspectionDate.DateTime;
-            cloned.ExpiresAt = AddInterval(cloned.ActivatedAt, cloned.ActiveFor, cloned.ActiveForDurationType);
+            cloned.ExpiresAt = DurationCalculator.AddInterval(cloned.ActivatedAt, cloned.ActiveFor, cloned.ActiveForDurationType);
         }
         return cloned;
     }
@@ -930,22 +836,10 @@ public partial class VehicleServiceItemEvaluator
         if (cloned.ValidityModeEnum == ClaimableItemValidityMode.RelativeToActivation)
         {
             cloned.ActivatedAt = entry.RecordedDate.DateTime;
-            cloned.ExpiresAt = AddInterval(cloned.ActivatedAt, cloned.ActiveFor, cloned.ActiveForDurationType);
+            cloned.ExpiresAt = DurationCalculator.AddInterval(cloned.ActivatedAt, cloned.ActiveFor, cloned.ActiveForDurationType);
         }
         return cloned;
     }
-
-    private static DateTime AddInterval(DateTime date, int? intervalValue, DurationType? durationType) => durationType switch
-    {
-        DurationType.Seconds => date.AddSeconds(intervalValue.GetValueOrDefault()),
-        DurationType.Minutes => date.AddMinutes(intervalValue.GetValueOrDefault()),
-        DurationType.Hours => date.AddHours(intervalValue.GetValueOrDefault()),
-        DurationType.Days => date.AddDays(intervalValue.GetValueOrDefault()),
-        DurationType.Weeks => date.AddDays(7 * intervalValue.GetValueOrDefault()),
-        DurationType.Months => date.AddMonths(intervalValue.GetValueOrDefault()),
-        DurationType.Years => date.AddYears(intervalValue.GetValueOrDefault()),
-        _ => date,
-    };
 
     // ===== Status assignment =====
 

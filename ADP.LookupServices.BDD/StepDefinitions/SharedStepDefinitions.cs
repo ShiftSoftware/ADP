@@ -277,8 +277,10 @@ public class SharedStepDefinitions
         _context.Aggregate.ExtendedWarrantyEntries.AddRange(
             dataTable.Rows.Select(row => new ExtendedWarrantyModel
             {
+                id = GetOptionalString(row, "ID"),
                 StartDate = GetOptionalDate(row, "StartDate"),
                 EndDate = GetOptionalDate(row, "EndDate"),
+                CompanyID = GetOptionalLong(row, "CompanyID"),
             }));
     }
 

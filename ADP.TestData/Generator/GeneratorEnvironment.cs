@@ -135,6 +135,15 @@ public class GeneratorLookupOptions
             return new ValueTask<string?>(name);
         };
 
+        options.CompanyLogoResolver = (model) =>
+        {
+            if (model.Value is not { } companyId)
+                return new ValueTask<string?>((string?)null);
+
+            return new ValueTask<string?>(
+                $"https://picsum.photos/seed/company-{companyId}/320/160");
+        };
+
         options.CompanyBranchNameResolver = (model) =>
         {
             var name = model.Value.HasValue && branchNames.TryGetValue(model.Value.Value, out var n) ? n : null;

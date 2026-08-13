@@ -48,6 +48,7 @@
       "activationIsRequired": false,
       "activationStatus": "NotRequired",
       "hasExtendedWarranty": false,
+      "extendedWarranties": [],
       "freeServiceStartDate": "2026-05-26"
     },
     "serviceHistory": [],

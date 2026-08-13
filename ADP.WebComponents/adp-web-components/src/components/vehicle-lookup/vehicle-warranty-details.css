@@ -164,6 +164,122 @@
   grid-template-columns: 1fr 1fr;
 }
 
+.extended-warranties {
+  margin-top: 20px;
+}
+
+.extended-warranties-title {
+  margin: 0 0 10px;
+  color: #1e293b;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.extended-warranties-grid {
+  gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+}
+
+.extended-warranty-card {
+  min-width: 0;
+  padding: 14px;
+  color: #0f172a;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.extended-warranty-provider {
+  gap: 12px;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.extended-warranty-provider-logo,
+.extended-warranty-provider-logo-placeholder {
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.extended-warranty-provider-logo {
+  padding: 4px;
+  object-fit: contain;
+}
+
+.extended-warranty-provider-logo-placeholder {
+  display: flex;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 700;
+  align-items: center;
+  justify-content: center;
+}
+
+.extended-warranty-provider-details {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.extended-warranty-field-label,
+.extended-warranty-field dt {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.extended-warranty-field-value,
+.extended-warranty-field dd {
+  overflow-wrap: anywhere;
+}
+
+.extended-warranty-fields {
+  gap: 10px 16px;
+  margin: 12px 0 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.extended-warranty-field {
+  min-width: 0;
+}
+
+.extended-warranty-field dt,
+.extended-warranty-field dd {
+  margin: 0;
+}
+
+.extended-warranty-field dd {
+  margin-top: 2px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.extended-warranty-id {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 520px) {
+  .warranty-tags,
+  .extended-warranty-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .extended-warranty-id {
+    grid-column: auto;
+  }
+}
+
 .py-3,
 .pt-3 {
   padding-top: 12px;

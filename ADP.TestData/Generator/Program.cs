@@ -221,8 +221,13 @@ static async Task<VehicleLookupDTO> GenerateVehicleLookup(
         data.PaintThicknessCertificateUrls = await options.PaintThicknessCertificateUrlsResolver(
             new LookupOptionResolverModel<string>(vin, "en", serviceProvider));
 
-    data.Warranty = new WarrantyAndFreeServiceDateEvaluator(aggregate, options)
-        .Evaluate(vehicle, data.SaleInformation, requestOptions.IgnoreBrokerStock);
+    data.Warranty = await new WarrantyAndFreeServiceDateEvaluator(aggregate, options)
+        .EvaluateAsync(
+            vehicle,
+            data.SaleInformation,
+            requestOptions.IgnoreBrokerStock,
+            "en",
+            serviceProvider);
 
     var serviceItemsResult = await new VehicleServiceItemEvaluator(
         storageService, aggregate, options, serviceProvider

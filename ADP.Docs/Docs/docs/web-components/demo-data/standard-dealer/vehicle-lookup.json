@@ -158,7 +158,25 @@
       "warrantyEndDate": "2027-02-01",
       "activationIsRequired": false,
       "activationStatus": "NotRequired",
-      "hasExtendedWarranty": false,
+      "hasExtendedWarranty": true,
+      "extendedWarrantyStartDate": "2027-02-01",
+      "extendedWarrantyEndDate": "2029-02-01",
+      "extendedWarranties": [
+        {
+          "id": "EW-JTMHX01J8L4198293-DISTRIBUTOR",
+          "providerCompanyID": "100",
+          "providerCompanyLogo": "https://picsum.photos/seed/company-100/320/160",
+          "startDate": "2027-02-01",
+          "endDate": "2028-02-01"
+        },
+        {
+          "id": "EW-JTMHX01J8L4198293-PROVIDER",
+          "providerCompanyID": "2",
+          "providerCompanyLogo": "https://picsum.photos/seed/company-2/320/160",
+          "startDate": "2028-02-01",
+          "endDate": "2029-02-01"
+        }
+      ],
       "freeServiceStartDate": "2024-02-01",
       "deFactoServiceStartDate": "2024-04-15"
     },
@@ -447,6 +465,7 @@
       "activationIsRequired": false,
       "activationStatus": "NotRequired",
       "hasExtendedWarranty": false,
+      "extendedWarranties": [],
       "freeServiceStartDate": "2023-06-20",
       "deFactoServiceStartDate": "2023-08-22"
     },
@@ -618,7 +637,8 @@
       "hasActiveWarranty": false,
       "activationIsRequired": false,
       "activationStatus": "NotRequired",
-      "hasExtendedWarranty": false
+      "hasExtendedWarranty": false,
+      "extendedWarranties": []
     },
     "serviceHistory": [],
     "vehicleVariantInfo": {},

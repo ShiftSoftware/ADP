@@ -21,6 +21,12 @@ public class LookupOptions
     public Func<LookupOptionResolverModel<Dictionary<string,string>>, ValueTask<string?>>? ServiceItemImageUrlResolver { get; set; }
     /// <summary>A dictionary mapping brand IDs to their standard warranty period in years.</summary>
     public Dictionary<long?, int> BrandStandardWarrantyPeriodsInYears { get; set; } = new Dictionary<long?, int>();
+    /// <summary>
+    /// Configured extended-warranty definitions evaluated against vehicle lookup data. Each
+    /// definition uses the same declarative condition contract as service-item eligibility.
+    /// Empty by default, preserving existing host behaviour until explicitly configured.
+    /// </summary>
+    public List<ExtendedWarrantyDefinitionModel> ExtendedWarrantyDefinitions { get; set; } = new();
     /// <summary>Resolver delegate that converts a paint thickness image path to a full URL.</summary>
     public Func<LookupOptionResolverModel<string>,ValueTask<string?>>? PaintThickneesImageUrlResolver { get; set; }
     /// <summary>

@@ -217,7 +217,28 @@
           ]
         }
       ],
-      "ExtendedWarrantyEntries": [],
+      "ExtendedWarrantyEntries": [
+        {
+          "id": "EW-JTMHX01J8L4198293-DISTRIBUTOR",
+          "VIN": "JTMHX01J8L4198293",
+          "StartDate": "2027-02-01",
+          "EndDate": "2028-02-01",
+          "IsActive": true,
+          "IsDeleted": false,
+          "CompanyID": 100,
+          "BranchID": 1000
+        },
+        {
+          "id": "EW-JTMHX01J8L4198293-PROVIDER",
+          "VIN": "JTMHX01J8L4198293",
+          "StartDate": "2028-02-01",
+          "EndDate": "2029-02-01",
+          "IsActive": true,
+          "IsDeleted": false,
+          "CompanyID": 2,
+          "BranchID": 30
+        }
+      ],
       "WarrantyDateShifts": [],
       "FreeServiceItemDateShifts": [],
       "ItemClaims": [

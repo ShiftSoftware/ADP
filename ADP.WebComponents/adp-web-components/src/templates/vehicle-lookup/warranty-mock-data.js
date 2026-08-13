@@ -2187,6 +2187,22 @@ const mockData = {
       hasExtendedWarranty: true,
       extendedWarrantyStartDate: '2026-11-30',
       extendedWarrantyEndDate: '2028-11-30',
+      extendedWarranties: [
+        {
+          id: 'EW-JTMABBBJ9P4099200-DISTRIBUTOR',
+          providerCompanyID: '5',
+          providerCompanyLogo: 'https://picsum.photos/seed/company-5/320/160',
+          startDate: '2026-11-30',
+          endDate: '2027-11-30',
+        },
+        {
+          id: 'EW-JTMABBBJ9P4099200-PROVIDER',
+          providerCompanyID: '9',
+          providerCompanyLogo: 'https://picsum.photos/seed/company-9/320/160',
+          startDate: '2027-11-30',
+          endDate: '2028-11-30',
+        },
+      ],
     },
     nextServiceDate: '2025-02-19',
     serviceHistory: [

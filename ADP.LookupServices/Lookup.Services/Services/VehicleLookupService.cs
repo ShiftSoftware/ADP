@@ -195,8 +195,13 @@ public class VehicleLookupService
             }
         }
 
-        data.Warranty = new WarrantyAndFreeServiceDateEvaluator(companyDataAggregate, lookupOptions)
-            .Evaluate(vehicle, data.SaleInformation, requestOptions.IgnoreBrokerStock);
+        data.Warranty = await new WarrantyAndFreeServiceDateEvaluator(companyDataAggregate, lookupOptions)
+            .EvaluateAsync(
+                vehicle,
+                data.SaleInformation,
+                requestOptions.IgnoreBrokerStock,
+                requestOptions.LanguageCode,
+                serviceProvider);
 
         var traceCollector = requestOptions.TraceServiceItemEvaluation
             ? new ServiceItemTraceCollector(vin)

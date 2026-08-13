@@ -107,11 +107,180 @@ Scenario: Extended warranty dates from entries
     | WarrantyActivationDate | CompanyID |
     | 2024-02-01             | 1         |
   And extended warranty entries:
-    | StartDate  | EndDate    |
-    | 2027-02-01 | 2029-02-01 |
+    | ID       | CompanyID | StartDate  | EndDate    |
+    | EW-ENTRY | 1         | 2027-02-01 | 2029-02-01 |
   When evaluating warranty dates for "1FDKF37GXVEB34368"
   Then the extended warranty start date is "2027-02-01"
   And the extended warranty end date is "2029-02-01"
+
+Scenario: Multiple extended warranties preserve provider details and aggregate their full span
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate |
+    | 1FDKF37GXVEB34368 | 2024-01-15  |
+  And extended warranty entries:
+    | ID       | CompanyID | StartDate  | EndDate    |
+    | EW-LATE  | 202       | 2029-06-01 | 2031-06-01 |
+    | EW-EARLY | 101       | 2027-02-01 | 2028-02-01 |
+  And company logos resolve as:
+    | CompanyID | Logo                      |
+    | 101       | https://images.test/a.png |
+    | 202       | https://images.test/b.png |
+  When evaluating warranty dates for "1FDKF37GXVEB34368"
+  Then the vehicle has extended warranty
+  And the extended warranty start date is "2027-02-01"
+  And the extended warranty end date is "2031-06-01"
+  And extended warranties are:
+    | ID       | ProviderCompanyID | ProviderCompanyLogo          | StartDate  | EndDate    |
+    | EW-LATE  | 202               | https://images.test/b.png    | 2029-06-01 | 2031-06-01 |
+    | EW-EARLY | 101               | https://images.test/a.png    | 2027-02-01 | 2028-02-01 |
+
+Scenario: The vehicle lookup API returns resolved provider detail
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | BrandID |
+    | 1FDKF37GXVEB34368 | 2024-01-15  | 1         | 1       |
+  And extended warranty entries:
+    | ID     | CompanyID | StartDate  | EndDate    |
+    | EW-API | 101       | 2027-02-01 | 2028-02-01 |
+  And company logos resolve as:
+    | CompanyID | Logo                        |
+    | 101       | https://images.test/api.png |
+  When looking up warranty details for "1FDKF37GXVEB34368"
+  Then extended warranties are:
+    | ID     | ProviderCompanyID | ProviderCompanyLogo        | StartDate  | EndDate    |
+    | EW-API | 101               | https://images.test/api.png | 2027-02-01 | 2028-02-01 |
+
+Scenario: Historical extended coverage still counts as an extended warranty
+  Given the current UTC time is "2035-01-01 00:00:00"
+  And vehicles in dealer stock:
+    | VIN               | InvoiceDate |
+    | 1FDKF37GXVEB34368 | 2024-01-15  |
+  And extended warranty entries:
+    | ID     | CompanyID | StartDate  | EndDate    |
+    | EW-OLD | 101       | 2027-02-01 | 2029-02-01 |
+  When evaluating warranty dates for "1FDKF37GXVEB34368"
+  Then the vehicle has extended warranty
+  And there are 1 extended warranties
+  And the extended warranty start date is "2027-02-01"
+  And the extended warranty end date is "2029-02-01"
+
+Scenario: Stored and configured extended warranties are combined before aggregation
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | BrandID |
+    | 1FDKF37GXVEB34368 | 2024-01-15  | 1       |
+  And vehicle service activations:
+    | WarrantyActivationDate | CompanyID |
+    | 2024-02-01             | 1         |
+  And extended warranty entries:
+    | ID        | CompanyID | StartDate  | EndDate    |
+    | EW-STORED | 101       | 2026-01-01 | 2027-06-01 |
+  And extended warranty definitions:
+    | ID         | ProviderCompanyID | ActiveFor | DurationType |
+    | CFG-REWARD | 901               | 1         | Years        |
+  And extended warranty definition "CFG-REWARD" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch | Selection | Count | ValuesJson |
+    | serviceHistory.laborLines.packageCode | ContainsAll | EndsWith  | Latest    | 1     | [" 60K"]  |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode |
+    | 1         | 10       | INV-060       | JOB-060             | 2026-03-01  | MODEL 60K   |
+  When evaluating warranty dates for "1FDKF37GXVEB34368"
+  Then there are 2 extended warranties
+  And the extended warranty start date is "2026-01-01"
+  And the extended warranty end date is "2028-02-01"
+
+Scenario Outline: A configured extended warranty uses the shared package suffix grammar
+  Given brand 1 has a warranty period of 3 years
+  And vehicles in dealer stock:
+    | VIN               | InvoiceDate | BrandID |
+    | 1FDKF37GXVEB34368 | 2024-01-15  | 1       |
+  And vehicle service activations:
+    | WarrantyActivationDate | CompanyID |
+    | 2024-02-01             | 1         |
+  And extended warranty definitions:
+    | ID         | ProviderCompanyID | ActiveFor | DurationType |
+    | CFG-REWARD | 901               | 1         | Years        |
+  And extended warranty definition "CFG-REWARD" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch | Selection | Count | ValuesJson  |
+    | serviceHistory.laborLines.packageCode | ContainsAll | EndsWith  | Latest    | 1     | ["<Suffix>"] |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode  |
+    | 1         | 10       | INV-060       | JOB-060             | 2026-03-01  | <PackageCode> |
+  And company logos resolve as:
+    | CompanyID | Logo                                |
+    | 901       | https://images.test/distributor.png |
+  When evaluating warranty dates for "1FDKF37GXVEB34368"
+  Then the vehicle has extended warranty
+  And extended warranties are:
+    | ID         | ProviderCompanyID | ProviderCompanyLogo                    | StartDate  | EndDate    |
+    | CFG-REWARD | 901               | https://images.test/distributor.png   | 2027-02-01 | 2028-02-01 |
+
+  Examples:
+    | Suffix | PackageCode |
+    |  60K   | MODEL 60K   |
+    |  75K   | MODEL 75K   |
+
+Scenario: A configured warranty can fall back to the tenant distributor as provider
+  Given the distributor company id is 901
+  And vehicles in dealer stock:
+    | VIN               | InvoiceDate | BrandID |
+    | 1FDKF37GXVEB34368 | 2024-01-15  | 1       |
+  And vehicle service activations:
+    | WarrantyActivationDate | CompanyID |
+    | 2024-02-01             | 1         |
+  And extended warranty definitions:
+    | ID         | ProviderCompanyID | ActiveFor | DurationType |
+    | CFG-REWARD |                   | 1         | Years        |
+  And extended warranty definition "CFG-REWARD" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch | Selection | Count | ValuesJson |
+    | serviceHistory.laborLines.packageCode | ContainsAll | EndsWith  | Latest    | 1     | [" 60K"]  |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode |
+    | 1         | 10       | INV-060       | JOB-060             | 2026-03-01  | MODEL 60K   |
+  And company logos resolve as:
+    | CompanyID | Logo                                |
+    | 901       | https://images.test/distributor.png |
+  When evaluating warranty dates for "1FDKF37GXVEB34368"
+  Then extended warranties are:
+    | ID         | ProviderCompanyID | ProviderCompanyLogo                    | StartDate  | EndDate    |
+    | CFG-REWARD | 901               | https://images.test/distributor.png   | 2027-02-01 | 2028-02-01 |
+
+Scenario Outline: A configured warranty fails closed when its package condition does not match
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | BrandID |
+    | 1FDKF37GXVEB34368 | 2024-01-15  | 1       |
+  And vehicle service activations:
+    | WarrantyActivationDate | CompanyID |
+    | 2024-02-01             | 1         |
+  And extended warranty definitions:
+    | ID         | ProviderCompanyID | ActiveFor | DurationType |
+    | CFG-REWARD | 901               | 1         | Years        |
+  And extended warranty definition "CFG-REWARD" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch | Selection | Count | ValuesJson |
+    | serviceHistory.laborLines.packageCode | ContainsAll | EndsWith  | Latest    | 1     | [" 60K"]  |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode  |
+    | 1         | 10       | INV-OTHER     | JOB-OTHER           | 2026-03-01  | <PackageCode> |
+  When evaluating warranty dates for "1FDKF37GXVEB34368"
+  Then the vehicle does not have extended warranty
+  And there are 0 extended warranties
+
+  Examples:
+    | PackageCode |
+    | MODEL 55K   |
+    | 160K        |
+
+Scenario: An extended warranty definition without conditions fails closed
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | BrandID |
+    | 1FDKF37GXVEB34368 | 2024-01-15  | 1       |
+  And vehicle service activations:
+    | WarrantyActivationDate | CompanyID |
+    | 2024-02-01             | 1         |
+  And extended warranty definitions:
+    | ID         | ProviderCompanyID | ActiveFor | DurationType |
+    | CFG-REWARD | 901               | 1         | Years        |
+  When evaluating warranty dates for "1FDKF37GXVEB34368"
+  Then the vehicle does not have extended warranty
+  And there are 0 extended warranties
 
 # --- De Facto Service Start Date ---
 # The earliest non-deleted ItemClaim.ClaimDate is always exposed as DeFactoServiceStartDate.
