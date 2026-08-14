@@ -33,6 +33,19 @@ public sealed class SnapshotAgentOptions
 
     public int KeepShims { get; init; } = 3;
 
+    /// <summary>
+    /// Where the folder-per-table analytics handoff is written, or null to not export at all.
+    /// Runs on the publish cadence, right after publishing, inside the same gate — it reads the
+    /// publish directory, so a lost lease must not let a second instance rewrite it.
+    /// </summary>
+    public string? ExportDirectory { get; init; }
+
+    /// <summary>Tables in the handoff, or null for every published table.</summary>
+    public IReadOnlyList<string>? ExportTables { get; init; }
+
+    /// <summary>Versions kept per table folder in the handoff.</summary>
+    public int KeepExportVersionsPerTable { get; init; } = 3;
+
     /// <summary>Drain bound: pump batches per table per cycle (a stuck-failing batch dead-letters after 5 attempts anyway).</summary>
     public int MaxPumpBatchesPerCycle { get; init; } = 100;
 
@@ -87,7 +100,8 @@ public sealed record SnapshotAgentCycle(
     bool ColdStartRebuild,
     IReadOnlyList<SnapshotAgentSourceRun> Sources,
     IReadOnlyList<SnapshotAgentPumpRun> Pumps,
-    SnapshotPublishResult? Publish)
+    SnapshotPublishResult? Publish,
+    SnapshotExportResult? Export = null)
 {
     public static readonly SnapshotAgentCycle Idle = new(true, false, [], [], null);
     public static readonly SnapshotAgentCycle GateUnavailable = new(false, false, [], [], null);
@@ -287,6 +301,7 @@ public sealed class SnapshotAgentLoop : IDisposable
             }
 
             SnapshotPublishResult? publish = null;
+            SnapshotExportResult? export = null;
             if (publishDue && !token.IsCancellationRequested)
             {
                 // The gate is what makes publishing to the shared directory safe — if the lease
@@ -305,18 +320,71 @@ public sealed class SnapshotAgentLoop : IDisposable
                 if (publish.Status == SnapshotPublishStatus.Published)
                     Emit(SnapshotAgentEventLevel.Info,
                         $"Published {publish.ShimFile} (exported: {string.Join(", ", publish.TablesExported)}).");
+
+                export = RunExport(ownershipGuard);
             }
             else if (publishDue)
             {
                 Emit(SnapshotAgentEventLevel.Warning, "Skipped publish — gate lost or cancellation requested mid-cycle.");
             }
 
-            return new SnapshotAgentCycle(true, coldStart, sourceRuns, pumpRuns, publish);
+            return new SnapshotAgentCycle(true, coldStart, sourceRuns, pumpRuns, publish, export);
         }
         finally
         {
             if (gate is not null)
                 await gate.DisposeAsync();
+        }
+    }
+
+    /// <summary>
+    /// Projects the just-published set into the analytics handoff layout. Contained like an
+    /// ingest failure: the snapshot is the product and the handoff is a downstream copy, so an
+    /// offline handoff target must not cost the cycle its publish — but it is emitted as an
+    /// Error, never swallowed.
+    /// </summary>
+    private SnapshotExportResult? RunExport(Action? ownershipGuard)
+    {
+        if (options.ExportDirectory is null)
+            return null;
+
+        try
+        {
+            // Re-checked after the publish: a long export window is exactly where a lease
+            // expires, and the handoff directory is shared.
+            ownershipGuard?.Invoke();
+
+            var export = SnapshotExporter.Export(new SnapshotExportOptions
+            {
+                PublishDirectory = options.PublishDirectory,
+                ExportDirectory = options.ExportDirectory,
+                SnapshotName = options.SnapshotName,
+                Tables = options.ExportTables,
+                KeepVersionsPerTable = options.KeepExportVersionsPerTable,
+            });
+
+            if (export.Status == SnapshotExportStatus.Exported)
+            {
+                Emit(SnapshotAgentEventLevel.Info,
+                    $"Exported handoff at {export.AsOfPublishId} (written: {string.Join(", ", export.TablesWritten)}).");
+            }
+
+            // An un-wired family publishes as valid, EMPTY parquet, which a consumer cannot tell
+            // from "no rows today". The manifest carries rowCount for that reason; this says it
+            // where operators actually look.
+            if (export.TablesWithNoRows.Count > 0)
+            {
+                Emit(SnapshotAgentEventLevel.Warning,
+                    $"Handoff carries empty table(s): {string.Join(", ", export.TablesWithNoRows)} — " +
+                    "consumers cannot distinguish an un-wired feed from a genuinely empty one.");
+            }
+
+            return export;
+        }
+        catch (Exception exception)
+        {
+            Emit(SnapshotAgentEventLevel.Error, "Handoff export failed; the publish stands.", exception: exception);
+            return null;
         }
     }
 

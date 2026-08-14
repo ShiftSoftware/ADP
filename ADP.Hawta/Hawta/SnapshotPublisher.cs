@@ -41,8 +41,13 @@ public static class SnapshotPublisher
     /// <summary>Any shim-shaped file, regardless of snapshot name — used to detect foreign snapshots sharing the directory.</summary>
     private static readonly Regex AnyShimShape = new(@"^.+-[0-9]{17}\.duckdb$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-    /// <summary>Published parquet name shape; retention never touches files outside it (ad-hoc parquet in the directory survives).</summary>
-    private static readonly Regex PublishedParquetShape = new(@"^[A-Za-z][A-Za-z0-9_]*-[0-9]{17}\.parquet$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    /// <summary>
+    /// Published parquet name shape; retention never touches files outside it (ad-hoc parquet in
+    /// the directory survives). The named groups let <see cref="SnapshotExporter"/> recover a
+    /// file's table and publish stamp without re-deriving the naming rule.
+    /// </summary>
+    internal static readonly Regex PublishedParquetShape =
+        new(@"^(?<table>[A-Za-z][A-Za-z0-9_]*)-(?<stamp>[0-9]{17})\.parquet$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     public static SnapshotPublishResult Publish(SnapshotStore store, SnapshotPublishOptions options)
     {
