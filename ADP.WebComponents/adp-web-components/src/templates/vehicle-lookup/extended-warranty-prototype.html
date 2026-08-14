@@ -1,0 +1,1413 @@
+<!doctype html>
+<html lang="en" data-expiry="dim" data-badge="current">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Extended warranty coverage prototype</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --canvas: #f2f4f6;
+        --paper: #ffffff;
+        --paper-soft: #f7f9fa;
+        --ink: #1a2530;
+        --muted: #5f6c78;
+        --line: #d5dce2;
+        --line-soft: #e8ecef;
+        --blue: #3071a9;
+        --blue-dark: #275e8f;
+        --blue-tint: #e8f1f8;
+        --green: #2c8a58;
+        --green-dark: #216b44;
+        --green-tint: #e8f4ed;
+        --red: #b42318;
+        --red-dark: #9b2c2c;
+        --red-tint: #fff1f0;
+        --violet: #755aa5;
+        --violet-dark: #5f4887;
+        --violet-tint: #f0ecf7;
+        --shadow: 0 18px 45px rgba(27, 45, 61, 0.1), 0 2px 7px rgba(27, 45, 61, 0.06);
+        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-width: 320px;
+        min-height: 100vh;
+        margin: 0;
+        color: var(--ink);
+        background: radial-gradient(circle at 17% 0%, rgba(48, 113, 169, 0.11), transparent 34rem), var(--canvas);
+      }
+
+      .page {
+        display: grid;
+        width: min(1040px, calc(100% - 32px));
+        min-height: 100vh;
+        margin: 0 auto;
+        padding: 24px 0 40px;
+        gap: 10px;
+        align-content: start;
+        place-items: center;
+      }
+
+      .prototype-controls {
+        display: grid;
+        width: 100%;
+        gap: 6px;
+        padding: 9px 12px 10px;
+        background: rgba(255, 255, 255, 0.6);
+        border: 1px dashed var(--line);
+        border-radius: 11px;
+      }
+
+      .prototype-controls-tag {
+        margin: 0 0 1px;
+        color: var(--muted);
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        opacity: 0.75;
+      }
+
+      .control-row {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .control-title {
+        flex: 0 0 auto;
+        margin: 0;
+        font-size: 10px;
+        font-weight: 850;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      .scenario-segmented button {
+        min-width: 110px;
+      }
+
+      .warranty-card {
+        position: relative;
+        width: 100%;
+        overflow: hidden;
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 13px;
+        box-shadow: var(--shadow);
+      }
+
+      .warranty-card::before {
+        position: absolute;
+        z-index: 3;
+        inset: 0 0 auto;
+        height: 4px;
+        background: var(--card-accent, linear-gradient(90deg, var(--green) 0 60.022%, var(--blue) 60.022% 80.011%, var(--violet) 80.011% 100%));
+        content: '';
+      }
+
+      .activation-header {
+        display: grid;
+        grid-template-columns: minmax(130px, 1fr) auto;
+        gap: 14px;
+        align-items: center;
+        padding: 14px 20px 12px;
+      }
+
+      .activation-main {
+        min-width: 0;
+      }
+
+      .status-badge {
+        display: inline-flex;
+        flex: 1 1 0;
+        gap: 7px;
+        align-items: center;
+        min-width: 0;
+        min-height: 30px;
+        padding: 5px 12px;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 700;
+        line-height: 1.15;
+        letter-spacing: -0.005em;
+      }
+
+      .status-badge.is-positive {
+        color: var(--green-dark);
+        background: var(--green-tint);
+        border: 1px solid rgba(44, 138, 88, 0.32);
+      }
+
+      .status-badge.is-negative {
+        color: var(--red-dark);
+        background: var(--red-tint);
+        border: 1px solid rgba(180, 35, 24, 0.28);
+      }
+
+      .badge-icon {
+        display: block;
+        flex: 0 0 auto;
+        width: 16px;
+        height: 16px;
+      }
+
+      h1,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        overflow-wrap: anywhere;
+        font-size: clamp(17px, 1.8vw, 20px);
+        font-weight: 500;
+        line-height: 1.15;
+        letter-spacing: -0.025em;
+      }
+
+      h1 span {
+        color: var(--muted);
+      }
+
+      h1 strong {
+        color: var(--ink);
+        font-weight: 760;
+      }
+
+      .total-coverage {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-rows: auto auto;
+        min-width: 250px;
+        padding: 2px 0 2px 14px;
+        background: transparent;
+        border: 0;
+        border-inline-start: 2px solid var(--green);
+        border-radius: 0;
+      }
+
+      .total-coverage span {
+        color: var(--muted);
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: 0.13em;
+        text-transform: uppercase;
+      }
+
+      .total-coverage strong {
+        grid-column: 2;
+        grid-row: 1 / span 2;
+        align-self: center;
+        margin: 0 0 0 10px;
+        color: var(--green-dark);
+        font-size: 20px;
+        line-height: 1.1;
+      }
+
+      .total-coverage .coverage-mix {
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 0;
+        line-height: 1.3;
+        text-transform: none;
+      }
+
+      .journey {
+        padding: 10px 20px 12px;
+        border-top: 1px dashed var(--line);
+      }
+
+      .journey-head {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px 12px;
+        /* stretch, not center: the longer label wraps to two lines at some
+           widths and the pair should stay the same height. */
+        align-items: stretch;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+
+      .segmented {
+        display: flex;
+        flex: 0 0 auto;
+        flex-wrap: wrap;
+        gap: 2px;
+        padding: 2px;
+        background: var(--line-soft);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .segmented button {
+        min-height: 28px;
+        padding: 4px 10px;
+        color: var(--muted);
+        background: transparent;
+        border: 1px solid transparent;
+        border-radius: 6px;
+        cursor: pointer;
+        font: inherit;
+        font-size: 10px;
+        font-weight: 750;
+        letter-spacing: 0.01em;
+        transition:
+          color 150ms ease,
+          border-color 150ms ease,
+          background 150ms ease,
+          box-shadow 150ms ease;
+      }
+
+      .segmented button:hover {
+        color: var(--ink);
+      }
+
+      .segmented button[aria-pressed='true'] {
+        color: var(--ink);
+        background: var(--paper);
+        border-color: rgba(48, 113, 169, 0.28);
+        box-shadow: 0 1px 3px rgba(26, 37, 48, 0.08);
+      }
+
+      .segmented button:focus-visible {
+        outline: 2px solid var(--blue);
+        outline-offset: 2px;
+      }
+
+      .timeline-shell {
+        position: relative;
+        background: var(--paper-soft);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+      }
+
+      .timeline-scroll {
+        overflow-x: auto;
+        padding: 12px 14px 7px;
+        border-radius: inherit;
+        scrollbar-color: #aab5bf transparent;
+        scrollbar-width: thin;
+        overscroll-behavior-inline: contain;
+      }
+
+      .timeline-scroll:focus-visible {
+        outline: 3px solid rgba(48, 113, 169, 0.24);
+        outline-offset: 3px;
+      }
+
+      .timeline-scroll::-webkit-scrollbar {
+        height: 8px;
+      }
+
+      .timeline-scroll::-webkit-scrollbar-thumb {
+        background: #aab5bf;
+        border: 2px solid var(--paper-soft);
+        border-radius: 99px;
+      }
+
+      .timeline {
+        --axis-height: 18px;
+        min-width: 700px;
+      }
+
+      .axis {
+        position: relative;
+        z-index: 2;
+        height: var(--axis-height);
+        margin: 0 8px;
+        border-bottom: 1px solid #bdc7cf;
+      }
+
+      .axis-date {
+        position: absolute;
+        inset: 0 auto auto var(--at);
+        padding: 0 3px;
+        color: var(--muted);
+        background: var(--paper-soft);
+        font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+        font-size: 11px;
+        font-weight: 800;
+        line-height: 1;
+        white-space: nowrap;
+        transform: translateX(-50%);
+      }
+
+      .axis-date:first-child {
+        transform: none;
+      }
+
+      .axis-date:last-child {
+        transform: translateX(-100%);
+      }
+
+      .axis-date::after {
+        position: absolute;
+        top: var(--axis-height);
+        left: 50%;
+        width: 1px;
+        height: 12px;
+        background: #aeb9c2;
+        content: '';
+      }
+
+      .axis-date:first-child::after {
+        left: 0;
+      }
+
+      .axis-date:last-child::after {
+        left: 100%;
+      }
+
+      .lane {
+        --track-top: 16px;
+        --track-height: 54px;
+        --label-band: 29px;
+        position: relative;
+        isolation: isolate;
+        height: calc(var(--track-top) + var(--track-height) + var(--label-band));
+        margin: 0 8px;
+      }
+
+      .lane::before {
+        position: absolute;
+        inset: var(--track-top) 0 auto;
+        height: var(--track-height);
+        background: repeating-linear-gradient(-45deg, rgba(95, 108, 120, 0.035) 0 5px, transparent 5px 10px), #edf1f3;
+        border: 1px solid var(--line-soft);
+        border-radius: 8px;
+        content: '';
+      }
+
+      .today-head {
+        position: relative;
+        height: 50px;
+        margin: 0 8px;
+      }
+
+      .today-pill {
+        position: absolute;
+        top: 0;
+        left: var(--at);
+        padding: 3px 6px;
+        color: var(--blue-dark);
+        background: var(--blue-tint);
+        border: 1px solid rgba(48, 113, 169, 0.32);
+        border-radius: 999px;
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        white-space: nowrap;
+        transform: translateX(-50%);
+      }
+
+      .today-head.is-near-end .today-pill {
+        transform: translateX(calc(-100% + 8px));
+      }
+
+      .today-marker {
+        position: absolute;
+        z-index: 5;
+        top: calc(-1 * var(--axis-height) - 21px);
+        bottom: var(--label-band);
+        left: var(--at);
+        width: 0;
+        pointer-events: none;
+      }
+
+      .today-marker::before {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: -1px;
+        width: 2px;
+        background: var(--blue);
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.72);
+        content: '';
+      }
+
+      /* The stretch across the label band is a separate element sitting below
+         the coverage list, so coverage names paint over the line instead of
+         being cut by it. */
+      .today-tail {
+        position: absolute;
+        z-index: 0;
+        top: calc(100% - var(--label-band));
+        bottom: 0;
+        left: var(--at);
+        width: 0;
+        pointer-events: none;
+      }
+
+      .today-tail::before {
+        position: absolute;
+        inset: 0 auto 0 -1px;
+        width: 2px;
+        background: var(--blue);
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.72);
+        content: '';
+      }
+
+      .today-marker::after {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 8px;
+        height: 8px;
+        background: var(--paper);
+        border: 2px solid var(--blue);
+        border-radius: 50%;
+        content: '';
+        transform: translateX(-50%);
+      }
+
+      .coverage-entry {
+        position: absolute;
+        z-index: var(--layer, 1);
+        top: var(--track-top);
+        left: var(--start);
+        width: var(--span);
+        min-width: 0;
+        transition:
+          opacity 160ms ease,
+          filter 160ms ease;
+      }
+
+      .coverage-list {
+        position: absolute;
+        z-index: 1;
+        inset: 0;
+      }
+
+      .segment {
+        position: relative;
+        display: flex;
+        width: 100%;
+        height: var(--track-height);
+        min-width: 0;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        border: 1px solid;
+        border-radius: 8px;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.56);
+      }
+
+      .standard {
+        justify-content: flex-start;
+        padding: 0 16px;
+        color: var(--green-dark);
+        background: rgba(232, 244, 237, 0.9);
+        border-color: rgba(44, 138, 88, 0.55);
+        border-inline-start: 4px solid var(--green);
+      }
+
+      .standard strong {
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.015em;
+      }
+
+      .provider-one {
+        background: rgba(232, 241, 248, 0.88);
+        border-color: rgba(48, 113, 169, 0.64);
+        border-style: dashed;
+      }
+
+      .provider-two {
+        background: rgba(240, 236, 247, 0.9);
+        border-color: rgba(117, 90, 165, 0.65);
+        border-style: dotted;
+        border-width: 2px;
+      }
+
+      .provider-logo {
+        display: block;
+        flex: 0 0 auto;
+        object-fit: contain;
+      }
+
+      .toyota-logo {
+        width: min(150px, calc(100% + 20px));
+        height: auto;
+        max-height: 45px;
+      }
+
+      .adp-logo {
+        width: auto;
+        height: 46px;
+        max-width: calc(100% - 12px);
+      }
+
+      .coverage-label {
+        display: block;
+        width: 100%;
+        min-height: 24px;
+        margin-top: 5px;
+        padding: 0 4px;
+        color: var(--ink);
+        font-size: 10px;
+        font-weight: 800;
+        line-height: 1.2;
+        text-align: center;
+      }
+
+      .boundary {
+        position: absolute;
+        z-index: 6;
+        top: calc(var(--track-top) + var(--track-height) / 2);
+        left: var(--at);
+        width: 10px;
+        height: 10px;
+        background: var(--blue);
+        border: 2px solid var(--paper);
+        border-radius: 50%;
+        box-shadow: 0 0 0 1px rgba(48, 113, 169, 0.46);
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+      }
+
+      .boundary-layer {
+        position: absolute;
+        z-index: 6;
+        inset: 0;
+        pointer-events: none;
+      }
+
+      .boundary.provider-handoff {
+        background: var(--violet);
+        box-shadow: 0 0 0 1px rgba(117, 90, 165, 0.46);
+      }
+
+      /* ---------------------------------------------------------------
+         Expiry indication — four switchable treatments for the elapsed
+         (left-of-today) part of the timeline. Prototype scaffolding: the
+         component keeps only the one that gets picked.
+         --------------------------------------------------------------- */
+
+      /* A · Dim — a finished contract fades back and loses its colour. */
+      html[data-expiry='dim'] .coverage-entry[data-status='expired'] {
+        opacity: 0.44;
+        filter: saturate(0.28);
+      }
+
+      html[data-expiry='dim'] .coverage-entry[data-status='expired'] .coverage-label {
+        color: var(--muted);
+      }
+
+      /* B · Past wash — one shade over everything before today, so the
+         elapsed slice of the running contract is greyed out as well. */
+      .past-wash {
+        position: absolute;
+        z-index: 4;
+        top: var(--track-top);
+        left: 0;
+        display: none;
+        width: var(--to, 0%);
+        height: var(--track-height);
+        background: linear-gradient(90deg, rgba(228, 233, 236, 0.62) 0%, rgba(228, 233, 236, 0.46) 100%);
+        border-radius: 8px 0 0 8px;
+        backdrop-filter: grayscale(0.92);
+        -webkit-backdrop-filter: grayscale(0.92);
+        pointer-events: none;
+      }
+
+      html[data-expiry='wash'] .past-wash {
+        display: block;
+      }
+
+      /* C · Consumed — every contract shows how much of it is used up:
+         expired ones are full, the running one fills up to today. */
+      .consumed-fill {
+        position: absolute;
+        z-index: 2;
+        inset: 0 auto 0 0;
+        display: none;
+        width: var(--consumed, 0%);
+        background: linear-gradient(rgba(233, 237, 240, 0.66), rgba(233, 237, 240, 0.66));
+        border-inline-end: 1px solid rgba(95, 108, 120, 0.34);
+        backdrop-filter: grayscale(1);
+        -webkit-backdrop-filter: grayscale(1);
+        pointer-events: none;
+      }
+
+      html[data-expiry='consumed'] .consumed-fill {
+        display: block;
+      }
+
+      html[data-expiry='consumed'] .coverage-entry[data-status='expired'] .coverage-label {
+        color: var(--muted);
+      }
+
+      /* D · Hatch + tag — a finished contract keeps its colour identity but
+         is hatched out and labelled, so "expired" is stated, not implied. */
+      html[data-expiry='hatch'] .coverage-entry[data-status='expired'] .segment {
+        color: var(--muted);
+        background-color: rgba(247, 249, 250, 0.85);
+        background-image: repeating-linear-gradient(-45deg, rgba(95, 108, 120, 0.15) 0 5px, transparent 5px 10px);
+        border-style: dashed;
+        border-color: rgba(95, 108, 120, 0.42);
+        box-shadow: none;
+      }
+
+      html[data-expiry='hatch'] .coverage-entry[data-status='expired'] .provider-logo {
+        filter: grayscale(1);
+        opacity: 0.5;
+      }
+
+      html[data-expiry='hatch'] .coverage-entry[data-status='expired'] .coverage-label {
+        color: var(--muted);
+      }
+
+      html[data-expiry='hatch'] .coverage-entry[data-status='expired'] .expired-tag {
+        display: inline-flex;
+      }
+
+      .expired-tag {
+        display: none;
+        margin-inline-start: 5px;
+        padding: 1px 5px;
+        color: var(--muted);
+        background: var(--line-soft);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        font-size: 8px;
+        font-weight: 850;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        vertical-align: 1px;
+      }
+
+      /* ---------------------------------------------------------------
+         Status badge treatments - switchable ideas for making the two
+         badges more vibrant. Prototype scaffolding: the component keeps
+         only the one that gets picked.
+         --------------------------------------------------------------- */
+
+      /* A - Solid: full-strength fill, white text and glyph. */
+      /* --green-dark, not --green: white on --green is 4.30:1, under the
+         4.5:1 AA floor for 13px text. This is 6.46:1. */
+      html[data-badge='solid'] .status-badge.is-positive {
+        color: #ffffff;
+        background: var(--green-dark);
+        border-color: #1a5535;
+      }
+
+      html[data-badge='solid'] .status-badge.is-negative {
+        color: #ffffff;
+        background: var(--red);
+        border-color: #8f1d13;
+      }
+
+      /* B - Split cap: solid leading cap carrying the glyph, tinted body. */
+      html[data-badge='cap'] .status-badge {
+        gap: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+
+      /* Text absorbs the slack so the cap stays flush to the leading edge
+         when the badge is stretched full width on narrow screens. */
+      html[data-badge='cap'] .status-badge > span {
+        flex: 1 1 auto;
+        padding: 6px 13px 6px 11px;
+        text-align: center;
+      }
+
+      html[data-badge='cap'] .badge-icon {
+        box-sizing: border-box;
+        align-self: stretch;
+        width: 34px;
+        height: auto;
+        padding: 6px 9px;
+        color: #ffffff;
+      }
+
+      html[data-badge='cap'] .status-badge.is-positive .badge-icon {
+        background: var(--green);
+      }
+
+      html[data-badge='cap'] .status-badge.is-negative .badge-icon {
+        background: var(--red);
+      }
+
+      /* C - Bold outline: white body, full-strength rule and glyph. */
+      html[data-badge='outline'] .status-badge {
+        border-width: 2px;
+        font-weight: 750;
+      }
+
+      html[data-badge='outline'] .status-badge.is-positive {
+        background: var(--paper);
+        border-color: var(--green);
+      }
+
+      html[data-badge='outline'] .status-badge.is-positive .badge-icon {
+        color: var(--green);
+      }
+
+      html[data-badge='outline'] .status-badge.is-negative {
+        background: var(--paper);
+        border-color: var(--red);
+      }
+
+      html[data-badge='outline'] .status-badge.is-negative .badge-icon {
+        color: var(--red);
+      }
+
+      /* D - Glow: tinted gradient with a soft coloured halo. */
+      html[data-badge='glow'] .status-badge.is-positive {
+        background: linear-gradient(#f3faf6, #dcefe4);
+        border-color: rgba(44, 138, 88, 0.5);
+        box-shadow:
+          0 1px 2px rgba(44, 138, 88, 0.2),
+          0 0 0 3px rgba(44, 138, 88, 0.12);
+      }
+
+      html[data-badge='glow'] .status-badge.is-positive .badge-icon {
+        color: var(--green);
+      }
+
+      html[data-badge='glow'] .status-badge.is-negative {
+        background: linear-gradient(#fff5f4, #ffe3e1);
+        border-color: rgba(180, 35, 24, 0.45);
+        box-shadow:
+          0 1px 2px rgba(180, 35, 24, 0.18),
+          0 0 0 3px rgba(180, 35, 24, 0.1);
+      }
+
+      html[data-badge='glow'] .status-badge.is-negative .badge-icon {
+        color: var(--red);
+      }
+
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      @media (max-width: 820px) {
+        .activation-header {
+          grid-template-columns: minmax(0, 1fr) auto;
+          gap: 6px 10px;
+          padding: 10px 12px 9px;
+        }
+
+        h1 {
+          font-size: 16px;
+        }
+
+        .total-coverage {
+          min-width: 0;
+          width: clamp(170px, 50vw, 190px);
+          padding-inline-start: 10px;
+          justify-self: end;
+        }
+      }
+
+      @media (max-width: 700px) {
+        .page {
+          width: min(100% - 20px, 1040px);
+          padding: 12px 0 24px;
+          place-items: start center;
+        }
+
+        .prototype-controls {
+          padding: 8px 10px 9px;
+        }
+
+        .control-row {
+          flex-direction: column;
+          gap: 4px;
+          align-items: stretch;
+        }
+
+        .scenario-segmented button {
+          min-width: 0;
+          font-size: 9px;
+        }
+
+        .journey {
+          padding: 8px 8px 10px;
+        }
+
+        .journey-head {
+          gap: 6px;
+          margin-bottom: 6px;
+          padding-inline: 4px;
+        }
+
+        .status-badge {
+          gap: 6px;
+          min-height: 28px;
+          padding: 5px 10px;
+          font-size: 12px;
+        }
+
+        .badge-icon {
+          width: 15px;
+          height: 15px;
+        }
+
+        .segmented button {
+          flex: 1 1 auto;
+          min-width: 0;
+          padding-inline: 4px;
+        }
+
+        .timeline-scroll {
+          padding: 10px 10px 5px;
+        }
+
+        .timeline {
+          --axis-height: 30px;
+          min-width: 420px;
+        }
+
+        .today-head.is-near-end .today-pill {
+          transform: translateX(calc(-100% - 46px));
+        }
+
+        .today-head.is-near-end .today-pill::after {
+          position: absolute;
+          top: 50%;
+          left: 100%;
+          width: 46px;
+          border-top: 1px solid rgba(48, 113, 169, 0.42);
+          content: '';
+        }
+
+        .axis-date:last-child {
+          top: 13px;
+        }
+
+        .axis-date:last-child::after {
+          top: calc(var(--axis-height) - 13px);
+        }
+      }
+
+      /* Below this the two badges no longer fit side by side, so stack them
+         full width rather than letting them wrap into a ragged row. */
+      @media (max-width: 430px) {
+        .journey-head {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .status-badge {
+          justify-content: center;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="prototype-controls" aria-label="Prototype controls">
+        <p class="prototype-controls-tag">Prototype controls</p>
+
+        <div class="control-row">
+          <p id="scenario-picker-title" class="control-title">Warranty examples</p>
+          <div class="segmented scenario-segmented" role="group" aria-labelledby="scenario-picker-title">
+            <button type="button" data-scenario-button="standard-only" aria-pressed="false" aria-controls="warranty-card">Standard only</button>
+            <button type="button" data-scenario-button="rewarded" aria-pressed="false" aria-controls="warranty-card">Rewarded warranty</button>
+            <button type="button" data-scenario-button="two-extensions" aria-pressed="true" aria-controls="warranty-card">Two extensions</button>
+            <button type="button" data-scenario-button="lapsed" aria-pressed="false" aria-controls="warranty-card">Recently lapsed</button>
+            <button type="button" data-scenario-button="long-expired" aria-pressed="false" aria-controls="warranty-card">Long expired</button>
+          </div>
+        </div>
+
+        <div class="control-row">
+          <p id="authorization-picker-title" class="control-title">Authorization</p>
+          <div class="segmented" role="group" aria-labelledby="authorization-picker-title">
+            <button type="button" data-authorization-button="authorized" aria-pressed="true" aria-controls="warranty-card">Authorized</button>
+            <button type="button" data-authorization-button="unauthorized" aria-pressed="false" aria-controls="warranty-card">Unauthorized</button>
+          </div>
+        </div>
+
+        <div class="control-row">
+          <p id="expiry-picker-title" class="control-title">Expiry indication</p>
+          <div class="segmented expiry-segmented" role="group" aria-labelledby="expiry-picker-title">
+            <button type="button" data-expiry-button="none" aria-pressed="false" aria-controls="warranty-card">None</button>
+            <button type="button" data-expiry-button="dim" aria-pressed="true" aria-controls="warranty-card">A · Dim</button>
+            <button type="button" data-expiry-button="wash" aria-pressed="false" aria-controls="warranty-card">B · Past wash</button>
+            <button type="button" data-expiry-button="consumed" aria-pressed="false" aria-controls="warranty-card">C · Consumed</button>
+            <button type="button" data-expiry-button="hatch" aria-pressed="false" aria-controls="warranty-card">D · Hatch + tag</button>
+          </div>
+        </div>
+
+        <div class="control-row">
+          <p id="badge-picker-title" class="control-title">Status badges</p>
+          <div class="segmented badge-segmented" role="group" aria-labelledby="badge-picker-title">
+            <button type="button" data-badge-button="current" aria-pressed="true" aria-controls="warranty-card">Current</button>
+            <button type="button" data-badge-button="solid" aria-pressed="false" aria-controls="warranty-card">A - Solid</button>
+            <button type="button" data-badge-button="cap" aria-pressed="false" aria-controls="warranty-card">B - Split cap</button>
+            <button type="button" data-badge-button="outline" aria-pressed="false" aria-controls="warranty-card">C - Bold outline</button>
+            <button type="button" data-badge-button="glow" aria-pressed="false" aria-controls="warranty-card">D - Glow</button>
+          </div>
+        </div>
+
+        <p id="interaction-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+      </section>
+
+      <article id="warranty-card" class="warranty-card" aria-labelledby="activation-title">
+        <header class="activation-header">
+          <div class="activation-main">
+            <h1 id="activation-title"><span>Activated by:</span> <strong id="activation-company">Dealer C</strong></h1>
+          </div>
+
+          <aside id="total-coverage" class="total-coverage" aria-label="Total planned protection: 5 years; 3 years standard plus 2 years extended">
+            <span>Total planned protection</span>
+            <strong id="total-years">5 years</strong>
+            <span id="coverage-mix" class="coverage-mix">3 years standard + 2 years extended</span>
+          </aside>
+        </header>
+
+        <section class="journey" aria-label="Warranty coverage">
+          <div class="journey-head">
+            <span id="authorization-status" class="status-badge is-positive"></span>
+            <span id="protection-status" class="status-badge is-positive"></span>
+          </div>
+
+          <div class="timeline-shell">
+            <div class="timeline-scroll" tabindex="0" role="region" aria-label="Warranty coverage timeline" aria-describedby="journey-summary">
+              <div class="timeline">
+                <div id="today-head" class="today-head" aria-hidden="true">
+                  <span id="today-pill" class="today-pill">Today · 2026-08-13</span>
+                </div>
+
+                <div id="timeline-axis" class="axis" aria-hidden="true"></div>
+
+                <div id="timeline-lane" class="lane">
+                  <span id="today-tail" class="today-tail" aria-hidden="true"></span>
+                  <div id="coverage-list" class="coverage-list" role="list"></div>
+
+                  <div id="boundary-layer" class="boundary-layer" aria-hidden="true"></div>
+                  <span id="past-wash" class="past-wash" aria-hidden="true"></span>
+                  <span id="today-marker" class="today-marker" aria-hidden="true"></span>
+                </div>
+
+                <p id="journey-summary" class="sr-only"></p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </article>
+    </main>
+    <script>
+      const snapshotDate = '2026-08-13';
+      const scenarios = {
+        'standard-only': {
+          label: 'Standard only',
+          activatedBy: 'Dealer A',
+          total: '3 years',
+          mix: '3 years standard',
+          range: ['2024-02-01', '2027-02-01'],
+          ticks: ['2024-02-01', '2027-02-01'],
+          coverages: [
+            {
+              id: 'standard',
+              kind: 'standard',
+              name: 'Standard warranty',
+              label: 'New Vehicle Warranty',
+              start: '2024-02-01',
+              end: '2027-02-01',
+            },
+          ],
+        },
+        'rewarded': {
+          label: 'Rewarded warranty',
+          activatedBy: 'Dealer B',
+          total: '4 years',
+          mix: '3 years standard + 1 year rewarded',
+          range: ['2023-02-01', '2027-02-01'],
+          ticks: ['2023-02-01', '2026-02-01', '2027-02-01'],
+          coverages: [
+            {
+              id: 'standard',
+              kind: 'standard',
+              name: 'Standard warranty',
+              label: 'New Vehicle Warranty',
+              start: '2023-02-01',
+              end: '2026-02-01',
+            },
+            {
+              id: 'provider-one',
+              kind: 'extended',
+              name: 'Toyota extended warranty',
+              label: 'Rewarded Warranty',
+              start: '2026-02-01',
+              end: '2027-02-01',
+              logo: './prototype-assets/extended-warranty/toyota-logo.png',
+              logoClass: 'toyota-logo',
+            },
+          ],
+        },
+        'two-extensions': {
+          label: 'Two extensions',
+          activatedBy: 'Dealer C',
+          total: '5 years',
+          mix: '3 years standard + 2 years extended',
+          range: ['2022-02-01', '2027-02-01'],
+          ticks: ['2022-02-01', '2025-02-01', '2026-02-01', '2027-02-01'],
+          coverages: [
+            {
+              id: 'standard',
+              kind: 'standard',
+              name: 'Standard warranty',
+              label: 'New Vehicle Warranty',
+              start: '2022-02-01',
+              end: '2025-02-01',
+            },
+            {
+              id: 'provider-one',
+              kind: 'extended',
+              name: 'Toyota extended warranty',
+              label: 'Rewarded Warranty',
+              start: '2025-02-01',
+              end: '2026-02-01',
+              logo: './prototype-assets/extended-warranty/toyota-logo.png',
+              logoClass: 'toyota-logo',
+            },
+            {
+              id: 'provider-two',
+              kind: 'extended',
+              name: 'ADP extended warranty',
+              label: 'Used Car Purchase',
+              start: '2026-02-01',
+              end: '2027-02-01',
+              logo: './prototype-assets/extended-warranty/adp-logo.svg',
+              logoClass: 'adp-logo',
+            },
+          ],
+        },
+        'lapsed': {
+          label: 'Lapsed',
+          activatedBy: 'Dealer A',
+          total: '5 years',
+          mix: '3 years standard + 2 years extended',
+          range: ['2020-02-01', '2027-02-01'],
+          ticks: ['2020-02-01', '2023-02-01', '2025-02-01', '2027-02-01'],
+          coverages: [
+            {
+              id: 'standard',
+              kind: 'standard',
+              name: 'Standard warranty',
+              label: 'New Vehicle Warranty',
+              start: '2020-02-01',
+              end: '2023-02-01',
+            },
+            {
+              id: 'provider-one',
+              kind: 'extended',
+              name: 'Toyota extended warranty',
+              label: 'Rewarded Warranty',
+              start: '2023-02-01',
+              end: '2025-02-01',
+              logo: './prototype-assets/extended-warranty/toyota-logo.png',
+              logoClass: 'toyota-logo',
+            },
+          ],
+        },
+        'long-expired': {
+          label: 'Long expired',
+          activatedBy: 'Dealer B',
+          total: '5 years',
+          mix: '3 years standard + 2 years extended',
+          range: ['2007-06-01', '2027-06-01'],
+          ticks: ['2007-06-01', '2010-06-01', '2012-06-01', '2027-06-01'],
+          coverages: [
+            {
+              id: 'standard',
+              kind: 'standard',
+              name: 'Standard warranty',
+              label: 'New Vehicle Warranty',
+              start: '2007-06-01',
+              end: '2010-06-01',
+            },
+            {
+              id: 'provider-one',
+              kind: 'extended',
+              name: 'Toyota extended warranty',
+              label: 'Rewarded Warranty',
+              start: '2010-06-01',
+              end: '2012-06-01',
+              logo: './prototype-assets/extended-warranty/toyota-logo.png',
+              logoClass: 'toyota-logo',
+            },
+          ],
+        },
+      };
+
+      // Same glyphs the live warranty status cards use (check.svg / x-mark.svg).
+      const badgeIcons = {
+        positive:
+          '<svg class="badge-icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false"><path fill="currentColor" d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM369 209L241 337c-9.4 9.4-24.6 9.4-33.9 0l-64-64c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l47 47L335 175c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9z" /></svg>',
+        negative:
+          '<svg class="badge-icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false"><path fill="currentColor" d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM175 175c9.4-9.4 24.6-9.4 33.9 0l47 47 47-47c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9l-47 47 47 47c9.4 9.4 9.4 24.6 0 33.9s-24.6 9.4-33.9 0l-47-47-47 47c-9.4 9.4-24.6 9.4-33.9 0s-9.4-24.6 0-33.9l47-47-47-47c-9.4-9.4-9.4-24.6 0-33.9z" /></svg>',
+      };
+
+      const expiryDescriptions = {
+        'none': 'no expiry treatment',
+        'dim': 'expired coverage dimmed',
+        'wash': 'everything before today shaded',
+        'consumed': 'the elapsed portion of every coverage filled in',
+        'hatch': 'expired coverage hatched and tagged',
+      };
+
+      const badgeDescriptions = {
+        'current': 'the current tinted pill',
+        'solid': 'solid fill with white text',
+        'cap': 'a solid leading cap with a tinted body',
+        'outline': 'a white body with a bold coloured rule',
+        'glow': 'a tinted gradient with a soft halo',
+      };
+
+      const root = document.documentElement;
+      const warrantyCard = document.querySelector('#warranty-card');
+      const activationCompany = document.querySelector('#activation-company');
+      const authorizationStatus = document.querySelector('#authorization-status');
+      const protectionStatus = document.querySelector('#protection-status');
+      const totalCoverage = document.querySelector('#total-coverage');
+      const totalYears = document.querySelector('#total-years');
+      const coverageMix = document.querySelector('#coverage-mix');
+      const timelineScroller = document.querySelector('.timeline-scroll');
+      const timelineAxis = document.querySelector('#timeline-axis');
+      const coverageList = document.querySelector('#coverage-list');
+      const boundaryLayer = document.querySelector('#boundary-layer');
+      const pastWash = document.querySelector('#past-wash');
+      const todayMarker = document.querySelector('#today-marker');
+      const todayTail = document.querySelector('#today-tail');
+      const todayHead = document.querySelector('#today-head');
+      const todayPill = document.querySelector('#today-pill');
+      const journeySummary = document.querySelector('#journey-summary');
+      const interactionStatus = document.querySelector('#interaction-status');
+      const scenarioButtons = [...document.querySelectorAll('[data-scenario-button]')];
+      const authorizationButtons = [...document.querySelectorAll('[data-authorization-button]')];
+      const expiryButtons = [...document.querySelectorAll('[data-expiry-button]')];
+      const badgeButtons = [...document.querySelectorAll('[data-badge-button]')];
+      let activeScenarioId = 'two-extensions';
+      let isAuthorized = true;
+
+      const toTimestamp = isoDate => Date.parse(`${isoDate}T00:00:00Z`);
+
+      const clampPercentage = value => Math.min(100, Math.max(0, value));
+
+      const positionInRange = (isoDate, scenario) => {
+        const rangeStart = toTimestamp(scenario.range[0]);
+        const rangeEnd = toTimestamp(scenario.range[1]);
+        return ((toTimestamp(isoDate) - rangeStart) / (rangeEnd - rangeStart)) * 100;
+      };
+
+      const asPercentage = value => `${value.toFixed(6)}%`;
+
+      const coverageStatus = coverage => {
+        const snapshot = toTimestamp(snapshotDate);
+        if (snapshot < toTimestamp(coverage.start)) return 'upcoming';
+        if (snapshot >= toTimestamp(coverage.end)) return 'expired';
+        return 'active';
+      };
+
+      const consumedShare = coverage => {
+        const status = coverageStatus(coverage);
+        if (status === 'expired') return 100;
+        if (status === 'upcoming') return 0;
+        const start = toTimestamp(coverage.start);
+        const end = toTimestamp(coverage.end);
+        return ((toTimestamp(snapshotDate) - start) / (end - start)) * 100;
+      };
+
+      const setStatusBadge = (element, isPositive, text) => {
+        element.className = `status-badge ${isPositive ? 'is-positive' : 'is-negative'}`;
+        element.innerHTML = `${isPositive ? badgeIcons.positive : badgeIcons.negative}<span>${text}</span>`;
+        element.setAttribute('aria-label', `${text}, on snapshot date ${snapshotDate}`);
+      };
+
+      const createCoverageEntry = (coverage, scenario) => {
+        const start = positionInRange(coverage.start, scenario);
+        const end = positionInRange(coverage.end, scenario);
+        const entry = document.createElement('div');
+        const segment = document.createElement('div');
+        const consumed = document.createElement('span');
+        const label = document.createElement('span');
+        const status = coverageStatus(coverage);
+
+        entry.className = `coverage-entry entry-${coverage.id}`;
+        entry.dataset.kind = coverage.kind;
+        entry.dataset.status = status;
+        entry.setAttribute('role', 'listitem');
+        entry.setAttribute('aria-label', `${coverage.name}, ${coverage.label}, ${coverage.start} to ${coverage.end}, ${status} on the ${snapshotDate} snapshot`);
+        entry.style.setProperty('--start', asPercentage(start));
+        entry.style.setProperty('--span', asPercentage(end - start));
+
+        segment.className = `segment ${coverage.id === 'standard' ? 'standard' : coverage.id}`;
+        if (coverage.kind === 'standard') {
+          const name = document.createElement('strong');
+          name.textContent = coverage.name;
+          segment.append(name);
+        } else {
+          const logo = document.createElement('img');
+          logo.className = `provider-logo ${coverage.logoClass}`;
+          logo.src = coverage.logo;
+          logo.alt = '';
+          segment.append(logo);
+        }
+
+        consumed.className = 'consumed-fill';
+        consumed.setAttribute('aria-hidden', 'true');
+        consumed.style.setProperty('--consumed', asPercentage(clampPercentage(consumedShare(coverage))));
+        segment.append(consumed);
+
+        label.className = 'coverage-label';
+        label.append(coverage.label);
+        if (status === 'expired') {
+          const expiredTag = document.createElement('span');
+          expiredTag.className = 'expired-tag';
+          expiredTag.textContent = 'Expired';
+          label.append(expiredTag);
+        }
+        entry.append(segment, label);
+        return entry;
+      };
+
+      const buildCardAccent = scenario => {
+        const colorById = {
+          'standard': 'var(--green)',
+          'provider-one': 'var(--blue)',
+          'provider-two': 'var(--violet)',
+        };
+        const stops = scenario.coverages.map(coverage => {
+          const start = asPercentage(positionInRange(coverage.start, scenario));
+          const end = asPercentage(positionInRange(coverage.end, scenario));
+          return `${colorById[coverage.id]} ${start} ${end}`;
+        });
+        return scenario.coverages.length === 1 ? colorById.standard : `linear-gradient(90deg, ${stops.join(', ')})`;
+      };
+
+      const revealToday = (behavior = 'auto') => {
+        const scenario = scenarios[activeScenarioId];
+        requestAnimationFrame(() => {
+          const overflow = timelineScroller.scrollWidth - timelineScroller.clientWidth;
+          if (overflow <= 0) return timelineScroller.scrollTo({ left: 0, behavior });
+          const todayShare = clampPercentage(positionInRange(snapshotDate, scenario)) / 100;
+          const target = timelineScroller.scrollWidth * todayShare - timelineScroller.clientWidth / 2;
+          timelineScroller.scrollTo({ left: Math.min(Math.max(target, 0), overflow), behavior });
+        });
+      };
+
+      const renderScenario = (scenarioId, announce = true) => {
+        const scenario = scenarios[scenarioId];
+        activeScenarioId = scenarioId;
+        const hasExtended = scenario.coverages.some(coverage => coverage.kind === 'extended');
+        const hasActiveWarranty = scenario.coverages.some(coverage => coverageStatus(coverage) === 'active');
+
+        scenarioButtons.forEach(button => {
+          button.setAttribute('aria-pressed', String(button.dataset.scenarioButton === scenarioId));
+        });
+        activationCompany.textContent = scenario.activatedBy;
+        setStatusBadge(authorizationStatus, isAuthorized, isAuthorized ? 'Authorized' : 'Unauthorized');
+        setStatusBadge(protectionStatus, hasActiveWarranty, hasActiveWarranty ? 'Has Active Warranty' : "Doesn't Have Active Warranty");
+        totalYears.textContent = scenario.total;
+        coverageMix.textContent = scenario.mix;
+        totalCoverage.setAttribute('aria-label', `Total planned protection: ${scenario.total}; ${scenario.mix}`);
+        warrantyCard.style.setProperty('--card-accent', buildCardAccent(scenario));
+
+        const tickFragment = document.createDocumentFragment();
+        scenario.ticks.forEach(tickDate => {
+          const tick = document.createElement('span');
+          tick.className = 'axis-date';
+          tick.textContent = tickDate;
+          tick.style.setProperty('--at', asPercentage(positionInRange(tickDate, scenario)));
+          tickFragment.append(tick);
+        });
+        timelineAxis.replaceChildren(tickFragment);
+
+        const coverageFragment = document.createDocumentFragment();
+        scenario.coverages.forEach(coverage => coverageFragment.append(createCoverageEntry(coverage, scenario)));
+        coverageList.replaceChildren(coverageFragment);
+        coverageList.setAttribute('aria-label', `${scenario.label}: ${hasExtended ? 'standard and extended warranty contracts' : 'standard warranty contract only'}`);
+
+        const boundaryFragment = document.createDocumentFragment();
+        scenario.coverages.slice(1).forEach((coverage, index) => {
+          const boundary = document.createElement('span');
+          boundary.className = `boundary${index > 0 ? ' provider-handoff' : ''}`;
+          boundary.style.setProperty('--at', asPercentage(positionInRange(coverage.start, scenario)));
+          boundaryFragment.append(boundary);
+        });
+        boundaryLayer.replaceChildren(boundaryFragment);
+
+        const todayPosition = positionInRange(snapshotDate, scenario);
+        todayMarker.style.setProperty('--at', asPercentage(todayPosition));
+        todayTail.style.setProperty('--at', asPercentage(todayPosition));
+        todayHead.style.setProperty('--at', asPercentage(todayPosition));
+        todayPill.textContent = `Today · ${snapshotDate}`;
+        // Only pull the pill off its line when centring it would run past the edge.
+        const headWidth = todayHead.clientWidth;
+        const pillCentre = (headWidth * clampPercentage(todayPosition)) / 100;
+        todayHead.classList.toggle('is-near-end', pillCentre + todayPill.offsetWidth / 2 > headWidth);
+        pastWash.style.setProperty('--to', asPercentage(clampPercentage(todayPosition)));
+
+        const coverageDescriptions = scenario.coverages.map(coverage => `${coverage.label} runs from ${coverage.start} to ${coverage.end} and is ${coverageStatus(coverage)}`);
+        journeySummary.textContent = `${coverageDescriptions.join('. ')}. ${hasExtended ? 'Coverage handoffs are contiguous.' : 'No extended coverage is recorded.'} The snapshot date is ${snapshotDate}, and everything left of the today marker has elapsed, shown with ${expiryDescriptions[root.dataset.expiry]}. Scroll horizontally on narrow screens.`;
+        if (announce) {
+          interactionStatus.textContent = `${scenario.label} example loaded. Activated by ${scenario.activatedBy}. ${scenario.total} total planned protection. ${isAuthorized ? 'Authorized' : 'Unauthorized'}. ${hasActiveWarranty ? 'Has active warranty' : "Doesn't have active warranty"} on ${snapshotDate}. ${hasExtended ? `${scenario.coverages.length - 1} extended coverage ${scenario.coverages.length === 2 ? 'span' : 'spans'}.` : 'No extended coverage.'}`;
+        }
+        revealToday('auto');
+      };
+
+      scenarioButtons.forEach(button => {
+        button.addEventListener('click', () => renderScenario(button.dataset.scenarioButton));
+      });
+
+      authorizationButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          isAuthorized = button.dataset.authorizationButton === 'authorized';
+          authorizationButtons.forEach(other => other.setAttribute('aria-pressed', String(other === button)));
+          setStatusBadge(authorizationStatus, isAuthorized, isAuthorized ? 'Authorized' : 'Unauthorized');
+          interactionStatus.textContent = `Vehicle shown as ${isAuthorized ? 'authorized' : 'unauthorized'}.`;
+        });
+      });
+
+      expiryButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          const expiryStyle = button.dataset.expiryButton;
+          root.dataset.expiry = expiryStyle;
+          expiryButtons.forEach(other => other.setAttribute('aria-pressed', String(other === button)));
+          renderScenario(activeScenarioId, false);
+          interactionStatus.textContent = `Expiry indication: ${expiryDescriptions[expiryStyle]}.`;
+        });
+      });
+
+      badgeButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          const badgeStyle = button.dataset.badgeButton;
+          root.dataset.badge = badgeStyle;
+          badgeButtons.forEach(other => other.setAttribute('aria-pressed', String(other === button)));
+          interactionStatus.textContent = `Status badges: ${badgeDescriptions[badgeStyle]}.`;
+        });
+      });
+
+      renderScenario(activeScenarioId, false);
+    </script>
+  </body>
+</html>

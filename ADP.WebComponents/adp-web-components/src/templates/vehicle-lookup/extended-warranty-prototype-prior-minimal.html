@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Extended warranty coverage prototype</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --canvas: #f2f4f6;
+        --paper: #ffffff;
+        --paper-soft: #f7f9fa;
+        --ink: #1a2530;
+        --muted: #5f6c78;
+        --line: #d5dce2;
+        --line-soft: #e8ecef;
+        --blue: #3071a9;
+        --blue-dark: #275e8f;
+        --blue-tint: #e8f1f8;
+        --green: #2c8a58;
+        --green-dark: #216b44;
+        --green-tint: #e8f4ed;
+        --violet: #755aa5;
+        --violet-dark: #5f4887;
+        --violet-tint: #f0ecf7;
+        --shadow: 0 18px 45px rgba(27, 45, 61, 0.1), 0 2px 7px rgba(27, 45, 61, 0.06);
+        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-width: 320px;
+        min-height: 100vh;
+        margin: 0;
+        color: var(--ink);
+        background: radial-gradient(circle at 17% 0%, rgba(48, 113, 169, 0.11), transparent 34rem), var(--canvas);
+      }
+
+      .page {
+        display: grid;
+        width: min(1040px, calc(100% - 32px));
+        min-height: 100vh;
+        margin: 0 auto;
+        padding: 40px 0 64px;
+        place-items: center;
+      }
+
+      .warranty-card {
+        position: relative;
+        width: 100%;
+        overflow: hidden;
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 13px;
+        box-shadow: var(--shadow);
+      }
+
+      .warranty-card::before {
+        position: absolute;
+        z-index: 3;
+        inset: 0 0 auto;
+        height: 4px;
+        background: linear-gradient(90deg, var(--green) 0 60%, var(--blue) 60% 80%, var(--violet) 80% 100%);
+        content: '';
+      }
+
+      .activation-header {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 32px;
+        align-items: center;
+        padding: 30px;
+      }
+
+      .activation-main {
+        min-width: 0;
+      }
+
+      .activation-kicker {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 13px;
+      }
+
+      .micro-label,
+      .status-badge {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        min-height: 25px;
+        padding: 5px 9px;
+        border-radius: 999px;
+        font-size: 10px;
+        font-weight: 800;
+        line-height: 1;
+        letter-spacing: 0.11em;
+        text-transform: uppercase;
+      }
+
+      .micro-label {
+        color: var(--blue-dark);
+        background: var(--blue-tint);
+        border: 1px solid rgba(48, 113, 169, 0.28);
+      }
+
+      .status-badge {
+        color: var(--green-dark);
+        background: var(--green-tint);
+        border: 1px solid rgba(44, 138, 88, 0.3);
+      }
+
+      .status-badge::before {
+        width: 7px;
+        height: 7px;
+        background: var(--green);
+        border-radius: 50%;
+        box-shadow: 0 0 0 3px rgba(44, 138, 88, 0.11);
+        content: '';
+      }
+
+      h1,
+      h2,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        overflow-wrap: anywhere;
+        font-size: clamp(22px, 3vw, 31px);
+        font-weight: 500;
+        line-height: 1.15;
+        letter-spacing: -0.025em;
+      }
+
+      h1 span {
+        color: var(--muted);
+      }
+
+      h1 strong {
+        color: var(--ink);
+        font-weight: 760;
+      }
+
+      .total-coverage {
+        display: grid;
+        min-width: 220px;
+        padding: 16px 19px;
+        background: var(--paper-soft);
+        border: 1px solid var(--line);
+        border-inline-start: 4px solid var(--green);
+        border-radius: 9px;
+      }
+
+      .total-coverage span {
+        color: var(--muted);
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: 0.13em;
+        text-transform: uppercase;
+      }
+
+      .total-coverage strong {
+        margin-top: 4px;
+        color: var(--green-dark);
+        font-size: 24px;
+        line-height: 1.1;
+      }
+
+      .journey {
+        padding: 26px 30px 32px;
+        border-top: 1px dashed var(--line);
+      }
+
+      h2 {
+        margin-bottom: 15px;
+        font-size: 11px;
+        font-weight: 850;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      .timeline-shell {
+        position: relative;
+        background: var(--paper-soft);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+      }
+
+      .timeline-scroll {
+        overflow-x: auto;
+        padding: 18px 20px 16px;
+        border-radius: inherit;
+        scrollbar-color: #aab5bf transparent;
+        scrollbar-width: thin;
+        overscroll-behavior-inline: contain;
+      }
+
+      .timeline-scroll:focus-visible {
+        outline: 3px solid rgba(48, 113, 169, 0.24);
+        outline-offset: 3px;
+      }
+
+      .timeline-scroll::-webkit-scrollbar {
+        height: 8px;
+      }
+
+      .timeline-scroll::-webkit-scrollbar-thumb {
+        background: #aab5bf;
+        border: 2px solid var(--paper-soft);
+        border-radius: 99px;
+      }
+
+      .timeline {
+        min-width: 700px;
+      }
+
+      .axis {
+        position: relative;
+        height: 36px;
+        margin: 0 8px;
+        border-bottom: 1px solid #bdc7cf;
+      }
+
+      .axis-date {
+        position: absolute;
+        inset: 0 auto auto var(--at);
+        color: var(--muted);
+        font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+        font-size: 10px;
+        font-weight: 650;
+        line-height: 1;
+        white-space: nowrap;
+        transform: translateX(-50%);
+      }
+
+      .axis-date:first-child {
+        transform: none;
+      }
+
+      .axis-date:last-child {
+        transform: translateX(-100%);
+      }
+
+      .axis-date::after {
+        position: absolute;
+        top: 19px;
+        left: 50%;
+        width: 1px;
+        height: 17px;
+        background: #aeb9c2;
+        content: '';
+      }
+
+      .axis-date:first-child::after {
+        left: 0;
+      }
+
+      .axis-date:last-child::after {
+        left: 100%;
+      }
+
+      .lane {
+        position: relative;
+        height: 98px;
+        margin: 0 8px;
+      }
+
+      .lane::before {
+        position: absolute;
+        inset: 39px 0 5px;
+        background: repeating-linear-gradient(-45deg, rgba(95, 108, 120, 0.035) 0 5px, transparent 5px 10px), #edf1f3;
+        border: 1px solid var(--line-soft);
+        border-radius: 8px;
+        content: '';
+      }
+
+      .aggregate-bracket {
+        position: absolute;
+        z-index: 2;
+        top: 5px;
+        left: var(--start);
+        width: var(--span);
+        height: 24px;
+        color: var(--blue-dark);
+        border: 1px dashed rgba(48, 113, 169, 0.62);
+        border-bottom: 0;
+        border-radius: 7px 7px 0 0;
+      }
+
+      .aggregate-bracket span {
+        position: absolute;
+        top: -7px;
+        left: 50%;
+        padding: 1px 7px;
+        background: var(--paper-soft);
+        font-size: 9px;
+        font-weight: 850;
+        letter-spacing: 0.08em;
+        white-space: nowrap;
+        text-transform: uppercase;
+        transform: translateX(-50%);
+      }
+
+      .segment {
+        position: absolute;
+        z-index: 1;
+        top: 39px;
+        bottom: 5px;
+        left: var(--start);
+        display: flex;
+        width: var(--span);
+        min-width: 0;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        border: 1px solid;
+        border-radius: 8px;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.56);
+      }
+
+      .segment:focus-visible {
+        z-index: 4;
+        outline: 3px solid rgba(48, 113, 169, 0.28);
+        outline-offset: 2px;
+      }
+
+      .standard {
+        justify-content: flex-start;
+        padding: 0 16px;
+        color: var(--green-dark);
+        background: rgba(232, 244, 237, 0.9);
+        border-color: rgba(44, 138, 88, 0.55);
+        border-inline-start: 4px solid var(--green);
+      }
+
+      .standard strong {
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.015em;
+      }
+
+      .provider-one {
+        top: 39px;
+        bottom: 11px;
+        background: rgba(232, 241, 248, 0.88);
+        border-color: rgba(48, 113, 169, 0.64);
+        border-style: dashed;
+      }
+
+      .provider-two {
+        top: 45px;
+        bottom: 5px;
+        background: rgba(240, 236, 247, 0.9);
+        border-color: rgba(117, 90, 165, 0.65);
+        border-style: dotted;
+        border-width: 2px;
+      }
+
+      .provider-logo {
+        display: block;
+        flex: 0 0 auto;
+        object-fit: contain;
+      }
+
+      .toyota-logo {
+        width: min(150px, calc(100% + 20px));
+        height: auto;
+        max-height: 45px;
+      }
+
+      .adp-logo {
+        width: auto;
+        height: 46px;
+        max-width: calc(100% - 12px);
+      }
+
+      .boundary {
+        position: absolute;
+        z-index: 3;
+        top: 33px;
+        bottom: 0;
+        left: var(--at);
+        width: 8px;
+        transform: translateX(-50%);
+        pointer-events: none;
+      }
+
+      .boundary::before {
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 2px;
+        height: 65px;
+        background: var(--paper);
+        box-shadow: 0 0 0 1px rgba(95, 108, 120, 0.28);
+        content: '';
+      }
+
+      .boundary::after {
+        position: absolute;
+        top: 2px;
+        left: 0;
+        width: 8px;
+        height: 8px;
+        background: var(--paper);
+        border: 2px solid var(--blue);
+        border-radius: 2px;
+        content: '';
+      }
+
+      .boundary.provider-handoff::after {
+        border-color: var(--violet);
+        border-radius: 50%;
+      }
+
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      @media (max-width: 700px) {
+        .page {
+          width: min(100% - 20px, 1040px);
+          padding: 18px 0 36px;
+          place-items: start center;
+        }
+
+        .activation-header {
+          grid-template-columns: 1fr;
+          gap: 20px;
+          padding: 25px 20px 22px;
+        }
+
+        .total-coverage {
+          min-width: 0;
+        }
+
+        .journey {
+          padding: 22px 12px 24px;
+        }
+
+        h2 {
+          padding: 0 8px;
+        }
+
+        .timeline-scroll {
+          padding-inline: 12px;
+        }
+
+        .timeline {
+          min-width: 420px;
+        }
+
+        .axis {
+          height: 48px;
+        }
+
+        .axis-date::after {
+          top: 31px;
+        }
+
+        .axis-date:last-child {
+          top: 12px;
+        }
+
+        .axis-date:last-child::after {
+          top: 19px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <article class="warranty-card" aria-labelledby="activation-title">
+        <header class="activation-header">
+          <div class="activation-main">
+            <div class="activation-kicker">
+              <span class="micro-label">Warranty activation</span>
+              <span class="status-badge">Protected now</span>
+            </div>
+            <h1 id="activation-title"><span>Activated by:</span> <strong>Sample Motors</strong></h1>
+          </div>
+
+          <aside class="total-coverage" aria-label="Total planned protection: 5 years">
+            <span>Total planned protection</span>
+            <strong>5 years</strong>
+          </aside>
+        </header>
+
+        <section class="journey" aria-labelledby="journey-title">
+          <h2 id="journey-title">Coverage journey</h2>
+
+          <div class="timeline-shell">
+            <div class="timeline-scroll" tabindex="0" role="region" aria-labelledby="journey-title" aria-describedby="aggregate-summary">
+              <div class="timeline">
+                <div class="axis" aria-hidden="true">
+                  <span class="axis-date" style="--at: 0%">01 Feb 2024</span>
+                  <span class="axis-date" style="--at: 60%">01 Feb 2027</span>
+                  <span class="axis-date" style="--at: 80%">01 Feb 2028</span>
+                  <span class="axis-date" style="--at: 100%">01 Feb 2029</span>
+                </div>
+
+                <div class="lane" role="list" aria-label="Normal and extended warranty contracts">
+                  <div class="segment standard" role="listitem" aria-label="Normal warranty, 1 February 2024 through 1 February 2027" style="--start: 0%; --span: 60%">
+                    <strong>Normal warranty</strong>
+                  </div>
+
+                  <div
+                    class="segment provider-one"
+                    role="listitem"
+                    aria-label="Toyota extended warranty, 1 February 2027 through 1 February 2028"
+                    style="--start: 60%; --span: 20%"
+                  >
+                    <img class="provider-logo toyota-logo" src="./prototype-assets/extended-warranty/toyota-logo.png" alt="" />
+                  </div>
+
+                  <div
+                    class="segment provider-two"
+                    role="listitem"
+                    aria-label="ADP extended warranty, 1 February 2028 through 1 February 2029"
+                    style="--start: 80%; --span: 20%"
+                  >
+                    <img class="provider-logo adp-logo" src="./prototype-assets/extended-warranty/adp-logo.svg" alt="" />
+                  </div>
+
+                  <div class="aggregate-bracket" style="--start: 60%; --span: 40%" aria-hidden="true">
+                    <span>Extended · 2 providers</span>
+                  </div>
+
+                  <span class="boundary" style="--at: 60%" aria-hidden="true"></span>
+                  <span class="boundary provider-handoff" style="--at: 80%" aria-hidden="true"></span>
+                </div>
+
+                <p id="aggregate-summary" class="sr-only">
+                  Aggregate extended warranty spans 1 February 2027 through 1 February 2029 across two contracts. Scroll horizontally on narrow screens.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </article>
+    </main>
+  </body>
+</html>
