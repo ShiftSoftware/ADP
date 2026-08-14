@@ -93,6 +93,22 @@
         "notes": ["Unauthorized campaign lookup and reCAPTCHA configuration are host policy and remain optional raw API properties."]
       }
     },
+    "vehicle-warranty-timeline": {
+      "wireContract": "adp.vehicle-warranty-timeline.v1",
+      "supportedLocales": ["en", "ar", "ku", "ru"],
+      "host": {
+        "properties": ["baseUrl", "language", "coreOnly", "disableVinValidation", "queryString"],
+        "methods": ["fetchVin"],
+        "owns": ["lookup request", "response handling", "loading and error state", "warranty coverage rendering"]
+      },
+      "runtimeAssets": {
+        "locales": "dist/locales",
+        "notes": [
+          "Warranty coverage only. Campaign rendering, reCAPTCHA and unauthorized campaign lookup are not part of this component; hosts that need them keep vehicle-warranty-details.",
+          "Adopted by pointing a host tab at this tag instead of vehicle-warranty-details. The two can coexist in one deployment."
+        ]
+      }
+    },
     "vehicle-claimable-items": {
       "wireContract": "adp.vehicle-claimable-items.v1",
       "supportedLocales": ["en", "ar", "ku", "ru"],

@@ -10,11 +10,6 @@
 
   "extendedWarrantyFrom": "الضمان الممتد (بدء)",
   "extendedWarrantyTo": "الضمان الممتد (الانتهاء)",
-  "extendedWarranties": "الضمانات الممتدة",
-  "extendedWarrantyID": "معرّف الضمان",
-  "extendedWarrantyProviderID": "معرّف مزود الضمان",
-  "extendedWarrantyStartDate": "تاريخ البدء",
-  "extendedWarrantyEndDate": "تاريخ الانتهاء",
 
   "recallExists": "هذه السيارة لديها حملة خدمة خاصة معلقة",
   "noRecall": "لا توجد حملة خدمة خاصة معلقة",

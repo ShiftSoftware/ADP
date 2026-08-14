@@ -55,8 +55,7 @@ public class VehicleWarrantyDTO
 
     // Stored (not a wall-clock getter): see note on HasActiveWarranty.
     /// <summary>
-    /// Whether the vehicle has one or more extended-warranty coverages. This remains true for
-    /// historical coverage whose end date has passed.
+    /// Whether the vehicle currently has an active extended warranty (end date is in the future).
     /// </summary>
     public bool HasExtendedWarranty { get; set; }
 
@@ -73,8 +72,10 @@ public class VehicleWarrantyDTO
     public DateTime? ExtendedWarrantyEndDate { get; set; }
 
     /// <summary>
-    /// The individual extended-warranty coverages awarded to the vehicle. The legacy flat
-    /// extended-warranty fields remain an aggregate compatibility summary of this collection.
+    /// Every extended-warranty coverage awarded to the vehicle: persisted entries plus any
+    /// awarded by a configured <c>LookupOptions.ExtendedWarrantyDefinitions</c> definition.
+    /// The flat <c>ExtendedWarranty*</c> fields above are unrelated legacy output describing
+    /// only the latest-ending persisted entry, and are not a summary of this collection.
     /// </summary>
     public List<VehicleExtendedWarrantyDTO> ExtendedWarranties { get; set; } = new();
 

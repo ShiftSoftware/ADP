@@ -64,6 +64,5 @@ When used inside `<vehicle-lookup>`, no additional props are needed.
 
 - **Warranty:** Start date, end date, active warranty status
 - **Extended Warranty:** Start date, end date (when available)
-- **Extended Warranty Details:** Every individual coverage's ID, provider company ID and logo, start date, and end date. The current local template labels a multiple-warranty example, and the generated standard-dealer data exposes two providers for `JTMHX01J8L4198293`.
 - **Free Service Start Date**
 - **SSCs:** Campaign code, description, repair status, labor codes, part numbers

@@ -11,6 +11,7 @@ import { VehicleClaimableItems } from './vehicle-claimable-items';
 import { VehiclePaintThickness } from './vehicle-paint-thickness';
 import { VehicleServiceHistory } from './vehicle-service-history';
 import { VehicleWarrantyDetails } from './vehicle-warranty-details';
+import { VehicleWarrantyTimeline } from './vehicle-warranty-timeline';
 import { VehicleSaleInformation } from './vehicle-sale-information';
 
 import { DotNetObjectReference } from '~features/blazor-ref';
@@ -25,6 +26,7 @@ const componentTags = {
   vehicleClaimableItems: 'vehicle-claimable-items',
   vehicleSaleInformation: 'vehicle-sale-information',
   vehicleWarrantyDetails: 'vehicle-warranty-details',
+  vehicleWarrantyTimeline: 'vehicle-warranty-timeline',
   vehicleSsc: 'vehicle-ssc',
 } as const;
 
@@ -36,6 +38,7 @@ export type ComponentMap = {
   [componentTags.vehicleClaimableItems]: VehicleClaimableItems;
   [componentTags.vehicleSaleInformation]: VehicleSaleInformation;
   [componentTags.vehicleWarrantyDetails]: VehicleWarrantyDetails;
+  [componentTags.vehicleWarrantyTimeline]: VehicleWarrantyTimeline;
   [componentTags.vehicleSsc]?: VehicleWarrantyDetails;
 };
 
@@ -107,6 +110,7 @@ export class VehicleLookup implements MultiLingual {
     const vehicleClaim = this.el.shadowRoot.getElementById('vehicle-claimable-items') as unknown as VehicleClaimableItems;
     const vehicleHistory = this.el.shadowRoot.getElementById('vehicle-service-history') as unknown as VehicleServiceHistory;
     const vehicleDetails = this.el.shadowRoot.getElementById('vehicle-warranty-details') as unknown as VehicleWarrantyDetails;
+    const vehicleTimeline = this.el.shadowRoot.getElementById('vehicle-warranty-timeline') as unknown as VehicleWarrantyTimeline;
     const vehicleThickness = this.el.shadowRoot.getElementById('vehicle-paint-thickness') as unknown as VehiclePaintThickness;
     const vehicleSpecification = this.el.shadowRoot.getElementById('vehicle-specification') as unknown as VehicleSpecification;
     const vehicleSaleInformation = this.el.shadowRoot.getElementById('vehicle-sale-information') as unknown as VehicleSaleInformation;
@@ -116,6 +120,7 @@ export class VehicleLookup implements MultiLingual {
       [componentTags.vehicleClaimableItems]: vehicleClaim,
       [componentTags.vehicleServiceHistory]: vehicleHistory,
       [componentTags.vehicleWarrantyDetails]: vehicleDetails,
+      [componentTags.vehicleWarrantyTimeline]: vehicleTimeline,
       [componentTags.vehicleAccessories]: vehicleAccessories,
       [componentTags.vehiclePaintThickness]: vehicleThickness,
       [componentTags.vehicleSpecification]: vehicleSpecification,
@@ -249,6 +254,7 @@ export class VehicleLookup implements MultiLingual {
       [componentTags.vehiclePaintThickness]: {},
       [componentTags.vehicleServiceHistory]: {},
       [componentTags.vehicleWarrantyDetails]: {},
+      [componentTags.vehicleWarrantyTimeline]: {},
       [componentTags.vehicleSaleInformation]: {},
       [componentTags.vehicleSsc]: {},
     };
@@ -328,6 +334,18 @@ export class VehicleLookup implements MultiLingual {
           id={componentTags.vehicleWarrantyDetails}
           {...props[componentTags.vehicleWarrantyDetails]}
         ></vehicle-warranty-details>
+      ),
+      'vehicle-warranty-timeline': (
+        <vehicle-warranty-timeline
+          coreOnly
+          isDev={this.isDev}
+          disableVinValidation={this.disableVinValidation}
+          base-url={this.baseUrl}
+          language={this.language}
+          query-string={this.queryString}
+          id={componentTags.vehicleWarrantyTimeline}
+          {...props[componentTags.vehicleWarrantyTimeline]}
+        />
       ),
       ...(this.separateSsc
         ? {

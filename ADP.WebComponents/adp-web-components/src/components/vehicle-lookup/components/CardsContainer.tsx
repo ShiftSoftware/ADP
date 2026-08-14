@@ -4,7 +4,6 @@ import { h } from '@stencil/core';
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 
 import StatusCard from './StatusCard';
-import ExtendedWarrantyCards from './ExtendedWarrantyCards';
 
 import RejectIcon from '~assets/x-mark.svg';
 
@@ -94,8 +93,6 @@ export default function CardsContainer({ isLoading, vehicleInformation, isAuthor
           state={vehicleInformation?.warranty?.hasExtendedWarranty ? 'info' : 'reject'}
         />
       </div>
-
-      <ExtendedWarrantyCards extendedWarranties={vehicleInformation?.warranty?.extendedWarranties ?? []} warrantyLocale={warrantyLocale} />
     </div>
   );
 }

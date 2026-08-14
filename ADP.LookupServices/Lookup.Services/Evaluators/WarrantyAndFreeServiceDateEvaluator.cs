@@ -140,7 +140,20 @@ public class WarrantyAndFreeServiceDateEvaluator
 
         AddStoredExtendedWarranties(result);
         AddConfiguredExtendedWarranties(result);
-        ApplyExtendedWarrantySummary(result);
+
+        // Legacy flat summary: the single latest-ending *stored* entry, exactly as it was before
+        // ExtendedWarranties existed. Configured definitions deliberately stay out of these fields
+        // so a host rendering the original warranty card sees no change when it configures them.
+        var lastExtendedWarrantyEntry = CompanyDataAggregate
+            .ExtendedWarrantyEntries?
+            .OrderByDescending(x => x.EndDate)?
+            .FirstOrDefault();
+
+        if (lastExtendedWarrantyEntry is not null)
+        {
+            result.ExtendedWarrantyStartDate = lastExtendedWarrantyEntry.StartDate;
+            result.ExtendedWarrantyEndDate = lastExtendedWarrantyEntry.EndDate;
+        }
 
         // De facto fallback: the earliest non-deleted ItemClaim.ClaimDate. A claim is a real
         // anchor for "service has begun" — if the regular chain produced nothing (typically
@@ -170,6 +183,7 @@ public class WarrantyAndFreeServiceDateEvaluator
         // request, so this is behaviourally equivalent to the previous compute-on-read getters.
         var nowUtc = Options.GetUtcNow();
         result.HasActiveWarranty = result.WarrantyEndDate.HasValue && result.WarrantyEndDate.Value >= nowUtc;
+        result.HasExtendedWarranty = result.ExtendedWarrantyEndDate.HasValue && result.ExtendedWarrantyEndDate.Value >= nowUtc;
 
         return result;
     }
@@ -247,18 +261,5 @@ public class WarrantyAndFreeServiceDateEvaluator
                 EndDate = coverageEnd,
             });
         }
-    }
-
-    private static void ApplyExtendedWarrantySummary(VehicleWarrantyDTO result)
-    {
-        result.HasExtendedWarranty = result.ExtendedWarranties.Count > 0;
-        result.ExtendedWarrantyStartDate = result.ExtendedWarranties
-            .Where(warranty => warranty.StartDate.HasValue)
-            .Select(warranty => warranty.StartDate)
-            .Min();
-        result.ExtendedWarrantyEndDate = result.ExtendedWarranties
-            .Where(warranty => warranty.EndDate.HasValue)
-            .Select(warranty => warranty.EndDate)
-            .Max();
     }
 }

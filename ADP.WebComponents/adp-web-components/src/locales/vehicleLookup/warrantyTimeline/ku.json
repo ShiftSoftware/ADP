@@ -1,0 +1,18 @@
+{
+  "dealer": "بریکار",
+  "authorized": "ڕێپێدراو",
+  "unauthorized": "ڕێپێنەدراو",
+  "activeWarranty": "گەرەنتی چالاکی هەیە",
+  "notActiveWarranty": "گەرەنتی چالاکی نییە",
+  "warrantyCoverage": "داپۆشینی گەرەنتی",
+  "totalPlannedProtection": "کۆی پاراستنی پلاندراو",
+  "standardWarranty": "گەرەنتی ئۆتۆمبێلی نوێ",
+  "extendedWarranty": "گەرەنتی درێژکراوە",
+  "standard": "بنەڕەتی",
+  "extended": "درێژکراوە",
+  "today": "ئەمڕۆ",
+  "year": "ساڵ",
+  "years": "ساڵ",
+  "month": "مانگ",
+  "months": "مانگ"
+}

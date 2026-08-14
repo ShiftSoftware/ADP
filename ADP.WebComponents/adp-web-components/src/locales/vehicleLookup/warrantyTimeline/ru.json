@@ -1,0 +1,18 @@
+{
+  "dealer": "Дилер",
+  "authorized": "Авторизован",
+  "unauthorized": "Не авторизован",
+  "activeWarranty": "Действующая гарантия",
+  "notActiveWarranty": "Нет действующей гарантии",
+  "warrantyCoverage": "Гарантийное покрытие",
+  "totalPlannedProtection": "Общая запланированная защита",
+  "standardWarranty": "Гарантия на новый автомобиль",
+  "extendedWarranty": "Расширенная гарантия",
+  "standard": "базовая",
+  "extended": "расширенная",
+  "today": "Сегодня",
+  "year": "г.",
+  "years": "г.",
+  "month": "мес.",
+  "months": "мес."
+}

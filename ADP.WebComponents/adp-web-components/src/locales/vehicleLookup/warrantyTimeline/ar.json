@@ -1,0 +1,18 @@
+{
+  "dealer": "الوكيل",
+  "authorized": "مصرّح",
+  "unauthorized": "غير مصرّح",
+  "activeWarranty": "لديه ضمان فعّال",
+  "notActiveWarranty": "لا يوجد ضمان فعّال",
+  "warrantyCoverage": "تغطية الضمان",
+  "totalPlannedProtection": "إجمالي الحماية المخططة",
+  "standardWarranty": "ضمان المركبة الجديدة",
+  "extendedWarranty": "الضمان الممتد",
+  "standard": "أساسي",
+  "extended": "ممتد",
+  "today": "اليوم",
+  "year": "سنة",
+  "years": "سنوات",
+  "month": "شهر",
+  "months": "أشهر"
+}

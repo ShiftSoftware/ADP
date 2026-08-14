@@ -2185,7 +2185,8 @@ const mockData = {
       warrantyStartDate: '2023-11-23',
       warrantyEndDate: '2026-11-23',
       hasExtendedWarranty: true,
-      extendedWarrantyStartDate: '2026-11-30',
+      // Legacy flat fields describe only the latest-ending stored coverage, not the whole set.
+      extendedWarrantyStartDate: '2027-11-30',
       extendedWarrantyEndDate: '2028-11-30',
       extendedWarranties: [
         {

@@ -1,0 +1,18 @@
+{
+  "dealer": "Dealer",
+  "authorized": "Authorized",
+  "unauthorized": "Unauthorized",
+  "activeWarranty": "Has Active Warranty",
+  "notActiveWarranty": "Doesn't Have Active Warranty",
+  "warrantyCoverage": "Warranty coverage",
+  "totalPlannedProtection": "Total planned protection",
+  "standardWarranty": "New Vehicle Warranty",
+  "extendedWarranty": "Extended Warranty",
+  "standard": "standard",
+  "extended": "extended",
+  "today": "Today",
+  "year": "year",
+  "years": "years",
+  "month": "month",
+  "months": "months"
+}

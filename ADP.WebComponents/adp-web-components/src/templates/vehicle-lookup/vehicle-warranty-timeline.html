@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Warranty Details</title>
+    <title>Warranty Timeline</title>
     <script src="./warranty-mock-data.js"></script>
     <script src="./mock-loader.js"></script>
     <script nomodule src="/build/shift-components.js"></script>
@@ -12,21 +12,8 @@
   <body>
     <a href="#" onclick="history.back()" style="color: blue; display: block; margin-bottom: 16px">Back</a>
 
-    <h1>Vehicle Warranty Details</h1>
-    <vehicle-warranty-details
-      user-id="1"
-      language="ku"
-      is-dev="true"
-      id="warranty"
-      show-ssc="true"
-      query-string=""
-      show-warranty="true"
-      brand-integration-id="TYT"
-      recaptcha-key="6LetFoYqAAAAAE0fg-070Qtm3z-DG24sMJ8wzY1f"
-      base-url="http://localhost:7204/api/secure-vehicle-lookup/"
-      unauthorized-ssc-lookup-base-url="http://localhost:7174/api/secure-unauthorized-ssc-lookup/"
-    >
-    </vehicle-warranty-details>
+    <h1>Vehicle Warranty Timeline</h1>
+    <vehicle-warranty-timeline id="timeline" language="en" is-dev="true" query-string="" base-url="http://localhost:7204/api/secure-vehicle-lookup/"> </vehicle-warranty-timeline>
 
     <div class="button-container">
       <button class="sample-button" onclick="updateLang('en')">En</button>
@@ -39,38 +26,33 @@
       <button class="sample-button" onclick="fetchVin('')">Empty</button>
       <button class="sample-button" onclick="fetchVin('error')">Error</button>
       <button class="sample-button" onclick="fetchVin('JTMHX01J8L4198295')">JTMHX01J8L4198295</button>
-      <button class="sample-button" onclick="fetchVin('JTMHX01J8L4198296')">JTMHX01J8L4198296</button>
-      <button class="sample-button" onclick="fetchVin('MR0BX8CD3P2791075')">MR0BX8CD3P2791075</button>
-      <button class="sample-button" onclick="fetchVin('JTMHX01J8L4198299')">JTMHX01J8L4198299</button>
       <button class="sample-button" onclick="fetchVin('JTMABBBJ9P4099243')">JTMABBBJ9P4099243</button>
       <button class="sample-button" onclick="fetchVin('JTMHU09J6E4100543')">JTMHU09J6E4100543</button>
-      <button class="sample-button" onclick="fetchVin('JTMABBBJ9P4099200')">JTMABBBJ9P4099200</button>
+      <button class="sample-button" onclick="fetchVin('JTMABBBJ9P4099200')">JTMABBBJ9P4099200 (Multiple warranties)</button>
       <button class="sample-button" onclick="fetchVin('JTMABBBJ9P4099294')">JTMABBBJ9P4099294 (Broker Stock)</button>
     </div>
 
     <script>
-      let warranty;
+      let timeline;
 
       document.addEventListener('DOMContentLoaded', function () {
-        warranty = document.getElementById('warranty');
+        timeline = document.getElementById('timeline');
 
-        loadMockData('vehicle-lookup').then(data => warranty.setMockData(data));
+        loadMockData('vehicle-lookup').then(data => timeline.setMockData(data));
 
-        warranty.loadingStateChange = isLoading => {
+        timeline.loadingStateChange = isLoading => {
           console.log('isLoading: ' + isLoading);
         };
 
-        warranty.loadedResponse = newResponse => console.log(newResponse);
-
-        warranty.unauthorizedSscLookupResponse = sscLookupStatus => console.log(sscLookupStatus);
+        timeline.loadedResponse = newResponse => console.log(newResponse);
       });
 
       function fetchVin(newVin) {
-        warranty.fetchVin(newVin);
+        timeline.fetchVin(newVin);
       }
 
       function updateLang(newLang) {
-        warranty.language = newLang;
+        timeline.language = newLang;
       }
     </script>
 

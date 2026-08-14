@@ -5,6 +5,13 @@ Feature: Warranty and Free Service Dates
   logic. Date shifts can override calculated dates. Extended warranty entries
   are tracked independently.
 
+  Extended warranty has two independent outputs. ExtendedWarranties lists every
+  coverage — persisted entries plus any awarded by a configured definition. The
+  flat HasExtendedWarranty/ExtendedWarrantyStartDate/ExtendedWarrantyEndDate
+  fields are older output that describes only the latest-ending *persisted*
+  entry, and only while that entry is still running. Configured coverage never
+  reaches them.
+
 # --- Normal Sale (no broker) ---
 
 Scenario: Warranty date from service activation
@@ -107,7 +114,7 @@ Scenario: Extended warranty dates from entries
   Then the extended warranty start date is "2027-02-01"
   And the extended warranty end date is "2029-02-01"
 
-Scenario: Multiple extended warranties preserve provider details and aggregate their full span
+Scenario: Multiple extended warranties preserve provider details
   Given vehicles in dealer stock:
     | VIN               | InvoiceDate |
     | 1FDKF37GXVEB34368 | 2024-01-15  |
@@ -121,7 +128,8 @@ Scenario: Multiple extended warranties preserve provider details and aggregate t
     | 202       | https://images.test/b.png |
   When evaluating warranty dates for "1FDKF37GXVEB34368"
   Then the vehicle has extended warranty
-  And the extended warranty start date is "2027-02-01"
+  # Legacy fields describe EW-LATE alone — not 2027-02-01 → 2031-06-01 across both.
+  And the extended warranty start date is "2029-06-01"
   And the extended warranty end date is "2031-06-01"
   And extended warranties are:
     | ID       | ProviderCompanyID | ProviderCompanyLogo          | StartDate  | EndDate    |
@@ -143,7 +151,7 @@ Scenario: The vehicle lookup API returns resolved provider detail
     | ID     | ProviderCompanyID | ProviderCompanyLogo        | StartDate  | EndDate    |
     | EW-API | 101               | https://images.test/api.png | 2027-02-01 | 2028-02-01 |
 
-Scenario: Historical extended coverage still counts as an extended warranty
+Scenario: Historical extended coverage stays listed but clears the legacy flag
   Given the current UTC time is "2035-01-01 00:00:00"
   And vehicles in dealer stock:
     | VIN               | InvoiceDate |
@@ -152,12 +160,12 @@ Scenario: Historical extended coverage still counts as an extended warranty
     | ID     | CompanyID | StartDate  | EndDate    |
     | EW-OLD | 101       | 2027-02-01 | 2029-02-01 |
   When evaluating warranty dates for "1FDKF37GXVEB34368"
-  Then the vehicle has extended warranty
+  Then the vehicle does not have extended warranty
   And there are 1 extended warranties
   And the extended warranty start date is "2027-02-01"
   And the extended warranty end date is "2029-02-01"
 
-Scenario: Stored and configured extended warranties are combined before aggregation
+Scenario: Configured coverage joins the collection without moving the legacy fields
   Given vehicles in dealer stock:
     | VIN               | InvoiceDate | BrandID |
     | 1FDKF37GXVEB34368 | 2024-01-15  | 1       |
@@ -178,8 +186,9 @@ Scenario: Stored and configured extended warranties are combined before aggregat
     | 1         | 10       | INV-060       | JOB-060             | 2026-03-01  | MODEL 60K   |
   When evaluating warranty dates for "1FDKF37GXVEB34368"
   Then there are 2 extended warranties
+  # CFG-REWARD runs to 2028-02-01 but the legacy end date stays on EW-STORED.
   And the extended warranty start date is "2026-01-01"
-  And the extended warranty end date is "2028-02-01"
+  And the extended warranty end date is "2027-06-01"
 
 Scenario Outline: A configured extended warranty uses the shared package suffix grammar
   Given brand 1 has a warranty period of 3 years
@@ -202,7 +211,8 @@ Scenario Outline: A configured extended warranty uses the shared package suffix 
     | CompanyID | Logo                                |
     | 901       | https://images.test/distributor.png |
   When evaluating warranty dates for "1FDKF37GXVEB34368"
-  Then the vehicle has extended warranty
+  # No persisted entry, so the legacy flag stays false however the definition matches.
+  Then the vehicle does not have extended warranty
   And extended warranties are:
     | ID         | ProviderCompanyID | ProviderCompanyLogo                    | StartDate  | EndDate    |
     | CFG-REWARD | 901               | https://images.test/distributor.png   | 2027-02-01 | 2028-02-01 |

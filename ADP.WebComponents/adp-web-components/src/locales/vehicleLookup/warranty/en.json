@@ -10,11 +10,6 @@
 
   "extendedWarrantyFrom": "Extended Warranty (Start)",
   "extendedWarrantyTo": "Extended Warranty (End)",
-  "extendedWarranties": "Extended warranties",
-  "extendedWarrantyID": "Warranty ID",
-  "extendedWarrantyProviderID": "Provider ID",
-  "extendedWarrantyStartDate": "Start date",
-  "extendedWarrantyEndDate": "End date",
 
   "recallExists": "This Vehicle has a Pending SSC",
   "noRecall": "No Pending SSC",
