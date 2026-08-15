@@ -26,6 +26,12 @@ namespace ShiftSoftware.ADP.Lookup.Services;
 [Docable]
 public class ServiceMenuLookupOptions
 {
+    // No storage-source option, deliberately. Which backend serves the menu documents is decided by
+    // REGISTRATION alone: AddServiceMenuLookup registers the Cosmos reader as the default storage only
+    // while no IServiceMenuLookupStorageService has been chosen, and AddDuckDBServiceMenuLookup (from
+    // the DuckDB package) replaces that default with its own. One storage is registered, ever — an
+    // option restating the registration could only agree with it or lie.
+
     /// <summary>
     /// Optional suffix appended to the platform-standard Cosmos database name for menu reads (e.g.
     /// "-alt" resolves "Services" as "Services-alt"). Intended for shared-emulator dev scenarios where

@@ -27,6 +27,18 @@ public class ServiceMenuContainerNotFoundException : Exception
         DatabaseName = databaseName;
         ContainerName = containerName;
     }
+
+    /// <summary>
+    /// For non-Cosmos stores, whose remediation is different: the same "never provisioned" fault, with
+    /// a message that says how THIS backend gets provisioned (e.g. run the menu DuckDB sync) instead of
+    /// pointing at Cosmos provisioning.
+    /// </summary>
+    public ServiceMenuContainerNotFoundException(string databaseName, string containerName, string message, Exception innerException)
+        : base(message, innerException)
+    {
+        DatabaseName = databaseName;
+        ContainerName = containerName;
+    }
 }
 
 /// <summary>
@@ -55,5 +67,24 @@ public class ServiceMenuGenerationException : Exception
             innerException)
     {
         BasicModelCode = basicModelCode;
+    }
+}
+
+/// <summary>
+/// Thrown when a non-Cosmos menu store exists but cannot be read — a DuckDB query failure, an
+/// unreadable snapshot file, a schema the reader does not understand.
+///
+/// This is the storage-neutral counterpart of a <c>CosmosException</c>: the Cosmos reader lets the
+/// SDK's own exception surface, and callers that contain storage faults (the vehicle lookup's menu
+/// section) catch both so a menu backend fault degrades to <c>Unavailable</c> on either storage
+/// instead of failing the surrounding lookup. Distinct from
+/// <see cref="ServiceMenuContainerNotFoundException"/>, which means the store was never provisioned
+/// at all — that one has a remediation, this one is a fault to investigate.
+/// </summary>
+public class ServiceMenuStorageException : Exception
+{
+    public ServiceMenuStorageException(string message, Exception innerException)
+        : base(message, innerException)
+    {
     }
 }

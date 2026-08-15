@@ -8,6 +8,7 @@ using ShiftSoftware.ADP.Lookup.Services.Enums;
 using ShiftSoftware.ADP.Lookup.Services.Evaluators;
 using ShiftSoftware.ADP.Lookup.Services.Extensions;
 using ShiftSoftware.ADP.Lookup.Services.Services;
+using ShiftSoftware.ADP.Menus.Generation;
 
 namespace ShiftSoftware.ADP.Menus.Tests;
 
@@ -43,6 +44,53 @@ public class ServiceMenuLookupRegistrationTests
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<ServiceMenuLookupService>());
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<ServiceMenuGenerationEvaluator>());
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<ServiceMenuCosmosService>());
+    }
+
+    /// <summary>
+    /// The default storage is Cosmos, and the interface resolves to the SAME scoped instance as the
+    /// concrete registration — one reader per scope, reachable both ways.
+    /// </summary>
+    [Fact]
+    public void TheStorageInterface_ResolvesToTheCosmosReader_ByDefault()
+    {
+        using var provider = Services().AddServiceMenuLookup().BuildServiceProvider(validateScopes: true);
+        using var scope = provider.CreateScope();
+
+        Assert.Same(
+            scope.ServiceProvider.GetRequiredService<ServiceMenuCosmosService>(),
+            scope.ServiceProvider.GetRequiredService<IServiceMenuLookupStorageService>());
+    }
+
+    /// <summary>
+    /// The Cosmos default is registered only while NO storage has been chosen — a storage the host (or
+    /// the DuckDB package) registered first is an explicit choice, never overridden and never joined by
+    /// an unused Cosmos registration beside it.
+    /// </summary>
+    [Fact]
+    public void AnAlreadyChosenStorage_SuppressesTheCosmosDefault()
+    {
+        var services = Services();
+        services.AddScoped<IServiceMenuLookupStorageService>(_ => new StubStorage());
+
+        services.AddServiceMenuLookup();
+
+        Assert.Single(services, x => x.ServiceType == typeof(IServiceMenuLookupStorageService));
+        Assert.DoesNotContain(services, x => x.ServiceType == typeof(ServiceMenuCosmosService));
+
+        using var provider = services.BuildServiceProvider(validateScopes: true);
+        using var scope = provider.CreateScope();
+
+        Assert.IsType<StubStorage>(scope.ServiceProvider.GetRequiredService<IServiceMenuLookupStorageService>());
+        Assert.NotNull(scope.ServiceProvider.GetRequiredService<ServiceMenuLookupService>());
+    }
+
+    private sealed class StubStorage : IServiceMenuLookupStorageService
+    {
+        public Task<ServiceMenuDocuments> GetMenuDocumentsAsync(string basicModelCode, CancellationToken cancellationToken = default)
+            => Task.FromResult(new ServiceMenuDocuments { BasicModelCode = basicModelCode });
+
+        public Task<IReadOnlyList<ServiceMenuDocuments>> GetMenuDocumentsAsync(IEnumerable<string> basicModelCodes, CancellationToken cancellationToken = default)
+            => throw new NotImplementedException();
     }
 
     /// <summary>Registering with no configuration at all must still resolve — every option is optional.</summary>

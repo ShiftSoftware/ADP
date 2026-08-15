@@ -48,6 +48,14 @@
 		  fixtures. It is also the project CI runs.
 		-->
 		<ProjectReference Include="..\..\ADP.LookupServices\Lookup.Services\Lookup.Services.csproj" />
+
+		<!--
+		  The DuckDB read side and menu sync. Referenced here for the same reason as Lookup.Services:
+		  the test that matters is DIFFERENTIAL — the same fixture documents served through the Cosmos
+		  path and through sync-to-DuckDB-then-read must generate identical menus, and this project is
+		  where both sides and the fixtures are already visible.
+		-->
+		<ProjectReference Include="..\..\ADP.LookupServices\Lookup.Services.DuckDB\Lookup.Services.DuckDB.csproj" />
 	</ItemGroup>
 
 </Project>

@@ -24,7 +24,7 @@ namespace ShiftSoftware.ADP.Lookup.Services.Evaluators;
 /// master data they do not carry, would otherwise take down every VIN lookup in a deployment that never
 /// finished setting menus up — for a section that is additive. Those become
 /// <see cref="VehicleServiceMenuStatus.Unavailable"/>, which is visible in the response rather than silent.
-/// <b>Only the menu subsystem's own enumerated faults are contained</b> — the two named service-menu
+/// <b>Only the menu subsystem's own enumerated faults are contained</b> — the three named service-menu
 /// exceptions and <see cref="CosmosException"/>. Anything else propagates, deliberately: a bug in this
 /// assembly, or in a host's <c>CountrySettingsResolver</c>, should surface as a failure rather than as a
 /// section that is quietly "unavailable" forever. Keep that resolver total.</para>
@@ -119,6 +119,13 @@ public class VehicleServiceMenuEvaluator
         {
             // The documents point at master data they do not carry — an incomplete replication. Same reasoning:
             // one model's broken menu must not be able to break that model's VIN lookups.
+            section.Status = VehicleServiceMenuStatus.Unavailable;
+            return section;
+        }
+        catch (ServiceMenuStorageException)
+        {
+            // The non-Cosmos storage counterpart of the CosmosException arm below: a DuckDB-backed menu
+            // store that exists but cannot be read. Same containment, same reason.
             section.Status = VehicleServiceMenuStatus.Unavailable;
             return section;
         }
