@@ -37,7 +37,7 @@ public class SnapshotRebuildTests : IDisposable
 
         using var rebuilt = RebuildIntoFreshStore([fx.Widget, fx.Gadget], out var result);
 
-        Assert.NotNull(result.ShimFile);
+        Assert.NotNull(result.ManifestFile);
         Assert.Equal(3, result.TotalRows);
         Assert.Equal(0, rebuilt.CountDirtyRows(fx.Widget));
         Assert.Equal(0, rebuilt.CountDirtyRows(fx.Gadget));
@@ -133,7 +133,7 @@ public class SnapshotRebuildTests : IDisposable
     }
 
     [Fact]
-    public void RebuildFallsBackToAnOlderShim_WhenTheNewestSetIsTorn()
+    public void RebuildFallsBackToAnOlderPublish_WhenTheNewestSetIsTorn()
     {
         // A DR rebuild correlates with exactly the kind of crash that tears files: the newest
         // shim's parquet being unreadable must fall back to the next kept shim, not fail DR.
@@ -144,14 +144,13 @@ public class SnapshotRebuildTests : IDisposable
         fx.MergeWidgets(("W1", "alpha", 2));
         var second = fx.Publish();
 
-        var newestWidgetParquet = Path.Combine(fx.PublishDirectory,
-            fx.Files($"Widget-{second.PublishId}.parquet").Single()!);
+        var newestWidgetParquet = Path.Combine(fx.PublishDirectory, "Widget", $"{second.PublishId}.parquet");
         File.WriteAllBytes(newestWidgetParquet, [0xBA, 0xD0]);
 
         using var rebuilt = RebuildIntoFreshStore([fx.Widget, fx.Gadget], out var result);
 
-        Assert.Equal(first.ShimFile, result.ShimFile);
-        Assert.Equal([second.ShimFile], result.ShimsSkipped);
+        Assert.Equal(first.ManifestFile, result.ManifestFile);
+        Assert.Equal([second.ManifestFile], result.PublishesSkipped);
         Assert.Equal(1, Convert.ToInt32(rebuilt.ExecuteScalar(
             "SELECT \"Quantity\" FROM data.\"Widget\" WHERE \"_PrimaryKey\" = 'W1'")));
     }
@@ -161,7 +160,7 @@ public class SnapshotRebuildTests : IDisposable
     {
         using var rebuilt = RebuildIntoFreshStore([fx.Widget], out var result);
 
-        Assert.Null(result.ShimFile);
+        Assert.Null(result.ManifestFile);
         Assert.Empty(result.TablesLoaded);
         Assert.Equal(["Widget"], result.TablesCreatedEmpty);
     }

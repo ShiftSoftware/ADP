@@ -9,8 +9,35 @@ public sealed class SnapshotAgentOptions
     /// <summary>The write DB path — instance-local disk, never a network share.</summary>
     public required string WriteDatabasePath { get; init; }
 
-    /// <summary>The read tier's directory (local folder in dev, the mounted share in prod).</summary>
+    /// <summary>
+    /// Where DuckDB caches downloaded extensions. Null keeps DuckDB's own default, which is
+    /// right for dev. Point it at persistent storage on any host whose default is ephemeral —
+    /// see <see cref="SnapshotStoreOptions.ExtensionDirectory"/> for why that matters.
+    /// </summary>
+    public string? ExtensionDirectory { get; init; }
+
+    /// <summary>
+    /// Azure Storage connection string for DuckDB's own <c>az://</c> access, when
+    /// <see cref="PublishStore"/> is a container. Set it from the same configuration value as the
+    /// store's — the two halves authenticate independently and configuring only one fails at the
+    /// first export, not at startup.
+    /// </summary>
+    public string? AzureConnectionString { get; init; }
+
+    /// <summary>The read tier's location (local folder in dev, the blob container in prod).</summary>
     public required string PublishDirectory { get; init; }
+
+    /// <summary>
+    /// Where the publish tier reads and writes. Null means a plain local directory at
+    /// <see cref="PublishDirectory"/> — the incumbent behaviour. Set it to a
+    /// <see cref="BlobPublishStore"/> to publish into a container.
+    ///
+    /// <para>One store serves the whole cycle: the publisher, the in-process retention sweep and
+    /// the cold-start rebuild all take THIS instance. They must never resolve their own, or a
+    /// deployment could end up publishing to one location and rebuilding from another — which
+    /// presents as an empty estate after a swap, not as a configuration error.</para>
+    /// </summary>
+    public PublishStore? PublishStore { get; init; }
 
     public required string SnapshotName { get; init; }
 
@@ -31,20 +58,8 @@ public sealed class SnapshotAgentOptions
     /// <summary>Per-table parquet export sort, passed through to the publisher.</summary>
     public IReadOnlyDictionary<string, IReadOnlyList<string>>? SortColumns { get; init; }
 
-    public int KeepShims { get; init; } = 3;
-
-    /// <summary>
-    /// Where the folder-per-table analytics handoff is written, or null to not export at all.
-    /// Runs on the publish cadence, right after publishing, inside the same gate — it reads the
-    /// publish directory, so a lost lease must not let a second instance rewrite it.
-    /// </summary>
-    public string? ExportDirectory { get; init; }
-
-    /// <summary>Tables in the handoff, or null for every published table.</summary>
-    public IReadOnlyList<string>? ExportTables { get; init; }
-
-    /// <summary>Versions kept per table folder in the handoff.</summary>
-    public int KeepExportVersionsPerTable { get; init; } = 3;
+    /// <summary>Published sets kept by retention — a recovery window, not a storage knob. See <see cref="SnapshotPublishOptions.KeepPublishes"/>.</summary>
+    public int KeepPublishes { get; init; } = 3;
 
     /// <summary>Drain bound: pump batches per table per cycle (a stuck-failing batch dead-letters after 5 attempts anyway).</summary>
     public int MaxPumpBatchesPerCycle { get; init; } = 100;
@@ -100,8 +115,7 @@ public sealed record SnapshotAgentCycle(
     bool ColdStartRebuild,
     IReadOnlyList<SnapshotAgentSourceRun> Sources,
     IReadOnlyList<SnapshotAgentPumpRun> Pumps,
-    SnapshotPublishResult? Publish,
-    SnapshotExportResult? Export = null)
+    SnapshotPublishResult? Publish)
 {
     public static readonly SnapshotAgentCycle Idle = new(true, false, [], [], null);
     public static readonly SnapshotAgentCycle GateUnavailable = new(false, false, [], [], null);
@@ -150,6 +164,22 @@ public sealed class SnapshotAgentLoop : IDisposable
     public SnapshotStore? Store => store;
 
     /// <summary>Runs cycles until cancelled. Contains its own failures: a crashed cycle is an event + backoff, not a dead agent.</summary>
+    /// <summary>
+    /// True once a cycle has completed <b>with the gate held</b> — meaning the write DB opened,
+    /// any cold-start rebuild from the published set finished, and the estate is serviceable.
+    ///
+    /// <para>This is the signal a slot-swap warm-up needs (D3). Every swap hands a new instance an
+    /// empty local disk, so the incoming instance must rebuild before it can publish; pinging an
+    /// endpoint that reports merely "the process started" would complete the swap during exactly
+    /// the window the warm-up exists to cover, which is worse than not warming at all.</para>
+    ///
+    /// <para>A cycle that could not take the gate does NOT count: it did no work and proves
+    /// nothing about this instance's readiness.</para>
+    /// </summary>
+    public bool HasCompletedAServiceableCycle => Volatile.Read(ref serviceableCycles) > 0;
+
+    private int serviceableCycles;
+
     public async Task RunAsync(CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested)
@@ -158,6 +188,8 @@ public sealed class SnapshotAgentLoop : IDisposable
             try
             {
                 cycle = await RunCycleAsync(cancellationToken);
+                if (cycle.GateAcquired)
+                    Interlocked.Increment(ref serviceableCycles);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -301,90 +333,47 @@ public sealed class SnapshotAgentLoop : IDisposable
             }
 
             SnapshotPublishResult? publish = null;
-            SnapshotExportResult? export = null;
             if (publishDue && !token.IsCancellationRequested)
             {
-                // The gate is what makes publishing to the shared directory safe — if the lease
+                // The gate is what makes publishing to the shared location safe — if the lease
                 // was lost mid-cycle, another instance may already be publishing there.
                 ownershipGuard?.Invoke();
                 publish = SnapshotPublisher.Publish(store!, new SnapshotPublishOptions
                 {
                     PublishDirectory = options.PublishDirectory,
+                    Store = options.PublishStore,
                     SnapshotName = options.SnapshotName,
                     Tables = options.Registry.Tables,
                     SortColumns = options.SortColumns,
-                    KeepShims = options.KeepShims,
+                    KeepPublishes = options.KeepPublishes,
                 });
                 nextPublish = options.TimeProvider.GetUtcNow() + options.PublishCadence;
 
                 if (publish.Status == SnapshotPublishStatus.Published)
                     Emit(SnapshotAgentEventLevel.Info,
-                        $"Published {publish.ShimFile} (exported: {string.Join(", ", publish.TablesExported)}).");
+                        $"Published {publish.ManifestFile} (exported: {string.Join(", ", publish.TablesExported)}).");
 
-                export = RunExport(ownershipGuard);
+                // An un-wired family publishes as valid, EMPTY parquet, which a consumer cannot
+                // tell from "no rows today". The manifest carries rowCount for that reason; this
+                // says it where operators actually look.
+                if (publish.TablesWithNoRows.Count > 0)
+                {
+                    Emit(SnapshotAgentEventLevel.Warning,
+                        $"Published set carries empty table(s): {string.Join(", ", publish.TablesWithNoRows)} — " +
+                        "consumers cannot distinguish an un-wired feed from a genuinely empty one.");
+                }
             }
             else if (publishDue)
             {
                 Emit(SnapshotAgentEventLevel.Warning, "Skipped publish — gate lost or cancellation requested mid-cycle.");
             }
 
-            return new SnapshotAgentCycle(true, coldStart, sourceRuns, pumpRuns, publish, export);
+            return new SnapshotAgentCycle(true, coldStart, sourceRuns, pumpRuns, publish);
         }
         finally
         {
             if (gate is not null)
                 await gate.DisposeAsync();
-        }
-    }
-
-    /// <summary>
-    /// Projects the just-published set into the analytics handoff layout. Contained like an
-    /// ingest failure: the snapshot is the product and the handoff is a downstream copy, so an
-    /// offline handoff target must not cost the cycle its publish — but it is emitted as an
-    /// Error, never swallowed.
-    /// </summary>
-    private SnapshotExportResult? RunExport(Action? ownershipGuard)
-    {
-        if (options.ExportDirectory is null)
-            return null;
-
-        try
-        {
-            // Re-checked after the publish: a long export window is exactly where a lease
-            // expires, and the handoff directory is shared.
-            ownershipGuard?.Invoke();
-
-            var export = SnapshotExporter.Export(new SnapshotExportOptions
-            {
-                PublishDirectory = options.PublishDirectory,
-                ExportDirectory = options.ExportDirectory,
-                SnapshotName = options.SnapshotName,
-                Tables = options.ExportTables,
-                KeepVersionsPerTable = options.KeepExportVersionsPerTable,
-            });
-
-            if (export.Status == SnapshotExportStatus.Exported)
-            {
-                Emit(SnapshotAgentEventLevel.Info,
-                    $"Exported handoff at {export.AsOfPublishId} (written: {string.Join(", ", export.TablesWritten)}).");
-            }
-
-            // An un-wired family publishes as valid, EMPTY parquet, which a consumer cannot tell
-            // from "no rows today". The manifest carries rowCount for that reason; this says it
-            // where operators actually look.
-            if (export.TablesWithNoRows.Count > 0)
-            {
-                Emit(SnapshotAgentEventLevel.Warning,
-                    $"Handoff carries empty table(s): {string.Join(", ", export.TablesWithNoRows)} — " +
-                    "consumers cannot distinguish an un-wired feed from a genuinely empty one.");
-            }
-
-            return export;
-        }
-        catch (Exception exception)
-        {
-            Emit(SnapshotAgentEventLevel.Error, "Handoff export failed; the publish stands.", exception: exception);
-            return null;
         }
     }
 
@@ -457,7 +446,12 @@ public sealed class SnapshotAgentLoop : IDisposable
         var existed = File.Exists(options.WriteDatabasePath);
         try
         {
-            store = SnapshotStore.Open(new SnapshotStoreOptions { DatabasePath = options.WriteDatabasePath });
+            store = SnapshotStore.Open(new SnapshotStoreOptions
+            {
+                DatabasePath = options.WriteDatabasePath,
+                ExtensionDirectory = options.ExtensionDirectory,
+                AzureConnectionString = options.AzureConnectionString,
+            });
         }
         catch (SnapshotSchemaMismatchException exception)
         {
@@ -465,7 +459,12 @@ public sealed class SnapshotAgentLoop : IDisposable
                 $"Write DB schema v{exception.Actual} != v{exception.Expected} — rebuilding from the published set.",
                 exception: exception);
             DeleteWriteDatabase();
-            store = SnapshotStore.Open(new SnapshotStoreOptions { DatabasePath = options.WriteDatabasePath });
+            store = SnapshotStore.Open(new SnapshotStoreOptions
+            {
+                DatabasePath = options.WriteDatabasePath,
+                ExtensionDirectory = options.ExtensionDirectory,
+                AzureConnectionString = options.AzureConnectionString,
+            });
             existed = false;
         }
         catch (DuckDB.NET.Data.DuckDBException exception) when (existed)
@@ -479,7 +478,12 @@ public sealed class SnapshotAgentLoop : IDisposable
                 "Write DB failed to open — presuming corruption; deleting and rebuilding from the published set.",
                 exception: exception);
             DeleteWriteDatabase();
-            store = SnapshotStore.Open(new SnapshotStoreOptions { DatabasePath = options.WriteDatabasePath });
+            store = SnapshotStore.Open(new SnapshotStoreOptions
+            {
+                DatabasePath = options.WriteDatabasePath,
+                ExtensionDirectory = options.ExtensionDirectory,
+                AzureConnectionString = options.AzureConnectionString,
+            });
             existed = false;
         }
 
@@ -493,11 +497,12 @@ public sealed class SnapshotAgentLoop : IDisposable
             // The slot-swap / new-instance story: local disk is empty, the published set is
             // the seed. Bookkeeping columns are published, so replication state survives and
             // the next pump writes zero Cosmos ops for unchanged data.
-            var rebuild = SnapshotRebuild.Execute(store, options.Registry.Tables, options.PublishDirectory, options.SnapshotName);
+            var rebuild = SnapshotRebuild.Execute(store, options.Registry.Tables, options.PublishDirectory,
+                options.SnapshotName, options.PublishStore);
             Emit(SnapshotAgentEventLevel.Info,
-                rebuild.ShimFile is null
+                rebuild.ManifestFile is null
                     ? "Cold start: nothing published yet — starting from an empty write DB."
-                    : $"Cold start: rebuilt {rebuild.TotalRows} row(s) across {rebuild.TablesLoaded.Count} table(s) from {rebuild.ShimFile}.");
+                    : $"Cold start: rebuilt {rebuild.TotalRows} row(s) across {rebuild.TablesLoaded.Count} table(s) from {rebuild.ManifestFile}.");
             return true;
         }
 

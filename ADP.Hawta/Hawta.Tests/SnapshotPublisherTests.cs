@@ -1,3 +1,4 @@
+﻿using DuckDB.NET.Data;
 using Xunit;
 
 namespace ShiftSoftware.ADP.Hawta.Tests;
@@ -71,22 +72,97 @@ public sealed class PublisherFixture : IDisposable
             new SnapshotMergeOptions { Source = "test", DeletesEnabled = true });
     }
 
-    public SnapshotPublishResult Publish(bool force = false, int keepShims = 3, Action? onBeforeShimCommit = null) =>
+    public SnapshotPublishResult Publish(bool force = false, int keepPublishes = 3, Action? onBeforeManifestCommit = null) =>
         SnapshotPublisher.Publish(Store, new SnapshotPublishOptions
         {
             PublishDirectory = PublishDirectory,
             SnapshotName = SnapshotName,
             Tables = [Widget, Gadget],
             Force = force,
-            KeepShims = keepShims,
-            OnBeforeShimCommit = onBeforeShimCommit,
+            KeepPublishes = keepPublishes,
+            OnBeforeManifestCommit = onBeforeManifestCommit,
             RetentionDelete = RetentionDelete,
         });
 
+    /// <summary>File names anywhere under the publish directory — table folders nest one level.</summary>
     public string[] Files(string pattern) =>
         Directory.Exists(PublishDirectory)
-            ? Directory.GetFiles(PublishDirectory, pattern).Select(Path.GetFileName).ToArray()!
+            ? Directory.GetFiles(PublishDirectory, pattern, SearchOption.AllDirectories).Select(Path.GetFileName).ToArray()!
             : [];
+
+    /// <summary>Version file names inside one table's folder.</summary>
+    public string[] Versions(string table)
+    {
+        var folder = Path.Combine(PublishDirectory, table);
+        return Directory.Exists(folder)
+            ? [.. Directory.GetFiles(folder, "*.parquet").Select(Path.GetFileName).Order()!]
+            : [];
+    }
+
+    /// <summary>Manifest file names in the directory, newest first.</summary>
+    public string[] Manifests() =>
+        Directory.Exists(PublishDirectory)
+            ? [.. Directory.GetFiles(PublishDirectory, $"{SnapshotName}-*.json")
+                .Select(Path.GetFileName).OrderDescending(StringComparer.Ordinal)!]
+            : [];
+
+    public PublishedSnapshot ReadNewest() =>
+        PublishedSnapshot.ReadNewest(PublishDirectory, SnapshotName)
+        ?? throw new InvalidOperationException("Nothing published.");
+
+    public PublishedTableManifest Entry(string table, PublishedSnapshot? manifest = null) =>
+        (manifest ?? ReadNewest()).Tables.Single(t => t.Table == table);
+
+    /// <summary>
+    /// The consumer contract end to end: resolve the manifest, look the table up, and read its
+    /// parquet through a connection that shares nothing with the write store — which is exactly
+    /// what an external consumer has, now that there is no shim to open.
+    /// </summary>
+    public object? ReadPublished(string table, string projection, string? where = null, PublishedSnapshot? manifest = null)
+    {
+        var entry = Entry(table, manifest);
+
+        using var connection = new DuckDBConnection("Data Source=:memory:");
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = $"SELECT {projection} FROM {entry.ReadParquetSql(PublishDirectory)}"
+                              + (where is null ? string.Empty : $" WHERE {where}");
+        return command.ExecuteScalar();
+    }
+
+    /// <summary>Every value of one column in the published parquet, in stored order.</summary>
+    public List<string> ReadPublishedColumn(string table, string projection)
+    {
+        var entry = Entry(table);
+
+        using var connection = new DuckDBConnection("Data Source=:memory:");
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = $"SELECT {projection} FROM {entry.ReadParquetSql(PublishDirectory)}";
+        using var reader = command.ExecuteReader();
+
+        var values = new List<string>();
+        while (reader.Read())
+            values.Add(reader.GetValue(0)?.ToString() ?? string.Empty);
+        return values;
+    }
+
+    /// <summary>Column names carried by a published table's parquet.</summary>
+    public List<string> PublishedColumns(string table)
+    {
+        var entry = Entry(table);
+
+        using var connection = new DuckDBConnection("Data Source=:memory:");
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = $"DESCRIBE SELECT * FROM {entry.ReadParquetSql(PublishDirectory)}";
+        using var reader = command.ExecuteReader();
+
+        var columns = new List<string>();
+        while (reader.Read())
+            columns.Add(reader.GetString(0));
+        return columns;
+    }
 
     public static bool DeleteForRetentionTest(string path)
     {
@@ -107,7 +183,7 @@ public class SnapshotPublisherTests : IDisposable
     private readonly PublisherFixture fx = new();
 
     [Fact]
-    public void FirstPublish_ExportsEveryTable_AndConsumersQueryThroughTheShim()
+    public void FirstPublish_ExportsEveryTable_AndConsumersReadThroughTheManifest()
     {
         fx.MergeWidgets(("W1", "alpha", 1), ("W2", "beta", 2));
         fx.MergeGadgets(("G1", "one"));
@@ -117,21 +193,44 @@ public class SnapshotPublisherTests : IDisposable
         Assert.Equal(SnapshotPublishStatus.Published, result.Status);
         Assert.Equal(["Widget", "Gadget"], result.TablesExported);
         Assert.Empty(result.TablesReused);
-        Assert.Single(fx.Files("*.duckdb"));
+        Assert.Single(fx.Manifests());
         Assert.Equal(2, fx.Files("*.parquet").Length);
         Assert.Empty(fx.Files("*.staging"));
+        // The shim it replaced was a DuckDB database file, which is the one artifact that
+        // cannot be opened over az:// — nothing may reintroduce one.
+        Assert.Empty(fx.Files("*.duckdb"));
 
-        // The consumer contract: resolve newest, open, query the same data.* names.
-        using var published = PublishedSnapshot.OpenNewest(fx.PublishDirectory, PublisherFixture.SnapshotName);
-        Assert.NotNull(published);
-        using var command = published.Connection.CreateCommand();
-        command.CommandText = "SELECT count(*) FROM data.\"Widget\" WHERE \"_Deleted\" = false";
-        Assert.Equal(2L, Convert.ToInt64(command.ExecuteScalar()));
+        // The consumer contract: resolve newest, read the manifest, read its parquet.
+        var manifest = fx.ReadNewest();
+        Assert.Equal(PublishedSnapshot.CurrentManifestVersion, manifest.ManifestVersion);
+        Assert.Equal(PublisherFixture.SnapshotName, manifest.SnapshotName);
+        Assert.Equal(result.PublishId, manifest.PublishId);
+        Assert.Equal(SnapshotStore.CurrentSchemaVersion, manifest.SchemaVersion);
+        Assert.Equal(".", manifest.PathBase);
+        Assert.Equal("latest-per-table", manifest.SelectionMode);
+        Assert.Equal(2, manifest.Tables.Count);
 
-        var info = published.ReadInfo();
-        Assert.Equal(PublisherFixture.SnapshotName, info.SnapshotName);
-        Assert.Equal(SnapshotStore.CurrentSchemaVersion, info.SchemaVersion);
-        Assert.Equal(2, published.ReadManifest().Count);
+        Assert.Equal(2L, Convert.ToInt64(fx.ReadPublished("Widget", "count(*)", "\"_Deleted\" = false")));
+    }
+
+    [Fact]
+    public void ManifestPathsAreFolderPerTable_ForwardSlashed_AndRelocatable()
+    {
+        fx.MergeWidgets(("W1", "alpha", 1));
+        fx.MergeGadgets(("G1", "one"));
+        var publish = fx.Publish();
+
+        foreach (var entry in fx.ReadNewest().Tables)
+        {
+            Assert.Equal("parquet", entry.Location.Kind);
+            var file = Assert.Single(entry.Location.Paths);
+            Assert.True(PublishPath.IsRelativeContainedPath(file), $"'{file}' is not a contained relative path.");
+            // Folder per table, forward-slashed: the layout consumers read, and the only one a
+            // table growing past a single file (or becoming a Delta directory) survives.
+            Assert.Equal($"{entry.Table}/{publish.PublishId}.parquet", file);
+            Assert.DoesNotContain('\\', file);
+            Assert.True(File.Exists(Path.Combine(fx.PublishDirectory, entry.Table, $"{publish.PublishId}.parquet")));
+        }
     }
 
     [Fact]
@@ -144,8 +243,8 @@ public class SnapshotPublisherTests : IDisposable
         var second = fx.Publish();
 
         Assert.Equal(SnapshotPublishStatus.SkippedNoChanges, second.Status);
-        Assert.Equal(first.ShimFile, second.ShimFile);
-        Assert.Single(fx.Files("*.duckdb"));
+        Assert.Equal(first.ManifestFile, second.ManifestFile);
+        Assert.Single(fx.Manifests());
         Assert.Equal(2, fx.Files("*.parquet").Length);
     }
 
@@ -162,15 +261,13 @@ public class SnapshotPublisherTests : IDisposable
         Assert.Equal(["Widget"], second.TablesExported);
         Assert.Equal(["Gadget"], second.TablesReused);
 
-        // Gadget's manifest entry still points at the FIRST publish's parquet file.
-        using var published = PublishedSnapshot.OpenNewest(fx.PublishDirectory, PublisherFixture.SnapshotName);
-        var manifest = published!.ReadManifest().ToDictionary(e => e.Table);
-        Assert.Contains(first.PublishId, manifest["Gadget"].ParquetFile);
-        Assert.Contains(second.PublishId, manifest["Widget"].ParquetFile);
+        // Gadget's manifest entry still points at the FIRST publish's parquet, and says so.
+        var manifest = fx.ReadNewest();
+        Assert.Equal(first.PublishId, fx.Entry("Gadget", manifest).PublishId);
+        Assert.Equal(second.PublishId, fx.Entry("Widget", manifest).PublishId);
+        Assert.Contains(first.PublishId, Assert.Single(fx.Entry("Gadget", manifest).Location.Paths));
 
-        using var command = published.Connection.CreateCommand();
-        command.CommandText = "SELECT \"Quantity\" FROM data.\"Widget\" WHERE \"_PrimaryKey\" = 'W1'";
-        Assert.Equal(99, Convert.ToInt32(command.ExecuteScalar()));
+        Assert.Equal(99, Convert.ToInt32(fx.ReadPublished("Widget", "\"Quantity\"", "\"_PrimaryKey\" = 'W1'")));
     }
 
     [Fact]
@@ -221,7 +318,21 @@ public class SnapshotPublisherTests : IDisposable
     }
 
     [Fact]
-    public void RetentionKeepsThreeShims_AndDeletesUnreferencedParquet()
+    public void EmptyTables_ArePublishedAndNamed_NotHidden()
+    {
+        fx.MergeWidgets(("W1", "alpha", 1));
+        // Gadget is never merged — the shape an un-wired CSV family has in production. It must
+        // publish as valid, EMPTY parquet AND be named, because a consumer cannot otherwise
+        // tell that from "no rows today".
+        var result = fx.Publish();
+
+        Assert.Equal(["Gadget"], result.TablesWithNoRows);
+        Assert.Equal(0, fx.Entry("Gadget").RowCount);
+        Assert.Equal(0L, Convert.ToInt64(fx.ReadPublished("Gadget", "count(*)")));
+    }
+
+    [Fact]
+    public void RetentionKeepsThreePublishes_AndDeletesUnreferencedParquet()
     {
         fx.MergeGadgets(("G1", "one"));
         for (var i = 1; i <= 5; i++)
@@ -231,21 +342,22 @@ public class SnapshotPublisherTests : IDisposable
             Assert.Equal(SnapshotPublishStatus.Published, result.Status);
         }
 
-        var shims = fx.Files($"{PublisherFixture.SnapshotName}-*.duckdb");
-        Assert.Equal(3, shims.Length);
+        Assert.Equal(3, fx.Manifests().Length);
 
-        // Kept: Gadget's single parquet (referenced by every shim) + the 3 Widget parquet
-        // files the kept shims reference. The first two Widget exports are unreferenced → gone.
-        Assert.Single(fx.Files("Gadget-*.parquet"));
-        Assert.Equal(3, fx.Files("Widget-*.parquet").Length);
+        // Kept: Gadget's single parquet (referenced by every manifest) + the 3 Widget parquet
+        // files the kept manifests reference. The first two Widget exports are unreferenced → gone.
+        Assert.Single(fx.Versions("Gadget"));
+        Assert.Equal(3, fx.Versions("Widget").Length);
 
-        // Every kept shim must still be fully queryable against the surviving parquet.
-        foreach (var shim in shims)
+        // Every kept publish must still resolve to parquet that is actually there.
+        foreach (var manifestFile in fx.Manifests())
         {
-            using var published = PublishedSnapshot.Open(Path.Combine(fx.PublishDirectory, shim!));
-            using var command = published.Connection.CreateCommand();
-            command.CommandText = "SELECT count(*) FROM data.\"Widget\"";
-            Assert.Equal(1L, Convert.ToInt64(command.ExecuteScalar()));
+            var manifest = PublishedSnapshot.Read(Path.Combine(fx.PublishDirectory, manifestFile));
+            foreach (var entry in manifest.Tables)
+                foreach (var path in entry.Resolve(fx.PublishDirectory))
+                    Assert.True(File.Exists(path), $"{manifestFile} references '{path}', which retention deleted.");
+
+            Assert.Equal(1L, Convert.ToInt64(fx.ReadPublished("Widget", "count(*)", manifest: manifest)));
         }
     }
 
@@ -254,17 +366,22 @@ public class SnapshotPublisherTests : IDisposable
     {
         fx.MergeGadgets(("G1", "one"));
         fx.MergeWidgets(("W1", "alpha", 1));
-        fx.Publish(keepShims: 1);
+        fx.Publish(keepPublishes: 2);
 
-        var firstWidgetParquet = Path.Combine(fx.PublishDirectory, fx.Files("Widget-*.parquet").Single()!);
+        var firstWidgetParquet = Path.Combine(fx.PublishDirectory, "Widget", fx.Versions("Widget").Single()!);
+
+        // Two more publishes push the first manifest out of the kept window, so its Widget
+        // parquet becomes unreferenced and eligible for deletion.
+        fx.MergeWidgets(("W1", "alpha", 2));
+        fx.Publish(keepPublishes: 2);
 
         fx.RetentionDelete = path => string.Equals(path, firstWidgetParquet, StringComparison.OrdinalIgnoreCase)
             ? false
             : PublisherFixture.DeleteForRetentionTest(path);
         try
         {
-            fx.MergeWidgets(("W1", "alpha", 2));
-            var result = fx.Publish(keepShims: 1);
+            fx.MergeWidgets(("W1", "alpha", 3));
+            var result = fx.Publish(keepPublishes: 2);
 
             // The old Widget parquet is unreferenced but locked — skipped, not fatal.
             Assert.Equal(SnapshotPublishStatus.Published, result.Status);
@@ -277,8 +394,8 @@ public class SnapshotPublisherTests : IDisposable
         }
 
         // Next publish's retention pass picks it up once the consumer is gone.
-        fx.MergeWidgets(("W1", "alpha", 3));
-        fx.Publish(keepShims: 1);
+        fx.MergeWidgets(("W1", "alpha", 4));
+        fx.Publish(keepPublishes: 2);
         Assert.False(File.Exists(firstWidgetParquet));
     }
 
@@ -286,44 +403,39 @@ public class SnapshotPublisherTests : IDisposable
     public void StaleStagingFilesFromACrashedRun_AreCleanedUp()
     {
         Directory.CreateDirectory(fx.PublishDirectory);
-        var staleParquet = Path.Combine(fx.PublishDirectory, "Widget-00000000000000000.parquet.staging");
-        var staleShim = Path.Combine(fx.PublishDirectory, $"{PublisherFixture.SnapshotName}-00000000000000000.duckdb.staging");
-        var staleWal = staleShim + ".wal";   // DuckDB's sidecar from a crashed WriteShim
+        Directory.CreateDirectory(Path.Combine(fx.PublishDirectory, "Widget"));
+        var staleParquet = Path.Combine(fx.PublishDirectory, "Widget", "00000000000000000.parquet.staging");
+        var staleManifest = Path.Combine(fx.PublishDirectory, $"{PublisherFixture.SnapshotName}-00000000000000000.json.staging");
         File.WriteAllText(staleParquet, "partial");
-        File.WriteAllText(staleShim, "partial");
-        File.WriteAllText(staleWal, "partial");
+        File.WriteAllText(staleManifest, "partial");
 
         fx.MergeWidgets(("W1", "alpha", 1));
         fx.Publish();
 
         Assert.Empty(fx.Files("*.staging"));
-        Assert.Empty(fx.Files("*.staging.wal"));
     }
 
     [Fact]
-    public void FaultBeforeShimCommit_LeavesStandingSnapshotVisible_AndRecordsFailure()
+    public void FaultBeforeManifestCommit_LeavesStandingSnapshotVisible_AndRecordsFailure()
     {
         fx.MergeWidgets(("W1", "alpha", 1));
         var first = fx.Publish();
-        var firstShimPath = Path.Combine(fx.PublishDirectory, first.ShimFile!);
+        var firstManifestPath = Path.Combine(fx.PublishDirectory, first.ManifestFile!);
 
-        using var standingConsumer = PublishedSnapshot.Open(firstShimPath);
         fx.MergeWidgets(("W1", "alpha", 2));
 
-        var injected = new InvalidOperationException("Injected immediately before shim commit.");
+        var injected = new InvalidOperationException("Injected immediately before manifest commit.");
         var observedReadyStaging = false;
         var thrown = Assert.Throws<InvalidOperationException>(() =>
-            fx.Publish(onBeforeShimCommit: () =>
+            fx.Publish(onBeforeManifestCommit: () =>
             {
-                var stagingFile = Assert.Single(fx.Files("*.duckdb.staging"));
-                Assert.Empty(fx.Files("*.staging.wal"));
+                var stagingFile = Assert.Single(fx.Files("*.json.staging"));
 
-                // The hook is after close/checkpoint: the staging shim is already a complete,
-                // queryable snapshot, but its non-final name keeps it invisible to resolution.
-                using var staged = PublishedSnapshot.Open(Path.Combine(fx.PublishDirectory, stagingFile));
-                using var stagedQuery = staged.Connection.CreateCommand();
-                stagedQuery.CommandText = "SELECT \"Quantity\" FROM data.\"Widget\" WHERE \"_PrimaryKey\" = 'W1'";
-                Assert.Equal(2, Convert.ToInt32(stagedQuery.ExecuteScalar()));
+                // The hook is after the staging manifest is fully written: it is already a
+                // complete, readable snapshot whose parquet are all on disk, but its non-final
+                // name keeps it invisible to resolution. That ordering IS the atomicity.
+                var staged = PublishedSnapshot.Read(Path.Combine(fx.PublishDirectory, stagingFile));
+                Assert.Equal(2, Convert.ToInt32(fx.ReadPublished("Widget", "\"Quantity\"", "\"_PrimaryKey\" = 'W1'", staged)));
 
                 observedReadyStaging = true;
                 throw injected;
@@ -331,13 +443,12 @@ public class SnapshotPublisherTests : IDisposable
 
         Assert.Same(injected, thrown);
         Assert.True(observedReadyStaging);
-        Assert.Equal(firstShimPath, PublishedSnapshot.ResolveNewest(fx.PublishDirectory, PublisherFixture.SnapshotName));
-        Assert.Equal(first.ShimFile, Assert.Single(fx.Files($"{PublisherFixture.SnapshotName}-*.duckdb")));
-        Assert.Single(fx.Files("*.duckdb.staging"));
+        Assert.Equal(firstManifestPath, PublishedSnapshot.ResolveNewest(fx.PublishDirectory, PublisherFixture.SnapshotName));
+        Assert.Equal(first.ManifestFile, Assert.Single(fx.Manifests()));
+        Assert.Single(fx.Files("*.json.staging"));
 
-        using var standingQuery = standingConsumer.Connection.CreateCommand();
-        standingQuery.CommandText = "SELECT \"Quantity\" FROM data.\"Widget\" WHERE \"_PrimaryKey\" = 'W1'";
-        Assert.Equal(1, Convert.ToInt32(standingQuery.ExecuteScalar()));
+        // A consumer resolving now still sees the previous, complete publish.
+        Assert.Equal(1, Convert.ToInt32(fx.ReadPublished("Widget", "\"Quantity\"", "\"_PrimaryKey\" = 'W1'")));
 
         Assert.Equal(1L, Convert.ToInt64(fx.Store.ExecuteScalar(
             "SELECT count(*) FROM meta.PublishRuns WHERE \"Status\" = 'Failed:Exception'")));
@@ -353,24 +464,20 @@ public class SnapshotPublisherTests : IDisposable
         fx.MergeWidgets(("W1", "alpha", 2));
 
         Assert.Throws<InvalidOperationException>(() =>
-            fx.Publish(onBeforeShimCommit: () => throw new InvalidOperationException("Injected failure.")));
-        var staleShim = Path.Combine(fx.PublishDirectory, Assert.Single(fx.Files("*.duckdb.staging")));
+            fx.Publish(onBeforeManifestCommit: () => throw new InvalidOperationException("Injected failure.")));
+        var staleManifest = Path.Combine(fx.PublishDirectory, Assert.Single(fx.Files("*.json.staging")));
 
         var recovered = fx.Publish();
 
         Assert.Equal(SnapshotPublishStatus.Published, recovered.Status);
-        Assert.False(File.Exists(staleShim));
+        Assert.False(File.Exists(staleManifest));
         Assert.Empty(fx.Files("*.staging"));
-        Assert.Empty(fx.Files("*.staging.wal"));
-        Assert.Equal(2, fx.Files($"{PublisherFixture.SnapshotName}-*.duckdb").Length);
+        Assert.Equal(2, fx.Manifests().Length);
         Assert.Equal(3, fx.Files("*.parquet").Length);   // old set + recovered Widget; failed orphan is swept
-        Assert.Equal(recovered.ShimFile, Path.GetFileName(
-            PublishedSnapshot.ResolveNewest(fx.PublishDirectory, PublisherFixture.SnapshotName)));
+        Assert.Equal(recovered.ManifestFile, PublishPath.FileName(
+            PublishedSnapshot.ResolveNewest(fx.PublishDirectory, PublisherFixture.SnapshotName)!));
 
-        using var published = PublishedSnapshot.OpenNewest(fx.PublishDirectory, PublisherFixture.SnapshotName);
-        using var query = published!.Connection.CreateCommand();
-        query.CommandText = "SELECT \"Quantity\" FROM data.\"Widget\" WHERE \"_PrimaryKey\" = 'W1'";
-        Assert.Equal(2, Convert.ToInt32(query.ExecuteScalar()));
+        Assert.Equal(2, Convert.ToInt32(fx.ReadPublished("Widget", "\"Quantity\"", "\"_PrimaryKey\" = 'W1'")));
 
         Assert.Equal(1L, Convert.ToInt64(fx.Store.ExecuteScalar(
             "SELECT count(*) FROM meta.PublishRuns WHERE \"Status\" = 'Failed:Exception'")));
@@ -379,7 +486,7 @@ public class SnapshotPublisherTests : IDisposable
     }
 
     [Fact]
-    public void ShimTimestampsNeverCollide_EvenInTheSameMillisecond()
+    public void PublishStampsNeverCollide_EvenInTheSameMillisecond()
     {
         fx.MergeWidgets(("W1", "alpha", 1));
         var first = fx.Publish();
@@ -399,15 +506,7 @@ public class SnapshotPublisherTests : IDisposable
         fx.MergeWidgets(("W3", "gamma", 3), ("W1", "alpha", 1), ("W2", "beta", 2));
         fx.Publish();
 
-        using var published = PublishedSnapshot.OpenNewest(fx.PublishDirectory, PublisherFixture.SnapshotName);
-        using var command = published!.Connection.CreateCommand();
-        command.CommandText = "SELECT \"_PrimaryKey\" FROM data.\"Widget\"";
-        using var reader = command.ExecuteReader();
-        var keys = new List<string>();
-        while (reader.Read())
-            keys.Add(reader.GetString(0));
-
-        Assert.Equal(["W1", "W2", "W3"], keys);
+        Assert.Equal(["W1", "W2", "W3"], fx.ReadPublishedColumn("Widget", "\"_PrimaryKey\""));
     }
 
     [Fact]
@@ -416,14 +515,7 @@ public class SnapshotPublisherTests : IDisposable
         fx.MergeWidgets(("W1", "alpha", 1));
         fx.Publish();
 
-        using var published = PublishedSnapshot.OpenNewest(fx.PublishDirectory, PublisherFixture.SnapshotName);
-        using var command = published!.Connection.CreateCommand();
-        command.CommandText = "DESCRIBE data.\"Widget\"";
-        using var reader = command.ExecuteReader();
-        var columns = new List<string>();
-        while (reader.Read())
-            columns.Add(reader.GetString(0));
-
+        var columns = fx.PublishedColumns("Widget");
         foreach (var bookkeeping in BookkeepingColumns.All)
             Assert.Contains(bookkeeping, columns);
     }
@@ -456,6 +548,149 @@ public class SnapshotPublisherTests : IDisposable
         Assert.Equal(1L, Convert.ToInt64(fx.Store.ExecuteScalar("SELECT count(*) FROM meta.PublishRuns")));
     }
 
+    // ---- Manifest contract -------------------------------------------------------------------
+
+    [Fact]
+    public void AFixedNameCopyOfTheNewestManifest_GivesConsumersAStableEntryPoint()
+    {
+        // Committed manifests are versioned, so their names change every publish. External
+        // consumers need one URL that does not.
+        fx.MergeWidgets(("W1", "alpha", 1));
+        fx.MergeGadgets(("G1", "one"));
+        var first = fx.Publish();
+
+        var stablePath = Path.Combine(fx.PublishDirectory, "latest.json");
+        Assert.True(File.Exists(stablePath));
+        Assert.Equal(first.PublishId, PublishedSnapshot.Read(stablePath).PublishId);
+
+        // It follows the newest commit...
+        fx.MergeWidgets(("W1", "alpha", 2));
+        var second = fx.Publish();
+        Assert.Equal(second.PublishId, PublishedSnapshot.Read(stablePath).PublishId);
+
+        // ...and it is a COPY, not the commit: it is never what resolve-newest, retention or
+        // cold start work from, so it can never be mistaken for a published set of its own.
+        Assert.DoesNotContain("latest.json", fx.Manifests());
+        Assert.Equal(second.ManifestFile,
+            PublishPath.FileName(PublishedSnapshot.ResolveNewest(fx.PublishDirectory, PublisherFixture.SnapshotName)!));
+    }
+
+    [Fact]
+    public void ALostStablePointer_IsRestoredByTheNextCycle_EvenWhenNothingChanged()
+    {
+        fx.MergeWidgets(("W1", "alpha", 1));
+        var first = fx.Publish();
+
+        var stablePath = Path.Combine(fx.PublishDirectory, "latest.json");
+        File.Delete(stablePath);
+
+        // Nothing changed, so this publish skips — the pointer must still come back, or a
+        // consumer bookmarked to it stays broken until the data happens to change.
+        var second = fx.Publish();
+
+        Assert.Equal(SnapshotPublishStatus.SkippedNoChanges, second.Status);
+        Assert.True(File.Exists(stablePath));
+        Assert.Equal(first.PublishId, PublishedSnapshot.Read(stablePath).PublishId);
+    }
+
+    [Fact]
+    public void KeepingFewerThanTwoPublishes_IsRefused()
+    {
+        // Retention depth is a recovery parameter: it is what lets cold start fall back past a
+        // torn set, and what lets a consumer mid-refresh keep the files it already resolved.
+        fx.MergeWidgets(("W1", "alpha", 1));
+
+        var tooFew = Assert.Throws<ArgumentException>(() => fx.Publish(keepPublishes: 1));
+        Assert.Contains("at least 2", tooFew.Message);
+    }
+
+    [Fact]
+    public void AManifestNamingSomethingOtherThanABareFile_IsRefused()
+    {
+        // Manifests are read back from a shared location. An entry naming an absolute path or a
+        // traversal would let retention fail to protect it and let a rebuild read a file the
+        // publisher never wrote — so reading one is a hard failure, not a resolved path.
+        fx.MergeWidgets(("W1", "alpha", 1));
+        fx.MergeGadgets(("G1", "one"));
+        fx.Publish();
+
+        var manifestPath = Path.Combine(fx.PublishDirectory, Assert.Single(fx.Manifests()));
+        File.WriteAllText(manifestPath,
+            File.ReadAllText(manifestPath).Replace("\"Widget/", "\"../escaped/"));
+
+        var thrown = Assert.Throws<InvalidDataException>(() => PublishedSnapshot.Read(manifestPath));
+        Assert.Contains("not a relative path", thrown.Message);
+    }
+
+    [Fact]
+    public void AManifestFromANewerPublisher_IsRefusedRatherThanReadWithOlderRules()
+    {
+        fx.MergeWidgets(("W1", "alpha", 1));
+        fx.Publish();
+
+        var manifestPath = Path.Combine(fx.PublishDirectory, Assert.Single(fx.Manifests()));
+        File.WriteAllText(manifestPath, File.ReadAllText(manifestPath).Replace(
+            $"\"manifestVersion\": {PublishedSnapshot.CurrentManifestVersion}",
+            $"\"manifestVersion\": {PublishedSnapshot.CurrentManifestVersion + 1}"));
+
+        var thrown = Assert.Throws<InvalidDataException>(() => PublishedSnapshot.Read(manifestPath));
+        Assert.Contains("upgrade", thrown.Message);
+    }
+
+    [Theory]
+    [InlineData("{ not json")]
+    [InlineData("{}")]                                    // parses fine; every member defaults
+    [InlineData("{\"manifestVersion\": 2}")]              // parses fine; tables is null
+    public void JsonThatIsNotAManifest_FailsAsBadData_NotAsANullReference(string content)
+    {
+        fx.MergeWidgets(("W1", "alpha", 1));
+        fx.Publish();
+
+        var manifestPath = Path.Combine(fx.PublishDirectory, Assert.Single(fx.Manifests()));
+        File.WriteAllText(manifestPath, content);
+
+        Assert.Throws<InvalidDataException>(() => PublishedSnapshot.Read(manifestPath));
+    }
+
+    [Fact]
+    public void AnUnreadableBaselineManifest_DegradesToAFullReExport_NeverToAWrongPublish()
+    {
+        fx.MergeWidgets(("W1", "alpha", 1));
+        fx.MergeGadgets(("G1", "one"));
+        fx.Publish();
+
+        File.WriteAllText(Path.Combine(fx.PublishDirectory, Assert.Single(fx.Manifests())), "{ not json");
+
+        var result = fx.Publish();
+
+        Assert.Equal(SnapshotPublishStatus.Published, result.Status);
+        Assert.Equal(["Widget", "Gadget"], result.TablesExported);
+        Assert.Empty(result.TablesReused);
+    }
+
+    [Fact]
+    public void ARemotePublishLocation_FailsLoudlyRatherThanReportingNothingPublished()
+    {
+        // Directory.Exists("az://…") answers false without throwing, which every caller would
+        // read as "nothing is published yet" — a full re-export against an empty baseline, and
+        // a cold start that concludes the published set is gone.
+        fx.MergeWidgets(("W1", "alpha", 1));
+
+        var thrown = Assert.Throws<NotSupportedException>(() => SnapshotPublisher.Publish(fx.Store, new SnapshotPublishOptions
+        {
+            PublishDirectory = "az://hawta/publish",
+            SnapshotName = PublisherFixture.SnapshotName,
+            Tables = [fx.Widget],
+        }));
+
+        Assert.Contains("az://hawta/publish", thrown.Message);
+
+        // ...and it is still recorded, because a publish that cannot reach its destination is
+        // exactly the failure the run record exists to surface.
+        Assert.Equal(1L, Convert.ToInt64(fx.Store.ExecuteScalar(
+            "SELECT count(*) FROM meta.PublishRuns WHERE \"Status\" = 'Failed:Exception'")));
+    }
+
     // ---- Regression tests from the 2026-08-01 adversarial review ----------------------------
 
     [Fact]
@@ -478,11 +713,7 @@ public class SnapshotPublisherTests : IDisposable
 
         Assert.Equal(SnapshotPublishStatus.Published, result.Status);
         Assert.Equal(["Widget"], result.TablesExported);
-
-        using var published = PublishedSnapshot.OpenNewest(fx.PublishDirectory, PublisherFixture.SnapshotName);
-        using var command = published!.Connection.CreateCommand();
-        command.CommandText = "SELECT \"Quantity\" FROM data.\"Widget\" WHERE \"_PrimaryKey\" = 'W2'";
-        Assert.Equal(99, Convert.ToInt32(command.ExecuteScalar()));
+        Assert.Equal(99, Convert.ToInt32(fx.ReadPublished("Widget", "\"Quantity\"", "\"_PrimaryKey\" = 'W2'")));
     }
 
     [Fact]
@@ -522,48 +753,51 @@ public class SnapshotPublisherTests : IDisposable
     }
 
     [Fact]
-    public void HeldOpenShimKeepsItsParquetAlive_UntilTheConsumerCloses()
+    public void HeldOpenManifestKeepsItsParquetAlive_UntilTheConsumerReleasesIt()
     {
-        // The blocker finding: a shim whose delete is skipped (consumer holds it open) must
-        // keep protecting the parquet only it references — the referenced set is built from
-        // shims on disk, not just the kept window.
+        // The blocker finding: a published set whose manifest delete is skipped (a consumer is
+        // mid-session against it) must keep protecting the parquet only it references — the
+        // referenced set is built from manifests on disk, not just the kept window.
         fx.MergeGadgets(("G1", "one"));
         fx.MergeWidgets(("W1", "alpha", 1));
-        var first = fx.Publish(keepShims: 1);
-        var firstShimPath = Path.Combine(fx.PublishDirectory, first.ShimFile!);
-        var firstWidgetParquet = fx.Files("Widget-*.parquet").Single()!;
+        var first = fx.Publish(keepPublishes: 2);
+        var firstManifestPath = Path.Combine(fx.PublishDirectory, first.ManifestFile!);
+        var firstWidgetParquet = Path.Combine("Widget", fx.Versions("Widget").Single()!);
 
-        // Simulate a sharing violation through the retention delete hook. This avoids relying
-        // on OS-specific file-lock semantics while the real consumer remains open.
-        using (var consumer = PublishedSnapshot.Open(firstShimPath))
+        // A consumer that resolved the first manifest and is still reading through it.
+        var consumer = PublishedSnapshot.Read(firstManifestPath);
+
+        fx.MergeWidgets(("W1", "alpha", 2));
+        fx.Publish(keepPublishes: 2);
+
+        // Simulate the sharing violation through the retention delete hook. This avoids relying
+        // on OS-specific file-lock semantics, and is the only form the condition takes for a
+        // manifest that a consumer has read rather than held open.
+        fx.RetentionDelete = path => string.Equals(path, firstManifestPath, StringComparison.OrdinalIgnoreCase)
+            ? false
+            : PublisherFixture.DeleteForRetentionTest(path);
+        try
         {
-            fx.RetentionDelete = path => string.Equals(path, firstShimPath, StringComparison.OrdinalIgnoreCase)
-                ? false
-                : PublisherFixture.DeleteForRetentionTest(path);
-            try
-            {
-                fx.MergeWidgets(("W1", "alpha", 2));
-                var second = fx.Publish(keepShims: 1);
+            fx.MergeWidgets(("W1", "alpha", 3));
+            var third = fx.Publish(keepPublishes: 2);
 
-                Assert.Equal(SnapshotPublishStatus.Published, second.Status);
-                Assert.True(second.FilesSkippedByRetention >= 1);                   // the held shim
-                Assert.True(File.Exists(Path.Combine(fx.PublishDirectory, firstWidgetParquet)));
+            Assert.Equal(SnapshotPublishStatus.Published, third.Status);
+            Assert.True(third.FilesSkippedByRetention >= 1);                   // the held manifest
+            Assert.True(File.Exists(Path.Combine(fx.PublishDirectory, firstWidgetParquet)));
 
-                // The mid-session consumer still queries its shim successfully.
-                using var query = consumer.Connection.CreateCommand();
-                query.CommandText = "SELECT \"Quantity\" FROM data.\"Widget\" WHERE \"_PrimaryKey\" = 'W1'";
-                Assert.Equal(1, Convert.ToInt32(query.ExecuteScalar()));
-            }
-            finally
-            {
-                fx.RetentionDelete = null;
-            }
+            // The mid-session consumer still reads its own set successfully.
+            Assert.Equal(1, Convert.ToInt32(
+                fx.ReadPublished("Widget", "\"Quantity\"", "\"_PrimaryKey\" = 'W1'", consumer)));
+        }
+        finally
+        {
+            fx.RetentionDelete = null;
         }
 
-        // Consumer gone → the next publish removes the old shim AND its parquet.
-        fx.MergeWidgets(("W1", "alpha", 3));
-        fx.Publish(keepShims: 1);
-        Assert.False(File.Exists(firstShimPath));
+        // Consumer gone → the next publish removes the old manifest AND its parquet.
+        fx.MergeWidgets(("W1", "alpha", 4));
+        fx.Publish(keepPublishes: 2);
+        Assert.False(File.Exists(firstManifestPath));
         Assert.False(File.Exists(Path.Combine(fx.PublishDirectory, firstWidgetParquet)));
     }
 
@@ -616,18 +850,14 @@ public class SnapshotPublisherTests : IDisposable
         fx.MergeGadgets(("G1", "one"));
         fx.Publish();
 
-        var gadgetParquet = Path.Combine(fx.PublishDirectory, fx.Files("Gadget-*.parquet").Single()!);
+        var gadgetParquet = Path.Combine(fx.PublishDirectory, "Gadget", fx.Versions("Gadget").Single()!);
         File.WriteAllBytes(gadgetParquet, [0xDE, 0xAD]);
 
         var result = fx.Publish();   // no data changed — only the torn file forces work
 
         Assert.Equal(SnapshotPublishStatus.Published, result.Status);
         Assert.Contains("Gadget", result.TablesExported);
-
-        using var published = PublishedSnapshot.OpenNewest(fx.PublishDirectory, PublisherFixture.SnapshotName);
-        using var command = published!.Connection.CreateCommand();
-        command.CommandText = "SELECT count(*) FROM data.\"Gadget\"";
-        Assert.Equal(1L, Convert.ToInt64(command.ExecuteScalar()));
+        Assert.Equal(1L, Convert.ToInt64(fx.ReadPublished("Gadget", "count(*)")));
     }
 
     [Fact]
@@ -705,14 +935,7 @@ public class SnapshotPublisherTests : IDisposable
             SortColumns = new Dictionary<string, IReadOnlyList<string>> { ["widget"] = ["Code"] },
         });
 
-        using var published = PublishedSnapshot.OpenNewest(fx.PublishDirectory, PublisherFixture.SnapshotName);
-        using var command = published!.Connection.CreateCommand();
-        command.CommandText = "SELECT \"Code\" FROM data.\"Widget\"";
-        using var reader = command.ExecuteReader();
-        var codes = new List<string>();
-        while (reader.Read())
-            codes.Add(reader.GetString(0));
-        Assert.Equal(["alpha", "zeta"], codes);
+        Assert.Equal(["alpha", "zeta"], fx.ReadPublishedColumn("Widget", "\"Code\""));
     }
 
     [Fact]
@@ -722,10 +945,7 @@ public class SnapshotPublisherTests : IDisposable
         fx.MergeWidgets(("W1", "alpha", 1));   // W2 vanishes → tombstone
         fx.Publish();
 
-        using var published = PublishedSnapshot.OpenNewest(fx.PublishDirectory, PublisherFixture.SnapshotName);
-        using var command = published!.Connection.CreateCommand();
-        command.CommandText = "SELECT \"_Deleted\" FROM data.\"Widget\" WHERE \"_PrimaryKey\" = 'W2'";
-        Assert.Equal(true, command.ExecuteScalar());
+        Assert.Equal(true, fx.ReadPublished("Widget", "\"_Deleted\"", "\"_PrimaryKey\" = 'W2'"));
     }
 
     public void Dispose() => fx.Dispose();

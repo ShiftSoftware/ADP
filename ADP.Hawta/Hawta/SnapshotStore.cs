@@ -31,6 +31,8 @@ public sealed class SnapshotStore : IDisposable
         try
         {
             connection.Open();
+            ApplyExtensionDirectory(connection, options.ExtensionDirectory);
+            ApplyAzureCredential(connection, options.AzureConnectionString);
             var store = new SnapshotStore(connection);
             store.Bootstrap(options.SchemaVersion);
             return store;
@@ -40,6 +42,51 @@ public sealed class SnapshotStore : IDisposable
             connection.Dispose();
             throw;
         }
+    }
+
+    /// <summary>
+    /// Points DuckDB's extension cache somewhere durable. Applied before <see cref="Bootstrap"/>
+    /// so it is in force for every statement this connection ever runs — the <c>azure</c>
+    /// extension is fetched lazily on the first <c>az://</c> touch, which can be any of them.
+    /// </summary>
+    internal static void ApplyExtensionDirectory(DuckDBConnection connection, string? extensionDirectory)
+    {
+        if (string.IsNullOrWhiteSpace(extensionDirectory))
+            return;
+
+        // Created eagerly: DuckDB reports a missing extension directory as a failure to open
+        // the download's temp file, which names the temp file and not the cause.
+        Directory.CreateDirectory(extensionDirectory);
+
+        using var command = connection.CreateCommand();
+        command.CommandText = $"SET extension_directory = '{extensionDirectory.Replace("'", "''")}'";
+        command.ExecuteNonQuery();
+    }
+
+    /// <summary>
+    /// Gives DuckDB its own credential for <c>az://</c>.
+    ///
+    /// <para>The publish tier reaches blob two ways and they authenticate SEPARATELY: listing,
+    /// metadata, delete and the manifest commit go through <c>Azure.Storage.Blobs</c>, while the
+    /// parquet itself moves through DuckDB's <c>COPY … TO</c> and <c>read_parquet</c>. Configuring
+    /// only the SDK half produces "Invalid Input Error: No valid Azure credentials found!" at the
+    /// first export — after the destination has already been proven reachable, which makes it read
+    /// like a DuckDB fault rather than a missing setting.</para>
+    ///
+    /// <para>Applied before <see cref="Bootstrap"/>, for the same reason as the extension
+    /// directory: the first <c>az://</c> touch can be any statement this connection runs.</para>
+    /// </summary>
+    internal static void ApplyAzureCredential(DuckDBConnection connection, string? azureConnectionString)
+    {
+        if (string.IsNullOrWhiteSpace(azureConnectionString))
+            return;
+
+        using var command = connection.CreateCommand();
+        // Never interpolated into a log or an exception message — this value carries the account
+        // key or SAS. DuckDB has no parameter binding for CREATE SECRET, so it is escaped instead.
+        command.CommandText =
+            $"CREATE OR REPLACE SECRET hawta_publish (TYPE azure, CONNECTION_STRING '{azureConnectionString.Replace("'", "''")}')";
+        command.ExecuteNonQuery();
     }
 
     private void Bootstrap(int expectedSchemaVersion)

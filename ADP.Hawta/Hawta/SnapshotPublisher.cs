@@ -1,36 +1,35 @@
 using System.Globalization;
+using System.Text.Json;
 using System.Text.RegularExpressions;
-using DuckDB.NET.Data;
 
 namespace ShiftSoftware.ADP.Hawta;
 
 /// <summary>
 /// Publishes the read tier: per-table ZSTD parquet for tables that changed since the last
-/// publish, plus a tiny views-shim DuckDB file (<c>{SnapshotName}-{ts}.duckdb</c>, KBs) whose
-/// <c>data.*</c> views compose the newest parquet per table — consumers keep the
-/// resolve-newest contract and upload cost is proportional to changed data, never database
-/// size.
+/// publish, plus a small JSON manifest (<c>{SnapshotName}-{ts}.json</c>) naming the newest
+/// parquet per table — consumers keep the resolve-newest contract and upload cost is
+/// proportional to changed data, never database size.
 ///
-/// <para><b>The shim is the atomic commit</b>: parquet lands first under new pinned names
-/// (each written to a <c>.staging</c> name and renamed), the shim is built at a
+/// <para><b>The manifest is the atomic commit</b>: parquet lands first under new pinned names
+/// (each written to a <c>.staging</c> name and renamed), the manifest is written to a
 /// <c>.staging</c> name and renamed <b>last</b> — a consumer can never observe a
-/// half-published set. Retention keeps <see cref="SnapshotPublishOptions.KeepShims"/> shims
-/// and deletes parquet no on-disk shim references (a delete-skipped shim a consumer still
-/// holds open keeps protecting its parquet until it can actually be removed).</para>
+/// half-published set. Retention keeps <see cref="SnapshotPublishOptions.KeepPublishes"/>
+/// manifests and deletes parquet no on-disk manifest references (a delete-skipped manifest a
+/// consumer still holds keeps protecting its parquet until it can actually be removed).</para>
 ///
 /// <para><b>Change detection</b> is a per-table signature — row count plus an
 /// order-independent XOR aggregate of a per-row state hash over <c>_PrimaryKey</c>,
-/// <c>_RowHash</c>, and every bookkeeping column — compared against the manifest embedded in
-/// the newest shim (<c>meta.publish_manifest</c>). The hash covers replication state, not
-/// just content: the published set doubles as the DR seed, so pump progress (which never
-/// bumps <c>_LastModified</c>) must re-export too. A per-row hash is deliberate — aggregate
-/// shortcuts like <c>MAX(_LastModified)</c> are not injective (a stamp can legitimately land
-/// below a future-pinned MAX; sums can alias) and were shown to skip real changes under
-/// clock skew. The manifest lives in the shim — not the write DB — so publish state survives
-/// a write-DB rebuild and the publish directory is self-describing.</para>
+/// <c>_RowHash</c>, and every bookkeeping column — compared against the previous manifest.
+/// The hash covers replication state, not just content: the published set doubles as the DR
+/// seed, so pump progress (which never bumps <c>_LastModified</c>) must re-export too. A
+/// per-row hash is deliberate — aggregate shortcuts like <c>MAX(_LastModified)</c> are not
+/// injective (a stamp can legitimately land below a future-pinned MAX; sums can alias) and
+/// were shown to skip real changes under clock skew. The manifest lives beside the parquet —
+/// not in the write DB — so publish state survives a write-DB rebuild and the publish
+/// directory is self-describing.</para>
 ///
 /// <para>Callers hold the write gate. The publisher owns its directory exclusively (one
-/// directory per published snapshot); if shims of another snapshot are detected, parquet
+/// directory per published snapshot); if manifests of another snapshot are detected, parquet
 /// cleanup is skipped rather than guessed at.</para>
 /// </summary>
 public static class SnapshotPublisher
@@ -38,16 +37,23 @@ public static class SnapshotPublisher
     /// <summary>Timestamp format embedded in published file names; lexicographic order == chronological.</summary>
     internal const string TimestampFormat = "yyyyMMddHHmmssfff";
 
-    /// <summary>Any shim-shaped file, regardless of snapshot name — used to detect foreign snapshots sharing the directory.</summary>
-    private static readonly Regex AnyShimShape = new(@"^.+-[0-9]{17}\.duckdb$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    /// <summary>Suffix every artifact is built under before its atomic rename to the final name.</summary>
+    internal const string StagingSuffix = ".staging";
 
     /// <summary>
-    /// Published parquet name shape; retention never touches files outside it (ad-hoc parquet in
-    /// the directory survives). The named groups let <see cref="SnapshotExporter"/> recover a
-    /// file's table and publish stamp without re-deriving the naming rule.
+    /// A table's folder name. One folder per table, holding immutable <c>{publishId}.parquet</c>
+    /// versions — the layout consumers already read, and the only one that survives a table
+    /// growing past a single file (partitioning today, a Delta directory later).
+    /// </summary>
+    internal static string FolderFor(SnapshotTableDefinition table) => table.Name;
+
+    /// <summary>
+    /// Published version-file shape, <b>within a table's folder</b>. Retention never touches
+    /// files outside it, so ad-hoc parquet dropped into the publish tier survives. The named
+    /// group lets a caller recover a file's publish stamp without re-deriving the naming rule.
     /// </summary>
     internal static readonly Regex PublishedParquetShape =
-        new(@"^(?<table>[A-Za-z][A-Za-z0-9_]*)-(?<stamp>[0-9]{17})\.parquet$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        new(@"^(?<stamp>[0-9]{17})\.parquet$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     public static SnapshotPublishResult Publish(SnapshotStore store, SnapshotPublishOptions options)
     {
@@ -56,17 +62,27 @@ public static class SnapshotPublisher
 
         try
         {
-            // Everything filesystem-touching sits inside the try: the share being offline is
+            // Everything storage-touching sits inside the try: the destination being offline is
             // the single most likely production failure and must land in PublishRuns.
-            Directory.CreateDirectory(options.PublishDirectory);
+            var publishStore = options.ResolveStore();
 
-            // Leftover .staging files (and their DuckDB .wal sidecars) can only come from a
-            // crashed prior publish (the write gate serializes publishers); clear them first.
-            foreach (var pattern in new[] { "*.staging", "*.staging.wal" })
-                foreach (var stale in Directory.EnumerateFiles(options.PublishDirectory, pattern))
-                    TryDelete(stale);
+            // Loud, and BEFORE anything reads. Every listing below reports an unreachable store as
+            // an empty one, and "empty" here means "nothing has ever been published" — which sends
+            // the publisher down the full-re-export path and skips the stamp-monotonicity clamp,
+            // permanently breaking resolve-newest ordering. This is the replacement for the
+            // RequireLocal stop-sign that used to stand here.
+            publishStore.EnsureReady();
 
-            var result = PublishCore(store, options);
+            // Leftover .staging files can only come from a crashed prior publish (the write gate
+            // serializes publishers); clear them first. The listing is recursive because table
+            // folders nest one level.
+            foreach (var stale in publishStore.List()
+                .Where(entry => entry.RelativePath.EndsWith(StagingSuffix, StringComparison.OrdinalIgnoreCase)))
+            {
+                publishStore.Delete(stale.Location);
+            }
+
+            var result = PublishCore(store, options, publishStore);
 
             if (result.Status == SnapshotPublishStatus.Published)
                 InsertRunRecord(store, options, result, startedAt, "Published", error: null);
@@ -80,7 +96,7 @@ public static class SnapshotPublisher
             {
                 InsertRunRecord(store, options,
                     new SnapshotPublishResult(startedAt.ToString(TimestampFormat, CultureInfo.InvariantCulture),
-                        SnapshotPublishStatus.Published, null, [], [], 0, 0, 0, false),
+                        SnapshotPublishStatus.Published, null, [], [], 0, 0, 0, false, []),
                     startedAt, "Failed:Exception", exception.Message);
             }
             catch { /* recording must never mask the original failure */ }
@@ -89,18 +105,18 @@ public static class SnapshotPublisher
         }
     }
 
-    private static SnapshotPublishResult PublishCore(SnapshotStore store, SnapshotPublishOptions options)
+    private static SnapshotPublishResult PublishCore(
+        SnapshotStore store, SnapshotPublishOptions options, PublishStore publishStore)
     {
-        // Baseline = the manifest of the newest shim. Unreadable manifest (older layout,
-        // corrupt file) degrades to a full re-export — never to a wrong publish.
-        var previousShim = PublishedSnapshot.ResolveNewest(options.PublishDirectory, options.SnapshotName);
+        // Baseline = the previous manifest. Unreadable manifest (older layout, corrupt file)
+        // degrades to a full re-export — never to a wrong publish.
+        var previousPath = PublishedSnapshot.ResolveNewest(publishStore, options.SnapshotName);
         var baseline = new Dictionary<string, PublishedTableManifest>(StringComparer.OrdinalIgnoreCase);
-        if (previousShim is not null)
+        if (previousPath is not null)
         {
             try
             {
-                using var previous = PublishedSnapshot.Open(previousShim);
-                foreach (var entry in previous.ReadManifest())
+                foreach (var entry in PublishedSnapshot.Read(publishStore, previousPath).Tables)
                     baseline[entry.Table] = entry;
             }
             catch
@@ -109,12 +125,12 @@ public static class SnapshotPublisher
             }
         }
 
-        // The publish stamp names every file of this run; strictly above the previous shim's
+        // The publish stamp names every file of this run; strictly above the previous manifest's
         // stamp so resolve-newest (ordinal name sort) can never tie or go backward.
         var stamp = DateTime.UtcNow;
-        if (previousShim is not null)
+        if (previousPath is not null)
         {
-            var previousStamp = ParseStamp(Path.GetFileName(previousShim), options.SnapshotName);
+            var previousStamp = ParseStamp(PublishPath.FileName(previousPath), options.SnapshotName);
             if (previousStamp is not null && stamp <= previousStamp.Value)
                 stamp = previousStamp.Value.AddMilliseconds(1);
         }
@@ -129,16 +145,16 @@ public static class SnapshotPublisher
             var signature = ReadSignature(store, table);
             var baselineEntry = baseline.GetValueOrDefault(table.Name);
 
-            // Reuse needs more than name equality: the baseline parquet must still be a
-            // bare in-directory filename AND readable with the expected row count (a torn
-            // file from a crash would otherwise be re-referenced by every future shim).
+            // Reuse needs more than signature equality: the baseline's files must still be
+            // readable at the expected row count (a torn file from a crash would otherwise be
+            // re-referenced by every future manifest). Bare-name validation already happened
+            // in PublishedSnapshot.Read.
             var upToDate =
                 !options.Force
                 && baselineEntry is not null
                 && baselineEntry.RowCount == signature.RowCount
                 && baselineEntry.StateHash == signature.StateHash
-                && baselineEntry.ParquetFile == Path.GetFileName(baselineEntry.ParquetFile)
-                && ParquetIsIntact(store, Path.Combine(options.PublishDirectory, baselineEntry.ParquetFile), baselineEntry.RowCount);
+                && ParquetIsIntact(store, baselineEntry.Resolve(publishStore.Root), baselineEntry.RowCount);
 
             if (upToDate)
             {
@@ -147,28 +163,65 @@ public static class SnapshotPublisher
                 continue;
             }
 
-            var parquetFile = $"{table.Name}-{publishId}.parquet";
-            ExportParquet(store, table, options, Path.Combine(options.PublishDirectory, parquetFile));
+            // Forward-slashed and relative: the manifest is read by consumers that are not
+            // necessarily on Windows, and the set has to stay relocatable.
+            var parquetFile = $"{FolderFor(table)}/{publishId}.parquet";
+            ExportParquet(store, table, options, publishStore, publishStore.Resolve(parquetFile));
             exported.Add(table.Name);
             manifest.Add(new PublishedTableManifest(
-                table.Name, parquetFile,
-                signature.RowCount, signature.StateHash, signature.MaxLastModified, ExportedAt: stamp));
+                Table: table.Name,
+                Location: PublishedTableLocation.Parquet(parquetFile),
+                PublishId: publishId,
+                RowCount: signature.RowCount,
+                StateHash: signature.StateHash,
+                DataAsOf: signature.MaxLastModified,
+                ExportedAt: stamp));
         }
 
-        if (exported.Count == 0 && previousShim is not null)
+        var noRows = manifest.Where(e => e.RowCount == 0).Select(e => e.Table).Order().ToList();
+
+        if (exported.Count == 0 && previousPath is not null)
         {
+            // Self-heal only: a pointer lost to a crash (or never written, on an estate published
+            // before it existed) comes back on the next cycle. Rewriting it unconditionally would
+            // churn its timestamp every publish cadence for no reader benefit.
+            if (options.StableManifestFileName is not null
+                && !publishStore.Exists(publishStore.Resolve(options.StableManifestFileName)))
+            {
+                RefreshStablePointer(options, publishStore, previousPath);
+            }
+
             return new SnapshotPublishResult(publishId, SnapshotPublishStatus.SkippedNoChanges,
-                Path.GetFileName(previousShim), exported, reused, 0, 0, 0, false);
+                PublishPath.FileName(previousPath), exported, reused, 0, 0, 0, false, noRows);
         }
 
-        var shimFile = $"{options.SnapshotName}-{publishId}.duckdb";
-        WriteShim(Path.Combine(options.PublishDirectory, shimFile), options.SnapshotName, publishId, stamp, manifest,
-            options.OnBeforeShimCommit);
+        // Alphabetical, so the manifest's table order is stable across configuration changes.
+        manifest.Sort((left, right) => string.Compare(left.Table, right.Table, StringComparison.OrdinalIgnoreCase));
 
-        var (shimsDeleted, parquetDeleted, skipped, cleanupSkipped) = ApplyRetention(options);
+        var manifestFile = $"{options.SnapshotName}-{publishId}{PublishedSnapshot.Extension}";
+        var manifestPath = publishStore.Resolve(manifestFile);
+        WriteManifest(manifestPath, options, publishStore, publishId, stamp, manifest, options.OnBeforeManifestCommit);
 
-        return new SnapshotPublishResult(publishId, SnapshotPublishStatus.Published, shimFile,
-            exported, reused, shimsDeleted, parquetDeleted, skipped, cleanupSkipped);
+        RefreshStablePointer(options, publishStore, manifestPath);
+
+        var retention = options.RetentionEnabled
+            ? SnapshotRetention.Sweep(new SnapshotRetentionOptions
+            {
+                PublishDirectory = options.PublishDirectory,
+                Store = publishStore,
+                SnapshotName = options.SnapshotName,
+                KeepPublishes = options.KeepPublishes,
+                // The set just committed is protected by being referenced, not by age, so the
+                // in-process sweep does not need a floor. A standalone sweeper does — see
+                // SnapshotRetention's remarks.
+                MinimumAge = options.RetentionMinimumAge,
+                Delete = options.RetentionDelete,
+            })
+            : new SnapshotRetentionResult(0, 0, 0, 0, CleanupSkipped: false);
+
+        return new SnapshotPublishResult(publishId, SnapshotPublishStatus.Published, manifestFile,
+            exported, reused, retention.ManifestsDeleted, retention.ParquetFilesDeleted,
+            retention.Skipped, retention.CleanupSkipped, noRows);
     }
 
     // ---- Change signature --------------------------------------------------------------------
@@ -205,14 +258,21 @@ public static class SnapshotPublisher
             reader.IsDBNull(2) ? null : SnapshotStore.AsUtc(reader.GetDateTime(2)));
     }
 
-    /// <summary>Footer-only probe: the file parses as parquet and carries the expected row count.</summary>
-    internal static bool ParquetIsIntact(SnapshotStore store, string parquetPath, long expectedRows)
+    /// <summary>Footer-only probe: every file parses as parquet and together they carry the expected row count.</summary>
+    internal static bool ParquetIsIntact(SnapshotStore store, IReadOnlyList<string> parquetPaths, long expectedRows)
     {
+        if (parquetPaths.Count == 0)
+            return false;
+
         try
         {
-            var rows = store.ExecuteScalar(
-                $"SELECT num_rows FROM parquet_file_metadata('{EscapePath(parquetPath)}')");
-            return Convert.ToInt64(rows) == expectedRows;
+            var rows = 0L;
+            foreach (var path in parquetPaths)
+            {
+                rows += Convert.ToInt64(store.ExecuteScalar(
+                    $"SELECT num_rows FROM parquet_file_metadata('{EscapePath(path)}')"));
+            }
+            return rows == expectedRows;
         }
         catch
         {
@@ -222,174 +282,115 @@ public static class SnapshotPublisher
 
     // ---- Export ------------------------------------------------------------------------------
 
-    private static void ExportParquet(SnapshotStore store, SnapshotTableDefinition table, SnapshotPublishOptions options, string parquetPath)
+    private static void ExportParquet(SnapshotStore store, SnapshotTableDefinition table,
+        SnapshotPublishOptions options, PublishStore publishStore, string parquetPath)
     {
         var sortColumns = options.SortColumnsFor(table);
         var orderBy = string.Join(", ", sortColumns.Select(c => $"\"{c}\""));
         var columns = string.Join(", ",
             table.Columns.Select(c => $"\"{c.Name}\"").Concat(BookkeepingColumns.All.Select(c => $"\"{c}\"")));
 
-        var stagingPath = parquetPath + ".staging";
+        // One folder per table; created on first publish of that table. A no-op where the
+        // namespace is flat, which is every blob container.
+        publishStore.EnsureFolderFor(parquetPath);
+
+        // On a filesystem a reader can observe a half-written file, so the bulk write lands on a
+        // staging name and is renamed. On blob it does not: measured, a parquet under construction
+        // is visible at ZERO bytes and then jumps to full size, so the content is never torn and a
+        // staging name would only add a second name that retention does not recognise -- which is
+        // how orphans become permanent.
+        var destination = publishStore.BulkWriteNeedsStaging ? parquetPath + StagingSuffix : parquetPath;
+
         store.Execute(
             $"""
             COPY (SELECT {columns} FROM {table.QualifiedName} ORDER BY {orderBy})
-            TO '{EscapePath(stagingPath)}' (FORMAT parquet, COMPRESSION zstd)
+            TO '{EscapePath(destination)}' (FORMAT parquet, COMPRESSION zstd)
             """);
-        // overwrite: a colliding final name can only be an unreferenced orphan from a crashed
-        // run (referenced names always carry stamps older than this publish's).
-        File.Move(stagingPath, parquetPath, overwrite: true);
+
+        if (publishStore.BulkWriteNeedsStaging)
+            publishStore.PromoteStaged(destination, parquetPath);
     }
 
-    // ---- The shim ----------------------------------------------------------------------------
+    // ---- The manifest ------------------------------------------------------------------------
 
-    private static void WriteShim(string shimPath, string snapshotName, string publishId, DateTime publishedAt,
-        IReadOnlyList<PublishedTableManifest> manifest, Action? onBeforeShimCommit)
+    private static void WriteManifest(string manifestPath, SnapshotPublishOptions options,
+        PublishStore publishStore, string publishId, DateTime publishedAt,
+        IReadOnlyList<PublishedTableManifest> tables, Action? onBeforeManifestCommit)
     {
-        var stagingPath = shimPath + ".staging";
+        var manifest = new PublishedSnapshot(
+            ManifestVersion: PublishedSnapshot.CurrentManifestVersion,
+            SnapshotName: options.SnapshotName,
+            PublishId: publishId,
+            PublishedAt: publishedAt,
+            SchemaVersion: SnapshotStore.CurrentSchemaVersion,
+            PackageVersion: typeof(SnapshotPublisher).Assembly.GetName().Version?.ToString() ?? "0.0.0",
+            PathBase: PublishedSnapshot.RelativePathBase,
+            SelectionMode: PublishedSnapshot.LatestPerTable,
+            Tables: tables);
 
-        // A stale staging DB or its WAL sidecar here would be replayed into the new shim.
-        if (File.Exists(stagingPath)) File.Delete(stagingPath);
-        if (File.Exists(stagingPath + ".wal")) File.Delete(stagingPath + ".wal");
+        var payload = JsonSerializer.Serialize(manifest, PublishedSnapshot.SerializerOptions);
 
-        using (var connection = new DuckDBConnection("Data Source=:memory:"))
+        // Prepared but not visible: on a filesystem this materialises a complete, readable manifest
+        // under a .staging name, so at the moment of commit the whole set genuinely exists and only
+        // the name is missing. On blob nothing is written until the commit itself.
+        var pending = publishStore.PrepareCommit(manifestPath, payload);
+
+        // Deliberately BETWEEN the two halves: a drill injected here observes a finished snapshot
+        // whose parquet are all in place, while consumers still resolve the prior commit. That
+        // ordering IS the atomicity, and it is exactly what the publish-kill drill asserts.
+        onBeforeManifestCommit?.Invoke();
+
+        // THE ATOMIC COMMIT. The fully-built manifest appears under its final name in exactly one
+        // operation -- a rename on a filesystem, a conditional PUT (If-None-Match: *) on blob, both
+        // of which REFUSE an existing name rather than replacing it. Measured on a real container:
+        // the second conditional PUT is rejected 409 BlobAlreadyExists with the first content
+        // intact. Falling back to an unconditional write here would silently destroy the guarantee
+        // that a consumer never observes a half-published set.
+        if (!publishStore.Commit(pending))
         {
-            connection.Open();
-
-            // The shim carries only view definitions and the manifest, so it is created with
-            // DuckDB's minimum block size: at the 256 KB default the empty-file floor is
-            // ~780 KB — bigger than small tables' parquet, which reads as "the shim holds
-            // data" when it must never. ATTACH is the only way to pass BLOCK_SIZE.
-            Execute(connection, $"ATTACH '{EscapePath(stagingPath)}' AS shim (BLOCK_SIZE 16384)");
-
-            // CREATE VIEW binds read_parquet immediately, so the bare relative filenames in the
-            // view SQL must resolve NOW — the setting is session-scoped and is not baked into
-            // the stored view text (consumers set their own via PublishedSnapshot.Open).
-            var directory = Path.GetDirectoryName(Path.GetFullPath(shimPath))!;
-            Execute(connection, $"SET file_search_path = '{EscapePath(directory)}'");
-
-            Execute(connection, "CREATE SCHEMA shim.data");
-            Execute(connection, "CREATE SCHEMA shim.meta");
-
-            Execute(connection,
-                """
-                CREATE TABLE shim.meta.publish_info (
-                    "PublishId" VARCHAR NOT NULL,
-                    "SnapshotName" VARCHAR NOT NULL,
-                    "PublishedAt" TIMESTAMP NOT NULL,
-                    "SchemaVersion" INTEGER NOT NULL,
-                    "PackageVersion" VARCHAR NOT NULL
-                )
-                """);
-            Execute(connection,
-                "INSERT INTO shim.meta.publish_info VALUES (?, ?, ?, ?, ?)",
-                publishId, snapshotName, publishedAt, SnapshotStore.CurrentSchemaVersion,
-                typeof(SnapshotPublisher).Assembly.GetName().Version?.ToString() ?? "0.0.0");
-
-            Execute(connection,
-                """
-                CREATE TABLE shim.meta.publish_manifest (
-                    "Table" VARCHAR NOT NULL,
-                    "ParquetFile" VARCHAR NOT NULL,
-                    "RowCount" BIGINT NOT NULL,
-                    "StateHash" VARCHAR NOT NULL,
-                    "MaxLastModified" TIMESTAMP,
-                    "ExportedAt" TIMESTAMP NOT NULL
-                )
-                """);
-
-            foreach (var entry in manifest)
-            {
-                Execute(connection,
-                    "INSERT INTO shim.meta.publish_manifest VALUES (?, ?, ?, ?, ?, ?)",
-                    entry.Table, entry.ParquetFile, entry.RowCount, entry.StateHash,
-                    entry.MaxLastModified, entry.ExportedAt);
-
-                // Bare relative filename: the set stays relocatable (local dir, SMB, abfss later).
-                // PublishedSnapshot.Open sets file_search_path to the shim's directory; plain
-                // duckdb.exe consumers open the shim from inside the directory (CWD resolution).
-                Execute(connection,
-                    $"""CREATE VIEW shim.data."{entry.Table}" AS SELECT * FROM read_parquet('{EscapePath(entry.ParquetFile)}')""");
-            }
-
-            Execute(connection, "DETACH shim");   // checkpoints and removes the WAL
+            throw new IOException(
+                $"'{manifestPath}' already exists, so this publish did not commit. The publish stamp is " +
+                "derived to sit strictly above the previous manifest's, so a collision means another " +
+                "writer holds this estate -- refusing to overwrite rather than racing it.");
         }
-
-        if (File.Exists(stagingPath + ".wal")) File.Delete(stagingPath + ".wal");
-
-        // Deliberately after the connection is closed and its WAL removed: drills injected
-        // here observe a complete staging shim while consumers still resolve the prior commit.
-        onBeforeShimCommit?.Invoke();
-
-        // The atomic commit: the fully-built shim appears under its final name in one rename.
-        File.Move(stagingPath, shimPath, overwrite: false);
     }
 
-    // ---- Retention ---------------------------------------------------------------------------
-
-    private static (int ShimsDeleted, int ParquetDeleted, int Skipped, bool CleanupSkipped) ApplyRetention(SnapshotPublishOptions options)
+    /// <summary>
+    /// Refreshes the fixed-name copy of the newest manifest — the stable entry point consumers
+    /// bookmark. Written through a staging name like everything else, so a reader never sees a
+    /// half-written pointer.
+    ///
+    /// <para>Contained rather than fatal: the versioned manifest is already committed and IS the
+    /// publish. A failure here leaves consumers on the previous complete set (whose files
+    /// retention still protects) and the next publish retries — losing the publish over a
+    /// convenience copy would be the wrong trade.</para>
+    /// </summary>
+    private static void RefreshStablePointer(
+        SnapshotPublishOptions options, PublishStore publishStore, string manifestPath)
     {
-        var shims = PublishedSnapshot.ListShims(options.PublishDirectory, options.SnapshotName);
+        if (options.StableManifestFileName is null)
+            return;
 
-        var shimsDeleted = 0;
-        var skipped = 0;
-        foreach (var old in shims.Skip(options.KeepShims))
+        try
         {
-            if (TryDelete(old, options.RetentionDelete)) shimsDeleted++;
-            else skipped++;
+            // Unconditional overwrite, unlike the commit above: this pointer is MEANT to move, and
+            // it is a copy of an already-committed manifest rather than the commit itself.
+            publishStore.WriteAllText(
+                publishStore.Resolve(options.StableManifestFileName),
+                publishStore.ReadAllText(manifestPath));
         }
-
-        // Parquet cleanup assumes exclusive directory ownership. A shim-shaped file under
-        // another snapshot name means a second publisher shares this directory — never guess
-        // at its references; skip the sweep and surface it.
-        var ownPattern = PublishedSnapshot.ShimPattern(options.SnapshotName);
-        var foreignShimPresent = Directory.EnumerateFiles(options.PublishDirectory, "*.duckdb")
-            .Select(Path.GetFileName)
-            .Any(name => name is not null && AnyShimShape.IsMatch(name) && !ownPattern.IsMatch(name));
-        if (foreignShimPresent)
-            return (shimsDeleted, 0, skipped, CleanupSkipped: true);
-
-        // The referenced set comes from EVERY shim still on disk — kept ones AND those whose
-        // delete was just skipped because a consumer holds them open. A held-open shim must
-        // keep its parquet alive (its reader is mid-session); the set shrinks by itself once
-        // the consumer closes and the shim can actually be deleted. Only delete when every
-        // manifest is readable and sane; guessing risks breaking a consumer mid-query.
-        var referenced = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var shim in PublishedSnapshot.ListShims(options.PublishDirectory, options.SnapshotName))
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException
+                                              or Azure.RequestFailedException)
         {
-            try
-            {
-                using var snapshot = PublishedSnapshot.Open(shim);
-                foreach (var entry in snapshot.ReadManifest())
-                {
-                    if (entry.ParquetFile != Path.GetFileName(entry.ParquetFile))
-                        return (shimsDeleted, 0, skipped, CleanupSkipped: true);
-                    referenced.Add(entry.ParquetFile);
-                }
-            }
-            catch
-            {
-                return (shimsDeleted, 0, skipped, CleanupSkipped: true);
-            }
+            // Next publish retries. The committed versioned manifest stands either way.
         }
-
-        var parquetDeleted = 0;
-        foreach (var parquet in Directory.EnumerateFiles(options.PublishDirectory, "*.parquet"))
-        {
-            var name = Path.GetFileName(parquet);
-            if (!PublishedParquetShape.IsMatch(name) || referenced.Contains(name))
-                continue;
-            if (TryDelete(parquet, options.RetentionDelete)) parquetDeleted++;
-            else skipped++;
-        }
-
-        return (shimsDeleted, parquetDeleted, skipped, CleanupSkipped: false);
     }
 
     // ---- Plumbing ----------------------------------------------------------------------------
 
     internal static DateTime? ParseStamp(string fileName, string snapshotName)
     {
-        var match = PublishedSnapshot.ShimPattern(snapshotName).Match(fileName);
+        var match = PublishedSnapshot.ManifestPattern(snapshotName).Match(fileName);
         if (!match.Success)
             return null;
         return DateTime.TryParseExact(match.Groups[1].Value, TimestampFormat,
@@ -400,36 +401,22 @@ public static class SnapshotPublisher
 
     private static string EscapePath(string path) => path.Replace("'", "''");
 
-    private static bool TryDelete(string path, Func<string, bool>? retentionDelete = null)
+    /// <summary>Best-effort removal of the publisher's own staging residue. Retention's delete lives in <see cref="SnapshotRetention"/>.</summary>
+    private static bool TryDelete(string path)
     {
         try
         {
-            if (retentionDelete is not null)
-                return retentionDelete(path);
             File.Delete(path);
             return true;
         }
         catch (IOException)
         {
-            return false; // in use by a consumer; the next publish's retention pass retries
+            return false; // in use; the next publish's staging sweep retries
         }
         catch (UnauthorizedAccessException)
         {
             return false;
         }
-    }
-
-    private static void Execute(DuckDBConnection connection, string sql, params object?[] parameters)
-    {
-        using var command = connection.CreateCommand();
-        command.CommandText = sql;
-        foreach (var value in parameters)
-        {
-            var parameter = command.CreateParameter();
-            parameter.Value = value ?? DBNull.Value;
-            command.Parameters.Add(parameter);
-        }
-        command.ExecuteNonQuery();
     }
 
     private static void InsertRunRecord(SnapshotStore store, SnapshotPublishOptions options,
@@ -444,6 +431,10 @@ public static class SnapshotPublisher
             """,
             result.PublishId, options.SnapshotName, startedAt, DateTime.UtcNow,
             result.TablesExported.Count, result.TablesReused.Count,
-            result.ShimsDeleted, result.ParquetFilesDeleted, status, error);
+            // The COLUMN is still "ShimsDeleted": meta.PublishRuns is CREATE TABLE IF NOT EXISTS,
+            // so renaming it would need a schema-version bump, and a bump forces every live write
+            // DB to rebuild — from a published set that, at cutover, has no manifest yet. Not
+            // worth it for a name. Rename with the next bump that is happening anyway.
+            result.ManifestsDeleted, result.ParquetFilesDeleted, status, error);
     }
 }

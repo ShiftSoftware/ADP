@@ -94,12 +94,17 @@ public sealed class SnapshotAgentLoopTests : IDisposable
         Assert.Equal(2, run.Merge!.RowsInserted);
         Assert.Equal(SnapshotPublishStatus.Published, first.Publish!.Status);
 
-        // A consumer can read what the cycle published.
-        using (var published = PublishedSnapshot.OpenNewest(PublishDir, "agent-test"))
+        // A consumer can read what the cycle published, through the manifest.
+        var published = PublishedSnapshot.ReadNewest(PublishDir, "agent-test");
+        Assert.NotNull(published);
+        var widget = published!.Tables.Single(t => t.Table == "Widget");
+
+        using (var consumer = new DuckDB.NET.Data.DuckDBConnection("Data Source=:memory:"))
         {
-            Assert.NotNull(published);
-            using var command = published!.Connection.CreateCommand();
-            command.CommandText = "SELECT count(*) FROM data.\"Widget\" WHERE \"_Deleted\" = false";
+            consumer.Open();
+            using var command = consumer.CreateCommand();
+            command.CommandText =
+                $"SELECT count(*) FROM {widget.ReadParquetSql(PublishDir)} WHERE \"_Deleted\" = false";
             Assert.Equal(2L, Convert.ToInt64(command.ExecuteScalar()));
         }
 

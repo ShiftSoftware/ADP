@@ -6,10 +6,11 @@ namespace ShiftSoftware.ADP.Hawta;
 /// dirty predicate matches nothing that was already replicated, and the next pump cycle writes
 /// zero Cosmos ops. This is also the slot-swap story, which is why it must stay boring.
 ///
-/// <para>Tries shims newest-first: a shim whose parquet set is missing or torn (the crash
-/// that motivates a DR rebuild can be the same crash that tore a file) is skipped in favor of
-/// the next kept shim, so DR converges on the newest <em>intact</em> published set. Only when
-/// no published shim is loadable does it throw — falling back to sources is the caller's
+/// <para>Tries published sets newest-first: a manifest whose parquet set is missing or torn
+/// (the crash that motivates a DR rebuild can be the same crash that tore a file) is skipped in
+/// favor of the next kept one, so DR converges on the newest <em>intact</em> published set —
+/// which is what <see cref="SnapshotPublishOptions.KeepPublishes"/> is really buying. Only when
+/// no published set is loadable does it throw — falling back to sources is the caller's
 /// decision, never a silent degrade.</para>
 ///
 /// <para>The caller opens (or recreates) the empty store and holds the write gate. Tables in
@@ -25,79 +26,82 @@ public static class SnapshotRebuild
         SnapshotStore store,
         IReadOnlyList<SnapshotTableDefinition> tables,
         string publishDirectory,
-        string snapshotName)
+        string snapshotName,
+        PublishStore? publishStore = null)
     {
         foreach (var table in tables)
             store.EnsureTable(table);
 
-        var shims = PublishedSnapshot.ListShims(publishDirectory, snapshotName);
-        if (shims.Count == 0)
+        // Loud before anything reads: an unreachable store lists as an EMPTY one, and empty here
+        // means "the published set is gone" -- which sends cold start to the from-source fallback,
+        // the single most expensive path in the system. Never take that branch on a network blip.
+        var store_ = publishStore ?? new LocalPublishStore(publishDirectory);
+        store_.EnsureReady();
+
+        var manifests = PublishedSnapshot.ListManifests(store_, snapshotName);
+        if (manifests.Count == 0)
         {
             return new SnapshotRebuildResult(null, [], [], [.. tables.Select(t => t.Name)], []);
         }
 
-        var shimsSkipped = new List<string>();
+        var publishesSkipped = new List<string>();
         Exception? lastFailure = null;
 
-        foreach (var shimPath in shims)
+        foreach (var manifestPath in manifests)
         {
             try
             {
-                return LoadFromShim(store, tables, publishDirectory, snapshotName, shimPath, shimsSkipped);
+                return LoadFromManifest(store, tables, store_, snapshotName, manifestPath, publishesSkipped);
             }
             catch (SnapshotSchemaMismatchException)
             {
-                // Version mismatch is systemic, not per-file — an older shim can only be older still.
+                // Version mismatch is systemic, not per-file — an older publish can only be older still.
                 throw;
             }
             catch (Exception exception)
             {
-                shimsSkipped.Add(Path.GetFileName(shimPath));
+                publishesSkipped.Add(PublishPath.FileName(manifestPath));
                 lastFailure = exception;
             }
         }
 
         throw new InvalidDataException(
-            $"No published shim of '{snapshotName}' in '{publishDirectory}' could be loaded " +
-            $"(tried: {string.Join(", ", shimsSkipped)}) — rebuild from sources instead.",
+            $"No published set of '{snapshotName}' in '{publishDirectory}' could be loaded " +
+            $"(tried: {string.Join(", ", publishesSkipped)}) — rebuild from sources instead.",
             lastFailure);
     }
 
-    private static SnapshotRebuildResult LoadFromShim(
+    private static SnapshotRebuildResult LoadFromManifest(
         SnapshotStore store, IReadOnlyList<SnapshotTableDefinition> tables,
-        string publishDirectory, string snapshotName, string shimPath, IReadOnlyList<string> shimsSkipped)
+        PublishStore publishStore, string snapshotName, string manifestPath, IReadOnlyList<string> publishesSkipped)
     {
-        IReadOnlyList<PublishedTableManifest> manifest;
-        using (var published = PublishedSnapshot.Open(shimPath))
-        {
-            var info = published.ReadInfo();
-            if (info.SchemaVersion != SnapshotStore.CurrentSchemaVersion)
-                throw new SnapshotSchemaMismatchException(SnapshotStore.CurrentSchemaVersion, info.SchemaVersion);
-            manifest = published.ReadManifest();
-        }
-        var manifestByTable = manifest.ToDictionary(e => e.Table, StringComparer.OrdinalIgnoreCase);
+        // Read validates structure (bare file names, non-empty locations) and throws otherwise,
+        // which is what demotes a tampered or truncated manifest to "try the next publish".
+        var published = PublishedSnapshot.Read(publishStore, manifestPath);
+        if (published.SchemaVersion != SnapshotStore.CurrentSchemaVersion)
+            throw new SnapshotSchemaMismatchException(SnapshotStore.CurrentSchemaVersion, published.SchemaVersion);
+
+        var manifestByTable = published.Tables.ToDictionary(e => e.Table, StringComparer.OrdinalIgnoreCase);
 
         var definedNames = new HashSet<string>(tables.Select(t => t.Name), StringComparer.OrdinalIgnoreCase);
-        var skipped = manifest.Where(e => !definedNames.Contains(e.Table)).Select(e => e.Table).ToList();
+        var skipped = published.Tables.Where(e => !definedNames.Contains(e.Table)).Select(e => e.Table).ToList();
 
-        // Validate the whole parquet set up front (bare names, footers parse, row counts
-        // match) before loading anything — a torn file must fail the shim, not the rebuild.
-        var parquetPaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        // Validate the whole parquet set up front (footers parse, row counts match) before
+        // loading anything — a torn file must fail the publish, not the rebuild.
+        var sources = new Dictionary<string, PublishedTableManifest>(StringComparer.OrdinalIgnoreCase);
         foreach (var table in tables)
         {
             if (!manifestByTable.TryGetValue(table.Name, out var entry))
                 continue;
 
-            if (entry.ParquetFile != Path.GetFileName(entry.ParquetFile))
+            if (!SnapshotPublisher.ParquetIsIntact(store, entry.Resolve(publishStore.Root), entry.RowCount))
+            {
                 throw new InvalidDataException(
-                    $"Manifest of '{Path.GetFileName(shimPath)}' references '{entry.ParquetFile}' — not a bare filename.");
+                    $"'{string.Join(", ", entry.Location.Paths)}' referenced by " +
+                    $"'{PublishPath.FileName(manifestPath)}' is missing or torn.");
+            }
 
-            var parquetPath = Path.Combine(publishDirectory, entry.ParquetFile);
-            if (!SnapshotPublisher.ParquetIsIntact(store, parquetPath, entry.RowCount))
-                throw new InvalidDataException(
-                    $"'{entry.ParquetFile}' referenced by '{Path.GetFileName(shimPath)}' is missing or torn.");
-
-            parquetPaths[table.Name] = parquetPath;
+            sources[table.Name] = entry;
         }
 
         var loaded = new List<SnapshotRebuildTable>();
@@ -109,14 +113,14 @@ public static class SnapshotRebuild
         {
             foreach (var table in tables)
             {
-                if (!parquetPaths.TryGetValue(table.Name, out var parquetPath))
+                if (!sources.TryGetValue(table.Name, out var entry))
                 {
                     createdEmpty.Add(table.Name);
                     continue;
                 }
 
-                var rows = LoadTable(store, table, parquetPath);
-                loaded.Add(new SnapshotRebuildTable(table.Name, Path.GetFileName(parquetPath), rows));
+                var rows = LoadTable(store, table, entry, publishStore.Root);
+                loaded.Add(new SnapshotRebuildTable(table.Name, entry.Location.Paths, rows));
 
                 store.Execute(
                     """
@@ -137,17 +141,19 @@ public static class SnapshotRebuild
             throw;
         }
 
-        return new SnapshotRebuildResult(Path.GetFileName(shimPath), loaded, skipped, createdEmpty, [.. shimsSkipped]);
+        return new SnapshotRebuildResult(
+            PublishPath.FileName(manifestPath), loaded, skipped, createdEmpty, [.. publishesSkipped]);
     }
 
-    private static long LoadTable(SnapshotStore store, SnapshotTableDefinition table, string parquetPath)
+    private static long LoadTable(
+        SnapshotStore store, SnapshotTableDefinition table, PublishedTableManifest entry, string publishDirectory)
     {
-        var escapedPath = parquetPath.Replace("'", "''");
+        var source = entry.ReadParquetSql(publishDirectory);
 
         var parquetColumns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         using (var command = store.Connection.CreateCommand())
         {
-            command.CommandText = $"DESCRIBE SELECT * FROM read_parquet('{escapedPath}')";
+            command.CommandText = $"DESCRIBE SELECT * FROM {source}";
             using var reader = command.ExecuteReader();
             while (reader.Read())
                 parquetColumns.Add(reader.GetString(0));
@@ -161,23 +167,23 @@ public static class SnapshotRebuild
         return store.Execute(
             $"""
             INSERT INTO {table.QualifiedName} ({string.Join(", ", columns)})
-            SELECT {string.Join(", ", columns)} FROM read_parquet('{escapedPath}')
+            SELECT {string.Join(", ", columns)} FROM {source}
             """);
     }
 }
 
-/// <param name="ShimFile">The shim the rebuild loaded, or null when no snapshot is published (the store stays empty — a genuinely fresh start).</param>
+/// <param name="ManifestFile">The manifest the rebuild loaded, or null when no snapshot is published (the store stays empty — a genuinely fresh start).</param>
 /// <param name="TablesSkipped">Manifest tables the caller's definitions don't declare (published by an older configuration).</param>
 /// <param name="TablesCreatedEmpty">Declared tables absent from the manifest (new families not yet published).</param>
-/// <param name="ShimsSkipped">Newer shims that could not be loaded (missing/torn parquet) before one succeeded.</param>
+/// <param name="PublishesSkipped">Newer published sets that could not be loaded (missing/torn parquet) before one succeeded.</param>
 public sealed record SnapshotRebuildResult(
-    string? ShimFile,
+    string? ManifestFile,
     IReadOnlyList<SnapshotRebuildTable> TablesLoaded,
     IReadOnlyList<string> TablesSkipped,
     IReadOnlyList<string> TablesCreatedEmpty,
-    IReadOnlyList<string> ShimsSkipped)
+    IReadOnlyList<string> PublishesSkipped)
 {
     public long TotalRows => TablesLoaded.Sum(t => t.Rows);
 }
 
-public sealed record SnapshotRebuildTable(string Table, string ParquetFile, long Rows);
+public sealed record SnapshotRebuildTable(string Table, IReadOnlyList<string> Files, long Rows);
