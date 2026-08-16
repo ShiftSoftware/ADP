@@ -110,6 +110,9 @@ nav:
           - Vehicle Service Activation: generated/Models/Vehicle/VehicleServiceActivation.md
       - Warranty & Service:
           - Extended Warranty: generated/Models/Vehicle/ExtendedWarrantyModel.md
+          - Extended Warranty Definition: generated/Models/Vehicle/ExtendedWarrantyDefinitionModel.md
+          - Eligibility Condition: generated/Models/Vehicle/EligibilityConditionModel.md
+          - Eligibility Condition Scope: generated/Models/Vehicle/EligibilityConditionScope.md
           - Warranty Claim: generated/Models/Vehicle/WarrantyClaimModel.md
           - Warranty Claim Labor Line: generated/Models/Vehicle/WarrantyClaimLaborLineModel.md
           - Warranty Date Shift: generated/Models/Vehicle/WarrantyDateShiftModel.md

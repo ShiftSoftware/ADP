@@ -2,6 +2,8 @@ import yupTypeMapper from '~lib/yup-type-mapper';
 
 const warrantyTimelineSchema = yupTypeMapper([
   'dealer',
+  'activatedBy',
+  'broker',
   'authorized',
   'unauthorized',
   'activeWarranty',
@@ -9,6 +11,7 @@ const warrantyTimelineSchema = yupTypeMapper([
   'warrantyCoverage',
   'totalPlannedProtection',
   'standardWarranty',
+  'standardWarrantyMark',
   'extendedWarranty',
   'standard',
   'extended',
@@ -17,6 +20,10 @@ const warrantyTimelineSchema = yupTypeMapper([
   'years',
   'month',
   'months',
+  'warrantyNotStarted',
+  'awaitingBrokerInvoice',
+  'awaitingEndCustomerSale',
+  'awaitingActivation',
 ]);
 
 export default warrantyTimelineSchema;

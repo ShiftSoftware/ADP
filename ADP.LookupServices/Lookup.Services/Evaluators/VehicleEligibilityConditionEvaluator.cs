@@ -26,10 +26,10 @@ internal sealed class VehicleEligibilityConditionEvaluator
     }
 
     internal bool MatchesAll(
-        IEnumerable<ServiceItemEligibilityConditionModel> conditions,
+        IEnumerable<EligibilityConditionModel> conditions,
         long? baseScheduleMaximumMileage = null)
     {
-        foreach (var condition in conditions ?? Enumerable.Empty<ServiceItemEligibilityConditionModel>())
+        foreach (var condition in conditions ?? Enumerable.Empty<EligibilityConditionModel>())
         {
             if (condition is null)
                 return false;
@@ -54,21 +54,52 @@ internal sealed class VehicleEligibilityConditionEvaluator
         return true;
     }
 
-    private bool MatchesServiceHistoryCondition(ServiceItemEligibilityConditionModel condition)
+    private bool MatchesServiceHistoryCondition(EligibilityConditionModel condition)
     {
         var requiredValues = condition.Values?.ToList();
-        if (condition.Operator != ServiceItemEligibilityConditionOperator.ContainsAll ||
-            (condition.ValueMatch != ServiceItemEligibilityConditionValueMatch.Exact &&
-                condition.ValueMatch != ServiceItemEligibilityConditionValueMatch.EndsWith) ||
-            condition.Scope?.Selection != ServiceItemEligibilityConditionSelection.Latest ||
-            condition.Scope.Count is null ||
-            condition.Scope.Count <= 0 ||
+        if (condition.Operator != EligibilityConditionOperator.ContainsAll ||
+            (condition.ValueMatch != EligibilityConditionValueMatch.Exact &&
+                condition.ValueMatch != EligibilityConditionValueMatch.EndsWith) ||
+            condition.Scope is null ||
             requiredValues is null ||
             requiredValues.Count == 0 ||
             requiredValues.Any(string.IsNullOrWhiteSpace))
             return false;
 
-        var latestInvoices = VehicleServiceHistoryEvaluator.GetInvoices(companyDataAggregate, ConsistencyLevels.Strong)
+        var invoices = SelectInvoices(condition.Scope);
+        if (invoices is null)
+            return false;
+
+        var packageCodes = invoices
+            .SelectMany(invoice => invoice.LaborLines ?? Enumerable.Empty<OrderLaborLineModel>())
+            .Select(line => line.PackageCode)
+            .Where(code => !string.IsNullOrWhiteSpace(code))
+            .ToList();
+
+        return requiredValues.All(value =>
+            packageCodes.Any(code => MatchesValue(code, value, condition.ValueMatch)));
+    }
+
+    /// <summary>
+    /// The invoices a scope selects, or null when the scope is not a shape this evaluator supports.
+    /// Null is a closed door, not an empty selection: an unsupported scope must fail the condition
+    /// rather than compare against nothing and pass.
+    /// </summary>
+    private List<VehicleServiceHistoryEvaluator.VehicleServiceHistoryInvoice> SelectInvoices(EligibilityConditionScope scope)
+    {
+        var invoices = VehicleServiceHistoryEvaluator.GetInvoices(companyDataAggregate, ConsistencyLevels.Strong);
+
+        // A Count here is an authoring mistake rather than a harmless extra: All already takes the
+        // whole history, so a number means the author had some other selection in mind.
+        if (scope.Selection == EligibilityConditionSelection.All)
+            return scope.Count is null ? invoices.ToList() : null;
+
+        if (scope.Selection != EligibilityConditionSelection.Latest ||
+            scope.Count is null ||
+            scope.Count <= 0)
+            return null;
+
+        var latest = invoices
             .Select(invoice => new
             {
                 Invoice = invoice,
@@ -79,29 +110,21 @@ internal sealed class VehicleEligibilityConditionEvaluator
                 }.Max()
             })
             .OrderByDescending(x => x.ServiceDate)
-            .Take(condition.Scope.Count.Value)
+            .Take(scope.Count.Value)
+            .Select(x => x.Invoice)
             .ToList();
 
-        if (latestInvoices.Count != condition.Scope.Count.Value)
-            return false;
-
-        var packageCodes = latestInvoices
-            .SelectMany(x => x.Invoice.LaborLines ?? Enumerable.Empty<OrderLaborLineModel>())
-            .Select(line => line.PackageCode)
-            .Where(code => !string.IsNullOrWhiteSpace(code))
-            .ToList();
-
-        return requiredValues.All(value =>
-            packageCodes.Any(code => MatchesValue(code, value, condition.ValueMatch)));
+        // Too little history to fill the window means the window cannot be judged either way.
+        return latest.Count == scope.Count.Value ? latest : null;
     }
 
     private static bool MatchesBaseScheduleMaximumMileageCondition(
-        ServiceItemEligibilityConditionModel condition,
+        EligibilityConditionModel condition,
         long? baseScheduleMaximumMileage)
     {
         var values = condition.Values?.ToList();
-        return condition.Operator == ServiceItemEligibilityConditionOperator.Equals &&
-            condition.ValueMatch == ServiceItemEligibilityConditionValueMatch.Exact &&
+        return condition.Operator == EligibilityConditionOperator.Equals &&
+            condition.ValueMatch == EligibilityConditionValueMatch.Exact &&
             condition.Scope is null &&
             values is { Count: 1 } &&
             long.TryParse(values[0], NumberStyles.None, CultureInfo.InvariantCulture, out var requiredMileage) &&
@@ -112,12 +135,12 @@ internal sealed class VehicleEligibilityConditionEvaluator
     private static bool MatchesValue(
         string actual,
         string required,
-        ServiceItemEligibilityConditionValueMatch valueMatch) =>
+        EligibilityConditionValueMatch valueMatch) =>
         valueMatch switch
         {
-            ServiceItemEligibilityConditionValueMatch.Exact =>
+            EligibilityConditionValueMatch.Exact =>
                 string.Equals(actual, required, StringComparison.OrdinalIgnoreCase),
-            ServiceItemEligibilityConditionValueMatch.EndsWith =>
+            EligibilityConditionValueMatch.EndsWith =>
                 actual.EndsWith(required, StringComparison.OrdinalIgnoreCase),
             _ => false,
         };

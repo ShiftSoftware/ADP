@@ -69,6 +69,18 @@ public class LookupOptions
     public Func<LookupOptionResolverModel<long?>, ValueTask<string?>>? CompanyBranchNameResolver { get; set; }
     /// <summary>Resolver delegate that resolves a company ID to its logo URL.</summary>
     public Func<LookupOptionResolverModel<long?>, ValueTask<string?>>? CompanyLogoResolver { get; set; }
+    /// <summary>
+    /// Resolver delegate that supplies an extended-warranty coverage's display name.
+    /// <para>Called only for coverages that do not already carry one: a configured
+    /// <see cref="ShiftSoftware.ADP.Models.Vehicle.ExtendedWarrantyDefinitionModel.Name"/> always wins. In
+    /// practice this covers the <b>persisted</b> entries, whose stored model has no name field at all — the
+    /// host is the only party that knows what its purchased coverages are called, so it names them here
+    /// rather than the identifier leaking onto the screen.</para>
+    /// <para>Receives the coverage as built so far (identifier, provider, dates) and returns null to leave it
+    /// unnamed, in which case the consumer falls back to its own generic wording. Invoked once per unnamed
+    /// coverage.</para>
+    /// </summary>
+    public Func<LookupOptionResolverModel<VehicleExtendedWarrantyDTO>, ValueTask<string?>>? ExtendedWarrantyNameResolver { get; set; }
     /// <summary>Resolver delegate that processes and returns part pricing (distributor purchase price and per-region prices).</summary>
     public Func<LookupOptionResolverModel<PartLookupPriceResoulverModel>, ValueTask<(decimal? distributorPurchasePrice, IEnumerable<PartPriceDTO> prices)>>? PartLookupPriceResolver { get; set; }
     /// <summary>Resolver delegate that processes and returns part stock availability data.</summary>
@@ -155,6 +167,22 @@ public class LookupOptions
     /// direct sale to a customer. See <see cref="IsEndCustomerSale"/>. Defaults to empty (no intermediaries).
     /// </summary>
     public List<long> IntermediaryCompanyIDs { get; set; } = new();
+
+    /// <summary>
+    /// The Identity <c>CompanyID</c> of the company that stands behind <b>persisted</b> extended-warranty
+    /// coverages, when the stored entry's own company is the one that recorded the sale rather than the one
+    /// providing the cover.
+    /// <para>A persisted entry carries the <c>CompanyID</c> of whichever company stored the row — typically the
+    /// selling dealer. Where a deployment runs extended warranty as a single programme, that dealer is not the
+    /// provider, and reporting it names the wrong party on the coverage. Set this and every persisted coverage
+    /// reports it instead; <see cref="CompanyNameResolver"/> and <see cref="CompanyLogoResolver"/> then supply
+    /// the name and logo as they do for any other company.</para>
+    /// <para>Leave null (the default) to keep reporting each entry's own company. Configured definitions are
+    /// unaffected either way — they carry their own
+    /// <see cref="ShiftSoftware.ADP.Models.Vehicle.ExtendedWarrantyDefinitionModel.ProviderCompanyID"/>, falling
+    /// back to <see cref="DistributorCompanyID"/>.</para>
+    /// </summary>
+    public long? ExtendedWarrantyProviderCompanyID { get; set; }
 
     /// <summary>
     /// Per company, the <c>AccountNumber</c>(s) that mark a <c>VehicleEntry</c> as a <b>direct sale to an end

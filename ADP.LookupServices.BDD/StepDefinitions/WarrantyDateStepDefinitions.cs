@@ -1,5 +1,6 @@
-using Reqnroll;
+﻿using Reqnroll;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
+using ShiftSoftware.ADP.Lookup.Services.Enums;
 using ShiftSoftware.ADP.Lookup.Services.Evaluators;
 using ShiftSoftware.ADP.Lookup.Services.Services;
 using ShiftSoftware.ADP.Models.Enums;
@@ -99,6 +100,7 @@ public class WarrantyDateStepDefinitions
             new ExtendedWarrantyDefinitionModel
             {
                 ID = GetOptionalString(row, "ID"),
+                Name = GetOptionalString(row, "Name"),
                 ProviderCompanyID = GetOptionalLong(row, "ProviderCompanyID"),
                 ActiveFor = GetOptionalInt(row, "ActiveFor"),
                 ActiveForDurationType = row.ContainsKey("DurationType") &&
@@ -124,14 +126,14 @@ public class WarrantyDateStepDefinitions
                 (row.ContainsKey("Selection") && !string.IsNullOrWhiteSpace(row["Selection"])) ||
                 (row.ContainsKey("Count") && !string.IsNullOrWhiteSpace(row["Count"]));
 
-            var condition = new ServiceItemEligibilityConditionModel
+            var condition = new EligibilityConditionModel
             {
                 Field = row["Field"],
-                Operator = Enum.Parse<ServiceItemEligibilityConditionOperator>(row["Operator"]),
-                Scope = hasScope ? new ServiceItemEligibilityConditionScope
+                Operator = Enum.Parse<EligibilityConditionOperator>(row["Operator"]),
+                Scope = hasScope ? new EligibilityConditionScope
                 {
                     Selection = row.ContainsKey("Selection") && !string.IsNullOrWhiteSpace(row["Selection"])
-                        ? Enum.Parse<ServiceItemEligibilityConditionSelection>(row["Selection"])
+                        ? Enum.Parse<EligibilityConditionSelection>(row["Selection"])
                         : default,
                     Count = GetOptionalInt(row, "Count"),
                 } : null,
@@ -143,7 +145,7 @@ public class WarrantyDateStepDefinitions
             };
 
             if (row.ContainsKey("ValueMatch") && !string.IsNullOrWhiteSpace(row["ValueMatch"]))
-                condition.ValueMatch = Enum.Parse<ServiceItemEligibilityConditionValueMatch>(row["ValueMatch"]);
+                condition.ValueMatch = Enum.Parse<EligibilityConditionValueMatch>(row["ValueMatch"]);
 
             return condition;
         }).ToList();
@@ -165,6 +167,61 @@ public class WarrantyDateStepDefinitions
         };
     }
 
+    [Given("company names resolve as:")]
+    public void GivenCompanyNamesResolveAs(DataTable dataTable)
+    {
+        var names = dataTable.Rows.ToDictionary(
+            row => long.Parse(row["CompanyID"]),
+            row => row["Name"]);
+
+        _context.Options.CompanyNameResolver = model =>
+        {
+            var name = model.Value is { } companyId && names.TryGetValue(companyId, out var value)
+                ? value
+                : null;
+            return new ValueTask<string?>(name);
+        };
+    }
+
+    [Given("extended warranty names resolve as:")]
+    public void GivenExtendedWarrantyNamesResolveAs(DataTable dataTable)
+    {
+        var names = dataTable.Rows.ToDictionary(row => row["ID"], row => row["Name"]);
+
+        _context.Options.ExtendedWarrantyNameResolver = model =>
+        {
+            var name = model.Value?.ID is { } id && names.TryGetValue(id, out var value) ? value : null;
+            return new ValueTask<string?>(name);
+        };
+    }
+
+    [Given("persisted extended warranties are provided by company {int}")]
+    public void GivenPersistedExtendedWarrantiesAreProvidedByCompany(int companyID)
+    {
+        _context.Options.ExtendedWarrantyProviderCompanyID = companyID;
+    }
+
+    [Then("the warranty start state is {string}")]
+    public void ThenTheWarrantyStartStateIs(string expectedState)
+    {
+        Assert.NotNull(_result);
+        Assert.Equal(Enum.Parse<WarrantyStartState>(expectedState), _result.StartState);
+    }
+
+    [Then("the warranty was activated by broker {string}")]
+    public void ThenTheWarrantyWasActivatedByBroker(string expectedBroker)
+    {
+        Assert.NotNull(_result);
+        Assert.Equal(expectedBroker, _result.ActivatedByBrokerName);
+    }
+
+    [Then("the warranty has no activating broker")]
+    public void ThenTheWarrantyHasNoActivatingBroker()
+    {
+        Assert.NotNull(_result);
+        Assert.Null(_result.ActivatedByBrokerName);
+    }
+
     [Then("the warranty start date is {string}")]
     public void ThenTheWarrantyStartDateIs(string expectedDate)
     {
@@ -184,6 +241,27 @@ public class WarrantyDateStepDefinitions
     {
         Assert.NotNull(_result);
         Assert.Equal(DateTime.Parse(expectedDate), _result.WarrantyEndDate);
+    }
+
+    [Then("the warranty end date is empty")]
+    public void ThenTheWarrantyEndDateIsEmpty()
+    {
+        Assert.NotNull(_result);
+        Assert.Null(_result.WarrantyEndDate);
+    }
+
+    [Then("the vehicle has active warranty")]
+    public void ThenTheVehicleHasActiveWarranty()
+    {
+        Assert.NotNull(_result);
+        Assert.True(_result.HasActiveWarranty);
+    }
+
+    [Then("the vehicle does not have active warranty")]
+    public void ThenTheVehicleDoesNotHaveActiveWarranty()
+    {
+        Assert.NotNull(_result);
+        Assert.False(_result.HasActiveWarranty);
     }
 
     [Then("the extended warranty start date is {string}")]
@@ -231,8 +309,10 @@ public class WarrantyDateStepDefinitions
         {
             var warranty = _result.ExtendedWarranties.SingleOrDefault(item => item.ID == row["ID"]);
             Assert.NotNull(warranty);
+            Assert.Equal(GetOptionalString(row, "Name"), warranty.Name);
             Assert.Equal(GetOptionalString(row, "ProviderCompanyID"), warranty.ProviderCompanyID);
             Assert.Equal(GetOptionalString(row, "ProviderCompanyLogo"), warranty.ProviderCompanyLogo);
+            Assert.Equal(GetOptionalString(row, "ProviderCompanyName"), warranty.ProviderCompanyName);
             Assert.Equal(GetOptionalDate(row, "StartDate"), warranty.StartDate);
             Assert.Equal(GetOptionalDate(row, "EndDate"), warranty.EndDate);
         }

@@ -1,5 +1,7 @@
 {
   "dealer": "Dealer",
+  "activatedBy": "Activated by",
+  "broker": "Trusted Business Partner",
   "authorized": "Authorized",
   "unauthorized": "Unauthorized",
   "activeWarranty": "Has Active Warranty",
@@ -7,6 +9,7 @@
   "warrantyCoverage": "Warranty coverage",
   "totalPlannedProtection": "Total planned protection",
   "standardWarranty": "New Vehicle Warranty",
+  "standardWarrantyMark": "Standard Warranty",
   "extendedWarranty": "Extended Warranty",
   "standard": "standard",
   "extended": "extended",
@@ -14,5 +17,9 @@
   "year": "year",
   "years": "years",
   "month": "month",
-  "months": "months"
+  "months": "months",
+  "warrantyNotStarted": "Warranty has not started",
+  "awaitingBrokerInvoice": "This Vehicle is not yet Invoiced by the following Trusted Business Partner: ",
+  "awaitingEndCustomerSale": "This Vehicle has not been sold to a customer yet.",
+  "awaitingActivation": "This Vehicle's Warranty has not been activated yet."
 }

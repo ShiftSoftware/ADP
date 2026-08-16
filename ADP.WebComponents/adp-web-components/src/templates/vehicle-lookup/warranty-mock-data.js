@@ -2182,6 +2182,9 @@ const mockData = {
     isAuthorized: true,
     warranty: {
       hasActiveWarranty: true,
+      // Started by the broker's invoice, not the dealer's — the header names both.
+      startState: 'Started',
+      activatedByBrokerName: 'Al-Burchman',
       warrantyStartDate: '2023-11-23',
       warrantyEndDate: '2026-11-23',
       hasExtendedWarranty: true,
@@ -2189,17 +2192,23 @@ const mockData = {
       extendedWarrantyStartDate: '2027-11-30',
       extendedWarrantyEndDate: '2028-11-30',
       extendedWarranties: [
+        // A configured definition: it carries its own display name.
         {
           id: 'EW-JTMABBBJ9P4099200-DISTRIBUTOR',
+          name: 'Distributor Service Reward',
           providerCompanyID: '5',
-          providerCompanyLogo: 'https://picsum.photos/seed/company-5/320/160',
+          providerCompanyName: 'Sample Distributor',
+          providerCompanyLogo: '/templates/vehicle-lookup/prototype-assets/extended-warranty/toyota-logo.png',
           startDate: '2026-11-30',
           endDate: '2027-11-30',
         },
+        // A persisted entry: no name, so the rail uses its generic label and the
+        // provider is told apart by the logo.
         {
           id: 'EW-JTMABBBJ9P4099200-PROVIDER',
           providerCompanyID: '9',
-          providerCompanyLogo: 'https://picsum.photos/seed/company-9/320/160',
+          providerCompanyName: 'Coverage Partner',
+          providerCompanyLogo: '/templates/vehicle-lookup/prototype-assets/extended-warranty/adp-logo.svg',
           startDate: '2027-11-30',
           endDate: '2028-11-30',
         },
@@ -2629,6 +2638,72 @@ const mockData = {
     ],
     basicModelCode: 'VJA300',
   },
+  // Only the distributor's entry has synced. Its invoice exists but is a supply-chain
+  // movement, so the warranty has not started and the vehicle has no rail.
+  JTMABBBJ9P4099280: {
+    vin: 'JTMABBBJ9P4099280',
+    identifiers: {
+      vin: 'JTMABBBJ9P4099280',
+      variant: '53311S3202301',
+      katashiki: 'VJA300L-GNUAZV',
+      color: '070',
+      trim: '40',
+      brand: 0,
+      brandIntegrationID: 'TYT',
+    },
+    saleInformation: {
+      companyIntegrationID: '5',
+      countryName: 'Iraq',
+      companyName: 'Sample Distributor',
+      invoiceDate: '2026-05-20',
+      invoiceNumber: 30018300,
+    },
+    isAuthorized: true,
+    warranty: {
+      hasActiveWarranty: false,
+      startState: 'AwaitingEndCustomerSale',
+      warrantyStartDate: null,
+      warrantyEndDate: null,
+      hasExtendedWarranty: false,
+      extendedWarranties: [],
+    },
+    serviceHistory: [],
+  },
+
+  // A real dealer sale, but nothing has dated the warranty: no activation, and this
+  // deployment does not default the start to the invoice date.
+  JTMABBBJ9P4099270: {
+    vin: 'JTMABBBJ9P4099270',
+    identifiers: {
+      vin: 'JTMABBBJ9P4099270',
+      variant: '53311S3202301',
+      katashiki: 'VJA300L-GNUAZV',
+      color: '070',
+      trim: '40',
+      brand: 0,
+      brandIntegrationID: 'TYT',
+    },
+    saleInformation: {
+      companyIntegrationID: '1',
+      countryName: 'Iraq',
+      companyName: 'SAS',
+      branchIntegrationID: '44',
+      branchName: 'SAS - Showroom | Basra',
+      invoiceDate: '2024-01-15',
+      invoiceNumber: 11160199,
+    },
+    isAuthorized: true,
+    warranty: {
+      hasActiveWarranty: false,
+      startState: 'AwaitingActivation',
+      warrantyStartDate: null,
+      warrantyEndDate: null,
+      hasExtendedWarranty: false,
+      extendedWarranties: [],
+    },
+    serviceHistory: [],
+  },
+
   JTMABBBJ9P4099294: {
     vin: 'JTMABBBJ9P4099294',
     identifiers: {
@@ -2661,6 +2736,9 @@ const mockData = {
     isAuthorized: true,
     warranty: {
       hasActiveWarranty: false,
+      // The dealer invoiced on 2023-09-18, but that only moved the car to the broker, so the
+      // warranty has not started and there is no rail — only the declaration.
+      startState: 'AwaitingBrokerInvoice',
       warrantyStartDate: null,
       warrantyEndDate: null,
       hasExtendedWarranty: false,

@@ -210,14 +210,14 @@ public class MockStorageStepDefinitions
             var hasScope =
                 (row.ContainsKey("Selection") && !string.IsNullOrWhiteSpace(row["Selection"])) ||
                 (row.ContainsKey("Count") && !string.IsNullOrWhiteSpace(row["Count"]));
-            var condition = new ServiceItemEligibilityConditionModel
+            var condition = new EligibilityConditionModel
             {
                 Field = row["Field"],
-                Operator = Enum.Parse<ServiceItemEligibilityConditionOperator>(row["Operator"]),
-                Scope = hasScope ? new ServiceItemEligibilityConditionScope
+                Operator = Enum.Parse<EligibilityConditionOperator>(row["Operator"]),
+                Scope = hasScope ? new EligibilityConditionScope
                 {
                     Selection = row.ContainsKey("Selection") && !string.IsNullOrWhiteSpace(row["Selection"])
-                        ? Enum.Parse<ServiceItemEligibilityConditionSelection>(row["Selection"])
+                        ? Enum.Parse<EligibilityConditionSelection>(row["Selection"])
                         : default,
                     Count = row.ContainsKey("Count") && !string.IsNullOrWhiteSpace(row["Count"])
                         ? int.Parse(row["Count"])
@@ -227,7 +227,7 @@ public class MockStorageStepDefinitions
             };
 
             if (row.ContainsKey("ValueMatch") && !string.IsNullOrWhiteSpace(row["ValueMatch"]))
-                condition.ValueMatch = Enum.Parse<ServiceItemEligibilityConditionValueMatch>(row["ValueMatch"]);
+                condition.ValueMatch = Enum.Parse<EligibilityConditionValueMatch>(row["ValueMatch"]);
 
             return condition;
         }).ToList();

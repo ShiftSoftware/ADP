@@ -1,4 +1,4 @@
-Feature: Warranty and Free Service Dates
+﻿Feature: Warranty and Free Service Dates
   Warranty and free service start dates are determined by the vehicle's sale
   circumstances. The system checks service activation records, warranty activation
   dates, and invoice dates (in that priority order). Broker sales have separate
@@ -190,6 +190,114 @@ Scenario: Configured coverage joins the collection without moving the legacy fie
   And the extended warranty start date is "2026-01-01"
   And the extended warranty end date is "2027-06-01"
 
+Scenario: Both coverage sources carry display labels for the rail
+  # The shape a host sees once it configures a reward alongside its existing purchased
+  # coverage: one persisted entry and one configured definition, different providers.
+  # A definition supplies its own name; a persisted entry has none and stays null, which
+  # is what tells a consumer to use its own generic wording instead of the identifier.
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | BrandID |
+    | 1FDKF37GXVEB34368 | 2024-01-15  | 1       |
+  And vehicle service activations:
+    | WarrantyActivationDate | CompanyID |
+    | 2024-02-01             | 1         |
+  And company logos resolve as:
+    | CompanyID | Logo                             |
+    | 101       | https://images.test/provider.png |
+    | 901       | https://images.test/reward.png   |
+  And company names resolve as:
+    | CompanyID | Name                |
+    | 101       | Coverage Partner    |
+    | 901       | Sample Distributor  |
+  And extended warranty entries:
+    | ID        | CompanyID | StartDate  | EndDate    |
+    | EW-STORED | 101       | 2026-01-01 | 2027-06-01 |
+  And extended warranty definitions:
+    | ID         | Name                      | ProviderCompanyID | ActiveFor | DurationType |
+    | CFG-REWARD | Distributor Service Reward | 901              | 1         | Years        |
+  And extended warranty definition "CFG-REWARD" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch | Selection | Count | ValuesJson |
+    | serviceHistory.laborLines.packageCode | ContainsAll | EndsWith  | Latest    | 1     | [" 60K"]  |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode |
+    | 1         | 10       | INV-060       | JOB-060             | 2026-03-01  | MODEL 60K   |
+  When evaluating warranty dates for "1FDKF37GXVEB34368"
+  Then extended warranties are:
+    | ID         | Name                       | ProviderCompanyID | ProviderCompanyLogo              | ProviderCompanyName | StartDate  | EndDate    |
+    | EW-STORED  |                            | 101               | https://images.test/provider.png | Coverage Partner    | 2026-01-01 | 2027-06-01 |
+    | CFG-REWARD | Distributor Service Reward | 901               | https://images.test/reward.png   | Sample Distributor  | 2027-02-01 | 2028-02-01 |
+
+Scenario: A configured provider company replaces the storing dealer on persisted coverage
+  # A persisted entry carries the CompanyID of whoever stored the row, which for a deployment that
+  # runs extended warranty as one programme is the selling dealer, not the provider. The option
+  # redirects persisted coverage to the real provider; a configured definition keeps its own.
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | BrandID |
+    | 1FDKF37GXVEB34368 | 2024-01-15  | 1       |
+  And vehicle service activations:
+    | WarrantyActivationDate | CompanyID |
+    | 2024-02-01             | 1         |
+  And persisted extended warranties are provided by company 700
+  And company names resolve as:
+    | CompanyID | Name             |
+    | 101       | Storing Dealer   |
+    | 700       | Coverage Partner |
+    | 901       | Sample Distributor |
+  And company logos resolve as:
+    | CompanyID | Logo                            |
+    | 101       | https://images.test/dealer.png  |
+    | 700       | https://images.test/partner.png |
+    | 901       | https://images.test/reward.png  |
+  And extended warranty entries:
+    | ID        | CompanyID | StartDate  | EndDate    |
+    | EW-STORED | 101       | 2026-01-01 | 2027-06-01 |
+  And extended warranty definitions:
+    | ID         | Name                       | ProviderCompanyID | ActiveFor | DurationType |
+    | CFG-REWARD | Distributor Service Reward | 901               | 1         | Years        |
+  And extended warranty definition "CFG-REWARD" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch | Selection | Count | ValuesJson |
+    | serviceHistory.laborLines.packageCode | ContainsAll | EndsWith  | Latest    | 1     | [" 60K"]  |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode |
+    | 1         | 10       | INV-060       | JOB-060             | 2026-03-01  | MODEL 60K   |
+  When evaluating warranty dates for "1FDKF37GXVEB34368"
+  # The storing dealer 101 appears nowhere: neither its name nor its logo reaches the coverage.
+  Then extended warranties are:
+    | ID         | Name                       | ProviderCompanyID | ProviderCompanyLogo             | ProviderCompanyName | StartDate  | EndDate    |
+    | EW-STORED  |                            | 700               | https://images.test/partner.png | Coverage Partner    | 2026-01-01 | 2027-06-01 |
+    | CFG-REWARD | Distributor Service Reward | 901               | https://images.test/reward.png  | Sample Distributor  | 2027-02-01 | 2028-02-01 |
+
+Scenario: The name resolver names persisted coverages without overriding a definition's own name
+  # A persisted entry has no name field at all, so the host is the only party that knows what its
+  # purchased coverage is called. A configured definition already carries one and must win.
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | BrandID |
+    | 1FDKF37GXVEB34368 | 2024-01-15  | 1       |
+  And vehicle service activations:
+    | WarrantyActivationDate | CompanyID |
+    | 2024-02-01             | 1         |
+  And extended warranty entries:
+    | ID        | CompanyID | StartDate  | EndDate    |
+    | EW-STORED | 101       | 2026-01-01 | 2027-06-01 |
+  And extended warranty definitions:
+    | ID         | Name              | ProviderCompanyID | ActiveFor | DurationType |
+    | CFG-REWARD | Definition's Name | 901               | 1         | Years        |
+  And extended warranty definition "CFG-REWARD" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch | Selection | Count | ValuesJson |
+    | serviceHistory.laborLines.packageCode | ContainsAll | EndsWith  | Latest    | 1     | [" 60K"]  |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode |
+    | 1         | 10       | INV-060       | JOB-060             | 2026-03-01  | MODEL 60K   |
+  And extended warranty names resolve as:
+    | ID         | Name              |
+    | EW-STORED  | Purchased Cover   |
+    | CFG-REWARD | Resolver's Name   |
+  When evaluating warranty dates for "1FDKF37GXVEB34368"
+  Then extended warranties are:
+    | ID         | Name              | ProviderCompanyID | StartDate  | EndDate    |
+    | EW-STORED  | Purchased Cover   | 101               | 2026-01-01 | 2027-06-01 |
+    | CFG-REWARD | Definition's Name | 901               | 2027-02-01 | 2028-02-01 |
+
 Scenario Outline: A configured extended warranty uses the shared package suffix grammar
   Given brand 1 has a warranty period of 3 years
   And vehicles in dealer stock:
@@ -272,6 +380,60 @@ Scenario Outline: A configured warranty fails closed when its package condition 
     | MODEL 55K   |
     | 160K        |
 
+Scenario Outline: A milestone reward is kept or lost according to the scope it is given
+  # A reward for reaching a service milestone has to survive the vehicle's next visit. Scoped to
+  # the latest invoice the condition asks "was the last service the 60K one", which is true for
+  # exactly as long as it takes the customer to come back — the reward appears at 60K and is
+  # withdrawn at 65K. Scoped to all of history it asks "has the vehicle had its 60K service",
+  # which is the question the programme is actually about.
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | BrandID |
+    | 1FDKF37GXVEB34368 | 2024-01-15  | 1       |
+  And vehicle service activations:
+    | WarrantyActivationDate | CompanyID |
+    | 2024-02-01             | 1         |
+  And extended warranty definitions:
+    | ID         | ProviderCompanyID | ActiveFor | DurationType |
+    | CFG-REWARD | 901               | 1         | Years        |
+  And extended warranty definition "CFG-REWARD" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch | Selection   | Count   | ValuesJson |
+    | serviceHistory.laborLines.packageCode | ContainsAll | EndsWith   | <Selection> | <Count> | [" 60K"]   |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode |
+    | 1         | 10       | INV-060       | JOB-060             | 2026-03-01  | MODEL 60K   |
+    | 1         | 10       | INV-065       | JOB-065             | 2026-06-01  | MODEL 65K   |
+    | 1         | 10       | INV-080       | JOB-080             | 2026-09-01  | MODEL 80K   |
+  When evaluating warranty dates for "1FDKF37GXVEB34368"
+  Then there are <Count of coverages> extended warranties
+
+  Examples:
+    | Selection | Count | Count of coverages |
+    | All       |       | 1                  |
+    | Latest    | 1     | 0                  |
+
+Scenario: A count alongside the all-history scope fails closed
+  # All already takes every invoice, so a window size here means the author meant a different
+  # selection. Honouring one of the two and discarding the other would award coverage on a rule
+  # nobody wrote.
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | BrandID |
+    | 1FDKF37GXVEB34368 | 2024-01-15  | 1       |
+  And vehicle service activations:
+    | WarrantyActivationDate | CompanyID |
+    | 2024-02-01             | 1         |
+  And extended warranty definitions:
+    | ID         | ProviderCompanyID | ActiveFor | DurationType |
+    | CFG-REWARD | 901               | 1         | Years        |
+  And extended warranty definition "CFG-REWARD" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch | Selection | Count | ValuesJson |
+    | serviceHistory.laborLines.packageCode | ContainsAll | EndsWith   | All       | 1     | [" 60K"]   |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode |
+    | 1         | 10       | INV-060       | JOB-060             | 2026-03-01  | MODEL 60K   |
+  When evaluating warranty dates for "1FDKF37GXVEB34368"
+  Then the vehicle does not have extended warranty
+  And there are 0 extended warranties
+
 Scenario: An extended warranty definition without conditions fails closed
   Given vehicles in dealer stock:
     | VIN               | InvoiceDate | BrandID |
@@ -314,6 +476,75 @@ Scenario: Broker without invoice and no claims leaves both dates empty
   When evaluating warranty dates for "1FDKF37GXVEB34368"
   Then the free service start date is empty
   And the de facto service start date is empty
+
+# --- Possession must not start the warranty ---
+# While the vehicle is still held by a broker that has not invoiced it, the warranty has not
+# officially started. The dealer's own invoice date must never stand in: the end customer would
+# silently lose the whole dealer-to-broker-to-customer possession period off the front of their
+# coverage. Once the broker invoices, that invoice — not the dealer's — is the anchor.
+
+Scenario: A broker holding the vehicle un-invoiced leaves the warranty unstarted
+  Given warranty start date defaults to invoice date
+  And vehicles in dealer stock:
+    | VIN               | InvoiceDate |
+    | 1FDKF37GXVEB34368 | 2024-01-15  |
+  And the sale has a broker without invoice
+  When evaluating warranty dates for "1FDKF37GXVEB34368"
+  # Not 2024-01-15: the dealer invoice only moved the car to the broker.
+  Then the warranty start date is empty
+  And the warranty end date is empty
+  And the vehicle does not have active warranty
+  # The panel can now say why, instead of showing an unexplained empty coverage.
+  And the warranty start state is "AwaitingBrokerInvoice"
+  And the warranty has no activating broker
+
+Scenario: The broker invoice anchors the warranty, not the dealer invoice
+  Given warranty start date defaults to invoice date
+  And brand 1 has a warranty period of 3 years
+  And vehicles in dealer stock:
+    | VIN               | InvoiceDate | BrandID |
+    | 1FDKF37GXVEB34368 | 2024-01-15  | 1       |
+  And the sale has a broker with invoice date "2024-02-10"
+  When evaluating warranty dates for "1FDKF37GXVEB34368"
+  # The customer keeps the 26 days the broker held the car.
+  Then the warranty start date is "2024-02-10"
+  And the warranty end date is "2027-02-10"
+  And the warranty start state is "Started"
+  And the warranty was activated by broker "Test Broker"
+
+Scenario: Supply-chain possession is reported as awaiting an end-customer sale
+  # Only the distributor's entry has synced. Its invoice date exists but must not anchor the warranty,
+  # so the panel needs to say the vehicle has not reached a customer rather than show nothing.
+  Given warranty start date defaults to invoice date
+  And the distributor company id is 5
+  And vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | InvoiceNumber |
+    | JTMAB7BJ0T4224184 | 2026-05-25  | 5         | 30018218      |
+  When evaluating warranty dates for "JTMAB7BJ0T4224184"
+  Then the warranty start date is empty
+  And the warranty start state is "AwaitingEndCustomerSale"
+  And the warranty has no activating broker
+
+Scenario: A dealer sale with nothing to date it is reported as awaiting activation
+  # A real end-customer sale, but no activation, no sale activation date, and defaulting is off.
+  # That is a missing-activation problem, not a possession one, and must not be conflated with it.
+  Given warranty start date does not default to invoice date
+  And vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID |
+    | 1FDKF37GXVEB34368 | 2024-01-15  | 10        |
+  When evaluating warranty dates for "1FDKF37GXVEB34368"
+  Then the warranty start date is empty
+  And the warranty start state is "AwaitingActivation"
+
+Scenario: A started warranty on a normal dealer sale names no broker
+  Given warranty start date defaults to invoice date
+  And vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID |
+    | 1FDKF37GXVEB34368 | 2024-01-15  | 10        |
+  When evaluating warranty dates for "1FDKF37GXVEB34368"
+  Then the warranty start date is "2024-01-15"
+  And the warranty start state is "Started"
+  And the warranty has no activating broker
 
 Scenario: Broker without invoice falls back to the only claim date
   Given vehicles in dealer stock:

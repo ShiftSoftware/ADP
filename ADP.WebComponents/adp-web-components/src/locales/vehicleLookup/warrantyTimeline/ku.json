@@ -1,5 +1,7 @@
 {
   "dealer": "بریکار",
+  "activatedBy": "چالاککراوە لەلایەن",
+  "broker": "هاوبەشی بازرگانی متمانەپێکراو",
   "authorized": "ڕێپێدراو",
   "unauthorized": "ڕێپێنەدراو",
   "activeWarranty": "گەرەنتی چالاکی هەیە",
@@ -7,6 +9,7 @@
   "warrantyCoverage": "داپۆشینی گەرەنتی",
   "totalPlannedProtection": "کۆی پاراستنی پلاندراو",
   "standardWarranty": "گەرەنتی ئۆتۆمبێلی نوێ",
+  "standardWarrantyMark": "گەرەنتی بنەڕەتی",
   "extendedWarranty": "گەرەنتی درێژکراوە",
   "standard": "بنەڕەتی",
   "extended": "درێژکراوە",
@@ -14,5 +17,9 @@
   "year": "ساڵ",
   "years": "ساڵ",
   "month": "مانگ",
-  "months": "مانگ"
+  "months": "مانگ",
+  "warrantyNotStarted": "گەرەنتی دەستی پێنەکردووە",
+  "awaitingBrokerInvoice": "هێشتا فاتورەی ئەم ئۆتۆمبێلە نەکراوە لەلایەن ئەم هاوبەشە بازرگانییە متمانەپێکراوەی خوارەوە: ",
+  "awaitingEndCustomerSale": "ئەم ئۆتۆمبێلە هێشتا بە کڕیارێک نەفرۆشراوە.",
+  "awaitingActivation": "گەرەنتی ئەم ئۆتۆمبێلە هێشتا چالاک نەکراوە."
 }

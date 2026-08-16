@@ -1,5 +1,7 @@
 {
   "dealer": "الوكيل",
+  "activatedBy": "تم التفعيل بواسطة",
+  "broker": "شريك الأعمال الموثوق به",
   "authorized": "مصرّح",
   "unauthorized": "غير مصرّح",
   "activeWarranty": "لديه ضمان فعّال",
@@ -7,6 +9,7 @@
   "warrantyCoverage": "تغطية الضمان",
   "totalPlannedProtection": "إجمالي الحماية المخططة",
   "standardWarranty": "ضمان المركبة الجديدة",
+  "standardWarrantyMark": "الضمان الأساسي",
   "extendedWarranty": "الضمان الممتد",
   "standard": "أساسي",
   "extended": "ممتد",
@@ -14,5 +17,9 @@
   "year": "سنة",
   "years": "سنوات",
   "month": "شهر",
-  "months": "أشهر"
+  "months": "أشهر",
+  "warrantyNotStarted": "لم يبدأ الضمان",
+  "awaitingBrokerInvoice": "لم يتم إصدار فاتورة لهذه المركبة بعد من قبل شريك الأعمال الموثوق به التالي: ",
+  "awaitingEndCustomerSale": "لم يتم بيع هذه المركبة إلى عميل بعد.",
+  "awaitingActivation": "لم يتم تفعيل ضمان هذه المركبة بعد."
 }

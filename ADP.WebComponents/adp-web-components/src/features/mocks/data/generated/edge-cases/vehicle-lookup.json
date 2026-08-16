@@ -45,6 +45,7 @@
       "hasActiveWarranty": true,
       "warrantyStartDate": "2026-05-26",
       "warrantyEndDate": "2029-05-26",
+      "startState": "Started",
       "activationIsRequired": false,
       "activationStatus": "NotRequired",
       "hasExtendedWarranty": false,
@@ -53,6 +54,61 @@
     },
     "serviceHistory": [],
     "vehicleSpecification": {
+      "modelDescription": "RAV4 2.0L 4WD",
+      "bodyType": "SUV",
+      "engine": "2.0L M20A-FKS",
+      "doors": "5",
+      "fuel": "Petrol",
+      "transmission": "CVT",
+      "side": "LHD"
+    },
+    "serviceItems": [],
+    "accessories": [],
+    "basicModelCode": "MXAA52"
+  },
+  "JTMAB7BJ0T4224900": {
+    "vin": "JTMAB7BJ0T4224900",
+    "identifiers": {
+      "vin": "JTMAB7BJ0T4224900",
+      "variant": "VAR001",
+      "katashiki": "MXAA52L-ANXGP",
+      "color": "1G3",
+      "trim": "LA20",
+      "brandID": "1"
+    },
+    "saleInformation": {
+      "countryID": "1",
+      "countryName": "Iraq",
+      "companyID": "5",
+      "companyName": "Sample Distributor",
+      "branchID": "500",
+      "branchName": "Distributor HQ",
+      "invoiceDate": "2026-05-20",
+      "invoiceNumber": "30018300",
+      "distributor": {
+        "companyID": "5",
+        "companyName": "Sample Distributor",
+        "branchID": "500",
+        "branchName": "Distributor HQ",
+        "invoiceNumber": "30018300",
+        "invoiceDate": "2026-05-20"
+      },
+      "intermediaries": []
+    },
+    "paintThicknessInspections": [],
+    "paintThicknessCertificateAvailable": false,
+    "isAuthorized": true,
+    "warranty": {
+      "hasActiveWarranty": false,
+      "startState": "AwaitingEndCustomerSale",
+      "activationIsRequired": false,
+      "activationStatus": "NotRequired",
+      "hasExtendedWarranty": false,
+      "extendedWarranties": []
+    },
+    "serviceHistory": [],
+    "vehicleSpecification": {
+      "modelYear": 2026,
       "modelDescription": "RAV4 2.0L 4WD",
       "bodyType": "SUV",
       "engine": "2.0L M20A-FKS",

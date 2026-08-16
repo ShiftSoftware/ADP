@@ -156,6 +156,7 @@
       "hasActiveWarranty": true,
       "warrantyStartDate": "2024-02-01",
       "warrantyEndDate": "2027-02-01",
+      "startState": "Started",
       "activationIsRequired": false,
       "activationStatus": "NotRequired",
       "hasExtendedWarranty": true,
@@ -166,6 +167,7 @@
           "id": "EW-JTMHX01J8L4198293-DISTRIBUTOR",
           "providerCompanyID": "100",
           "providerCompanyLogo": "https://picsum.photos/seed/company-100/320/160",
+          "providerCompanyName": "Sample Distributor",
           "startDate": "2027-02-01",
           "endDate": "2028-02-01"
         },
@@ -173,6 +175,7 @@
           "id": "EW-JTMHX01J8L4198293-PROVIDER",
           "providerCompanyID": "2",
           "providerCompanyLogo": "https://picsum.photos/seed/company-2/320/160",
+          "providerCompanyName": "City Auto",
           "startDate": "2028-02-01",
           "endDate": "2029-02-01"
         }
@@ -462,6 +465,7 @@
       "hasActiveWarranty": true,
       "warrantyStartDate": "2023-06-20",
       "warrantyEndDate": "2026-06-20",
+      "startState": "Started",
       "activationIsRequired": false,
       "activationStatus": "NotRequired",
       "hasExtendedWarranty": false,
@@ -635,6 +639,7 @@
     "isAuthorized": false,
     "warranty": {
       "hasActiveWarranty": false,
+      "startState": "AwaitingActivation",
       "activationIsRequired": false,
       "activationStatus": "NotRequired",
       "hasExtendedWarranty": false,

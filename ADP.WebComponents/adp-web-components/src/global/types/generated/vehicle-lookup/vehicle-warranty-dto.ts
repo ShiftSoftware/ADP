@@ -3,6 +3,8 @@ export type VehicleWarrantyDTO = {
     hasActiveWarranty: boolean;
     warrantyStartDate?: string;
     warrantyEndDate?: string;
+    startState: 'Started' | 'AwaitingBrokerInvoice' | 'AwaitingEndCustomerSale' | 'AwaitingActivation';
+    activatedByBrokerName?: string;
     activationIsRequired: boolean;
     activationStatus: 'NotRequired' | 'Required' | 'BlockedNotAllocated';
     hasExtendedWarranty: boolean;

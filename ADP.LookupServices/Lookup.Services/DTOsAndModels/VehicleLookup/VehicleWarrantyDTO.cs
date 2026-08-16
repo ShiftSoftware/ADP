@@ -35,6 +35,25 @@ public class VehicleWarrantyDTO
     public DateTime? WarrantyEndDate { get; set; }
 
     /// <summary>
+    /// Why the warranty has or has not started. When this is not <see cref="WarrantyStartState.Started"/>
+    /// there is no coverage period yet and <see cref="WarrantyStartDate"/> is null — the reason is the
+    /// vehicle's possession state, not missing data, and is meant to be shown rather than hidden.
+    /// </summary>
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public WarrantyStartState StartState { get; set; }
+
+    /// <summary>
+    /// The broker whose invoice anchored the warranty, when the vehicle was sold through one. Null in
+    /// every other case, including a broker that has not invoiced yet.
+    /// <para>This is a warranty fact, not a sale fact: <c>SaleInformation.Broker</c> is present whether or
+    /// not the broker has invoiced, and a <c>WarrantyDateShift</c> can move the start date afterwards, so a
+    /// consumer cannot safely re-derive it by comparing dates. The dealer company is deliberately not
+    /// duplicated here — it is <c>SaleInformation.CompanyName</c>, already resolved from the vehicle's
+    /// ownership.</para>
+    /// </summary>
+    public string? ActivatedByBrokerName { get; set; }
+
+    /// <summary>
     /// Indicates whether warranty activation is due for this vehicle (it has pending warranty-activation–triggered
     /// free service items). Company-agnostic — it does not consider which dealer is asking. Consumed by bulk
     /// reporting/exports. For the dealer-facing activation affordance use <see cref="ActivationStatus"/>.

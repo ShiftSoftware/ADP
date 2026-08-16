@@ -1,5 +1,7 @@
 {
   "dealer": "Дилер",
+  "activatedBy": "Активировано",
+  "broker": "Доверенный деловой партнер",
   "authorized": "Авторизован",
   "unauthorized": "Не авторизован",
   "activeWarranty": "Действующая гарантия",
@@ -7,6 +9,7 @@
   "warrantyCoverage": "Гарантийное покрытие",
   "totalPlannedProtection": "Общая запланированная защита",
   "standardWarranty": "Гарантия на новый автомобиль",
+  "standardWarrantyMark": "Базовая гарантия",
   "extendedWarranty": "Расширенная гарантия",
   "standard": "базовая",
   "extended": "расширенная",
@@ -14,5 +17,9 @@
   "year": "г.",
   "years": "г.",
   "month": "мес.",
-  "months": "мес."
+  "months": "мес.",
+  "warrantyNotStarted": "Гарантия не началась",
+  "awaitingBrokerInvoice": "Счет за этот автомобиль еще не выставлен следующим доверенным деловым партнером: ",
+  "awaitingEndCustomerSale": "Этот автомобиль еще не продан клиенту.",
+  "awaitingActivation": "Гарантия этого автомобиля еще не активирована."
 }

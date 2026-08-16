@@ -1,13 +1,24 @@
 /*
- * Coverage timeline — the opt-in warranty presentation behind the
- * `coverage-timeline` prop on <vehicle-warranty-details>. Ported from
+ * Coverage timeline — the stylesheet for <vehicle-warranty-timeline>, ported from
  * src/templates/vehicle-lookup/extended-warranty-prototype.html.
  *
- * The old card in vehicle-warranty-details.css is untouched and stays the
- * default; nothing here applies unless a host opts in.
+ * This is a separate component tag, not a mode of <vehicle-warranty-details>; that
+ * panel keeps its own stylesheet and is untouched by anything here.
  */
 
+/* The panel chrome and the load transition every other vehicle-lookup panel gets. Without these the
+   component still renders the layout's markup but none of its styling, which is why switching VIN
+   used to cut straight from one vehicle to the next with no fade. */
+@import '../style/shift-skeleton.css';
+@import '../../features/vehicle-info-layout/vehicle-info-layout.css';
+
 :host {
+  display: block;
+  /* The panel is embedded at whatever width the host gives it — a tab, a sidebar, a narrow column —
+     so its breakpoints have to read its own width. Viewport media queries kept the desktop layout
+     in a 380px column and the totals were clipped off the side of the card. */
+  container-type: inline-size;
+  container-name: warranty-panel;
   --paper: #ffffff;
   --ink: #1a2530;
   --muted: #5f6c78;
@@ -23,7 +34,18 @@
   --green-tint: #e8f4ed;
   --violet: #755aa5;
   --violet-dark: #5f4887;
+  --paper-soft: #f7f9fa;
+  --blue-tint: #e8f1f8;
   --shadow: 0 18px 45px rgba(27, 45, 61, 0.1), 0 2px 7px rgba(27, 45, 61, 0.06);
+  /* One duration for everything that appears, disappears or resizes, so the card settles as a
+     single movement instead of a sequence of unrelated ones. */
+  --settle: 320ms;
+  /* How far text swells as it leaves. The panel header's VIN uses 1.5, but it is one short string
+     centred in an empty bar; the same figure on a line of body text reads as a lunge. */
+  --leave-scale: 1.25;
+  /* The rail leaves as one piece and is far wider than a line of text, so it needs much less to
+     read as the same movement — 1.25 across 900px is a lurch, not a lift. */
+  --rail-leave-scale: 1.06;
 }
 
 .coverage-timeline,
@@ -53,8 +75,177 @@
   z-index: 3;
   inset: 0 0 auto;
   height: 4px;
-  background: var(--card-accent, linear-gradient(90deg, var(--green) 0 60.022%, var(--blue) 60.022% 80.011%, var(--violet) 80.011% 100%));
+  background: var(--card-accent, var(--line));
   content: '';
+  transition: opacity var(--settle) ease;
+}
+
+/* A row the card gains and loses. Animating the grid track rather than the content lets the row
+   slide shut on the same frame its message is cleared, so nothing pops out of existence. */
+.collapsible {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows var(--settle) ease,
+    opacity calc(var(--settle) - 60ms) ease;
+}
+
+.collapsible[data-open='true'] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+/* overflow:hidden is load-bearing twice over: it clips the content while the row is shut, and it
+   zeroes the item's automatic minimum size, which is what lets the 0fr track actually reach zero
+   instead of stopping at the content's height. */
+.collapsible-body {
+  overflow: hidden;
+}
+
+/* Text leaves the way the panel header's VIN does — growing as it fades — and arrives by settling
+   back down to size. The blocks below give up the shared skeleton to do it: that overlay is opaque,
+   so text animating underneath it cannot be seen at all. The rail keeps the shimmer, being
+   graphical rather than prose. */
+.activation-title,
+.activation-broker,
+.total-coverage,
+.status-badge > span,
+.warranty-notice > span {
+  transition:
+    opacity var(--settle) ease,
+    transform var(--settle) ease;
+}
+
+/* Anchored to the edge the text is set from, not its middle. The card clips, so a line growing out
+   of its own centre loses its opening words over the side — "Dealer: Sample Motors" left mid-flight
+   as "ple Motors". Growing inward from the anchor keeps every word on the card the whole way out. */
+.activation-title,
+.activation-broker,
+.warranty-notice > span {
+  transform-origin: left center;
+}
+
+.total-coverage {
+  transform-origin: right center;
+}
+
+[dir='rtl'] .activation-title,
+[dir='rtl'] .activation-broker,
+[dir='rtl'] .warranty-notice > span {
+  transform-origin: right center;
+}
+
+[dir='rtl'] .total-coverage {
+  transform-origin: left center;
+}
+
+.loading .activation-title,
+.loading .activation-broker,
+.loading .total-coverage,
+.loading .status-badge > span,
+.loading .warranty-notice > span {
+  opacity: 0;
+  transform: scale(var(--leave-scale));
+}
+
+/* Glyphs fade without growing: they are stretched caps rather than lettering, and scaling them
+   reads as the shape breaking rather than the content leaving. They have to go regardless — a
+   check mark left sitting on a chip still asserts a verdict for a vehicle that has not loaded. */
+.notice-icon {
+  transition: opacity var(--settle) ease;
+}
+
+.loading .badge-icon,
+.loading .notice-icon {
+  opacity: 0;
+}
+
+/* The rail leaves with everything else rather than sitting still under the veil: its groups carry
+   the transform, not the individual dates and labels, which already use transforms of their own for
+   positioning and would be knocked off their marks by a second one. */
+.today-head,
+.axis,
+.lane {
+  transition:
+    opacity var(--settle) ease,
+    transform var(--settle) ease;
+}
+
+.loading .today-head,
+.loading .axis,
+.loading .lane {
+  opacity: 0;
+  transform: scale(var(--rail-leave-scale));
+}
+
+/* The shared skeleton does animate, but as a -45deg gradient sweeping out and back over two seconds
+   between two greys about 5% apart — moving, yet reading as static. Replaced here with a single
+   band of light travelling left to right on repeat. Scoped to this stylesheet on purpose: the
+   shared file is imported by every other vehicle panel, which keep the treatment they shipped. */
+.shift-skeleton::after {
+  background-color: #dde1e6;
+  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.85) 50%, rgba(255, 255, 255, 0) 100%);
+  background-repeat: no-repeat;
+  background-size: 45% 100%;
+}
+
+.loading .shift-skeleton::after {
+  animation: warranty-sheen 1.3s linear infinite;
+}
+
+/* Shared by the rail's overlay and by the shapes that go neutral without one — the chips and the
+   possession band — so everything still on screen during a load is sweeping in step.
+
+   Starts and ends clear of the box so the band enters and leaves rather than appearing mid-sweep. */
+@keyframes warranty-sheen {
+  from {
+    background-position: -100% 0;
+  }
+
+  to {
+    background-position: 200% 0;
+  }
+}
+
+/* The accent bar is the one part the shared skeleton cannot cover, and it carries a gradient, which
+   does not interpolate to a different gradient — left alone it snaps to the next vehicle's colours
+   the instant the data lands. Fading it over the load hides the swap. */
+.loading .warranty-card::before {
+  opacity: 0;
+}
+
+/* Blocks that a vehicle has nothing to put in. They fade where they stand and keep their box, so
+   the card is the same height whichever vehicle is loaded and the reader's eye keeps its place. */
+.broker-slot,
+.total-slot,
+.timeline-shell {
+  transition: opacity var(--settle) ease;
+}
+
+/* A block on its way out must not be handed its content back as it goes. When a vehicle arrives
+   with nothing to put in a block, the card drops the block and the load ends on the same frame —
+   the wrapper fading 1 to 0 while the text inside it fades 0 to 1. Nested opacities multiply, so
+   the pair peaks around a quarter visible a third of the way through and the block ghosts back
+   into view on its way out. Pinning the content at zero while its wrapper is leaving keeps the
+   exit clean; these must out-specify the rules that return text at the end of a load. */
+.broker-slot[data-empty='true'] .activation-broker,
+.total-slot[data-empty='true'] .total-coverage,
+.collapsible[data-open='false'] .warranty-notice > span,
+.collapsible[data-open='false'] .notice-icon {
+  opacity: 0;
+}
+
+/* The totals go fully invisible — a ghost of "0 months" would be worse than nothing. The rail keeps
+   a faint outline instead: with no bands, no axis and no marker rendered, all that survives is the
+   empty track, which reads as "no coverage recorded" where a blank gap just reads as broken. */
+.broker-slot[data-empty='true'],
+.total-slot[data-empty='true'] {
+  opacity: 0;
+}
+
+.timeline-shell[data-empty='true'] {
+  opacity: 0.45;
 }
 
 .activation-header {
@@ -84,18 +275,38 @@
   font-weight: 700;
   line-height: 1.15;
   letter-spacing: -0.005em;
+  transition:
+    color var(--settle) ease,
+    background var(--settle) ease,
+    box-shadow var(--settle) ease;
 }
 
 .status-badge.is-positive {
   color: var(--green-dark);
   background: var(--green-tint);
-  border: 1px solid rgba(44, 138, 88, 0.32);
+  box-shadow: inset 0 0 0 1px rgba(44, 138, 88, 0.32);
 }
 
 .status-badge.is-negative {
   color: var(--red-dark);
   background: var(--red-tint);
-  border: 1px solid rgba(180, 35, 24, 0.28);
+  box-shadow: inset 0 0 0 1px rgba(180, 35, 24, 0.28);
+}
+
+/* No lookup yet, so no verdict. The chip keeps its shape and its cap — dropping either would move
+   the row the instant a vehicle arrived — and goes neutral instead, which is what the older
+   warranty panel's idle card does.
+
+   Must stay above the `.loading` rules further down: those tie with these on specificity and win
+   only on source order, and a chip mid-load should sweep rather than sit. */
+.status-badge.is-idle {
+  color: var(--muted);
+  background: var(--line-soft);
+  box-shadow: inset 0 0 0 1px rgba(95, 108, 120, 0.22);
+}
+
+.status-badge.is-idle .badge-icon {
+  background: var(--line);
 }
 
 /* Text absorbs the slack so the cap stays flush to the leading edge when the
@@ -115,6 +326,9 @@
   height: auto;
   padding: 6px 9px;
   color: #ffffff;
+  transition:
+    opacity var(--settle) ease,
+    background var(--settle) ease;
 }
 
 .status-badge.is-positive .badge-icon {
@@ -125,12 +339,50 @@
   background: var(--red);
 }
 
+/* While the next vehicle is fetched these carry no verdict, so every colour that says one goes
+   neutral for the load: the ring, the fill, and the icon's cap.
+   
+   All three matter, not just the ring. The skeleton overlay is a separate rounded box stacked on
+   the chip, and two nested antialiased curves never land on the same subpixels, so whatever sits
+   underneath fringes the rim by a fraction of a pixel. On a 999px pill that fringe gathers at the
+   caps — the chip was loading with a green or red halo picked out around its rounded ends while
+   the flat blocks beside it looked clean.
+   
+   Must stay below every verdict colour above, the icon caps included: these tie with those on
+   specificity and win only on source order. */
+.loading .status-badge {
+  background-color: #dcdfe4;
+  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.85) 50%, rgba(255, 255, 255, 0) 100%);
+  background-repeat: no-repeat;
+  background-size: 45% 100%;
+  box-shadow: inset 0 0 0 1px rgba(95, 108, 120, 0.42);
+  animation: warranty-sheen 1.3s linear infinite;
+}
+
+.loading .status-badge .badge-icon {
+  background: #dcdfe4;
+}
+
+/* Ruled top and bottom only, as at rest: the band runs the full width of the card, so a ring would
+   put two stray vertical ticks against its edges for the length of the load. */
+.loading .warranty-notice {
+  background-color: #dcdfe4;
+  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.85) 50%, rgba(255, 255, 255, 0) 100%);
+  background-repeat: no-repeat;
+  background-size: 45% 100%;
+  box-shadow:
+    inset 0 1px 0 rgba(95, 108, 120, 0.42),
+    inset 0 -1px 0 rgba(95, 108, 120, 0.42);
+  animation: warranty-sheen 1.3s linear infinite;
+}
+
 /* A class, not an <h1>: the component is embedded in a host page and must not
    inject a top-level heading into that page's outline. */
 .activation-title {
   margin: 0;
   overflow-wrap: anywhere;
-  font-size: clamp(17px, 1.8vw, 20px);
+  /* Scales with the panel, not the window — the rest of the card's breakpoints already do. */
+  font-size: clamp(16px, 3.2cqw, 20px);
   font-weight: 500;
   line-height: 1.15;
   letter-spacing: -0.025em;
@@ -145,11 +397,68 @@
   font-weight: 760;
 }
 
+/* Second attribution line: the broker that anchored the warranty, under the dealer it came from.
+
+   Held to one line so the box it reserves is identical on every vehicle. Left to wrap, a long name
+   in a narrow column would run to two or three lines and reintroduce exactly the height change this
+   slot exists to remove — reserved space cannot depend on the name that happens to fill it. */
+.activation-broker {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  margin: 3px 0 0;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.activation-broker span {
+  color: var(--muted);
+}
+
+.activation-broker strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+/* Warranty-not-started declaration. Full width and outside .journey so it renders on a card with no
+   coverage too — which is the case it exists for: possession means there is no rail to hang it off. */
+.warranty-notice {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+  padding: 9px 20px;
+  color: var(--red-dark);
+  background: var(--red-tint);
+  /* Ruled on both edges so the band closes, and square because it runs the full width of the card.
+     Drawn as shadows rather than borders so nothing that strips borders can change the card's
+     height. */
+  border-radius: 0;
+  box-shadow:
+    inset 0 1px 0 rgba(180, 35, 24, 0.18),
+    inset 0 -1px 0 rgba(180, 35, 24, 0.18);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.notice-icon {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+}
+
+.total-slot {
+  min-width: 250px;
+}
+
 .total-coverage {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-rows: auto auto;
-  min-width: 250px;
   padding: 2px 0 2px 14px;
   background: transparent;
   border: 0;
@@ -176,6 +485,10 @@
 }
 
 .total-coverage .coverage-mix {
+  /* Holds its line even when there is no mix to name, so the faded totals block is not a line
+     shorter than a real one. Sized in em against this element's own 9px, so the reservation tracks
+     the type rather than a pixel figure that has to be kept in step by hand. */
+  min-height: 1.3em;
   margin-top: 2px;
   color: var(--muted);
   font-size: 9px;
@@ -201,40 +514,21 @@
   margin-bottom: 8px;
 }
 
+/* The rail sizes itself to the panel. It carries no minimum width and never scrolls: a rail you
+   have to drag sideways to read defeats the point of drawing the whole contract at once, and the
+   parts that cannot survive the squeeze — crowded axis dates — are dropped rather than pushed
+   out of view. */
 .timeline-shell {
   position: relative;
+  overflow: hidden;
   background: var(--paper-soft);
   border: 1px solid var(--line);
   border-radius: 10px;
 }
 
-.timeline-scroll {
-  overflow-x: auto;
-  padding: 12px 14px 7px;
-  border-radius: inherit;
-  scrollbar-color: #aab5bf transparent;
-  scrollbar-width: thin;
-  overscroll-behavior-inline: contain;
-}
-
-.timeline-scroll:focus-visible {
-  outline: 3px solid rgba(48, 113, 169, 0.24);
-  outline-offset: 3px;
-}
-
-.timeline-scroll::-webkit-scrollbar {
-  height: 8px;
-}
-
-.timeline-scroll::-webkit-scrollbar-thumb {
-  background: #aab5bf;
-  border: 2px solid var(--paper-soft);
-  border-radius: 99px;
-}
-
 .timeline {
   --axis-height: 18px;
-  min-width: 700px;
+  padding: 12px 14px 7px;
 }
 
 .axis {
@@ -259,11 +553,17 @@
   transform: translateX(-50%);
 }
 
-.axis-date:first-child {
+/* Set by thinAxis() on the dates that would have overlapped a neighbour. The boundary dot on the
+   lane still marks the handover, and every date stays in the entry labels and the sr-only summary. */
+.axis-date.is-crowded {
+  display: none;
+}
+
+.axis-date[data-align='start'] {
   transform: none;
 }
 
-.axis-date:last-child {
+.axis-date[data-align='end'] {
   transform: translateX(-100%);
 }
 
@@ -277,18 +577,18 @@
   content: '';
 }
 
-.axis-date:first-child::after {
+.axis-date[data-align='start']::after {
   left: 0;
 }
 
-.axis-date:last-child::after {
+.axis-date[data-align='end']::after {
   left: 100%;
 }
 
 .lane {
   --track-top: 16px;
   --track-height: 54px;
-  --label-band: 29px;
+  --label-band: 41px;
   position: relative;
   isolation: isolate;
   height: calc(var(--track-top) + var(--track-height) + var(--label-band));
@@ -329,6 +629,10 @@
 
 .today-head.is-near-end .today-pill {
   transform: translateX(calc(-100% + 8px));
+}
+
+.today-head.is-near-start .today-pill {
+  transform: translateX(-8px);
 }
 
 .today-marker {
@@ -457,10 +761,17 @@
 }
 
 .coverage-label {
-  display: block;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  /* Three lines fit the band exactly; anything longer is a host-supplied name that would
+     otherwise be clipped by the lane, so it ellipsises instead. The full text stays in the
+     entry's aria-label and the sr-only summary. */
+  -webkit-line-clamp: 3;
   width: 100%;
+  overflow-wrap: anywhere;
   min-height: 24px;
   margin-top: 5px;
+  overflow: hidden;
   padding: 0 4px;
   color: var(--ink);
   font-size: 10px;
@@ -507,14 +818,6 @@
   pointer-events: none;
 }
 
-/* ---------------------------------------------------------------
-   Expiry indication — four switchable treatments for the elapsed
-   (left-of-today) part of the timeline. Prototype scaffolding: the
-   component keeps only the one that gets picked.
-   --------------------------------------------------------------- */
-
-/* A · Dim — a finished contract fades back and loses its colour. */
-
 .sr-only {
   position: absolute;
   width: 1px;
@@ -526,7 +829,7 @@
   border: 0;
 }
 
-@media (max-width: 820px) {
+@container warranty-panel (max-width: 820px) {
   .activation-header {
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 6px 10px;
@@ -535,15 +838,28 @@
   .activation-title {
     font-size: 16px;
   }
-  .total-coverage {
+  .total-slot {
     min-width: 0;
-    width: clamp(170px, 50vw, 190px);
-    padding-inline-start: 10px;
+    width: clamp(170px, 50cqw, 190px);
     justify-self: end;
+  }
+  .total-coverage {
+    padding-inline-start: 10px;
+  }
+  /* Two parts to the mix — standard plus extended — no longer fit on one line in the narrowed
+     totals column, so the line is reserved here rather than left to appear only on the vehicles
+     that happen to have both. That was the last thing left changing the card's height. */
+  .total-coverage .coverage-mix {
+    min-height: 2.6em;
   }
 }
 
-@media (max-width: 700px) {
+@container warranty-panel (max-width: 700px) {
+  .warranty-notice {
+    margin-bottom: 8px;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
   .journey {
     padding: 8px 8px 10px;
   }
@@ -563,12 +879,9 @@
     width: 30px;
     padding: 5px 8px;
   }
-  .timeline-scroll {
-    padding: 10px 10px 5px;
-  }
   .timeline {
     --axis-height: 30px;
-    min-width: 420px;
+    padding: 10px 10px 5px;
   }
   .today-head.is-near-end .today-pill {
     transform: translateX(calc(-100% - 46px));
@@ -581,17 +894,17 @@
     border-top: 1px solid rgba(48, 113, 169, 0.42);
     content: '';
   }
-  .axis-date:last-child {
+  .axis-date[data-align='end'] {
     top: 13px;
   }
-  .axis-date:last-child::after {
+  .axis-date[data-align='end']::after {
     top: calc(var(--axis-height) - 13px);
   }
 }
 
 /* Below this the two badges no longer fit side by side, so stack them
    full width rather than letting them wrap into a ragged row. */
-@media (max-width: 430px) {
+@container warranty-panel (max-width: 430px) {
   .journey-head {
     flex-direction: column;
     align-items: stretch;
@@ -607,5 +920,8 @@
   *::after {
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+    /* The sheen repeats forever, so it has to be stopped here and not merely shortened. */
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
   }
 }

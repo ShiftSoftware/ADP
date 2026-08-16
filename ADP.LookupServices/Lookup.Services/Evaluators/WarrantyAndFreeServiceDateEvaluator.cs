@@ -1,5 +1,6 @@
 ﻿using ShiftSoftware.ADP.Lookup.Services.Aggregate;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
+using ShiftSoftware.ADP.Lookup.Services.Enums;
 using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ADP.Models.Vehicle;
 using System;
@@ -24,8 +25,8 @@ public class WarrantyAndFreeServiceDateEvaluator
         => EvaluateCore(vehicle, saleInformation, ignoreBrokerStock);
 
     /// <summary>
-    /// Evaluates warranty dates and resolves each extended-warranty provider logo through the
-    /// host's existing company-logo resolver.
+    /// Evaluates warranty dates and resolves each extended-warranty provider's logo and display
+    /// name through the host's existing company resolvers.
     /// </summary>
     public async Task<VehicleWarrantyDTO> EvaluateAsync(
         VehicleEntryModel vehicle,
@@ -36,23 +37,45 @@ public class WarrantyAndFreeServiceDateEvaluator
     {
         var result = EvaluateCore(vehicle, saleInformation, ignoreBrokerStock);
 
-        if (Options.CompanyLogoResolver is null)
+        await NameUnnamedExtendedWarrantiesAsync(result, languageCode, serviceProvider);
+
+        if (Options.CompanyLogoResolver is null && Options.CompanyNameResolver is null)
             return result;
 
+        // Memoized per provider: a vehicle can hold several coverages from the same provider and
+        // each resolver is a host callout. The two are resolved independently — a host may wire one
+        // and not the other.
         var logoByProvider = new Dictionary<long, string>();
+        var nameByProvider = new Dictionary<long, string>();
+
         foreach (var warranty in result.ExtendedWarranties)
         {
             if (!long.TryParse(warranty.ProviderCompanyID, out var providerCompanyID))
                 continue;
 
-            if (!logoByProvider.TryGetValue(providerCompanyID, out var logo))
+            if (Options.CompanyLogoResolver is not null)
             {
-                logo = await Options.CompanyLogoResolver(
-                    new LookupOptionResolverModel<long?>(providerCompanyID, languageCode, serviceProvider));
-                logoByProvider[providerCompanyID] = logo;
+                if (!logoByProvider.TryGetValue(providerCompanyID, out var logo))
+                {
+                    logo = await Options.CompanyLogoResolver(
+                        new LookupOptionResolverModel<long?>(providerCompanyID, languageCode, serviceProvider));
+                    logoByProvider[providerCompanyID] = logo;
+                }
+
+                warranty.ProviderCompanyLogo = logo;
             }
 
-            warranty.ProviderCompanyLogo = logo;
+            if (Options.CompanyNameResolver is not null)
+            {
+                if (!nameByProvider.TryGetValue(providerCompanyID, out var name))
+                {
+                    name = await Options.CompanyNameResolver(
+                        new LookupOptionResolverModel<long?>(providerCompanyID, languageCode, serviceProvider));
+                    nameByProvider[providerCompanyID] = name;
+                }
+
+                warranty.ProviderCompanyName = name;
+            }
         }
 
         return result;
@@ -183,9 +206,62 @@ public class WarrantyAndFreeServiceDateEvaluator
         // request, so this is behaviourally equivalent to the previous compute-on-read getters.
         var nowUtc = Options.GetUtcNow();
         result.HasActiveWarranty = result.WarrantyEndDate.HasValue && result.WarrantyEndDate.Value >= nowUtc;
+
+        // Stated after the date shift, so the reason always describes the start date actually reported.
+        result.StartState = ResolveStartState(result, vehicle, saleInformation);
+
+        // Only once the broker has actually invoiced: before that the warranty has not started at all, and
+        // the broker is the reason it hasn't rather than the party that began it.
+        if (saleInformation?.Broker?.InvoiceDate is not null)
+            result.ActivatedByBrokerName = saleInformation.Broker.BrokerName;
         result.HasExtendedWarranty = result.ExtendedWarrantyEndDate.HasValue && result.ExtendedWarrantyEndDate.Value >= nowUtc;
 
         return result;
+    }
+
+    /// <summary>
+    /// Why the warranty has or has not started, mirroring the branches that produced (or withheld) the
+    /// start date above. Possession — supply chain or an un-invoiced broker — is the reason in every case
+    /// where a date exists on the vehicle but deliberately was not used.
+    /// </summary>
+    private WarrantyStartState ResolveStartState(
+        VehicleWarrantyDTO result,
+        VehicleEntryModel vehicle,
+        VehicleSaleInformation saleInformation)
+    {
+        if (result.WarrantyStartDate is not null)
+            return WarrantyStartState.Started;
+
+        if (saleInformation?.Broker is not null && saleInformation.Broker.InvoiceDate is null)
+            return WarrantyStartState.AwaitingBrokerInvoice;
+
+        if (!Options.IsEndCustomerSale(vehicle))
+            return WarrantyStartState.AwaitingEndCustomerSale;
+
+        return WarrantyStartState.AwaitingActivation;
+    }
+
+    /// <summary>
+    /// Fills in display names the coverage did not bring with it. A configured definition's own name
+    /// always wins; the resolver is the only way a persisted entry — whose stored model has no name
+    /// field — can be named at all.
+    /// </summary>
+    private async Task NameUnnamedExtendedWarrantiesAsync(
+        VehicleWarrantyDTO result,
+        string languageCode,
+        IServiceProvider serviceProvider)
+    {
+        if (Options.ExtendedWarrantyNameResolver is null)
+            return;
+
+        foreach (var warranty in result.ExtendedWarranties)
+        {
+            if (!string.IsNullOrWhiteSpace(warranty.Name))
+                continue;
+
+            warranty.Name = await Options.ExtendedWarrantyNameResolver(
+                new LookupOptionResolverModel<VehicleExtendedWarrantyDTO>(warranty, languageCode, serviceProvider));
+        }
     }
 
     private void AddStoredExtendedWarranties(VehicleWarrantyDTO result)
@@ -198,7 +274,11 @@ public class WarrantyAndFreeServiceDateEvaluator
             .Select(entry => new VehicleExtendedWarrantyDTO
             {
                 ID = entry.id,
-                ProviderCompanyID = entry.CompanyID?.ToString(),
+                // Persisted entries carry no display name, so Name stays null and consumers fall
+                // back to their own generic wording. Never surface the identifier as a label.
+                // The stored CompanyID is whoever recorded the row; a host that runs extended warranty
+                // as one programme names the real provider through the option instead.
+                ProviderCompanyID = (Options.ExtendedWarrantyProviderCompanyID ?? entry.CompanyID)?.ToString(),
                 StartDate = entry.StartDate,
                 EndDate = entry.EndDate,
             }));
@@ -256,6 +336,7 @@ public class WarrantyAndFreeServiceDateEvaluator
             result.ExtendedWarranties.Add(new VehicleExtendedWarrantyDTO
             {
                 ID = definition.ID,
+                Name = definition.Name,
                 ProviderCompanyID = providerCompanyID.Value.ToString(),
                 StartDate = coverageStart,
                 EndDate = coverageEnd,

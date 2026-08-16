@@ -2,8 +2,12 @@
   "LookupOptions": {
     "WarrantyStartDateDefaultsToInvoiceDate": true,
     "DistributorCompanyID": 5,
-    "IntermediaryCompanyIDs": [7],
-    "BrandStandardWarrantyPeriodsInYears": { "1": 3 },
+    "IntermediaryCompanyIDs": [
+      7
+    ],
+    "BrandStandardWarrantyPeriodsInYears": {
+      "1": 3
+    },
     "LookupBrokerStock": false
   },
   "Companies": [
@@ -11,29 +15,44 @@
       "CompanyId": 5,
       "CompanyName": "Sample Distributor",
       "Branches": [
-        { "BranchId": 500, "BranchName": "Distributor HQ" }
+        {
+          "BranchId": 500,
+          "BranchName": "Distributor HQ"
+        }
       ]
     },
     {
       "CompanyId": 7,
       "CompanyName": "Regional Importer",
       "Branches": [
-        { "BranchId": 700, "BranchName": "Importer Hub" }
+        {
+          "BranchId": 700,
+          "BranchName": "Importer Hub"
+        }
       ]
     },
     {
       "CompanyId": 10,
       "CompanyName": "Sample Dealer",
       "Branches": [
-        { "BranchId": 100, "BranchName": "Main Showroom" }
+        {
+          "BranchId": 100,
+          "BranchName": "Main Showroom"
+        }
       ]
     }
   ],
   "Countries": [
-    { "CountryId": 1, "CountryName": "Iraq" }
+    {
+      "CountryId": 1,
+      "CountryName": "Iraq"
+    }
   ],
   "Regions": [
-    { "RegionId": 20, "RegionName": "Central Iraq" }
+    {
+      "RegionId": 20,
+      "RegionName": "Central Iraq"
+    }
   ],
   "Vehicles": {
     "JTMAB7BJ0T4224184": {
@@ -82,7 +101,10 @@
         }
       ],
       "InitialOfficialVINs": [
-        { "VIN": "JTMAB7BJ0T4224184", "CompanyID": 10 }
+        {
+          "VIN": "JTMAB7BJ0T4224184",
+          "CompanyID": 10
+        }
       ],
       "SSCAffectedVINs": [],
       "WarrantyClaims": [],
@@ -98,6 +120,46 @@
           "BranchID": 100
         }
       ],
+      "Accessories": [],
+      "PaintThicknessInspections": [],
+      "ExtendedWarrantyEntries": [],
+      "WarrantyDateShifts": [],
+      "FreeServiceItemDateShifts": [],
+      "ItemClaims": [],
+      "PaidServiceInvoices": [],
+      "FreeServiceItemExcludedVINs": [],
+      "VehicleInspections": []
+    },
+    "JTMAB7BJ0T4224900": {
+      "VehicleEntries": [
+        {
+          "VIN": "JTMAB7BJ0T4224900",
+          "InvoiceDate": "2026-05-20",
+          "InvoiceNumber": "30018300",
+          "CompanyID": 5,
+          "BranchID": 500,
+          "CountryID": 1,
+          "BrandID": 1,
+          "VariantCode": "VAR001",
+          "Katashiki": "MXAA52L-ANXGP",
+          "ExteriorColorCode": "1G3",
+          "InteriorColorCode": "LA20",
+          "ModelDescription": "RAV4 2.0L 4WD",
+          "ModelCode": "42605",
+          "ModelYear": 2026
+        }
+      ],
+      "InitialOfficialVINs": [
+        {
+          "VIN": "JTMAB7BJ0T4224900",
+          "CompanyID": 5
+        }
+      ],
+      "SSCAffectedVINs": [],
+      "WarrantyClaims": [],
+      "LaborLines": [],
+      "PartLines": [],
+      "VehicleServiceActivations": [],
       "Accessories": [],
       "PaintThicknessInspections": [],
       "ExtendedWarrantyEntries": [],

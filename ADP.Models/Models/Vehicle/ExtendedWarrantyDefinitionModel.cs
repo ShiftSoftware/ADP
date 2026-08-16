@@ -1,4 +1,4 @@
-using ShiftSoftware.ADP.Models.Enums;
+﻿using ShiftSoftware.ADP.Models.Enums;
 using System.Collections.Generic;
 
 namespace ShiftSoftware.ADP.Models.Vehicle;
@@ -16,6 +16,12 @@ public class ExtendedWarrantyDefinitionModel
     public string ID { get; set; }
 
     /// <summary>
+    /// The name shown for this coverage. The identifier is not a display string, so when this is
+    /// omitted consumers fall back to their own generic "extended warranty" wording.
+    /// </summary>
+    public string Name { get; set; }
+
+    /// <summary>
     /// The provider company's Identity ID. When omitted, the lookup host's configured
     /// <c>LookupOptions.DistributorCompanyID</c> is used.
     /// </summary>
@@ -28,9 +34,9 @@ public class ExtendedWarrantyDefinitionModel
     public DurationType? ActiveForDurationType { get; set; }
 
     /// <summary>
-    /// Declarative predicates that must all match before this coverage is awarded. This uses
-    /// the same closed condition grammar as service-item eligibility; unsupported conditions
-    /// fail closed.
+    /// Declarative predicates that must all match before this coverage is awarded. This is the
+    /// same closed condition grammar service items are gated by; unsupported conditions fail
+    /// closed.
     /// </summary>
-    public IEnumerable<ServiceItemEligibilityConditionModel> EligibilityConditions { get; set; }
+    public IEnumerable<EligibilityConditionModel> EligibilityConditions { get; set; }
 }
