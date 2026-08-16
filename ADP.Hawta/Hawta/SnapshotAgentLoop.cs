@@ -261,6 +261,12 @@ public sealed class SnapshotAgentLoop : IDisposable
             Action? ownershipGuard = gate is null ? null : new Action(gate.EnsureOwnership);
 
             var coldStart = EnsureStore();
+
+            // One probe per cycle, always — it is lazy, so a registry with no gated source never
+            // touches the file system through it. Sharing it across the cycle is the point: every
+            // source sees the same picture of the share, and no cycle inherits another's cache.
+            var fileMetadata = new DirectoryListingFileMetadataProbe();
+
             var sourceRuns = new List<SnapshotAgentSourceRun>();
             var pumpTables = new Dictionary<string, (SnapshotTableDefinition Table, IReadOnlyList<CosmosFamilyMapping> Families, int BatchSize, int MaxInFlightRows)>(
                 StringComparer.OrdinalIgnoreCase);
@@ -272,11 +278,20 @@ public sealed class SnapshotAgentLoop : IDisposable
 
                 try
                 {
-                    var merge = source.Ingest(new SnapshotSourceContext { Store = store!, CancellationToken = token });
+                    var merge = source.Ingest(new SnapshotSourceContext
+                    {
+                        Store = store!,
+                        CancellationToken = token,
+                        FileMetadata = fileMetadata,
+                    });
                     sourceRuns.Add(new SnapshotAgentSourceRun(source.Key, merge, null));
 
+                    // SkippedSourceUnchanged is the gate working, not a problem — warning on it
+                    // would make the healthy steady state the noisiest thing in the log.
                     if (!merge.Succeeded
-                        && merge.Status is not (SnapshotMergeStatus.SkippedSourceAbsent or SnapshotMergeStatus.SkippedSourceEmpty))
+                        && merge.Status is not (SnapshotMergeStatus.SkippedSourceAbsent
+                            or SnapshotMergeStatus.SkippedSourceEmpty
+                            or SnapshotMergeStatus.SkippedSourceUnchanged))
                     {
                         Emit(SnapshotAgentEventLevel.Warning,
                             $"Ingest finished {merge.Status} (run {merge.RunId}).", source.Key);
@@ -312,6 +327,15 @@ public sealed class SnapshotAgentLoop : IDisposable
                         source.Families,
                         source.ReplicationBatchSize,
                         source.ReplicationMaxInFlightRows));
+            }
+
+            // Degrading to per-file probing is correct behaviour, not a failure — but it means a
+            // folder would not enumerate, which is worth knowing before it becomes an outage.
+            if (fileMetadata.FoldersDegradedToPerFileProbing > 0)
+            {
+                Emit(SnapshotAgentEventLevel.Warning,
+                    $"{fileMetadata.FoldersDegradedToPerFileProbing} source folder(s) would not enumerate this " +
+                    "cycle; fell back to per-file metadata probing. Feeds still ingest — check share health.");
             }
 
             var pumpRuns = new List<SnapshotAgentPumpRun>();

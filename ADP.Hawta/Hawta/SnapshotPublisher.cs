@@ -200,7 +200,7 @@ public static class SnapshotPublisher
 
         var manifestFile = $"{options.SnapshotName}-{publishId}{PublishedSnapshot.Extension}";
         var manifestPath = publishStore.Resolve(manifestFile);
-        WriteManifest(manifestPath, options, publishStore, publishId, stamp, manifest, options.OnBeforeManifestCommit);
+        WriteManifest(store, manifestPath, options, publishStore, publishId, stamp, manifest, options.OnBeforeManifestCommit);
 
         RefreshStablePointer(options, publishStore, manifestPath);
 
@@ -313,10 +313,18 @@ public static class SnapshotPublisher
 
     // ---- The manifest ------------------------------------------------------------------------
 
-    private static void WriteManifest(string manifestPath, SnapshotPublishOptions options,
+    private static void WriteManifest(SnapshotStore store, string manifestPath, SnapshotPublishOptions options,
         PublishStore publishStore, string publishId, DateTime publishedAt,
         IReadOnlyList<PublishedTableManifest> tables, Action? onBeforeManifestCommit)
     {
+        // Carried INSIDE the manifest so a cold start can restore what the gate already knows
+        // instead of re-reading every feed. Correct only because they commit together: these
+        // stamps describe exactly the state the parquet above describes, and one conditional PUT
+        // names both. Read here, at publish time, when no merge is in flight.
+        var sourceStamps = store.ReadAllSourceFileStamps()
+            .Select(PublishedSourceStamp.From)
+            .ToList();
+
         var manifest = new PublishedSnapshot(
             ManifestVersion: PublishedSnapshot.CurrentManifestVersion,
             SnapshotName: options.SnapshotName,
@@ -326,7 +334,8 @@ public static class SnapshotPublisher
             PackageVersion: typeof(SnapshotPublisher).Assembly.GetName().Version?.ToString() ?? "0.0.0",
             PathBase: PublishedSnapshot.RelativePathBase,
             SelectionMode: PublishedSnapshot.LatestPerTable,
-            Tables: tables);
+            Tables: tables,
+            SourceStamps: sourceStamps.Count == 0 ? null : sourceStamps);
 
         var payload = JsonSerializer.Serialize(manifest, PublishedSnapshot.SerializerOptions);
 

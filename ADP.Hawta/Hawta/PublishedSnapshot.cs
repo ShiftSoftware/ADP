@@ -32,7 +32,8 @@ public sealed record PublishedSnapshot(
     [property: JsonPropertyName("packageVersion")] string PackageVersion,
     [property: JsonPropertyName("pathBase")] string PathBase,
     [property: JsonPropertyName("selectionMode")] string SelectionMode,
-    [property: JsonPropertyName("tables")] IReadOnlyList<PublishedTableManifest> Tables)
+    [property: JsonPropertyName("tables")] IReadOnlyList<PublishedTableManifest> Tables,
+    [property: JsonPropertyName("sourceStamps")] IReadOnlyList<PublishedSourceStamp>? SourceStamps = null)
 {
     /// <summary>
     /// Bumped only for a breaking change to the manifest contract; new fields are additive.
@@ -278,4 +279,47 @@ public sealed record PublishedTableLocation(
     public const string ParquetKind = "parquet";
 
     public static PublishedTableLocation Parquet(string file) => new(ParquetKind, [file]);
+}
+
+/// <summary>
+/// One file source's change-gate stamp, carried so a fresh instance does not have to re-read every
+/// feed to rebuild what it already knows. <b>Agent-internal — consumers must ignore this section.</b>
+///
+/// <para><b>Why it lives in the manifest rather than beside it.</b> The stamp asserts "this exact
+/// file was already merged into the data you are looking at". That claim is only true relative to a
+/// particular published state, so it has to be committed by the same act that commits the state — a
+/// stamp written between a merge and the next publish describes rows that are in no published set
+/// yet, and restoring it against the previous manifest would let the gate skip a file whose rows are
+/// not there. Riding inside the manifest makes the two impossible to disagree: they are named by one
+/// conditional PUT. A sibling artifact would need a second commit, which is exactly the atomicity the
+/// manifest-last design exists to avoid.</para>
+///
+/// <para>A source that merged after the last publish simply has no entry here, so it re-reads on the
+/// next cycle — correct, because its work is not in the restored data either.</para>
+///
+/// <para><see cref="LastWriteUtcTicks"/> is exact ticks, matching <c>meta.SourceFileStamps</c>:
+/// NTFS resolves file times to 100 ns and this value is compared for equality, so any narrowing
+/// makes an unchanged file read as changed.</para>
+/// </summary>
+public sealed record PublishedSourceStamp(
+    [property: JsonPropertyName("sourceKey")] string SourceKey,
+    [property: JsonPropertyName("filePath")] string FilePath,
+    [property: JsonPropertyName("length")] long Length,
+    [property: JsonPropertyName("lastWriteUtcTicks")] long LastWriteUtcTicks,
+    [property: JsonPropertyName("configFingerprint")] string ConfigFingerprint,
+    [property: JsonPropertyName("stampedAtUtc")] DateTime StampedAtUtc)
+{
+    public static PublishedSourceStamp From(SourceFileStamp stamp) => new(
+        stamp.SourceKey, stamp.FilePath, stamp.Length, stamp.LastWriteUtc.Ticks,
+        stamp.ConfigFingerprint, stamp.StampedAtUtc);
+
+    /// <remarks>
+    /// <see cref="SourceFileStamp.StampedAtUtc"/> keeps its ORIGINAL value across a restore. It is
+    /// the age a per-source re-ingest bound measures, and resetting it here would silently extend
+    /// every configured bound across a restart — precisely when feeds are most likely to have been
+    /// swapped underneath us.
+    /// </remarks>
+    public SourceFileStamp ToStamp() => new(
+        SourceKey, FilePath, Length, new DateTime(LastWriteUtcTicks, DateTimeKind.Utc),
+        ConfigFingerprint, StampedAtUtc);
 }

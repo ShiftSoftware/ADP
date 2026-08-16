@@ -179,6 +179,35 @@ public sealed class FileSnapshotIngestorOptions
     /// <summary>Optional result column carrying the row's own save date (becomes <c>_SourceModified</c>).</summary>
     public string? SourceModifiedColumn { get; init; }
 
+    /// <summary>
+    /// Skip the read entirely when the file is unchanged since the last successful merge.
+    /// <b>Null keeps the incumbent behaviour</b> — read, hash and merge every cycle — so wiring the
+    /// gate is an explicit, per-host decision rather than something a package bump turns on.
+    /// See <see cref="SourceChangeGate"/> for what "unchanged" is allowed to mean.
+    /// </summary>
+    public SourceChangeGate? ChangeGate { get; init; }
+
+    /// <summary>
+    /// Per-source override of <see cref="SourceChangeGate.ReingestAfter"/>: re-read this feed
+    /// unconditionally once its stamp is older than this. Null — the default — inherits the gate's
+    /// setting, which is itself normally "never".
+    ///
+    /// <para>The knob belongs per source because the cost is entirely a property of the feed. A
+    /// 51 KB stock file can afford an hourly blind re-read; a 391 MiB catalogue that changes twice a
+    /// year cannot, and forcing one on it would read hundreds of gigabytes a year to notice
+    /// nothing. Set this only where the file is cheap AND its producer might rewrite content while
+    /// preserving the timestamp.</para>
+    /// </summary>
+    public TimeSpan? ReingestAfter { get; init; }
+
+    /// <summary>
+    /// Operator-supplied version folded into the change gate's fingerprint. Changing it forces one
+    /// full re-read. It is the only lever that does so <b>without a deploy</b> — which is what you
+    /// need when the reason to distrust the stamps cannot be expressed as a configuration change.
+    /// Ignored when <see cref="ChangeGate"/> is null.
+    /// </summary>
+    public string? IngestVersion { get; init; }
+
     public required SnapshotMergeOptions MergeOptions { get; init; }
 }
 
@@ -223,7 +252,14 @@ public static class FileSnapshotIngestor
     /// </summary>
     public static string KeyTrim(string expression) => $"trim({expression}, {TrimChars})";
 
-    public static SnapshotMergeResult Ingest(SnapshotStore store, FileSnapshotIngestorOptions options)
+    /// <param name="fileMetadata">
+    /// The cycle's metadata probe, when the caller has one. Null disables
+    /// <see cref="FileSnapshotIngestorOptions.ChangeGate"/> for this call — a caller with no probe
+    /// reads, which is the safe direction. The agent supplies one per cycle via
+    /// <see cref="SnapshotSourceContext.FileMetadata"/>.
+    /// </param>
+    public static SnapshotMergeResult Ingest(
+        SnapshotStore store, FileSnapshotIngestorOptions options, FileMetadataProbe? fileMetadata = null)
     {
         var format = ResolveFormat(options);
 
@@ -312,6 +348,29 @@ public static class FileSnapshotIngestor
             SnapshotMerge.InsertRunRecord(store, options.Table, options.MergeOptions, runId, DateTime.UtcNow, skipped,
                 $"Source file not found: {options.FilePath}");
             return skipped;
+        }
+
+        // ---- Source change gate ------------------------------------------------------------
+        // Placed AFTER the absence guard (absence is its own outcome and must stay one) and
+        // BEFORE everything expensive. Skips on one condition only: metadata established, file
+        // identical, configuration identical, stamp still inside its trust window. Every other
+        // answer — including every failure — falls through to the ordinary read below.
+        SourceChangeDecision? gateDecision = null;
+        if (options.ChangeGate is { } changeGate && fileMetadata is not null)
+        {
+            gateDecision = changeGate.Evaluate(
+                store, fileMetadata, StampKey(options.MergeOptions), options.FilePath,
+                SourceConfigFingerprint.Compute(options, options.IngestVersion),
+                options.ReingestAfter);
+
+            if (gateDecision.ShouldSkip)
+            {
+                var runId = options.MergeOptions.RunId ?? Guid.NewGuid().ToString("N");
+                var skipped = new SnapshotMergeResult(runId, SnapshotMergeStatus.SkippedSourceUnchanged, 0, 0, 0, 0);
+                SnapshotMerge.InsertRunRecord(store, options.Table, options.MergeOptions, runId, DateTime.UtcNow,
+                    skipped, gateDecision.Describe(options.FilePath));
+                return skipped;
+            }
         }
 
         // A 0-byte file is the just-created-not-yet-written half of the mid-upload window
@@ -445,7 +504,50 @@ public static class FileSnapshotIngestor
             throw;
         }
 
-        return SnapshotMerge.Execute(store, options.Table, staging, options.MergeOptions);
+        var merge = SnapshotMerge.Execute(store, options.Table, staging, options.MergeOptions);
+
+        // Stamp ONLY on success. A failed, aborted or guardrail-tripped run must leave the previous
+        // stamp alone so the next cycle reads again — stamping any other outcome would let the gate
+        // skip a file that was never actually ingested.
+        //
+        // And stamp the metadata read BEFORE the ingest, never a fresh probe: it describes the file
+        // whose bytes are now in the table. Re-probing here would record a file rewritten DURING the
+        // read as already ingested — the one shape of miss this gate must not be able to produce.
+        if (options.ChangeGate is not null
+            && merge.Status == SnapshotMergeStatus.Succeeded
+            && gateDecision is { Verdict: not SourceChangeVerdict.MetadataUnavailable })
+        {
+            store.WriteSourceFileStamp(new SourceFileStamp(
+                StampKey(options.MergeOptions),
+                options.FilePath,
+                gateDecision.Metadata.Length,
+                gateDecision.Metadata.LastWriteUtc,
+                SourceConfigFingerprint.Compute(options, options.IngestVersion),
+                options.ChangeGate.TimeProvider.GetUtcNow().UtcDateTime));
+        }
+
+        return merge;
+    }
+
+    /// <summary>
+    /// The stamp's identity. <see cref="SnapshotMergeOptions.Source"/> alone is normally unique, but
+    /// the per-dealer pattern (many sources, one shared table) distinguishes itself by scope — so
+    /// the scope is folded in and two dealers can never overwrite each other's stamp.
+    /// </summary>
+    /// <remarks>
+    /// Length-prefixed rather than delimiter-joined, matching the encoding
+    /// <see cref="PrimaryKeyExpression"/> already uses for composite keys. Source keys legitimately
+    /// contain <c>/</c> (<c>dms-order-lines/AAD</c>), so a plain join could alias
+    /// (<c>a/b</c> + <c>c</c>) onto (<c>a</c> + <c>b/c</c>) and let two sources share one stamp.
+    /// </remarks>
+    internal static string StampKey(SnapshotMergeOptions mergeOptions)
+    {
+        if (string.IsNullOrWhiteSpace(mergeOptions.SourceScope))
+            return mergeOptions.Source;
+
+        var source = mergeOptions.Source;
+        var scope = mergeOptions.SourceScope;
+        return $"V{source.Length}:{source};V{scope.Length}:{scope};";
     }
 
     private static FileSourceFormat ResolveFormat(FileSnapshotIngestorOptions options)

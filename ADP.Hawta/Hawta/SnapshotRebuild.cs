@@ -133,6 +133,18 @@ public static class SnapshotRebuild
                     startedAt, DateTime.UtcNow, rows, rows);
             }
 
+            // Restore the change gate's memory alongside the data it describes, so a fresh instance
+            // does not re-read every feed to relearn what this manifest already records. Safe only
+            // because the two were committed together: these stamps describe exactly the state just
+            // loaded. A source that merged AFTER this publish has no entry here and re-reads — which
+            // is right, because its rows are not in what we just loaded either.
+            //
+            // StampedAtUtc keeps its ORIGINAL value. It is the age a per-source re-ingest bound
+            // measures, and refreshing it here would silently extend every configured bound across a
+            // restart — exactly when feeds are most likely to have been swapped underneath us.
+            foreach (var stamp in published.SourceStamps ?? [])
+                store.WriteSourceFileStamp(stamp.ToStamp());
+
             store.Execute("COMMIT");
         }
         catch

@@ -78,6 +78,17 @@ public enum SnapshotMergeStatus
     /// is the intentional-wipe path.
     /// </summary>
     SkippedSourceEmpty,
+    /// <summary>
+    /// The source change gate found the file byte-for-byte identical in length and last-write time
+    /// to its last SUCCESSFUL merge, under an unchanged ingest configuration and inside the
+    /// re-ingest window — so the file was never opened. Recorded as
+    /// <c>Skipped:SourceUnchanged</c>.
+    ///
+    /// <para>This is a <b>run record, not silence</b>: a source that stops being read has to stay
+    /// visible in <c>meta.SyncRuns</c>, or a gate holding on stale metadata would look exactly like
+    /// a healthy idle feed.</para>
+    /// </summary>
+    SkippedSourceUnchanged,
 }
 
 /// <param name="PendingDeletes">On <see cref="SnapshotMergeStatus.AbortedMassDelete"/>: how many tombstones the run would have written.</param>

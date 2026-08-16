@@ -50,6 +50,70 @@ public class SnapshotRebuildTests : IDisposable
     }
 
     [Fact]
+    public void RebuildRestoresSourceFileStamps_SoAColdStartDoesNotRescanEveryFeed()
+    {
+        // The whole point of carrying stamps in the manifest: a slot swap hands the new instance an
+        // empty disk, and without this it re-reads every feed to relearn what the published set
+        // already records.
+        fx.MergeWidgets(("W1", "alpha", 1));
+        var stampedAt = new DateTime(2026, 8, 10, 7, 30, 0, DateTimeKind.Utc);
+        var lastWrite = new DateTime(2026, 8, 9, 22, 15, 0, DateTimeKind.Utc).AddTicks(4271);
+        fx.Store.WriteSourceFileStamp(new SourceFileStamp(
+            "csv-widgets", @"C:\feeds\widgets.csv", 1234, lastWrite, "FINGERPRINT-A", stampedAt));
+        fx.Publish();
+
+        using var rebuilt = RebuildIntoFreshStore([fx.Widget, fx.Gadget], out _);
+
+        var restored = rebuilt.ReadSourceFileStamp("csv-widgets");
+        Assert.NotNull(restored);
+        Assert.Equal(1234, restored.Length);
+        Assert.Equal("FINGERPRINT-A", restored.ConfigFingerprint);
+        // Exact ticks survive the manifest round trip. A narrowed timestamp would make an unchanged
+        // file read as changed — the defect this shape exists to prevent.
+        Assert.Equal(lastWrite, restored.LastWriteUtc);
+        // The ORIGINAL stamp time, not the restore time: it is the age a per-source re-ingest bound
+        // measures, and refreshing it would silently extend every configured bound across a restart.
+        Assert.Equal(stampedAt, restored.StampedAtUtc);
+    }
+
+    [Fact]
+    public void AStampMadeAfterTheLastPublish_IsNotRestored_SoThatSourceReadsAgain()
+    {
+        // The failure this design exists to prevent. A stamp written between a merge and the next
+        // publish describes rows that are in NO published set; restoring it against the previous
+        // manifest would let the gate skip a file whose rows are absent from the rebuilt table.
+        fx.MergeWidgets(("W1", "alpha", 1));
+        fx.Publish();
+
+        fx.Store.WriteSourceFileStamp(new SourceFileStamp(
+            "csv-late", @"C:\feeds\late.csv", 99, DateTime.UtcNow, "FINGERPRINT-B", DateTime.UtcNow));
+
+        using var rebuilt = RebuildIntoFreshStore([fx.Widget, fx.Gadget], out _);
+
+        Assert.Null(rebuilt.ReadSourceFileStamp("csv-late"));
+    }
+
+    [Fact]
+    public void AManifestWithNoStampSection_StillRebuilds()
+    {
+        // sourceStamps is additive, so every manifest published before it existed must keep
+        // rebuilding. Absent reads as "no stamps", never as a parse failure.
+        fx.MergeWidgets(("W1", "alpha", 1));
+        fx.Publish();
+
+        var manifest = Directory.EnumerateFiles(fx.PublishDirectory, "*.json")
+            .First(f => !Path.GetFileName(f).StartsWith("latest", StringComparison.OrdinalIgnoreCase));
+        var stripped = System.Text.RegularExpressions.Regex.Replace(
+            File.ReadAllText(manifest), ",\\s*\"sourceStamps\":\\s*(null|\\[[\\s\\S]*?\\])", string.Empty);
+        File.WriteAllText(manifest, stripped);
+
+        using var rebuilt = RebuildIntoFreshStore([fx.Widget, fx.Gadget], out var result);
+
+        Assert.NotNull(result.ManifestFile);
+        Assert.Equal(1, result.TotalRows);
+    }
+
+    [Fact]
     public void RebuildPreservesTombstones()
     {
         fx.MergeWidgets(("W1", "alpha", 1), ("W2", "beta", 2));

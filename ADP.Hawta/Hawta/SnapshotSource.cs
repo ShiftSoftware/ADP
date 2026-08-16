@@ -77,4 +77,11 @@ public sealed class SnapshotSourceContext
 {
     public required SnapshotStore Store { get; init; }
     public required CancellationToken CancellationToken { get; init; }
+
+    /// <summary>
+    /// This cycle's file-metadata probe, or null when the host does not gate on source changes.
+    /// <b>One instance per cycle</b>: it caches, so every source in a cycle sees one consistent
+    /// picture of the share and no cycle inherits another cycle's view of it.
+    /// </summary>
+    public FileMetadataProbe? FileMetadata { get; init; }
 }

@@ -292,6 +292,7 @@ public static class SnapshotMerge
         SnapshotMergeStatus.Failed => "Failed:Exception",
         SnapshotMergeStatus.SkippedSourceAbsent => "Skipped:SourceAbsent",
         SnapshotMergeStatus.SkippedSourceEmpty => "Skipped:SourceEmpty",
+        SnapshotMergeStatus.SkippedSourceUnchanged => "Skipped:SourceUnchanged",
         _ => status.ToString(),
     };
 }

@@ -166,7 +166,109 @@ public sealed class SnapshotStore : IDisposable
                 "Error" VARCHAR
             )
             """);
+
+        // The source change gate's memory: what each file source looked like the last time its
+        // merge SUCCEEDED. Additive, so an existing write DB gains it empty on the next open and
+        // no schema-version bump (and therefore no forced cold-start rebuild) is needed — every
+        // source simply re-reads once and re-stamps.
+        Execute(
+            """
+            CREATE TABLE IF NOT EXISTS meta.SourceFileStamps (
+                "SourceKey" VARCHAR NOT NULL PRIMARY KEY,
+                "FilePath" VARCHAR NOT NULL,
+                "Length" BIGINT NOT NULL,
+                "LastWriteUtcTicks" BIGINT NOT NULL,
+                "ConfigFingerprint" VARCHAR NOT NULL,
+                "StampedAtUtc" TIMESTAMP NOT NULL
+            )
+            """);
     }
+
+    /// <summary>
+    /// What <paramref name="sourceKey"/> looked like at its last successful merge, or null if it
+    /// has never had one. Null is the safe answer: the caller reads the file.
+    /// </summary>
+    /// <remarks>
+    /// The last-write time is stored as exact <see cref="DateTime.Ticks"/>, not as a TIMESTAMP.
+    /// NTFS resolves file times to 100 ns while DuckDB's TIMESTAMP holds microseconds, so a
+    /// round-trip through TIMESTAMP truncates — and this value is compared for EQUALITY, where a
+    /// truncated round-trip reads as "the file changed" on almost every unchanged file. (Almost:
+    /// a timestamp that happens to land on a microsecond boundary compares equal, which makes the
+    /// bug intermittent rather than obvious.) Ticks are exact and this field is an identity token,
+    /// never something a human queries by range.
+    /// </remarks>
+    public SourceFileStamp? ReadSourceFileStamp(string sourceKey)
+    {
+        using var command = Connection.CreateCommand();
+        command.CommandText =
+            """
+            SELECT "FilePath", "Length", "LastWriteUtcTicks", "ConfigFingerprint", "StampedAtUtc"
+            FROM meta.SourceFileStamps WHERE "SourceKey" = ?
+            """;
+        var parameter = command.CreateParameter();
+        parameter.Value = sourceKey;
+        command.Parameters.Add(parameter);
+
+        using var reader = command.ExecuteReader();
+        if (!reader.Read())
+            return null;
+
+        return new SourceFileStamp(
+            sourceKey,
+            reader.GetString(0),
+            reader.GetInt64(1),
+            new DateTime(reader.GetInt64(2), DateTimeKind.Utc),
+            reader.GetString(3),
+            AsUtc(reader.GetDateTime(4)));
+    }
+
+    /// <summary>
+    /// Records a source's file identity after a successful merge. Called <b>only</b> on success —
+    /// stamping a failed or skipped run would let the next cycle skip a file that was never
+    /// actually ingested.
+    /// </summary>
+    public void WriteSourceFileStamp(SourceFileStamp stamp)
+    {
+        Execute("DELETE FROM meta.SourceFileStamps WHERE \"SourceKey\" = ?", stamp.SourceKey);
+        Execute(
+            "INSERT INTO meta.SourceFileStamps VALUES (?, ?, ?, ?, ?, ?)",
+            stamp.SourceKey, stamp.FilePath, stamp.Length, stamp.LastWriteUtc.Ticks,
+            stamp.ConfigFingerprint, stamp.StampedAtUtc);
+    }
+
+    /// <summary>
+    /// Every stamp, for publishing alongside the set they describe. Read at publish time, when no
+    /// merge is in flight (the loop ingests, pumps, then publishes), so what this returns is exactly
+    /// consistent with the parquet about to be committed.
+    /// </summary>
+    public IReadOnlyList<SourceFileStamp> ReadAllSourceFileStamps()
+    {
+        using var command = Connection.CreateCommand();
+        command.CommandText =
+            """
+            SELECT "SourceKey", "FilePath", "Length", "LastWriteUtcTicks", "ConfigFingerprint", "StampedAtUtc"
+            FROM meta.SourceFileStamps ORDER BY "SourceKey"
+            """;
+
+        using var reader = command.ExecuteReader();
+        var stamps = new List<SourceFileStamp>();
+        while (reader.Read())
+        {
+            stamps.Add(new SourceFileStamp(
+                reader.GetString(0),
+                reader.GetString(1),
+                reader.GetInt64(2),
+                new DateTime(reader.GetInt64(3), DateTimeKind.Utc),
+                reader.GetString(4),
+                AsUtc(reader.GetDateTime(5))));
+        }
+
+        return stamps;
+    }
+
+    /// <summary>Drops a source's stamp, forcing a full read on its next cycle.</summary>
+    public void ClearSourceFileStamp(string sourceKey) =>
+        Execute("DELETE FROM meta.SourceFileStamps WHERE \"SourceKey\" = ?", sourceKey);
 
     /// <summary>
     /// Creates the family's consolidated table (source columns + bookkeeping) if missing.
