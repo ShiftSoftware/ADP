@@ -155,10 +155,54 @@ Custom conditions are a closed, fail-closed contract. The supported fields are:
 
 | Field | Shape | Meaning |
 |---|---|---|
-| `serviceHistory.laborLines.packageCode` | `ContainsAll`, `Latest` scope, positive count, one or more values; `Exact` or `EndsWith` matching | Requires package codes across the selected latest service invoices. |
+| `serviceHistory.laborLines.packageCode` | `ContainsAll`; scope `Latest` with a positive count, or `All` with no count; one or more values; `Exact`, `EndsWith` or `Milestone` matching | Requires package codes across the selected service invoices. |
+| `serviceHistory.laborLines.maximumMilestone` | `Equals`, no scope, exactly one positive mileage; `program` optional, `qualifier` required | Requires the highest milestone the vehicle has reached to equal the configured mileage. |
 | `serviceItems.baseSchedule.maximumMileage` | `Equals`, no scope, exactly one positive invariant-culture integer string | Requires the derived base schedule cap to equal the configured mileage. |
 
 Every declared condition must match. An unknown field or operator, malformed value/scope, missing cap, or insufficient history excludes the item.
+
+`Latest` selects a moving window, so it answers "is this the case right now" and a later unrelated
+invoice can displace a required code. `All` takes the whole history and answers "has this ever
+happened", which is what a condition about a milestone the vehicle has passed needs.
+
+`Milestone` matching reads the scheduled service out of a package code and compares it numerically,
+so its `values` are mileages rather than text. Two extra properties apply to it, and to
+`maximumMilestone`:
+
+- `program` — the programme prefixes whose codes count, matched against the leading token of the
+  code. Omit it to accept every programme.
+- `qualifier` — how the trailing variant token is treated: `None` (the milestone must be the last
+  token), `Any`, `Only` (an allow-list in `values`) or `Except` (a deny-list). **Required**, with no
+  default: whether a variant-qualified code records the same service is a decision, and a default
+  would make it silently.
+
+Both are rejected on any other field or value match. How a milestone is read out of a code is
+deployment configuration — see `ServiceMilestoneOptions` — not part of this contract.
+
+A reward gated on prerequisites the customer must have performed, and on not having gone past them:
+
+```json
+{
+  "eligibilityConditions": [
+    {
+      "field": "serviceHistory.laborLines.packageCode",
+      "operator": "ContainsAll",
+      "valueMatch": "Milestone",
+      "program": ["PGM"],
+      "qualifier": { "selection": "None" },
+      "values": ["45000", "50000"],
+      "scope": { "selection": "All" }
+    },
+    {
+      "field": "serviceHistory.laborLines.maximumMilestone",
+      "operator": "Equals",
+      "program": ["PGM"],
+      "qualifier": { "selection": "None" },
+      "values": ["50000"]
+    }
+  ]
+}
+```
 
 Example reward catalog fragment:
 

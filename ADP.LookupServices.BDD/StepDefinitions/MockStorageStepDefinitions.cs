@@ -50,6 +50,31 @@ public class MockStorageStepDefinitions
             StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
     }
 
+    private static bool HasValue(DataTableRow row, string column) =>
+        row.ContainsKey(column) && !string.IsNullOrWhiteSpace(row[column]);
+
+    /// <summary>
+    /// An optional list-valued condition property, written either comma-separated for readability or
+    /// as a JSON array when the scenario is about a shape the shorthand cannot express — an empty
+    /// list, or an entry that is blank or null. Absent from both columns means the property was
+    /// omitted, which is a distinct case from an empty list in this grammar.
+    /// </summary>
+    private static IEnumerable<string>? GetOptionalConditionList(
+        DataTableRow row,
+        string column,
+        string jsonColumn)
+    {
+        if (HasValue(row, jsonColumn))
+            return JsonSerializer.Deserialize<string[]>(row[jsonColumn]) ?? [];
+
+        if (!HasValue(row, column))
+            return null;
+
+        return row[column].Split(
+            ',',
+            StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+    }
+
     [Given("broker stock for brand {long}:")]
     public void GivenBrokerStockForBrand(long brandId, DataTable dataTable)
     {
@@ -228,6 +253,27 @@ public class MockStorageStepDefinitions
 
             if (row.ContainsKey("ValueMatch") && !string.IsNullOrWhiteSpace(row["ValueMatch"]))
                 condition.ValueMatch = Enum.Parse<EligibilityConditionValueMatch>(row["ValueMatch"]);
+
+            if (HasValue(row, "WhenUnmet"))
+                condition.WhenUnmet = Enum.Parse<EligibilityConditionUnmetBehavior>(row["WhenUnmet"]);
+
+            condition.Program = GetOptionalConditionList(row, "Program", "ProgramJson");
+
+            // Any of the three columns brings the qualifier into being, so a scenario can pin the
+            // selection, its values, or both — and leaving all three out is how a scenario says the
+            // author omitted the qualifier altogether.
+            if (HasValue(row, "Qualifier") ||
+                HasValue(row, "QualifierValues") ||
+                HasValue(row, "QualifierValuesJson"))
+            {
+                condition.Qualifier = new EligibilityConditionQualifier
+                {
+                    Selection = HasValue(row, "Qualifier")
+                        ? Enum.Parse<EligibilityConditionQualifierSelection>(row["Qualifier"])
+                        : default,
+                    Values = GetOptionalConditionList(row, "QualifierValues", "QualifierValuesJson"),
+                };
+            }
 
             return condition;
         }).ToList();

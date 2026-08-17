@@ -4,6 +4,7 @@ using Reqnroll;
 using ShiftSoftware.ADP.Lookup.Services;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Part;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
+using ShiftSoftware.ADP.Lookup.Services.Milestones;
 
 namespace LookupServices.BDD.StepDefinitions;
 
@@ -255,5 +256,53 @@ public class LookupOptionsStepDefinitions
     public void GivenShowStockQuantityIsEnabled()
     {
         _context.Options.ShowPartLookupStockQauntity = true;
+    }
+
+    [Given("LookupOptions milestone bounds are minimum {long} maximum {long} step {long}")]
+    public void GivenMilestoneBounds(long minimum, long maximum, long step)
+    {
+        _context.Options.ServiceMilestones.MinimumInKilometres = minimum;
+        _context.Options.ServiceMilestones.MaximumInKilometres = maximum;
+        _context.Options.ServiceMilestones.StepInKilometres = step;
+    }
+
+    [Given("LookupOptions milestone package-code pattern is {string}")]
+    public void GivenMilestonePackageCodePattern(string pattern)
+    {
+        _context.Options.ServiceMilestones.PackageCodePattern = pattern;
+    }
+
+    /// <summary>
+    /// Replaces the package-code reader with a lookup table, standing in for the source that will
+    /// state milestones outright. Codes the table does not list read as carrying no milestone, the
+    /// same as unscheduled work does through the built-in reader.
+    /// </summary>
+    [Given("the milestone resolver reads:")]
+    public void GivenTheMilestoneResolverReads(DataTable dataTable)
+    {
+        var readings = dataTable.Rows.ToDictionary(
+            row => row["PackageCode"],
+            row => new ServiceMilestoneReading(
+                long.Parse(row["Milestone"], CultureInfo.InvariantCulture),
+                GetOptionalString(row, "Program"),
+                GetOptionalString(row, "Qualifier")),
+            StringComparer.OrdinalIgnoreCase);
+
+        _context.Options.ServiceMilestones.Resolver = new StubMilestoneResolver(readings);
+    }
+
+    private sealed class StubMilestoneResolver : IServiceMilestoneResolver
+    {
+        private readonly Dictionary<string, ServiceMilestoneReading> readings;
+
+        internal StubMilestoneResolver(Dictionary<string, ServiceMilestoneReading> readings)
+        {
+            this.readings = readings;
+        }
+
+        public ServiceMilestoneReading? Resolve(string packageCode) =>
+            packageCode is not null && readings.TryGetValue(packageCode, out var reading)
+                ? reading
+                : null;
     }
 }

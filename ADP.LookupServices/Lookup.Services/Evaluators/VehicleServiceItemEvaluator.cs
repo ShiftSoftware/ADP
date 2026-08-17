@@ -141,13 +141,14 @@ public partial class VehicleServiceItemEvaluator
         long? baseScheduleMaximumMileage)
     {
         var eligible = FilterEligibleServiceItems(serviceItems, vehicle, ownership, freeServiceStartDate, baseScheduleMaximumMileage)
-            .OrderByDescending(x => x.MaximumMileage.HasValue)
-            .ThenBy(x => x.MaximumMileage);
+            .OrderByDescending(x => x.Item.MaximumMileage.HasValue)
+            .ThenBy(x => x.Item.MaximumMileage);
 
-        foreach (var item in eligible)
+        foreach (var (item, outcome) in eligible)
         {
             var modelCost = GetModelCost(item.ModelCosts, vehicle?.Katashiki, vehicle?.VariantCode);
             var dto = BuildFreeServiceItemDto(item, vehicle, languageCode, modelCost);
+            dto.Lock = outcome?.ToLockDTO();
             Trace.RecordFreeBuild(item, dto, modelCost, languageCode);
             yield return dto;
         }
@@ -276,12 +277,50 @@ public partial class VehicleServiceItemEvaluator
         result.AddRange(newItems);
     }
 
+    /// <summary>
+    /// Settles what an unclaimable item shows, once statuses are known.
+    /// <para>
+    /// An item that has already been claimed is claimed, whatever its conditions say about the
+    /// vehicle today — a customer whose later services closed the window still had the reward, and
+    /// telling them they missed it would be false. The claim wins and the block goes.
+    /// </para>
+    /// <para>
+    /// What remains locked or missed shows no expiry. A reward active for three months is active for
+    /// three months from the moment it unlocks, not from warranty activation, so the rolling date
+    /// would count down against a customer who cannot claim yet. Cleared here rather than before the
+    /// rolling pass, so the sequence every other item is dated from is the one it would have had.
+    /// </para>
+    /// </summary>
+    private void ResolveUnclaimableItems(List<VehicleServiceItemDTO> serviceItems)
+    {
+        foreach (var item in serviceItems)
+        {
+            if (item.Lock is null)
+                continue;
+
+            if (item.StatusEnum == VehcileServiceItemStatuses.Processed)
+            {
+                Trace.Note($"Item {item.ServiceItemID} reads as {item.Lock.State} but has already been claimed; the claim wins and the lock block is dropped.");
+                item.Lock = null;
+                continue;
+            }
+
+            if (item.ExpiresAt is null)
+                continue;
+
+            Trace.Note($"Item {item.ServiceItemID} is {item.Lock.State}; cleared ExpiresAt={item.ExpiresAt:yyyy-MM-dd} — its validity starts when it unlocks.");
+            item.ExpiresAt = null;
+        }
+    }
+
     private async Task<bool> CalculateServiceItemStatusAndClaimability(
         List<VehicleServiceItemDTO> serviceItems,
         bool showingInactivatedItems,
         string languageCode)
     {
         await AssignStatusToItems(serviceItems, showingInactivatedItems, languageCode);
+
+        ResolveUnclaimableItems(serviceItems);
 
         var activationRequired = serviceItems.Any(x => x.StatusEnum == VehcileServiceItemStatuses.ActivationRequired);
 
@@ -300,6 +339,15 @@ public partial class VehicleServiceItemEvaluator
     /// </summary>
     private static string ApplyClaimability(VehicleServiceItemDTO item, DateTime nowUtc)
     {
+        // Checked before status, and unconditionally: an item on screen to explain itself must never
+        // be claimable, whatever status it would otherwise carry. Claimable is part of the signed
+        // payload, so this is also what the claim endpoint enforces against.
+        if (item.Lock is not null)
+        {
+            item.Claimable = false;
+            return $"{item.Lock.State} item → not claimable.";
+        }
+
         if (item.ValidityModeEnum == ClaimableItemValidityMode.FixedDateRange && item.ActivatedAt > nowUtc)
         {
             item.Claimable = false;
@@ -605,7 +653,7 @@ public partial class VehicleServiceItemEvaluator
     /// order). Reason strings are formatted separately by the trace collector — this method
     /// stays predicate-only and allocation-free.
     /// </summary>
-    private EligibilityRejectionStage EvaluateItemEligibility(
+    private (EligibilityRejectionStage Stage, EligibilityConditionOutcome Outcome) EvaluateItemEligibility(
         ServiceItemModel item,
         VehicleEntryModel vehicle,
         VehicleOwnership ownership,
@@ -613,11 +661,24 @@ public partial class VehicleServiceItemEvaluator
         long? baseScheduleMaximumMileage)
     {
         var staticStage = EvaluateStaticItemEligibility(item, vehicle, ownership, freeServiceStartDate);
-        if (staticStage != EligibilityRejectionStage.None) return staticStage;
-        if (!new VehicleEligibilityConditionEvaluator(companyDataAggregate)
-            .MatchesAll(item.EligibilityConditions, baseScheduleMaximumMileage))
-            return EligibilityRejectionStage.CustomCondition;
-        return EligibilityRejectionStage.None;
+        if (staticStage != EligibilityRejectionStage.None)
+            return (staticStage, null);
+
+        // The static filters answer with facts about the vehicle — its brand, its market, its owner —
+        // and an item failing one of those was never this customer's to see. Only the custom
+        // conditions can produce something worth showing unclaimable.
+        var outcome = new VehicleEligibilityConditionEvaluator(companyDataAggregate, options, Trace.IsEnabled)
+            .Evaluate(item.EligibilityConditions, baseScheduleMaximumMileage);
+
+        var stage = outcome.State switch
+        {
+            EligibilityConditionState.Met => EligibilityRejectionStage.None,
+            EligibilityConditionState.Locked => EligibilityRejectionStage.CustomConditionLocked,
+            EligibilityConditionState.Missed => EligibilityRejectionStage.CustomConditionMissed,
+            _ => EligibilityRejectionStage.CustomCondition,
+        };
+
+        return (stage, outcome);
     }
 
     private EligibilityRejectionStage EvaluateStaticItemEligibility(
@@ -705,7 +766,7 @@ public partial class VehicleServiceItemEvaluator
     /// trace collector — the <c>Disabled</c> sink ignores the calls, so this is the only
     /// path (no separate fast path needed).
     /// </summary>
-    private IEnumerable<ServiceItemModel> FilterEligibleServiceItems(
+    private IEnumerable<(ServiceItemModel Item, EligibilityConditionOutcome Outcome)> FilterEligibleServiceItems(
         IEnumerable<ServiceItemModel> serviceItems,
         VehicleEntryModel vehicle,
         VehicleOwnership ownership,
@@ -716,10 +777,16 @@ public partial class VehicleServiceItemEvaluator
 
         foreach (var item in serviceItems ?? Enumerable.Empty<ServiceItemModel>())
         {
-            var stage = EvaluateItemEligibility(item, vehicle, ownership, freeServiceStartDate, baseScheduleMaximumMileage);
-            Trace.RecordEligibilityDecision(item, stage, vehicle, ownership);
-            if (stage == EligibilityRejectionStage.None)
-                yield return item;
+            var (stage, outcome) = EvaluateItemEligibility(item, vehicle, ownership, freeServiceStartDate, baseScheduleMaximumMileage);
+            Trace.RecordEligibilityDecision(item, stage, vehicle, ownership, outcome?.Prerequisites, outcome?.QualifierNearMisses);
+
+            // Locked and missed items pass this point carrying their reason. Everything else that
+            // failed is dropped, as it always was — an item excluded by brand, market or programme
+            // would put another catalog on this dealer's screen.
+            if (stage == EligibilityRejectionStage.None ||
+                stage == EligibilityRejectionStage.CustomConditionLocked ||
+                stage == EligibilityRejectionStage.CustomConditionMissed)
+                yield return (item, outcome);
         }
     }
 

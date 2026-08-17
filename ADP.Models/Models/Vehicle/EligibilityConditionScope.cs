@@ -31,8 +31,20 @@ public enum EligibilityConditionOperator
 [JsonConverter(typeof(JsonStringEnumConverter))]
 public enum EligibilityConditionValueMatch
 {
+    /// <summary>Case-insensitive ordinal comparison of the whole value.</summary>
     Exact = 0,
-    EndsWith = 1
+
+    /// <summary>Case-insensitive ordinal suffix comparison, with no trimming or tokenizing.</summary>
+    EndsWith = 1,
+
+    /// <summary>
+    /// Read the service milestone out of the value and compare it numerically, so the configured
+    /// values are mileages rather than text. String matching cannot express this: a milestone is a
+    /// number that a deployment writes into a longer code, and the same service can be written more
+    /// than one way. Requires <see cref="EligibilityConditionModel.Qualifier"/> to say which of
+    /// those writings count.
+    /// </summary>
+    Milestone = 2,
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter))]

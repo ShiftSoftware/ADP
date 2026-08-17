@@ -289,6 +289,73 @@ public class VehicleServiceItemStepDefinitions
         Assert.DoesNotContain(_result, i => i.ServiceItemID == serviceItemId);
     }
 
+    [Then("service item {string} is offered")]
+    public void ThenServiceItemIsOffered(string serviceItemId)
+    {
+        var item = RequireItem(serviceItemId);
+        Assert.Null(item.Lock);
+    }
+
+    [Then("service item {string} is {string}")]
+    public void ThenServiceItemLockStateIs(string serviceItemId, string expectedState)
+    {
+        var item = RequireItem(serviceItemId);
+        Assert.NotNull(item.Lock);
+        Assert.Equal(Enum.Parse<VehicleServiceItemLockState>(expectedState, ignoreCase: true), item.Lock!.State);
+    }
+
+    [Then("service item {string} has no expiry")]
+    public void ThenServiceItemHasNoExpiry(string serviceItemId)
+    {
+        var item = RequireItem(serviceItemId);
+        Assert.Null(item.ExpiresAt);
+    }
+
+    [Then("service item {string} has prerequisites:")]
+    public void ThenServiceItemHasPrerequisites(string serviceItemId, DataTable dataTable)
+    {
+        var item = RequireItem(serviceItemId);
+        Assert.NotNull(item.Lock);
+
+        var expected = dataTable.Rows.Select(row => (
+            Mileage: long.Parse(row["Mileage"]),
+            Label: GetOptionalString(row, "Label"),
+            Satisfied: bool.Parse(row["Satisfied"]),
+            SatisfiedOn: GetOptionalString(row, "SatisfiedOn"))).ToList();
+
+        Assert.Equal(expected.Count, item.Lock!.Prerequisites.Count);
+
+        foreach (var (actual, want) in item.Lock.Prerequisites.Zip(expected))
+        {
+            Assert.Equal(want.Mileage, actual.Mileage);
+            Assert.Equal(want.Satisfied, actual.Satisfied);
+
+            if (want.Label is not null)
+                Assert.Equal(want.Label, actual.Label);
+
+            if (want.SatisfiedOn is null)
+                Assert.Null(actual.SatisfiedOn);
+            else
+                Assert.Equal(DateTime.Parse(want.SatisfiedOn), actual.SatisfiedOn);
+        }
+    }
+
+    private static string? GetOptionalString(DataTableRow row, string column)
+    {
+        if (!row.ContainsKey(column))
+            return null;
+        var value = row[column];
+        return string.IsNullOrWhiteSpace(value) ? null : value;
+    }
+
+    private VehicleServiceItemDTO RequireItem(string serviceItemId)
+    {
+        Assert.NotNull(_result);
+        var item = _result!.FirstOrDefault(i => i.ServiceItemID == serviceItemId);
+        Assert.NotNull(item);
+        return item!;
+    }
+
     [Then("service item {string} has expiration {string}")]
     public void ThenServiceItemHasExpiration(string serviceItemId, string expectedDate)
     {

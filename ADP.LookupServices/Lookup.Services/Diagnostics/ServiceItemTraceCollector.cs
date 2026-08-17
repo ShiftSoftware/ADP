@@ -168,7 +168,9 @@ public class ServiceItemTraceCollector
         ServiceItemModel item,
         EligibilityRejectionStage stage,
         VehicleEntryModel vehicle,
-        VehicleOwnership ownership)
+        VehicleOwnership ownership,
+        IReadOnlyList<VehicleServiceItemPrerequisiteDTO> prerequisites = null,
+        IReadOnlyList<ServiceItemMilestoneQualifierNearMiss> qualifierNearMisses = null)
     {
         var accepted = stage == EligibilityRejectionStage.None;
         var decision = new ServiceItemEligibilityDecision
@@ -180,9 +182,16 @@ public class ServiceItemTraceCollector
             Verdict = accepted ? EligibilityVerdict.Accepted : EligibilityVerdict.Rejected,
             RejectionStage = stage,
             Reason = accepted ? null : ServiceItemEligibilityReasonFormatter.Format(item, stage, vehicle, ownership),
+            Prerequisites = prerequisites?.ToList() ?? new List<VehicleServiceItemPrerequisiteDTO>(),
+            QualifierNearMisses = qualifierNearMisses?.ToList() ?? new List<ServiceItemMilestoneQualifierNearMiss>(),
         };
         trace.Eligibility.Decisions.Add(decision);
+
+        // Locked and missed items are shown, so counting them as rejected would make the trace
+        // disagree with the screen. They are neither accepted nor dropped.
         if (accepted) trace.Eligibility.AcceptedCount++;
+        else if (stage == EligibilityRejectionStage.CustomConditionLocked ||
+                 stage == EligibilityRejectionStage.CustomConditionMissed) trace.Eligibility.UnclaimableCount++;
         else trace.Eligibility.RejectedCount++;
     }
 
@@ -437,7 +446,7 @@ public class ServiceItemTraceCollector
         public override void RecordBaseScheduleCapDecision(ServiceItemModel item, bool included, BaseScheduleCapDecisionReason reason, EligibilityRejectionStage staticRejectionStage = EligibilityRejectionStage.None) { }
         public override void RecordBaseScheduleCap(long? maximumMileage) { }
         public override void RecordEligibilityInputCount(int count) { }
-        public override void RecordEligibilityDecision(ServiceItemModel item, EligibilityRejectionStage stage, VehicleEntryModel vehicle, VehicleOwnership ownership) { }
+        public override void RecordEligibilityDecision(ServiceItemModel item, EligibilityRejectionStage stage, VehicleEntryModel vehicle, VehicleOwnership ownership, IReadOnlyList<VehicleServiceItemPrerequisiteDTO> prerequisites = null, IReadOnlyList<ServiceItemMilestoneQualifierNearMiss> qualifierNearMisses = null) { }
         public override void RecordFreeBuild(ServiceItemModel item, VehicleServiceItemDTO dto, ServiceItemCostModel matchedCost, string languageCode) { }
         public override void RecordPaidBuild(PaidServiceInvoiceModel invoice, PaidServiceInvoiceLineModel line, VehicleServiceItemDTO dto, string languageCode) { }
         public override void RecordWarrantyRollingSkipped(string reason) { }

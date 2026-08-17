@@ -11,6 +11,9 @@ import cancelledIcon from '~assets/cancelled.svg';
 import processedIcon from '~assets/processed.svg';
 import activationRequiredIcon from '~assets/activationRequired.svg';
 
+import { LockIcon } from '~assets/lock-icon';
+import { HourglassIcon } from '~assets/hourglass-icon';
+
 import dynamicClaimSchema from '~locales/vehicleLookup/claimableItems/type';
 
 const icons = {
@@ -19,6 +22,13 @@ const icons = {
   processed: processedIcon,
   cancelled: cancelledIcon,
   activationRequired: activationRequiredIcon,
+};
+
+// The only two words this feature adds to the screen, kept together so moving them into the locale
+// files is one edit. Left untranslated deliberately for now — see the locked-items plan.
+const lockStateLabels = {
+  Locked: 'Locked',
+  Missed: 'Missed',
 };
 
 type ClaimableItemProps = {
@@ -40,8 +50,13 @@ export const ClaimableItem: FunctionalComponent<ClaimableItemProps> = ({ item, l
 
   const closePopover = () => setClaimableItemPopover(false);
 
+  // A locked or missed item carries an ordinary status underneath — usually pending, because
+  // nothing about its lifecycle changed. The lock is what the customer is being told, so it takes
+  // over the card: the status would say "Pending" about a reward they cannot claim.
+  const lockState = item?.lock?.state;
+
   return (
-    <div class={cn('claimable-item', { [item.status]: addStatusClass })}>
+    <div class={cn('claimable-item', { [item.status]: addStatusClass && !lockState, [`lock-${lockState}`]: !!lockState })}>
       <div class="claimable-item-container">
         <div
           ref={el => (headerEl = el as HTMLDivElement)}
@@ -52,8 +67,8 @@ export const ClaimableItem: FunctionalComponent<ClaimableItemProps> = ({ item, l
           onAnimationEnd={removeLoadAnimationClass}
           class="claimable-item-header load-animation"
         >
-          <img src={icons[item.status]} alt="status icon" />
-          <div>{locale[item?.status]}</div>
+          {lockState ? <div class="claimable-item-lock-icon">{lockState === 'Missed' ? <HourglassIcon /> : <LockIcon />}</div> : <img src={icons[item.status]} alt="status icon" />}
+          <div>{lockState ? lockStateLabels[lockState] : locale[item?.status]}</div>
         </div>
         <div onAnimationEnd={removeLoadAnimationClass} class="claimable-item-circle load-animation" />
         <div onAnimationEnd={removeLoadAnimationClass} class="claimable-item-footer load-animation">

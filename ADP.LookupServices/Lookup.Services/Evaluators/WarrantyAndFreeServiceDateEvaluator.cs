@@ -289,7 +289,7 @@ public class WarrantyAndFreeServiceDateEvaluator
         if (result.WarrantyEndDate is null)
             return;
 
-        var conditionEvaluator = new VehicleEligibilityConditionEvaluator(CompanyDataAggregate);
+        var conditionEvaluator = new VehicleEligibilityConditionEvaluator(CompanyDataAggregate, Options);
 
         foreach (var definition in Options.ExtendedWarrantyDefinitions ?? Enumerable.Empty<ExtendedWarrantyDefinitionModel>())
         {

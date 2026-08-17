@@ -1,6 +1,7 @@
 ﻿using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Part;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using ShiftSoftware.ADP.Lookup.Services.Enums;
+using ShiftSoftware.ADP.Lookup.Services.Milestones;
 using ShiftSoftware.ADP.Models;
 using ShiftSoftware.ADP.Models.Vehicle;
 using ShiftSoftware.ShiftEntity.Model.Dtos;
@@ -311,6 +312,15 @@ public class LookupOptions
     /// registration order, last writer winning.</para>
     /// </summary>
     public Action<ServiceMenuLookupOptions>? ConfigureServiceMenu { get; set; }
+
+    /// <summary>
+    /// How this deployment's service history names a scheduled service, read by milestone-based
+    /// eligibility conditions. The defaults describe the common convention; a deployment writing its
+    /// codes differently changes them here rather than in a catalog condition, and a host with a
+    /// source that states the interval outright replaces the reader entirely through
+    /// <see cref="ServiceMilestoneOptions.Resolver"/>.
+    /// </summary>
+    public ServiceMilestoneOptions ServiceMilestones { get; set; } = new();
 }
 
 /// <summary>

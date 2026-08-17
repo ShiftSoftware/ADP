@@ -1,5 +1,6 @@
 import type { VehicleServiceItemGroup } from './vehicle-service-item-group';
 import type { VehicleItemWarning } from './vehicle-item-warning';
+import type { VehicleServiceItemLockDTO } from './vehicle-service-item-lock-dto';
 export type VehicleServiceItemDTO = {
     group: VehicleServiceItemGroup;
     showDocumentUploader: boolean;
@@ -29,6 +30,7 @@ export type VehicleServiceItemDTO = {
     jobNumber: string;
     maximumMileage?: number;
     claimable: boolean;
+    lock?: VehicleServiceItemLockDTO;
     claimingMethodEnum: 'ClaimByScanningQRCode' | 'ClaimByEnteringInvoiceAndJobNumber';
     vehicleInspectionID: string;
     vehicleInspectionTypeID: string;

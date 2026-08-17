@@ -113,6 +113,8 @@ nav:
           - Extended Warranty Definition: generated/Models/Vehicle/ExtendedWarrantyDefinitionModel.md
           - Eligibility Condition: generated/Models/Vehicle/EligibilityConditionModel.md
           - Eligibility Condition Scope: generated/Models/Vehicle/EligibilityConditionScope.md
+          - Eligibility Condition Qualifier: generated/Models/Vehicle/EligibilityConditionQualifier.md
+          - Eligibility Condition Unmet Behavior: generated/Models/Vehicle/EligibilityConditionUnmetBehavior.md
           - Warranty Claim: generated/Models/Vehicle/WarrantyClaimModel.md
           - Warranty Claim Labor Line: generated/Models/Vehicle/WarrantyClaimLaborLineModel.md
           - Warranty Date Shift: generated/Models/Vehicle/WarrantyDateShiftModel.md
@@ -169,6 +171,8 @@ nav:
           - Configuration:
               - Lookup Options: generated/LookupServices/LookupOptions.md
               - Service Menu Lookup Options: generated/LookupServices/ServiceMenuLookupOptions.md
+              - Service Milestone Options: generated/LookupServices/Milestones/ServiceMilestoneOptions.md
+              - Service Milestone Reading: generated/LookupServices/Milestones/ServiceMilestoneReading.md
           - Vehicle Lookup:
               - Vehicle Lookup Result: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleLookupDTO.md
               - Vehicle Identifiers: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleIdentifiersDTO.md
@@ -179,6 +183,9 @@ nav:
               - Specification: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleSpecificationDTO.md
               - Variant Info: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleVariantInfoDTO.md
               - Service Item: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleServiceItemDTO.md
+              - Service Item Lock: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleServiceItemLockDTO.md
+              - Service Item Lock State: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleServiceItemLockState.md
+              - Service Item Prerequisite: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleServiceItemPrerequisiteDTO.md
               - Service Item Group: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleServiceItemGroup.md
               - Item Claim: generated/LookupServices/DTOsAndModels/VehicleLookup/ItemClaimDTO.md
               - Item Warning: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleItemWarning.md
@@ -256,6 +263,7 @@ nav:
                   - Status & Claimability: generated/Features/ServiceItems_Status.md
                   - Eligibility Filters: generated/Features/ServiceItems_Eligibility.md
                   - Program Roles & Base Schedule Cap: generated/Features/ServiceItems_ProgramRole.md
+                  - Locked & Missed Rewards: generated/Features/ServiceItems_LockedRewards.md
                   - Ineligible Items with Existing Claims: generated/Features/ServiceItems_Ineligible.md
                   - Expiration & Activation Dates: generated/Features/ServiceItems_Expiration.md
               - Activation:

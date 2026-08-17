@@ -71,4 +71,12 @@ export const config: Config = {
     port: 3000,
     reloadStrategy: 'pageReload',
   },
+  testing: {
+    // Spec tests render components that import status icons as modules. Jest has no loader for a
+    // binary asset, so it resolves them to a stub — a spec asserts which icon slot is filled, never
+    // what the file contains.
+    moduleNameMapper: {
+      '\.(svg|png|jpg|jpeg|gif|webp)$': '<rootDir>/src/tests/asset-stub.js',
+    },
+  },
 };

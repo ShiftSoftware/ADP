@@ -1,3 +1,4 @@
+using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using ShiftSoftware.ADP.Lookup.Services.Enums;
 using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ADP.Models.Vehicle;
@@ -103,6 +104,12 @@ public class ServiceItemTraceEligibility
     public int InputCount { get; set; }
     public int AcceptedCount { get; set; }
     public int RejectedCount { get; set; }
+
+    /// <summary>
+    /// Items returned locked or missed. Counted apart from both other totals because they are
+    /// neither offered nor dropped, and folding them into either would misreport the screen.
+    /// </summary>
+    public int UnclaimableCount { get; set; }
     public List<ServiceItemEligibilityDecision> Decisions { get; set; } = new();
 }
 
@@ -118,6 +125,39 @@ public enum EligibilityRejectionStage
     CampaignWindow,
     VehicleApplicability,
     CustomCondition,
+
+    /// <summary>
+    /// A custom condition failed, and the item is shown locked rather than dropped. Rejected in the
+    /// sense that it is not being offered — the customer can still earn it.
+    /// </summary>
+    CustomConditionLocked,
+
+    /// <summary>
+    /// A custom condition failed and the window has closed. Also shown rather than dropped, which is
+    /// the point: an item that vanishes explains nothing.
+    /// </summary>
+    CustomConditionMissed,
+}
+
+/// <summary>
+/// A service-history code that named a milestone a condition wanted, and was excluded on its
+/// trailing qualifier alone.
+/// <para>
+/// Recorded because the alternative is guessing. Whether a variant-qualified booking records the
+/// same service is a fact about how a deployment's advisors work, and these are the only evidence
+/// of it that a lookup can produce.
+/// </para>
+/// </summary>
+public class ServiceItemMilestoneQualifierNearMiss
+{
+    /// <summary>The milestone the code named, in kilometres.</summary>
+    public long Milestone { get; set; }
+
+    /// <summary>The programme the code was booked under, or null when it named none.</summary>
+    public string Program { get; set; }
+
+    /// <summary>The trailing qualifier that excluded it.</summary>
+    public string Qualifier { get; set; }
 }
 
 public class ServiceItemTraceBaseScheduleCap
@@ -155,7 +195,19 @@ public class ServiceItemEligibilityDecision
     public EligibilityRejectionStage RejectionStage { get; set; }
     public string Reason { get; set; }
     public ServiceItemSnapshot Item { get; set; }
+
+    /// <summary>
+    /// The prerequisites this item waits on, when it is locked or missed. Empty otherwise.
+    /// </summary>
+    public List<VehicleServiceItemPrerequisiteDTO> Prerequisites { get; set; } = new();
+
+    /// <summary>
+    /// Codes that named a milestone this item's conditions wanted but were excluded on their
+    /// qualifier. See <see cref="ServiceItemMilestoneQualifierNearMiss"/>.
+    /// </summary>
+    public List<ServiceItemMilestoneQualifierNearMiss> QualifierNearMisses { get; set; } = new();
 }
+
 
 public class ServiceItemSnapshot
 {

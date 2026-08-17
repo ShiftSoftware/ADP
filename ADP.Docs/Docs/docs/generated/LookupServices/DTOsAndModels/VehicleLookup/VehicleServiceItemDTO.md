@@ -35,6 +35,7 @@ Represents a service item available for a vehicle — includes its type (free/pa
 | JobNumber <div><strong>``string``</strong></div> | The job number associated with the claim. |
 | MaximumMileage <div><strong>``long?``</strong></div> | The maximum mileage for sequential validity calculations. |
 | Claimable <div><strong>``bool``</strong></div> | Whether this service item can currently be claimed. |
+| Lock <div><strong>``VehicleServiceItemLockDTO?``</strong></div> | Why this item is shown without being claimable, or null when it is an ordinary offered item. A locked or missed item always carries `Claimable` false, and shows no expiry — a reward whose validity starts when it unlocks has no honest date to show before then. |
 | ClaimingMethodEnum <div><strong>``ClaimableItemClaimingMethod``</strong></div> | The method used to claim this item (e.g., QR Code scan, Invoice + Job Number). |
 | VehicleInspectionID <div><strong>``string``</strong></div> | The vehicle inspection ID associated with this claim, if applicable. |
 | VehicleInspectionTypeID <div><strong>``string``</strong></div> | The vehicle inspection type ID required for claiming, if applicable. |

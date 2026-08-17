@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Localization;
@@ -127,6 +127,16 @@ public class ItemClaimController : ShiftEntitySecureControllerAsync<ItemClaimRep
             if (!claimDTO.ServiceItem!.ValidateSignature(claimDTO.VIN, adpSecreteSigningKey))
             {
                 return Unauthorized(new { Success = false, Message = loc["Invalid signature."].Value });
+            }
+
+            // Claimable is part of what the signature covers, but a valid signature only proves the
+            // lookup issued this item — not that it offered it. That distinction did not exist while
+            // every item the lookup returned was claimable; now that locked and missed items are
+            // returned too, so a customer can see what returning is worth, an untampered
+            // Claimable:false item would otherwise walk straight through this endpoint.
+            if (!claimDTO.ServiceItem.Claimable)
+            {
+                return BadRequest(new { Success = false, Message = loc["This item is not claimable yet."].Value });
             }
 
             if (!string.IsNullOrWhiteSpace(claimDTO.ServiceItem?.VehicleInspectionID))

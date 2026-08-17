@@ -36,6 +36,10 @@ internal static class ServiceItemEligibilityReasonFormatter
             FormatVehicleApplicability(item, vehicle),
         EligibilityRejectionStage.CustomCondition =>
             "The item's configured eligibility conditions did not match the vehicle lookup data.",
+        EligibilityRejectionStage.CustomConditionLocked =>
+            "A locking eligibility condition did not match. The item is returned locked, not dropped, because the customer can still satisfy it.",
+        EligibilityRejectionStage.CustomConditionMissed =>
+            "A condition marking the end of the item's window did not match. The item is returned as missed.",
         _ => "",
     };
 

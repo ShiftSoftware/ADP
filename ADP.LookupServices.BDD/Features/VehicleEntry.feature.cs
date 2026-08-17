@@ -156,17 +156,17 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table334 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table417 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate"});
-                table334.AddRow(new string[] {
+                table417.AddRow(new string[] {
                             "1FDKF37GXVEB34368",
                             ""});
-                table334.AddRow(new string[] {
+                table417.AddRow(new string[] {
                             "1FDKF37GXVEB34368",
                             "2024-01-15"});
 #line 7
- await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table334, "Given ");
+ await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table417, "Given ");
 #line hidden
 #line 11
  await testRunner.WhenAsync("Checking \"1FDKF37GXVEB34368\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -199,17 +199,17 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table335 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table418 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate"});
-                table335.AddRow(new string[] {
+                table418.AddRow(new string[] {
                             "1FDKF37GXVEB34368",
                             "2023-06-01"});
-                table335.AddRow(new string[] {
+                table418.AddRow(new string[] {
                             "1FDKF37GXVEB34368",
                             "2024-01-15"});
 #line 15
- await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table335, "Given ");
+ await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table418, "Given ");
 #line hidden
 #line 19
  await testRunner.WhenAsync("Checking \"1FDKF37GXVEB34368\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -242,14 +242,14 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table336 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table419 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate"});
-                table336.AddRow(new string[] {
+                table419.AddRow(new string[] {
                             "1FDKF37GXVEB34368",
                             "2024-01-15"});
 #line 23
- await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table336, "Given ");
+ await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table419, "Given ");
 #line hidden
 #line 26
  await testRunner.WhenAsync("Checking \"1FDKF37GXVEB34368\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");

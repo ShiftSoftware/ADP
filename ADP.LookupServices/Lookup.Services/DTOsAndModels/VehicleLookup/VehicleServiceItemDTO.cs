@@ -86,6 +86,12 @@ public class VehicleServiceItemDTO
     public long? MaximumMileage { get; set; }
     /// <summary>Whether this service item can currently be claimed.</summary>
     public bool Claimable { get; set; }
+    /// <summary>
+    /// Why this item is shown without being claimable, or null when it is an ordinary offered item.
+    /// A locked or missed item always carries <see cref="Claimable"/> false, and shows no expiry —
+    /// a reward whose validity starts when it unlocks has no honest date to show before then.
+    /// </summary>
+    public VehicleServiceItemLockDTO? Lock { get; set; }
 
     [DocIgnore]
     [JsonIgnore]

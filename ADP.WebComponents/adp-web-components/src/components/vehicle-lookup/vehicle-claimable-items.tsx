@@ -18,6 +18,16 @@ import { VehicleItemClaimForm } from './vehicle-item-claim-form';
 
 import dynamicClaimSchema from '~locales/vehicleLookup/claimableItems/type';
 
+/**
+ * Whether an item is genuinely waiting to be claimed.
+ *
+ * A locked or missed reward keeps its ordinary status — usually pending, because nothing about its
+ * lifecycle changed — so a plain status check would treat it as the customer's next step. It would
+ * take the progress marker, and claiming a later item would "skip" past it and cancel it. Neither is
+ * true of an item the customer was never able to claim.
+ */
+const isAwaitingClaim = (item: VehicleServiceItemDTO) => item.status === 'pending' && !item.lock;
+
 import { PrintIcon } from '~assets/print-icon';
 import { ActivationIcon } from '~assets/activation-icon';
 import { EmptyTableIcon } from '~assets/empty-table-icon';
@@ -190,9 +200,43 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
     return vehicleLookup;
   };
 
-  private updateProgressBar = async (payload?: object) => {
-    // payload indicates its not a fresh list rather it is an update to current one
-    if (!payload) {
+  /**
+   * The lane is drawn by measuring where the next claimable card sits, so it cannot be measured
+   * until Stencil has written those cards. Stencil writes through requestAnimationFrame, and a
+   * browser does not run requestAnimationFrame while its tab is in the background — it does keep
+   * firing timers there, only throttled. Measuring on a timer therefore measures a DOM that has
+   * not been rendered yet whenever an answer arrives while nobody is watching: there are no cards
+   * to find, the measurement fails, and the lane keeps the zero width the reset gave it. So the
+   * measurement is requested through this flag and taken in componentDidRender, which ties it to
+   * the render it depends on rather than to the clock.
+   */
+  private progressBarUpdatePending = false;
+
+  private takePendingProgressBarUpdate = () => {
+    if (!this.progressBarUpdatePending) return;
+    this.progressBarUpdatePending = false;
+    this.updateProgressBar();
+  };
+
+  private onWindowResize = () => this.updateProgressBar({ preserveWidth: true });
+
+  private onVisibilityChange = () => {
+    // Anything but a tab that is still hidden is worth retrying against, including a document that
+    // does not report a visibility at all.
+    if (document.visibilityState === 'hidden') return;
+    this.takePendingProgressBarUpdate();
+  };
+
+  private updateProgressBar = async (options?: { preserveWidth?: boolean }) => {
+    // Nothing to write into yet — componentDidLoad takes the measurement once it has the bar.
+    if (!this.progressBar) {
+      this.progressBarUpdatePending = true;
+      return;
+    }
+
+    // A resize or a retry is not a fresh list, so the bar keeps the width it has rather than
+    // flashing back to zero and re-animating.
+    if (!options?.preserveWidth) {
       // hard reset of the bar
       this.progressBar.style.transitionDuration = '0s';
       this.progressBar.style.opacity = '0';
@@ -211,15 +255,25 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
 
     const serviceItems = this.getServiceItems();
 
-    const firstPendingItemIndex = serviceItems.findIndex(x => x.status === 'pending');
+    const firstPendingItemIndex = serviceItems.findIndex(x => isAwaitingClaim(x));
 
     if (firstPendingItemIndex !== -1) {
       const pendingItemRef = this.el.shadowRoot.querySelectorAll('.claimable-item')[firstPendingItemIndex] as HTMLElement;
 
       const progressLaneRef = this.el.shadowRoot.querySelector('.progress-lane') as HTMLElement;
 
+      const { width: progressLaneWidth, left: progressLeftOffset } = progressLaneRef?.getBoundingClientRect() ?? { width: 0, left: 0 };
+
+      // Either this list has not been rendered yet, or nothing has been laid out — which is what
+      // an element measures as while it is not being displayed. Leave the request standing so the
+      // next render, resize or wake-up takes it, rather than writing a NaN width that the browser
+      // discards and leaving the lane empty for good.
+      if (!pendingItemRef || !progressLaneWidth) {
+        this.progressBarUpdatePending = true;
+        return;
+      }
+
       const { left: pendingItemLeftOffset } = pendingItemRef.getBoundingClientRect();
-      const { width: progressLaneWidth, left: progressLeftOffset } = progressLaneRef.getBoundingClientRect();
 
       const offsetToLeftRatio = ((pendingItemLeftOffset - progressLeftOffset) / progressLaneWidth) * 100;
 
@@ -248,17 +302,27 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
 
     this.claimableItemsBox = this.el.shadowRoot.querySelector('.claimable-items-box');
 
-    window.addEventListener('resize', this.updateProgressBar);
+    window.addEventListener('resize', this.onWindowResize);
+    document.addEventListener('visibilitychange', this.onVisibilityChange);
 
     if (this.claimableItemsBox) this.claimableItemsBox.addEventListener('scroll', this.updatePopoverLocation);
     window.addEventListener('scroll', this.updatePopoverLocation);
     window.addEventListener('resize', this.updatePopoverLocation);
 
     requestAnimationFrame(() => this.measurePopoverHeight());
+
+    // A lookup can land before the component has finished loading, in which case the measurement
+    // it asked for is still owed.
+    this.takePendingProgressBarUpdate();
+  }
+
+  componentDidRender() {
+    this.takePendingProgressBarUpdate();
   }
 
   async disconnectedCallback() {
-    window.removeEventListener('resize', this.updateProgressBar);
+    window.removeEventListener('resize', this.onWindowResize);
+    document.removeEventListener('visibilitychange', this.onVisibilityChange);
     if (this.claimableItemsBox) this.claimableItemsBox.removeEventListener('scroll', this.updatePopoverLocation);
     window.removeEventListener('scroll', this.updatePopoverLocation);
     window.removeEventListener('resize', this.updatePopoverLocation);
@@ -273,10 +337,7 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
 
   @Watch('vehicleLookup')
   async onVehicleChange() {
-    // wait for jsx update
-    setTimeout(() => {
-      this.updateProgressBar();
-    }, 50);
+    this.progressBarUpdatePending = true;
   }
 
   private onActiveTabChange = ({ label }: { label: string; idx: number }) => {
@@ -285,10 +346,10 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
 
     this.tabAnimationTimeoutRef = setTimeout(() => {
       this.activeTab = label;
-      // wait for jsx update
+      // let the new tab's cards settle before dropping the loading lane and measuring against them
       setTimeout(() => {
         this.tabAnimationLoading = false;
-        this.updateProgressBar();
+        this.progressBarUpdatePending = true;
       }, 50);
     }, 750);
   };
@@ -317,7 +378,10 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
 
   private measurePopoverHeight = () => {
     const body = this.el.shadowRoot?.querySelector('.popover-body') as HTMLElement | null;
-    if (body && body.offsetHeight > 0) this.popoverHeight = body.offsetHeight;
+    // scrollHeight, not offsetHeight: the body carries a max-height derived from this measurement,
+    // so reading its rendered height would feed the cap back into the decision that set it and the
+    // popover would conclude it fits anywhere. scrollHeight is the content's own height either way.
+    if (body && body.scrollHeight > 0) this.popoverHeight = body.scrollHeight;
   };
 
   private measurePopoverContentHeight = (): number => {
@@ -491,7 +555,7 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
     const serviceDataClone = JSON.parse(JSON.stringify(serviceItems));
 
     const index = serviceItems.indexOf(item);
-    const pendingItemsBefore = serviceDataClone.slice(0, index).filter(x => x.status === 'pending');
+    const pendingItemsBefore = serviceDataClone.slice(0, index).filter(x => isAwaitingClaim(x));
 
     serviceDataClone[index].claimable = false;
     serviceDataClone[index].status = 'processed';
@@ -754,7 +818,7 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
                     item={item}
                     locale={this.locale}
                     setClaimableItemPopover={this.setClaimableItemPopover}
-                    addStatusClass={item.status !== 'pending' || serviceItems.findIndex(i => i.status === 'pending') === idx}
+                    addStatusClass={!isAwaitingClaim(item) || serviceItems.findIndex(i => isAwaitingClaim(i)) === idx}
                   />
                 ))}
 

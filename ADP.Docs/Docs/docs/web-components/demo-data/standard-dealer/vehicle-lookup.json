@@ -186,6 +186,23 @@
     "nextServiceDate": "2025-06-15",
     "serviceHistory": [
       {
+        "serviceType": "35,000 KM periodic service",
+        "serviceDate": "2025-03-10",
+        "mileage": 35100,
+        "companyName": "Sample Motors",
+        "branchName": "Main Branch 2",
+        "invoiceNumber": "INV-2025-003",
+        "jobNumber": "WO-2025-003",
+        "laborLines": [
+          {
+            "laborCode": "LAB-PER-35",
+            "packageCode": "PGM MDL100 35K",
+            "serviceDescription": "Periodic Maintenance"
+          }
+        ],
+        "partLines": []
+      },
+      {
         "serviceType": "10000km Service - Full inspection",
         "serviceDate": "2024-12-15",
         "mileage": 10500,
@@ -394,6 +411,46 @@
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
         "signature": "9sUlY1q5xgHrM\u002Bs0L\u002BifmKXebe0L0XOnPbSaOfPzimE=",
+        "signatureExpiry": "2026-01-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "attachment-warning",
+            "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "Return Reward",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2031-02-01",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "serviceItemID": "SI-006",
+        "maximumMileage": 45000,
+        "claimable": false,
+        "lock": {
+          "state": "Locked",
+          "prerequisites": [
+            {
+              "mileage": 35000,
+              "label": "35K",
+              "satisfied": true,
+              "satisfiedOn": "2025-03-10T00:00:00"
+            },
+            {
+              "mileage": 40000,
+              "label": "40K",
+              "satisfied": false
+            }
+          ]
+        },
+        "claimingMethodEnum": 0,
+        "vehicleInspectionTypeID": "",
+        "signature": "245/IKCM11IjI7z\u002B38vOC8BjfRz3ytgnAc5YLlsoiBI=",
         "signatureExpiry": "2026-01-01T00:00:00Z"
       },
       {
@@ -623,6 +680,45 @@
         "claimingMethodEnum": 0,
         "vehicleInspectionTypeID": "",
         "signature": "loP1YM4sVOgXz8Kz7odIKF879HnrkukC6F\u002BuwbTwuzA=",
+        "signatureExpiry": "2026-01-01T00:00:00Z"
+      },
+      {
+        "showDocumentUploader": false,
+        "warnings": [
+          {
+            "key": "attachment-warning",
+            "imageUrl": "https://adpstoragev2.blob.core.windows.net/docs/vehicles/required-claim-documents.jpeg?sv=2023-01-03\u0026st=2025-08-11T18%3A45%3A24Z\u0026se=2999-08-12T18%3A45%3A00Z\u0026sr=b\u0026sp=r\u0026sig=8NQyQHoOjbonJCi93UK2W0dWPZ%2Fwf0CkRIgBR4n3RYE%3D",
+            "bodyContent": "Please ensure that the customer-signed document is uploaded prior to submitting the claim.\u003Cbr/\u003EA picture of the required document type is indicated on the right hand side of this warning message.\u003Cbr/\u003E\u003Cbr/\u003E\u003Cstrong\u003EClaims submitted without the necessary document will not be accepted\u003C/strong\u003E"
+          }
+        ],
+        "documentUploaderIsRequired": false,
+        "name": "Return Reward",
+        "type": "free",
+        "typeEnum": "Free",
+        "activatedAt": "2030-06-20",
+        "status": "pending",
+        "statusEnum": "Pending",
+        "serviceItemID": "SI-006",
+        "maximumMileage": 45000,
+        "claimable": false,
+        "lock": {
+          "state": "Locked",
+          "prerequisites": [
+            {
+              "mileage": 35000,
+              "label": "35K",
+              "satisfied": false
+            },
+            {
+              "mileage": 40000,
+              "label": "40K",
+              "satisfied": false
+            }
+          ]
+        },
+        "claimingMethodEnum": 0,
+        "vehicleInspectionTypeID": "",
+        "signature": "GRfJpxCR58Ck/30HZqFUGmIpuizLKcUJvSK7eCcx6Oc=",
         "signatureExpiry": "2026-01-01T00:00:00Z"
       }
     ],

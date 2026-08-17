@@ -123,3 +123,34 @@
 .activationRequired .claimable-item-header {
   color: #9e9e9e;
 }
+
+/* Locked and missed items sit on the same lane as the rest but must not read as available. Both are
+   drained of colour; the difference between them is that one is still coming and one is over. */
+
+.claimable-item-lock-icon {
+  @apply size-[40px] flex items-center justify-center duration-1000;
+}
+
+.claimable-item-lock-icon svg {
+  @apply size-[30px];
+}
+
+.claimable-item-header:hover .claimable-item-lock-icon {
+  @apply scale-[125%];
+}
+
+.lock-Locked .claimable-item-circle {
+  @apply bg-[#bdbdbd] border-[#f2f2f2];
+}
+
+.lock-Locked .claimable-item-header {
+  @apply text-[#8d8d8d];
+}
+
+.lock-Missed .claimable-item-circle {
+  @apply bg-[#c08a3e] border-[#f6ecdc];
+}
+
+.lock-Missed .claimable-item-header {
+  @apply text-[#a5701f];
+}

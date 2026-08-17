@@ -2,7 +2,9 @@
   "LookupOptions": {
     "WarrantyStartDateDefaultsToInvoiceDate": true,
     "DistributorCompanyID": 100,
-    "BrandStandardWarrantyPeriodsInYears": { "1": 3 },
+    "BrandStandardWarrantyPeriodsInYears": {
+      "1": 3
+    },
     "LookupBrokerStock": false,
     "DistributorStockPartLookupQuantityThreshold": 100,
     "ShowPartLookupStockQauntity": true,
@@ -30,33 +32,60 @@
       "CompanyId": 1,
       "CompanyName": "Sample Motors",
       "Branches": [
-        { "BranchId": 10, "BranchName": "Main Branch 2" },
-        { "BranchId": 20, "BranchName": "Service Center" }
+        {
+          "BranchId": 10,
+          "BranchName": "Main Branch 2"
+        },
+        {
+          "BranchId": 20,
+          "BranchName": "Service Center"
+        }
       ]
     },
     {
       "CompanyId": 2,
       "CompanyName": "City Auto",
       "Branches": [
-        { "BranchId": 30, "BranchName": "Downtown Branch" }
+        {
+          "BranchId": 30,
+          "BranchName": "Downtown Branch"
+        }
       ]
     },
     {
       "CompanyId": 100,
       "CompanyName": "Sample Distributor",
       "Branches": [
-        { "BranchId": 1000, "BranchName": "Distributor HQ" }
+        {
+          "BranchId": 1000,
+          "BranchName": "Distributor HQ"
+        }
       ]
     }
   ],
   "Countries": [
-    { "CountryId": 1, "CountryName": "Iraq" },
-    { "CountryId": 2, "CountryName": "Kuwait" }
+    {
+      "CountryId": 1,
+      "CountryName": "Iraq"
+    },
+    {
+      "CountryId": 2,
+      "CountryName": "Kuwait"
+    }
   ],
   "Regions": [
-    { "RegionId": 10, "RegionName": "Kurdistan" },
-    { "RegionId": 20, "RegionName": "Central Iraq" },
-    { "RegionId": 30, "RegionName": "Kuwait City" }
+    {
+      "RegionId": 10,
+      "RegionName": "Kurdistan"
+    },
+    {
+      "RegionId": 20,
+      "RegionName": "Central Iraq"
+    },
+    {
+      "RegionId": 30,
+      "RegionName": "Kuwait City"
+    }
   ],
   "Vehicles": {
     "JTMHX01J8L4198293": {
@@ -91,7 +120,10 @@
         }
       ],
       "InitialOfficialVINs": [
-        { "VIN": "JTMHX01J8L4198293", "CompanyID": 1 }
+        {
+          "VIN": "JTMHX01J8L4198293",
+          "CompanyID": 1
+        }
       ],
       "SSCAffectedVINs": [
         {
@@ -119,7 +151,10 @@
           "RepairDate": "2024-03-20",
           "LaborOperationNumberMain": "LAB-FP-01",
           "LaborLines": [
-            { "LaborCode": "LAB-FP-01", "InvoiceStatus": "C" }
+            {
+              "LaborCode": "LAB-FP-01",
+              "InvoiceStatus": "C"
+            }
           ]
         }
       ],
@@ -151,6 +186,20 @@
           "BranchID": 10,
           "NextServiceDate": "2025-06-15",
           "Odometer": 10500
+        },
+        {
+          "VIN": "JTMHX01J8L4198293",
+          "InvoiceDate": "2025-03-10",
+          "OrderDocumentNumber": "WO-2025-003",
+          "InvoiceNumber": "INV-2025-003",
+          "LaborCode": "LAB-PER-35",
+          "ServiceDescription": "Periodic Maintenance",
+          "JobDescription": "35,000 KM periodic service",
+          "InvoiceStatus": "C",
+          "PackageCode": "PGM MDL100 35K",
+          "CompanyID": 1,
+          "BranchID": 10,
+          "Odometer": 35100
         }
       ],
       "PartLines": [
@@ -203,17 +252,104 @@
           "InspectionDate": "2024-01-10",
           "CompanyID": 1,
           "Panels": [
-            { "PanelType": "Hood", "PanelPosition": "Front", "MeasuredThickness": 125.5, "Images": ["Uploads/paintThickness/JTMHX01J8L4198293#2024-01-10 08-30-00/Hood_1.jpg", "Uploads/paintThickness/JTMHX01J8L4198293#2024-01-10 08-30-00/Hood_2.jpg"] },
-            { "PanelType": "Fender", "PanelSide": "Left", "PanelPosition": "Front", "MeasuredThickness": 118.0, "Images": ["Uploads/paintThickness/JTMHX01J8L4198293#2024-01-10 08-30-00/Left_Front_Fender_1.jpg", "Uploads/paintThickness/JTMHX01J8L4198293#2024-01-10 08-30-00/Left_Front_Fender_2.jpg"] },
-            { "PanelType": "Fender", "PanelSide": "Right", "PanelPosition": "Front", "MeasuredThickness": 120.3, "Images": ["Uploads/paintThickness/JTMHX01J8L4198293#2024-01-10 08-30-00/Right_Front_Fender_1.jpg", "Uploads/paintThickness/JTMHX01J8L4198293#2024-01-10 08-30-00/Right_Front_Fender_2.jpg"] },
-            { "PanelType": "Door", "PanelSide": "Left", "PanelPosition": "Front", "MeasuredThickness": 115.0, "Images": ["Uploads/paintThickness/JTMHX01J8L4198293#2024-01-10 08-30-00/Left_Front_Door_1.jpg", "Uploads/paintThickness/JTMHX01J8L4198293#2024-01-10 08-30-00/Left_Front_Door_2.jpg"] },
-            { "PanelType": "Door", "PanelSide": "Right", "PanelPosition": "Front", "MeasuredThickness": 116.2, "Images": ["Uploads/paintThickness/JTMHX01J8L4198293#2024-01-10 08-30-00/Right_Front_Door_1.jpg", "Uploads/paintThickness/JTMHX01J8L4198293#2024-01-10 08-30-00/Right_Front_Door_2.jpg"] },
-            { "PanelType": "Door", "PanelSide": "Left", "PanelPosition": "Rear", "MeasuredThickness": 122.0, "Images": ["Uploads/paintThickness/JTMHX01J8L4198293#2024-01-10 08-30-00/Left_Rear_Door_1.jpg", "Uploads/paintThickness/JTMHX01J8L4198293#2024-01-10 08-30-00/Left_Rear_Door_2.jpg"] },
-            { "PanelType": "Door", "PanelSide": "Right", "PanelPosition": "Rear", "MeasuredThickness": 121.5, "Images": ["Uploads/paintThickness/JTMHX01J8L4198293#2024-01-10 08-30-00/Right_Rear_Door_1.jpg", "Uploads/paintThickness/JTMHX01J8L4198293#2024-01-10 08-30-00/Right_Rear_Door_2.jpg"] },
-            { "PanelType": "Fender", "PanelSide": "Left", "PanelPosition": "Rear", "MeasuredThickness": 130.0, "Images": [] },
-            { "PanelType": "Fender", "PanelSide": "Right", "PanelPosition": "Rear", "MeasuredThickness": 128.5, "Images": [] },
-            { "PanelType": "TailGate", "PanelPosition": "Rear", "MeasuredThickness": 135.0, "Images": ["Uploads/paintThickness/JTMHX01J8L4198293#2024-01-10 08-30-00/Tail_Gate_1.jpg", "Uploads/paintThickness/JTMHX01J8L4198293#2024-01-10 08-30-00/Tail_Gate_2.jpg"] },
-            { "PanelType": "Roof", "PanelPosition": "Middle", "MeasuredThickness": 110.0, "Images": [] }
+            {
+              "PanelType": "Hood",
+              "PanelPosition": "Front",
+              "MeasuredThickness": 125.5,
+              "Images": [
+                "Uploads/paintThickness/JTMHX01J8L4198293#2024-01-10 08-30-00/Hood_1.jpg",
+                "Uploads/paintThickness/JTMHX01J8L4198293#2024-01-10 08-30-00/Hood_2.jpg"
+              ]
+            },
+            {
+              "PanelType": "Fender",
+              "PanelSide": "Left",
+              "PanelPosition": "Front",
+              "MeasuredThickness": 118.0,
+              "Images": [
+                "Uploads/paintThickness/JTMHX01J8L4198293#2024-01-10 08-30-00/Left_Front_Fender_1.jpg",
+                "Uploads/paintThickness/JTMHX01J8L4198293#2024-01-10 08-30-00/Left_Front_Fender_2.jpg"
+              ]
+            },
+            {
+              "PanelType": "Fender",
+              "PanelSide": "Right",
+              "PanelPosition": "Front",
+              "MeasuredThickness": 120.3,
+              "Images": [
+                "Uploads/paintThickness/JTMHX01J8L4198293#2024-01-10 08-30-00/Right_Front_Fender_1.jpg",
+                "Uploads/paintThickness/JTMHX01J8L4198293#2024-01-10 08-30-00/Right_Front_Fender_2.jpg"
+              ]
+            },
+            {
+              "PanelType": "Door",
+              "PanelSide": "Left",
+              "PanelPosition": "Front",
+              "MeasuredThickness": 115.0,
+              "Images": [
+                "Uploads/paintThickness/JTMHX01J8L4198293#2024-01-10 08-30-00/Left_Front_Door_1.jpg",
+                "Uploads/paintThickness/JTMHX01J8L4198293#2024-01-10 08-30-00/Left_Front_Door_2.jpg"
+              ]
+            },
+            {
+              "PanelType": "Door",
+              "PanelSide": "Right",
+              "PanelPosition": "Front",
+              "MeasuredThickness": 116.2,
+              "Images": [
+                "Uploads/paintThickness/JTMHX01J8L4198293#2024-01-10 08-30-00/Right_Front_Door_1.jpg",
+                "Uploads/paintThickness/JTMHX01J8L4198293#2024-01-10 08-30-00/Right_Front_Door_2.jpg"
+              ]
+            },
+            {
+              "PanelType": "Door",
+              "PanelSide": "Left",
+              "PanelPosition": "Rear",
+              "MeasuredThickness": 122.0,
+              "Images": [
+                "Uploads/paintThickness/JTMHX01J8L4198293#2024-01-10 08-30-00/Left_Rear_Door_1.jpg",
+                "Uploads/paintThickness/JTMHX01J8L4198293#2024-01-10 08-30-00/Left_Rear_Door_2.jpg"
+              ]
+            },
+            {
+              "PanelType": "Door",
+              "PanelSide": "Right",
+              "PanelPosition": "Rear",
+              "MeasuredThickness": 121.5,
+              "Images": [
+                "Uploads/paintThickness/JTMHX01J8L4198293#2024-01-10 08-30-00/Right_Rear_Door_1.jpg",
+                "Uploads/paintThickness/JTMHX01J8L4198293#2024-01-10 08-30-00/Right_Rear_Door_2.jpg"
+              ]
+            },
+            {
+              "PanelType": "Fender",
+              "PanelSide": "Left",
+              "PanelPosition": "Rear",
+              "MeasuredThickness": 130.0,
+              "Images": []
+            },
+            {
+              "PanelType": "Fender",
+              "PanelSide": "Right",
+              "PanelPosition": "Rear",
+              "MeasuredThickness": 128.5,
+              "Images": []
+            },
+            {
+              "PanelType": "TailGate",
+              "PanelPosition": "Rear",
+              "MeasuredThickness": 135.0,
+              "Images": [
+                "Uploads/paintThickness/JTMHX01J8L4198293#2024-01-10 08-30-00/Tail_Gate_1.jpg",
+                "Uploads/paintThickness/JTMHX01J8L4198293#2024-01-10 08-30-00/Tail_Gate_2.jpg"
+              ]
+            },
+            {
+              "PanelType": "Roof",
+              "PanelPosition": "Middle",
+              "MeasuredThickness": 110.0,
+              "Images": []
+            }
           ]
         }
       ],
@@ -277,14 +413,18 @@
           "Lines": [
             {
               "ServiceItemID": "SI-PAID-15K",
-              "Cost": 85.00,
+              "Cost": 85.0,
               "ExpireDate": "2027-02-01",
               "PackageCode": "PKG-PAID-15K",
               "ServiceItem": {
                 "IntegrationID": "SI-PAID-15K",
-                "Name": { "en": "15,000 KM Paid Service" },
+                "Name": {
+                  "en": "15,000 KM Paid Service"
+                },
                 "MaximumMileage": 16000,
-                "BrandIDs": [1]
+                "BrandIDs": [
+                  1
+                ]
               }
             }
           ]
@@ -309,7 +449,10 @@
         }
       ],
       "InitialOfficialVINs": [
-        { "VIN": "JTMW43FV10D123456", "CompanyID": 1 }
+        {
+          "VIN": "JTMW43FV10D123456",
+          "CompanyID": 1
+        }
       ],
       "SSCAffectedVINs": [],
       "WarrantyClaims": [],
@@ -390,9 +533,13 @@
   "ServiceItems": [
     {
       "IntegrationID": "SI-001",
-      "Name": { "en": "1,000 KM Service" },
+      "Name": {
+        "en": "1,000 KM Service"
+      },
       "IsDeleted": false,
-      "BrandIDs": [1],
+      "BrandIDs": [
+        1
+      ],
       "CampaignStartDate": "2020-01-01",
       "CampaignEndDate": "2030-12-31",
       "CampaignActivationTrigger": "WarrantyActivation",
@@ -403,9 +550,13 @@
     },
     {
       "IntegrationID": "SI-002",
-      "Name": { "en": "5,000 KM Service" },
+      "Name": {
+        "en": "5,000 KM Service"
+      },
       "IsDeleted": false,
-      "BrandIDs": [1],
+      "BrandIDs": [
+        1
+      ],
       "CampaignStartDate": "2020-01-01",
       "CampaignEndDate": "2030-12-31",
       "CampaignActivationTrigger": "WarrantyActivation",
@@ -416,9 +567,13 @@
     },
     {
       "IntegrationID": "SI-003",
-      "Name": { "en": "10,000 KM Service" },
+      "Name": {
+        "en": "10,000 KM Service"
+      },
       "IsDeleted": false,
-      "BrandIDs": [1],
+      "BrandIDs": [
+        1
+      ],
       "CampaignStartDate": "2020-01-01",
       "CampaignEndDate": "2030-12-31",
       "CampaignActivationTrigger": "WarrantyActivation",
@@ -431,9 +586,13 @@
     },
     {
       "IntegrationID": "SI-004",
-      "Name": { "en": "20,000 KM Service" },
+      "Name": {
+        "en": "20,000 KM Service"
+      },
       "IsDeleted": false,
-      "BrandIDs": [1],
+      "BrandIDs": [
+        1
+      ],
       "CampaignStartDate": "2020-01-01",
       "CampaignEndDate": "2030-12-31",
       "CampaignActivationTrigger": "WarrantyActivation",
@@ -444,9 +603,13 @@
     },
     {
       "IntegrationID": "SI-005",
-      "Name": { "en": "30,000 KM Service" },
+      "Name": {
+        "en": "30,000 KM Service"
+      },
       "IsDeleted": false,
-      "BrandIDs": [1],
+      "BrandIDs": [
+        1
+      ],
       "CampaignStartDate": "2020-01-01",
       "CampaignEndDate": "2030-12-31",
       "CampaignActivationTrigger": "WarrantyActivation",
@@ -454,6 +617,67 @@
       "ActiveFor": 24,
       "ActiveForDurationType": "Months",
       "MaximumMileage": 30000
+    },
+    {
+      "IntegrationID": "SI-006",
+      "Name": {
+        "en": "Return Reward"
+      },
+      "IsDeleted": false,
+      "BrandIDs": [
+        1
+      ],
+      "CampaignStartDate": "2020-01-01",
+      "CampaignEndDate": "2030-12-31",
+      "CampaignActivationTrigger": "WarrantyActivation",
+      "ValidityMode": "RelativeToActivation",
+      "ActiveFor": 3,
+      "ActiveForDurationType": "Months",
+      "MaximumMileage": 45000,
+      "ProgramRole": "Reward",
+      "EligibilityConditions": [
+        {
+          "Field": "serviceHistory.laborLines.packageCode",
+          "Operator": "ContainsAll",
+          "ValueMatch": "Milestone",
+          "Program": [
+            "PGM"
+          ],
+          "Qualifier": {
+            "Selection": "None"
+          },
+          "Values": [
+            "35000",
+            "40000"
+          ],
+          "Scope": {
+            "Selection": "All"
+          },
+          "WhenUnmet": "Lock"
+        },
+        {
+          "Field": "serviceHistory.laborLines.maximumMilestone",
+          "Operator": "Equals",
+          "Program": [
+            "PGM"
+          ],
+          "Qualifier": {
+            "Selection": "None"
+          },
+          "Values": [
+            "40000"
+          ],
+          "WhenUnmet": "Miss"
+        },
+        {
+          "Field": "serviceItems.baseSchedule.maximumMileage",
+          "Operator": "Equals",
+          "Values": [
+            "30000"
+          ],
+          "WhenUnmet": "Hide"
+        }
+      ]
     }
   ],
   "Parts": {
@@ -466,7 +690,7 @@
           "ProductGroup": "F",
           "PNC": "90460",
           "BinType": "A",
-          "DistributorPurchasePrice": 2.50,
+          "DistributorPurchasePrice": 2.5,
           "Length": 80,
           "Width": 50,
           "Height": 15,
@@ -479,15 +703,15 @@
               "RegionPrices": [
                 {
                   "RegionID": 10,
-                  "RetailPrice": 5.00,
-                  "PurchasePrice": 3.50,
-                  "WarrantyPrice": 2.80
+                  "RetailPrice": 5.0,
+                  "PurchasePrice": 3.5,
+                  "WarrantyPrice": 2.8
                 },
                 {
                   "RegionID": 20,
-                  "RetailPrice": 4.80,
-                  "PurchasePrice": 3.40,
-                  "WarrantyPrice": 2.70
+                  "RetailPrice": 4.8,
+                  "PurchasePrice": 3.4,
+                  "WarrantyPrice": 2.7
                 }
               ]
             },
@@ -496,15 +720,17 @@
               "RegionPrices": [
                 {
                   "RegionID": 30,
-                  "RetailPrice": 5.50,
-                  "PurchasePrice": 3.80,
-                  "WarrantyPrice": 3.00
+                  "RetailPrice": 5.5,
+                  "PurchasePrice": 3.8,
+                  "WarrantyPrice": 3.0
                 }
               ]
             }
           ],
           "SupersededTo": [
-            { "PartNumber": "SU00302475" }
+            {
+              "PartNumber": "SU00302475"
+            }
           ],
           "SupersededFrom": []
         }
@@ -540,7 +766,7 @@
           "PartNumber": "04152-YZZA1",
           "PartName": "OIL FILTER",
           "ProductGroup": "E",
-          "DistributorPurchasePrice": 4.20,
+          "DistributorPurchasePrice": 4.2,
           "Origin": "TH",
           "CountryData": [
             {
@@ -548,9 +774,9 @@
               "RegionPrices": [
                 {
                   "RegionID": 10,
-                  "RetailPrice": 8.50,
-                  "PurchasePrice": 6.00,
-                  "WarrantyPrice": 4.50
+                  "RetailPrice": 8.5,
+                  "PurchasePrice": 6.0,
+                  "WarrantyPrice": 4.5
                 }
               ]
             }

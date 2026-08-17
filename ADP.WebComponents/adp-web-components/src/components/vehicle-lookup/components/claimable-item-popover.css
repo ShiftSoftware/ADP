@@ -1,6 +1,18 @@
 .claimable-item-popover {
   @apply opacity-0 fixed z-50 block w-fit pointer-events-none;
   transition: opacity 0.5s ease;
+
+  /* The claim voucher's palette, so a card and the popover that describes it read as one surface.
+     Kept local rather than imported — the voucher scopes its own to .claim-scrim, and this lives in
+     a different shadow root. */
+  --text: #1f2937;
+  --muted: #6b7280;
+  --hair: #ececec;
+  --tear: #d9d2c6;
+  --primary-dark: #275e8f;
+  --green: #2c8a58;
+  --green-tint: #e8f4ed;
+  --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
 }
 
 .claimable-item-popover[aria-expanded='true'] {
@@ -37,22 +49,18 @@
   transition: height 0.3s ease;
 }
 
-.popover-info-value,
+.claimable-item-popover .val,
 .claimable-item-popover .claim-button {
   transition: opacity 0.15s ease;
 }
 
-.claimable-item-popover.content-fading .popover-info-value,
+.claimable-item-popover.content-fading .val,
 .claimable-item-popover.content-fading .claim-button {
   opacity: 0;
 }
 
 .popover-body button {
   @apply py-[4px] flex justify-center w-[80%] mt-[16px] m-auto [&_svg]:size-[30px] [&_svg]:!pointer-events-none;
-}
-
-.popover-info-row {
-  @apply flex [&_*]:flex-1 [&_*]:shrink-0 text-start border-b min-h-[35px] py-[2px] items-center text-[16px];
 }
 
 .popover-arrow-icon {
@@ -81,4 +89,123 @@
 
 .claimable-item-popover .claim-button:hover path {
   fill: #2ecc71;
+}
+
+/* ============ Specs — three to a row, as on the claim voucher ============
+   A label above its value, three across, is the difference between a card that fits under its item
+   and one that runs off the window. The same eight fields stacked were eight rows tall. */
+
+.popover-specs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  padding: 10px 0 12px;
+  border-bottom: 1.5px dashed var(--tear);
+}
+
+.popover-specs:first-child {
+  padding-top: 0;
+}
+
+/* A tear rule under the final row would be a line with nothing beneath it. When the lock block
+   follows, that row is no longer last and keeps its rule — which is exactly where one belongs. */
+.popover-specs:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.popover-spec {
+  min-width: 0;
+  padding-inline-end: 14px;
+}
+
+.popover-spec + .popover-spec {
+  border-inline-start: 1px solid var(--hair);
+  padding-inline-start: 14px;
+}
+
+.claimable-item-popover .lab {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.claimable-item-popover .val {
+  font-family: var(--mono) !important;
+  font-size: 13px;
+  font-weight: 500;
+  margin-top: 3px;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.popover-spec.pkg {
+  grid-column: span 2;
+}
+
+/* Alone on its row it takes the whole width — there is nothing beside it to make room for. */
+.popover-spec.pkg.full {
+  grid-column: 1 / -1;
+}
+
+.popover-spec.pkg .val {
+  color: var(--primary-dark);
+}
+
+/* ============ Prerequisites ============
+   Chips that wrap rather than a list that stacks, so a rule naming six services costs two lines and
+   not six. This is the only part of the card that grows with the catalog, and it is why nothing here
+   needs to scroll. */
+
+.popover-lock {
+  @apply flex flex-col gap-[8px];
+  padding-top: 10px;
+}
+
+.popover-lock .lab {
+  text-transform: none;
+  letter-spacing: 0.02em;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.popover-lock-prerequisites {
+  @apply flex flex-wrap gap-[8px];
+}
+
+.popover-prerequisite {
+  @apply flex items-center gap-[7px] rounded-[4px] border px-[9px] py-[5px];
+  border-color: var(--hair);
+  color: var(--muted);
+}
+
+.popover-prerequisite.satisfied {
+  border-color: var(--green);
+  background: var(--green-tint);
+  color: var(--green);
+}
+
+.popover-prerequisite .val {
+  margin-top: 0;
+  color: inherit;
+  line-height: 1.1;
+}
+
+.popover-prerequisite-mark {
+  @apply size-[15px] shrink-0 rounded-full border border-current flex items-center justify-center;
+}
+
+.popover-prerequisite-mark svg {
+  @apply size-[10px];
+}
+
+.popover-prerequisite-date {
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  margin-top: 1px;
+  opacity: 0.75;
+}
+
+.popover-prerequisite-date:empty {
+  display: none;
 }
