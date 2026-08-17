@@ -1,6 +1,7 @@
 using ShiftSoftware.ADP.Lookup.Services.Aggregate;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using ShiftSoftware.ADP.Lookup.Services.Enums;
+using ShiftSoftware.ADP.Lookup.Services.Milestones;
 using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ADP.Models.Vehicle;
 using System;
@@ -164,13 +165,36 @@ public class ServiceItemTraceCollector
 
     public virtual void RecordEligibilityInputCount(int count) => trace.Eligibility.InputCount = count;
 
+    /// <summary>
+    /// Records how this deployment reads milestones. Called once per run whether or not any item
+    /// carries a milestone condition: "the reader is configured to read nothing" and "this vehicle
+    /// has no milestones" produce identical output everywhere else, and telling them apart is the
+    /// whole difference between a configuration to fix and a customer who has not been back.
+    /// </summary>
+    public virtual void RecordMilestoneReader(IServiceMilestoneResolver resolver)
+    {
+        var reader = trace.Eligibility.MilestoneReader;
+
+        // A host-supplied resolver declares no conventions and reports no problems. Reading a
+        // milestone out of a source that states one cannot fail the way matching a shape can.
+        if (resolver is not PackageCodeServiceMilestoneResolver packageCodeReader)
+        {
+            reader.CanRead = resolver is not null;
+            return;
+        }
+
+        reader.CanRead = packageCodeReader.CanRead;
+        reader.Conventions = packageCodeReader.Conventions.ToList();
+        reader.Problems = packageCodeReader.Problems.ToList();
+    }
+
     public virtual void RecordEligibilityDecision(
         ServiceItemModel item,
         EligibilityRejectionStage stage,
         VehicleEntryModel vehicle,
         VehicleOwnership ownership,
         IReadOnlyList<VehicleServiceItemPrerequisiteDTO> prerequisites = null,
-        IReadOnlyList<ServiceItemMilestoneQualifierNearMiss> qualifierNearMisses = null)
+        IReadOnlyList<ServiceItemMilestoneNearMiss> milestoneNearMisses = null)
     {
         var accepted = stage == EligibilityRejectionStage.None;
         var decision = new ServiceItemEligibilityDecision
@@ -183,7 +207,7 @@ public class ServiceItemTraceCollector
             RejectionStage = stage,
             Reason = accepted ? null : ServiceItemEligibilityReasonFormatter.Format(item, stage, vehicle, ownership),
             Prerequisites = prerequisites?.ToList() ?? new List<VehicleServiceItemPrerequisiteDTO>(),
-            QualifierNearMisses = qualifierNearMisses?.ToList() ?? new List<ServiceItemMilestoneQualifierNearMiss>(),
+            MilestoneNearMisses = milestoneNearMisses?.ToList() ?? new List<ServiceItemMilestoneNearMiss>(),
         };
         trace.Eligibility.Decisions.Add(decision);
 
@@ -446,7 +470,8 @@ public class ServiceItemTraceCollector
         public override void RecordBaseScheduleCapDecision(ServiceItemModel item, bool included, BaseScheduleCapDecisionReason reason, EligibilityRejectionStage staticRejectionStage = EligibilityRejectionStage.None) { }
         public override void RecordBaseScheduleCap(long? maximumMileage) { }
         public override void RecordEligibilityInputCount(int count) { }
-        public override void RecordEligibilityDecision(ServiceItemModel item, EligibilityRejectionStage stage, VehicleEntryModel vehicle, VehicleOwnership ownership, IReadOnlyList<VehicleServiceItemPrerequisiteDTO> prerequisites = null, IReadOnlyList<ServiceItemMilestoneQualifierNearMiss> qualifierNearMisses = null) { }
+        public override void RecordEligibilityDecision(ServiceItemModel item, EligibilityRejectionStage stage, VehicleEntryModel vehicle, VehicleOwnership ownership, IReadOnlyList<VehicleServiceItemPrerequisiteDTO> prerequisites = null, IReadOnlyList<ServiceItemMilestoneNearMiss> milestoneNearMisses = null) { }
+        public override void RecordMilestoneReader(IServiceMilestoneResolver resolver) { }
         public override void RecordFreeBuild(ServiceItemModel item, VehicleServiceItemDTO dto, ServiceItemCostModel matchedCost, string languageCode) { }
         public override void RecordPaidBuild(PaidServiceInvoiceModel invoice, PaidServiceInvoiceLineModel line, VehicleServiceItemDTO dto, string languageCode) { }
         public override void RecordWarrantyRollingSkipped(string reason) { }

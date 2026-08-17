@@ -44,4 +44,59 @@ Scenario: Trace explains base schedule cap contributors and role exclusions
   And the trace records "SI-BASE" as a base schedule cap contributor
   And the trace excludes "SI-REWARD" from the base schedule cap because of "ProgramRole"
   And the trace records "SI-REWARD" as accepted
+
+# The measurement the incident was missing. A code that did not count towards a milestone rule is
+# invisible on the screen — indistinguishable from a service the customer never had — so the trace
+# names each one and why it did not count. A code dropped on its qualifier is a rule to calibrate
+# with the deployment; a code the reader made nothing of is a convention that has stopped fitting.
+Scenario: Trace names every code a milestone rule passed over, and why
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | BranchID | BrandID |
+    | 1FDKF37GXVEB34368 | 2026-01-15  | 1         | 10       | 1       |
+  And service items:
+    | ServiceItemID | Name             | BrandID | ActiveForMonths |
+    | SI-REWARD     | Milestone reward | 1       | 24              |
+  And service item "SI-REWARD" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch | Program | Qualifier | Selection | Values      |
+    | serviceHistory.laborLines.packageCode | ContainsAll | Milestone  | PGM     | None      | All       | 45000,50000 |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode      |
+    | 1         | 10       | INV-1         | JOB-1               | 2026-02-01  | PGM MDL100 45K   |
+    | 1         | 10       | INV-2         | JOB-2               | 2026-03-01  | PGM MDL100 50KQA |
+    | 1         | 10       | INV-3         | JOB-3               | 2026-04-01  | ALT MDL100 50K   |
+    | 1         | 10       | INV-4         | JOB-4               | 2026-05-01  | BRAKE PADS       |
+  And the trace free service start date is "2026-01-15"
+  When evaluating service items with trace for "1FDKF37GXVEB34368" with language "en"
+  Then the trace reports the milestone reader uses convention "scenario"
+  And the trace records a "QualifierFiltered" near miss for "SI-REWARD" on "PGM MDL100 50KQA"
+  And the trace records a "ProgrammeFiltered" near miss for "SI-REWARD" on "ALT MDL100 50K"
+  And the trace records a "Unresolved" near miss for "SI-REWARD" on "BRAKE PADS"
+  And the trace records no near miss for "SI-REWARD" on "PGM MDL100 45K"
+
+# A reader configured to read nothing and a customer who has never been back produce the same empty
+# result. The trace reports the reader's state separately so the two can be told apart without
+# waiting for somebody to complain about a specific vehicle.
+Scenario: Trace tells a reader that reads nothing from a vehicle that has nothing to read
+  Given LookupOptions milestone conventions:
+    | Name     | Pattern                                     |
+    | unusable | ^(?<program>PGM)\s+[A-Z0-9]+\s+[0-9]{1,3}K$ |
+  And vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | BranchID | BrandID |
+    | 1FDKF37GXVEB34368 | 2026-01-15  | 1         | 10       | 1       |
+  And service items:
+    | ServiceItemID | Name             | BrandID | ActiveForMonths |
+    | SI-REWARD     | Milestone reward | 1       | 24              |
+  And service item "SI-REWARD" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch | Program | Qualifier | Selection | Values      |
+    | serviceHistory.laborLines.packageCode | ContainsAll | Milestone  | PGM     | None      | All       | 45000,50000 |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode    |
+    | 1         | 10       | INV-1         | JOB-1               | 2026-02-01  | PGM MDL100 45K |
+    | 1         | 10       | INV-2         | JOB-2               | 2026-03-01  | PGM MDL100 50K |
+  And the trace free service start date is "2026-01-15"
+  When evaluating service items with trace for "1FDKF37GXVEB34368" with language "en"
+  Then the trace reports the milestone reader cannot read
+  And the trace reports the milestone convention "unusable" as "MissingMilestoneGroup"
+  And the trace records a "Unresolved" near miss for "SI-REWARD" on "PGM MDL100 45K"
+  And the trace records a "Unresolved" near miss for "SI-REWARD" on "PGM MDL100 50K"
 ```

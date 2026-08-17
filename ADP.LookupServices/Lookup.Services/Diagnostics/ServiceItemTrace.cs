@@ -1,5 +1,6 @@
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using ShiftSoftware.ADP.Lookup.Services.Enums;
+using ShiftSoftware.ADP.Lookup.Services.Milestones;
 using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ADP.Models.Vehicle;
 using System;
@@ -111,6 +112,36 @@ public class ServiceItemTraceEligibility
     /// </summary>
     public int UnclaimableCount { get; set; }
     public List<ServiceItemEligibilityDecision> Decisions { get; set; } = new();
+
+    /// <summary>
+    /// How this deployment reads milestones out of its service codes. Recorded whether or not any
+    /// milestone condition was evaluated, because "this deployment cannot read milestones" and
+    /// "this vehicle has none" are different findings that look identical everywhere else.
+    /// </summary>
+    public ServiceItemTraceMilestoneReader MilestoneReader { get; set; } = new();
+}
+
+/// <summary>
+/// The state of the milestone reader for this lookup.
+/// <para>
+/// A reader that reads nothing is a configuration to fix, not a customer without service history,
+/// and on a card the two are indistinguishable. Reporting it per lookup is what makes the
+/// difference visible without waiting for the estate-wide audit.
+/// </para>
+/// </summary>
+public class ServiceItemTraceMilestoneReader
+{
+    /// <summary>Whether the reader can produce a milestone at all.</summary>
+    public bool CanRead { get; set; }
+
+    /// <summary>
+    /// The conventions in use, by name, in the order they are tried. Empty for a host-supplied
+    /// resolver, which declares none.
+    /// </summary>
+    public List<string> Conventions { get; set; } = new();
+
+    /// <summary>Settings that could not be used, with the reason.</summary>
+    public List<ServiceMilestoneConfigurationProblem> Problems { get; set; } = new();
 }
 
 public enum EligibilityVerdict { Accepted, Rejected }
@@ -140,24 +171,53 @@ public enum EligibilityRejectionStage
 }
 
 /// <summary>
-/// A service-history code that named a milestone a condition wanted, and was excluded on its
-/// trailing qualifier alone.
+/// A service-history code that did not count towards a milestone condition, and the reason it did
+/// not.
 /// <para>
-/// Recorded because the alternative is guessing. Whether a variant-qualified booking records the
-/// same service is a fact about how a deployment's advisors work, and these are the only evidence
-/// of it that a lookup can produce.
+/// Recorded because the alternative is guessing. Nothing distinguishes, on the screen, a service a
+/// customer never had from one the reader could not read: both are simply absent. These are the
+/// only evidence a lookup can produce about which of the two it is — and the reason matters, since
+/// a code excluded on its qualifier is a rule to calibrate with the deployment, while a code the
+/// reader could not read at all is a convention to fix.
 /// </para>
 /// </summary>
-public class ServiceItemMilestoneQualifierNearMiss
+public class ServiceItemMilestoneNearMiss
 {
-    /// <summary>The milestone the code named, in kilometres.</summary>
-    public long Milestone { get; set; }
+    /// <summary>Why the code did not count.</summary>
+    public ServiceItemMilestoneNearMissReason Reason { get; set; }
+
+    /// <summary>The code, as the source system wrote it.</summary>
+    public string PackageCode { get; set; }
+
+    /// <summary>
+    /// The milestone the code named, in kilometres, or null when nothing was read out of it —
+    /// which is the whole of what is known about an
+    /// <see cref="ServiceItemMilestoneNearMissReason.Unresolved"/> code.
+    /// </summary>
+    public long? Milestone { get; set; }
 
     /// <summary>The programme the code was booked under, or null when it named none.</summary>
     public string Program { get; set; }
 
-    /// <summary>The trailing qualifier that excluded it.</summary>
+    /// <summary>The qualifier the code carried, or null when it carried none.</summary>
     public string Qualifier { get; set; }
+}
+
+/// <summary>Why a service-history code did not count towards a milestone condition.</summary>
+public enum ServiceItemMilestoneNearMissReason
+{
+    /// <summary>
+    /// The reader made nothing of the code. Ordinary for unscheduled work, which is most of it —
+    /// and the shape of a convention that has stopped fitting, which is why it is recorded at all.
+    /// A reader with no conventions configured reports every code this way.
+    /// </summary>
+    Unresolved = 0,
+
+    /// <summary>A milestone was read, under a programme this condition does not count.</summary>
+    ProgrammeFiltered = 1,
+
+    /// <summary>A milestone was read, under a programme that counts, and dropped on its qualifier.</summary>
+    QualifierFiltered = 2,
 }
 
 public class ServiceItemTraceBaseScheduleCap
@@ -202,10 +262,10 @@ public class ServiceItemEligibilityDecision
     public List<VehicleServiceItemPrerequisiteDTO> Prerequisites { get; set; } = new();
 
     /// <summary>
-    /// Codes that named a milestone this item's conditions wanted but were excluded on their
-    /// qualifier. See <see cref="ServiceItemMilestoneQualifierNearMiss"/>.
+    /// Codes this item's milestone conditions passed over, with the reason. See
+    /// <see cref="ServiceItemMilestoneNearMiss"/>.
     /// </summary>
-    public List<ServiceItemMilestoneQualifierNearMiss> QualifierNearMisses { get; set; } = new();
+    public List<ServiceItemMilestoneNearMiss> MilestoneNearMisses { get; set; } = new();
 }
 
 

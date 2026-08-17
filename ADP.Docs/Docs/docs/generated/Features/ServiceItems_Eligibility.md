@@ -300,8 +300,14 @@ Scenario: A package code containing a required value does not satisfy the condit
 # --- Milestone eligibility conditions ---
 #
 # A milestone condition reads the scheduled service out of a package code and compares it as a
-# number, so its values are mileages rather than text. Codes below are invented and follow the
-# shape <PROGRAM> <MODEL> <MILESTONE>K [<QUALIFIER>].
+# number, so its values are mileages rather than text.
+#
+# How a code is put together is the deployment's business, declared as conventions with named
+# groups; ADP ships none and infers nothing. These scenarios run against one convention the harness
+# declares for them (TestContext.ScenarioServiceCodePattern), reproducing the shapes real codes come
+# in: an optional programme, which may be glued to a model token; further tokens, which may be
+# hyphenated; the milestone; and a qualifier glued to the milestone, trailing it, or absent. Codes
+# below are invented. Scenarios about the conventions themselves declare their own.
 
 Scenario Outline: Prerequisite milestones count however the service history is arranged
   Given vehicles in dealer stock:
@@ -535,7 +541,7 @@ Scenario Outline: A milestone is read out of the code, or the code carries none
     | no milestone token at all        | BRAKE PADS        | not in   |
     | a model code with digits only    | PGM MDL100        | not in   |
     | a number with no K               | PGM MDL100 50     | not in   |
-    | two milestone tokens in one code | PGM 50K 100K      | not in   |
+    | a glued programme and model      | PGMX9 50K         | in       |
 
 Scenario Outline: An implausible milestone reading is discarded
   Given vehicles in dealer stock:
@@ -555,10 +561,12 @@ Scenario Outline: An implausible milestone reading is discarded
   Then service item "SI-REWARD" is not in the result
 
   Examples:
-    | Reason                       | PackageCode      | Mileage |
-    | off the scheduled interval   | PGM MDL100 7K    | 7000    |
-    | below the plausible minimum  | PGM MDL100 1K    | 1000    |
-    | above the plausible maximum  | PGM MDL100 999K  | 999000  |
+    | Reason                                  | PackageCode       | Mileage |
+    | off the scheduled interval              | PGM MDL100 7K     | 7000    |
+    | below the plausible minimum             | PGM MDL100 1K     | 1000    |
+    | above the plausible maximum             | PGM MDL100 999K   | 999000  |
+    | a number glued to a letter prefix       | XYZ44K            | 44000   |
+    | a model token in the milestone position | PGM EOR MDL200 KQ | 200000  |
 
 # The bounds are deployment configuration, not a rule of the grammar: a deployment scheduling its
 # services on a different interval says so here rather than living with silently discarded readings.
@@ -580,8 +588,10 @@ Scenario: Configured bounds admit a milestone the defaults discard
   When evaluating service items for "1FDKF37GXVEB34368" with language "en"
   Then service item "SI-REWARD" is in the result
 
-Scenario: A deployment writing its milestones differently configures the pattern
-  Given LookupOptions milestone package-code pattern is "(?<![A-Z0-9])([0-9]+)000\s*KM(?![A-Z0-9])"
+Scenario: A deployment writing its milestones differently declares its own convention
+  Given LookupOptions milestone conventions:
+    | Name  | Pattern                                                          |
+    | metre | ^(?<program>[A-Z]+)\s+[A-Z0-9]+\s+(?<milestone>[0-9]{1,3})000\s*KM$ |
   And vehicles in dealer stock:
     | VIN               | InvoiceDate | CompanyID | BranchID | BrandID |
     | 1FDKF37GXVEB34368 | 2026-01-15  | 1         | 10       | 1       |
@@ -622,6 +632,265 @@ Scenario: Eligibility follows the milestone reader, not the shape of the code
     | 1         | 10       | INV-2         | JOB-2               | 2026-03-01  | JOB-BETA    |
     | 1         | 10       | INV-3         | JOB-3               | 2026-04-01  | JOB-GAMMA   |
     | 1         | 10       | INV-4         | JOB-4               | 2026-05-01  | PGM MDL100 70K |
+  And the free service start date is "2026-01-15"
+  When evaluating service items for "1FDKF37GXVEB34368" with language "en"
+  Then service item "SI-REWARD" is in the result
+
+# --- Service-code conventions ---
+#
+# What ADP reads out of a code, it reads because a convention said where to find it. It does not
+# take the leading token for the programme or the trailing text for the qualifier: a reader that
+# infers structure fits the one convention it was written against and quietly reports every other
+# shape as work that never happened.
+
+# The shapes below are the ones production codes actually come in. Each is read correctly here only
+# because the convention names where the programme sits; a reader counting tokens instead reads the
+# glued shapes as another programme entirely.
+Scenario Outline: The programme is read from where the convention says it is
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | BranchID | BrandID |
+    | 1FDKF37GXVEB34368 | 2026-01-15  | 1         | 10       | 1       |
+  And service items:
+    | ServiceItemID | Name          | BrandID | ActiveForMonths |
+    | SI-REWARD     | Return reward | 1       | 24              |
+  And service item "SI-REWARD" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch | Program | Qualifier | Selection | Values |
+    | serviceHistory.laborLines.packageCode | ContainsAll | Milestone  | PGM     | Any       | All       | 50000  |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode   |
+    | 1         | 10       | INV-1         | JOB-1               | 2026-02-01  | <PackageCode> |
+  And the free service start date is "2026-01-15"
+  When evaluating service items for "1FDKF37GXVEB34368" with language "en"
+  Then service item "SI-REWARD" is <Presence> the result
+
+  Examples:
+    | Shape                                    | PackageCode       | Presence |
+    | space-separated from the model           | PGM MDL100 50K    | in       |
+    | glued to the model                       | PGMX9 50K         | in       |
+    | glued, with the qualifier glued too      | PGMX9 50KQA       | in       |
+    | alone, with no model token               | PGM 50K           | in       |
+    | a longer programme starting the same     | PGMALT MDL100 50K | in       |
+    | another programme entirely               | ALT MDL100 50K    | not in   |
+    | a programme the convention does not name | XYZ MDL100 50K    | not in   |
+    | no programme at all                      | 50K               | not in   |
+
+# A qualifier is whatever the convention's qualifier group captures, and production codes carry it
+# glued to the milestone, trailing as separate tokens, or both at once. Matching it against an
+# allow-list is how a scenario states what was actually read.
+Scenario Outline: The qualifier is read from where the convention says it is
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | BranchID | BrandID |
+    | 1FDKF37GXVEB34368 | 2026-01-15  | 1         | 10       | 1       |
+  And service items:
+    | ServiceItemID | Name          | BrandID | ActiveForMonths |
+    | SI-REWARD     | Return reward | 1       | 24              |
+  And service item "SI-REWARD" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch | Program | Qualifier   | QualifierValues   | Selection | Values |
+    | serviceHistory.laborLines.packageCode | ContainsAll | Milestone  | PGM     | <Qualifier> | <QualifierValues> | All       | 50000  |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode   |
+    | 1         | 10       | INV-1         | JOB-1               | 2026-02-01  | <PackageCode> |
+  And the free service start date is "2026-01-15"
+  When evaluating service items for "1FDKF37GXVEB34368" with language "en"
+  Then service item "SI-REWARD" is <Presence> the result
+
+  Examples:
+    | Shape                                 | PackageCode         | Qualifier | QualifierValues | Presence |
+    | glued to the milestone                | PGM MDL100 50KQA    | Only      | QA              | in       |
+    | trailing as its own token             | PGM MDL100 50K QA   | Only      | QA              | in       |
+    | glued and trailing together           | PGM MDL100 50KQA QB | Only      | QA QB           | in       |
+    | absent                                | PGM MDL100 50K      | None      |                 | in       |
+    | a glued qualifier is not no qualifier | PGM MDL100 50KQA    | None      |                 | not in   |
+    | a second milestone-shaped token       | PGM MDL100 50K 100K | Only      | 100K            | in       |
+
+# Accumulated history outlives a change of code shape, so a deployment that has changed how it
+# writes its codes declares both — which is what an ordered list is for. Eligibility reads history,
+# never the current catalog, and the codes customers were served under are still in it.
+Scenario Outline: Conventions are tried in order and the first to match decides the reading
+  Given LookupOptions milestone conventions:
+    | Name    | Pattern                                                  |
+    | current | ^(?<program>PGM)\s+[A-Z0-9]+\s+(?<milestone>[0-9]{1,3})K$ |
+    | legacy  | ^(?<milestone>[0-9]{1,3})KM-(?<program>[A-Z]+)$          |
+  And vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | BranchID | BrandID |
+    | 1FDKF37GXVEB34368 | 2026-01-15  | 1         | 10       | 1       |
+  And service items:
+    | ServiceItemID | Name          | BrandID | ActiveForMonths |
+    | SI-REWARD     | Return reward | 1       | 24              |
+  And service item "SI-REWARD" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch | Program | Qualifier | Selection | Values      |
+    | serviceHistory.laborLines.packageCode | ContainsAll | Milestone  | PGM     | Any       | All       | 45000,50000 |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode |
+    | 1         | 10       | INV-1         | JOB-1               | 2026-02-01  | <CodeA>     |
+    | 1         | 10       | INV-2         | JOB-2               | 2026-03-01  | <CodeB>     |
+  And the free service start date is "2026-01-15"
+  When evaluating service items for "1FDKF37GXVEB34368" with language "en"
+  Then service item "SI-REWARD" is <Presence> the result
+
+  Examples:
+    | History                            | CodeA          | CodeB          | Presence |
+    | both in the current shape          | PGM MDL100 45K | PGM MDL100 50K | in       |
+    | both in the legacy shape           | 45KM-PGM       | 50KM-PGM       | in       |
+    | one of each, as history holds      | 45KM-PGM       | PGM MDL100 50K | in       |
+    | a shape neither convention reads   | PGM-MDL100-45K | PGM MDL100 50K | not in   |
+
+# ADP ships no convention. A default would be one network's writing habits presented as everyone's,
+# and it fails by matching a plausible-looking fraction rather than by failing — which is exactly
+# how a total mismatch comes to look like a working configuration.
+Scenario: A deployment that declares no conventions reads no milestones
+  Given LookupOptions declares no milestone conventions
+  And vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | BranchID | BrandID |
+    | 1FDKF37GXVEB34368 | 2026-01-15  | 1         | 10       | 1       |
+  And service items:
+    | ServiceItemID | Name          | BrandID | ActiveForMonths |
+    | SI-REWARD     | Return reward | 1       | 24              |
+  And service item "SI-REWARD" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch | Program | Qualifier | Selection | Values      |
+    | serviceHistory.laborLines.packageCode | ContainsAll | Milestone  | PGM     | Any       | All       | 45000,50000 |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode    |
+    | 1         | 10       | INV-1         | JOB-1               | 2026-02-01  | PGM MDL100 45K |
+    | 1         | 10       | INV-2         | JOB-2               | 2026-03-01  | PGM MDL100 50K |
+  And the free service start date is "2026-01-15"
+  When evaluating service items for "1FDKF37GXVEB34368" with language "en"
+  Then service item "SI-REWARD" is not in the result
+
+Scenario Outline: A convention ADP cannot use reads nothing
+  Given LookupOptions milestone conventions:
+    | Name     | Pattern   |
+    | unusable | <Pattern> |
+  And vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | BranchID | BrandID |
+    | 1FDKF37GXVEB34368 | 2026-01-15  | 1         | 10       | 1       |
+  And service items:
+    | ServiceItemID | Name          | BrandID | ActiveForMonths |
+    | SI-REWARD     | Return reward | 1       | 24              |
+  And service item "SI-REWARD" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch | Program | Qualifier | Selection | Values |
+    | serviceHistory.laborLines.packageCode | ContainsAll | Milestone  | PGM     | Any       | All       | 50000  |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode    |
+    | 1         | 10       | INV-1         | JOB-1               | 2026-02-01  | PGM MDL100 50K |
+  And the free service start date is "2026-01-15"
+  When evaluating service items for "1FDKF37GXVEB34368" with language "en"
+  Then service item "SI-REWARD" is not in the result
+
+  Examples:
+    | Fault                         | Pattern                                     |
+    | it captures no milestone      | ^(?<program>PGM)\s+[A-Z0-9]+\s+[0-9]{1,3}K$ |
+    | its pattern does not compile  | ^(?<milestone>[0-9]{1,3}K$                  |
+    | it declares no pattern at all |                                             |
+
+# A convention that cannot be used is dropped rather than tolerated: left in the list it would match
+# without reading anything and shadow every convention after it, which is a silent way to read
+# nothing.
+Scenario: A convention ADP cannot use does not shadow the ones after it
+  Given LookupOptions milestone conventions:
+    | Name     | Pattern                                                  |
+    | unusable | ^(?<program>PGM)\s+[A-Z0-9]+\s+[0-9]{1,3}K$              |
+    | usable   | ^(?<program>PGM)\s+[A-Z0-9]+\s+(?<milestone>[0-9]{1,3})K$ |
+  And vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | BranchID | BrandID |
+    | 1FDKF37GXVEB34368 | 2026-01-15  | 1         | 10       | 1       |
+  And service items:
+    | ServiceItemID | Name          | BrandID | ActiveForMonths |
+    | SI-REWARD     | Return reward | 1       | 24              |
+  And service item "SI-REWARD" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch | Program | Qualifier | Selection | Values |
+    | serviceHistory.laborLines.packageCode | ContainsAll | Milestone  | PGM     | Any       | All       | 50000  |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode    |
+    | 1         | 10       | INV-1         | JOB-1               | 2026-02-01  | PGM MDL100 50K |
+  And the free service start date is "2026-01-15"
+  When evaluating service items for "1FDKF37GXVEB34368" with language "en"
+  Then service item "SI-REWARD" is in the result
+
+# Anchoring a convention is what settles which match names the milestone. Left unanchored, a code
+# carrying two milestone-shaped tokens reads as carrying none, because choosing one of them would be
+# a guess about whether a reward was earned.
+Scenario Outline: An unanchored convention that matches twice reads no milestone
+  Given LookupOptions milestone conventions:
+    | Name       | Pattern                   |
+    | unanchored | (?<milestone>[0-9]{1,3})K |
+  And vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | BranchID | BrandID |
+    | 1FDKF37GXVEB34368 | 2026-01-15  | 1         | 10       | 1       |
+  And service items:
+    | ServiceItemID | Name          | BrandID | ActiveForMonths |
+    | SI-REWARD     | Return reward | 1       | 24              |
+  And service item "SI-REWARD" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch | Qualifier | Selection | Values |
+    | serviceHistory.laborLines.packageCode | ContainsAll | Milestone  | Any       | All       | 50000  |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode   |
+    | 1         | 10       | INV-1         | JOB-1               | 2026-02-01  | <PackageCode> |
+  And the free service start date is "2026-01-15"
+  When evaluating service items for "1FDKF37GXVEB34368" with language "en"
+  Then service item "SI-REWARD" is <Presence> the result
+
+  Examples:
+    | Code                 | PackageCode  | Presence |
+    | one milestone token  | PGM 50K      | in       |
+    | two milestone tokens | PGM 50K 100K | not in   |
+
+# Which programmes count is the item's business, not the reader's, so two items reading the same
+# history through different programme lists reach different verdicts. That is what makes the
+# programme a per-item filter rather than a deployment-wide one.
+Scenario: Two items with different programme lists reach different verdicts on one history
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | BranchID | BrandID |
+    | 1FDKF37GXVEB34368 | 2026-01-15  | 1         | 10       | 1       |
+  And service items:
+    | ServiceItemID | Name        | BrandID | ActiveForMonths |
+    | SI-PAID       | Paid reward | 1       | 24              |
+    | SI-FREE       | Free reward | 1       | 24              |
+  And service item "SI-PAID" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch | Program | Qualifier | Selection | Values      |
+    | serviceHistory.laborLines.packageCode | ContainsAll | Milestone  | PGM     | Any       | All       | 45000,50000 |
+  And service item "SI-FREE" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch | Program | Qualifier | Selection | Values      |
+    | serviceHistory.laborLines.packageCode | ContainsAll | Milestone  | ALT     | Any       | All       | 45000,50000 |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode    |
+    | 1         | 10       | INV-1         | JOB-1               | 2026-02-01  | PGM MDL100 45K |
+    | 1         | 10       | INV-2         | JOB-2               | 2026-03-01  | PGM MDL100 50K |
+  And the free service start date is "2026-01-15"
+  When evaluating service items for "1FDKF37GXVEB34368" with language "en"
+  Then service item "SI-PAID" is in the result
+  And service item "SI-FREE" is not in the result
+
+# The shape that produced the production incident, reproduced with invented codes. This vehicle's
+# history spans a change of code shape: the free-programme services are booked under a programme
+# glued to a model token and carry a glued spec suffix, and the two paid services appear one in each
+# shape. Every line is legible, so the paid prerequisites count, the free ones are excluded on their
+# programme rather than lost, and the reward is offered. Read by a token-counting reader, seven of
+# these nine lines say nothing at all.
+Scenario: A history spanning a change of code shape yields its paid milestones
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | BranchID | BrandID |
+    | 1FDKF37GXVEB34368 | 2026-01-15  | 1         | 10       | 1       |
+  And service items:
+    | ServiceItemID | Name              | BrandID | ActiveForMonths | MaximumMileage | ProgramRole |
+    | SI-BASE       | Base schedule end | 1       | 6               | 40000          |             |
+    | SI-REWARD     | Milestone reward  | 1       | 3               | 55000          | Reward      |
+  And service item "SI-REWARD" has eligibility conditions:
+    | Field                                      | Operator    | ValueMatch | Program | Qualifier | Selection | Values      |
+    | serviceHistory.laborLines.packageCode      | ContainsAll | Milestone  | PGM     | Any       | All       | 45000,50000 |
+    | serviceHistory.laborLines.maximumMilestone | Equals      |            | PGM     | Any       |           | 50000       |
+    | serviceItems.baseSchedule.maximumMileage   | Equals      |            |         |           |           | 40000       |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode       |
+    | 1         | 10       | INV-1         | JOB-1               | 2024-10-29  | OTHPGMX6 05KQA    |
+    | 1         | 10       | INV-2         | JOB-2               | 2025-03-05  | OTHPGMX6 15KQA    |
+    | 1         | 10       | INV-3         | JOB-3               | 2025-08-17  | OTHPGMX6 25KQA    |
+    | 1         | 10       | INV-4         | JOB-4               | 2025-10-14  | OTHPGMX6 30KQA    |
+    | 1         | 10       | INV-5         | JOB-5               | 2025-11-25  | OTHPGMX6 35KQA    |
+    | 1         | 10       | INV-6         | JOB-6               | 2026-01-31  | OTHPGMX6 40KQA QB |
+    | 1         | 10       | INV-7         | JOB-7               | 2026-04-04  | PGMX6 45KQA       |
+    | 1         | 10       | INV-7         | JOB-7               | 2026-04-04  | CONSUMABLES       |
+    | 1         | 10       | INV-8         | JOB-8               | 2026-05-23  | PGM MDL150 50K    |
   And the free service start date is "2026-01-15"
   When evaluating service items for "1FDKF37GXVEB34368" with language "en"
   Then service item "SI-REWARD" is in the result

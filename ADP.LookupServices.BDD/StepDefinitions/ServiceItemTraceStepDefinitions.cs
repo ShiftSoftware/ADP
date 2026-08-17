@@ -106,4 +106,56 @@ public class ServiceItemTraceStepDefinitions
         Assert.True(_trace!.StageTimings.Count >= min,
             $"Expected at least {min} stage timings, got {_trace.StageTimings.Count}");
     }
+    /// <summary>
+    /// A service code an item's milestone rule passed over, named with the reason it did. All three
+    /// reasons are recorded: a code dropped on its qualifier is a rule to calibrate, while a code
+    /// the reader made nothing of is a convention that has stopped fitting — and the second one
+    /// produces no other signal anywhere.
+    /// </summary>
+    [Then("the trace records a {string} near miss for {string} on {string}")]
+    public void ThenTraceRecordsNearMiss(string reason, string serviceItemId, string packageCode)
+    {
+        Assert.NotNull(_trace);
+        var decision = _trace!.Eligibility.Decisions.SingleOrDefault(x => x.ServiceItemID == serviceItemId);
+        Assert.NotNull(decision);
+
+        Assert.Contains(
+            decision!.MilestoneNearMisses,
+            miss => miss.PackageCode == packageCode && miss.Reason.ToString() == reason);
+    }
+
+    [Then("the trace records no near miss for {string} on {string}")]
+    public void ThenTraceRecordsNoNearMiss(string serviceItemId, string packageCode)
+    {
+        Assert.NotNull(_trace);
+        var decision = _trace!.Eligibility.Decisions.SingleOrDefault(x => x.ServiceItemID == serviceItemId);
+        Assert.NotNull(decision);
+
+        Assert.DoesNotContain(decision!.MilestoneNearMisses, miss => miss.PackageCode == packageCode);
+    }
+
+    [Then("the trace reports the milestone reader cannot read")]
+    public void ThenTraceReportsReaderCannotRead()
+    {
+        Assert.NotNull(_trace);
+        Assert.False(_trace!.Eligibility.MilestoneReader.CanRead);
+    }
+
+    [Then("the trace reports the milestone reader uses convention {string}")]
+    public void ThenTraceReportsReaderConvention(string convention)
+    {
+        Assert.NotNull(_trace);
+        Assert.True(_trace!.Eligibility.MilestoneReader.CanRead);
+        Assert.Contains(convention, _trace.Eligibility.MilestoneReader.Conventions);
+    }
+
+    [Then("the trace reports the milestone convention {string} as {string}")]
+    public void ThenTraceReportsConventionProblem(string convention, string kind)
+    {
+        Assert.NotNull(_trace);
+        Assert.Contains(
+            _trace!.Eligibility.MilestoneReader.Problems,
+            problem => problem.Convention == convention && problem.Kind.ToString() == kind);
+    }
 }
+

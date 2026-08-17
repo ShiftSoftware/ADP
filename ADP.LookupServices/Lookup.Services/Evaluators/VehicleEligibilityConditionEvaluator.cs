@@ -22,25 +22,28 @@ internal sealed class VehicleEligibilityConditionEvaluator
     internal const string ServiceHistoryMaximumMilestoneField = "serviceHistory.laborLines.maximumMilestone";
     internal const string BaseScheduleMaximumMileageField = "serviceItems.baseSchedule.maximumMileage";
 
-    private static readonly ServiceMilestoneOptions DefaultMilestoneOptions = new ServiceMilestoneOptions();
+    // A deployment that configures nothing reads no milestones. That is the intended state rather
+    // than a gap: a default convention is one network's writing habits presented as everyone's, and
+    // it fails by matching a plausible-looking fraction rather than by failing outright.
+    private static readonly ServiceMilestoneOptions UnconfiguredMilestoneOptions = new ServiceMilestoneOptions();
 
     private readonly CompanyDataAggregateModel companyDataAggregate;
     private readonly IServiceMilestoneResolver milestoneResolver;
-    private readonly bool collectQualifierNearMisses;
+    private readonly bool collectMilestoneNearMisses;
 
     // Gathered per Evaluate call and reset by it, so one instance can be reused across definitions
     // without carrying the last one's findings into the next.
     private List<VehicleServiceItemPrerequisiteDTO> prerequisites;
-    private List<ServiceItemMilestoneQualifierNearMiss> qualifierNearMisses;
+    private List<ServiceItemMilestoneNearMiss> milestoneNearMisses;
 
     internal VehicleEligibilityConditionEvaluator(
         CompanyDataAggregateModel companyDataAggregate,
         LookupOptions options,
-        bool collectQualifierNearMisses = false)
+        bool collectMilestoneNearMisses = false)
     {
         this.companyDataAggregate = companyDataAggregate;
-        this.milestoneResolver = (options?.ServiceMilestones ?? DefaultMilestoneOptions).GetResolver();
-        this.collectQualifierNearMisses = collectQualifierNearMisses;
+        this.milestoneResolver = (options?.ServiceMilestones ?? UnconfiguredMilestoneOptions).GetResolver();
+        this.collectMilestoneNearMisses = collectMilestoneNearMisses;
     }
 
     internal bool MatchesAll(
@@ -59,14 +62,14 @@ internal sealed class VehicleEligibilityConditionEvaluator
         long? baseScheduleMaximumMileage = null)
     {
         prerequisites = null;
-        qualifierNearMisses = null;
+        milestoneNearMisses = null;
 
         var state = EligibilityConditionState.Met;
 
         foreach (var condition in conditions ?? Enumerable.Empty<EligibilityConditionModel>())
         {
             if (condition is null)
-                return EligibilityConditionOutcome.Hidden;
+                return Hidden();
 
             if (MatchesCondition(condition, baseScheduleMaximumMileage))
                 continue;
@@ -74,7 +77,7 @@ internal sealed class VehicleEligibilityConditionEvaluator
             switch (condition.WhenUnmet)
             {
                 case EligibilityConditionUnmetBehavior.Hide:
-                    return EligibilityConditionOutcome.Hidden;
+                    return Hidden();
 
                 case EligibilityConditionUnmetBehavior.Lock:
                     state = EligibilityConditionState.Locked;
@@ -89,15 +92,32 @@ internal sealed class VehicleEligibilityConditionEvaluator
                     break;
 
                 default:
-                    return EligibilityConditionOutcome.Hidden;
+                    return Hidden();
             }
         }
 
+        // An item that ended up eligible can still have passed over codes on the way, and those are
+        // the same evidence — a rule that reached its answer through half its history is worth
+        // seeing before the half it ignored starts to matter. Nothing is allocated unless the
+        // request asked for a trace, so the untraced path keeps the shared instance.
         if (state == EligibilityConditionState.Met)
-            return EligibilityConditionOutcome.Met;
+            return milestoneNearMisses is null
+                ? EligibilityConditionOutcome.Met
+                : new EligibilityConditionOutcome(EligibilityConditionState.Met, null, milestoneNearMisses);
 
-        return new EligibilityConditionOutcome(state, prerequisites, qualifierNearMisses);
+        return new EligibilityConditionOutcome(state, prerequisites, milestoneNearMisses);
     }
+
+    /// <summary>
+    /// A hidden item, carrying whatever its milestone rules passed over on the way. A hiding clause
+    /// settles the matter for the item, but not for the question of why: the codes a rule could not
+    /// read are the same evidence whether the item ends up hidden, locked or offered, and the
+    /// shipped instrument recorded them in only one of the three.
+    /// </summary>
+    private EligibilityConditionOutcome Hidden() =>
+        milestoneNearMisses is null
+            ? EligibilityConditionOutcome.Hidden
+            : new EligibilityConditionOutcome(EligibilityConditionState.Hidden, null, milestoneNearMisses);
 
     private bool MatchesCondition(EligibilityConditionModel condition, long? baseScheduleMaximumMileage)
     {
@@ -299,17 +319,29 @@ internal sealed class VehicleEligibilityConditionEvaluator
         foreach (var line in invoices.SelectMany(invoice =>
                      invoice.LaborLines ?? Enumerable.Empty<OrderLaborLineModel>()))
         {
-            var reading = milestoneResolver.Resolve(line?.PackageCode);
-            if (reading is null)
+            var packageCode = line?.PackageCode;
+
+            if (string.IsNullOrWhiteSpace(packageCode))
                 continue;
+
+            var reading = milestoneResolver.Resolve(packageCode);
+
+            if (reading is null)
+            {
+                RecordNearMiss(ServiceItemMilestoneNearMissReason.Unresolved, packageCode, null);
+                continue;
+            }
 
             if (programs is not null &&
                 (reading.Program is null || !programs.Contains(reading.Program)))
+            {
+                RecordNearMiss(ServiceItemMilestoneNearMissReason.ProgrammeFiltered, packageCode, reading);
                 continue;
+            }
 
             if (!qualifier.Accepts(reading.Qualifier))
             {
-                RecordQualifierNearMiss(reading);
+                RecordNearMiss(ServiceItemMilestoneNearMissReason.QualifierFiltered, packageCode, reading);
                 continue;
             }
 
@@ -325,23 +357,32 @@ internal sealed class VehicleEligibilityConditionEvaluator
     }
 
     /// <summary>
-    /// A code that named a milestone this rule wanted and was dropped on its trailing qualifier
-    /// alone. Whether those services should have counted is a question about how a deployment books
-    /// its work, which no amount of reading the catalog can settle — but counting the near misses
-    /// turns it into a measurement.
+    /// A service-history code this rule passed over, and why.
+    /// <para>
+    /// Recorded for all three reasons, not the qualifier alone. A code read and then rejected on its
+    /// variant is a calibration question to settle with the deployment; a code the reader made
+    /// nothing of is a convention that has stopped fitting, and it produces no other signal
+    /// anywhere — the code simply does not appear, exactly as if the service had never been
+    /// performed. Recording only the qualifier case is blind to the failure that matters more.
+    /// </para>
     /// </summary>
-    private void RecordQualifierNearMiss(ServiceMilestoneReading reading)
+    private void RecordNearMiss(
+        ServiceItemMilestoneNearMissReason reason,
+        string packageCode,
+        ServiceMilestoneReading reading)
     {
-        if (!collectQualifierNearMisses)
+        if (!collectMilestoneNearMisses)
             return;
 
-        qualifierNearMisses = qualifierNearMisses ?? new List<ServiceItemMilestoneQualifierNearMiss>();
+        milestoneNearMisses = milestoneNearMisses ?? new List<ServiceItemMilestoneNearMiss>();
 
-        qualifierNearMisses.Add(new ServiceItemMilestoneQualifierNearMiss
+        milestoneNearMisses.Add(new ServiceItemMilestoneNearMiss
         {
-            Milestone = reading.Milestone,
-            Program = reading.Program,
-            Qualifier = reading.Qualifier,
+            Reason = reason,
+            PackageCode = packageCode,
+            Milestone = reading?.Milestone,
+            Program = reading?.Program,
+            Qualifier = reading?.Qualifier,
         });
     }
 

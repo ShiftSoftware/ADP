@@ -172,7 +172,14 @@ nav:
               - Lookup Options: generated/LookupServices/LookupOptions.md
               - Service Menu Lookup Options: generated/LookupServices/ServiceMenuLookupOptions.md
               - Service Milestone Options: generated/LookupServices/Milestones/ServiceMilestoneOptions.md
+              - Service Code Convention: generated/LookupServices/Milestones/ServiceCodeConvention.md
               - Service Milestone Reading: generated/LookupServices/Milestones/ServiceMilestoneReading.md
+              - Service Code Read Result: generated/LookupServices/Milestones/ServiceCodeReadResult.md
+              - Milestone Configuration Problem: generated/LookupServices/Milestones/ServiceMilestoneConfigurationProblem.md
+              - Service Code Coverage Report: generated/LookupServices/Milestones/ServiceCodeCoverageReport.md
+              - Service Code Coverage Group: generated/LookupServices/Milestones/ServiceCodeCoverageGroup.md
+              - Unresolved Service Code: generated/LookupServices/Milestones/UnresolvedServiceCode.md
+              - Service Code Sample: generated/LookupServices/Milestones/ServiceCodeSample.md
           - Vehicle Lookup:
               - Vehicle Lookup Result: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleLookupDTO.md
               - Vehicle Identifiers: generated/LookupServices/DTOsAndModels/VehicleLookup/VehicleIdentifiersDTO.md

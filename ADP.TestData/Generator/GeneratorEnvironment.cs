@@ -2,6 +2,7 @@ using ShiftSoftware.ADP.Lookup.Services;
 using ShiftSoftware.ADP.Lookup.Services.Aggregate;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Part;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
+using ShiftSoftware.ADP.Lookup.Services.Milestones;
 using ShiftSoftware.ADP.Models.Part;
 using ShiftSoftware.ADP.Models.TBP;
 using ShiftSoftware.ADP.Models.Vehicle;
@@ -67,6 +68,16 @@ public class GeneratorLookupOptions
     /// </summary>
     public VehicleItemWarning? UnInvoicedBrokerClaimWarning { get; set; }
 
+    /// <summary>
+    /// How this environment's service codes name a scheduled service, declared the way a host
+    /// declares it: patterns with named <c>milestone</c>, <c>program</c> and <c>qualifier</c> groups,
+    /// tried in order. ADP ships none — a convention belongs to a source system, and one presented
+    /// as a framework default reads a fraction of any estate that does not share it while looking
+    /// configured — so an environment with milestone conditions has to declare one here or its
+    /// rewards read no history at all.
+    /// </summary>
+    public List<ServiceCodeConvention> ServiceMilestoneConventions { get; set; } = new();
+
     public LookupOptions ToLookupOptions(
         Dictionary<long, string> companyNames,
         Dictionary<long, string> branchNames,
@@ -85,6 +96,8 @@ public class GeneratorLookupOptions
             ShowPartLookupStockQauntity = ShowPartLookupStockQauntity,
             EnableManufacturerLookup = EnableManufacturerLookup,
         };
+
+        options.ServiceMilestones.Conventions = ServiceMilestoneConventions;
 
         // Resolve paint-thickness image keys to deterministic placeholder photos so the
         // web-component mocks and docs demos render a working gallery (the keys are

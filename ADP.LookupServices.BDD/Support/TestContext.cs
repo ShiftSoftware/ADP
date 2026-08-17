@@ -2,6 +2,7 @@ using System.Reflection;
 using ShiftSoftware.ADP.Lookup.Services;
 using ShiftSoftware.ADP.Lookup.Services.Aggregate;
 using ShiftSoftware.ADP.Lookup.Services.Evaluators;
+using ShiftSoftware.ADP.Lookup.Services.Milestones;
 using ShiftSoftware.ADP.Lookup.Services.Services;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.Part;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
@@ -18,7 +19,34 @@ public class TestContext
         StockParts = [],
         CompanyDeadStockParts = [],
     };
-    public LookupOptions Options { get; set; } = new();
+    public LookupOptions Options { get; set; } = NewLookupOptions();
+
+    /// <summary>
+    /// The pattern the scenarios' deployment declares for its own service codes. ADP ships none —
+    /// a convention is a fact about a source system, and one presented as a framework default reads
+    /// a fraction of any estate that does not share it while looking configured — so the harness
+    /// declares one the same way a host does.
+    /// <para>
+    /// It reproduces the shapes real codes come in: an optional programme, optionally glued to a
+    /// model token; further tokens, which may be hyphenated; the milestone; and a qualifier that
+    /// may be glued to the milestone, trail it as separate tokens, or be absent.
+    /// </para>
+    /// </summary>
+    public const string ScenarioServiceCodePattern =
+        @"^(?:(?<program>PGM|ALT|OTH)[A-Z0-9-]*)?(?:\s*[A-Z][A-Z0-9-]*)*\s*(?<milestone>[0-9]{1,3})\s*K(?<qualifier>[A-Z0-9]*(?:\s+[A-Z0-9]+)*)$";
+
+    private static LookupOptions NewLookupOptions()
+    {
+        var options = new LookupOptions();
+
+        options.ServiceMilestones.Conventions.Add(new ServiceCodeConvention
+        {
+            Name = "scenario",
+            Pattern = ScenarioServiceCodePattern,
+        });
+
+        return options;
+    }
     public IServiceProvider ServiceProvider { get; set; } = null!;
     public IVehicleLookupStorageService StorageService { get; set; } = null!;
 

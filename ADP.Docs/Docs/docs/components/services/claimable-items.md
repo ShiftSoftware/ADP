@@ -169,15 +169,23 @@ happened", which is what a condition about a milestone the vehicle has passed ne
 so its `values` are mileages rather than text. Two extra properties apply to it, and to
 `maximumMilestone`:
 
-- `program` — the programme prefixes whose codes count, matched against the leading token of the
-  code. Omit it to accept every programme.
-- `qualifier` — how the trailing variant token is treated: `None` (the milestone must be the last
-  token), `Any`, `Only` (an allow-list in `values`) or `Except` (a deny-list). **Required**, with no
-  default: whether a variant-qualified code records the same service is a decision, and a default
-  would make it silently.
+- `program` — the programmes whose codes count, compared exactly and case-insensitively with the
+  programme the deployment's convention read out of the code. Omit it to accept every programme.
+- `qualifier` — how the spec or variant text the convention read is treated: `None` (the code
+  carries none), `Any`, `Only` (an allow-list in `values`) or `Except` (a deny-list). **Required**,
+  with no default: whether a variant-qualified code records the same service is a decision, and a
+  default would make it silently.
 
-Both are rejected on any other field or value match. How a milestone is read out of a code is
-deployment configuration — see `ServiceMilestoneOptions` — not part of this contract.
+Both are rejected on any other field or value match.
+
+Where the programme and the qualifier sit inside a code is deployment configuration, not part of
+this contract: a deployment declares its code structure as one or more
+`ServiceMilestoneOptions.Conventions`, each a pattern with named `milestone`, `program` and
+`qualifier` groups, tried in order. **ADP ships none**, so a deployment that declares none reads no
+milestones at all and no milestone condition can match. `ServiceCodeCoverageAudit` reports how much
+of a deployment's real code corpus its conventions actually read — run it against the labour-line
+store rather than a catalog export, because eligibility reads accumulated history and history holds
+code shapes the current catalog does not.
 
 A reward gated on prerequisites the customer must have performed, and on not having gone past them:
 

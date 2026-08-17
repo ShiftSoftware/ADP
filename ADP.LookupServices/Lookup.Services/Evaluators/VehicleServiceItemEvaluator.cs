@@ -1,5 +1,6 @@
 using ShiftSoftware.ADP.Lookup.Services.Aggregate;
 using ShiftSoftware.ADP.Lookup.Services.Diagnostics;
+using ShiftSoftware.ADP.Lookup.Services.Milestones;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using ShiftSoftware.ADP.Lookup.Services.Enums;
 using ShiftSoftware.ADP.Lookup.Services.Services;
@@ -774,11 +775,12 @@ public partial class VehicleServiceItemEvaluator
         long? baseScheduleMaximumMileage)
     {
         Trace.RecordEligibilityInputCount(serviceItems?.Count() ?? 0);
+        Trace.RecordMilestoneReader(options?.ServiceMilestones?.GetResolver());
 
         foreach (var item in serviceItems ?? Enumerable.Empty<ServiceItemModel>())
         {
             var (stage, outcome) = EvaluateItemEligibility(item, vehicle, ownership, freeServiceStartDate, baseScheduleMaximumMileage);
-            Trace.RecordEligibilityDecision(item, stage, vehicle, ownership, outcome?.Prerequisites, outcome?.QualifierNearMisses);
+            Trace.RecordEligibilityDecision(item, stage, vehicle, ownership, outcome?.Prerequisites, outcome?.MilestoneNearMisses);
 
             // Locked and missed items pass this point carrying their reason. Everything else that
             // failed is dropped, as it always was — an item excluded by brand, market or programme

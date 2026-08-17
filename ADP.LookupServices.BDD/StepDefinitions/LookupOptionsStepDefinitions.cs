@@ -266,10 +266,31 @@ public class LookupOptionsStepDefinitions
         _context.Options.ServiceMilestones.StepInKilometres = step;
     }
 
-    [Given("LookupOptions milestone package-code pattern is {string}")]
-    public void GivenMilestonePackageCodePattern(string pattern)
+    /// <summary>
+    /// Replaces the conventions the harness declares by default. A deployment writing its codes
+    /// differently says so here rather than living with silently discarded readings, and several
+    /// conventions may be declared: the first whose pattern matches decides the reading.
+    /// </summary>
+    [Given("LookupOptions milestone conventions:")]
+    public void GivenMilestoneConventions(DataTable dataTable)
     {
-        _context.Options.ServiceMilestones.PackageCodePattern = pattern;
+        _context.Options.ServiceMilestones.Conventions = dataTable.Rows
+            .Select(row => new ServiceCodeConvention
+            {
+                Name = GetOptionalString(row, "Name"),
+                Pattern = row.ContainsKey("Pattern") ? row["Pattern"] : null,
+            })
+            .ToList();
+    }
+
+    /// <summary>
+    /// Leaves the deployment with no way to read a milestone at all — what ADP ships as, since a
+    /// convention belongs to a source system rather than to the framework.
+    /// </summary>
+    [Given("LookupOptions declares no milestone conventions")]
+    public void GivenNoMilestoneConventions()
+    {
+        _context.Options.ServiceMilestones.Conventions.Clear();
     }
 
     /// <summary>

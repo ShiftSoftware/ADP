@@ -1,5 +1,7 @@
 using ShiftSoftware.ADP.Models;
 using System;
+using System.Collections.Generic;
+using System.Text;
 
 namespace ShiftSoftware.ADP.Lookup.Services.Milestones;
 
@@ -7,33 +9,24 @@ namespace ShiftSoftware.ADP.Lookup.Services.Milestones;
 /// How this deployment's service-history codes name a scheduled service, and what counts as a
 /// believable milestone once one is read.
 /// <para>
-/// Configured rather than hard-coded because the convention belongs to the source system, not to
-/// ADP: another deployment will write its milestones differently, and the failure mode is silent —
-/// a pattern that fits nothing reads every service as unscheduled, and every milestone condition
-/// simply stops matching.
+/// Declared rather than inferred, and deliberately without a default. A convention shipped as a
+/// framework default is one network's writing habits presented as everyone's: it looks configured,
+/// it matches a plausible-looking fraction, and every code it does not fit reads as work that never
+/// happened. Nothing here reads anything until a deployment says how its codes are written, and
+/// <see cref="ServiceCodeCoverageAudit"/> exists so that "how many of our codes does this actually
+/// read" is a number somebody can look at rather than a discovery made from a customer complaint.
 /// </para>
 /// </summary>
 [Docable]
 public class ServiceMilestoneOptions
 {
     /// <summary>
-    /// Matches a milestone written as a number of thousands followed by K, as a standalone token:
-    /// the digits are captured, and the surrounding characters must not be letters or digits so a
-    /// model code carrying digits cannot be mistaken for one.
-    /// <para>
-    /// <c>[0-9]</c> and not <c>\d</c> deliberately. .NET's <c>\d</c> matches Unicode digits, and a
-    /// deployment rendering Arabic or Kurdish will meet digits that are not the ones this convention
-    /// is written in.
-    /// </para>
+    /// The ways this deployment's source system writes a service code, in the order they are tried;
+    /// the first whose pattern matches decides the reading. Empty by design — a deployment that
+    /// declares none reads no milestones at all, and says so as a distinct state rather than
+    /// reporting every vehicle as having no service history.
     /// </summary>
-    public const string DefaultPackageCodePattern = @"(?<![A-Z0-9])([0-9]+)\s*K(?![A-Z0-9])";
-
-    /// <summary>
-    /// The pattern that reads a milestone out of a package code, capturing the number of thousands
-    /// in its first group. Matched case-insensitively. A code holding more than one match is read as
-    /// holding none, because which of them is the milestone would be a guess.
-    /// </summary>
-    public string PackageCodePattern { get; set; } = DefaultPackageCodePattern;
+    public IList<ServiceCodeConvention> Conventions { get; set; } = new List<ServiceCodeConvention>();
 
     /// <summary>The smallest believable milestone, in kilometres.</summary>
     public long MinimumInKilometres { get; set; } = 5_000;
@@ -53,16 +46,17 @@ public class ServiceMilestoneOptions
 
     /// <summary>
     /// Replaces the built-in package-code reader entirely — the seam a host uses to supply
-    /// milestones from a source that states them rather than implies them. When unset, the settings
-    /// above build the built-in reader.
+    /// milestones from a source that states them rather than implies them, and the seam that lets a
+    /// network whose codes are not regex-tractable be fixed without an ADP release. When unset, the
+    /// settings above build the built-in reader.
     /// </summary>
     public IServiceMilestoneResolver Resolver { get; set; }
 
     // Built once and reused: the evaluator constructs a condition evaluator per catalog item, so
-    // building a Regex on the way past would pay for the parse on every item of every lookup. Held
-    // as one reference so a reader either sees a resolver together with the settings it was built
-    // from or sees neither — the settings are not expected to change after startup, but a torn pair
-    // would be an unreproducible wrong answer rather than a slow one.
+    // compiling conventions on the way past would pay for the parse on every item of every lookup.
+    // Held as one reference so a reader either sees a resolver together with the settings it was
+    // built from or sees neither — the settings are not expected to change after startup, but a
+    // torn pair would be an unreproducible wrong answer rather than a slow one.
     private CachedResolver cached;
 
     internal IServiceMilestoneResolver GetResolver()
@@ -70,12 +64,7 @@ public class ServiceMilestoneOptions
         if (Resolver != null)
             return Resolver;
 
-        var signature = string.Join(
-            "\u0000",
-            PackageCodePattern ?? string.Empty,
-            MinimumInKilometres.ToString(),
-            MaximumInKilometres.ToString(),
-            StepInKilometres.ToString());
+        var signature = Signature();
 
         var current = cached;
         if (current != null && string.Equals(current.Signature, signature, StringComparison.Ordinal))
@@ -84,6 +73,31 @@ public class ServiceMilestoneOptions
         var built = new CachedResolver(signature, new PackageCodeServiceMilestoneResolver(this));
         cached = built;
         return built.Resolver;
+    }
+
+    /// <summary>
+    /// The settings the cached reader was built from, taken over the conventions' contents rather
+    /// than the list's identity: a host that adds a convention to the list it already handed us has
+    /// changed the configuration just as much as one that assigned a new list.
+    /// </summary>
+    private string Signature()
+    {
+        // A separator that cannot occur in a name or a pattern, so no two different
+        // configurations can write the same signature by running two fields together.
+        const char Separator = '\u0000';
+
+        var signature = new StringBuilder()
+            .Append(MinimumInKilometres).Append(Separator)
+            .Append(MaximumInKilometres).Append(Separator)
+            .Append(StepInKilometres);
+
+        if (Conventions != null)
+            foreach (var convention in Conventions)
+                signature
+                    .Append(Separator).Append(convention?.Name)
+                    .Append(Separator).Append(convention?.Pattern);
+
+        return signature.ToString();
     }
 
     private sealed class CachedResolver

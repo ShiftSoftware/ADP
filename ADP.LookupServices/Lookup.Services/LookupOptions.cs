@@ -315,10 +315,17 @@ public class LookupOptions
 
     /// <summary>
     /// How this deployment's service history names a scheduled service, read by milestone-based
-    /// eligibility conditions. The defaults describe the common convention; a deployment writing its
-    /// codes differently changes them here rather than in a catalog condition, and a host with a
-    /// source that states the interval outright replaces the reader entirely through
-    /// <see cref="ServiceMilestoneOptions.Resolver"/>.
+    /// eligibility conditions.
+    /// <para>
+    /// <b>Ships empty, and reads nothing until a deployment declares its conventions.</b> The
+    /// structure of a service code belongs to the source system: ADP shipping a default would be
+    /// one network's writing habits presented as everyone's, and it fails by matching a
+    /// plausible-looking fraction rather than by failing — every code it does not fit reads as work
+    /// that never happened, which withholds rewards customers have earned and reports nothing.
+    /// Declare conventions here, and check them against real data with
+    /// <see cref="ServiceCodeCoverageAudit"/>. A host with a source that states the interval
+    /// outright replaces the reader entirely through <see cref="ServiceMilestoneOptions.Resolver"/>.
+    /// </para>
     /// </summary>
     public ServiceMilestoneOptions ServiceMilestones { get; set; } = new();
 }

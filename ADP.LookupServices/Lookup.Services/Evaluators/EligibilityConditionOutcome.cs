@@ -31,20 +31,20 @@ internal sealed class EligibilityConditionOutcome
     internal IReadOnlyList<VehicleServiceItemPrerequisiteDTO> Prerequisites { get; }
 
     /// <summary>
-    /// Milestone codes that were dropped on their qualifier alone. Collected only while tracing;
-    /// they are evidence about how a deployment's codes are actually booked, which is a question the
-    /// catalog cannot answer.
+    /// Service codes a milestone condition passed over, with the reason. Collected only while
+    /// tracing; they are evidence about how a deployment's codes are actually written and booked,
+    /// which is a question the catalog cannot answer.
     /// </summary>
-    internal IReadOnlyList<ServiceItemMilestoneQualifierNearMiss> QualifierNearMisses { get; }
+    internal IReadOnlyList<ServiceItemMilestoneNearMiss> MilestoneNearMisses { get; }
 
     internal EligibilityConditionOutcome(
         EligibilityConditionState state,
         IReadOnlyList<VehicleServiceItemPrerequisiteDTO> prerequisites,
-        IReadOnlyList<ServiceItemMilestoneQualifierNearMiss> qualifierNearMisses)
+        IReadOnlyList<ServiceItemMilestoneNearMiss> milestoneNearMisses)
     {
         State = state;
         Prerequisites = prerequisites ?? new List<VehicleServiceItemPrerequisiteDTO>();
-        QualifierNearMisses = qualifierNearMisses ?? new List<ServiceItemMilestoneQualifierNearMiss>();
+        MilestoneNearMisses = milestoneNearMisses ?? new List<ServiceItemMilestoneNearMiss>();
     }
 
     internal bool IsMet => State == EligibilityConditionState.Met;
