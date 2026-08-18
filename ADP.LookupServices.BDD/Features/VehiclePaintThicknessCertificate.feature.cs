@@ -170,43 +170,43 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 8
 await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table433 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table522 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID"});
-                table433.AddRow(new string[] {
+                table522.AddRow(new string[] {
                             "JTMBFREVXKD123456",
                             "2024-01-15",
                             "1"});
 #line 12
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table433, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table522, "Given ");
 #line hidden
-                global::Reqnroll.Table table434 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table523 = new global::Reqnroll.Table(new string[] {
                             "InspectionDate",
                             "Source"});
-                table434.AddRow(new string[] {
+                table523.AddRow(new string[] {
                             "2024-01-10",
                             "PDI"});
 #line 15
-  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table434, "And ");
+  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table523, "And ");
 #line hidden
-                global::Reqnroll.Table table435 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table524 = new global::Reqnroll.Table(new string[] {
                             "PanelType",
                             "PanelSide",
                             "PanelPosition",
                             "MeasuredThickness"});
-                table435.AddRow(new string[] {
+                table524.AddRow(new string[] {
                             "Hood",
                             "Center",
                             "Front",
                             "120"});
-                table435.AddRow(new string[] {
+                table524.AddRow(new string[] {
                             "Roof",
                             "Left",
                             "Middle",
                             "95"});
 #line 18
-  await testRunner.AndAsync("paint thickness panels for inspection on \"2024-01-10\":", ((string)(null)), table435, "And ");
+  await testRunner.AndAsync("paint thickness panels for inspection on \"2024-01-10\":", ((string)(null)), table524, "And ");
 #line hidden
 #line 22
   await testRunner.WhenAsync("evaluating the paint thickness certificate with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -254,32 +254,32 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 8
 await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table436 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table525 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID"});
-                table436.AddRow(new string[] {
+                table525.AddRow(new string[] {
                             "JTMBFREVXKD123456",
                             "2024-01-15",
                             "1"});
-                table436.AddRow(new string[] {
+                table525.AddRow(new string[] {
                             "JTMBFREVXKD123456",
                             "2024-03-20",
                             "2"});
 #line 30
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table436, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table525, "Given ");
 #line hidden
-                global::Reqnroll.Table table437 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table526 = new global::Reqnroll.Table(new string[] {
                             "InspectionDate",
                             "Source"});
-                table437.AddRow(new string[] {
+                table526.AddRow(new string[] {
                             "2024-01-10",
                             "PDI"});
-                table437.AddRow(new string[] {
+                table526.AddRow(new string[] {
                             "2024-03-18",
                             "PDI"});
 #line 34
-  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table437, "And ");
+  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table526, "And ");
 #line hidden
 #line 38
   await testRunner.WhenAsync("evaluating the paint thickness certificate with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -321,25 +321,25 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 8
 await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table438 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table527 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID"});
-                table438.AddRow(new string[] {
+                table527.AddRow(new string[] {
                             "JTMBFREVXKD123456",
                             "2024-03-20",
                             "2"});
 #line 44
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table438, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table527, "Given ");
 #line hidden
-                global::Reqnroll.Table table439 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table528 = new global::Reqnroll.Table(new string[] {
                             "InspectionDate",
                             "Source"});
-                table439.AddRow(new string[] {
+                table528.AddRow(new string[] {
                             "2024-01-10",
                             "PDI"});
 #line 47
-  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table439, "And ");
+  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table528, "And ");
 #line hidden
 #line 50
   await testRunner.WhenAsync("evaluating the paint thickness certificate with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -375,31 +375,31 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 8
 await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table440 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table529 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID"});
-                table440.AddRow(new string[] {
+                table529.AddRow(new string[] {
                             "JTMBFREVXKD123456",
                             "2024-06-01",
                             "1"});
 #line 54
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table440, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table529, "Given ");
 #line hidden
-                global::Reqnroll.Table table441 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table530 = new global::Reqnroll.Table(new string[] {
                             "InspectionDate",
                             "Source"});
-                table441.AddRow(new string[] {
+                table530.AddRow(new string[] {
                             "2024-01-10",
                             "PDI"});
-                table441.AddRow(new string[] {
+                table530.AddRow(new string[] {
                             "2024-05-20",
                             "PDI"});
-                table441.AddRow(new string[] {
+                table530.AddRow(new string[] {
                             "2024-03-05",
                             "PDI"});
 #line 57
-  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table441, "And ");
+  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table530, "And ");
 #line hidden
 #line 62
   await testRunner.WhenAsync("evaluating the paint thickness certificate with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -438,28 +438,28 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 8
 await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table442 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table531 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID"});
-                table442.AddRow(new string[] {
+                table531.AddRow(new string[] {
                             "JTMBFREVXKD123456",
                             "2024-01-14",
                             "1"});
 #line 67
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table442, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table531, "Given ");
 #line hidden
-                global::Reqnroll.Table table443 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table532 = new global::Reqnroll.Table(new string[] {
                             "InspectionDate",
                             "Source"});
-                table443.AddRow(new string[] {
+                table532.AddRow(new string[] {
                             "2024-01-15",
                             "PDI"});
-                table443.AddRow(new string[] {
+                table532.AddRow(new string[] {
                             "2024-02-01",
                             "PDI"});
 #line 70
-  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table443, "And ");
+  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table532, "And ");
 #line hidden
 #line 74
   await testRunner.WhenAsync("evaluating the paint thickness certificate with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -495,25 +495,25 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 8
 await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table444 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table533 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID"});
-                table444.AddRow(new string[] {
+                table533.AddRow(new string[] {
                             "JTMBFREVXKD123456",
                             "2024-01-15",
                             "1"});
 #line 78
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table444, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table533, "Given ");
 #line hidden
-                global::Reqnroll.Table table445 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table534 = new global::Reqnroll.Table(new string[] {
                             "InspectionDate",
                             "Source"});
-                table445.AddRow(new string[] {
+                table534.AddRow(new string[] {
                             "2024-01-15",
                             "PDI"});
 #line 81
-  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table445, "And ");
+  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table534, "And ");
 #line hidden
 #line 84
   await testRunner.WhenAsync("evaluating the paint thickness certificate with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -555,25 +555,25 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 8
 await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table446 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table535 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID"});
-                table446.AddRow(new string[] {
+                table535.AddRow(new string[] {
                             "JTMBFREVXKD123456",
                             "2024-01-15",
                             "1"});
 #line 90
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table446, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table535, "Given ");
 #line hidden
-                global::Reqnroll.Table table447 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table536 = new global::Reqnroll.Table(new string[] {
                             "InspectionDate",
                             "Source"});
-                table447.AddRow(new string[] {
+                table536.AddRow(new string[] {
                             "2024-01-10",
                             "Dealer"});
 #line 93
-  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table447, "And ");
+  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table536, "And ");
 #line hidden
 #line 96
   await testRunner.WhenAsync("evaluating the paint thickness certificate with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -609,25 +609,25 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 8
 await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table448 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table537 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID"});
-                table448.AddRow(new string[] {
+                table537.AddRow(new string[] {
                             "JTMBFREVXKD123456",
                             "2024-01-15",
                             "1"});
 #line 100
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table448, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table537, "Given ");
 #line hidden
-                global::Reqnroll.Table table449 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table538 = new global::Reqnroll.Table(new string[] {
                             "InspectionDate",
                             "Source"});
-                table449.AddRow(new string[] {
+                table538.AddRow(new string[] {
                             "",
                             "PDI"});
 #line 103
-  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table449, "And ");
+  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table538, "And ");
 #line hidden
 #line 106
   await testRunner.WhenAsync("evaluating the paint thickness certificate with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -663,25 +663,25 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 8
 await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table450 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table539 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID"});
-                table450.AddRow(new string[] {
+                table539.AddRow(new string[] {
                             "JTMBFREVXKD123456",
                             "",
                             "1"});
 #line 110
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table450, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table539, "Given ");
 #line hidden
-                global::Reqnroll.Table table451 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table540 = new global::Reqnroll.Table(new string[] {
                             "InspectionDate",
                             "Source"});
-                table451.AddRow(new string[] {
+                table540.AddRow(new string[] {
                             "2024-01-10",
                             "PDI"});
 #line 113
-  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table451, "And ");
+  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table540, "And ");
 #line hidden
 #line 116
   await testRunner.WhenAsync("evaluating the paint thickness certificate with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -717,25 +717,25 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 8
 await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table452 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table541 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID"});
-                table452.AddRow(new string[] {
+                table541.AddRow(new string[] {
                             "JTMBFREVXKD123456",
                             "2024-01-15",
                             "1"});
 #line 120
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table452, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table541, "Given ");
 #line hidden
-                global::Reqnroll.Table table453 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table542 = new global::Reqnroll.Table(new string[] {
                             "InspectionDate",
                             "Source"});
-                table453.AddRow(new string[] {
+                table542.AddRow(new string[] {
                             "2024-01-10",
                             "pdi"});
 #line 123
-  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table453, "And ");
+  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table542, "And ");
 #line hidden
 #line 126
   await testRunner.WhenAsync("evaluating the paint thickness certificate with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -774,46 +774,46 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 8
 await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table454 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table543 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID"});
-                table454.AddRow(new string[] {
+                table543.AddRow(new string[] {
                             "JTMBFREVXKD123456",
                             "2024-01-15",
                             "1"});
 #line 131
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table454, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table543, "Given ");
 #line hidden
-                global::Reqnroll.Table table455 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table544 = new global::Reqnroll.Table(new string[] {
                             "InspectionDate",
                             "Source"});
-                table455.AddRow(new string[] {
+                table544.AddRow(new string[] {
                             "2024-01-10",
                             "PDI"});
 #line 134
-  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table455, "And ");
+  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table544, "And ");
 #line hidden
-                global::Reqnroll.Table table456 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table545 = new global::Reqnroll.Table(new string[] {
                             "PanelType",
                             "PanelSide",
                             "PanelPosition",
                             "MeasuredThickness",
                             "Images"});
-                table456.AddRow(new string[] {
+                table545.AddRow(new string[] {
                             "Hood",
                             "Center",
                             "Front",
                             "120",
                             "hood-1.jpg,hood-2.jpg"});
-                table456.AddRow(new string[] {
+                table545.AddRow(new string[] {
                             "Roof",
                             "Left",
                             "Middle",
                             "95",
                             "roof-1.jpg"});
 #line 137
-  await testRunner.AndAsync("paint thickness panels for inspection on \"2024-01-10\":", ((string)(null)), table456, "And ");
+  await testRunner.AndAsync("paint thickness panels for inspection on \"2024-01-10\":", ((string)(null)), table545, "And ");
 #line hidden
 #line 141
   await testRunner.WhenAsync("evaluating the paint thickness certificate with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -858,25 +858,25 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 8
 await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table457 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table546 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID"});
-                table457.AddRow(new string[] {
+                table546.AddRow(new string[] {
                             "JTMBFREVXKD123456",
                             "2024-01-15",
                             "1"});
 #line 147
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table457, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table546, "Given ");
 #line hidden
-                global::Reqnroll.Table table458 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table547 = new global::Reqnroll.Table(new string[] {
                             "InspectionDate",
                             "Source"});
-                table458.AddRow(new string[] {
+                table547.AddRow(new string[] {
                             "2024-01-10",
                             "PDI"});
 #line 150
-  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table458, "And ");
+  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table547, "And ");
 #line hidden
 #line 153
   await testRunner.AndAsync("resolvable colors exterior \"Super White II\" and interior \"Black Fabric\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -1017,25 +1017,25 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 8
 await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table459 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table548 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID"});
-                table459.AddRow(new string[] {
+                table548.AddRow(new string[] {
                             "JTMBFREVXKD123456",
                             "2024-01-15",
                             "2"});
 #line 177
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table459, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table548, "Given ");
 #line hidden
-                global::Reqnroll.Table table460 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table549 = new global::Reqnroll.Table(new string[] {
                             "InspectionDate",
                             "Source"});
-                table460.AddRow(new string[] {
+                table549.AddRow(new string[] {
                             "2024-01-10",
                             "PDI"});
 #line 180
-  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table460, "And ");
+  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table549, "And ");
 #line hidden
 #line 183
   await testRunner.WhenAsync("checking paint thickness certificate availability", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -1071,25 +1071,25 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 8
 await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table461 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table550 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID"});
-                table461.AddRow(new string[] {
+                table550.AddRow(new string[] {
                             "JTMBFREVXKD123456",
                             "2024-01-15",
                             "1"});
 #line 187
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table461, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table550, "Given ");
 #line hidden
-                global::Reqnroll.Table table462 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table551 = new global::Reqnroll.Table(new string[] {
                             "InspectionDate",
                             "Source"});
-                table462.AddRow(new string[] {
+                table551.AddRow(new string[] {
                             "2024-01-10",
                             "PDI"});
 #line 190
-  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table462, "And ");
+  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table551, "And ");
 #line hidden
 #line 193
   await testRunner.AndAsync("a paint thickness certificate serial number resolver that returns \"3F09A-12B45\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -1131,25 +1131,25 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 8
 await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table463 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table552 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID"});
-                table463.AddRow(new string[] {
+                table552.AddRow(new string[] {
                             "JTMBFREVXKD123456",
                             "2024-01-15",
                             "1"});
 #line 199
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table463, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table552, "Given ");
 #line hidden
-                global::Reqnroll.Table table464 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table553 = new global::Reqnroll.Table(new string[] {
                             "InspectionDate",
                             "Source"});
-                table464.AddRow(new string[] {
+                table553.AddRow(new string[] {
                             "2024-01-10",
                             "PDI"});
 #line 202
-  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table464, "And ");
+  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table553, "And ");
 #line hidden
 #line 205
   await testRunner.WhenAsync("evaluating the paint thickness certificate with language \"en\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -1191,25 +1191,25 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 8
 await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table465 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table554 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID"});
-                table465.AddRow(new string[] {
+                table554.AddRow(new string[] {
                             "JTMBFREVXKD123456",
                             "2024-01-15",
                             "1"});
 #line 210
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table465, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table554, "Given ");
 #line hidden
-                global::Reqnroll.Table table466 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table555 = new global::Reqnroll.Table(new string[] {
                             "InspectionDate",
                             "Source"});
-                table466.AddRow(new string[] {
+                table555.AddRow(new string[] {
                             "2024-01-10",
                             "PDI"});
 #line 213
-  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table466, "And ");
+  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table555, "And ");
 #line hidden
 #line 216
   await testRunner.AndAsync("a paint thickness certificate url resolver that returns \"https://lookup.example/c" +
@@ -1257,25 +1257,25 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 8
 await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table467 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table556 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID"});
-                table467.AddRow(new string[] {
+                table556.AddRow(new string[] {
                             "JTMBFREVXKD123456",
                             "2024-01-15",
                             "1"});
 #line 223
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table467, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table556, "Given ");
 #line hidden
-                global::Reqnroll.Table table468 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table557 = new global::Reqnroll.Table(new string[] {
                             "InspectionDate",
                             "Source"});
-                table468.AddRow(new string[] {
+                table557.AddRow(new string[] {
                             "2024-01-10",
                             "PDI"});
 #line 226
-  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table468, "And ");
+  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table557, "And ");
 #line hidden
 #line 229
   await testRunner.AndAsync("a paint thickness certificate url resolver that returns \"https://lookup.example/c" +
@@ -1318,25 +1318,25 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 8
 await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table469 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table558 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID"});
-                table469.AddRow(new string[] {
+                table558.AddRow(new string[] {
                             "JTMBFREVXKD123456",
                             "2024-01-15",
                             "2"});
 #line 235
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table469, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table558, "Given ");
 #line hidden
-                global::Reqnroll.Table table470 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table559 = new global::Reqnroll.Table(new string[] {
                             "InspectionDate",
                             "Source"});
-                table470.AddRow(new string[] {
+                table559.AddRow(new string[] {
                             "2024-01-10",
                             "PDI"});
 #line 238
-  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table470, "And ");
+  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table559, "And ");
 #line hidden
 #line 241
   await testRunner.AndAsync("a paint thickness certificate url resolver that returns \"https://lookup.example/c" +
@@ -1380,25 +1380,25 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 8
 await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table471 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table560 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID"});
-                table471.AddRow(new string[] {
+                table560.AddRow(new string[] {
                             "JTMBFREVXKD123456",
                             "2024-01-15",
                             "1"});
 #line 247
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table471, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table560, "Given ");
 #line hidden
-                global::Reqnroll.Table table472 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table561 = new global::Reqnroll.Table(new string[] {
                             "InspectionDate",
                             "Source"});
-                table472.AddRow(new string[] {
+                table561.AddRow(new string[] {
                             "2024-01-10",
                             "PDI"});
 #line 250
-  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table472, "And ");
+  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table561, "And ");
 #line hidden
 #line 253
   await testRunner.WhenAsync("looking up the vehicle \"JTMBFREVXKD123456\" with certificate url generation reques" +
@@ -1438,25 +1438,25 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line 8
 await this.FeatureBackgroundAsync();
 #line hidden
-                global::Reqnroll.Table table473 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table562 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID"});
-                table473.AddRow(new string[] {
+                table562.AddRow(new string[] {
                             "JTMBFREVXKD123456",
                             "2024-01-15",
                             "1"});
 #line 258
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table473, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table562, "Given ");
 #line hidden
-                global::Reqnroll.Table table474 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table563 = new global::Reqnroll.Table(new string[] {
                             "InspectionDate",
                             "Source"});
-                table474.AddRow(new string[] {
+                table563.AddRow(new string[] {
                             "2024-01-10",
                             "PDI"});
 #line 261
-  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table474, "And ");
+  await testRunner.AndAsync("paint thickness inspections:", ((string)(null)), table563, "And ");
 #line hidden
 #line 264
   await testRunner.AndAsync("a paint thickness certificate url resolver that returns \"https://lookup.example/c" +
