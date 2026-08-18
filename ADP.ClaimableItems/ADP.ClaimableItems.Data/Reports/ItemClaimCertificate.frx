@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Report ScriptLanguage="CSharp" ReportInfo.Created="04/11/2023 14:13:59" ReportInfo.Modified="12/09/2025 09:28:18" ReportInfo.CreatorVersion="2025.1.0.0">
+<Report ScriptLanguage="CSharp" ReportInfo.Created="04/11/2023 14:13:59" ReportInfo.Modified="08/18/2026 08:19:59" ReportInfo.CreatorVersion="2025.1.0.0">
   <Dictionary/>
   <ReportPage Name="Page1" RawPaperSize="9" LeftMargin="6" TopMargin="6" RightMargin="6" BottomMargin="6" Watermark.Font="Arial, 60pt" LastPageSource="15" FirstPageSource="15">
     <PageHeaderBand Name="PageHeader1" Width="748.44" Height="160.65">
@@ -17,18 +17,18 @@
         </TableRow>
       </TableObject>
       <TableObject Name="Table25" Left="500.85" Top="122.85" Width="232.49" Height="37.8">
-        <TableColumn Name="Column226" Width="118.13"/>
-        <TableColumn Name="Column227" Width="114.36"/>
+        <TableColumn Name="Column226" Width="89.78"/>
+        <TableColumn Name="Column227" Width="142.71"/>
         <TableRow Name="Row90">
           <TableCell Name="Cell546" Text="Date:" HorzAlign="Right" Font="Arial, 10pt"/>
-          <TableCell Name="Cell547" Text="[Header.CertificateDate]" HorzAlign="Right" VertAlign="Center" Font="Arial, 10pt"/>
+          <TableCell Name="Cell547" Text="[Header.CertificateDate]" AutoShrink="FontSize" HorzAlign="Right" VertAlign="Center" Font="Arial, 10pt"/>
         </TableRow>
         <TableRow Name="Row97">
           <TableCell Name="Cell562" Text="Reference #:" HorzAlign="Right" Font="Arial, 10pt"/>
-          <TableCell Name="Cell563" Text="[Header.DisplayDistributorCertificateNo]" HorzAlign="Right" VertAlign="Center" Font="Arial, 10pt"/>
+          <TableCell Name="Cell563" Text="[Header.DisplayDistributorCertificateNo]" AutoShrink="FontSize" HorzAlign="Right" VertAlign="Center" Font="Arial, 10pt"/>
         </TableRow>
       </TableObject>
-      <ChildBand Name="Child4" Top="164.73" Width="748.44" Height="274.05" CanGrow="true" PrintOn="FirstPage">
+      <ChildBand Name="Child4" Top="163.85" Width="748.44" Height="274.05" CanGrow="true" PrintOn="FirstPage">
         <TableObject Name="Table27" Top="18.9" Width="746.55" Height="255.15">
           <TableColumn Name="Column238" Width="746.55"/>
           <TableRow Name="Row92" MinHeight="56.7" Height="56.7" AutoSize="true">
@@ -49,7 +49,7 @@
         </TableObject>
       </ChildBand>
     </PageHeaderBand>
-    <DataBand Name="DataClaims" Top="475.29" Width="748.44" Height="28.35" CanGrow="true">
+    <DataBand Name="DataClaims" Top="472.65" Width="748.44" Height="28.35" CanGrow="true">
       <TableObject Name="Table1" Width="746.42" Height="28.35">
         <TableColumn Name="Column41" Width="40.95"/>
         <TableColumn Name="Column42" Width="69.3"/>
@@ -68,8 +68,8 @@
           <TableCell Name="Cell27" Border.Lines="All" Border.Width="2" Text="[Table.Amount]" HorzAlign="Center" VertAlign="Center" Font="Arial, 9pt"/>
         </TableRow>
       </TableObject>
-      <ChildBand Name="Child1" Top="507.73" Width="748.44" CompleteToNRows="4"/>
-      <DataHeaderBand Name="DataHeader1" Top="442.86" Width="748.44" Height="28.35">
+      <ChildBand Name="Child1" Top="504.2" Width="748.44" CompleteToNRows="4"/>
+      <DataHeaderBand Name="DataHeader1" Top="441.1" Width="748.44" Height="28.35">
         <TableObject Name="Table2" Width="746.42" Height="28.35">
           <TableColumn Name="Column32" Width="40.95"/>
           <TableColumn Name="Column33" Width="69.3"/>
@@ -90,7 +90,7 @@
         </TableObject>
       </DataHeaderBand>
     </DataBand>
-    <ReportSummaryBand Name="ReportSummary1" Top="511.81" Width="748.44" Height="44.41">
+    <ReportSummaryBand Name="ReportSummary1" Top="507.4" Width="748.44" Height="44.41">
       <TableObject Name="Table26" Width="746.55" Height="28.35" PrintOnParent="true">
         <TableColumn Name="Column232" Width="40.95"/>
         <TableColumn Name="Column233" Width="69.3"/>
@@ -107,14 +107,14 @@
           <TableCell Name="Cell553" Border.Lines="All" Border.Width="2" HorzAlign="Center" VertAlign="Center" Font="Arial, 12pt, style=Bold"/>
         </TableRow>
       </TableObject>
-      <ChildBand Name="ChildSignStamp" Top="560.3" Width="748.44" Height="214.51">
+      <ChildBand Name="ChildSignStamp" Top="555.01" Width="748.44" Height="214.51">
         <TextObject Name="Text7" Left="10.11" Top="18.9" Width="311.85" Height="37.8" Text="For the Distributor:&#13;&#10;[Header.Distributor]" HorzAlign="Center" Font="Arial, 10pt, style=Bold"/>
         <TextObject Name="Text9" Left="9.45" Top="138.91" Width="321.3" Height="75.6" Border.Lines="Top" Text="Name:&#13;&#10;Title:" VertAlign="Bottom" Font="Arial, 10pt" LineHeight="30"/>
         <TextObject Name="Text16" Left="388.11" Top="18.9" Width="330.75" Height="37.8" Text="For the Dealer:&#13;&#10;[Header.Dealer]" HorzAlign="Center" Font="Arial, 10pt, style=Bold"/>
         <TextObject Name="Text17" Left="387.45" Top="138.73" Width="311.85" Height="75.6" Border.Lines="Top" Text="Name:&#13;&#10;Title:" VertAlign="Bottom" Font="Arial, 10pt" LineHeight="30"/>
       </ChildBand>
     </ReportSummaryBand>
-    <PageFooterBand Name="PageFooter1" Top="778.89" Width="748.44" Height="75.6">
+    <PageFooterBand Name="PageFooter1" Top="772.72" Width="748.44" Height="75.6">
       <TextObject Name="TextFooterAddress" Left="18.9" Top="18.9" Width="378" Height="47.25" Text="Aviapark Business Center, 14 Elbek Street,&#13;&#10;Yashnobod district, Tashkent 100060, Uzbekistan" HorzAlign="Center" VertAlign="Center" Font="Segoe UI, 10pt" TextFill.Color="Gray"/>
       <TextObject Name="TextFooterContactDetails" Left="396.9" Top="18.9" Width="340.2" Height="47.25" Text="+998 90 900 11 60&#13;&#10;www.toyota-centralasia.com" HorzAlign="Center" VertAlign="Center" Font="Segoe UI, 10pt" TextFill.Color="Gray"/>
     </PageFooterBand>
