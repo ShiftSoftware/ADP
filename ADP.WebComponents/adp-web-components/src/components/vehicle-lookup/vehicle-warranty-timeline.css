@@ -36,6 +36,9 @@
   --violet-dark: #5f4887;
   --paper-soft: #f7f9fa;
   --blue-tint: #e8f1f8;
+  /* Dates sit a shade darker than --muted. At 13px they are read, not glanced at, and the
+     muted grey was thin against the rail's soft paper. */
+  --date-ink: #46535e;
   --shadow: 0 18px 45px rgba(27, 45, 61, 0.1), 0 2px 7px rgba(27, 45, 61, 0.06);
   /* One duration for everything that appears, disappears or resizes, so the card settles as a
      single movement instead of a sequence of unrelated ones. */
@@ -468,9 +471,9 @@
 
 .total-coverage span {
   color: var(--muted);
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.13em;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
@@ -486,12 +489,12 @@
 
 .total-coverage .coverage-mix {
   /* Holds its line even when there is no mix to name, so the faded totals block is not a line
-     shorter than a real one. Sized in em against this element's own 9px, so the reservation tracks
-     the type rather than a pixel figure that has to be kept in step by hand. */
+     shorter than a real one. Sized in em against this element's own size, so the reservation
+     tracks the type rather than a pixel figure that has to be kept in step by hand. */
   min-height: 1.3em;
   margin-top: 2px;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0;
   line-height: 1.3;
@@ -543,11 +546,17 @@
   position: absolute;
   inset: 0 auto auto var(--at);
   padding: 0 3px;
-  color: var(--muted);
+  color: var(--date-ink);
   background: var(--paper-soft);
-  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
-  font-size: 11px;
-  font-weight: 800;
+  /* The panel's own text stack rather than a mono one. Mono was doing two jobs here —
+     signalling "data", and keeping digits the same width so the dates sit on a common
+     grid — and only the second matters, which tabular figures give us without the
+     small-size legibility cost of the mono stack (Consolas, on Windows). */
+  font-family: inherit;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: 0.01em;
   line-height: 1;
   white-space: nowrap;
   transform: translateX(-50%);
@@ -588,7 +597,7 @@
 .lane {
   --track-top: 16px;
   --track-height: 54px;
-  --label-band: 41px;
+  --label-band: 49px;
   position: relative;
   isolation: isolate;
   height: calc(var(--track-top) + var(--track-height) + var(--label-band));
@@ -620,9 +629,10 @@
   background: var(--blue-tint);
   border: 1px solid rgba(48, 113, 169, 0.32);
   border-radius: 999px;
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: 0.01em;
   white-space: nowrap;
   transform: translateX(-50%);
 }
@@ -733,8 +743,8 @@
 }
 
 .segment.is-standard strong {
-  font-size: 12px;
-  font-weight: 800;
+  font-size: 13px;
+  font-weight: 700;
   letter-spacing: 0.015em;
 }
 
@@ -763,19 +773,20 @@
 .coverage-label {
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  /* Three lines fit the band exactly; anything longer is a host-supplied name that would
+  /* Three lines fit --label-band exactly; anything longer is a host-supplied name that would
      otherwise be clipped by the lane, so it ellipsises instead. The full text stays in the
-     entry's aria-label and the sr-only summary. */
+     entry's aria-label and the sr-only summary. Changing this size means changing that band:
+     it is cut to 3 x (font-size x line-height) plus the margin above. */
   -webkit-line-clamp: 3;
   width: 100%;
   overflow-wrap: anywhere;
-  min-height: 24px;
+  min-height: 29px;
   margin-top: 5px;
   overflow: hidden;
   padding: 0 4px;
   color: var(--ink);
-  font-size: 10px;
-  font-weight: 800;
+  font-size: 12px;
+  font-weight: 700;
   line-height: 1.2;
   text-align: center;
 }
@@ -925,3 +936,4 @@
     animation-iteration-count: 1 !important;
   }
 }
+

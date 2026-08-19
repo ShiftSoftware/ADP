@@ -274,8 +274,13 @@ const BADGE_GLYPHS = {
  * Only the broker case is derivable from the response; the supply-chain cases depend on the host's
  * own company classification, so the reason is read from the DTO. An older API that does not send
  * `startState` reads as started and shows nothing, exactly as before.
+ *
+ * `AwaitingActivation` is withheld from an unauthorized vehicle. That message says a step is
+ * outstanding, and on a vehicle this dealer is not authorized for the step is never coming — the
+ * card would be promising an activation that will not happen. The other two are statements about
+ * where the vehicle sits in the supply chain, which is true no matter who is asking, so they stand.
  */
-const notStartedMessage = (vehicleInformation: VehicleLookupDTO | undefined, locale: TimelineLocale) => {
+const notStartedMessage = (vehicleInformation: VehicleLookupDTO | undefined, locale: TimelineLocale, isAuthorized: boolean | undefined) => {
   const startState = vehicleInformation?.warranty?.startState;
 
   if (!vehicleInformation || !startState || startState === 'Started') return '';
@@ -283,7 +288,7 @@ const notStartedMessage = (vehicleInformation: VehicleLookupDTO | undefined, loc
   if (startState === 'AwaitingBrokerInvoice') return locale.awaitingBrokerInvoice + (vehicleInformation?.saleInformation?.broker?.brokerName || '');
   if (startState === 'AwaitingEndCustomerSale') return locale.awaitingEndCustomerSale;
 
-  return locale.awaitingActivation;
+  return isAuthorized === false ? '' : locale.awaitingActivation;
 };
 
 /**
@@ -334,7 +339,7 @@ export default function CoverageTimeline({ vehicleInformation, locale, isAuthori
   const hasCoverage = coverages.length > 0;
 
   const dealerName = vehicleInformation?.saleInformation?.companyName || '';
-  const notice = notStartedMessage(vehicleInformation, locale);
+  const notice = notStartedMessage(vehicleInformation, locale, isAuthorized);
 
   // The broker that actually anchored the warranty — a warranty fact, not a sale fact, so it is read
   // from the warranty DTO rather than inferred from the presence of a broker on the sale.
@@ -517,8 +522,8 @@ function TotalCoverage({ coverages, locale }: { coverages: Coverage[]; locale: T
   const total = mix ? formatDuration(standardMonths + extendedMonths, locale) : '—';
 
   return (
-    <aside class="total-coverage" aria-label={`${locale.totalPlannedProtection}: ${mix || total}`}>
-      <span>{locale.totalPlannedProtection}</span>
+    <aside class="total-coverage" aria-label={`${locale.totalWarranty}: ${mix || total}`}>
+      <span>{locale.totalWarranty}</span>
       <strong>{total}</strong>
       <span class="coverage-mix">{mix}</span>
     </aside>

@@ -9,7 +9,7 @@ const warrantyTimelineSchema = yupTypeMapper([
   'activeWarranty',
   'notActiveWarranty',
   'warrantyCoverage',
-  'totalPlannedProtection',
+  'totalWarranty',
   'standardWarranty',
   'standardWarrantyMark',
   'extendedWarranty',

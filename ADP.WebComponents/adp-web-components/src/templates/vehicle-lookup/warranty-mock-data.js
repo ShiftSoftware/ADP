@@ -2704,6 +2704,40 @@ const mockData = {
     serviceHistory: [],
   },
 
+  // Same standing as JTMABBBJ9P4099270 but the requesting dealer is not authorized for it, so the
+  // activation the state implies is never coming. The panel must not say it is pending.
+  JTMABBBJ9P4099271: {
+    vin: 'JTMABBBJ9P4099271',
+    identifiers: {
+      vin: 'JTMABBBJ9P4099271',
+      variant: '53311S3202301',
+      katashiki: 'VJA300L-GNUAZV',
+      color: '070',
+      trim: '40',
+      brand: 0,
+      brandIntegrationID: 'TYT',
+    },
+    saleInformation: {
+      companyIntegrationID: '1',
+      countryName: 'Iraq',
+      companyName: 'SAS',
+      branchIntegrationID: '44',
+      branchName: 'SAS - Showroom | Basra',
+      invoiceDate: '2024-01-15',
+      invoiceNumber: 11160204,
+    },
+    isAuthorized: false,
+    warranty: {
+      hasActiveWarranty: false,
+      startState: 'AwaitingActivation',
+      warrantyStartDate: null,
+      warrantyEndDate: null,
+      hasExtendedWarranty: false,
+      extendedWarranties: [],
+    },
+    serviceHistory: [],
+  },
+
   JTMABBBJ9P4099294: {
     vin: 'JTMABBBJ9P4099294',
     identifiers: {

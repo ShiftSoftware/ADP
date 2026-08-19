@@ -13,6 +13,7 @@
   --green: #2c8a58;
   --green-tint: #e8f4ed;
   --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --ui-font: 'Noto Kufi Arabic', 'Nunito', Roboto, Arial, sans-serif;
 }
 
 .claimable-item-popover[aria-expanded='true'] {
@@ -123,17 +124,25 @@
   padding-inline-start: 14px;
 }
 
+/* 0.14em was buying separation that 9px could not get any other way. At 11px it only makes an
+   already long label longer, so the tracking comes back down as the size goes up. */
 .claimable-item-popover .lab {
-  font-size: 9px;
-  letter-spacing: 0.14em;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   color: var(--muted);
   text-transform: uppercase;
 }
 
+/* Mono is kept only where reading character by character is the point — the package code below.
+   Dates, company names and reference numbers are read as words and figures, and the mono stack
+   (Consolas, on Windows) costs legibility at this size for nothing. Tabular figures keep the
+   values aligned down the column, which is the one thing mono was doing for them. */
 .claimable-item-popover .val {
-  font-family: var(--mono) !important;
-  font-size: 13px;
-  font-weight: 500;
+  font-family: var(--ui-font) !important;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
   margin-top: 3px;
   color: var(--text);
   overflow-wrap: anywhere;
@@ -150,6 +159,8 @@
 
 .popover-spec.pkg .val {
   color: var(--primary-dark);
+  font-family: var(--mono) !important;
+  font-weight: 500;
 }
 
 /* ============ Prerequisites ============
@@ -165,7 +176,8 @@
 .popover-lock .lab {
   text-transform: none;
   letter-spacing: 0.02em;
-  font-size: 11px;
+  font-size: 12px;
+  font-weight: 600;
   line-height: 1.4;
 }
 
@@ -188,6 +200,7 @@
 .popover-prerequisite .val {
   margin-top: 0;
   color: inherit;
+  font-size: 12px;
   line-height: 1.1;
 }
 
@@ -200,8 +213,9 @@
 }
 
 .popover-prerequisite-date {
-  font-size: 9px;
-  letter-spacing: 0.06em;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
   margin-top: 1px;
   opacity: 0.75;
 }

@@ -9,10 +9,10 @@ import CoverageTimeline from './CoverageTimeline';
 
 const SNAPSHOT = '2027-06-01';
 
-const renderTimeline = (vehicleInformation?: Partial<VehicleLookupDTO>, today = SNAPSHOT) =>
+const renderTimeline = (vehicleInformation?: Partial<VehicleLookupDTO>, today = SNAPSHOT, isAuthorized = true) =>
   newSpecPage({
     components: [],
-    template: () => <CoverageTimeline vehicleInformation={vehicleInformation as VehicleLookupDTO} locale={timelineLocale} isAuthorized today={today} />,
+    template: () => <CoverageTimeline vehicleInformation={vehicleInformation as VehicleLookupDTO} locale={timelineLocale} isAuthorized={isAuthorized} today={today} />,
   });
 
 const bandsOf = (page: { body: HTMLElement }) => [...page.body.querySelectorAll('.coverage-entry')];
@@ -258,6 +258,22 @@ describe('CoverageTimeline', () => {
     } as Partial<VehicleLookupDTO>);
 
     expect(page.body.querySelector('.warranty-notice')?.textContent).toBe(timelineLocale.awaitingActivation);
+  });
+
+  it('does not promise an activation to a vehicle it is not authorized for', async () => {
+    const page = await renderTimeline({ saleInformation: { companyName: 'Sample Motors' }, warranty: { startState: 'AwaitingActivation' } } as Partial<VehicleLookupDTO>, SNAPSHOT, false);
+
+    expect(isShown(page, '.warranty-notice')).toBe(false);
+  });
+
+  it('still states supply-chain possession when unauthorized, because that does not depend on who is asking', async () => {
+    const page = await renderTimeline(
+      { saleInformation: { companyName: 'Sample Distributor' }, warranty: { startState: 'AwaitingEndCustomerSale' } } as Partial<VehicleLookupDTO>,
+      SNAPSHOT,
+      false,
+    );
+
+    expect(page.body.querySelector('.warranty-notice')?.textContent).toBe(timelineLocale.awaitingEndCustomerSale);
   });
 
   it('names both the dealer and the broker when a broker invoice started the warranty', async () => {
