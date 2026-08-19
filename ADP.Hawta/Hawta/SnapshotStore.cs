@@ -184,6 +184,26 @@ public sealed class SnapshotStore : IDisposable
             )
             """);
 
+        // How far each Cosmos-reading source has already ingested. Additive on exactly the same
+        // terms as meta.SourceFileStamps above — this CREATE block has no version gate, so an
+        // existing write DB gains the table empty on the next open and no schema-version bump
+        // (and therefore no forced cold-start rebuild) is needed.
+        //
+        // The UPSTREAM cursor. Not to be confused with meta.ChangeSequenceState below, which
+        // allocates the DOWNSTREAM one: this records what we have already read out of a container,
+        // that records what consumers have yet to read out of us.
+        Execute(
+            """
+            CREATE TABLE IF NOT EXISTS meta.SourceCosmosCursors (
+                "SourceKey" VARCHAR NOT NULL PRIMARY KEY,
+                "Database" VARCHAR NOT NULL,
+                "Container" VARCHAR NOT NULL,
+                "ContinuationToken" VARCHAR NOT NULL,
+                "IngestVersion" VARCHAR,
+                "StampedAtUtc" TIMESTAMP NOT NULL
+            )
+            """);
+
         // Store-wide allocator for the downstream change cursor. It is a table rather than a
         // DuckDB SEQUENCE because its value must roll back with a failed merge and be reconciled
         // to the maximum sequence restored from a published manifest.
@@ -300,6 +320,128 @@ public sealed class SnapshotStore : IDisposable
     /// <summary>Drops a source's stamp, forcing a full read on its next cycle.</summary>
     public void ClearSourceFileStamp(string sourceKey) =>
         Execute("DELETE FROM meta.SourceFileStamps WHERE \"SourceKey\" = ?", sourceKey);
+
+    // ---- Cosmos read cursors ------------------------------------------------------------------
+
+    /// <summary>
+    /// How far <paramref name="sourceKey"/> has already ingested from its Cosmos container, or
+    /// null if it has never merged one. Null is the expensive answer here, not the safe one: it
+    /// means the next read starts from the beginning of the container.
+    /// </summary>
+    public SourceCosmosCursor? ReadSourceCosmosCursor(string sourceKey)
+    {
+        using var command = Connection.CreateCommand();
+        command.CommandText =
+            """
+            SELECT "Database", "Container", "ContinuationToken", "IngestVersion", "StampedAtUtc"
+            FROM meta.SourceCosmosCursors WHERE "SourceKey" = ?
+            """;
+        var parameter = command.CreateParameter();
+        parameter.Value = sourceKey;
+        command.Parameters.Add(parameter);
+
+        using var reader = command.ExecuteReader();
+        if (!reader.Read())
+            return null;
+
+        return new SourceCosmosCursor(
+            sourceKey,
+            reader.GetString(0),
+            reader.GetString(1),
+            reader.GetString(2),
+            reader.IsDBNull(3) ? null : reader.GetString(3),
+            AsUtc(reader.GetDateTime(4)));
+    }
+
+    /// <summary>
+    /// Records a Cosmos source's resume position. Called <b>only after</b> the documents it
+    /// describes have merged — writing it first would let a crash between the two skip documents
+    /// that are in no table, which is the one failure direction this design cannot absorb.
+    /// </summary>
+    public void WriteSourceCosmosCursor(SourceCosmosCursor cursor)
+    {
+        ArgumentNullException.ThrowIfNull(cursor);
+
+        Execute("DELETE FROM meta.SourceCosmosCursors WHERE \"SourceKey\" = ?", cursor.SourceKey);
+        Execute(
+            "INSERT INTO meta.SourceCosmosCursors VALUES (?, ?, ?, ?, ?, ?)",
+            cursor.SourceKey, cursor.Database, cursor.Container, cursor.ContinuationToken,
+            cursor.IngestVersion, cursor.StampedAtUtc);
+    }
+
+    /// <summary>
+    /// Every cursor, for publishing alongside the set it describes. Read at publish time, when no
+    /// merge is in flight, so what this returns is exactly consistent with the parquet about to be
+    /// committed.
+    /// </summary>
+    public IReadOnlyList<SourceCosmosCursor> ReadAllSourceCosmosCursors()
+    {
+        using var command = Connection.CreateCommand();
+        command.CommandText =
+            """
+            SELECT "SourceKey", "Database", "Container", "ContinuationToken", "IngestVersion", "StampedAtUtc"
+            FROM meta.SourceCosmosCursors ORDER BY "SourceKey"
+            """;
+
+        using var reader = command.ExecuteReader();
+        var cursors = new List<SourceCosmosCursor>();
+        while (reader.Read())
+        {
+            cursors.Add(new SourceCosmosCursor(
+                reader.GetString(0),
+                reader.GetString(1),
+                reader.GetString(2),
+                reader.GetString(3),
+                reader.IsDBNull(4) ? null : reader.GetString(4),
+                AsUtc(reader.GetDateTime(5))));
+        }
+
+        return cursors;
+    }
+
+    /// <summary>Drops a source's cursor. Its next read starts from the beginning of the container.</summary>
+    public void ClearSourceCosmosCursor(string sourceKey) =>
+        Execute("DELETE FROM meta.SourceCosmosCursors WHERE \"SourceKey\" = ?", sourceKey);
+
+    /// <summary>
+    /// The newest run record per source, for publishing alongside the set it describes. Read at
+    /// publish time, when no merge is in flight.
+    ///
+    /// <para>A source that has never run has no entry, and that absence is the point: a source
+    /// crashing before it can stage anything writes no run record at all, so "never ran" and
+    /// "failing every tick" both present as an absent row — which a consumer must be able to tell
+    /// from a source that ran and found nothing.</para>
+    /// </summary>
+    public IReadOnlyList<SourceRunSummary> ReadLatestRunPerSource()
+    {
+        using var command = Connection.CreateCommand();
+        command.CommandText =
+            """
+            SELECT "Source", "TargetTable", "StartedAt", "FinishedAt", "Status",
+                   "RowsStaged", "RowsInserted", "RowsUpdated", "RowsTombstoned"
+            FROM meta.SyncRuns
+            QUALIFY row_number() OVER (PARTITION BY "Source" ORDER BY "StartedAt" DESC, "RunId" DESC) = 1
+            ORDER BY "Source"
+            """;
+
+        using var reader = command.ExecuteReader();
+        var runs = new List<SourceRunSummary>();
+        while (reader.Read())
+        {
+            runs.Add(new SourceRunSummary(
+                reader.GetString(0),
+                reader.GetString(1),
+                AsUtc(reader.GetDateTime(2)),
+                reader.IsDBNull(3) ? null : AsUtc(reader.GetDateTime(3)),
+                reader.GetString(4),
+                reader.GetInt64(5),
+                reader.GetInt64(6),
+                reader.GetInt64(7),
+                reader.GetInt64(8)));
+        }
+
+        return runs;
+    }
 
     /// <summary>
     /// Creates the family's consolidated table (source columns + bookkeeping) if missing.

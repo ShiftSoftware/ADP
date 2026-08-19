@@ -158,6 +158,25 @@ public sealed class SnapshotAgentLoop : IDisposable
             throw new InvalidOperationException(
                 "Wet mode with replicated tables requires a CosmosClient (set DryRun for dark-launch).");
         }
+
+        // A Cosmos-READING source fails at STARTUP without a client, never per cadence tick, and
+        // DryRun does not excuse it — DryRun darkens the pump, not the reads.
+        //
+        // Without this guard such a source has Families = null, so it slips past the check above:
+        // the host starts clean, then throws on every tick, and its table publishes as well-formed
+        // EMPTY parquet. A consumer cannot tell that from "this table genuinely has no rows", and
+        // for a table whose absent rows mean "the dealer did not do it", the empty version is a
+        // report that accuses everyone. Dark DMS dealers are allowed to ship dark because their
+        // table has live siblings keeping it real; a Cosmos-only table has none.
+        var cosmosReaders = options.Registry.Sources.Where(s => s.CosmosRead is not null).ToList();
+        if (cosmosClient is null && cosmosReaders.Count > 0)
+        {
+            throw new InvalidOperationException(
+                "Cosmos-reading source(s) require a CosmosClient: " +
+                string.Join(", ", cosmosReaders.Select(s => $"'{s.Key}' ({s.CosmosRead})")) +
+                ". A source that cannot reach its container must not be registered at all — turning it " +
+                "off with Enabled still ensures, publishes and rebuilds an empty table.");
+        }
     }
 
     /// <summary>The store, once a cycle has opened it (exposed for hosts' diagnostics endpoints).</summary>
@@ -278,7 +297,10 @@ public sealed class SnapshotAgentLoop : IDisposable
 
                 try
                 {
-                    var merge = source.Ingest(new SnapshotSourceContext
+                    // RunIngestAsync, not Ingest: it dispatches to whichever delegate the source
+                    // declares. A synchronous source still runs inline on this thread — the store
+                    // is single-connection and single-writer, so nothing here goes concurrent.
+                    var merge = await source.RunIngestAsync(new SnapshotSourceContext
                     {
                         Store = store!,
                         CancellationToken = token,

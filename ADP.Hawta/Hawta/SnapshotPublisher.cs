@@ -476,6 +476,20 @@ public static class SnapshotPublisher
             .Select(PublishedSourceStamp.From)
             .ToList();
 
+        // Cosmos read cursors ride the same road, for the same reason and with more at stake: a
+        // cursor lost on rebuild does not cost one re-read of one file, it costs a full re-read of
+        // a container that only grows.
+        var sourceCursors = store.ReadAllSourceCosmosCursors()
+            .Select(PublishedSourceCursor.From)
+            .ToList();
+
+        // And the run records, for the same reason the stamps ride here: the fact lives on the
+        // agent's instance-local disk, where nothing outside the agent can read it. This section
+        // is the one a health framework is meant to read.
+        var sourceRuns = store.ReadLatestRunPerSource()
+            .Select(PublishedSourceRun.From)
+            .ToList();
+
         var manifest = new PublishedSnapshot(
             ManifestVersion: PublishedSnapshot.CurrentManifestVersion,
             SnapshotName: options.SnapshotName,
@@ -489,6 +503,8 @@ public static class SnapshotPublisher
             SourceStamps: sourceStamps.Count == 0 ? null : sourceStamps)
         {
             ChangeSequenceHighWatermark = store.ReadChangeSequenceHighWatermark(),
+            SourceCursors = sourceCursors.Count == 0 ? null : sourceCursors,
+            SourceRuns = sourceRuns.Count == 0 ? null : sourceRuns,
         };
 
         var payload = JsonSerializer.Serialize(manifest, PublishedSnapshot.SerializerOptions);

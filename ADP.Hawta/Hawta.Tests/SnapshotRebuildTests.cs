@@ -114,6 +114,71 @@ public class SnapshotRebuildTests : IDisposable
     }
 
     [Fact]
+    public void RebuildRestoresCosmosCursors_SoDrIsNotSilentlyAFullContainerReRead()
+    {
+        // Without this a rebuild reseeds the write DB from parquet, the cursor is gone, and the
+        // next tick reads the whole container from the beginning — harmless at merge level, but a
+        // full read nobody asked for, growing more expensive every day.
+        fx.MergeWidgets(("W1", "alpha", 1));
+        var stampedAt = new DateTime(2026, 8, 18, 6, 15, 0, DateTimeKind.Utc);
+        fx.Store.WriteSourceCosmosCursor(new SourceCosmosCursor(
+            "cosmos-ssc-lookup", "Logs", "SSC", "TOKEN-A", "v3", stampedAt));
+        fx.Publish();
+
+        using var rebuilt = RebuildIntoFreshStore([fx.Widget, fx.Gadget], out _);
+
+        var restored = rebuilt.ReadSourceCosmosCursor("cosmos-ssc-lookup");
+        Assert.NotNull(restored);
+        Assert.Equal("TOKEN-A", restored.ContinuationToken);
+        Assert.Equal("Logs", restored.Database);
+        Assert.Equal("SSC", restored.Container);
+        Assert.Equal("v3", restored.IngestVersion);
+        // The ORIGINAL stamp time: "when did this source last actually read?" has to survive DR
+        // truthfully, or a source quiet since before the outage looks freshly read.
+        Assert.Equal(stampedAt, restored.StampedAtUtc);
+    }
+
+    [Fact]
+    public void ACursorMovedAfterTheLastPublish_IsNotRestored()
+    {
+        // The same failure direction the file stamps guard, and worse here: restoring a cursor
+        // against an older manifest would skip documents whose rows are in no published set.
+        fx.MergeWidgets(("W1", "alpha", 1));
+        fx.Publish();
+
+        fx.Store.WriteSourceCosmosCursor(new SourceCosmosCursor(
+            "cosmos-late", "Logs", "SSC", "TOKEN-LATE", null, DateTime.UtcNow));
+
+        using var rebuilt = RebuildIntoFreshStore([fx.Widget, fx.Gadget], out _);
+
+        Assert.Null(rebuilt.ReadSourceCosmosCursor("cosmos-late"));
+    }
+
+    [Fact]
+    public void AManifestWithNoCursorSection_StillRebuilds()
+    {
+        // sourceCursors is additive on a manifest version that does not move for it, so every set
+        // published before it existed must keep rebuilding.
+        fx.MergeWidgets(("W1", "alpha", 1));
+        fx.Store.WriteSourceCosmosCursor(new SourceCosmosCursor(
+            "cosmos-ssc-lookup", "Logs", "SSC", "TOKEN-A", null, DateTime.UtcNow));
+        fx.Publish();
+
+        var manifest = Directory.EnumerateFiles(fx.PublishDirectory, "*.json")
+            .First(f => !Path.GetFileName(f).StartsWith("latest", StringComparison.OrdinalIgnoreCase));
+        var stripped = System.Text.RegularExpressions.Regex.Replace(
+            File.ReadAllText(manifest), ",\\s*\"sourceCursors\":\\s*(null|\\[[\\s\\S]*?\\])", string.Empty);
+        Assert.DoesNotContain("sourceCursors", stripped);
+        File.WriteAllText(manifest, stripped);
+
+        using var rebuilt = RebuildIntoFreshStore([fx.Widget, fx.Gadget], out var result);
+
+        Assert.NotNull(result.ManifestFile);
+        Assert.Equal(1, result.TotalRows);
+        Assert.Null(rebuilt.ReadSourceCosmosCursor("cosmos-ssc-lookup"));
+    }
+
+    [Fact]
     public void RebuildPreservesTombstones()
     {
         fx.MergeWidgets(("W1", "alpha", 1), ("W2", "beta", 2));
@@ -244,6 +309,28 @@ public class SnapshotRebuildTests : IDisposable
         Assert.Null(result.ManifestFile);
         Assert.Empty(result.TablesLoaded);
         Assert.Equal(["Widget"], result.TablesCreatedEmpty);
+    }
+
+    [Fact]
+    public void RebuildIntoAWarmStore_BlamesTheCallerRatherThanThePublishedSet()
+    {
+        // A host that forgets the cold-start guard reaches here with a populated store. The seed is
+        // a bare INSERT, so before this precondition existed the primary-key violation surfaced
+        // from inside the per-manifest loop wearing the costume of a torn parquet file: "no
+        // published set could be loaded ... rebuild from sources instead". Both halves of that were
+        // wrong, and the second half recommends the most expensive path in the system.
+        fx.MergeWidgets(("W1", "alpha", 1), ("W2", "beta", 2));
+        fx.Publish();
+
+        var refusal = Assert.Throws<InvalidOperationException>(() =>
+            SnapshotRebuild.Execute(fx.Store, [fx.Widget], fx.PublishDirectory, PublisherFixture.SnapshotName));
+
+        Assert.Contains("already holds 2 row(s)", refusal.Message);
+        Assert.Contains("existed BEFORE it was opened", refusal.Message);
+        Assert.Contains("published set is not at fault", refusal.Message);
+
+        // And it must not have partially seeded on its way to refusing.
+        Assert.Equal(2L, Convert.ToInt64(fx.Store.ExecuteScalar("SELECT count(*) FROM data.\"Widget\"")));
     }
 
     public void Dispose() => fx.Dispose();

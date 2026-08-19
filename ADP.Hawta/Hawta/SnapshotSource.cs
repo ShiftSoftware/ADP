@@ -42,8 +42,62 @@ public sealed class SnapshotSource
     /// Runs the full pull → stage → merge for this source and returns the merge result.
     /// Called under the write gate, on the dispatcher's single thread. The delegate owns
     /// source connectivity (SQL connection, file path) and its own merge options.
+    ///
+    /// <para>Set this <b>or</b> <see cref="IngestAsync"/>, never both — the registry validates it.
+    /// Reading it on a source that declared the async sibling throws rather than returning null,
+    /// so the mistake names itself instead of arriving as a NullReferenceException.</para>
     /// </summary>
-    public required Func<SnapshotSourceContext, SnapshotMergeResult> Ingest { get; init; }
+    public Func<SnapshotSourceContext, SnapshotMergeResult> Ingest
+    {
+        get => ingest ?? throw new InvalidOperationException(
+            $"Source '{Key}' declares IngestAsync, not the synchronous Ingest delegate. " +
+            $"Call {nameof(RunIngestAsync)} to run a source without knowing which it uses.");
+        init
+        {
+            // An explicit null reads as "not set", so a caller can pick a delegate in a
+            // conditional expression without silently claiming to have one.
+            ingest = value;
+            HasSynchronousIngest = value is not null;
+        }
+    }
+
+    private readonly Func<SnapshotSourceContext, SnapshotMergeResult>? ingest;
+
+    /// <summary>
+    /// The asynchronous sibling, for sources whose pull is genuinely I/O-bound and has no
+    /// synchronous API — a Cosmos change-feed read is the first.
+    ///
+    /// <para><b>Why a sibling and not a widened <see cref="Ingest"/>.</b> That delegate is a
+    /// <c>public required</c> member of a public type in a published package, invoked at thirteen
+    /// sites and constructed at nineteen across three repositories, from enclosing methods that are
+    /// synchronous by signature. Changing its type is a source AND binary break for every consumer
+    /// compiled against an earlier release, and cascades <c>void</c> to <c>async Task</c> through a
+    /// whole test suite and harness — or forces sync-over-async, which this codebase forbids
+    /// elsewhere for good reason. A sibling costs one branch in the dispatcher and changes zero
+    /// existing call sites.</para>
+    /// </summary>
+    public Func<SnapshotSourceContext, Task<SnapshotMergeResult>>? IngestAsync { get; init; }
+
+    /// <summary>True when this source was built with the synchronous <see cref="Ingest"/> delegate.</summary>
+    public bool HasSynchronousIngest { get; private set; }
+
+    /// <summary>
+    /// Runs whichever ingest delegate this source declares. The dispatcher calls this, and so
+    /// should any harness that fans out over a registry — it is the only form that works for every
+    /// source kind.
+    /// </summary>
+    public Task<SnapshotMergeResult> RunIngestAsync(SnapshotSourceContext context) =>
+        IngestAsync is { } asynchronous
+            ? asynchronous(context)
+            : Task.FromResult(Ingest(context));
+
+    /// <summary>
+    /// Non-null when this source READS a Cosmos container, naming which one. Declarative on
+    /// purpose: the reader itself is closed over by the ingest delegate (the connection-string
+    /// precedent), but the agent has to be able to see that a Cosmos read exists BEFORE it starts
+    /// running cycles — see <see cref="CosmosSourceRead"/>.
+    /// </summary>
+    public CosmosSourceRead? CosmosRead { get; init; }
 
     /// <summary>
     /// The declarative file configuration when this is a common-path file source. It is the

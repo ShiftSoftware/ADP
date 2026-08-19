@@ -35,6 +35,25 @@ public static class SnapshotRebuild
         foreach (var table in tables)
             store.EnsureTable(table);
 
+        // The documented precondition, checked rather than assumed. The seed below is a bare
+        // INSERT, so a caller that hands over a POPULATED store gets a primary-key violation from
+        // deep inside the per-manifest loop — where it is indistinguishable from a torn parquet
+        // file, and comes back as "no published set could be loaded, rebuild from sources
+        // instead". That message names the wrong culprit and recommends the most expensive path in
+        // the system to fix a caller bug the published set is innocent of. One count per table is
+        // nothing next to reading the set, and it turns that misdirection into the actual answer.
+        foreach (var table in tables)
+        {
+            var existing = Convert.ToInt64(store.ExecuteScalar($"SELECT count(*) FROM {table.QualifiedName}"));
+            if (existing > 0)
+            {
+                throw new InvalidOperationException(
+                    $"Rebuild seeds an EMPTY store, and '{table.QualifiedName}' already holds {existing:N0} row(s). " +
+                    "The caller decides cold start by asking whether the write database existed BEFORE it was " +
+                    "opened, and only rebuilds then; a warm store needs no seed. The published set is not at fault.");
+            }
+        }
+
         // Loud before anything reads: an unreachable store lists as an EMPTY one, and empty here
         // means "the published set is gone" -- which sends cold start to the from-source fallback,
         // the single most expensive path in the system. Never take that branch on a network blip.
@@ -191,6 +210,15 @@ public static class SnapshotRebuild
             // restart — exactly when feeds are most likely to have been swapped underneath us.
             foreach (var stamp in published.SourceStamps ?? [])
                 store.WriteSourceFileStamp(stamp.ToStamp());
+
+            // Same act, same transaction, for the upstream Cosmos cursors — and here it is not an
+            // optimisation. Without it a DR rebuild silently becomes a full container re-read: the
+            // write DB is reseeded from parquet, not from sources, so a cursor that lived only in
+            // the write DB is gone, and the next tick starts from the beginning of the container.
+            // Harmless at merge level (the hash diff absorbs it) but a full read nobody asked for,
+            // and one that gets more expensive every day the container grows.
+            foreach (var cursor in published.SourceCursors ?? [])
+                store.WriteSourceCosmosCursor(cursor.ToCursor());
 
             // Only compatible v4 manifests contribute to this floor. A newer torn v4 may have
             // exposed values beyond the older intact set we loaded, so the next reservation must

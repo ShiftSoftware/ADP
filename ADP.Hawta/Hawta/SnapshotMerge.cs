@@ -1,4 +1,4 @@
-namespace ShiftSoftware.ADP.Hawta;
+﻿namespace ShiftSoftware.ADP.Hawta;
 
 /// <summary>
 /// The set-based merge at the heart of the snapshot: staging → one atomic transaction of
@@ -64,7 +64,7 @@ public static class SnapshotMerge
         if (invalidRows > 0)
         {
             var invalid = new SnapshotMergeResult(runId, SnapshotMergeStatus.FailedInvalidStagingRows, rowsStaged, 0, 0, 0);
-            InsertRunRecord(store, table, options, runId, startedAt, invalid,
+            RecordRun(store, table, options, runId, startedAt, invalid,
                 $"{invalidRows} staging row(s) with NULL identity/content hash — the ingestor contract was not met.");
             return invalid;
         }
@@ -74,7 +74,7 @@ public static class SnapshotMerge
         if (duplicateKeys > 0)
         {
             var failed = new SnapshotMergeResult(runId, SnapshotMergeStatus.FailedDuplicateStagingKeys, rowsStaged, 0, 0, 0);
-            InsertRunRecord(store, table, options, runId, startedAt, failed,
+            RecordRun(store, table, options, runId, startedAt, failed,
                 $"{duplicateKeys} duplicate _PrimaryKey value(s) in staging — the ingestor must dedup before merging.");
             return failed;
         }
@@ -117,7 +117,7 @@ public static class SnapshotMerge
                     store.Execute("ROLLBACK");
                     var aborted = new SnapshotMergeResult(runId, SnapshotMergeStatus.AbortedMassDelete,
                         rowsStaged, 0, 0, 0, pendingDeletes);
-                    InsertRunRecord(store, table, options, runId, startedAt, aborted,
+                    RecordRun(store, table, options, runId, startedAt, aborted,
                         $"Mass-delete guardrail: {pendingDeletes} of {liveRows} live rows would be tombstoned " +
                         $"(> {options.MaxDeletedPercent:P0} and > {options.MinDeletedRowsAbsolute}). " +
                         "Re-run with ForceDeletes for an intentional purge.");
@@ -159,7 +159,7 @@ public static class SnapshotMerge
                 store.Execute("ROLLBACK");
                 var abortedAdoption = new SnapshotMergeResult(runId, SnapshotMergeStatus.AbortedMassAdoption,
                     rowsStaged, 0, 0, 0, RowsRescoped: rowsRescoped);
-                InsertRunRecord(store, table, options, runId, startedAt, abortedAdoption,
+                RecordRun(store, table, options, runId, startedAt, abortedAdoption,
                     $"Mass-adoption guardrail: {rowsRescoped} of {rowsStaged} staged rows are live under a DIFFERENT " +
                     $"_SourceScope (> {options.MaxAdoptedPercent:P0} and > {options.MinAdoptedRowsAbsolute}). " +
                     "This is the mis-pasted-connection-string signature. Re-run with ForceAdoptions for an intentional scope migration.");
@@ -362,7 +362,7 @@ public static class SnapshotMerge
             var result = new SnapshotMergeResult(runId, SnapshotMergeStatus.Succeeded,
                 rowsStaged, rowsInserted, rowsUpdated, rowsTombstoned, RowsRescoped: rowsRescoped);
 
-            InsertRunRecord(store, table, options, runId, startedAt, result, error: null);
+            RecordRun(store, table, options, runId, startedAt, result, error: null);
 
             store.Execute("COMMIT");
             return result;
@@ -374,7 +374,7 @@ public static class SnapshotMerge
             // The run record IS the alarm surface — a crashed run must be visible, not absent.
             try
             {
-                InsertRunRecord(store, table, options, runId, startedAt,
+                RecordRun(store, table, options, runId, startedAt,
                     new SnapshotMergeResult(runId, SnapshotMergeStatus.Failed, rowsStaged, 0, 0, 0),
                     exception.Message);
             }
@@ -382,6 +382,21 @@ public static class SnapshotMerge
 
             throw;
         }
+    }
+
+    /// <summary>
+    /// The run record for one <see cref="Execute"/> call, unless the caller is an ingestor that
+    /// merges a single source run in several transactions and writes its own aggregate — see
+    /// <see cref="SnapshotMergeOptions.SuppressRunRecord"/>.
+    /// </summary>
+    private static void RecordRun(
+        SnapshotStore store, SnapshotTableDefinition table, SnapshotMergeOptions options,
+        string runId, DateTime startedAt, SnapshotMergeResult result, string? error)
+    {
+        if (options.SuppressRunRecord)
+            return;
+
+        InsertRunRecord(store, table, options, runId, startedAt, result, error);
     }
 
     internal static void InsertRunRecord(

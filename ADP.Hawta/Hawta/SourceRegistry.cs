@@ -34,6 +34,30 @@ public sealed class SourceRegistry
             if (!byKey.TryAdd(source.Key, source))
                 throw new ArgumentException($"Duplicate source key '{source.Key}'.", nameof(sources));
 
+            // Exactly one ingest delegate. Neither is a source that is scheduled and then does
+            // nothing; both is a source whose behaviour depends on which branch the dispatcher
+            // happens to prefer. Validated at construction, so the answer arrives at startup
+            // rather than on the first cadence tick.
+            switch (source.HasSynchronousIngest, source.IngestAsync is not null)
+            {
+                case (false, false):
+                    throw new ArgumentException(
+                        $"Source '{source.Key}': set exactly one of Ingest or IngestAsync — it has neither.",
+                        nameof(sources));
+                case (true, true):
+                    throw new ArgumentException(
+                        $"Source '{source.Key}': set exactly one of Ingest or IngestAsync — it has both.",
+                        nameof(sources));
+            }
+
+            if (source.CosmosRead is { } cosmosRead
+                && (string.IsNullOrWhiteSpace(cosmosRead.Database) || string.IsNullOrWhiteSpace(cosmosRead.Container)))
+            {
+                throw new ArgumentException(
+                    $"Source '{source.Key}': a Cosmos read must name both a database and a container.",
+                    nameof(sources));
+            }
+
             if (source.Cadence <= TimeSpan.Zero)
                 throw new ArgumentException($"Source '{source.Key}': cadence must be positive.", nameof(sources));
 

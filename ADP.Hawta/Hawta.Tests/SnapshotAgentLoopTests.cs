@@ -352,4 +352,77 @@ public sealed class SnapshotAgentLoopTests : IDisposable
         Assert.Equal(1L, cycle.Sources[1].Merge!.RowsRescoped);
         Assert.Contains(events, e => e.SourceKey == "scope-b" && e.Message.Contains("_SourceScope"));
     }
+
+    // ---- Asynchronous sources, and the Cosmos-read startup guard -------------------------------
+
+    private static SnapshotSource CosmosReadingSource(
+        string key,
+        Func<IEnumerable<(string Key, string Code, int Quantity)>> rows,
+        CosmosSourceRead? cosmosRead = null) => new()
+        {
+            Key = key,
+            RecordIdentity = SourceRecordIdentityDescriptor.DatabaseKey("Code"),
+            Table = Table,
+            Cadence = TimeSpan.FromMinutes(5),
+            CosmosRead = cosmosRead ?? new CosmosSourceRead("Logs", "SSC"),
+            // Genuinely asynchronous: it yields before staging, the way a network read does.
+            IngestAsync = async context =>
+            {
+                await Task.Yield();
+                return IngestOf(key, rows)(context);
+            },
+        };
+
+    [Fact]
+    public async Task AnAsyncSource_RunsAndPublishesLikeAnyOther()
+    {
+        var registry = new SourceRegistry(
+            [CosmosReadingSource("cosmos-widgets", () => [("W1", "alpha", 1), ("W2", "beta", 2)])]);
+
+        // The guard below demands a client for a Cosmos-reading source; this is the shape a host
+        // with a configured endpoint has. It is never connected to.
+        using var client = new Microsoft.Azure.Cosmos.CosmosClient(
+            "AccountEndpoint=https://localhost:8081/;AccountKey=" +
+            Convert.ToBase64String("startup-guard-only-never-connects"u8.ToArray()) + ";");
+        using var loop = new SnapshotAgentLoop(
+            new SnapshotAgentOptions
+            {
+                Registry = registry,
+                WriteDatabasePath = WriteDbPath,
+                PublishDirectory = PublishDir,
+                SnapshotName = "agent-test",
+                TimeProvider = clock,
+                OnEvent = events.Add,
+                DryRun = true,
+            },
+            client);
+
+        var cycle = await loop.RunCycleAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(2L, cycle.Sources.Single().Merge!.RowsInserted);
+        Assert.Equal(SnapshotPublishStatus.Published, cycle.Publish!.Status);
+    }
+
+    [Fact]
+    public void ACosmosReadingSource_WithNoClient_FailsAtStartup()
+    {
+        // Never per cadence tick. Without this the host starts clean, throws on every tick, and
+        // publishes a well-formed EMPTY table that a consumer cannot tell from "no rows today" —
+        // and for this table, absent rows mean "the dealer did not do it".
+        var registry = new SourceRegistry([CosmosReadingSource("cosmos-widgets", () => [])]);
+
+        var exception = Assert.Throws<InvalidOperationException>(() => Loop(registry));
+
+        Assert.Contains("Cosmos-reading source(s) require a CosmosClient", exception.Message);
+        Assert.Contains("'cosmos-widgets' (Logs/SSC)", exception.Message);
+    }
+
+    [Fact]
+    public void DryRun_DoesNotExcuseAMissingClientForACosmosReadingSource()
+    {
+        // DryRun darkens the PUMP. A read-only source still has to reach its container.
+        var registry = new SourceRegistry([CosmosReadingSource("cosmos-widgets", () => [])]);
+
+        Assert.Throws<InvalidOperationException>(() => Loop(registry, dryRun: true));
+    }
 }

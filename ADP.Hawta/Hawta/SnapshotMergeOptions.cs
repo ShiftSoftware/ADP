@@ -1,4 +1,4 @@
-namespace ShiftSoftware.ADP.Hawta;
+﻿namespace ShiftSoftware.ADP.Hawta;
 
 /// <summary>
 /// What a source record identity means. The registry publishes the matching structured descriptor
@@ -91,6 +91,37 @@ public sealed class SnapshotMergeOptions
     /// </summary>
     public string? RunId { get; init; }
 
+    /// <summary>
+    /// Suppresses the per-<see cref="SnapshotMerge.Execute"/> run record, for an ingestor that
+    /// merges ONE source run in several transactions and writes a single aggregate record itself.
+    ///
+    /// <para><b>`meta.SyncRuns` means "one row per source run" everywhere it is read</b> — the
+    /// publisher takes the newest row per source into the manifest's `sourceRuns`, and the health
+    /// checks age off it. The Cosmos change-feed drain merges every <c>MergeBatchSize</c> rows so
+    /// the cursor only ever advances past data that landed, which made a 49,532-document bootstrap
+    /// write 25 records; the newest held the last batch's 1,532, and that is the number that
+    /// reached the manifest. Internal, because a source that needs this is implementing the
+    /// aggregate itself.</para>
+    /// </summary>
+    internal bool SuppressRunRecord { get; init; }
+
+    /// <summary>A copy whose per-merge run record is suppressed; see <see cref="SuppressRunRecord"/>.</summary>
+    internal SnapshotMergeOptions WithSuppressedRunRecord() => new()
+    {
+        Source = Source,
+        RecordIdentityKind = RecordIdentityKind,
+        SourceScope = SourceScope,
+        DeletesEnabled = DeletesEnabled,
+        MaxDeletedPercent = MaxDeletedPercent,
+        MinDeletedRowsAbsolute = MinDeletedRowsAbsolute,
+        ForceDeletes = ForceDeletes,
+        MaxAdoptedPercent = MaxAdoptedPercent,
+        MinAdoptedRowsAbsolute = MinAdoptedRowsAbsolute,
+        ForceAdoptions = ForceAdoptions,
+        RunId = RunId,
+        SuppressRunRecord = true,
+    };
+
     internal SnapshotMergeOptions WithRecordIdentityKind(SourceRecordIdentityKind identityKind) => new()
     {
         Source = Source,
@@ -104,6 +135,7 @@ public sealed class SnapshotMergeOptions
         MinAdoptedRowsAbsolute = MinAdoptedRowsAbsolute,
         ForceAdoptions = ForceAdoptions,
         RunId = RunId,
+        SuppressRunRecord = SuppressRunRecord,
     };
 }
 

@@ -201,4 +201,107 @@ public class SourceRegistryTests
         // "Not enabled" must never mean "missing from the publish set".
         Assert.Equal(["Widget", "Dark"], registry.Tables.Select(t => t.Name));
     }
+
+    // ---- Exactly one ingest delegate -----------------------------------------------------------
+
+    private static SnapshotSource AsyncSource(
+        string key,
+        bool alsoSynchronous = false,
+        CosmosSourceRead? cosmosRead = null,
+        Func<SnapshotSourceContext, Task<SnapshotMergeResult>>? ingestAsync = null) => new()
+        {
+            Key = key,
+            RecordIdentity = SourceRecordIdentityDescriptor.DatabaseKey(WidgetTable.Columns[0].Name),
+            Table = WidgetTable,
+            Cadence = TimeSpan.FromMinutes(1),
+            CosmosRead = cosmosRead,
+            IngestAsync = ingestAsync
+                          ?? (_ => throw new InvalidOperationException("Not meant to run in these tests.")),
+            Ingest = alsoSynchronous
+                ? _ => throw new InvalidOperationException("Not meant to run in these tests.")
+                : null!,
+        };
+
+    [Fact]
+    public void AnAsyncOnlySource_IsValid()
+    {
+        var registry = new SourceRegistry([AsyncSource("cosmos-thing")]);
+
+        var source = registry["cosmos-thing"];
+        Assert.False(source.HasSynchronousIngest);
+        Assert.NotNull(source.IngestAsync);
+    }
+
+    [Fact]
+    public void ASourceWithNeitherIngestDelegate_IsRejected()
+    {
+        // It would be scheduled on its cadence and then do nothing at all.
+        var exception = Assert.Throws<ArgumentException>(() => new SourceRegistry(
+        [
+            new SnapshotSource
+            {
+                Key = "empty",
+                RecordIdentity = SourceRecordIdentityDescriptor.DatabaseKey(WidgetTable.Columns[0].Name),
+                Table = WidgetTable,
+                Cadence = TimeSpan.FromMinutes(1),
+            },
+        ]));
+
+        Assert.Contains("exactly one of Ingest or IngestAsync", exception.Message);
+    }
+
+    [Fact]
+    public void ASourceWithBothIngestDelegates_IsRejected()
+    {
+        var exception = Assert.Throws<ArgumentException>(() =>
+            new SourceRegistry([AsyncSource("both", alsoSynchronous: true)]));
+
+        Assert.Contains("it has both", exception.Message);
+    }
+
+    [Fact]
+    public void ReadingIngest_OnAnAsyncSource_NamesTheMistake()
+    {
+        // Rather than a NullReferenceException inside a harness that fans out over a registry.
+        var exception = Assert.Throws<InvalidOperationException>(() => AsyncSource("cosmos-thing").Ingest);
+
+        Assert.Contains("declares IngestAsync", exception.Message);
+        Assert.Contains(nameof(SnapshotSource.RunIngestAsync), exception.Message);
+    }
+
+    [Fact]
+    public async Task RunIngestAsync_DispatchesToWhicheverDelegateTheSourceDeclares()
+    {
+        using var snapshot = new TestSnapshot();
+        var context = new SnapshotSourceContext
+        {
+            Store = snapshot.Store,
+            CancellationToken = TestContext.Current.CancellationToken,
+        };
+
+        var synchronous = new SnapshotSource
+        {
+            Key = "sync",
+            RecordIdentity = SourceRecordIdentityDescriptor.DatabaseKey(WidgetTable.Columns[0].Name),
+            Table = WidgetTable,
+            Cadence = TimeSpan.FromMinutes(1),
+            Ingest = _ => new SnapshotMergeResult("sync-run", SnapshotMergeStatus.Succeeded, 1, 1, 0, 0),
+        };
+        var asynchronous = AsyncSource("async", ingestAsync: _ => Task.FromResult(
+            new SnapshotMergeResult("async-run", SnapshotMergeStatus.Succeeded, 2, 2, 0, 0)));
+
+        Assert.Equal("sync-run", (await synchronous.RunIngestAsync(context)).RunId);
+        Assert.Equal("async-run", (await asynchronous.RunIngestAsync(context)).RunId);
+    }
+
+    [Fact]
+    public void ACosmosReadMissingItsContainer_IsRejected()
+    {
+        var exception = Assert.Throws<ArgumentException>(() => new SourceRegistry(
+        [
+            AsyncSource("cosmos-thing", cosmosRead: new CosmosSourceRead("Logs", "  ")),
+        ]));
+
+        Assert.Contains("must name both a database and a container", exception.Message);
+    }
 }

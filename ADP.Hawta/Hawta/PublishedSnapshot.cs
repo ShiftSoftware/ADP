@@ -41,6 +41,42 @@ public sealed record PublishedSnapshot(
     public long? ChangeSequenceHighWatermark { get; init; }
 
     /// <summary>
+    /// Where each Cosmos-reading source had already read to, at the instant this set was
+    /// committed. <b>Agent-internal — consumers must ignore this section</b>, exactly like
+    /// <see cref="SourceStamps"/>.
+    ///
+    /// <para>A body property for the same reason as the watermark above: the positional
+    /// constructor is a documented compatibility surface, and this is an additive JSON field that
+    /// does not move <see cref="CurrentManifestVersion"/>.</para>
+    ///
+    /// <para>It could not ride <see cref="SourceStamps"/>. <see cref="PublishedSourceStamp"/> is
+    /// file-shaped — path, length, last-write ticks, every member non-nullable — and round-trips
+    /// into <c>meta.SourceFileStamps</c>, whose primary key is the source key. One source could
+    /// not hold both a file stamp and a cursor.</para>
+    /// </summary>
+    [JsonPropertyName("sourceCursors")]
+    public IReadOnlyList<PublishedSourceCursor>? SourceCursors { get; init; }
+
+    /// <summary>
+    /// The newest run record per source at the instant this set was committed — the fact behind
+    /// "has ingest stopped running?", carried out of the agent's instance-local write DB so it can
+    /// be asked from anywhere the published tier is readable.
+    ///
+    /// <para><b>Unlike the two sections above, this one is FOR consumers</b> — specifically for a
+    /// health framework. It is still only facts: run times, statuses and counts, with no threshold
+    /// and no verdict.</para>
+    ///
+    /// <para><b>Its freshness floor is the publish, not the run.</b> The publisher writes no
+    /// manifest when no table's signature changed, so on a genuinely quiet estate this section
+    /// freezes at the last real publish. An age measured on it therefore says "how long since a run
+    /// was COMMITTED to a published set", which is the honest reading and is why a threshold on it
+    /// has to be generous. The sharp signal is absence: a source that has never run, or that
+    /// crashes before staging on every tick, simply has no entry.</para>
+    /// </summary>
+    [JsonPropertyName("sourceRuns")]
+    public IReadOnlyList<PublishedSourceRun>? SourceRuns { get; init; }
+
+    /// <summary>
     /// Bumped only for a breaking change to the manifest contract; new fields are additive.
     /// v2 replaced the singular <c>parquetPath</c> string with the plural, self-describing
     /// <see cref="PublishedTableLocation"/>. v3 makes the per-table source catalog mandatory
@@ -304,9 +340,94 @@ public sealed record PublishedSnapshot(
             command.ExecuteNonQuery();
         }
 
+        WriteMetaTables(command);
+
         // CHECKPOINT so the file is complete without a WAL sidecar the reader would have to replay.
         command.CommandText = "CHECKPOINT";
         command.ExecuteNonQuery();
+    }
+
+    /// <summary>
+    /// The manifest's own facts, as queryable tables rather than JSON a SQL tool cannot reach.
+    ///
+    /// <para>Real tables, not views: this data comes from the manifest document, not from parquet,
+    /// and the database is throwaway anyway. They are small by construction — one row for the
+    /// publish, one per table, one per source.</para>
+    ///
+    /// <para><c>meta.publish_info</c> restores a name that consumers were already written against
+    /// and that stopped resolving when the published tier dropped its DuckDB shim: a check reading
+    /// it has been returning a source error rather than a verdict ever since.</para>
+    /// </summary>
+    private void WriteMetaTables(DuckDBCommand command)
+    {
+        command.CommandText = "CREATE SCHEMA IF NOT EXISTS meta";
+        command.ExecuteNonQuery();
+
+        command.CommandText =
+            """
+            CREATE TABLE meta.publish_info (
+                "SnapshotName" VARCHAR, "PublishId" VARCHAR, "PublishedAt" TIMESTAMP,
+                "ManifestVersion" INTEGER, "SchemaVersion" INTEGER, "PackageVersion" VARCHAR,
+                "ChangeSequenceHighWatermark" BIGINT)
+            """;
+        command.ExecuteNonQuery();
+
+        command.CommandText =
+            """
+            INSERT INTO meta.publish_info VALUES (?, ?, ?, ?, ?, ?, ?)
+            """;
+        AddParameters(command,
+            SnapshotName, PublishId, PublishedAt, ManifestVersion, SchemaVersion, PackageVersion,
+            ChangeSequenceHighWatermark);
+        command.ExecuteNonQuery();
+
+        command.CommandText =
+            """
+            CREATE TABLE meta.published_tables (
+                "TableName" VARCHAR, "PublishId" VARCHAR, "RowCount" BIGINT,
+                "StateHash" VARCHAR, "DataAsOf" TIMESTAMP, "ExportedAt" TIMESTAMP)
+            """;
+        command.ExecuteNonQuery();
+
+        foreach (var entry in Tables)
+        {
+            command.CommandText = "INSERT INTO meta.published_tables VALUES (?, ?, ?, ?, ?, ?)";
+            AddParameters(command,
+                entry.Table, entry.PublishId, entry.RowCount, entry.StateHash, entry.DataAsOf, entry.ExportedAt);
+            command.ExecuteNonQuery();
+        }
+
+        // The run records. Always created, even when the section is absent from an older manifest:
+        // a health check must be able to ask the question and get "no rows" — its own answer — not
+        // a catalog error indistinguishable from a broken query.
+        command.CommandText =
+            """
+            CREATE TABLE meta.sync_runs (
+                "SourceKey" VARCHAR, "TargetTable" VARCHAR, "StartedAt" TIMESTAMP,
+                "FinishedAt" TIMESTAMP, "Status" VARCHAR,
+                "RowsStaged" BIGINT, "RowsInserted" BIGINT, "RowsUpdated" BIGINT, "RowsTombstoned" BIGINT)
+            """;
+        command.ExecuteNonQuery();
+
+        foreach (var run in SourceRuns ?? [])
+        {
+            command.CommandText = "INSERT INTO meta.sync_runs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            AddParameters(command,
+                run.SourceKey, run.TargetTable, run.StartedAt, run.FinishedAt, run.Status,
+                run.RowsStaged, run.RowsInserted, run.RowsUpdated, run.RowsTombstoned);
+            command.ExecuteNonQuery();
+        }
+    }
+
+    private static void AddParameters(DuckDBCommand command, params object?[] values)
+    {
+        command.Parameters.Clear();
+        foreach (var value in values)
+        {
+            var parameter = command.CreateParameter();
+            parameter.Value = value ?? DBNull.Value;
+            command.Parameters.Add(parameter);
+        }
     }
 
     /// <summary>The manifest's own directory, which every path in it resolves against.</summary>
@@ -436,4 +557,65 @@ public sealed record PublishedSourceStamp(
     public SourceFileStamp ToStamp() => new(
         SourceKey, FilePath, Length, new DateTime(LastWriteUtcTicks, DateTimeKind.Utc),
         ConfigFingerprint, StampedAtUtc);
+}
+
+/// <summary>
+/// One Cosmos-reading source's resume position, carried through DR so a rebuild does not turn
+/// into a full container re-read. <b>Agent-internal — consumers must ignore this section.</b>
+///
+/// <para><b>Why it lives in the manifest rather than beside it.</b> The same reason as
+/// <see cref="PublishedSourceStamp"/>, and it matters more here. A cursor asserts "everything up
+/// to this position is already in the data you are looking at". That is only true relative to a
+/// particular published state, so it has to be committed by the same act that commits the state.
+/// A cursor written after a merge but before the next publish describes rows that are in no
+/// published set yet; restoring it against the previous manifest would skip documents whose rows
+/// are not there — silent loss, in the dangerous direction. Riding inside the manifest makes the
+/// two impossible to disagree: one conditional PUT names both.</para>
+///
+/// <para><b>What it does NOT promise.</b> The publisher writes no manifest at all when no table's
+/// signature changed, and cursor movement is not an input to that decision. So a quiet period, or
+/// a tick whose documents projected to identical column values, leaves the published cursor
+/// arbitrarily stale, and a rebuild resumes NEAR where the write DB was rather than exactly at it.
+/// That is safe — an older cursor re-reads a bounded delta the hash diff absorbs — but it is a
+/// property to know, not one to rely on being tight.</para>
+/// </summary>
+public sealed record PublishedSourceCursor(
+    [property: JsonPropertyName("sourceKey")] string SourceKey,
+    [property: JsonPropertyName("database")] string Database,
+    [property: JsonPropertyName("container")] string Container,
+    [property: JsonPropertyName("continuationToken")] string ContinuationToken,
+    [property: JsonPropertyName("ingestVersion")] string? IngestVersion,
+    [property: JsonPropertyName("stampedAtUtc")] DateTime StampedAtUtc)
+{
+    public static PublishedSourceCursor From(SourceCosmosCursor cursor) => new(
+        cursor.SourceKey, cursor.Database, cursor.Container, cursor.ContinuationToken,
+        cursor.IngestVersion, cursor.StampedAtUtc);
+
+    /// <remarks>
+    /// <see cref="SourceCosmosCursor.StampedAtUtc"/> keeps its ORIGINAL value across a restore, so
+    /// "when did this source last actually read?" survives DR truthfully. Refreshing it here would
+    /// make a source that has not read since before the outage look freshly read.
+    /// </remarks>
+    public SourceCosmosCursor ToCursor() => new(
+        SourceKey, Database, Container, ContinuationToken, IngestVersion, StampedAtUtc);
+}
+
+/// <summary>
+/// One source's newest run at publish time. See <see cref="PublishedSnapshot.SourceRuns"/> for what
+/// this section is for and what its freshness actually means.
+/// </summary>
+public sealed record PublishedSourceRun(
+    [property: JsonPropertyName("sourceKey")] string SourceKey,
+    [property: JsonPropertyName("targetTable")] string TargetTable,
+    [property: JsonPropertyName("startedAt")] DateTime StartedAt,
+    [property: JsonPropertyName("finishedAt")] DateTime? FinishedAt,
+    [property: JsonPropertyName("status")] string Status,
+    [property: JsonPropertyName("rowsStaged")] long RowsStaged,
+    [property: JsonPropertyName("rowsInserted")] long RowsInserted,
+    [property: JsonPropertyName("rowsUpdated")] long RowsUpdated,
+    [property: JsonPropertyName("rowsTombstoned")] long RowsTombstoned)
+{
+    public static PublishedSourceRun From(SourceRunSummary run) => new(
+        run.SourceKey, run.TargetTable, run.StartedAt, run.FinishedAt, run.Status,
+        run.RowsStaged, run.RowsInserted, run.RowsUpdated, run.RowsTombstoned);
 }

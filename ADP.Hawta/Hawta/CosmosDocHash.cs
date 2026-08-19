@@ -27,9 +27,23 @@ public static class CosmosDocHash
     /// <summary>Hashes any JSON object in canonical form — use on the Cosmos-read side with the same field list.</summary>
     public static string Compute(JsonObject json)
     {
-        var canonical = Canonicalize(json)!.ToJsonString(new JsonSerializerOptions { WriteIndented = false });
-        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(canonical))).ToLowerInvariant();
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(CanonicalText(json)))).ToLowerInvariant();
     }
+
+    /// <summary>
+    /// The canonical text this hash is taken over: properties sorted recursively, numbers
+    /// normalized by value, no indentation.
+    ///
+    /// <para>Exposed because a Cosmos-read ingestor that STORES a nested fragment as a JSON string
+    /// column has the same problem for a different reason. <see cref="RowHash"/> hashes the byte
+    /// literal of the stored VARCHAR, and Cosmos re-renders numbers on read (a written
+    /// <c>1.500</c> comes back <c>1.5</c>), so storing the service's raw text would change
+    /// <c>_RowHash</c> on drift in property order, whitespace, escaping or number rendering — and
+    /// every re-read of an unchanged container would republish every row instead of being the
+    /// promised no-op.</para>
+    /// </summary>
+    public static string CanonicalText(JsonNode? json) =>
+        Canonicalize(json)?.ToJsonString(new JsonSerializerOptions { WriteIndented = false }) ?? "null";
 
     private static JsonNode? Canonicalize(JsonNode? node) => node switch
     {
