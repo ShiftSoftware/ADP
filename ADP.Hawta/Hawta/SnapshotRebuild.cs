@@ -8,17 +8,20 @@ namespace ShiftSoftware.ADP.Hawta;
 ///
 /// <para>Tries published sets newest-first: a manifest whose parquet set is missing or torn
 /// (the crash that motivates a DR rebuild can be the same crash that tore a file) is skipped in
-/// favor of the next kept one, so DR converges on the newest <em>intact</em> published set —
-/// which is what <see cref="SnapshotPublishOptions.KeepPublishes"/> is really buying. Only when
-/// no published set is loadable does it throw — falling back to sources is the caller's
-/// decision, never a silent degrade.</para>
+/// favor of the next kept compatible one, so DR converges on the newest <em>intact</em> v4
+/// published set — which is what <see cref="SnapshotPublishOptions.KeepPublishes"/> is really
+/// buying. If every readable manifest is provably pre-v4, it returns an empty seed so the normal
+/// source cycle can build the clean v4 estate. A current manifest that is torn, or an unreadable
+/// manifest whose version cannot be proved old, still fails loudly rather than silently falling
+/// back past data or cursor values consumers may already have observed.</para>
 ///
 /// <para>The caller opens (or recreates) the empty store and holds the write gate. Tables in
 /// the published manifest that the caller's definitions don't declare are skipped and
 /// reported; declared tables missing from the manifest are created empty (a new family not
-/// yet published). Columns are loaded by intersection with the parquet schema, so a widened
-/// definition rebuilds from an older parquet with the new columns NULL (the same additive
-/// drift <see cref="SnapshotStore.EnsureTable"/> allows).</para>
+/// yet published). Source columns are loaded by intersection with the parquet schema, so a
+/// widened definition rebuilds with its new source columns NULL (the same additive drift
+/// <see cref="SnapshotStore.EnsureTable"/> allows). Every v4 bookkeeping column and every durable
+/// source-version value is required; a missing/invalid contract field rejects the whole seed.</para>
 /// </summary>
 public static class SnapshotRebuild
 {
@@ -46,23 +49,70 @@ public static class SnapshotRebuild
 
         var publishesSkipped = new List<string>();
         Exception? lastFailure = null;
+        long observedChangeSequenceHighWatermark = 0;
+        var compatibleManifestSeen = false;
+        var incompatibleManifestSeen = false;
+        var unclassifiedFailureSeen = false;
 
         foreach (var manifestPath in manifests)
         {
             try
             {
-                return LoadFromManifest(store, tables, store_, snapshotName, manifestPath, publishesSkipped);
+                // A committed newer manifest may later lose or tear one of its parquet files after
+                // consumers have already observed its sequence values. Even when rebuild falls
+                // back to an older intact data set, those values must never be reused.
+                var schemaVersion = PublishedSnapshot.ReadSchemaVersion(store_, manifestPath);
+                if (schemaVersion > SnapshotStore.CurrentSchemaVersion)
+                    throw new SnapshotSchemaMismatchException(
+                        SnapshotStore.CurrentSchemaVersion, schemaVersion);
+
+                if (schemaVersion < SnapshotStore.OldestRebuildableSchemaVersion)
+                {
+                    // v2/v3 carried either no durable sequence contract or the rejected
+                    // row-level source metadata. They are not seeds for v4. When they are the
+                    // only publishes, cold start deliberately stays empty so the normal source
+                    // cycle can build a clean v4 estate instead of deadlocking on every restart.
+                    incompatibleManifestSeen = true;
+                    publishesSkipped.Add(PublishPath.FileName(manifestPath));
+                    lastFailure = new SnapshotSchemaMismatchException(
+                        SnapshotStore.CurrentSchemaVersion, schemaVersion);
+                    continue;
+                }
+
+                compatibleManifestSeen = true;
+                var published = PublishedSnapshot.Read(store_, manifestPath);
+
+                observedChangeSequenceHighWatermark = Math.Max(
+                    observedChangeSequenceHighWatermark,
+                    published.ChangeSequenceHighWatermark ?? 0);
+
+                return LoadFromManifest(
+                    store, tables, store_, snapshotName, manifestPath, published,
+                    observedChangeSequenceHighWatermark, publishesSkipped);
             }
             catch (SnapshotSchemaMismatchException)
             {
                 // Version mismatch is systemic, not per-file — an older publish can only be older still.
                 throw;
             }
+            catch (SnapshotSequenceContractException)
+            {
+                // A newer manifest without a trustworthy global floor cannot be skipped: its
+                // parquet may carry sequence values consumers already observed.
+                throw;
+            }
             catch (Exception exception)
             {
                 publishesSkipped.Add(PublishPath.FileName(manifestPath));
                 lastFailure = exception;
+                unclassifiedFailureSeen = true;
             }
+        }
+
+        if (!compatibleManifestSeen && incompatibleManifestSeen && !unclassifiedFailureSeen)
+        {
+            return new SnapshotRebuildResult(
+                null, [], [], [.. tables.Select(table => table.Name)], publishesSkipped);
         }
 
         throw new InvalidDataException(
@@ -73,14 +123,10 @@ public static class SnapshotRebuild
 
     private static SnapshotRebuildResult LoadFromManifest(
         SnapshotStore store, IReadOnlyList<SnapshotTableDefinition> tables,
-        PublishStore publishStore, string snapshotName, string manifestPath, IReadOnlyList<string> publishesSkipped)
+        PublishStore publishStore, string snapshotName, string manifestPath,
+        PublishedSnapshot published, long changeSequenceFloor,
+        IReadOnlyList<string> publishesSkipped)
     {
-        // Read validates structure (bare file names, non-empty locations) and throws otherwise,
-        // which is what demotes a tampered or truncated manifest to "try the next publish".
-        var published = PublishedSnapshot.Read(publishStore, manifestPath);
-        if (published.SchemaVersion != SnapshotStore.CurrentSchemaVersion)
-            throw new SnapshotSchemaMismatchException(SnapshotStore.CurrentSchemaVersion, published.SchemaVersion);
-
         var manifestByTable = published.Tables.ToDictionary(e => e.Table, StringComparer.OrdinalIgnoreCase);
 
         var definedNames = new HashSet<string>(tables.Select(t => t.Name), StringComparer.OrdinalIgnoreCase);
@@ -120,6 +166,7 @@ public static class SnapshotRebuild
                 }
 
                 var rows = LoadTable(store, table, entry, publishStore.Root);
+                store.RestoreSourceOwnership(table, entry.SourceCatalog);
                 loaded.Add(new SnapshotRebuildTable(table.Name, entry.Location.Paths, rows));
 
                 store.Execute(
@@ -145,6 +192,11 @@ public static class SnapshotRebuild
             foreach (var stamp in published.SourceStamps ?? [])
                 store.WriteSourceFileStamp(stamp.ToStamp());
 
+            // Only compatible v4 manifests contribute to this floor. A newer torn v4 may have
+            // exposed values beyond the older intact set we loaded, so the next reservation must
+            // remain strictly above the maximum observed compatible high watermark.
+            store.ReconcileChangeSequence(tables, changeSequenceFloor);
+
             store.Execute("COMMIT");
         }
         catch
@@ -169,6 +221,27 @@ public static class SnapshotRebuild
             using var reader = command.ExecuteReader();
             while (reader.Read())
                 parquetColumns.Add(reader.GetString(0));
+        }
+
+        var missingBookkeeping = BookkeepingColumns.All
+            .Where(column => !parquetColumns.Contains(column))
+            .ToList();
+        if (missingBookkeeping.Count > 0)
+        {
+            throw new InvalidDataException(
+                $"Published v4 table '{table.Name}' is missing required bookkeeping column(s): " +
+                string.Join(", ", missingBookkeeping));
+        }
+
+        var invalidVersions = Convert.ToInt64(store.ExecuteScalar(
+            $"SELECT count(*) FROM {source} " +
+            $"WHERE \"{BookkeepingColumns.ChangeSequence}\" IS NULL " +
+            $"OR \"{BookkeepingColumns.ChangeSequence}\" <= 0 " +
+            $"OR \"{BookkeepingColumns.ChangeRecordedAt}\" IS NULL"));
+        if (invalidVersions > 0)
+        {
+            throw new InvalidDataException(
+                $"Published v4 table '{table.Name}' has {invalidVersions} row(s) with invalid durable change metadata.");
         }
 
         var columns = table.Columns.Select(c => c.Name).Concat(BookkeepingColumns.All)

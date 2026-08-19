@@ -151,7 +151,7 @@ public class SnapshotRebuildTests : IDisposable
                 key, code, quantity);
         }
         var merge = SnapshotMerge.Execute(rebuilt, fx.Widget, staging,
-            new SnapshotMergeOptions { Source = "test", DeletesEnabled = true });
+            new SnapshotMergeOptions { Source = fx.WidgetSource.Key, DeletesEnabled = true });
 
         Assert.True(merge.Succeeded);
         Assert.Equal(0, merge.RowsInserted);
@@ -217,6 +217,23 @@ public class SnapshotRebuildTests : IDisposable
         Assert.Equal([second.ManifestFile], result.PublishesSkipped);
         Assert.Equal(1, Convert.ToInt32(rebuilt.ExecuteScalar(
             "SELECT \"Quantity\" FROM data.\"Widget\" WHERE \"_PrimaryKey\" = 'W1'")));
+
+        var skippedHighWatermark = PublishedSnapshot.Read(
+            Path.Combine(fx.PublishDirectory, second.ManifestFile!)).ChangeSequenceHighWatermark!.Value;
+        var staging = rebuilt.CreateStagingTable(fx.Widget);
+        rebuilt.Execute(
+            $"""
+            INSERT INTO {staging.QualifiedName}
+                ("Code", "Quantity", "_PrimaryKey", "_RowHash", "_SourceModified")
+            SELECT "Code", "Quantity", 'W2', {RowHash.Expression(["Code", "Quantity"])}, NULL
+            FROM (SELECT 'beta' AS "Code", 2 AS "Quantity")
+            """);
+        SnapshotMerge.Execute(rebuilt, fx.Widget, staging,
+            new SnapshotMergeOptions { Source = fx.WidgetSource.Key, DeletesEnabled = false });
+
+        Assert.True(Convert.ToInt64(rebuilt.ExecuteScalar(
+            "SELECT \"_ChangeSequence\" FROM data.\"Widget\" WHERE \"_PrimaryKey\" = 'W2'"))
+            > skippedHighWatermark);
     }
 
     [Fact]

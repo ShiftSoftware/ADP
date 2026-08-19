@@ -79,6 +79,7 @@ public sealed class SnapshotAgentLoopTests : IDisposable
             new SnapshotSource
             {
                 Key = "widgets",
+                RecordIdentity = SourceRecordIdentityDescriptor.LogicalKey("Code"),
                 Table = Table,
                 Cadence = TimeSpan.FromMinutes(5),
                 Ingest = IngestOf("widgets", () => rows),
@@ -136,6 +137,8 @@ public sealed class SnapshotAgentLoopTests : IDisposable
             new SnapshotSource
             {
                 Key = "broken",
+                SourceScope = "broken",
+                RecordIdentity = SourceRecordIdentityDescriptor.LogicalKey("Code"),
                 Table = Table,
                 Cadence = TimeSpan.FromMinutes(1),
                 Ingest = _ => { attempts++; throw new InvalidOperationException("source database unreachable"); },
@@ -143,9 +146,11 @@ public sealed class SnapshotAgentLoopTests : IDisposable
             new SnapshotSource
             {
                 Key = "healthy",
+                SourceScope = "healthy",
+                RecordIdentity = SourceRecordIdentityDescriptor.LogicalKey("Code"),
                 Table = Table,
                 Cadence = TimeSpan.FromMinutes(1),
-                Ingest = IngestOf("healthy", () => [("W1", "alpha", 1)]),
+                Ingest = IngestOf("healthy", () => [("W1", "alpha", 1)], scope: "healthy"),
             },
         ]);
 
@@ -177,6 +182,7 @@ public sealed class SnapshotAgentLoopTests : IDisposable
             new SnapshotSource
             {
                 Key = "widgets",
+                RecordIdentity = SourceRecordIdentityDescriptor.LogicalKey("Code"),
                 Table = Table,
                 Cadence = TimeSpan.FromMinutes(5),
                 Ingest = IngestOf("widgets", () => rows),
@@ -212,6 +218,7 @@ public sealed class SnapshotAgentLoopTests : IDisposable
             new SnapshotSource
             {
                 Key = "widgets",
+                RecordIdentity = SourceRecordIdentityDescriptor.LogicalKey("Code"),
                 Table = Table,
                 Cadence = TimeSpan.FromMinutes(5),
                 Ingest = IngestOf("widgets", () => rows),
@@ -262,6 +269,7 @@ public sealed class SnapshotAgentLoopTests : IDisposable
             new SnapshotSource
             {
                 Key = "widgets",
+                RecordIdentity = SourceRecordIdentityDescriptor.LogicalKey("Code"),
                 Table = Table,
                 Cadence = TimeSpan.FromMinutes(5),
                 Ingest = IngestOf("widgets", () => [("W1", "alpha", 1)]),
@@ -290,6 +298,7 @@ public sealed class SnapshotAgentLoopTests : IDisposable
             new SnapshotSource
             {
                 Key = "widgets",
+                RecordIdentity = SourceRecordIdentityDescriptor.LogicalKey("Code"),
                 Table = Table,
                 Cadence = TimeSpan.FromHours(1),
                 Ingest = IngestOf("widgets", () => rows),
@@ -316,6 +325,8 @@ public sealed class SnapshotAgentLoopTests : IDisposable
             new SnapshotSource
             {
                 Key = "scope-a",
+                SourceScope = "A",
+                RecordIdentity = SourceRecordIdentityDescriptor.LogicalKey("Code"),
                 Table = Table,
                 Cadence = TimeSpan.FromMinutes(1),
                 Ingest = IngestOf("scope-a", () => [("K", "alpha", 1)], scope: "A"),
@@ -324,6 +335,8 @@ public sealed class SnapshotAgentLoopTests : IDisposable
             new SnapshotSource
             {
                 Key = "scope-b",
+                SourceScope = "B",
+                RecordIdentity = SourceRecordIdentityDescriptor.LogicalKey("Code"),
                 Table = Table,
                 Cadence = TimeSpan.FromMinutes(1),
                 Ingest = IngestOf("scope-b", () => [("K", "alpha", 1)], scope: "B"),

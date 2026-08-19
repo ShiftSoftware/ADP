@@ -10,6 +10,7 @@ public class SourceRegistryTests
     private static SnapshotSource Source(
         string key,
         SnapshotTableDefinition? table = null,
+        string? sourceScope = null,
         TimeSpan? cadence = null,
         IReadOnlyList<CosmosFamilyMapping>? families = null,
         bool enabled = true,
@@ -18,6 +19,8 @@ public class SourceRegistryTests
         int replicationMaxInFlightRows = 1) => new()
     {
         Key = key,
+        SourceScope = sourceScope,
+        RecordIdentity = SourceRecordIdentityDescriptor.LogicalKey((table ?? WidgetTable).Columns[0].Name),
         Table = table ?? WidgetTable,
         Cadence = cadence ?? TimeSpan.FromMinutes(1),
         Ingest = _ => throw new InvalidOperationException("Not meant to run in these tests."),
@@ -34,9 +37,9 @@ public class SourceRegistryTests
         var otherTable = new SnapshotTableDefinition("Gadget", [new SnapshotColumn("Name", "VARCHAR")]);
         var registry = new SourceRegistry(
         [
-            Source("a"),
+            Source("a", sourceScope: "a"),
             Source("b", table: otherTable),
-            Source("c"),   // same table as "a" — same instance
+            Source("c", sourceScope: "c"),   // same table as "a" — distinct owned scope
         ]);
 
         Assert.Equal(3, registry.Sources.Count);
@@ -60,6 +63,10 @@ public class SourceRegistryTests
         Assert.Throws<ArgumentException>(() => new SourceRegistry([Source("  ")]));
 
     [Fact]
+    public void BlankNonNullScope_IsRejected() =>
+        Assert.Throws<ArgumentException>(() => new SourceRegistry([Source("a", sourceScope: "  ")]));
+
+    [Fact]
     public void NonPositiveCadence_IsRejected() =>
         Assert.Throws<ArgumentException>(() => new SourceRegistry([Source("a", cadence: TimeSpan.Zero)]));
 
@@ -78,12 +85,24 @@ public class SourceRegistryTests
     {
         var registry = new SourceRegistry(
         [
-            Source("a", replicationBatchSize: 250, replicationMaxInFlightRows: 4),
-            Source("b", replicationBatchSize: 250, replicationMaxInFlightRows: 4),
+            Source("a", sourceScope: "a", replicationBatchSize: 250, replicationMaxInFlightRows: 4),
+            Source("b", sourceScope: "b", replicationBatchSize: 250, replicationMaxInFlightRows: 4),
         ]);
 
         Assert.Equal(2, registry.Sources.Count);
         Assert.Single(registry.Tables);
+    }
+
+    [Fact]
+    public void SharedTable_WithDuplicateScopeOwnership_IsRejectedCaseInsensitively()
+    {
+        var exception = Assert.Throws<ArgumentException>(() => new SourceRegistry(
+        [
+            Source("a", sourceScope: "north"),
+            Source("b", sourceScope: "NORTH"),
+        ]));
+
+        Assert.Contains("exactly one source owner", exception.Message);
     }
 
     [Fact]
@@ -128,7 +147,11 @@ public class SourceRegistryTests
             },
         ];
 
-        var registry = new SourceRegistry([Source("a", families: shared), Source("b", families: shared)]);
+        var registry = new SourceRegistry(
+        [
+            Source("a", sourceScope: "a", families: shared),
+            Source("b", sourceScope: "b", families: shared),
+        ]);
         Assert.Equal(2, registry.Sources.Count);
         Assert.Single(registry.Tables);
     }

@@ -7,6 +7,13 @@ namespace ShiftSoftware.ADP.Hawta;
 /// semantics as ShiftEntity's <c>IShiftEntityReplication</c>: <c>_LastReplicationDate</c> is
 /// the <c>_ReplicationModified</c> of the document-affecting row version that was pushed —
 /// never wall clock. <c>_LastModified</c> remains the truthful stamp for any stored source change.
+///
+/// <para>The downstream incremental-ingestion contract adds only <c>_ChangeSequence</c>, a
+/// store-wide durable increasing version number, and <c>_ChangeRecordedAt</c>, when Hawta accepted
+/// that version. Source ownership and key semantics are published once in the manifest catalog,
+/// not denormalized onto every row. The sequence/timestamp advance only for an insert, content
+/// change, resurrection, source/scope adoption, or tombstone — never an unchanged scan or forced
+/// republish.</para>
 /// </summary>
 public static class BookkeepingColumns
 {
@@ -23,12 +30,15 @@ public static class BookkeepingColumns
     public const string ReplicationAttempts = "_ReplicationAttempts";
     public const string ReplicationError = "_ReplicationError";
     public const string ReplicatedAt = "_ReplicatedAt";
+    public const string ChangeSequence = "_ChangeSequence";
+    public const string ChangeRecordedAt = "_ChangeRecordedAt";
 
     /// <summary>All bookkeeping column names, in table-DDL order.</summary>
     public static readonly IReadOnlyList<string> All =
     [
         PrimaryKey, RowHash, ReplicationHash, SourceScope, LastModified, ReplicationModified, Deleted, DeletedAt,
         LastReplicationDate, ReplicationStamp, ReplicationAttempts, ReplicationError, ReplicatedAt,
+        ChangeSequence, ChangeRecordedAt,
     ];
 
     internal const string TableDdl =
@@ -45,6 +55,8 @@ public static class BookkeepingColumns
         "{ReplicationStamp}" VARCHAR,
         "{ReplicationAttempts}" INTEGER NOT NULL DEFAULT 0,
         "{ReplicationError}" VARCHAR,
-        "{ReplicatedAt}" TIMESTAMP
+        "{ReplicatedAt}" TIMESTAMP,
+        "{ChangeSequence}" BIGINT NOT NULL,
+        "{ChangeRecordedAt}" TIMESTAMP NOT NULL
         """;
 }

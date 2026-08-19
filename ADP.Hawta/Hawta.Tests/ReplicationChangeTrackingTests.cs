@@ -73,6 +73,7 @@ public sealed class ReplicationChangeTrackingTests : IDisposable
         var source = new SnapshotSource
         {
             Key = "snapshot-only",
+            RecordIdentity = SourceRecordIdentityDescriptor.LogicalKey(options.LogicalKey!),
             Table = table,
             Cadence = TimeSpan.FromMinutes(1),
             Families = null,

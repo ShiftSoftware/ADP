@@ -12,6 +12,9 @@ public sealed class PublisherFixture : IDisposable
     public SnapshotStore Store { get; }
     public SnapshotTableDefinition Widget { get; }
     public SnapshotTableDefinition Gadget { get; }
+    public SnapshotSource WidgetSource { get; }
+    public SnapshotSource GadgetSource { get; }
+    public IReadOnlyList<SnapshotSource> Sources { get; }
     public string PublishDirectory { get; }
     public Func<string, bool>? RetentionDelete { get; set; }
 
@@ -32,8 +35,21 @@ public sealed class PublisherFixture : IDisposable
         Store.EnsureTable(Widget);
         Store.EnsureTable(Gadget);
 
+        WidgetSource = PublishSource("test-widget", Widget);
+        GadgetSource = PublishSource("test-gadget", Gadget);
+        Sources = [WidgetSource, GadgetSource];
+
         PublishDirectory = Path.Combine(Path.GetTempPath(), $"hawta-publish-tests-{Guid.NewGuid():N}");
     }
+
+    private static SnapshotSource PublishSource(string key, SnapshotTableDefinition table) => new()
+    {
+        Key = key,
+        RecordIdentity = SourceRecordIdentityDescriptor.LogicalKey(table.Columns[0].Name),
+        Table = table,
+        Cadence = TimeSpan.FromMinutes(1),
+        Ingest = _ => throw new NotSupportedException("Publisher fixture sources are declarative only."),
+    };
 
     public SnapshotMergeResult MergeWidgets(params (string Key, string Code, int Quantity)[] rows) =>
         MergeWidgetsWithSourceDates([.. rows.Select(r => (r.Key, r.Code, r.Quantity, (DateTime?)null))]);
@@ -52,7 +68,7 @@ public sealed class PublisherFixture : IDisposable
                 row.Key, row.SourceModified, row.Code, row.Quantity);
         }
         return SnapshotMerge.Execute(Store, Widget, staging,
-            new SnapshotMergeOptions { Source = "test", DeletesEnabled = true });
+            new SnapshotMergeOptions { Source = WidgetSource.Key, DeletesEnabled = true });
     }
 
     public SnapshotMergeResult MergeGadgets(params (string Key, string Label)[] rows)
@@ -69,7 +85,7 @@ public sealed class PublisherFixture : IDisposable
                 row.Key, row.Label);
         }
         return SnapshotMerge.Execute(Store, Gadget, staging,
-            new SnapshotMergeOptions { Source = "test", DeletesEnabled = true });
+            new SnapshotMergeOptions { Source = GadgetSource.Key, DeletesEnabled = true });
     }
 
     public SnapshotPublishResult Publish(bool force = false, int keepPublishes = 3, Action? onBeforeManifestCommit = null) =>
@@ -78,6 +94,7 @@ public sealed class PublisherFixture : IDisposable
             PublishDirectory = PublishDirectory,
             SnapshotName = SnapshotName,
             Tables = [Widget, Gadget],
+            Sources = Sources,
             Force = force,
             KeepPublishes = keepPublishes,
             OnBeforeManifestCommit = onBeforeManifestCommit,
@@ -530,6 +547,7 @@ public class SnapshotPublisherTests : IDisposable
             PublishDirectory = fx.PublishDirectory,
             SnapshotName = PublisherFixture.SnapshotName,
             Tables = [fx.Widget],
+            Sources = [fx.WidgetSource],
             SortColumns = new Dictionary<string, IReadOnlyList<string>> { ["Widget"] = ["NoSuchColumn"] },
         }));
     }
@@ -681,6 +699,7 @@ public class SnapshotPublisherTests : IDisposable
             PublishDirectory = "az://hawta/publish",
             SnapshotName = PublisherFixture.SnapshotName,
             Tables = [fx.Widget],
+            Sources = [fx.WidgetSource],
         }));
 
         Assert.Contains("az://hawta/publish", thrown.Message);
@@ -814,6 +833,7 @@ public class SnapshotPublisherTests : IDisposable
             PublishDirectory = fx.PublishDirectory,
             SnapshotName = "other-read",
             Tables = [fx.Gadget],
+            Sources = [fx.GadgetSource],
         });
         var foreignParquet = fx.Files("Gadget-*.parquet");
 
@@ -872,6 +892,7 @@ public class SnapshotPublisherTests : IDisposable
             PublishDirectory = fx.PublishDirectory,
             SnapshotName = "TEST-READ",   // same snapshot, drifted casing
             Tables = [fx.Widget, fx.Gadget],
+            Sources = fx.Sources,
         });
 
         Assert.Equal(SnapshotPublishStatus.SkippedNoChanges, result.Status);
@@ -893,6 +914,7 @@ public class SnapshotPublisherTests : IDisposable
             PublishDirectory = blocked,
             SnapshotName = PublisherFixture.SnapshotName,
             Tables = [fx.Widget],
+            Sources = [fx.WidgetSource],
         }));
 
         Assert.Equal(1L, Convert.ToInt64(fx.Store.ExecuteScalar(
@@ -907,6 +929,7 @@ public class SnapshotPublisherTests : IDisposable
             PublishDirectory = fx.PublishDirectory,
             SnapshotName = PublisherFixture.SnapshotName,
             Tables = [fx.Widget, new SnapshotTableDefinition("widget", [new SnapshotColumn("Code", "VARCHAR")])],
+            Sources = [fx.WidgetSource],
         }));
     }
 
@@ -918,6 +941,7 @@ public class SnapshotPublisherTests : IDisposable
             PublishDirectory = fx.PublishDirectory,
             SnapshotName = PublisherFixture.SnapshotName,
             Tables = [fx.Widget],
+            Sources = [fx.WidgetSource],
             SortColumns = new Dictionary<string, IReadOnlyList<string>> { ["DmsOrderLines"] = ["Code"] },
         }));
     }
@@ -932,6 +956,7 @@ public class SnapshotPublisherTests : IDisposable
             PublishDirectory = fx.PublishDirectory,
             SnapshotName = PublisherFixture.SnapshotName,
             Tables = [fx.Widget],
+            Sources = [fx.WidgetSource],
             SortColumns = new Dictionary<string, IReadOnlyList<string>> { ["widget"] = ["Code"] },
         });
 

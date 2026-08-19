@@ -29,6 +29,8 @@ public static class SnapshotMerge
         StagingTable stagingTable,
         SnapshotMergeOptions options)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(options.Source);
+
         var runId = options.RunId ?? Guid.NewGuid().ToString("N");
         var startedAt = DateTime.UtcNow;
         var runTimestamp = startedAt;
@@ -47,6 +49,8 @@ public static class SnapshotMerge
         var deleted = $"\"{BookkeepingColumns.Deleted}\"";
         var lastModified = $"\"{BookkeepingColumns.LastModified}\"";
         var replicationModified = $"\"{BookkeepingColumns.ReplicationModified}\"";
+        var changeSequence = $"\"{BookkeepingColumns.ChangeSequence}\"";
+        var changeRecordedAt = $"\"{BookkeepingColumns.ChangeRecordedAt}\"";
 
         long rowsStaged = Convert.ToInt64(store.ExecuteScalar($"SELECT count(*) FROM {staging}"));
 
@@ -162,9 +166,44 @@ public static class SnapshotMerge
                 return abortedAdoption;
             }
 
+            var updatePredicate =
+                $"({targetRef}.{hash} IS DISTINCT FROM {stg}.{hash} " +
+                $"OR {targetRef}.{deleted} = true " +
+                $"OR {targetRef}.{scope} IS DISTINCT FROM ? " +
+                $"OR ownership.\"SourceKey\" IS DISTINCT FROM ? " +
+                $"OR {targetRef}.{changeSequence} IS NULL " +
+                $"OR {targetRef}.{changeRecordedAt} IS NULL)";
+
+            var updateFrom =
+                $"FROM {target} AS {targetRef} JOIN {staging} AS {stg} " +
+                $"ON {targetRef}.{pk} = {stg}.{pk} " +
+                $"LEFT JOIN meta.SourceOwnership AS ownership " +
+                $"ON ownership.\"TableName\" = ? AND ownership.\"PrimaryKey\" = {targetRef}.{pk}";
+
+            var rowsUpdatedPlanned = Convert.ToInt64(store.ExecuteScalar(
+                $"SELECT count(*) {updateFrom} WHERE {updatePredicate}",
+                table.Name, options.SourceScope, options.Source));
+
+            if (rowsUpdatedPlanned > 0)
+            {
+                var firstUpdateSequence = store.ReserveChangeSequences(rowsUpdatedPlanned);
+                store.Execute(
+                    $"""
+                    CREATE OR REPLACE TEMP TABLE "hawta$versions" AS
+                    SELECT {stg}.{pk} AS {pk},
+                           CAST(? + row_number() OVER (ORDER BY {stg}.{pk}) - 1 AS BIGINT) AS {changeSequence}
+                    {updateFrom}
+                    WHERE {updatePredicate}
+                    """,
+                    firstUpdateSequence, table.Name, options.SourceScope, options.Source);
+            }
+
             var assignments = string.Join(",\n    ", table.Columns.Select(c => $"\"{c.Name}\" = {stg}.\"{c.Name}\""));
-            var rowsUpdated = store.Execute(
-                $"""
+            long rowsUpdated = 0;
+            if (rowsUpdatedPlanned > 0)
+            {
+                rowsUpdated = store.Execute(
+                    $"""
                 UPDATE {target}
                 SET {assignments},
                     {hash} = {stg}.{hash},
@@ -182,6 +221,8 @@ public static class SnapshotMerge
                             {targetRef}.{replicationModified} + INTERVAL 1 MICROSECOND)
                         ELSE {targetRef}.{replicationModified}
                     END,
+                    {changeSequence} = versions.{changeSequence},
+                    {changeRecordedAt} = ?,
                     {deleted} = false,
                     "{BookkeepingColumns.DeletedAt}" = NULL,
                     "{BookkeepingColumns.ReplicationAttempts}" = CASE
@@ -195,27 +236,57 @@ public static class SnapshotMerge
                           OR {targetRef}.{scope} IS DISTINCT FROM ? THEN NULL
                         ELSE {targetRef}."{BookkeepingColumns.ReplicationError}" END
                 FROM {staging} AS {stg}
+                JOIN "hawta$versions" AS versions ON versions.{pk} = {stg}.{pk}
                 WHERE {targetRef}.{pk} = {stg}.{pk}
-                  AND ({targetRef}.{hash} IS DISTINCT FROM {stg}.{hash}
-                       OR {targetRef}.{deleted} = true
-                       OR {targetRef}.{scope} IS DISTINCT FROM ?)
                 """,
-                options.SourceScope, runTimestamp,
-                options.SourceScope, runTimestamp,
-                options.SourceScope, options.SourceScope,
-                options.SourceScope);
+                    options.SourceScope, runTimestamp,
+                    options.SourceScope, runTimestamp,
+                    runTimestamp,
+                    options.SourceScope, options.SourceScope);
+            }
+
+            if (rowsUpdated != rowsUpdatedPlanned)
+                throw new InvalidOperationException(
+                    $"Source-version update for '{options.Source}' planned {rowsUpdatedPlanned} row(s) but changed {rowsUpdated}.");
 
             // Inserts: staging rows with no existing key.
-            var rowsInserted = store.Execute(
-                $"""
-                INSERT INTO {target} ({table.QuotedColumnList}, {pk}, {hash}, {replicationHash}, {scope}, {lastModified}, {replicationModified}, {deleted})
+            var rowsInsertedPlanned = Convert.ToInt64(store.ExecuteScalar(
+                $"SELECT count(*) FROM {staging} AS {stg} WHERE NOT EXISTS " +
+                $"(SELECT 1 FROM {target} t WHERE t.{pk} = {stg}.{pk})"));
+            if (rowsInsertedPlanned > 0)
+            {
+                var firstInsertSequence = store.ReserveChangeSequences(rowsInsertedPlanned);
+                store.Execute(
+                    $"""
+                    CREATE OR REPLACE TEMP TABLE "hawta$versions" AS
+                    SELECT {stg}.{pk} AS {pk},
+                           CAST(? + row_number() OVER (ORDER BY {stg}.{pk}) - 1 AS BIGINT) AS {changeSequence}
+                    FROM {staging} AS {stg}
+                    WHERE NOT EXISTS (SELECT 1 FROM {target} t WHERE t.{pk} = {stg}.{pk})
+                    """,
+                    firstInsertSequence);
+            }
+
+            long rowsInserted = 0;
+            if (rowsInsertedPlanned > 0)
+            {
+                rowsInserted = store.Execute(
+                    $"""
+                INSERT INTO {target} ({table.QuotedColumnList}, {pk}, {hash}, {replicationHash}, {scope}, {lastModified}, {replicationModified}, {deleted},
+                                      {changeSequence}, {changeRecordedAt})
                 SELECT {string.Join(", ", table.Columns.Select(c => $"{stg}.\"{c.Name}\""))},
                        {stg}.{pk}, {stg}.{hash}, {stg}.{replicationHash}, ?,
-                       coalesce({stg}."_SourceModified", ?), coalesce({stg}."_SourceModified", ?), false
+                       coalesce({stg}."_SourceModified", ?), coalesce({stg}."_SourceModified", ?), false,
+                       versions.{changeSequence}, ?
                 FROM {staging} AS {stg}
-                WHERE NOT EXISTS (SELECT 1 FROM {target} t WHERE t.{pk} = {stg}.{pk})
+                JOIN "hawta$versions" AS versions ON versions.{pk} = {stg}.{pk}
                 """,
-                options.SourceScope, runTimestamp, runTimestamp);
+                    options.SourceScope, runTimestamp, runTimestamp, runTimestamp);
+            }
+
+            if (rowsInserted != rowsInsertedPlanned)
+                throw new InvalidOperationException(
+                    $"Source-version insert for '{options.Source}' planned {rowsInsertedPlanned} row(s) but changed {rowsInserted}.");
 
             // Tombstones: in-scope live rows absent from this full-universe staging.
             // NOT IN is NULL-safe here: the Failed:InvalidStagingRows pre-check guarantees
@@ -225,20 +296,67 @@ public static class SnapshotMerge
             long rowsTombstoned = 0;
             if (options.DeletesEnabled && pendingDeletes > 0)
             {
-                rowsTombstoned = store.Execute(
+                var firstDeleteSequence = store.ReserveChangeSequences(pendingDeletes);
+                store.Execute(
                     $"""
-                    UPDATE {target}
-                    SET {deleted} = true,
-                        "{BookkeepingColumns.DeletedAt}" = ?,
-                        {lastModified} = greatest(?, {lastModified} + INTERVAL 1 MICROSECOND),
-                        {replicationModified} = greatest(?, {replicationModified} + INTERVAL 1 MICROSECOND),
-                        "{BookkeepingColumns.ReplicationAttempts}" = 0,
-                        "{BookkeepingColumns.ReplicationError}" = NULL
+                    CREATE OR REPLACE TEMP TABLE "hawta$versions" AS
+                    SELECT {pk},
+                           CAST(? + row_number() OVER (ORDER BY {pk}) - 1 AS BIGINT) AS {changeSequence}
+                    FROM {target}
                     WHERE {deleted} = false
                       AND {scope} IS NOT DISTINCT FROM ?
                       AND {pk} NOT IN (SELECT {pk} FROM {staging})
                     """,
-                    runTimestamp, runTimestamp, runTimestamp, options.SourceScope);
+                    firstDeleteSequence, options.SourceScope);
+
+                rowsTombstoned = store.Execute(
+                    $"""
+                    UPDATE {target} AS {targetRef}
+                    SET {deleted} = true,
+                        "{BookkeepingColumns.DeletedAt}" = ?,
+                        {lastModified} = greatest(?, {lastModified} + INTERVAL 1 MICROSECOND),
+                        {replicationModified} = greatest(?, {replicationModified} + INTERVAL 1 MICROSECOND),
+                        {changeSequence} = versions.{changeSequence},
+                        {changeRecordedAt} = ?,
+                        "{BookkeepingColumns.ReplicationAttempts}" = 0,
+                        "{BookkeepingColumns.ReplicationError}" = NULL
+                    FROM "hawta$versions" AS versions
+                    WHERE {targetRef}.{pk} = versions.{pk}
+                    """,
+                    runTimestamp, runTimestamp, runTimestamp, runTimestamp);
+
+                if (rowsTombstoned != pendingDeletes)
+                    throw new InvalidOperationException(
+                        $"Source-version tombstone for '{options.Source}' planned {pendingDeletes} row(s) but changed {rowsTombstoned}.");
+            }
+
+            // The internal owner changes in the SAME transaction as the accepted row versions.
+            // Missing/different ownership participated in updatePredicate, so this repair cannot
+            // happen without the corresponding sequence advance.
+            store.Execute(
+                $"""
+                DELETE FROM meta.SourceOwnership
+                WHERE "TableName" = ?
+                  AND "PrimaryKey" IN (SELECT {pk} FROM {staging})
+                """,
+                table.Name);
+            store.Execute(
+                $"""
+                INSERT INTO meta.SourceOwnership ("TableName", "PrimaryKey", "SourceKey")
+                SELECT ?, {pk}, ? FROM {staging}
+                """,
+                table.Name, options.Source);
+
+            if (rowsTombstoned > 0)
+            {
+                store.Execute(
+                    "DELETE FROM meta.SourceOwnership WHERE \"TableName\" = ? " +
+                    "AND \"PrimaryKey\" IN (SELECT \"_PrimaryKey\" FROM \"hawta$versions\")",
+                    table.Name);
+                store.Execute(
+                    "INSERT INTO meta.SourceOwnership (\"TableName\", \"PrimaryKey\", \"SourceKey\") " +
+                    "SELECT ?, \"_PrimaryKey\", ? FROM \"hawta$versions\"",
+                    table.Name, options.Source);
             }
 
             var result = new SnapshotMergeResult(runId, SnapshotMergeStatus.Succeeded,

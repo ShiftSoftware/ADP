@@ -368,6 +368,7 @@ public sealed class SnapshotAgentLoop : IDisposable
                     Store = options.PublishStore,
                     SnapshotName = options.SnapshotName,
                     Tables = options.Registry.Tables,
+                    Sources = options.Registry.Sources,
                     SortColumns = options.SortColumns,
                     KeepPublishes = options.KeepPublishes,
                 });
@@ -516,7 +517,8 @@ public sealed class SnapshotAgentLoop : IDisposable
 
         replicator = new CosmosSnapshotReplicator(store, cosmosClient);
 
-        if (!existed)
+        var coldStart = !existed;
+        if (coldStart)
         {
             // The slot-swap / new-instance story: local disk is empty, the published set is
             // the seed. Bookkeeping columns are published, so replication state survives and
@@ -525,12 +527,13 @@ public sealed class SnapshotAgentLoop : IDisposable
                 options.SnapshotName, options.PublishStore);
             Emit(SnapshotAgentEventLevel.Info,
                 rebuild.ManifestFile is null
-                    ? "Cold start: nothing published yet — starting from an empty write DB."
+                    ? rebuild.PublishesSkipped.Count > 0
+                        ? $"Cold start: no compatible v4 seed (ignored {rebuild.PublishesSkipped.Count} pre-v4 publish(es)) — rebuilding from sources."
+                        : "Cold start: nothing published yet — starting from an empty write DB."
                     : $"Cold start: rebuilt {rebuild.TotalRows} row(s) across {rebuild.TablesLoaded.Count} table(s) from {rebuild.ManifestFile}.");
-            return true;
         }
 
-        return false;
+        return coldStart;
     }
 
     private void DeleteWriteDatabase()

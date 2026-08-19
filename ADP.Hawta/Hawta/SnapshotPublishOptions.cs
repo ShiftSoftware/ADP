@@ -39,6 +39,13 @@ public sealed class SnapshotPublishOptions
     public required IReadOnlyList<SnapshotTableDefinition> Tables { get; init; }
 
     /// <summary>
+    /// Declarative source catalog for the published tables. Every table must have at least one
+    /// source, and every table/scope pair exactly one. Disabled sources remain catalogued because
+    /// their already-published rows still need an unambiguous owner and identity contract.
+    /// </summary>
+    public required IReadOnlyList<SnapshotSource> Sources { get; init; }
+
+    /// <summary>
     /// Per-table sort for parquet export (parquet has no index — row-group min/max stats plus
     /// ordering are what give consumer lookups real pruning). Keys are table names; values are
     /// column names (source or bookkeeping). Default: <c>_PrimaryKey</c>.
@@ -131,6 +138,53 @@ public sealed class SnapshotPublishOptions
             .Where(g => g.Count() > 1).Select(g => g.Key).ToList();
         if (duplicates.Count > 0)
             throw new ArgumentException($"Duplicate table(s) in Tables: {string.Join(", ", duplicates)}.");
+
+        var sourceKeyDuplicates = Sources
+            .GroupBy(source => source.Key, StringComparer.OrdinalIgnoreCase)
+            .Where(group => group.Count() > 1)
+            .Select(group => group.Key)
+            .ToList();
+        if (sourceKeyDuplicates.Count > 0)
+            throw new ArgumentException($"Duplicate source key(s) in Sources: {string.Join(", ", sourceKeyDuplicates)}.");
+
+        var blankScopeSource = Sources.FirstOrDefault(source =>
+            source.SourceScope is not null && string.IsNullOrWhiteSpace(source.SourceScope));
+        if (blankScopeSource is not null)
+            throw new ArgumentException(
+                $"Source '{blankScopeSource.Key}' has a blank source scope; use null for unscoped.");
+
+        foreach (var table in Tables)
+        {
+            var tableSources = Sources
+                .Where(source => source.Table.Name.Equals(table.Name, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            if (tableSources.Count == 0)
+                throw new ArgumentException($"Published table '{table.Name}' has no source catalog entry.");
+
+            var duplicateScope = tableSources
+                .GroupBy(source => source.SourceScope, NullableOrdinalIgnoreCaseComparer.Instance)
+                .FirstOrDefault(group => group.Count() > 1);
+            if (duplicateScope is not null)
+                throw new ArgumentException(
+                    $"Published table '{table.Name}' scope '{duplicateScope.Key ?? "<null>"}' has more than one source owner.");
+
+            foreach (var source in tableSources)
+            {
+                if (string.IsNullOrWhiteSpace(source.Key))
+                    throw new ArgumentException($"Published table '{table.Name}' has a blank source key.");
+                if (source.RecordIdentity is null)
+                    throw new ArgumentException($"Source '{source.Key}' has no record-identity descriptor.");
+                source.RecordIdentity.Validate("<publish configuration>", table.Name, source.Key);
+            }
+        }
+
+        var foreignSources = Sources
+            .Where(source => !Tables.Any(table => table.Name.Equals(source.Table.Name, StringComparison.OrdinalIgnoreCase)))
+            .Select(source => source.Key)
+            .ToList();
+        if (foreignSources.Count > 0)
+            throw new ArgumentException(
+                $"Sources name table(s) outside this publish: {string.Join(", ", foreignSources)}.");
 
         // A key matching no declared table is a dead configuration entry — the silent-misconfig
         // class this validation exists to prevent (a typo'd table would export unsorted forever).

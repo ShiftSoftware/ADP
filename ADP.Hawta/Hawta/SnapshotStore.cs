@@ -13,7 +13,8 @@ namespace ShiftSoftware.ADP.Hawta;
 /// </summary>
 public sealed class SnapshotStore : IDisposable
 {
-    public const int CurrentSchemaVersion = 2;
+    public const int CurrentSchemaVersion = 4;
+    internal const int OldestRebuildableSchemaVersion = 4;
 
     /// <summary>Rows failing replication this many times leave the dirty predicate (dead-letter) until reset.</summary>
     public const int MaxReplicationAttempts = 5;
@@ -182,6 +183,36 @@ public sealed class SnapshotStore : IDisposable
                 "StampedAtUtc" TIMESTAMP NOT NULL
             )
             """);
+
+        // Store-wide allocator for the downstream change cursor. It is a table rather than a
+        // DuckDB SEQUENCE because its value must roll back with a failed merge and be reconciled
+        // to the maximum sequence restored from a published manifest.
+        Execute(
+            """
+            CREATE TABLE IF NOT EXISTS meta.ChangeSequenceState (
+                "Singleton" BOOLEAN NOT NULL PRIMARY KEY,
+                "LastValue" BIGINT NOT NULL
+            )
+            """);
+        Execute(
+            """
+            INSERT INTO meta.ChangeSequenceState
+            SELECT true, 0
+            WHERE NOT EXISTS (SELECT 1 FROM meta.ChangeSequenceState WHERE "Singleton" = true)
+            """);
+
+        // Internal ownership preserves source adoption semantics without leaking source keys onto
+        // every public row. A v4 rebuild recreates it from the manifest's unambiguous table/scope
+        // catalog before ingestion resumes.
+        Execute(
+            """
+            CREATE TABLE IF NOT EXISTS meta.SourceOwnership (
+                "TableName" VARCHAR NOT NULL,
+                "PrimaryKey" VARCHAR NOT NULL,
+                "SourceKey" VARCHAR NOT NULL,
+                PRIMARY KEY ("TableName", "PrimaryKey")
+            )
+            """);
     }
 
     /// <summary>
@@ -305,6 +336,71 @@ public sealed class SnapshotStore : IDisposable
 
         foreach (var column in table.Columns.Where(c => !existingColumns.Contains(c.Name)))
             Execute($"ALTER TABLE {table.QualifiedName} ADD COLUMN \"{column.Name}\" {column.DuckDbType}");
+
+    }
+
+    /// <summary>Recreates internal row ownership from one validated v4 table catalog.</summary>
+    internal void RestoreSourceOwnership(
+        SnapshotTableDefinition table,
+        IReadOnlyList<PublishedSourceCatalogEntry> sourceCatalog)
+    {
+        Execute("DELETE FROM meta.SourceOwnership WHERE \"TableName\" = ?", table.Name);
+
+        foreach (var source in sourceCatalog)
+        {
+            Execute(
+                $"""
+                INSERT INTO meta.SourceOwnership ("TableName", "PrimaryKey", "SourceKey")
+                SELECT ?, "{BookkeepingColumns.PrimaryKey}", ?
+                FROM {table.QualifiedName}
+                WHERE "{BookkeepingColumns.SourceScope}" IS NOT DISTINCT FROM ?
+                """,
+                table.Name, source.SourceKey, source.SourceScope);
+        }
+
+        var rows = Convert.ToInt64(ExecuteScalar($"SELECT count(*) FROM {table.QualifiedName}"));
+        var owned = Convert.ToInt64(ExecuteScalar(
+            "SELECT count(*) FROM meta.SourceOwnership WHERE \"TableName\" = ?", table.Name));
+        if (owned != rows)
+            throw new InvalidDataException(
+                $"Table '{table.Name}' restored {rows} row(s) but its manifest catalog attributed {owned}. " +
+                "Every row scope must have exactly one source owner.");
+    }
+
+    /// <summary>Moves the allocator above every row restored from published parquet.</summary>
+    internal void ReconcileChangeSequence(
+        IReadOnlyList<SnapshotTableDefinition> tables,
+        long publishedHighWatermark = 0)
+    {
+        var maximum = publishedHighWatermark;
+        foreach (var table in tables)
+        {
+            var value = ExecuteScalar(
+                $"SELECT max(\"{BookkeepingColumns.ChangeSequence}\") FROM {table.QualifiedName}");
+            if (value is not null and not DBNull)
+                maximum = Math.Max(maximum, Convert.ToInt64(value));
+        }
+
+        var current = Convert.ToInt64(ExecuteScalar(
+            "SELECT \"LastValue\" FROM meta.ChangeSequenceState WHERE \"Singleton\" = true"));
+        if (maximum > current)
+            Execute("UPDATE meta.ChangeSequenceState SET \"LastValue\" = ? WHERE \"Singleton\" = true", maximum);
+    }
+
+    internal long ReadChangeSequenceHighWatermark() => Convert.ToInt64(ExecuteScalar(
+        "SELECT \"LastValue\" FROM meta.ChangeSequenceState WHERE \"Singleton\" = true"));
+
+    /// <summary>Reserves a contiguous, transactionally durable range and returns its first value.</summary>
+    internal long ReserveChangeSequences(long count)
+    {
+        if (count <= 0)
+            throw new ArgumentOutOfRangeException(nameof(count), "A sequence reservation must be positive.");
+
+        var last = Convert.ToInt64(ExecuteScalar(
+            "SELECT \"LastValue\" FROM meta.ChangeSequenceState WHERE \"Singleton\" = true"));
+        var nextLast = checked(last + count);
+        Execute("UPDATE meta.ChangeSequenceState SET \"LastValue\" = ? WHERE \"Singleton\" = true", nextLast);
+        return checked(last + 1);
     }
 
     /// <summary>

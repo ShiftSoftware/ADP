@@ -12,8 +12,8 @@ public sealed class SnapshotStoreOptions
     /// <summary>
     /// Expected storage schema version. Opening a database whose <c>meta.schema_info</c>
     /// sentinel differs throws <see cref="SnapshotSchemaMismatchException"/> — the caller is
-    /// expected to rebuild the write database from sources (idempotent under the replication
-    /// stamp semantics).
+    /// expected to rebuild the write database from a compatible published snapshot (or, when no
+    /// seed exists, from sources).
     /// </summary>
     public int SchemaVersion { get; init; } = SnapshotStore.CurrentSchemaVersion;
 
@@ -59,7 +59,7 @@ public sealed class SnapshotStoreOptions
 /// <summary>Thrown when the write database's schema sentinel doesn't match the package's expectation.</summary>
 public sealed class SnapshotSchemaMismatchException(int expected, int actual) : Exception(
     $"Snapshot write database schema version is {actual}, this package expects {expected}. " +
-    "Rebuild the write database from sources (a full re-upsert is idempotent under the replication stamp semantics).")
+    "Rebuild the write database from a compatible published snapshot, or from sources when no seed exists.")
 {
     public int Expected { get; } = expected;
     public int Actual { get; } = actual;

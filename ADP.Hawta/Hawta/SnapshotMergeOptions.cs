@@ -1,9 +1,53 @@
 namespace ShiftSoftware.ADP.Hawta;
 
+/// <summary>
+/// What a source record identity means. The registry publishes the matching structured descriptor
+/// once per table/scope; merge options retain the kind as an operational consistency signal.
+/// </summary>
+public enum SourceRecordIdentityKind
+{
+    /// <summary>A database-owned primary key (for example an application table's numeric ID).</summary>
+    DatabaseKey,
+
+    /// <summary>
+    /// A deterministic key derived from business columns. A correction to a key component is
+    /// represented as tombstone + insert; Hawta cannot prove it is the same upstream record.
+    /// </summary>
+    LogicalKey,
+
+    /// <summary>
+    /// A logical group plus an encounter-order occurrence ordinal. This is explicit no-lineage
+    /// mode for repeated rows without a stable key: reordering within the group can re-identify
+    /// rows and is intentionally represented as ordinary version churn.
+    /// </summary>
+    OccurrenceOrdinal,
+}
+
 public sealed class SnapshotMergeOptions
 {
+    private SourceRecordIdentityKind recordIdentityKind = SourceRecordIdentityKind.LogicalKey;
+
     /// <summary>Source name recorded on the <c>meta.SyncRuns</c> row (e.g. the registry source key).</summary>
     public required string Source { get; init; }
+
+    /// <summary>
+    /// Declares the semantics of the staged <c>_PrimaryKey</c>. It must match the registry's
+    /// <see cref="SnapshotSource.RecordIdentity"/> descriptor.
+    /// </summary>
+    public SourceRecordIdentityKind RecordIdentityKind
+    {
+        get => recordIdentityKind;
+        init
+        {
+            recordIdentityKind = value;
+            RecordIdentityKindWasExplicitlySet = true;
+        }
+    }
+
+    // A caller compiled before this property existed necessarily leaves it unset. File ingestion
+    // can then infer OccurrenceOrdinal from its already-explicit OccurrenceRowIdentity without a
+    // patch-level behaviour break, while new callers that explicitly mislabel it still fail loud.
+    internal bool RecordIdentityKindWasExplicitlySet { get; private set; }
 
     /// <summary>
     /// The scope this run's staging represents (e.g. one file of a multi-file family). The
@@ -46,6 +90,21 @@ public sealed class SnapshotMergeOptions
     /// <see cref="SnapshotMerge.Execute"/> call, so an options instance is safely reusable.
     /// </summary>
     public string? RunId { get; init; }
+
+    internal SnapshotMergeOptions WithRecordIdentityKind(SourceRecordIdentityKind identityKind) => new()
+    {
+        Source = Source,
+        RecordIdentityKind = identityKind,
+        SourceScope = SourceScope,
+        DeletesEnabled = DeletesEnabled,
+        MaxDeletedPercent = MaxDeletedPercent,
+        MinDeletedRowsAbsolute = MinDeletedRowsAbsolute,
+        ForceDeletes = ForceDeletes,
+        MaxAdoptedPercent = MaxAdoptedPercent,
+        MinAdoptedRowsAbsolute = MinAdoptedRowsAbsolute,
+        ForceAdoptions = ForceAdoptions,
+        RunId = RunId,
+    };
 }
 
 public enum SnapshotMergeStatus

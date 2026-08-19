@@ -292,8 +292,21 @@ public static class FileSnapshotIngestor
                 nameof(options));
         }
         var occurrence = options.OccurrenceRowIdentity;
+        var mergeOptions = options.MergeOptions;
         if (occurrence is not null)
         {
+            if (mergeOptions.RecordIdentityKindWasExplicitlySet
+                && mergeOptions.RecordIdentityKind != SourceRecordIdentityKind.OccurrenceOrdinal)
+            {
+                throw new ArgumentException(
+                    "OccurrenceRowIdentity has no durable physical-row lineage; " +
+                    "MergeOptions.RecordIdentityKind must be OccurrenceOrdinal.",
+                    nameof(options));
+            }
+
+            if (!mergeOptions.RecordIdentityKindWasExplicitlySet)
+                mergeOptions = mergeOptions.WithRecordIdentityKind(SourceRecordIdentityKind.OccurrenceOrdinal);
+
             var ordinal = options.Table.Columns.SingleOrDefault(column =>
                 column.Name.Equals(occurrence.OrdinalColumn, StringComparison.OrdinalIgnoreCase));
             if (ordinal is null)
@@ -504,7 +517,7 @@ public static class FileSnapshotIngestor
             throw;
         }
 
-        var merge = SnapshotMerge.Execute(store, options.Table, staging, options.MergeOptions);
+        var merge = SnapshotMerge.Execute(store, options.Table, staging, mergeOptions);
 
         // Stamp ONLY on success. A failed, aborted or guardrail-tripped run must leave the previous
         // stamp alone so the next cycle reads again — stamping any other outcome would let the gate

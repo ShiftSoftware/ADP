@@ -144,6 +144,7 @@ public sealed class SnapshotRetentionTests : IDisposable
             PublishDirectory = fx.PublishDirectory,
             SnapshotName = PublisherFixture.SnapshotName,
             Tables = [fx.Widget],
+            Sources = [fx.WidgetSource],
         }.RetentionMinimumAge);
     }
 

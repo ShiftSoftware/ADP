@@ -184,6 +184,39 @@ public sealed class FileSnapshotIngestorTests : IDisposable
     }
 
     [Fact]
+    public void OccurrenceIdentityInfersItsOperationalKind_WithoutPublicRowSourceMetadata()
+    {
+        var table = new SnapshotTableDefinition("RepeatedPart",
+        [
+            new SnapshotColumn("PartNumber", "VARCHAR"),
+            new SnapshotColumn("SourceRowOrdinal", "BIGINT"),
+            new SnapshotColumn("Description", "VARCHAR"),
+        ]);
+        fixture.Store.EnsureTable(table);
+        var path = WriteFile("repeated-parts.csv",
+            "PartNumber,Description\nP1,first\nP1,second\n");
+
+        var result = FileSnapshotIngestor.Ingest(fixture.Store, new FileSnapshotIngestorOptions
+        {
+            Table = table,
+            FilePath = path,
+            OccurrenceRowIdentity = new FileOccurrenceRowIdentity(
+                "SourceRowOrdinal", new FileLogicalKeyPart("PartNumber")),
+            // This is the pre-source-version call shape: no RecordIdentityKind initializer.
+            MergeOptions = new SnapshotMergeOptions { Source = "repeated-parts", DeletesEnabled = true },
+        });
+
+        Assert.Equal(2, result.RowsInserted);
+        Assert.Equal(2, fixture.Scalar<int>(
+            "SELECT count(*) FROM data.\"RepeatedPart\" " +
+            "WHERE \"_ChangeSequence\" > 0 AND \"_ChangeRecordedAt\" IS NOT NULL"));
+        Assert.Equal(0, fixture.Scalar<int>(
+            "SELECT count(*) FROM information_schema.columns " +
+            "WHERE table_schema = 'data' AND table_name = 'RepeatedPart' " +
+            "AND column_name IN ('_SourceKey', '_SourceRecordId', '_SourceRecordIdentityKind')"));
+    }
+
+    [Fact]
     public void FileRowNumber_MakesFirstInFileWinsDedupDeterministic()
     {
         // The JPM shape: duplicate keys collapse at ingest, first occurrence supplies the values.

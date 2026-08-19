@@ -35,12 +35,18 @@ public sealed record PublishedSnapshot(
     [property: JsonPropertyName("tables")] IReadOnlyList<PublishedTableManifest> Tables,
     [property: JsonPropertyName("sourceStamps")] IReadOnlyList<PublishedSourceStamp>? SourceStamps = null)
 {
+    // Body property preserves the pre-v3 positional constructor's CLR signature for consumers
+    // compiled against an earlier patch release while remaining an additive JSON field.
+    [JsonPropertyName("changeSequenceHighWatermark")]
+    public long? ChangeSequenceHighWatermark { get; init; }
+
     /// <summary>
     /// Bumped only for a breaking change to the manifest contract; new fields are additive.
     /// v2 replaced the singular <c>parquetPath</c> string with the plural, self-describing
-    /// <see cref="PublishedTableLocation"/> — see its remarks for why that break was spent early.
+    /// <see cref="PublishedTableLocation"/>. v3 makes the per-table source catalog mandatory
+    /// for schema-v4 publishes.
     /// </summary>
-    public const int CurrentManifestVersion = 2;
+    public const int CurrentManifestVersion = 3;
 
     /// <summary>Every path in the manifest is relative to the manifest's own directory.</summary>
     internal const string RelativePathBase = ".";
@@ -51,7 +57,11 @@ public sealed record PublishedSnapshot(
     /// <summary>Manifest file extension. Deliberately not <c>.duckdb</c> — see the type's remarks.</summary>
     internal const string Extension = ".json";
 
-    internal static readonly JsonSerializerOptions SerializerOptions = new() { WriteIndented = true };
+    internal static readonly JsonSerializerOptions SerializerOptions = new()
+    {
+        WriteIndented = true,
+        Converters = { new JsonStringEnumConverter(namingPolicy: null, allowIntegerValues: false) },
+    };
 
     /// <summary>
     /// Manifest name shape. IgnoreCase mirrors the filesystem's semantics (Windows local disk
@@ -120,6 +130,35 @@ public sealed record PublishedSnapshot(
         return manifest;
     }
 
+    /// <summary>
+    /// Reads only the schema discriminator. Cold-start migration uses this before full v4
+    /// validation so a structurally obsolete pre-v4 manifest can be proven old and ignored,
+    /// while unreadable JSON or a missing discriminator remains an unclassified hard failure.
+    /// </summary>
+    internal static int ReadSchemaVersion(PublishStore store, string manifestPath)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(store.ReadAllText(manifestPath));
+            if (document.RootElement.ValueKind != JsonValueKind.Object
+                || !document.RootElement.TryGetProperty("schemaVersion", out var schema)
+                || !schema.TryGetInt32(out var schemaVersion)
+                || schemaVersion <= 0)
+            {
+                throw new InvalidDataException(
+                    $"'{manifestPath}' has no integer schemaVersion discriminator.");
+            }
+
+            return schemaVersion;
+        }
+        catch (JsonException exception)
+        {
+            throw new InvalidDataException(
+                $"'{manifestPath}' is not readable enough to determine its Hawta schema version.",
+                exception);
+        }
+    }
+
     /// <summary>Reads the newest manifest in the directory, or null when nothing is published yet.</summary>
     public static PublishedSnapshot? ReadNewest(string publishDirectory, string snapshotName) =>
         ReadNewest(new LocalPublishStore(publishDirectory), snapshotName);
@@ -157,8 +196,33 @@ public sealed record PublishedSnapshot(
                 "A newer publisher wrote this set — upgrade rather than reading it with older rules.");
         }
 
+        if (SchemaVersion >= 4 && ManifestVersion < 3)
+            throw new InvalidDataException(
+                $"'{manifestPath}' is schema v{SchemaVersion} but manifest v{ManifestVersion} cannot carry the required source catalog.");
+
+        if (SchemaVersion >= 3 && ChangeSequenceHighWatermark is null)
+            throw new SnapshotSequenceContractException(
+                $"'{manifestPath}' is schema v{SchemaVersion} but carries no change-sequence high watermark.");
+
+        if (ChangeSequenceHighWatermark < 0)
+            throw new SnapshotSequenceContractException(
+                $"'{manifestPath}' carries a negative change-sequence high watermark.");
+
+        if (Tables.Any(entry => entry is null))
+            throw new InvalidDataException($"'{manifestPath}' contains a null table entry.");
+
+        var duplicateTables = Tables
+            .GroupBy(entry => entry.Table, StringComparer.OrdinalIgnoreCase)
+            .FirstOrDefault(group => group.Count() > 1);
+        if (duplicateTables is not null)
+            throw new InvalidDataException($"'{manifestPath}' names table '{duplicateTables.Key}' more than once.");
+
+        var sourceKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var entry in Tables)
         {
+            if (string.IsNullOrWhiteSpace(entry.Table) || entry.Location?.Paths is null)
+                throw new InvalidDataException(
+                    $"'{manifestPath}' contains a table entry without a table name or location.");
             if (entry.Location.Paths.Count == 0)
                 throw new InvalidDataException($"'{manifestPath}' entry for '{entry.Table}' names no files.");
 
@@ -170,6 +234,36 @@ public sealed record PublishedSnapshot(
                         $"'{manifestPath}' entry for '{entry.Table}' references '{path}' — not a relative path " +
                         "contained under the manifest's own directory.");
                 }
+            }
+
+            if (SchemaVersion >= 4 && (entry.SourceCatalog is null || entry.SourceCatalog.Count == 0))
+                throw new InvalidDataException(
+                    $"'{manifestPath}' schema-v{SchemaVersion} entry for '{entry.Table}' has no source catalog.");
+
+            var scopes = new HashSet<string?>(NullableOrdinalIgnoreCaseComparer.Instance);
+            foreach (var source in entry.SourceCatalog ?? [])
+            {
+                if (source is null)
+                    throw new InvalidDataException(
+                        $"'{manifestPath}' entry for '{entry.Table}' contains a null source catalog entry.");
+                if (string.IsNullOrWhiteSpace(source.SourceKey))
+                    throw new InvalidDataException(
+                        $"'{manifestPath}' entry for '{entry.Table}' has a blank source key.");
+                if (source.SourceScope is not null && string.IsNullOrWhiteSpace(source.SourceScope))
+                    throw new InvalidDataException(
+                        $"'{manifestPath}' source '{source.SourceKey}' for '{entry.Table}' has a blank source scope; null is the only unscoped representation.");
+                if (!sourceKeys.Add(source.SourceKey))
+                    throw new InvalidDataException(
+                        $"'{manifestPath}' source key '{source.SourceKey}' is declared more than once.");
+                if (!scopes.Add(source.SourceScope))
+                    throw new InvalidDataException(
+                        $"'{manifestPath}' entry for '{entry.Table}' declares scope " +
+                        $"'{source.SourceScope ?? "<null>"}' more than once.");
+
+                if (source.RecordIdentity is null)
+                    throw new InvalidDataException(
+                        $"'{manifestPath}' source '{source.SourceKey}' for table '{entry.Table}' has no record-identity contract.");
+                source.RecordIdentity.Validate(manifestPath, entry.Table, source.SourceKey);
             }
         }
     }
@@ -222,6 +316,13 @@ public sealed record PublishedSnapshot(
 }
 
 /// <summary>
+/// A committed manifest cannot safely participate in fallback or publishing because its global
+/// sequence floor is absent or invalid. Unlike an unreadable/torn data artifact, falling back
+/// past this error could reuse a cursor value already observed by a consumer.
+/// </summary>
+internal sealed class SnapshotSequenceContractException(string message) : Exception(message);
+
+/// <summary>
 /// One table's entry in a manifest: where its data lives, plus the change signature
 /// (<paramref name="RowCount"/> + <paramref name="StateHash"/>, the per-row-state XOR
 /// aggregate) it was exported at. <paramref name="DataAsOf"/> is observability — the newest
@@ -238,6 +339,13 @@ public sealed record PublishedTableManifest(
     [property: JsonPropertyName("dataAsOf")] DateTime? DataAsOf,
     [property: JsonPropertyName("exportedAt")] DateTime ExportedAt)
 {
+    /// <summary>
+    /// Exactly one source declaration for every scope feeding this table. The catalog explains
+    /// the canonical <c>_PrimaryKey</c> without repeating source identity metadata on every row.
+    /// </summary>
+    [JsonPropertyName("sourceCatalog")]
+    public IReadOnlyList<PublishedSourceCatalogEntry> SourceCatalog { get; init; } = [];
+
     /// <summary>The entry's files resolved against the manifest's directory, in manifest order.</summary>
     public IReadOnlyList<string> Resolve(string publishDirectory) =>
         [.. Location.Paths.Select(path => PublishPath.Combine(publishDirectory, path))];
@@ -260,6 +368,12 @@ public sealed record PublishedTableManifest(
     }
 }
 
+/// <summary>One source owner in a published table's source catalog.</summary>
+public sealed record PublishedSourceCatalogEntry(
+    [property: JsonPropertyName("sourceKey")] string SourceKey,
+    [property: JsonPropertyName("sourceScope")] string? SourceScope,
+    [property: JsonPropertyName("recordIdentity")] SourceRecordIdentityDescriptor RecordIdentity);
+
 /// <summary>
 /// Where one table's data lives, as a self-describing set rather than a single file name.
 ///
@@ -270,7 +384,7 @@ public sealed record PublishedTableManifest(
 /// <c>files[]</c> field alongside a <c>parquetPath</c> later would leave two fields with
 /// ambiguous precedence. The break was spent while the consumer contract was still early.</para>
 /// </summary>
-/// <param name="Kind">Storage format. <c>parquet</c> today; the field exists so <c>delta</c> can be added without a v3.</param>
+/// <param name="Kind">Storage format. <c>parquet</c> today; the field exists so <c>delta</c> can be added without replacing this location shape.</param>
 /// <param name="Paths">Bare file names relative to the manifest's directory. Readers must handle more than one; the publisher currently writes one.</param>
 public sealed record PublishedTableLocation(
     [property: JsonPropertyName("kind")] string Kind,

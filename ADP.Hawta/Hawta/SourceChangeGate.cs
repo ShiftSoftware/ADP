@@ -289,6 +289,7 @@ public static class SourceConfigFingerprint
         // Merge behaviour that changes the OUTPUT. Guardrail thresholds are excluded on purpose —
         // see the type remarks.
         Add("sourceScope", options.MergeOptions.SourceScope);
+        Add("recordIdentityKind", options.MergeOptions.RecordIdentityKind);
         Add("deletesEnabled", options.MergeOptions.DeletesEnabled);
         Add("forceDeletes", options.MergeOptions.ForceDeletes);
         Add("forceAdoptions", options.MergeOptions.ForceAdoptions);

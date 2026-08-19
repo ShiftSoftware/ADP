@@ -165,7 +165,7 @@ public sealed class BlankFieldPolicyTests : IDisposable
             Table = table,
             FilePath = csv,
             PrimaryKeyColumn = "Code",
-            MergeOptions = new SnapshotMergeOptions { Source = "textflip-csv", DeletesEnabled = true },
+            MergeOptions = new SnapshotMergeOptions { Source = "textflip", DeletesEnabled = true },
         });
 
         var parquet = Path.Combine(directory, "textflip.parquet");
@@ -181,7 +181,7 @@ public sealed class BlankFieldPolicyTests : IDisposable
             Table = table,
             FilePath = parquet,
             PrimaryKeyColumn = "Code",
-            MergeOptions = new SnapshotMergeOptions { Source = "textflip-parquet", DeletesEnabled = true },
+            MergeOptions = new SnapshotMergeOptions { Source = "textflip", DeletesEnabled = true },
         });
 
         // Exactly the blank row re-hashes; the populated row does not.
@@ -205,7 +205,7 @@ public sealed class BlankFieldPolicyTests : IDisposable
             Table = table,
             FilePath = csv,
             PrimaryKeyColumn = "Code",
-            MergeOptions = new SnapshotMergeOptions { Source = "flip-csv", DeletesEnabled = true },
+            MergeOptions = new SnapshotMergeOptions { Source = "flip", DeletesEnabled = true },
         });
 
         var parquet = Path.Combine(directory, "flip.parquet");
@@ -221,7 +221,7 @@ public sealed class BlankFieldPolicyTests : IDisposable
             Table = table,
             FilePath = parquet,
             PrimaryKeyColumn = "Code",
-            MergeOptions = new SnapshotMergeOptions { Source = "flip-parquet", DeletesEnabled = true },
+            MergeOptions = new SnapshotMergeOptions { Source = "flip", DeletesEnabled = true },
         });
 
         Assert.True(flip.Succeeded);

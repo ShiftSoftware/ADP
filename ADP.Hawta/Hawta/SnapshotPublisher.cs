@@ -114,14 +114,35 @@ public static class SnapshotPublisher
         var baseline = new Dictionary<string, PublishedTableManifest>(StringComparer.OrdinalIgnoreCase);
         if (previousPath is not null)
         {
+            PublishedSnapshot? previous = null;
             try
             {
-                foreach (var entry in PublishedSnapshot.Read(publishStore, previousPath).Tables)
-                    baseline[entry.Table] = entry;
+                previous = PublishedSnapshot.Read(publishStore, previousPath);
+            }
+            catch (SnapshotSequenceContractException)
+            {
+                throw;
             }
             catch
             {
                 baseline.Clear();
+            }
+
+            if (previous is not null)
+            {
+                if (previous.SchemaVersion > SnapshotStore.CurrentSchemaVersion)
+                    throw new InvalidOperationException(
+                        $"Refusing to publish schema v{SnapshotStore.CurrentSchemaVersion} over newer " +
+                        $"snapshot schema v{previous.SchemaVersion} in '{previousPath}'. Upgrade this publisher.");
+
+                // An older-to-v4 transition must re-export EVERY table, including an empty one
+                // whose row-count/hash signature is still 0/0. Reusing pre-v4 parquet would put
+                // the rejected row contract behind a v4 catalog manifest.
+                if (previous.SchemaVersion == SnapshotStore.CurrentSchemaVersion)
+                {
+                    foreach (var entry in previous.Tables)
+                        baseline[entry.Table] = entry;
+                }
             }
         }
 
@@ -136,14 +157,27 @@ public static class SnapshotPublisher
         }
         var publishId = stamp.ToString(TimestampFormat, CultureInfo.InvariantCulture);
 
+        var sourceCatalogs = options.Tables.ToDictionary(
+            table => table.Name,
+            table => BuildSourceCatalog(options, table),
+            StringComparer.OrdinalIgnoreCase);
+        foreach (var table in options.Tables)
+            EnsureSourceVersionContract(store, table, sourceCatalogs[table.Name]);
+        EnsureGlobalSequenceContract(store, options.Tables);
+
         var exported = new List<string>();
         var reused = new List<string>();
         var manifest = new List<PublishedTableManifest>();
+        var catalogChanged = previousPath is not null && baseline.Count != options.Tables.Count;
 
         foreach (var table in options.Tables)
         {
+            var sourceCatalog = sourceCatalogs[table.Name];
             var signature = ReadSignature(store, table);
             var baselineEntry = baseline.GetValueOrDefault(table.Name);
+
+            if (baselineEntry is not null && !CatalogsEqual(baselineEntry.SourceCatalog, sourceCatalog))
+                catalogChanged = true;
 
             // Reuse needs more than signature equality: the baseline's files must still be
             // readable at the expected row count (a torn file from a crash would otherwise be
@@ -159,7 +193,7 @@ public static class SnapshotPublisher
             if (upToDate)
             {
                 reused.Add(table.Name);
-                manifest.Add(baselineEntry!);
+                manifest.Add(baselineEntry! with { SourceCatalog = sourceCatalog });
                 continue;
             }
 
@@ -175,12 +209,15 @@ public static class SnapshotPublisher
                 RowCount: signature.RowCount,
                 StateHash: signature.StateHash,
                 DataAsOf: signature.MaxLastModified,
-                ExportedAt: stamp));
+                ExportedAt: stamp)
+            {
+                SourceCatalog = sourceCatalog,
+            });
         }
 
         var noRows = manifest.Where(e => e.RowCount == 0).Select(e => e.Table).Order().ToList();
 
-        if (exported.Count == 0 && previousPath is not null)
+        if (exported.Count == 0 && previousPath is not null && !catalogChanged)
         {
             // Self-heal only: a pointer lost to a crash (or never written, on an estate published
             // before it existed) comes back on the next cycle. Rewriting it unconditionally would
@@ -225,6 +262,120 @@ public static class SnapshotPublisher
     }
 
     // ---- Change signature --------------------------------------------------------------------
+
+    private static IReadOnlyList<PublishedSourceCatalogEntry> BuildSourceCatalog(
+        SnapshotPublishOptions options,
+        SnapshotTableDefinition table) =>
+        [.. options.Sources
+            .Where(source => source.Table.Name.Equals(table.Name, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(source => source.SourceScope is null ? 0 : 1)
+            .ThenBy(source => source.SourceScope, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(source => source.Key, StringComparer.OrdinalIgnoreCase)
+            .Select(source => new PublishedSourceCatalogEntry(
+                source.Key, source.SourceScope, source.RecordIdentity))];
+
+    private static bool CatalogsEqual(
+        IReadOnlyList<PublishedSourceCatalogEntry>? left,
+        IReadOnlyList<PublishedSourceCatalogEntry> right) =>
+        JsonSerializer.Serialize(left ?? [], PublishedSnapshot.SerializerOptions)
+            .Equals(JsonSerializer.Serialize(right, PublishedSnapshot.SerializerOptions), StringComparison.Ordinal);
+
+    private static void EnsureSourceVersionContract(
+        SnapshotStore store,
+        SnapshotTableDefinition table,
+        IReadOnlyList<PublishedSourceCatalogEntry> sourceCatalog)
+    {
+        var invalid = Convert.ToInt64(store.ExecuteScalar(
+            $"""
+            SELECT count(*)
+            FROM {table.QualifiedName}
+            WHERE "{BookkeepingColumns.ChangeSequence}" IS NULL
+               OR "{BookkeepingColumns.ChangeSequence}" <= 0
+               OR "{BookkeepingColumns.ChangeRecordedAt}" IS NULL
+            """));
+
+        if (invalid > 0)
+            throw new InvalidOperationException(
+                $"Table '{table.Name}' has {invalid} row(s) without complete durable change-sequence metadata.");
+
+        long attributed = 0;
+        foreach (var source in sourceCatalog)
+        {
+            var sourceRows = Convert.ToInt64(store.ExecuteScalar(
+                $"SELECT count(*) FROM {table.QualifiedName} " +
+                $"WHERE \"{BookkeepingColumns.SourceScope}\" IS NOT DISTINCT FROM ?",
+                source.SourceScope));
+            attributed += sourceRows;
+
+            var ownershipMismatch = Convert.ToInt64(store.ExecuteScalar(
+                $"""
+                SELECT count(*)
+                FROM {table.QualifiedName} AS rows
+                LEFT JOIN meta.SourceOwnership AS ownership
+                  ON ownership."TableName" = ?
+                 AND ownership."PrimaryKey" = rows."{BookkeepingColumns.PrimaryKey}"
+                WHERE rows."{BookkeepingColumns.SourceScope}" IS NOT DISTINCT FROM ?
+                  AND ownership."SourceKey" IS DISTINCT FROM ?
+                """,
+                table.Name, source.SourceScope, source.SourceKey));
+            if (ownershipMismatch > 0)
+                throw new InvalidOperationException(
+                    $"Table '{table.Name}' scope '{source.SourceScope ?? "<null>"}' has {ownershipMismatch} row(s) " +
+                    $"not internally owned by catalog source '{source.SourceKey}'. Reingest that source before publishing.");
+        }
+
+        var rowCount = Convert.ToInt64(store.ExecuteScalar($"SELECT count(*) FROM {table.QualifiedName}"));
+        if (attributed != rowCount)
+            throw new InvalidOperationException(
+                $"Table '{table.Name}' has {rowCount - attributed} row(s) whose _SourceScope is not owned by exactly one source catalog entry.");
+
+        var orphanedOwnership = Convert.ToInt64(store.ExecuteScalar(
+            $"""
+            SELECT count(*)
+            FROM meta.SourceOwnership AS ownership
+            LEFT JOIN {table.QualifiedName} AS rows
+              ON rows."{BookkeepingColumns.PrimaryKey}" = ownership."PrimaryKey"
+            WHERE ownership."TableName" = ?
+              AND rows."{BookkeepingColumns.PrimaryKey}" IS NULL
+            """,
+            table.Name));
+        if (orphanedOwnership > 0)
+            throw new InvalidOperationException(
+                $"Table '{table.Name}' has {orphanedOwnership} orphaned internal source-ownership row(s).");
+    }
+
+    private static void EnsureGlobalSequenceContract(
+        SnapshotStore store,
+        IReadOnlyList<SnapshotTableDefinition> tables)
+    {
+        var sequenceRows = string.Join(
+            " UNION ALL ",
+            tables.Select(table =>
+                $"SELECT \"{BookkeepingColumns.ChangeSequence}\" AS sequence FROM {table.QualifiedName}"));
+
+        using var command = store.Connection.CreateCommand();
+        command.CommandText =
+            $"SELECT count(*), count(DISTINCT sequence), max(sequence) FROM ({sequenceRows}) AS versions";
+        using var reader = command.ExecuteReader();
+        reader.Read();
+
+        var rows = reader.GetInt64(0);
+        var distinctSequences = reader.GetInt64(1);
+        var maximum = reader.IsDBNull(2) ? 0 : reader.GetInt64(2);
+        if (rows != distinctSequences)
+        {
+            throw new InvalidOperationException(
+                $"Published tables contain {rows - distinctSequences} duplicate durable change-sequence value(s); " +
+                "_ChangeSequence must be store-wide unique.");
+        }
+
+        var highWatermark = store.ReadChangeSequenceHighWatermark();
+        if (maximum > highWatermark)
+        {
+            throw new InvalidOperationException(
+                $"Published tables contain change sequence {maximum}, above allocator high watermark {highWatermark}.");
+        }
+    }
 
     private sealed record TableSignature(long RowCount, string StateHash, DateTime? MaxLastModified);
 
@@ -335,7 +486,10 @@ public static class SnapshotPublisher
             PathBase: PublishedSnapshot.RelativePathBase,
             SelectionMode: PublishedSnapshot.LatestPerTable,
             Tables: tables,
-            SourceStamps: sourceStamps.Count == 0 ? null : sourceStamps);
+            SourceStamps: sourceStamps.Count == 0 ? null : sourceStamps)
+        {
+            ChangeSequenceHighWatermark = store.ReadChangeSequenceHighWatermark(),
+        };
 
         var payload = JsonSerializer.Serialize(manifest, PublishedSnapshot.SerializerOptions);
 

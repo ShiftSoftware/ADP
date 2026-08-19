@@ -15,6 +15,20 @@ public sealed class SnapshotSource
     public required string Key { get; init; }
 
     /// <summary>
+    /// The row scope this source owns, matching <see cref="SnapshotMergeOptions.SourceScope"/>.
+    /// Hawta needs this declaratively (not only inside the ingest closure) to publish the v4
+    /// table catalog and restore internal ownership from a compatible manifest, including for
+    /// disabled sources. Null means the source owns the table's unscoped universe.
+    /// </summary>
+    public string? SourceScope { get; init; }
+
+    /// <summary>
+    /// Exact derivation and meaning of this source's canonical <c>_PrimaryKey</c>. Published once
+    /// per table/scope in the manifest; it is deliberately not repeated on every parquet row.
+    /// </summary>
+    public required SourceRecordIdentityDescriptor RecordIdentity { get; init; }
+
+    /// <summary>
     /// The table this source feeds. Sources sharing a table (e.g. one view family across
     /// eight dealers) must share the SAME definition instance — and distinguish their rows
     /// via <see cref="SnapshotMergeOptions.SourceScope"/> inside the ingest delegate.

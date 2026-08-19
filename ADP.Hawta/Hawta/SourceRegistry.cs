@@ -26,6 +26,10 @@ public sealed class SourceRegistry
         {
             if (string.IsNullOrWhiteSpace(source.Key))
                 throw new ArgumentException("A source key must be non-blank.", nameof(sources));
+            if (source.SourceScope is not null && string.IsNullOrWhiteSpace(source.SourceScope))
+                throw new ArgumentException(
+                    $"Source '{source.Key}': source scope must be non-blank when present; use null for unscoped.",
+                    nameof(sources));
 
             if (!byKey.TryAdd(source.Key, source))
                 throw new ArgumentException($"Duplicate source key '{source.Key}'.", nameof(sources));
@@ -81,6 +85,18 @@ public sealed class SourceRegistry
                     throw new ArgumentException(
                         $"Source '{source.Key}': table '{source.Table.Name}' has sources disagreeing on " +
                         "ReplicationMaxInFlightRows — the pump runs per table; they must agree.",
+                        nameof(sources));
+
+                var scopeOwner = byKey.Values.FirstOrDefault(candidate =>
+                    !ReferenceEquals(candidate, source)
+                    && candidate.Table.Name.Equals(source.Table.Name, StringComparison.OrdinalIgnoreCase)
+                    && NullableOrdinalIgnoreCaseComparer.Instance.Equals(
+                        candidate.SourceScope, source.SourceScope));
+                if (scopeOwner is not null)
+                    throw new ArgumentException(
+                        $"Sources '{scopeOwner.Key}' and '{source.Key}' both claim table " +
+                        $"'{source.Table.Name}' scope '{source.SourceScope ?? "<null>"}'. " +
+                        "Each table/scope must have exactly one source owner or unchanged rows will churn identity.",
                         nameof(sources));
             }
             else
