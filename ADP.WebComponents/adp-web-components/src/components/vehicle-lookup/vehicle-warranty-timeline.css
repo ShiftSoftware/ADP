@@ -548,11 +548,10 @@
   padding: 0 3px;
   color: var(--date-ink);
   background: var(--paper-soft);
-  /* The panel's own text stack rather than a mono one. Mono was doing two jobs here —
-     signalling "data", and keeping digits the same width so the dates sit on a common
-     grid — and only the second matters, which tabular figures give us without the
-     small-size legibility cost of the mono stack (Consolas, on Windows). */
-  font-family: inherit;
+  /* No font-family: the dates take the panel's, like everything else here. They were set in a
+     monospace stack, which was doing two jobs — signalling "data", and keeping digits the same
+     width so they sit on a common grid. Only the second matters, and tabular figures give us
+     that without the small-size legibility cost (the stack resolves to Consolas on Windows). */
   font-size: 13px;
   font-variant-numeric: tabular-nums;
   font-weight: 700;

@@ -12,8 +12,6 @@
   --primary-dark: #275e8f;
   --green: #2c8a58;
   --green-tint: #e8f4ed;
-  --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
-  --ui-font: 'Noto Kufi Arabic', 'Nunito', Roboto, Arial, sans-serif;
 }
 
 .claimable-item-popover[aria-expanded='true'] {
@@ -134,12 +132,11 @@
   text-transform: uppercase;
 }
 
-/* Mono is kept only where reading character by character is the point — the package code below.
-   Dates, company names and reference numbers are read as words and figures, and the mono stack
-   (Consolas, on Windows) costs legibility at this size for nothing. Tabular figures keep the
-   values aligned down the column, which is the one thing mono was doing for them. */
+/* One font throughout, inherited from the host via the blanket rule in vehicle-claimable-items.css.
+   These values were set in a monospace stack, which resolves to Consolas on Windows and costs
+   legibility at this size. Tabular figures keep them aligned down the column, which is the one
+   thing the mono stack was doing for them. */
 .claimable-item-popover .val {
-  font-family: var(--ui-font) !important;
   font-size: 14px;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
@@ -159,8 +156,11 @@
 
 .popover-spec.pkg .val {
   color: var(--primary-dark);
-  font-family: var(--mono) !important;
-  font-weight: 500;
+  /* Reads as a code, but it is read constantly, so it follows the other values into the UI font
+     rather than staying in the mono stack for the sake of looking like a code. The extra tracking
+     is what mono was actually contributing here — space between characters — at a size that can
+     carry it. */
+  letter-spacing: 0.03em;
 }
 
 /* ============ Prerequisites ============
