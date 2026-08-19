@@ -5,7 +5,6 @@ using ShiftSoftware.ADP.Models.Customer;
 using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ADP.Models.TBP;
 using ShiftSoftware.ADP.Models.Vehicle;
-using System.Text.Json;
 
 namespace LookupServices.BDD.StepDefinitions;
 
@@ -38,41 +37,6 @@ public class MockStorageStepDefinitions
     {
         var value = GetOptionalString(row, column);
         return value is null ? null : long.Parse(value);
-    }
-
-    private static IEnumerable<string> GetEligibilityConditionValues(DataTableRow row)
-    {
-        if (row.ContainsKey("ValuesJson"))
-            return JsonSerializer.Deserialize<string[]>(row["ValuesJson"]) ?? [];
-
-        return row["Values"].Split(
-            ',',
-            StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-    }
-
-    private static bool HasValue(DataTableRow row, string column) =>
-        row.ContainsKey(column) && !string.IsNullOrWhiteSpace(row[column]);
-
-    /// <summary>
-    /// An optional list-valued condition property, written either comma-separated for readability or
-    /// as a JSON array when the scenario is about a shape the shorthand cannot express — an empty
-    /// list, or an entry that is blank or null. Absent from both columns means the property was
-    /// omitted, which is a distinct case from an empty list in this grammar.
-    /// </summary>
-    private static IEnumerable<string>? GetOptionalConditionList(
-        DataTableRow row,
-        string column,
-        string jsonColumn)
-    {
-        if (HasValue(row, jsonColumn))
-            return JsonSerializer.Deserialize<string[]>(row[jsonColumn]) ?? [];
-
-        if (!HasValue(row, column))
-            return null;
-
-        return row[column].Split(
-            ',',
-            StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
     }
 
     [Given("broker stock for brand {long}:")]
@@ -230,53 +194,7 @@ public class MockStorageStepDefinitions
         if (item is null)
             throw new ReqnrollException($"Service item '{serviceItemId}' was not configured.");
 
-        item.EligibilityConditions = dataTable.Rows.Select(row =>
-        {
-            var hasScope =
-                (row.ContainsKey("Selection") && !string.IsNullOrWhiteSpace(row["Selection"])) ||
-                (row.ContainsKey("Count") && !string.IsNullOrWhiteSpace(row["Count"]));
-            var condition = new EligibilityConditionModel
-            {
-                Field = row["Field"],
-                Operator = Enum.Parse<EligibilityConditionOperator>(row["Operator"]),
-                Scope = hasScope ? new EligibilityConditionScope
-                {
-                    Selection = row.ContainsKey("Selection") && !string.IsNullOrWhiteSpace(row["Selection"])
-                        ? Enum.Parse<EligibilityConditionSelection>(row["Selection"])
-                        : default,
-                    Count = row.ContainsKey("Count") && !string.IsNullOrWhiteSpace(row["Count"])
-                        ? int.Parse(row["Count"])
-                        : null,
-                } : null,
-                Values = GetEligibilityConditionValues(row),
-            };
-
-            if (row.ContainsKey("ValueMatch") && !string.IsNullOrWhiteSpace(row["ValueMatch"]))
-                condition.ValueMatch = Enum.Parse<EligibilityConditionValueMatch>(row["ValueMatch"]);
-
-            if (HasValue(row, "WhenUnmet"))
-                condition.WhenUnmet = Enum.Parse<EligibilityConditionUnmetBehavior>(row["WhenUnmet"]);
-
-            condition.Program = GetOptionalConditionList(row, "Program", "ProgramJson");
-
-            // Any of the three columns brings the qualifier into being, so a scenario can pin the
-            // selection, its values, or both — and leaving all three out is how a scenario says the
-            // author omitted the qualifier altogether.
-            if (HasValue(row, "Qualifier") ||
-                HasValue(row, "QualifierValues") ||
-                HasValue(row, "QualifierValuesJson"))
-            {
-                condition.Qualifier = new EligibilityConditionQualifier
-                {
-                    Selection = HasValue(row, "Qualifier")
-                        ? Enum.Parse<EligibilityConditionQualifierSelection>(row["Qualifier"])
-                        : default,
-                    Values = GetOptionalConditionList(row, "QualifierValues", "QualifierValuesJson"),
-                };
-            }
-
-            return condition;
-        }).ToList();
+        item.EligibilityConditions = EligibilityConditionTable.Read(dataTable);
     }
 
     [Given("LookupOptions has broker stock lookup enabled")]

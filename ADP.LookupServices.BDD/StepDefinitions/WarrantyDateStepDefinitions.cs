@@ -1,4 +1,5 @@
-﻿using Reqnroll;
+﻿using LookupServices.BDD.Support;
+using Reqnroll;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using ShiftSoftware.ADP.Lookup.Services.Enums;
 using ShiftSoftware.ADP.Lookup.Services.Evaluators;
@@ -6,7 +7,6 @@ using ShiftSoftware.ADP.Lookup.Services.Services;
 using ShiftSoftware.ADP.Models.Enums;
 using ShiftSoftware.ADP.Models.Vehicle;
 using NSubstitute;
-using System.Text.Json;
 using Xunit;
 
 namespace LookupServices.BDD.StepDefinitions;
@@ -120,35 +120,7 @@ public class WarrantyDateStepDefinitions
         if (definition is null)
             throw new ReqnrollException($"Extended warranty definition '{definitionId}' was not configured.");
 
-        definition.EligibilityConditions = dataTable.Rows.Select(row =>
-        {
-            var hasScope =
-                (row.ContainsKey("Selection") && !string.IsNullOrWhiteSpace(row["Selection"])) ||
-                (row.ContainsKey("Count") && !string.IsNullOrWhiteSpace(row["Count"]));
-
-            var condition = new EligibilityConditionModel
-            {
-                Field = row["Field"],
-                Operator = Enum.Parse<EligibilityConditionOperator>(row["Operator"]),
-                Scope = hasScope ? new EligibilityConditionScope
-                {
-                    Selection = row.ContainsKey("Selection") && !string.IsNullOrWhiteSpace(row["Selection"])
-                        ? Enum.Parse<EligibilityConditionSelection>(row["Selection"])
-                        : default,
-                    Count = GetOptionalInt(row, "Count"),
-                } : null,
-                Values = row.ContainsKey("ValuesJson")
-                    ? JsonSerializer.Deserialize<string[]>(row["ValuesJson"]) ?? []
-                    : row["Values"].Split(
-                        ',',
-                        StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries),
-            };
-
-            if (row.ContainsKey("ValueMatch") && !string.IsNullOrWhiteSpace(row["ValueMatch"]))
-                condition.ValueMatch = Enum.Parse<EligibilityConditionValueMatch>(row["ValueMatch"]);
-
-            return condition;
-        }).ToList();
+        definition.EligibilityConditions = EligibilityConditionTable.Read(dataTable);
     }
 
     [Given("company logos resolve as:")]

@@ -15,7 +15,71 @@ Almost all authorized vehicles come with a standard warranty that is usually act
     Additionally, there are cases where the warranty activation date does not exactly match the invoice date. For example, there may be a delay in delivering the vehcile to the end customer.
 
 ## Extended Warranty
-Customers have the option to extend their warranty by buying extended warranty packages.
+
+Coverage that runs on after the standard warranty ends. It reaches the lookup from two
+independent sources, and `VehicleWarrantyDTO.ExtendedWarranties` lists both together:
+
+- **Purchased coverage** — extended warranty packages the customer bought, stored against the
+  vehicle. These carry their own start and end dates.
+- **Earned coverage** — awarded by a `LookupOptions.ExtendedWarrantyDefinitions` definition when
+  the vehicle satisfies the conditions the definition declares. Coverage begins at the end of the
+  standard warranty and runs for the configured duration.
+
+!!! note "The flat fields describe purchased coverage only"
+    `HasExtendedWarranty`, `ExtendedWarrantyStartDate` and `ExtendedWarrantyEndDate` are older
+    output describing the latest-ending **stored** entry, and only while it is still running.
+    Earned coverage never reaches them — a host configuring definitions reads
+    `ExtendedWarranties`.
+
+### Earning coverage from service history
+
+A definition is gated by the same declarative condition grammar service items use — see
+[Eligibility](../services/claimable-items.md#eligibility) for the full contract — so a coverage
+awarded for keeping up with scheduled servicing is written the same way. Definitions are opt-in and
+fail closed: one with no conditions, an unusable duration or no provider awards nothing.
+
+!!! warning "Match the milestone, not the suffix"
+    A condition can compare package codes as **text** (`Exact`, `EndsWith`) or read the scheduled
+    service out of them and compare it as a **number** (`Milestone`). Prefer `Milestone` for
+    anything about a service the customer has had.
+
+    A network that appends a spec or variant token writes the same 60,000 km service as
+    `MODEL 60KS3`, which a `EndsWith` rule looking for `" 60K"` does not match. The vehicle then
+    reads as one that never had the service, the coverage is silently withheld, and nothing
+    reports a problem — the only signal is a customer asking why. `Milestone` matching reads the
+    milestone out of the code and takes a `qualifier` decision about the variant token explicitly,
+    so a new spec suffix does not quietly change who qualifies.
+
+    Leave `program` off when any programme's 60,000 km service should count; name programmes only
+    when the coverage genuinely belongs to one.
+
+```json
+{
+  "id": "EW-SERVICE-REWARD",
+  "name": "Service Reward Coverage",
+  "providerCompanyID": 901,
+  "activeFor": 1,
+  "activeForDurationType": "Years",
+  "eligibilityConditions": [
+    {
+      "field": "serviceHistory.laborLines.packageCode",
+      "operator": "ContainsAll",
+      "valueMatch": "Milestone",
+      "qualifier": { "selection": "Any" },
+      "values": ["60000"],
+      "scope": { "selection": "All" }
+    }
+  ]
+}
+```
+
+`scope.selection: "All"` asks whether the vehicle has *ever* had the service, which is what a
+reward for reaching a milestone is about. `Latest` asks whether it was the most recent visit, so
+the coverage would be withdrawn the next time the customer comes in.
+
+Reading a milestone at all depends on this deployment having declared how its codes are written
+(`ServiceMilestoneOptions.Conventions`). ADP ships none, so a deployment that declares none can
+match no milestone condition anywhere — for coverage or for service items.
 
 ## Free Service Start Date
 

@@ -178,6 +178,13 @@ so its `values` are mileages rather than text. Two extra properties apply to it,
 
 Both are rejected on any other field or value match.
 
+The same grammar gates **extended-warranty definitions**
+(`LookupOptions.ExtendedWarrantyDefinitions`), matched by the same evaluator — milestone
+conditions included. See
+[Extended Warranty](../vehicle-information/warranty.md#earning-coverage-from-service-history).
+Warranty definitions differ in one respect: an empty condition set fails closed there rather than
+admitting every vehicle, because coverage is not something to award by omission.
+
 Where the programme and the qualifier sit inside a code is deployment configuration, not part of
 this contract: a deployment declares its code structure as one or more
 `ServiceMilestoneOptions.Conventions`, each a pattern with named `milestone`, `program` and

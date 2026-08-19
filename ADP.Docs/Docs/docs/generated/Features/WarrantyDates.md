@@ -454,6 +454,108 @@ Scenario: An extended warranty definition without conditions fails closed
   Then the vehicle does not have extended warranty
   And there are 0 extended warranties
 
+# --- Milestone-based extended warranty ---
+#
+# A configured coverage is gated by the same declarative grammar service items use, so a reward for
+# reaching a service milestone can be written the same way: read the milestone out of the package
+# code and compare it as a number, rather than match the text the code happens to end with.
+#
+# The distinction is the whole point. A network that appends a spec token writes the 60,000 km
+# service as "MODEL 60KS3", and to a suffix comparison that is a vehicle which never had one — the
+# customer is denied a coverage they earned, and nothing anywhere reports a problem. Every scenario
+# above this line matches on the suffix; the shape that survives such codes had been available to a
+# coverage all along and was never shown here, which is its own way of not existing.
+#
+# Codes below are invented, and read through the convention the harness declares
+# (TestContext.ScenarioServiceCodePattern).
+
+Scenario Outline: A qualified milestone code is read as the service it records
+  Given brand 1 has a warranty period of 3 years
+  And vehicles in dealer stock:
+    | VIN               | InvoiceDate | BrandID |
+    | 1FDKF37GXVEB34368 | 2024-01-15  | 1       |
+  And vehicle service activations:
+    | WarrantyActivationDate | CompanyID |
+    | 2024-02-01             | 1         |
+  And extended warranty definitions:
+    | ID         | ProviderCompanyID | ActiveFor | DurationType |
+    | CFG-REWARD | 901               | 1         | Years        |
+  And extended warranty definition "CFG-REWARD" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch   | Qualifier   | QualifierValues   | Selection | ValuesJson   |
+    | serviceHistory.laborLines.packageCode | ContainsAll | <ValueMatch> | <Qualifier> | <QualifierValues> | All       | <ValuesJson> |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode |
+    | 1         | 10       | INV-060       | JOB-060             | 2026-03-01  | MODEL 60KS3 |
+  When evaluating warranty dates for "1FDKF37GXVEB34368"
+  Then there are <Coverages> extended warranties
+
+  Examples:
+    | Grammar                        | ValueMatch | Qualifier | QualifierValues | ValuesJson | Coverages |
+    | milestone, any qualifier       | Milestone  | Any       |                 | ["60000"]  | 1         |
+    | milestone, only unqualified    | Milestone  | None      |                 | ["60000"]  | 0         |
+    | milestone, that spec allowed   | Milestone  | Only      | S3              | ["60000"]  | 1         |
+    | milestone, that spec excluded  | Milestone  | Except    | S3              | ["60000"]  | 0         |
+    | the package suffix             | EndsWith   |           |                 | [" 60K"]   | 0         |
+    | the package suffix, spec glued | EndsWith   |           |                 | [" 60KS3"] | 1         |
+
+Scenario Outline: A milestone coverage counts the service whichever programme booked it
+  # Omitting the programme filter is how a deployment says the milestone is what earns the coverage:
+  # a 60,000 km service is a 60,000 km service whichever programme the branch booked it under. Naming
+  # a programme narrows it back to that programme's own codes, and the same visit stops counting.
+  Given brand 1 has a warranty period of 3 years
+  And vehicles in dealer stock:
+    | VIN               | InvoiceDate | BrandID |
+    | 1FDKF37GXVEB34368 | 2024-01-15  | 1       |
+  And vehicle service activations:
+    | WarrantyActivationDate | CompanyID |
+    | 2024-02-01             | 1         |
+  And extended warranty definitions:
+    | ID         | ProviderCompanyID | ActiveFor | DurationType |
+    | CFG-REWARD | 901               | 1         | Years        |
+  And extended warranty definition "CFG-REWARD" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch | Program   | Qualifier | Selection | Values |
+    | serviceHistory.laborLines.packageCode | ContainsAll | Milestone  | <Program> | Any       | All       | 60000  |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode   |
+    | 1         | 10       | INV-060       | JOB-060             | 2026-03-01  | ALTSERV 60KS3 |
+  When evaluating warranty dates for "1FDKF37GXVEB34368"
+  Then there are <Coverages> extended warranties
+
+  Examples:
+    | Rule                     | Program | Coverages |
+    | any programme counts     |         | 1         |
+    | only the named programme | PGM     | 0         |
+
+Scenario: A milestone-earned coverage runs from the end of the standard warranty
+  # The same anchor a suffix-matched definition uses. Nothing about reading the milestone changes
+  # when the coverage starts or how long it lasts.
+  Given brand 1 has a warranty period of 3 years
+  And vehicles in dealer stock:
+    | VIN               | InvoiceDate | BrandID |
+    | 1FDKF37GXVEB34368 | 2024-01-15  | 1       |
+  And vehicle service activations:
+    | WarrantyActivationDate | CompanyID |
+    | 2024-02-01             | 1         |
+  And extended warranty definitions:
+    | ID         | Name                       | ProviderCompanyID | ActiveFor | DurationType |
+    | CFG-REWARD | Distributor Service Reward | 901               | 2         | Years        |
+  And extended warranty definition "CFG-REWARD" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch | Qualifier | Selection | Values |
+    | serviceHistory.laborLines.packageCode | ContainsAll | Milestone  | Any       | All       | 60000  |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode |
+    | 1         | 10       | INV-050       | JOB-050             | 2025-11-01  | MODEL 50K   |
+    | 1         | 10       | INV-060       | JOB-060             | 2026-03-01  | MODEL 60KS3 |
+    | 1         | 10       | INV-065       | JOB-065             | 2026-07-01  | MODEL 65KS3 |
+  And company logos resolve as:
+    | CompanyID | Logo                                |
+    | 901       | https://images.test/distributor.png |
+  When evaluating warranty dates for "1FDKF37GXVEB34368"
+  # Scoped to all of history, so the later 65K visit does not withdraw what the 60K one earned.
+  Then extended warranties are:
+    | ID         | Name                       | ProviderCompanyID | ProviderCompanyLogo                 | StartDate  | EndDate    |
+    | CFG-REWARD | Distributor Service Reward | 901               | https://images.test/distributor.png | 2027-02-01 | 2029-02-01 |
+
 # --- De Facto Service Start Date ---
 # The earliest non-deleted ItemClaim.ClaimDate is always exposed as DeFactoServiceStartDate.
 # When the regular fallback chain leaves FreeServiceStartDate=null (typically broker-without-invoice
