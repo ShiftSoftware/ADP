@@ -13,7 +13,10 @@ namespace ShiftSoftware.ADP.Hawta;
 /// </summary>
 public sealed class SnapshotStore : IDisposable
 {
-    public const int CurrentSchemaVersion = 4;
+    // v5 collapsed meta.SourceOwnership from one row per data row to one row per (table,
+    // scope). A v4 published set is still a valid cold-start seed — ownership was never
+    // published; it derives from the manifest's source catalog — so the rebuild floor stays 4.
+    public const int CurrentSchemaVersion = 5;
     internal const int OldestRebuildableSchemaVersion = 4;
 
     /// <summary>Rows failing replication this many times leave the dirty predicate (dead-letter) until reset.</summary>
@@ -222,15 +225,22 @@ public sealed class SnapshotStore : IDisposable
             """);
 
         // Internal ownership preserves source adoption semantics without leaking source keys onto
-        // every public row. A v4 rebuild recreates it from the manifest's unambiguous table/scope
-        // catalog before ingestion resumes.
+        // every public row. One row per (table, scope), never per key: the registry guarantees
+        // each table/scope has exactly one owning source, so per-key rows would only repeat this
+        // map — measured at 1.5M rows and 134 MiB on a deployment with one large catalog table.
+        // "SourceScope" stores chr(0) for a table's single unscoped universe, because DuckDB
+        // refuses NULL in any primary-key component; the NULL<->sentinel translation never
+        // leaves this store's read/write methods. The scope column is case-SENSITIVE, exactly
+        // like the merge's IS NOT DISTINCT FROM — the registry's case-insensitive uniqueness
+        // check is the stricter construction-time guard. A rebuild recreates the map from the
+        // manifest's table/scope catalog before ingestion resumes.
         Execute(
             """
             CREATE TABLE IF NOT EXISTS meta.SourceOwnership (
                 "TableName" VARCHAR NOT NULL,
-                "PrimaryKey" VARCHAR NOT NULL,
+                "SourceScope" VARCHAR NOT NULL,
                 "SourceKey" VARCHAR NOT NULL,
-                PRIMARY KEY ("TableName", "PrimaryKey")
+                PRIMARY KEY ("TableName", "SourceScope")
             )
             """);
     }
@@ -481,32 +491,83 @@ public sealed class SnapshotStore : IDisposable
 
     }
 
-    /// <summary>Recreates internal row ownership from one validated v4 table catalog.</summary>
+    // ---- Source ownership ---------------------------------------------------------------------
+    // One map row per (table, scope). The SQL below writes chr(0) in place of a NULL scope —
+    // DuckDB refuses NULL in a primary-key component — and callers only ever pass and receive
+    // the real nullable scope. Scope matching is case-sensitive SQL equality, deliberately in
+    // agreement with the merge's IS NOT DISTINCT FROM; any caller comparing the returned KEY in
+    // C# must use ordinal comparison for the same reason.
+
+    /// <summary>
+    /// The source key owning one (table, scope), or null when no merge or rebuild has ever
+    /// recorded an owner for that scope.
+    /// </summary>
+    internal string? ReadSourceOwner(string tableName, string? sourceScope)
+    {
+        var owner = ExecuteScalar(
+            """
+            SELECT "SourceKey" FROM meta.SourceOwnership
+            WHERE "TableName" = ? AND "SourceScope" = coalesce(?, chr(0))
+            """,
+            tableName, sourceScope);
+        return owner is null or DBNull ? null : (string)owner;
+    }
+
+    /// <summary>Records a scope's owner, replacing any previous owner of the same (table, scope).</summary>
+    internal void WriteSourceOwner(string tableName, string? sourceScope, string sourceKey)
+    {
+        Execute(
+            """
+            DELETE FROM meta.SourceOwnership
+            WHERE "TableName" = ? AND "SourceScope" = coalesce(?, chr(0))
+            """,
+            tableName, sourceScope);
+        Execute(
+            """
+            INSERT INTO meta.SourceOwnership ("TableName", "SourceScope", "SourceKey")
+            VALUES (?, coalesce(?, chr(0)), ?)
+            """,
+            tableName, sourceScope, sourceKey);
+    }
+
+    /// <summary>Recreates a table's ownership map from one validated manifest source catalog.</summary>
     internal void RestoreSourceOwnership(
         SnapshotTableDefinition table,
         IReadOnlyList<PublishedSourceCatalogEntry> sourceCatalog)
     {
-        Execute("DELETE FROM meta.SourceOwnership WHERE \"TableName\" = ?", table.Name);
-
-        foreach (var source in sourceCatalog)
-        {
-            Execute(
-                $"""
-                INSERT INTO meta.SourceOwnership ("TableName", "PrimaryKey", "SourceKey")
-                SELECT ?, "{BookkeepingColumns.PrimaryKey}", ?
-                FROM {table.QualifiedName}
-                WHERE "{BookkeepingColumns.SourceScope}" IS NOT DISTINCT FROM ?
-                """,
-                table.Name, source.SourceKey, source.SourceScope);
-        }
-
-        var rows = Convert.ToInt64(ExecuteScalar($"SELECT count(*) FROM {table.QualifiedName}"));
-        var owned = Convert.ToInt64(ExecuteScalar(
-            "SELECT count(*) FROM meta.SourceOwnership WHERE \"TableName\" = ?", table.Name));
-        if (owned != rows)
+        // Refused rather than last-writer-wins: a catalog attributing one scope twice would
+        // otherwise silently drop an owner here and only fail later, at the publish contract,
+        // where nothing points back at the seed. Default string equality is ordinal and
+        // case-sensitive — the same comparison the map's primary key applies.
+        var duplicate = sourceCatalog
+            .GroupBy(source => source.SourceScope)
+            .FirstOrDefault(group => group.Count() > 1);
+        if (duplicate is not null)
             throw new InvalidDataException(
-                $"Table '{table.Name}' restored {rows} row(s) but its manifest catalog attributed {owned}. " +
-                "Every row scope must have exactly one source owner.");
+                $"Table '{table.Name}' manifest catalog attributes scope '{duplicate.Key ?? "<null>"}' to " +
+                $"{duplicate.Count()} sources. Every row scope must have exactly one source owner.");
+
+        Execute("DELETE FROM meta.SourceOwnership WHERE \"TableName\" = ?", table.Name);
+        foreach (var source in sourceCatalog)
+            WriteSourceOwner(table.Name, source.SourceScope, source.SourceKey);
+
+        // Coverage: every scope present on the restored rows must have an owner in the map just
+        // written. The per-key shape verified this by counting rows; scopes are what is stored
+        // now, so scopes are what is checked.
+        var unowned = Convert.ToInt64(ExecuteScalar(
+            $"""
+            SELECT count(*)
+            FROM (SELECT DISTINCT coalesce("{BookkeepingColumns.SourceScope}", chr(0)) AS "Scope"
+                  FROM {table.QualifiedName}) AS scopes
+            LEFT JOIN meta.SourceOwnership AS map
+              ON map."TableName" = ? AND map."SourceScope" = scopes."Scope"
+            WHERE map."SourceKey" IS NULL
+            """,
+            table.Name));
+        if (unowned > 0)
+            throw new InvalidDataException(
+                $"Table '{table.Name}' restored rows under {unowned} scope(s) its manifest catalog does not " +
+                "attribute. Every row scope must have exactly one source owner.");
     }
 
     /// <summary>Moves the allocator above every row restored from published parquet.</summary>

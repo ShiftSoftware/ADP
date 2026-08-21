@@ -32,8 +32,13 @@ public sealed class SourceVersionContractTests
             "SELECT \"_SourceScope\" FROM data.\"Widget\" WHERE \"_PrimaryKey\" = 'W1'"));
         Assert.NotEqual(DBNull.Value, Scalar(store,
             "SELECT \"_ChangeRecordedAt\" FROM data.\"Widget\" WHERE \"_PrimaryKey\" = 'W1'"));
-        Assert.Equal("database.widgets", OwnershipSource(store, widgets, "W1"));
-        Assert.Equal("csv.repeated", OwnershipSource(store, gadgets, "G1"));
+        Assert.Equal("database.widgets", OwnershipSource(store, widgets, "north"));
+        Assert.Equal("csv.repeated", OwnershipSource(store, gadgets, null));
+
+        // Ownership is a per-scope map: three merged rows across two tables produce exactly
+        // one ownership row per (table, scope), never one per data row.
+        Assert.Equal(2L, Convert.ToInt64(store.ExecuteScalar(
+            "SELECT count(*) FROM meta.SourceOwnership")));
 
         var columns = TableColumns(store, widgets);
         Assert.Contains(BookkeepingColumns.PrimaryKey, columns);
@@ -75,7 +80,7 @@ public sealed class SourceVersionContractTests
     }
 
     [Fact]
-    public void SourceAndScopeAdoptionAdvanceVersion_ButARepeatDoesNot()
+    public void ScopeAdoptionAdvancesVersionOnce_ASourceKeyChangeIsAMapWriteOnly_AndARepeatDoesNothing()
     {
         using var store = SnapshotStore.Open(new SnapshotStoreOptions { DatabasePath = ":memory:" });
         var table = Table("Widget");
@@ -83,21 +88,80 @@ public sealed class SourceVersionContractTests
 
         Merge(store, table, [("W1", "one")], source: "source-a", scope: "A");
         var original = Sequence(store, table, "W1");
+        Assert.Equal("source-a", OwnershipSource(store, table, "A"));
 
-        var sourceAdoption = Merge(store, table, [("W1", "one")], source: "source-b", scope: "A");
-        Assert.Equal(1, sourceAdoption.RowsUpdated);
-        var afterSource = Sequence(store, table, "W1");
-        Assert.True(afterSource > original);
-        Assert.Equal("source-b", OwnershipSource(store, table, "W1"));
+        // A changed source key over an unchanged scope is a configuration rename. The map row
+        // is replaced; the data row is untouched and its version does not advance. (The old
+        // per-key shape re-stamped every row here — a full-table churn for an attribution-only
+        // change.)
+        var rename = Merge(store, table, [("W1", "one")], source: "source-b", scope: "A");
+        Assert.Equal(0, rename.RowsUpdated);
+        Assert.Equal(original, Sequence(store, table, "W1"));
+        Assert.Equal("source-b", OwnershipSource(store, table, "A"));
 
+        // A scope change is an adoption: the row is re-stamped, and its sequence advances
+        // exactly once — one reservation above the pre-merge high watermark.
+        var watermarkBefore = store.ReadChangeSequenceHighWatermark();
         var scopeAdoption = Merge(store, table, [("W1", "one")], source: "source-b", scope: "B");
         Assert.Equal(1, scopeAdoption.RowsRescoped);
+        Assert.Equal(1, scopeAdoption.RowsUpdated);
         var adopted = Sequence(store, table, "W1");
-        Assert.True(adopted > afterSource);
+        Assert.Equal(watermarkBefore + 1, adopted);
+        Assert.Equal("source-b", OwnershipSource(store, table, "B"));
 
         var unchanged = Merge(store, table, [("W1", "one")], source: "source-b", scope: "B");
         Assert.Equal(0, unchanged.RowsUpdated);
         Assert.Equal(adopted, Sequence(store, table, "W1"));
+    }
+
+    [Fact]
+    public void OwnershipMapStoresTheNullScopeAsASentinel_AndRoundTripsBothScopeShapes()
+    {
+        using var store = SnapshotStore.Open(new SnapshotStoreOptions { DatabasePath = ":memory:" });
+
+        store.WriteSourceOwner("Widget", null, "source-a");
+        store.WriteSourceOwner("Widget", "north", "source-b");
+
+        Assert.Equal("source-a", store.ReadSourceOwner("Widget", null));
+        Assert.Equal("source-b", store.ReadSourceOwner("Widget", "north"));
+        Assert.Null(store.ReadSourceOwner("Widget", "south"));
+        Assert.Null(store.ReadSourceOwner("Gadget", null));
+
+        // The single-universe scope is stored as chr(0) — NOT NULL, so DuckDB accepts it in
+        // the primary key — and the sentinel never escapes the store's read/write methods.
+        Assert.Equal(1L, Convert.ToInt64(store.ExecuteScalar(
+            "SELECT count(*) FROM meta.SourceOwnership WHERE \"SourceScope\" = chr(0)")));
+        Assert.Equal(0L, Convert.ToInt64(store.ExecuteScalar(
+            "SELECT count(*) FROM meta.SourceOwnership WHERE \"SourceScope\" IS NULL")));
+
+        // Re-writing an owner replaces its row rather than accumulating one per write.
+        store.WriteSourceOwner("Widget", null, "source-c");
+        Assert.Equal("source-c", store.ReadSourceOwner("Widget", null));
+        Assert.Equal(2L, Convert.ToInt64(store.ExecuteScalar(
+            "SELECT count(*) FROM meta.SourceOwnership WHERE \"TableName\" = 'Widget'")));
+    }
+
+    [Fact]
+    public void ScopesDifferingOnlyInCase_AreDistinctToTheMergeSqlAndTheMapAlike()
+    {
+        using var store = SnapshotStore.Open(new SnapshotStoreOptions { DatabasePath = ":memory:" });
+        var table = Table("Widget");
+        store.EnsureTable(table);
+
+        Merge(store, table, [("W1", "one")], source: "source-upper", scope: "North");
+        var original = Sequence(store, table, "W1");
+
+        // IS NOT DISTINCT FROM is case-sensitive, so this is an adoption, not a repeat — and
+        // the map keys the two spellings separately. The registry's case-INSENSITIVE
+        // construction check is what keeps such a configuration from ever going live; the
+        // engine's only job here is to never disagree with its own SQL.
+        var adoption = Merge(store, table, [("W1", "one")], source: "source-lower", scope: "north");
+        Assert.Equal(1, adoption.RowsRescoped);
+        Assert.Equal(1, adoption.RowsUpdated);
+        Assert.True(Sequence(store, table, "W1") > original);
+
+        Assert.Equal("source-upper", OwnershipSource(store, table, "North"));
+        Assert.Equal("source-lower", OwnershipSource(store, table, "north"));
     }
 
     [Fact]
@@ -126,16 +190,18 @@ public sealed class SourceVersionContractTests
         store.Execute(
             "INSERT INTO \"bad_source_version_staging\" VALUES ('bad', 'not-an-integer', 'W2', 'new-hash', NULL, NULL)");
 
+        // The failing merge runs under a DIFFERENT source key, so the ownership assertion
+        // below proves a failed run can never take over a scope's attribution.
         Assert.ThrowsAny<Exception>(() => SnapshotMerge.Execute(
             store,
             table,
             new StagingTable("bad_source_version_staging", "temp.main.\"bad_source_version_staging\""),
-            new SnapshotMergeOptions { Source = "database.widgets", DeletesEnabled = false }));
+            new SnapshotMergeOptions { Source = "database.widgets-two", DeletesEnabled = false }));
 
         Assert.Equal(originalSequence, Sequence(store, table, "W1"));
         Assert.Equal("one", Scalar(store,
             "SELECT \"Code\" FROM data.\"Widget\" WHERE \"_PrimaryKey\" = 'W1'"));
-        Assert.Equal("database.widgets", OwnershipSource(store, table, "W1"));
+        Assert.Equal("database.widgets", OwnershipSource(store, table, null));
         Assert.Equal(originalSequence, store.ReadChangeSequenceHighWatermark());
 
         MergeQuantity(store, table, [("W2", "two", 2)]);
@@ -239,10 +305,26 @@ public sealed class SourceVersionContractTests
         fx.Store.Execute(
             "UPDATE data.\"Widget\" SET \"_ChangeSequence\" = 1 WHERE \"_PrimaryKey\" = 'W1'");
         fx.Store.Execute(
-            "DELETE FROM meta.SourceOwnership WHERE \"TableName\" = 'Widget' AND \"PrimaryKey\" = 'W1'");
+            "DELETE FROM meta.SourceOwnership WHERE \"TableName\" = 'Widget'");
 
         var ownershipException = Assert.Throws<InvalidOperationException>(() => fx.Publish());
         Assert.Contains("not internally owned", ownershipException.Message);
+        Assert.Empty(fx.Manifests());
+    }
+
+    [Fact]
+    public void PublisherRejectsRowsWhoseScopeNoCatalogEntryOwns()
+    {
+        using var fx = new PublisherFixture();
+        fx.MergeWidgets(("W1", "one", 1));
+
+        // Rows resident under a scope the catalog does not declare (the fixture's widget
+        // source is unscoped): every row must be attributable, or the publish refuses.
+        fx.Store.Execute(
+            "UPDATE data.\"Widget\" SET \"_SourceScope\" = 'unclaimed' WHERE \"_PrimaryKey\" = 'W1'");
+
+        var exception = Assert.Throws<InvalidOperationException>(() => fx.Publish());
+        Assert.Contains("not owned by exactly one source catalog entry", exception.Message);
         Assert.Empty(fx.Manifests());
     }
 
@@ -313,7 +395,25 @@ public sealed class SourceVersionContractTests
             rebuilt, [fx.Widget, fx.Gadget], fx.PublishDirectory, PublisherFixture.SnapshotName);
 
         Assert.Equal(1L, Sequence(rebuilt, fx.Widget, "W1"));
-        Assert.Equal(fx.WidgetSource.Key, OwnershipSource(rebuilt, fx.Widget, "W1"));
+        Assert.Equal(fx.WidgetSource.Key, OwnershipSource(rebuilt, fx.Widget, null));
+
+        // The restored map must make a re-merge of identical content a complete no-op —
+        // zero updates proves the rebuilt estate re-stamps nothing after DR.
+        var restaged = rebuilt.CreateStagingTable(fx.Widget);
+        foreach (var (key, code, quantity) in new[] { ("W1", "one", 1), ("W2", "two", 2) })
+        {
+            rebuilt.Execute(
+                $"""
+                INSERT INTO {restaged.QualifiedName} ("Code", "Quantity", "_PrimaryKey", "_RowHash", "_SourceModified")
+                SELECT "Code", "Quantity", ?, {RowHash.Expression(["Code", "Quantity"])}, NULL
+                FROM (SELECT ? AS "Code", ? AS "Quantity")
+                """,
+                key, code, quantity);
+        }
+        var remerge = SnapshotMerge.Execute(rebuilt, fx.Widget, restaged,
+            new SnapshotMergeOptions { Source = fx.WidgetSource.Key, DeletesEnabled = false });
+        Assert.Equal(0, remerge.RowsUpdated);
+        Assert.Equal(0, remerge.RowsInserted);
 
         var staging = rebuilt.CreateStagingTable(fx.Widget);
         rebuilt.Execute(
@@ -327,6 +427,32 @@ public sealed class SourceVersionContractTests
 
         Assert.Equal(published.ChangeSequenceHighWatermark!.Value + 1,
             Sequence(rebuilt, fx.Widget, "W3"));
+    }
+
+    [Fact]
+    public void AV4PublishedSetIsStillAValidSeed_ItsCatalogRestoresTheOwnershipMap()
+    {
+        using var fx = new PublisherFixture();
+        fx.MergeWidgets(("W1", "one", 1));
+        fx.Publish();
+
+        // Ownership was never published, so a set stamped by the previous schema version
+        // seeds the current store: the map derives from the manifest's source catalog. This
+        // is why the rebuild floor (OldestRebuildableSchemaVersion) deliberately stayed at 4.
+        var path = PublishedSnapshot.ResolveNewest(
+            fx.PublishDirectory, PublisherFixture.SnapshotName)!;
+        var manifest = PublishedSnapshot.Read(path);
+        File.WriteAllText(path, JsonSerializer.Serialize(
+            manifest with { SchemaVersion = SnapshotStore.OldestRebuildableSchemaVersion },
+            PublishedSnapshot.SerializerOptions));
+
+        using var rebuilt = SnapshotStore.Open(new SnapshotStoreOptions { DatabasePath = ":memory:" });
+        var result = SnapshotRebuild.Execute(
+            rebuilt, [fx.Widget, fx.Gadget], fx.PublishDirectory, PublisherFixture.SnapshotName);
+
+        Assert.NotNull(result.ManifestFile);
+        Assert.Equal(1L, Convert.ToInt64(rebuilt.ExecuteScalar("SELECT count(*) FROM data.\"Widget\"")));
+        Assert.Equal(fx.WidgetSource.Key, OwnershipSource(rebuilt, fx.Widget, null));
     }
 
     [Theory]
@@ -445,13 +571,11 @@ public sealed class SourceVersionContractTests
         Convert.ToDateTime(store.ExecuteScalar(
             $"SELECT \"_ChangeRecordedAt\" FROM {table.QualifiedName} WHERE \"_PrimaryKey\" = ?", key));
 
-    private static string OwnershipSource(
+    private static string? OwnershipSource(
         SnapshotStore store,
         SnapshotTableDefinition table,
-        string key) =>
-        Convert.ToString(store.ExecuteScalar(
-            "SELECT \"SourceKey\" FROM meta.SourceOwnership WHERE \"TableName\" = ? AND \"PrimaryKey\" = ?",
-            table.Name, key))!;
+        string? scope) =>
+        store.ReadSourceOwner(table.Name, scope);
 
     private static object Scalar(SnapshotStore store, string sql) => store.ExecuteScalar(sql)!;
 

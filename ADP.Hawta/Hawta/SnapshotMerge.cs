@@ -166,23 +166,26 @@ public static class SnapshotMerge
                 return abortedAdoption;
             }
 
+            // A changed SOURCE KEY with an unchanged scope deliberately does not appear here.
+            // Ownership is derived from _SourceScope plus the per-scope map, so a source key
+            // renamed in configuration is a one-row map write at the end of this transaction —
+            // not a full-table re-stamp. Rows are only re-stamped when something on the row
+            // itself changed, and a scope change is the adoption path carrying the whole
+            // repair burden.
             var updatePredicate =
                 $"({targetRef}.{hash} IS DISTINCT FROM {stg}.{hash} " +
                 $"OR {targetRef}.{deleted} = true " +
                 $"OR {targetRef}.{scope} IS DISTINCT FROM ? " +
-                $"OR ownership.\"SourceKey\" IS DISTINCT FROM ? " +
                 $"OR {targetRef}.{changeSequence} IS NULL " +
                 $"OR {targetRef}.{changeRecordedAt} IS NULL)";
 
             var updateFrom =
                 $"FROM {target} AS {targetRef} JOIN {staging} AS {stg} " +
-                $"ON {targetRef}.{pk} = {stg}.{pk} " +
-                $"LEFT JOIN meta.SourceOwnership AS ownership " +
-                $"ON ownership.\"TableName\" = ? AND ownership.\"PrimaryKey\" = {targetRef}.{pk}";
+                $"ON {targetRef}.{pk} = {stg}.{pk}";
 
             var rowsUpdatedPlanned = Convert.ToInt64(store.ExecuteScalar(
                 $"SELECT count(*) {updateFrom} WHERE {updatePredicate}",
-                table.Name, options.SourceScope, options.Source));
+                options.SourceScope));
 
             if (rowsUpdatedPlanned > 0)
             {
@@ -195,7 +198,7 @@ public static class SnapshotMerge
                     {updateFrom}
                     WHERE {updatePredicate}
                     """,
-                    firstUpdateSequence, table.Name, options.SourceScope, options.Source);
+                    firstUpdateSequence, options.SourceScope);
             }
 
             var assignments = string.Join(",\n    ", table.Columns.Select(c => $"\"{c.Name}\" = {stg}.\"{c.Name}\""));
@@ -330,34 +333,12 @@ public static class SnapshotMerge
                         $"Source-version tombstone for '{options.Source}' planned {pendingDeletes} row(s) but changed {rowsTombstoned}.");
             }
 
-            // The internal owner changes in the SAME transaction as the accepted row versions.
-            // Missing/different ownership participated in updatePredicate, so this repair cannot
-            // happen without the corresponding sequence advance.
-            store.Execute(
-                $"""
-                DELETE FROM meta.SourceOwnership
-                WHERE "TableName" = ?
-                  AND "PrimaryKey" IN (SELECT {pk} FROM {staging})
-                """,
-                table.Name);
-            store.Execute(
-                $"""
-                INSERT INTO meta.SourceOwnership ("TableName", "PrimaryKey", "SourceKey")
-                SELECT ?, {pk}, ? FROM {staging}
-                """,
-                table.Name, options.Source);
-
-            if (rowsTombstoned > 0)
-            {
-                store.Execute(
-                    "DELETE FROM meta.SourceOwnership WHERE \"TableName\" = ? " +
-                    "AND \"PrimaryKey\" IN (SELECT \"_PrimaryKey\" FROM \"hawta$versions\")",
-                    table.Name);
-                store.Execute(
-                    "INSERT INTO meta.SourceOwnership (\"TableName\", \"PrimaryKey\", \"SourceKey\") " +
-                    "SELECT ?, \"_PrimaryKey\", ? FROM \"hawta$versions\"",
-                    table.Name, options.Source);
-            }
+            // The scope's owner is recorded in the SAME transaction as the accepted row
+            // versions: one map row per (table, scope), replacing any previous owner. This is
+            // the whole ownership write — for a 1.4M-row staging the per-key shape performed
+            // 2.9M ownership row-writes here. Tombstoned rows keep their scope, so tombstones
+            // need no ownership write at all.
+            store.WriteSourceOwner(table.Name, options.SourceScope, options.Source);
 
             var result = new SnapshotMergeResult(runId, SnapshotMergeStatus.Succeeded,
                 rowsStaged, rowsInserted, rowsUpdated, rowsTombstoned, RowsRescoped: rowsRescoped);

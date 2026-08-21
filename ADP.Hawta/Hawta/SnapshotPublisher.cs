@@ -307,20 +307,17 @@ public static class SnapshotPublisher
                 source.SourceScope));
             attributed += sourceRows;
 
-            var ownershipMismatch = Convert.ToInt64(store.ExecuteScalar(
-                $"""
-                SELECT count(*)
-                FROM {table.QualifiedName} AS rows
-                LEFT JOIN meta.SourceOwnership AS ownership
-                  ON ownership."TableName" = ?
-                 AND ownership."PrimaryKey" = rows."{BookkeepingColumns.PrimaryKey}"
-                WHERE rows."{BookkeepingColumns.SourceScope}" IS NOT DISTINCT FROM ?
-                  AND ownership."SourceKey" IS DISTINCT FROM ?
-                """,
-                table.Name, source.SourceScope, source.SourceKey));
-            if (ownershipMismatch > 0)
+            // Ownership is a per-scope map, not a per-row join. The key comparison is ordinal
+            // (case-sensitive) so it can never disagree with the map's primary key or the
+            // IS NOT DISTINCT FROM above. A missing map entry is acceptable only while the
+            // scope holds no rows at all — a declared source that has never merged.
+            var owner = store.ReadSourceOwner(table.Name, source.SourceScope);
+            var ownershipMismatch = owner is null
+                ? sourceRows > 0
+                : !string.Equals(owner, source.SourceKey, StringComparison.Ordinal);
+            if (ownershipMismatch)
                 throw new InvalidOperationException(
-                    $"Table '{table.Name}' scope '{source.SourceScope ?? "<null>"}' has {ownershipMismatch} row(s) " +
+                    $"Table '{table.Name}' scope '{source.SourceScope ?? "<null>"}' is " +
                     $"not internally owned by catalog source '{source.SourceKey}'. Reingest that source before publishing.");
         }
 
@@ -329,19 +326,8 @@ public static class SnapshotPublisher
             throw new InvalidOperationException(
                 $"Table '{table.Name}' has {rowCount - attributed} row(s) whose _SourceScope is not owned by exactly one source catalog entry.");
 
-        var orphanedOwnership = Convert.ToInt64(store.ExecuteScalar(
-            $"""
-            SELECT count(*)
-            FROM meta.SourceOwnership AS ownership
-            LEFT JOIN {table.QualifiedName} AS rows
-              ON rows."{BookkeepingColumns.PrimaryKey}" = ownership."PrimaryKey"
-            WHERE ownership."TableName" = ?
-              AND rows."{BookkeepingColumns.PrimaryKey}" IS NULL
-            """,
-            table.Name));
-        if (orphanedOwnership > 0)
-            throw new InvalidOperationException(
-                $"Table '{table.Name}' has {orphanedOwnership} orphaned internal source-ownership row(s).");
+        // No orphaned-ownership check remains: a map row cannot orphan the way per-key rows
+        // could, because ownership now derives from a column every row carries.
     }
 
     private static void EnsureGlobalSequenceContract(

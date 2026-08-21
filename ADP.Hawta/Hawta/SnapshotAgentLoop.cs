@@ -52,7 +52,11 @@ public sealed class SnapshotAgentOptions
     /// </summary>
     public bool DryRun { get; init; }
 
-    /// <summary>Null = ungated (single-process local runs). Production always gates.</summary>
+    /// <summary>
+    /// Null = ungated: nothing serialises two agent instances writing the same estate. Safe
+    /// only for a deployment that provably runs one process. Any multi-instance deployment —
+    /// including slot swaps, whose old and new instances overlap — must configure a gate.
+    /// </summary>
     public SnapshotWriteGateOptions? WriteGate { get; init; }
 
     /// <summary>Per-table parquet export sort, passed through to the publisher.</summary>
