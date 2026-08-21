@@ -591,15 +591,11 @@ public static class SnapshotPublisher
             """
             INSERT INTO meta.PublishRuns
             ("PublishId", "SnapshotName", "StartedAt", "FinishedAt",
-             "TablesExported", "TablesReused", "ShimsDeleted", "ParquetFilesDeleted", "Status", "Error")
+             "TablesExported", "TablesReused", "ManifestsDeleted", "ParquetFilesDeleted", "Status", "Error")
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             result.PublishId, options.SnapshotName, startedAt, DateTime.UtcNow,
             result.TablesExported.Count, result.TablesReused.Count,
-            // The COLUMN is still "ShimsDeleted": meta.PublishRuns is CREATE TABLE IF NOT EXISTS,
-            // so renaming it would need a schema-version bump, and a bump forces every live write
-            // DB to rebuild — from a published set that, at cutover, has no manifest yet. Not
-            // worth it for a name. Rename with the next bump that is happening anyway.
             result.ManifestsDeleted, result.ParquetFilesDeleted, status, error);
     }
 }

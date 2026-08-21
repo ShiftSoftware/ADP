@@ -147,7 +147,7 @@ public sealed class SnapshotStore : IDisposable
                 "FinishedAt" TIMESTAMP,
                 "TablesExported" INTEGER NOT NULL DEFAULT 0,
                 "TablesReused" INTEGER NOT NULL DEFAULT 0,
-                "ShimsDeleted" INTEGER NOT NULL DEFAULT 0,
+                "ManifestsDeleted" INTEGER NOT NULL DEFAULT 0,
                 "ParquetFilesDeleted" INTEGER NOT NULL DEFAULT 0,
                 "Status" VARCHAR NOT NULL,
                 "Error" VARCHAR
@@ -458,6 +458,17 @@ public sealed class SnapshotStore : IDisposable
     /// Additive schema drift is applied automatically: source columns present in the
     /// definition but missing on an existing table are added via <c>ALTER TABLE ADD COLUMN</c>
     /// (as nullable), so shipping a widened definition against a live write DB just works.
+    ///
+    /// <para>Snapshot tables declare no PRIMARY KEY, deliberately. Key uniqueness is the
+    /// merge's contract, not the storage engine's: staging with a duplicate or NULL
+    /// <c>_PrimaryKey</c> is refused before any mutation, inserts are anti-joined against
+    /// resident keys, and a rebuild refuses a seed containing duplicates. The index a
+    /// primary key would add costs real money at scale — measured on a deployment with
+    /// ~1.4M rows in one table, it was ~105 MiB of the write database and most of that
+    /// table's load time — and the only per-key reads in the engine are the replication
+    /// pump's bookkeeping writes, whose scans stay far cheaper than the remote work each
+    /// one follows. A table created by an older package keeps its index until the next
+    /// schema rebuild; that is harmless, only larger.</para>
     /// </summary>
     public void EnsureTable(SnapshotTableDefinition table)
     {
@@ -467,8 +478,7 @@ public sealed class SnapshotStore : IDisposable
             $"""
             CREATE TABLE IF NOT EXISTS {table.QualifiedName} (
                 {sourceColumns},
-                {BookkeepingColumns.TableDdl},
-                PRIMARY KEY ("{BookkeepingColumns.PrimaryKey}")
+                {BookkeepingColumns.TableDdl}
             )
             """);
 

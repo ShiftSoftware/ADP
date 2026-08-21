@@ -80,6 +80,33 @@ public class SnapshotStoreTests
     }
 
     [Fact]
+    public void EnsureTable_DeclaresNoPrimaryKey_AndANullKeyIsStillRefused()
+    {
+        using var snapshot = new TestSnapshot();
+
+        // Uniqueness is the merge's contract, not the storage engine's — the index a primary
+        // key would build was measured as most of a large table's size and load time. This
+        // fails loudly if anyone quietly reintroduces the constraint.
+        var keyConstraints = Convert.ToInt64(snapshot.Store.ExecuteScalar(
+            """
+            SELECT count(*) FROM duckdb_constraints()
+            WHERE schema_name = 'data' AND table_name = 'Widget'
+              AND constraint_type IN ('PRIMARY KEY', 'UNIQUE')
+            """));
+        Assert.Equal(0L, keyConstraints);
+
+        // The NOT NULL on _PrimaryKey used to ride in on the primary key; it must hold alone.
+        var refusal = Assert.ThrowsAny<Exception>(() => snapshot.Store.Execute(
+            """
+            INSERT INTO data."Widget"
+            ("Code", "Quantity", "_PrimaryKey", "_RowHash", "_ReplicationHash",
+             "_LastModified", "_ReplicationModified", "_ChangeSequence", "_ChangeRecordedAt")
+            VALUES ('w', 1, NULL, 'h', 'h', now()::TIMESTAMP, now()::TIMESTAMP, 1, now()::TIMESTAMP)
+            """));
+        Assert.Contains("NOT NULL", refusal.Message);
+    }
+
+    [Fact]
     public void TableDefinition_RejectsUnsafeIdentifiers()
     {
         Assert.Throws<ArgumentException>(() =>

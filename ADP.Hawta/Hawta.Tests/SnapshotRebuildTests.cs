@@ -50,6 +50,56 @@ public class SnapshotRebuildTests : IDisposable
     }
 
     [Fact]
+    public void ASeedWithADuplicatedKey_IsRefused_AndRebuildFallsBackToTheOlderCleanSet()
+    {
+        // With no PRIMARY KEY index on snapshot tables, storage accepts a corrupt store's
+        // duplicate rows and the publisher exports them faithfully (the global sequence
+        // contract refuses only duplicated or unallocated _ChangeSequence values, and a buggy
+        // merge would allocate properly). The rebuild's seed check must refuse the corrupt
+        // set the way it refuses a torn one: fall back to the older clean publish, on record.
+        fx.MergeWidgets(("W1", "alpha", 1), ("W2", "beta", 2));
+        var first = fx.Publish();
+
+        fx.Store.Execute(
+            """
+            INSERT INTO data."Widget"
+            SELECT * REPLACE (CAST(? AS BIGINT) AS "_ChangeSequence")
+            FROM data."Widget" WHERE "_PrimaryKey" = 'W1'
+            """,
+            fx.Store.ReserveChangeSequences(1));
+        var second = fx.Publish();
+
+        using var rebuilt = RebuildIntoFreshStore([fx.Widget], out var result);
+
+        Assert.Equal(first.ManifestFile, result.ManifestFile);
+        Assert.Equal([second.ManifestFile], result.PublishesSkipped);
+        Assert.Equal(2L, Convert.ToInt64(rebuilt.ExecuteScalar("SELECT count(*) FROM data.\"Widget\"")));
+    }
+
+    [Fact]
+    public void WhenTheOnlySetHasADuplicatedKey_TheTerminalFailureNamesIt()
+    {
+        // No older set to fall back to: the rebuild must fail, point at from-sources recovery
+        // (which genuinely fixes this — staging is deduplicated), and carry the duplicate as
+        // the cause rather than dressing it up as a missing published set.
+        fx.MergeWidgets(("W1", "alpha", 1));
+        fx.Store.Execute(
+            """
+            INSERT INTO data."Widget"
+            SELECT * REPLACE (CAST(? AS BIGINT) AS "_ChangeSequence")
+            FROM data."Widget" WHERE "_PrimaryKey" = 'W1'
+            """,
+            fx.Store.ReserveChangeSequences(1));
+        fx.Publish();
+
+        var refusal = Assert.Throws<InvalidDataException>(() =>
+            RebuildIntoFreshStore([fx.Widget], out _));
+
+        Assert.Contains("rebuild from sources", refusal.Message);
+        Assert.Contains("duplicated", Assert.IsType<InvalidDataException>(refusal.InnerException).Message);
+    }
+
+    [Fact]
     public void RebuildRestoresSourceFileStamps_SoAColdStartDoesNotRescanEveryFeed()
     {
         // The whole point of carrying stamps in the manifest: a slot swap hands the new instance an

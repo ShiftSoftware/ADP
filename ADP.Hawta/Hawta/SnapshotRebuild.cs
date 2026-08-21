@@ -36,12 +36,12 @@ public static class SnapshotRebuild
             store.EnsureTable(table);
 
         // The documented precondition, checked rather than assumed. The seed below is a bare
-        // INSERT, so a caller that hands over a POPULATED store gets a primary-key violation from
-        // deep inside the per-manifest loop — where it is indistinguishable from a torn parquet
-        // file, and comes back as "no published set could be loaded, rebuild from sources
-        // instead". That message names the wrong culprit and recommends the most expensive path in
-        // the system to fix a caller bug the published set is innocent of. One count per table is
-        // nothing next to reading the set, and it turns that misdirection into the actual answer.
+        // INSERT, and snapshot tables carry no PRIMARY KEY index — so a caller that hands over
+        // a POPULATED store would not fail here at all: every seeded row would land beside the
+        // rows already resident, and the doubled keys would only surface at the next publish as
+        // a global sequence-contract failure that blames the store's data. This check is what
+        // stands between that caller bug and a silently doubled table, and one count per table
+        // is nothing next to reading the set.
         foreach (var table in tables)
         {
             var existing = Convert.ToInt64(store.ExecuteScalar($"SELECT count(*) FROM {table.QualifiedName}"));
@@ -270,6 +270,18 @@ public static class SnapshotRebuild
         {
             throw new InvalidDataException(
                 $"Published v4 table '{table.Name}' has {invalidVersions} row(s) with invalid durable change metadata.");
+        }
+
+        // Snapshot tables carry no PRIMARY KEY index, so nothing structural refuses a seed whose
+        // rows duplicate a key — and a duplicate restored here would be trusted by every later
+        // merge (only staging is checked). Refuse the seed at the door instead. count(DISTINCT)
+        // ignores NULLs, so this also catches a NULL key before the insert does.
+        var duplicateKeys = Convert.ToInt64(store.ExecuteScalar(
+            $"SELECT count(*) - count(DISTINCT \"{BookkeepingColumns.PrimaryKey}\") FROM {source}"));
+        if (duplicateKeys > 0)
+        {
+            throw new InvalidDataException(
+                $"Published v4 table '{table.Name}' has {duplicateKeys} duplicated or NULL primary key value(s).");
         }
 
         var columns = table.Columns.Select(c => c.Name).Concat(BookkeepingColumns.All)
