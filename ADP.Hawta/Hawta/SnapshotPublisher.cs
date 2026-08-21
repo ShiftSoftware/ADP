@@ -285,18 +285,36 @@ public static class SnapshotPublisher
         SnapshotTableDefinition table,
         IReadOnlyList<PublishedSourceCatalogEntry> sourceCatalog)
     {
-        var invalid = Convert.ToInt64(store.ExecuteScalar(
-            $"""
-            SELECT count(*)
-            FROM {table.QualifiedName}
-            WHERE "{BookkeepingColumns.ChangeSequence}" IS NULL
-               OR "{BookkeepingColumns.ChangeSequence}" <= 0
-               OR "{BookkeepingColumns.ChangeRecordedAt}" IS NULL
-            """));
+        long invalid, duplicateKeys;
+        using (var command = store.Connection.CreateCommand())
+        {
+            // One scan, two verdicts. The duplicate count rides the metadata query because
+            // snapshot tables carry no PRIMARY KEY index: nothing structural keeps a corrupt
+            // store from holding doubled keys, and this contract is the last gate before such
+            // a store is exported to every consumer of the published set.
+            command.CommandText =
+                $"""
+                SELECT
+                    count(*) FILTER (WHERE "{BookkeepingColumns.ChangeSequence}" IS NULL
+                        OR "{BookkeepingColumns.ChangeSequence}" <= 0
+                        OR "{BookkeepingColumns.ChangeRecordedAt}" IS NULL),
+                    count(*) - count(DISTINCT "{BookkeepingColumns.PrimaryKey}")
+                FROM {table.QualifiedName}
+                """;
+            using var reader = command.ExecuteReader();
+            reader.Read();
+            invalid = reader.GetInt64(0);
+            duplicateKeys = reader.GetInt64(1);
+        }
 
         if (invalid > 0)
             throw new InvalidOperationException(
                 $"Table '{table.Name}' has {invalid} row(s) without complete durable change-sequence metadata.");
+
+        if (duplicateKeys > 0)
+            throw new InvalidOperationException(
+                $"Table '{table.Name}' has {duplicateKeys} duplicated primary key value(s); " +
+                "the write store is corrupt — rebuild it before publishing.");
 
         long attributed = 0;
         foreach (var source in sourceCatalog)

@@ -49,25 +49,43 @@ public class SnapshotRebuildTests : IDisposable
             "SELECT count(*) FROM meta.SyncRuns WHERE \"Source\" = 'rebuild:test-read'")));
     }
 
+    /// <summary>
+    /// Corrupts the newest published Widget parquet in place, count-preservingly: W2's row
+    /// keeps its own change sequence and metadata but takes W1's key. Appending a row instead
+    /// would change the row count and be caught by the manifest's intact check as a torn file —
+    /// letting these tests pass without ever reaching the duplicate guard.
+    /// </summary>
+    private void CorruptNewestWidgetParquetWithDuplicateKey()
+    {
+        var entry = fx.Entry("Widget");
+        var source = entry.ReadParquetSql(fx.PublishDirectory);
+        var file = entry.Resolve(fx.PublishDirectory).Single().Replace('\\', '/');
+
+        fx.Store.Execute(
+            $"""
+            CREATE OR REPLACE TEMP TABLE corrupt AS
+            SELECT * REPLACE ('W1' AS "_PrimaryKey") FROM {source} WHERE "_PrimaryKey" = 'W2'
+            UNION ALL
+            SELECT * FROM {source} WHERE "_PrimaryKey" <> 'W2'
+            """);
+        fx.Store.Execute($"COPY corrupt TO '{file}' (FORMAT PARQUET)");
+        fx.Store.Execute("DROP TABLE corrupt");
+    }
+
     [Fact]
     public void ASeedWithADuplicatedKey_IsRefused_AndRebuildFallsBackToTheOlderCleanSet()
     {
-        // With no PRIMARY KEY index on snapshot tables, storage accepts a corrupt store's
-        // duplicate rows and the publisher exports them faithfully (the global sequence
-        // contract refuses only duplicated or unallocated _ChangeSequence values, and a buggy
-        // merge would allocate properly). The rebuild's seed check must refuse the corrupt
-        // set the way it refuses a torn one: fall back to the older clean publish, on record.
+        // The publish contract refuses to export a store with duplicated keys, but a published
+        // set does not have to come from this publisher: an older engine, another tool, or
+        // in-place corruption can hand the rebuild duplicates whose parquet still matches its
+        // manifest's row count. The rebuild's seed check must refuse such a set the way it
+        // refuses a torn one: fall back to the older clean publish, on record.
         fx.MergeWidgets(("W1", "alpha", 1), ("W2", "beta", 2));
         var first = fx.Publish();
 
-        fx.Store.Execute(
-            """
-            INSERT INTO data."Widget"
-            SELECT * REPLACE (CAST(? AS BIGINT) AS "_ChangeSequence")
-            FROM data."Widget" WHERE "_PrimaryKey" = 'W1'
-            """,
-            fx.Store.ReserveChangeSequences(1));
+        fx.MergeWidgets(("W1", "alpha", 1), ("W2", "beta", 3));
         var second = fx.Publish();
+        CorruptNewestWidgetParquetWithDuplicateKey();
 
         using var rebuilt = RebuildIntoFreshStore([fx.Widget], out var result);
 
@@ -82,15 +100,9 @@ public class SnapshotRebuildTests : IDisposable
         // No older set to fall back to: the rebuild must fail, point at from-sources recovery
         // (which genuinely fixes this — staging is deduplicated), and carry the duplicate as
         // the cause rather than dressing it up as a missing published set.
-        fx.MergeWidgets(("W1", "alpha", 1));
-        fx.Store.Execute(
-            """
-            INSERT INTO data."Widget"
-            SELECT * REPLACE (CAST(? AS BIGINT) AS "_ChangeSequence")
-            FROM data."Widget" WHERE "_PrimaryKey" = 'W1'
-            """,
-            fx.Store.ReserveChangeSequences(1));
+        fx.MergeWidgets(("W1", "alpha", 1), ("W2", "beta", 2));
         fx.Publish();
+        CorruptNewestWidgetParquetWithDuplicateKey();
 
         var refusal = Assert.Throws<InvalidDataException>(() =>
             RebuildIntoFreshStore([fx.Widget], out _));

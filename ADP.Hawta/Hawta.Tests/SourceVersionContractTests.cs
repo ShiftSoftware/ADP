@@ -355,6 +355,33 @@ public sealed class SourceVersionContractTests
     }
 
     [Fact]
+    public void PublisherRejectsAStoreWithDuplicatedKeys_LeavingTheCleanSetInPlace()
+    {
+        // With no PRIMARY KEY index on snapshot tables, this contract is what stands between
+        // a corrupt store and every consumer of the published set. The duplicate below carries
+        // a properly reserved sequence, so only the key check can refuse it.
+        using var fx = new PublisherFixture();
+        fx.MergeWidgets(("W1", "one", 1), ("W2", "two", 2));
+        var clean = fx.Publish();
+
+        fx.Store.Execute(
+            """
+            INSERT INTO data."Widget"
+            SELECT * REPLACE (CAST(? AS BIGINT) AS "_ChangeSequence")
+            FROM data."Widget" WHERE "_PrimaryKey" = 'W1'
+            """,
+            fx.Store.ReserveChangeSequences(1));
+
+        var exception = Assert.Throws<InvalidOperationException>(() => fx.Publish());
+        Assert.Contains("duplicated primary key", exception.Message);
+
+        // Refused before any export: the clean set is still the newest manifest and the
+        // table folder holds no new parquet version.
+        Assert.Equal([clean.ManifestFile], fx.Manifests());
+        Assert.Single(fx.Versions("Widget"));
+    }
+
+    [Fact]
     public void SchemaV4ManifestRequiresHighWatermarkAndSourceCatalog()
     {
         using var fx = new PublisherFixture();

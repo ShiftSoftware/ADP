@@ -274,8 +274,9 @@ public static class SnapshotRebuild
 
         // Snapshot tables carry no PRIMARY KEY index, so nothing structural refuses a seed whose
         // rows duplicate a key — and a duplicate restored here would be trusted by every later
-        // merge (only staging is checked). Refuse the seed at the door instead. count(DISTINCT)
-        // ignores NULLs, so this also catches a NULL key before the insert does.
+        // merge (only staging is checked; the publish contract would refuse the store, but only
+        // after the corrupt seed is already resident). Refuse the seed at the door instead.
+        // count(DISTINCT) ignores NULLs, so this also catches a NULL key before the insert does.
         var duplicateKeys = Convert.ToInt64(store.ExecuteScalar(
             $"SELECT count(*) - count(DISTINCT \"{BookkeepingColumns.PrimaryKey}\") FROM {source}"));
         if (duplicateKeys > 0)

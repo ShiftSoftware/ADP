@@ -462,7 +462,8 @@ public sealed class SnapshotStore : IDisposable
     /// <para>Snapshot tables declare no PRIMARY KEY, deliberately. Key uniqueness is the
     /// merge's contract, not the storage engine's: staging with a duplicate or NULL
     /// <c>_PrimaryKey</c> is refused before any mutation, inserts are anti-joined against
-    /// resident keys, and a rebuild refuses a seed containing duplicates. The index a
+    /// resident keys, a rebuild refuses a seed containing duplicates, and the publish
+    /// contract refuses to export a store that carries them. The index a
     /// primary key would add costs real money at scale — measured on a deployment with
     /// ~1.4M rows in one table, it was ~105 MiB of the write database and most of that
     /// table's load time — and the only per-key reads in the engine are the replication
