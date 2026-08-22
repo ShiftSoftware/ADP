@@ -243,6 +243,44 @@ public sealed class SnapshotStore : IDisposable
                 PRIMARY KEY ("TableName", "SourceScope")
             )
             """);
+
+        // Where each table's rows live: resident in this database, or deferred to the newest
+        // committed published parquet. Recorded EXPLICITLY, never inferred from count(*) —
+        // zero rows is ambiguous (legitimately-empty-resident reads the same as deferred),
+        // and a warm process restart must find a previously deferred table still deferred.
+        // An absent row means Resident, which is why this CREATE needs no version gate: an
+        // existing write DB gains the table empty on the next open and behaves exactly as
+        // before. A Deferred row carries everything hydration needs (the resolved file list
+        // and the row count the copy holds), so ingest never has to reach the publish tier's
+        // manifest machinery.
+        Execute(
+            """
+            CREATE TABLE IF NOT EXISTS meta.TableResidency (
+                "TableName" VARCHAR NOT NULL PRIMARY KEY,
+                "Residency" VARCHAR NOT NULL,
+                "ManifestFile" VARCHAR,
+                "ParquetPaths" VARCHAR,
+                "RowCount" BIGINT,
+                "RecordedAtUtc" TIMESTAMP NOT NULL
+            )
+            """);
+
+        // One content identity per (table, scope) while the table is deferred — what the
+        // ingest-time guard compares a re-delivered file against to prove the merge would
+        // change nothing, so hydration can be skipped entirely. Copied from the manifest's
+        // source catalog when the table defers; deleted when hydration takes it Resident
+        // (from then on the merge's own diff answers the question for free). The scope
+        // column stores chr(0) for a table's single unscoped universe, the same sentinel
+        // convention as meta.SourceOwnership, for the same DuckDB primary-key reason.
+        Execute(
+            """
+            CREATE TABLE IF NOT EXISTS meta.DeferredContentHashes (
+                "TableName" VARCHAR NOT NULL,
+                "SourceScope" VARCHAR NOT NULL,
+                "ContentHash" VARCHAR NOT NULL,
+                PRIMARY KEY ("TableName", "SourceScope")
+            )
+            """);
     }
 
     /// <summary>
@@ -581,6 +619,117 @@ public sealed class SnapshotStore : IDisposable
                 "attribute. Every row scope must have exactly one source owner.");
     }
 
+    // ---- Table residency ----------------------------------------------------------------------
+    // Lazy residency's state store. Writes happen transactionally with the act they describe:
+    // MarkTableDeferred inside the cold-start rebuild's transaction, MarkTableResident inside
+    // the hydrating merge's transaction — so a crash can never leave the state claiming rows
+    // that are not there, or hiding rows that are.
+
+    /// <summary>
+    /// Where <paramref name="tableName"/>'s rows live. An absent record means
+    /// <see cref="SnapshotResidency.Resident"/> — the pre-residency behaviour, and the safe
+    /// default for a table nothing has ever decided about.
+    /// </summary>
+    public SnapshotResidency ReadResidency(string tableName)
+    {
+        var state = ExecuteScalar(
+            "SELECT \"Residency\" FROM meta.TableResidency WHERE \"TableName\" = ?", tableName);
+        return state is string text && text == nameof(SnapshotResidency.Deferred)
+            ? SnapshotResidency.Deferred
+            : SnapshotResidency.Resident;
+    }
+
+    /// <summary>The full deferred record, or null when the table is Resident.</summary>
+    internal DeferredTableRecord? ReadDeferredTableRecord(string tableName)
+    {
+        using var command = Connection.CreateCommand();
+        command.CommandText =
+            """
+            SELECT "ManifestFile", "ParquetPaths", "RowCount"
+            FROM meta.TableResidency
+            WHERE "TableName" = ? AND "Residency" = 'Deferred'
+            """;
+        var parameter = command.CreateParameter();
+        parameter.Value = tableName;
+        command.Parameters.Add(parameter);
+
+        using var reader = command.ExecuteReader();
+        if (!reader.Read())
+            return null;
+
+        var paths = System.Text.Json.JsonSerializer.Deserialize<List<string>>(reader.GetString(1))
+            ?? throw new InvalidDataException(
+                $"Deferred record for table '{tableName}' carries no parquet path list.");
+        return new DeferredTableRecord(tableName, reader.GetString(0), paths, reader.GetInt64(2));
+    }
+
+    /// <summary>
+    /// Records that a table's rows stay in the published copy: the manifest entry's resolved
+    /// file list and row count (what hydration will load), plus the per-scope content
+    /// identities the ingest-time guard compares against.
+    /// </summary>
+    internal void MarkTableDeferred(
+        string tableName,
+        string manifestFile,
+        IReadOnlyList<string> parquetPaths,
+        long rowCount,
+        IReadOnlyList<(string? SourceScope, string ContentHash)> contentHashes)
+    {
+        if (parquetPaths.Count == 0)
+            throw new ArgumentException(
+                $"A deferred record for '{tableName}' needs at least one parquet file.", nameof(parquetPaths));
+
+        Execute("DELETE FROM meta.TableResidency WHERE \"TableName\" = ?", tableName);
+        Execute(
+            "INSERT INTO meta.TableResidency VALUES (?, 'Deferred', ?, ?, ?, ?)",
+            tableName, manifestFile,
+            System.Text.Json.JsonSerializer.Serialize(parquetPaths), rowCount, DateTime.UtcNow);
+
+        Execute("DELETE FROM meta.DeferredContentHashes WHERE \"TableName\" = ?", tableName);
+        foreach (var (sourceScope, contentHash) in contentHashes)
+        {
+            Execute(
+                """
+                INSERT INTO meta.DeferredContentHashes ("TableName", "SourceScope", "ContentHash")
+                VALUES (?, coalesce(?, chr(0)), ?)
+                """,
+                tableName, sourceScope, contentHash);
+        }
+    }
+
+    /// <summary>
+    /// Records that a table's rows are in this database — written when a cold start loads a
+    /// table and when hydration brings a deferred one back. The content identities go with the
+    /// deferred record: once rows are resident the merge's own diff answers "unchanged" for free.
+    /// </summary>
+    internal void MarkTableResident(string tableName)
+    {
+        Execute("DELETE FROM meta.TableResidency WHERE \"TableName\" = ?", tableName);
+        Execute(
+            "INSERT INTO meta.TableResidency VALUES (?, 'Resident', NULL, NULL, NULL, ?)",
+            tableName, DateTime.UtcNow);
+        Execute("DELETE FROM meta.DeferredContentHashes WHERE \"TableName\" = ?", tableName);
+    }
+
+    /// <summary>
+    /// The recorded content identity for one (table, scope) of a Deferred table, or null when
+    /// the table is Resident or the deferring manifest carried no hash for that scope (an
+    /// older published set) — null always means "cannot prove unchanged; hydrate and merge".
+    /// </summary>
+    internal string? ReadDeferredContentHash(string tableName, string? sourceScope)
+    {
+        var hash = ExecuteScalar(
+            """
+            SELECT hashes."ContentHash"
+            FROM meta.DeferredContentHashes AS hashes
+            JOIN meta.TableResidency AS residency
+              ON residency."TableName" = hashes."TableName" AND residency."Residency" = 'Deferred'
+            WHERE hashes."TableName" = ? AND hashes."SourceScope" = coalesce(?, chr(0))
+            """,
+            tableName, sourceScope);
+        return hash is null or DBNull ? null : (string)hash;
+    }
+
     /// <summary>Moves the allocator above every row restored from published parquet.</summary>
     internal void ReconcileChangeSequence(
         IReadOnlyList<SnapshotTableDefinition> tables,
@@ -896,6 +1045,22 @@ public sealed class SnapshotStore : IDisposable
 
     public long CountDirtyRows(SnapshotTableDefinition table) =>
         Convert.ToInt64(ExecuteScalar($"SELECT count(*) FROM {table.QualifiedName} WHERE {DirtyPredicate}"));
+
+    /// <summary>
+    /// Rows still owed to Cosmos but past the attempt limit — unreplicated AND outside
+    /// <see cref="DirtyPredicate"/>. The pump's queue looks empty while these exist; they also
+    /// keep the manifest's replication-pending count above zero, which blocks the table's
+    /// cold-start deferral. <see cref="ResetReplicationFailures"/> (or a content change, which
+    /// resets the ledger during merge) puts them back in the queue.
+    /// </summary>
+    public long CountDeadLetteredRows(SnapshotTableDefinition table) =>
+        Convert.ToInt64(ExecuteScalar(
+            $"""
+            SELECT count(*) FROM {table.QualifiedName}
+            WHERE ("{BookkeepingColumns.LastReplicationDate}" IS NULL
+                   OR "{BookkeepingColumns.LastReplicationDate}" < "{BookkeepingColumns.ReplicationModified}")
+              AND "{BookkeepingColumns.ReplicationAttempts}" >= {MaxReplicationAttempts}
+            """));
 
     /// <summary>
     /// Records a successful push: stamps the CAPTURED <c>_ReplicationModified</c> as the watermark and

@@ -138,6 +138,18 @@ public sealed class SnapshotSource
     /// publish set", or the table would silently lose its DR seed.
     /// </summary>
     public bool Enabled { get; init; } = true;
+
+    /// <summary>
+    /// Keeps this source's table Resident at cold start even when it qualifies for deferral.
+    /// Residency is deferred BY DEFAULT for every table whose sources can all answer
+    /// "unchanged" without reading data (gate-wired file sources), so this is the per-source
+    /// opt-out for a feed the host knows is hot: a table that changes most ticks would only
+    /// pay a hydration on its first change, but pinning it skips even that one read. A pin on
+    /// ANY source pins the whole table — residency is per table, and disagreement resolves to
+    /// the safe state. Wrong in either direction costs bandwidth, never correctness: an
+    /// unpinned hot table hydrates once and then stays resident until restart.
+    /// </summary>
+    public bool PinResident { get; init; }
 }
 
 /// <summary>What an ingest delegate gets to work with.</summary>

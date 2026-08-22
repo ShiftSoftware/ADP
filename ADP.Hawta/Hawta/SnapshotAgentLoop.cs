@@ -111,7 +111,8 @@ public sealed record SnapshotAgentPumpRun(
     TimeSpan BookkeepingTime = default,
     int GroupsRead = 0,
     int SourceRowsLoaded = 0,
-    int GroupsRecomputed = 0);
+    int GroupsRecomputed = 0,
+    int DeadLettered = 0);
 
 /// <summary>What one cycle did.</summary>
 public sealed record SnapshotAgentCycle(
@@ -312,12 +313,13 @@ public sealed class SnapshotAgentLoop : IDisposable
                     });
                     sourceRuns.Add(new SnapshotAgentSourceRun(source.Key, merge, null));
 
-                    // SkippedSourceUnchanged is the gate working, not a problem — warning on it
-                    // would make the healthy steady state the noisiest thing in the log.
+                    // The gate and guard skips are the system working, not a problem — warning
+                    // on them would make the healthy steady state the noisiest thing in the log.
                     if (!merge.Succeeded
                         && merge.Status is not (SnapshotMergeStatus.SkippedSourceAbsent
                             or SnapshotMergeStatus.SkippedSourceEmpty
-                            or SnapshotMergeStatus.SkippedSourceUnchanged))
+                            or SnapshotMergeStatus.SkippedSourceUnchanged
+                            or SnapshotMergeStatus.SkippedContentUnchanged))
                     {
                         Emit(SnapshotAgentEventLevel.Warning,
                             $"Ingest finished {merge.Status} (run {merge.RunId}).", source.Key);
@@ -468,6 +470,15 @@ public sealed class SnapshotAgentLoop : IDisposable
             Emit(SnapshotAgentEventLevel.Warning,
                 $"Pump {table.Name}: cursor scan complete with retryable failed row(s) still dirty — retries next cycle.");
 
+        // A drained queue with dead-letters is the settled-vs-drained divergence: the pump's
+        // own predicate no longer sees these rows, so without this line nothing anywhere says
+        // they exist — until a cold start declines to defer the table and nobody knows why.
+        if (drain.DeadLettered > 0)
+            Emit(SnapshotAgentEventLevel.Warning,
+                $"Pump {table.Name}: {drain.DeadLettered} row(s) are dead-lettered — unreplicated but past " +
+                $"{SnapshotStore.MaxReplicationAttempts} attempts, invisible to the drain. They also block " +
+                "this table's cold-start deferral. Reset the failure ledger (or ship a content change) to retry.");
+
         if (drain.RowsRead > 0)
         {
             var groupShape = drain.GroupsRead > 0
@@ -485,7 +496,8 @@ public sealed class SnapshotAgentLoop : IDisposable
             drain.Excluded, drain.Failed, drain.Drained, drain.RemoteAttemptedRows,
             drain.RemoteFailedRows, drain.MaxObservedInFlightRows, drain.RequestCharge,
             drain.ThrottledRequests, drain.CosmosOperationTime, drain.BookkeepingTime,
-            drain.GroupsRead, drain.SourceRowsLoaded, drain.GroupsRecomputed);
+            drain.GroupsRead, drain.SourceRowsLoaded, drain.GroupsRecomputed,
+            drain.DeadLettered);
     }
 
     /// <summary>Opens (or rebuilds) the write DB. Returns true when this was a cold start that restored from the published set.</summary>
@@ -549,14 +561,20 @@ public sealed class SnapshotAgentLoop : IDisposable
             // The slot-swap / new-instance story: local disk is empty, the published set is
             // the seed. Bookkeeping columns are published, so replication state survives and
             // the next pump writes zero Cosmos ops for unchanged data.
-            var rebuild = SnapshotRebuild.Execute(store, options.Registry.Tables, options.PublishDirectory,
+            // The registry overload, so qualified quiet tables stay deferred to the published
+            // copy instead of being downloaded just to sit unread until the next deploy.
+            var rebuild = SnapshotRebuild.Execute(store, options.Registry, options.PublishDirectory,
                 options.SnapshotName, options.PublishStore);
             Emit(SnapshotAgentEventLevel.Info,
                 rebuild.ManifestFile is null
                     ? rebuild.PublishesSkipped.Count > 0
                         ? $"Cold start: no compatible v4 seed (ignored {rebuild.PublishesSkipped.Count} pre-v4 publish(es)) — rebuilding from sources."
                         : "Cold start: nothing published yet — starting from an empty write DB."
-                    : $"Cold start: rebuilt {rebuild.TotalRows} row(s) across {rebuild.TablesLoaded.Count} table(s) from {rebuild.ManifestFile}.");
+                    : $"Cold start: rebuilt {rebuild.TotalRows} row(s) across {rebuild.TablesLoaded.Count} table(s) from {rebuild.ManifestFile}."
+                      + (rebuild.TablesDeferred.Count > 0
+                          ? $" {rebuild.TablesDeferred.Count} table(s) stay deferred to the published copy" +
+                            $" ({rebuild.TablesDeferred.Sum(t => t.Rows)} row(s) not downloaded)."
+                          : string.Empty));
         }
 
         return coldStart;

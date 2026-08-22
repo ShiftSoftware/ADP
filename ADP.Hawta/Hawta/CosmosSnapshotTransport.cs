@@ -152,6 +152,13 @@ internal interface IReplicationStateStore
         bool dirtyGroupsOnly) =>
         throw new NotSupportedException("This replication-state test double does not support grouped projections.");
 
+    /// <summary>
+    /// Unreplicated rows past the attempt limit — the drain report's settled-vs-drained
+    /// divergence. Defaulted to zero so replication-state test doubles that model no failure
+    /// ledger keep compiling; the real store counts.
+    /// </summary>
+    long CountDeadLetteredRows(SnapshotTableDefinition table) => 0;
+
     void PruneReconOps(SnapshotTableDefinition table);
     void AppendReconOp(ReplicationReconOperation operation);
 
@@ -229,6 +236,8 @@ internal sealed class SnapshotReplicationStateStore(SnapshotStore store) : IRepl
         int limit,
         bool dirtyGroupsOnly) =>
         store.ReadReplicationGroups(table, grouping, afterGroupKey, limit, dirtyGroupsOnly);
+
+    public long CountDeadLetteredRows(SnapshotTableDefinition table) => store.CountDeadLetteredRows(table);
 
     public void PruneReconOps(SnapshotTableDefinition table) => store.PruneReconOps(table);
 

@@ -25,12 +25,42 @@ namespace ShiftSoftware.ADP.Hawta;
 /// </summary>
 public static class SnapshotRebuild
 {
+    /// <summary>
+    /// The residency-aware cold start: tables the <paramref name="registry"/> qualifies for
+    /// deferral — and whose committed copy is provably not owed to the replication pump — are
+    /// NOT loaded; their rows stay in the published parquet and the write DB records a
+    /// Deferred state plus everything hydration needs. Everything else loads exactly as
+    /// before. This is where the entire cold-start saving comes from: on the measured estate
+    /// one quiet catalog table is 87% of the publish set's bytes.
+    /// </summary>
+    public static SnapshotRebuildResult Execute(
+        SnapshotStore store,
+        SourceRegistry registry,
+        string publishDirectory,
+        string snapshotName,
+        PublishStore? publishStore = null) =>
+        ExecuteCore(store, registry.Tables, publishDirectory, snapshotName, publishStore, registry);
+
+    /// <summary>
+    /// Without a registry nothing can qualify for deferral, so every manifest table loads
+    /// Resident — the pre-residency behaviour, kept for callers that only have table
+    /// definitions.
+    /// </summary>
     public static SnapshotRebuildResult Execute(
         SnapshotStore store,
         IReadOnlyList<SnapshotTableDefinition> tables,
         string publishDirectory,
         string snapshotName,
-        PublishStore? publishStore = null)
+        PublishStore? publishStore = null) =>
+        ExecuteCore(store, tables, publishDirectory, snapshotName, publishStore, registry: null);
+
+    private static SnapshotRebuildResult ExecuteCore(
+        SnapshotStore store,
+        IReadOnlyList<SnapshotTableDefinition> tables,
+        string publishDirectory,
+        string snapshotName,
+        PublishStore? publishStore,
+        SourceRegistry? registry)
     {
         foreach (var table in tables)
             store.EnsureTable(table);
@@ -63,7 +93,7 @@ public static class SnapshotRebuild
         var manifests = PublishedSnapshot.ListManifests(store_, snapshotName);
         if (manifests.Count == 0)
         {
-            return new SnapshotRebuildResult(null, [], [], [.. tables.Select(t => t.Name)], []);
+            return new SnapshotRebuildResult(null, [], [], [], [.. tables.Select(t => t.Name)], []);
         }
 
         var publishesSkipped = new List<string>();
@@ -107,7 +137,7 @@ public static class SnapshotRebuild
 
                 return LoadFromManifest(
                     store, tables, store_, snapshotName, manifestPath, published,
-                    observedChangeSequenceHighWatermark, publishesSkipped);
+                    observedChangeSequenceHighWatermark, publishesSkipped, registry);
             }
             catch (SnapshotSchemaMismatchException)
             {
@@ -131,7 +161,7 @@ public static class SnapshotRebuild
         if (!compatibleManifestSeen && incompatibleManifestSeen && !unclassifiedFailureSeen)
         {
             return new SnapshotRebuildResult(
-                null, [], [], [.. tables.Select(table => table.Name)], publishesSkipped);
+                null, [], [], [], [.. tables.Select(table => table.Name)], publishesSkipped);
         }
 
         throw new InvalidDataException(
@@ -144,7 +174,7 @@ public static class SnapshotRebuild
         SnapshotStore store, IReadOnlyList<SnapshotTableDefinition> tables,
         PublishStore publishStore, string snapshotName, string manifestPath,
         PublishedSnapshot published, long changeSequenceFloor,
-        IReadOnlyList<string> publishesSkipped)
+        IReadOnlyList<string> publishesSkipped, SourceRegistry? registry)
     {
         var manifestByTable = published.Tables.ToDictionary(e => e.Table, StringComparer.OrdinalIgnoreCase);
 
@@ -152,7 +182,11 @@ public static class SnapshotRebuild
         var skipped = published.Tables.Where(e => !definedNames.Contains(e.Table)).Select(e => e.Table).ToList();
 
         // Validate the whole parquet set up front (footers parse, row counts match) before
-        // loading anything — a torn file must fail the publish, not the rebuild.
+        // loading anything — a torn file must fail the publish, not the rebuild. Deferred
+        // candidates get exactly the same probe: a table whose rows are about to stay in the
+        // published copy needs its copy proven intact MORE than one being loaded does, and a
+        // failed probe here sends the whole manifest to the newest-first fallback — the
+        // existing DR posture, unchanged.
         var sources = new Dictionary<string, PublishedTableManifest>(StringComparer.OrdinalIgnoreCase);
         foreach (var table in tables)
         {
@@ -170,6 +204,7 @@ public static class SnapshotRebuild
         }
 
         var loaded = new List<SnapshotRebuildTable>();
+        var deferred = new List<SnapshotRebuildTable>();
         var createdEmpty = new List<string>();
         var startedAt = DateTime.UtcNow;
 
@@ -180,12 +215,48 @@ public static class SnapshotRebuild
             {
                 if (!sources.TryGetValue(table.Name, out var entry))
                 {
+                    // No committed published copy exists, so the only copy this table can
+                    // have is resident rows — recorded as an explicit state, not left to
+                    // inference. This is a normal condition (a new family before its first
+                    // publish, the cutover's first hour), not an error; the table becomes
+                    // deferred-eligible at the first cold start after its first publish.
                     createdEmpty.Add(table.Name);
+                    store.MarkTableResident(table.Name);
+                    continue;
+                }
+
+                if (ShouldDefer(registry, table, entry, published.SchemaVersion))
+                {
+                    // The skip itself. The rows stay in the published parquet; what this
+                    // start records instead is (a) the Deferred state with the entry's
+                    // resolved file list and row count — everything a later hydration
+                    // needs — and (b) the per-scope content identities the ingest-time
+                    // guard compares re-delivered files against. The ownership map is
+                    // restored from the manifest catalog exactly as for a loaded table
+                    // (it derives from the catalog; no rows are needed), and the source
+                    // stamps restore below with everyone else's — which is what keeps the
+                    // gate quiet so the deferral actually holds.
+                    store.MarkTableDeferred(
+                        table.Name,
+                        PublishPath.FileName(manifestPath),
+                        entry.Resolve(publishStore.Root),
+                        entry.RowCount,
+                        [.. entry.SourceCatalog
+                            .Where(source => source.ContentHash is not null)
+                            .Select(source => (source.SourceScope, source.ContentHash!))]);
+                    store.RestoreSourceOwnership(table, entry.SourceCatalog);
+                    deferred.Add(new SnapshotRebuildTable(table.Name, entry.Location.Paths, entry.RowCount));
+
+                    // No synthetic rebuild run record: those say "this start loaded N rows",
+                    // and this start deliberately loaded none. Per-source freshness rows
+                    // reappear within one cadence tick, exactly as they do for loaded
+                    // tables (rebuild never restores per-source SyncRuns rows either way).
                     continue;
                 }
 
                 var rows = LoadTable(store, table, entry, publishStore.Root);
                 store.RestoreSourceOwnership(table, entry.SourceCatalog);
+                store.MarkTableResident(table.Name);
                 loaded.Add(new SnapshotRebuildTable(table.Name, entry.Location.Paths, rows));
 
                 store.Execute(
@@ -234,13 +305,58 @@ public static class SnapshotRebuild
         }
 
         return new SnapshotRebuildResult(
-            PublishPath.FileName(manifestPath), loaded, skipped, createdEmpty, [.. publishesSkipped]);
+            PublishPath.FileName(manifestPath), loaded, deferred, skipped, createdEmpty, [.. publishesSkipped]);
+    }
+
+    /// <summary>
+    /// Whether this cold start may leave a table's rows in the published copy. Three
+    /// conditions, all computed: the seed must be a CURRENT-schema publish, the registry must
+    /// qualify the table's shape (every source a gate-wired file source, no pin), and the
+    /// settled rule — the copy is provably not owed to the pump. A dead-lettered row counts as
+    /// owed on purpose: the manifest's pending count is attempts-blind, so such a row blocks
+    /// the skip, loads, and stays visible to a reset. A null pending count (an entry written
+    /// before the field existed) can prove nothing and loads.
+    ///
+    /// <para>The schema condition is load-bearing, not tidiness: the publisher deliberately
+    /// refuses to reuse entries from an older-schema baseline — a schema transition must
+    /// re-export every table — and re-exporting needs resident rows. A table deferred from an
+    /// older-schema seed would leave the transition publish with nothing to carry and nothing
+    /// to export, failing every cycle until someone forced the rows resident. So an
+    /// older-schema rebuild loads everything, the transition publish re-exports it, and the
+    /// NEXT restart defers from the fresh current-schema set.</para>
+    /// </summary>
+    private static bool ShouldDefer(
+        SourceRegistry? registry,
+        SnapshotTableDefinition table,
+        PublishedTableManifest entry,
+        int manifestSchemaVersion)
+    {
+        if (manifestSchemaVersion != SnapshotStore.CurrentSchemaVersion)
+            return false;
+
+        if (registry is null || !registry.IsTableDeferredCapable(table.Name))
+            return false;
+
+        if (!registry.TableHasReplicationEnabledCosmosFamily(table.Name))
+            return true;
+
+        return entry.ReplicationPending == 0;
     }
 
     private static long LoadTable(
-        SnapshotStore store, SnapshotTableDefinition table, PublishedTableManifest entry, string publishDirectory)
+        SnapshotStore store, SnapshotTableDefinition table, PublishedTableManifest entry, string publishDirectory) =>
+        LoadTableInto(store, table, entry.ReadParquetSql(publishDirectory), $"Published v4 table '{table.Name}'");
+
+    /// <summary>
+    /// The one loader for bringing published rows back into the write DB — cold start and
+    /// ingest-time hydration both come through here, so a torn, wrong-schema, or key-corrupt
+    /// file is refused by the same checks on both paths. <paramref name="sourceDescription"/>
+    /// names the copy in error messages ("Published v4 table 'X'", "Deferred copy of 'X'").
+    /// </summary>
+    internal static long LoadTableInto(
+        SnapshotStore store, SnapshotTableDefinition table, string readParquetSql, string sourceDescription)
     {
-        var source = entry.ReadParquetSql(publishDirectory);
+        var source = readParquetSql;
 
         var parquetColumns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         using (var command = store.Connection.CreateCommand())
@@ -257,7 +373,7 @@ public static class SnapshotRebuild
         if (missingBookkeeping.Count > 0)
         {
             throw new InvalidDataException(
-                $"Published v4 table '{table.Name}' is missing required bookkeeping column(s): " +
+                $"{sourceDescription} is missing required bookkeeping column(s): " +
                 string.Join(", ", missingBookkeeping));
         }
 
@@ -269,7 +385,7 @@ public static class SnapshotRebuild
         if (invalidVersions > 0)
         {
             throw new InvalidDataException(
-                $"Published v4 table '{table.Name}' has {invalidVersions} row(s) with invalid durable change metadata.");
+                $"{sourceDescription} has {invalidVersions} row(s) with invalid durable change metadata.");
         }
 
         // Snapshot tables carry no PRIMARY KEY index, so nothing structural refuses a seed whose
@@ -282,7 +398,7 @@ public static class SnapshotRebuild
         if (duplicateKeys > 0)
         {
             throw new InvalidDataException(
-                $"Published v4 table '{table.Name}' has {duplicateKeys} duplicated or NULL primary key value(s).");
+                $"{sourceDescription} has {duplicateKeys} duplicated or NULL primary key value(s).");
         }
 
         var columns = table.Columns.Select(c => c.Name).Concat(BookkeepingColumns.All)
@@ -299,12 +415,20 @@ public static class SnapshotRebuild
 }
 
 /// <param name="ManifestFile">The manifest the rebuild loaded, or null when no snapshot is published (the store stays empty — a genuinely fresh start).</param>
+/// <param name="TablesDeferred">
+/// Tables whose rows deliberately stayed in the published copy (lazy residency): definitions
+/// ensured, ownership and stamps restored, rows NOT loaded; <c>Rows</c> is what the copy
+/// holds, not what was read. A separate list on purpose — operators read
+/// <paramref name="TablesCreatedEmpty"/> as "new family, nothing published yet", which is a
+/// different condition entirely.
+/// </param>
 /// <param name="TablesSkipped">Manifest tables the caller's definitions don't declare (published by an older configuration).</param>
 /// <param name="TablesCreatedEmpty">Declared tables absent from the manifest (new families not yet published).</param>
 /// <param name="PublishesSkipped">Newer published sets that could not be loaded (missing/torn parquet) before one succeeded.</param>
 public sealed record SnapshotRebuildResult(
     string? ManifestFile,
     IReadOnlyList<SnapshotRebuildTable> TablesLoaded,
+    IReadOnlyList<SnapshotRebuildTable> TablesDeferred,
     IReadOnlyList<string> TablesSkipped,
     IReadOnlyList<string> TablesCreatedEmpty,
     IReadOnlyList<string> PublishesSkipped)

@@ -500,6 +500,57 @@ public static class FileSnapshotIngestor
                     "Nothing merged; re-run with ForceDeletes for an intentional purge.");
                 return skipped;
             }
+
+            // ---- Content-identity guard (Deferred tables only) --------------------------
+            // The gate's file identity is length + mtime BY DESIGN, so a producer that
+            // rewrites identical content — or merely refreshes a timestamp — fires it. For a
+            // Resident table the merge absorbs that for free: no row differs, nothing is
+            // touched. For a Deferred table the merge would first pay the expensive part,
+            // hydrating the whole published copy back over the wire. The staged rows are
+            // already local and hashed (the file had to be read anyway), so compare their
+            // content identity with the one recorded when the copy was deferred: equal means
+            // the merge provably changes nothing, and the run ends here — stamp the file so
+            // the gate goes quiet again, record the run, leave the rows where they are.
+            //
+            // FileChanged ONLY, deliberately. ConfigurationChanged, PathChanged, TrustExpired
+            // and an IngestVersion bump can change what a merge PRODUCES from identical bytes
+            // (a new binding, a different key recipe), and identical content under the OLD
+            // rules proves nothing about the new ones — those verdicts always hydrate and
+            // merge. A caller with no gate or no probe has no verdict and never gets here;
+            // the merge's own hydrate-first rule keeps it correct.
+            if (gateDecision is { Verdict: SourceChangeVerdict.FileChanged }
+                && store.ReadDeferredContentHash(options.Table.Name, options.MergeOptions.SourceScope)
+                    is { } deferredContentHash)
+            {
+                var stagedContentHash = Convert.ToString(store.ExecuteScalar(
+                    $"SELECT {SnapshotContentHash.AggregateSql} FROM {staging.QualifiedName}"));
+
+                if (string.Equals(stagedContentHash, deferredContentHash, StringComparison.Ordinal))
+                {
+                    var stagedRows = Convert.ToInt64(store.ExecuteScalar(
+                        $"SELECT count(*) FROM {staging.QualifiedName}"));
+
+                    // The stamp describes the metadata read BEFORE staging, same rule as the
+                    // success path below: it names the file whose bytes were just compared.
+                    store.WriteSourceFileStamp(new SourceFileStamp(
+                        StampKey(options.MergeOptions),
+                        options.FilePath,
+                        gateDecision.Metadata.Length,
+                        gateDecision.Metadata.LastWriteUtc,
+                        SourceConfigFingerprint.Compute(options, options.IngestVersion),
+                        options.ChangeGate!.TimeProvider.GetUtcNow().UtcDateTime));
+
+                    var runId = options.MergeOptions.RunId ?? Guid.NewGuid().ToString("N");
+                    var skipped = new SnapshotMergeResult(
+                        runId, SnapshotMergeStatus.SkippedContentUnchanged, stagedRows, 0, 0, 0);
+                    SnapshotMerge.InsertRunRecord(store, options.Table, options.MergeOptions, runId,
+                        DateTime.UtcNow, skipped,
+                        $"Source file changed on disk but its {stagedRows} staged row(s) are content-identical " +
+                        $"to the table's deferred published copy for this scope: {options.FilePath}. " +
+                        "Hydration skipped; rows stay in the published copy.");
+                    return skipped;
+                }
+            }
         }
         catch (Exception exception)
         {

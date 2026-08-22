@@ -139,6 +139,24 @@ public sealed class SnapshotRecon
         Func<SnapshotReconFamily, CancellationToken, IAsyncEnumerable<JsonObject>> actualDocuments,
         CancellationToken cancellationToken)
     {
+        // A Deferred table has zero resident rows, so a recon over it would classify EVERY
+        // live document as an Orphan — a guaranteed red verdict with a "corruption" flavour
+        // that blocks the standing pump preflight, when nothing is actually wrong. Refuse
+        // with the real reason instead of misdiagnosing. Hydration is not this class's call
+        // to make: any merge against the table hydrates it automatically, and a caller that
+        // wants recon-now-regardless drives one first.
+        foreach (var table in options.Tables)
+        {
+            if (store.ReadResidency(table.Name) == SnapshotResidency.Deferred)
+            {
+                throw new InvalidOperationException(
+                    $"Table '{table.Name}' is Deferred — its rows live in the published copy, not the " +
+                    "write database, and reconciling an empty resident table against Cosmos would report " +
+                    "every document as an orphan. Run recon after the table is Resident (any merge " +
+                    "hydrates it), or restart without deferral qualification.");
+            }
+        }
+
         CreateWorkTables();
         try
         {

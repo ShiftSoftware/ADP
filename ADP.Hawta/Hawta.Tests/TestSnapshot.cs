@@ -9,6 +9,17 @@ public sealed class TestSnapshot : IDisposable
     public SnapshotStore Store { get; }
     public SnapshotTableDefinition Table { get; }
 
+    /// <summary>
+    /// When true, every <see cref="Stage"/> call first pushes the table's current rows out to
+    /// a parquet file and marks the table Deferred — so each merge in an existing test
+    /// exercises the full defer → hydrate → merge path and must land on identical results.
+    /// This is how the incumbent merge suite runs against both residency states.
+    /// </summary>
+    public bool DeferBeforeEachStage { get; init; }
+
+    private readonly string deferDirectory;
+    private int deferSequence;
+
     public TestSnapshot()
     {
         Store = SnapshotStore.Open(new SnapshotStoreOptions { DatabasePath = ":memory:" });
@@ -18,6 +29,7 @@ public sealed class TestSnapshot : IDisposable
             new SnapshotColumn("Quantity", "INTEGER"),
         ]);
         Store.EnsureTable(Table);
+        deferDirectory = Path.Combine(Path.GetTempPath(), "hawta-defer", Guid.NewGuid().ToString("N"));
     }
 
     /// <summary>Stages rows (key, code, quantity) with the uniform row-hash recipe, then merges.</summary>
@@ -48,6 +60,9 @@ public sealed class TestSnapshot : IDisposable
         IEnumerable<(string Key, string Code, int Quantity)> rows,
         DateTime? sourceModified = null)
     {
+        if (DeferBeforeEachStage && Store.ReadResidency(Table.Name) == SnapshotResidency.Resident)
+            DeferCurrentRows();
+
         var staging = Store.CreateStagingTable(Table);
 
         foreach (var row in rows)
@@ -64,6 +79,27 @@ public sealed class TestSnapshot : IDisposable
         return staging;
     }
 
+    /// <summary>
+    /// Simulates the cold-start skip against the table's CURRENT contents: every row (live and
+    /// tombstoned — the published copy is a full copy) goes out to a parquet file, the resident
+    /// rows are deleted, and the table is marked Deferred pointing at that file. The next merge
+    /// hydrates it back. An empty table defers too — a published entry with zero rows is
+    /// legitimate, which is exactly why residency is a recorded state and not a row count.
+    /// </summary>
+    public void DeferCurrentRows()
+    {
+        Directory.CreateDirectory(deferDirectory);
+        var file = Path.Combine(deferDirectory, $"defer-{deferSequence++}.parquet").Replace('\\', '/');
+        Store.Execute(
+            $"""
+            COPY (SELECT * FROM {Table.QualifiedName} ORDER BY "_PrimaryKey")
+            TO '{file.Replace("'", "''")}' (FORMAT parquet)
+            """);
+        var rows = Scalar<long>($"SELECT count(*) FROM {Table.QualifiedName}");
+        Store.Execute($"DELETE FROM {Table.QualifiedName}");
+        Store.MarkTableDeferred(Table.Name, "test-defer.json", [file], rows, contentHashes: []);
+    }
+
     public T Scalar<T>(string sql, params object?[] parameters) =>
         (T)Convert.ChangeType(Store.ExecuteScalar(sql, parameters)!, typeof(T));
 
@@ -73,5 +109,9 @@ public sealed class TestSnapshot : IDisposable
         return value is DBNull ? null : value;
     }
 
-    public void Dispose() => Store.Dispose();
+    public void Dispose()
+    {
+        Store.Dispose();
+        try { Directory.Delete(deferDirectory, recursive: true); } catch { }
+    }
 }

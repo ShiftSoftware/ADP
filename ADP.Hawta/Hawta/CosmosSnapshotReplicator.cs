@@ -167,7 +167,16 @@ public sealed record ReplicationDrainResult(
     int MaxRowsPerBookkeepingTransaction = 0,
     int GroupsRead = 0,
     int SourceRowsLoaded = 0,
-    int GroupsRecomputed = 0);
+    int GroupsRecomputed = 0,
+    /// <summary>
+    /// Rows still unreplicated but past the attempt limit — invisible to the drain's own
+    /// dirty predicate, so a drain can report an empty queue while these sit permanently
+    /// undelivered. Surfaced per drain because the same rows also block a cold start from
+    /// deferring the table (the manifest's pending count is attempts-blind on purpose):
+    /// one poison row silently costs the table its deferral until an operator resets the
+    /// ledger or the source ships a content change.
+    /// </summary>
+    int DeadLettered = 0);
 
 /// <summary>
 /// The snapshot → Cosmos pump. Loads a batch through the dirty predicate (capturing each
@@ -352,11 +361,18 @@ public sealed class CosmosSnapshotReplicator
             }
         }
 
+        // Counted at drain end so failures that just crossed the attempt limit are included.
+        // One cheap scan; what it buys is the settled-vs-drained divergence being visible in
+        // the run report instead of only in a cold start that unexpectedly loads the table.
+        cancellationToken.ThrowIfCancellationRequested();
+        var deadLettered = (int)store.CountDeadLetteredRows(options.Table);
+
         return new ReplicationDrainResult(
             runId, options.DryRun, batches, rowsRead, upserted, deleted, excluded, failed, drained, stopped,
             remoteAttempted, remoteFailed, highWater, requestCharge, throttled, retryAfter, cosmosTime,
             bookkeepingTime, bookkeepingTransactions, bookkeepingOutcomeRows,
-            maxRowsPerBookkeepingTransaction, groupsRead, sourceRowsLoaded, groupsRecomputed);
+            maxRowsPerBookkeepingTransaction, groupsRead, sourceRowsLoaded, groupsRecomputed,
+            deadLettered);
     }
 
     private async Task<ReplicationRunResult> RunOnceCoreAsync(

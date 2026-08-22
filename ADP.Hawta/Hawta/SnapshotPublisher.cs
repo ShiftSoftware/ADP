@@ -161,8 +161,22 @@ public static class SnapshotPublisher
             table => table.Name,
             table => BuildSourceCatalog(options, table),
             StringComparer.OrdinalIgnoreCase);
+
+        // Residency read once per table, up front: the deferred branch below has to run
+        // BEFORE the contract scan and BEFORE any signature read, because both are questions
+        // about resident rows and a Deferred table has none — its committed copy is the
+        // answer, and reading (0, empty-hash) instead would send it down the export path,
+        // which for a deferred table means empty parquet over the copy of record.
+        var residency = options.Tables.ToDictionary(
+            table => table.Name,
+            table => store.ReadResidency(table.Name),
+            StringComparer.OrdinalIgnoreCase);
+
         foreach (var table in options.Tables)
-            EnsureSourceVersionContract(store, table, sourceCatalogs[table.Name]);
+        {
+            if (residency[table.Name] == SnapshotResidency.Resident)
+                EnsureSourceVersionContract(store, table, sourceCatalogs[table.Name]);
+        }
         EnsureGlobalSequenceContract(store, options.Tables);
 
         var exported = new List<string>();
@@ -173,11 +187,62 @@ public static class SnapshotPublisher
         foreach (var table in options.Tables)
         {
             var sourceCatalog = sourceCatalogs[table.Name];
-            var signature = ReadSignature(store, table);
             var baselineEntry = baseline.GetValueOrDefault(table.Name);
 
-            if (baselineEntry is not null && !CatalogsEqual(baselineEntry.SourceCatalog, sourceCatalog))
+            // The catalog a carried entry keeps: identity fields refreshed from the live
+            // configuration (the incumbent reuse behaviour — a renamed source key must reach
+            // the manifest), content identities grafted from the baseline (they describe rows
+            // this cycle did not touch, and only an export may recompute them).
+            var carriedCatalog = baselineEntry is null
+                ? sourceCatalog
+                : CarryContentHashes(sourceCatalog, baselineEntry.SourceCatalog);
+
+            if (baselineEntry is not null && !CatalogsEqual(baselineEntry.SourceCatalog, carriedCatalog))
                 catalogChanged = true;
+
+            // ---- Deferred branch — before any signature read, keyed on recorded state ----
+            // The committed copy IS this table's current state, so its baseline entry is
+            // carried forward verbatim: location, row count, state hash, replication-pending
+            // count. No signature read, no contract scan, no export. Riding the same manifest
+            // mechanics as the reuse path is what makes the entry survive rewrites triggered
+            // by other tables. Force does not override this branch: forcing a re-export needs
+            // resident rows, and hydrating is the caller's decision, never the publisher's.
+            if (residency[table.Name] == SnapshotResidency.Deferred)
+            {
+                if (baselineEntry is null)
+                {
+                    // A deferred table with nothing to carry cannot be published at all —
+                    // exporting would write empty parquet over the copy of record. This state
+                    // is a contradiction (deferral requires a committed entry), so fail the
+                    // publish loudly; a restart re-evaluates residency at cold start.
+                    throw new InvalidOperationException(
+                        $"Table '{table.Name}' is Deferred but the previous manifest carries no entry to " +
+                        "carry forward. Refusing to publish: exporting a deferred table would overwrite " +
+                        "the only copy of its rows with an empty file. Restart the agent so cold start " +
+                        "re-evaluates residency.");
+                }
+
+                // The reused path re-verifies intactness every publish, and a deferred entry
+                // needs that MORE: the old self-heal (re-export from resident rows) does not
+                // exist here, so a rotted copy of record must be discovered while older
+                // manifests still hold a fallback — not when hydration needs it. Measured at
+                // a footer read + row count (0.12 MiB / 2 requests on the large catalog
+                // table) — cheap at any cadence.
+                if (!ParquetIsIntact(store, baselineEntry.Resolve(publishStore.Root), baselineEntry.RowCount))
+                {
+                    throw new InvalidDataException(
+                        $"Table '{table.Name}' is Deferred and its published copy " +
+                        $"('{string.Join(", ", baselineEntry.Location.Paths)}') is missing or torn. " +
+                        "Refusing to publish rather than re-referencing a bad copy of record. " +
+                        "Restart the agent: cold start falls back to older manifests, then to sources.");
+                }
+
+                reused.Add(table.Name);
+                manifest.Add(baselineEntry with { SourceCatalog = carriedCatalog });
+                continue;
+            }
+
+            var signature = ReadSignature(store, table);
 
             // Reuse needs more than signature equality: the baseline's files must still be
             // readable at the expected row count (a torn file from a crash would otherwise be
@@ -192,8 +257,11 @@ public static class SnapshotPublisher
 
             if (upToDate)
             {
+                // An unchanged signature covers every exported column of every row, so the
+                // baseline's replication-pending count and content identities still hold and
+                // ride along unrecomputed.
                 reused.Add(table.Name);
-                manifest.Add(baselineEntry! with { SourceCatalog = sourceCatalog });
+                manifest.Add(baselineEntry! with { SourceCatalog = carriedCatalog });
                 continue;
             }
 
@@ -211,7 +279,8 @@ public static class SnapshotPublisher
                 DataAsOf: signature.MaxLastModified,
                 ExportedAt: stamp)
             {
-                SourceCatalog = sourceCatalog,
+                SourceCatalog = ComputeContentHashes(store, table, options, sourceCatalog),
+                ReplicationPending = ReadReplicationPendingRaw(store, table, options),
             });
         }
 
@@ -279,6 +348,84 @@ public static class SnapshotPublisher
         IReadOnlyList<PublishedSourceCatalogEntry> right) =>
         JsonSerializer.Serialize(left ?? [], PublishedSnapshot.SerializerOptions)
             .Equals(JsonSerializer.Serialize(right, PublishedSnapshot.SerializerOptions), StringComparison.Ordinal);
+
+    /// <summary>
+    /// Grafts the baseline's per-scope content identities onto a freshly built catalog.
+    /// Matched by scope, not by key: the scope is the durable identity of the rows a hash
+    /// describes (a source key renamed in configuration keeps the same rows), matched with the
+    /// same comparer the rest of the publisher uses for scopes.
+    /// </summary>
+    private static IReadOnlyList<PublishedSourceCatalogEntry> CarryContentHashes(
+        IReadOnlyList<PublishedSourceCatalogEntry> fresh,
+        IReadOnlyList<PublishedSourceCatalogEntry>? baseline) =>
+        [.. fresh.Select(entry => entry with
+        {
+            ContentHash = (baseline ?? []).FirstOrDefault(previous =>
+                NullableOrdinalIgnoreCaseComparer.Instance.Equals(previous.SourceScope, entry.SourceScope))
+                ?.ContentHash,
+        })];
+
+    /// <summary>
+    /// Computes each scope's content identity from its LIVE resident rows, for scopes owned by
+    /// a file source. Live rows only: the identity is compared against a staged file at ingest
+    /// time, and a file never delivers the rows it stopped delivering (the tombstones). Only
+    /// file-source scopes because only the file gate's false fires consume it today — a SQL or
+    /// Cosmos source merges every tick and its table can never defer; extend when another
+    /// source kind learns to.
+    /// </summary>
+    private static IReadOnlyList<PublishedSourceCatalogEntry> ComputeContentHashes(
+        SnapshotStore store,
+        SnapshotTableDefinition table,
+        SnapshotPublishOptions options,
+        IReadOnlyList<PublishedSourceCatalogEntry> sourceCatalog)
+    {
+        var fileSourceScopes = options.Sources
+            .Where(source => source.Table.Name.Equals(table.Name, StringComparison.OrdinalIgnoreCase)
+                             && source.FileIngestion is not null)
+            .Select(source => source.SourceScope)
+            .ToHashSet(NullableOrdinalIgnoreCaseComparer.Instance);
+
+        return [.. sourceCatalog.Select(entry => entry with
+        {
+            ContentHash = fileSourceScopes.Contains(entry.SourceScope)
+                ? Convert.ToString(store.ExecuteScalar(
+                    $"""
+                    SELECT {SnapshotContentHash.AggregateSql}
+                    FROM {table.QualifiedName}
+                    WHERE "{BookkeepingColumns.Deleted}" = false
+                      AND "{BookkeepingColumns.SourceScope}" IS NOT DISTINCT FROM ?
+                    """,
+                    entry.SourceScope))
+                : null,
+        })];
+    }
+
+    /// <summary>
+    /// The raw replication-pending count for the manifest entry, or null for a table with no
+    /// Cosmos family. Deliberately NOT <see cref="SnapshotStore.DirtyPredicate"/>: that ends
+    /// with an attempts clause, so a dead-lettered row leaves it while still unreplicated —
+    /// and a dead-lettered row must keep blocking the cold-start skip (it loads, stays
+    /// visible, and waits for a reset or a content change). Recorded raw regardless of whether
+    /// replication is currently enabled; the cold-start decision applies the enabled filter
+    /// with the configuration in force THEN, which is what makes flipping replication on later
+    /// just work: the flip restarts the process, and that cold start sees the full backlog.
+    /// </summary>
+    private static long? ReadReplicationPendingRaw(
+        SnapshotStore store, SnapshotTableDefinition table, SnapshotPublishOptions options)
+    {
+        var hasCosmosFamily = options.Sources.Any(source =>
+            source.Table.Name.Equals(table.Name, StringComparison.OrdinalIgnoreCase)
+            && source.Families is { Count: > 0 });
+        if (!hasCosmosFamily)
+            return null;
+
+        return Convert.ToInt64(store.ExecuteScalar(
+            $"""
+            SELECT count(*) FROM {table.QualifiedName}
+            WHERE "{BookkeepingColumns.LastReplicationDate}" IS NULL
+               OR "{BookkeepingColumns.LastReplicationDate}" < "{BookkeepingColumns.ReplicationModified}"
+            """));
+    }
 
     private static void EnsureSourceVersionContract(
         SnapshotStore store,
@@ -437,9 +584,32 @@ public static class SnapshotPublisher
 
     // ---- Export ------------------------------------------------------------------------------
 
+    /// <summary>
+    /// The last stand of rule "a non-resident table can never be exported". The deferred
+    /// branch in the publish loop is what normally keeps a Deferred table away from here; this
+    /// guard is the backstop that survives any future reordering of that loop, because the
+    /// failure it prevents is the worst one this design has: exporting a Deferred table writes
+    /// well-formed EMPTY parquet over the only copy of its rows, and retention then rotates
+    /// the truth out a few publishes later. Reaching this throw means a publisher bug, never
+    /// an operational condition — there is no remediation except fixing the code.
+    /// </summary>
+    internal static void EnsureResidentForExport(SnapshotStore store, SnapshotTableDefinition table)
+    {
+        if (store.ReadResidency(table.Name) == SnapshotResidency.Deferred)
+        {
+            throw new InvalidOperationException(
+                $"Table '{table.Name}' is Deferred — its rows live only in the published copy — and it " +
+                "reached parquet export. Exporting would overwrite the copy of record with an empty " +
+                "file. The publisher's deferred branch should have carried its manifest entry instead; " +
+                "this is a publisher bug.");
+        }
+    }
+
     private static void ExportParquet(SnapshotStore store, SnapshotTableDefinition table,
         SnapshotPublishOptions options, PublishStore publishStore, string parquetPath)
     {
+        EnsureResidentForExport(store, table);
+
         var sortColumns = options.SortColumnsFor(table);
         var orderBy = string.Join(", ", sortColumns.Select(c => $"\"{c}\""));
         var columns = string.Join(", ",

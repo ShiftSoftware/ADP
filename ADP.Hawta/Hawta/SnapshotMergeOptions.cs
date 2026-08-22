@@ -180,6 +180,16 @@ public enum SnapshotMergeStatus
     /// a healthy idle feed.</para>
     /// </summary>
     SkippedSourceUnchanged,
+    /// <summary>
+    /// The gate said the file changed, but the staged content is identical to what the table's
+    /// Deferred published copy already holds for this scope — a timestamp refresh or a
+    /// byte-different re-delivery of the same rows. The file WAS read and hashed (that part is
+    /// local and already paid); what was skipped is hydrating the whole published copy back
+    /// just to merge zero changes. Recorded as <c>Skipped:ContentUnchanged</c>, the gate stamp
+    /// is refreshed so the next tick skips at the metadata level again, and the table stays
+    /// Deferred.
+    /// </summary>
+    SkippedContentUnchanged,
 }
 
 /// <param name="PendingDeletes">On <see cref="SnapshotMergeStatus.AbortedMassDelete"/>: how many tombstones the run would have written.</param>
