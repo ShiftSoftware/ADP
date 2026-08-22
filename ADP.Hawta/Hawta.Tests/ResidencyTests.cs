@@ -442,8 +442,14 @@ public sealed class ResidencyTests : IDisposable
         Assert.Equal(2, fx.Entry("Widget").RowCount);
     }
 
-    [Fact]
-    public void ColdStart_TornDeferredCopy_FallsBackToTheOlderManifest()
+    /// <summary>
+    /// Two committed sets: v1 (Widget 2 rows, Gadget 1 row), then v2 (Widget 3 rows,
+    /// Gadget 2 rows) — the estate the fallback-seed shapes below damage in three ways. A
+    /// deferral may only ever stand against the newest manifest BY NAME (the publisher's
+    /// carry-forward baseline); deferring against whichever manifest happened to load would
+    /// wedge every subsequent publish, with "restart the agent" rebuilding the same state.
+    /// </summary>
+    private SourceRegistry TwoPublishes()
     {
         fx.WriteFeed(FeedV1);
         var registry = fx.Registry(fx.FileSource(fx.FileOptions()), fx.GadgetSource());
@@ -453,23 +459,120 @@ public sealed class ResidencyTests : IDisposable
 
         fx.WriteFeed(FeedV2);
         Assert.True(fx.Ingest(fx.Store).Succeeded);
+        fx.MergeGadgets(fx.Store, ("G1", "one"), ("G2", "two"));
         Assert.Equal(SnapshotPublishStatus.Published, fx.Publish(fx.Store, registry).Status);
+        return registry;
+    }
 
-        // Tear the NEWEST Widget parquet; the older manifest still references the first one.
+    [Fact]
+    public void ColdStart_UnreadableNewestManifest_LoadsResident_AndTheNextPublishSelfHeals()
+    {
+        var registry = TwoPublishes();
+
+        // The newest manifest's JSON rots. Nobody can know what it said — and the publisher
+        // resolves its baseline from that manifest by name — so nothing may stay deferred:
+        // everything loads from the older seed.
+        var corrupt = PublishedSnapshot.ResolveNewest(fx.PublishDirectory, ResidencyFixture.SnapshotName)!;
+        File.WriteAllText(corrupt, "{ this is not a manifest");
+
+        using var fresh = fx.ColdStart(registry, out var rebuild);
+
+        Assert.Equal([PublishPath.FileName(corrupt)], rebuild.PublishesSkipped);
+        Assert.Empty(rebuild.TablesDeferred);
+        Assert.Contains("Widget", rebuild.TablesLoaded.Select(t => t.Table));
+        Assert.Equal(SnapshotResidency.Resident, fresh.ReadResidency("Widget"));
+        Assert.Equal(2, ResidencyFixture.Rows(fresh, "Widget")); // the older seed's copy
+
+        // Resident rows restore the pre-residency self-heal: the publisher reads no baseline
+        // out of the corrupt manifest, re-exports everything, and mints a manifest that
+        // outranks the corrupt name — so the NEXT start is back to the good posture.
+        var publish = fx.Publish(fresh, registry);
+        Assert.Equal(SnapshotPublishStatus.Published, publish.Status);
+        Assert.Contains("Widget", publish.TablesExported);
+
+        using var healed = fx.ColdStart(registry, out var second);
+        Assert.Empty(second.PublishesSkipped);
+        Assert.Equal(["Widget"], second.TablesDeferred.Select(t => t.Table));
+    }
+
+    [Fact]
+    public void ColdStart_OwnCopyTornInTheNewestManifest_LoadsResident_AndTheNextPublishReexports()
+    {
+        var registry = TwoPublishes();
+
+        // Tear Widget's own parquet in the NEWEST manifest. Its copy of record is down to one
+        // good older copy — deferring against that copy would leave the publisher throwing on
+        // the torn baseline every cycle, and the recorded copy sweepable once its manifest
+        // ages out. Loading resident lets the next publish mint a fresh export instead:
+        // restoring redundancy is the point, not a consolation.
         var newest = fx.Entry("Widget").Resolve(fx.PublishDirectory).Single();
         File.WriteAllBytes(newest, [9, 9, 9]);
 
         using var fresh = fx.ColdStart(registry, out var rebuild);
 
         Assert.Single(rebuild.PublishesSkipped);
-        Assert.Equal(["Widget"], rebuild.TablesDeferred.Select(t => t.Table));
-        Assert.Equal(2, rebuild.TablesDeferred.Single().Rows); // v1's two rows, not v2's three
+        Assert.Empty(rebuild.TablesDeferred);
+        Assert.Contains("Widget", rebuild.TablesLoaded.Select(t => t.Table));
+        Assert.Equal(SnapshotResidency.Resident, fresh.ReadResidency("Widget"));
+        Assert.Equal(2, ResidencyFixture.Rows(fresh, "Widget")); // v1's two rows, not v2's three
 
-        // And the fallback copy is genuinely hydratable.
-        fx.WriteFeed("Code,Quantity\nA,9\n");
+        var publish = fx.Publish(fresh, registry);
+        Assert.Equal(SnapshotPublishStatus.Published, publish.Status);
+        Assert.Contains("Widget", publish.TablesExported);
+        Assert.Equal(2, fx.Entry("Widget").RowCount);
+
+        using var healed = fx.ColdStart(registry, out var second);
+        Assert.Empty(second.PublishesSkipped);
+        Assert.Equal(["Widget"], second.TablesDeferred.Select(t => t.Table));
+    }
+
+    [Fact]
+    public void ColdStart_SiblingTear_DefersAgainstTheNewestManifestsOwnEntry_ZeroLoad()
+    {
+        var registry = TwoPublishes();
+        var newestManifest = PublishedSnapshot.ResolveNewest(fx.PublishDirectory, ResidencyFixture.SnapshotName)!;
+
+        // Tear the SIBLING's newest parquet only. The estate must seed from the older set,
+        // but the newest manifest still supplies Widget's own entry intact — and that entry
+        // is what the publisher will carry by name. Deferring against it keeps the zero-load
+        // win, and record and baseline agree by construction.
+        var gadgetNewest = fx.Entry("Gadget").Resolve(fx.PublishDirectory).Single();
+        File.WriteAllBytes(gadgetNewest, [9, 9, 9]);
+
+        using var fresh = fx.ColdStart(registry, out var rebuild);
+
+        Assert.Single(rebuild.PublishesSkipped);
+        Assert.Equal(["Widget"], rebuild.TablesDeferred.Select(t => t.Table));
+        Assert.Equal(3, rebuild.TablesDeferred.Single().Rows); // v2's copy, not the seed's v1
+        Assert.Equal(["Gadget"], rebuild.TablesLoaded.Select(t => t.Table));
+        Assert.Equal(1, ResidencyFixture.Rows(fresh, "Gadget")); // the older intact sibling copy
+
+        // The record IS the newest manifest's entry: name, resolved paths, row count.
+        var record = fresh.ReadDeferredTableRecord("Widget")!;
+        Assert.Equal(PublishPath.FileName(newestManifest), record.ManifestFile);
+        Assert.Equal(fx.Entry("Widget").Resolve(fx.PublishDirectory), record.ParquetPaths);
+
+        // The gate stamps came from the newest manifest too — the feed is unchanged since
+        // the newest publish, so the deferral holds without even a content-hash read.
+        Assert.Equal(SnapshotMergeStatus.SkippedSourceUnchanged, fx.Ingest(fresh).Status);
+
+        // The next publish agrees by construction: Widget's entry carries, the torn sibling
+        // re-exports, nothing throws.
+        var publish = fx.Publish(fresh, registry);
+        Assert.Equal(SnapshotPublishStatus.Published, publish.Status);
+        Assert.Contains("Widget", publish.TablesReused);
+        Assert.Contains("Gadget", publish.TablesExported);
+        Assert.Equal(3, fx.Entry("Widget").RowCount);
+
+        // And hydration reads the NEWEST paths: a real change merges against v2's three rows
+        // (hydrating the seed's v1 copy would have to re-insert C).
+        fx.WriteFeed("Code,Quantity\nA,1\nB,5\nC,4\n");
         var merge = fx.Ingest(fresh);
         Assert.True(merge.Succeeded);
+        Assert.Equal(0, merge.RowsInserted);
+        Assert.Equal(1, merge.RowsUpdated);
         Assert.Equal(SnapshotResidency.Resident, fresh.ReadResidency("Widget"));
+        Assert.Equal(3, ResidencyFixture.Rows(fresh, "Widget"));
     }
 
     [Fact]
