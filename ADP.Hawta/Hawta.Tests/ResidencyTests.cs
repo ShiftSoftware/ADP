@@ -894,6 +894,51 @@ public sealed class ResidencyTests : IDisposable
         Assert.NotNull(fx.Entry("Widget").SourceCatalog.Single().ContentHash);
     }
 
+    [Fact]
+    public void ANonzeroReplicationPending_SurvivesDeferralAndAManifestRewrite_ByteForByte()
+    {
+        // The exact entry the flip restart depends on: a table deferred with a recorded
+        // backlog (pump off, so pending is raw and nonzero). A manifest rewrite triggered by
+        // a sibling must carry the count untouched — a zeroed or dropped field here would
+        // wrongly defer the whole backlog at the flip restart.
+        fx.WriteFeed(FeedV1);
+        var families = new List<CosmosFamilyMapping>
+        {
+            new()
+            {
+                Family = "Widget", Database = "TestDb", Container = "Widgets",
+                Map = row => new CosmosDocument { Id = row.PrimaryKey, PartitionKey = [row.PrimaryKey], Body = new Dictionary<string, object?> { ["Code"] = row.Values["Code"] } },
+            },
+        };
+        var registry = fx.Registry(
+            fx.FileSource(fx.FileOptions(), families: families, replicationEnabled: false),
+            fx.GadgetSource());
+        Assert.True(fx.Ingest(fx.Store).Succeeded);
+        fx.MergeGadgets(fx.Store, ("G1", "one"));
+        Assert.Equal(SnapshotPublishStatus.Published, fx.Publish(fx.Store, registry).Status);
+        Assert.Equal(2, fx.Entry("Widget").ReplicationPending);
+
+        using var fresh = fx.ColdStart(registry, out var rebuild);
+        Assert.Equal(["Widget"], rebuild.TablesDeferred.Select(t => t.Table));
+        var before = fx.Entry("Widget");
+
+        // The residency record carries the count too — it is what the loop's flip warning
+        // reads on a warm reopen, when no manifest is being consulted.
+        Assert.Equal(2, fresh.ReadDeferredTableRecord("Widget")!.ReplicationPending);
+
+        // A sibling change forces a NEW manifest; the deferred entry rides into it verbatim.
+        fx.MergeGadgets(fresh, ("G1", "one"), ("G2", "two"));
+        var publish = fx.Publish(fresh, registry);
+        Assert.Equal(SnapshotPublishStatus.Published, publish.Status);
+        Assert.Equal(["Gadget"], publish.TablesExported);
+
+        var after = fx.Entry("Widget");
+        Assert.Equal(2, after.ReplicationPending);
+        Assert.Equal(
+            JsonSerializer.Serialize(before, PublishedSnapshot.SerializerOptions),
+            JsonSerializer.Serialize(after, PublishedSnapshot.SerializerOptions));
+    }
+
     // ---- Callers that must refuse loudly ------------------------------------------------------
 
     [Fact]
@@ -924,6 +969,39 @@ public sealed class ResidencyTests : IDisposable
             CancellationToken.None));
 
         Assert.Contains("Deferred", exception.Message);
+    }
+
+    [Fact]
+    public async Task DryRunPump_RefusesADeferredTable_InsteadOfReadingVacuouslyClean()
+    {
+        // A deferred table's dirty queue reads as empty because the rows are not resident —
+        // a dry-run that emitted zero intended ops would be read as "all settled" while the
+        // manifest records a backlog. It must refuse with the real reason, like recon does,
+        // and leave any previous run's recon evidence alone.
+        using var snapshot = new TestSnapshot();
+        snapshot.Merge([("K1", "alpha", 1), ("K2", "beta", 2)]); // a real backlog exists…
+        snapshot.DeferCurrentRows();                             // …and then the table defers
+
+        var replicator = new CosmosSnapshotReplicator(snapshot.Store, cosmosClient: null);
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => replicator.RunOnceAsync(
+            new CosmosSnapshotReplicatorOptions
+            {
+                Table = snapshot.Table,
+                Families =
+                [
+                    new CosmosFamilyMapping
+                    {
+                        Family = "Widget", Database = "TestDb", Container = "Widgets",
+                        Map = row => new CosmosDocument { Id = row.PrimaryKey, PartitionKey = [row.PrimaryKey], Body = new Dictionary<string, object?> { ["Code"] = row.Values["Code"] } },
+                    },
+                ],
+                DryRun = true,
+            },
+            TestContext.Current.CancellationToken));
+
+        Assert.Contains("Deferred", exception.Message);
+        Assert.Equal(0L, Convert.ToInt64(snapshot.Store.ExecuteScalar(
+            "SELECT count(*) FROM meta.ReconOps"))); // nothing pruned, nothing emitted
     }
 
     // ---- Qualification ------------------------------------------------------------------------

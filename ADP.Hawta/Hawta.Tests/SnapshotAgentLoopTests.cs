@@ -425,4 +425,224 @@ public sealed class SnapshotAgentLoopTests : IDisposable
 
         Assert.Throws<InvalidOperationException>(() => Loop(registry, dryRun: true));
     }
+
+    // ---- The warm-reopen replication flip -----------------------------------------------------
+    // The load/skip decision runs ONLY at cold start. A table deferred with a recorded backlog
+    // while replication was OFF stays Deferred through a WARM restart whose configuration turns
+    // replication ON — the pump drains an empty table every cycle, reporting clean, while the
+    // owed rows sit in the published copy indefinitely. The loop cannot fix the state safely;
+    // it must refuse to be quiet about it.
+
+    private static readonly CosmosFamilyMapping FlipFamily = new()
+    {
+        Family = "Widget",
+        Database = "TestDb",
+        Container = "Widgets",
+        Map = row => new CosmosDocument
+        {
+            Id = row.PrimaryKey,
+            PartitionKey = [row.PrimaryKey],
+            Body = new Dictionary<string, object?> { ["Code"] = row.Values["Code"] },
+        },
+    };
+
+    private FileSnapshotIngestorOptions FlipFeedOptions(string feedPath, SourceChangeGate gate) => new()
+    {
+        Table = Table,
+        FilePath = feedPath,
+        LogicalKey = FileLogicalKey.Single("Code"),
+        ChangeGate = gate,
+        MergeOptions = new SnapshotMergeOptions { Source = "file-widget", DeletesEnabled = true },
+    };
+
+    private SourceRegistry FlipRegistry(FileSnapshotIngestorOptions options, bool replicationEnabled) =>
+        new(
+        [
+            new SnapshotSource
+            {
+                Key = "file-widget",
+                RecordIdentity = SourceRecordIdentityDescriptor.LogicalKey("Code"),
+                Table = Table,
+                Cadence = TimeSpan.FromMinutes(1),
+                Ingest = context => FileSnapshotIngestor.Ingest(context.Store, options, context.FileMetadata),
+                FileIngestion = options,
+                Families = [FlipFamily],
+                ReplicationEnabled = replicationEnabled,
+            },
+        ]);
+
+    /// <summary>Ingest + publish on a throwaway primary store so the loop has a seed to cold-start from.</summary>
+    private void SeedPublishedSet(FileSnapshotIngestorOptions options, SourceRegistry registry, bool settle)
+    {
+        using var primary = SnapshotStore.Open(new SnapshotStoreOptions { DatabasePath = ":memory:" });
+        primary.EnsureTable(Table);
+        Assert.True(FileSnapshotIngestor.Ingest(
+            primary, options, new DirectoryListingFileMetadataProbe()).Succeeded);
+        if (settle)
+        {
+            foreach (var row in primary.ReadDirtyRows(Table))
+                primary.MarkReplicated(Table, row.PrimaryKey, row.CapturedLastModified, "{\"id\":\"x\"}");
+        }
+
+        Assert.Equal(SnapshotPublishStatus.Published, SnapshotPublisher.Publish(primary, new SnapshotPublishOptions
+        {
+            PublishDirectory = PublishDir,
+            SnapshotName = "agent-test",
+            Tables = registry.Tables,
+            Sources = registry.Sources,
+        }).Status);
+    }
+
+    [Fact]
+    public async Task AWarmReplicationFlip_OnADeferredBackloggedTable_WarnsLoudly_EveryCycle()
+    {
+        var feed = Path.Combine(root, "widgets.csv");
+        File.WriteAllText(feed, "Code,Quantity\nA,1\nB,2\n");
+        var options = FlipFeedOptions(feed, new SourceChangeGate());
+        SeedPublishedSet(options, FlipRegistry(options, replicationEnabled: false), settle: false);
+
+        // Cold start with replication OFF: pending is 2, but nothing is enabled, so the table
+        // defers — correctly — with the owed count recorded. No warning yet.
+        using (var cold = Loop(FlipRegistry(options, replicationEnabled: false)))
+            await cold.RunCycleAsync(TestContext.Current.CancellationToken);
+        Assert.DoesNotContain(events, e => e.Message.Contains("owed to the replication pump"));
+
+        // The flip ships as a bare config edit on a warm instance: the write DB survives, so
+        // no cold start runs and nothing re-evaluates the skip. DryRun here is the dark-launch
+        // posture — the warning must fire whether or not the pump actually runs.
+        events.Clear();
+        using var warm = Loop(FlipRegistry(options, replicationEnabled: true), dryRun: true);
+        await warm.RunCycleAsync(TestContext.Current.CancellationToken);
+        clock.Advance(TimeSpan.FromMinutes(2));
+        await warm.RunCycleAsync(TestContext.Current.CancellationToken);
+
+        var warnings = events.Where(e =>
+            e.Level == SnapshotAgentEventLevel.Warning
+            && e.Message.Contains("owed to the replication pump")).ToList();
+        Assert.Equal(2, warnings.Count); // every cycle, deliberately — this state is never fine
+        Assert.Contains("Cold-start the agent", warnings[0].Message);
+        Assert.Contains("2 row(s)", warnings[0].Message);
+    }
+
+    [Fact]
+    public async Task TheFlipWarning_StaysQuiet_WhenNothingIsOwed()
+    {
+        var feed = Path.Combine(root, "widgets.csv");
+        File.WriteAllText(feed, "Code,Quantity\nA,1\nB,2\n");
+        var options = FlipFeedOptions(feed, new SourceChangeGate());
+        SeedPublishedSet(options, FlipRegistry(options, replicationEnabled: false), settle: true);
+
+        // Same flip, but the published copy owes nothing (pending 0): deferral is exactly
+        // right and the warm flip changes nothing — the warning must not cry wolf.
+        using (var cold = Loop(FlipRegistry(options, replicationEnabled: false)))
+            await cold.RunCycleAsync(TestContext.Current.CancellationToken);
+        events.Clear();
+
+        using var warm = Loop(FlipRegistry(options, replicationEnabled: true), dryRun: true);
+        await warm.RunCycleAsync(TestContext.Current.CancellationToken);
+
+        Assert.DoesNotContain(events, e => e.Message.Contains("owed to the replication pump"));
+    }
+
+    // ---- The wipe-on-start posture ------------------------------------------------------------
+    // Production hosts delete the write DB at every process start, so every production start
+    // is a cold start and the warm/cold asymmetry (the flip trap above) disappears there.
+    // These prove the boot sequence that policy depends on: wiped boots converge (the second
+    // one defers again), and a boot that cannot reach the publish tier fails CLEAN — no
+    // half-started empty estate left behind — then completes the full cold start when the
+    // tier returns.
+
+    [Fact]
+    public async Task WipeOnStart_TwoSuccessiveBoots_TheSecondDefersAgain()
+    {
+        var feed = Path.Combine(root, "widgets.csv");
+        File.WriteAllText(feed, "Code,Quantity\nA,1\nB,2\n");
+        var options = FlipFeedOptions(feed, new SourceChangeGate());
+        var registry = FlipRegistry(options, replicationEnabled: false);
+        SeedPublishedSet(options, registry, settle: true);
+
+        for (var boot = 1; boot <= 2; boot++)
+        {
+            // The wipe: what a production host does before starting the loop.
+            if (File.Exists(WriteDbPath + ".wal")) File.Delete(WriteDbPath + ".wal");
+            if (File.Exists(WriteDbPath)) File.Delete(WriteDbPath);
+
+            events.Clear();
+            using (var loop = Loop(registry))
+            {
+                var cycle = await loop.RunCycleAsync(TestContext.Current.CancellationToken);
+                Assert.True(cycle.ColdStartRebuild);
+                Assert.Equal(SnapshotMergeStatus.SkippedSourceUnchanged, cycle.Sources.Single().Merge!.Status);
+                Assert.Equal(SnapshotPublishStatus.SkippedNoChanges, cycle.Publish!.Status);
+            }
+
+            Assert.Contains(events, e => e.Message.Contains("stay deferred to the published copy"));
+            Assert.DoesNotContain(events, e => e.Level == SnapshotAgentEventLevel.Error);
+
+            using var store = SnapshotStore.Open(new SnapshotStoreOptions { DatabasePath = WriteDbPath });
+            Assert.Equal(SnapshotResidency.Deferred, store.ReadResidency("Widget"));
+        }
+    }
+
+    /// <summary>Delegates to a real local store; EnsureReady throws while the outage is armed.</summary>
+    private sealed class OutageStore(PublishStore inner) : PublishStore
+    {
+        public bool Armed { get; set; } = true;
+
+        public override string Root => inner.Root;
+        public override void EnsureReady()
+        {
+            if (Armed)
+                throw new IOException("The publish tier is unreachable (simulated outage).");
+            inner.EnsureReady();
+        }
+
+        public override IReadOnlyList<PublishEntry> List(string? relativePrefix = null) => inner.List(relativePrefix);
+        public override bool Exists(string location) => inner.Exists(location);
+        public override string ReadAllText(string location) => inner.ReadAllText(location);
+        public override void WriteAllText(string location, string content) => inner.WriteAllText(location, content);
+        public override PendingCommit PrepareCommit(string location, string content) => inner.PrepareCommit(location, content);
+        public override bool Commit(PendingCommit pending) => inner.Commit(pending);
+        public override bool Delete(string location) => inner.Delete(location);
+        public override DateTime? LastWriteUtc(string location) => inner.LastWriteUtc(location);
+        public override bool BulkWriteNeedsStaging => inner.BulkWriteNeedsStaging;
+        public override void PromoteStaged(string stagingLocation, string finalLocation) => inner.PromoteStaged(stagingLocation, finalLocation);
+        public override void EnsureFolderFor(string location) => inner.EnsureFolderFor(location);
+    }
+
+    [Fact]
+    public async Task ABootWithTheTierUnreachable_FailsClean_ThenCompletesTheFullColdStart()
+    {
+        var feed = Path.Combine(root, "widgets.csv");
+        File.WriteAllText(feed, "Code,Quantity\nA,1\nB,2\n");
+        var options = FlipFeedOptions(feed, new SourceChangeGate());
+        var registry = FlipRegistry(options, replicationEnabled: false);
+        SeedPublishedSet(options, registry, settle: true);
+
+        var outage = new OutageStore(new LocalPublishStore(PublishDir));
+        using var loop = new SnapshotAgentLoop(new SnapshotAgentOptions
+        {
+            Registry = registry,
+            WriteDatabasePath = WriteDbPath,
+            PublishDirectory = PublishDir,
+            PublishStore = outage,
+            SnapshotName = "agent-test",
+            TimeProvider = clock,
+            OnEvent = events.Add,
+        }, cosmosClient: null);
+
+        // Boot while the tier is down: the cycle fails at store level — and leaves NOTHING.
+        // A surviving empty write DB would make the next cycle a "warm" open over an empty
+        // all-resident estate, whose first publish would paper the real set with empties.
+        await Assert.ThrowsAsync<IOException>(() => loop.RunCycleAsync(TestContext.Current.CancellationToken));
+        Assert.False(File.Exists(WriteDbPath));
+
+        // The tier returns: the SAME loop's next cycle performs the complete cold start.
+        outage.Armed = false;
+        var cycle = await loop.RunCycleAsync(TestContext.Current.CancellationToken);
+
+        Assert.True(cycle.ColdStartRebuild);
+        Assert.Contains(events, e => e.Message.Contains("stay deferred to the published copy"));
+        Assert.Equal(SnapshotPublishStatus.SkippedNoChanges, cycle.Publish!.Status);
+    }
 }

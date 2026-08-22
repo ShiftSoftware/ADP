@@ -89,9 +89,24 @@ public sealed class SnapshotStore : IDisposable
         // Never interpolated into a log or an exception message — this value carries the account
         // key or SAS. DuckDB has no parameter binding for CREATE SECRET, so it is escaped instead.
         command.CommandText =
-            $"CREATE OR REPLACE SECRET hawta_publish (TYPE azure, CONNECTION_STRING '{azureConnectionString.Replace("'", "''")}')";
+            $"CREATE OR REPLACE SECRET hawta_publish (TYPE azure, CONNECTION_STRING '{ExpandDevelopmentStorage(azureConnectionString).Replace("'", "''")}')";
         command.ExecuteNonQuery();
     }
+
+    /// <summary>
+    /// The local storage emulator's shorthand, expanded to the explicit form DuckDB needs.
+    /// The .NET SDK resolves <c>UseDevelopmentStorage=true</c> internally; DuckDB's azure
+    /// extension does not, so a host feeding both halves from one configured value would
+    /// authenticate the SDK half and fail the DuckDB half at the first parquet touch. The
+    /// account name, key, and endpoint below are the emulator's fixed, publicly documented
+    /// development credentials — not a secret.
+    /// </summary>
+    internal static string ExpandDevelopmentStorage(string connectionString) =>
+        connectionString.Trim().Equals("UseDevelopmentStorage=true", StringComparison.OrdinalIgnoreCase)
+            ? "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;" +
+              "AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;" +
+              "BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;"
+            : connectionString;
 
     private void Bootstrap(int expectedSchemaVersion)
     {
@@ -261,6 +276,7 @@ public sealed class SnapshotStore : IDisposable
                 "ManifestFile" VARCHAR,
                 "ParquetPaths" VARCHAR,
                 "RowCount" BIGINT,
+                "ReplicationPending" BIGINT,
                 "RecordedAtUtc" TIMESTAMP NOT NULL
             )
             """);
@@ -645,7 +661,7 @@ public sealed class SnapshotStore : IDisposable
         using var command = Connection.CreateCommand();
         command.CommandText =
             """
-            SELECT "ManifestFile", "ParquetPaths", "RowCount"
+            SELECT "ManifestFile", "ParquetPaths", "RowCount", "ReplicationPending"
             FROM meta.TableResidency
             WHERE "TableName" = ? AND "Residency" = 'Deferred'
             """;
@@ -660,7 +676,9 @@ public sealed class SnapshotStore : IDisposable
         var paths = System.Text.Json.JsonSerializer.Deserialize<List<string>>(reader.GetString(1))
             ?? throw new InvalidDataException(
                 $"Deferred record for table '{tableName}' carries no parquet path list.");
-        return new DeferredTableRecord(tableName, reader.GetString(0), paths, reader.GetInt64(2));
+        return new DeferredTableRecord(
+            tableName, reader.GetString(0), paths, reader.GetInt64(2),
+            reader.IsDBNull(3) ? null : reader.GetInt64(3));
     }
 
     /// <summary>
@@ -673,7 +691,8 @@ public sealed class SnapshotStore : IDisposable
         string manifestFile,
         IReadOnlyList<string> parquetPaths,
         long rowCount,
-        IReadOnlyList<(string? SourceScope, string ContentHash)> contentHashes)
+        IReadOnlyList<(string? SourceScope, string ContentHash)> contentHashes,
+        long? replicationPending = null)
     {
         if (parquetPaths.Count == 0)
             throw new ArgumentException(
@@ -681,9 +700,10 @@ public sealed class SnapshotStore : IDisposable
 
         Execute("DELETE FROM meta.TableResidency WHERE \"TableName\" = ?", tableName);
         Execute(
-            "INSERT INTO meta.TableResidency VALUES (?, 'Deferred', ?, ?, ?, ?)",
+            "INSERT INTO meta.TableResidency VALUES (?, 'Deferred', ?, ?, ?, ?, ?)",
             tableName, manifestFile,
-            System.Text.Json.JsonSerializer.Serialize(parquetPaths), rowCount, DateTime.UtcNow);
+            System.Text.Json.JsonSerializer.Serialize(parquetPaths), rowCount, replicationPending,
+            DateTime.UtcNow);
 
         Execute("DELETE FROM meta.DeferredContentHashes WHERE \"TableName\" = ?", tableName);
         foreach (var (sourceScope, contentHash) in contentHashes)
@@ -706,7 +726,7 @@ public sealed class SnapshotStore : IDisposable
     {
         Execute("DELETE FROM meta.TableResidency WHERE \"TableName\" = ?", tableName);
         Execute(
-            "INSERT INTO meta.TableResidency VALUES (?, 'Resident', NULL, NULL, NULL, ?)",
+            "INSERT INTO meta.TableResidency VALUES (?, 'Resident', NULL, NULL, NULL, NULL, ?)",
             tableName, DateTime.UtcNow);
         Execute("DELETE FROM meta.DeferredContentHashes WHERE \"TableName\" = ?", tableName);
     }
@@ -1229,23 +1249,31 @@ public sealed class SnapshotStore : IDisposable
         SnapshotTableDefinition table,
         IReadOnlyList<ReplicationStateOutcome> outcomes)
     {
+        // AttemptCost is 0 for a throttled failure and 1 for everything else. Throttling is
+        // the service applying backpressure, not the row being poison — a sustained burst
+        // (the cutover's initial drain is exactly one) can outlast the SDK's own retry layer,
+        // and if every surfaced 429 burned an attempt, rows would dead-letter for merely
+        // queueing. The error still lands in the ledger so an operator sees WHY the row is
+        // waiting; the row stays dirty and retries next drain, forever if need be — the
+        // attempt limit exists to stop deterministic per-row failures, and a 429 is never one.
         var values = string.Join(", ", outcomes.Select(_ =>
-            "(CAST(? AS VARCHAR), CAST(? AS TIMESTAMP), CAST(? AS VARCHAR))"));
-        var parameters = new List<object?>(outcomes.Count * 3);
+            "(CAST(? AS VARCHAR), CAST(? AS TIMESTAMP), CAST(? AS VARCHAR), CAST(? AS INTEGER))"));
+        var parameters = new List<object?>(outcomes.Count * 4);
         foreach (var outcome in outcomes)
         {
             parameters.Add(outcome.PrimaryKey);
             parameters.Add(AsUtc(outcome.CapturedLastModified));
             parameters.Add(outcome.Error);
+            parameters.Add(outcome.ThrottledFailure ? 0 : 1);
         }
 
         Execute(
             transaction,
             $"""
             UPDATE {table.QualifiedName} AS target
-            SET "{BookkeepingColumns.ReplicationAttempts}" = target."{BookkeepingColumns.ReplicationAttempts}" + 1,
+            SET "{BookkeepingColumns.ReplicationAttempts}" = target."{BookkeepingColumns.ReplicationAttempts}" + outcome."AttemptCost",
                 "{BookkeepingColumns.ReplicationError}" = outcome."Error"
-            FROM (VALUES {values}) AS outcome("PrimaryKey", "CapturedLastModified", "Error")
+            FROM (VALUES {values}) AS outcome("PrimaryKey", "CapturedLastModified", "Error", "AttemptCost")
             WHERE target."{BookkeepingColumns.PrimaryKey}" = outcome."PrimaryKey"
               AND target."{BookkeepingColumns.ReplicationModified}" = outcome."CapturedLastModified"
               AND (target."{BookkeepingColumns.LastReplicationDate}" < target."{BookkeepingColumns.ReplicationModified}"

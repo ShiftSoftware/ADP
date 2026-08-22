@@ -27,16 +27,26 @@ public enum SnapshotResidency
 
 /// <summary>
 /// What the write database remembers about a Deferred table: which manifest its committed
-/// copy came from, the resolved parquet file list, and the row count the copy carries.
-/// Recorded at the cold start that skipped loading; deleted when hydration takes the table
-/// Resident. This is everything hydration needs, so ingest never has to reach the publish
-/// tier's listing or manifest machinery — the store's own connection reads the files directly.
+/// copy came from, the resolved parquet file list, the row count the copy carries, and the
+/// manifest entry's replication-pending count. Recorded at the cold start that skipped
+/// loading; deleted when hydration takes the table Resident. This is everything hydration
+/// needs, so ingest never has to reach the publish tier's listing or manifest machinery —
+/// the store's own connection reads the files directly.
+///
+/// <para><see cref="ReplicationPending"/> exists for one warning: the skip decision runs only
+/// at cold start, so a table deferred while replication was OFF stays Deferred through a WARM
+/// restart that turns replication ON — the pump then drains an empty table every cycle,
+/// reporting clean, while the owed rows sit in the published copy indefinitely. The loop
+/// compares this recorded count against the live configuration each cycle and warns loudly.
+/// Null means the deferring manifest carried no count (no Cosmos family) — nothing can be
+/// owed, so the warning never fires on it.</para>
 /// </summary>
 internal sealed record DeferredTableRecord(
     string TableName,
     string ManifestFile,
     IReadOnlyList<string> ParquetPaths,
-    long RowCount)
+    long RowCount,
+    long? ReplicationPending)
 {
     /// <summary>
     /// A DuckDB relation over the deferred copy's explicit file list — never a glob pattern.

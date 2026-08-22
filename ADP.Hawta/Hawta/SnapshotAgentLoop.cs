@@ -366,6 +366,34 @@ public sealed class SnapshotAgentLoop : IDisposable
                     "cycle; fell back to per-file metadata probing. Feeds still ingest — check share health.");
             }
 
+            // The flip trap's surviving flavor: the load/skip decision runs ONLY at cold
+            // start, so a table deferred while replication was OFF stays Deferred through a
+            // WARM restart that turns replication ON. The pump below then drains an empty
+            // table every cycle — honestly reporting QueueEmpty — while the rows the manifest
+            // recorded as owed sit in the published copy indefinitely. Nothing here can fix
+            // that safely (hydrating outside a merge is a second residency decision point);
+            // what it can do is refuse to be quiet about it. Fires every cycle on purpose,
+            // and in dark-launch (DryRun) too: the state is wrong regardless of whether the
+            // pump runs. Remediation is a cold start. A host that wipes its write DB at
+            // every process start makes each start cold and this state unreachable — there
+            // this warning is the tripwire that should never fire; on hosts that reuse
+            // estates (local workflows), replication flips must ship as cold starts, never
+            // as bare config edits on a warm process.
+            foreach (var (table, _, _, _) in pumpTables.Values)
+            {
+                if (store!.ReadResidency(table.Name) != SnapshotResidency.Deferred)
+                    continue;
+                var record = store.ReadDeferredTableRecord(table.Name);
+                if (record?.ReplicationPending is > 0)
+                {
+                    Emit(SnapshotAgentEventLevel.Warning,
+                        $"Table {table.Name} is Deferred with {record.ReplicationPending} row(s) recorded as " +
+                        "owed to the replication pump, and replication is now enabled. The pump cannot see " +
+                        "deferred rows, so they will never drain from here. Cold-start the agent (deploy or " +
+                        "swap): the restart will load the table and the pump will perform the full drain.");
+                }
+            }
+
             var pumpRuns = new List<SnapshotAgentPumpRun>();
             if (!options.DryRun)
             {
@@ -563,18 +591,33 @@ public sealed class SnapshotAgentLoop : IDisposable
             // the next pump writes zero Cosmos ops for unchanged data.
             // The registry overload, so qualified quiet tables stay deferred to the published
             // copy instead of being downloaded just to sit unread until the next deploy.
-            var rebuild = SnapshotRebuild.Execute(store, options.Registry, options.PublishDirectory,
-                options.SnapshotName, options.PublishStore);
-            Emit(SnapshotAgentEventLevel.Info,
-                rebuild.ManifestFile is null
-                    ? rebuild.PublishesSkipped.Count > 0
-                        ? $"Cold start: no compatible v4 seed (ignored {rebuild.PublishesSkipped.Count} pre-v4 publish(es)) — rebuilding from sources."
-                        : "Cold start: nothing published yet — starting from an empty write DB."
-                    : $"Cold start: rebuilt {rebuild.TotalRows} row(s) across {rebuild.TablesLoaded.Count} table(s) from {rebuild.ManifestFile}."
-                      + (rebuild.TablesDeferred.Count > 0
-                          ? $" {rebuild.TablesDeferred.Count} table(s) stay deferred to the published copy" +
-                            $" ({rebuild.TablesDeferred.Sum(t => t.Rows)} row(s) not downloaded)."
-                          : string.Empty));
+            try
+            {
+                var rebuild = SnapshotRebuild.Execute(store, options.Registry, options.PublishDirectory,
+                    options.SnapshotName, options.PublishStore);
+                Emit(SnapshotAgentEventLevel.Info,
+                    rebuild.ManifestFile is null
+                        ? rebuild.PublishesSkipped.Count > 0
+                            ? $"Cold start: no compatible v4 seed (ignored {rebuild.PublishesSkipped.Count} pre-v4 publish(es)) — rebuilding from sources."
+                            : "Cold start: nothing published yet — starting from an empty write DB."
+                        : $"Cold start: rebuilt {rebuild.TotalRows} row(s) across {rebuild.TablesLoaded.Count} table(s) from {rebuild.ManifestFile}."
+                          + (rebuild.TablesDeferred.Count > 0
+                              ? $" {rebuild.TablesDeferred.Count} table(s) stay deferred to the published copy" +
+                                $" ({rebuild.TablesDeferred.Sum(t => t.Rows)} row(s) not downloaded)."
+                              : string.Empty));
+            }
+            catch
+            {
+                // Never half-start. A failed cold-start rebuild (publish tier unreachable,
+                // every kept set torn) must not leave this fresh, EMPTY store behind: the
+                // next cycle would find the file, skip the rebuild, run sources against an
+                // empty all-resident estate, and publish that over the real set. Drop the
+                // store AND the just-created file so the next cycle retries the FULL cold
+                // start — with the loop's backoff, a tier that is briefly unreachable at
+                // boot means the boot waits until it is back, nothing less.
+                DeleteWriteDatabase();
+                throw;
+            }
         }
 
         return coldStart;

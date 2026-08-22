@@ -387,9 +387,26 @@ public sealed class CosmosSnapshotReplicator
         var runId = options.RunId ?? Guid.NewGuid().ToString("N");
         var groupedFamily = options.Families.SingleOrDefault(family => family.Grouping is not null);
         if (options.DryRun)
+        {
+            // A Deferred table's rows are not resident, so its dirty queue reads as EMPTY here
+            // — and a dry-run that emits zero intended ops while the manifest records thousands
+            // pending would be read as "all settled", which is the opposite of the truth.
+            // Refuse instead, the same posture as recon. The WET path deliberately has no such
+            // check: a deferred table's wet no-op is truthful (the skip rule already proved
+            // nothing is owed, or the loop is warning that something is).
+            if (store.ReadResidency(options.Table) == SnapshotResidency.Deferred)
+            {
+                throw new InvalidOperationException(
+                    $"Table '{options.Table.Name}' is Deferred — its rows live only in the published copy, " +
+                    "so a dry-run over the write database would emit an empty intended-ops list that reads " +
+                    "as 'all settled' whatever is actually owed. Hydrate the table first (ship a content " +
+                    "change, or restart so cold start re-evaluates residency), then re-run the dry-run.");
+            }
+
             return groupedFamily is null
                 ? ExecuteDryRun(runId, options, cancellationToken)
                 : ExecuteGroupedDryRun(runId, options, groupedFamily, cancellationToken);
+        }
 
         if (groupedFamily is not null)
             return await RunGroupedOnceAsync(runId, options, groupedFamily, cancellationToken);
@@ -564,7 +581,9 @@ public sealed class CosmosSnapshotReplicator
         double RequestCharge,
         int ThrottledRequests,
         TimeSpan RetryAfter,
-        TimeSpan CosmosOperationTime);
+        TimeSpan CosmosOperationTime,
+        /// <summary>The terminal failure was a 429 — record the error, burn no attempt.</summary>
+        bool ThrottledFailure = false);
 
     private sealed record OperationAttempt(
         Exception? Failure,
@@ -785,7 +804,8 @@ public sealed class CosmosSnapshotReplicator
                             : ReplicationStateOutcome.Failed(
                                 row.PrimaryKey,
                                 row.CapturedLastModified,
-                                outcome.Failure.Message)))
+                                outcome.Failure.Message,
+                                outcome.ThrottledFailure)))
                     .ToList();
                 var commitStarted = Stopwatch.GetTimestamp();
                 store.CommitReplicationOutcomes(options.Table, stateOutcomes, EnsureCommitAllowed);
@@ -912,7 +932,7 @@ public sealed class CosmosSnapshotReplicator
                     cancellationToken);
                 Accumulate(attempt);
                 if (attempt.Failure is not null)
-                    return Outcome(attempt.Failure);
+                    return Outcome(attempt.Failure, attempt.Throttled);
                 deleted++;
             }
 
@@ -930,7 +950,7 @@ public sealed class CosmosSnapshotReplicator
                     cancellationToken);
                 Accumulate(attempt);
                 if (attempt.Failure is not null)
-                    return Outcome(attempt.Failure);
+                    return Outcome(attempt.Failure, attempt.Throttled);
                 upserted++;
             }
 
@@ -964,7 +984,7 @@ public sealed class CosmosSnapshotReplicator
             cosmosTime += attempt.Elapsed;
         }
 
-        RowOutcome Outcome(Exception? failure) => new(
+        RowOutcome Outcome(Exception? failure, bool throttledFailure = false) => new(
             work,
             failure,
             RemoteAttempted: remoteStarted,
@@ -973,7 +993,8 @@ public sealed class CosmosSnapshotReplicator
             requestCharge,
             throttled,
             retryAfter,
-            cosmosTime);
+            cosmosTime,
+            throttledFailure);
     }
 
     private static IEnumerable<CosmosContainerKey> EnumerateContainerKeys(RowPlan plan) =>

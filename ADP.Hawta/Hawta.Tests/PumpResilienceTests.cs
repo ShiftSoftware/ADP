@@ -1,3 +1,4 @@
+using System.Net;
 using Xunit;
 
 namespace ShiftSoftware.ADP.Hawta.Tests;
@@ -6,7 +7,10 @@ namespace ShiftSoftware.ADP.Hawta.Tests;
 /// What a Cosmos outage must NOT do: burn every row's 5-attempt ledger inside one cycle.
 /// The wet pump pages by cursor (a failed row is not re-read in the same drain) and the
 /// dispatcher breaks the drain when an entire batch fails. Deleting a dead-lettered row
-/// must also re-open it for its Cosmos delete.
+/// must also re-open it for its Cosmos delete. Throttling (429) is the service applying
+/// backpressure, not per-row poison: it records the error but never consumes the ledger,
+/// so a sustained burst — the cutover's initial drain is exactly one — cannot dead-letter
+/// rows that merely queued.
 /// </summary>
 public class PumpResilienceTests : IDisposable
 {
@@ -108,5 +112,114 @@ public class PumpResilienceTests : IDisposable
         Assert.Equal(1L, snapshot.Store.CountDirtyRows(snapshot.Table));
         Assert.Equal(0L, snapshot.Scalar<long>(
             "SELECT \"_ReplicationAttempts\" FROM data.\"Widget\" WHERE \"_PrimaryKey\" = 'K1'"));
+    }
+
+    // ---- Throttling is backpressure, never poison --------------------------------------------
+    // The emulator does not throttle realistically, so these prove the 429 semantics with a
+    // fault-injecting transport: what surfaces past the SDK's own retry layer as a 429 —
+    // whether as a non-success response or as a thrown CosmosException — must record its
+    // error and leave the attempts ledger alone. Everything else keeps paying an attempt.
+
+    private sealed class ScriptedContainer(
+        Func<CosmosDocument, CosmosTransportResponse> onUpsert) : ICosmosSnapshotContainer
+    {
+        public Task<CosmosTransportResponse> UpsertAsync(
+            CosmosDocument document, CancellationToken cancellationToken) =>
+            Task.FromResult(onUpsert(document));
+
+        public Task<CosmosTransportResponse> DeleteAsync(
+            string id, IReadOnlyList<object?> partitionKey, CancellationToken cancellationToken) =>
+            Task.FromResult(new CosmosTransportResponse(
+                HttpStatusCode.NoContent, true, 1, RetryAfter: null, ErrorMessage: null));
+    }
+
+    private sealed class ScriptedTransport(ICosmosSnapshotContainer container) : ICosmosSnapshotTransport
+    {
+        public ICosmosSnapshotContainer GetContainer(string database, string containerName) => container;
+    }
+
+    private static CosmosTransportResponse Ok() =>
+        new(HttpStatusCode.OK, true, 1, RetryAfter: null, ErrorMessage: null);
+
+    private static CosmosTransportResponse Throttled() =>
+        new(HttpStatusCode.TooManyRequests, false, 0,
+            RetryAfter: TimeSpan.FromMilliseconds(500), ErrorMessage: "Request rate is large");
+
+    private CosmosSnapshotReplicator Replicator(Func<CosmosDocument, CosmosTransportResponse> onUpsert) =>
+        new(new SnapshotReplicationStateStore(snapshot.Store),
+            new ScriptedTransport(new ScriptedContainer(onUpsert)));
+
+    [Fact]
+    public async Task ASurfaced429_RecordsTheError_ButBurnsNoAttempt()
+    {
+        snapshot.Merge([("K1", "alpha", 1), ("K2", "beta", 2)]);
+        var replicator = Replicator(document =>
+            document.Id == "K1" ? Throttled() : Ok());
+
+        var drain = await replicator.DrainAsync(new CosmosSnapshotReplicatorOptions
+        {
+            Table = snapshot.Table,
+            Families = [Family],
+        }, cancellationToken: TestContext.Current.CancellationToken);
+
+        // K2 settled; K1 failed the cycle (visible in the report) — but its ledger is
+        // untouched and its error names the throttle, so an operator sees WHY it waits.
+        Assert.Equal(1, drain.Failed);
+        Assert.Equal(1, drain.ThrottledRequests);
+        Assert.Equal(1, drain.Upserted);
+        Assert.Equal(0L, snapshot.Scalar<long>(
+            "SELECT \"_ReplicationAttempts\" FROM data.\"Widget\" WHERE \"_PrimaryKey\" = 'K1'"));
+        Assert.Contains("TooManyRequests", snapshot.Scalar<string>(
+            "SELECT \"_ReplicationError\" FROM data.\"Widget\" WHERE \"_PrimaryKey\" = 'K1'"));
+        Assert.Equal(1L, snapshot.Store.CountDirtyRows(snapshot.Table));
+    }
+
+    [Fact]
+    public async Task SustainedThrottling_CanNeverDeadLetterARow()
+    {
+        snapshot.Merge([("K1", "alpha", 1)]);
+        var replicator = Replicator(_ => Throttled());
+
+        // Twice the attempt limit: were 429s burning the ledger, K1 would dead-letter here
+        // and silently cost its table the cold-start deferral. It must stay dirty forever.
+        for (var cycle = 0; cycle < SnapshotStore.MaxReplicationAttempts * 2; cycle++)
+        {
+            await replicator.DrainAsync(new CosmosSnapshotReplicatorOptions
+            {
+                Table = snapshot.Table,
+                Families = [Family],
+            }, cancellationToken: TestContext.Current.CancellationToken);
+        }
+
+        Assert.Equal(0L, snapshot.Scalar<long>(
+            "SELECT \"_ReplicationAttempts\" FROM data.\"Widget\" WHERE \"_PrimaryKey\" = 'K1'"));
+        Assert.Equal(0L, snapshot.Store.CountDeadLetteredRows(snapshot.Table));
+        Assert.Equal(1L, snapshot.Store.CountDirtyRows(snapshot.Table));
+    }
+
+    [Fact]
+    public async Task AThrown429_IsAlsoACarveOut_ButOtherFailuresStillPay()
+    {
+        snapshot.Merge([("K1", "alpha", 1), ("K2", "beta", 2)]);
+        var replicator = Replicator(document => document.Id switch
+        {
+            // The SDK can surface an exhausted 429 as a thrown CosmosException rather than
+            // a response; the classification must not depend on which shape arrives.
+            "K1" => throw new Microsoft.Azure.Cosmos.CosmosException(
+                "Rate limited", HttpStatusCode.TooManyRequests, 3200, "activity", 0),
+            _ => new CosmosTransportResponse(
+                HttpStatusCode.ServiceUnavailable, false, 0, RetryAfter: null, ErrorMessage: "down"),
+        });
+
+        await replicator.DrainAsync(new CosmosSnapshotReplicatorOptions
+        {
+            Table = snapshot.Table,
+            Families = [Family],
+        }, cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(0L, snapshot.Scalar<long>(
+            "SELECT \"_ReplicationAttempts\" FROM data.\"Widget\" WHERE \"_PrimaryKey\" = 'K1'"));
+        Assert.Equal(1L, snapshot.Scalar<long>(
+            "SELECT \"_ReplicationAttempts\" FROM data.\"Widget\" WHERE \"_PrimaryKey\" = 'K2'"));
     }
 }

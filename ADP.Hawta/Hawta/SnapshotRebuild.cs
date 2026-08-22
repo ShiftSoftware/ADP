@@ -265,7 +265,8 @@ public static class SnapshotRebuild
                         baseline.RowCount,
                         [.. baseline.SourceCatalog
                             .Where(source => source.ContentHash is not null)
-                            .Select(source => (source.SourceScope, source.ContentHash!))]);
+                            .Select(source => (source.SourceScope, source.ContentHash!))],
+                        baseline.ReplicationPending);
                     store.RestoreSourceOwnership(table, baseline.SourceCatalog);
                     deferred.Add(new SnapshotRebuildTable(table.Name, baseline.Location.Paths, baseline.RowCount));
 
