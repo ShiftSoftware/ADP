@@ -52,8 +52,9 @@ public class SnapshotRebuildTests : IDisposable
     /// <summary>
     /// Corrupts the newest published Widget parquet in place, count-preservingly: W2's row
     /// keeps its own change sequence and metadata but takes W1's key. Appending a row instead
-    /// would change the row count and be caught by the manifest's intact check as a torn file —
-    /// letting these tests pass without ever reaching the duplicate guard.
+    /// would change the row count and be caught as a torn file — letting these tests pass
+    /// without ever reaching the duplicate guard. (That other corruption has its own tests
+    /// below, via <see cref="CorruptNewestWidgetParquetWithAnExtraRow"/>.)
     /// </summary>
     private void CorruptNewestWidgetParquetWithDuplicateKey()
     {
@@ -70,6 +71,73 @@ public class SnapshotRebuildTests : IDisposable
             """);
         fx.Store.Execute($"COPY corrupt TO '{file}' (FORMAT PARQUET)");
         fx.Store.Execute("DROP TABLE corrupt");
+    }
+
+    /// <summary>
+    /// The other tear: a file that parses perfectly and simply holds the wrong number of rows.
+    /// Appends a copy of W2 under a fresh key, so the parquet is valid, its footer is honest, and
+    /// only the manifest disagrees.
+    /// </summary>
+    private void CorruptNewestWidgetParquetWithAnExtraRow()
+    {
+        var entry = fx.Entry("Widget");
+        var source = entry.ReadParquetSql(fx.PublishDirectory);
+        var file = entry.Resolve(fx.PublishDirectory).Single().Replace('\\', '/');
+
+        fx.Store.Execute(
+            $"""
+            CREATE OR REPLACE TEMP TABLE corrupt AS
+            SELECT * FROM {source}
+            UNION ALL
+            SELECT * REPLACE ('W9' AS "_PrimaryKey") FROM {source} WHERE "_PrimaryKey" = 'W2'
+            """);
+        fx.Store.Execute($"COPY corrupt TO '{file}' (FORMAT PARQUET)");
+        fx.Store.Execute("DROP TABLE corrupt");
+    }
+
+    [Fact]
+    public void ASeedHoldingMoreRowsThanItsManifest_IsRefused_AndRebuildFallsBackToTheOlderCleanSet()
+    {
+        // The row-count half of "missing or torn", and the one nothing else would catch. A file
+        // that fails to open announces itself; this one loads cleanly and would quietly seed the
+        // estate with rows the manifest never described — rows no consumer has been told about,
+        // carrying whatever change sequences the corruption left on them. The rebuild used to
+        // prove this from the parquet footer BEFORE loading, at the cost of opening every file an
+        // extra time over the network; it now proves it from the rows actually inserted, which is
+        // the same claim made by the load itself. Either way the set is refused and DR falls back.
+        fx.MergeWidgets(("W1", "alpha", 1), ("W2", "beta", 2));
+        var first = fx.Publish();
+
+        fx.MergeWidgets(("W1", "alpha", 1), ("W2", "beta", 3));
+        var second = fx.Publish();
+        CorruptNewestWidgetParquetWithAnExtraRow();
+
+        using var rebuilt = RebuildIntoFreshStore([fx.Widget], out var result);
+
+        Assert.Equal(first.ManifestFile, result.ManifestFile);
+        Assert.Equal([second.ManifestFile], result.PublishesSkipped);
+
+        // And the fallback seed is whole: the rolled-back attempt left nothing behind.
+        Assert.Equal(2L, Convert.ToInt64(rebuilt.ExecuteScalar("SELECT count(*) FROM data.\"Widget\"")));
+        Assert.Equal(2, Convert.ToInt32(rebuilt.ExecuteScalar(
+            "SELECT \"Quantity\" FROM data.\"Widget\" WHERE \"_PrimaryKey\" = 'W2'")));
+    }
+
+    [Fact]
+    public void WhenTheOnlySetHoldsMoreRowsThanItsManifest_TheTerminalFailureNamesTheCount()
+    {
+        // No older set to fall back to. The cause must say the copy is torn and name both counts,
+        // rather than surfacing as a bare "no published set could be loaded".
+        fx.MergeWidgets(("W1", "alpha", 1), ("W2", "beta", 2));
+        fx.Publish();
+        CorruptNewestWidgetParquetWithAnExtraRow();
+
+        var refusal = Assert.Throws<InvalidDataException>(() => RebuildIntoFreshStore([fx.Widget], out _));
+
+        var cause = Assert.IsType<InvalidDataException>(refusal.InnerException);
+        Assert.Contains("is torn", cause.Message);
+        Assert.Contains("loaded 3 row(s)", cause.Message);
+        Assert.Contains("manifest records 2", cause.Message);
     }
 
     [Fact]

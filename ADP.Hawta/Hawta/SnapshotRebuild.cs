@@ -196,38 +196,19 @@ public static class SnapshotRebuild
         var definedNames = new HashSet<string>(tables.Select(t => t.Name), StringComparer.OrdinalIgnoreCase);
         var skipped = published.Tables.Where(e => !definedNames.Contains(e.Table)).Select(e => e.Table).ToList();
 
-        // Validate the whole parquet set up front (footers parse, row counts match) before
-        // loading anything — a torn file must fail the publish, not the rebuild. On the normal
-        // path (the seed IS the newest manifest) deferred candidates get exactly the same
-        // probe: a table whose rows are about to stay in the published copy needs its copy
-        // proven intact MORE than one being loaded does. A failed probe here sends the whole
-        // manifest to the newest-first fallback — the existing DR posture, unchanged; on such
-        // a fallback seed, ResolveDeferralBaseline probes the newest entry per table instead.
-        var sources = new Dictionary<string, PublishedTableManifest>(StringComparer.OrdinalIgnoreCase);
-        foreach (var table in tables)
-        {
-            if (!manifestByTable.TryGetValue(table.Name, out var entry))
-                continue;
-
-            if (!SnapshotPublisher.ParquetIsIntact(store, entry.Resolve(publishStore.Root), entry.RowCount))
-            {
-                throw new InvalidDataException(
-                    $"'{string.Join(", ", entry.Location.Paths)}' referenced by " +
-                    $"'{PublishPath.FileName(manifestPath)}' is missing or torn.");
-            }
-
-            sources[table.Name] = entry;
-        }
-
         // Resolve — and probe — each table's deferral baseline BEFORE the transaction opens.
         // The probe reads publish-tier parquet footers, and a torn file aborts an open DuckDB
         // transaction even though the probe itself absorbs the error; it is remote I/O that
         // has no business inside the seed's atomic load anyway.
+        //
+        // These are the ONLY footer probes a cold start runs, and they are the ones that earn
+        // their cost: a deferred table's rows are not loaded, so the published copy is its only
+        // copy, and nothing else will read that file until a hydration weeks later. A table being
+        // LOADED proves its own copy by loading it — see the row-count check below.
         var deferralBaselines = new Dictionary<string, PublishedTableManifest>(StringComparer.OrdinalIgnoreCase);
         foreach (var table in tables)
         {
-            var baseline = ResolveDeferralBaseline(
-                store, registry, table, newestByName, seedIsNewest, publishStore.Root);
+            var baseline = ResolveDeferralBaseline(store, registry, table, newestByName, publishStore.Root);
             if (baseline is not null)
                 deferralBaselines[table.Name] = baseline;
         }
@@ -243,7 +224,7 @@ public static class SnapshotRebuild
         {
             foreach (var table in tables)
             {
-                sources.TryGetValue(table.Name, out var seedEntry);
+                manifestByTable.TryGetValue(table.Name, out var seedEntry);
 
                 if (deferralBaselines.TryGetValue(table.Name, out var baseline))
                 {
@@ -296,6 +277,22 @@ public static class SnapshotRebuild
                 }
 
                 var rows = LoadTable(store, table, seedEntry, publishStore.Root);
+
+                // The intactness check for a LOADED table, made by the load itself. The footer
+                // probe this replaces asserted exactly this equality from parquet metadata, at
+                // the price of opening the file an extra time; reading the rows asserts it from
+                // the rows, which is strictly the stronger claim — a file whose footer is honest
+                // but whose data pages are corrupt passes a probe and fails here. A mismatch
+                // throws, the transaction rolls back, and the manifest goes to the newest-first
+                // fallback: the same DR posture as before, reached one statement later.
+                if (rows != seedEntry.RowCount)
+                {
+                    throw new InvalidDataException(
+                        $"'{string.Join(", ", seedEntry.Location.Paths)}' referenced by " +
+                        $"'{PublishPath.FileName(manifestPath)}' is torn: it loaded {rows} row(s), " +
+                        $"but the manifest records {seedEntry.RowCount}.");
+                }
+
                 store.RestoreSourceOwnership(table, seedEntry.SourceCatalog);
                 store.MarkTableResident(table.Name);
                 loaded.Add(new SnapshotRebuildTable(table.Name, seedEntry.Location.Paths, rows));
@@ -405,7 +402,6 @@ public static class SnapshotRebuild
         SourceRegistry? registry,
         SnapshotTableDefinition table,
         PublishedSnapshot? newestByName,
-        bool seedIsNewest,
         string publishRoot)
     {
         if (newestByName is null || newestByName.SchemaVersion != SnapshotStore.CurrentSchemaVersion)
@@ -425,16 +421,13 @@ public static class SnapshotRebuild
             return null;
         }
 
-        // The seed's own files were all probed up front (a torn one sent the whole manifest
-        // to fallback), so on the normal path the entry is already proven. On a fallback seed
-        // nobody has probed the newest entry yet — and it is the one file the deferral is
-        // about to stake the table's only unloaded copy on, so a failed probe here quietly
-        // resolves to resident rather than failing the seed that is otherwise fine.
-        if (!seedIsNewest
-            && !SnapshotPublisher.ParquetIsIntact(store, entry.Resolve(publishRoot), entry.RowCount))
-        {
+        // The one file the deferral is about to stake the table's only unloaded copy on, so it
+        // is proven here — on every path, not just a fallback seed. A failed probe resolves
+        // quietly to resident rather than failing a seed that is otherwise fine: loading is
+        // always available, and the next publish then mints a fresh export, which is the
+        // pre-residency self-heal.
+        if (!SnapshotPublisher.ParquetIsIntact(store, entry.Resolve(publishRoot), entry.RowCount))
             return null;
-        }
 
         return entry;
     }
@@ -454,9 +447,10 @@ public static class SnapshotRebuild
     /// ordering is a performance decision with a measured basis. Against a blob publish tier a
     /// statement over a remote parquet costs a near-constant toll regardless of size — measured on
     /// the TCA estate at roughly two seconds whether the file holds two rows or 1.4 million, because
-    /// the cost is round trips, not bytes. Validating the copy in place meant four remote statements
-    /// per table; on a 21-table seed that was ~84 tolls and just over three minutes, most of it
-    /// spent asking a network about data that was about to be local anyway.</para>
+    /// the cost is round trips, not bytes. Validating the copy in place meant four openings per
+    /// table, and a caller that also footer-probed it first meant five; on a 21-table seed those
+    /// were most of a three-minute cold start, spent asking a network about data that was about to
+    /// be local anyway.</para>
     ///
     /// <para><b>Why moving them is safe rather than a trade.</b> Both callers hold an open
     /// transaction across the whole load — cold start's own BEGIN/COMMIT, and the merge transaction
