@@ -1040,6 +1040,93 @@ public sealed class ResidencyTests : IDisposable
             .IsTableDeferredCapable("Widget"));
     }
 
+    // ---- The gate's memory is a reason to publish -------------------------------------------
+
+    [Fact]
+    public void AFingerprintChangeAlone_RewritesTheManifest_SoTheNextColdStartStopsRereadingEveryFeed()
+    {
+        fx.WriteFeed(FeedV1);
+        var before = fx.FileOptions();
+        var registry = fx.Registry(fx.FileSource(before), fx.GadgetSource());
+        Assert.True(fx.Ingest(fx.Store, before).Succeeded);
+        fx.MergeGadgets(fx.Store, ("G1", "one"));
+        Assert.Equal(SnapshotPublishStatus.Published, fx.Publish(fx.Store, registry).Status);
+        var published = fx.ReadNewestManifest().PublishId;
+        var publishedPaths = fx.Entry("Widget").Location.Paths;
+
+        // A deploy, in miniature. Nothing about the FEED moves — same bytes, same mtime, same
+        // path — only the fingerprint, which in production carries Hawta's own version and here
+        // takes the operator's field instead. The gate must fire on it: that re-read is what a
+        // new build is owed.
+        var after = fx.FileOptions(ingestVersion: "after-the-deploy");
+        var upgraded = fx.Registry(fx.FileSource(after), fx.GadgetSource());
+        var reread = fx.Ingest(fx.Store, after);
+        Assert.Equal(SnapshotMergeStatus.Succeeded, reread.Status);
+        Assert.Equal(0, reread.RowsInserted + reread.RowsUpdated + reread.RowsTombstoned);
+
+        // And here is the asymmetry this test exists for. The re-read found identical content,
+        // so no signature moved, so nothing exports — and on signatures alone the publisher
+        // skipped, leaving the manifest carrying stamps that no longer match this build. Every
+        // cold start from it then re-read every feed and re-hydrated every deferred table, found
+        // nothing, skipped the publish again, and left the same stale stamps behind. Rewriting
+        // costs one manifest and moves no data.
+        var refreshed = fx.Publish(fx.Store, upgraded);
+        Assert.Equal(SnapshotPublishStatus.Published, refreshed.Status);
+        Assert.Empty(refreshed.TablesExported);
+        Assert.Contains("Widget", refreshed.TablesReused);
+        Assert.NotEqual(published, fx.ReadNewestManifest().PublishId);
+
+        // The rows did not move with it: reuse means the new manifest points at the same files.
+        Assert.Equal(publishedPaths, fx.Entry("Widget").Location.Paths);
+
+        // The proof that matters, and the symptom that started this: a fresh store seeded from
+        // the refreshed manifest does NOT read the feed again.
+        using var fresh = fx.ColdStart(upgraded, out _);
+        Assert.Equal(SnapshotMergeStatus.SkippedSourceUnchanged, fx.Ingest(fresh, after).Status);
+    }
+
+    [Fact]
+    public void AnUnchangedCycle_StillSkips_SoTheStampRuleCannotChurnTheManifest()
+    {
+        var registry = TwoPublishes();
+        var standing = fx.ReadNewestManifest().PublishId;
+
+        // Same feed, same fingerprint, same rows. The gate skips, so no stamp is rewritten, so
+        // the live stamps and the manifest's still agree and there is nothing to say.
+        Assert.Equal(SnapshotMergeStatus.SkippedSourceUnchanged, fx.Ingest(fx.Store).Status);
+        Assert.Equal(SnapshotPublishStatus.SkippedNoChanges, fx.Publish(fx.Store, registry).Status);
+        Assert.Equal(standing, fx.ReadNewestManifest().PublishId);
+    }
+
+    [Fact]
+    public void AStampMerelyAgeing_DoesNotRewriteTheManifest()
+    {
+        // The churn this rule must not cause. A re-ingest bound expiring re-reads the feed and
+        // writes a stamp whose only new field is StampedAtUtc — the file, its mtime and the
+        // fingerprint are all untouched. Publishing on that would rewrite the manifest on a
+        // timer forever, and heal nothing: a restore keeps the ORIGINAL StampedAtUtc by design,
+        // so the fresh value would not even survive the trip it was written for.
+        var clock = new ManualClock();
+        var gate = new SourceChangeGate(TimeSpan.FromHours(6), clock);
+
+        fx.WriteFeed(FeedV1);
+        var options = fx.FileOptions(gate: gate);
+        var registry = fx.Registry(fx.FileSource(options), fx.GadgetSource());
+        Assert.True(fx.Ingest(fx.Store, options).Succeeded);
+        fx.MergeGadgets(fx.Store, ("G1", "one"));
+        Assert.Equal(SnapshotPublishStatus.Published, fx.Publish(fx.Store, registry).Status);
+        var standing = fx.ReadNewestManifest().PublishId;
+
+        clock.Advance(TimeSpan.FromHours(7));
+
+        var reread = fx.Ingest(fx.Store, options);
+        Assert.Equal(SnapshotMergeStatus.Succeeded, reread.Status);
+        Assert.Equal(0, reread.RowsInserted + reread.RowsUpdated + reread.RowsTombstoned);
+
+        Assert.Equal(SnapshotPublishStatus.SkippedNoChanges, fx.Publish(fx.Store, registry).Status);
+        Assert.Equal(standing, fx.ReadNewestManifest().PublishId);
+    }
+
     private sealed class ManualClock : TimeProvider
     {
         private DateTimeOffset now = new(2026, 8, 22, 12, 0, 0, TimeSpan.Zero);

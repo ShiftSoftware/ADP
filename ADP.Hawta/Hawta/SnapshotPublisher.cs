@@ -112,6 +112,11 @@ public static class SnapshotPublisher
         // degrades to a full re-export — never to a wrong publish.
         var previousPath = PublishedSnapshot.ResolveNewest(publishStore, options.SnapshotName);
         var baseline = new Dictionary<string, PublishedTableManifest>(StringComparer.OrdinalIgnoreCase);
+
+        // The gate stamps the baseline carries, kept for the change decision below. An
+        // unreadable or pre-v4 baseline leaves this empty, which reads as "changed" — the same
+        // conservative direction the table baseline takes.
+        IReadOnlyList<PublishedSourceStamp> baselineStamps = [];
         if (previousPath is not null)
         {
             PublishedSnapshot? previous = null;
@@ -142,6 +147,7 @@ public static class SnapshotPublisher
                 {
                     foreach (var entry in previous.Tables)
                         baseline[entry.Table] = entry;
+                    baselineStamps = previous.SourceStamps ?? [];
                 }
             }
         }
@@ -286,7 +292,37 @@ public static class SnapshotPublisher
 
         var noRows = manifest.Where(e => e.RowCount == 0).Select(e => e.Table).Order().ToList();
 
-        if (exported.Count == 0 && previousPath is not null && !catalogChanged)
+        // The gate's memory, read once: compared against the baseline immediately below, and
+        // carried into the new manifest if one is written. One read, so the set that decides
+        // and the set that is committed cannot differ.
+        var sourceStamps = store.ReadAllSourceFileStamps().Select(PublishedSourceStamp.From).ToList();
+
+        // Stamps are a third reason to rewrite, alongside an export and a catalog change.
+        //
+        // A stamp says "this exact file is already in the data you are looking at", and cold
+        // start restores the stamps from the manifest it seeds from. So when the live stamps
+        // and the baseline's disagree, the baseline is carrying a memory that no longer matches
+        // this build — and every cold start from it fires the gate on those sources, re-reads
+        // every one of their feeds, and hydrates every table that was deferred against them.
+        //
+        // Left to signatures alone that never healed: the re-read finds identical content, so
+        // no table's signature moves, so nothing is exported, so the manifest is not rewritten
+        // and keeps the stale stamps. The next cold start does it again, and the next. The
+        // condition is self-perpetuating precisely because it costs nothing in ROWS. Rewriting
+        // here ends it in one cycle, and cheaply: every table is reused, so this writes one
+        // manifest and moves no data.
+        //
+        // The commonest cause is an ordinary deploy — the fingerprint carries Hawta's own
+        // version, so a release invalidates every stamp on purpose. That is a re-read the new
+        // build is owed exactly once, not once per restart until the data happens to change.
+        //
+        // Cursors deliberately do NOT get this treatment: a change-feed continuation token can
+        // advance on a tick that produced no rows, so including them would rewrite the manifest
+        // at cadence forever. A stale cursor also costs a bounded partial re-read, where stale
+        // stamps cost every feed and every deferred copy.
+        var stampsChanged = !GateMemoryEqual(baselineStamps, sourceStamps);
+
+        if (exported.Count == 0 && previousPath is not null && !catalogChanged && !stampsChanged)
         {
             // Self-heal only: a pointer lost to a crash (or never written, on an estate published
             // before it existed) comes back on the next cycle. Rewriting it unconditionally would
@@ -306,7 +342,8 @@ public static class SnapshotPublisher
 
         var manifestFile = $"{options.SnapshotName}-{publishId}{PublishedSnapshot.Extension}";
         var manifestPath = publishStore.Resolve(manifestFile);
-        WriteManifest(store, manifestPath, options, publishStore, publishId, stamp, manifest, options.OnBeforeManifestCommit);
+        WriteManifest(store, manifestPath, options, publishStore, publishId, stamp, manifest, sourceStamps,
+            options.OnBeforeManifestCommit);
 
         RefreshStablePointer(options, publishStore, manifestPath);
 
@@ -560,6 +597,33 @@ public static class SnapshotPublisher
             reader.IsDBNull(2) ? null : SnapshotStore.AsUtc(reader.GetDateTime(2)));
     }
 
+    /// <summary>
+    /// Do two stamp sets carry the same answer for the change gate? Compares exactly the fields
+    /// <see cref="SourceChangeGate"/> compares — path, length, last-write ticks, fingerprint —
+    /// keyed by source, order-independent.
+    ///
+    /// <para><see cref="PublishedSourceStamp.StampedAtUtc"/> is deliberately excluded. It is a
+    /// clock, not an identity: it moves on every read, and the only gate rule that consults it
+    /// is the re-ingest bound, which measures AGE. A stamp growing older is not a change anyone
+    /// can publish their way out of — republishing preserves the original value by design — so
+    /// including it would rewrite the manifest on a schedule and heal nothing.</para>
+    /// </summary>
+    private static bool GateMemoryEqual(
+        IReadOnlyList<PublishedSourceStamp> baseline, IReadOnlyList<PublishedSourceStamp> current)
+    {
+        if (baseline.Count != current.Count)
+            return false;
+
+        static IEnumerable<string> Identities(IReadOnlyList<PublishedSourceStamp> stamps) =>
+            stamps
+                .Select(stamp => string.Join(
+                    '',
+                    stamp.SourceKey, stamp.FilePath, stamp.Length, stamp.LastWriteUtcTicks, stamp.ConfigFingerprint))
+                .Order(StringComparer.Ordinal);
+
+        return Identities(baseline).SequenceEqual(Identities(current), StringComparer.Ordinal);
+    }
+
     /// <summary>Footer-only probe: every file parses as parquet and together they carry the expected row count.</summary>
     internal static bool ParquetIsIntact(SnapshotStore store, IReadOnlyList<string> parquetPaths, long expectedRows)
     {
@@ -638,18 +702,18 @@ public static class SnapshotPublisher
 
     // ---- The manifest ------------------------------------------------------------------------
 
+    /// <param name="sourceStamps">
+    /// Carried INSIDE the manifest so a cold start can restore what the gate already knows
+    /// instead of re-reading every feed. Correct only because they commit together: these stamps
+    /// describe exactly the state the parquet above describes, and one conditional PUT names
+    /// both. Read by the caller, which also compares them against the baseline to decide whether
+    /// this manifest needs writing at all — one read, so deciding and committing cannot diverge.
+    /// </param>
     private static void WriteManifest(SnapshotStore store, string manifestPath, SnapshotPublishOptions options,
         PublishStore publishStore, string publishId, DateTime publishedAt,
-        IReadOnlyList<PublishedTableManifest> tables, Action? onBeforeManifestCommit)
+        IReadOnlyList<PublishedTableManifest> tables, IReadOnlyList<PublishedSourceStamp> sourceStamps,
+        Action? onBeforeManifestCommit)
     {
-        // Carried INSIDE the manifest so a cold start can restore what the gate already knows
-        // instead of re-reading every feed. Correct only because they commit together: these
-        // stamps describe exactly the state the parquet above describes, and one conditional PUT
-        // names both. Read here, at publish time, when no merge is in flight.
-        var sourceStamps = store.ReadAllSourceFileStamps()
-            .Select(PublishedSourceStamp.From)
-            .ToList();
-
         // Cosmos read cursors ride the same road, for the same reason and with more at stake: a
         // cursor lost on rebuild does not cost one re-read of one file, it costs a full re-read of
         // a container that only grows.
