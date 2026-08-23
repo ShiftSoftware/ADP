@@ -22,6 +22,7 @@ namespace ShiftSoftware.ADP.Hawta.Tests;
 /// and is tracked as cutover-day watch items: hierarchical-partition-key edge behavior,
 /// RU/throttle semantics, and real continuation paging.</para>
 /// </summary>
+[Collection(CosmosEmulatorCollection.Name)]
 public sealed class DeferredReplicatedEmulatorTests :
     IClassFixture<DeferredReplicatedEmulatorTests.EmulatorDatabase>, IDisposable
 {

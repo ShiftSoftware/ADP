@@ -10,6 +10,7 @@ namespace ShiftSoftware.ADP.Hawta.Tests;
 /// the real pump: upserts with a hierarchical partition key, stamp semantics, coordinate
 /// changes (delete-old-then-write-new), and tombstone point deletes.
 /// </summary>
+[Collection(CosmosEmulatorCollection.Name)]
 public class CosmosReplicatorEmulatorTests : IDisposable
 {
     // 127.0.0.1, not localhost: the emulator listens on IPv4 only and localhost can resolve to ::1.
