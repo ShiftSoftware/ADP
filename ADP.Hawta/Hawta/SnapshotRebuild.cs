@@ -448,12 +448,37 @@ public static class SnapshotRebuild
     /// ingest-time hydration both come through here, so a torn, wrong-schema, or key-corrupt
     /// file is refused by the same checks on both paths. <paramref name="sourceDescription"/>
     /// names the copy in error messages ("Published v4 table 'X'", "Deferred copy of 'X'").
+    ///
+    /// <para><b>Exactly two statements touch the copy: the schema probe and the insert.</b> The
+    /// contract checks below deliberately run AFTER the insert, against the local table, and that
+    /// ordering is a performance decision with a measured basis. Against a blob publish tier a
+    /// statement over a remote parquet costs a near-constant toll regardless of size — measured on
+    /// the TCA estate at roughly two seconds whether the file holds two rows or 1.4 million, because
+    /// the cost is round trips, not bytes. Validating the copy in place meant four remote statements
+    /// per table; on a 21-table seed that was ~84 tolls and just over three minutes, most of it
+    /// spent asking a network about data that was about to be local anyway.</para>
+    ///
+    /// <para><b>Why moving them is safe rather than a trade.</b> Both callers hold an open
+    /// transaction across the whole load — cold start's own BEGIN/COMMIT, and the merge transaction
+    /// that brackets hydration — and both roll back on any exception. Rows that fail a check below
+    /// therefore never become visible to anything: the same guarantee the pre-insert order gave,
+    /// reached by rolling back rather than by refusing early. The cost is that a bad copy is now
+    /// read before it is rejected, which is work spent only on the failure path.</para>
+    ///
+    /// <para>The checks are equivalent only because the target is EMPTY, so "the rows in the table"
+    /// and "the rows just loaded" are the same set. Both callers guarantee it — cold start asserts
+    /// it per table up front, and a Deferred table has no resident rows by definition — and it is
+    /// re-asserted here, locally and cheaply, because that equivalence is what the whole reordering
+    /// stands on.</para>
     /// </summary>
     internal static long LoadTableInto(
         SnapshotStore store, SnapshotTableDefinition table, string readParquetSql, string sourceDescription)
     {
         var source = readParquetSql;
 
+        // Remote statement 1 of 2. Footer only, and unavoidable: the insert takes the intersection
+        // of the declared columns and the file's, which is what lets a widened definition load an
+        // older file with its new columns NULL.
         var parquetColumns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         using (var command = store.Connection.CreateCommand())
         {
@@ -473,8 +498,38 @@ public static class SnapshotRebuild
                 string.Join(", ", missingBookkeeping));
         }
 
+        // The precondition the post-insert checks rest on, asserted rather than assumed. Local, one
+        // count, and it keeps a caller bug from being reported as a corrupt published copy: with
+        // rows already present, the duplicate-key check below would blame the seed for keys the
+        // store was holding before the load.
+        var existing = Convert.ToInt64(store.ExecuteScalar($"SELECT count(*) FROM {table.QualifiedName}"));
+        if (existing > 0)
+        {
+            throw new InvalidOperationException(
+                $"Table '{table.Name}' already holds {existing} row(s) and cannot be loaded into. " +
+                $"{sourceDescription} may only be loaded into an empty table — cold start seeds a fresh " +
+                "store, and hydration loads a Deferred table, which has no resident rows. Reaching here " +
+                "means a caller bug, not a bad published copy.");
+        }
+
+        var columns = table.Columns.Select(c => c.Name).Concat(BookkeepingColumns.All)
+            .Where(parquetColumns.Contains)
+            .Select(c => $"\"{c}\"")
+            .ToList();
+
+        // Remote statement 2 of 2.
+        var rows = store.Execute(
+            $"""
+            INSERT INTO {table.QualifiedName} ({string.Join(", ", columns)})
+            SELECT {string.Join(", ", columns)} FROM {source}
+            """);
+
+        // ---- Contract checks, over the loaded rows on local disk --------------------------------
+        // Same assertions, same messages, same transaction. Only the side of the network they run on
+        // has changed, and with it the number of times the published copy is opened.
+
         var invalidVersions = Convert.ToInt64(store.ExecuteScalar(
-            $"SELECT count(*) FROM {source} " +
+            $"SELECT count(*) FROM {table.QualifiedName} " +
             $"WHERE \"{BookkeepingColumns.ChangeSequence}\" IS NULL " +
             $"OR \"{BookkeepingColumns.ChangeSequence}\" <= 0 " +
             $"OR \"{BookkeepingColumns.ChangeRecordedAt}\" IS NULL"));
@@ -487,26 +542,17 @@ public static class SnapshotRebuild
         // Snapshot tables carry no PRIMARY KEY index, so nothing structural refuses a seed whose
         // rows duplicate a key — and a duplicate restored here would be trusted by every later
         // merge (only staging is checked; the publish contract would refuse the store, but only
-        // after the corrupt seed is already resident). Refuse the seed at the door instead.
-        // count(DISTINCT) ignores NULLs, so this also catches a NULL key before the insert does.
+        // after the corrupt seed is already resident). Refuse the seed before the transaction
+        // commits. count(DISTINCT) ignores NULLs, so this also catches a NULL key.
         var duplicateKeys = Convert.ToInt64(store.ExecuteScalar(
-            $"SELECT count(*) - count(DISTINCT \"{BookkeepingColumns.PrimaryKey}\") FROM {source}"));
+            $"SELECT count(*) - count(DISTINCT \"{BookkeepingColumns.PrimaryKey}\") FROM {table.QualifiedName}"));
         if (duplicateKeys > 0)
         {
             throw new InvalidDataException(
                 $"{sourceDescription} has {duplicateKeys} duplicated or NULL primary key value(s).");
         }
 
-        var columns = table.Columns.Select(c => c.Name).Concat(BookkeepingColumns.All)
-            .Where(parquetColumns.Contains)
-            .Select(c => $"\"{c}\"")
-            .ToList();
-
-        return store.Execute(
-            $"""
-            INSERT INTO {table.QualifiedName} ({string.Join(", ", columns)})
-            SELECT {string.Join(", ", columns)} FROM {source}
-            """);
+        return rows;
     }
 }
 
