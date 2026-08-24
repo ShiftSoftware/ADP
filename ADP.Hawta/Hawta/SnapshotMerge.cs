@@ -82,6 +82,11 @@ public static class SnapshotMerge
         store.Execute("BEGIN TRANSACTION");
         try
         {
+            // Lazy residency: a Deferred table's rows come back BEFORE anything reads the
+            // target — the guardrail counts below are the first reads, and against an empty
+            // table both mass guardrails are disarmed. Inside this transaction, first thing.
+            HydrateDeferredRows(store, table);
+
             // Would-be tombstones and the guardrail — computed before any mutation.
             long pendingDeletes = 0;
             if (options.DeletesEnabled)
@@ -166,23 +171,26 @@ public static class SnapshotMerge
                 return abortedAdoption;
             }
 
+            // A changed SOURCE KEY with an unchanged scope deliberately does not appear here.
+            // Ownership is derived from _SourceScope plus the per-scope map, so a source key
+            // renamed in configuration is a one-row map write at the end of this transaction —
+            // not a full-table re-stamp. Rows are only re-stamped when something on the row
+            // itself changed, and a scope change is the adoption path carrying the whole
+            // repair burden.
             var updatePredicate =
                 $"({targetRef}.{hash} IS DISTINCT FROM {stg}.{hash} " +
                 $"OR {targetRef}.{deleted} = true " +
                 $"OR {targetRef}.{scope} IS DISTINCT FROM ? " +
-                $"OR ownership.\"SourceKey\" IS DISTINCT FROM ? " +
                 $"OR {targetRef}.{changeSequence} IS NULL " +
                 $"OR {targetRef}.{changeRecordedAt} IS NULL)";
 
             var updateFrom =
                 $"FROM {target} AS {targetRef} JOIN {staging} AS {stg} " +
-                $"ON {targetRef}.{pk} = {stg}.{pk} " +
-                $"LEFT JOIN meta.SourceOwnership AS ownership " +
-                $"ON ownership.\"TableName\" = ? AND ownership.\"PrimaryKey\" = {targetRef}.{pk}";
+                $"ON {targetRef}.{pk} = {stg}.{pk}";
 
             var rowsUpdatedPlanned = Convert.ToInt64(store.ExecuteScalar(
                 $"SELECT count(*) {updateFrom} WHERE {updatePredicate}",
-                table.Name, options.SourceScope, options.Source));
+                options.SourceScope));
 
             if (rowsUpdatedPlanned > 0)
             {
@@ -195,7 +203,7 @@ public static class SnapshotMerge
                     {updateFrom}
                     WHERE {updatePredicate}
                     """,
-                    firstUpdateSequence, table.Name, options.SourceScope, options.Source);
+                    firstUpdateSequence, options.SourceScope);
             }
 
             var assignments = string.Join(",\n    ", table.Columns.Select(c => $"\"{c.Name}\" = {stg}.\"{c.Name}\""));
@@ -330,34 +338,12 @@ public static class SnapshotMerge
                         $"Source-version tombstone for '{options.Source}' planned {pendingDeletes} row(s) but changed {rowsTombstoned}.");
             }
 
-            // The internal owner changes in the SAME transaction as the accepted row versions.
-            // Missing/different ownership participated in updatePredicate, so this repair cannot
-            // happen without the corresponding sequence advance.
-            store.Execute(
-                $"""
-                DELETE FROM meta.SourceOwnership
-                WHERE "TableName" = ?
-                  AND "PrimaryKey" IN (SELECT {pk} FROM {staging})
-                """,
-                table.Name);
-            store.Execute(
-                $"""
-                INSERT INTO meta.SourceOwnership ("TableName", "PrimaryKey", "SourceKey")
-                SELECT ?, {pk}, ? FROM {staging}
-                """,
-                table.Name, options.Source);
-
-            if (rowsTombstoned > 0)
-            {
-                store.Execute(
-                    "DELETE FROM meta.SourceOwnership WHERE \"TableName\" = ? " +
-                    "AND \"PrimaryKey\" IN (SELECT \"_PrimaryKey\" FROM \"hawta$versions\")",
-                    table.Name);
-                store.Execute(
-                    "INSERT INTO meta.SourceOwnership (\"TableName\", \"PrimaryKey\", \"SourceKey\") " +
-                    "SELECT ?, \"_PrimaryKey\", ? FROM \"hawta$versions\"",
-                    table.Name, options.Source);
-            }
+            // The scope's owner is recorded in the SAME transaction as the accepted row
+            // versions: one map row per (table, scope), replacing any previous owner. This is
+            // the whole ownership write — for a 1.4M-row staging the per-key shape performed
+            // 2.9M ownership row-writes here. Tombstoned rows keep their scope, so tombstones
+            // need no ownership write at all.
+            store.WriteSourceOwner(table.Name, options.SourceScope, options.Source);
 
             var result = new SnapshotMergeResult(runId, SnapshotMergeStatus.Succeeded,
                 rowsStaged, rowsInserted, rowsUpdated, rowsTombstoned, RowsRescoped: rowsRescoped);
@@ -382,6 +368,45 @@ public static class SnapshotMerge
 
             throw;
         }
+    }
+
+    /// <summary>
+    /// Any merge about to run against a Deferred table loads its rows back from the published
+    /// copy first — unconditionally, keyed off the recorded residency state and NEVER off a
+    /// gate verdict, because several callers reach this merge with no verdict at all (an
+    /// <c>IngestVersion</c> bump, a harness driving an ingestor directly, a non-file source
+    /// that somehow shares the table). Living here, at the one point every ingest path funnels
+    /// through, is what makes the rule automatic instead of a checklist.
+    ///
+    /// <para>Hydration and merge are one transaction, so a half-hydrated table can never be
+    /// published or read: the run either commits rows + merge together, or rolls back to
+    /// exactly the Deferred state it started from. A failed load (torn file, unreachable
+    /// publish tier) therefore fails the whole run — no stamp is written, so the next cadence
+    /// tick retries — and deliberately NEVER falls back to re-reading sources: the merge would
+    /// see an empty table, both mass guardrails would be disarmed, and every staged row would
+    /// re-insert with a fresh change sequence. Source fallback belongs to cold start only,
+    /// where it is the existing DR posture.</para>
+    /// </summary>
+    private static void HydrateDeferredRows(SnapshotStore store, SnapshotTableDefinition table)
+    {
+        var deferred = store.ReadDeferredTableRecord(table.Name);
+        if (deferred is null)
+            return;
+
+        var rows = SnapshotRebuild.LoadTableInto(
+            store, table, deferred.ReadParquetSql(), $"Deferred copy of table '{table.Name}'");
+        if (rows != deferred.RowCount)
+        {
+            throw new InvalidDataException(
+                $"Deferred copy of table '{table.Name}' loaded {rows} row(s) but " +
+                $"{deferred.RowCount} were recorded when it was deferred — the published copy is " +
+                "torn. Failing this run so nothing is stamped; the next tick retries.");
+        }
+
+        // No change-sequence reconciliation is needed here: the allocator was raised above
+        // this copy's manifest high watermark by the cold start that deferred it, and that
+        // allocator state is durable in the write DB.
+        store.MarkTableResident(table.Name);
     }
 
     /// <summary>
@@ -426,6 +451,7 @@ public static class SnapshotMerge
         SnapshotMergeStatus.SkippedSourceAbsent => "Skipped:SourceAbsent",
         SnapshotMergeStatus.SkippedSourceEmpty => "Skipped:SourceEmpty",
         SnapshotMergeStatus.SkippedSourceUnchanged => "Skipped:SourceUnchanged",
+        SnapshotMergeStatus.SkippedContentUnchanged => "Skipped:ContentUnchanged",
         _ => status.ToString(),
     };
 }

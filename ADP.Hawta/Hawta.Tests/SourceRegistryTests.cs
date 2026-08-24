@@ -93,6 +93,10 @@ public class SourceRegistryTests
         Assert.Single(registry.Tables);
     }
 
+    // These two rejections are the invariant the per-scope ownership map depends on: ownership
+    // is derived as (table, scope) -> source key, which is only a function because the registry
+    // refuses two sources claiming one table/scope. Relaxing this check would let unchanged
+    // rows churn identity — these tests must fail loudly if anyone tries.
     [Fact]
     public void SharedTable_WithDuplicateScopeOwnership_IsRejectedCaseInsensitively()
     {
@@ -101,6 +105,15 @@ public class SourceRegistryTests
             Source("a", sourceScope: "north"),
             Source("b", sourceScope: "NORTH"),
         ]));
+
+        Assert.Contains("exactly one source owner", exception.Message);
+    }
+
+    [Fact]
+    public void SharedTable_WithTwoUnscopedSources_IsRejected()
+    {
+        var exception = Assert.Throws<ArgumentException>(() =>
+            new SourceRegistry([Source("a"), Source("b")]));
 
         Assert.Contains("exactly one source owner", exception.Message);
     }

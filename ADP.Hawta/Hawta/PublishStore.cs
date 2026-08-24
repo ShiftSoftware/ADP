@@ -297,26 +297,15 @@ public sealed class BlobPublishStore : PublishStore
     /// does not try: it asks whether the container is there and turns "no" into a throw. That is the
     /// distinction the rest of the tier cannot make for itself — every listing reports an
     /// unreachable store as an empty one.
+    ///
+    /// <para>Not creating it is the standing rule rather than a concession to the narrow credential:
+    /// the engine never creates or deletes a container, whatever the credential would allow. See
+    /// <see cref="SnapshotBlobContainerMissingException"/>. It is the one place this store parts
+    /// company with <see cref="LocalPublishStore"/>, which does create its directory — a directory
+    /// is not a permission boundary, and nobody scopes a credential to one.</para>
     /// </summary>
     public override void EnsureReady()
     {
-        try
-        {
-            // Create it, like LocalPublishStore creates its directory and like SnapshotWriteGate
-            // already does for the gate container. An account-scoped connection string — what
-            // production uses — can do this, so a first-ever deployment does not need somebody to
-            // have pre-created the container by hand.
-            container.CreateIfNotExists(cancellationToken: CancellationToken.None);
-        }
-        catch (RequestFailedException exception) when (exception.Status is 403 or 409)
-        {
-            // A narrower credential (a container-scoped SAS, or an account whose role omits
-            // container management) cannot create, and does not need to: the container already
-            // exists in every such deployment, because something had to grant access to it.
-            // Falling through to the reachability probe is the point — that is the question that
-            // actually matters, and it is answerable under either credential.
-        }
-
         try
         {
             // Deliberately a LISTING, not container.Exists(). Exists() issues a container-level
@@ -328,6 +317,12 @@ public sealed class BlobPublishStore : PublishStore
             // nothing and being believed.
             foreach (var _ in container.GetBlobs(BlobTraits.None, BlobStates.None, prefix, CancellationToken.None).Take(1))
                 break;
+        }
+        catch (RequestFailedException exception) when (exception.ErrorCode == BlobErrorCode.ContainerNotFound)
+        {
+            // Separated from the reachability failure below because it is the one with a one-line
+            // fix, and because "not there" and "cannot see it" are the two an operator confuses.
+            throw SnapshotBlobContainerMissingException.For(container.Name, "publish", exception);
         }
         catch (RequestFailedException exception)
         {

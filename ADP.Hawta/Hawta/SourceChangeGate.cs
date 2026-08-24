@@ -201,7 +201,11 @@ public sealed class SourceChangeGate
 ///     fixes a parsing bug in the ingestor or changes how row hashes are computed, so no
 ///     configuration hash can see it. Costs one extra full read per package bump, which App Service
 ///     already pays anyway: a slot swap hands the new instance an empty local disk, so the stamp
-///     table starts empty regardless.</item>
+///     table starts empty regardless. Known consequence for lazy residency: the bump makes every
+///     file source's first tick report ConfigurationChanged, and that verdict deliberately bypasses
+///     the content-identity guard — so the first tick after a version-bump deploy re-ingests every
+///     file feed and hydrates every deferred table once. Bounded to version-bump deploys;
+///     same-version restarts keep the full deferred saving.</item>
 ///   <item><b>Manual</b> — an operator-supplied version string. The only lever that forces a re-read
 ///     <i>without a deploy</i>, which is exactly what you want when the fix is a configuration
 ///     change you cannot express, or when you simply do not trust the stamps.</item>

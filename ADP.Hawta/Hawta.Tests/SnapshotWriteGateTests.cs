@@ -38,11 +38,23 @@ public class SnapshotWriteGateTests
         RenewInterval = renewInterval ?? TimeSpan.FromSeconds(5),
     };
 
+    /// <summary>
+    /// Creates the gate container — the DEVELOPER's job, and here the test is the developer.
+    /// The engine never creates a container (see <see cref="SnapshotBlobContainerMissingException"/>
+    /// and the guard tests in <c>BlobContainerOwnershipTests</c>), so everything that drives it
+    /// against a real service provisions one first, exactly as an operator does in production.
+    /// </summary>
+    private static async Task EnsureGateContainerAsync(
+        SnapshotWriteGateOptions options, CancellationToken cancellationToken) =>
+        await new BlobContainerClient(DevelopmentStorage, options.ContainerName)
+            .CreateIfNotExistsAsync(cancellationToken: cancellationToken);
+
     [Fact]
     public async Task SecondAcquirer_IsRefused_UntilTheFirstReleases()
     {
         Assert.SkipWhen(!AzuriteIsRunning(), "Azurite is not running on 127.0.0.1:10000.");
         var gateName = $"gate-{Guid.NewGuid():N}";
+        await EnsureGateContainerAsync(Options(gateName), TestContext.Current.CancellationToken);
 
         var first = await SnapshotWriteGate.TryAcquireAsync(Options(gateName), TestContext.Current.CancellationToken);
         Assert.NotNull(first);
@@ -68,6 +80,7 @@ public class SnapshotWriteGateTests
     public async Task TwoDistinctGates_DoNotContend()
     {
         Assert.SkipWhen(!AzuriteIsRunning(), "Azurite is not running on 127.0.0.1:10000.");
+        await EnsureGateContainerAsync(Options("unused"), TestContext.Current.CancellationToken);
 
         var a = await SnapshotWriteGate.TryAcquireAsync(Options($"gate-{Guid.NewGuid():N}"), TestContext.Current.CancellationToken);
         var b = await SnapshotWriteGate.TryAcquireAsync(Options($"gate-{Guid.NewGuid():N}"), TestContext.Current.CancellationToken);
@@ -84,6 +97,7 @@ public class SnapshotWriteGateTests
     {
         Assert.SkipWhen(!AzuriteIsRunning(), "Azurite is not running on 127.0.0.1:10000.");
         var gateName = $"gate-{Guid.NewGuid():N}";
+        await EnsureGateContainerAsync(Options(gateName), TestContext.Current.CancellationToken);
 
         // 15 s lease, 5 s renew: by 20 s an unrenewed lease would have expired and the
         // second acquirer would win. Renewal must keep it out.
@@ -527,8 +541,8 @@ public class SnapshotWriteGateTests
     {
         Assert.SkipWhen(!AzuriteIsRunning(), "Azurite is not running on 127.0.0.1:10000.");
         var options = Options($"gate-{Guid.NewGuid():N}");
+        await EnsureGateContainerAsync(options, TestContext.Current.CancellationToken);
         var container = new BlobContainerClient(DevelopmentStorage, options.ContainerName);
-        await container.CreateIfNotExistsAsync(cancellationToken: TestContext.Current.CancellationToken);
         var blob = container.GetBlobClient(options.GateName);
         await blob.UploadAsync(BinaryData.FromString(""), overwrite: true, TestContext.Current.CancellationToken);
 

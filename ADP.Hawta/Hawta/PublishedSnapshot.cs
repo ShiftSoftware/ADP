@@ -467,6 +467,30 @@ public sealed record PublishedTableManifest(
     [JsonPropertyName("sourceCatalog")]
     public IReadOnlyList<PublishedSourceCatalogEntry> SourceCatalog { get; init; } = [];
 
+    /// <summary>
+    /// How many of this table's rows were still owed to the Cosmos pump when the entry was
+    /// exported — the raw strict count (<c>_LastReplicationDate</c> NULL or behind
+    /// <c>_ReplicationModified</c>), <b>deliberately without</b> the attempts clause the pump's
+    /// own dirty predicate carries: a dead-lettered row has left the pump's queue but is still
+    /// unreplicated, and it must keep blocking the cold-start skip below. Null for a table with
+    /// no Cosmos family, and on entries written before the field existed.
+    ///
+    /// <para><b>Agent-internal — consumers must ignore this field.</b> It exists for one
+    /// decision: a cold start may leave this table's rows in the published copy (deferred) only
+    /// when the copy is provably not owed to the pump — no Cosmos family, or this count is
+    /// zero, or no source currently has replication enabled. Recorded raw regardless of whether
+    /// replication is enabled at export time; the cold-start decision applies the
+    /// currently-enabled filter. That split is what closes the enable-later trap for free:
+    /// rows merged while replication was off carry a watermark gap, so this count holds the
+    /// full backlog, and flipping replication on restarts the process — whose cold start sees
+    /// pending &gt; 0 with replication enabled and loads the table for the initial drain.
+    /// Staleness in the other direction is impossible: drain progress changes bookkeeping,
+    /// bookkeeping changes the signature, and a changed signature forces a re-export that
+    /// recomputes this count.</para>
+    /// </summary>
+    [JsonPropertyName("replicationPending")]
+    public long? ReplicationPending { get; init; }
+
     /// <summary>The entry's files resolved against the manifest's directory, in manifest order.</summary>
     public IReadOnlyList<string> Resolve(string publishDirectory) =>
         [.. Location.Paths.Select(path => PublishPath.Combine(publishDirectory, path))];
@@ -493,7 +517,30 @@ public sealed record PublishedTableManifest(
 public sealed record PublishedSourceCatalogEntry(
     [property: JsonPropertyName("sourceKey")] string SourceKey,
     [property: JsonPropertyName("sourceScope")] string? SourceScope,
-    [property: JsonPropertyName("recordIdentity")] SourceRecordIdentityDescriptor RecordIdentity);
+    [property: JsonPropertyName("recordIdentity")] SourceRecordIdentityDescriptor RecordIdentity)
+{
+    /// <summary>
+    /// Content identity of this scope's LIVE rows at export time — the
+    /// <see cref="SnapshotContentHash"/> aggregate (row count + order-independent md5 fold of
+    /// key ‖ row hash). <b>Agent-internal — consumers must ignore this field.</b>
+    ///
+    /// <para>What it is for: the change gate's file identity is length + mtime by design, so a
+    /// producer that rewrites identical content (or merely refreshes a timestamp) fires the
+    /// gate. For a Deferred table that false fire would cost a full hydration of the published
+    /// copy just to discover nothing changed. The staged file is already local and hashed when
+    /// the decision is made, so the ingestor compares the staged aggregate against this one and
+    /// skips the hydration when they match. Live rows only, deliberately: a tombstoned row is
+    /// one the source stopped delivering, and the staged side of the comparison is a file that
+    /// never contains it.</para>
+    ///
+    /// <para>Carried forward verbatim while the table stays deferred (the rows it describes
+    /// cannot change without hydrating); recomputed at every export. Null on a non-file source
+    /// (nothing consumes it there today) and on entries written before the field existed —
+    /// null always means "cannot prove unchanged", never "unchanged".</para>
+    /// </summary>
+    [JsonPropertyName("contentHash")]
+    public string? ContentHash { get; init; }
+}
 
 /// <summary>
 /// Where one table's data lives, as a self-describing set rather than a single file name.

@@ -25,23 +25,53 @@ namespace ShiftSoftware.ADP.Hawta;
 /// </summary>
 public static class SnapshotRebuild
 {
+    /// <summary>
+    /// The residency-aware cold start: tables the <paramref name="registry"/> qualifies for
+    /// deferral — and whose committed copy is provably not owed to the replication pump — are
+    /// NOT loaded; their rows stay in the published parquet and the write DB records a
+    /// Deferred state plus everything hydration needs. Everything else loads exactly as
+    /// before. This is where the entire cold-start saving comes from: on the measured estate
+    /// one quiet catalog table is 87% of the publish set's bytes.
+    /// </summary>
+    public static SnapshotRebuildResult Execute(
+        SnapshotStore store,
+        SourceRegistry registry,
+        string publishDirectory,
+        string snapshotName,
+        PublishStore? publishStore = null) =>
+        ExecuteCore(store, registry.Tables, publishDirectory, snapshotName, publishStore, registry);
+
+    /// <summary>
+    /// Without a registry nothing can qualify for deferral, so every manifest table loads
+    /// Resident — the pre-residency behaviour, kept for callers that only have table
+    /// definitions.
+    /// </summary>
     public static SnapshotRebuildResult Execute(
         SnapshotStore store,
         IReadOnlyList<SnapshotTableDefinition> tables,
         string publishDirectory,
         string snapshotName,
-        PublishStore? publishStore = null)
+        PublishStore? publishStore = null) =>
+        ExecuteCore(store, tables, publishDirectory, snapshotName, publishStore, registry: null);
+
+    private static SnapshotRebuildResult ExecuteCore(
+        SnapshotStore store,
+        IReadOnlyList<SnapshotTableDefinition> tables,
+        string publishDirectory,
+        string snapshotName,
+        PublishStore? publishStore,
+        SourceRegistry? registry)
     {
         foreach (var table in tables)
             store.EnsureTable(table);
 
         // The documented precondition, checked rather than assumed. The seed below is a bare
-        // INSERT, so a caller that hands over a POPULATED store gets a primary-key violation from
-        // deep inside the per-manifest loop — where it is indistinguishable from a torn parquet
-        // file, and comes back as "no published set could be loaded, rebuild from sources
-        // instead". That message names the wrong culprit and recommends the most expensive path in
-        // the system to fix a caller bug the published set is innocent of. One count per table is
-        // nothing next to reading the set, and it turns that misdirection into the actual answer.
+        // INSERT, and snapshot tables carry no PRIMARY KEY index — so a caller that hands over
+        // a POPULATED store would not fail here at all: every seeded row would land beside the
+        // rows already resident, and the doubled keys would only surface at the next publish as
+        // a global sequence-contract failure that blames the store's data. This check is what
+        // stands between that caller bug and a silently doubled table, and one count per table
+        // is nothing next to reading the set.
         foreach (var table in tables)
         {
             var existing = Convert.ToInt64(store.ExecuteScalar($"SELECT count(*) FROM {table.QualifiedName}"));
@@ -63,7 +93,7 @@ public static class SnapshotRebuild
         var manifests = PublishedSnapshot.ListManifests(store_, snapshotName);
         if (manifests.Count == 0)
         {
-            return new SnapshotRebuildResult(null, [], [], [.. tables.Select(t => t.Name)], []);
+            return new SnapshotRebuildResult(null, [], [], [], [.. tables.Select(t => t.Name)], []);
         }
 
         var publishesSkipped = new List<string>();
@@ -72,6 +102,13 @@ public static class SnapshotRebuild
         var compatibleManifestSeen = false;
         var incompatibleManifestSeen = false;
         var unclassifiedFailureSeen = false;
+
+        // The newest manifest BY NAME, kept even when the estate ends up seeding from an older
+        // one. It is the only manifest a table may stay deferred against, because it is the one
+        // the publisher will resolve as its baseline — see ResolveDeferralBaseline. Stays null
+        // when it cannot be read (then nobody can know what it said, and nothing may defer).
+        PublishedSnapshot? newestByName = null;
+        string? newestByNamePath = null;
 
         foreach (var manifestPath in manifests)
         {
@@ -100,6 +137,11 @@ public static class SnapshotRebuild
 
                 compatibleManifestSeen = true;
                 var published = PublishedSnapshot.Read(store_, manifestPath);
+                if (manifestPath == manifests[0])
+                {
+                    newestByName = published;
+                    newestByNamePath = manifestPath;
+                }
 
                 observedChangeSequenceHighWatermark = Math.Max(
                     observedChangeSequenceHighWatermark,
@@ -107,7 +149,8 @@ public static class SnapshotRebuild
 
                 return LoadFromManifest(
                     store, tables, store_, snapshotName, manifestPath, published,
-                    observedChangeSequenceHighWatermark, publishesSkipped);
+                    observedChangeSequenceHighWatermark, publishesSkipped, registry,
+                    newestByName, newestByNamePath);
             }
             catch (SnapshotSchemaMismatchException)
             {
@@ -131,7 +174,7 @@ public static class SnapshotRebuild
         if (!compatibleManifestSeen && incompatibleManifestSeen && !unclassifiedFailureSeen)
         {
             return new SnapshotRebuildResult(
-                null, [], [], [.. tables.Select(table => table.Name)], publishesSkipped);
+                null, [], [], [], [.. tables.Select(table => table.Name)], publishesSkipped);
         }
 
         throw new InvalidDataException(
@@ -144,33 +187,36 @@ public static class SnapshotRebuild
         SnapshotStore store, IReadOnlyList<SnapshotTableDefinition> tables,
         PublishStore publishStore, string snapshotName, string manifestPath,
         PublishedSnapshot published, long changeSequenceFloor,
-        IReadOnlyList<string> publishesSkipped)
+        IReadOnlyList<string> publishesSkipped, SourceRegistry? registry,
+        PublishedSnapshot? newestByName, string? newestByNamePath)
     {
+        var seedIsNewest = ReferenceEquals(published, newestByName);
         var manifestByTable = published.Tables.ToDictionary(e => e.Table, StringComparer.OrdinalIgnoreCase);
 
         var definedNames = new HashSet<string>(tables.Select(t => t.Name), StringComparer.OrdinalIgnoreCase);
         var skipped = published.Tables.Where(e => !definedNames.Contains(e.Table)).Select(e => e.Table).ToList();
 
-        // Validate the whole parquet set up front (footers parse, row counts match) before
-        // loading anything — a torn file must fail the publish, not the rebuild.
-        var sources = new Dictionary<string, PublishedTableManifest>(StringComparer.OrdinalIgnoreCase);
+        // Resolve — and probe — each table's deferral baseline BEFORE the transaction opens.
+        // The probe reads publish-tier parquet footers, and a torn file aborts an open DuckDB
+        // transaction even though the probe itself absorbs the error; it is remote I/O that
+        // has no business inside the seed's atomic load anyway.
+        //
+        // These are the ONLY footer probes a cold start runs, and they are the ones that earn
+        // their cost: a deferred table's rows are not loaded, so the published copy is its only
+        // copy, and nothing else will read that file until a hydration weeks later. A table being
+        // LOADED proves its own copy by loading it — see the row-count check below.
+        var deferralBaselines = new Dictionary<string, PublishedTableManifest>(StringComparer.OrdinalIgnoreCase);
         foreach (var table in tables)
         {
-            if (!manifestByTable.TryGetValue(table.Name, out var entry))
-                continue;
-
-            if (!SnapshotPublisher.ParquetIsIntact(store, entry.Resolve(publishStore.Root), entry.RowCount))
-            {
-                throw new InvalidDataException(
-                    $"'{string.Join(", ", entry.Location.Paths)}' referenced by " +
-                    $"'{PublishPath.FileName(manifestPath)}' is missing or torn.");
-            }
-
-            sources[table.Name] = entry;
+            var baseline = ResolveDeferralBaseline(store, registry, table, newestByName, publishStore.Root);
+            if (baseline is not null)
+                deferralBaselines[table.Name] = baseline;
         }
 
         var loaded = new List<SnapshotRebuildTable>();
+        var deferred = new List<SnapshotRebuildTable>();
         var createdEmpty = new List<string>();
+        var deferredFromNewestSourceKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var startedAt = DateTime.UtcNow;
 
         store.Execute("BEGIN TRANSACTION");
@@ -178,15 +224,78 @@ public static class SnapshotRebuild
         {
             foreach (var table in tables)
             {
-                if (!sources.TryGetValue(table.Name, out var entry))
+                manifestByTable.TryGetValue(table.Name, out var seedEntry);
+
+                if (deferralBaselines.TryGetValue(table.Name, out var baseline))
                 {
-                    createdEmpty.Add(table.Name);
+                    // The skip itself. The rows stay in the published parquet; what this
+                    // start records instead is (a) the Deferred state with the baseline
+                    // entry's resolved file list and row count — everything a later
+                    // hydration needs — and (b) the per-scope content identities the
+                    // ingest-time guard compares re-delivered files against. All of it
+                    // comes from the NEWEST manifest's entry (the seed's own on the normal
+                    // path), so what hydration will read and what the publisher will carry
+                    // are the same files by construction. The ownership map is restored
+                    // from that entry's catalog exactly as for a loaded table (it derives
+                    // from the catalog; no rows are needed), and the source stamps restore
+                    // below — which is what keeps the gate quiet so the deferral holds.
+                    store.MarkTableDeferred(
+                        table.Name,
+                        PublishPath.FileName(newestByNamePath!),
+                        baseline.Resolve(publishStore.Root),
+                        baseline.RowCount,
+                        [.. baseline.SourceCatalog
+                            .Where(source => source.ContentHash is not null)
+                            .Select(source => (source.SourceScope, source.ContentHash!))],
+                        baseline.ReplicationPending);
+                    store.RestoreSourceOwnership(table, baseline.SourceCatalog);
+                    deferred.Add(new SnapshotRebuildTable(table.Name, baseline.Location.Paths, baseline.RowCount));
+
+                    if (!seedIsNewest)
+                        foreach (var source in baseline.SourceCatalog)
+                            deferredFromNewestSourceKeys.Add(source.SourceKey);
+
+                    // No synthetic rebuild run record: those say "this start loaded N rows",
+                    // and this start deliberately loaded none. Per-source freshness rows
+                    // reappear within one cadence tick, exactly as they do for loaded
+                    // tables (rebuild never restores per-source SyncRuns rows either way).
                     continue;
                 }
 
-                var rows = LoadTable(store, table, entry, publishStore.Root);
-                store.RestoreSourceOwnership(table, entry.SourceCatalog);
-                loaded.Add(new SnapshotRebuildTable(table.Name, entry.Location.Paths, rows));
+                if (seedEntry is null)
+                {
+                    // Nothing to load (the seed carries no entry for this table) and, per
+                    // the check above, nothing it may defer against either — so the only
+                    // copy this table can have is resident rows, recorded as an explicit
+                    // state, not left to inference. This is a normal condition (a new
+                    // family before its first publish, the cutover's first hour), not an
+                    // error; the table becomes deferred-eligible at the first cold start
+                    // after its first publish.
+                    createdEmpty.Add(table.Name);
+                    store.MarkTableResident(table.Name);
+                    continue;
+                }
+
+                var rows = LoadTable(store, table, seedEntry, publishStore.Root);
+
+                // The intactness check for a LOADED table, made by the load itself. The footer
+                // probe this replaces asserted exactly this equality from parquet metadata, at
+                // the price of opening the file an extra time; reading the rows asserts it from
+                // the rows, which is strictly the stronger claim — a file whose footer is honest
+                // but whose data pages are corrupt passes a probe and fails here. A mismatch
+                // throws, the transaction rolls back, and the manifest goes to the newest-first
+                // fallback: the same DR posture as before, reached one statement later.
+                if (rows != seedEntry.RowCount)
+                {
+                    throw new InvalidDataException(
+                        $"'{string.Join(", ", seedEntry.Location.Paths)}' referenced by " +
+                        $"'{PublishPath.FileName(manifestPath)}' is torn: it loaded {rows} row(s), " +
+                        $"but the manifest records {seedEntry.RowCount}.");
+                }
+
+                store.RestoreSourceOwnership(table, seedEntry.SourceCatalog);
+                store.MarkTableResident(table.Name);
+                loaded.Add(new SnapshotRebuildTable(table.Name, seedEntry.Location.Paths, rows));
 
                 store.Execute(
                     """
@@ -211,6 +320,23 @@ public static class SnapshotRebuild
             foreach (var stamp in published.SourceStamps ?? [])
                 store.WriteSourceFileStamp(stamp.ToStamp());
 
+            // A table deferred against the newest manifest while the estate seeded from an
+            // older one takes its gate stamps from the NEWEST manifest too. A stamp asserts
+            // "this exact file is already in the data you are looking at", and for such a
+            // table the data is the newest committed copy, not the seed — the seed's older
+            // stamp would fire the gate on the first tick and cost a full file read just for
+            // the content guard to conclude nothing changed. Only these tables' own sources
+            // are overridden: everyone else's rows really did come from the seed, and the
+            // seed's stamps are the ones that describe them.
+            if (deferredFromNewestSourceKeys.Count > 0)
+            {
+                foreach (var stamp in newestByName!.SourceStamps ?? [])
+                {
+                    if (deferredFromNewestSourceKeys.Contains(stamp.SourceKey))
+                        store.WriteSourceFileStamp(stamp.ToStamp());
+                }
+            }
+
             // Same act, same transaction, for the upstream Cosmos cursors — and here it is not an
             // optimisation. Without it a DR rebuild silently becomes a full container re-read: the
             // write DB is reseeded from parquet, not from sources, so a cursor that lived only in
@@ -234,14 +360,119 @@ public static class SnapshotRebuild
         }
 
         return new SnapshotRebuildResult(
-            PublishPath.FileName(manifestPath), loaded, skipped, createdEmpty, [.. publishesSkipped]);
+            PublishPath.FileName(manifestPath), loaded, deferred, skipped, createdEmpty, [.. publishesSkipped]);
+    }
+
+    /// <summary>
+    /// The manifest entry this cold start may leave a table's rows in — always the newest
+    /// manifest BY NAME's own entry — or null when the table must load resident. Four
+    /// conditions, all computed: the newest manifest must be readable and a CURRENT-schema
+    /// publish, the registry must qualify the table's shape (every source a gate-wired file
+    /// source, no pin), the settled rule — the copy is provably not owed to the pump (a
+    /// dead-lettered row counts as owed on purpose: the manifest's pending count is
+    /// attempts-blind, so such a row blocks the skip, loads, and stays visible to a reset; a
+    /// null pending count can prove nothing and loads) — and the entry's own parquet must
+    /// probe intact.
+    ///
+    /// <para>Why only the newest by name, even when the estate seeds from an older manifest:
+    /// the publisher resolves its carry-forward baseline from the newest manifest BY NAME and
+    /// never consults the residency record. A table deferred against whichever manifest
+    /// happened to load diverges from that baseline the moment the newest manifest is corrupt
+    /// or a sibling's parquet is torn — then every publish throws on the missing or torn
+    /// baseline entry, restarting rebuilds the identical divergence instead of healing it,
+    /// and retention (which protects manifest-referenced files only) can meanwhile sweep the
+    /// recorded copy out from under a future hydration. So: when the newest manifest can
+    /// still supply this table's entry intact, defer against THAT entry — record and baseline
+    /// then agree by construction, at zero load. When it cannot — the manifest is unreadable
+    /// (nobody can know what it said) or this table's own parquet in it is torn (the copy of
+    /// record is down to one good older copy) — the table loads resident and the next publish
+    /// re-exports: minting a fresh copy is the pre-residency self-heal, restored on exactly
+    /// the faults that used to heal.</para>
+    ///
+    /// <para>The schema condition is load-bearing, not tidiness — the same wedge family: the
+    /// publisher deliberately refuses to reuse entries from an older-schema baseline — a
+    /// schema transition must re-export every table — and re-exporting needs resident rows. A
+    /// table deferred from an older-schema set would leave the transition publish with
+    /// nothing to carry and nothing to export, failing every cycle until someone forced the
+    /// rows resident. So an older-schema rebuild loads everything, the transition publish
+    /// re-exports it, and the NEXT restart defers from the fresh current-schema set.</para>
+    /// </summary>
+    private static PublishedTableManifest? ResolveDeferralBaseline(
+        SnapshotStore store,
+        SourceRegistry? registry,
+        SnapshotTableDefinition table,
+        PublishedSnapshot? newestByName,
+        string publishRoot)
+    {
+        if (newestByName is null || newestByName.SchemaVersion != SnapshotStore.CurrentSchemaVersion)
+            return null;
+
+        if (registry is null || !registry.IsTableDeferredCapable(table.Name))
+            return null;
+
+        var entry = newestByName.Tables.FirstOrDefault(candidate =>
+            candidate.Table.Equals(table.Name, StringComparison.OrdinalIgnoreCase));
+        if (entry is null)
+            return null;
+
+        if (registry.TableHasReplicationEnabledCosmosFamily(table.Name)
+            && entry.ReplicationPending != 0)
+        {
+            return null;
+        }
+
+        // The one file the deferral is about to stake the table's only unloaded copy on, so it
+        // is proven here — on every path, not just a fallback seed. A failed probe resolves
+        // quietly to resident rather than failing a seed that is otherwise fine: loading is
+        // always available, and the next publish then mints a fresh export, which is the
+        // pre-residency self-heal.
+        if (!SnapshotPublisher.ParquetIsIntact(store, entry.Resolve(publishRoot), entry.RowCount))
+            return null;
+
+        return entry;
     }
 
     private static long LoadTable(
-        SnapshotStore store, SnapshotTableDefinition table, PublishedTableManifest entry, string publishDirectory)
-    {
-        var source = entry.ReadParquetSql(publishDirectory);
+        SnapshotStore store, SnapshotTableDefinition table, PublishedTableManifest entry, string publishDirectory) =>
+        LoadTableInto(store, table, entry.ReadParquetSql(publishDirectory), $"Published v4 table '{table.Name}'");
 
+    /// <summary>
+    /// The one loader for bringing published rows back into the write DB — cold start and
+    /// ingest-time hydration both come through here, so a torn, wrong-schema, or key-corrupt
+    /// file is refused by the same checks on both paths. <paramref name="sourceDescription"/>
+    /// names the copy in error messages ("Published v4 table 'X'", "Deferred copy of 'X'").
+    ///
+    /// <para><b>Exactly two statements touch the copy: the schema probe and the insert.</b> The
+    /// contract checks below deliberately run AFTER the insert, against the local table, and that
+    /// ordering is a performance decision with a measured basis. Against a blob publish tier a
+    /// statement over a remote parquet costs a near-constant toll regardless of size — measured on
+    /// the TCA estate at roughly two seconds whether the file holds two rows or 1.4 million, because
+    /// the cost is round trips, not bytes. Validating the copy in place meant four openings per
+    /// table, and a caller that also footer-probed it first meant five; on a 21-table seed those
+    /// were most of a three-minute cold start, spent asking a network about data that was about to
+    /// be local anyway.</para>
+    ///
+    /// <para><b>Why moving them is safe rather than a trade.</b> Both callers hold an open
+    /// transaction across the whole load — cold start's own BEGIN/COMMIT, and the merge transaction
+    /// that brackets hydration — and both roll back on any exception. Rows that fail a check below
+    /// therefore never become visible to anything: the same guarantee the pre-insert order gave,
+    /// reached by rolling back rather than by refusing early. The cost is that a bad copy is now
+    /// read before it is rejected, which is work spent only on the failure path.</para>
+    ///
+    /// <para>The checks are equivalent only because the target is EMPTY, so "the rows in the table"
+    /// and "the rows just loaded" are the same set. Both callers guarantee it — cold start asserts
+    /// it per table up front, and a Deferred table has no resident rows by definition — and it is
+    /// re-asserted here, locally and cheaply, because that equivalence is what the whole reordering
+    /// stands on.</para>
+    /// </summary>
+    internal static long LoadTableInto(
+        SnapshotStore store, SnapshotTableDefinition table, string readParquetSql, string sourceDescription)
+    {
+        var source = readParquetSql;
+
+        // Remote statement 1 of 2. Footer only, and unavoidable: the insert takes the intersection
+        // of the declared columns and the file's, which is what lets a widened definition load an
+        // older file with its new columns NULL.
         var parquetColumns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         using (var command = store.Connection.CreateCommand())
         {
@@ -257,19 +488,22 @@ public static class SnapshotRebuild
         if (missingBookkeeping.Count > 0)
         {
             throw new InvalidDataException(
-                $"Published v4 table '{table.Name}' is missing required bookkeeping column(s): " +
+                $"{sourceDescription} is missing required bookkeeping column(s): " +
                 string.Join(", ", missingBookkeeping));
         }
 
-        var invalidVersions = Convert.ToInt64(store.ExecuteScalar(
-            $"SELECT count(*) FROM {source} " +
-            $"WHERE \"{BookkeepingColumns.ChangeSequence}\" IS NULL " +
-            $"OR \"{BookkeepingColumns.ChangeSequence}\" <= 0 " +
-            $"OR \"{BookkeepingColumns.ChangeRecordedAt}\" IS NULL"));
-        if (invalidVersions > 0)
+        // The precondition the post-insert checks rest on, asserted rather than assumed. Local, one
+        // count, and it keeps a caller bug from being reported as a corrupt published copy: with
+        // rows already present, the duplicate-key check below would blame the seed for keys the
+        // store was holding before the load.
+        var existing = Convert.ToInt64(store.ExecuteScalar($"SELECT count(*) FROM {table.QualifiedName}"));
+        if (existing > 0)
         {
-            throw new InvalidDataException(
-                $"Published v4 table '{table.Name}' has {invalidVersions} row(s) with invalid durable change metadata.");
+            throw new InvalidOperationException(
+                $"Table '{table.Name}' already holds {existing} row(s) and cannot be loaded into. " +
+                $"{sourceDescription} may only be loaded into an empty table — cold start seeds a fresh " +
+                "store, and hydration loads a Deferred table, which has no resident rows. Reaching here " +
+                "means a caller bug, not a bad published copy.");
         }
 
         var columns = table.Columns.Select(c => c.Name).Concat(BookkeepingColumns.All)
@@ -277,21 +511,60 @@ public static class SnapshotRebuild
             .Select(c => $"\"{c}\"")
             .ToList();
 
-        return store.Execute(
+        // Remote statement 2 of 2.
+        var rows = store.Execute(
             $"""
             INSERT INTO {table.QualifiedName} ({string.Join(", ", columns)})
             SELECT {string.Join(", ", columns)} FROM {source}
             """);
+
+        // ---- Contract checks, over the loaded rows on local disk --------------------------------
+        // Same assertions, same messages, same transaction. Only the side of the network they run on
+        // has changed, and with it the number of times the published copy is opened.
+
+        var invalidVersions = Convert.ToInt64(store.ExecuteScalar(
+            $"SELECT count(*) FROM {table.QualifiedName} " +
+            $"WHERE \"{BookkeepingColumns.ChangeSequence}\" IS NULL " +
+            $"OR \"{BookkeepingColumns.ChangeSequence}\" <= 0 " +
+            $"OR \"{BookkeepingColumns.ChangeRecordedAt}\" IS NULL"));
+        if (invalidVersions > 0)
+        {
+            throw new InvalidDataException(
+                $"{sourceDescription} has {invalidVersions} row(s) with invalid durable change metadata.");
+        }
+
+        // Snapshot tables carry no PRIMARY KEY index, so nothing structural refuses a seed whose
+        // rows duplicate a key — and a duplicate restored here would be trusted by every later
+        // merge (only staging is checked; the publish contract would refuse the store, but only
+        // after the corrupt seed is already resident). Refuse the seed before the transaction
+        // commits. count(DISTINCT) ignores NULLs, so this also catches a NULL key.
+        var duplicateKeys = Convert.ToInt64(store.ExecuteScalar(
+            $"SELECT count(*) - count(DISTINCT \"{BookkeepingColumns.PrimaryKey}\") FROM {table.QualifiedName}"));
+        if (duplicateKeys > 0)
+        {
+            throw new InvalidDataException(
+                $"{sourceDescription} has {duplicateKeys} duplicated or NULL primary key value(s).");
+        }
+
+        return rows;
     }
 }
 
 /// <param name="ManifestFile">The manifest the rebuild loaded, or null when no snapshot is published (the store stays empty — a genuinely fresh start).</param>
+/// <param name="TablesDeferred">
+/// Tables whose rows deliberately stayed in the published copy (lazy residency): definitions
+/// ensured, ownership and stamps restored, rows NOT loaded; <c>Rows</c> is what the copy
+/// holds, not what was read. A separate list on purpose — operators read
+/// <paramref name="TablesCreatedEmpty"/> as "new family, nothing published yet", which is a
+/// different condition entirely.
+/// </param>
 /// <param name="TablesSkipped">Manifest tables the caller's definitions don't declare (published by an older configuration).</param>
 /// <param name="TablesCreatedEmpty">Declared tables absent from the manifest (new families not yet published).</param>
 /// <param name="PublishesSkipped">Newer published sets that could not be loaded (missing/torn parquet) before one succeeded.</param>
 public sealed record SnapshotRebuildResult(
     string? ManifestFile,
     IReadOnlyList<SnapshotRebuildTable> TablesLoaded,
+    IReadOnlyList<SnapshotRebuildTable> TablesDeferred,
     IReadOnlyList<string> TablesSkipped,
     IReadOnlyList<string> TablesCreatedEmpty,
     IReadOnlyList<string> PublishesSkipped)

@@ -152,6 +152,21 @@ internal interface IReplicationStateStore
         bool dirtyGroupsOnly) =>
         throw new NotSupportedException("This replication-state test double does not support grouped projections.");
 
+    /// <summary>
+    /// Unreplicated rows past the attempt limit — the drain report's settled-vs-drained
+    /// divergence. Defaulted to zero so replication-state test doubles that model no failure
+    /// ledger keep compiling; the real store counts.
+    /// </summary>
+    long CountDeadLetteredRows(SnapshotTableDefinition table) => 0;
+
+    /// <summary>
+    /// Where the table's rows live. Dry-run refuses a Deferred table on this answer: its
+    /// dirty queue reads as empty because the rows are not resident, and an empty intended-ops
+    /// run would be mistaken for "all settled". Defaulted to Resident so replication-state
+    /// test doubles that model no residency keep compiling; the real store reads the record.
+    /// </summary>
+    SnapshotResidency ReadResidency(SnapshotTableDefinition table) => SnapshotResidency.Resident;
+
     void PruneReconOps(SnapshotTableDefinition table);
     void AppendReconOp(ReplicationReconOperation operation);
 
@@ -170,14 +185,18 @@ internal enum ReplicationStateOutcomeKind
 /// <summary>
 /// A terminal row outcome produced by the Cosmos side of the pump. Successful outcomes
 /// carry the exact captured watermark and stamp that landed remotely; failed outcomes carry
-/// the error to add once to that captured version's retry ledger.
+/// the error to add once to that captured version's retry ledger — unless the failure was
+/// the service throttling (<see cref="ThrottledFailure"/>), which records the error but
+/// costs no attempt: backpressure is not per-row poison, and the attempt limit exists for
+/// deterministic failures only.
 /// </summary>
 internal sealed record ReplicationStateOutcome(
     string PrimaryKey,
     DateTime CapturedLastModified,
     ReplicationStateOutcomeKind Kind,
     string? ReplicationStamp,
-    string? Error)
+    string? Error,
+    bool ThrottledFailure = false)
 {
     public static ReplicationStateOutcome Replicated(
         string primaryKey,
@@ -193,13 +212,15 @@ internal sealed record ReplicationStateOutcome(
     public static ReplicationStateOutcome Failed(
         string primaryKey,
         DateTime capturedLastModified,
-        string error) =>
+        string error,
+        bool throttled = false) =>
         new(
             primaryKey,
             capturedLastModified,
             ReplicationStateOutcomeKind.Failed,
             ReplicationStamp: null,
-            error);
+            error,
+            throttled);
 }
 
 internal sealed record ReplicationReconOperation(
@@ -229,6 +250,10 @@ internal sealed class SnapshotReplicationStateStore(SnapshotStore store) : IRepl
         int limit,
         bool dirtyGroupsOnly) =>
         store.ReadReplicationGroups(table, grouping, afterGroupKey, limit, dirtyGroupsOnly);
+
+    public long CountDeadLetteredRows(SnapshotTableDefinition table) => store.CountDeadLetteredRows(table);
+
+    public SnapshotResidency ReadResidency(SnapshotTableDefinition table) => store.ReadResidency(table.Name);
 
     public void PruneReconOps(SnapshotTableDefinition table) => store.PruneReconOps(table);
 

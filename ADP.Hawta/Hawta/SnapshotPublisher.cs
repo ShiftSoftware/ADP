@@ -112,6 +112,11 @@ public static class SnapshotPublisher
         // degrades to a full re-export — never to a wrong publish.
         var previousPath = PublishedSnapshot.ResolveNewest(publishStore, options.SnapshotName);
         var baseline = new Dictionary<string, PublishedTableManifest>(StringComparer.OrdinalIgnoreCase);
+
+        // The gate stamps the baseline carries, kept for the change decision below. An
+        // unreadable or pre-v4 baseline leaves this empty, which reads as "changed" — the same
+        // conservative direction the table baseline takes.
+        IReadOnlyList<PublishedSourceStamp> baselineStamps = [];
         if (previousPath is not null)
         {
             PublishedSnapshot? previous = null;
@@ -142,6 +147,7 @@ public static class SnapshotPublisher
                 {
                     foreach (var entry in previous.Tables)
                         baseline[entry.Table] = entry;
+                    baselineStamps = previous.SourceStamps ?? [];
                 }
             }
         }
@@ -161,8 +167,22 @@ public static class SnapshotPublisher
             table => table.Name,
             table => BuildSourceCatalog(options, table),
             StringComparer.OrdinalIgnoreCase);
+
+        // Residency read once per table, up front: the deferred branch below has to run
+        // BEFORE the contract scan and BEFORE any signature read, because both are questions
+        // about resident rows and a Deferred table has none — its committed copy is the
+        // answer, and reading (0, empty-hash) instead would send it down the export path,
+        // which for a deferred table means empty parquet over the copy of record.
+        var residency = options.Tables.ToDictionary(
+            table => table.Name,
+            table => store.ReadResidency(table.Name),
+            StringComparer.OrdinalIgnoreCase);
+
         foreach (var table in options.Tables)
-            EnsureSourceVersionContract(store, table, sourceCatalogs[table.Name]);
+        {
+            if (residency[table.Name] == SnapshotResidency.Resident)
+                EnsureSourceVersionContract(store, table, sourceCatalogs[table.Name]);
+        }
         EnsureGlobalSequenceContract(store, options.Tables);
 
         var exported = new List<string>();
@@ -173,11 +193,62 @@ public static class SnapshotPublisher
         foreach (var table in options.Tables)
         {
             var sourceCatalog = sourceCatalogs[table.Name];
-            var signature = ReadSignature(store, table);
             var baselineEntry = baseline.GetValueOrDefault(table.Name);
 
-            if (baselineEntry is not null && !CatalogsEqual(baselineEntry.SourceCatalog, sourceCatalog))
+            // The catalog a carried entry keeps: identity fields refreshed from the live
+            // configuration (the incumbent reuse behaviour — a renamed source key must reach
+            // the manifest), content identities grafted from the baseline (they describe rows
+            // this cycle did not touch, and only an export may recompute them).
+            var carriedCatalog = baselineEntry is null
+                ? sourceCatalog
+                : CarryContentHashes(sourceCatalog, baselineEntry.SourceCatalog);
+
+            if (baselineEntry is not null && !CatalogsEqual(baselineEntry.SourceCatalog, carriedCatalog))
                 catalogChanged = true;
+
+            // ---- Deferred branch — before any signature read, keyed on recorded state ----
+            // The committed copy IS this table's current state, so its baseline entry is
+            // carried forward verbatim: location, row count, state hash, replication-pending
+            // count. No signature read, no contract scan, no export. Riding the same manifest
+            // mechanics as the reuse path is what makes the entry survive rewrites triggered
+            // by other tables. Force does not override this branch: forcing a re-export needs
+            // resident rows, and hydrating is the caller's decision, never the publisher's.
+            if (residency[table.Name] == SnapshotResidency.Deferred)
+            {
+                if (baselineEntry is null)
+                {
+                    // A deferred table with nothing to carry cannot be published at all —
+                    // exporting would write empty parquet over the copy of record. This state
+                    // is a contradiction (deferral requires a committed entry), so fail the
+                    // publish loudly; a restart re-evaluates residency at cold start.
+                    throw new InvalidOperationException(
+                        $"Table '{table.Name}' is Deferred but the previous manifest carries no entry to " +
+                        "carry forward. Refusing to publish: exporting a deferred table would overwrite " +
+                        "the only copy of its rows with an empty file. Restart the agent so cold start " +
+                        "re-evaluates residency.");
+                }
+
+                // The reused path re-verifies intactness every publish, and a deferred entry
+                // needs that MORE: the old self-heal (re-export from resident rows) does not
+                // exist here, so a rotted copy of record must be discovered while older
+                // manifests still hold a fallback — not when hydration needs it. Measured at
+                // a footer read + row count (0.12 MiB / 2 requests on the large catalog
+                // table) — cheap at any cadence.
+                if (!ParquetIsIntact(store, baselineEntry.Resolve(publishStore.Root), baselineEntry.RowCount))
+                {
+                    throw new InvalidDataException(
+                        $"Table '{table.Name}' is Deferred and its published copy " +
+                        $"('{string.Join(", ", baselineEntry.Location.Paths)}') is missing or torn. " +
+                        "Refusing to publish rather than re-referencing a bad copy of record. " +
+                        "Restart the agent: cold start falls back to older manifests, then to sources.");
+                }
+
+                reused.Add(table.Name);
+                manifest.Add(baselineEntry with { SourceCatalog = carriedCatalog });
+                continue;
+            }
+
+            var signature = ReadSignature(store, table);
 
             // Reuse needs more than signature equality: the baseline's files must still be
             // readable at the expected row count (a torn file from a crash would otherwise be
@@ -192,8 +263,11 @@ public static class SnapshotPublisher
 
             if (upToDate)
             {
+                // An unchanged signature covers every exported column of every row, so the
+                // baseline's replication-pending count and content identities still hold and
+                // ride along unrecomputed.
                 reused.Add(table.Name);
-                manifest.Add(baselineEntry! with { SourceCatalog = sourceCatalog });
+                manifest.Add(baselineEntry! with { SourceCatalog = carriedCatalog });
                 continue;
             }
 
@@ -211,13 +285,44 @@ public static class SnapshotPublisher
                 DataAsOf: signature.MaxLastModified,
                 ExportedAt: stamp)
             {
-                SourceCatalog = sourceCatalog,
+                SourceCatalog = ComputeContentHashes(store, table, options, sourceCatalog),
+                ReplicationPending = ReadReplicationPendingRaw(store, table, options),
             });
         }
 
         var noRows = manifest.Where(e => e.RowCount == 0).Select(e => e.Table).Order().ToList();
 
-        if (exported.Count == 0 && previousPath is not null && !catalogChanged)
+        // The gate's memory, read once: compared against the baseline immediately below, and
+        // carried into the new manifest if one is written. One read, so the set that decides
+        // and the set that is committed cannot differ.
+        var sourceStamps = store.ReadAllSourceFileStamps().Select(PublishedSourceStamp.From).ToList();
+
+        // Stamps are a third reason to rewrite, alongside an export and a catalog change.
+        //
+        // A stamp says "this exact file is already in the data you are looking at", and cold
+        // start restores the stamps from the manifest it seeds from. So when the live stamps
+        // and the baseline's disagree, the baseline is carrying a memory that no longer matches
+        // this build — and every cold start from it fires the gate on those sources, re-reads
+        // every one of their feeds, and hydrates every table that was deferred against them.
+        //
+        // Left to signatures alone that never healed: the re-read finds identical content, so
+        // no table's signature moves, so nothing is exported, so the manifest is not rewritten
+        // and keeps the stale stamps. The next cold start does it again, and the next. The
+        // condition is self-perpetuating precisely because it costs nothing in ROWS. Rewriting
+        // here ends it in one cycle, and cheaply: every table is reused, so this writes one
+        // manifest and moves no data.
+        //
+        // The commonest cause is an ordinary deploy — the fingerprint carries Hawta's own
+        // version, so a release invalidates every stamp on purpose. That is a re-read the new
+        // build is owed exactly once, not once per restart until the data happens to change.
+        //
+        // Cursors deliberately do NOT get this treatment: a change-feed continuation token can
+        // advance on a tick that produced no rows, so including them would rewrite the manifest
+        // at cadence forever. A stale cursor also costs a bounded partial re-read, where stale
+        // stamps cost every feed and every deferred copy.
+        var stampsChanged = !GateMemoryEqual(baselineStamps, sourceStamps);
+
+        if (exported.Count == 0 && previousPath is not null && !catalogChanged && !stampsChanged)
         {
             // Self-heal only: a pointer lost to a crash (or never written, on an estate published
             // before it existed) comes back on the next cycle. Rewriting it unconditionally would
@@ -237,7 +342,8 @@ public static class SnapshotPublisher
 
         var manifestFile = $"{options.SnapshotName}-{publishId}{PublishedSnapshot.Extension}";
         var manifestPath = publishStore.Resolve(manifestFile);
-        WriteManifest(store, manifestPath, options, publishStore, publishId, stamp, manifest, options.OnBeforeManifestCommit);
+        WriteManifest(store, manifestPath, options, publishStore, publishId, stamp, manifest, sourceStamps,
+            options.OnBeforeManifestCommit);
 
         RefreshStablePointer(options, publishStore, manifestPath);
 
@@ -280,23 +386,119 @@ public static class SnapshotPublisher
         JsonSerializer.Serialize(left ?? [], PublishedSnapshot.SerializerOptions)
             .Equals(JsonSerializer.Serialize(right, PublishedSnapshot.SerializerOptions), StringComparison.Ordinal);
 
+    /// <summary>
+    /// Grafts the baseline's per-scope content identities onto a freshly built catalog.
+    /// Matched by scope, not by key: the scope is the durable identity of the rows a hash
+    /// describes (a source key renamed in configuration keeps the same rows), matched with the
+    /// same comparer the rest of the publisher uses for scopes.
+    /// </summary>
+    private static IReadOnlyList<PublishedSourceCatalogEntry> CarryContentHashes(
+        IReadOnlyList<PublishedSourceCatalogEntry> fresh,
+        IReadOnlyList<PublishedSourceCatalogEntry>? baseline) =>
+        [.. fresh.Select(entry => entry with
+        {
+            ContentHash = (baseline ?? []).FirstOrDefault(previous =>
+                NullableOrdinalIgnoreCaseComparer.Instance.Equals(previous.SourceScope, entry.SourceScope))
+                ?.ContentHash,
+        })];
+
+    /// <summary>
+    /// Computes each scope's content identity from its LIVE resident rows, for scopes owned by
+    /// a file source. Live rows only: the identity is compared against a staged file at ingest
+    /// time, and a file never delivers the rows it stopped delivering (the tombstones). Only
+    /// file-source scopes because only the file gate's false fires consume it today — a SQL or
+    /// Cosmos source merges every tick and its table can never defer; extend when another
+    /// source kind learns to.
+    /// </summary>
+    private static IReadOnlyList<PublishedSourceCatalogEntry> ComputeContentHashes(
+        SnapshotStore store,
+        SnapshotTableDefinition table,
+        SnapshotPublishOptions options,
+        IReadOnlyList<PublishedSourceCatalogEntry> sourceCatalog)
+    {
+        var fileSourceScopes = options.Sources
+            .Where(source => source.Table.Name.Equals(table.Name, StringComparison.OrdinalIgnoreCase)
+                             && source.FileIngestion is not null)
+            .Select(source => source.SourceScope)
+            .ToHashSet(NullableOrdinalIgnoreCaseComparer.Instance);
+
+        return [.. sourceCatalog.Select(entry => entry with
+        {
+            ContentHash = fileSourceScopes.Contains(entry.SourceScope)
+                ? Convert.ToString(store.ExecuteScalar(
+                    $"""
+                    SELECT {SnapshotContentHash.AggregateSql}
+                    FROM {table.QualifiedName}
+                    WHERE "{BookkeepingColumns.Deleted}" = false
+                      AND "{BookkeepingColumns.SourceScope}" IS NOT DISTINCT FROM ?
+                    """,
+                    entry.SourceScope))
+                : null,
+        })];
+    }
+
+    /// <summary>
+    /// The raw replication-pending count for the manifest entry, or null for a table with no
+    /// Cosmos family. Deliberately NOT <see cref="SnapshotStore.DirtyPredicate"/>: that ends
+    /// with an attempts clause, so a dead-lettered row leaves it while still unreplicated —
+    /// and a dead-lettered row must keep blocking the cold-start skip (it loads, stays
+    /// visible, and waits for a reset or a content change). Recorded raw regardless of whether
+    /// replication is currently enabled; the cold-start decision applies the enabled filter
+    /// with the configuration in force THEN, which is what makes flipping replication on later
+    /// just work: the flip restarts the process, and that cold start sees the full backlog.
+    /// </summary>
+    private static long? ReadReplicationPendingRaw(
+        SnapshotStore store, SnapshotTableDefinition table, SnapshotPublishOptions options)
+    {
+        var hasCosmosFamily = options.Sources.Any(source =>
+            source.Table.Name.Equals(table.Name, StringComparison.OrdinalIgnoreCase)
+            && source.Families is { Count: > 0 });
+        if (!hasCosmosFamily)
+            return null;
+
+        return Convert.ToInt64(store.ExecuteScalar(
+            $"""
+            SELECT count(*) FROM {table.QualifiedName}
+            WHERE "{BookkeepingColumns.LastReplicationDate}" IS NULL
+               OR "{BookkeepingColumns.LastReplicationDate}" < "{BookkeepingColumns.ReplicationModified}"
+            """));
+    }
+
     private static void EnsureSourceVersionContract(
         SnapshotStore store,
         SnapshotTableDefinition table,
         IReadOnlyList<PublishedSourceCatalogEntry> sourceCatalog)
     {
-        var invalid = Convert.ToInt64(store.ExecuteScalar(
-            $"""
-            SELECT count(*)
-            FROM {table.QualifiedName}
-            WHERE "{BookkeepingColumns.ChangeSequence}" IS NULL
-               OR "{BookkeepingColumns.ChangeSequence}" <= 0
-               OR "{BookkeepingColumns.ChangeRecordedAt}" IS NULL
-            """));
+        long invalid, duplicateKeys;
+        using (var command = store.Connection.CreateCommand())
+        {
+            // One scan, two verdicts. The duplicate count rides the metadata query because
+            // snapshot tables carry no PRIMARY KEY index: nothing structural keeps a corrupt
+            // store from holding doubled keys, and this contract is the last gate before such
+            // a store is exported to every consumer of the published set.
+            command.CommandText =
+                $"""
+                SELECT
+                    count(*) FILTER (WHERE "{BookkeepingColumns.ChangeSequence}" IS NULL
+                        OR "{BookkeepingColumns.ChangeSequence}" <= 0
+                        OR "{BookkeepingColumns.ChangeRecordedAt}" IS NULL),
+                    count(*) - count(DISTINCT "{BookkeepingColumns.PrimaryKey}")
+                FROM {table.QualifiedName}
+                """;
+            using var reader = command.ExecuteReader();
+            reader.Read();
+            invalid = reader.GetInt64(0);
+            duplicateKeys = reader.GetInt64(1);
+        }
 
         if (invalid > 0)
             throw new InvalidOperationException(
                 $"Table '{table.Name}' has {invalid} row(s) without complete durable change-sequence metadata.");
+
+        if (duplicateKeys > 0)
+            throw new InvalidOperationException(
+                $"Table '{table.Name}' has {duplicateKeys} duplicated primary key value(s); " +
+                "the write store is corrupt — rebuild it before publishing.");
 
         long attributed = 0;
         foreach (var source in sourceCatalog)
@@ -307,20 +509,17 @@ public static class SnapshotPublisher
                 source.SourceScope));
             attributed += sourceRows;
 
-            var ownershipMismatch = Convert.ToInt64(store.ExecuteScalar(
-                $"""
-                SELECT count(*)
-                FROM {table.QualifiedName} AS rows
-                LEFT JOIN meta.SourceOwnership AS ownership
-                  ON ownership."TableName" = ?
-                 AND ownership."PrimaryKey" = rows."{BookkeepingColumns.PrimaryKey}"
-                WHERE rows."{BookkeepingColumns.SourceScope}" IS NOT DISTINCT FROM ?
-                  AND ownership."SourceKey" IS DISTINCT FROM ?
-                """,
-                table.Name, source.SourceScope, source.SourceKey));
-            if (ownershipMismatch > 0)
+            // Ownership is a per-scope map, not a per-row join. The key comparison is ordinal
+            // (case-sensitive) so it can never disagree with the map's primary key or the
+            // IS NOT DISTINCT FROM above. A missing map entry is acceptable only while the
+            // scope holds no rows at all — a declared source that has never merged.
+            var owner = store.ReadSourceOwner(table.Name, source.SourceScope);
+            var ownershipMismatch = owner is null
+                ? sourceRows > 0
+                : !string.Equals(owner, source.SourceKey, StringComparison.Ordinal);
+            if (ownershipMismatch)
                 throw new InvalidOperationException(
-                    $"Table '{table.Name}' scope '{source.SourceScope ?? "<null>"}' has {ownershipMismatch} row(s) " +
+                    $"Table '{table.Name}' scope '{source.SourceScope ?? "<null>"}' is " +
                     $"not internally owned by catalog source '{source.SourceKey}'. Reingest that source before publishing.");
         }
 
@@ -329,19 +528,8 @@ public static class SnapshotPublisher
             throw new InvalidOperationException(
                 $"Table '{table.Name}' has {rowCount - attributed} row(s) whose _SourceScope is not owned by exactly one source catalog entry.");
 
-        var orphanedOwnership = Convert.ToInt64(store.ExecuteScalar(
-            $"""
-            SELECT count(*)
-            FROM meta.SourceOwnership AS ownership
-            LEFT JOIN {table.QualifiedName} AS rows
-              ON rows."{BookkeepingColumns.PrimaryKey}" = ownership."PrimaryKey"
-            WHERE ownership."TableName" = ?
-              AND rows."{BookkeepingColumns.PrimaryKey}" IS NULL
-            """,
-            table.Name));
-        if (orphanedOwnership > 0)
-            throw new InvalidOperationException(
-                $"Table '{table.Name}' has {orphanedOwnership} orphaned internal source-ownership row(s).");
+        // No orphaned-ownership check remains: a map row cannot orphan the way per-key rows
+        // could, because ownership now derives from a column every row carries.
     }
 
     private static void EnsureGlobalSequenceContract(
@@ -409,6 +597,33 @@ public static class SnapshotPublisher
             reader.IsDBNull(2) ? null : SnapshotStore.AsUtc(reader.GetDateTime(2)));
     }
 
+    /// <summary>
+    /// Do two stamp sets carry the same answer for the change gate? Compares exactly the fields
+    /// <see cref="SourceChangeGate"/> compares — path, length, last-write ticks, fingerprint —
+    /// keyed by source, order-independent.
+    ///
+    /// <para><see cref="PublishedSourceStamp.StampedAtUtc"/> is deliberately excluded. It is a
+    /// clock, not an identity: it moves on every read, and the only gate rule that consults it
+    /// is the re-ingest bound, which measures AGE. A stamp growing older is not a change anyone
+    /// can publish their way out of — republishing preserves the original value by design — so
+    /// including it would rewrite the manifest on a schedule and heal nothing.</para>
+    /// </summary>
+    private static bool GateMemoryEqual(
+        IReadOnlyList<PublishedSourceStamp> baseline, IReadOnlyList<PublishedSourceStamp> current)
+    {
+        if (baseline.Count != current.Count)
+            return false;
+
+        static IEnumerable<string> Identities(IReadOnlyList<PublishedSourceStamp> stamps) =>
+            stamps
+                .Select(stamp => string.Join(
+                    '',
+                    stamp.SourceKey, stamp.FilePath, stamp.Length, stamp.LastWriteUtcTicks, stamp.ConfigFingerprint))
+                .Order(StringComparer.Ordinal);
+
+        return Identities(baseline).SequenceEqual(Identities(current), StringComparer.Ordinal);
+    }
+
     /// <summary>Footer-only probe: every file parses as parquet and together they carry the expected row count.</summary>
     internal static bool ParquetIsIntact(SnapshotStore store, IReadOnlyList<string> parquetPaths, long expectedRows)
     {
@@ -433,9 +648,32 @@ public static class SnapshotPublisher
 
     // ---- Export ------------------------------------------------------------------------------
 
+    /// <summary>
+    /// The last stand of rule "a non-resident table can never be exported". The deferred
+    /// branch in the publish loop is what normally keeps a Deferred table away from here; this
+    /// guard is the backstop that survives any future reordering of that loop, because the
+    /// failure it prevents is the worst one this design has: exporting a Deferred table writes
+    /// well-formed EMPTY parquet over the only copy of its rows, and retention then rotates
+    /// the truth out a few publishes later. Reaching this throw means a publisher bug, never
+    /// an operational condition — there is no remediation except fixing the code.
+    /// </summary>
+    internal static void EnsureResidentForExport(SnapshotStore store, SnapshotTableDefinition table)
+    {
+        if (store.ReadResidency(table.Name) == SnapshotResidency.Deferred)
+        {
+            throw new InvalidOperationException(
+                $"Table '{table.Name}' is Deferred — its rows live only in the published copy — and it " +
+                "reached parquet export. Exporting would overwrite the copy of record with an empty " +
+                "file. The publisher's deferred branch should have carried its manifest entry instead; " +
+                "this is a publisher bug.");
+        }
+    }
+
     private static void ExportParquet(SnapshotStore store, SnapshotTableDefinition table,
         SnapshotPublishOptions options, PublishStore publishStore, string parquetPath)
     {
+        EnsureResidentForExport(store, table);
+
         var sortColumns = options.SortColumnsFor(table);
         var orderBy = string.Join(", ", sortColumns.Select(c => $"\"{c}\""));
         var columns = string.Join(", ",
@@ -464,18 +702,18 @@ public static class SnapshotPublisher
 
     // ---- The manifest ------------------------------------------------------------------------
 
+    /// <param name="sourceStamps">
+    /// Carried INSIDE the manifest so a cold start can restore what the gate already knows
+    /// instead of re-reading every feed. Correct only because they commit together: these stamps
+    /// describe exactly the state the parquet above describes, and one conditional PUT names
+    /// both. Read by the caller, which also compares them against the baseline to decide whether
+    /// this manifest needs writing at all — one read, so deciding and committing cannot diverge.
+    /// </param>
     private static void WriteManifest(SnapshotStore store, string manifestPath, SnapshotPublishOptions options,
         PublishStore publishStore, string publishId, DateTime publishedAt,
-        IReadOnlyList<PublishedTableManifest> tables, Action? onBeforeManifestCommit)
+        IReadOnlyList<PublishedTableManifest> tables, IReadOnlyList<PublishedSourceStamp> sourceStamps,
+        Action? onBeforeManifestCommit)
     {
-        // Carried INSIDE the manifest so a cold start can restore what the gate already knows
-        // instead of re-reading every feed. Correct only because they commit together: these
-        // stamps describe exactly the state the parquet above describes, and one conditional PUT
-        // names both. Read here, at publish time, when no merge is in flight.
-        var sourceStamps = store.ReadAllSourceFileStamps()
-            .Select(PublishedSourceStamp.From)
-            .ToList();
-
         // Cosmos read cursors ride the same road, for the same reason and with more at stake: a
         // cursor lost on rebuild does not cost one re-read of one file, it costs a full re-read of
         // a container that only grows.
@@ -605,15 +843,11 @@ public static class SnapshotPublisher
             """
             INSERT INTO meta.PublishRuns
             ("PublishId", "SnapshotName", "StartedAt", "FinishedAt",
-             "TablesExported", "TablesReused", "ShimsDeleted", "ParquetFilesDeleted", "Status", "Error")
+             "TablesExported", "TablesReused", "ManifestsDeleted", "ParquetFilesDeleted", "Status", "Error")
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             result.PublishId, options.SnapshotName, startedAt, DateTime.UtcNow,
             result.TablesExported.Count, result.TablesReused.Count,
-            // The COLUMN is still "ShimsDeleted": meta.PublishRuns is CREATE TABLE IF NOT EXISTS,
-            // so renaming it would need a schema-version bump, and a bump forces every live write
-            // DB to rebuild — from a published set that, at cutover, has no manifest yet. Not
-            // worth it for a name. Rename with the next bump that is happening anyway.
             result.ManifestsDeleted, result.ParquetFilesDeleted, status, error);
     }
 }

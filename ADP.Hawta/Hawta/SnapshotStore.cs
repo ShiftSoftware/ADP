@@ -13,7 +13,10 @@ namespace ShiftSoftware.ADP.Hawta;
 /// </summary>
 public sealed class SnapshotStore : IDisposable
 {
-    public const int CurrentSchemaVersion = 4;
+    // v5 collapsed meta.SourceOwnership from one row per data row to one row per (table,
+    // scope). A v4 published set is still a valid cold-start seed — ownership was never
+    // published; it derives from the manifest's source catalog — so the rebuild floor stays 4.
+    public const int CurrentSchemaVersion = 5;
     internal const int OldestRebuildableSchemaVersion = 4;
 
     /// <summary>Rows failing replication this many times leave the dirty predicate (dead-letter) until reset.</summary>
@@ -86,9 +89,24 @@ public sealed class SnapshotStore : IDisposable
         // Never interpolated into a log or an exception message — this value carries the account
         // key or SAS. DuckDB has no parameter binding for CREATE SECRET, so it is escaped instead.
         command.CommandText =
-            $"CREATE OR REPLACE SECRET hawta_publish (TYPE azure, CONNECTION_STRING '{azureConnectionString.Replace("'", "''")}')";
+            $"CREATE OR REPLACE SECRET hawta_publish (TYPE azure, CONNECTION_STRING '{ExpandDevelopmentStorage(azureConnectionString).Replace("'", "''")}')";
         command.ExecuteNonQuery();
     }
+
+    /// <summary>
+    /// The local storage emulator's shorthand, expanded to the explicit form DuckDB needs.
+    /// The .NET SDK resolves <c>UseDevelopmentStorage=true</c> internally; DuckDB's azure
+    /// extension does not, so a host feeding both halves from one configured value would
+    /// authenticate the SDK half and fail the DuckDB half at the first parquet touch. The
+    /// account name, key, and endpoint below are the emulator's fixed, publicly documented
+    /// development credentials — not a secret.
+    /// </summary>
+    internal static string ExpandDevelopmentStorage(string connectionString) =>
+        connectionString.Trim().Equals("UseDevelopmentStorage=true", StringComparison.OrdinalIgnoreCase)
+            ? "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;" +
+              "AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;" +
+              "BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;"
+            : connectionString;
 
     private void Bootstrap(int expectedSchemaVersion)
     {
@@ -144,7 +162,7 @@ public sealed class SnapshotStore : IDisposable
                 "FinishedAt" TIMESTAMP,
                 "TablesExported" INTEGER NOT NULL DEFAULT 0,
                 "TablesReused" INTEGER NOT NULL DEFAULT 0,
-                "ShimsDeleted" INTEGER NOT NULL DEFAULT 0,
+                "ManifestsDeleted" INTEGER NOT NULL DEFAULT 0,
                 "ParquetFilesDeleted" INTEGER NOT NULL DEFAULT 0,
                 "Status" VARCHAR NOT NULL,
                 "Error" VARCHAR
@@ -222,15 +240,61 @@ public sealed class SnapshotStore : IDisposable
             """);
 
         // Internal ownership preserves source adoption semantics without leaking source keys onto
-        // every public row. A v4 rebuild recreates it from the manifest's unambiguous table/scope
-        // catalog before ingestion resumes.
+        // every public row. One row per (table, scope), never per key: the registry guarantees
+        // each table/scope has exactly one owning source, so per-key rows would only repeat this
+        // map — measured at 1.5M rows and 134 MiB on a deployment with one large catalog table.
+        // "SourceScope" stores chr(0) for a table's single unscoped universe, because DuckDB
+        // refuses NULL in any primary-key component; the NULL<->sentinel translation never
+        // leaves this store's read/write methods. The scope column is case-SENSITIVE, exactly
+        // like the merge's IS NOT DISTINCT FROM — the registry's case-insensitive uniqueness
+        // check is the stricter construction-time guard. A rebuild recreates the map from the
+        // manifest's table/scope catalog before ingestion resumes.
         Execute(
             """
             CREATE TABLE IF NOT EXISTS meta.SourceOwnership (
                 "TableName" VARCHAR NOT NULL,
-                "PrimaryKey" VARCHAR NOT NULL,
+                "SourceScope" VARCHAR NOT NULL,
                 "SourceKey" VARCHAR NOT NULL,
-                PRIMARY KEY ("TableName", "PrimaryKey")
+                PRIMARY KEY ("TableName", "SourceScope")
+            )
+            """);
+
+        // Where each table's rows live: resident in this database, or deferred to the newest
+        // committed published parquet. Recorded EXPLICITLY, never inferred from count(*) —
+        // zero rows is ambiguous (legitimately-empty-resident reads the same as deferred),
+        // and a warm process restart must find a previously deferred table still deferred.
+        // An absent row means Resident, which is why this CREATE needs no version gate: an
+        // existing write DB gains the table empty on the next open and behaves exactly as
+        // before. A Deferred row carries everything hydration needs (the resolved file list
+        // and the row count the copy holds), so ingest never has to reach the publish tier's
+        // manifest machinery.
+        Execute(
+            """
+            CREATE TABLE IF NOT EXISTS meta.TableResidency (
+                "TableName" VARCHAR NOT NULL PRIMARY KEY,
+                "Residency" VARCHAR NOT NULL,
+                "ManifestFile" VARCHAR,
+                "ParquetPaths" VARCHAR,
+                "RowCount" BIGINT,
+                "ReplicationPending" BIGINT,
+                "RecordedAtUtc" TIMESTAMP NOT NULL
+            )
+            """);
+
+        // One content identity per (table, scope) while the table is deferred — what the
+        // ingest-time guard compares a re-delivered file against to prove the merge would
+        // change nothing, so hydration can be skipped entirely. Copied from the manifest's
+        // source catalog when the table defers; deleted when hydration takes it Resident
+        // (from then on the merge's own diff answers the question for free). The scope
+        // column stores chr(0) for a table's single unscoped universe, the same sentinel
+        // convention as meta.SourceOwnership, for the same DuckDB primary-key reason.
+        Execute(
+            """
+            CREATE TABLE IF NOT EXISTS meta.DeferredContentHashes (
+                "TableName" VARCHAR NOT NULL,
+                "SourceScope" VARCHAR NOT NULL,
+                "ContentHash" VARCHAR NOT NULL,
+                PRIMARY KEY ("TableName", "SourceScope")
             )
             """);
     }
@@ -448,6 +512,18 @@ public sealed class SnapshotStore : IDisposable
     /// Additive schema drift is applied automatically: source columns present in the
     /// definition but missing on an existing table are added via <c>ALTER TABLE ADD COLUMN</c>
     /// (as nullable), so shipping a widened definition against a live write DB just works.
+    ///
+    /// <para>Snapshot tables declare no PRIMARY KEY, deliberately. Key uniqueness is the
+    /// merge's contract, not the storage engine's: staging with a duplicate or NULL
+    /// <c>_PrimaryKey</c> is refused before any mutation, inserts are anti-joined against
+    /// resident keys, a rebuild refuses a seed containing duplicates, and the publish
+    /// contract refuses to export a store that carries them. The index a
+    /// primary key would add costs real money at scale — measured on a deployment with
+    /// ~1.4M rows in one table, it was ~105 MiB of the write database and most of that
+    /// table's load time — and the only per-key reads in the engine are the replication
+    /// pump's bookkeeping writes, whose scans stay far cheaper than the remote work each
+    /// one follows. A table created by an older package keeps its index until the next
+    /// schema rebuild; that is harmless, only larger.</para>
     /// </summary>
     public void EnsureTable(SnapshotTableDefinition table)
     {
@@ -457,8 +533,7 @@ public sealed class SnapshotStore : IDisposable
             $"""
             CREATE TABLE IF NOT EXISTS {table.QualifiedName} (
                 {sourceColumns},
-                {BookkeepingColumns.TableDdl},
-                PRIMARY KEY ("{BookkeepingColumns.PrimaryKey}")
+                {BookkeepingColumns.TableDdl}
             )
             """);
 
@@ -481,32 +556,198 @@ public sealed class SnapshotStore : IDisposable
 
     }
 
-    /// <summary>Recreates internal row ownership from one validated v4 table catalog.</summary>
+    // ---- Source ownership ---------------------------------------------------------------------
+    // One map row per (table, scope). The SQL below writes chr(0) in place of a NULL scope —
+    // DuckDB refuses NULL in a primary-key component — and callers only ever pass and receive
+    // the real nullable scope. Scope matching is case-sensitive SQL equality, deliberately in
+    // agreement with the merge's IS NOT DISTINCT FROM; any caller comparing the returned KEY in
+    // C# must use ordinal comparison for the same reason.
+
+    /// <summary>
+    /// The source key owning one (table, scope), or null when no merge or rebuild has ever
+    /// recorded an owner for that scope.
+    /// </summary>
+    internal string? ReadSourceOwner(string tableName, string? sourceScope)
+    {
+        var owner = ExecuteScalar(
+            """
+            SELECT "SourceKey" FROM meta.SourceOwnership
+            WHERE "TableName" = ? AND "SourceScope" = coalesce(?, chr(0))
+            """,
+            tableName, sourceScope);
+        return owner is null or DBNull ? null : (string)owner;
+    }
+
+    /// <summary>Records a scope's owner, replacing any previous owner of the same (table, scope).</summary>
+    internal void WriteSourceOwner(string tableName, string? sourceScope, string sourceKey)
+    {
+        Execute(
+            """
+            DELETE FROM meta.SourceOwnership
+            WHERE "TableName" = ? AND "SourceScope" = coalesce(?, chr(0))
+            """,
+            tableName, sourceScope);
+        Execute(
+            """
+            INSERT INTO meta.SourceOwnership ("TableName", "SourceScope", "SourceKey")
+            VALUES (?, coalesce(?, chr(0)), ?)
+            """,
+            tableName, sourceScope, sourceKey);
+    }
+
+    /// <summary>Recreates a table's ownership map from one validated manifest source catalog.</summary>
     internal void RestoreSourceOwnership(
         SnapshotTableDefinition table,
         IReadOnlyList<PublishedSourceCatalogEntry> sourceCatalog)
     {
-        Execute("DELETE FROM meta.SourceOwnership WHERE \"TableName\" = ?", table.Name);
+        // Refused rather than last-writer-wins: a catalog attributing one scope twice would
+        // otherwise silently drop an owner here and only fail later, at the publish contract,
+        // where nothing points back at the seed. Default string equality is ordinal and
+        // case-sensitive — the same comparison the map's primary key applies.
+        var duplicate = sourceCatalog
+            .GroupBy(source => source.SourceScope)
+            .FirstOrDefault(group => group.Count() > 1);
+        if (duplicate is not null)
+            throw new InvalidDataException(
+                $"Table '{table.Name}' manifest catalog attributes scope '{duplicate.Key ?? "<null>"}' to " +
+                $"{duplicate.Count()} sources. Every row scope must have exactly one source owner.");
 
+        Execute("DELETE FROM meta.SourceOwnership WHERE \"TableName\" = ?", table.Name);
         foreach (var source in sourceCatalog)
+            WriteSourceOwner(table.Name, source.SourceScope, source.SourceKey);
+
+        // Coverage: every scope present on the restored rows must have an owner in the map just
+        // written. The per-key shape verified this by counting rows; scopes are what is stored
+        // now, so scopes are what is checked.
+        var unowned = Convert.ToInt64(ExecuteScalar(
+            $"""
+            SELECT count(*)
+            FROM (SELECT DISTINCT coalesce("{BookkeepingColumns.SourceScope}", chr(0)) AS "Scope"
+                  FROM {table.QualifiedName}) AS scopes
+            LEFT JOIN meta.SourceOwnership AS map
+              ON map."TableName" = ? AND map."SourceScope" = scopes."Scope"
+            WHERE map."SourceKey" IS NULL
+            """,
+            table.Name));
+        if (unowned > 0)
+            throw new InvalidDataException(
+                $"Table '{table.Name}' restored rows under {unowned} scope(s) its manifest catalog does not " +
+                "attribute. Every row scope must have exactly one source owner.");
+    }
+
+    // ---- Table residency ----------------------------------------------------------------------
+    // Lazy residency's state store. Writes happen transactionally with the act they describe:
+    // MarkTableDeferred inside the cold-start rebuild's transaction, MarkTableResident inside
+    // the hydrating merge's transaction — so a crash can never leave the state claiming rows
+    // that are not there, or hiding rows that are.
+
+    /// <summary>
+    /// Where <paramref name="tableName"/>'s rows live. An absent record means
+    /// <see cref="SnapshotResidency.Resident"/> — the pre-residency behaviour, and the safe
+    /// default for a table nothing has ever decided about.
+    /// </summary>
+    public SnapshotResidency ReadResidency(string tableName)
+    {
+        var state = ExecuteScalar(
+            "SELECT \"Residency\" FROM meta.TableResidency WHERE \"TableName\" = ?", tableName);
+        return state is string text && text == nameof(SnapshotResidency.Deferred)
+            ? SnapshotResidency.Deferred
+            : SnapshotResidency.Resident;
+    }
+
+    /// <summary>The full deferred record, or null when the table is Resident.</summary>
+    internal DeferredTableRecord? ReadDeferredTableRecord(string tableName)
+    {
+        using var command = Connection.CreateCommand();
+        command.CommandText =
+            """
+            SELECT "ManifestFile", "ParquetPaths", "RowCount", "ReplicationPending"
+            FROM meta.TableResidency
+            WHERE "TableName" = ? AND "Residency" = 'Deferred'
+            """;
+        var parameter = command.CreateParameter();
+        parameter.Value = tableName;
+        command.Parameters.Add(parameter);
+
+        using var reader = command.ExecuteReader();
+        if (!reader.Read())
+            return null;
+
+        var paths = System.Text.Json.JsonSerializer.Deserialize<List<string>>(reader.GetString(1))
+            ?? throw new InvalidDataException(
+                $"Deferred record for table '{tableName}' carries no parquet path list.");
+        return new DeferredTableRecord(
+            tableName, reader.GetString(0), paths, reader.GetInt64(2),
+            reader.IsDBNull(3) ? null : reader.GetInt64(3));
+    }
+
+    /// <summary>
+    /// Records that a table's rows stay in the published copy: the manifest entry's resolved
+    /// file list and row count (what hydration will load), plus the per-scope content
+    /// identities the ingest-time guard compares against.
+    /// </summary>
+    internal void MarkTableDeferred(
+        string tableName,
+        string manifestFile,
+        IReadOnlyList<string> parquetPaths,
+        long rowCount,
+        IReadOnlyList<(string? SourceScope, string ContentHash)> contentHashes,
+        long? replicationPending = null)
+    {
+        if (parquetPaths.Count == 0)
+            throw new ArgumentException(
+                $"A deferred record for '{tableName}' needs at least one parquet file.", nameof(parquetPaths));
+
+        Execute("DELETE FROM meta.TableResidency WHERE \"TableName\" = ?", tableName);
+        Execute(
+            "INSERT INTO meta.TableResidency VALUES (?, 'Deferred', ?, ?, ?, ?, ?)",
+            tableName, manifestFile,
+            System.Text.Json.JsonSerializer.Serialize(parquetPaths), rowCount, replicationPending,
+            DateTime.UtcNow);
+
+        Execute("DELETE FROM meta.DeferredContentHashes WHERE \"TableName\" = ?", tableName);
+        foreach (var (sourceScope, contentHash) in contentHashes)
         {
             Execute(
-                $"""
-                INSERT INTO meta.SourceOwnership ("TableName", "PrimaryKey", "SourceKey")
-                SELECT ?, "{BookkeepingColumns.PrimaryKey}", ?
-                FROM {table.QualifiedName}
-                WHERE "{BookkeepingColumns.SourceScope}" IS NOT DISTINCT FROM ?
+                """
+                INSERT INTO meta.DeferredContentHashes ("TableName", "SourceScope", "ContentHash")
+                VALUES (?, coalesce(?, chr(0)), ?)
                 """,
-                table.Name, source.SourceKey, source.SourceScope);
+                tableName, sourceScope, contentHash);
         }
+    }
 
-        var rows = Convert.ToInt64(ExecuteScalar($"SELECT count(*) FROM {table.QualifiedName}"));
-        var owned = Convert.ToInt64(ExecuteScalar(
-            "SELECT count(*) FROM meta.SourceOwnership WHERE \"TableName\" = ?", table.Name));
-        if (owned != rows)
-            throw new InvalidDataException(
-                $"Table '{table.Name}' restored {rows} row(s) but its manifest catalog attributed {owned}. " +
-                "Every row scope must have exactly one source owner.");
+    /// <summary>
+    /// Records that a table's rows are in this database — written when a cold start loads a
+    /// table and when hydration brings a deferred one back. The content identities go with the
+    /// deferred record: once rows are resident the merge's own diff answers "unchanged" for free.
+    /// </summary>
+    internal void MarkTableResident(string tableName)
+    {
+        Execute("DELETE FROM meta.TableResidency WHERE \"TableName\" = ?", tableName);
+        Execute(
+            "INSERT INTO meta.TableResidency VALUES (?, 'Resident', NULL, NULL, NULL, NULL, ?)",
+            tableName, DateTime.UtcNow);
+        Execute("DELETE FROM meta.DeferredContentHashes WHERE \"TableName\" = ?", tableName);
+    }
+
+    /// <summary>
+    /// The recorded content identity for one (table, scope) of a Deferred table, or null when
+    /// the table is Resident or the deferring manifest carried no hash for that scope (an
+    /// older published set) — null always means "cannot prove unchanged; hydrate and merge".
+    /// </summary>
+    internal string? ReadDeferredContentHash(string tableName, string? sourceScope)
+    {
+        var hash = ExecuteScalar(
+            """
+            SELECT hashes."ContentHash"
+            FROM meta.DeferredContentHashes AS hashes
+            JOIN meta.TableResidency AS residency
+              ON residency."TableName" = hashes."TableName" AND residency."Residency" = 'Deferred'
+            WHERE hashes."TableName" = ? AND hashes."SourceScope" = coalesce(?, chr(0))
+            """,
+            tableName, sourceScope);
+        return hash is null or DBNull ? null : (string)hash;
     }
 
     /// <summary>Moves the allocator above every row restored from published parquet.</summary>
@@ -826,6 +1067,22 @@ public sealed class SnapshotStore : IDisposable
         Convert.ToInt64(ExecuteScalar($"SELECT count(*) FROM {table.QualifiedName} WHERE {DirtyPredicate}"));
 
     /// <summary>
+    /// Rows still owed to Cosmos but past the attempt limit — unreplicated AND outside
+    /// <see cref="DirtyPredicate"/>. The pump's queue looks empty while these exist; they also
+    /// keep the manifest's replication-pending count above zero, which blocks the table's
+    /// cold-start deferral. <see cref="ResetReplicationFailures"/> (or a content change, which
+    /// resets the ledger during merge) puts them back in the queue.
+    /// </summary>
+    public long CountDeadLetteredRows(SnapshotTableDefinition table) =>
+        Convert.ToInt64(ExecuteScalar(
+            $"""
+            SELECT count(*) FROM {table.QualifiedName}
+            WHERE ("{BookkeepingColumns.LastReplicationDate}" IS NULL
+                   OR "{BookkeepingColumns.LastReplicationDate}" < "{BookkeepingColumns.ReplicationModified}")
+              AND "{BookkeepingColumns.ReplicationAttempts}" >= {MaxReplicationAttempts}
+            """));
+
+    /// <summary>
     /// Records a successful push: stamps the CAPTURED <c>_ReplicationModified</c> as the watermark and
     /// the replication stamp in the same statement (they can never drift apart), and clears the
     /// failure ledger. If a merge bumped the row mid-flight, captured &lt; current
@@ -992,23 +1249,31 @@ public sealed class SnapshotStore : IDisposable
         SnapshotTableDefinition table,
         IReadOnlyList<ReplicationStateOutcome> outcomes)
     {
+        // AttemptCost is 0 for a throttled failure and 1 for everything else. Throttling is
+        // the service applying backpressure, not the row being poison — a sustained burst
+        // (the cutover's initial drain is exactly one) can outlast the SDK's own retry layer,
+        // and if every surfaced 429 burned an attempt, rows would dead-letter for merely
+        // queueing. The error still lands in the ledger so an operator sees WHY the row is
+        // waiting; the row stays dirty and retries next drain, forever if need be — the
+        // attempt limit exists to stop deterministic per-row failures, and a 429 is never one.
         var values = string.Join(", ", outcomes.Select(_ =>
-            "(CAST(? AS VARCHAR), CAST(? AS TIMESTAMP), CAST(? AS VARCHAR))"));
-        var parameters = new List<object?>(outcomes.Count * 3);
+            "(CAST(? AS VARCHAR), CAST(? AS TIMESTAMP), CAST(? AS VARCHAR), CAST(? AS INTEGER))"));
+        var parameters = new List<object?>(outcomes.Count * 4);
         foreach (var outcome in outcomes)
         {
             parameters.Add(outcome.PrimaryKey);
             parameters.Add(AsUtc(outcome.CapturedLastModified));
             parameters.Add(outcome.Error);
+            parameters.Add(outcome.ThrottledFailure ? 0 : 1);
         }
 
         Execute(
             transaction,
             $"""
             UPDATE {table.QualifiedName} AS target
-            SET "{BookkeepingColumns.ReplicationAttempts}" = target."{BookkeepingColumns.ReplicationAttempts}" + 1,
+            SET "{BookkeepingColumns.ReplicationAttempts}" = target."{BookkeepingColumns.ReplicationAttempts}" + outcome."AttemptCost",
                 "{BookkeepingColumns.ReplicationError}" = outcome."Error"
-            FROM (VALUES {values}) AS outcome("PrimaryKey", "CapturedLastModified", "Error")
+            FROM (VALUES {values}) AS outcome("PrimaryKey", "CapturedLastModified", "Error", "AttemptCost")
             WHERE target."{BookkeepingColumns.PrimaryKey}" = outcome."PrimaryKey"
               AND target."{BookkeepingColumns.ReplicationModified}" = outcome."CapturedLastModified"
               AND (target."{BookkeepingColumns.LastReplicationDate}" < target."{BookkeepingColumns.ReplicationModified}"

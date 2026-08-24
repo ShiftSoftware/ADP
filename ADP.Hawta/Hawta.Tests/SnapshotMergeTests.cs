@@ -4,7 +4,16 @@ namespace ShiftSoftware.ADP.Hawta.Tests;
 
 public class SnapshotMergeTests : IDisposable
 {
-    private readonly TestSnapshot snapshot = new();
+    // Protected + a defer knob so DeferredSnapshotMergeTests can inherit this whole suite and
+    // run every merge through the defer → hydrate → merge path. Same scenarios, same
+    // assertions — except the three tests below marked virtual, whose post-failure assertions
+    // legitimately differ when the rows' home is the published copy rather than the table.
+    protected readonly TestSnapshot snapshot;
+
+    public SnapshotMergeTests() : this(deferBeforeEachStage: false) { }
+
+    protected SnapshotMergeTests(bool deferBeforeEachStage) =>
+        snapshot = new TestSnapshot { DeferBeforeEachStage = deferBeforeEachStage };
 
     [Fact]
     public void InsertsNewRows_AndRecordsTheRun()
@@ -72,7 +81,7 @@ public class SnapshotMergeTests : IDisposable
     }
 
     [Fact]
-    public void MassDeleteGuardrail_AbortsAndLeavesDataIntact()
+    public virtual void MassDeleteGuardrail_AbortsAndLeavesDataIntact()
     {
         var rows = Enumerable.Range(1, 100).Select(i => ($"W{i}", "alpha", i)).ToList();
         snapshot.Merge(rows);
@@ -92,7 +101,7 @@ public class SnapshotMergeTests : IDisposable
     }
 
     [Fact]
-    public void FullWipe_TripsTheGuardrail_EvenBelowTheAbsoluteFloor()
+    public virtual void FullWipe_TripsTheGuardrail_EvenBelowTheAbsoluteFloor()
     {
         // The absolute floor waves through trivial churn; it must never wave through a
         // TOTAL wipe (empty staging vs a small family — the 29-row NonJPM class).
@@ -267,7 +276,7 @@ public class SnapshotMergeTests : IDisposable
     }
 
     [Fact]
-    public void DuplicateStagingKeys_FailTheRun_BeforeTouchingData()
+    public virtual void DuplicateStagingKeys_FailTheRun_BeforeTouchingData()
     {
         snapshot.Merge([("W1", "alpha", 1)]);
 

@@ -48,19 +48,24 @@ public static class SnapshotWriteGate
 {
     /// <summary>
     /// Tries to take the gate. Null = another holder has it (the caller skips its cycle and
-    /// retries later — normal during deploy overlap). Creates the container/blob on first use.
-    /// Before enabling this protocol, every legacy writer must be stopped and any existing
-    /// empty gate must be reconciled and initialized by an operator. The create ETag only
-    /// bootstraps a blob created by this call; blob leases themselves do not change that ETag,
-    /// so running old and new gate protocols concurrently is not supported.
+    /// retries later — normal during deploy overlap). Creates the gate BLOB on first use; the
+    /// CONTAINER must already exist, because this engine never creates one — see
+    /// <see cref="SnapshotBlobContainerMissingException"/>. Before enabling this protocol, every
+    /// legacy writer must be stopped and any existing empty gate must be reconciled and
+    /// initialized by an operator. The create ETag only bootstraps a blob created by this call;
+    /// blob leases themselves do not change that ETag, so running old and new gate protocols
+    /// concurrently is not supported.
     /// </summary>
     public static async Task<WriteGateLease?> TryAcquireAsync(
         SnapshotWriteGateOptions options, CancellationToken cancellationToken = default)
     {
         ValidateOptions(options);
 
+        // The container is NOT created here, deliberately — an operator provisions it once, and
+        // this then runs under a credential scoped to exactly that container. Creating it would
+        // demand a wider credential for no gain, and it is
+        // InitializeExistingLegacyMarkerAsync's posture already.
         var container = new BlobContainerClient(options.ConnectionString, options.ContainerName);
-        await container.CreateIfNotExistsAsync(cancellationToken: cancellationToken);
 
         var blob = container.GetBlobClient(options.GateName);
         ETag? freshEmptyMarkerETag = null;
@@ -71,6 +76,14 @@ public static class SnapshotWriteGate
                 new BlobUploadOptions { Conditions = new BlobRequestConditions { IfNoneMatch = ETag.All } },
                 cancellationToken);
             freshEmptyMarkerETag = createResponse.Value.ETag;
+        }
+        catch (RequestFailedException exception) when (IsContainerMissing(exception))
+        {
+            // A throw, never the null return. Null means "another holder has the gate", which
+            // tells the caller to skip this cycle and come back later — so reporting a missing
+            // container that way would leave a misconfigured deployment idling forever while
+            // every health signal said it was fine.
+            throw SnapshotBlobContainerMissingException.For(options.ContainerName, "write-gate", exception);
         }
         catch (RequestFailedException exception) when (
             exception.Status is 409 or 412) // exists (or exists-and-leased) — both fine, we only need the blob to be there
@@ -132,6 +145,12 @@ public static class SnapshotWriteGate
                 "The existing marker is leased by another holder, so the no-writer precondition is false.",
                 exception);
         }
+        catch (RequestFailedException exception) when (IsContainerMissing(exception))
+        {
+            // Same distinction as in TryAcquireAsync: a missing container is a provisioning
+            // problem with a one-line fix, not a marker that could not be acquired as-is.
+            throw SnapshotBlobContainerMissingException.For(options.ContainerName, "write-gate", exception);
+        }
         catch (RequestFailedException exception)
         {
             throw SnapshotWriteGateRecoveryRequiredException.LegacyInitializationRefused(
@@ -189,6 +208,14 @@ public static class SnapshotWriteGate
             throw;
         }
     }
+
+    /// <summary>
+    /// Every operation inside a container that is not there answers 404 <c>ContainerNotFound</c>.
+    /// Matched on the error code rather than the status, because a blob-level 404
+    /// (<c>BlobNotFound</c>) is a different — and entirely normal — answer.
+    /// </summary>
+    private static bool IsContainerMissing(RequestFailedException exception) =>
+        exception.ErrorCode == BlobErrorCode.ContainerNotFound;
 
     private static void ValidateOptions(SnapshotWriteGateOptions options)
     {

@@ -132,7 +132,49 @@ public sealed class SourceRegistry
         }
 
         Tables = tables;
+
+        // Lazy-residency qualification — COMPUTED from the declared shape, never a flag a
+        // host sets per table. A table can be deferred at cold start only when every source
+        // feeding it can answer "unchanged" without reading data, which today means a
+        // declarative file source with a change gate wired, and when no source pins it.
+        // Disagreement resolves to Resident; nothing is refused — a mixed table simply keeps
+        // today's behaviour. Evaluated over the declared shape regardless of Enabled: a dark
+        // source never ticks, so it never forces a load, and its previously published rows
+        // ride the deferred copy like everyone else's.
+        foreach (var group in Sources.GroupBy(s => s.Table.Name, StringComparer.OrdinalIgnoreCase))
+        {
+            if (group.All(s => s.FileIngestion is { ChangeGate: not null } && !s.PinResident))
+                deferredCapableTables.Add(group.Key);
+
+            if (group.Any(s => s is { Families.Count: > 0, ReplicationEnabled: true }))
+                replicationEnabledFamilyTables.Add(group.Key);
+        }
     }
+
+    private readonly HashSet<string> deferredCapableTables = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> replicationEnabledFamilyTables = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// True when every source feeding the table is a gate-wired file source and none pins it —
+    /// the precondition for a cold start to leave the table's rows in the published copy.
+    ///
+    /// <para><b>Operational rule that cannot be machine-enforced, so it is stated here:</b>
+    /// never remove a deferred-capable source from the configuration without first taking its
+    /// table Resident (change the feed, or pin it, and let a publish commit resident rows). A
+    /// table absent from the registry drops out of every new manifest, and once the older
+    /// manifests age out of retention its parquet survives only as an unreferenced stray no
+    /// rebuild can restore. For a resident table that is an inconvenience; for a deferred one
+    /// it strands the only copy of its rows outside every restore path.</para>
+    /// </summary>
+    public bool IsTableDeferredCapable(string tableName) => deferredCapableTables.Contains(tableName);
+
+    /// <summary>
+    /// True when the table feeds a Cosmos family AND some source currently has replication
+    /// enabled — the configuration under which a cold start must prove the committed copy owes
+    /// the pump nothing (manifest <c>replicationPending</c> = 0) before it may defer the table.
+    /// </summary>
+    public bool TableHasReplicationEnabledCosmosFamily(string tableName) =>
+        replicationEnabledFamilyTables.Contains(tableName);
 
     /// <summary>All sources, registry order (enabled or not).</summary>
     public IReadOnlyList<SnapshotSource> Sources { get; }

@@ -229,10 +229,19 @@ public sealed class SnapshotPublishOptions
 
 public enum SnapshotPublishStatus
 {
-    /// <summary>A new manifest was committed (with at least one table re-exported, or under <see cref="SnapshotPublishOptions.Force"/>).</summary>
+    /// <summary>
+    /// A new manifest was committed. Any of four reasons: a table was re-exported, a source
+    /// catalog changed, the change gate's stamps no longer match the ones the previous manifest
+    /// carries, or <see cref="SnapshotPublishOptions.Force"/>. The last three can each commit a
+    /// manifest in which every table is reused and no data moved.
+    /// </summary>
     Published,
 
-    /// <summary>No table's signature changed — nothing was written; the previous manifest stands.</summary>
+    /// <summary>
+    /// Nothing was written and the previous manifest stands: no table's signature changed, no
+    /// catalog changed, and the gate stamps it carries still match the live ones — so a cold
+    /// start seeded from it resumes without re-reading a feed.
+    /// </summary>
     SkippedNoChanges,
 }
 
