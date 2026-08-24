@@ -28,7 +28,10 @@ dotnet pack ADP.Models/Models --configuration Release  # Pack Models NuGet
 ```bash
 npm install                  # Install dependencies
 npm run build                # Production build
-npm start                    # Dev server with watch (port 3000)
+npm start                    # Dev server + template watchers (port 3000)
+npm run start:stencil        # Dev server only, no template watchers
+npm run build:templates      # One-off build of the dev-showcase assets
+npm run watch:templates      # Showcase stylesheet watcher only
 npm test                     # Run spec tests (Jest)
 npm run test.watch           # Watch mode tests
 npm run typecheck            # tsc --noEmit
@@ -37,6 +40,10 @@ npm run lint:fix             # ESLint with --fix
 npm run format               # Prettier format all source files
 npm run prettier             # Check formatting without writing
 ```
+
+`npm start` runs `automation/dev.mjs`, which builds the showcase assets, then runs the
+Tailwind and catalog watchers alongside the Stencil dev server. `npm run build:templates`
+is only needed if you edited `src/templates` with the dev server down.
 
 Lint/format policy: ESLint owns code correctness, Prettier owns layout — there is no
 formatting rule in the ESLint config, so run `npm run lint:fix` then `npm run format`.
@@ -75,7 +82,28 @@ Built with **Stencil.js** (namespace: `shift-components`), Tailwind CSS, and SCS
 - `global/api/` — API endpoint configurations
 - `global/types/` — TypeScript types (`generated/` subdir is auto-generated from C# models)
 - `locales/` — Multi-language support files
-- `templates/` — HTML/JSX templates
+- `templates/` — Dev-only showcase pages (see below)
+
+### Dev showcase (`src/index.html` + `src/templates/`)
+Dev-only pages that demonstrate each component. They are styled by a **compiled**
+Tailwind 4 + daisyUI 5 stylesheet (`templates/harness.css`) and driven by Alpine — all
+served locally, never from a CDN. Controls come from `templates/harness.js`; the page
+index is generated into `templates/catalog.json` by scanning `src/templates`.
+
+`harness.css`, `templates/vendor/` and `catalog.json` are **generated and gitignored** —
+`npm start` builds them. Do not commit them, and do not hand-edit `harness.css`; its
+source is `templates/harness.src.css`.
+
+Conventions when touching these pages:
+- daisyUI semantic tokens only (`bg-base-200`, `text-base-content`) — never raw Tailwind
+  palette (`text-gray-800`, `from-blue-50`), which ignores the theme.
+- The brand gold is a fill, not a text colour: `bg-primary`/`btn-primary` for fills,
+  `text-accent` for anything that must read as a colour on a light page.
+- Do not infer the brand colour from existing component CSS — the most common hexes there
+  are Bootstrap 3 defaults, not branding.
+
+Full design language, rules and migration plan:
+`.shift/repos/adp/web-components/templates-design-language.md`
 
 **Path aliases** (configured in `stencil.config.ts`):
 `~api`, `~lib`, `~locales`, `~features`, `~types`, `~assets`
