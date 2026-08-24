@@ -98,7 +98,8 @@ describe('locked and missed reward cards', () => {
 
     expect(card.classList.contains('pending')).toBe(true);
     expect(card.querySelector('.claimable-item-lock-icon')).toBeNull();
-    expect(card.querySelector('img[alt="status icon"]')).not.toBeNull();
+    // The status glyph is still drawn — just the ordinary one, not a lock.
+    expect(card.querySelector('.claimable-item-icon svg')).not.toBeNull();
   });
 
   it('lists each prerequisite with its own tick, and the date the done one happened', async () => {

@@ -1,0 +1,154 @@
+/* The frame around the timeline: the heading above it, the scroll box it lives in, and the closing
+ * note under it.
+ *
+ * All of it is this component's own content, not VehicleInfoLayout's. That layout is shared by a
+ * dozen cards and its header — the centred VIN strip above this heading — is chrome they all wear.
+ * Growing a heading into it would have moved every one of them.
+ */
+
+.timeline-heading {
+  @apply flex items-center gap-[16px];
+  padding: 18px 24px;
+  /* Separates the card's own VIN strip above from the timeline below, the way the design does. */
+  border-bottom: 1px solid #ececef;
+}
+
+.timeline-heading-badge {
+  @apply flex shrink-0 items-center justify-center rounded-full;
+  width: 48px;
+  height: 48px;
+  color: #3b82f6;
+  background-image: linear-gradient(135deg, #dbe7fb 0%, #f3f8ff 100%);
+}
+
+.timeline-heading-badge svg {
+  @apply block size-[27px];
+}
+
+.timeline-heading-text {
+  @apply flex min-w-0 flex-col;
+}
+
+.timeline-heading-title {
+  font-size: 21px;
+  line-height: 27px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.timeline-heading-subtitle {
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 400;
+  color: #767e8c;
+}
+
+/* #region The scroll box */
+
+.timeline-band {
+  @apply relative;
+  transition: all 0.3s;
+}
+
+/* The one scroll container, and it holds the whole timeline — the cards *and* the two boxes that
+   describe them. That is what puts the horizontal scrollbar underneath all of it, at the foot of the
+   card, instead of drawing it as a rule across the middle. `auto` rather than `scroll`, so a list
+   that fits shows no scrollbar at all. */
+.claimable-items-box {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-inline: 48px;
+}
+
+.timeline-track {
+  @apply relative;
+  height: 352px;
+  /* Room for the tab strip, which is pinned to the band's top edge and so cannot push anything down
+     itself. Without it the cards centre themselves straight underneath the tabs. */
+  padding-top: 48px;
+}
+
+/* Pinned to the left of the scrollport. Sticky rather than absolute: an absolutely positioned child
+   of a scroll container is still part of the scrolled content and travels with it, and these two
+   must hold still while the timeline is dragged sideways. Width resolves against the box's content
+   box — the scrollport — not against the wider track beside it. */
+.timeline-underlay {
+  position: sticky;
+  left: 0;
+  width: 100%;
+}
+
+/* #endregion */
+
+.timeline-footnote {
+  @apply flex items-center gap-[12px];
+  margin: 16px 0 20px;
+  padding: 14px 18px;
+  border-radius: 10px;
+  background-image: linear-gradient(135deg, #e8f0fc 0%, #ffffff 100%);
+  border: 1px solid #e2eaf6;
+}
+
+.timeline-footnote-icon {
+  @apply flex shrink-0 items-center justify-center;
+  color: #3071a9;
+}
+
+.timeline-footnote-icon svg {
+  @apply block size-[21px];
+}
+
+.timeline-footnote-text {
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+/* #region Idle stand-in */
+
+/* Nothing has been looked up yet — not loading, not failed, just nothing asked. Saying so beats
+   leaving 352px of empty card.
+   Mirrors the track's own box exactly — same height, same top padding, same inline inset — so it
+   occupies the space the timeline will, rather than floating over the whole band. */
+.timeline-idle {
+  @apply pointer-events-none absolute top-0 flex flex-col items-center justify-center gap-[16px] text-center;
+  inset-inline: 48px;
+  height: 352px;
+  padding-top: 48px;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.35s ease,
+    visibility 0s linear 0.35s;
+}
+
+.timeline-idle.is-shown {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 0.35s ease 0.15s,
+    visibility 0s;
+}
+
+.timeline-idle-badge {
+  @apply flex shrink-0 items-center justify-center rounded-full;
+  width: 64px;
+  height: 64px;
+  color: #3b82f6;
+  background-image: linear-gradient(135deg, #dbe7fb 0%, #f3f8ff 100%);
+}
+
+.timeline-idle-badge svg {
+  @apply block size-[32px];
+}
+
+.timeline-idle-text {
+  max-width: 420px;
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 500;
+  color: #767e8c;
+}
+
+/* #endregion */

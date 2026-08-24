@@ -19,9 +19,14 @@ import { VehicleItemClaimForm } from './vehicle-item-claim-form';
 
 import dynamicClaimSchema from '~locales/vehicleLookup/claimableItems/type';
 
+import { CarIcon } from '~assets/car-icon';
 import { PrintIcon } from '~assets/print-icon';
-import { ActivationIcon } from '~assets/activation-icon';
+import { PowerIcon } from '~assets/power-icon';
+import { ShieldIcon } from '~assets/shield-icon';
 import { EmptyTableIcon } from '~assets/empty-table-icon';
+import { TriangleAlertIcon } from '~assets/triangle-alert';
+import { CircleCheckIcon } from '~assets/circle-check-icon';
+import { CirclePowerIcon } from '~assets/circle-power-icon';
 import { VehicleLookupMock } from '~features/vehicle-lookup-component/types';
 import { ItemClaimDTO } from '../../global/types/generated/vehicle-lookup/item-claim-dto';
 
@@ -373,10 +378,38 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
     }
   };
 
+  /**
+   * The box the popover is placed against: the item's whole column — status icon, chip, node, dot,
+   * name — rather than any one piece of it. Anchored to the status block, as it was, the card opened
+   * straight over the node and the label of the very item the customer was pointing at.
+   *
+   * The column is three absolutely positioned boxes hung around a 48px node, so no single element
+   * has a rect that covers it. The union of the container's children is that rect.
+   */
+  private anchorBounds = (anchor: HTMLElement) => {
+    const { left, right, top, bottom } = anchor.getBoundingClientRect();
+    const bounds = { left, right, top, bottom };
+
+    for (const child of Array.from(anchor.children)) {
+      const rect = child.getBoundingClientRect();
+
+      // An element mid-entrance measures small but never zero; one that has not been laid out at all
+      // measures zero, and folding that into the union would drag the anchor to the viewport origin.
+      if (!rect.width && !rect.height) continue;
+
+      bounds.left = Math.min(bounds.left, rect.left);
+      bounds.right = Math.max(bounds.right, rect.right);
+      bounds.top = Math.min(bounds.top, rect.top);
+      bounds.bottom = Math.max(bounds.bottom, rect.bottom);
+    }
+
+    return bounds;
+  };
+
   updatePopoverLocation = () => {
     if (!this.popoverAnchorEl) return;
 
-    const { left, right, top, bottom } = this.popoverAnchorEl.getBoundingClientRect();
+    const { left, right, top, bottom } = this.anchorBounds(this.popoverAnchorEl);
     const centerX = (left + right) / 2;
 
     // Writing @State re-renders the whole component, and scroll fires far more often than the anchor
@@ -759,8 +792,27 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
     const showActivationRequired = activationStatus === 'Required';
     const showActivationBlocked = activationStatus === 'BlockedNotAllocated';
     const showActivationBox = showActivationRequired || showActivationBlocked || this.showPrintBox;
-    const isBlockedBox = showActivationBlocked && !this.showPrintBox;
     const showActionButton = this.showPrintBox || showActivationRequired;
+
+    // The notice under the timeline is one box with three things it can be saying, not three boxes:
+    // a claim just landed and can be printed, this vehicle needs activating, or it needs activating
+    // and this dealership is not the one that can do it. A claim landing wins over an activation
+    // notice, because it is the newer news and the customer just caused it.
+    const noticeTone = this.showPrintBox ? 'success' : showActivationBlocked ? 'blocked' : 'warning';
+
+    const showNotice = !this.isLoading && !this.tabAnimationLoading && !!this.vehicleLookup && showActivationBox;
+
+    const isBusy = this.isLoading || this.tabAnimationLoading;
+
+    // Nothing has been looked up yet — not loading, not failed, just nothing asked. The band would
+    // otherwise be an empty 352px of card with no explanation.
+    const isIdle = !isBusy && !this.isError && !this.vehicleLookup;
+
+    const noticeMessage = this.showPrintBox
+      ? this.locale.successFulClaimMessage
+      : showActivationBlocked
+        ? this.locale.activationBlockedNotAllocated
+        : this.locale.warrantyAndServicesNotActivated;
 
     return (
       <Host translate="no">
@@ -821,90 +873,116 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
             ) : null
           }
         >
-          <div dir="ltr" class={cn('relative flex items-center h-[320px] transition-all duration-300', { loading: this.isLoading || this.tabAnimationLoading })}>
-            {/* Tabs container */}
+          <div dir={this.locale.sharedLocales.direction} class="timeline-heading">
+            <div class="timeline-heading-badge">
+              <CarIcon />
+            </div>
+            <div class="timeline-heading-text">
+              <strong class="timeline-heading-title">{this.locale.timelineTitle}</strong>
+              <span class="timeline-heading-subtitle">{this.locale.timelineSubtitle}</span>
+            </div>
+          </div>
+
+          <div dir="ltr" class={cn('timeline-band', { loading: this.isLoading || this.tabAnimationLoading })}>
+            {/* Tabs. Outside the scroll box on purpose — they name what is being scrolled, so they
+                must not travel with it. */}
             <div dir={this.locale.sharedLocales.direction} class="absolute top-0 z-10 w-full pt-[16px]">
               <div class={cn('duration-300', { 'translate-y-[-50%] opacity-0': hideTabs })}>
                 <shift-tabs activeTabLabel={this.activeTab} changeActiveTab={this.onActiveTabChange} tabs={tabs}></shift-tabs>
               </div>
             </div>
 
-            {/* Loading Component  */}
-            <div class={cn('absolute w-[calc(100%-60px)] left-[30px] progress-container-style opacity-0', { 'opacity-100': this.isLoading || this.tabAnimationLoading })}>
-              <div class="w-full h-full rounded-[4px] overflow-x-hidden absolute left-0 top-0">
-                <div class="absolute opacity-0 bg-[#1a1a1a] w-[150%] h-full" />
-                <div class="absolute h-full bg-[linear-gradient(to_bottom,_#428bca_0%,_#3071a9_100%)] lane-inc" />
-                <div class="absolute h-full bg-[linear-gradient(to_bottom,_#428bca_0%,_#3071a9_100%)] lane-dec" />
+            {/* Says why the band is empty when nothing has been looked up yet. Outside the scroll box,
+                so it cannot be scrolled away from. */}
+            <div dir={this.locale.sharedLocales.direction} class={cn('timeline-idle', { 'is-shown': isIdle })}>
+              <div class="timeline-idle-badge">
+                <CarIcon />
               </div>
+              <p class="timeline-idle-text">{this.locale.timelineIdle}</p>
             </div>
 
-            {/* Inactive items activation & Print functionality */}
-            <div
-              dir={this.locale.sharedLocales.direction}
-              class={cn(
-                'absolute w-[90%] z-10 pointer-events-none border opacity-0 translate-y-[-5px] scale-[70%] p-[25px] text-[16px] rounded-[6px] flex items-center justify-between left-1/2 -translate-x-1/2 h-10 bottom-[40px] transition duration-500',
-                {
-                  'text-[#8a6d3b] bg-[#fcf8e3] border-[#faebcc]': !isBlockedBox,
-                  'text-[#58151c] bg-[#f7d7d8] border-[#f2aeb5]': isBlockedBox,
-                  'opacity-100 pointer-events-auto translate-y-0 scale-100': !this.isLoading && this.vehicleLookup && !this.tabAnimationLoading && showActivationBox,
-                },
-              )}
-            >
-              <span class="font-semibold">
-                {this.showPrintBox
-                  ? this.locale.successFulClaimMessage
-                  : showActivationBlocked
-                    ? this.locale.activationBlockedNotAllocated
-                    : this.locale.warrantyAndServicesNotActivated}
-              </span>
+            <div class="claimable-items-box">
+              <div class="timeline-track">
+                <div class="flex relative w-fit min-w-full items-center h-full [&_*]:shrink-0 gap-[280px] justify-between">
+                  {/* Lane */}
+                  <div
+                    class={cn('progress-container-style progress-lane absolute overflow-hidden w-full opacity-100', {
+                      'opacity-0': this.isLoading || this.tabAnimationLoading || isNoServicesAvailable || !this.vehicleLookup,
+                    })}
+                  >
+                    {/* Progress lane */}
+                    <div part="progress-bar" class="progress-bar transition-all w-1/2 h-full bg-[linear-gradient(to_bottom,_#428bca_0%,_#3071a9_100%)]" />
+                  </div>
 
-              {showActionButton && (
-                <button class="claim-button" onClick={this.showPrintBox ? this.printLastClaimResponse : this.activateClaimItem}>
-                  {this.showPrintBox ? <PrintIcon class="size-[30px] duration-200" /> : <ActivationIcon class="size-[30px] duration-200" />}
-                  <span>{this.showPrintBox ? this.locale.print : this.locale.activateNow}</span>
-                </button>
-              )}
-            </div>
+                  {/* The lane that stands in for it while the answer is on its way. A sibling of
+                      the real one so the two sit on exactly the same line. */}
+                  <div class={cn('progress-container-style progress-lane-loading absolute w-full opacity-0', { 'opacity-100': isBusy })}>
+                    <div class="absolute left-0 top-0 h-full w-full overflow-x-hidden rounded-full">
+                      <div class="lane-sweep lane-inc" />
+                      <div class="lane-sweep lane-dec" />
+                    </div>
+                  </div>
 
-            <div class="claimable-items-box px-[30px] min-w-full relative overflow-x-scroll h-full overflow-y-hidden">
-              <div class="flex relative w-fit min-w-full items-center h-full [&_*]:shrink-0 gap-[250px] justify-between">
-                {/* Lane */}
-                <div
-                  class={cn('progress-container-style progress-lane absolute overflow-hidden w-[calc(100%-0px)] translate-y-0 opacity-100', {
-                    'opacity-0': this.isLoading || this.tabAnimationLoading || isNoServicesAvailable || !this.vehicleLookup,
-                  })}
-                >
-                  {/* Progress lane */}
-                  <div part="progress-bar" class="progress-bar transition-all w-1/2 h-full bg-[linear-gradient(to_bottom,_#428bca_0%,_#3071a9_100%)]" />
+                  {/* Claim items */}
+                  <div class="ml-[-140px]" />
+
+                  {serviceItems.map((item, idx) => (
+                    <ClaimableItem
+                      item={item}
+                      locale={this.locale}
+                      setClaimableItemPopover={this.setClaimableItemPopover}
+                      addStatusClass={!isAwaitingClaim(item) || firstAwaitingIndex === idx}
+                    />
+                  ))}
+
+                  <div class="ml-[-140px]" />
                 </div>
 
-                {/* Claim items */}
-                <div class="ml-[-125px]" />
-
-                {serviceItems.map((item, idx) => (
-                  <ClaimableItem
-                    item={item}
-                    locale={this.locale}
-                    setClaimableItemPopover={this.setClaimableItemPopover}
-                    addStatusClass={!isAwaitingClaim(item) || firstAwaitingIndex === idx}
-                  />
-                ))}
-
-                <div class="ml-[-125px]" />
+                {/* Empty state */}
+                <div
+                  dir={this.locale.sharedLocales.direction}
+                  class={cn(
+                    'absolute top-0 left-0 pointer-events-none size-full box-content flex flex-col justify-center opacity-0 transition duration-500 items-center text-slate-700',
+                    {
+                      'opacity-100 scale-100': isNoServicesAvailable,
+                    },
+                  )}
+                >
+                  <EmptyTableIcon class="size-[90px]" />
+                  <div class="text-[22px]">{this.locale.sharedLocales.errors.noServiceAvailable}</div>
+                </div>
               </div>
 
-              {/* Empty state */}
-              <div
-                dir={this.locale.sharedLocales.direction}
-                class={cn(
-                  'absolute top-0 left-0 pointer-events-none size-full box-content flex flex-col justify-center opacity-0 transition duration-500 items-center text-slate-700',
-                  {
-                    'opacity-100 scale-100': isNoServicesAvailable,
-                  },
+              {/* Both of these belong to the timeline, so they ride inside the scroll box with it —
+                  which is what puts the horizontal scrollbar underneath them rather than drawing it
+                  as a rule between the timeline and the two boxes that describe it. Pinned, not
+                  scrolled: see .timeline-underlay. */}
+              <div class="timeline-underlay">
+                <div class={cn('timeline-notice-slot', { 'is-open': showNotice })}>
+                  <div class="timeline-notice-clip">
+                    <div dir={this.locale.sharedLocales.direction} class={cn('timeline-notice', `timeline-notice-${noticeTone}`)}>
+                      <div class="timeline-notice-icon">{this.showPrintBox ? <CircleCheckIcon /> : showActivationBlocked ? <TriangleAlertIcon /> : <CirclePowerIcon />}</div>
+
+                      <span class="timeline-notice-text">{noticeMessage}</span>
+
+                      {showActionButton && (
+                        <button type="button" class="timeline-notice-action" onClick={this.showPrintBox ? this.printLastClaimResponse : this.activateClaimItem}>
+                          {this.showPrintBox ? <PrintIcon viewBox="0 0 24 24" fill="currentColor" /> : <PowerIcon />}
+                          <span>{this.showPrintBox ? this.locale.print : this.locale.activateNow}</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {!this.isError && (
+                  <div dir={this.locale.sharedLocales.direction} class="timeline-footnote">
+                    <div class="timeline-footnote-icon">
+                      <ShieldIcon />
+                    </div>
+                    <span class="timeline-footnote-text">{this.locale.timelineNote}</span>
+                  </div>
                 )}
-              >
-                <EmptyTableIcon class="size-[90px]" />
-                <div class="text-[22px]">{this.locale.sharedLocales.errors.noServiceAvailable}</div>
               </div>
             </div>
           </div>

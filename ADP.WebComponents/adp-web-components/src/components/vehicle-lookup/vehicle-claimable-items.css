@@ -2,6 +2,8 @@
 @import './components/claimable-item.css';
 @import './components/claimable-item-popover.css';
 @import './components/claimable-trace-modal.css';
+@import './timeline-frame.css';
+@import './timeline-notice.css';
 @import '../../features/vehicle-info-layout/vehicle-info-layout.css';
 
 :host {
@@ -16,16 +18,56 @@
   font-family: inherit !important;
 }
 
+/* Both lanes are absolutely positioned inside the cards row, whose `align-items: center` already
+   centres them on the line the nodes sit on. The -translate-y-1/2 that used to be here was a
+   leftover from before that, and only ever applied to one of the two: the real lane also carries
+   `translate-y-0`, a utility that wins on source order, so it sat centred while the loading lane it
+   stands in for sat 6px — half a lane — higher. */
 .progress-container-style {
-  @apply h-[10px] -translate-y-1/2 rounded-full transition duration-500 bg-[#f2f2f2] border border-[#ddd];
+  @apply h-[12px] rounded-full transition duration-500 bg-[#f2f2f2] border border-[#ddd];
+}
+
+/* The track the cards sit on. What the vehicle has already reached is drawn solid, what is still
+   ahead is a row of rounded dashes on bare card — so the lane itself says where the customer is,
+   instead of leaving that to be inferred from the cards standing on it.
+   The dashes come from an inline SVG rather than a repeating gradient because a gradient can only
+   cut square ends, and square ends next to a rounded bar read as a rendering fault. */
+.progress-lane {
+  border-color: transparent;
+  background-color: transparent;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='8' viewBox='0 0 22 8'%3E%3Cline x1='4' y1='4' x2='13' y2='4' stroke='%23ccd3dc' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-position: left center;
+  background-repeat: repeat-x;
+  background-size: 22px 8px;
+  box-shadow: none;
+}
+
+/* Rounded so the head of the lane reads as a cap rather than a cut, which is what it looks like
+   when it stops between two cards. */
+.progress-bar {
+  @apply rounded-full;
+  box-shadow: 0 1px 2px rgba(48, 113, 169, 0.32);
+}
+
+/* The lane that stands in for the real one while the answer is on its way. Its own track is a soft
+   vertical wash rather than flat grey, and the two bars that sweep along it fade out at both ends —
+   so they read as light travelling down the lane rather than blocks sliding under it. */
+.progress-lane-loading {
+  background-image: linear-gradient(180deg, #f8f9fb 0%, #edeff2 100%);
+  border-color: #e2e4e8;
+}
+
+.lane-sweep {
+  @apply absolute h-full;
+  background-image: linear-gradient(90deg, rgba(66, 139, 202, 0) 0%, #4b93cf 28%, #3071a9 72%, rgba(48, 113, 169, 0) 100%);
 }
 
 .loading .lane-inc {
-  animation: lane-increase 2.5s infinite ease;
+  animation: lane-increase 4s infinite ease;
 }
 
 .loading .lane-dec {
-  animation: lane-decrease 2.5s 1s infinite ease;
+  animation: lane-decrease 4s 1.6s infinite ease;
 }
 
 @keyframes lane-increase {

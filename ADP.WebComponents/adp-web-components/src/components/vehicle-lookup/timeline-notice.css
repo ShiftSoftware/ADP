@@ -1,0 +1,151 @@
+/* The notice that appears under the timeline. It is one box with three things it can be saying — a
+   claim landed and can be printed, this vehicle needs activating, or it needs activating and this
+   dealership cannot do it — so it is one element wearing a tone rather than three variants of markup
+   that would drift apart. Each tone sets the three custom properties at the bottom of this file and
+   nothing else changes. */
+
+/* It used to be absolutely positioned over the foot of the timeline, which put it on top of the
+   scroll box's horizontal scrollbar with nothing between them, and left it fighting the item labels
+   behind it for the same pixels. It is a row of its own now. The row collapses to nothing when there
+   is nothing to say, and grid-template-rows is what makes that animate — height:auto cannot be
+   transitioned, and a max-height guess would either clip a wrapped message or coast through empty
+   space on the way open. */
+.timeline-notice-slot {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.4s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.timeline-notice-slot.is-open {
+  grid-template-rows: 1fr;
+}
+
+/* The 0fr row still lays its content out at full height and lets it overflow; this is what actually
+   hides it. min-height:0 keeps the grid item from claiming its content's height as a floor. */
+.timeline-notice-clip {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.timeline-notice {
+  @apply flex items-center gap-[16px] rounded-[12px] border opacity-0;
+  /* The scroll box's own inline padding is the side inset; this only has to stop the box growing
+     absurdly wide on a large screen. */
+  width: 100%;
+  max-width: 760px;
+  margin: 16px auto 0;
+  min-height: 66px;
+  padding: 14px 20px;
+  box-shadow: 0 2px 8px rgba(16, 24, 40, 0.06);
+  transform: translateY(6px) scale(0.98);
+  transition:
+    opacity 0.4s ease,
+    transform 0.4s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.timeline-notice-slot.is-open .timeline-notice {
+  @apply opacity-100;
+  transform: translateY(0) scale(1);
+}
+
+.timeline-notice-icon {
+  @apply flex shrink-0 items-center justify-center rounded-full;
+  width: 36px;
+  height: 36px;
+  color: var(--notice-icon);
+  background-color: var(--notice-badge);
+}
+
+.timeline-notice-icon svg {
+  @apply block size-[20px];
+}
+
+.timeline-notice-text {
+  @apply grow font-semibold;
+  font-size: 15px;
+  line-height: 20px;
+  color: var(--notice-text);
+}
+
+/* The action is the same green whatever the tone: both things it ever does — activate the vehicle,
+   print the claim the customer just made — are the way forward, and colouring it amber next to an
+   amber notice would bury it. */
+.timeline-notice-action {
+  @apply flex shrink-0 cursor-pointer items-center gap-[8px] rounded-[8px] font-bold text-white;
+  padding: 9px 18px;
+  border: 0;
+  font-size: 14px;
+  line-height: 18px;
+  background-color: #1e874a;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.16);
+  transition:
+    background-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* Both glyphs already paint in currentColor — the print mark by fill, the power mark by stroke — so
+   this only has to size them. */
+.timeline-notice-action svg {
+  @apply block size-[19px];
+}
+
+.timeline-notice-action:hover {
+  background-color: #186f3c;
+  box-shadow: 0 2px 6px rgba(16, 24, 40, 0.2);
+}
+
+.timeline-notice-action:active {
+  transform: scale(0.97);
+}
+
+.timeline-notice-action:focus-visible {
+  outline: 2px solid #1e874a;
+  outline-offset: 2px;
+}
+
+/* #region Tones */
+
+/* Something is owed before the customer can use any of this. */
+.timeline-notice-warning {
+  --notice-text: #7a5c22;
+  --notice-icon: #a9761a;
+  --notice-badge: #fbf0d3;
+  background-color: #fdf9ec;
+  border-color: #f2e2bb;
+}
+
+/* Owed, and this dealership is not the one that can settle it — there is no button on this tone. */
+.timeline-notice-blocked {
+  --notice-text: #58151c;
+  --notice-icon: #b3242f;
+  --notice-badge: #f7d7d8;
+  background-color: #fdeff0;
+  border-color: #f2aeb5;
+}
+
+/* A claim just went through. */
+.timeline-notice-success {
+  --notice-text: #0b3521;
+  --notice-icon: #1e874a;
+  --notice-badge: #d0e7de;
+  background-color: #eef7f2;
+  border-color: #a2d0bb;
+}
+
+/* #endregion */
+
+@media (prefers-reduced-motion: reduce) {
+  .timeline-notice-slot {
+    transition: none;
+  }
+
+  .timeline-notice,
+  .timeline-notice-slot.is-open .timeline-notice {
+    transform: none;
+  }
+
+  .timeline-notice-action:active {
+    transform: none;
+  }
+}

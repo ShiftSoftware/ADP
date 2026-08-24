@@ -58,6 +58,10 @@ const claimableItemsSchema = object({
     'traceTitle',
     'traceLoading',
     'traceFailed',
+    'timelineTitle',
+    'timelineSubtitle',
+    'timelineNote',
+    'timelineIdle',
   ]),
 );
 

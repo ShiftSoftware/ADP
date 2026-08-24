@@ -23,6 +23,10 @@
   "traceTitle": "Service-item Lookup Trace",
   "traceLoading": "Loading trace…",
   "traceFailed": "Failed to load trace.",
+  "timelineTitle": "Service Timeline",
+  "timelineSubtitle": "Vehicle maintenance progress",
+  "timelineNote": "Stay on track to keep your vehicle running at its best.",
+  "timelineIdle": "Look up a VIN to see this vehicle’s service timeline.",
   "claimForm": {
     "expand": "Expand",
     "print": "Print",
