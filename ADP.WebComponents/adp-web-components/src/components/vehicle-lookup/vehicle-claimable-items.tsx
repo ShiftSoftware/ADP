@@ -2,6 +2,7 @@ import { Component, Element, Host, Method, Prop, State, Watch, h } from '@stenci
 
 import cn from '~lib/cn';
 import { scrollIntoContainerView } from '~lib/scroll-into-container-view';
+import { bindEscapeFallback, closeModalOverlay, demoteOverlay, openModalOverlay, promoteOverlayIfCaged } from '~lib/overlay';
 
 import { VehicleLookupDTO } from '~types/generated/vehicle-lookup/vehicle-lookup-dto';
 import { VehicleServiceItemDTO } from '~types/generated/vehicle-lookup/vehicle-service-item-dto';
@@ -18,6 +19,12 @@ import { VehicleItemClaimForm } from './vehicle-item-claim-form';
 
 import dynamicClaimSchema from '~locales/vehicleLookup/claimableItems/type';
 
+import { PrintIcon } from '~assets/print-icon';
+import { ActivationIcon } from '~assets/activation-icon';
+import { EmptyTableIcon } from '~assets/empty-table-icon';
+import { VehicleLookupMock } from '~features/vehicle-lookup-component/types';
+import { ItemClaimDTO } from '../../global/types/generated/vehicle-lookup/item-claim-dto';
+
 /**
  * Whether an item is genuinely waiting to be claimed.
  *
@@ -27,12 +34,6 @@ import dynamicClaimSchema from '~locales/vehicleLookup/claimableItems/type';
  * true of an item the customer was never able to claim.
  */
 const isAwaitingClaim = (item: VehicleServiceItemDTO) => item.status === 'pending' && !item.lock;
-
-import { PrintIcon } from '~assets/print-icon';
-import { ActivationIcon } from '~assets/activation-icon';
-import { EmptyTableIcon } from '~assets/empty-table-icon';
-import { VehicleLookupMock } from '~features/vehicle-lookup-component/types';
-import { ItemClaimDTO } from '../../global/types/generated/vehicle-lookup/item-claim-dto';
 
 @Component({
   shadow: true,
@@ -137,7 +138,9 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
   @State() popoverTarget: PopoverTarget = { centerX: 0, topY: 0, bottomY: 0 };
   @State() popoverHeight: number = 0;
   @State() popoverBodyContentHeight: number = 0;
-  @State() popoverContentFading: boolean = false;
+  @State() popoverSwapping: boolean = false;
+  @State() outgoingClaimItem?: VehicleServiceItemDTO;
+  @State() popoverLayerKey: number = 0;
   @State() popoverFadingOut: boolean = false;
 
   @State() showTraceModal: boolean = false;
@@ -148,13 +151,15 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
 
   claimForm: VehicleItemClaimForm;
   private traceAbortController?: AbortController;
-  private traceCloseListener?: (event: KeyboardEvent) => void;
+  private traceDialogEl?: HTMLDialogElement;
+  private releaseTraceFallbacks?: () => void;
   private traceFadeOutTimeoutRef: ReturnType<typeof setTimeout>;
 
   private popoverAnchorEl: HTMLElement;
+  private popoverEl?: HTMLElement;
   private popoverCloseTimeoutRef: ReturnType<typeof setTimeout>;
   private popoverHideTimeoutRef: ReturnType<typeof setTimeout>;
-  private popoverContentSwapTimeoutRef: ReturnType<typeof setTimeout>;
+  private popoverSwapEndTimeoutRef: ReturnType<typeof setTimeout>;
 
   private progressBar: HTMLElement;
   private claimableItemsBox: HTMLElement;
@@ -305,9 +310,9 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
     window.addEventListener('resize', this.onWindowResize);
     document.addEventListener('visibilitychange', this.onVisibilityChange);
 
-    if (this.claimableItemsBox) this.claimableItemsBox.addEventListener('scroll', this.updatePopoverLocation);
-    window.addEventListener('scroll', this.updatePopoverLocation);
-    window.addEventListener('resize', this.updatePopoverLocation);
+    if (this.claimableItemsBox) this.claimableItemsBox.addEventListener('scroll', this.onViewportChange);
+    window.addEventListener('scroll', this.onViewportChange);
+    window.addEventListener('resize', this.onViewportChange);
 
     requestAnimationFrame(() => this.measurePopoverHeight());
 
@@ -323,16 +328,16 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
   async disconnectedCallback() {
     window.removeEventListener('resize', this.onWindowResize);
     document.removeEventListener('visibilitychange', this.onVisibilityChange);
-    if (this.claimableItemsBox) this.claimableItemsBox.removeEventListener('scroll', this.updatePopoverLocation);
-    window.removeEventListener('scroll', this.updatePopoverLocation);
-    window.removeEventListener('resize', this.updatePopoverLocation);
+    if (this.claimableItemsBox) this.claimableItemsBox.removeEventListener('scroll', this.onViewportChange);
+    window.removeEventListener('scroll', this.onViewportChange);
+    window.removeEventListener('resize', this.onViewportChange);
     clearTimeout(this.popoverCloseTimeoutRef);
     clearTimeout(this.popoverHideTimeoutRef);
-    clearTimeout(this.popoverContentSwapTimeoutRef);
+    clearTimeout(this.popoverSwapEndTimeoutRef);
     clearTimeout(this.traceFadeOutTimeoutRef);
-    if (this.traceCloseListener) window.removeEventListener('keydown', this.traceCloseListener);
     this.traceAbortController?.abort();
-    if (this.showTraceModal || this.traceModalFadingOut) document.body.style.overflow = 'auto';
+    this.releaseTraceFallbacks?.();
+    demoteOverlay(this.popoverEl);
   }
 
   @Watch('vehicleLookup')
@@ -372,20 +377,42 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
     if (!this.popoverAnchorEl) return;
 
     const { left, right, top, bottom } = this.popoverAnchorEl.getBoundingClientRect();
+    const centerX = (left + right) / 2;
 
-    this.popoverTarget = { centerX: (left + right) / 2, topY: top, bottomY: bottom };
+    // Writing @State re-renders the whole component, and scroll fires far more often than the anchor
+    // actually moves — most notably not at all while the popover is parked over a still page.
+    if (this.popoverTarget.centerX === centerX && this.popoverTarget.topY === top && this.popoverTarget.bottomY === bottom) return;
+
+    this.popoverTarget = { centerX, topY: top, bottomY: bottom };
+  };
+
+  // The anchor outlives the popover, so scroll and resize would otherwise keep measuring it long
+  // after the card closed.
+  private onViewportChange = () => {
+    if (!this.showClaimableItemPopover && !this.popoverFadingOut) return;
+    this.updatePopoverLocation();
   };
 
   private measurePopoverHeight = () => {
     const body = this.el.shadowRoot?.querySelector('.popover-body') as HTMLElement | null;
-    // scrollHeight, not offsetHeight: the body carries a max-height derived from this measurement,
-    // so reading its rendered height would feed the cap back into the decision that set it and the
-    // popover would conclude it fits anywhere. scrollHeight is the content's own height either way.
-    if (body && body.scrollHeight > 0) this.popoverHeight = body.scrollHeight;
+    const content = this.el.shadowRoot?.querySelector('.popover-body-content') as HTMLElement | null;
+    const inner = this.currentPopoverInner();
+
+    if (!body || !content || !inner) return;
+
+    // Mid-swap the content box is pinned to an animating height and the outgoing layer is still
+    // stacked behind the incoming one, so the body's own size is neither where it started nor where
+    // it is going. Take the chrome (padding + border) from the live box and the content height from
+    // the layer that will remain, which off a swap is exactly the body's scrollHeight anyway.
+    this.popoverHeight = Math.ceil(inner.getBoundingClientRect().height) + (body.offsetHeight - content.offsetHeight);
   };
 
+  // Scoped to the current layer: during a cross-fade an outgoing copy of the card is mounted too,
+  // and an unscoped lookup would measure whichever of the two the vdom happened to put first.
+  private currentPopoverInner = () => this.el.shadowRoot?.querySelector('.popover-layer-current .popover-body-inner') as HTMLElement | null;
+
   private measurePopoverContentHeight = (): number => {
-    const inner = this.el.shadowRoot?.querySelector('.popover-body-inner') as HTMLElement | null;
+    const inner = this.currentPopoverInner();
     if (!inner) return 0;
     // Use getBoundingClientRect for sub-pixel precision and ceil to avoid undershooting at
     // fractional browser zoom (e.g. 80%, where offsetHeight may round down by 1px and clip the bottom).
@@ -394,8 +421,10 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
 
   private static readonly POPOVER_CLOSE_DELAY_MS = 200;
   private static readonly POPOVER_FADE_OUT_MS = 500;
-  private static readonly POPOVER_CONTENT_FADE_MS = 150;
-  private static readonly TRACE_FADE_OUT_MS = 300;
+  /** Cross-fade + resize duration. Handed to the popover as --popover-swap, so this one number
+   *  drives both the CSS transitions and the timer that drops the outgoing layer. */
+  private static readonly POPOVER_SWAP_MS = 500;
+  private static readonly TRACE_FADE_OUT_MS = 420;
 
   setClaimableItemPopover = (showPopover: boolean, claimableItem?: VehicleServiceItemDTO, anchorEl?: HTMLElement) => {
     clearTimeout(this.popoverCloseTimeoutRef);
@@ -424,46 +453,69 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
         return;
       }
 
-      clearTimeout(this.popoverContentSwapTimeoutRef);
+      clearTimeout(this.popoverSwapEndTimeoutRef);
 
       if (wasActive) {
-        // Switching to a different item while still active: slide + cross-fade content.
+        // Switching to a different item while still active. Both cards are mounted at once, stacked
+        // in one grid cell: pin the box to the height it has now, mount the incoming layer hidden,
+        // then release everything together next frame so the fade-out, the fade-in and the resize
+        // run on the same clock. The previous version faded the values out, swapped the DOM, and
+        // only then started resizing — which is what made the move read as two separate jerks, left
+        // labels and whole rows hard-swapping, and mounted/unmounted a claim button mid-move.
         this.popoverBodyContentHeight = this.measurePopoverContentHeight();
-        this.popoverContentFading = true;
+        this.outgoingClaimItem = this.selectedClaimItem;
+        this.selectedClaimItem = claimableItem;
+        this.popoverLayerKey += 1;
+        this.popoverSwapping = true;
         this.popoverFadingOut = false;
         this.showClaimableItemPopover = true;
         this.updatePopoverLocation();
 
-        this.popoverContentSwapTimeoutRef = setTimeout(() => {
-          this.selectedClaimItem = claimableItem;
+        // Two frames: the first lets Stencil render the incoming layer, the second lets the browser
+        // adopt its opacity:0 starting style. Flipping in the first frame would skip the transition.
+        requestAnimationFrame(() =>
           requestAnimationFrame(() => {
             this.popoverBodyContentHeight = this.measurePopoverContentHeight();
-            this.popoverContentFading = false;
+            this.popoverSwapping = false;
             this.measurePopoverHeight();
-          });
-        }, VehicleClaimableItems.POPOVER_CONTENT_FADE_MS);
+          }),
+        );
+
+        this.popoverSwapEndTimeoutRef = setTimeout(() => {
+          this.outgoingClaimItem = undefined;
+          // Hand the height back to the content, so anything that changes it later (a claim landing,
+          // a resize) reflows instead of staying pinned to a stale measurement.
+          this.popoverBodyContentHeight = 0;
+        }, VehicleClaimableItems.POPOVER_SWAP_MS);
       } else {
         // Truly fresh open. Two-frame dance: set position while still hidden, then flip aria-expanded
         // next frame so the opacity fade-in doesn't drag a position transition along with it.
-        this.popoverContentFading = false;
+        this.popoverSwapping = false;
+        this.outgoingClaimItem = undefined;
         this.popoverBodyContentHeight = 0;
         this.selectedClaimItem = claimableItem;
         this.updatePopoverLocation();
         requestAnimationFrame(() => {
           this.showClaimableItemPopover = true;
+          // Non-modal, and only when an ancestor would otherwise clip it: a hover card that took the
+          // top layer unconditionally would outrank the host's own toasts and nav for no reason, and
+          // a modal one would inert the very cards it is meant to be hovered between.
+          promoteOverlayIfCaged(this.popoverEl);
           requestAnimationFrame(() => this.measurePopoverHeight());
         });
       }
     } else {
       this.popoverCloseTimeoutRef = setTimeout(() => {
-        clearTimeout(this.popoverContentSwapTimeoutRef);
+        clearTimeout(this.popoverSwapEndTimeoutRef);
         this.showClaimableItemPopover = false;
         this.popoverFadingOut = true;
-        this.popoverContentFading = false;
+        this.popoverSwapping = false;
+        this.outgoingClaimItem = undefined;
 
         this.popoverHideTimeoutRef = setTimeout(() => {
           this.popoverFadingOut = false;
           this.popoverBodyContentHeight = 0;
+          demoteOverlay(this.popoverEl);
         }, VehicleClaimableItems.POPOVER_FADE_OUT_MS);
       }, VehicleClaimableItems.POPOVER_CLOSE_DELAY_MS);
     }
@@ -492,13 +544,20 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
     this.isLoadingTrace = true;
     this.traceError = undefined;
     this.traceHtml = undefined;
-    // Match the claim-form pattern: lock host page scroll so the only scrollbar is the iframe's.
-    document.body.style.overflow = 'hidden';
 
-    this.traceCloseListener = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') this.closeTraceModal();
-    };
-    window.addEventListener('keydown', this.traceCloseListener);
+    // Match the claim-form pattern: the top layer clears the host page's stacking contexts and
+    // inerts everything behind it, so the only scrollbar is the iframe's.
+    const inTopLayer = openModalOverlay(this.traceDialogEl);
+
+    // What the top layer supplies for free, supplied by hand where it is unavailable.
+    if (!inTopLayer) {
+      document.body.style.overflow = 'hidden';
+      const release = bindEscapeFallback(this.onTraceCancel);
+      this.releaseTraceFallbacks = () => {
+        release();
+        document.body.style.overflow = '';
+      };
+    }
 
     this.traceAbortController?.abort();
     this.traceAbortController = new AbortController();
@@ -533,18 +592,24 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
     this.traceAbortController?.abort();
     this.showTraceModal = false;
     this.traceModalFadingOut = true;
-    document.body.style.overflow = 'auto';
-    if (this.traceCloseListener) {
-      window.removeEventListener('keydown', this.traceCloseListener);
-      this.traceCloseListener = undefined;
-    }
     clearTimeout(this.traceFadeOutTimeoutRef);
     this.traceFadeOutTimeoutRef = setTimeout(() => {
       this.traceModalFadingOut = false;
       this.isLoadingTrace = false;
       this.traceError = undefined;
       this.traceHtml = undefined;
+      // Last, so the panel is fully faded before it leaves the top layer.
+      if (this.showTraceModal) return;
+      closeModalOverlay(this.traceDialogEl);
+      this.releaseTraceFallbacks?.();
+      this.releaseTraceFallbacks = undefined;
     }, VehicleClaimableItems.TRACE_FADE_OUT_MS);
+  };
+
+  /** Escape would drop the panel out of the top layer in one frame; close it through the fade. */
+  private onTraceCancel = (event: Event) => {
+    event.preventDefault();
+    this.closeTraceModal();
   };
 
   @Method()
@@ -560,13 +625,11 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
     serviceDataClone[index].claimable = false;
     serviceDataClone[index].status = 'processed';
 
-    pendingItemsBefore.forEach(function (otherItem) {
-      otherItem.status = 'cancelled';
-    });
+    pendingItemsBefore.forEach(otherItem => (otherItem.status = 'cancelled'));
 
     const vehicleDataClone = JSON.parse(JSON.stringify(this.vehicleLookup)) as VehicleLookupDTO;
     vehicleDataClone.serviceItems = serviceDataClone;
-    this.vehicleLookup = JSON.parse(JSON.stringify(vehicleDataClone));
+    this.vehicleLookup = vehicleDataClone;
 
     if (response.PrintURL) this.showPrintBox = true;
 
@@ -619,7 +682,6 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
 
               reject(new Error('Upload succeeded but response is not valid JSON'));
             }
-            resolve();
           } else {
             try {
               const responseData = JSON.parse(xhr.responseText);
@@ -632,11 +694,7 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
           }
         };
 
-        xhr.onerror = e => {
-          console.log(e);
-
-          reject(new Error('Network error'));
-        };
+        xhr.onerror = () => reject(new Error('Network error'));
 
         xhr.send(formData);
       });
@@ -644,7 +702,7 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
       // Show the claim-failure dialog, then re-throw: the rejection resets the
       // claim form's loading state and keeps it open for retry.
       this.claimForm.showError(error?.serverMessage || this.locale.sharedLocales.errors.requestFailedPleaseTryAgainLater);
-      throw new Error(error);
+      throw error;
     }
   };
 
@@ -667,7 +725,7 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
       this.completeClaim({ Success: true, ID: '11223344', PrintURL: 'http://localhost/test/print/1122' });
     } catch (error) {
       this.claimForm.showError(this.locale.sharedLocales.errors.requestFailedPleaseTryAgainLater);
-      throw new Error(error);
+      throw error;
     }
   };
 
@@ -686,6 +744,10 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
 
   render() {
     const serviceItems = this.getServiceItems();
+
+    // Only the first item still awaiting a claim wears its status colour; the rest are drawn plain.
+    // Hoisted out of the map below, where it used to be a findIndex per card.
+    const firstAwaitingIndex = serviceItems.findIndex(isAwaitingClaim);
 
     const isNoServicesAvailable = !this.isLoading && this.vehicleLookup && !serviceItems.length;
 
@@ -717,10 +779,14 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
           target={this.popoverTarget}
           popoverHeight={this.popoverHeight}
           fadingOut={this.popoverFadingOut}
-          contentFading={this.popoverContentFading}
+          swapping={this.popoverSwapping}
+          outgoingItem={this.outgoingClaimItem}
+          layerKey={this.popoverLayerKey}
+          swapMs={VehicleClaimableItems.POPOVER_SWAP_MS}
           bodyContentHeight={this.popoverBodyContentHeight}
           onMouseEnter={this.onPopoverMouseEnter}
           onMouseLeave={this.onPopoverMouseLeave}
+          rootRef={el => (this.popoverEl = el)}
         />
 
         <ClaimableTraceModal
@@ -732,6 +798,8 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
           traceHtml={this.traceHtml}
           locale={this.locale}
           onClose={this.closeTraceModal}
+          onCancel={this.onTraceCancel}
+          dialogRef={el => (this.traceDialogEl = el)}
         />
 
         <VehicleInfoLayout
@@ -818,7 +886,7 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
                     item={item}
                     locale={this.locale}
                     setClaimableItemPopover={this.setClaimableItemPopover}
-                    addStatusClass={!isAwaitingClaim(item) || serviceItems.findIndex(i => isAwaitingClaim(i)) === idx}
+                    addStatusClass={!isAwaitingClaim(item) || firstAwaitingIndex === idx}
                   />
                 ))}
 

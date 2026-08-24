@@ -43,9 +43,12 @@ const renderPopover = (item: VehicleServiceItemDTO, target = { centerX: 200, top
         target={target}
         popoverHeight={popoverHeight}
         fadingOut={false}
-        contentFading={false}
+        swapping={false}
+        layerKey={0}
+        swapMs={500}
         bodyContentHeight={0}
         claim={() => {}}
+        rootRef={() => {}}
         onMouseEnter={() => {}}
         onMouseLeave={() => {}}
       />

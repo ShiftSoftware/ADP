@@ -2,8 +2,28 @@
    "just work": header has a fixed height, body fills the remaining space, iframe is
    100% of the body. The iframe itself owns scrolling; we never try to size to content. */
 .claimable-trace-modal {
-  @apply fixed inset-0 z-[60] flex flex-col bg-white opacity-0 pointer-events-none;
-  transition: opacity 0.3s ease;
+  @apply fixed inset-0 flex-col bg-white opacity-0 pointer-events-none;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: none;
+  transition: opacity 0.42s ease;
+
+  /* An author `display` would beat the UA's `dialog:not([open]) { display: none }` and leave the
+     modal on screen while closed, so the flex column is scoped to the open state instead. */
+  display: none;
+}
+
+.claimable-trace-modal[open] {
+  display: flex;
+}
+
+/* The panel is opaque and full-screen; a UA backdrop would only show through during the fade. */
+.claimable-trace-modal::backdrop {
+  background: transparent;
 }
 
 .claimable-trace-modal.open {

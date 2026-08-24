@@ -18,6 +18,44 @@
    properties so the voucher mirrors under dir="rtl".
    ============================================================ */
 
+/* ============================================================
+   The card is shown with dialog.showModal(), which puts it in the browser's top layer: above every
+   stacking context on the host page, clipped by no ancestor's overflow, and immune to an ancestor
+   transform turning `position: fixed` into "fixed relative to that ancestor" — all without moving
+   it out of this shadow root, so refs, measurements and scoped styles keep working.
+
+   The dialog is only the top-layer host. .claim-scrim below still paints the dim and owns the
+   entrance transition, so every UA default that would draw a second box has to go.
+   ============================================================ */
+
+/* Stated rather than inherited from the UA sheet: an engine with no <dialog> support treats this as
+   an unknown inline element, which has no such rule and would lay its children out in flow. */
+.claim-dialog:not([open]) {
+  display: none;
+}
+
+.claim-dialog {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  overflow: visible;
+  /* The scrim inside re-enables them once open; this keeps the dialog's own box from swallowing
+     clicks during the fade-out, when the scrim has already gone pointer-events: none. */
+  pointer-events: none;
+}
+
+/* The scrim paints the dim, and it animates — a UA backdrop underneath would jump in on open. */
+.claim-dialog::backdrop {
+  background: transparent;
+}
+
 .claim-scrim {
   --primary: #3071a9;
   --primary-dark: #275e8f;
@@ -37,7 +75,6 @@
   --hair: #ececec;
   --paper: #ffffff;
   --tear: #d9d2c6; /* perforation dots + dashed tear rules */
-  --punch: #aab0b8; /* scrim color over a light host page — punch holes read as holes */
 
   font-size: 14px;
   color: var(--text);
@@ -62,10 +99,15 @@
   position: relative;
   width: 1040px;
   max-width: 100%;
-  background: var(--paper);
+  /* Transparent on purpose: the paper is painted by .v-body/.stub so the punch
+     holes masked out of those panes cut all the way through to the scrim. */
+  background: transparent;
   border-radius: 8px;
   box-shadow: 0 10px 30px rgba(16, 24, 40, 0.16);
   overflow: hidden;
+
+  --punch-r: 8px;
+  --punch-edge: transparent calc(var(--punch-r) - 0.5px), #000 calc(var(--punch-r) + 0.5px);
 }
 
 .voucher.side {
@@ -118,6 +160,7 @@
 
 .v-body {
   position: relative;
+  background: var(--paper);
   padding-block: 22px 24px;
   padding-inline: 28px 26px;
   display: flex;
@@ -522,38 +565,72 @@
   background-repeat: repeat-x;
 }
 
-.punch {
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  background: var(--punch);
-  border-radius: 50%;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
-  z-index: 1;
+/* ============ Punch holes ============
+   Real holes, not painted discs. The old version painted the punches a fixed
+   grey guessed from "scrim over a light host page", so over a dark host page
+   they read as light dots instead of holes, and the two punches never matched
+   the backdrop behind them. Masking the paper panes instead lets the scrim —
+   and whatever the host page shows through it — read inside the punch.
+
+   Each pane carries two NON-overlapping mask layers, one hole apiece: mask
+   layers composite with `add`, so an overlapping second layer would paint the
+   first one's hole back in. The 2px bleed on .stub keeps .perf, which sits 1px
+   outside the pane box, from being masked away along with it. */
+
+.v-body,
+.stub {
+  -webkit-mask-image: radial-gradient(circle var(--punch-r) at var(--punch-a), var(--punch-edge)), radial-gradient(circle var(--punch-r) at var(--punch-b), var(--punch-edge));
+  mask-image: radial-gradient(circle var(--punch-r) at var(--punch-a), var(--punch-edge)), radial-gradient(circle var(--punch-r) at var(--punch-b), var(--punch-edge));
+  -webkit-mask-size: var(--punch-size);
+  mask-size: var(--punch-size);
+  -webkit-mask-position: var(--punch-pos);
+  mask-position: var(--punch-pos);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
 }
 
-.voucher.side .punch {
-  inset-inline-start: -8px;
+/* Side layout: vertical seam, punches on the voucher's top and bottom edges. */
+
+.voucher.side .v-body {
+  --punch-size: 100% 50%;
+  --punch-pos: left top, left bottom;
+  --punch-a: right top;
+  --punch-b: right bottom;
 }
 
-.voucher.side .punch.p1 {
-  top: -8px;
+.voucher.side .stub {
+  --punch-size: calc(100% + 2px) 50%;
+  --punch-pos: right top, right bottom;
+  --punch-a: 2px top;
+  --punch-b: 2px bottom;
 }
 
-.voucher.side .punch.p2 {
-  bottom: -8px;
+[dir='rtl'] .voucher.side .v-body {
+  --punch-a: left top;
+  --punch-b: left bottom;
 }
 
-.voucher.bottom .punch {
-  top: -8px;
+[dir='rtl'] .voucher.side .stub {
+  --punch-pos: left top, left bottom;
+  --punch-a: right 2px top 0;
+  --punch-b: right 2px bottom 0;
 }
 
-.voucher.bottom .punch.p1 {
-  inset-inline-start: -8px;
+/* Bottom layout: horizontal seam, punches on the voucher's inline edges. Both
+   ends get a hole, so the geometry is already mirror-symmetric under RTL. */
+
+.voucher.bottom .v-body {
+  --punch-size: 50% 100%;
+  --punch-pos: left top, right top;
+  --punch-a: left bottom;
+  --punch-b: right bottom;
 }
 
-.voucher.bottom .punch.p2 {
-  inset-inline-end: -8px;
+.voucher.bottom .stub {
+  --punch-size: 50% calc(100% + 2px);
+  --punch-pos: left bottom, right bottom;
+  --punch-a: left 2px;
+  --punch-b: right 2px;
 }
 
 .field {
@@ -804,6 +881,7 @@
   height: 26px;
   display: grid;
   place-items: center;
+  overflow: hidden;
   border: none;
   border-radius: 50%;
   background: transparent;
@@ -811,7 +889,20 @@
   cursor: pointer;
   transition:
     background 0.15s,
-    color 0.15s;
+    color 0.15s,
+    width 0.35s ease,
+    opacity 0.35s ease,
+    margin-inline-start 0.35s ease;
+}
+
+/* Collapsed rather than unmounted, so clearing the last document animates the whole row out
+   together instead of dropping this button in one frame while the chips below animate away. */
+.upload-clear.is-hidden {
+  width: 0;
+  opacity: 0;
+  pointer-events: none;
+  /* Cancels the row's 10px gap, which a zero-width item would otherwise leave behind. */
+  margin-inline-start: -10px;
 }
 
 .upload-clear:hover {
@@ -954,18 +1045,70 @@
   cursor: progress;
 }
 
-.btn-claim .claim-label {
+/* The button is content-sized, so CLAIM -> PROCESSING used to resize it in a single frame. Both
+   captions now sit stacked in this one cell and the width is set explicitly from whichever is
+   active (measureClaimLabel), because a width that only follows its content is never a property
+   change and so never transitions. The button itself needs no width rule: it is sized by this. */
+.btn-claim .claim-label-stack {
   position: relative;
   z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+  transition: width 0.42s ease;
+}
+
+/* Only the active caption is in flow, so the stack sizes to it on its own and the measured width is
+   an enhancement rather than a requirement: if the measurement never lands, the button falls back to
+   today's behaviour (right size, no transition) instead of sitting at the wider of the two. */
+.btn-claim .claim-label {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   gap: 9px;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.28s ease;
+}
+
+.btn-claim .claim-label.active {
+  position: relative;
+  top: auto;
+  bottom: auto;
+  left: auto;
+  transform: none;
+  opacity: 1;
 }
 
 .btn-claim .claim-label svg {
   width: 17px;
   height: 17px;
+}
+
+.btn-claim .claim-pct {
+  padding-inline-start: 0.4em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The live number right-aligns over a hidden "100", which is what fixes the slot's width without
+   depending on `ch` resolving to a tabular advance in whichever font the host supplies. */
+.btn-claim .claim-pct-slot {
+  display: inline-grid;
+  justify-items: end;
+}
+
+.btn-claim .claim-pct-slot > * {
+  grid-area: 1 / 1;
+}
+
+.btn-claim .claim-pct-ghost {
+  visibility: hidden;
 }
 
 .claim-progress {
@@ -1252,18 +1395,22 @@
     background-repeat: repeat-x;
   }
 
-  .voucher.side .punch {
-    top: -8px;
-    bottom: auto;
+  /* Seam turns horizontal here, so the punches move to the inline edges. */
+
+  .voucher.side .v-body,
+  [dir='rtl'] .voucher.side .v-body {
+    --punch-size: 50% 100%;
+    --punch-pos: left top, right top;
+    --punch-a: left bottom;
+    --punch-b: right bottom;
   }
 
-  .voucher.side .punch.p1 {
-    inset-inline-start: -8px;
-  }
-
-  .voucher.side .punch.p2 {
-    inset-inline-start: auto;
-    inset-inline-end: -8px;
+  .voucher.side .stub,
+  [dir='rtl'] .voucher.side .stub {
+    --punch-size: 50% calc(100% + 2px);
+    --punch-pos: left bottom, right bottom;
+    --punch-a: left 2px;
+    --punch-b: right 2px;
   }
 }
 

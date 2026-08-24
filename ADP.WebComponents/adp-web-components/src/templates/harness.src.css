@@ -1,0 +1,221 @@
+/*
+ * adp-web-components — dev harness stylesheet SOURCE.
+ *
+ * Compile with `npm run build:templates` (or `npm run watch:templates` while
+ * editing template markup). The compiled output is `harness.css`, which is what
+ * the pages link — no CDN, no browser-side Tailwind JIT.
+ *
+ * The design tokens live here, once, as a daisyUI theme. Pages then use daisyUI
+ * semantic classes (`bg-base-200`, `text-base-content`, `btn-primary`) and never
+ * raw palette utilities like `text-gray-800` — that is what stops the pages from
+ * drifting apart, and what makes the theme control work.
+ *
+ * ONE RULE ABOUT THE BRAND COLOUR. It is gold, which is bright: 1.54:1 on white
+ * but 11.3:1 on the dark ground. So it splits in two on the light theme:
+ *
+ *   primary  — FILLS that carry dark text on top: btn-primary, badge-primary,
+ *              a tinted surface like bg-primary/10.
+ *   accent   — anything that must READ as a colour against the page: text,
+ *              icons, borders, thin bars, the focus ring.
+ *
+ * On the dark theme both are the same gold, because there it is legible either
+ * way. Using `text-primary` on a light page makes it invisible — reach for
+ * `text-accent`.
+ *
+ * See .shift/repos/adp/web-components/templates-design-language.md.
+ */
+
+/*
+ * `tailwindcss4` is an npm alias for tailwindcss@4. The components build on
+ * tailwindcss@3 through stencil-tailwind-plugin, so the root `tailwindcss` has
+ * to stay on 3 — the alias lets these dev-only pages use v4 (which daisyUI 5
+ * requires) without disturbing that.
+ */
+@import 'tailwindcss4';
+
+/* Only HTML markup and the harness script contain class names. Scanning the
+   compiled harness.css back into itself would be circular. */
+@source "./**/*.html";
+@source "./harness.js";
+@source "../index.html";
+
+@plugin "daisyui" {
+  themes: false;
+}
+
+/* ---------- light: the complete set ---------- */
+@plugin "daisyui/theme" {
+  name: 'harness';
+  default: true;
+  prefersdark: false;
+  color-scheme: light;
+
+  --color-base-100: #ffffff; /* surface  */
+  --color-base-200: #eef1f5; /* ground   */
+  --color-base-300: #dde4ec; /* line     */
+  --color-base-content: #121922; /* ink  */
+
+  /*
+   * ADP gold. It is 1.54:1 on white, so it can only ever be a FILL on a light
+   * ground — never text, an icon, a border or a thin bar. Those use `accent`,
+   * which is the same hue darkened to 6.18:1. See the rule below.
+   */
+  --color-primary: #f9cb4b;
+  --color-primary-content: #2a2000; /* 10.5:1 on the gold */
+
+  --color-secondary: #4c5964; /* ink-2 */
+  --color-secondary-content: #ffffff;
+
+  /* Brand colour for anything that must READ as a colour against the page. */
+  --color-accent: #7a5d08;
+  --color-accent-content: #ffffff;
+
+  --color-neutral: #7b8794; /* ink-3 */
+  --color-neutral-content: #ffffff;
+
+  /* fixture state only — chrome never uses these */
+  --color-info: #3071a9;
+  --color-info-content: #ffffff;
+  --color-success: #0e7c66;
+  --color-success-content: #ffffff;
+  --color-warning: #9a5b00;
+  --color-warning-content: #ffffff;
+  --color-error: #b42318;
+  --color-error-content: #ffffff;
+
+  --radius-selector: 999px;
+  --radius-field: 6px;
+  --radius-box: 16px;
+
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+/* ---------- dark: follows the system unless data-theme forces otherwise ---------- */
+@plugin "daisyui/theme" {
+  name: 'harness-dark';
+  default: false;
+  prefersdark: true;
+  color-scheme: dark;
+
+  --color-base-100: #151b23;
+  --color-base-200: #0c1016;
+  --color-base-300: #262f3a;
+  --color-base-content: #e8eef4;
+
+  /* On a dark ground the gold is 11.3:1, so fill and text can be the same value
+     and `accent` does not need to darken. */
+  --color-primary: #f9cb4b;
+  --color-primary-content: #2a2000;
+
+  --color-secondary: #a7b4c1;
+  --color-secondary-content: #0c1016;
+
+  --color-accent: #f9cb4b;
+  --color-accent-content: #2a2000;
+
+  --color-neutral: #76838f;
+  --color-neutral-content: #0c1016;
+
+  --color-info: #6aa9d8;
+  --color-info-content: #0c1016;
+  --color-success: #3fbfa3;
+  --color-success-content: #0c1016;
+  --color-warning: #d69a3a;
+  --color-warning-content: #0c1016;
+  --color-error: #ff6b5e;
+  --color-error-content: #0c1016;
+
+  --radius-selector: 999px;
+  --radius-field: 6px;
+  --radius-box: 16px;
+
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+/*
+ * The handful of things utilities genuinely cannot express. Everything else is
+ * composed in markup — if you are tempted to add a class here, check first that
+ * it is not just a utility stack.
+ */
+@layer components {
+  /* Width is driven by the rail's platform switcher; centred so phone widths do
+     not hug one edge of the column. */
+  .frame {
+    width: var(--frame-w, 100%);
+    max-width: 100%;
+    margin-inline: auto;
+    transition: width 0.25s ease;
+  }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .lede {
+    max-width: 70ch;
+  }
+
+  .log {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    line-height: 1.55;
+    max-height: 20rem;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  /*
+   * The ADP wordmark, tinted by `currentColor` through a mask so it inverts with
+   * the theme. An <img> could not do that, and inlining the path would put 1.5KB
+   * of geometry in every page that shows it.
+   */
+  .adp-logo {
+    display: block;
+    aspect-ratio: 2256 / 932;
+    background-color: currentColor;
+    -webkit-mask: url('/templates/assets/adp-wordmark.svg') no-repeat center / contain;
+    mask: url('/templates/assets/adp-wordmark.svg') no-repeat center / contain;
+  }
+}
+
+@layer base {
+  /* accent, not primary: a gold ring is 1.5:1 on a white page and would not read
+     as a focus indicator at all. */
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  /* Alpine strips this once it initialises; without it, un-bound markup flashes. */
+  [x-cloak] {
+    display: none !important;
+  }
+
+  /*
+   * The single blanket override in this stylesheet. A reduced-motion reset has
+   * to beat every animation on the page, including any a component sets on
+   * itself, and no specificity reliably does that.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

@@ -49,7 +49,7 @@
     "typecheck:ts7": "npx --yes -p typescript@7 tsc --noEmit -p tsconfig.json",
     "generate": "stencil generate",
     "build": "stencil build -- --prod && node ./automation/generate-integration-manifest.mjs",
-    "start": "stencil build --dev --watch --serve",
+    "start": "node ./automation/dev.mjs",
     "test.watch": "stencil test --spec --watchAll",
     "create:type": "node ./automation/generate-type.mjs",
     "update:locale": "node ./automation/update-locale.mjs",
@@ -60,7 +60,10 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,css,scss,html}\"",
     "prettier": "prettier --check \"src/**/*.{ts,tsx,js,jsx,css,scss,html}\"",
     "generate:integration-manifest": "node ./automation/generate-integration-manifest.mjs",
-    "verify:integration-artifact": "node ./automation/verify-integration-artifact.mjs"
+    "verify:integration-artifact": "node ./automation/verify-integration-artifact.mjs",
+    "build:templates": "node ./automation/build-templates.mjs",
+    "watch:templates": "node ./automation/build-templates.mjs --watch",
+    "start:stencil": "stencil build --dev --watch --serve"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
@@ -68,10 +71,13 @@
     "@stencil/core": "^4.43.5",
     "@stencil/postcss": "^2.1.0",
     "@stencil/sass": "^2.0.0",
+    "@tailwindcss/cli": "^4",
     "@types/jest": "29",
     "@types/node": "^22.10.0",
+    "alpinejs": "^3",
     "autoprefixer": "^10.4.13",
     "cssnano": "^5.1.14",
+    "daisyui": "^5",
     "eslint": "^9.39.5",
     "globals": "^17.9.0",
     "jest": "29",
@@ -79,6 +85,7 @@
     "prettier": "^3.5.3",
     "stencil-tailwind-plugin": "^1.8.0",
     "tailwindcss": "^3.2.4",
+    "tailwindcss4": "npm:tailwindcss@^4",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.66.0"
   },

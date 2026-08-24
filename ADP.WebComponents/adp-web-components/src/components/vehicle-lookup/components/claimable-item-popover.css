@@ -2,6 +2,11 @@
   @apply opacity-0 fixed z-50 block w-fit pointer-events-none;
   transition: opacity 0.5s ease;
 
+  /* --popover-swap is set inline from POPOVER_SWAP_MS in vehicle-claimable-items.tsx, which is the
+     single source of truth: the same number has to drive these transitions AND the timer that tears
+     the outgoing layer down, and a duplicate here would drift from it silently. The fallback below
+     only applies if the component never rendered a value. */
+
   /* The claim voucher's palette, so a card and the popover that describes it read as one surface.
      Kept local rather than imported — the voucher scopes its own to .claim-scrim, and this lives in
      a different shadow root. */
@@ -15,11 +20,11 @@
 }
 
 .claimable-item-popover[aria-expanded='true'] {
-  @apply !opacity-100 !pointer-events-auto [&_*]:!pointer-events-auto;
+  @apply !opacity-100 !pointer-events-auto;
   transition:
-    top 0.3s ease,
-    bottom 0.3s ease,
-    left 0.3s ease,
+    top var(--popover-swap, 0.5s) ease,
+    bottom var(--popover-swap, 0.5s) ease,
+    left var(--popover-swap, 0.5s) ease,
     opacity 0.5s ease;
 }
 
@@ -27,39 +32,105 @@
   pointer-events: auto;
 }
 
+/* Only while promoted into the top layer — the attribute is added at open time, not in markup, so
+   that a card which never needs promoting is never subject to `[popover]:not(:popover-open)
+   { display: none }`. These undo the UA box the attribute otherwise brings with it; `inset: 0` in
+   particular would stretch the card, since the component only sets top/bottom/left inline. */
+.claimable-item-popover[popover] {
+  right: auto;
+  bottom: auto;
+  width: fit-content;
+  height: fit-content;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  overflow: visible;
+}
+
 .popover-relative-container {
   @apply relative w-fit;
 }
 
-.popover-arrow-1 {
-  @apply absolute w-0 h-0 border-[10px] border-t-0 !border-b-[#dddddd] border-transparent;
-}
-
-.popover-arrow-2 {
-  @apply mt-[1px] absolute w-0 h-0 border-[10px] border-t-0 !border-b-[#f9f9f9] border-transparent;
-}
-
 .popover-body {
   @apply relative z-10 bg-[#f9f9f9] border shadow border-[#dddddd] w-[540px] p-[20px] rounded-[5px] text-[#282828];
+  /* The body slides sideways when the card would otherwise run off the window edge. Two adjacent
+     items can land on different offsets, so without this it jumps between them. */
+  transition: transform var(--popover-swap, 0.5s) ease;
 }
 
 .popover-body-content {
   overflow: hidden;
-  transition: height 0.3s ease;
+  transition: height var(--popover-swap, 0.5s) ease;
 }
 
-.claimable-item-popover .val,
-.claimable-item-popover .claim-button {
-  transition: opacity 0.15s ease;
+/* ============ Cross-fade between two hovered items ============
+   The old transition faded the values out, swapped the DOM, then let the height catch up — so the
+   card sat still and then jerked, labels and rows hard-swapped under the fading values, and a claim
+   button present on only one of the two items mounted and unmounted mid-move.
+
+   Both renders now live in the same grid cell: the outgoing one fades out, the incoming one fades
+   in, and the box resizes, all on one clock. Nothing inside either layer animates its own size —
+   the single height transition above owns every resize. */
+
+.popover-layers {
+  display: grid;
+  /* Not `stretch`: the incoming layer has to keep its own height for the swap to measure it. */
+  align-items: start;
 }
 
-.claimable-item-popover.content-fading .val,
-.claimable-item-popover.content-fading .claim-button {
+.popover-layer {
+  grid-area: 1 / 1;
+  min-width: 0;
+  transition: opacity var(--popover-swap, 0.5s) ease;
+}
+
+.popover-layer-current {
+  opacity: 1;
+}
+
+.popover-layer-outgoing {
   opacity: 0;
 }
 
+/* Held for one frame after the incoming layer mounts, so it has an opacity:0 starting style to
+   transition away from rather than appearing at full strength. */
+.claimable-item-popover.swapping .popover-layer-current {
+  opacity: 0;
+}
+
+.claimable-item-popover.swapping .popover-layer-outgoing {
+  opacity: 1;
+}
+
+/* A fading-out claim button must not be clickable. */
+.popover-layer-outgoing {
+  pointer-events: none;
+}
+
+/* ============ Action slot ============
+   A grid whose occupants all share one cell, so states that never appear together swap by opacity
+   in place instead of by reflow. Collapsed outright when empty — that is what lets the card shrink
+   to an item with no actions rather than hold a blank band. */
+
+.popover-actions {
+  display: grid;
+  align-items: start;
+  justify-items: center;
+  margin-top: 16px;
+}
+
+.popover-actions > .popover-action {
+  grid-area: 1 / 1;
+}
+
+.popover-actions.is-empty {
+  display: none;
+}
+
 .popover-body button {
-  @apply py-[4px] flex justify-center w-[80%] mt-[16px] m-auto [&_svg]:size-[30px] [&_svg]:!pointer-events-none;
+  @apply py-[4px] flex justify-center w-[80%] m-auto [&_svg]:size-[30px] [&_svg]:!pointer-events-none;
 }
 
 .popover-arrow-icon {
@@ -76,18 +147,6 @@
 
 .popover-arrow-bottom-line {
   @apply h-[1.5px] absolute w-[30px] left-[4.5px] top-[27.75px] bg-[#f9f9f9];
-}
-
-.claimable-item-popover .claim-button {
-  @apply active:[&_svg]:scale-[125%] active:bg-[#27ae60] [&_circle]:fill-[#2ecc71] hover:text-white hover:bg-[#2ecc71] hover:stroke-white hover:fill-white hover:[&_circle]:fill-white outline-none flex items-center gap-[3px] border border-[#27ae60] bg-transparent fill-[#27ae60] stroke-[#27ae60] text-[#27ae60]  rounded-[5px] cursor-pointer duration-200 font-bold px-[10px];
-}
-
-.claimable-item-popover .claim-button path {
-  transition: 0.2s;
-}
-
-.claimable-item-popover .claim-button:hover path {
-  fill: #2ecc71;
 }
 
 /* ============ Specs — three to a row, as on the claim voucher ============

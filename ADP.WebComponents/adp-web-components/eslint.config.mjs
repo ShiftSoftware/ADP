@@ -15,6 +15,7 @@ export default [
       'src/components.d.ts',
       'src/locale-mapper.ts',
       'src/global/types/generated/**',
+      'src/templates/vendor/**',
     ],
   },
   js.configs.recommended,

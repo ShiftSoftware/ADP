@@ -16,16 +16,33 @@ type ClaimableTraceModalProps = {
   traceHtml?: string;
   locale: ComponentLocale<typeof dynamicClaimSchema>;
   onClose: () => void;
+  /** Handed back so the owner can showModal()/close() it — see openTraceModal. */
+  dialogRef: (element: HTMLDialogElement) => void;
+  onCancel: (event: Event) => void;
 };
 
-export const ClaimableTraceModal: FunctionalComponent<ClaimableTraceModalProps> = ({ isOpen, fadingOut, isLoading, errorMessage, vin, traceHtml, locale, onClose }) => {
+export const ClaimableTraceModal: FunctionalComponent<ClaimableTraceModalProps> = ({
+  isOpen,
+  fadingOut,
+  isLoading,
+  errorMessage,
+  vin,
+  traceHtml,
+  locale,
+  onClose,
+  dialogRef,
+  onCancel,
+}) => {
   const titleSuffix = vin ? ` — ${vin}` : '';
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-hidden={(!isOpen).toString()}
+    // A real dialog rather than role="dialog": showModal() puts it in the top layer, so it clears
+    // the host page's stacking contexts and inerts everything behind it. The element supplies the
+    // modal semantics and aria-hidden that were being declared by hand here.
+    <dialog
+      ref={el => dialogRef(el as HTMLDialogElement)}
+      onCancel={onCancel}
+      aria-label={`${locale.traceTitle}${titleSuffix}`}
       dir={locale.sharedLocales.direction}
       class={cn('claimable-trace-modal', { 'open': isOpen, 'fading-out': fadingOut })}
     >
@@ -57,6 +74,6 @@ export const ClaimableTraceModal: FunctionalComponent<ClaimableTraceModalProps> 
           <iframe class="trace-modal-iframe" srcdoc={traceHtml} sandbox="allow-scripts" title={locale.traceTitle} />
         )}
       </div>
-    </div>
+    </dialog>
   );
 };
