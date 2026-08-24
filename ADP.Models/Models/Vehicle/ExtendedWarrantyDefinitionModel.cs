@@ -27,6 +27,19 @@ public class ExtendedWarrantyDefinitionModel
     /// </summary>
     public long? ProviderCompanyID { get; set; }
 
+    /// <summary>
+    /// The brand IDs this coverage is awarded for. Omit it to award every brand, which is what
+    /// every definition did before this property existed; an empty list awards none.
+    /// <para>
+    /// Brand is a fact about the vehicle rather than a predicate over its history, so it is stated
+    /// here rather than through <see cref="EligibilityConditions"/> — the same separation service
+    /// items draw between their own <c>BrandIDs</c> and their conditions. A programme that runs for
+    /// one brand and not another is two definitions, each carrying its own conditions, rather than
+    /// one definition whose conditions have to encode which brand they are talking about.
+    /// </para>
+    /// </summary>
+    public IEnumerable<long?> BrandIDs { get; set; }
+
     /// <summary>The number of duration units for which the coverage remains valid.</summary>
     public int? ActiveFor { get; set; }
 

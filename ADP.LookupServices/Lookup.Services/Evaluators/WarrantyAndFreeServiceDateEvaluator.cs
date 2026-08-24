@@ -162,7 +162,7 @@ public class WarrantyAndFreeServiceDateEvaluator
         }
 
         AddStoredExtendedWarranties(result);
-        AddConfiguredExtendedWarranties(result);
+        AddConfiguredExtendedWarranties(result, vehicle);
 
         // Legacy flat summary: the single latest-ending *stored* entry, exactly as it was before
         // ExtendedWarranties existed. Configured definitions deliberately stay out of these fields
@@ -284,7 +284,7 @@ public class WarrantyAndFreeServiceDateEvaluator
             }));
     }
 
-    private void AddConfiguredExtendedWarranties(VehicleWarrantyDTO result)
+    private void AddConfiguredExtendedWarranties(VehicleWarrantyDTO result, VehicleEntryModel vehicle)
     {
         if (result.WarrantyEndDate is null)
             return;
@@ -302,7 +302,12 @@ public class WarrantyAndFreeServiceDateEvaluator
             // Warranty definitions are opt-in and fail closed. Service items retain their legacy
             // empty-condition behaviour in the shared evaluator, but an empty warranty definition
             // must never silently award coverage to every vehicle.
+            //
+            // Brand is settled before anything else is asked. A definition scoped to one brand is
+            // not a rule the other brand fails — it was never addressed to it, so nothing about
+            // that vehicle's history is worth reading against it.
             if (definition is null ||
+                !MatchesBrand(definition, vehicle) ||
                 string.IsNullOrWhiteSpace(definition.ID) ||
                 result.ExtendedWarranties.Any(warranty =>
                     string.Equals(warranty.ID, definition.ID, StringComparison.Ordinal)) ||
@@ -343,4 +348,13 @@ public class WarrantyAndFreeServiceDateEvaluator
             });
         }
     }
+
+    /// <summary>
+    /// Whether a definition is addressed to this vehicle's brand, matching how service items scope
+    /// themselves: an omitted list means every brand (the behaviour before definitions could be
+    /// scoped at all), and an empty one means none. An unknown vehicle matches nothing scoped, so a
+    /// brand-scoped coverage is never awarded on a vehicle whose brand could not be read.
+    /// </summary>
+    private static bool MatchesBrand(ExtendedWarrantyDefinitionModel definition, VehicleEntryModel vehicle) =>
+        definition.BrandIDs is null || definition.BrandIDs.Any(brandID => brandID == vehicle?.BrandID);
 }

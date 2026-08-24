@@ -102,6 +102,7 @@ public class WarrantyDateStepDefinitions
                 ID = GetOptionalString(row, "ID"),
                 Name = GetOptionalString(row, "Name"),
                 ProviderCompanyID = GetOptionalLong(row, "ProviderCompanyID"),
+                BrandIDs = GetOptionalBrandIDs(row, "BrandIDs"),
                 ActiveFor = GetOptionalInt(row, "ActiveFor"),
                 ActiveForDurationType = row.ContainsKey("DurationType") &&
                     !string.IsNullOrWhiteSpace(row["DurationType"])
@@ -342,5 +343,24 @@ public class WarrantyDateStepDefinitions
     {
         var value = GetOptionalString(row, column);
         return value is null ? null : DateTime.Parse(value);
+    }
+
+    /// <summary>
+    /// Reads a definition's brand scope from a comma-separated cell. A blank cell leaves it unset,
+    /// which awards every brand — the only reading that keeps the scenarios written before the
+    /// column existed saying what they said. "[]" is therefore the one way to write the empty list,
+    /// which awards no brand at all.
+    /// </summary>
+    private static IEnumerable<long?>? GetOptionalBrandIDs(DataTableRow row, string column)
+    {
+        var value = GetOptionalString(row, column);
+
+        if (value is null)
+            return null;
+
+        if (value == "[]")
+            return Array.Empty<long?>();
+
+        return value.Split(',').Select(brandID => (long?)long.Parse(brandID.Trim())).ToList();
     }
 }

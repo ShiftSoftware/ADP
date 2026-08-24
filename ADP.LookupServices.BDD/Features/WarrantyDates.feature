@@ -550,6 +550,105 @@ Scenario: A milestone-earned coverage runs from the end of the standard warranty
     | ID         | Name                       | ProviderCompanyID | ProviderCompanyLogo                 | StartDate  | EndDate    |
     | CFG-REWARD | Distributor Service Reward | 901               | https://images.test/distributor.png | 2027-02-01 | 2029-02-01 |
 
+# --- Brand scope ---
+#
+# A vehicle whose brand a coverage does not name has not failed the rule — the rule was never
+# written about it, so nothing in its service history is worth reading against it. That is why brand
+# is stated on the definition rather than as another condition: a programme that runs on one brand
+# and not another is two definitions, each with its own conditions, rather than one definition whose
+# conditions have to keep saying which brand they mean.
+#
+# Every scenario above this line leaves BrandIDs unset and still awards its coverage: omitting it
+# awards every brand, which is what a definition did before it could be scoped at all.
+
+Scenario Outline: A brand-scoped coverage is awarded only to the brands it names
+  # The history satisfies the condition in every row, so the count is deciding brand and nothing
+  # else. A blank BrandIDs cell is the property omitted; "[]" is the empty list, which names no
+  # brand and so can never be awarded — the two readings a single blank cell could not tell apart.
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | BrandID   |
+    | 1FDKF37GXVEB34368 | 2024-01-15  | <BrandID> |
+  And vehicle service activations:
+    | WarrantyActivationDate | CompanyID |
+    | 2024-02-01             | 1         |
+  And extended warranty definitions:
+    | ID         | ProviderCompanyID | BrandIDs   | ActiveFor | DurationType |
+    | CFG-REWARD | 901               | <BrandIDs> | 1         | Years        |
+  And extended warranty definition "CFG-REWARD" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch | Qualifier | Selection | Values |
+    | serviceHistory.laborLines.packageCode | ContainsAll | Milestone  | Any       | All       | 60000  |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode |
+    | 1         | 10       | INV-060       | JOB-060             | 2026-03-01  | MODEL 60K   |
+  When evaluating warranty dates for "1FDKF37GXVEB34368"
+  Then there are <Awarded> extended warranties
+
+Examples:
+  | scope                        | BrandID | BrandIDs | Awarded |
+  | the vehicle's own brand      | 1       | 1        | 1       |
+  | a brand the vehicle is not   | 2       | 1        | 0       |
+  | a list naming both brands    | 2       | 1,2      | 1       |
+  | unscoped, so every brand     | 2       |          | 1       |
+  | the empty list, so no brand  | 1       | []       | 0       |
+
+Scenario: A definition scoped away from the vehicle is never read against its history
+  # Brand is settled before the conditions are, so a definition addressed to another brand cannot
+  # be awarded however completely this vehicle's history satisfies it. Same history and same rule as
+  # the awarded row above — only the brand differs, and it is enough on its own.
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | BrandID |
+    | 1FDKF37GXVEB34368 | 2024-01-15  | 2       |
+  And vehicle service activations:
+    | WarrantyActivationDate | CompanyID |
+    | 2024-02-01             | 1         |
+  And extended warranty entries:
+    | ID        | CompanyID | StartDate  | EndDate    |
+    | EW-STORED | 101       | 2026-01-01 | 2027-06-01 |
+  And extended warranty definitions:
+    | ID         | Name                       | ProviderCompanyID | BrandIDs | ActiveFor | DurationType |
+    | CFG-REWARD | Distributor Service Reward | 901               | 1        | 1         | Years        |
+  And extended warranty definition "CFG-REWARD" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch | Qualifier | Selection | Values |
+    | serviceHistory.laborLines.packageCode | ContainsAll | Milestone  | Any       | All       | 60000  |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode |
+    | 1         | 10       | INV-060       | JOB-060             | 2026-03-01  | MODEL 60K   |
+  When evaluating warranty dates for "1FDKF37GXVEB34368"
+  # The coverage the vehicle actually holds is untouched: brand scope withholds the configured
+  # award, it does not filter what the vehicle was already sold.
+  Then extended warranties are:
+    | ID        | ProviderCompanyID | StartDate  | EndDate    |
+    | EW-STORED | 101               | 2026-01-01 | 2027-06-01 |
+
+Scenario: Each brand's own definition answers for it alone
+  # What a second brand joining the programme looks like: its own definition on its own terms. This
+  # vehicle's history satisfies both rules, and it is still offered only the one addressed to it —
+  # so the first brand's rule never has to be loosened to make room for the second.
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | BrandID |
+    | 1FDKF37GXVEB34368 | 2024-01-15  | 2       |
+  And vehicle service activations:
+    | WarrantyActivationDate | CompanyID |
+    | 2024-02-01             | 1         |
+  And extended warranty definitions:
+    | ID         | Name           | ProviderCompanyID | BrandIDs | ActiveFor | DurationType |
+    | CFG-BRAND1 | Brand 1 Reward | 901               | 1        | 1         | Years        |
+    | CFG-BRAND2 | Brand 2 Reward | 901               | 2        | 2         | Years        |
+  And extended warranty definition "CFG-BRAND1" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch | Qualifier | Selection | Values |
+    | serviceHistory.laborLines.packageCode | ContainsAll | Milestone  | Any       | All       | 60000  |
+  And extended warranty definition "CFG-BRAND2" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch | Qualifier | Selection | Values |
+    | serviceHistory.laborLines.packageCode | ContainsAll | Milestone  | Any       | All       | 40000  |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode |
+    | 1         | 10       | INV-040       | JOB-040             | 2025-09-01  | MODEL 40K   |
+    | 1         | 10       | INV-060       | JOB-060             | 2026-03-01  | MODEL 60K   |
+  When evaluating warranty dates for "1FDKF37GXVEB34368"
+  Then extended warranties are:
+    | ID         | Name           | ProviderCompanyID | StartDate  | EndDate    |
+    | CFG-BRAND2 | Brand 2 Reward | 901               | 2027-02-01 | 2029-02-01 |
+
 # --- De Facto Service Start Date ---
 # The earliest non-deleted ItemClaim.ClaimDate is always exposed as DeFactoServiceStartDate.
 # When the regular fallback chain leaves FreeServiceStartDate=null (typically broker-without-invoice

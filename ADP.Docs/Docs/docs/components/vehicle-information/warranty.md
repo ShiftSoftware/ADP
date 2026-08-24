@@ -1,4 +1,4 @@
-## Standard Warranty
+﻿## Standard Warranty
 
 Almost all authorized vehicles come with a standard warranty that is usually activated from the date of sale to the end customer (Invoice Date).
 
@@ -58,6 +58,7 @@ fail closed: one with no conditions, an unusable duration or no provider awards 
   "id": "EW-SERVICE-REWARD",
   "name": "Service Reward Coverage",
   "providerCompanyID": 901,
+  "brandIDs": [1],
   "activeFor": 1,
   "activeForDurationType": "Years",
   "eligibilityConditions": [
@@ -80,6 +81,20 @@ the coverage would be withdrawn the next time the customer comes in.
 Reading a milestone at all depends on this deployment having declared how its codes are written
 (`ServiceMilestoneOptions.Conventions`). ADP ships none, so a deployment that declares none can
 match no milestone condition anywhere — for coverage or for service items.
+
+### Scoping coverage to a brand
+
+`brandIDs` names the brands a definition is offered to. A vehicle of any other brand is not one
+that failed the rule — the rule was never written about it, so its service history is never read
+against the definition at all. Omit `brandIDs` and every brand is awarded, which is what a
+definition did before it could be scoped; an empty list awards none.
+
+Brand sits on the definition rather than in `eligibilityConditions` for the same reason service
+items keep their own `BrandIDs` separate from theirs: it is a fact about the vehicle, not a
+predicate over its history. A programme that runs on one brand and not another is therefore **two
+definitions**, each carrying its own conditions and its own duration — not one definition whose
+conditions have to keep restating which brand they mean. A second brand joining later needs no
+change to the first brand's rule.
 
 ## Free Service Start Date
 
