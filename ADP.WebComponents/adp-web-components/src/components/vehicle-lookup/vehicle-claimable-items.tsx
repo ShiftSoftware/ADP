@@ -20,8 +20,12 @@ import { VehicleItemClaimForm } from './vehicle-item-claim-form';
 import dynamicClaimSchema from '~locales/vehicleLookup/claimableItems/type';
 
 import { PrintIcon } from '~assets/print-icon';
+import { BanIcon } from '~assets/ban-icon';
+import { TickIcon } from '~assets/tick-icon';
+import { SearchIcon } from '~assets/search-icon';
 import { ActivationIcon } from '~assets/activation-icon';
 import { EmptyTableIcon } from '~assets/empty-table-icon';
+import { TriangleAlertIcon } from '~assets/triangle-alert';
 import { VehicleLookupMock } from '~features/vehicle-lookup-component/types';
 import { ItemClaimDTO } from '../../global/types/generated/vehicle-lookup/item-claim-dto';
 
@@ -217,6 +221,44 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
    */
   private progressBarUpdatePending = false;
 
+  /**
+   * How far the rail runs past the last node. The nodes are what the rail is about, so it neither
+   * starts nor stops in the empty margin either side of them — but it does keep going a little way
+   * past the last one, which is what makes the dotted run read as "and then?" rather than as a rail
+   * that simply ran out.
+   */
+  private static readonly LANE_TAIL_PX = 84;
+
+  /**
+   * Pins the rail to the nodes rather than to the row. The row is padded either side — deliberately,
+   * so the first and last cards have room for their 220px labels — and a rail drawn across all of it
+   * would start in a margin where there is no item for it to be about.
+   */
+  private layoutProgressLane = () => {
+    const lane = this.el.shadowRoot?.querySelector('.progress-lane') as HTMLElement;
+    const row = this.el.shadowRoot?.querySelector('.claimable-items-row') as HTMLElement;
+
+    if (!lane || !row) return;
+
+    const cards = this.el.shadowRoot.querySelectorAll('.claimable-item');
+
+    // Nothing to pin it to, so it falls back to spanning the row — which is where the loading bar
+    // draws too, so the two cross-fade over the same run while a lookup is still in flight.
+    if (!cards.length) {
+      lane.style.left = '';
+      lane.style.width = '';
+      return;
+    }
+
+    // A card is a zero-width marker, so its left edge is the point its node is centred on.
+    const rowLeft = row.getBoundingClientRect().left;
+    const firstNodeX = (cards[0] as HTMLElement).getBoundingClientRect().left;
+    const lastNodeX = (cards[cards.length - 1] as HTMLElement).getBoundingClientRect().left;
+
+    lane.style.left = `${firstNodeX - rowLeft}px`;
+    lane.style.width = `${lastNodeX - firstNodeX + VehicleClaimableItems.LANE_TAIL_PX}px`;
+  };
+
   private takePendingProgressBarUpdate = () => {
     if (!this.progressBarUpdatePending) return;
     this.progressBarUpdatePending = false;
@@ -238,6 +280,9 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
       this.progressBarUpdatePending = true;
       return;
     }
+
+    // Everything below is measured against the rail, so the rail has to be where it belongs first.
+    this.layoutProgressLane();
 
     // A resize or a retry is not a fresh list, so the bar keeps the width it has rather than
     // flashing back to zero and re-animating.
@@ -280,7 +325,10 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
 
       const { left: pendingItemLeftOffset } = pendingItemRef.getBoundingClientRect();
 
-      const offsetToLeftRatio = ((pendingItemLeftOffset - progressLeftOffset) / progressLaneWidth) * 100;
+      // The fill ends *on* the node it has reached, tucked under its ring, so progress always
+      // terminates on an item. It stopped short of it for a while and read as a bar that had failed
+      // to arrive rather than as a run-in to the next claim.
+      const offsetToLeftRatio = Math.max(0, ((pendingItemLeftOffset - progressLeftOffset) / progressLaneWidth) * 100);
 
       this.progressBar.style.width = `${offsetToLeftRatio.toFixed(2)}%`;
 
@@ -291,7 +339,9 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
         });
       else scrollIntoContainerView(pendingItemRef, this.claimableItemsBox);
     } else if (!(serviceItems.length === 0 || serviceItems.filter(x => x.status === 'activationRequired').length === serviceItems.length)) {
-      this.progressBar.style.width = '100%';
+      // Every item accounted for: the fill runs to the last node and stops there, so the tail past
+      // it stays dotted rather than the rail ending in a blue stub pointing at nothing.
+      this.progressBar.style.width = `calc(100% - ${VehicleClaimableItems.LANE_TAIL_PX}px)`;
 
       this.claimableItemsBox.scrollTo({
         left: this.claimableItemsBox.scrollWidth,
@@ -749,7 +799,11 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
     // Hoisted out of the map below, where it used to be a findIndex per card.
     const firstAwaitingIndex = serviceItems.findIndex(isAwaitingClaim);
 
-    const isNoServicesAvailable = !this.isLoading && this.vehicleLookup && !serviceItems.length;
+    const isNoServicesAvailable = !this.isLoading && !this.tabAnimationLoading && this.vehicleLookup && !serviceItems.length;
+
+    // Nothing has been asked for yet — no lookup, no error, nothing in flight. Left blank until now,
+    // which read as a component that had failed to load rather than one waiting for a VIN.
+    const isIdle = !this.isLoading && !this.tabAnimationLoading && !this.isError && !this.vehicleLookup;
 
     const hideTabs = this.isLoading || this.isError || !this.tabs.length || !serviceItems.length;
 
@@ -761,6 +815,11 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
     const showActivationBox = showActivationRequired || showActivationBlocked || this.showPrintBox;
     const isBlockedBox = showActivationBlocked && !this.showPrintBox;
     const showActionButton = this.showPrintBox || showActivationRequired;
+
+    // A claim that went through is good news and a blocked activation is bad news; both used to be
+    // drawn in the same warning yellow. One tone class picks the accent, the badge and the button.
+    const noticeTone = this.showPrintBox ? 'notice-success' : isBlockedBox ? 'notice-danger' : 'notice-warning';
+    const NoticeGlyph = this.showPrintBox ? TickIcon : isBlockedBox ? BanIcon : TriangleAlertIcon;
 
     return (
       <Host translate="no">
@@ -830,27 +889,29 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
             </div>
 
             {/* Loading Component  */}
-            <div class={cn('absolute w-[calc(100%-60px)] left-[30px] progress-container-style opacity-0', { 'opacity-100': this.isLoading || this.tabAnimationLoading })}>
-              <div class="w-full h-full rounded-[4px] overflow-x-hidden absolute left-0 top-0">
-                <div class="absolute opacity-0 bg-[#1a1a1a] w-[150%] h-full" />
-                <div class="absolute h-full bg-[linear-gradient(to_bottom,_#428bca_0%,_#3071a9_100%)] lane-inc" />
-                <div class="absolute h-full bg-[linear-gradient(to_bottom,_#428bca_0%,_#3071a9_100%)] lane-dec" />
+            <div
+              class={cn('absolute w-[calc(100%-60px)] left-[30px] progress-container-style progress-track-dotted opacity-0', {
+                'opacity-100': this.isLoading || this.tabAnimationLoading,
+              })}
+            >
+              <div class="progress-loading-rail">
+                <div class="progress-loading-sweep lane-inc" />
+                <div class="progress-loading-sweep lane-dec" />
               </div>
             </div>
 
             {/* Inactive items activation & Print functionality */}
             <div
               dir={this.locale.sharedLocales.direction}
-              class={cn(
-                'absolute w-[90%] z-10 pointer-events-none border opacity-0 translate-y-[-5px] scale-[70%] p-[25px] text-[16px] rounded-[6px] flex items-center justify-between left-1/2 -translate-x-1/2 h-10 bottom-[40px] transition duration-500',
-                {
-                  'text-[#8a6d3b] bg-[#fcf8e3] border-[#faebcc]': !isBlockedBox,
-                  'text-[#58151c] bg-[#f7d7d8] border-[#f2aeb5]': isBlockedBox,
-                  'opacity-100 pointer-events-auto translate-y-0 scale-100': !this.isLoading && this.vehicleLookup && !this.tabAnimationLoading && showActivationBox,
-                },
-              )}
+              class={cn('timeline-notice', noticeTone, {
+                'is-visible': !this.isLoading && this.vehicleLookup && !this.tabAnimationLoading && showActivationBox,
+              })}
             >
-              <span class="font-semibold">
+              <div class="timeline-notice-badge">
+                <NoticeGlyph />
+              </div>
+
+              <span class="timeline-notice-text">
                 {this.showPrintBox
                   ? this.locale.successFulClaimMessage
                   : showActivationBlocked
@@ -859,23 +920,42 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
               </span>
 
               {showActionButton && (
-                <button class="claim-button" onClick={this.showPrintBox ? this.printLastClaimResponse : this.activateClaimItem}>
-                  {this.showPrintBox ? <PrintIcon class="size-[30px] duration-200" /> : <ActivationIcon class="size-[30px] duration-200" />}
+                <button type="button" class="notice-action" onClick={this.showPrintBox ? this.printLastClaimResponse : this.activateClaimItem}>
+                  {this.showPrintBox ? <PrintIcon viewBox="0 0 24 24" fill="currentColor" /> : <ActivationIcon />}
                   <span>{this.showPrintBox ? this.locale.print : this.locale.activateNow}</span>
                 </button>
               )}
             </div>
 
+            {/* Idle and empty. Siblings of the scrolling box rather than children of it, so neither
+                slides out of view with the cards behind them. */}
+            <div dir={this.locale.sharedLocales.direction} class={cn('timeline-placeholder', { 'is-visible': isIdle })}>
+              <div class="timeline-placeholder-badge">
+                <SearchIcon />
+              </div>
+              <div class="timeline-placeholder-title">{this.locale.noVehicleSelected}</div>
+              <div class="timeline-placeholder-hint">{this.locale.noVehicleSelectedHint}</div>
+            </div>
+
+            <div dir={this.locale.sharedLocales.direction} class={cn('timeline-placeholder', { 'is-visible': isNoServicesAvailable })}>
+              <div class="timeline-placeholder-badge">
+                <EmptyTableIcon />
+              </div>
+              <div class="timeline-placeholder-title">{this.locale.sharedLocales.errors.noServiceAvailable}</div>
+            </div>
+
             <div class="claimable-items-box px-[30px] min-w-full relative overflow-x-scroll h-full overflow-y-hidden">
-              <div class="flex relative w-fit min-w-full items-center h-full [&_*]:shrink-0 gap-[250px] justify-between">
-                {/* Lane */}
+              <div class="claimable-items-row flex relative w-fit min-w-full items-center h-full [&_*]:shrink-0 gap-[250px] justify-between">
+                {/* Lane. Spans the nodes rather than the row: it starts on the first node and runs a
+                    short tail past the last, so nothing is drawn in the margin either side where
+                    there is no item for it to be about. `layoutProgressLane` writes both. */}
                 <div
-                  class={cn('progress-container-style progress-lane absolute overflow-hidden w-[calc(100%-0px)] translate-y-0 opacity-100', {
+                  class={cn('progress-container-style progress-track-dotted progress-lane absolute overflow-hidden w-full opacity-100', {
                     'opacity-0': this.isLoading || this.tabAnimationLoading || isNoServicesAvailable || !this.vehicleLookup,
                   })}
                 >
                   {/* Progress lane */}
-                  <div part="progress-bar" class="progress-bar transition-all w-1/2 h-full bg-[linear-gradient(to_bottom,_#428bca_0%,_#3071a9_100%)]" />
+                  <div part="progress-bar" class="progress-bar transition-all w-1/2 h-full" />
                 </div>
 
                 {/* Claim items */}
@@ -891,20 +971,6 @@ export class VehicleClaimableItems implements MultiLingual, VehicleInfoLayoutInt
                 ))}
 
                 <div class="ml-[-125px]" />
-              </div>
-
-              {/* Empty state */}
-              <div
-                dir={this.locale.sharedLocales.direction}
-                class={cn(
-                  'absolute top-0 left-0 pointer-events-none size-full box-content flex flex-col justify-center opacity-0 transition duration-500 items-center text-slate-700',
-                  {
-                    'opacity-100 scale-100': isNoServicesAvailable,
-                  },
-                )}
-              >
-                <EmptyTableIcon class="size-[90px]" />
-                <div class="text-[22px]">{this.locale.sharedLocales.errors.noServiceAvailable}</div>
               </div>
             </div>
           </div>

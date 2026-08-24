@@ -19,6 +19,8 @@
   "activationRequired": "Activation Required",
   "warrantyAndServicesNotActivated": "Warranty & Services have not been activated for this vehicle.",
   "activationBlockedNotAllocated": "Activation is required, but this vehicle is not allocated to your dealership, so it can't be activated.",
+  "noVehicleSelected": "هیچ ئۆتۆمبێلێک دیاری نەکراوە",
+  "noVehicleSelectedHint": "ژمارەی شاسی بگەڕێ بۆ بینینی خزمەتگوزارییەکان.",
   "viewTrace": "بینینی شوێنپێی گەڕان",
   "traceTitle": "شوێنپێی گەڕانی بڕگەی خزمەتگوزاری",
   "traceLoading": "بارکردنی شوێنپێ…",

@@ -88,7 +88,7 @@ const settle = async (page: SpecPage) => {
   await page.waitForChanges();
 };
 
-/** Cards sit one pitch apart, so the lane should stop at the index of the first awaiting card. */
+/** Cards sit one pitch apart, so the lane should stop on the first awaiting card. */
 const expectedWidth = () => `${(((FIRST_AWAITING_INDEX * cardPitch) / LANE_WIDTH) * 100).toFixed(2)}%`;
 
 describe('progress lane measurement', () => {

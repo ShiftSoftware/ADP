@@ -54,6 +54,8 @@ const claimableItemsSchema = object({
     'activationRequired',
     'warrantyAndServicesNotActivated',
     'activationBlockedNotAllocated',
+    'noVehicleSelected',
+    'noVehicleSelectedHint',
     'viewTrace',
     'traceTitle',
     'traceLoading',

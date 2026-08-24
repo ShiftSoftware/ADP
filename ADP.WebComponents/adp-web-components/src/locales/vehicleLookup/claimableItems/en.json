@@ -19,6 +19,8 @@
   "activationRequired": "Activation Required",
   "warrantyAndServicesNotActivated": "Warranty & Services have not been activated for this vehicle.",
   "activationBlockedNotAllocated": "Activation is required, but this vehicle is not allocated to your dealership, so it can't be activated.",
+  "noVehicleSelected": "No vehicle selected",
+  "noVehicleSelectedHint": "Look up a VIN to see its service items.",
   "viewTrace": "View Lookup Trace",
   "traceTitle": "Service-item Lookup Trace",
   "traceLoading": "Loading trace…",

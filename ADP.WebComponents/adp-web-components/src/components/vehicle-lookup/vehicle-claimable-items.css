@@ -16,8 +16,42 @@
   font-family: inherit !important;
 }
 
+/* The one rail every state of the timeline is drawn on — the resting lane, the un-earned run behind
+   it and the indeterminate loading bar — so the rail never changes shape when a lookup lands. It is
+   always absolutely positioned inside a centred box; `top`/`margin-top` pin it to the same axis the
+   nodes sit on rather than leaning on where a flex container parks an absolute child. */
 .progress-container-style {
-  @apply h-[10px] -translate-y-1/2 rounded-full transition duration-500 bg-[#f2f2f2] border border-[#ddd];
+  @apply h-[6px] rounded-full transition duration-500;
+
+  top: 50%;
+  margin-top: -3px;
+}
+
+/* The run a vehicle has not reached yet reads as a dotted rule rather than a filled trough, so the
+   solid blue laid over it is unmistakably "how far this one has got". */
+.progress-track-dotted {
+  background-color: transparent;
+  background-image: radial-gradient(circle, #d2d6db 0 1.9px, transparent 2.1px);
+  background-size: 9px 6px;
+  background-position: left center;
+  background-repeat: repeat-x;
+}
+
+.progress-bar {
+  background-color: #1e7fd4;
+  border-radius: 9999px;
+}
+
+.progress-loading-rail {
+  @apply w-full h-full rounded-full overflow-hidden absolute left-0 top-0;
+}
+
+/* Two sweeps chasing each other down the dotted rail. Each fades in and out along its own length,
+   so what travels reads as light moving over the rail rather than a block sliding across it. */
+.progress-loading-sweep {
+  @apply absolute h-full rounded-full;
+
+  background-image: linear-gradient(90deg, rgb(30 127 212 / 0) 0%, rgb(93 168 233 / 0.85) 30%, rgb(30 127 212 / 1) 62%, rgb(30 127 212 / 0) 100%);
 }
 
 .loading .lane-inc {
@@ -49,6 +83,224 @@
   to {
     left: 110%;
     width: 10%;
+  }
+}
+
+/* Nothing here conveys anything a still rail does not; it only says "still working". */
+@media (prefers-reduced-motion: reduce) {
+  .loading .lane-inc,
+  .loading .lane-dec {
+    animation: none;
+    left: 0;
+    width: 100%;
+    opacity: 0.45;
+  }
+}
+
+/* ── Notice bar ───────────────────────────────────────────────────────────────
+   The three things this component has to say once the timeline is on screen: a claim went through
+   and can be printed, the vehicle needs activating, or it needs activating and this dealership is
+   not the one that can do it. All three used to be the same Bootstrap warning yellow, so a
+   successful claim and a blocked vehicle looked identical. Tone is one variable now, read by the
+   badge, the border and the button — the same way a node's status colour works. */
+.timeline-notice {
+  --notice-rgb: 183 121 31;
+
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: calc(100% - 60px);
+  max-width: 880px;
+  padding: 11px 13px;
+  border-radius: 10px;
+  border: 1px solid rgb(var(--notice-rgb) / 0.3);
+  background-color: #ffffff;
+  background-image: linear-gradient(90deg, rgb(var(--notice-rgb) / 0.08), rgb(var(--notice-rgb) / 0.02));
+  box-shadow:
+    0 1px 2px rgb(16 24 40 / 0.04),
+    0 8px 20px -10px rgb(var(--notice-rgb) / 0.45);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(8px) scale(0.97);
+  transition:
+    opacity 500ms ease,
+    transform 500ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.timeline-notice.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0) scale(1);
+}
+
+.timeline-notice.notice-success {
+  --notice-rgb: 39 174 96;
+}
+
+.timeline-notice.notice-warning {
+  --notice-rgb: 183 121 31;
+}
+
+.timeline-notice.notice-danger {
+  --notice-rgb: 208 2 27;
+}
+
+/* The hollow ring the timeline draws its nodes with, at notice scale — so the bar reads as part of
+   the same object rather than as a stray alert that happened to land underneath it. */
+.timeline-notice-badge {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 9999px;
+  border: 3px solid rgb(var(--notice-rgb));
+  background-color: #ffffff;
+  color: rgb(var(--notice-rgb));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.timeline-notice-badge svg {
+  width: 19px;
+  height: 19px;
+  stroke-width: 2.6px;
+}
+
+.timeline-notice-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 600;
+  color: #333333;
+}
+
+.notice-action {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 9999px;
+  background-color: rgb(var(--notice-rgb));
+  color: #ffffff;
+  fill: #ffffff;
+  stroke: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  outline: none;
+  box-shadow: 0 1px 2px rgb(16 24 40 / 0.12);
+  transition:
+    filter 200ms ease,
+    transform 200ms ease,
+    box-shadow 200ms ease;
+}
+
+.notice-action svg {
+  width: 19px;
+  height: 19px;
+}
+
+/* The activation glyph draws its disc with a `fill="none"` presentation attribute, which beats an
+   inherited colour — so the disc has to be asked for by name, as the claim button also does. */
+.notice-action svg circle {
+  fill: currentColor;
+  fill-opacity: 0.3;
+}
+
+.notice-action:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 5px 14px -3px rgb(var(--notice-rgb) / 0.55);
+}
+
+.notice-action:active {
+  transform: scale(0.97);
+}
+
+.notice-action:focus-visible {
+  box-shadow: 0 0 0 3px rgb(var(--notice-rgb) / 0.35);
+}
+
+/* ── Idle and empty ───────────────────────────────────────────────────────────
+   Two states that both mean "there is no timeline to draw", told apart by whether anything was
+   asked for. Idle rendered as an empty 320px box until now, which reads as a component that failed
+   rather than one waiting for a VIN. The dashed ring picks up the rail's dotted run, so the empty
+   box still belongs to the same drawing. */
+.timeline-placeholder {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  text-align: center;
+  padding: 0 24px;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(8px) scale(0.96);
+  transition:
+    opacity 500ms ease,
+    transform 500ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.timeline-placeholder.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+.timeline-placeholder-badge {
+  width: 74px;
+  height: 74px;
+  margin-bottom: 14px;
+  border-radius: 9999px;
+  border: 2px dashed #dde2e8;
+  background-color: #fbfcfd;
+  color: #9aa3ad;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.timeline-placeholder-badge svg {
+  width: 34px;
+  height: 34px;
+}
+
+.timeline-placeholder-title {
+  font-size: 20px;
+  line-height: 26px;
+  font-weight: 700;
+  color: #44494f;
+}
+
+.timeline-placeholder-hint {
+  font-size: 15px;
+  line-height: 21px;
+  color: #8a9099;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .timeline-notice,
+  .timeline-placeholder {
+    transition-property: opacity;
+  }
+
+  .timeline-notice {
+    transform: translateX(-50%);
+  }
+
+  .timeline-placeholder {
+    transform: none;
   }
 }
 

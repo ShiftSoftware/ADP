@@ -19,6 +19,8 @@
   "activationRequired": "Activation Required",
   "warrantyAndServicesNotActivated": "Warranty & Services have not been activated for this vehicle.",
   "activationBlockedNotAllocated": "Activation is required, but this vehicle is not allocated to your dealership, so it can't be activated.",
+  "noVehicleSelected": "لم يتم تحديد مركبة",
+  "noVehicleSelectedHint": "ابحث برقم الهيكل لعرض عناصر الخدمة.",
   "viewTrace": "عرض تتبع البحث",
   "traceTitle": "تتبع البحث عن عنصر الخدمة",
   "traceLoading": "جارٍ تحميل التتبع…",
