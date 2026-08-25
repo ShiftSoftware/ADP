@@ -573,4 +573,166 @@ public sealed class SnapshotIngestConcurrencySafetyTests : IDisposable
             await Task.Delay(1, TestContext.Current.CancellationToken);
         }
     }
+    // ---- Narration -----------------------------------------------------------------------------
+
+    /// <summary>
+    /// The reason OnFetched exists: it must fire WHILE the drain is blocked, or it reports nothing
+    /// the drain's own callback would not have reported later anyway.
+    ///
+    /// <para>The first prod-parity run made this concrete — 2.5 minutes of console silence while
+    /// eight fetches ran to completion behind one 149-second source, which on screen is
+    /// indistinguishable from a hang. Here the slow source sits at registry position 0, so nothing
+    /// can drain until it finishes; every progress event asserted below therefore happened during
+    /// the blackout.</para>
+    /// </summary>
+    [Fact]
+    public async Task FetchesNarrate_WhileTheDrainIsStillBlockedOnTheSlowSourceAheadOfThem()
+    {
+        var slow = new TaskCompletionSource();
+        var progress = new ConcurrentQueue<SnapshotFetchProgress>();
+        var sources = new List<SnapshotSource>
+        {
+            Fetching("slow-head", rows: 2, gate: slow.Task),
+            Fetching("quick-a", rows: 3),
+            Fetching("quick-b", rows: 4),
+        };
+
+        var run = SnapshotIngestDispatcher.RunAsync(
+            new SnapshotIngestDispatcherOptions
+            {
+                Store = snapshot.Store,
+                Sources = sources,
+                Degree = 3,
+                OnFetched = progress.Enqueue,
+            },
+            outcome => drained.Add(outcome.Source.Key),
+            TestContext.Current.CancellationToken);
+
+        // Both quick sources finish and narrate; the drain cannot have moved, because the source it
+        // is parked on has not been released yet.
+        while (progress.Count < 2)
+            await Task.Delay(10, TestContext.Current.CancellationToken);
+
+        Assert.Empty(drained);
+        var duringBlackout = progress.ToArray();
+        Assert.Equal(["quick-a", "quick-b"], duringBlackout.Select(p => p.Source.Key).Order());
+
+        // And each one names the source the CYCLE is waiting for, not itself — the difference
+        // between "something finished" and "everything except slow-head has finished".
+        Assert.All(duringBlackout, p => Assert.Equal("slow-head", p.DrainWaitingOn?.Key));
+        Assert.All(duringBlackout, p => Assert.Null(p.Failure));
+        Assert.Contains(duringBlackout, p => p.Source.Key == "quick-b" && p.BufferedRows == 4);
+
+        slow.SetResult();
+        await run;
+
+        // The source that unblocks the drain reports itself, which is how the line reads
+        // "*** this unblocks the drain ***" rather than naming some other source.
+        var head = progress.Single(p => p.Source.Key == "slow-head");
+        Assert.Same(head.Source, head.DrainWaitingOn);
+        Assert.Equal(["slow-head", "quick-a", "quick-b"], drained);
+    }
+
+    /// <summary>
+    /// A faulted fetch still narrates, carrying its exception. The drain reports it again later at
+    /// the source's registry position — narration is an extra view, never the only one.
+    /// </summary>
+    [Fact]
+    public async Task AFaultedFetch_Narrates_AndStillSurfacesOnTheDrain()
+    {
+        var progress = new ConcurrentQueue<SnapshotFetchProgress>();
+        var outcomes = new List<SnapshotIngestOutcome>();
+        var sources = new List<SnapshotSource>
+        {
+            Fetching("broken", rows: 3, fetchThrows: new InvalidOperationException("the dealer box refused")),
+        };
+
+        await SnapshotIngestDispatcher.RunAsync(
+            new SnapshotIngestDispatcherOptions
+            {
+                Store = snapshot.Store,
+                Sources = sources,
+                Degree = 2,
+                OnFetched = progress.Enqueue,
+            },
+            outcomes.Add,
+            TestContext.Current.CancellationToken);
+
+        var narrated = Assert.Single(progress);
+        Assert.Equal("the dealer box refused", narrated.Failure!.Message);
+        Assert.Equal(0, narrated.BufferedRows);
+        Assert.Equal("the dealer box refused", outcomes.Single().Failure!.Message);
+    }
+
+    /// <summary>
+    /// Narration must never decide the fate of a cycle — the DELIBERATE opposite of the drain's
+    /// callback, where a throw is the caller's assertion failing and has to end the run. A console
+    /// that cannot be written to is not a reason to lose three minutes of fetching.
+    /// </summary>
+    [Fact]
+    public async Task AThrowingNarrator_IsSwallowed_AndEverySourceStillMerges()
+    {
+        var sources = new List<SnapshotSource>
+        {
+            Fetching("first", rows: 2),
+            Fetching("second", rows: 3),
+        };
+
+        var report = await SnapshotIngestDispatcher.RunAsync(
+            new SnapshotIngestDispatcherOptions
+            {
+                Store = snapshot.Store,
+                Sources = sources,
+                Degree = 2,
+                OnFetched = _ => throw new InvalidOperationException("the console is gone"),
+            },
+            outcome => drained.Add(outcome.Source.Key),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(["first", "second"], drained);
+        Assert.Equal(2, report.SourcesDrained);
+        Assert.Equal(5, snapshot.Scalar<long>(
+            "SELECT count(*) FROM data.\"Widget\" WHERE \"_Deleted\" = false"));
+    }
+
+    /// <summary>
+    /// The width a narration line reports is the width that now EXISTS: this fetch retired and its
+    /// replacement already admitted. Reporting before the admission pump would print a trough that
+    /// never happened, which is worse than not reporting at all — it would make a healthy fan-out
+    /// look like it was collapsing.
+    /// </summary>
+    [Fact]
+    public async Task ANarrationLine_ReportsTheWidthAfterItsReplacementIsAdmitted()
+    {
+        var progress = new ConcurrentQueue<SnapshotFetchProgress>();
+        var hold = new TaskCompletionSource();
+        var sources = new List<SnapshotSource>
+        {
+            Fetching("held-a", rows: 1, gate: hold.Task),
+            Fetching("held-b", rows: 1, gate: hold.Task),
+            Fetching("quick", rows: 1),
+        };
+
+        var run = SnapshotIngestDispatcher.RunAsync(
+            new SnapshotIngestDispatcherOptions
+            {
+                Store = snapshot.Store,
+                Sources = sources,
+                Degree = 3,
+                OnFetched = progress.Enqueue,
+            },
+            outcome => drained.Add(outcome.Source.Key),
+            TestContext.Current.CancellationToken);
+
+        while (progress.IsEmpty)
+            await Task.Delay(10, TestContext.Current.CancellationToken);
+
+        // "quick" finished while both held sources are still running, so the line it printed has to
+        // say two are still fetching — not one, and not zero.
+        var quick = progress.Single(p => p.Source.Key == "quick");
+        Assert.Equal(2, quick.FetchesInFlight);
+
+        hold.SetResult();
+        await run;
+    }
 }

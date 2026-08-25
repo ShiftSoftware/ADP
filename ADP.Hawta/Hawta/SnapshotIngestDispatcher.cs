@@ -66,7 +66,50 @@ public sealed class SnapshotIngestDispatcherOptions
     /// which is what keeps the degree usable.</para>
     /// </summary>
     public int MaxPerConcurrencyGroup { get; init; } = 2;
+
+    /// <summary>
+    /// Narration, called once per fetch as it FINISHES — optional, and null means silence.
+    ///
+    /// <para><b>Why this exists at all.</b> Every visible line a caller prints comes from
+    /// <c>onDrained</c>, which runs on the serial drain in registry order. So while the drain is
+    /// parked on a slow source, a fan-out running at full width produces no output whatsoever: the
+    /// first real cycle spent 2.5 minutes fetching eight sources concurrently and looked, on
+    /// screen, exactly like a wedged process. The information was all recorded and none of it was
+    /// visible until afterwards. A fetch-completion event is the only thing that can show progress
+    /// during the window, because the drain by definition is not making any.</para>
+    ///
+    /// <para><b>Called on the WORKER thread, concurrently with other workers</b> — unlike
+    /// <c>onDrained</c>. A handler that writes anywhere shared must do its own locking.</para>
+    ///
+    /// <para><b>Exceptions are swallowed</b>, and this is the deliberate opposite of
+    /// <c>onDrained</c>, where a throw is a caller's assertion failing and must end the run.
+    /// Narration is not an assertion; a console that cannot be written to must not decide the fate
+    /// of a three-minute cycle.</para>
+    /// </summary>
+    public Action<SnapshotFetchProgress>? OnFetched { get; init; }
 }
+
+/// <summary>
+/// One fetch, as it completes — the fan-out's only signal of life while the drain is blocked.
+/// </summary>
+/// <param name="Elapsed">Wall time of this fetch alone.</param>
+/// <param name="BufferedRows">Rows this fetch put in memory. Zero when it failed.</param>
+/// <param name="Failure">Null on success. The drain reports it again, later, at the source's registry position.</param>
+/// <param name="FetchesInFlight">Fetches still running AFTER this one finished and admission topped up.</param>
+/// <param name="TotalBufferedRows">Rows held across every fetched-but-not-yet-drained buffer.</param>
+/// <param name="DrainWaitingOn">
+/// The source the serial drain is parked on, which is what makes this line diagnostic rather than
+/// decorative: it names the one source the cycle is actually waiting for. Null before the drain
+/// starts waiting, and equal to <paramref name="Source"/> when this fetch is the one that unblocks it.
+/// </param>
+public sealed record SnapshotFetchProgress(
+    SnapshotSource Source,
+    TimeSpan Elapsed,
+    long BufferedRows,
+    Exception? Failure,
+    int FetchesInFlight,
+    long TotalBufferedRows,
+    SnapshotSource? DrainWaitingOn);
 
 /// <summary>One source's outcome, handed to the caller ON THE DRAIN THREAD, in registry order.</summary>
 /// <param name="Merge">Null when the source threw; see <paramref name="Failure"/>.</param>
@@ -156,6 +199,17 @@ public static class SnapshotIngestDispatcher
         {
             for (var index = 0; index < sources.Count; index++)
             {
+                // FIRST, before admission can start a single worker for this iteration. A worker
+                // narrates from its own thread the moment it finishes, and the whole value of that
+                // line is that it names the source the cycle is parked on — so the marker has to be
+                // in place before any worker exists to read it. Setting it after PumpAdmission left
+                // a scheduling window in which the earliest fetches reported "drain not waiting
+                // yet", which is not merely imprecise: it is worthless exactly when the fan-out is
+                // widest and the reader most needs to know what the hold-up is. Volatile rather
+                // than locked — the drain writes, workers read, and a narration line must never
+                // contend for the admission lock.
+                run.DrainWaitingOnIndex = index;
+
                 // Top up before every wait, so a fetch starts the moment the budget allows —
                 // workers also pump on completion, which is what keeps width up while the drain
                 // is parked on a slow source.
@@ -281,6 +335,9 @@ public static class SnapshotIngestDispatcher
         private int fetchesInFlight;
         private long bufferedRows;
         private bool stopped;
+
+        /// <summary>Registry index the drain is parked on; -1 before it waits on anything.</summary>
+        public volatile int DrainWaitingOnIndex = -1;
 
         public Run(SnapshotIngestDispatcherOptions options, CancellationToken cancellationToken)
         {
@@ -429,6 +486,8 @@ public static class SnapshotIngestDispatcher
         {
             var elapsed = Stopwatch.StartNew();
             long reported = 0;
+            long accounted = 0;
+            Exception? failure = null;
 
             try
             {
@@ -445,11 +504,13 @@ public static class SnapshotIngestDispatcher
                 // BufferedRows is the authority; incremental reports are an early view of it. A
                 // fetch that reported nothing is accounted in full right here.
                 Track(Interlocked.Add(ref bufferedRows, fetch.BufferedRows - reported));
+                accounted = fetch.BufferedRows;
                 completion.TrySetResult(new FetchSlot(fetch, null, elapsed.Elapsed, fetch.BufferedRows));
             }
             catch (Exception exception)
             {
                 // Nothing survives a faulted fetch, so nothing stays accounted for it.
+                failure = exception;
                 Interlocked.Add(ref bufferedRows, -reported);
                 completion.TrySetResult(new FetchSlot(null, exception, elapsed.Elapsed, 0));
             }
@@ -457,6 +518,40 @@ public static class SnapshotIngestDispatcher
             {
                 ReleaseWorker(group);
                 PumpAdmission();
+
+                // AFTER both, so the width this line reports is the width that now exists — this
+                // fetch retired and its replacement already started. Reporting before the pump
+                // would print a trough that never happened.
+                Narrate(source, elapsed.Elapsed, accounted, failure);
+            }
+        }
+
+        private void Narrate(SnapshotSource source, TimeSpan elapsed, long rowsFetched, Exception? failure)
+        {
+            if (options.OnFetched is not { } onFetched)
+                return;
+
+            int inFlight;
+            lock (admission)
+                inFlight = fetchesInFlight;
+
+            var waitingOn = DrainWaitingOnIndex;
+
+            try
+            {
+                onFetched(new SnapshotFetchProgress(
+                    source,
+                    elapsed,
+                    rowsFetched,
+                    failure,
+                    inFlight,
+                    Interlocked.Read(ref bufferedRows),
+                    waitingOn >= 0 && waitingOn < options.Sources.Count ? options.Sources[waitingOn] : null));
+            }
+            catch
+            {
+                // Documented on OnFetched: narration never decides the fate of a cycle. The drain's
+                // own callback is the opposite, and deliberately so.
             }
         }
 
