@@ -74,11 +74,12 @@ public class AzureExtensionPreinstallTests
     }
 
     /// <summary>
-    /// With a credential, Open installs the extension and then closes the door behind it, so no
-    /// later connection can attempt an install at all.
+    /// With a credential, Open puts the extension on disk — and changes nothing else. Once it is
+    /// cached, autoinstall never fires for it, which is why the pre-install alone is the whole fix
+    /// (measured: pre-install only is already 8/8 under the concurrent race).
     /// </summary>
     [Fact]
-    public void Open_WithAzureCredential_InstallsExtension_AndDisablesAutoinstall()
+    public void Open_WithAzureCredential_InstallsExtension_AndLeavesSettingsAlone()
     {
         var extensionDirectory = TempDirectory("ext");
         try
@@ -95,10 +96,10 @@ public class AzureExtensionPreinstallTests
                 "The azure extension could not be installed (no network and no cached copy). " +
                 "The best-effort contract is exercised by the offline test below.");
 
-            Assert.Equal("false", Setting(store, "autoinstall_known_extensions"));
-
-            // autoload stays ON — a cached extension must still load, or the fix would break az://
-            // for the very connection it is meant to protect.
+            // Neither setting is touched. An earlier version disabled autoinstall as a guard; that
+            // guarded nothing here and blocked autoinstall of OTHER extensions on the same database
+            // instance, so it was removed. Pinned so it does not creep back.
+            Assert.Equal("true", Setting(store, "autoinstall_known_extensions"));
             Assert.Equal("true", Setting(store, "autoload_known_extensions"));
         }
         finally
@@ -108,12 +109,12 @@ public class AzureExtensionPreinstallTests
     }
 
     /// <summary>
-    /// The best-effort contract: when the install cannot happen, autoinstall is left ON, which is
-    /// exactly the behaviour this estate had before the fix existed — the first az:// touch tries
-    /// and reports its own error at the point of use. No path is left worse than it was.
+    /// The best-effort contract: an install that cannot happen must not fail <c>Open</c>. The estate
+    /// is left exactly where it was before this method existed — the first az:// touch tries and
+    /// reports its own error at the point of use. No path is left worse than it was.
     /// </summary>
     [Fact]
-    public void Open_WhenTheExtensionCannotBeInstalled_LeavesAutoinstallOn()
+    public void Open_WhenTheExtensionCannotBeInstalled_DoesNotFailOpen()
     {
         var extensionDirectory = TempDirectory("offline");
         try
@@ -132,7 +133,7 @@ public class AzureExtensionPreinstallTests
                     AzureConnectionString = AnyCredential,
                 });
 
-                // If Open survived, the install must have failed silently and left autoinstall on.
+                // If Open survived, the install failed silently and nothing was altered.
                 Assert.Equal("true", Setting(store, "autoinstall_known_extensions"));
             }
             catch (Exception failure)

@@ -30,15 +30,20 @@ public sealed class SnapshotStoreOptions
     /// being reachable at that moment. Pointing this at persistent storage makes it happen
     /// once.</para>
     ///
-    /// <para>This deliberately does <b>not</b> conflict with <see cref="DatabasePath"/>'s
-    /// local-disk-only rule. That rule exists because a <i>writable DuckDB database</i> over
-    /// SMB risks corruption; an extension is a read-only binary that is loaded and never
-    /// written, so shared network storage is fine for it and wrong for the database.</para>
+    /// <para><b>Point this at instance-local storage, not a share — the same rule
+    /// <see cref="DatabasePath"/> follows.</b> This documentation used to say the opposite: that
+    /// the local-disk-only rule was about a <i>writable DuckDB database</i> over SMB risking
+    /// corruption, and that "an extension is a read-only binary that is loaded and never written,
+    /// so shared network storage is fine for it". <b>That is wrong.</b> An extension is read-only
+    /// in steady state and written exactly once, at install — and DuckDB's install is not atomic
+    /// (duckdb/duckdb#3947), so concurrent first touches race (duckdb/duckdb#12589, open).
+    /// Measured on 1.5.5: eight concurrent cold first touches into one empty directory left one
+    /// survivor and stranded a 29 MB <c>.tmp-&lt;guid&gt;</c>. On shared storage that race is
+    /// cross-process AND cross-machine.</para>
     ///
-    /// <para>Deployment note, since it is easy to get wrong: on Azure App Service use the
-    /// <c>%HOME%</c> environment variable rather than a literal <c>D:\home</c>. New apps
-    /// resolve <c>%HOME%</c> to <c>C:\home</c>; only older ones get <c>D:</c>, and Microsoft's
-    /// guidance is explicitly not to hardcode the drive letter.</para>
+    /// <para><see cref="SnapshotStore.Open"/> now pre-installs the azure extension serially, which
+    /// removes the race within one process — measured 1/8 survivors before, 8/8 after. Keeping this
+    /// directory instance-local is what removes it between processes and machines.</para>
     /// </summary>
     public string? ExtensionDirectory { get; init; }
 
