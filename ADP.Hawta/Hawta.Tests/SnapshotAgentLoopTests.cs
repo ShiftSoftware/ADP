@@ -57,7 +57,11 @@ public sealed class SnapshotAgentLoopTests : IDisposable
         });
     };
 
-    private SnapshotAgentLoop Loop(SourceRegistry registry, bool dryRun = false, TimeSpan? publishCadence = null) =>
+    private SnapshotAgentLoop Loop(
+        SourceRegistry registry,
+        bool dryRun = false,
+        TimeSpan? publishCadence = null,
+        int ingestDegree = 1) =>
         new(new SnapshotAgentOptions
         {
             Registry = registry,
@@ -66,6 +70,7 @@ public sealed class SnapshotAgentLoopTests : IDisposable
             SnapshotName = "agent-test",
             PublishCadence = publishCadence ?? TimeSpan.FromMinutes(1),
             DryRun = dryRun,
+            IngestDegree = ingestDegree,
             TimeProvider = clock,
             OnEvent = events.Add,
         }, cosmosClient: null);
@@ -171,6 +176,78 @@ public sealed class SnapshotAgentLoopTests : IDisposable
         clock.Advance(TimeSpan.FromMinutes(1));
         await loop.RunCycleAsync(TestContext.Current.CancellationToken);
         Assert.Equal(2, attempts);
+    }
+
+    // ---- The bounded ingest fan-out ------------------------------------------------------------
+
+    /// <summary>A two-phase source: the fetch materialises rows off the store, the drain merges them.</summary>
+    private static SnapshotSource FetchingSource(
+        string key,
+        Func<IEnumerable<(string Key, string Code, int Quantity)>> rows,
+        Exception? fetchThrows = null) => new()
+        {
+            Key = key,
+            SourceScope = key,
+            ConcurrencyGroup = "one-box",
+            RecordIdentity = SourceRecordIdentityDescriptor.LogicalKey("Code"),
+            Table = Table,
+            Cadence = TimeSpan.FromMinutes(1),
+            Fetch = _ =>
+            {
+                if (fetchThrows is not null)
+                    throw fetchThrows;
+
+                var buffered = rows().ToList();
+                return SnapshotSourceFetch.Staged(
+                    buffered.Count, context => IngestOf(key, () => buffered, scope: key)(context));
+            },
+        };
+
+    [Fact]
+    public async Task FanningOutTheFetches_ChangesNothingTheCycleReports()
+    {
+        // Everything the loop folds — run records, warnings, cadence state — is written by the
+        // serial drain, so a fanned-out cycle has to be indistinguishable from a serial one apart
+        // from its wall clock.
+        var registry = new SourceRegistry(Enumerable.Range(0, 6)
+            .Select(index => FetchingSource($"s{index}", () => [($"W{index}", "alpha", index)]))
+            .ToList());
+
+        using var loop = Loop(registry, ingestDegree: 4);
+        var cycle = await loop.RunCycleAsync(TestContext.Current.CancellationToken);
+
+        // Registry order, one run each, every row landed.
+        Assert.Equal(["s0", "s1", "s2", "s3", "s4", "s5"], cycle.Sources.Select(run => run.SourceKey));
+        Assert.All(cycle.Sources, run => Assert.Equal(1, run.Merge!.RowsInserted));
+        Assert.Equal(SnapshotPublishStatus.Published, cycle.Publish!.Status);
+
+        // Cadence state advanced for every source — nextDue is a loop FIELD, and a lost write
+        // there is permanent for the process rather than for the cycle.
+        Assert.Same(SnapshotAgentCycle.Idle, await loop.RunCycleAsync(TestContext.Current.CancellationToken));
+
+        Assert.Contains(events, e => e.Message.Contains("Ingest fan-out: 6 source(s) fetched ahead"));
+    }
+
+    [Fact]
+    public async Task ACrashingFetch_IsContained_AndStillAdvancesItsCadence()
+    {
+        var registry = new SourceRegistry(
+        [
+            FetchingSource("broken", () => [], new InvalidOperationException("dealer box unreachable")),
+            FetchingSource("healthy", () => [("W1", "alpha", 1)]),
+        ]);
+
+        using var loop = Loop(registry, ingestDegree: 2);
+        var cycle = await loop.RunCycleAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, cycle.Sources.Count);
+        Assert.Equal("dealer box unreachable", cycle.Sources[0].Error!.Message);
+        Assert.Null(cycle.Sources[0].Merge);
+        Assert.Equal(1, cycle.Sources[1].Merge!.RowsInserted);
+        Assert.Contains(events, e => e is { Level: SnapshotAgentEventLevel.Error, SourceKey: "broken" });
+
+        // No hot-looping a dead source, exactly as a crashing one-phase source behaves.
+        Assert.Same(SnapshotAgentCycle.Idle, await loop.RunCycleAsync(TestContext.Current.CancellationToken));
     }
 
     [Fact]

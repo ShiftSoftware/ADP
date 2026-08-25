@@ -75,6 +75,22 @@ public sealed class SnapshotAgentOptions
     /// <summary>Drain bound: pump batches per table per cycle (a stuck-failing batch dead-letters after 5 attempts anyway).</summary>
     public int MaxPumpBatchesPerCycle { get; init; } = 100;
 
+    /// <summary>
+    /// Concurrent FETCHES per cycle, for sources that declare <see cref="SnapshotSource.Fetch"/>.
+    /// The merge drain is serial and in registry order at every degree.
+    ///
+    /// <para><b>1 — the default — is exactly today's behaviour</b>, so adopting this package
+    /// changes nothing until a host opts in, and setting the host's knob back to 1 is the kill
+    /// switch: production drops to serial fetching with a config change and no redeploy.</para>
+    /// </summary>
+    public int IngestDegree { get; init; } = 1;
+
+    /// <summary>Fetched-but-unmerged rows above which admission stops. See <see cref="SnapshotIngestDispatcherOptions.MaxBufferedRows"/>.</summary>
+    public int IngestMaxBufferedRows { get; init; } = 100_000;
+
+    /// <summary>Concurrent fetches per <see cref="SnapshotSource.ConcurrencyGroup"/> — the per-remote-box cap.</summary>
+    public int IngestMaxPerConcurrencyGroup { get; init; } = 2;
+
     /// <summary>Injectable clock for tests.</summary>
     public TimeProvider TimeProvider { get; init; } = TimeProvider.System;
 
@@ -134,11 +150,18 @@ public sealed record SnapshotAgentCycle(
 }
 
 /// <summary>
-/// The dispatcher: per-source cadences over ONE sequential worker (the store is
-/// single-connection and single-writer — concurrency here would buy nothing and break
-/// everything), each cycle bracketed by the write gate. A cycle is: gate → cold-start
-/// rebuild if the write DB is fresh → ingest every due source → pump the affected tables
-/// (wet mode) → publish on its own cadence → release.
+/// The dispatcher: per-source cadences, each cycle bracketed by the write gate. A cycle is:
+/// gate → cold-start rebuild if the write DB is fresh → ingest every due source → pump the
+/// affected tables (wet mode) → publish on its own cadence → release.
+///
+/// <para><b>One sequential worker for everything that touches the store</b> — it is
+/// single-connection and single-writer, and merges are ≤ 60 ms outside one 8.2 s outlier, so
+/// there is nothing there worth parallelising. What IS worth parallelising is the wait in front
+/// of it: fetch is 95.4–97.9 % of a cycle. Sources that declare
+/// <see cref="SnapshotSource.Fetch"/> have that half dispatched ahead by
+/// <see cref="SnapshotIngestDispatcher"/>, bounded by <see cref="SnapshotAgentOptions.IngestDegree"/>
+/// and by rows in flight; the merge drain stays serial and in registry order, and every run
+/// record, source stamp and piece of scheduler state is still written by it.</para>
 /// Not thread-safe by contract: one loop instance, one caller at a time
 /// (<see cref="RunAsync"/> is the caller in production; <see cref="RunSourceOnceAsync"/>
 /// is for admin force-runs while the loop is NOT running the same instance).
@@ -302,22 +325,39 @@ public sealed class SnapshotAgentLoop : IDisposable
             var pumpTables = new Dictionary<string, (SnapshotTableDefinition Table, IReadOnlyList<CosmosFamilyMapping> Families, int BatchSize, int MaxInFlightRows)>(
                 StringComparer.OrdinalIgnoreCase);
 
-            foreach (var source in due)
-            {
-                if (token.IsCancellationRequested)
-                    break;
-
-                try
+            // The fan-out. Sources that declare Fetch have their external half dispatched ahead,
+            // bounded by degree AND by rows in flight; everything else runs inline exactly as it
+            // always has. EVERY callback below lands on the drain's single thread, in registry
+            // order, which is what keeps nextDue, sourceRuns and pumpTables plain unsynchronised
+            // state — nextDue in particular is a loop FIELD whose corruption would be permanent
+            // for the process, not for the cycle.
+            var ingest = await SnapshotIngestDispatcher.RunAsync(
+                new SnapshotIngestDispatcherOptions
                 {
-                    // RunIngestAsync, not Ingest: it dispatches to whichever delegate the source
-                    // declares. A synchronous source still runs inline on this thread — the store
-                    // is single-connection and single-writer, so nothing here goes concurrent.
-                    var merge = await source.RunIngestAsync(new SnapshotSourceContext
+                    Store = store!,
+                    Sources = due,
+                    FileMetadata = fileMetadata,
+                    Degree = options.IngestDegree,
+                    MaxBufferedRows = options.IngestMaxBufferedRows,
+                    MaxPerConcurrencyGroup = options.IngestMaxPerConcurrencyGroup,
+                },
+                outcome =>
+                {
+                    var source = outcome.Source;
+                    nextDue[source.Key] = options.TimeProvider.GetUtcNow() + source.Cadence;
+
+                    if (outcome.Failure is { } exception)
                     {
-                        Store = store!,
-                        CancellationToken = token,
-                        FileMetadata = fileMetadata,
-                    });
+                        // The merge already wrote its Failed:Exception run record; the loop's job
+                        // is to contain the failure so the other sources still run. A fetch that
+                        // threw wrote nothing at all — same as a source that threw before reaching
+                        // a merge has always done.
+                        sourceRuns.Add(new SnapshotAgentSourceRun(source.Key, null, exception));
+                        Emit(SnapshotAgentEventLevel.Error, "Ingest crashed.", source.Key, exception);
+                        return;
+                    }
+
+                    var merge = outcome.Merge!;
                     sourceRuns.Add(new SnapshotAgentSourceRun(source.Key, merge, null));
 
                     // The gate and guard skips are the system working, not a problem — warning
@@ -339,29 +379,26 @@ public sealed class SnapshotAgentLoop : IDisposable
                             "(scope migration), a config error if it repeats (two sources claiming the same keys).",
                             source.Key);
                     }
-                }
-                catch (OperationCanceledException) when (token.IsCancellationRequested)
-                {
-                    break;
-                }
-                catch (Exception exception)
-                {
-                    // The merge already wrote its Failed:Exception run record; the loop's job is
-                    // to contain the failure so the other sources still run.
-                    sourceRuns.Add(new SnapshotAgentSourceRun(source.Key, null, exception));
-                    Emit(SnapshotAgentEventLevel.Error, "Ingest crashed.", source.Key, exception);
-                }
-                finally
-                {
-                    nextDue[source.Key] = options.TimeProvider.GetUtcNow() + source.Cadence;
-                }
 
-                if (source is { Families.Count: > 0, ReplicationEnabled: true })
-                    pumpTables.TryAdd(source.Table.Name, (
-                        source.Table,
-                        source.Families,
-                        source.ReplicationBatchSize,
-                        source.ReplicationMaxInFlightRows));
+                    if (source is { Families.Count: > 0, ReplicationEnabled: true })
+                        pumpTables.TryAdd(source.Table.Name, (
+                            source.Table,
+                            source.Families,
+                            source.ReplicationBatchSize,
+                            source.ReplicationMaxInFlightRows));
+                },
+                token);
+
+            // Width is the thing that silently fails here: a fan-out whose blocking work cannot
+            // get threads reaches degree 1 and reports nothing. Say it once per cycle that
+            // actually fanned out, so a regression is visible in the log rather than in the clock.
+            if (ingest.SourcesFetched > 1)
+            {
+                Emit(SnapshotAgentEventLevel.Info,
+                    $"Ingest fan-out: {ingest.SourcesFetched} source(s) fetched ahead, peak width " +
+                    $"{ingest.MaxObservedFetchesInFlight}/{options.IngestDegree} reached after " +
+                    $"{ingest.TimeToMaximumWidth.TotalMilliseconds:F0} ms, peak buffer " +
+                    $"{ingest.MaxObservedBufferedRows}/{options.IngestMaxBufferedRows} row(s).");
             }
 
             // Degrading to per-file probing is correct behaviour, not a failure — but it means a

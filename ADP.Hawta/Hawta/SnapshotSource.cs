@@ -43,14 +43,16 @@ public sealed class SnapshotSource
     /// Called under the write gate, on the dispatcher's single thread. The delegate owns
     /// source connectivity (SQL connection, file path) and its own merge options.
     ///
-    /// <para>Set this <b>or</b> <see cref="IngestAsync"/>, never both — the registry validates it.
-    /// Reading it on a source that declared the async sibling throws rather than returning null,
-    /// so the mistake names itself instead of arriving as a NullReferenceException.</para>
+    /// <para>Set this, <see cref="IngestAsync"/> <b>or</b> <see cref="Fetch"/> — exactly one; the
+    /// registry validates it. Reading it on a source that declared a sibling throws rather than
+    /// returning null, so the mistake names itself instead of arriving as a
+    /// NullReferenceException.</para>
     /// </summary>
     public Func<SnapshotSourceContext, SnapshotMergeResult> Ingest
     {
         get => ingest ?? throw new InvalidOperationException(
-            $"Source '{Key}' declares IngestAsync, not the synchronous Ingest delegate. " +
+            $"Source '{Key}' declares {(IngestAsync is not null ? nameof(IngestAsync) : nameof(Fetch))}, " +
+            "not the synchronous Ingest delegate. " +
             $"Call {nameof(RunIngestAsync)} to run a source without knowing which it uses.");
         init
         {
@@ -78,18 +80,69 @@ public sealed class SnapshotSource
     /// </summary>
     public Func<SnapshotSourceContext, Task<SnapshotMergeResult>>? IngestAsync { get; init; }
 
+    /// <summary>
+    /// The two-phase sibling: everything external, and nothing else.
+    ///
+    /// <para><b>Why a third form rather than a widened one.</b> Neither existing delegate is a
+    /// concurrency boundary. <see cref="RunIngestAsync"/> resolves a synchronous source INLINE, on
+    /// the calling thread, before the Task exists — 53 of 54 sources in the production estate are
+    /// synchronous — so a <c>Task.WhenAll</c> over it yields exactly zero parallelism. Splitting
+    /// the fetch out is the only shape that puts the external wait somewhere it can overlap, and
+    /// measurement says the external wait is 95.4–97.9 % of a cycle.</para>
+    ///
+    /// <para><b>What a fetch may do:</b> open its own source connection, run its query, and drain
+    /// the result into memory. <b>What it may not do:</b> touch the store, in any way. It gets a
+    /// <see cref="SnapshotSourceFetchContext"/>, which has no store on it — the restriction is the
+    /// type, not a rule to remember. The <see cref="SnapshotSourceFetch"/> it returns carries a
+    /// delegate the SERIAL drain runs with the store, and that delegate is where staging, hashing,
+    /// merging, the run record and any source stamp happen.</para>
+    ///
+    /// <para>Set this, <see cref="Ingest"/> <b>or</b> <see cref="IngestAsync"/> — exactly one; the
+    /// registry validates all three.</para>
+    /// </summary>
+    public Func<SnapshotSourceFetchContext, SnapshotSourceFetch>? Fetch { get; init; }
+
+    /// <summary>
+    /// Sources sharing this key never fetch more than
+    /// <see cref="SnapshotIngestDispatcherOptions.MaxPerConcurrencyGroup"/> at a time. Null opts
+    /// out and leaves the source bounded only by the degree.
+    ///
+    /// <para><b>This is the remote box, not the table.</b> Two sources contend when they query the
+    /// same server — one dealer's 1C box, one app database — which is invisible to the engine: it
+    /// never sees a connection string, and <see cref="SourceScope"/> is null for all sixteen app
+    /// tables. So the host names the group. Registry order puts a dealer's four view families
+    /// next to each other, which means a bare degree cap would point four concurrent aggregate
+    /// queries at one dealer by construction; those boxes being slow is the premise of the whole
+    /// fan-out, so making them slower is not a silent trade.</para>
+    /// </summary>
+    public string? ConcurrencyGroup { get; init; }
+
     /// <summary>True when this source was built with the synchronous <see cref="Ingest"/> delegate.</summary>
     public bool HasSynchronousIngest { get; private set; }
 
     /// <summary>
-    /// Runs whichever ingest delegate this source declares. The dispatcher calls this, and so
-    /// should any harness that fans out over a registry — it is the only form that works for every
-    /// source kind.
+    /// Runs whichever ingest delegate this source declares. The dispatcher calls this for the
+    /// one-phase forms, and so should any caller that does not fan out — it is the only form that
+    /// works for every source kind.
+    ///
+    /// <para>A two-phase source runs both halves here, back to back on the calling thread, which
+    /// is exactly what it did before it was split. That is what lets every existing caller —
+    /// harnesses, admin force-runs, drills, tests — keep working unchanged while the dispatcher is
+    /// the only thing that overlaps anything.</para>
     /// </summary>
     public Task<SnapshotMergeResult> RunIngestAsync(SnapshotSourceContext context) =>
         IngestAsync is { } asynchronous
             ? asynchronous(context)
-            : Task.FromResult(Ingest(context));
+            : Task.FromResult(RunIngestInline(context));
+
+    private SnapshotMergeResult RunIngestInline(SnapshotSourceContext context)
+    {
+        if (Fetch is not { } fetch)
+            return Ingest(context);
+
+        var fetched = fetch(new SnapshotSourceFetchContext { CancellationToken = context.CancellationToken });
+        return fetched.Drain(context);
+    }
 
     /// <summary>
     /// Non-null when this source READS a Cosmos container, naming which one. Declarative on

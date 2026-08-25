@@ -34,20 +34,32 @@ public sealed class SourceRegistry
             if (!byKey.TryAdd(source.Key, source))
                 throw new ArgumentException($"Duplicate source key '{source.Key}'.", nameof(sources));
 
-            // Exactly one ingest delegate. Neither is a source that is scheduled and then does
-            // nothing; both is a source whose behaviour depends on which branch the dispatcher
-            // happens to prefer. Validated at construction, so the answer arrives at startup
-            // rather than on the first cadence tick.
-            switch (source.HasSynchronousIngest, source.IngestAsync is not null)
+            // Exactly one ingest delegate. None is a source that is scheduled and then does
+            // nothing; more than one is a source whose behaviour depends on which branch the
+            // dispatcher happens to prefer. Validated at construction, so the answer arrives at
+            // startup rather than on the first cadence tick.
+            //
+            // THREE states, not two, and the widening had to land BEFORE any source changed form:
+            // a source adopting Fetch sets neither of the old two, so against the old table every
+            // migrated source would have failed at startup reading as "it has neither".
+            var declared = new List<string>(3);
+            if (source.HasSynchronousIngest) declared.Add(nameof(SnapshotSource.Ingest));
+            if (source.IngestAsync is not null) declared.Add(nameof(SnapshotSource.IngestAsync));
+            if (source.Fetch is not null) declared.Add(nameof(SnapshotSource.Fetch));
+
+            if (declared.Count != 1)
             {
-                case (false, false):
-                    throw new ArgumentException(
-                        $"Source '{source.Key}': set exactly one of Ingest or IngestAsync — it has neither.",
-                        nameof(sources));
-                case (true, true):
-                    throw new ArgumentException(
-                        $"Source '{source.Key}': set exactly one of Ingest or IngestAsync — it has both.",
-                        nameof(sources));
+                throw new ArgumentException(
+                    $"Source '{source.Key}': set exactly one of Ingest, IngestAsync or Fetch — it has " +
+                    (declared.Count == 0 ? "none." : $"{declared.Count} ({string.Join(", ", declared)})."),
+                    nameof(sources));
+            }
+
+            if (source.ConcurrencyGroup is not null && string.IsNullOrWhiteSpace(source.ConcurrencyGroup))
+            {
+                throw new ArgumentException(
+                    $"Source '{source.Key}': concurrency group must be non-blank when present; use null to opt out.",
+                    nameof(sources));
             }
 
             if (source.CosmosRead is { } cosmosRead

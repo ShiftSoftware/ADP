@@ -37,6 +37,13 @@ public sealed class SqlViewSnapshotIngestorOptions
 /// resolved once), computes the uniform <see cref="RowHash"/> in-database, then hands off to
 /// <see cref="SnapshotMerge"/>. Change detection is the hash diff — the source needs no
 /// change column and is never written to.
+///
+/// <para><b>Two entry shapes, same downstream code.</b> <see cref="Ingest(SnapshotStore, DbConnection, SqlViewSnapshotIngestorOptions)"/>
+/// does the whole thing on one thread. <see cref="Fetch(Func{DbConnection}, SqlViewSnapshotIngestorOptions, SnapshotSourceFetchContext)"/>
+/// splits it at the only seam that pays: the remote read, measured at 95.4–97.9 % of an ingest
+/// cycle, runs on a worker; staging, the in-DB hash and the merge stay on the store's single
+/// connection. Both converge on the reader entry point below, so there is one implementation of
+/// the behaviour and two ways to schedule it.</para>
 /// </summary>
 public static class SqlViewSnapshotIngestor
 {
@@ -53,6 +60,69 @@ public static class SqlViewSnapshotIngestor
         command.CommandTimeout = options.CommandTimeoutSeconds;
 
         using var reader = command.ExecuteReader();
+        return Ingest(store, reader, options);
+    }
+
+    /// <summary>
+    /// The parallel half of the two-phase form: connect, execute, drain into memory, and hand the
+    /// buffer to the serial drain. <b>Nothing here touches the store</b>, which is what makes it
+    /// safe to run several of these at once while merges continue on the store's one connection.
+    ///
+    /// <para><b>The source connection closes here, not after the merge.</b> The one-phase form
+    /// holds it open through staging, hashing and the merge, because the appender reads straight
+    /// off the live reader. Under fetch-ahead the connection is done the moment the rows are in
+    /// hand — strictly gentler on a dealer box than today, quite apart from the parallelism.</para>
+    /// </summary>
+    /// <param name="connect">
+    /// Builds the source connection. A factory rather than a connection, because the fetch runs on
+    /// a worker thread and must own the connection's whole life there — including disposing it
+    /// when the fetch throws.
+    /// </param>
+    public static SnapshotSourceFetch Fetch(
+        Func<DbConnection> connect,
+        SqlViewSnapshotIngestorOptions options,
+        SnapshotSourceFetchContext context)
+    {
+        var buffered = Fetch(connect, options, context.CancellationToken, context.RowsBuffered);
+        return SnapshotSourceFetch.Staged(
+            buffered.RowCount,
+            drain => Ingest(drain.Store, buffered, options));
+    }
+
+    /// <summary>
+    /// Connect, execute and drain into memory. Split out from the overload above so a caller can
+    /// hold the buffer on its own — tests and diagnostics want the row set, not the carrier.
+    /// </summary>
+    public static BufferedRowSet Fetch(
+        Func<DbConnection> connect,
+        SqlViewSnapshotIngestorOptions options,
+        CancellationToken cancellationToken = default,
+        Action<int>? onRowsBuffered = null)
+    {
+        using var sourceConnection = connect();
+        if (sourceConnection.State != ConnectionState.Open)
+            sourceConnection.Open();
+
+        using var command = sourceConnection.CreateCommand();
+        command.CommandText = options.SelectSql;
+        command.CommandTimeout = options.CommandTimeoutSeconds;
+
+        using var reader = command.ExecuteReader();
+        return BufferedRowSet.Drain(reader, cancellationToken, onRowsBuffered);
+    }
+
+    /// <summary>
+    /// The serial half of the two-phase form. It is the reader entry point below, over
+    /// <paramref name="buffered"/> — deliberately the SAME code path, so a two-phase source and a
+    /// one-phase source resolve ordinals identically, fail on a missing column identically, and
+    /// write identical run records.
+    /// </summary>
+    public static SnapshotMergeResult Ingest(
+        SnapshotStore store,
+        BufferedRowSet buffered,
+        SqlViewSnapshotIngestorOptions options)
+    {
+        using var reader = buffered.CreateReader();
         return Ingest(store, reader, options);
     }
 

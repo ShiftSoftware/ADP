@@ -260,7 +260,8 @@ public class SourceRegistryTests
             },
         ]));
 
-        Assert.Contains("exactly one of Ingest or IngestAsync", exception.Message);
+        Assert.Contains("exactly one of Ingest, IngestAsync or Fetch", exception.Message);
+        Assert.Contains("it has none", exception.Message);
     }
 
     [Fact]
@@ -269,7 +270,69 @@ public class SourceRegistryTests
         var exception = Assert.Throws<ArgumentException>(() =>
             new SourceRegistry([AsyncSource("both", alsoSynchronous: true)]));
 
-        Assert.Contains("it has both", exception.Message);
+        Assert.Contains("it has 2 (Ingest, IngestAsync)", exception.Message);
+    }
+
+    // ---- The third state: a two-phase source ----------------------------------------------------
+    //
+    // The truth table above was widened from two states to three BEFORE any source adopted Fetch,
+    // and that order is load-bearing: against the old table a two-phase source sets neither of the
+    // old delegates, so every migrated source would have read as "it has neither" and thrown at
+    // startup.
+
+    private static SnapshotSource FetchSource(string key, bool alsoSynchronous = false) => new()
+    {
+        Key = key,
+        RecordIdentity = SourceRecordIdentityDescriptor.DatabaseKey(WidgetTable.Columns[0].Name),
+        Table = WidgetTable,
+        Cadence = TimeSpan.FromMinutes(1),
+        Fetch = _ => SnapshotSourceFetch.Terminal(
+            _ => new SnapshotMergeResult($"{key}-run", SnapshotMergeStatus.SkippedSourceUnchanged, 0, 0, 0, 0)),
+        Ingest = alsoSynchronous
+            ? _ => throw new InvalidOperationException("Not meant to run in these tests.")
+            : null!,
+    };
+
+    [Fact]
+    public void AFetchOnlySource_IsValid()
+    {
+        var registry = new SourceRegistry([FetchSource("sql-thing")]);
+
+        var source = registry["sql-thing"];
+        Assert.False(source.HasSynchronousIngest);
+        Assert.Null(source.IngestAsync);
+        Assert.NotNull(source.Fetch);
+    }
+
+    [Fact]
+    public void ASourceWithBothFetchAndIngest_IsRejected()
+    {
+        var exception = Assert.Throws<ArgumentException>(() =>
+            new SourceRegistry([FetchSource("both", alsoSynchronous: true)]));
+
+        Assert.Contains("it has 2 (Ingest, Fetch)", exception.Message);
+    }
+
+    [Fact]
+    public void ABlankConcurrencyGroup_IsRejected()
+    {
+        // Null opts out; whitespace is a typo that would silently give the source a group of its own
+        // and quietly stop capping the remote box it was meant to share.
+        var exception = Assert.Throws<ArgumentException>(() => new SourceRegistry(
+        [
+            new SnapshotSource
+            {
+                Key = "sql-thing",
+                RecordIdentity = SourceRecordIdentityDescriptor.DatabaseKey(WidgetTable.Columns[0].Name),
+                Table = WidgetTable,
+                Cadence = TimeSpan.FromMinutes(1),
+                ConcurrencyGroup = "   ",
+                Fetch = _ => SnapshotSourceFetch.Terminal(
+                    _ => new SnapshotMergeResult("run", SnapshotMergeStatus.SkippedSourceUnchanged, 0, 0, 0, 0)),
+            },
+        ]));
+
+        Assert.Contains("concurrency group must be non-blank", exception.Message);
     }
 
     [Fact]
@@ -279,6 +342,15 @@ public class SourceRegistryTests
         var exception = Assert.Throws<InvalidOperationException>(() => AsyncSource("cosmos-thing").Ingest);
 
         Assert.Contains("declares IngestAsync", exception.Message);
+        Assert.Contains(nameof(SnapshotSource.RunIngestAsync), exception.Message);
+    }
+
+    [Fact]
+    public void ReadingIngest_OnATwoPhaseSource_NamesTheOtherMistake()
+    {
+        var exception = Assert.Throws<InvalidOperationException>(() => FetchSource("sql-thing").Ingest);
+
+        Assert.Contains("declares Fetch", exception.Message);
         Assert.Contains(nameof(SnapshotSource.RunIngestAsync), exception.Message);
     }
 
