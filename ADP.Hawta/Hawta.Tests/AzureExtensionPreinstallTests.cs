@@ -4,7 +4,7 @@ using Xunit;
 namespace ShiftSoftware.ADP.Hawta.Tests;
 
 /// <summary>
-/// <see cref="SnapshotStore.PreinstallAzureExtension"/> — the fix for DuckDB's non-atomic extension
+/// <see cref="SnapshotStore.ProvisionAzureExtension"/> — the fix for DuckDB's non-atomic extension
 /// install (duckdb/duckdb#3947) and the race between concurrent first touches
 /// (duckdb/duckdb#12589, open upstream).
 ///
@@ -150,6 +150,104 @@ public class AzureExtensionPreinstallTests
         finally
         {
             TryDelete(extensionDirectory);
+        }
+    }
+
+    /// <summary>
+    /// Copies a warmed extension cache into a stand-in "deployment" tree, preserving the
+    /// version/platform layout DuckDB resolves by. Returns null when there was nothing to copy.
+    /// </summary>
+    private static string? ShippedTreeFrom(string warmedCache, string destination)
+    {
+        if (!AzureExtensionPresent(warmedCache))
+            return null;
+
+        foreach (var source in Directory.GetFiles(warmedCache, "*", SearchOption.AllDirectories))
+        {
+            var relative = Path.GetRelativePath(warmedCache, source);
+            var target = Path.Combine(destination, relative);
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            File.Copy(source, target, overwrite: true);
+        }
+
+        return destination;
+    }
+
+    /// <summary>
+    /// Shipped mode. The extension comes from the deployment, so nothing is downloaded and nothing
+    /// is written — which is what makes the concurrent race impossible rather than merely unlikely.
+    /// </summary>
+    [Fact]
+    public void AShippedExtensionTree_IsLoadedInPlace_AndNothingIsWritten()
+    {
+        var warmed = TempDirectory("warm");
+        var deployed = TempDirectory("deployed");
+        var writable = TempDirectory("writable");
+        try
+        {
+            using (SnapshotStore.Open(new SnapshotStoreOptions
+            {
+                DatabasePath = ":memory:",
+                ExtensionDirectory = warmed,
+                AzureConnectionString = AnyCredential,
+            }))
+            {
+            }
+
+            Assert.SkipWhen(
+                ShippedTreeFrom(warmed, deployed) is null,
+                "The azure extension could not be installed (no network and no cached copy).");
+
+            using var store = SnapshotStore.Open(new SnapshotStoreOptions
+            {
+                DatabasePath = ":memory:",
+                ExtensionDirectory = writable,
+                ExtensionDirectories = new[] { deployed },
+                AzureConnectionString = AnyCredential,
+            });
+
+            // Autoinstall MUST be off here: with it on, DuckDB downloads before it will look at
+            // extension_directories, which would make the shipped copy pointless.
+            Assert.Equal("false", Setting(store, "autoinstall_known_extensions"));
+
+            // The whole point — the writable cache is untouched, so there is no write to race.
+            Assert.Empty(Directory.GetFiles(writable, "*", SearchOption.AllDirectories));
+        }
+        finally
+        {
+            TryDelete(warmed);
+            TryDelete(deployed);
+            TryDelete(writable);
+        }
+    }
+
+    /// <summary>
+    /// A deployment whose shipped tree is missing, built for the wrong platform, or pinned to a
+    /// different DuckDB version must degrade to a slower cold start — never to "no blob access".
+    /// Autoinstall has to be put back, or the fetch it falls through to cannot work either.
+    /// </summary>
+    [Fact]
+    public void AnUnusableShippedTree_FallsBackToFetching_AndRestoresAutoinstall()
+    {
+        var empty = TempDirectory("empty-deploy");
+        var writable = TempDirectory("fallback-writable");
+        try
+        {
+            using var store = SnapshotStore.Open(new SnapshotStoreOptions
+            {
+                DatabasePath = ":memory:",
+                ExtensionDirectory = writable,
+                ExtensionDirectories = new[] { empty },
+                AzureConnectionString = AnyCredential,
+            });
+
+            // Restored, so the fetch path below it is actually usable.
+            Assert.Equal("true", Setting(store, "autoinstall_known_extensions"));
+        }
+        finally
+        {
+            TryDelete(empty);
+            TryDelete(writable);
         }
     }
 

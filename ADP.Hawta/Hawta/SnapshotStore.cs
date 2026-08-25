@@ -36,7 +36,8 @@ public sealed class SnapshotStore : IDisposable
         {
             connection.Open();
             ApplyExtensionDirectory(connection, options.ExtensionDirectory);
-            PreinstallAzureExtension(connection, options.AzureConnectionString);
+            ApplyExtensionDirectories(connection, options.ExtensionDirectories);
+            ProvisionAzureExtension(connection, options.AzureConnectionString, options.ExtensionDirectories);
             ApplyAzureCredential(connection, options.AzureConnectionString);
             var store = new SnapshotStore(connection);
             store.Bootstrap(options.SchemaVersion);
@@ -69,7 +70,38 @@ public sealed class SnapshotStore : IDisposable
     }
 
     /// <summary>
-    /// Installs the <c>azure</c> extension ONCE, here, so that nothing later has to race for it.
+    /// Adds read-only search directories for extensions that shipped with the deployment. Distinct
+    /// from <see cref="ApplyExtensionDirectory"/>, which names the ONE writable directory installs
+    /// are cached into; this names directories DuckDB may only read.
+    /// </summary>
+    internal static void ApplyExtensionDirectories(
+        DuckDBConnection connection, IReadOnlyList<string>? extensionDirectories)
+    {
+        if (extensionDirectories is not { Count: > 0 })
+            return;
+
+        var present = extensionDirectories
+            .Where(directory => !string.IsNullOrWhiteSpace(directory))
+            .Select(directory => $"'{directory.Replace("'", "''")}'")
+            .ToArray();
+
+        if (present.Length == 0)
+            return;
+
+        using var command = connection.CreateCommand();
+        command.CommandText = $"SET extension_directories = [{string.Join(", ", present)}]";
+        command.ExecuteNonQuery();
+    }
+
+    private static void SetAutoinstall(DuckDBConnection connection, bool enabled)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = $"SET autoinstall_known_extensions = {(enabled ? "true" : "false")}";
+        command.ExecuteNonQuery();
+    }
+
+    /// <summary>
+    /// Provisions the <c>azure</c> extension ONCE, here, so that nothing later has to race for it.
     ///
     /// <para><b>The problem.</b> <c>autoinstall_known_extensions</c> defaults to true, so the first
     /// <c>az://</c> touch on a cold extension directory triggers a ~28 MB download. That download is
@@ -105,11 +137,44 @@ public sealed class SnapshotStore : IDisposable
     /// store with no azure connection string is never going to touch <c>az://</c>, and making it
     /// install an extension it will not use would newly break opening offline with a cold cache.</para>
     /// </summary>
-    internal static void PreinstallAzureExtension(DuckDBConnection connection, string? azureConnectionString)
+    internal static void ProvisionAzureExtension(
+        DuckDBConnection connection,
+        string? azureConnectionString,
+        IReadOnlyList<string>? shippedDirectories)
     {
         if (string.IsNullOrWhiteSpace(azureConnectionString))
             return;
 
+        // ---- Shipped mode. Nothing is downloaded and nothing is written.
+        if (shippedDirectories is { Count: > 0 })
+        {
+            try
+            {
+                // REQUIRED, and this is the one place it earns its keep. With autoinstall on,
+                // DuckDB tries to DOWNLOAD before it will consider extension_directories — measured:
+                // `INSTALL azure` with a shipped tree present does not short-circuit, and an
+                // autoloaded first az:// touch reports "Extension Autoloading Error ... trying to
+                // automatically install". Off, the same statements resolve from the shipped tree.
+                SetAutoinstall(connection, enabled: false);
+
+                // Explicit rather than left to autoload, so a shipped tree that is missing, of the
+                // wrong DuckDB version, or built for the wrong platform fails HERE — where the
+                // fallback below can still save the run — instead of at some later az:// read.
+                using var load = connection.CreateCommand();
+                load.CommandText = "LOAD azure";
+                load.ExecuteNonQuery();
+                return;
+            }
+            catch
+            {
+                // The shipped tree could not satisfy the load. Put autoinstall back exactly as it
+                // was and fall through to fetching, so a version or platform mismatch in the
+                // deployment degrades to "slower cold start" rather than "no blob access".
+                try { SetAutoinstall(connection, enabled: true); } catch { /* nothing left to try */ }
+            }
+        }
+
+        // ---- Fetch mode. One serial install, best effort.
         try
         {
             using var install = connection.CreateCommand();

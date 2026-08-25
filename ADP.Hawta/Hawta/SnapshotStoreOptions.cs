@@ -48,6 +48,35 @@ public sealed class SnapshotStoreOptions
     public string? ExtensionDirectory { get; init; }
 
     /// <summary>
+    /// Read-only directories holding extensions that SHIPPED with the deployment, searched instead
+    /// of downloading. Set this and the estate never fetches an extension at runtime at all.
+    ///
+    /// <para><b>Layout is load-bearing</b>, and DuckDB does not guess:
+    /// <c>&lt;directory&gt;/&lt;duckdb-version&gt;/&lt;platform&gt;/&lt;name&gt;.duckdb_extension</c>,
+    /// e.g. <c>.../v1.5.5/windows_amd64/azure.duckdb_extension</c>. The version must track the
+    /// <c>DuckDB.NET.Data.Full</c> pin and the platform must match the machine that RUNS the app,
+    /// not the one that builds it.</para>
+    ///
+    /// <para><b>Why this is better than a writable cache, measured.</b> Under eight concurrent cold
+    /// first touches, a downloading cache was 1/8 with a stranded 29 MB temp file; a shipped tree is
+    /// 8/8 and the directory still holds exactly the file that was deployed. Not because a race was
+    /// won — because there is no write to race. It also removes the runtime dependency on
+    /// <c>extensions.duckdb.org</c>: verified by pointing the extension repository at an unreachable
+    /// host and reading <c>az://</c> anyway.</para>
+    ///
+    /// <para><b>Setting this changes how <see cref="SnapshotStore.Open"/> provisions the extension</b>
+    /// — see <see cref="SnapshotStore.ProvisionAzureExtension"/>. In particular it must disable
+    /// <c>autoinstall_known_extensions</c>, because with autoinstall on DuckDB tries to DOWNLOAD
+    /// before it will look here, which would make the shipped copy pointless. Measured, not
+    /// assumed: <c>INSTALL azure</c> with a shipped tree present does not short-circuit, it
+    /// downloads.</para>
+    ///
+    /// <para>Null or empty (the default) keeps the download-on-demand behaviour, which is what a
+    /// dev machine wants.</para>
+    /// </summary>
+    public IReadOnlyList<string>? ExtensionDirectories { get; init; }
+
+    /// <summary>
     /// Azure Storage connection string, when the published tier lives in a blob container. Null for
     /// a local or SMB publish location.
     ///

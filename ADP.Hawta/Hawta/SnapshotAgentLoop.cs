@@ -17,6 +17,13 @@ public sealed class SnapshotAgentOptions
     public string? ExtensionDirectory { get; init; }
 
     /// <summary>
+    /// Read-only directories holding extensions that shipped with the deployment. Set this and the
+    /// agent never fetches an extension at runtime.
+    /// See <see cref="SnapshotStoreOptions.ExtensionDirectories"/> for the required layout.
+    /// </summary>
+    public IReadOnlyList<string>? ExtensionDirectories { get; init; }
+
+    /// <summary>
     /// Azure Storage connection string for DuckDB's own <c>az://</c> access, when
     /// <see cref="PublishStore"/> is a container. Set it from the same configuration value as the
     /// store's — the two halves authenticate independently and configuring only one fails at the
@@ -541,6 +548,7 @@ public sealed class SnapshotAgentLoop : IDisposable
             {
                 DatabasePath = options.WriteDatabasePath,
                 ExtensionDirectory = options.ExtensionDirectory,
+                ExtensionDirectories = options.ExtensionDirectories,
                 AzureConnectionString = options.AzureConnectionString,
             });
         }
@@ -554,6 +562,7 @@ public sealed class SnapshotAgentLoop : IDisposable
             {
                 DatabasePath = options.WriteDatabasePath,
                 ExtensionDirectory = options.ExtensionDirectory,
+                ExtensionDirectories = options.ExtensionDirectories,
                 AzureConnectionString = options.AzureConnectionString,
             });
             existed = false;
@@ -573,6 +582,7 @@ public sealed class SnapshotAgentLoop : IDisposable
             {
                 DatabasePath = options.WriteDatabasePath,
                 ExtensionDirectory = options.ExtensionDirectory,
+                ExtensionDirectories = options.ExtensionDirectories,
                 AzureConnectionString = options.AzureConnectionString,
             });
             existed = false;
