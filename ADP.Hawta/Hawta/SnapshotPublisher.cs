@@ -185,6 +185,15 @@ public static class SnapshotPublisher
         }
         EnsureGlobalSequenceContract(store, options.Tables);
 
+        // Every path the baseline could ask about, resolved once. Filling is lazy — see
+        // ParquetFooterProbe — so a publish that reuses nothing never pays for this.
+        var footerProbe = new ParquetFooterProbe(
+            store,
+            baseline.Values
+                .SelectMany(entry => entry.Resolve(publishStore.Root))
+                .Distinct(StringComparer.Ordinal)
+                .ToArray());
+
         var exported = new List<string>();
         var reused = new List<string>();
         var manifest = new List<PublishedTableManifest>();
@@ -234,7 +243,7 @@ public static class SnapshotPublisher
                 // manifests still hold a fallback — not when hydration needs it. Measured at
                 // a footer read + row count (0.12 MiB / 2 requests on the large catalog
                 // table) — cheap at any cadence.
-                if (!ParquetIsIntact(store, baselineEntry.Resolve(publishStore.Root), baselineEntry.RowCount))
+                if (!footerProbe.IsIntact(baselineEntry.Resolve(publishStore.Root), baselineEntry.RowCount))
                 {
                     throw new InvalidDataException(
                         $"Table '{table.Name}' is Deferred and its published copy " +
@@ -259,7 +268,7 @@ public static class SnapshotPublisher
                 && baselineEntry is not null
                 && baselineEntry.RowCount == signature.RowCount
                 && baselineEntry.StateHash == signature.StateHash
-                && ParquetIsIntact(store, baselineEntry.Resolve(publishStore.Root), baselineEntry.RowCount);
+                && footerProbe.IsIntact(baselineEntry.Resolve(publishStore.Root), baselineEntry.RowCount);
 
             if (upToDate)
             {
@@ -622,6 +631,100 @@ public static class SnapshotPublisher
                 .Order(StringComparer.Ordinal);
 
         return Identities(baseline).SequenceEqual(Identities(current), StringComparer.Ordinal);
+    }
+
+    /// <summary>
+    /// One batched footer probe for a whole publish, instead of one statement per table.
+    ///
+    /// <para><b>Why this pays, measured.</b> A <c>parquet_file_metadata</c> probe against blob costs
+    /// ~590 ms <i>fixed per file, regardless of size</i> — a 5 KB parquet and a 101 MB one price the
+    /// same, because the cost is a statement round trip and not a read. Probing 34 published tables
+    /// one statement at a time cost <b>26.8 s</b>; the identical set in ONE statement cost
+    /// <b>9.3 s</b>, returning identical row totals. That is the whole win: round trips, not reads.
+    /// (A glob over the prefix was faster still at ~1.0 s, but it cannot be scoped to a specific
+    /// baseline's paths, which is what correctness here requires.)</para>
+    ///
+    /// <para><b>Lazily filled, deliberately.</b> A publish where every table's signature moved never
+    /// reaches a reuse probe at all, and must not pay for one — so nothing is fetched until the
+    /// first probe actually asks. The cost is then paid once for the whole publish.</para>
+    ///
+    /// <para><b>It can only ever be an optimisation.</b> A batched statement throws in its entirety
+    /// if a single path is missing — and a missing path is precisely the torn-copy case this probe
+    /// exists to detect, so treating a failed batch as "torn" would refuse healthy publishes. Every
+    /// failure path therefore falls back to the original per-path probe: a batch that throws, a
+    /// path absent from the map, an empty candidate set. The verdict this returns is always the
+    /// verdict <see cref="ParquetIsIntact"/> would have returned.</para>
+    /// </summary>
+    internal sealed class ParquetFooterProbe(SnapshotStore store, IReadOnlyList<string> candidatePaths)
+    {
+        private Dictionary<string, long>? rowsByPath;
+        private bool batchUnavailable;
+
+        internal bool IsIntact(IReadOnlyList<string> parquetPaths, long expectedRows)
+        {
+            if (parquetPaths.Count == 0)
+                return false;
+
+            if (!batchUnavailable)
+            {
+                rowsByPath ??= TryFill();
+
+                if (rowsByPath is not null)
+                {
+                    var total = 0L;
+                    var covered = true;
+
+                    foreach (var path in parquetPaths)
+                    {
+                        if (!rowsByPath.TryGetValue(path, out var rows))
+                        {
+                            covered = false;
+                            break;
+                        }
+
+                        total += rows;
+                    }
+
+                    if (covered)
+                        return total == expectedRows;
+                }
+            }
+
+            return ParquetIsIntact(store, parquetPaths, expectedRows);
+        }
+
+        private Dictionary<string, long>? TryFill()
+        {
+            if (candidatePaths.Count == 0)
+            {
+                batchUnavailable = true;
+                return null;
+            }
+
+            try
+            {
+                // file_name comes back byte-identical to the path passed in (verified against the
+                // blob tier), so the map can be keyed on it directly with no normalisation.
+                var list = string.Join(", ", candidatePaths.Select(path => $"'{EscapePath(path)}'"));
+                using var command = store.Connection.CreateCommand();
+                command.CommandText = $"SELECT file_name, num_rows FROM parquet_file_metadata([{list}])";
+
+                var map = new Dictionary<string, long>(StringComparer.Ordinal);
+                using var reader = command.ExecuteReader();
+                while (reader.Read())
+                    map[reader.GetString(0)] = reader.GetInt64(1);
+
+                return map;
+            }
+            catch
+            {
+                // One unreadable path fails the whole statement. That is not a verdict about any
+                // particular table, so it must not become one — give up on batching for the rest of
+                // this publish and let every caller take the per-path route.
+                batchUnavailable = true;
+                return null;
+            }
+        }
     }
 
     /// <summary>Footer-only probe: every file parses as parquet and together they carry the expected row count.</summary>

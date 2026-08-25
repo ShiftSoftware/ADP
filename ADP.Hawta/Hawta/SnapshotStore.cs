@@ -36,6 +36,7 @@ public sealed class SnapshotStore : IDisposable
         {
             connection.Open();
             ApplyExtensionDirectory(connection, options.ExtensionDirectory);
+            PreinstallAzureExtension(connection, options.AzureConnectionString);
             ApplyAzureCredential(connection, options.AzureConnectionString);
             var store = new SnapshotStore(connection);
             store.Bootstrap(options.SchemaVersion);
@@ -65,6 +66,69 @@ public sealed class SnapshotStore : IDisposable
         using var command = connection.CreateCommand();
         command.CommandText = $"SET extension_directory = '{extensionDirectory.Replace("'", "''")}'";
         command.ExecuteNonQuery();
+    }
+
+    /// <summary>
+    /// Installs the <c>azure</c> extension ONCE, here, so that nothing later has to race for it.
+    ///
+    /// <para><b>The problem.</b> <c>autoinstall_known_extensions</c> defaults to true, so the first
+    /// <c>az://</c> touch on a cold extension directory triggers a ~28 MB download. That download is
+    /// <b>not atomic</b> (duckdb/duckdb#3947), and concurrent first touches race
+    /// (duckdb/duckdb#12589, still open upstream). Measured on this exact build: eight connections
+    /// released simultaneously into one empty extension directory left <b>one</b> survivor, seven
+    /// failures ("Failed to create directory …", "Could not move file: Access is denied"), and a
+    /// stranded 29 MB <c>.tmp-&lt;guid&gt;</c> file that nothing ever collects. After this change the
+    /// same race is 8/8 with no leak.</para>
+    ///
+    /// <para><b>This is not only a fan-out concern.</b> The host points the extension directory at
+    /// <c>%HOME%/data/duckdb-extensions</c> on App Service specifically so it survives an instance
+    /// move — and <c>%HOME%</c> there is Azure Files, <b>shared by every instance of the app</b>. Two
+    /// instances cold-starting against an empty directory (first deploy at &gt;1 instance, a
+    /// scale-out, a slot swap) is the same race with no fan-out involved.</para>
+    ///
+    /// <para><b>Why it is safe on the hot path.</b> Open runs on every start, so this must not add a
+    /// per-start network dependency, and it does not: a warm <c>INSTALL</c> costs <b>1–4 ms</b> and
+    /// succeeds even with the extension repository unreachable, because it short-circuits on the
+    /// on-disk cache. Only the cold install pays (~2 s), and that is the same download the first
+    /// <c>az://</c> touch would have made anyway — moved earlier, where it is serial.</para>
+    ///
+    /// <para><b>Guarded on the credential</b>, exactly like <see cref="ApplyAzureCredential"/>: a
+    /// store with no azure connection string is never going to touch <c>az://</c>, and making it
+    /// install an extension it will not use would newly break opening offline with a cold cache.</para>
+    /// </summary>
+    internal static void PreinstallAzureExtension(DuckDBConnection connection, string? azureConnectionString)
+    {
+        if (string.IsNullOrWhiteSpace(azureConnectionString))
+            return;
+
+        try
+        {
+            using var install = connection.CreateCommand();
+            install.CommandText = "INSTALL azure";
+            install.ExecuteNonQuery();
+        }
+        catch
+        {
+            // Best effort, and deliberately silent. If the install could not happen — offline with a
+            // cold cache, say — leaving autoinstall ON reproduces the behaviour this estate had
+            // before this method existed: the first az:// touch tries, and reports its own error at
+            // the point of use. Turning autoinstall off here instead would convert a recoverable
+            // "download it when you need it" into a hard failure at a site that has no context to
+            // explain it. No path is left worse than it was.
+            return;
+        }
+
+        // The extension is now on disk, so nothing needs to install one again. Closing the door is
+        // what actually removes the race — a cached extension still LOADS, because
+        // autoload_known_extensions stays on.
+        //
+        // GLOBAL scope, measured: this and extension_directory both apply to the database INSTANCE,
+        // and DuckDB caches one instance per database path. So every later connection opened against
+        // the same Data Source — which is how a fan-out must open them, since DuckDBConnection
+        // .Duplicate() refuses file-backed connections — inherits this without restating it.
+        using var disable = connection.CreateCommand();
+        disable.CommandText = "SET autoinstall_known_extensions = false";
+        disable.ExecuteNonQuery();
     }
 
     /// <summary>
