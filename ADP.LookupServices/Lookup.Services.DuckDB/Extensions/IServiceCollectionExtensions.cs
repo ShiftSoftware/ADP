@@ -69,7 +69,7 @@ public static class IServiceCollectionExtensions
         services.RemoveAll<ServiceMenuCosmosService>();
     }
 
-    // No registration for DuckDBServiceMenuSyncService yet, on purpose: the sync is a placeholder
-    // (NotImplementedException), and a resolvable registration would make a host believe the feature
-    // exists. The real sync brings its own registration when it lands.
+    // The sync that POPULATES the menu tables is not here: it is ServiceMenuDuckDBSyncService in the
+    // ShiftSoftware.ADP.Menus.Sync package (registered with AddServiceMenuDuckDBSync) — this
+    // package stays a pure read side, and lookup-only hosts never carry the sync engine's dependencies.
 }

@@ -1,7 +1,8 @@
-using System.Globalization;
+using System.Reflection;
 
 using DuckDB.NET.Data;
 using Microsoft.Azure.Cosmos;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using ShiftSoftware.ADP.Lookup.Services;
@@ -11,21 +12,26 @@ using ShiftSoftware.ADP.Lookup.Services.DuckDB.Extensions;
 using ShiftSoftware.ADP.Lookup.Services.Evaluators;
 using ShiftSoftware.ADP.Lookup.Services.Extensions;
 using ShiftSoftware.ADP.Lookup.Services.Services;
+using ShiftSoftware.ADP.Menus.Data.Entities;
 using ShiftSoftware.ADP.Menus.Generation;
-using ShiftSoftware.ADP.Models;
+using ShiftSoftware.ADP.Menus.Sync;
+using ShiftSoftware.ADP.Menus.Sync.Extensions;
+using ShiftSoftware.ADP.Models.Service.DuckDB;
 
 namespace ShiftSoftware.ADP.Menus.Tests;
 
 /// <summary>
-/// The menu lookup's DuckDB READER, end to end and offline: fixture documents are seeded into a real
-/// in-memory DuckDB database using the reader's own layout contract (<c>DuckDBServiceMenuSchema</c>,
-/// via InternalsVisibleTo — the seeder cannot drift from the DDL the reader expects), and come back
-/// through the real reader. The sync that will populate these tables in production is a separate,
-/// not-yet-implemented concern; these tests pin the contract it must produce.
+/// The menu lookup's DuckDB backend, end to end and offline: fixture ENTITY graphs go through the
+/// REAL sync (<c>ServiceMenuDuckDBSyncService</c>, only its SQL read stubbed through the seam it
+/// exposes for exactly this) into a real in-memory DuckDB database — normalized tables, production
+/// DDL, per-table watermarks — and come back through the real reader, which JOINS them back into the
+/// document shape at read time.
 ///
 /// <para>The test that matters most is DIFFERENTIAL, like this project's export-vs-lookup golden: the
-/// same documents served by the Cosmos path and by the seeded-DuckDB path must generate IDENTICAL
-/// menus — codes, descriptions, money. Storage is the only thing allowed to differ.</para>
+/// same entity graph served through the Cosmos path (projected by the production
+/// <c>MenuCosmosMappers</c>) and through the sync-then-join path must generate IDENTICAL menus —
+/// codes, descriptions, money. That comparison is what pins the reader's join-time assembly to the
+/// Cosmos projections' embed-time rules.</para>
 /// </summary>
 public class ServiceMenuDuckDBTests
 {
@@ -33,7 +39,7 @@ public class ServiceMenuDuckDBTests
     private const string ConnectionString =
         "AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==";
 
-    // ---- the Cosmos seam -----------------------------------------------------------------------------
+    // ---- the seams -----------------------------------------------------------------------------------
 
     private sealed class StubCosmosService : ServiceMenuCosmosService
     {
@@ -49,90 +55,217 @@ public class ServiceMenuDuckDBTests
             => Task.FromResult(read(basicModelCode));
     }
 
-    // ---- seeding: fixture documents → DuckDB tables, per the reader's own schema contract -------------
-
     /// <summary>
-    /// An in-memory store holding the given documents, laid out exactly as the schema contract
-    /// declares: tables from <c>DuckDBServiceMenuSchema.BuildCreateTableSql</c>, scalar columns native,
-    /// embedded shapes as JSON — what any future menu sync must produce for the reader to work.
+    /// The real sync with only its SQL side overridden, through the two seams it exposes for exactly
+    /// this: the source attach (a fixture-fed <c>SetupGetSourceBatchItems</c> instead of the EF Core
+    /// source adapter, honouring the watermark it is handed) and the prune's source-id read. Fixture
+    /// entity graphs are flattened into per-entity-type sets (deduplicated by id, since the graph
+    /// shares references) — so the whole engine-and-DuckDB flow, including incremental pulls and
+    /// full-reload prunes, runs for real against the fixture.
     /// </summary>
-    private static DuckDBConnection SeededStore(params ServiceMenuDocuments[] documentSets)
+    private sealed class StubSyncService : ServiceMenuDuckDBSyncService
     {
-        var connection = new DuckDBConnection("DataSource=:memory:");
-        connection.Open();
-        SeedInto(connection, documentSets);
-        return connection;
-    }
+        private readonly Dictionary<Type, List<object>> sources;
 
-    private static void SeedInto(DuckDBConnection connection, params ServiceMenuDocuments[] documentSets)
-    {
-        foreach (var (tableName, modelType) in DuckDBServiceMenuSchema.Tables)
-            Execute(connection, DuckDBServiceMenuSchema.BuildCreateTableSql(tableName, modelType));
+        /// <summary>The watermark each table's source attach was given, keyed by entity type name.</summary>
+        internal Dictionary<string, DateTimeOffset?> ObservedWatermarks { get; } = new(StringComparer.Ordinal);
 
-        foreach (var documents in documentSets)
+        internal StubSyncService(params MenuGraphFixture.Fixture[] fixtures)
         {
-            InsertRows(connection, ModelTypes.MenuVariant, documents.Variants);
-            InsertRows(connection, ModelTypes.MenuPeriod, documents.Periods);
-            InsertRows(connection, ModelTypes.MenuLabour, documents.Labours);
-            InsertRows(connection, ModelTypes.MenuItem, documents.Items);
+            sources = CollectEntities(fixtures);
         }
-    }
 
-    private static void InsertRows<T>(DuckDBConnection connection, string tableName, List<T> models)
-    {
-        var columns = DuckDBServiceMenuSchema.GetColumns(typeof(T));
-        var columnList = string.Join(", ", columns.Select(column => DuckDBServiceMenuSchema.QuoteIdentifier(column.Name)));
-
-        foreach (var model in models)
+        protected override void AttachSqlSource<TEntity, TRow>(
+            ShiftSoftware.ADP.SyncAgent.Services.Interfaces.ISyncEngine<TEntity, TRow> engine,
+            DbContext database,
+            DateTimeOffset? watermark)
         {
-            var values = string.Join(", ", columns.Select(column => Literal(column.GetValue(model), column.PropertyType)));
+            ObservedWatermarks[typeof(TEntity).Name] = watermark;
 
-            Execute(connection,
-                $"INSERT INTO {DuckDBServiceMenuSchema.QuoteIdentifier(tableName)} ({columnList}) VALUES ({values})");
+            var rows = sources.TryGetValue(typeof(TEntity), out var list) ? list : [];
+            var filtered = rows
+                .Where(row => watermark is null || GetLastSaveDate(row) >= watermark)
+                .Cast<TEntity>()
+                .ToList();
+
+            engine.SetupGetSourceBatchItems(input =>
+                new ValueTask<IEnumerable<TEntity?>?>(filtered
+                    .Skip((int)(input.Input.Status.CurrentStep * input.Input.Status.BatchSize))
+                    .Take((int)input.Input.Status.BatchSize)));
         }
-    }
 
-    private static string Literal(object? value, Type propertyType)
-    {
-        if (value is null)
-            return "NULL";
-
-        if (DuckDBServiceMenuSchema.IsJsonColumn(propertyType))
-            return $"'{DuckDBServiceMenuSchema.EscapeLiteral(Newtonsoft.Json.JsonConvert.SerializeObject(value))}'";
-
-        return value switch
+        protected override Task<List<long>> ReadSourceIdsAsync<TEntity>(
+            DbContext database, CancellationToken cancellationToken)
         {
-            string text => $"'{DuckDBServiceMenuSchema.EscapeLiteral(text)}'",
-            bool flag => flag ? "TRUE" : "FALSE",
-            IFormattable number => number.ToString(null, CultureInfo.InvariantCulture),
-            _ => value.ToString()!,
-        };
-    }
-
-    private static void Execute(DuckDBConnection connection, string sql)
-    {
-        using var command = connection.CreateCommand();
-        command.CommandText = sql;
-        command.ExecuteNonQuery();
+            var rows = sources.TryGetValue(typeof(TEntity), out var list) ? list : [];
+            return Task.FromResult(rows.Select(GetId).ToList());
+        }
     }
 
     // ---- fixture plumbing ----------------------------------------------------------------------------
 
-    /// <summary>
-    /// A second model's worth of documents: the fixture partition re-keyed onto another basic model
-    /// code, with every document id offset so the per-type PRIMARY KEY holds.
-    /// </summary>
-    private static ServiceMenuDocuments RekeyedCopy(string basicModelCode, string idPrefix)
+    /// <summary>Every entity the fixture graphs reach, flattened per type and deduplicated by id.</summary>
+    private static Dictionary<Type, List<object>> CollectEntities(params MenuGraphFixture.Fixture[] fixtures)
     {
-        var copy = MenuCosmosDocumentFixture.Build();
-        copy.BasicModelCode = basicModelCode;
+        var byType = new Dictionary<Type, Dictionary<long, object>>();
 
-        foreach (var variant in copy.Variants) { variant.BasicModelCode = basicModelCode; variant.id = idPrefix + variant.id; }
-        foreach (var period in copy.Periods) { period.BasicModelCode = basicModelCode; period.id = idPrefix + period.id; }
-        foreach (var labour in copy.Labours) { labour.BasicModelCode = basicModelCode; labour.id = idPrefix + labour.id; }
-        foreach (var item in copy.Items) { item.BasicModelCode = basicModelCode; item.id = idPrefix + item.id; }
+        void Add(object? entity)
+        {
+            if (entity is null)
+                return;
 
-        return copy;
+            var bucket = byType.TryGetValue(entity.GetType(), out var existing)
+                ? existing
+                : byType[entity.GetType()] = new Dictionary<long, object>();
+
+            bucket[GetId(entity)] = entity;
+        }
+
+        foreach (var fixture in fixtures)
+        {
+            foreach (var variant in fixture.Variants)
+            {
+                Add(variant);
+                Add(variant.Menu);
+                Add(variant.Menu?.VehicleModel);
+
+                foreach (var rate in variant.LabourRates) Add(rate);
+
+                foreach (var period in variant.PeriodicAvailabilities)
+                {
+                    Add(period);
+                    Add(period.ServiceInterval);
+                    Add(period.ServiceInterval?.ServiceIntervalGroup);
+                }
+
+                foreach (var labour in variant.LabourDetails)
+                {
+                    Add(labour);
+                    Add(labour.ServiceIntervalGroup);
+                    foreach (var interval in labour.ServiceIntervalGroup?.ServiceIntervals ?? []) Add(interval);
+                }
+
+                foreach (var item in variant.Items)
+                {
+                    Add(item);
+
+                    foreach (var part in item.Parts)
+                    {
+                        Add(part);
+                        foreach (var price in part.CountryPrices) Add(price);
+                    }
+
+                    var link = item.ReplacementItemVehicleModel;
+                    Add(link);
+
+                    var replacementItem = link?.ReplacementItem;
+                    Add(replacementItem);
+                    Add(replacementItem?.StandaloneReplacementItemGroup);
+
+                    foreach (var groupLink in replacementItem?.ReplacementItemServiceIntervalGroups ?? [])
+                    {
+                        Add(groupLink);
+                        Add(groupLink.ServiceIntervalGroup);
+                        foreach (var interval in groupLink.ServiceIntervalGroup?.ServiceIntervals ?? []) Add(interval);
+                    }
+                }
+            }
+
+            foreach (var mapping in fixture.LabourRateMappings.Values) Add(mapping);
+            foreach (var mapping in fixture.BrandMappings.Values) Add(mapping);
+        }
+
+        return byType.ToDictionary(x => x.Key, x => x.Value.Values.ToList());
+    }
+
+    private static long GetId(object entity) =>
+        (long)entity.GetType().GetProperty("ID")!.GetValue(entity)!;
+
+    private static DateTimeOffset GetLastSaveDate(object entity) =>
+        entity.GetType().GetProperty("LastSaveDate")?.GetValue(entity) is DateTimeOffset value ? value : default;
+
+    /// <summary>Stamps LastSaveDate on every entity the fixture reaches — the watermark tests' clock.</summary>
+    private static void StampAll(MenuGraphFixture.Fixture fixture, DateTimeOffset lastSaveDate)
+    {
+        foreach (var entity in CollectEntities(fixture).Values.SelectMany(x => x))
+            Stamp(entity, lastSaveDate);
+    }
+
+    private static void Stamp(object entity, DateTimeOffset lastSaveDate)
+    {
+        var property = entity.GetType().GetProperty("LastSaveDate")
+            ?? throw new InvalidOperationException($"{entity.GetType().Name} has no LastSaveDate.");
+
+        (property.GetSetMethod(nonPublic: true)
+            ?? throw new InvalidOperationException($"{entity.GetType().Name}.LastSaveDate has no setter."))
+            .Invoke(entity, [lastSaveDate]);
+    }
+
+    /// <summary>
+    /// Re-keys a fixture's MENU GRAPH onto offset ids (master data keeps its ids and deduplicates on
+    /// merge), optionally onto another basic model code — how the tests build a second variant or a
+    /// second model beside the first.
+    /// </summary>
+    private static void OffsetGraph(MenuGraphFixture.Fixture fixture, long offset, string? basicModelCode = null)
+    {
+        foreach (var menu in fixture.Variants.Select(x => x.Menu).Distinct())
+        {
+            menu.ID += offset;
+
+            if (basicModelCode is not null)
+                menu.BasicModelCode = basicModelCode;
+        }
+
+        foreach (var variant in fixture.Variants)
+        {
+            variant.ID += offset;
+            variant.MenuID = variant.Menu.ID;
+
+            foreach (var rate in variant.LabourRates) { rate.ID += offset; rate.MenuVariantID = variant.ID; }
+            foreach (var period in variant.PeriodicAvailabilities) { period.ID += offset; period.MenuVariantID = variant.ID; }
+            foreach (var labour in variant.LabourDetails) { labour.ID += offset; labour.MenuVariantID = variant.ID; }
+
+            foreach (var item in variant.Items)
+            {
+                item.ID += offset;
+                item.MenuVariantID = variant.ID;
+
+                foreach (var part in item.Parts)
+                {
+                    part.ID += offset;
+                    part.MenuItemID = item.ID;
+
+                    foreach (var price in part.CountryPrices) { price.ID += offset; price.MenuItemPartID = part.ID; }
+                }
+            }
+        }
+    }
+
+    private static ServiceMenuDocuments MergedCosmosDocuments(params MenuGraphFixture.Fixture[] fixtures)
+    {
+        var documents = MenuCosmosDocumentFixture.From(fixtures[0]);
+
+        foreach (var fixture in fixtures.Skip(1))
+        {
+            var more = MenuCosmosDocumentFixture.From(fixture);
+            documents.Variants.AddRange(more.Variants);
+            documents.Periods.AddRange(more.Periods);
+            documents.Labours.AddRange(more.Labours);
+            documents.Items.AddRange(more.Items);
+        }
+
+        return documents;
+    }
+
+    private static async Task<DuckDBConnection> SyncedStoreAsync(params MenuGraphFixture.Fixture[] fixtures)
+    {
+        var connection = new DuckDBConnection("DataSource=:memory:");
+        connection.Open();
+
+        var result = await new StubSyncService(fixtures).SyncAllAsync(null!, connection);
+        Assert.True(result.Succeeded);
+
+        return connection;
     }
 
     private static ServiceMenuLookupService Lookup(IServiceMenuLookupStorageService storage) =>
@@ -145,58 +278,23 @@ public class ServiceMenuDuckDBTests
         Language = "en",
     };
 
-    // ---- seed + read ---------------------------------------------------------------------------------
-
-    [Fact]
-    public async Task ASeededStore_Read_RoundTripsTheDocuments()
-    {
-        var original = MenuCosmosDocumentFixture.Build();
-        using var connection = SeededStore(original);
-
-        var roundTripped = await new DuckDBServiceMenuLookupStorageService(connection)
-            .GetMenuDocumentsAsync(MenuGraphFixture.BasicModelCode);
-
-        Assert.Equal(original.Variants.Count, roundTripped.Variants.Count);
-        Assert.Equal(original.Periods.Count, roundTripped.Periods.Count);
-        Assert.Equal(original.Labours.Count, roundTripped.Labours.Count);
-        Assert.Equal(original.Items.Count, roundTripped.Items.Count);
-
-        // The embedded (JSON-columned) shapes survive: the variant keeps its mappings and country
-        // rates, the item keeps its parts with their prices, the labour keeps its group's membership.
-        var variant = roundTripped.Variants.Single(x => x.id == original.Variants[0].id);
-        Assert.Equal(original.Variants[0].VariantName, variant.VariantName);
-        Assert.Equal(original.Variants[0].LabourRate, variant.LabourRate);
-        Assert.NotNull(variant.LabourRateMapping);
-        Assert.Equal(original.Variants[0].LabourRateMapping.Code, variant.LabourRateMapping.Code);
-        Assert.NotNull(variant.BrandMapping);
-        Assert.Equal(original.Variants[0].CountryLabourRates.Count, variant.CountryLabourRates.Count);
-
-        var item = roundTripped.Items.Single(x => x.id == original.Items[0].id);
-        Assert.Equal(original.Items[0].Parts.Count, item.Parts.Count);
-        Assert.Equal(
-            original.Items[0].Parts.Sum(x => x.CountryPrices.Count),
-            item.Parts.Sum(x => x.CountryPrices.Count));
-        Assert.Equal(
-            original.Items[0].ServiceIntervalGroups.Count,
-            item.ServiceIntervalGroups.Count);
-
-        var labour = roundTripped.Labours.Single(x => x.id == original.Labours[0].id);
-        Assert.NotNull(labour.ServiceIntervalGroup);
-        Assert.Equal(
-            original.Labours[0].ServiceIntervalGroup.ServiceIntervalIDs,
-            labour.ServiceIntervalGroup.ServiceIntervalIDs);
-    }
+    // ---- the differential claim ----------------------------------------------------------------------
 
     /// <summary>
-    /// THE differential claim: Cosmos path and DuckDB path generate identical menus from the same
-    /// documents. Decimals are compared as decimals — DuckDB's DECIMAL(38,12) changes scale, never value.
+    /// One entity graph, two storage pipelines, one menu: the Cosmos path embeds at write time
+    /// (production mappers), the DuckDB path normalizes at write time and joins at read time — and
+    /// the generated menus must be identical, codes, descriptions and money. Two variants (one free)
+    /// so the comparison covers variant selection too.
     /// </summary>
     [Fact]
-    public async Task GenerationParity_CosmosPathAndDuckDBPath_ProduceIdenticalMenus()
+    public async Task OneGraph_TwoBackends_OneIdenticalMenu()
     {
-        var documents = MenuCosmosDocumentFixture.WithFreeAndPaidVariants();
+        var paid = MenuGraphFixture.Build();
+        var free = MenuGraphFixture.Build();
+        OffsetGraph(free, 100_000);
+        free.Variants.Single().IsFree = true;
 
-        var viaCosmos = await Lookup(new StubCosmosService(_ => documents))
+        var viaCosmos = await Lookup(new StubCosmosService(_ => MergedCosmosDocuments(paid, free)))
             .GetMenuAsync(Request(MenuGraphFixture.BasicModelCode));
 
         // Guard against a vacuous pass: the expected side must actually be a generated menu — two
@@ -208,7 +306,7 @@ public class ServiceMenuDuckDBTests
             viaCosmos.Variants.SelectMany(variant => variant.PeriodicServices.Concat(variant.StandaloneServices)),
             line => line.Parts.Count > 0);
 
-        using var connection = SeededStore(documents);
+        using var connection = await SyncedStoreAsync(paid, free);
         var viaDuckDB = await Lookup(new DuckDBServiceMenuLookupStorageService(connection))
             .GetMenuAsync(Request(MenuGraphFixture.BasicModelCode));
 
@@ -273,15 +371,104 @@ public class ServiceMenuDuckDBTests
         }
     }
 
+    // ---- watermarks ----------------------------------------------------------------------------------
+
+    /// <summary>
+    /// The incremental contract, tiq-style: the FIRST run of every table is a full pull (no
+    /// watermark), and the next run's pull starts from the DESTINATION's MAX(LastSaveDate) — no
+    /// replication bookkeeping anywhere. An edit stamped later flows through the incremental run.
+    /// </summary>
+    [Fact]
+    public async Task ASecondSync_PullsFromTheDestinationWatermark()
+    {
+        var fixture = MenuGraphFixture.Build();
+        var t1 = DateTimeOffset.Parse("2026-01-01T00:00:00Z");
+        StampAll(fixture, t1);
+
+        using var connection = new DuckDBConnection("DataSource=:memory:");
+        connection.Open();
+
+        var firstSync = new StubSyncService(fixture);
+        var first = await firstSync.SyncAllAsync(null!, connection);
+
+        Assert.True(first.Succeeded);
+        Assert.All(first.Tables, table => Assert.Null(table.Watermark));
+
+        // An edit lands upstream after the first run.
+        var variant = fixture.Variants.Single();
+        variant.Name = "RENAMED";
+        Stamp(variant, DateTimeOffset.Parse("2026-02-01T00:00:00Z"));
+
+        var secondSync = new StubSyncService(fixture);
+        var second = await secondSync.SyncAllAsync(null!, connection);
+
+        Assert.True(second.Succeeded);
+        Assert.All(second.Tables, table => Assert.Equal(t1, table.Watermark));
+        Assert.Equal(t1, secondSync.ObservedWatermarks[nameof(MenuVariant)]);
+
+        var documents = await new DuckDBServiceMenuLookupStorageService(connection)
+            .GetMenuDocumentsAsync(MenuGraphFixture.BasicModelCode);
+
+        Assert.Equal("RENAMED", documents.Variants.Single().VariantName);
+        Assert.Single(documents.Variants);
+    }
+
+    /// <summary>
+    /// Incremental pulls cannot see hard deletes (the row is simply gone from the source), so a FULL
+    /// reload prunes rows whose ids left the source — the reconciler a host schedules periodically.
+    /// </summary>
+    [Fact]
+    public async Task AFullReload_PrunesRowsTheSourceNoLongerHas()
+    {
+        var fixture = MenuGraphFixture.Build();
+
+        using var connection = new DuckDBConnection("DataSource=:memory:");
+        connection.Open();
+
+        var first = await new StubSyncService(fixture).SyncAllAsync(null!, connection);
+        Assert.True(first.Succeeded);
+
+        var variant = fixture.Variants.Single();
+        var removed = variant.PeriodicAvailabilities.First();
+        variant.PeriodicAvailabilities.Remove(removed);
+
+        var second = await new StubSyncService(fixture).SyncAllAsync(null!, connection, fullReload: true);
+
+        Assert.True(second.Succeeded);
+        Assert.Equal(1, second.Tables.Single(x => x.Table == ServiceMenuDuckDBTables.MenuPeriodicAvailability).Pruned);
+
+        var documents = await new DuckDBServiceMenuLookupStorageService(connection)
+            .GetMenuDocumentsAsync(MenuGraphFixture.BasicModelCode);
+
+        Assert.DoesNotContain(documents.Periods, x => x.id == removed.ID.ToString());
+    }
+
+    /// <summary>An empty source still leaves a synced, readable store — NotFound, not unprovisioned.</summary>
+    [Fact]
+    public async Task ASyncOfAnEmptySource_LeavesAReadableEmptyStore()
+    {
+        using var connection = new DuckDBConnection("DataSource=:memory:");
+        connection.Open();
+
+        var result = await new StubSyncService().SyncAllAsync(null!, connection);
+        Assert.True(result.Succeeded);
+
+        var menu = await Lookup(new DuckDBServiceMenuLookupStorageService(connection))
+            .GetMenuAsync(Request("ABC12"));
+
+        Assert.True(menu.NotFound);
+    }
+
     // ---- bulk ----------------------------------------------------------------------------------------
 
     [Fact]
     public async Task BulkRead_GroupsByCode_KeepsFirstAppearanceOrder_AndAnswersMissingCodesEmpty()
     {
-        var first = MenuCosmosDocumentFixture.Build();
-        var second = RekeyedCopy("ZZZ99", "b-");
+        var first = MenuGraphFixture.Build();
+        var second = MenuGraphFixture.Build();
+        OffsetGraph(second, 200_000, basicModelCode: "ZZZ99");
 
-        using var connection = SeededStore(first, second);
+        using var connection = await SyncedStoreAsync(first, second);
         var storage = new DuckDBServiceMenuLookupStorageService(connection);
 
         var results = await storage.GetMenuDocumentsAsync(
@@ -290,12 +477,13 @@ public class ServiceMenuDuckDBTests
         Assert.Equal(3, results.Count);
 
         Assert.Equal("ZZZ99", results[0].BasicModelCode);
-        Assert.Equal(second.Variants.Count, results[0].Variants.Count);
-        Assert.Equal(second.Items.Count, results[0].Items.Count);
+        Assert.Single(results[0].Variants);
+        Assert.NotEmpty(results[0].Items);
 
         Assert.Equal(MenuGraphFixture.BasicModelCode, results[1].BasicModelCode);
-        Assert.Equal(first.Periods.Count, results[1].Periods.Count);
-        Assert.Equal(first.Labours.Count, results[1].Labours.Count);
+        Assert.Single(results[1].Variants);
+        Assert.NotEmpty(results[1].Periods);
+        Assert.NotEmpty(results[1].Labours);
 
         Assert.Equal("NOPE1", results[2].BasicModelCode);
         Assert.True(results[2].IsEmpty);
@@ -304,8 +492,7 @@ public class ServiceMenuDuckDBTests
     [Fact]
     public async Task BulkLookup_OverDuckDB_FoldsEachCodeLikeTheSingleLookup()
     {
-        var documents = MenuCosmosDocumentFixture.Build();
-        using var connection = SeededStore(documents);
+        using var connection = await SyncedStoreAsync(MenuGraphFixture.Build());
 
         var lookup = Lookup(new DuckDBServiceMenuLookupStorageService(connection));
 
@@ -339,22 +526,6 @@ public class ServiceMenuDuckDBTests
 
         await Assert.ThrowsAsync<NotImplementedException>(
             () => lookup.GetMenusAsync(new[] { MenuGraphFixture.BasicModelCode }, Request()));
-    }
-
-    // ---- the sync placeholder ------------------------------------------------------------------------
-
-    /// <summary>
-    /// The menu DuckDB sync is deliberately not implemented — its design (what it pulls from, how it
-    /// runs) is a separate decision. Pinned so the placeholder cannot silently pretend to sync.
-    /// </summary>
-    [Fact]
-    public async Task TheMenuDuckDBSync_IsNotImplementedYet()
-    {
-        using var connection = new DuckDBConnection("DataSource=:memory:");
-        connection.Open();
-
-        await Assert.ThrowsAsync<NotImplementedException>(
-            () => new DuckDBServiceMenuSyncService().SyncAsync(connection));
     }
 
     // ---- faults --------------------------------------------------------------------------------------
@@ -430,6 +601,18 @@ public class ServiceMenuDuckDBTests
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<ServiceMenuLookupService>());
     }
 
+    [Fact]
+    public void TheSyncRegistration_Resolves()
+    {
+        var services = new ServiceCollection();
+        services.AddServiceMenuDuckDBSync();
+
+        using var provider = services.BuildServiceProvider(validateScopes: true);
+        using var scope = provider.CreateScope();
+
+        Assert.NotNull(scope.ServiceProvider.GetRequiredService<ServiceMenuDuckDBSyncService>());
+    }
+
     /// <summary>
     /// The connection-string overload serves hosts with no <c>DuckDBConnection</c> registration at
     /// all: each scope's reader opens its OWN connection and disposes it with the scope — proven by
@@ -442,12 +625,11 @@ public class ServiceMenuDuckDBTests
 
         try
         {
-            var documents = MenuCosmosDocumentFixture.Build();
-
-            using (var seed = new DuckDBConnection($"DataSource={path}"))
+            using (var writeConnection = new DuckDBConnection($"DataSource={path}"))
             {
-                seed.Open();
-                SeedInto(seed, documents);
+                writeConnection.Open();
+                var result = await new StubSyncService(MenuGraphFixture.Build()).SyncAllAsync(null!, writeConnection);
+                Assert.True(result.Succeeded);
             }
 
             var services = new ServiceCollection();

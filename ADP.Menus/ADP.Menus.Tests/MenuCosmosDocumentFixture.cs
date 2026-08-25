@@ -1,7 +1,7 @@
 using System.Linq;
 
 using ShiftSoftware.ADP.Menus.Data.Entities;
-using ShiftSoftware.ADP.Menus.Data.Replication;
+using ShiftSoftware.ADP.Menus.Sync.Replication;
 using ShiftSoftware.ADP.Menus.Generation;
 
 namespace ShiftSoftware.ADP.Menus.Tests;

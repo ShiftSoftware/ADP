@@ -5,7 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-using ShiftSoftware.ADP.Menus.Data.Replication;
+using ShiftSoftware.ADP.Menus.Sync.Replication;
 using ShiftSoftware.ShiftEntity.CosmosDbReplication.Services;
 
 using System.Runtime.CompilerServices;

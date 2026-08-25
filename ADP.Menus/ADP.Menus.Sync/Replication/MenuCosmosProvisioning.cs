@@ -2,7 +2,7 @@ using Microsoft.Azure.Cosmos;
 
 using System.Net;
 
-namespace ShiftSoftware.ADP.Menus.Data.Replication;
+namespace ShiftSoftware.ADP.Menus.Sync.Replication;
 
 /// <summary>What provisioning did to one container, and whether it is usable.</summary>
 /// <param name="Name">The container id.</param>

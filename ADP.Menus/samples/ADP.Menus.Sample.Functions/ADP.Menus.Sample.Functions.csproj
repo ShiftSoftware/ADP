@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFramework>net10.0</TargetFramework>
@@ -32,6 +32,7 @@
 	-->
 	<ItemGroup>
 		<ProjectReference Include="..\..\ADP.Menus.Data\ADP.Menus.Data.csproj" />
+		<ProjectReference Include="..\..\ADP.Menus.Sync\ADP.Menus.Sync.csproj" />
 		<ProjectReference Include="..\..\..\ADP.LookupServices\Lookup.Services\Lookup.Services.csproj" />
 	</ItemGroup>
 

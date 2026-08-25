@@ -1,11 +1,19 @@
-﻿
+
 using Microsoft.Extensions.Logging;
 
 namespace ShiftSoftware.ADP.SyncAgent;
 
+/// <summary>
+/// Bridges the sync engine's own narration into a standard <see cref="ILogger"/>: every status the
+/// engine reports through <see cref="SetSyncTaskStatus"/> is written as a log line (batch completions,
+/// action boundaries and run outcomes at Information; retries at Warning; failures at Error; the
+/// micro-steps inside a batch at Debug), and the engine's explicit <c>Log*</c> calls — including the
+/// exceptions it hands over on batch and run failures — pass straight through.
+/// </summary>
 public class SyncEngineILogger : ISyncEngineLogger
 {
     private readonly ILogger logger;
+    private readonly string? name;
 
     public IEnumerable<SyncEngineLoggerStatus> SyncTaskStatuses { get; private set; } = [];
 
@@ -18,6 +26,15 @@ public class SyncEngineILogger : ISyncEngineLogger
     public SyncEngineILogger(ILogger logger)
     {
         this.logger = logger;
+    }
+
+    /// <param name="name">
+    /// Optional context rendered into every line — the job or table this engine run is syncing, so
+    /// hosts running many engines can tell the narrations apart.
+    /// </param>
+    public SyncEngineILogger(ILogger logger, string? name) : this(logger)
+    {
+        this.name = name;
     }
 
     public ISyncEngineLogger SetOperationTimeoutInSeconds(long? seconds)
@@ -35,8 +52,42 @@ public class SyncEngineILogger : ISyncEngineLogger
     public ValueTask<ISyncEngineLogger> SetSyncTaskStatus(SyncEngineLoggerStatus syncTaskStatus)
     {
         this.CurrentSyncTaskStatus = syncTaskStatus;
+
+        var level = syncTaskStatus.OperationType switch
+        {
+            SyncOperationType.Failed => LogLevel.Error,
+            SyncOperationType.BatchRetry => LogLevel.Warning,
+            SyncOperationType.Preparing
+                or SyncOperationType.ActionStarted
+                or SyncOperationType.BatchCompleted
+                or SyncOperationType.ActionCompleted
+                or SyncOperationType.Succeeded
+                or SyncOperationType.Finished => LogLevel.Information,
+            _ => LogLevel.Debug,
+        };
+
+        // Run-level statuses (Preparing, Succeeded, Failed, Finished) carry no action or batch — keep
+        // their lines clean rather than rendering placeholder nulls.
+        if (syncTaskStatus.ActionType is null)
+            this.logger.Log(level,
+                "Sync engine{Name}: {Operation}.",
+                RenderedName, syncTaskStatus.OperationType);
+        else if (syncTaskStatus.CurrentRetryCount > 0)
+            this.logger.Log(level,
+                "Sync engine{Name}: {Operation} (action: {Action}, batch {Step}/{TotalSteps}, retry {Retry}/{MaxRetries}).",
+                RenderedName, syncTaskStatus.OperationType, syncTaskStatus.ActionType,
+                syncTaskStatus.CurrentStep, syncTaskStatus.TotalStep?.ToString() ?? "?",
+                syncTaskStatus.CurrentRetryCount, syncTaskStatus.MaxRetryCount);
+        else
+            this.logger.Log(level,
+                "Sync engine{Name}: {Operation} (action: {Action}, batch {Step}/{TotalSteps}).",
+                RenderedName, syncTaskStatus.OperationType, syncTaskStatus.ActionType,
+                syncTaskStatus.CurrentStep, syncTaskStatus.TotalStep?.ToString() ?? "?");
+
         return new(this);
     }
+
+    private string RenderedName => this.name is null ? "" : $" [{this.name}]";
 
     public ValueTask CompleteAllRunningTasks()
     {

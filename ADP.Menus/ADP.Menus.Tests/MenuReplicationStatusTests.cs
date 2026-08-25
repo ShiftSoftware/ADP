@@ -1,4 +1,4 @@
-using ShiftSoftware.ADP.Menus.Data.Replication;
+using ShiftSoftware.ADP.Menus.Sync.Replication;
 using ShiftSoftware.ShiftEntity.Model.Replication;
 
 using System.Reflection;
@@ -22,7 +22,10 @@ public class MenuReplicationStatusTests
     [Fact]
     public void CountsEveryEntityThatOptsIntoReplication()
     {
-        var replicatedEntities = typeof(MenuCosmosMappers).Assembly
+        // Anchored on an ENTITY type: the entities live in ADP.Menus.Data while the replication flows
+        // (and this status reader) live in ADP.Menus.Sync, and it is the entities assembly that holds
+        // everything opting into replication.
+        var replicatedEntities = typeof(Data.Entities.MenuVariant).Assembly
             .GetTypes()
             .Where(type => type is { IsClass: true, IsAbstract: false }
                 && typeof(IShiftEntityReplication).IsAssignableFrom(type))

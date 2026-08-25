@@ -3,11 +3,12 @@ using Microsoft.Extensions.DependencyInjection;
 
 using ShiftSoftware.ADP.Menus.Data.Entities;
 using ShiftSoftware.ShiftEntity.Core;
+using Entities = ShiftSoftware.ADP.Menus.Data.Entities;
 using ShiftSoftware.ShiftEntity.CosmosDbReplication;
 using ShiftSoftware.ShiftEntity.EFCore;
 using ShiftSoftware.ShiftEntity.Model.Replication;
 
-namespace ShiftSoftware.ADP.Menus.Data.Replication;
+namespace ShiftSoftware.ADP.Menus.Sync.Replication;
 
 /// <summary>
 /// Loads what a Cosmos projection needs beyond the row the save trigger hands it.

@@ -1,14 +1,14 @@
 using Microsoft.Azure.Cosmos;
 
 using ShiftSoftware.ADP.Menus.Data.Entities;
-using ShiftSoftware.ADP.Menus.Data.Replication;
+using ShiftSoftware.ADP.Menus.Sync.Replication;
 using ShiftSoftware.ADP.Models.Service.Cosmos;
 using ShiftSoftware.ShiftEntity.CosmosDbReplication;
 using ShiftSoftware.ShiftEntity.EFCore;
 
 using NoSQLConstants = ShiftSoftware.ADP.Models.Constants.NoSQLConstants;
 
-namespace ShiftSoftware.ADP.Menus.Data.Extensions;
+namespace ShiftSoftware.ADP.Menus.Sync.Extensions;
 
 /// <summary>
 /// Opt-in Cosmos replication for the menu catalog, following the container design in

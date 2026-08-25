@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 
 using ShiftSoftware.ADP.Menus.Data.Entities;
 
-namespace ShiftSoftware.ADP.Menus.Data.Replication;
+namespace ShiftSoftware.ADP.Menus.Sync.Replication;
 
 /// <summary>
 /// The navigations each Cosmos projection reads, as query shapers.

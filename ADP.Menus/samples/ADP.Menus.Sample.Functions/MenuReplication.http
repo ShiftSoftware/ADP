@@ -25,6 +25,26 @@ POST {{host}}/api/replicate-all
 ### `isUpToDate: true` is what a finished backfill looks like.
 GET {{host}}/api/replication-status
 
+### ─────────────────────────── sync to DuckDB ───────────────────────────
+
+### Syncs every menu table from SQL into ONE DuckDB database file (menus.duckdb beside the host, or
+### ConnectionStrings:DuckDB), one table after another — the local-file counterpart of replicate-all,
+### and the store the DuckDB-backed menu lookup reads.
+###
+### Incremental by default: each table pulls only the rows saved at or past ITS OWN destination-side
+### MAX(LastSaveDate) watermark; the first run over a fresh file is automatically a full pull. No
+### configuration is needed — DuckDB has no server.
+###
+### The response reports each table: `succeeded`, `upserted`, `pruned`, and the `watermark` the pull
+### started from (null = full pull). Read those rather than the status code — a failed table does not
+### stop the run, and rerunning is idempotent. One writer at a time: do not overlap two of these.
+POST {{host}}/api/duckdb-sync
+
+### Full reload — every table re-pulls EVERYTHING and prunes rows whose ids left SQL. This is the
+### reconciler for hard deletes (an incremental pull cannot see a row that no longer exists), the
+### DuckDB counterpart of replicate-all's updateAll. Run it on a schedule, or after a bulk cleanup.
+POST {{host}}/api/duckdb-sync?fullReload=true
+
 ### ──────────────────────────── then read it back ────────────────────────────
 
 ### The service menu for one basic model code — the read side of everything above.

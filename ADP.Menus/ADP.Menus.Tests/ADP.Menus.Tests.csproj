@@ -56,6 +56,12 @@
 		  where both sides and the fixtures are already visible.
 		-->
 		<ProjectReference Include="..\..\ADP.LookupServices\Lookup.Services.DuckDB\Lookup.Services.DuckDB.csproj" />
+
+		<!--
+		  The menu data movement: replication (whose mappers the fixtures reuse) and the DuckDB sync
+		  (whose output the DuckDB reader above consumes).
+		-->
+		<ProjectReference Include="..\ADP.Menus.Sync\ADP.Menus.Sync.csproj" />
 	</ItemGroup>
 
 </Project>

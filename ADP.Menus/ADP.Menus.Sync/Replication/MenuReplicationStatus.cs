@@ -1,10 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 
 using ShiftSoftware.ADP.Menus.Data.Entities;
+using Entities = ShiftSoftware.ADP.Menus.Data.Entities;
 using ShiftSoftware.ShiftEntity.Core;
 using ShiftSoftware.ShiftEntity.Model.Replication;
 
-namespace ShiftSoftware.ADP.Menus.Data.Replication;
+namespace ShiftSoftware.ADP.Menus.Sync.Replication;
 
 /// <summary>One replicated table's standing against Cosmos.</summary>
 /// <param name="Table">The entity type name — the table, as the replication registrations name it.</param>

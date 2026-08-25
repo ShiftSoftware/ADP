@@ -1,6 +1,6 @@
 using NoSQLConstants = ShiftSoftware.ADP.Models.Constants.NoSQLConstants;
 
-namespace ShiftSoftware.ADP.Menus.Data.Replication;
+namespace ShiftSoftware.ADP.Menus.Sync.Replication;
 
 /// <summary>One Cosmos container the menu replication writes to, and the key it must be created with.</summary>
 /// <param name="Name">The container id.</param>

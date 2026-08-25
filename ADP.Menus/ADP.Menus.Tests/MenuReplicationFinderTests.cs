@@ -1,7 +1,7 @@
 using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Cosmos.Linq;
 
-using ShiftSoftware.ADP.Menus.Data.Replication;
+using ShiftSoftware.ADP.Menus.Sync.Replication;
 using ShiftSoftware.ADP.Models;
 using ShiftSoftware.ADP.Models.Constants;
 using ShiftSoftware.ADP.Models.Service.Cosmos;

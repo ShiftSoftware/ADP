@@ -8,7 +8,7 @@ namespace ShiftSoftware.ADP.Lookup.Services;
 /// This is a provisioning fault, not a data one, so it is raised rather than folded into an empty
 /// result. Silently reporting "this model has no menu" would make an unprovisioned deployment look
 /// like one whose catalog is simply empty — indistinguishable, and permanent.
-/// Remediation: run <c>MenuCosmosProvisioning.EnsureContainersAsync</c> (ADP.Menus.Data) from the
+/// Remediation: run <c>MenuCosmosProvisioning.EnsureContainersAsync</c> (ADP.Menus.Sync) from the
 /// host's deployment path, then a full catch-up sweep to populate it.
 /// </summary>
 public class ServiceMenuContainerNotFoundException : Exception
@@ -20,7 +20,7 @@ public class ServiceMenuContainerNotFoundException : Exception
         : base(
             $"Cosmos container '{containerName}' was not found in database '{databaseName}'. " +
             "Service-menu lookups read a single partition of that container, so it must exist before any " +
-            "lookup runs. Provision it with MenuCosmosProvisioning.EnsureContainersAsync (ADP.Menus.Data), " +
+            "lookup runs. Provision it with MenuCosmosProvisioning.EnsureContainersAsync (ADP.Menus.Sync), " +
             "which also verifies every partition key, then run a full catch-up replication to populate it.",
             innerException)
     {

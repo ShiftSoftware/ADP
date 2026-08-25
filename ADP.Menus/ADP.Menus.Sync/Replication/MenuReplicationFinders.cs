@@ -1,7 +1,7 @@
 using ShiftSoftware.ADP.Models;
 using ShiftSoftware.ADP.Models.Service.Cosmos;
 
-namespace ShiftSoftware.ADP.Menus.Data.Replication;
+namespace ShiftSoftware.ADP.Menus.Sync.Replication;
 
 /// <summary>
 /// "Which menu documents embed this master row?" — the queries that drive the <c>UpdateReference</c>

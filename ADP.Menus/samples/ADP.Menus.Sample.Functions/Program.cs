@@ -4,10 +4,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 using ShiftSoftware.ADP.Lookup.Services.Enums;
 using ShiftSoftware.ADP.Lookup.Services.Extensions;
 using ShiftSoftware.ADP.Menus.Sample.Functions;
+using ShiftSoftware.ADP.Menus.Sync.Extensions;
 
 // The sweep half of the menu → Cosmos replication. The sample API replicates on save (the trigger);
 // this host re-syncs on a schedule, which is the only thing that can reach rows the trigger never saw
@@ -20,6 +22,11 @@ var host = new HostBuilder()
         .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
         .AddEnvironmentVariables()
         .AddUserSecrets<Program>(optional: true, reloadOnChange: true))
+    // EF Core prints every SQL statement at Information, which drowns the replication and DuckDB-sync
+    // narration this host exists to demonstrate. Warnings and errors still come through; lower this
+    // back to Information when the queries themselves are what you are debugging.
+    .ConfigureLogging(logging =>
+        logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning))
     .ConfigureServices((context, services) =>
     {
         // MenuReplicationDB maps the menu tables the same way the API host does — see its remarks.
@@ -35,6 +42,10 @@ var host = new HostBuilder()
 
         // Registers the CosmosDBReplication service the timers and the HTTP endpoint drive.
         services.AddShiftEntityCosmosDbReplication<MenuReplicationDB>();
+
+        // The SQL → DuckDB half: the stateless sync service POST api/duckdb-sync drives, table by
+        // table, into a local DuckDB file. The DbContext and the write connection are passed per call.
+        services.AddServiceMenuDuckDBSync();
 
         // ---------- the READ side ----------
         // The lookup turns a basic model code back into menu codes and prices, out of the very

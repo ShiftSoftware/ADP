@@ -1,7 +1,7 @@
 using ShiftSoftware.ADP.Menus.Data.Entities;
 using ShiftSoftware.ADP.Models.Service.Cosmos;
 
-namespace ShiftSoftware.ADP.Menus.Data.Replication;
+namespace ShiftSoftware.ADP.Menus.Sync.Replication;
 
 /// <summary>
 /// Manual EF entity → Cosmos document projections. No AutoMapper, so every field is explicit and

@@ -1,0 +1,59 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<Import Project="..\..\GlobalSettings.props" />
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<RootNamespace>ShiftSoftware.ADP.Menus.Sync</RootNamespace>
+		<Authors>Shift Software</Authors>
+		<Product>ADP.Menus</Product>
+		<Version>$(ADPVersion)</Version>
+		<AssemblyName>ShiftSoftware.ADP.Menus.Sync</AssemblyName>
+		<PackageId>ShiftSoftware.ADP.Menus.Sync</PackageId>
+		<IsPackable>true</IsPackable>
+		<Title>ShiftSoftware ADP.Menus — Sync</Title>
+		<Description>Data movement for the ShiftSoftware ADP.Menus catalog, from its SQL source of truth: SQL-to-Cosmos replication (the save trigger and the catch-up sweep that keep the ServiceMenus containers fresh) and SQL-to-DuckDB sync (a SyncEngine flow projecting through the same mappers, for menu lookups served from DuckDB storage by ShiftSoftware.ADP.Lookup.Services.DuckDB).</Description>
+		<Copyright>Copyright (c) Shift Software 2026</Copyright>
+		<PackageProjectUrl>https://github.com/ShiftSoftware/ADP</PackageProjectUrl>
+		<PackageIcon>icon.png</PackageIcon>
+		<RepositoryUrl>https://github.com/ShiftSoftware/ADP</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageTags>shift;shiftsoftware;adp;menus;automotive;service;replication;cosmos;duckdb;sync</PackageTags>
+		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="..\ADP.Menus.Generation\Images\icon.png" Pack="true" PackagePath="\" />
+	</ItemGroup>
+
+	<!--
+	  The menu entities and their model building, which the replication mappers, include graphs and
+	  reload hooks project from — the anti-drift unit stays whole, it just lives here now.
+	-->
+	<ItemGroup>
+		<ProjectReference Include="..\ADP.Menus.Data\ADP.Menus.Data.csproj"
+		                  Condition="Exists('..\ADP.Menus.Data\ADP.Menus.Data.csproj')" />
+		<PackageReference Include="ShiftSoftware.ADP.Menus.Data" Version="$(ADPVersion)"
+		                  Condition="!Exists('..\ADP.Menus.Data\ADP.Menus.Data.csproj')" />
+	</ItemGroup>
+
+	<!-- The trigger and catch-up replication framework the SQL-to-Cosmos half builds on. -->
+	<ItemGroup>
+		<PackageReference Include="ShiftSoftware.ShiftEntity.CosmosDbReplication" Version="2026.7.31.1" />
+	</ItemGroup>
+
+	<!--
+	  The sync engine and its DuckDB destination adapter for the Cosmos-to-DuckDB half, which also
+	  brings the Cosmos SDK and ADP.Models. NOTE this package is for hosts that MOVE menu data
+	  (authoring hosts replicating to Cosmos, agent hosts syncing to DuckDB) — it deliberately does not
+	  live in ADP.Menus.Shared (consumed by the WASM web project) or ADP.Menus.Data (consumed by every
+	  API host), because the engine's dependency tree is heavy.
+	-->
+	<ItemGroup>
+		<ProjectReference Include="..\..\ADP.SyncAgent\SyncAgent\ADP.SyncAgent.csproj"
+		                  Condition="Exists('..\..\ADP.SyncAgent\SyncAgent\ADP.SyncAgent.csproj')" />
+		<PackageReference Include="ShiftSoftware.ADP.SyncAgent" Version="$(ADPVersion)"
+		                  Condition="!Exists('..\..\ADP.SyncAgent\SyncAgent\ADP.SyncAgent.csproj')" />
+	</ItemGroup>
+</Project>

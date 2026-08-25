@@ -1,13 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 
 using ShiftSoftware.ADP.Menus.Data.Entities;
+using Entities = ShiftSoftware.ADP.Menus.Data.Entities;
 using ShiftSoftware.ADP.Models.Service.Cosmos;
 using ShiftSoftware.ShiftEntity.CosmosDbReplication.Services;
 using ShiftSoftware.ShiftEntity.EFCore;
 
 using NoSQLConstants = ShiftSoftware.ADP.Models.Constants.NoSQLConstants;
 
-namespace ShiftSoftware.ADP.Menus.Data.Replication;
+namespace ShiftSoftware.ADP.Menus.Sync.Replication;
 
 /// <summary>
 /// Reusable Cosmos "catch-up" replication for the menu catalog — the sweep counterpart to the
