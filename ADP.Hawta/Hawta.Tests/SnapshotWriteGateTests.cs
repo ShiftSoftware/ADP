@@ -506,7 +506,9 @@ public class SnapshotWriteGateTests
         started.Stop();
 
         Assert.True(started.Elapsed < TimeSpan.FromSeconds(2), $"Dispose took {started.Elapsed}.");
-        Assert.Contains("clean marker could not be confirmed", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.True(
+            exception.Message.Contains("clean marker could not be confirmed", StringComparison.OrdinalIgnoreCase),
+            $"Dispose took a different failure path: {exception.Message}");
         Assert.Equal(WriteGateMarkerState.Active, WriteGateMarkerCodec.Parse(session.Content).State);
         Assert.Equal(0, session.ReleaseCount);
 
@@ -675,12 +677,32 @@ public class SnapshotWriteGateTests
         public void CompleteBlockedRelease() => BlockedRelease.TrySetResult();
     }
 
+    /// <summary>
+    /// Short enough that a blocked handoff operation ends dispose quickly, long enough that WHICH
+    /// operation ends it is not decided by the thread-pool scheduler.
+    ///
+    /// <para><b>Why 500 ms and not 100.</b> DisposeAsync spends ONE budget across four operations
+    /// in order: stop the renewal loop, renew, write the clean marker, release. Each of these tests
+    /// blocks one of them and asserts on the failure that names it. At 100 ms the first step alone
+    /// could exhaust the budget — the renewal loop is parked in
+    /// <c>PeriodicTimer.WaitForNextTickAsync</c>, and cancelling it completes on a THREAD-POOL
+    /// continuation. Running the full suite, where many test classes share a pool, that
+    /// continuation regularly missed 100 ms, so dispose failed at step one and never reached the
+    /// operation the test had blocked. It presented as a flake:
+    /// <c>CleanWriteIgnoringCancellation_BoundsDispose</c> failed 3/3 full-suite runs and passed
+    /// 22/22 in isolation, and neither CPU load nor pool-blocking load reproduced it in-process.</para>
+    ///
+    /// <para><b>The engine was right both times</b> — it bounded dispose and named the operation
+    /// that actually failed. What was wrong was a test asserting on which of three correct outcomes
+    /// a scheduler would pick. 500 ms leaves the injected block as by far the slowest step while
+    /// keeping every dispose here an order of magnitude inside its 2-second assertion.</para>
+    /// </summary>
     private static SnapshotWriteGateOptions OptionsWithShortHandoff() => new()
     {
         ConnectionString = DevelopmentStorage,
         GateName = $"gate-{Guid.NewGuid():N}",
         LeaseDuration = TimeSpan.FromSeconds(15),
         RenewInterval = TimeSpan.FromSeconds(5),
-        HandoffOperationTimeout = TimeSpan.FromMilliseconds(100),
+        HandoffOperationTimeout = TimeSpan.FromMilliseconds(500),
     };
 }
