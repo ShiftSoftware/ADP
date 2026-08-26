@@ -19,16 +19,16 @@ export const ServiceHistorySubRow = ({ locale, row }: Props) => {
 
   const laborHeaders: InformationTableColumn[] = [
     { key: 'laborCode', label: locale.laborCode },
+    { key: 'serviceDescription', label: locale.serviceDescription, centeredHorizontally: false },
     { key: 'packageCode', label: locale.packageCode },
     { key: 'serviceCode', label: locale.serviceCode },
-    { key: 'serviceDescription', label: locale.serviceDescription, centeredHorizontally: false },
   ];
 
   const partHeaders: InformationTableColumn[] = [
     { key: 'partNumber', label: locale.partNumber },
-    { key: 'qty', label: locale.qty },
-    { key: 'packageCode', label: locale.packageCode },
     { key: 'partDescription', label: locale.partDescription, centeredHorizontally: false },
+    { key: 'packageCode', label: locale.packageCode },
+    { key: 'qty', label: locale.qty },
   ];
 
   return (

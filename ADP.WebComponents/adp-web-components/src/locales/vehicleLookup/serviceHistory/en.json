@@ -16,7 +16,7 @@
   "serviceCode": "Service Code",
   "serviceDescription": "Service Description",
 
-  "partNumber": "Part No.",
-  "qty": "Qty",
+  "partNumber": "Part Number",
+  "qty": "Part Quantity",
   "partDescription": "Part Description"
 }
