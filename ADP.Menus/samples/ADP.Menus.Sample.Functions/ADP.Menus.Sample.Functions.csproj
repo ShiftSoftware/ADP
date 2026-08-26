@@ -34,6 +34,8 @@
 		<ProjectReference Include="..\..\ADP.Menus.Data\ADP.Menus.Data.csproj" />
 		<ProjectReference Include="..\..\ADP.Menus.Sync\ADP.Menus.Sync.csproj" />
 		<ProjectReference Include="..\..\..\ADP.LookupServices\Lookup.Services\Lookup.Services.csproj" />
+		<!-- The DuckDB storage for the menu lookup — what GET api/menu-duckdb/{code} reads with. -->
+		<ProjectReference Include="..\..\..\ADP.LookupServices\Lookup.Services.DuckDB\Lookup.Services.DuckDB.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

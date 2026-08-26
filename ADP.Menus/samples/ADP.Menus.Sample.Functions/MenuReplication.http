@@ -45,6 +45,18 @@ POST {{host}}/api/duckdb-sync
 ### DuckDB counterpart of replicate-all's updateAll. Run it on a schedule, or after a bulk cleanup.
 POST {{host}}/api/duckdb-sync?fullReload=true
 
+### ...then read the menu back FROM DUCKDB. Same parameters, same response shape and — the claim
+### worth testing — the same answer as GET api/menu/{code} below, because everything above the
+### storage seam is identical; only the storage differs. Run duckdb-sync, then call both endpoints
+### for one code and diff them.
+###
+### Answers 503 with a pointer at duckdb-sync when the store was never synced (a missing file is
+### never silently created; the lookup opens it read-only).
+GET {{host}}/api/menu-duckdb/{{basicModelCode}}
+
+### The language / country / free-filter variants work identically to the Cosmos endpoint.
+GET {{host}}/api/menu-duckdb/{{basicModelCode}}?language=ar&countryId=2
+
 ### ──────────────────────────── then read it back ────────────────────────────
 
 ### The service menu for one basic model code — the read side of everything above.
