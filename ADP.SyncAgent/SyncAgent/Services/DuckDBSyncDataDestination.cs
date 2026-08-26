@@ -35,6 +35,12 @@ public class DuckDBSyncDataDestination<TSource, TDestination, DuckDB>
     public ISyncEngine<TSource, TDestination> Configure(DuckDBSyncDataDestinationConfigurations<TSource, TDestination> configurations, bool configureSyncService = true)
     {
         Configurations = configurations;
+
+        // Resolved (and so validated) HERE, at wiring time, rather than only inside Preparing: a
+        // misdeclared index is a programming error, and Preparing's catch-all would turn it into a
+        // bare "prepare failed" with the offending column nowhere in sight.
+        ResolveIndexes();
+
         var previousPreparing = SyncService.Preparing;
 
         if (configureSyncService)
@@ -62,6 +68,8 @@ public class DuckDBSyncDataDestination<TSource, TDestination, DuckDB>
             using var createTableCmd = db.CreateCommand();
             createTableCmd.CommandText = createTableSql;
             createTableCmd.ExecuteNonQuery();
+
+            CreateIndexes(tableName);
 
             return ValueTask.FromResult(SyncPreparingResponseAction.Succeeded);
         }
@@ -181,6 +189,143 @@ public class DuckDBSyncDataDestination<TSource, TDestination, DuckDB>
 
         return sb.ToString();
     }
+
+    /// <summary>
+    /// Creates every configured secondary index, after the table exists. <c>IF NOT EXISTS</c> makes
+    /// this a no-op from the second run on — indexes live in the database file, so only the run that
+    /// first meets a table pays for building them.
+    ///
+    /// <para>Before the batches, not after: an incremental run inherits the indexes from the run
+    /// that created the table anyway, so deferring would only ever save the FIRST load's index
+    /// maintenance — and would leave a table that failed mid-run with no indexes at all, which is
+    /// exactly when a reader is most likely to meet it.</para>
+    /// </summary>
+    private void CreateIndexes(string tableName)
+    {
+        foreach (var index in ResolveIndexes())
+        {
+            using var createIndexCmd = db.CreateCommand();
+            createIndexCmd.CommandText =
+                $"CREATE INDEX IF NOT EXISTS {DuckDbSchemaHelpers.QuoteIdentifier(index.Name)} " +
+                $"ON {tableName} ({string.Join(", ", index.Expressions)})";
+            createIndexCmd.ExecuteNonQuery();
+        }
+    }
+
+    /// <summary>
+    /// Turns the configured <see cref="DuckDBIndexDefinition{TDestination}"/>s into named lists of
+    /// SQL expressions. Column names come from the destination's properties (so an index can only
+    /// name a column the table actually has, and quoting keeps a property called <c>Order</c> or
+    /// <c>Group</c> from becoming a syntax error); raw SQL expressions pass through verbatim.
+    /// </summary>
+    private IReadOnlyList<ResolvedIndex> ResolveIndexes()
+    {
+        var definitions = Configurations?.Indexes;
+
+        if (definitions is null || definitions.Count == 0)
+            return [];
+
+        var tableName = GetTableName();
+        var properties = GetPropertiesWithChildPriority();
+        var resolved = new List<ResolvedIndex>(definitions.Count);
+        var usedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var definition in definitions)
+        {
+            if (definition is null)
+                throw new InvalidOperationException($"A null index definition was configured for DuckDB table '{tableName}'.");
+
+            var expressions = new List<string>();
+            var nameParts = new List<string>();
+
+            if (definition.Columns is not null)
+            {
+                var memberNames = GetPropertyNamesFromExpression(definition.Columns);
+
+                if (memberNames.Count == 0)
+                    throw new InvalidOperationException(
+                        $"An index on DuckDB table '{tableName}' has a Columns expression that names no property of {typeof(TDestination).Name}.");
+
+                foreach (var memberName in memberNames)
+                {
+                    var property = properties.FirstOrDefault(x => string.Equals(x.Name, memberName, StringComparison.OrdinalIgnoreCase))
+                        ?? throw new InvalidOperationException(
+                            $"An index on DuckDB table '{tableName}' names '{memberName}', which is not a column of {typeof(TDestination).Name}.");
+
+                    expressions.Add(DuckDbSchemaHelpers.QuoteIdentifier(property.Name));
+                    nameParts.Add(property.Name);
+                }
+            }
+
+            foreach (var sqlExpression in definition.SqlExpressions ?? [])
+            {
+                if (string.IsNullOrWhiteSpace(sqlExpression))
+                    throw new InvalidOperationException($"An index on DuckDB table '{tableName}' has a blank SQL expression.");
+
+                expressions.Add(sqlExpression.Trim());
+                nameParts.Add(sqlExpression.Trim());
+            }
+
+            if (expressions.Count == 0)
+                throw new InvalidOperationException(
+                    $"An index on DuckDB table '{tableName}' declares no columns. Set Columns, SqlExpressions, or both.");
+
+            var name = string.IsNullOrWhiteSpace(definition.Name)
+                ? BuildIndexName(tableName, nameParts)
+                : definition.Name.Trim();
+
+            if (!usedNames.Add(name))
+                throw new InvalidOperationException(
+                    $"Two indexes on DuckDB table '{tableName}' resolve to the name '{name}'. Give one of them an explicit Name.");
+
+            resolved.Add(new ResolvedIndex(name, expressions));
+        }
+
+        return resolved;
+    }
+
+    /// <summary>
+    /// <c>IX_{table}_{parts}</c>, with anything that is not a letter, a digit or an underscore
+    /// folded to a single underscore — the name has to survive being quoted as an identifier, and it
+    /// has to come out the SAME on every run, because <c>CREATE INDEX IF NOT EXISTS</c> recognises
+    /// an existing index by nothing but its name.
+    /// </summary>
+    private static string BuildIndexName(string tableName, IEnumerable<string> nameParts)
+    {
+        var sb = new StringBuilder("IX");
+
+        AppendSanitized(sb, tableName);
+
+        foreach (var part in nameParts)
+            AppendSanitized(sb, part);
+
+        // A part that ends in punctuation — an expression like lower("Code") — would otherwise
+        // trail an underscore.
+        return sb.ToString().TrimEnd('_');
+    }
+
+    private static void AppendSanitized(StringBuilder sb, string value)
+    {
+        sb.Append('_');
+
+        var lastWasSeparator = true;
+
+        foreach (var c in value)
+        {
+            if (char.IsLetterOrDigit(c) || c == '_')
+            {
+                sb.Append(c);
+                lastWasSeparator = false;
+            }
+            else if (!lastWasSeparator)
+            {
+                sb.Append('_');
+                lastWasSeparator = true;
+            }
+        }
+    }
+
+    private sealed record ResolvedIndex(string Name, IReadOnlyList<string> Expressions);
 
     private static string MapCSharpTypeToDuckDB(Type type)
     {

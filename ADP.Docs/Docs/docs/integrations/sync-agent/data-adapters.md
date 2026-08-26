@@ -208,6 +208,7 @@ Key features:
 - **Automatic table creation** from the destination model's properties with correct DuckDB type mapping.
 - **Staging table pattern** — data is first bulk-loaded into a temporary staging table, then upserted into the main table for atomicity.
 - **Primary key support** — configurable primary key for upsert behavior.
+- **Secondary indexes** — declared with the table, for the queries that will *read* it.
 - **Complex type handling** — nested objects are stored as JSON columns.
 
 ```csharp
@@ -218,6 +219,14 @@ destination.Configure(new DuckDBSyncDataDestinationConfigurations<SourceModel, D
     TableName = "Parts",
     PrimaryKey = x => x.PartNumber,
     ContinueAfterFail = true,
+
+    Indexes =
+    [
+        // Single column, composite, and a raw SQL expression under an explicit name.
+        new() { Columns = x => x.SupplierId },
+        new() { Columns = x => new { x.WarehouseId, x.CountryId } },
+        new() { SqlExpressions = ["lower(\"PartNumber\")"], Name = "IX_Parts_LowerPartNumber" },
+    ],
 });
 ```
 
@@ -230,6 +239,25 @@ destination.Configure(new DuckDBSyncDataDestinationConfigurations<SourceModel, D
 | `TableName` | `string` | **Required.** Name of the DuckDB table. |
 | `PrimaryKey` | `Expression<...>?` | Expression for the primary key column (enables upsert). |
 | `ContinueAfterFail` | `bool` | If `true`, continue processing remaining items after a row fails. Default: `false`. |
+| `Indexes` | `IReadOnlyList<DuckDBIndexDefinition<TDestination>>?` | Secondary indexes to create with the table. Default: none. |
+
+#### DuckDB Index Definitions
+
+`DuckDBIndexDefinition<TDestination>`:
+
+| Property | Type | Description |
+|---|---|---|
+| `Columns` | `Expression<...>?` | The indexed columns as a member expression — one property, or several via an anonymous type. |
+| `SqlExpressions` | `IReadOnlyList<string>?` | Raw DuckDB index expressions, emitted verbatim, for what a member expression cannot say. Appended after `Columns`. |
+| `Name` | `string?` | Index name. Defaults to `IX_{table}_{columns}`. |
+
+Indexes are created with `CREATE INDEX IF NOT EXISTS` right after the table, so re-running a
+sync reuses them. They are validated when `Configure` is called, so a malformed definition
+throws where it was written rather than failing the run later.
+
+There is no `IsUnique`: DuckDB requires an explicit conflict target for `INSERT OR REPLACE`
+once a table carries more than one `UNIQUE`/`PRIMARY KEY` constraint, so a second unique index
+would break the adapter's own upserts. Uniqueness belongs to `PrimaryKey`.
 
 #### DuckDB Type Mapping
 

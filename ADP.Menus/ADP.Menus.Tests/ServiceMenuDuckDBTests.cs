@@ -17,6 +17,9 @@ using ShiftSoftware.ADP.Menus.Generation;
 using ShiftSoftware.ADP.Menus.Sync;
 using ShiftSoftware.ADP.Menus.Sync.Extensions;
 using ShiftSoftware.ADP.Models.Service.DuckDB;
+using ShiftSoftware.ADP.SyncAgent;
+using ShiftSoftware.ADP.SyncAgent.Configurations;
+using ShiftSoftware.ADP.SyncAgent.Services;
 
 namespace ShiftSoftware.ADP.Menus.Tests;
 
@@ -457,6 +460,174 @@ public class ServiceMenuDuckDBTests
             .GetMenuAsync(Request("ABC12"));
 
         Assert.True(menu.NotFound);
+    }
+
+    // ---- indexes -------------------------------------------------------------------------------------
+
+    /// <summary>
+    /// The sync declares the READER's access path as indexes and the destination adapter creates them
+    /// with the tables. This pins WHICH columns get one, not merely that some do: the entry point
+    /// (<c>Menu.BasicModelCode</c>) and every foreign id the reader walks the graph by — and nothing
+    /// else, because reads by id ride the PRIMARY KEY and the reference catalogs are read whole.
+    /// </summary>
+    [Fact]
+    public async Task TheSyncIndexesEveryColumnTheReaderEntersOrJoinsBy()
+    {
+        using var connection = await SyncedStoreAsync(MenuGraphFixture.Build());
+
+        Assert.Equal(
+            new[]
+            {
+                (ServiceMenuDuckDBTables.Menu, "BasicModelCode"),
+                (ServiceMenuDuckDBTables.MenuItem, "MenuVariantID"),
+                (ServiceMenuDuckDBTables.MenuItemPart, "MenuItemID"),
+                (ServiceMenuDuckDBTables.MenuItemPartCountryPrice, "MenuItemPartID"),
+                (ServiceMenuDuckDBTables.MenuLabourDetails, "MenuVariantID"),
+                (ServiceMenuDuckDBTables.MenuPeriodicAvailability, "MenuVariantID"),
+                (ServiceMenuDuckDBTables.MenuVariant, "MenuID"),
+                (ServiceMenuDuckDBTables.MenuVariantLabourRate, "MenuVariantID"),
+                (ServiceMenuDuckDBTables.ReplacementItemServiceIntervalGroup, "ReplacementItemID"),
+            },
+            ReadIndexes(connection));
+    }
+
+    /// <summary>
+    /// The second run meets the indexes the first one left behind and neither duplicates them nor
+    /// trips over them — and its upserts still land. That last part is the reason index definitions
+    /// cannot declare uniqueness: DuckDB refuses an untargeted <c>INSERT OR REPLACE</c> the moment a
+    /// table carries a second UNIQUE/PRIMARY KEY constraint, so a UNIQUE index here would break the
+    /// very batches it was declared alongside.
+    /// </summary>
+    [Fact]
+    public async Task ASecondSync_ReusesTheIndexes_AndItsUpsertsStillLand()
+    {
+        var fixture = MenuGraphFixture.Build();
+        StampAll(fixture, DateTimeOffset.Parse("2026-01-01T00:00:00Z"));
+
+        using var connection = new DuckDBConnection("DataSource=:memory:");
+        connection.Open();
+
+        Assert.True((await new StubSyncService(fixture).SyncAllAsync(null!, connection)).Succeeded);
+
+        var afterFirstRun = ReadIndexes(connection);
+        Assert.NotEmpty(afterFirstRun);
+
+        var variant = fixture.Variants.Single();
+        variant.Name = "RENAMED";
+        Stamp(variant, DateTimeOffset.Parse("2026-02-01T00:00:00Z"));
+
+        Assert.True((await new StubSyncService(fixture).SyncAllAsync(null!, connection)).Succeeded);
+
+        Assert.Equal(afterFirstRun, ReadIndexes(connection));
+
+        var documents = await new DuckDBServiceMenuLookupStorageService(connection)
+            .GetMenuDocumentsAsync(MenuGraphFixture.BasicModelCode);
+
+        Assert.Equal("RENAMED", documents.Variants.Single().VariantName);
+    }
+
+    private sealed class IndexProbeRow
+    {
+        public long ID { get; set; }
+        public string Code { get; set; } = string.Empty;
+        public long CountryID { get; set; }
+    }
+
+    /// <summary>
+    /// The destination adapter's own index API, straight through: a composite named by a member
+    /// expression (auto-named from the table and its columns) and a raw SQL expression under an
+    /// explicit name — the escape hatch for what a member expression cannot say.
+    /// </summary>
+    [Fact]
+    public async Task TheDestinationAdapter_CreatesCompositeAndExpressionIndexes()
+    {
+        using var connection = new DuckDBConnection("DataSource=:memory:");
+        connection.Open();
+
+        var engine = new SyncEngine<IndexProbeRow, IndexProbeRow>();
+        engine.Configure([SyncActionType.Add], 100, 0, 60, RetryAction.RetryAndStopAfterLastRetry);
+        engine.SetupGetSourceBatchItems(_ => new ValueTask<IEnumerable<IndexProbeRow?>?>([]));
+        engine.SetupMapping((rows, _) => new ValueTask<IEnumerable<IndexProbeRow?>?>(rows));
+
+        new DuckDBSyncDataDestination<IndexProbeRow, IndexProbeRow, DuckDBConnection>(connection)
+            .SetSyncService(engine)
+            .Configure(new DuckDBSyncDataDestinationConfigurations<IndexProbeRow, IndexProbeRow>
+            {
+                TableName = "IndexProbe",
+                PrimaryKey = row => row.ID,
+                Indexes =
+                [
+                    new() { Columns = row => new { row.Code, row.CountryID } },
+                    new() { SqlExpressions = ["lower(\"Code\")"], Name = "IX_IndexProbe_LowerCode" },
+                ],
+            });
+
+        Assert.True(await engine.RunAsync());
+
+        Assert.Equal(
+            new[] { "IX_IndexProbe_Code_CountryID", "IX_IndexProbe_LowerCode" },
+            ReadIndexNames(connection));
+
+        // The composite indexes both columns, in the order the expression named them.
+        Assert.Equal(new[] { ("IndexProbe", "Code, CountryID") }, ReadIndexes(connection).Take(1));
+    }
+
+    /// <summary>
+    /// An index that names nothing is a programming error, and it surfaces where it was written —
+    /// at Configure — rather than as a bare "prepare failed" from inside the run.
+    /// </summary>
+    [Fact]
+    public void AnIndexThatNamesNoColumn_ThrowsAtConfigureTime()
+    {
+        using var connection = new DuckDBConnection("DataSource=:memory:");
+        connection.Open();
+
+        var destination = new DuckDBSyncDataDestination<IndexProbeRow, IndexProbeRow, DuckDBConnection>(connection)
+            .SetSyncService(new SyncEngine<IndexProbeRow, IndexProbeRow>());
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            destination.Configure(new DuckDBSyncDataDestinationConfigurations<IndexProbeRow, IndexProbeRow>
+            {
+                TableName = "IndexProbe",
+                PrimaryKey = row => row.ID,
+                Indexes = [new()],
+            }));
+
+        Assert.Contains("IndexProbe", exception.Message);
+        Assert.Contains("declares no columns", exception.Message);
+    }
+
+    /// <summary>
+    /// Every index in the store, as (table, indexed columns), ordered. DuckDB's catalog lists only
+    /// explicitly created indexes, so the PRIMARY KEY ones are deliberately absent here.
+    /// </summary>
+    private static List<(string Table, string Columns)> ReadIndexes(DuckDBConnection connection)
+    {
+        var indexes = new List<(string, string)>();
+
+        using var command = connection.CreateCommand();
+        command.CommandText =
+            "SELECT table_name, array_to_string(expressions, ', ') FROM duckdb_indexes() ORDER BY table_name, index_name";
+
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+            indexes.Add((reader.GetString(0), reader.GetString(1)));
+
+        return indexes;
+    }
+
+    private static List<string> ReadIndexNames(DuckDBConnection connection)
+    {
+        var names = new List<string>();
+
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT index_name FROM duckdb_indexes() ORDER BY index_name";
+
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+            names.Add(reader.GetString(0));
+
+        return names;
     }
 
     // ---- bulk ----------------------------------------------------------------------------------------
