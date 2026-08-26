@@ -463,11 +463,20 @@ public partial class VehicleServiceItemEvaluator
     }
 
     /// <summary>
-    /// If a higher-mileage free item is already <c>Processed</c>, mark all lower-mileage
-    /// <c>Pending</c> items as <c>Cancelled</c> — they were superseded by the customer
-    /// jumping straight to a later interval.
-    /// <see cref="FindItemsCancelledByClaiming"/> is the pre-claim mirror of this rule
-    /// (it feeds the skipped-items claim warning) — keep the two predicates in sync.
+    /// If a higher-mileage free item is already <c>Processed</c>, mark the lower-mileage items it
+    /// superseded as <c>Cancelled</c> — the customer jumped straight to a later interval.
+    /// <para>
+    /// A <c>Pending</c> item is still inside its own window, so any such claim supersedes it. An
+    /// <c>Expired</c> one is cancelled only when the claim landed BEFORE it expired: cancellation is
+    /// what actually ended that item, and it has to keep saying so once the date it would otherwise
+    /// have run out on passes. Status is derived per lookup and nothing records a cancellation, so
+    /// without this the label silently rewrites itself to <c>Expired</c> on that date. An item the
+    /// customer simply let lapse — the claim came after its expiry — was never cancelled and stays
+    /// <c>Expired</c>.
+    /// </para>
+    /// <see cref="FindItemsCancelledByClaiming"/> is the pre-claim mirror of this rule (it feeds the
+    /// skipped-items claim warning) and stays <c>Pending</c>-only on purpose: a claim being made now
+    /// cannot land before an expiry that has already passed, so it never cancels an expired item.
     /// </summary>
     private void ApplyDynamicCancellation(IEnumerable<VehicleServiceItemDTO> serviceItems)
     {
@@ -478,10 +487,13 @@ public partial class VehicleServiceItemEvaluator
 
         foreach (var item in freeItems)
         {
-            if (item.StatusEnum != VehcileServiceItemStatuses.Pending) continue;
+            if (item.StatusEnum != VehcileServiceItemStatuses.Pending &&
+                item.StatusEnum != VehcileServiceItemStatuses.Expired) continue;
 
             var supersededBy = freeItems.FirstOrDefault(x =>
-                x.StatusEnum == VehcileServiceItemStatuses.Processed && x.MaximumMileage > item.MaximumMileage);
+                x.StatusEnum == VehcileServiceItemStatuses.Processed
+                && x.MaximumMileage > item.MaximumMileage
+                && ClaimLandedBeforeExpiry(item, x));
             if (supersededBy is null) continue;
 
             item.Status = "cancelled";
@@ -489,6 +501,23 @@ public partial class VehicleServiceItemEvaluator
             item.Claimable = false;
             Trace.RecordCancellation(item, supersededBy);
         }
+    }
+
+    /// <summary>
+    /// Whether <paramref name="supersededBy"/> was claimed while <paramref name="item"/> was still
+    /// live. Vacuously true for a <c>Pending</c> item — it has not expired, so nothing already claimed
+    /// can post-date it. Compared against the same <see cref="EffectiveExpiry"/> the status verdict
+    /// uses, so the two agree on the instant an item stops being live. A claim carrying no date cannot
+    /// be placed on either side of that instant and so does not cancel: the item keeps the
+    /// <c>Expired</c> reading it would have had anyway.
+    /// </summary>
+    private bool ClaimLandedBeforeExpiry(VehicleServiceItemDTO item, VehicleServiceItemDTO supersededBy)
+    {
+        if (item.StatusEnum != VehcileServiceItemStatuses.Expired) return true;
+        if (item.ExpiresAt is null || supersededBy.ClaimDate is null) return false;
+
+        return supersededBy.ClaimDate.Value.UtcDateTime
+             < EffectiveExpiry(item.ExpiresAt.Value, options.TreatServiceItemExpiryAsEndOfDay);
     }
 
     private async Task StampSignaturesPrintUrlsAndWarnings(
