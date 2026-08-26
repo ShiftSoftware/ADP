@@ -268,17 +268,28 @@ public sealed class SnapshotIngestConcurrencySafetyTests : IDisposable
     public async Task ABacklogOfBufferedRows_StopsAdmission_EvenWhileDegreeSlotsAreFree()
     {
         // Source 0 never finishes fetching, so the DRAIN is parked on it and can release nothing.
-        // Sources 1 and 2 are admitted with it, complete immediately — freeing two of the three
-        // degree slots — and their buffered rows are then the only thing that can refuse the
-        // remaining nine. The earlier "admit one whenever nothing is in flight" rule failed exactly
-        // here: it would have walked all nine in, one at a time, with the budget already blown.
+        // Sources 1 and 2 are admitted alongside it, and their buffered rows are then the only
+        // thing that can refuse the remaining nine. The earlier "admit one whenever nothing is in
+        // flight" rule failed exactly here: it would have walked all nine in, one at a time, with
+        // the budget already blown.
+        //
+        // The two backers are gated as well, so their rows land only AFTER all three are admitted.
+        // Without that gate the premise is not yet established when the window first looks: a
+        // backer that buffers its hundred rows while the pump is still walking the queue closes the
+        // window early and quite correctly leaves the third source unadmitted — a pass for the
+        // dispatcher and a five-second timeout here. Gating separates the fact under test — the
+        // window was open and admission stopped anyway — from a window that simply shut first.
         var holdTheDrain = NewGate();
+        var holdTheBackers = NewGate();
         var sources = new List<SnapshotSource> { Fetching("head", gate: holdTheDrain.Task) };
-        sources.AddRange(Enumerable.Range(1, 11).Select(index => Fetching($"s{index}", rows: 100)));
+        sources.AddRange(Enumerable.Range(1, 11).Select(index =>
+            Fetching($"s{index}", rows: 100, gate: index <= 2 ? holdTheBackers.Task : null)));
 
         var run = RunAsync(sources, degree: 3, maxBufferedRows: 100);
 
-        await WaitUntilAsync(() => started.Count == 3);
+        await WaitUntilAsync(() => started.Count == 3);   // Full degree, with the budget untouched.
+
+        holdTheBackers.SetResult();
         await WaitUntilAsync(() => Volatile.Read(ref fetchesInFlight) == 1);   // Only the head is left.
         await Task.Delay(50, TestContext.Current.CancellationToken);
 
