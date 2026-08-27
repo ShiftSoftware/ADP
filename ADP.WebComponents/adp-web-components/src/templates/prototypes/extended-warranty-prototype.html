@@ -1,5 +1,18 @@
 <!doctype html>
-<html lang="en" data-expiry="dim">
+<!--
+  FROZEN PROTOTYPE — do not restyle.
+
+  A hand-built mock with no component in it. It records what a design looked like
+  when a decision was taken, which is the whole of its value: re-styling it onto
+  the harness tokens would destroy the record and prove nothing.
+
+  Harness pages live one level up; see
+  .shift/repos/adp/web-components/templates-design-language.md §8.
+
+  The working prototype: every expiry and badge treatment on one page,
+  switchable, which is how the options were compared.
+-->
+<html lang="en" data-expiry="dim" data-badge="current">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -126,8 +139,10 @@
 
       .status-badge {
         display: inline-flex;
+        flex: 1 1 0;
         gap: 7px;
         align-items: center;
+        min-width: 0;
         min-height: 30px;
         padding: 5px 12px;
         border-radius: 999px;
@@ -227,7 +242,9 @@
         display: flex;
         flex-wrap: wrap;
         gap: 7px 12px;
-        align-items: center;
+        /* stretch, not center: the longer label wraps to two lines at some
+           widths and the pair should stay the same height. */
+        align-items: stretch;
         justify-content: space-between;
         margin-bottom: 8px;
       }
@@ -287,7 +304,7 @@
 
       .timeline-scroll {
         overflow-x: auto;
-        padding: 10px 14px 7px;
+        padding: 12px 14px 7px;
         border-radius: inherit;
         scrollbar-color: #aab5bf transparent;
         scrollbar-width: thin;
@@ -310,12 +327,14 @@
       }
 
       .timeline {
+        --axis-height: 18px;
         min-width: 700px;
       }
 
       .axis {
         position: relative;
-        height: 30px;
+        z-index: 2;
+        height: var(--axis-height);
         margin: 0 8px;
         border-bottom: 1px solid #bdc7cf;
       }
@@ -323,7 +342,9 @@
       .axis-date {
         position: absolute;
         inset: 0 auto auto var(--at);
+        padding: 0 3px;
         color: var(--muted);
+        background: var(--paper-soft);
         font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
         font-size: 11px;
         font-weight: 800;
@@ -342,10 +363,10 @@
 
       .axis-date::after {
         position: absolute;
-        top: 15px;
+        top: var(--axis-height);
         left: 50%;
         width: 1px;
-        height: 15px;
+        height: 12px;
         background: #aeb9c2;
         content: '';
       }
@@ -359,60 +380,35 @@
       }
 
       .lane {
+        --track-top: 16px;
+        --track-height: 54px;
+        --label-band: 29px;
         position: relative;
         isolation: isolate;
-        height: 112px;
+        height: calc(var(--track-top) + var(--track-height) + var(--label-band));
         margin: 0 8px;
       }
 
       .lane::before {
         position: absolute;
-        inset: 29px 0 auto;
-        height: 54px;
+        inset: var(--track-top) 0 auto;
+        height: var(--track-height);
         background: repeating-linear-gradient(-45deg, rgba(95, 108, 120, 0.035) 0 5px, transparent 5px 10px), #edf1f3;
         border: 1px solid var(--line-soft);
         border-radius: 8px;
         content: '';
       }
 
-      .today-marker {
+      .today-head {
+        position: relative;
+        height: 50px;
+        margin: 0 8px;
+      }
+
+      .today-pill {
         position: absolute;
-        z-index: 5;
         top: 0;
-        bottom: 29px;
         left: var(--at);
-        width: 0;
-        pointer-events: none;
-      }
-
-      .today-marker::before {
-        position: absolute;
-        top: 18px;
-        bottom: 0;
-        left: -1px;
-        width: 2px;
-        background: var(--blue);
-        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.72);
-        content: '';
-      }
-
-      .today-marker::after {
-        position: absolute;
-        top: 21px;
-        left: 0;
-        width: 8px;
-        height: 8px;
-        background: var(--paper);
-        border: 2px solid var(--blue);
-        border-radius: 50%;
-        content: '';
-        transform: translateX(-50%);
-      }
-
-      .today-marker span {
-        position: absolute;
-        top: 0;
-        left: 0;
         padding: 3px 6px;
         color: var(--blue-dark);
         background: var(--blue-tint);
@@ -425,14 +421,70 @@
         transform: translateX(-50%);
       }
 
-      .today-marker.is-near-end span {
+      .today-head.is-near-end .today-pill {
         transform: translateX(calc(-100% + 8px));
+      }
+
+      .today-marker {
+        position: absolute;
+        z-index: 5;
+        top: calc(-1 * var(--axis-height) - 21px);
+        bottom: var(--label-band);
+        left: var(--at);
+        width: 0;
+        pointer-events: none;
+      }
+
+      .today-marker::before {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: -1px;
+        width: 2px;
+        background: var(--blue);
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.72);
+        content: '';
+      }
+
+      /* The stretch across the label band is a separate element sitting below
+         the coverage list, so coverage names paint over the line instead of
+         being cut by it. */
+      .today-tail {
+        position: absolute;
+        z-index: 0;
+        top: calc(100% - var(--label-band));
+        bottom: 0;
+        left: var(--at);
+        width: 0;
+        pointer-events: none;
+      }
+
+      .today-tail::before {
+        position: absolute;
+        inset: 0 auto 0 -1px;
+        width: 2px;
+        background: var(--blue);
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.72);
+        content: '';
+      }
+
+      .today-marker::after {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 8px;
+        height: 8px;
+        background: var(--paper);
+        border: 2px solid var(--blue);
+        border-radius: 50%;
+        content: '';
+        transform: translateX(-50%);
       }
 
       .coverage-entry {
         position: absolute;
         z-index: var(--layer, 1);
-        top: 29px;
+        top: var(--track-top);
         left: var(--start);
         width: var(--span);
         min-width: 0;
@@ -451,7 +503,7 @@
         position: relative;
         display: flex;
         width: 100%;
-        height: 54px;
+        height: var(--track-height);
         min-width: 0;
         align-items: center;
         justify-content: center;
@@ -523,7 +575,7 @@
       .boundary {
         position: absolute;
         z-index: 6;
-        top: 56px;
+        top: calc(var(--track-top) + var(--track-height) / 2);
         left: var(--at);
         width: 10px;
         height: 10px;
@@ -568,11 +620,11 @@
       .past-wash {
         position: absolute;
         z-index: 4;
-        top: 29px;
+        top: var(--track-top);
         left: 0;
         display: none;
         width: var(--to, 0%);
-        height: 54px;
+        height: var(--track-height);
         background: linear-gradient(90deg, rgba(228, 233, 236, 0.62) 0%, rgba(228, 233, 236, 0.46) 100%);
         border-radius: 8px 0 0 8px;
         backdrop-filter: grayscale(0.92);
@@ -644,6 +696,108 @@
         letter-spacing: 0.08em;
         text-transform: uppercase;
         vertical-align: 1px;
+      }
+
+      /* ---------------------------------------------------------------
+         Status badge treatments - switchable ideas for making the two
+         badges more vibrant. Prototype scaffolding: the component keeps
+         only the one that gets picked.
+         --------------------------------------------------------------- */
+
+      /* A - Solid: full-strength fill, white text and glyph. */
+      /* --green-dark, not --green: white on --green is 4.30:1, under the
+         4.5:1 AA floor for 13px text. This is 6.46:1. */
+      html[data-badge='solid'] .status-badge.is-positive {
+        color: #ffffff;
+        background: var(--green-dark);
+        border-color: #1a5535;
+      }
+
+      html[data-badge='solid'] .status-badge.is-negative {
+        color: #ffffff;
+        background: var(--red);
+        border-color: #8f1d13;
+      }
+
+      /* B - Split cap: solid leading cap carrying the glyph, tinted body. */
+      html[data-badge='cap'] .status-badge {
+        gap: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+
+      /* Text absorbs the slack so the cap stays flush to the leading edge
+         when the badge is stretched full width on narrow screens. */
+      html[data-badge='cap'] .status-badge > span {
+        flex: 1 1 auto;
+        padding: 6px 13px 6px 11px;
+        text-align: center;
+      }
+
+      html[data-badge='cap'] .badge-icon {
+        box-sizing: border-box;
+        align-self: stretch;
+        width: 34px;
+        height: auto;
+        padding: 6px 9px;
+        color: #ffffff;
+      }
+
+      html[data-badge='cap'] .status-badge.is-positive .badge-icon {
+        background: var(--green);
+      }
+
+      html[data-badge='cap'] .status-badge.is-negative .badge-icon {
+        background: var(--red);
+      }
+
+      /* C - Bold outline: white body, full-strength rule and glyph. */
+      html[data-badge='outline'] .status-badge {
+        border-width: 2px;
+        font-weight: 750;
+      }
+
+      html[data-badge='outline'] .status-badge.is-positive {
+        background: var(--paper);
+        border-color: var(--green);
+      }
+
+      html[data-badge='outline'] .status-badge.is-positive .badge-icon {
+        color: var(--green);
+      }
+
+      html[data-badge='outline'] .status-badge.is-negative {
+        background: var(--paper);
+        border-color: var(--red);
+      }
+
+      html[data-badge='outline'] .status-badge.is-negative .badge-icon {
+        color: var(--red);
+      }
+
+      /* D - Glow: tinted gradient with a soft coloured halo. */
+      html[data-badge='glow'] .status-badge.is-positive {
+        background: linear-gradient(#f3faf6, #dcefe4);
+        border-color: rgba(44, 138, 88, 0.5);
+        box-shadow:
+          0 1px 2px rgba(44, 138, 88, 0.2),
+          0 0 0 3px rgba(44, 138, 88, 0.12);
+      }
+
+      html[data-badge='glow'] .status-badge.is-positive .badge-icon {
+        color: var(--green);
+      }
+
+      html[data-badge='glow'] .status-badge.is-negative {
+        background: linear-gradient(#fff5f4, #ffe3e1);
+        border-color: rgba(180, 35, 24, 0.45);
+        box-shadow:
+          0 1px 2px rgba(180, 35, 24, 0.18),
+          0 0 0 3px rgba(180, 35, 24, 0.1);
+      }
+
+      html[data-badge='glow'] .status-badge.is-negative .badge-icon {
+        color: var(--red);
       }
 
       .sr-only {
@@ -727,18 +881,19 @@
         }
 
         .timeline-scroll {
-          padding: 8px 10px 5px;
+          padding: 10px 10px 5px;
         }
 
         .timeline {
+          --axis-height: 30px;
           min-width: 420px;
         }
 
-        .today-marker.is-near-end span {
+        .today-head.is-near-end .today-pill {
           transform: translateX(calc(-100% - 46px));
         }
 
-        .today-marker.is-near-end span::after {
+        .today-head.is-near-end .today-pill::after {
           position: absolute;
           top: 50%;
           left: 100%;
@@ -747,22 +902,12 @@
           content: '';
         }
 
-        .axis {
-          height: 42px;
-        }
-
-        .axis-date::after {
-          top: 25px;
-          height: 17px;
-        }
-
         .axis-date:last-child {
-          top: 11px;
+          top: 13px;
         }
 
         .axis-date:last-child::after {
-          top: 19px;
-          height: 12px;
+          top: calc(var(--axis-height) - 13px);
         }
       }
 
@@ -788,6 +933,9 @@
         }
       }
     </style>
+
+    <!-- Navigation only: a shadow-DOM element, so it adds no layout and no styles to this page. -->
+    <script type="module" src="/templates/nav.js"></script>
   </head>
   <body>
     <main class="page">
@@ -824,6 +972,17 @@
           </div>
         </div>
 
+        <div class="control-row">
+          <p id="badge-picker-title" class="control-title">Status badges</p>
+          <div class="segmented badge-segmented" role="group" aria-labelledby="badge-picker-title">
+            <button type="button" data-badge-button="current" aria-pressed="true" aria-controls="warranty-card">Current</button>
+            <button type="button" data-badge-button="solid" aria-pressed="false" aria-controls="warranty-card">A - Solid</button>
+            <button type="button" data-badge-button="cap" aria-pressed="false" aria-controls="warranty-card">B - Split cap</button>
+            <button type="button" data-badge-button="outline" aria-pressed="false" aria-controls="warranty-card">C - Bold outline</button>
+            <button type="button" data-badge-button="glow" aria-pressed="false" aria-controls="warranty-card">D - Glow</button>
+          </div>
+        </div>
+
         <p id="interaction-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
       </section>
 
@@ -849,16 +1008,19 @@
           <div class="timeline-shell">
             <div class="timeline-scroll" tabindex="0" role="region" aria-label="Warranty coverage timeline" aria-describedby="journey-summary">
               <div class="timeline">
+                <div id="today-head" class="today-head" aria-hidden="true">
+                  <span id="today-pill" class="today-pill">Today · 2026-08-13</span>
+                </div>
+
                 <div id="timeline-axis" class="axis" aria-hidden="true"></div>
 
                 <div id="timeline-lane" class="lane">
+                  <span id="today-tail" class="today-tail" aria-hidden="true"></span>
                   <div id="coverage-list" class="coverage-list" role="list"></div>
 
                   <div id="boundary-layer" class="boundary-layer" aria-hidden="true"></div>
                   <span id="past-wash" class="past-wash" aria-hidden="true"></span>
-                  <span id="today-marker" class="today-marker" aria-hidden="true">
-                    <span>Today · 2026-08-13</span>
-                  </span>
+                  <span id="today-marker" class="today-marker" aria-hidden="true"></span>
                 </div>
 
                 <p id="journey-summary" class="sr-only"></p>
@@ -1029,6 +1191,14 @@
         'hatch': 'expired coverage hatched and tagged',
       };
 
+      const badgeDescriptions = {
+        'current': 'the current tinted pill',
+        'solid': 'solid fill with white text',
+        'cap': 'a solid leading cap with a tinted body',
+        'outline': 'a white body with a bold coloured rule',
+        'glow': 'a tinted gradient with a soft halo',
+      };
+
       const root = document.documentElement;
       const warrantyCard = document.querySelector('#warranty-card');
       const activationCompany = document.querySelector('#activation-company');
@@ -1043,12 +1213,15 @@
       const boundaryLayer = document.querySelector('#boundary-layer');
       const pastWash = document.querySelector('#past-wash');
       const todayMarker = document.querySelector('#today-marker');
-      const todayLabel = todayMarker.querySelector('span');
+      const todayTail = document.querySelector('#today-tail');
+      const todayHead = document.querySelector('#today-head');
+      const todayPill = document.querySelector('#today-pill');
       const journeySummary = document.querySelector('#journey-summary');
       const interactionStatus = document.querySelector('#interaction-status');
       const scenarioButtons = [...document.querySelectorAll('[data-scenario-button]')];
       const authorizationButtons = [...document.querySelectorAll('[data-authorization-button]')];
       const expiryButtons = [...document.querySelectorAll('[data-expiry-button]')];
+      const badgeButtons = [...document.querySelectorAll('[data-badge-button]')];
       let activeScenarioId = 'two-extensions';
       let isAuthorized = true;
 
@@ -1201,8 +1374,13 @@
 
         const todayPosition = positionInRange(snapshotDate, scenario);
         todayMarker.style.setProperty('--at', asPercentage(todayPosition));
-        todayMarker.classList.toggle('is-near-end', todayPosition > 80);
-        todayLabel.textContent = `Today · ${snapshotDate}`;
+        todayTail.style.setProperty('--at', asPercentage(todayPosition));
+        todayHead.style.setProperty('--at', asPercentage(todayPosition));
+        todayPill.textContent = `Today · ${snapshotDate}`;
+        // Only pull the pill off its line when centring it would run past the edge.
+        const headWidth = todayHead.clientWidth;
+        const pillCentre = (headWidth * clampPercentage(todayPosition)) / 100;
+        todayHead.classList.toggle('is-near-end', pillCentre + todayPill.offsetWidth / 2 > headWidth);
         pastWash.style.setProperty('--to', asPercentage(clampPercentage(todayPosition)));
 
         const coverageDescriptions = scenario.coverages.map(coverage => `${coverage.label} runs from ${coverage.start} to ${coverage.end} and is ${coverageStatus(coverage)}`);
@@ -1233,6 +1411,15 @@
           expiryButtons.forEach(other => other.setAttribute('aria-pressed', String(other === button)));
           renderScenario(activeScenarioId, false);
           interactionStatus.textContent = `Expiry indication: ${expiryDescriptions[expiryStyle]}.`;
+        });
+      });
+
+      badgeButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          const badgeStyle = button.dataset.badgeButton;
+          root.dataset.badge = badgeStyle;
+          badgeButtons.forEach(other => other.setAttribute('aria-pressed', String(other === button)));
+          interactionStatus.textContent = `Status badges: ${badgeDescriptions[badgeStyle]}.`;
         });
       });
 

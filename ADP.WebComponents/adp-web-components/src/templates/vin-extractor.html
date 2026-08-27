@@ -1,238 +1,298 @@
 <!doctype html>
-<html dir="ltr" lang="en">
+<html lang="en" dir="ltr">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0" />
-    <title>Vin Extractor</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>VIN extractor — adp-web-components</title>
+
+    <link rel="stylesheet" href="/templates/harness.css" />
+
+    <!-- Blocking on purpose: a deferred module would let the page paint light first. -->
+    <script src="/templates/harness-theme.js"></script>
+
     <script nomodule src="/build/shift-components.js"></script>
     <script type="module" src="/build/shift-components.esm.js"></script>
+
+    <script type="module" src="/templates/harness.js"></script>
+    <script defer src="/templates/vendor/alpine.js"></script>
   </head>
-  <body>
-    <a href="#" onclick="history.back()" style="color: blue; display: block; margin-bottom: 16px">Back</a>
 
-    <h1 style="font-weight: 700; margin: 16px 8px; font-size: 30px">Vin Extractor Demo</h1>
+  <body class="bg-base-200 text-base-content min-h-screen">
+    <!-- Every area and page, read from catalog.json. -->
+    <div data-harness-nav x-cloak></div>
 
-    <ol>
-      <li>
-        <div>OCR 2000ms</div>
-        <button id="case-1-button" onclick="openExtractor('case-1')" type="button">open</button>
-        <vin-extractor
-          use-ocr="true"
-          title="OCR-2000ms"
-          on-error="onError"
-          id="case-1-element"
-          on-extract="onExtract"
-          on-processing="onProcessing"
-          on-open-change="openChanged"
-          ocr-endpoint="https://tiq-vehicles-functions-staging.azurewebsites.net/api/vehicle-lookup/ocr"
-        ></vin-extractor>
-      </li>
-      <li>
-        <div>sticker 2000ms</div>
-        <button id="case-2-button" onclick="openExtractor('case-2')" type="button">open</button>
-        <vin-extractor
-          read-sticker="true"
-          on-error="onError"
-          id="case-2-element"
-          title="sticker-2000ms"
-          on-extract="onExtract"
-          on-processing="onProcessing"
-          on-open-change="openChanged"
-        ></vin-extractor>
-      </li>
-      <li>
-        <div>both 2000ms -verbose</div>
-        <button id="case-3-button" onclick="openExtractor('case-3')" type="button">open</button>
-        <vin-extractor
-          verbose="false"
-          use-ocr="true"
-          read-sticker="true"
-          title="both-2000ms"
-          on-error="onError"
-          id="case-3-element"
-          on-extract="onExtract"
-          on-processing="onProcessing"
-          on-open-change="openChanged"
-          ocr-endpoint=""
-        ></vin-extractor>
-      </li>
-      <li>
-        <div>both skip validation</div>
-        <button id="case-4-button" onclick="openExtractor('case-4')" type="button">open</button>
-        <vin-extractor
-          use-ocr="true"
-          on-error="onError"
-          read-sticker="true"
-          id="case-4-element"
-          skip-validation="true"
-          on-extract="onExtract"
-          on-processing="onProcessing"
-          title="both skip validation"
-          on-open-change="openChanged"
-          ocr-endpoint=""
-        ></vin-extractor>
-      </li>
-      <li>
-        <div>both manual-capture</div>
-        <button id="case-5-button" onclick="openExtractor('case-5')" type="button">open</button>
-        <vin-extractor
-          use-ocr="true"
-          on-error="onError"
-          read-sticker="true"
-          id="case-5-element"
-          manual-capture="true"
-          skip-validation="true"
-          on-extract="onExtract"
-          title="both manual-capture"
-          on-processing="onProcessing"
-          on-open-change="openChanged"
-          ocr-endpoint=""
-        ></vin-extractor>
-      </li>
-      <li>
-        <div>both file upload</div>
+    <div class="mx-auto flex max-w-[1400px] flex-col gap-8 px-4 py-10 sm:px-8">
+      <header>
+        <p class="eyebrow text-neutral">adp-web-components · standalone</p>
+        <h1 class="mt-1 text-2xl font-bold tracking-tight">VIN extractor</h1>
+        <p class="lede text-base-content/70 mt-2">
+          Nine configurations of the same scanner side by side, because what it does depends almost entirely on which flags are set. The first five open a camera; the last four
+          take a file instead. A device camera is needed for the first group.
+        </p>
+      </header>
 
-        <vin-extractor
-          use-ocr="true"
-          file-upload="true"
-          read-sticker="true"
-          id="case-6-element"
-          skip-validation="true"
-          on-processing="onProcessing"
-          uploader-button-id="vin-extractor-button"
-          ocr-endpoint=""
-        >
-          <button id="vin-extractor-button" type="button">upload</button>
-        </vin-extractor>
-      </li>
-      <li>
-        <div>ocr file upload</div>
+      <!--
+        No single subject here — this page drives nine elements itself — so the
+        rail keeps only the controls that apply to the page as a whole, and the
+        cases feed the log through `harness:log`.
+      -->
+      <section class="flex flex-col gap-4" x-data="harness({ subject: false, language: false, mode: false, platform: false })">
+        <div class="flex min-w-0 flex-col gap-5">
+          <div class="card bg-base-100 border-base-300 flex flex-row flex-wrap items-center gap-3 border p-4">
+            <span class="eyebrow text-neutral">Last extracted VIN</span>
+            <code id="vin" class="text-accent font-mono text-lg font-bold">N/A</code>
+          </div>
 
-        <vin-extractor
-          use-ocr="true"
-          file-upload="true"
-          id="case-7-element"
-          skip-validation="true"
-          on-processing="onProcessing"
-          uploader-button-id="vin-extractor-button2"
-          ocr-endpoint=""
-        >
-          <button id="vin-extractor-button2" type="button">upload</button>
-        </vin-extractor>
-      </li>
-      <li>
-        <div>sticker file upload</div>
+          <section>
+            <h2 class="eyebrow text-neutral mb-3">Camera</h2>
 
-        <vin-extractor file-upload="true" read-sticker="true" id="case-8-element" skip-validation="true" on-processing="onProcessing" uploader-button-id="vin-extractor-button3">
-          <button id="vin-extractor-button3" type="button">upload</button>
-        </vin-extractor>
-      </li>
-      <li>
-        <div>sticker file upload capture environment</div>
+            <ol class="grid gap-4 sm:grid-cols-2">
+              <li class="card bg-base-100 border-base-300 flex flex-col items-start gap-3 border p-4">
+                <div>
+                  <p class="font-semibold">OCR</p>
+                  <p class="text-base-content/60 font-mono text-sm">use-ocr · live endpoint</p>
+                </div>
 
-        <vin-extractor
-          file-upload="true"
-          read-sticker="true"
-          id="case-9-element"
-          skip-validation="true"
-          capture-environment="true"
-          on-processing="onProcessing"
-          uploader-button-id="vin-extractor-button4"
-        >
-          <button id="vin-extractor-button4" type="button">upload</button>
-        </vin-extractor>
-      </li>
-    </ol>
+                <button id="case-1-button" type="button" class="btn btn-sm btn-outline" onclick="openExtractor('case-1')">Open</button>
 
-    <h2>
-      Vin:
-      <span id="vin">N/A</span>
-    </h2>
-  </body>
+                <vin-extractor
+                  id="case-1-element"
+                  use-ocr="true"
+                  title="OCR-2000ms"
+                  on-error="onError"
+                  on-extract="onExtract"
+                  on-processing="onProcessing"
+                  on-open-change="onOpenChange"
+                  ocr-endpoint="https://tiq-vehicles-functions-staging.azurewebsites.net/api/vehicle-lookup/ocr"
+                ></vin-extractor>
+              </li>
 
-  <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      const vinExtractor = document.getElementById('case-6-element');
-      const vinExtractor2 = document.getElementById('case-7-element');
-      const vinExtractor3 = document.getElementById('case-8-element');
-      const vinExtractor4 = document.getElementById('case-9-element');
+              <li class="card bg-base-100 border-base-300 flex flex-col items-start gap-3 border p-4">
+                <div>
+                  <p class="font-semibold">Sticker</p>
+                  <p class="text-base-content/60 font-mono text-sm">read-sticker</p>
+                </div>
 
-      [vinExtractor, vinExtractor2, vinExtractor3, vinExtractor4].forEach(vinExt => {
-        if (!vinExt) return;
-        vinExt.onError = onError;
-        vinExt.onExtract = onExtract;
-        vinExt.onProcessing = onProcessing;
-      });
-    });
+                <button id="case-2-button" type="button" class="btn btn-sm btn-outline" onclick="openExtractor('case-2')">Open</button>
 
-    function getBlazorRef(target) {
-      const blazor = {};
+                <vin-extractor
+                  id="case-2-element"
+                  read-sticker="true"
+                  title="sticker-2000ms"
+                  on-error="onError"
+                  on-extract="onExtract"
+                  on-processing="onProcessing"
+                  on-open-change="onOpenChange"
+                ></vin-extractor>
+              </li>
 
-      blazor.invokeMethodAsync = function (methodName, ...args) {
-        if (methodName === 'onError') {
-          closeExtractor(target);
-          onError(...args);
-        } else if (methodName === 'onExtract') {
-          closeExtractor(target);
-          onExtract(...args);
-        } else if (methodName === 'openChanged') {
-          openChanged(target, ...args);
-        } else if (methodName === 'onProcessing') {
-          onProcessing(...args);
-        }
-      };
+              <li class="card bg-base-100 border-base-300 flex flex-col items-start gap-3 border p-4">
+                <div>
+                  <p class="font-semibold">Both</p>
+                  <p class="text-base-content/60 font-mono text-sm">use-ocr · read-sticker · verbose="false"</p>
+                </div>
 
-      return blazor;
-    }
+                <button id="case-3-button" type="button" class="btn btn-sm btn-outline" onclick="openExtractor('case-3')">Open</button>
 
-    function openChanged(target, isOpen) {
-      if (!isOpen) {
-        closeExtractor(target);
+                <vin-extractor
+                  id="case-3-element"
+                  use-ocr="true"
+                  read-sticker="true"
+                  verbose="false"
+                  title="both-2000ms"
+                  ocr-endpoint=""
+                  on-error="onError"
+                  on-extract="onExtract"
+                  on-processing="onProcessing"
+                  on-open-change="onOpenChange"
+                ></vin-extractor>
+              </li>
+
+              <li class="card bg-base-100 border-base-300 flex flex-col items-start gap-3 border p-4">
+                <div>
+                  <p class="font-semibold">Both, no validation</p>
+                  <p class="text-base-content/60 font-mono text-sm">skip-validation — accepts anything read</p>
+                </div>
+
+                <button id="case-4-button" type="button" class="btn btn-sm btn-outline" onclick="openExtractor('case-4')">Open</button>
+
+                <vin-extractor
+                  id="case-4-element"
+                  use-ocr="true"
+                  read-sticker="true"
+                  skip-validation="true"
+                  title="both skip validation"
+                  ocr-endpoint=""
+                  on-error="onError"
+                  on-extract="onExtract"
+                  on-processing="onProcessing"
+                  on-open-change="onOpenChange"
+                ></vin-extractor>
+              </li>
+
+              <li class="card bg-base-100 border-base-300 flex flex-col items-start gap-3 border p-4">
+                <div>
+                  <p class="font-semibold">Both, manual capture</p>
+                  <p class="text-base-content/60 font-mono text-sm">manual-capture — the reader waits to be told when</p>
+                </div>
+
+                <button id="case-5-button" type="button" class="btn btn-sm btn-outline" onclick="openExtractor('case-5')">Open</button>
+
+                <vin-extractor
+                  id="case-5-element"
+                  use-ocr="true"
+                  read-sticker="true"
+                  manual-capture="true"
+                  skip-validation="true"
+                  title="both manual-capture"
+                  ocr-endpoint=""
+                  on-error="onError"
+                  on-extract="onExtract"
+                  on-processing="onProcessing"
+                  on-open-change="onOpenChange"
+                ></vin-extractor>
+              </li>
+            </ol>
+          </section>
+
+          <section>
+            <h2 class="eyebrow text-neutral mb-3">File upload</h2>
+            <p class="text-base-content/60 mb-3 text-sm">
+              <code>uploader-button-id</code> points at a button the host supplies as a child, so the trigger below is the host's own markup, not the component's.
+            </p>
+
+            <ol class="grid gap-4 sm:grid-cols-2">
+              <li class="card bg-base-100 border-base-300 flex flex-col items-start gap-3 border p-4">
+                <div>
+                  <p class="font-semibold">Both</p>
+                  <p class="text-base-content/60 font-mono text-sm">use-ocr · read-sticker</p>
+                </div>
+
+                <vin-extractor id="case-6-element" use-ocr="true" read-sticker="true" file-upload="true" skip-validation="true" uploader-button-id="upload-both" ocr-endpoint="">
+                  <button id="upload-both" type="button" class="btn btn-sm btn-outline">Choose image</button>
+                </vin-extractor>
+              </li>
+
+              <li class="card bg-base-100 border-base-300 flex flex-col items-start gap-3 border p-4">
+                <div>
+                  <p class="font-semibold">OCR</p>
+                  <p class="text-base-content/60 font-mono text-sm">use-ocr</p>
+                </div>
+
+                <vin-extractor id="case-7-element" use-ocr="true" file-upload="true" skip-validation="true" uploader-button-id="upload-ocr" ocr-endpoint="">
+                  <button id="upload-ocr" type="button" class="btn btn-sm btn-outline">Choose image</button>
+                </vin-extractor>
+              </li>
+
+              <li class="card bg-base-100 border-base-300 flex flex-col items-start gap-3 border p-4">
+                <div>
+                  <p class="font-semibold">Sticker</p>
+                  <p class="text-base-content/60 font-mono text-sm">read-sticker</p>
+                </div>
+
+                <vin-extractor id="case-8-element" read-sticker="true" file-upload="true" skip-validation="true" uploader-button-id="upload-sticker">
+                  <button id="upload-sticker" type="button" class="btn btn-sm btn-outline">Choose image</button>
+                </vin-extractor>
+              </li>
+
+              <li class="card bg-base-100 border-base-300 flex flex-col items-start gap-3 border p-4">
+                <div>
+                  <p class="font-semibold">Sticker, rear camera</p>
+                  <p class="text-base-content/60 font-mono text-sm">capture-environment — opens the camera on a phone</p>
+                </div>
+
+                <vin-extractor
+                  id="case-9-element"
+                  read-sticker="true"
+                  file-upload="true"
+                  skip-validation="true"
+                  capture-environment="true"
+                  uploader-button-id="upload-sticker-camera"
+                >
+                  <button id="upload-sticker-camera" type="button" class="btn btn-sm btn-outline">Choose image</button>
+                </vin-extractor>
+              </li>
+            </ol>
+          </section>
+        </div>
+
+        <!-- The harness drawer: launcher, right-edge hover strip and panel, all stamped by harness.js. -->
+        <div data-harness-rail x-cloak></div>
+      </section>
+    </div>
+
+    <script>
+      const report = (label, detail) => window.dispatchEvent(new CustomEvent('harness:log', { detail: { label, detail } }));
+
+      const onError = error => report('error', error?.message ?? error);
+      const onProcessing = isProcessing => report(isProcessing ? 'processing' : 'idle', '');
+
+      function onExtract(vin) {
+        report('extract', vin);
+        document.getElementById('vin').textContent = vin;
+
+        // One VIN at a time: whichever case read it, the rest close.
+        document.querySelectorAll('vin-extractor').forEach(scanner => scanner.close());
       }
-    }
 
-    function getTargetElements(target) {
-      const vinExtractor = document.getElementById(`${target}-element`);
-      const button = document.getElementById(`${target}-button`);
-      return { vinExtractor, button };
-    }
+      /*
+       * The camera cases go through the Blazor bridge on purpose — that is how the
+       * .NET host drives this component, and it is the path most likely to break.
+       * The upload cases assign the callbacks directly, which is the plain-web way.
+       */
+      const uploadCases = ['case-6-element', 'case-7-element', 'case-8-element', 'case-9-element'];
 
-    function onError(error) {
-      console.error('Error:', error);
-    }
+      document.addEventListener('DOMContentLoaded', () => {
+        uploadCases.forEach(id => {
+          const extractor = document.getElementById(id);
 
-    function onExtract(data) {
-      console.log('Extracted data:', data);
-      document.getElementById('vin').innerHTML = data;
+          if (!extractor) return;
 
-      const scanners = Array.from(document.getElementsByTagName('vin-extractor'));
-
-      scanners.forEach(scanner => {
-        scanner.close();
+          extractor.onError = onError;
+          extractor.onExtract = onExtract;
+          extractor.onProcessing = onProcessing;
+        });
       });
-    }
 
-    function openExtractor(target) {
-      const { vinExtractor, button } = getTargetElements(target);
+      function blazorRefFor(target) {
+        return {
+          // The names arriving here are the literal `on-*` attribute values above:
+          // the component dispatches a string callback through the ref by name.
+          invokeMethodAsync(name, ...args) {
+            if (name === 'onProcessing') return onProcessing(...args);
 
-      vinExtractor.setBlazorRef(getBlazorRef(target));
+            // Staying open is the only case that does not release the trigger.
+            if (name === 'onOpenChange' && args[0]) return;
 
-      button.innerHTML = 'Loading...';
-      button.setAttribute('disabled', true);
+            resetTrigger(target);
 
-      vinExtractor.open();
-    }
+            if (name === 'onError') onError(...args);
+            if (name === 'onExtract') onExtract(...args);
+          },
+        };
+      }
 
-    function closeExtractor(target) {
-      const { vinExtractor, button } = getTargetElements(target);
+      function openExtractor(target) {
+        const extractor = document.getElementById(`${target}-element`);
+        const button = document.getElementById(`${target}-button`);
 
-      button.innerHTML = 'open';
-      button.removeAttribute('disabled');
-    }
+        extractor.setBlazorRef(blazorRefFor(target));
 
-    function onProcessing(isProcessing) {
-      if (isProcessing) console.log('Processing...');
-      else console.log('Processing finished');
-    }
-  </script>
+        button.textContent = 'Opening…';
+        button.disabled = true;
+
+        report('open', target);
+        extractor.open();
+      }
+
+      function resetTrigger(target) {
+        const button = document.getElementById(`${target}-button`);
+
+        if (!button) return;
+
+        button.textContent = 'Open';
+        button.disabled = false;
+      }
+    </script>
+  </body>
 </html>

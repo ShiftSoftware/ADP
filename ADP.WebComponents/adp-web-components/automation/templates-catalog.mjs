@@ -16,11 +16,12 @@ const AREA_LABELS = {
   'part-lookup': 'Part lookup',
   'vehicle-lookup': 'Vehicle lookup',
   'production-host': 'Host integration',
+  'prototypes': 'Prototypes',
   'root': 'Standalone',
 };
 
 /** Order areas deliberately rather than however the filesystem returns them. */
-const AREA_ORDER = ['vehicle-lookup', 'part-lookup', 'forms', 'root', 'production-host'];
+const AREA_ORDER = ['vehicle-lookup', 'part-lookup', 'forms', 'root', 'production-host', 'prototypes'];
 
 export async function writeCatalog(root) {
   const templates = path.join(root, 'src', 'templates');
@@ -51,15 +52,39 @@ export async function writeCatalog(root) {
   // a second copy of it in sync.
   const { name, version } = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
 
+  const listed = disambiguate(pages.filter(page => page.kind !== 'index'));
+
   const catalog = {
     package: { name, version },
     areas,
-    pages: pages.filter(page => page.kind !== 'index').sort((a, b) => rank(a.area) - rank(b.area) || a.title.localeCompare(b.title)),
+    pages: listed.sort((a, b) => rank(a.area) - rank(b.area) || a.title.localeCompare(b.title)),
   };
 
   await writeFile(path.join(templates, CATALOG_FILE), JSON.stringify(catalog, null, 2) + '\n');
 
   return catalog;
+}
+
+/**
+ * A title is only useful in a menu if it is unique. Four of the frozen prototypes
+ * share one and cannot be edited, so the filename settles it here rather than in
+ * the page.
+ */
+function disambiguate(pages) {
+  const seen = new Map();
+
+  for (const page of pages) {
+    const key = `${page.area}/${page.title}`;
+    seen.set(key, (seen.get(key) ?? 0) + 1);
+  }
+
+  for (const page of pages) {
+    if (seen.get(`${page.area}/${page.title}`) > 1) {
+      page.title = `${page.title} (${path.basename(page.path, '.html')})`;
+    }
+  }
+
+  return pages;
 }
 
 function rank(area) {

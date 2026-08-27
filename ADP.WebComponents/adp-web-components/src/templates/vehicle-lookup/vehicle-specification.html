@@ -1,115 +1,92 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vehicle Specification</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Vehicle specification — adp-web-components</title>
+
+    <link rel="stylesheet" href="/templates/harness.css" />
+
+    <!-- Blocking on purpose: a deferred module would let the page paint light first. -->
+    <script src="/templates/harness-theme.js"></script>
+
     <script nomodule src="/build/shift-components.js"></script>
     <script type="module" src="/build/shift-components.esm.js"></script>
+
     <script src="./mock-data.js"></script>
     <script src="./mock-loader.js"></script>
+    <script type="module" src="/templates/harness.js"></script>
+    <script defer src="/templates/vendor/alpine.js"></script>
   </head>
-  <body>
-    <a href="#" onclick="history.back()" style="color: blue; display: block; margin-bottom: 16px">Back</a>
 
-    <h1>Vehicle Specification</h1>
-    <vehicle-specification
-      language="ku"
-      is-dev="true"
-      query-string=""
-      id="vehicle-specification"
-      error-callback="blazorErrorCallback"
-      loaded-response="blazorLoadedResponse"
-      loading-state-change="blazorLoadingStateChange"
-      base-url="http://localhost:7174/api/secure-vehicle-lookup-test/"
-    >
-    </vehicle-specification>
+  <body class="bg-base-200 text-base-content min-h-screen">
+    <!-- Every area and page, read from catalog.json. -->
+    <div data-harness-nav x-cloak></div>
 
-    <div class="button-container">
-      <button class="sample-button" onclick="updateLang('en')">En</button>
-      <button class="sample-button" onclick="updateLang('ku')">Ku</button>
-      <button class="sample-button" onclick="updateLang('ar')">Ar</button>
-      <button class="sample-button" onclick="updateLang('ru')">Ru</button>
-    </div>
+    <div class="mx-auto flex max-w-[1180px] flex-col gap-8 px-4 py-10 sm:px-8">
+      <header>
+        <p class="eyebrow text-neutral">adp-web-components · vehicle lookup</p>
+        <h1 class="mt-1 text-2xl font-bold tracking-tight">Vehicle specification</h1>
+        <p class="lede text-base-content/70 mt-2">
+          The build record for a VIN. This page deliberately consumes the component the way a Blazor host does — through <code>setBlazorRef</code> and callbacks named as attribute
+          strings — rather than by assigning functions to the props.
+        </p>
+      </header>
 
-    <div class="button-container">
-      <button class="sample-button" onclick="fetchVin()">reload</button>
-      <button class="sample-button" onclick="fetchVin('')">Empty (close)</button>
-      <button class="sample-button" onclick="fetchVin('error')">Error</button>
-      <button class="sample-button" onclick="fetchVin('JTMHX01J8L4198295')">JTMHX01J8L4198295</button>
-      <button class="sample-button" onclick="fetchVin('JTMHX01J8L4198296')">JTMHX01J8L4198296</button>
-      <button class="sample-button" onclick="fetchVin('MR0BX8CD3P2791075')">MR0BX8CD3P2791075</button>
-      <button class="sample-button" onclick="fetchVin('JTMHX01J8L4198299')">JTMHX01J8L4198299</button>
-      <button class="sample-button" onclick="fetchVin('JTMABBBJ9P4099243')">JTMABBBJ9P4099243</button>
-      <button class="sample-button" onclick="fetchVin('JTMHU09J6E4100543')">JTMHU09J6E4100543</button>
-      <button class="sample-button" onclick="fetchVin('JTMABBBJ9P4099200')">JTMABBBJ9P4099200</button>
+      <section
+        class="flex flex-col gap-4"
+        x-data="harness({
+          mocks: 'vehicle-lookup',
+          has: vehicle => Boolean(vehicle?.vehicleSpecification),
+          events: false,
+        })"
+      >
+        <!-- Mode + fixtures, right where they are used. -->
+        <div data-harness-bar x-cloak></div>
+
+        <div class="frame card bg-base-100 border-base-300 border p-5">
+          <vehicle-specification
+            id="subject"
+            language="en"
+            query-string=""
+            error-callback="blazorErrorCallback"
+            loaded-response="blazorLoadedResponse"
+            loading-state-change="blazorLoadingStateChange"
+            base-url="http://localhost:7174/api/secure-vehicle-lookup-test/"
+          ></vehicle-specification>
+        </div>
+
+        <!-- The harness drawer: launcher, right-edge hover strip and panel, all stamped by harness.js. -->
+        <div data-harness-rail x-cloak></div>
+      </section>
     </div>
 
     <script>
-      let vehicleSpecification;
+      /*
+       * A stand-in for the DotNetObjectReference a Blazor host would pass in: the
+       * component looks its callbacks up by name and invokes them through this
+       * object, so the three `*-callback` attributes above are the whole contract.
+       *
+       * `harness({ events: false })` keeps the harness from assigning functions
+       * over those props; the log is fed from here instead.
+       */
+      const report = (label, detail) => window.dispatchEvent(new CustomEvent('harness:log', { detail: { label, detail } }));
 
-      const functionReferences = {
-        blazorErrorCallback,
-        blazorLoadedResponse,
-        blazorLoadingStateChange,
+      const blazorCallbacks = {
+        blazorErrorCallback: error => report('error', error),
+        blazorLoadedResponse: response => report('loaded', response?.vin ?? '(no vin)'),
+        blazorLoadingStateChange: isLoading => report(isLoading ? 'loading' : 'idle', ''),
       };
 
-      const virtualBlazorRef = {
-        invokeMethodAsync: (functionName, ...args) => {
-          if (functionReferences[functionName]) functionReferences[functionName](...args);
-        },
-      };
+      // `setBlazorRef` is a @Method, so it does not exist until the element has
+      // upgraded — and this classic script runs before the deferred component module.
+      customElements.whenDefined('vehicle-specification').then(async () => {
+        const subject = document.querySelector('#subject');
 
-      document.addEventListener('DOMContentLoaded', function () {
-        vehicleSpecification = document.getElementById('vehicle-specification');
+        await subject.componentOnReady?.();
 
-        loadMockData('vehicle-lookup').then(data => vehicleSpecification.setMockData(data));
-
-        vehicleSpecification.setBlazorRef(virtualBlazorRef);
-
-        // vehicleSpecification.errorCallback = err => console.log('error', err);
-        // vehicleSpecification.loadedResponse = newResponse => console.log(newResponse);
-        // vehicleSpecification.loadingStateChange = isLoading => console.log('isLoading: ' + isLoading);
+        subject.setBlazorRef({ invokeMethodAsync: (name, ...args) => blazorCallbacks[name]?.(...args) });
       });
-
-      function blazorErrorCallback(err) {
-        console.log('error', err);
-      }
-      function blazorLoadedResponse(newResponse) {
-        console.log('response', newResponse);
-      }
-      function blazorLoadingStateChange(isLoading) {
-        console.log('isLoading: ' + isLoading);
-      }
-
-      function updateLang(newLang) {
-        vehicleSpecification.language = newLang;
-      }
-
-      function fetchVin(newVin) {
-        vehicleSpecification.fetchVin(newVin);
-      }
     </script>
-
-    <style>
-      .button-container {
-        margin-top: 50px;
-        border: 1px solid #e1e1e1;
-        padding: 20px;
-        display: flex;
-        flex-wrap: wrap;
-        align-content: center;
-        justify-content: center;
-        gap: 10px;
-      }
-      .sample-button {
-        background-color: #428bca;
-        padding: 10px 15px;
-      }
-
-      .sample-button:hover {
-        background-color: #3071a9;
-      }
-    </style>
   </body>
 </html>

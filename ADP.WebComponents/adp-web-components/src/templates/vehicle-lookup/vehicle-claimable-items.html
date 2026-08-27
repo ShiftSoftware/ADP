@@ -1,119 +1,76 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>vehicle-claimable-items</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Claimable items — adp-web-components</title>
 
-    <script src="./mock-data.js"></script>
-    <script src="./mock-loader.js"></script>
+    <link rel="stylesheet" href="/templates/harness.css" />
+
+    <!-- Blocking on purpose: a deferred module would let the page paint light first. -->
+    <script src="/templates/harness-theme.js"></script>
 
     <script nomodule src="/build/shift-components.js"></script>
     <script type="module" src="/build/shift-components.esm.js"></script>
+
+    <script src="./mock-data.js"></script>
+    <script src="./mock-loader.js"></script>
+    <script type="module" src="/templates/harness.js"></script>
+    <script defer src="/templates/vendor/alpine.js"></script>
   </head>
-  <style>
-    .button-container {
-      margin-top: 50px;
-      border: 1px solid #e1e1e1;
-      padding: 20px;
-      display: flex;
-      flex-wrap: wrap;
-      align-content: center;
-      justify-content: center;
-      gap: 10px;
-    }
-    .sample-button {
-      background-color: #428bca;
-      padding: 10px 15px;
-    }
 
-    .sample-button:hover {
-      background-color: #3071a9;
-    }
-  </style>
+  <body class="bg-base-200 text-base-content min-h-screen">
+    <!-- Every area and page, read from catalog.json. -->
+    <div data-harness-nav x-cloak></div>
 
-  <body>
-    <a href="#" onclick="history.back()" style="color: blue; display: block; margin-bottom: 16px">Back</a>
+    <div class="mx-auto flex max-w-[1180px] flex-col gap-8 px-4 py-10 sm:px-8">
+      <header>
+        <p class="eyebrow text-neutral">adp-web-components · vehicle lookup</p>
+        <h1 class="mt-1 text-2xl font-bold tracking-tight">Claimable items</h1>
+        <p class="lede text-base-content/70 mt-2">
+          Free service items the vehicle is still entitled to, and the claim flow behind them. Deep-linkable: <code>?vin=…</code> loads a fixture on open, and
+          <code>?claim=&lt;index&gt;</code> opens the claim form for that service item straight away.
+        </p>
+      </header>
 
-    <h1>Vehicle Claimable Items</h1>
-    <vehicle-claimable-items id="vehicle-claimable-items" headers="{}" claim-end-point="" is-dev="true" query-string="" base-url=""></vehicle-claimable-items>
+      <section
+        class="flex flex-col gap-4"
+        x-data="harness({
+          mocks: 'vehicle-lookup',
+          has: vehicle => vehicle?.serviceItems?.length > 0,
+          start: new URLSearchParams(location.search).get('vin'),
+          labels: {
+            JTMHX01J8L4198293: 'not available · null',
+            JTMHX01J8L4198294: 'not available · empty',
+            JTMABBBJ9P4099200: 'realistic',
+            JTMABBBJ9P4099201: 'realistic, at distributor stock',
+            '1G8ZY1275YZ188208': 'inactive services',
+            BLOCKEDNOTALLOC01: 'blocked, not allocated',
+          },
+          events: {
+            /* Both of these replace the profile's default line and do the page's own work. */
+            loadedResponse(response) {
+              const claim = new URLSearchParams(location.search).get('claim');
 
-    <div class="button-container">
-      <button class="sample-button" onclick="updateLang('en')">En</button>
-      <button class="sample-button" onclick="updateLang('ku')">Ku</button>
-      <button class="sample-button" onclick="updateLang('ar')">Ar</button>
-      <button class="sample-button" onclick="updateLang('ru')">Ru</button>
+              if (claim) this.subject.claim(response?.serviceItems?.[claim]);
+
+              return ['loaded', response?.vin ?? '(no vin)'];
+            },
+            activate: information => ['activate', information?.vin ?? '(no vin)'],
+            print: response => ['print', JSON.stringify(response)],
+          },
+        })"
+      >
+        <!-- Mode + fixtures, right where they are used. -->
+        <div data-harness-bar x-cloak></div>
+
+        <div class="frame card bg-base-100 border-base-300 border p-5">
+          <vehicle-claimable-items id="subject" language="en" headers="{}" claim-end-point="" query-string="" base-url=""></vehicle-claimable-items>
+        </div>
+
+        <!-- The harness drawer: launcher, right-edge hover strip and panel, all stamped by harness.js. -->
+        <div data-harness-rail x-cloak></div>
+      </section>
     </div>
-
-    <div style="margin-top: 50px; border: 1px solid #e1e1e1; padding: 20px; display: flex; align-content: center; justify-content: center; gap: 10px">
-      <button class="sample-button" onclick="vinLookup('')">empty (Reset)</button>
-      <button class="sample-button" onclick="vinLookup('JTMHX01J8L4198293')">Sample 1 (Not Available Null)</button>
-      <button class="sample-button" onclick="vinLookup('JTMHX01J8L4198294')">Sample 2 (Not Available Empty)</button>
-      <button class="sample-button" onclick="vinLookup('JTMHX01J8L4198295')">Sample 3</button>
-      <button class="sample-button" onclick="vinLookup('JTMHX01J8L4198296')">Sample 4</button>
-      <button class="sample-button" onclick="vinLookup('MR0BX8CD3P2791075')">Sample 5</button>
-      <button class="sample-button" onclick="vinLookup('JTMHX01J8L4198299')">Sample 6</button>
-      <button class="sample-button" onclick="vinLookup('JTMABBBJ9P4099243')">Sample 7</button>
-      <button class="sample-button" onclick="vinLookup('JTMHU09J6E4100543')">Sample 8</button>
-      <button class="sample-button" onclick="vinLookup('JTMABBBJ9P4099200')">Sample 9 (Realistic)</button>
-      <button class="sample-button" onclick="vinLookup('JTMABBBJ9P4099201')">Sample 10 (Realistic at TBP Stock)</button>
-      <button class="sample-button" onclick="vinLookup('1G8ZY1275YZ188208')">Inactive Services</button>
-    </div>
-
-    <script>
-      let claimableItems;
-
-      document.addEventListener('DOMContentLoaded', function () {
-        claimableItems = document.getElementById('vehicle-claimable-items');
-
-        loadMockData('vehicle-lookup').then(data => claimableItems.setMockData(data));
-
-        claimableItems.loadingStateChange = isLoading => {
-          // console.log('isLoading: ' + isLoading);
-        };
-
-        claimableItems.loadedResponse = newResponse => {
-          // console.log(newResponse);
-
-          const urlParams = new URLSearchParams(window.location.search);
-
-          const claimIndex = urlParams.get('claim');
-
-          if (claimIndex) {
-            var itemToClaim = newResponse['serviceItems'][claimIndex];
-
-            claimableItems.claim(itemToClaim);
-          }
-        };
-
-        const urlParams = new URLSearchParams(window.location.search);
-
-        const vin = urlParams.get('vin');
-
-        if (vin) {
-          vinLookup(vin);
-        }
-
-        claimableItems.activate = vehicleInformation => {
-          // console.log(vehicleInformation);
-
-          alert(JSON.stringify(vehicleInformation));
-        };
-
-        //claimableItems.print = lastClaimResponse => {
-        //  console.log(lastClaimResponse);
-
-        //  alert(JSON.stringify(lastClaimResponse))
-        //};
-      });
-
-      function updateLang(newLang) {
-        claimableItems.language = newLang;
-      }
-
-      function vinLookup(vin) {
-        claimableItems.fetchVin(vin);
-      }
-    </script>
   </body>
 </html>

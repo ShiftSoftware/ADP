@@ -13,6 +13,8 @@ import { LanguageKeys } from '~features/multi-lingual';
 import { FormInputLabel } from './components/form-input-label';
 import { FormErrorMessage } from './components/form-error-message';
 import { BranchSlotDay } from './branch-slot-dropdown';
+import { BranchDateStep } from './branch-date-dropdown';
+import { BranchSlotSelection } from './branch-slot-picker';
 
 /** One day as the calendar endpoint returns it. */
 interface DayEntry {
@@ -20,23 +22,16 @@ interface DayEntry {
   Times: string[];
 }
 
-export interface BranchSlotSelection {
-  /** `2026-08-13` */
-  date: string;
-  /** Exactly what the API sent, e.g. `2026-08-13 09:00 AM`. */
-  raw: string;
-  /** `2026-08-13T09:00` — what goes on the wire to the ticket. */
-  value: string;
-}
-
 type Status = 'idle' | 'loading' | 'ready' | 'empty' | 'error';
 
 const FALLBACK_COPY = {
   en: {
-    day: 'Pick a day',
+    date: 'Pick a date',
     time: 'Pick a time',
-    days: 'days available',
     slots: 'slots',
+    back: 'Change date',
+    noTimes: 'Nothing left on this day',
+    closed: 'Closed on this day',
     idle: 'Choose a branch first',
     empty: 'No times available at this branch',
     error: "Couldn't load available times",
@@ -45,10 +40,12 @@ const FALLBACK_COPY = {
     loading: 'Loading times…',
   },
   ar: {
-    day: 'اختر اليوم',
+    date: 'اختر التاريخ',
     time: 'اختر الوقت',
-    days: 'يوماً متاحاً',
     slots: 'موعداً',
+    back: 'تغيير التاريخ',
+    noTimes: 'لا توجد مواعيد في هذا اليوم',
+    closed: 'مغلق في هذا اليوم',
     idle: 'اختر الفرع أولاً',
     empty: 'لا توجد أوقات متاحة في هذا الفرع',
     error: 'تعذّر تحميل الأوقات المتاحة',
@@ -57,10 +54,12 @@ const FALLBACK_COPY = {
     loading: 'جارٍ تحميل الأوقات…',
   },
   ku: {
-    day: 'ڕۆژێک هەڵبژێرە',
+    date: 'بەروارێک هەڵبژێرە',
     time: 'کاتێک هەڵبژێرە',
-    days: 'ڕۆژی بەردەست',
     slots: 'کات',
+    back: 'گۆڕینی بەروار',
+    noTimes: 'هیچ کاتێک نەماوە لەم ڕۆژەدا',
+    closed: 'داخراوە لەم ڕۆژەدا',
     idle: 'سەرەتا لقێک هەڵبژێرە',
     empty: 'هیچ کاتێکی بەردەست نییە لەم لقەدا',
     error: 'نەتوانرا کاتە بەردەستەکان باربکرێن',
@@ -69,10 +68,12 @@ const FALLBACK_COPY = {
     loading: 'کاتەکان باردەکرێن…',
   },
   ru: {
-    day: 'Выберите день',
+    date: 'Выберите дату',
     time: 'Выберите время',
-    days: 'дней доступно',
     slots: 'слотов',
+    back: 'Сменить дату',
+    noTimes: 'На этот день ничего не осталось',
+    closed: 'В этот день закрыто',
     idle: 'Сначала выберите филиал',
     empty: 'В этом филиале нет свободного времени',
     error: 'Не удалось загрузить свободное время',
@@ -83,24 +84,26 @@ const FALLBACK_COPY = {
 };
 
 /**
- * Branch-aware booking slot field.
+ * Branch-aware booking slot field, month-calendar variant.
  *
- * Presents as a normal dropdown — the same `form-input-select` trigger as every
- * other select in the form — and portals its panel onto `document.body` through
- * `shift-portal`, exactly as `shift-select` does.
+ * Same contract and same data as `branch-slot-picker` — the same endpoint, the
+ * same `slotChange` payload, the same standalone-without-a-form behaviour. The
+ * difference is entirely in the panel: a month grid first, then that day's
+ * times, on a sliding track. Customers who have never used a horizontal day
+ * strip have used a month calendar, and the second step arrives already scoped
+ * to one day rather than sitting under the first.
  *
- * Standalone by design: `form` is optional. Drop `<branch-slot-picker>` on any
- * page, in a PWA or in a native WebView, give it the four ids, and listen to
- * `slotChange`.
+ * The two are meant to be interchangeable, so a deployment can pick whichever
+ * its audience reads faster without anything downstream changing.
  */
 @Component({
   shadow: false,
-  tag: 'branch-slot-picker',
-  styleUrl: 'branch-slot-picker.css',
+  tag: 'branch-date-picker',
+  styleUrl: 'branch-date-picker.css',
 })
-export class BranchSlotPicker implements FormElement {
+export class BranchDatePicker implements FormElement {
   /** Field name. Only meaningful when `form` is supplied. */
-  @Prop() name: string = 'bookingSlot';
+  @Prop() name: string = 'bookingDate';
 
   /** Optional — omit for standalone use and listen to `slotChange` instead. */
   @Prop() form?: FormHook<any>;
@@ -119,13 +122,19 @@ export class BranchSlotPicker implements FormElement {
 
   /**
    * Weekdays the branch never books on, `0` Sunday … `6` Saturday. Accepts an
-   * array or a `"5,6"` string. Matching days stay visible but unselectable —
-   * see `~lib/slot-day-rules` for why they are not simply dropped.
+   * array or a `"5,6"` string. Matching days stay on the grid, struck through,
+   * rather than being dropped — see `~lib/slot-day-rules`.
    */
   @Prop() disabledWeekdays?: string | number[];
 
   /** One-off blackout dates as `YYYY-MM-DD`, same accepted shapes as above. */
   @Prop() disabledDates?: string | string[];
+
+  /**
+   * First column of the grid, `0` Sunday … `6` Saturday. Left unset it comes
+   * from the active locale, which is right far more often than any constant.
+   */
+  @Prop() weekStartsOn?: number;
 
   /** Gap between the trigger and the panel, matching shift-select's default. */
   @Prop() gap: number = 8;
@@ -133,13 +142,12 @@ export class BranchSlotPicker implements FormElement {
   /**
    * Floor for the panel width on desktop. The panel is portaled to `<body>` and
    * positioned fixed, so it is free to be wider than the field — and than the
-   * form around it — which is the point: a two-column form gives the field
-   * ~320px, which squeezed the day strip and the time grid into something that
-   * read as clipped. Capped to the viewport at open time.
+   * form around it — which is the point: seven columns stop reading as a
+   * calendar much below this, and form fields are routinely narrower.
    */
-  @Prop() minPanelWidth: number = 420;
+  @Prop() minPanelWidth: number = 380;
 
-  /** Tallest the panel may get before it scrolls. Also capped to the viewport. */
+  /** Tallest the panel may get before its panes scroll. Also capped to the viewport. */
   @Prop() maxPanelHeight: number = 460;
 
   @Prop() label?: string;
@@ -161,11 +169,17 @@ export class BranchSlotPicker implements FormElement {
   @State() dropdownAncestorClasses = '';
 
   /**
-   * The day being browsed in the panel. Kept apart from `selectedDate` so that
-   * opening the panel, scrubbing through days and then dismissing it leaves the
-   * committed selection untouched.
+   * The day whose times are on the second pane. Kept apart from `selectedDate`
+   * so browsing the calendar and then dismissing the panel leaves the committed
+   * selection untouched.
    */
   @State() draftDate: string = '';
+
+  @State() step: BranchDateStep = 'date';
+
+  /** Month on screen as `YYYY-MM`, and which way the last change travelled. */
+  @State() monthKey: string = '';
+  @State() monthDirection: number = 1;
 
   /** Fires on every confirmed day+time selection. The standalone contract. */
   @Event() slotChange: EventEmitter<BranchSlotSelection>;
@@ -196,7 +210,7 @@ export class BranchSlotPicker implements FormElement {
 
     // The panel is portaled out of the form, so theme classes have to travel
     // with it or it renders unstyled against the host page.
-    this.dropdownAncestorClasses = `${this.name}-slot-picker ${getCustomClassesForPortal(this.el)}`;
+    this.dropdownAncestorClasses = `${this.name}-date-picker ${getCustomClassesForPortal(this.el)}`;
   }
 
   disconnectedCallback() {
@@ -212,7 +226,7 @@ export class BranchSlotPicker implements FormElement {
 
   @Watch('isOpen')
   onOpenChange(isOpen: boolean) {
-    // Only the sheet needs this. An anchored dropdown repositions on scroll and
+    // Only the sheet needs this. An anchored panel repositions on scroll and
     // freezing the page under it would be wrong.
     if (!this.isSheet) return;
     if (isOpen) this.lockScroll();
@@ -241,7 +255,7 @@ export class BranchSlotPicker implements FormElement {
     this.days = this.applyDayRules(this.fetchedDays);
 
     // The committed slot may have just become unbookable, and a draft pointing
-    // at a now-disabled day would leave the time list empty with no way back.
+    // at a now-blocked day would leave the times pane empty with no way back.
     if (this.selectedDate && this.days.find(day => day.date === this.selectedDate)?.disabled) {
       this.selectedDate = '';
       this.selectedRaw = '';
@@ -249,6 +263,7 @@ export class BranchSlotPicker implements FormElement {
 
     if (!this.draftDate || this.days.find(day => day.date === this.draftDate)?.disabled) {
       this.draftDate = this.firstOpenDay()?.date ?? '';
+      this.step = 'date';
     }
 
     if (this.status === 'ready' && !this.days.some(day => !day.disabled)) this.status = 'empty';
@@ -264,6 +279,7 @@ export class BranchSlotPicker implements FormElement {
     this.selectedDate = '';
     this.selectedRaw = '';
     this.draftDate = '';
+    this.step = 'date';
     this.isOpen = false;
     this.load();
   }
@@ -274,6 +290,7 @@ export class BranchSlotPicker implements FormElement {
     this.selectedDate = '';
     this.selectedRaw = '';
     this.draftDate = '';
+    this.step = 'date';
   }
 
   getValue() {
@@ -289,8 +306,14 @@ export class BranchSlotPicker implements FormElement {
   @Method()
   async openDropdown() {
     if (this.status === 'idle') return;
-    const draft = this.selectedDate || this.draftDate;
-    this.draftDate = this.days.find(day => day.date === draft && !day.disabled) ? draft : (this.firstOpenDay()?.date ?? '');
+
+    const landing = this.days.find(day => day.date === this.selectedDate && !day.disabled)?.date ?? this.firstOpenDay()?.date ?? '';
+
+    this.draftDate = landing;
+    this.monthKey = landing.slice(0, 7);
+    // Reopening a committed slot lands on the times, where the change is most
+    // likely to be; a first open has nothing to show there yet.
+    this.step = this.selectedRaw ? 'time' : 'date';
     this.adjustDropdownPosition();
     this.isOpen = true;
   }
@@ -317,8 +340,33 @@ export class BranchSlotPicker implements FormElement {
     return ['en-GB'];
   }
 
+  /**
+   * `0` Sunday … `6` Saturday. `getWeekInfo` is the only thing that knows the
+   * region's answer; it is missing on older WebViews, hence the guard and the
+   * Monday default the rest of Intl assumes.
+   */
+  private get weekStart(): number {
+    if (this.weekStartsOn !== undefined && this.weekStartsOn !== null) return ((+this.weekStartsOn % 7) + 7) % 7;
+
+    try {
+      const locale = new (Intl as any).Locale(this.intlLocales[0]);
+      const info = locale.getWeekInfo?.() ?? locale.weekInfo;
+      // ISO numbering: 1 is Monday, 7 is Sunday.
+      if (info?.firstDay) return info.firstDay % 7;
+    } catch {
+      /* fall through to the default */
+    }
+
+    return 1;
+  }
+
   private pad(n: number) {
     return String(n).padStart(2, '0');
+  }
+
+  private get todayIso(): string {
+    const now = new Date();
+    return `${now.getFullYear()}-${this.pad(now.getMonth() + 1)}-${this.pad(now.getDate())}`;
   }
 
   /** `2026-08-13 09:00 AM` → minutes since midnight. */
@@ -346,9 +394,20 @@ export class BranchSlotPicker implements FormElement {
 
   private formatDay = (date: string, options: Intl.DateTimeFormatOptions): string => {
     // Midday, not midnight: a midnight Date in a negative-offset zone rolls back
-    // a day, which silently mislabels every chip.
+    // a day, which silently mislabels every cell.
     const [y, m, d] = date.split('-').map(x => parseInt(x, 10));
     return new Intl.DateTimeFormat(this.intlLocales, options).format(new Date(y, m - 1, d, 12));
+  };
+
+  private formatMonth = (monthKey: string): string => {
+    if (!monthKey) return '';
+    const [y, m] = monthKey.split('-').map(x => parseInt(x, 10));
+    return new Intl.DateTimeFormat(this.intlLocales, { month: 'long', year: 'numeric' }).format(new Date(y, m - 1, 1, 12));
+  };
+
+  /** 7 January 2024 was a Sunday, so it indexes weekdays without a lookup table. */
+  private formatWeekday = (weekday: number): string => {
+    return new Intl.DateTimeFormat(this.intlLocales, { weekday: 'short' }).format(new Date(2024, 0, 7 + weekday, 12));
   };
 
   private queryUrl(): string | null {
@@ -374,9 +433,9 @@ export class BranchSlotPicker implements FormElement {
 
   /**
    * Overlapping work periods of equal priority make the endpoint emit the same
-   * slot more than once (branch 45 returns every time twice), and a merged
-   * response is not necessarily ordered. Both are fixed here rather than in the
-   * panel, so anything reading `days` gets clean data.
+   * slot more than once, and a merged response is not necessarily ordered. Both
+   * are fixed here rather than in the panel, so anything reading `days` gets
+   * clean data.
    */
   private normalise(raw: DayEntry[]): BranchSlotDay[] {
     return raw
@@ -400,6 +459,10 @@ export class BranchSlotPicker implements FormElement {
 
   private firstOpenDay(): BranchSlotDay | undefined {
     return this.days.find(day => !day.disabled);
+  }
+
+  private lastOpenDay(): BranchSlotDay | undefined {
+    return [...this.days].reverse().find(day => !day.disabled);
   }
 
   private async load() {
@@ -430,7 +493,7 @@ export class BranchSlotPicker implements FormElement {
       const firstOpen = this.firstOpenDay();
 
       // Every day blocked reads to a customer exactly as no days at all, so it
-      // gets the empty copy rather than a strip of dead chips.
+      // gets the empty copy rather than a month of dead cells.
       if (!firstOpen) {
         this.status = 'empty';
         return;
@@ -438,6 +501,7 @@ export class BranchSlotPicker implements FormElement {
 
       const preset = this.days.find(day => !day.disabled && this.defaultValue && this.defaultValue.startsWith(day.date));
       this.draftDate = (preset ?? firstOpen).date;
+      this.monthKey = this.draftDate.slice(0, 7);
       this.status = 'ready';
     } catch (error) {
       if ((error as Error)?.name === 'AbortError') return;
@@ -460,18 +524,19 @@ export class BranchSlotPicker implements FormElement {
   /**
    * Below this width the panel is a bottom sheet pinned to the viewport, so it
    * is not anchored to anything and none of the positioning below applies. Kept
-   * in sync with the media query in branch-slot-dropdown.css.
+   * in sync with the media query in branch-date-dropdown.css.
    */
   private get isSheet(): boolean {
     return typeof window !== 'undefined' && window.matchMedia('(max-width: 599px)').matches;
   }
 
-  /** Mirrors shift-select: anchor to the trigger, flip up when space is short. */
+  /** Anchor to the trigger, flip up when space below is short. */
   private adjustDropdownPosition = () => {
     const dropdown = this.dropdownEl;
     const trigger = this.getTriggerEl();
 
     if (!dropdown || !trigger) return;
+
     // Sheet mode is viewport-anchored; CSS owns it entirely.
     if (this.isSheet) return;
 
@@ -487,36 +552,34 @@ export class BranchSlotPicker implements FormElement {
     // clientWidth, not innerWidth: innerWidth includes the classic scrollbar, so
     // measuring against it pushes the panel a scrollbar's width off the edge.
     const viewportWidth = document.documentElement.clientWidth;
-    const viewportHeight = window.innerHeight;
 
-    // The panel is never narrower than a usable day strip. Matching the trigger
-    // was the whole bug: inside a two-column form the trigger is ~320px, which
-    // cut the strip mid-chip and squeezed the time grid to three columns.
     const width = Math.round(Math.min(Math.max(rect.width, this.minPanelWidth), viewportWidth - this.gap * 2));
-    dropdown.style.setProperty('--branch-slot-width', `${width}px`);
+    dropdown.style.setProperty('--branch-date-width', `${width}px`);
 
-    // Measure unclamped, or the flip decision is made against whatever height
-    // the previous open happened to leave behind.
-    dropdown.style.setProperty('--branch-slot-max-height', 'none');
-    const naturalHeight = dropdown.offsetHeight;
-
-    const spaceBelow = viewportHeight - rect.bottom - this.gap * 2;
+    const spaceBelow = window.innerHeight - rect.bottom - this.gap * 2;
     const spaceAbove = rect.top - this.gap * 2;
-    const openUpwards = naturalHeight > spaceBelow && spaceAbove > spaceBelow;
+    const openUpwards = dropdown.offsetHeight > spaceBelow && spaceAbove > spaceBelow;
 
-    // Cap the panel to the room that actually exists. Without this it runs
-    // off-screen in landscape and with the keyboard up, and there is nothing to
-    // scroll to reach it.
-    const room = Math.max(180, Math.min(this.maxPanelHeight, openUpwards ? spaceAbove : spaceBelow));
-    const height = Math.min(naturalHeight, room);
-    dropdown.style.setProperty('--branch-slot-max-height', `${room}px`);
+    // The body is a constant height, so this only ever clips it in a viewport
+    // too short to hold the calendar — the panes scroll inside what is left.
+    const room = Math.max(220, Math.min(this.maxPanelHeight, openUpwards ? spaceAbove : spaceBelow));
+    dropdown.style.setProperty('--branch-date-max-height', `${room}px`);
 
     // Keep it on-screen horizontally — the panel has a min-width, so a field
     // near the right edge would otherwise hang off it.
     const left = Math.max(this.gap, Math.min(rect.left, viewportWidth - width - this.gap));
+    dropdown.style.setProperty('--branch-date-left', `${left}px`);
 
-    dropdown.style.setProperty('--branch-slot-left', `${left}px`);
-    dropdown.style.setProperty('--branch-slot-top', `${openUpwards ? Math.max(this.gap, rect.top - height - this.gap) : rect.bottom + this.gap}px`);
+    // Pinned by whichever edge touches the field. Anchoring upwards by `bottom`
+    // rather than `top` means the animated body height cannot drag the panel
+    // across the trigger as it grows.
+    if (openUpwards) {
+      dropdown.style.setProperty('--branch-date-top', 'auto');
+      dropdown.style.setProperty('--branch-date-bottom', `${window.innerHeight - rect.top + this.gap}px`);
+    } else {
+      dropdown.style.setProperty('--branch-date-top', `${rect.bottom + this.gap}px`);
+      dropdown.style.setProperty('--branch-date-bottom', 'auto');
+    }
   };
 
   private handleResize = () => {
@@ -534,7 +597,11 @@ export class BranchSlotPicker implements FormElement {
 
   private handleKeyDown(event: KeyboardEvent) {
     if (!this.isOpen) return;
-    if (event.key === 'Escape') this.isOpen = false;
+    // Escape steps back through the panel before it dismisses it — the times
+    // pane is a drill-down, so leaving the field entirely would overshoot.
+    if (event.key !== 'Escape') return;
+    if (this.step === 'time') this.step = 'date';
+    else this.isOpen = false;
   }
 
   private closeOnOutsideClick = (event: MouseEvent) => {
@@ -550,9 +617,39 @@ export class BranchSlotPicker implements FormElement {
     else this.openDropdown();
   };
 
-  private handleDay = (date: string) => {
+  private get monthBounds(): { min: string; max: string } {
+    return {
+      min: (this.firstOpenDay()?.date ?? '').slice(0, 7),
+      max: (this.lastOpenDay()?.date ?? '').slice(0, 7),
+    };
+  }
+
+  /** Months with nothing bookable in them are not worth walking into. */
+  private handleMonth = (delta: number) => {
+    if (!this.monthKey) return;
+
+    const [year, month] = this.monthKey.split('-').map(part => parseInt(part, 10));
+    const moved = new Date(year, month - 1 + delta, 1, 12);
+    const next = `${moved.getFullYear()}-${this.pad(moved.getMonth() + 1)}`;
+
+    const { min, max } = this.monthBounds;
+    if (next < min || next > max) return;
+
+    this.monthDirection = delta < 0 ? -1 : 1;
+    this.monthKey = next;
+  };
+
+  private handleDate = (date: string) => {
     if (this.days.find(day => day.date === date)?.disabled) return;
     this.draftDate = date;
+    this.step = 'time';
+  };
+
+  private handleBack = () => {
+    this.step = 'date';
+    // Coming back from a day in another month should land on that day's month,
+    // not on whatever the calendar was last scrolled to.
+    if (this.draftDate) this.monthKey = this.draftDate.slice(0, 7);
   };
 
   private handleTime = (raw: string) => {
@@ -593,6 +690,8 @@ export class BranchSlotPicker implements FormElement {
     // doubles as the retry affordance.
     const blocked = this.isDisabled || state?.disabled || this.status === 'idle' || this.status === 'loading' || this.status === 'empty';
 
+    const { min, max } = this.monthBounds;
+
     const dropdownProps = {
       name: this.name,
       days: this.days,
@@ -600,13 +699,24 @@ export class BranchSlotPicker implements FormElement {
       status: this.status,
       isOpen: this.isOpen,
       idleText: this.copy.idle,
+      step: this.step,
+      today: this.todayIso,
+      weekStart: this.weekStart,
+      monthKey: this.monthKey,
+      monthDirection: this.monthDirection,
+      canGoPrev: !!this.monthKey && this.monthKey > min,
+      canGoNext: !!this.monthKey && this.monthKey < max,
       activeDate: this.draftDate,
-      handleDay: this.handleDay,
+      selectedRaw: this.selectedRaw,
+      handleMonth: this.handleMonth,
+      handleDate: this.handleDate,
       handleTime: this.handleTime,
+      handleBack: this.handleBack,
       handleRetry: () => this.load(),
       handleDismiss: () => (this.isOpen = false),
-      selectedRaw: this.selectedRaw,
       formatDay: this.formatDay,
+      formatMonth: this.formatMonth,
+      formatWeekday: this.formatWeekday,
       displayTime: this.displayTime,
       setElementRef: this.setDropdownRef,
       direction: this.isRtl ? 'rtl' : 'ltr',
@@ -626,7 +736,7 @@ export class BranchSlotPicker implements FormElement {
               placeholder={placeholder}
               onClick={this.toggle}
               part={`${this.name}-input-select form-input-select`}
-              class="form-input-style form-input-select branch-slot-trigger"
+              class="form-input-style form-input-select branch-date-trigger"
             />
 
             <div part={`${this.name}-select-icon-container form-input-select-icon-container`} class="form-input-select-icon-container">
@@ -637,9 +747,9 @@ export class BranchSlotPicker implements FormElement {
               // Stencil only bundles a lazily-portaled component if it also sees
               // the tag in a template. Same guard shift-select uses.
               // @ts-ignore
-              false && <branch-slot-dropdown />
+              false && <branch-date-dropdown />
             }
-            <shift-portal tag="branch-slot-dropdown" inheritedClasses={this.dropdownAncestorClasses} componentProps={dropdownProps} />
+            <shift-portal tag="branch-date-dropdown" inheritedClasses={this.dropdownAncestorClasses} componentProps={dropdownProps} />
           </div>
 
           <FormErrorMessage name={this.name} isError={!!state?.isError} errorMessage={localised?.errorTextMessage || ''} />

@@ -6,6 +6,12 @@ import cn from '~lib/cn';
 export interface BranchSlotDay {
   date: string;
   times: string[];
+  /**
+   * Returned by the branch but not bookable — a blackout date or a weekday the
+   * deployment never takes bookings on. Rendered greyed rather than removed so
+   * the customer sees the day exists.
+   */
+  disabled?: boolean;
 }
 
 export interface BranchSlotDropdownCopy {
@@ -109,7 +115,8 @@ export class BranchSlotDropdown {
   }
 
   private renderSlots() {
-    const active = this.days.find(day => day.date === this.activeDate);
+    const active = this.days.find(day => day.date === this.activeDate && !day.disabled);
+    const openCount = this.days.filter(day => !day.disabled).length;
     let lastMonth = '';
 
     return (
@@ -118,7 +125,7 @@ export class BranchSlotDropdown {
           <div class="branch-slot-head">
             <span class="branch-slot-sublabel">{this.copy.day}</span>
             <span class="branch-slot-count">
-              {this.days.length} {this.copy.days}
+              {openCount} {this.copy.days}
             </span>
           </div>
 
@@ -128,8 +135,12 @@ export class BranchSlotDropdown {
               const showMonth = month !== lastMonth;
               lastMonth = month;
 
-              const isActive = day.date === this.activeDate;
-              const identifier = cn(`${this.name}-slot-day branch-slot-day`, { 'branch-slot-day-selected': isActive });
+              const isBlocked = !!day.disabled;
+              const isActive = !isBlocked && day.date === this.activeDate;
+              const identifier = cn(`${this.name}-slot-day branch-slot-day`, {
+                'branch-slot-day-selected': isActive,
+                'branch-slot-day-disabled': isBlocked,
+              });
 
               return (
                 <button
@@ -138,8 +149,10 @@ export class BranchSlotDropdown {
                   role="radio"
                   part={identifier}
                   class={identifier}
+                  disabled={isBlocked}
+                  aria-disabled={isBlocked ? 'true' : 'false'}
                   aria-checked={isActive ? 'true' : 'false'}
-                  onClick={() => this.handleDay(day.date)}
+                  onClick={() => !isBlocked && this.handleDay(day.date)}
                 >
                   <span class="branch-slot-day-dow">{this.formatDay(day.date, { weekday: 'short' })}</span>
                   <span class="branch-slot-day-num">{this.formatDay(day.date, { day: 'numeric' })}</span>

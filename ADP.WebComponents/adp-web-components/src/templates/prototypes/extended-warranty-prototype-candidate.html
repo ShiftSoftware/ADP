@@ -1,5 +1,18 @@
 <!doctype html>
-<html lang="en" data-expiry="dim" data-badge="current">
+<!--
+  FROZEN PROTOTYPE — do not restyle.
+
+  A hand-built mock with no component in it. It records what a design looked like
+  when a decision was taken, which is the whole of its value: re-styling it onto
+  the harness tokens would destroy the record and prove nothing.
+
+  Harness pages live one level up; see
+  .shift/repos/adp/web-components/templates-design-language.md §8.
+
+  The candidate that went forward — the shape `vehicle-warranty-timeline`
+  was built from.
+-->
+<html lang="en" data-expiry="dim">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -126,10 +139,8 @@
 
       .status-badge {
         display: inline-flex;
-        flex: 1 1 0;
         gap: 7px;
         align-items: center;
-        min-width: 0;
         min-height: 30px;
         padding: 5px 12px;
         border-radius: 999px;
@@ -229,9 +240,7 @@
         display: flex;
         flex-wrap: wrap;
         gap: 7px 12px;
-        /* stretch, not center: the longer label wraps to two lines at some
-           widths and the pair should stay the same height. */
-        align-items: stretch;
+        align-items: center;
         justify-content: space-between;
         margin-bottom: 8px;
       }
@@ -685,108 +694,6 @@
         vertical-align: 1px;
       }
 
-      /* ---------------------------------------------------------------
-         Status badge treatments - switchable ideas for making the two
-         badges more vibrant. Prototype scaffolding: the component keeps
-         only the one that gets picked.
-         --------------------------------------------------------------- */
-
-      /* A - Solid: full-strength fill, white text and glyph. */
-      /* --green-dark, not --green: white on --green is 4.30:1, under the
-         4.5:1 AA floor for 13px text. This is 6.46:1. */
-      html[data-badge='solid'] .status-badge.is-positive {
-        color: #ffffff;
-        background: var(--green-dark);
-        border-color: #1a5535;
-      }
-
-      html[data-badge='solid'] .status-badge.is-negative {
-        color: #ffffff;
-        background: var(--red);
-        border-color: #8f1d13;
-      }
-
-      /* B - Split cap: solid leading cap carrying the glyph, tinted body. */
-      html[data-badge='cap'] .status-badge {
-        gap: 0;
-        padding: 0;
-        overflow: hidden;
-      }
-
-      /* Text absorbs the slack so the cap stays flush to the leading edge
-         when the badge is stretched full width on narrow screens. */
-      html[data-badge='cap'] .status-badge > span {
-        flex: 1 1 auto;
-        padding: 6px 13px 6px 11px;
-        text-align: center;
-      }
-
-      html[data-badge='cap'] .badge-icon {
-        box-sizing: border-box;
-        align-self: stretch;
-        width: 34px;
-        height: auto;
-        padding: 6px 9px;
-        color: #ffffff;
-      }
-
-      html[data-badge='cap'] .status-badge.is-positive .badge-icon {
-        background: var(--green);
-      }
-
-      html[data-badge='cap'] .status-badge.is-negative .badge-icon {
-        background: var(--red);
-      }
-
-      /* C - Bold outline: white body, full-strength rule and glyph. */
-      html[data-badge='outline'] .status-badge {
-        border-width: 2px;
-        font-weight: 750;
-      }
-
-      html[data-badge='outline'] .status-badge.is-positive {
-        background: var(--paper);
-        border-color: var(--green);
-      }
-
-      html[data-badge='outline'] .status-badge.is-positive .badge-icon {
-        color: var(--green);
-      }
-
-      html[data-badge='outline'] .status-badge.is-negative {
-        background: var(--paper);
-        border-color: var(--red);
-      }
-
-      html[data-badge='outline'] .status-badge.is-negative .badge-icon {
-        color: var(--red);
-      }
-
-      /* D - Glow: tinted gradient with a soft coloured halo. */
-      html[data-badge='glow'] .status-badge.is-positive {
-        background: linear-gradient(#f3faf6, #dcefe4);
-        border-color: rgba(44, 138, 88, 0.5);
-        box-shadow:
-          0 1px 2px rgba(44, 138, 88, 0.2),
-          0 0 0 3px rgba(44, 138, 88, 0.12);
-      }
-
-      html[data-badge='glow'] .status-badge.is-positive .badge-icon {
-        color: var(--green);
-      }
-
-      html[data-badge='glow'] .status-badge.is-negative {
-        background: linear-gradient(#fff5f4, #ffe3e1);
-        border-color: rgba(180, 35, 24, 0.45);
-        box-shadow:
-          0 1px 2px rgba(180, 35, 24, 0.18),
-          0 0 0 3px rgba(180, 35, 24, 0.1);
-      }
-
-      html[data-badge='glow'] .status-badge.is-negative .badge-icon {
-        color: var(--red);
-      }
-
       .sr-only {
         position: absolute;
         width: 1px;
@@ -920,6 +827,9 @@
         }
       }
     </style>
+
+    <!-- Navigation only: a shadow-DOM element, so it adds no layout and no styles to this page. -->
+    <script type="module" src="/templates/nav.js"></script>
   </head>
   <body>
     <main class="page">
@@ -953,17 +863,6 @@
             <button type="button" data-expiry-button="wash" aria-pressed="false" aria-controls="warranty-card">B · Past wash</button>
             <button type="button" data-expiry-button="consumed" aria-pressed="false" aria-controls="warranty-card">C · Consumed</button>
             <button type="button" data-expiry-button="hatch" aria-pressed="false" aria-controls="warranty-card">D · Hatch + tag</button>
-          </div>
-        </div>
-
-        <div class="control-row">
-          <p id="badge-picker-title" class="control-title">Status badges</p>
-          <div class="segmented badge-segmented" role="group" aria-labelledby="badge-picker-title">
-            <button type="button" data-badge-button="current" aria-pressed="true" aria-controls="warranty-card">Current</button>
-            <button type="button" data-badge-button="solid" aria-pressed="false" aria-controls="warranty-card">A - Solid</button>
-            <button type="button" data-badge-button="cap" aria-pressed="false" aria-controls="warranty-card">B - Split cap</button>
-            <button type="button" data-badge-button="outline" aria-pressed="false" aria-controls="warranty-card">C - Bold outline</button>
-            <button type="button" data-badge-button="glow" aria-pressed="false" aria-controls="warranty-card">D - Glow</button>
           </div>
         </div>
 
@@ -1175,14 +1074,6 @@
         'hatch': 'expired coverage hatched and tagged',
       };
 
-      const badgeDescriptions = {
-        'current': 'the current tinted pill',
-        'solid': 'solid fill with white text',
-        'cap': 'a solid leading cap with a tinted body',
-        'outline': 'a white body with a bold coloured rule',
-        'glow': 'a tinted gradient with a soft halo',
-      };
-
       const root = document.documentElement;
       const warrantyCard = document.querySelector('#warranty-card');
       const activationCompany = document.querySelector('#activation-company');
@@ -1205,7 +1096,6 @@
       const scenarioButtons = [...document.querySelectorAll('[data-scenario-button]')];
       const authorizationButtons = [...document.querySelectorAll('[data-authorization-button]')];
       const expiryButtons = [...document.querySelectorAll('[data-expiry-button]')];
-      const badgeButtons = [...document.querySelectorAll('[data-badge-button]')];
       let activeScenarioId = 'two-extensions';
       let isAuthorized = true;
 
@@ -1395,15 +1285,6 @@
           expiryButtons.forEach(other => other.setAttribute('aria-pressed', String(other === button)));
           renderScenario(activeScenarioId, false);
           interactionStatus.textContent = `Expiry indication: ${expiryDescriptions[expiryStyle]}.`;
-        });
-      });
-
-      badgeButtons.forEach(button => {
-        button.addEventListener('click', () => {
-          const badgeStyle = button.dataset.badgeButton;
-          root.dataset.badge = badgeStyle;
-          badgeButtons.forEach(other => other.setAttribute('aria-pressed', String(other === button)));
-          interactionStatus.textContent = `Status badges: ${badgeDescriptions[badgeStyle]}.`;
         });
       });
 

@@ -28,7 +28,8 @@
   top: var(--branch-slot-top, 0);
   left: var(--branch-slot-left, 0);
   width: var(--branch-slot-width, auto);
-  /* The input can be narrower than a usable day strip. */
+  /* Floor for the width the picker measures — the input is routinely narrower
+     than a usable day strip. */
   min-width: 288px;
   /* Never taller than the room the picker measured. A constant here is what put
      ~150px of panel off-screen in landscape and whenever the keyboard was up,
@@ -83,6 +84,14 @@
 
 .branch-slot-day-selected {
   @apply border-slate-600 bg-slate-200;
+}
+
+/*
+  Present but not bookable. Dashed and drained rather than hidden, so a customer
+  scanning the strip can tell "that day is closed" from "that day scrolled past".
+*/
+.branch-slot-day-disabled {
+  @apply cursor-not-allowed border-dashed border-slate-200 bg-slate-50 text-slate-300 hover:bg-slate-50;
 }
 
 .branch-slot-day-dow {

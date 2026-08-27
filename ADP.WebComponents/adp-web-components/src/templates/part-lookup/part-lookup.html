@@ -1,153 +1,94 @@
 <!doctype html>
-<html lang="en" x-data="lookupPage()" x-init="init()">
+<html lang="en" dir="ltr">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vehicle Part Lookup</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Part lookup — adp-web-components</title>
 
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" type="text/css" />
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <link rel="stylesheet" href="/templates/harness.css" />
+
+    <!-- Blocking on purpose: a deferred module would let the page paint light first. -->
+    <script src="/templates/harness-theme.js"></script>
 
     <script nomodule src="/build/shift-components.js"></script>
     <script type="module" src="/build/shift-components.esm.js"></script>
+
+    <script type="module" src="/templates/harness.js"></script>
+    <script defer src="/templates/vendor/alpine.js"></script>
   </head>
 
-  <body class="min-h-screen bg-base-200 flex flex-col items-center py-10 px-4 font-sans">
-    <div class="w-full max-w-[1600px] bg-base-100 shadow-xl rounded-2xl p-8">
-      <div class="flex items-center justify-between mb-6">
-        <a href="#" onclick="history.back()" class="btn btn-ghost text-blue-600 hover:bg-blue-50">← Back</a>
-        <h1 class="text-3xl font-extrabold text-gray-800">Vehicle Part Lookup</h1>
-        <div class="w-[80px]"></div>
-      </div>
+  <body class="bg-base-200 text-base-content min-h-screen">
+    <!-- Every area and page, read from catalog.json. -->
+    <div data-harness-nav x-cloak></div>
 
-      <div class="flex flex-col items-center gap-6 mb-8">
-        <div class="w-fit gap-4 items-center flex text-center">
-          <h2 class="text-lg font-semibold shrink-0 text-gray-700 mb-2">Part Number <span class="text-red-500">*</span></h2>
-          <input x-model="inputValue" type="text" class="input input-bordered w-80 text-center" placeholder="Enter part number..." />
-          <p x-text="errorMessage" class="text-red-500 absolute mt-2 h-5"></p>
-          <button class="btn btn-primary w-40" @click="fetchData()">
-            <span x-show="!isLoading"><i class="fa-solid fa-magnifying-glass"></i> Search</span>
-            <span x-show="isLoading" class="flex items-center gap-2"> <span class="loading loading-spinner"></span> Searching... </span>
-          </button>
-        </div>
+    <div class="mx-auto flex max-w-[1400px] flex-col gap-8 px-4 py-10 sm:px-8">
+      <header>
+        <p class="eyebrow text-neutral">adp-web-components · part lookup</p>
+        <h1 class="mt-1 text-2xl font-bold tracking-tight">Part lookup</h1>
+        <p class="lede text-base-content/70 mt-2">
+          The wrapper that holds all three part lookups and shows one at a time. The search field and tab strip below are the host's — they are what a page embedding this component
+          has to build, and they drive <code>fetchData()</code> and <code>active-element</code>.
+        </p>
+      </header>
 
-        <div class="flex flex-col sm:flex-row items-center justify-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl shadow-sm">
-          <h2 class="text-lg font-semibold text-gray-700 flex items-center gap-2">
-            <span>🧭</span> Mode:
-            <span class="font-bold text-indigo-600" x-text="isDev ? 'Development' : 'Production'"></span>
-          </h2>
-          <label class="cursor-pointer">
-            <input type="checkbox" x-on:click="switchEnvironment" class="toggle toggle-primary ml-3" />
-          </label>
-        </div>
+      <section
+        class="flex flex-col gap-4"
+        x-data="harness({
+          profile: 'part',
+          samples: ['T110715002102', 'T1118850010/1', 'T1112375020/11'],
+          setup: subject => (subject.endpoint = { url: 'https://tiq-part-lookup.azurewebsites.net/api/secure-part-lookup', query: { code: '' } }),
+        })"
+      >
+        <div class="flex min-w-0 flex-col gap-4">
+          <!--
+            Host-side chrome, not harness chrome: a real embedding page owns the
+            search field and the tab strip, so they stay in the page body rather
+            than moving into the rail.
+          -->
+          <div class="card bg-base-100 border-base-300 flex flex-wrap items-center gap-3 border p-4" x-data="{ code: 'SU00302474' }">
+            <label class="input min-w-60 flex-1">
+              <span class="eyebrow text-neutral">Part no.</span>
+              <input x-model="code" type="search" placeholder="e.g. SU00302474" aria-label="Part number" @keydown.enter.prevent="run(code)" />
+            </label>
 
-        <div class="text-center flex gap-3 items-center">
-          <h2 class="text-lg font-semibold text-gray-700">🌐 Language:</h2>
-          <div class="flex flex-wrap justify-center gap-3">
-            <template x-for="lang in languages" :key="lang">
-              <button class="btn btn-outline btn-sm" @click="updateLang(lang)" x-text="lang.toUpperCase()"></button>
+            <button type="button" class="btn btn-primary" :disabled="loading" @click="run(code)">
+              <span class="loading loading-spinner loading-xs" x-show="loading"></span>
+              Search
+            </button>
+          </div>
+
+          <div role="tablist" class="tabs tabs-box self-start" x-data="{ tab: 'distributor-lookup' }">
+            <template
+              x-for="item in [
+                { value: 'dead-stock-lookup', label: 'Dead stock' },
+                { value: 'distributor-lookup', label: 'Distributor' },
+                { value: 'manufacturer-lookup', label: 'Manufacturer' },
+              ]"
+              :key="item.value"
+            >
+              <button
+                type="button"
+                role="tab"
+                class="tab"
+                :class="tab === item.value && 'tab-active'"
+                :aria-selected="tab === item.value"
+                @click="tab = item.value; subject.activeElement = item.value"
+                x-text="item.label"
+              ></button>
             </template>
           </div>
-        </div>
 
-        <div class="text-center flex gap-3 items-center w-fit">
-          <h2 class="text-lg font-semibold text-gray-700">Lookups:</h2>
-          <div class="flex flex-wrap justify-center w-fit mx-auto gap-3 card-xs shadow-sm card">
-            <div class="card-body !flex !flex-row">
-              <template x-for="item in lookups" :key="item.label">
-                <button x-text="item.label" @click="fetchData(item.value)" class="btn btn-dash btn-sm"></button>
-              </template>
-            </div>
+          <!-- Mode + fixtures, right where they are used. -->
+          <div data-harness-bar x-cloak></div>
+
+          <div class="frame card bg-base-100 border-base-300 border p-5">
+            <part-lookup id="subject" language="en" active-element="distributor-lookup"></part-lookup>
           </div>
         </div>
-      </div>
 
-      <div role="tablist" class="tabs mb-4 tabs-lg w-fit mx-auto tabs-center tabs-box">
-        <a role="tab" class="tab" :class="activeTab === 'dead-stock-lookup' ? 'tab-active' : ''" @click="changeLookup('dead-stock-lookup')">Dead Stock</a>
-        <a role="tab" class="tab" :class="activeTab === 'distributor-lookup' ? 'tab-active' : ''" @click="changeLookup('distributor-lookup')">Distributor</a>
-        <a role="tab" class="tab" :class="activeTab === 'manufacturer-lookup' ? 'tab-active' : ''" @click="changeLookup('manufacturer-lookup')">Manufacturer</a>
-      </div>
-
-      <part-lookup is-dev="false" id="custom-component" :active-element="activeTab"></part-lookup>
+        <!-- The harness drawer: launcher, right-edge hover strip and panel, all stamped by harness.js. -->
+        <div data-harness-rail x-cloak></div>
+      </section>
     </div>
-
-    <script>
-      const staticLookups = [
-        { label: 'Reload', value: undefined },
-        { label: 'Empty', value: '' },
-        { label: 'Error', value: 'error' },
-      ];
-
-      const prodLookups = [
-        { label: 'T110715002102', value: 'T110715002102' },
-        { label: 'T1118850010/1', value: 'T1118850010/1' },
-        { label: 'T1112375020/11', value: 'T1112375020/11' },
-      ];
-
-      function lookupPage() {
-        return {
-          isDev: false,
-          isLoading: false,
-          errorMessage: '',
-          componentRef: null,
-          inputValue: 'SU00302474',
-          activeTab: 'distributor-lookup',
-          languages: ['en', 'ku', 'ar', 'ru'],
-          lookups: [...staticLookups, ...prodLookups],
-
-          init() {
-            this.componentRef = document.getElementById('custom-component');
-
-            this.componentRef.endpoint = {
-              url: 'https://tiq-part-lookup.azurewebsites.net/api/secure-part-lookup',
-              query: { code: '' },
-            };
-
-            this.componentRef.loadedResponse = newResponse => console.log('response:', newResponse);
-            this.componentRef.loadingStateChange = isLoading => {
-              console.log('isLoading:', isLoading);
-              this.isLoading = isLoading;
-            };
-            this.componentRef.loadedMockDatas = mockData => {
-              console.log('new mock data:', mockData);
-              this.generateMockItems(mockData);
-            };
-          },
-
-          generateMockItems(mockData) {
-            const mockItem = Object.keys(mockData).map(key => ({ label: key, value: key }));
-            this.lookups = [...staticLookups, ...mockItem];
-          },
-
-          switchEnvironment() {
-            this.isDev = !this.isDev;
-            this.lookups = this.isDev ? [] : [...staticLookups, ...prodLookups];
-            this.componentRef.isDev = this.isDev;
-          },
-
-          updateLang(lang) {
-            if (this.componentRef) this.componentRef.language = lang;
-          },
-
-          changeLookup(tab) {
-            this.activeTab = tab;
-            this.componentRef.activeElement = tab;
-          },
-
-          async fetchData(value) {
-            if (this.isLoading) return;
-            try {
-              await this.componentRef.fetchData(value || this.inputValue);
-            } catch (err) {
-              console.log(err);
-
-              this.errorMessage = 'Error loading data.';
-            }
-          },
-        };
-      }
-    </script>
   </body>
 </html>

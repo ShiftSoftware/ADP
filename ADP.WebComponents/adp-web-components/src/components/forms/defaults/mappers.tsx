@@ -6,6 +6,36 @@ import { format, isBefore, isEqual } from 'date-fns';
 import { decodeTimeOffset } from '~lib/decode-time-offset';
 import { populateItems } from '~lib/populate-items';
 
+/**
+ * Resolves the four ids the calendar endpoint needs from the branch the
+ * `companyBranchId` field has selected.
+ *
+ * That field keeps the whole branch record in its option `meta`, so company,
+ * department and brand need no extra configuration. Department resolves against
+ * the branch's own list rather than being hardcoded: asking a branch for a
+ * department it does not have returns an empty calendar.
+ */
+const resolveBranchTarget = ({ form, props }) => {
+  form.addWatcher('companyBranchId');
+
+  const branchValue = form?.getValue('companyBranchId');
+  const branch = form.context['companyBranchIdList']?.find(item => item.value === branchValue)?.meta;
+
+  const departments: string[] = (branch?.Departments ?? []).map(d => d.IntegrationId).filter(Boolean);
+  const brands: string[] = (branch?.Brands ?? []).map(b => b.IntegrationId).filter(Boolean);
+
+  const preference: string[] = props?.departmentPreference ?? ['showroom'];
+  const departmentId = preference.find(d => departments.includes(d)) ?? departments[0] ?? '';
+
+  return {
+    hasBranch: !!branch,
+    companyId: branch?.CompanyIntegrationId ?? '',
+    branchId: branch?.IntegrationId ?? '',
+    departmentId: props?.departmentId ?? departmentId,
+    brandId: props?.brandId ?? brands[0] ?? '',
+  };
+};
+
 export const getFormMappers = (extraMappers: Record<string, (prop: any) => any> = {}) => ({
   submit: ({ props }) => <form-submit key={props?.name} {...props} />,
 
@@ -151,42 +181,27 @@ export const getFormMappers = (extraMappers: Record<string, (prop: any) => any> 
   date: ({ props }) => <form-picker-input type="date" {...props} icon={<CalendarDaysIcon />} />,
 
   /**
-   * Branch-aware booking slot. Unlike `time` below — which builds a fixed ladder
-   * from min/max/span and is therefore identical at every branch on every day —
-   * this asks the branch's own calendar what is actually open.
-   *
-   * The branch comes from the `companyBranchId` field's selected option, whose
-   * `meta` is the whole branch record, so company / department / brand need no
-   * extra configuration. Department resolves against the branch's own list
-   * rather than being hardcoded: asking a branch for a department it does not
-   * have returns an empty calendar.
+   * Branch-aware booking slot, day-strip variant. Unlike `time` below — which
+   * builds a fixed ladder from min/max/span and is therefore identical at every
+   * branch on every day — this asks the branch's own calendar what is actually
+   * open.
    */
   bookingSlot: ({ form, language, props }) => {
-    form.addWatcher('companyBranchId');
+    const { hasBranch, ...target } = resolveBranchTarget({ form, props });
 
-    const branchValue = form?.getValue('companyBranchId');
-    const branch = form.context['companyBranchIdList']?.find(item => item.value === branchValue)?.meta;
+    return <branch-slot-picker {...props} {...target} form={form} key={props?.name} language={language} calendarApi={props?.calendarApi} isDisabled={!hasBranch} />;
+  },
 
-    const departments: string[] = (branch?.Departments ?? []).map(d => d.IntegrationId).filter(Boolean);
-    const brands: string[] = (branch?.Brands ?? []).map(b => b.IntegrationId).filter(Boolean);
+  /**
+   * The same booking slot, month-calendar variant: a date picker that slides to
+   * that day's times. Identical data, identical submitted value — the two are
+   * interchangeable, so a deployment can run whichever its audience reads
+   * faster without anything downstream changing.
+   */
+  bookingDate: ({ form, language, props }) => {
+    const { hasBranch, ...target } = resolveBranchTarget({ form, props });
 
-    const preference: string[] = props?.departmentPreference ?? ['showroom'];
-    const departmentId = preference.find(d => departments.includes(d)) ?? departments[0] ?? '';
-
-    return (
-      <branch-slot-picker
-        {...props}
-        form={form}
-        key={props?.name}
-        language={language}
-        calendarApi={props?.calendarApi}
-        companyId={branch?.CompanyIntegrationId ?? ''}
-        branchId={branch?.IntegrationId ?? ''}
-        departmentId={props?.departmentId ?? departmentId}
-        brandId={props?.brandId ?? brands[0] ?? ''}
-        isDisabled={!branch}
-      />
-    );
+    return <branch-date-picker {...props} {...target} form={form} key={props?.name} language={language} calendarApi={props?.calendarApi} isDisabled={!hasBranch} />;
   },
 
   time: ({ language, props }) => {

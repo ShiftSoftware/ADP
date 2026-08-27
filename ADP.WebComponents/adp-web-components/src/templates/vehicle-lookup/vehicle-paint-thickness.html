@@ -1,95 +1,63 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Paint Thickness</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Paint thickness — adp-web-components</title>
+
+    <link rel="stylesheet" href="/templates/harness.css" />
+
+    <!-- Blocking on purpose: a deferred module would let the page paint light first. -->
+    <script src="/templates/harness-theme.js"></script>
+
     <script nomodule src="/build/shift-components.js"></script>
     <script type="module" src="/build/shift-components.esm.js"></script>
+
     <script src="./mock-data.js"></script>
     <script src="./mock-loader.js"></script>
+    <script type="module" src="/templates/harness.js"></script>
+    <script defer src="/templates/vendor/alpine.js"></script>
   </head>
-  <body>
-    <a href="#" onclick="history.back()" style="color: blue; display: block; margin-bottom: 16px">Back</a>
 
-    <h1>Vehicle Paint Thickness</h1>
+  <body class="bg-base-200 text-base-content min-h-screen">
+    <!-- Every area and page, read from catalog.json. -->
+    <div data-harness-nav x-cloak></div>
 
-    <vehicle-paint-thickness
-      language="ku"
-      is-dev="true"
-      query-string=""
-      id="paint-thickness"
-      base-url="http://localhost:7174/api/secure-vehicle-lookup-test/"
-      show-certificate-button="true"
-    >
-    </vehicle-paint-thickness>
+    <div class="mx-auto flex max-w-[1180px] flex-col gap-8 px-4 py-10 sm:px-8">
+      <header>
+        <p class="eyebrow text-neutral">adp-web-components · vehicle lookup</p>
+        <h1 class="mt-1 text-2xl font-bold tracking-tight">Paint thickness</h1>
+        <p class="lede text-base-content/70 mt-2">
+          Per-panel paint readings for the VIN. <code>show-certificate-button</code> is on, so the certificate print link renders — it is signed per language, so switch language
+          before opening it.
+        </p>
+      </header>
 
-    <div class="button-container">
-      <button class="sample-button" onclick="updateLang('en')">En</button>
-      <button class="sample-button" onclick="updateLang('ku')">Ku</button>
-      <button class="sample-button" onclick="updateLang('ar')">Ar</button>
-      <button class="sample-button" onclick="updateLang('ru')">Ru</button>
+      <section
+        class="flex flex-col gap-4"
+        x-data="harness({
+          mocks: 'vehicle-lookup',
+          // `paintThickness` is present on nearly every fixture; the readings are what
+          // the table actually draws.
+          has: vehicle => vehicle?.paintThicknessInspections?.length > 0,
+        })"
+      >
+        <!-- Mode + fixtures, right where they are used. -->
+        <div data-harness-bar x-cloak></div>
+
+        <div class="frame card bg-base-100 border-base-300 border p-5">
+          <vehicle-paint-thickness
+            id="subject"
+            language="en"
+            query-string=""
+            show-certificate-button="true"
+            base-url="http://localhost:7174/api/secure-vehicle-lookup-test/"
+          ></vehicle-paint-thickness>
+        </div>
+
+        <!-- The harness drawer: launcher, right-edge hover strip and panel, all stamped by harness.js. -->
+        <div data-harness-rail x-cloak></div>
+      </section>
     </div>
-
-    <div class="button-container">
-      <button class="sample-button" onclick="fetchVin()">reload</button>
-      <button class="sample-button" onclick="fetchVin('')">Empty (close)</button>
-      <button class="sample-button" onclick="fetchVin('error')">Error</button>
-      <button class="sample-button" onclick="fetchVin('JTMHX01J8L4198295')">JTMHX01J8L4198295</button>
-      <button class="sample-button" onclick="fetchVin('JTMHX01J8L4198296')">JTMHX01J8L4198296</button>
-      <button class="sample-button" onclick="fetchVin('MR0BX8CD3P2791075')">MR0BX8CD3P2791075</button>
-      <button class="sample-button" onclick="fetchVin('JTMHX01J8L4198299')">JTMHX01J8L4198299</button>
-      <button class="sample-button" onclick="fetchVin('JTMABBBJ9P4099243')">JTMABBBJ9P4099243</button>
-      <button class="sample-button" onclick="fetchVin('JTMHU09J6E4100543')">JTMHU09J6E4100543</button>
-      <button class="sample-button" onclick="fetchVin('JTMABBBJ9P4099200')">JTMABBBJ9P4099200</button>
-    </div>
-
-    <script>
-      let paintThickness;
-
-      document.addEventListener('DOMContentLoaded', function () {
-        paintThickness = document.getElementById('paint-thickness');
-
-        loadMockData('vehicle-lookup').then(data => paintThickness.setMockData(data));
-
-        paintThickness.loadedResponse = newResponse => console.log(newResponse);
-        paintThickness.loadingStateChange = isLoading => {
-          console.log('isLoading: ' + isLoading);
-        };
-      });
-
-      function updateLang(newLang) {
-        paintThickness.language = newLang;
-      }
-
-      function fetchVin(newVin) {
-        paintThickness.fetchVin(newVin);
-      }
-
-      function setData(key) {
-        paintThickness.setData(mockData[key]);
-      }
-    </script>
-
-    <style>
-      .button-container {
-        margin-top: 50px;
-        border: 1px solid #e1e1e1;
-        padding: 20px;
-        display: flex;
-        flex-wrap: wrap;
-        align-content: center;
-        justify-content: center;
-        gap: 10px;
-      }
-      .sample-button {
-        background-color: #428bca;
-        padding: 10px 15px;
-      }
-
-      .sample-button:hover {
-        background-color: #3071a9;
-      }
-    </style>
   </body>
 </html>

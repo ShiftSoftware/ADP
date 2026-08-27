@@ -1,320 +1,123 @@
 <!doctype html>
-
-<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<html lang="en" dir="ltr">
   <head>
-    <title>Vehicle Lookup</title>
-    <!-- Latest compiled and minified CSS -->
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css"
-      integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu"
-      crossorigin="anonymous"
-    />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Vehicle lookup — adp-web-components</title>
 
-    <!-- Optional theme -->
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap-theme.min.css"
-      integrity="sha384-6pzBo3FDv/PJ8r2KRkGHifhEocL+1X2rVCTTkUfGk7/0pbek5mMa1upzvWbrUbOZ"
-      crossorigin="anonymous"
-    />
+    <link rel="stylesheet" href="/templates/harness.css" />
 
-    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
-    <script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha384-nvAa0+6Qg9clwYCGGPpDQLVpLNn0fRaROjHqs13t4Ggj3Ez50XnGQqc/r8MhnRDZ" crossorigin="anonymous"></script>
-    <!-- Include all compiled plugins (below), or include individual files as needed -->
-    <script
-      src="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/js/bootstrap.min.js"
-      integrity="sha384-aJ21OjlMXNL5UyIl/XNwTMqvzeRMZH2w8c5cRVpzpU8Y5bApTppSuUkhZXN0VxHd"
-      crossorigin="anonymous"
-    ></script>
+    <!-- Blocking on purpose: a deferred module would let the page paint light first. -->
+    <script src="/templates/harness-theme.js"></script>
 
     <script nomodule src="/build/shift-components.js"></script>
     <script type="module" src="/build/shift-components.esm.js"></script>
+
     <script src="./mock-data.js"></script>
     <script src="./mock-loader.js"></script>
-
-    <!-- <script type="module" src="../../../dist/shift-components/shift-components.esm.js"></script> -->
-
-    <style>
-      body {
-        background: #f7f7f7;
-        padding: 25px;
-      }
-
-      #vehicle-info-tab a {
-        color: black;
-        font-size: 18px;
-        transition: 0.3s;
-        user-select: none;
-      }
-
-      #vehicle-info-tab li.active a {
-        font-weight: bold;
-        background: #425368;
-        color: white;
-      }
-
-      input.disabled {
-        background: #e0e0e0;
-      }
-
-      .nav-tabs li.disabled {
-        background: #e0e0e0;
-        opacity: 0.5;
-        pointer-events: none;
-      }
-
-      .switch {
-        position: relative;
-        display: inline-block;
-        width: 60px;
-        height: 34px;
-      }
-
-      .switch input {
-        opacity: 0;
-        width: 0;
-        height: 0;
-      }
-
-      .slider {
-        position: absolute;
-        cursor: pointer;
-        inset: 0;
-        background-color: #ccc;
-        transition: 0.4s;
-        border-radius: 34px;
-      }
-
-      .slider::before {
-        position: absolute;
-        content: '';
-        height: 26px;
-        width: 26px;
-        left: 4px;
-        bottom: 4px;
-        background-color: white;
-        transition: 0.4s;
-        border-radius: 50%;
-      }
-
-      input:checked + .slider {
-        background-color: #4caf50;
-      }
-
-      input:checked + .slider::before {
-        transform: translateX(26px);
-      }
-    </style>
+    <script type="module" src="/templates/harness.js"></script>
+    <script defer src="/templates/vendor/alpine.js"></script>
   </head>
 
-  <body>
-    <a href="#" onclick="history.back()" style="color: blue; display: block; margin-bottom: 16px">Back</a>
+  <body class="bg-base-200 text-base-content min-h-screen">
+    <!-- Every area and page, read from catalog.json. -->
+    <div data-harness-nav x-cloak></div>
 
-    <div class="section_inner" style="width: 90%; margin: auto">
-      <div>
-        <div class="container-fluid">
-          <div class="row" runat="server" id="rowSubmitForm">
-            <div class="col-sm-12">
-              <div class="row">
-                <div class="col-lg-offset-3 col-lg-6" runat="server" id="colCustomerName">
-                  <div>
-                    <p class="font_f_o_b f16 mb10 error_bg text-center">VIN <span class="required">*Required</span></p>
-                  </div>
-                  <input value="MR0AX8CDXP4446478" class="shift-form-field" style="width: 100%" autocomplete="off" id="vinInput" />
-                  <div class="ltc-ferrari-red error-message error text-center"></div>
-                </div>
-              </div>
-            </div>
+    <div class="mx-auto flex max-w-[1400px] flex-col gap-8 px-4 py-10 sm:px-8">
+      <header>
+        <p class="eyebrow text-neutral">adp-web-components · vehicle lookup</p>
+        <h1 class="mt-1 text-2xl font-bold tracking-tight">Vehicle lookup</h1>
+        <p class="lede text-base-content/70 mt-2">
+          The shell that holds all eight vehicle components and shows one at a time. The VIN field and the tab strip below belong to the host — a page embedding this component has
+          to build them, and they are what drive <code>fetchVin()</code> and <code>active-element</code>.
+        </p>
+      </header>
 
-            <div class="col-sm-12 text-center btn_list clearfix" style="margin-top: 20px">
-              <button onclick="fetchVin()" id="searchButton" type="button" class="btn_type_5 f14 font_f_o_b">
-                <i id="search-icon" class="fa fa-search"></i>
-                <i id="spinner-icon" class="fa fa-spin fa-spinner" style="display: none"></i>
-                <span id="search-text">Search</span>
+      <section
+        class="flex flex-col gap-4"
+        x-data="harness({
+          profile: 'composite',
+          mocks: 'vehicle-lookup',
+          labels: {
+            JTMABBBJ9P4099200: 'realistic',
+            JTMABBBJ9P4099201: 'realistic, at distributor stock',
+            '1G8ZY1275YZ188208': 'inactive services',
+            BLOCKEDNOTALLOC01: 'blocked, not allocated',
+          },
+        })"
+      >
+        <div class="flex min-w-0 flex-col gap-4">
+          <!--
+            Host-side chrome, not harness chrome: a real embedding page owns the
+            VIN field and the tab strip, so they stay in the page body rather than
+            moving into the rail.
+          -->
+          <div class="card bg-base-100 border-base-300 flex flex-col gap-2 border p-4" x-data="{ vin: 'MR0AX8CDXP4446478' }">
+            <div class="flex flex-wrap items-center gap-3">
+              <label class="input min-w-60 flex-1">
+                <span class="eyebrow text-neutral">VIN</span>
+                <input x-model="vin" type="search" autocomplete="off" aria-label="VIN" :readonly="loading" @keydown.enter.prevent="run(vin)" />
+              </label>
+
+              <button type="button" class="btn btn-primary" :disabled="loading" @click="run(vin)">
+                <span class="loading loading-spinner loading-xs" x-show="loading"></span>
+                Search
               </button>
             </div>
+
+            <p class="text-error text-sm" x-show="error" x-text="error"></p>
           </div>
 
-          <div class="button-container">
-            <button class="sample-button" onclick="updateLang('en')">En</button>
-            <button class="sample-button" onclick="updateLang('ku')">Ku</button>
-            <button class="sample-button" onclick="updateLang('ar')">Ar</button>
-            <button class="sample-button" onclick="updateLang('ru')">Ru</button>
+          <!--
+            The old page disabled every inactive tab while a search was in flight —
+            that is the one piece of the jQuery wiring worth keeping, so it is here
+            as a binding instead.
+          -->
+          <div role="tablist" class="tabs tabs-box self-start" x-data="{ tab: 'vehicle-specification' }">
+            <template
+              x-for="item in [
+                { value: 'vehicle-specification', label: 'Specification' },
+                { value: 'vehicle-sale-information', label: 'Sale information' },
+                { value: 'vehicle-accessories', label: 'Accessories' },
+                { value: 'vehicle-warranty-details', label: 'Warranty & SSC' },
+                { value: 'vehicle-warranty-timeline', label: 'Warranty timeline' },
+                { value: 'vehicle-service-history', label: 'Service history' },
+                { value: 'vehicle-paint-thickness', label: 'Paint thickness' },
+                { value: 'vehicle-claimable-items', label: 'Claimable items' },
+              ]"
+              :key="item.value"
+            >
+              <button
+                type="button"
+                role="tab"
+                class="tab"
+                :class="tab === item.value && 'tab-active'"
+                :aria-selected="tab === item.value"
+                :disabled="loading && tab !== item.value"
+                @click="tab = item.value; subject.activeElement = item.value"
+                x-text="item.label"
+              ></button>
+            </template>
           </div>
 
-          <style>
-            .button-container {
-              margin-top: 50px;
-              border: 1px solid #e1e1e1;
-              padding: 20px;
-              display: flex;
-              flex-wrap: wrap;
-              align-content: center;
-              justify-content: center;
-              gap: 10px;
-            }
+          <!-- Mode + fixtures, right where they are used. -->
+          <div data-harness-bar x-cloak></div>
 
-            .sample-button {
-              background-color: #428bca;
-              padding: 10px 15px;
-            }
-
-            .sample-button:hover {
-              background-color: #3071a9;
-            }
-          </style>
-
-          <div class="button-container button-container-vins">
-            <div style="display: flex; align-items: center; gap: 16px">
-              <label for="toggleSwitch">is development</label>
-              <label class="switch">
-                <input type="checkbox" id="toggleSwitch" />
-                <span class="slider"></span>
-              </label>
-            </div>
-
-            <button class="sample-button" onclick="searchStaticVin()">reload</button>
-            <button class="sample-button" onclick="searchStaticVin('')">Empty (close)</button>
-            <button class="sample-button" onclick="searchStaticVin('error')">Error</button>
-          </div>
-
-          <div class="well" style="background: white; margin-top: 30px; border-radius: 10px">
-            <!-- Nav tabs -->
-            <ul class="nav nav-tabs" role="tablist" id="vehicle-info-tab" style="display: flex; justify-content: center; border-bottom: none">
-              <li role="presentation" onclick="changeLookup('vehicle-specification')" class="active">
-                <a class="disable-auto-scroll" href="#specification" aria-controls="specification" role="tab" data-toggle="tab"><span>Specification</span></a>
-              </li>
-              <li role="presentation" onclick="changeLookup('vehicle-sale-information')">
-                <a class="disable-auto-scroll" href="#sale-information" aria-controls="sale-information" role="tab" data-toggle="tab"><span>Sale Information</span></a>
-              </li>
-              <li role="presentation" onclick="changeLookup('vehicle-accessories')">
-                <a class="disable-auto-scroll" href="#accessories" aria-controls="accessories" role="tab" data-toggle="tab"><span>Accessories</span></a>
-              </li>
-              <li role="presentation" onclick="changeLookup('vehicle-warranty-details')">
-                <a class="disable-auto-scroll" href="#warranty-and-ssc" aria-controls="warranty-and-ssc" role="tab" data-toggle="tab"><span>Warranty & SSC</span></a>
-              </li>
-              <li role="presentation" onclick="changeLookup('vehicle-warranty-timeline')">
-                <a class="disable-auto-scroll" href="#warranty-timeline" aria-controls="warranty-timeline" role="tab" data-toggle="tab"><span>Warranty Timeline</span></a>
-              </li>
-              <li role="presentation" onclick="changeLookup('vehicle-service-history')">
-                <a class="disable-auto-scroll" href="#history" aria-controls="history" role="tab" data-toggle="tab"><span>Service History</span></a>
-              </li>
-              <li role="presentation" onclick="changeLookup('vehicle-paint-thickness')">
-                <a class="disable-auto-scroll" href="#thickness" aria-controls="thickness" role="tab" data-toggle="tab"><span>Paint Thickness</span></a>
-              </li>
-              <li role="presentation" onclick="changeLookup('vehicle-claimable-items')">
-                <a class="disable-auto-scroll" href="#vehicle-claimable-items" aria-controls="vehicle-claimable-items" role="tab" data-toggle="tab"
-                  ><span>Vehicle Claimable items</span></a
-                >
-              </li>
-            </ul>
-
-            <!-- Tab panes -->
-            <div class="tab-content" style="background: white; border: 1px solid #dddddd; padding: 25px; border-radius: 10px">
-              <vehicle-lookup
-                language="en"
-                id="vehicle-lookup"
-                active-element="vehicle-specification"
-                base-url="http://localhost:7204/api/secure-vehicle-lookup/"
-                query-string=""
-                children-props='{"vehicle-claimable-items":{"showTrace":true},"vehicle-warranty-details":{"showSsc":true,"recaptchaKey":"6LetFoYqAAAAAE0fg-070Qtm3z-DG24sMJ8wzY1f"},"vehicle-paint-thickness":{"showCertificateButton":true},"dynamic-claim":{"claimEndPoint":"http://localhost:5015/api/vehicle/service-claim","claim-via-barcode-scanner":"false"}}'
-              ></vehicle-lookup>
-            </div>
+          <div class="frame card bg-base-100 border-base-300 border p-5">
+            <vehicle-lookup
+              id="subject"
+              language="en"
+              query-string=""
+              active-element="vehicle-specification"
+              base-url="http://localhost:7204/api/secure-vehicle-lookup/"
+              children-props='{"vehicle-claimable-items":{"showTrace":true},"vehicle-warranty-details":{"showSsc":true,"recaptchaKey":"6LetFoYqAAAAAE0fg-070Qtm3z-DG24sMJ8wzY1f"},"vehicle-paint-thickness":{"showCertificateButton":true},"dynamic-claim":{"claimEndPoint":"http://localhost:5015/api/vehicle/service-claim","claim-via-barcode-scanner":"false"}}'
+            ></vehicle-lookup>
           </div>
         </div>
-      </div>
+
+        <!-- The harness drawer: launcher, right-edge hover strip and panel, all stamped by harness.js. -->
+        <div data-harness-rail x-cloak></div>
+      </section>
     </div>
-
-    <script>
-      let vehicleLookup;
-      let searching = false;
-      let loadedMockData;
-
-      const searchIcon = document.getElementById('search-icon');
-      const searchText = document.getElementById('search-text');
-      const spinnerIcon = document.getElementById('spinner-icon');
-      const errorMessage = document.getElementsByClassName('error-message')[0];
-
-      const container = document.querySelector('.button-container-vins');
-
-      loadMockData('vehicle-lookup').then(data => {
-        loadedMockData = data;
-        Object.keys(data).forEach(vin => {
-          const button = document.createElement('button');
-          button.className = 'sample-button';
-          button.textContent = vin;
-          button.onclick = () => searchStaticVin(vin);
-          container.appendChild(button);
-        });
-      });
-
-      const input = document.getElementById('vinInput');
-
-      function updateLang(newLang) {
-        vehicleLookup.language = newLang;
-      }
-
-      function changeLookup(newIndex) {
-        vehicleLookup.activeElement = newIndex;
-      }
-
-      function fetchVin() {
-        vehicleLookup.fetchVin(input.value, { headers: 'headers-value' });
-      }
-
-      const toggle = document.getElementById('toggleSwitch');
-      let isDev = false;
-
-      toggle.addEventListener('change', function () {
-        isDev = this.checked;
-        vehicleLookup.isDev = isDev;
-      });
-
-      function searchStaticVin(vin) {
-        if (!isDev) vehicleLookup.fetchVin(vin, { headers: 'headers-value' });
-        else vehicleLookup.handleLoadData(loadedMockData[vin], null);
-      }
-
-      document.addEventListener('DOMContentLoaded', async function () {
-        vehicleLookup = document.getElementById('vehicle-lookup');
-
-        vehicleLookup.errorStateListener = async function errorStateListener(error) {
-          if (error) {
-            input.classList.add('error_bg');
-            errorMessage.innerHTML = error;
-          } else {
-            input.classList.remove('error_bg');
-            errorMessage.innerHTML = '';
-          }
-        };
-
-        vehicleLookup.onLoadingStateChanged = function onLoadingStateChanged(isLoading) {
-          if (isLoading) {
-            $("li:not('.active')").addClass('disabled');
-            searching = true;
-            searchIcon.style.display = 'none';
-            spinnerIcon.style.display = 'inline-block';
-            searchText.innerHTML = 'Searching...';
-            input.readOnly = true;
-            input.classList.add('disabled');
-          } else {
-            $("li:not('.active')").removeClass('disabled');
-            searchIcon.style.display = 'inline-block';
-            spinnerIcon.style.display = 'none';
-            searchText.innerHTML = 'Search';
-            input.readOnly = false;
-            input.classList.remove('disabled');
-            searching = false;
-          }
-        };
-
-        vehicleLookup.dynamicClaimActivate = vehicleInformation => {
-          console.log(vehicleInformation);
-
-          alert(JSON.stringify(vehicleInformation));
-        };
-      });
-    </script>
   </body>
 </html>

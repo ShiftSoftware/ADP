@@ -1,118 +1,51 @@
 <!doctype html>
-<html lang="en" x-data="lookupPage()" x-init="init()">
+<html lang="en" dir="ltr">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dead Stock Lookup</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Dead stock lookup — adp-web-components</title>
 
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" type="text/css" />
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <link rel="stylesheet" href="/templates/harness.css" />
+
+    <!-- Blocking on purpose: a deferred module would let the page paint light first. -->
+    <script src="/templates/harness-theme.js"></script>
 
     <script nomodule src="/build/shift-components.js"></script>
     <script type="module" src="/build/shift-components.esm.js"></script>
+
+    <script type="module" src="/templates/harness.js"></script>
+    <script defer src="/templates/vendor/alpine.js"></script>
   </head>
 
-  <body class="min-h-screen bg-base-200 flex flex-col items-center py-10 px-4 font-sans">
-    <div class="w-full max-w-[1600px] bg-base-100 shadow-xl rounded-2xl p-8">
-      <div class="flex items-center justify-between mb-4">
-        <a href="#" onclick="history.back()" class="btn btn-ghost text-blue-600 hover:bg-blue-50">← Back</a>
-        <h1 class="text-3xl font-extrabold text-gray-800">Dead Stock Lookup</h1>
-        <div class="w-[80px]"></div>
-      </div>
+  <body class="bg-base-200 text-base-content min-h-screen">
+    <!-- Every area and page, read from catalog.json. -->
+    <div data-harness-nav x-cloak></div>
 
-      <div class="flex flex-col mb-8 items-center gap-4">
-        <div class="flex flex-col sm:flex-row items-center justify-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl shadow-sm">
-          <h2 class="text-lg font-semibold text-gray-700 flex items-center gap-2">
-            <span>🧭</span> Mode:
-            <span class="font-bold text-indigo-600" x-text="isDev ? 'Development' : 'Production'"></span>
-          </h2>
-          <label class="cursor-pointer">
-            <input type="checkbox" x-on:click="switchEnvironment" class="toggle toggle-primary ml-3" />
-          </label>
+    <div class="mx-auto flex max-w-[1400px] flex-col gap-8 px-4 py-10 sm:px-8">
+      <header>
+        <p class="eyebrow text-neutral">adp-web-components · part lookup</p>
+        <h1 class="mt-1 text-2xl font-bold tracking-tight">Dead stock lookup</h1>
+        <p class="lede text-base-content/70 mt-2">Where a slow-moving part is still sitting across the branch network, for a given part number.</p>
+      </header>
+
+      <section
+        class="flex flex-col gap-4"
+        x-data="harness({
+          profile: 'part',
+          samples: ['T110715002102', 'T1118850010/1', 'T1112375020/11'],
+          setup: subject => (subject.endpoint = { url: 'https://tiq-part-lookup.azurewebsites.net/api/secure-part-lookup', query: { code: '' } }),
+        })"
+      >
+        <!-- Mode + fixtures, right where they are used. -->
+        <div data-harness-bar x-cloak></div>
+
+        <div class="frame card bg-base-100 border-base-300 border p-5">
+          <dead-stock-lookup id="subject" language="en" localization-name="arabic"></dead-stock-lookup>
         </div>
 
-        <div class="text-center gap-3 flex items-center">
-          <h2 class="text-lg font-semibold text-gray-700">🌐 Language:</h2>
-          <div class="flex flex-wrap justify-center gap-3">
-            <template x-for="lang in languages" :key="lang">
-              <button class="btn btn-outline btn-sm" @click="updateLang(lang)" x-text="lang.toUpperCase()"></button>
-            </template>
-          </div>
-        </div>
-
-        <div class="text-center flex gap-3 items-center w-fit">
-          <h2 class="text-lg font-semibold text-gray-700">Lookups:</h2>
-          <div class="flex flex-wrap justify-center w-fit mx-auto gap-3 card-xs shadow-sm card">
-            <div class="card-body !flex !flex-row">
-              <template x-for="item in lookups" :key="item.label">
-                <button x-text="item.label" @click="fetchData(item.value)" class="btn btn-dash btn-sm"></button>
-              </template>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <dead-stock-lookup id="custom-component" is-dev="false" localization-name="arabic"></dead-stock-lookup>
+        <!-- The harness drawer: launcher, right-edge hover strip and panel, all stamped by harness.js. -->
+        <div data-harness-rail x-cloak></div>
+      </section>
     </div>
-
-    <script>
-      const staticLookups = [
-        { label: 'Reload', value: undefined },
-        { label: 'Empty', value: '' },
-        { label: 'Error', value: 'error' },
-      ];
-
-      const prodLookups = [
-        { label: 'T110715002102', value: 'T110715002102' },
-        { label: 'T1118850010/1', value: 'T1118850010/1' },
-        { label: 'T1112375020/11', value: 'T1112375020/11' },
-      ];
-
-      function lookupPage() {
-        return {
-          isDev: false,
-          staticLookups,
-          prodLookups,
-          componentRef: null,
-          languages: ['en', 'ku', 'ar', 'ru'],
-          lookups: [...staticLookups, ...prodLookups],
-
-          init() {
-            this.componentRef = document.getElementById('custom-component');
-            this.componentRef.endpoint = {
-              url: 'https://tiq-part-lookup.azurewebsites.net/api/secure-part-lookup',
-              query: { code: '' },
-            };
-            this.componentRef.loadedResponse = newResponse => console.log('response:', newResponse);
-            this.componentRef.loadingStateChange = isLoading => console.log('isLoading:', isLoading);
-            this.componentRef.loadedMockDatas = mockData => {
-              console.log('new mock data:', mockData);
-              this.generateMockItems(mockData);
-            };
-          },
-
-          updateLang(lang) {
-            if (this.componentRef) this.componentRef.language = lang;
-          },
-
-          fetchData(vin) {
-            if (this.componentRef) this.componentRef.fetchData(vin);
-          },
-
-          generateMockItems(mockData) {
-            const mockItem = Object.keys(mockData).map(key => ({ label: key, value: key }));
-            this.lookups = [...staticLookups, ...mockItem];
-          },
-
-          switchEnvironment() {
-            this.isDev = !this.isDev;
-            this.lookups = this.isDev ? [] : [...staticLookups, ...prodLookups];
-            this.componentRef.isDev = this.isDev;
-          },
-        };
-      }
-    </script>
   </body>
 </html>

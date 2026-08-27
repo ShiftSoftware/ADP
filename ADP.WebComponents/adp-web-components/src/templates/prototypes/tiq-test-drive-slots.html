@@ -1,0 +1,328 @@
+<!doctype html>
+<!--
+  Test drive booking — day strip vs date picker (LIVE).
+
+  Run with `npm start`, then open http://localhost:3000/templates/prototypes/tiq-test-drive-slots.html
+
+  A prototype, not a demo: it exists to settle which of the two pickers ships.
+  Unlike the frozen mocks beside it this one is live — the components, the branch
+  list and the calendar are all real, because the choice is about how the two
+  feel against real availability. Once the call is made, the losing field and
+  this page both go.
+
+  The real production test-drive structure with one change: its `date` and
+  `time` fields are replaced by TWO booking fields, so the same branch, the same
+  calendar response and the same submitted value can be judged through two
+  different interfaces side by side:
+
+    Option A  bookingSlot / <branch-slot-picker>  — horizontal day strip above
+              the day's times, both visible at once.
+    Option B  bookingDate / <branch-date-picker>  — month calendar that slides
+              across to that day's times, one decision per screen.
+
+  Everything else — vehicle, name, phone, branch — is untouched, and the branch
+  list is the live one. In production a deployment ships one of the two, not
+  both; they are together here only so the difference is directly comparable.
+  That also means every branch change fires the calendar twice, once per field.
+
+  The email field is there for layout: it fills the second cell of the branch
+  row so the two booking fields land side by side on a row of their own. It is
+  optional and nobody needs to fill it in.
+
+  BLOCKED DAYS ARE A DEMO RULE. Both fields are handed Friday + Saturday and
+  every third day as blocked, purely so the "day exists but is not bookable"
+  state is on screen. The live calendar has no such rule — a real deployment
+  passes its own holiday list through the same two props.
+
+  SUBMIT IS DELIBERATELY DEAD. `data.requestUrl` points at example.invalid so
+  this page can never create a real test-drive ticket in production. Restore the
+  original requestUrl only in a form you intend to actually submit.
+
+  Branches worth trying:
+    Company 1 / branch 43  — 11 slots, short Fridays (16:00-19:00 only)
+    Company 1 / branch 45  — starts a week out, and the API returns every slot
+                             twice; the pickers de-duplicate it
+    Company 1 / branch 51  — no showroom department, so the calendar is empty
+-->
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Test drive booking · day strip vs date picker — adp-web-components</title>
+
+    <link rel="stylesheet" href="/templates/harness.css" />
+
+    <!-- Blocking on purpose: a deferred module would let the page paint light first. -->
+    <script src="/templates/harness-theme.js"></script>
+
+    <script nomodule src="/build/shift-components.js"></script>
+    <script type="module" src="/build/shift-components.esm.js"></script>
+
+    <script type="module" src="/templates/harness.js"></script>
+    <script defer src="/templates/vendor/alpine.js"></script>
+
+    <!-- The host's fonts, loaded the way the host loads them. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@100..900&family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap" rel="stylesheet" />
+
+    <link rel="stylesheet" href="https://tiqappstorage.blob.core.windows.net/template-files/vehicle-quotation-tiq.css" />
+
+    <style>
+      /*
+       * The host theme, reaching into the component through `::part()`. Raw pixel
+       * and palette values here are deliberate: they belong to the host site, not
+       * to the harness, so they do not follow the harness tokens.
+       */
+      test-drive-form::part(container) {
+        max-width: 700px;
+        margin-inline: auto;
+      }
+
+      /*
+       * The part name comes from `data.theme` in the structure. The linked host
+       * stylesheet declares the same rules against `vehicle-quotation-form`, so
+       * none of them reach this element — they are restated here for
+       * `test-drive-form`, which is what makes this form look like the host's.
+       */
+      test-drive-form::part(vehicle-quotation-tiq) {
+        user-select: none;
+        font-family: 'Noto Kufi Arabic', 'Nunito', Roboto, Arial, sans-serif !important;
+      }
+
+      .vehicle-quotation-tiq,
+      .vehicle-quotation-tiq::part(form-dialog-modal) {
+        font-family: 'Droid Arabic Kufi', Roboto, Arial, sans-serif;
+      }
+
+      test-drive-form::part(inputs_wrapper) {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        margin-bottom: 24px;
+      }
+
+      test-drive-form::part(vehicle-wrapper) {
+        display: flex;
+        flex-direction: column;
+      }
+
+      @media (min-width: 640px) {
+        /*
+         * Two columns, and the field order in the structure is what puts the two
+         * booking fields together on the last row: name / phone, branch / email,
+         * then Option A / Option B.
+         */
+        test-drive-form::part(inputs_wrapper) {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        test-drive-form::part(vehicle-wrapper) {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 24px;
+          align-items: center;
+        }
+      }
+
+      test-drive-form::part(hr) {
+        margin-top: 24px;
+        margin-bottom: 24px;
+        border-color: rgb(203 213 225);
+      }
+
+      test-drive-form::part(vehicle-image-wrapper) {
+        position: relative;
+        display: flex;
+        padding-right: 20px;
+        padding-left: 20px;
+        justify-content: center;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      test-drive-form::part(vehicle-image-loader-icon) {
+        width: 32px;
+        height: 32px;
+        animation: spin 2s linear infinite;
+      }
+
+      test-drive-form::part(section-title) {
+        margin-bottom: 8px;
+        color: black;
+        font-size: 24px;
+        font-weight: 600;
+      }
+
+      test-drive-form::part(vehicle-image-loading-wrapper) {
+        position: absolute;
+        z-index: 10;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: rgb(15 23 42);
+        opacity: 0;
+        pointer-events: none;
+        transition-property: all;
+        transition-duration: 100ms;
+      }
+
+      test-drive-form::part(vehicle-image-active-loading-wrapper) {
+        opacity: 1;
+      }
+    </style>
+  </head>
+
+  <body class="bg-base-200 text-base-content min-h-screen">
+    <!-- Every area and page, read from catalog.json. -->
+    <div data-harness-nav x-cloak></div>
+
+    <div class="mx-auto flex max-w-[1180px] flex-col gap-8 px-4 py-10 sm:px-8">
+      <header>
+        <p class="eyebrow text-neutral">adp-web-components · prototypes</p>
+        <h1 class="mt-1 text-2xl font-bold tracking-tight">Test drive booking · day strip vs date picker</h1>
+        <p class="lede text-base-content/70 mt-2">
+          Pick a branch once, then compare the two ways of choosing a slot on the last row. <strong>Option A</strong> is the day strip: days and times stacked, both visible at
+          once. <strong>Option B</strong> is the date picker: a month calendar that slides across to that day's times, one decision per screen. Same endpoint, same response, same
+          submitted value — only the interface differs.
+        </p>
+        <p class="text-warning border-warning/40 bg-warning/10 mt-3 rounded-box border px-3 py-2 text-sm">
+          Submit is disabled on purpose — <code>requestUrl</code> points at <code>example.invalid</code>, so this page cannot create a real test-drive ticket. Friday, Saturday and
+          every third day are blocked by a demo rule so the disabled-day state is visible; the live calendar has no such rule.
+        </p>
+      </header>
+
+      <section class="flex flex-col gap-4" x-data="harness({ profile: 'form', languages: ['en', 'ar', 'ku'] })">
+        <!--
+          A page-level control rather than a rail entry: it belongs to this
+          comparison, not to every form demo. It writes the same two props a
+          deployment would use for its own holiday list.
+        -->
+        <div class="border-base-300 bg-base-100 rounded-box flex flex-wrap items-center gap-3 border px-4 py-3" x-data="{ blocked: true }" x-cloak>
+          <span class="eyebrow text-neutral">Demo blocked days</span>
+
+          <div class="join">
+            <button type="button" class="btn btn-sm join-item" :class="blocked && 'btn-active'" @click="blocked = true; setBlockedDays(true)">Fri + Sat + every 3rd</button>
+            <button type="button" class="btn btn-sm join-item" :class="!blocked && 'btn-active'" @click="blocked = false; setBlockedDays(false)">None</button>
+          </div>
+
+          <span class="text-base-content/60 text-xs">Applied to both fields at once, through <code>disabledWeekdays</code> / <code>disabledDates</code>.</span>
+        </div>
+
+        <!-- Mode + fixtures, right where they are used. -->
+        <div data-harness-bar x-cloak></div>
+
+        <div class="frame card bg-base-100 border-base-300 border p-5 sm:p-8">
+          <!-- No `language` attribute: unset, the form resolves it from `?lang=`, which the rail keeps in sync. -->
+          <test-drive-form id="subject" disable-scroll-to-top="true" structure-url="/templates/prototypes/structures/tiq-test-drive-slots.json"></test-drive-form>
+        </div>
+
+        <!-- The harness drawer: launcher, right-edge hover strip and panel, all stamped by harness.js. -->
+        <div data-harness-rail x-cloak></div>
+      </section>
+    </div>
+
+    <script>
+      const report = (label, detail) => window.dispatchEvent(new CustomEvent('harness:log', { detail: { label, detail } }));
+
+      /*
+       * Surface every calendar request, so the demo proves it is hitting the real
+       * endpoint rather than a fixture — and so the duplicate slots the API returns
+       * for some branches are visible as a number rather than as a hunch.
+       *
+       * Expect two of these per branch change: one field each.
+       */
+      const nativeFetch = window.fetch;
+
+      window.fetch = function (input, init) {
+        const url = typeof input === 'string' ? input : input?.url;
+        const started = performance.now();
+        const watched = url && url.includes('/calendar');
+
+        if (watched) report('→ GET', url);
+
+        return nativeFetch.apply(this, arguments).then(response => {
+          if (!watched) return response;
+
+          const elapsed = Math.round(performance.now() - started);
+
+          response
+            .clone()
+            .json()
+            .then(data => {
+              const days = Array.isArray(data) ? data : [];
+              const raw = days.reduce((total, day) => total + day.Times.length, 0);
+              const unique = days.reduce((total, day) => total + new Set(day.Times).size, 0);
+              const duplicates = raw === unique ? '' : `, ${raw - unique} DUPLICATES`;
+
+              report(`← ${response.status}`, `${elapsed}ms · ${days.length} days · ${raw} times (${unique} unique${duplicates})`);
+            })
+            .catch(() => {});
+
+          return response;
+        });
+      };
+
+      // Both pickers emit the same event, so name the source — otherwise the two
+      // options are indistinguishable in the log.
+      document.addEventListener('slotChange', event => {
+        const source = event.composedPath()[0];
+
+        report('slotChange', `${source?.tagName?.toLowerCase() ?? 'unknown'} ${JSON.stringify(event.detail)}`);
+      });
+
+      /*
+       * Demo-only blocking rules.
+       *
+       * The calendar endpoint has no concept of a blocked day — it simply omits
+       * what a branch is closed for. These props exist for what it cannot say:
+       * weekdays a deployment never books on, and one-off blackout dates. Both
+       * render the day struck through instead of removing it, which is the state
+       * this page needs on screen to be judged, so they are forced here.
+       */
+      const RULE_WEEKDAYS = [5, 6]; // 0 is Sunday, so 5 = Friday, 6 = Saturday.
+
+      const isoDate = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+      /** Counting today as day 1, every third day is blocked. */
+      function everyThirdDay(count) {
+        const dates = [];
+        // Midday: a midnight Date in a negative-offset zone rolls back a day.
+        const cursor = new Date();
+
+        cursor.setHours(12, 0, 0, 0);
+
+        for (let offset = 0; offset < count; offset++) {
+          if ((offset + 1) % 3 === 0) dates.push(isoDate(cursor));
+          cursor.setDate(cursor.getDate() + 1);
+        }
+
+        return dates;
+      }
+
+      /*
+       * `fields` is the form's per-field prop override — the same channel a host
+       * uses to inject anything the structure JSON cannot know at build time.
+       */
+      function setBlockedDays(on) {
+        const rules = on ? { disabledWeekdays: RULE_WEEKDAYS, disabledDates: everyThirdDay(75) } : { disabledWeekdays: [], disabledDates: [] };
+
+        document.getElementById('subject').fields = { bookingSlot: { ...rules }, bookingDate: { ...rules } };
+
+        report('blocked days', on ? `${RULE_WEEKDAYS.length} weekdays + ${rules.disabledDates.length} dates` : 'none');
+      }
+
+      // Properties set before upgrade would be shadowed by the prototype accessor.
+      customElements.whenDefined('test-drive-form').then(() => setBlockedDays(true));
+    </script>
+  </body>
+</html>
