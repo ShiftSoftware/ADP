@@ -6,224 +6,205 @@ namespace ShiftSoftware.ADP.Rastgo;
 
 /// <summary>
 /// Renders the latest run per check into a single self-contained HTML page — no external assets, so it
-/// works opened straight off a file share. Layout is "big picture → drill down": a fixed left sidebar
-/// gives an at-a-glance health summary plus jump-navigation (Category → Family), while the detail table
-/// on the right keeps EVERY row in the DOM, expanded by default. Drill-down is navigation, not
-/// view-swapping, so native Ctrl+F still finds everything on load. JS only adds opt-in filtering,
-/// scroll-spy, and collapsible groups.
+/// works opened straight off a file share. Layout is "big picture → drill down": a fixed left rail gives
+/// an at-a-glance health summary plus jump-navigation (Category → Family), while the detail pane on the
+/// right keeps EVERY row in the DOM, expanded by default. Drill-down is navigation, not view-swapping, so
+/// native Ctrl+F still finds everything on load. JS only adds opt-in filtering, collapsible groups, the
+/// floating tooltips and the theme toggle.
+/// <para>
+/// The transform is <see cref="CheckModel"/>, shared with <see cref="TrendsRenderer"/>; so is the chrome
+/// (stylesheet, head, lockup, tooltip / theme / fold script) in <see cref="PageChrome"/>. The two
+/// renderers share no markup.
+/// </para>
 /// </summary>
 public static partial class DashboardRenderer
 {
     public static string Render(IReadOnlyList<CheckResult> all, DateTimeOffset generatedAtUtc, DashboardOptions? options = null)
     {
-        var opt = options ?? DashboardOptions.Default;
-        var L = new Labeler(opt);
-
-        // Category display order: the consumer's CategoryOrder wins; categories it omits fall after, by the
-        // framework's built-in order then name.
-        int CatRank(string key)
-        {
-            if (opt.CategoryOrder is { } co)
-            {
-                for (var i = 0; i < co.Count; i++)
-                    if (string.Equals(co[i], key, StringComparison.OrdinalIgnoreCase)) return i;
-                return co.Count + CategoryRank(key);
-            }
-            return CategoryRank(key);
-        }
-
-        var checks = all
-            .GroupBy(r => r.CheckName)
-            .Select(g =>
-            {
-                var latestRun = g.Max(x => x.StartedAtUtc);
-                var rows = g.Where(x => x.StartedAtUtc == latestRun)
-                            .OrderByDescending(x => CheckRunner.Rank(x.Status))
-                            .ThenBy(x => x.BreakdownKey, StringComparer.OrdinalIgnoreCase)
-                            .ToList();
-                return new CheckView(
-                    Name: g.Key,
-                    Domain: string.IsNullOrWhiteSpace(rows[0].Domain) ? "unknown" : rows[0].Domain,
-                    Family: Family(g.Key),
-                    Category: rows[0].Category,
-                    Severity: rows[0].Severity,
-                    Description: rows[0].Description,
-                    Order: rows[0].Order,
-                    RunId: rows[0].RunId,
-                    Status: CheckRunner.Rollup(rows.Select(x => x.Status)),
-                    When: latestRun,
-                    Rows: rows);
-            })
-            .ToList();
-
-        int Count(HealthStatus s) => checks.Count(c => c.Status == s);
-
-        // A check whose latest result isn't from its DOMAIN's newest run is a leftover (renamed/removed).
-        // Per-domain by design: in the federated model each domain runs on its own schedule with its own
-        // RunId, so a single global "latest run" would wrongly flag every other domain as stale. (Per-check
-        // start times also differ by ms within one run, so compare by RunId, not timestamp.)
-        var latestRunByDomain = checks
-            .GroupBy(c => c.Domain)
-            .ToDictionary(g => g.Key, g => g.MaxBy(c => c.When)!.RunId, StringComparer.OrdinalIgnoreCase);
-
-        // Domains present (federated packs). Shown as filter chips + a per-row badge only when more than one.
-        var domains = checks.GroupBy(c => c.Domain).OrderByDescending(g => g.Count()).ThenBy(g => g.Key, StringComparer.OrdinalIgnoreCase).ToList();
-        var multiDomain = domains.Count > 1;
-
-        // Top axis is the Category field (Freshness, Reconciliation, …); within it, group by name-Family.
-        var categories = checks
-            .GroupBy(c => string.IsNullOrWhiteSpace(c.Category) ? "other" : c.Category.Trim().ToLowerInvariant())
-            .OrderBy(g => CatRank(g.Key)).ThenBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        var model = CheckModel.Build(all, options ?? DashboardOptions.Default);
+        var L = model.Labels;
 
         var sb = new StringBuilder();
-        sb.Append(HeadAndStyle);
-        sb.Append("<div class=\"app\">");
+        sb.Append(PageChrome.Head("Rastgo"));
+        sb.Append("<body class=\"bg-base-200 text-base-content flex h-screen flex-col overflow-hidden\">");
+        sb.Append("<div class=\"flex min-h-0 flex-1\">");
 
-        // ---- sidebar: health summary + jump nav -------------------------------
-        sb.Append("<aside class=\"side\">");
-        sb.Append("<div class=\"brand\"><div class=\"logo\">").Append(Logo).Append("</div>")
-          .Append($"<div class=\"meta\">{generatedAtUtc:yyyy-MM-dd HH:mm} UTC · {checks.Count} checks</div></div>");
+        // ---- rail: health summary + jump nav ----------------------------------
+        sb.Append("<aside class=\"bg-base-100 border-base-300 hidden w-[248px] shrink-0 flex-col overflow-y-auto border-r lg:flex\">");
 
-        sb.Append("<div class=\"kpis\">");
-        foreach (var (status, label) in new[] { (HealthStatus.Fail, "Fail"), (HealthStatus.Error, "Error"), (HealthStatus.Warn, "Warn"), (HealthStatus.Pass, "Pass") })
-            sb.Append($"<button class=\"kpi {status}\" data-filter=\"{status}\"><span class=\"n\">{Count(status)}</span><span class=\"l\">{label}</span></button>");
+        sb.Append("<div class=\"border-base-300 border-b px-3 py-3\">")
+          .Append("<div data-brand>").Append(PageChrome.Logo).Append("</div>")
+          .Append("<p class=\"text-base-content/50 mt-1.5 text-[10px] leading-relaxed\" data-meta>")
+          .Append($"{generatedAtUtc.UtcDateTime:yyyy-MM-dd HH:mm} UTC · {model.Checks.Count} checks · {model.Domains.Count} domains")
+          .Append("</p></div>");
+
+        sb.Append("<div class=\"grid grid-cols-4 gap-1 px-3 py-2.5\" data-kpis>");
+        foreach (var status in PageChrome.KpiOrder)
+            sb.Append($"<button type=\"button\" data-filter=\"{status}\" class=\"border-base-300 rounded-field hover:border-accent/40 border px-1 py-1.5 text-center transition-colors\">")
+              .Append($"<span class=\"block text-sm leading-none font-bold {PageChrome.Tone(status).Text}\">{model.Count(status)}</span>")
+              .Append($"<span class=\"eyebrow text-base-content/45 mt-0.5 block text-[8px]\">{status}</span></button>");
         sb.Append("</div>");
 
-        if (multiDomain)
+        // Domain chips only earn their space in a federated deployment.
+        sb.Append("<div class=\"px-3 pb-2.5\" data-domains>");
+        if (model.MultiDomain)
         {
-            sb.Append("<div class=\"doms\"><span class=\"domlbl\">Domains</span>");
-            foreach (var d in domains)
-                sb.Append($"<button class=\"dom\" data-domain=\"{Esc(d.Key)}\">{Esc(d.Key)} <b>{d.Count()}</b></button>");
+            sb.Append("<p class=\"eyebrow text-base-content/40 mb-1 text-[8px]\">Domains</p><div class=\"flex flex-wrap gap-1\">");
+            foreach (var d in model.Domains)
+                sb.Append($"<button type=\"button\" data-domain=\"{Esc(d.Id)}\" class=\"border-base-300 rounded-field hover:border-accent/40 border px-1.5 py-0.5 text-[10px] transition-colors\">")
+                  .Append($"{Esc(d.Id)} <span class=\"text-base-content/45\">{d.Count}</span></button>");
             sb.Append("</div>");
         }
+        sb.Append("</div>");
 
-        sb.Append("<nav class=\"toc\">");
-        foreach (var cat in categories)
+        // The rail's own fold is independent of the pane's — it shortens the jump list, it does not hide
+        // content, so "Collapse all" deliberately leaves it alone.
+        sb.Append("<nav class=\"px-1.5 pb-8\" data-toc>");
+        foreach (var cat in model.Categories)
         {
-            var key = cat.Key;
-            var slug = Slug(key);
-            sb.Append($"<div class=\"toccat\" data-cat=\"{slug}\"><div class=\"tcatrow\">")
-              .Append("<button class=\"tfold\" type=\"button\" aria-label=\"Fold section\">▾</button>")
-              .Append($"<a class=\"tcat\" data-cat=\"{slug}\" href=\"#cat-{slug}\" data-tip=\"{Esc(CategoryBlurb(key))}\"><span class=\"tlabel\">{Esc(L.CategoryName(key))} {InfoCue()}</span>{RollupCounts(cat.ToList())}</a></div>");
+            var families = cat.Families.Where(f => f.Tail is not null).ToList();
 
-            sb.Append("<div class=\"tfams\">");
-            foreach (var fam in cat.GroupBy(c => c.Family).OrderBy(f => f.Min(c => c.Order ?? int.MaxValue)).ThenBy(f => L.FamilyTail(key, f.Key) ?? "~", StringComparer.OrdinalIgnoreCase))
-            {
-                var tail = L.FamilyTail(key, fam.Key);
-                if (tail is null) continue;   // family == category (e.g. "volume"): covered by the category line
-                var famSlug = Slug(fam.Key);
-                sb.Append($"<a class=\"tfam\" data-target=\"fam-{famSlug}\" href=\"#fam-{famSlug}\"><span class=\"tlabel\">{Esc(tail)}</span>{RollupCounts(fam.ToList())}</a>");
-            }
-            sb.Append("</div></div>");
+            sb.Append("<div class=\"mb-0.5\"><div class=\"flex items-center\">")
+              .Append(families.Count > 0
+                  ? $"<button type=\"button\" data-tocfold class=\"hover:text-base-content grid h-6 w-4 shrink-0 place-items-center\">{PageChrome.Caret()}</button>"
+                  : "<span class=\"w-4 shrink-0\"></span>")
+              .Append($"<a href=\"#cat-{cat.Slug}\" data-jump=\"cat-{cat.Slug}\" class=\"hover:bg-base-200 rounded-field flex min-w-0 flex-1 items-center gap-1.5 px-1.5 py-1 text-xs font-semibold\">")
+              .Append("<span class=\"flex min-w-0 flex-1 items-center gap-1\">")
+              .Append($"<span class=\"truncate\">{Esc(cat.Label)}</span>{PageChrome.InfoCue(cat.Blurb)}</span>")
+              .Append($"<span class=\"flex shrink-0 gap-0.5\">{CheckModel.Chips(cat.Checks)}</span></a></div>");
+
+            var inner = new StringBuilder("<div class=\"border-base-300 mt-0.5 ml-4 flex flex-col border-l\">");
+            foreach (var fam in families)
+                inner.Append($"<a href=\"#fam-{fam.Slug}\" data-jump=\"fam-{fam.Slug}\" class=\"text-base-content/60 hover:bg-base-200 hover:text-base-content flex items-center gap-1.5 py-0.5 pr-1.5 pl-2 text-[11px]\">")
+                     .Append($"<span class=\"min-w-0 flex-1 truncate\">{Esc(fam.Tail)}</span>")
+                     .Append($"<span class=\"flex shrink-0 gap-0.5\">{CheckModel.Chips(fam.Checks)}</span></a>");
+            sb.Append(PageChrome.Slide(inner.Append("</div>").ToString())).Append("</div>");
         }
         sb.Append("</nav></aside>");
 
-        // ---- main: toolbar + detail table -------------------------------------
-        sb.Append("<main class=\"main\">");
-        sb.Append("<section class=\"toolbar\">")
-          .Append("<input id=\"q\" type=\"search\" placeholder=\"Filter checks…  (native Ctrl+F still works)\" autocomplete=\"off\">")
-          .Append("<button id=\"expand\" class=\"btn\">Expand all</button>")
-          .Append("<button id=\"collapse\" class=\"btn\">Collapse all</button>")
-          .Append("<span class=\"hint\">Click a card to filter by status · click a section in the sidebar to jump</span>")
-          .Append("</section>");
+        // ---- main: toolbar + detail pane --------------------------------------
+        sb.Append("<main class=\"min-w-0 flex-1 overflow-y-auto\">");
+        sb.Append("<div class=\"bg-base-200/95 border-base-300 sticky top-0 z-20 flex h-10 items-center gap-1.5 border-b px-4 backdrop-blur\">")
+          .Append("<input type=\"search\" data-q placeholder=\"Filter checks…  (native Ctrl+F still works)\" autocomplete=\"off\" class=\"input input-xs bg-base-100 border-base-300 rounded-field h-7 w-full max-w-[320px]\">")
+          .Append("<button type=\"button\" data-expand class=\"btn btn-xs btn-ghost border-base-300 h-7 border font-normal\">Expand all</button>")
+          .Append("<button type=\"button\" data-collapse class=\"btn btn-xs btn-ghost border-base-300 h-7 border font-normal\">Collapse all</button>")
+          // Hint and toggle share one right-docked group: the hint drops out on narrow screens and the
+          // toggle must not drift left when it does.
+          .Append("<div class=\"ml-auto flex items-center gap-2\">")
+          .Append("<span class=\"text-base-content/45 hidden text-[11px] xl:inline\">Click a card to filter by status · click a heading to fold</span>")
+          .Append(PageChrome.ThemeToggleButton)
+          .Append("</div></div>");
 
-        sb.Append("<table><thead><tr><th>Status</th><th>Check</th><th>Detail</th></tr></thead>");
-        foreach (var cat in categories)
+        sb.Append("<div class=\"px-4 pt-3 pb-16\" data-table>");
+        foreach (var cat in model.Categories)
         {
-            var key = cat.Key;
-            var slug = Slug(key);
-            sb.Append($"<tbody class=\"cat\" data-cat=\"{slug}\"><tr class=\"cathdr\" id=\"cat-{slug}\"><td colspan=\"3\" data-tip=\"{Esc(CategoryBlurb(key))}\"><span class=\"ccaret\">▾</span><span class=\"clabel\">{Esc(L.CategoryName(key))} {InfoCue()}</span>{RollupCounts(cat.ToList())}</td></tr></tbody>");
+            // `overflow-clip`, NOT `overflow-hidden`. The section has to clip its children to its own
+            // rounded corners — otherwise the body's square top corners show through the notches of the
+            // sticky header once rows scroll under it — but `hidden` would make the section a scroll
+            // container and kill the sticky header outright. `clip` does not. With the rounding owned by
+            // the section the header carries none, so it looks right stuck to the toolbar and a folded
+            // category is a clean rounded pill with no missing bottom edge.
+            sb.Append($"<section class=\"bg-base-100 border-base-300 rounded-box mb-2.5 overflow-clip border\" data-cat=\"{cat.Slug}\">")
+              // Hover is a SOLID base-200: a translucent one let the rows scrolling beneath the sticky
+              // header bleed through it.
+              .Append($"<button type=\"button\" id=\"cat-{cat.Slug}\" data-catfold class=\"bg-base-100 hover:bg-base-200 sticky top-10 z-10 flex w-full scroll-mt-[44px] items-center gap-2 px-3 py-1.5 text-left transition-colors\">")
+              .Append(PageChrome.Caret())
+              .Append("<span class=\"bg-accent h-3 w-0.5 shrink-0 rounded-full\"></span>")
+              .Append("<span class=\"flex min-w-0 items-center gap-1\">")
+              .Append($"<span class=\"truncate text-xs font-bold tracking-wide uppercase\">{Esc(cat.Label)}</span>{PageChrome.InfoCue(cat.Blurb)}</span>")
+              .Append($"<span class=\"ml-auto flex gap-0.5\">{CheckModel.Chips(cat.Checks)}</span></button>");
 
-            foreach (var fam in cat.GroupBy(c => c.Family).OrderBy(f => f.Min(c => c.Order ?? int.MaxValue)).ThenBy(f => L.FamilyTail(key, f.Key) ?? "~", StringComparer.OrdinalIgnoreCase))
+            var body = new StringBuilder("<div class=\"border-base-300 border-t\">");
+            foreach (var fam in cat.Families)
             {
-                var tail = L.FamilyTail(key, fam.Key);
-                var famSlug = Slug(fam.Key);
-                var famChecks = fam.OrderBy(c => c.Order ?? int.MaxValue).ThenBy(c => c.Name, StringComparer.OrdinalIgnoreCase).ToList();
+                if (fam.Tail is null)
+                {
+                    // Family == category: no tail to label it with, so these rows sit directly under the
+                    // category and fold only with it.
+                    body.Append("<div class=\"border-base-300 border-b last:border-b-0\">");
+                    foreach (var c in fam.Checks) AppendCheckRow(body, c, model.MultiDomain, L);
+                    body.Append("</div>");
+                    continue;
+                }
 
-                sb.Append($"<tbody class=\"group{(tail is null ? " nohdr" : "")}\" data-cat=\"{slug}\">");
-                if (tail is not null)
-                    sb.Append($"<tr class=\"grp\" id=\"fam-{famSlug}\"><td colspan=\"3\"><span class=\"caret\">▾</span> {Esc(tail)} {RollupCounts(famChecks)}</td></tr>");
-                foreach (var c in famChecks)
-                    AppendCheckRow(sb, c, latestRunByDomain.GetValueOrDefault(c.Domain, ""), multiDomain, L);
-                sb.Append("</tbody>");
+                body.Append("<div data-family class=\"border-base-300 border-b last:border-b-0\">")
+                    .Append($"<button type=\"button\" id=\"fam-{fam.Slug}\" data-famfold class=\"bg-base-200/50 hover:bg-base-200 flex w-full scroll-mt-[68px] items-center gap-1.5 px-3 py-1 text-left\">")
+                    .Append(PageChrome.Caret())
+                    .Append($"<span class=\"text-[11px] font-semibold\">{Esc(fam.Tail)}</span>")
+                    .Append($"<span class=\"ml-auto flex gap-0.5\">{CheckModel.Chips(fam.Checks)}</span></button>");
+
+                var rows = new StringBuilder();
+                foreach (var c in fam.Checks) AppendCheckRow(rows, c, model.MultiDomain, L);
+                body.Append(PageChrome.Slide(rows.ToString())).Append("</div>");
             }
+
+            sb.Append(PageChrome.Slide(body.Append("</div>").ToString())).Append("</section>");
         }
 
-        sb.Append("</table></main></div>");
-        sb.Append(Script);
+        sb.Append("</div></main></div>");
+        sb.Append("<script>(function(){'use strict';").Append(PageChrome.SharedScript).Append(Script).Append("})();</script></body></html>");
         return sb.ToString();
     }
 
-    private static void AppendCheckRow(StringBuilder sb, CheckView c, string domainLatestRunId, bool showDomain, Labeler L)
+    private static void AppendCheckRow(StringBuilder sb, CheckView c, bool showDomain, Labeler L)
     {
-        var title = L.Title(c.Name);
-        var isGrouped = c.Rows.Count > 1 || c.Rows[0].BreakdownKey is not null;
-        var stale = !string.IsNullOrEmpty(domainLatestRunId) && c.RunId != domainLatestRunId;
-
         var searchText = Esc((string.Join(' ',
-            new[] { c.Name, title, c.Category, c.Severity, c.Domain, c.Description ?? "" }
+            new[] { c.Name, c.Title, c.Category, c.Severity, c.Domain, c.Description ?? "" }
             .Concat(c.Rows.Select(r => $"{L.BreakdownLabel(r.BreakdownKey ?? "")} {r.Message}")))).ToLowerInvariant());
 
-        sb.Append($"<tr class=\"check\" data-status=\"{c.Status}\" data-domain=\"{Esc(c.Domain)}\" data-text=\"{searchText}\">");
-        sb.Append($"<td><span class=\"pill {c.Status}\">{c.Status}</span></td>");
+        // 21rem for the name column is measured, not guessed: the longest check name plus its domain and
+        // severity tags. Any narrower and the tag line wraps, which costs every row a third line.
+        sb.Append("<div class=\"border-base-300 grid grid-cols-[4rem_minmax(0,21rem)_minmax(0,1fr)] gap-3 border-b px-3 py-1.5 last:border-b-0\" ")
+          .Append($"data-check data-status=\"{c.Status}\" data-domain=\"{Esc(c.Domain)}\" data-text=\"{searchText}\">");
 
-        sb.Append("<td><div class=\"title\">").Append(Esc(title)).Append(' ').Append(Info(c.Description)).Append("</div>")
-          .Append($"<div class=\"sub\"><code>{Esc(c.Name)}</code>");
+        sb.Append($"<div><span class=\"rounded-selector {PageChrome.Tone(c.Status).Solid} inline-block px-1.5 text-[10px] leading-[17px] font-bold\">{c.Status}</span></div>");
+
+        sb.Append("<div class=\"min-w-0\"><div class=\"flex items-center gap-1 text-[13px] leading-tight font-semibold\">")
+          .Append($"<span class=\"truncate\">{Esc(c.Title)}</span>{PageChrome.InfoCue(c.Description)}</div>")
+          .Append("<div class=\"mt-0.5 flex flex-wrap items-center gap-1\">")
+          .Append($"<code class=\"ident bg-base-200 text-base-content/55 rounded px-1 text-[10px]\">{Esc(c.Name)}</code>");
         if (showDomain)
-            sb.Append($" <span class=\"tag dom\">{Esc(c.Domain)}</span>");
-        sb.Append($" <span class=\"tag sev-{Esc(c.Severity)}\">{Esc(c.Severity)}</span>");
-        if (stale)
-            sb.Append($"<span class=\"tag stale\" tabindex=\"0\" data-tip=\"From an earlier run ({c.When:yyyy-MM-dd HH:mm} UTC) — not in the latest run, so likely renamed or removed.\">stale</span>");
-        sb.Append("</div></td>");
+            sb.Append($"<span class=\"border-base-300 text-base-content/55 rounded border px-1 text-[9px]\">{Esc(c.Domain)}</span>");
+        sb.Append($"<span class=\"rounded border px-1 text-[9px] {(string.Equals(c.Severity, "critical", StringComparison.OrdinalIgnoreCase) ? "border-error/35 text-error" : "border-base-300 text-base-content/50")}\">{Esc(c.Severity)}</span>");
+        if (c.Stale)
+            sb.Append($"<span tabindex=\"0\" data-tip=\"From an earlier run ({c.When.UtcDateTime:yyyy-MM-dd HH:mm} UTC) — not in the latest run, so likely renamed or removed.\" class=\"border-warning/40 text-warning cursor-help rounded border px-1 text-[9px]\">stale</span>");
+        sb.Append("</div></div>");
 
-        sb.Append("<td class=\"detail\">");
-        if (!isGrouped)
+        sb.Append("<div class=\"min-w-0 text-xs\">");
+        if (!c.Grouped)
         {
-            sb.Append(Esc(c.Rows[0].Message));
+            sb.Append($"<span class=\"text-base-content/75\">{Esc(c.Rows[0].Message)}</span>");
         }
         else
         {
             const int cap = 60;
-            // The threshold ("max 2d") belongs to the whole check, yet every breached breakdown row repeats it.
-            // Group the rows by their rule and lift each distinct rule to a single chip, dropping it from the
-            // rows beneath. The common case (every row shares one rule) collapses to a single chip; a mixed check
-            // (some "(warn 1.5d)", some "(max 2d)") gets one chip per rule, worst-severity group first (RuleGroups
-            // preserves c.Rows' status-ranked order). Rows carrying no rule render chip-less, verbatim.
+            // The threshold ("max 2d") belongs to the whole check, yet every breached breakdown row repeats
+            // it. Group the rows by their rule and lift each distinct rule to a single chip, dropping it
+            // from the rows beneath. The common case (every row shares one rule) collapses to a single
+            // chip; a mixed check (some "(warn 1.5d)", some "(max 2d)") gets one chip per rule,
+            // worst-severity group first (RuleGroups preserves c.Rows' status-ranked order). Rows carrying
+            // no rule render chip-less, verbatim.
             var shown = 0;
             foreach (var (rule, rows) in RuleGroups(c.Rows))
             {
                 if (shown >= cap) break;
                 if (rule is not null)
-                    sb.Append($"<div class=\"bkrule\">{Esc(rule)}</div>");
+                    sb.Append($"<div class=\"border-base-300 text-base-content/60 rounded-selector bg-base-200 mt-1 mb-0.5 inline-block border px-1.5 text-[9px] leading-4 font-semibold first:mt-0\">{Esc(rule)}</div>");
                 foreach (var r in rows)
                 {
                     if (shown >= cap) break;
                     var msg = rule is null ? r.Message : StripRule(r.Message);
-                    sb.Append($"<div class=\"bk\"><span class=\"dot {r.Status}\"></span><b>{Esc(L.BreakdownLabel(r.BreakdownKey ?? "—"))}</b> <span class=\"bkmsg\">{Esc(msg)}</span></div>");
+                    sb.Append("<div class=\"flex items-baseline gap-1.5 leading-5\">")
+                      .Append($"<span class=\"dot {PageChrome.Tone(r.Status).Text} translate-y-[-1px]\"></span>")
+                      .Append($"<span class=\"min-w-[7rem] shrink-0 text-[11px] font-semibold\">{Esc(L.BreakdownLabel(r.BreakdownKey ?? "—"))}</span>")
+                      .Append($"<span class=\"text-base-content/65 text-[11px]\">{Esc(msg)}</span></div>");
                     shown++;
                 }
             }
             if (c.Rows.Count > shown)
-                sb.Append($"<div class=\"bk muted\">+{c.Rows.Count - shown} more…</div>");
+                sb.Append($"<div class=\"text-base-content/40 text-[11px] leading-5\">+{c.Rows.Count - shown} more…</div>");
         }
-        sb.Append("</td></tr>");
-    }
-
-    private static string Info(string? tip) => string.IsNullOrWhiteSpace(tip) ? "" :
-        $"<span class=\"info\" tabindex=\"0\" role=\"button\" aria-label=\"What this checks\" data-tip=\"{Esc(tip)}\">i</span>";
-
-    private static string InfoCue() => "<span class=\"info\" aria-hidden=\"true\">i</span>";
-
-    private static string RollupCounts(List<CheckView> checks)
-    {
-        var sb = new StringBuilder("<span class=\"counts\">");
-        foreach (var s in new[] { HealthStatus.Fail, HealthStatus.Error, HealthStatus.Warn, HealthStatus.Pass })
-        {
-            var n = checks.Count(c => c.Status == s);
-            if (n > 0) sb.Append($"<span class=\"cnt {s}\">{n}</span>");
-        }
-        return sb.Append("</span>").ToString();
+        sb.Append("</div></div>");
     }
 
     private static string Esc(string? s) => WebUtility.HtmlEncode(s ?? "");
@@ -269,335 +250,105 @@ public static partial class DashboardRenderer
         return s;
     }
 
-    // ---- category axis -----------------------------------------------------
-
-    private static readonly string[] CatOrder = { "freshness", "reconciliation", "quality", "volume", "flow" };
-    private static int CategoryRank(string key) { var i = Array.IndexOf(CatOrder, key); return i < 0 ? 99 : i; }
-
-    private static readonly Dictionary<string, string> Blurbs = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["freshness"] = "Is the data recent? Source-delivery times plus the newest dates inside each feed and the snapshot publish.",
-        ["reconciliation"] = "Do the replicas agree? Source-vs-loaded gap, and an independent recomputation vs the production store's counts.",
-        ["quality"] = "Integrity rules: required fields present, no file-sync conflict copies left behind.",
-        ["volume"] = "Row-count floors for tables with no date column — catches an empty or half-loaded table.",
-        ["flow"] = "End-to-end pipeline flow checks.",
-        ["other"] = "Uncategorised checks.",
-    };
-    private static string CategoryBlurb(string key) => Blurbs.TryGetValue(key, out var b) ? b : "Checks in this category.";
-
-    private static string Slug(string s)
-    {
-        var slug = new string(s.Select(ch => char.IsLetterOrDigit(ch) ? char.ToLowerInvariant(ch) : '-').ToArray());
-        while (slug.Contains("--")) slug = slug.Replace("--", "-");
-        return slug.Trim('-');
-    }
-
-    // ---- friendly names ----------------------------------------------------
-
-    private static string Family(string name)
-    {
-        var i = name.LastIndexOf('.');
-        return i <= 0 ? "" : name[..i];
-    }
-
-    /// <summary>
-    /// Turns raw check / family / breakdown tokens into display labels. Defaults to Rastgo's own structural
-    /// vocabulary (categories, families) plus generic title-casing; a consumer extends it via
-    /// <see cref="DashboardOptions"/> (domain token labels, acronyms, breakdown-key formatting) so
-    /// domain-specific names stay in the domain pack rather than the framework.
-    /// </summary>
-    private sealed class Labeler
-    {
-        private readonly Dictionary<string, string> _tokens;
-        private readonly IReadOnlySet<string> _acronyms;
-        private readonly Func<string, string> _breakdown;
-
-        public Labeler(DashboardOptions options)
-        {
-            _tokens = new Dictionary<string, string>(FrameworkTokens, StringComparer.OrdinalIgnoreCase);
-            if (options.TokenLabels is not null)
-                foreach (var (k, v) in options.TokenLabels) _tokens[k] = v;   // consumer overrides win
-            _acronyms = options.Acronyms ?? EmptyAcronyms;
-            _breakdown = options.BreakdownKeyFormatter ?? (k => k);
-        }
-
-        public string CategoryName(string key) => PrettyToken(key);
-
-        /// <summary>Family label relative to its category: drops a leading token that just echoes the
-        /// category (so "freshness.source" → "Source"), and null when the family IS the category.</summary>
-        public string? FamilyTail(string categoryKey, string family)
-        {
-            var tokens = family.Split('.', StringSplitOptions.RemoveEmptyEntries).ToList();
-            if (tokens.Count > 0 && string.Equals(PrettyToken(tokens[0]), CategoryName(categoryKey), StringComparison.OrdinalIgnoreCase))
-                tokens.RemoveAt(0);
-            return tokens.Count == 0 ? null : string.Join(" › ", tokens.Select(PrettyToken));
-        }
-
-        public string Title(string name)
-        {
-            var i = name.LastIndexOf('.');
-            return PrettyToken(i < 0 ? name : name[(i + 1)..]);
-        }
-
-        public string BreakdownLabel(string key) => _breakdown(key);
-
-        private string PrettyToken(string t)
-        {
-            if (_tokens.TryGetValue(t, out var v)) return v;
-            if (_acronyms.Contains(t)) return t.ToUpperInvariant();
-            var s = t.Replace('_', ' ').Trim();
-            return s.Length == 0 ? s : char.ToUpper(s[0]) + s[1..];
-        }
-
-        private static readonly IReadOnlySet<string> EmptyAcronyms = new HashSet<string>();
-
-        // Rastgo's own structural vocabulary (categories + generic family/step tokens). Domain check names
-        // (e.g. a per-table freshness check) are supplied by the consumer via DashboardOptions.TokenLabels.
-        private static readonly Dictionary<string, string> FrameworkTokens = new(StringComparer.OrdinalIgnoreCase)
-        {
-            ["freshness"] = "Freshness", ["quality"] = "Quality", ["reconciliation"] = "Reconciliation", ["recon"] = "Reconciliation",
-            ["volume"] = "Volume", ["flow"] = "Flow", ["gap"] = "Gap", ["source"] = "Source", ["source_data"] = "Source data",
-            ["snapshot_published"] = "Snapshot published", ["load"] = "Load",
-            ["conflict_copies"] = "File-sync conflict copies", ["duck_vs_cosmos"] = "DuckDB vs Cosmos",
-        };
-    }
-
-    private sealed record CheckView(
-        string Name, string Domain, string Family, string Category, string Severity, string? Description, int? Order,
-        string RunId, HealthStatus Status, DateTimeOffset When, List<CheckResult> Rows);
-
-    // ---- static assets -----------------------------------------------------
-
-    // Rastgo horizontal lockup (on-dark variant: white letters, yellow star + "A" accent). Inlined because the
-    // page ships no external assets; the viewBox is tightened around the artwork for the sidebar header.
-    private const string Logo = """
-    <svg viewBox="48 24 412 128" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Rastgo">
-    <g transform="translate(64,40) scale(0.8)"><path fill-rule="evenodd" fill="#F2C230" d="M60,0 75,45 120,60 75,75 60,120 45,75 0,60 45,45 Z M60,28 68,52 92,60 68,68 60,92 52,68 28,60 52,52 Z"/></g>
-    <text x="184" y="109" textLength="260" lengthAdjust="spacing" font-family="'Sora','Exo 2','Rajdhani','Segoe UI',sans-serif" font-size="58" font-weight="600"><tspan fill="#ffffff">R</tspan><tspan fill="#F2C230">A</tspan><tspan fill="#ffffff">STGO</tspan></text>
-    </svg>
-    """;
-
-    private const string HeadAndStyle = """
-    <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Rastgo</title>
-    <style>
-    :root{--bg:#f6f8fa;--fg:#1c2128;--muted:#656d76;--line:#d0d7de;--pass:#1a7f37;--warn:#9a6700;--fail:#cf222e;--error:#6e7781;--card:#fff;
-          --side:#0d1117;--side-fg:#cdd5df;--side-muted:#8b949e;--side-line:#21262d;--side-hov:#161b22;--accent:#2f81f7;--sideW:290px;--barH:57px}
-    *{box-sizing:border-box}
-    html{scroll-behavior:smooth}
-    body{margin:0;font-family:system-ui,'Segoe UI',Arial,sans-serif;color:var(--fg);background:var(--bg)}
-
-    /* layout */
-    .side{position:fixed;top:0;left:0;bottom:0;width:var(--sideW);background:var(--side);color:var(--side-fg);overflow:auto;border-right:1px solid #000}
-    .main{margin-left:var(--sideW)}
-    @media(max-width:880px){.side{position:static;width:auto;height:auto;bottom:auto}.main{margin-left:0}}
-
-    /* sidebar header + KPIs */
-    .brand{padding:15px 18px 8px}
-    .brand .logo svg{display:block;height:40px;width:auto}
-    .brand .meta{font-size:11px;color:var(--side-muted);margin-top:3px;line-height:1.4}
-    .kpis{display:flex;gap:6px;padding:6px 14px 12px}
-    .kpi{flex:1;cursor:pointer;border:1px solid var(--side-line);background:#161b22;border-radius:8px;padding:8px 4px;color:var(--side-fg);font:inherit}
-    .kpi .n{display:block;font-size:18px;font-weight:700;line-height:1}
-    .kpi .l{display:block;font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:var(--side-muted);margin-top:3px}
-    .kpi.Fail .n{color:#ff7b72}.kpi.Warn .n{color:#e3b341}.kpi.Pass .n{color:#3fb950}.kpi.Error .n{color:#9aa4af}
-    .kpi:hover{border-color:#3b434d}
-    .kpi.active{outline:2px solid var(--accent);outline-offset:1px}
-    .doms{display:flex;flex-wrap:wrap;gap:5px;align-items:center;padding:0 14px 12px}
-    .domlbl{width:100%;font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:var(--side-muted)}
-    .dom{cursor:pointer;border:1px solid var(--side-line);background:#161b22;border-radius:7px;padding:4px 9px;color:var(--side-fg);font:inherit;font-size:11px}
-    .dom b{color:#fff}
-    .dom:hover{border-color:#3b434d}
-    .dom.active{outline:2px solid var(--accent);outline-offset:1px}
-
-    /* sidebar nav */
-    .toc{padding:4px 8px 28px}
-    .toccat{margin-bottom:1px}
-    .tcatrow{display:flex;align-items:center}
-    .tfold{cursor:pointer;background:none;border:0;color:var(--side-muted);width:20px;height:28px;font-size:10px;padding:0;flex:0 0 20px}
-    .tfold:hover{color:#fff}
-    .toccat.folded .tfold{transform:rotate(-90deg)}
-    .toccat.folded .tfams{display:none}
-    .tcat{flex:1;min-width:0;display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--side-fg);font-weight:600;font-size:13px;padding:5px 8px;border-radius:6px}
-    .tcat:hover{background:var(--side-hov)}
-    .tcat.active{background:#1f2733;color:#fff}
-    .tfams{margin:1px 0 7px 20px;display:flex;flex-direction:column;gap:1px}
-    .tfam{display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--side-muted);font-size:12px;padding:4px 8px;border-radius:6px;border-left:1px solid var(--side-line)}
-    .tfam:hover{background:var(--side-hov);color:var(--side-fg)}
-    .tfam.active{color:#fff;border-left-color:var(--accent);background:var(--side-hov)}
-    .tlabel{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .dim{opacity:.3}
-
-    /* count chips */
-    .counts{display:inline-flex;gap:4px;flex:0 0 auto}
-    .cnt{min-width:18px;text-align:center;border-radius:9px;padding:0 6px;color:#fff;font-size:10px;font-weight:700;line-height:17px}
-    .cnt.Fail{background:var(--fail)}.cnt.Warn{background:var(--warn)}.cnt.Pass{background:var(--pass)}.cnt.Error{background:var(--error)}
-
-    /* main toolbar */
-    .toolbar{position:sticky;top:0;z-index:6;display:flex;align-items:center;gap:10px;padding:10px 22px;
-             background:rgba(246,248,250,.93);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
-    #q{flex:1;max-width:460px;padding:8px 12px;border:1px solid var(--line);border-radius:8px;font:inherit;background:var(--card)}
-    .btn{cursor:pointer;border:1px solid var(--line);background:var(--card);border-radius:8px;padding:7px 12px;font:inherit;color:var(--fg)}
-    .btn:hover{background:#eef1f4}
-    .hint{color:var(--muted);font-size:12px;margin-left:auto}
-    @media(max-width:880px){.hint{display:none}}
-
-    /* table */
-    table{border-collapse:collapse;width:100%;font-size:13px;background:var(--card)}
-    thead th{position:sticky;top:var(--barH);background:#eef1f4;text-align:left;padding:7px 22px;color:var(--muted);font-weight:600;border-bottom:1px solid var(--line);z-index:4}
-    td{padding:9px 22px;border-bottom:1px solid #eef1f4;vertical-align:top}
-
-    .cathdr{scroll-margin-top:96px;cursor:pointer}
-    .cathdr td{background:var(--side);color:#fff;font-weight:700;padding:9px 22px;font-size:12px;text-transform:uppercase;letter-spacing:.05em}
-    .cathdr .counts{float:right}
-    .clabel{vertical-align:middle}
-    .ccaret{display:inline-block;width:14px;color:#fff;opacity:.75;transition:transform .1s}
-    .cat.catcollapsed .ccaret{transform:rotate(-90deg)}
-    tbody.group.gcollapsed{display:none}
-
-    .grp{cursor:pointer;scroll-margin-top:96px}
-    .grp td{background:#f0f3f6;font-weight:600;border-bottom:1px solid var(--line)}
-    .caret{display:inline-block;width:14px;color:var(--muted);transition:transform .1s}
-    .group.collapsed .caret{transform:rotate(-90deg)}
-    .group.collapsed .check{display:none}
-    .grp .counts{float:right}
-
-    .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;color:#fff}
-    .pill.Pass{background:var(--pass)}.pill.Warn{background:var(--warn)}.pill.Fail{background:var(--fail)}.pill.Error{background:var(--error)}.pill.Skipped{background:#8c959f}
-    .title{font-weight:600}
-    .sub{margin-top:2px;color:var(--muted);font-size:12px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-    .sub code{background:#eef1f4;padding:1px 5px;border-radius:4px;color:#3b434d}
-    .tag{border:1px solid var(--line);border-radius:6px;padding:0 6px;font-size:11px}
-    .tag.sev-critical{border-color:var(--fail);color:var(--fail)}
-    .tag.sev-warning{border-color:var(--warn);color:var(--warn)}
-    .tag.stale{border-color:var(--warn);color:var(--warn);cursor:help}
-    .tag.dom{border-color:var(--accent);color:var(--accent)}
-    .info{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;border:1px solid currentColor;font-size:9px;font-weight:700;font-style:normal;line-height:1;cursor:help;opacity:.5;vertical-align:middle;flex:0 0 auto}
-    .info:hover,.info:focus,[data-tip]:hover .info,[data-tip]:focus .info{opacity:1;outline:none}
-    .detail{max-width:640px}
-    .bk{padding:1px 0}
-    .bk .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;vertical-align:middle}
-    .dot.Pass{background:var(--pass)}.dot.Warn{background:var(--warn)}.dot.Fail{background:var(--fail)}.dot.Error{background:var(--error)}.dot.Skipped{background:#8c959f}
-    .bkmsg{color:var(--muted)}
-    .bkrule{display:inline-block;margin:0 0 4px;padding:1px 7px;font-size:11px;line-height:16px;color:var(--muted);background:#eef1f4;border-radius:6px}
-    .bk + .bkrule{margin-top:7px}
-    .muted{color:var(--muted)}
-    .hide{display:none}
-    #tip{position:fixed;z-index:50;max-width:340px;background:#0d1117;color:#e6edf3;border:1px solid #30363d;border-radius:8px;padding:8px 11px;font-size:12px;line-height:1.45;box-shadow:0 6px 22px rgba(0,0,0,.3);pointer-events:none;opacity:0;transition:opacity .1s}
-    #tip.show{opacity:1}
-    </style></head><body>
-    """;
+    // ---- page behaviour ----------------------------------------------------
 
     private const string Script = """
-    <script>
-    (function(){
-      const $$=s=>[...document.querySelectorAll(s)];
-      const q=document.getElementById('q');
-      const kpis=$$('.kpi[data-filter]');
-      const doms=$$('.dom[data-domain]');
-      let sf=null,df=null;
 
-      function apply(){
-        const t=(q.value||'').toLowerCase().trim();
-        $$('tr.check').forEach(r=>{
-          const okS=!sf||r.dataset.status===sf;
-          const okT=!t||(r.dataset.text||'').includes(t);
-          const okD=!df||r.dataset.domain===df;
-          r.classList.toggle('hide',!(okS&&okT&&okD));
-        });
-        $$('tbody.group').forEach(g=>{
-          const vis=g.querySelector('tr.check:not(.hide)');
-          g.classList.toggle('hide',!vis);
-          if((sf||t||df)&&vis)g.classList.remove('collapsed','gcollapsed');
-        });
-        $$('tbody.cat').forEach(c=>{
-          const any=$$('tbody.group[data-cat="'+c.dataset.cat+'"]').some(g=>!g.classList.contains('hide'));
-          c.classList.toggle('hide',!any);
-          if((sf||t||df)&&any)c.classList.remove('catcollapsed');
-        });
-        $$('.tfam').forEach(a=>{
-          const row=document.getElementById(a.dataset.target);
-          const g=row&&row.closest('tbody.group');
-          a.classList.toggle('dim',!g||g.classList.contains('hide'));
-        });
-        $$('.tcat').forEach(a=>{
-          const c=document.querySelector('tbody.cat[data-cat="'+a.dataset.cat+'"]');
-          a.classList.toggle('dim',!c||c.classList.contains('hide'));
-        });
-      }
-
-      // status filter (sidebar cards)
-      kpis.forEach(k=>k.addEventListener('click',()=>{
-        sf=sf===k.dataset.filter?null:k.dataset.filter;
-        kpis.forEach(x=>x.classList.toggle('active',x.dataset.filter===sf));
-        apply();
-      }));
-      q.addEventListener('input',apply);
-      doms.forEach(d=>d.addEventListener('click',()=>{
-        df=df===d.dataset.domain?null:d.dataset.domain;
-        doms.forEach(x=>x.classList.toggle('active',x.dataset.domain===df));
-        apply();
-      }));
-
-      // collapse / expand: a family group (its header), or a whole category incl. its loose checks (the category header)
-      $$('tr.grp').forEach(h=>h.addEventListener('click',()=>h.parentElement.classList.toggle('collapsed')));
-      $$('tr.cathdr').forEach(h=>h.addEventListener('click',()=>{
-        const cat=h.closest('tbody.cat'),slug=cat.dataset.cat;
-        const collapsed=cat.classList.toggle('catcollapsed');
-        $$('tbody.group[data-cat="'+slug+'"]').forEach(g=>g.classList.toggle('gcollapsed',collapsed));
-      }));
-      const ex=document.getElementById('expand'),co=document.getElementById('collapse');
-      ex&&ex.addEventListener('click',()=>{$$('tbody.group').forEach(g=>g.classList.remove('collapsed','gcollapsed'));$$('tbody.cat').forEach(c=>c.classList.remove('catcollapsed'));});
-      co&&co.addEventListener('click',()=>{$$('tbody.cat').forEach(c=>c.classList.add('catcollapsed'));$$('tbody.group').forEach(g=>g.classList.add('gcollapsed'));});
-
-      // sidebar: fold a category's family list
-      $$('.tfold').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();b.closest('.toccat').classList.toggle('folded');}));
-      // sidebar: a family jump also expands its group (so the anchor lands on visible rows)
-      $$('.tfam').forEach(a=>a.addEventListener('click',()=>{
-        const row=document.getElementById(a.dataset.target);
-        const g=row&&row.closest('tbody.group'); if(g)g.classList.remove('collapsed');
-      }));
-
-      // scroll-spy: highlight the section nearest the top
-      function setActive(row){
-        const isCat=row.classList.contains('cathdr');
-        const famId=isCat?null:row.id;
-        const cat=isCat?row.id.slice(4):(row.closest('tbody.group')||{}).dataset?.cat;
-        $$('.tcat').forEach(a=>a.classList.toggle('active',a.dataset.cat===cat));
-        $$('.tfam').forEach(a=>a.classList.toggle('active',!!famId&&a.dataset.target===famId));
-      }
-      const seen=new Map();
-      const io=new IntersectionObserver(es=>{
-        es.forEach(e=>{ if(e.isIntersecting)seen.set(e.target,e.boundingClientRect.top); else seen.delete(e.target); });
-        let best=null,bt=1e9;
-        seen.forEach((top,el)=>{ if(top<bt){bt=top;best=el;} });
-        if(best)setActive(best);
-      },{rootMargin:'-96px 0px -65% 0px',threshold:0});
-      $$('tr.cathdr, tr.grp').forEach(r=>io.observe(r));
-
-      // tooltips: one shared fixed-position box, placed in JS so the scrolling sidebar can't clip it
-      const tip=document.createElement('div');tip.id='tip';tip.setAttribute('role','tooltip');document.body.appendChild(tip);
-      function showTip(el){
-        const txt=el.getAttribute('data-tip');if(!txt)return;
-        tip.textContent=txt;tip.classList.add('show');
-        const r=el.getBoundingClientRect(),tw=tip.offsetWidth,th=tip.offsetHeight;
-        const left=Math.min(Math.max(8,r.left+r.width/2-tw/2),innerWidth-tw-8);
-        let top=r.bottom+8;if(top+th>innerHeight-8)top=r.top-th-8;
-        tip.style.left=left+'px';tip.style.top=Math.max(8,top)+'px';
-      }
-      const hideTip=()=>tip.classList.remove('show');
-      $$('[data-tip]').forEach(el=>{
-        el.addEventListener('mouseenter',()=>showTip(el));
-        el.addEventListener('mouseleave',hideTip);
-        el.addEventListener('focus',()=>showTip(el));
-        el.addEventListener('blur',hideTip);
+    /* ---- fold binds -------------------------------------------------------
+       Two levels, matching the structure. A check whose family IS its category
+       renders with no family header — there is no tail left to label it with —
+       so it has no fold control of its own and belongs to the category
+       directly. That only works if the CATEGORY folds too: without it,
+       "Collapse all" hid those rows with nothing but "Expand all" able to bring
+       them back. */
+    function bindFold(selector) {
+      document.querySelectorAll(selector).forEach(header => {
+        const body = bodyOf(header);
+        header.setAttribute('aria-expanded', 'true');
+        header.addEventListener('click', () => setFold(header, body, !isFolded(body)));
       });
-      addEventListener('scroll',hideTip,true);
+    }
 
-      // default expanded => native Ctrl+F finds everything on load. Flip for big-picture-first.
-      const COLLAPSE_ON_LOAD=false;
-      if(COLLAPSE_ON_LOAD)$$('tbody.group').forEach(g=>g.classList.add('collapsed'));
-    })();
-    </script></body></html>
+    bindFold('[data-catfold]');
+    bindFold('[data-famfold]');
+    bindFold('[data-tocfold]');
+
+    /* Both buttons act on both levels. Collapsing only categories looked
+       identical while collapsed but behaved wrongly on the way back out:
+       opening one category dumped every check in it on screen at once. Folding
+       the families too makes the expand a real drill-down.
+
+       The rail is deliberately untouched. It is navigation, not content, and
+       collapsing it would take the jump list away exactly when the pane is
+       folded down and you most need it. */
+    const setAll = folded =>
+      document.querySelectorAll('[data-catfold], [data-famfold]').forEach(h => setFold(h, bodyOf(h), folded));
+
+    document.querySelector('[data-collapse]').addEventListener('click', () => setAll(true));
+    document.querySelector('[data-expand]').addEventListener('click', () => setAll(false));
+
+    /* ---- filtering --------------------------------------------------------
+       Opt-in only: the page loads fully expanded and unfiltered, so native
+       Ctrl+F finds everything before any of this runs. */
+    const state = { status: null, domain: null, q: '' };
+    const rows = [...document.querySelectorAll('[data-check]')];
+
+    function apply() {
+      for (const row of rows) {
+        const ok =
+          (!state.status || row.dataset.status === state.status) &&
+          (!state.domain || row.dataset.domain === state.domain) &&
+          (!state.q || row.dataset.text.includes(state.q));
+        row.classList.toggle('hidden', !ok);
+      }
+
+      /* A filter must never leave a match hidden behind a fold. */
+      if (state.status || state.domain || state.q) setAll(false);
+
+      for (const section of document.querySelectorAll('[data-cat]')) {
+        const any = [...section.querySelectorAll('[data-check]')].some(r => !r.classList.contains('hidden'));
+        section.classList.toggle('opacity-35', !any);
+      }
+    }
+
+    /* Scoped to the RAIL. `data-domain` is also on every check row — that is
+       how apply() reads a row's domain — so an unscoped query would bind a
+       filter handler to every row and put the selected ring on it: click any
+       row and the page silently filters to that row's domain. */
+    const rail = document.querySelector('aside');
+
+    for (const kind of ['filter', 'domain']) {
+      const key = kind === 'filter' ? 'status' : 'domain';
+      rail.querySelectorAll(`[data-${kind}]`).forEach(button =>
+        button.addEventListener('click', () => {
+          state[key] = state[key] === button.dataset[kind] ? null : button.dataset[kind];
+          rail.querySelectorAll(`[data-${kind}]`).forEach(b => {
+            const on = b.dataset[kind] === state[key];
+            b.classList.toggle('ring-2', on);
+            b.classList.toggle('ring-accent', on);
+          });
+          apply();
+        }),
+      );
+    }
+
+    document.querySelector('[data-q]').addEventListener('input', e => {
+      state.q = e.target.value.trim().toLowerCase();
+      apply();
+    });
+
+    /* The rail links live outside the scrolling pane, so let the anchor scroll
+       it. A jump into a folded category opens it first, or it goes nowhere. */
+    document.querySelectorAll('[data-jump]').forEach(link =>
+      link.addEventListener('click', e => {
+        e.preventDefault();
+        const target = document.getElementById(link.dataset.jump);
+        if (!target) return;
+        const catHeader = target.closest('[data-cat]')?.querySelector('[data-catfold]');
+        if (catHeader) setFold(catHeader, bodyOf(catHeader), false);
+        if (target.matches('[data-famfold]')) setFold(target, bodyOf(target), false);
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }),
+    );
     """;
 }
