@@ -1,4 +1,4 @@
-using Microsoft.Azure.Cosmos;
+﻿using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -33,12 +33,6 @@ var host = new HostBuilder()
         // It points at the same SQL database the sample API writes to.
         services.AddDbContext<MenuReplicationDB>(database =>
             database.UseSqlServer(context.Configuration.GetConnectionString("SQLServer")));
-
-        // CosmosDBReplication resolves IMapper on construction, so AutoMapper has to be present even
-        // though replication never uses it: every menu projection is an explicit manual delegate in
-        // MenuCosmosMappers. An empty configuration is therefore exactly right — registering the
-        // menus' AutoMapper profiles here would pull in DTO/hash-id services this host does not have.
-        services.AddAutoMapper(_ => { });
 
         // Registers the CosmosDBReplication service the timers and the HTTP endpoint drive.
         services.AddShiftEntityCosmosDbReplication<MenuReplicationDB>();

@@ -1,11 +1,11 @@
-using ShiftSoftware.ADP.Menus.Data.Entities;
+﻿using ShiftSoftware.ADP.Menus.Data.Entities;
 using ShiftSoftware.ADP.Models.Service.Cosmos;
 
 namespace ShiftSoftware.ADP.Menus.Sync.Replication;
 
 /// <summary>
-/// Manual EF entity → Cosmos document projections. No AutoMapper, so every field is explicit and
-/// reviewable.
+/// Manual EF entity → Cosmos document projections. Hand-written rather than generated, so every field
+/// is explicit and reviewable.
 ///
 /// These are LAYER 2 only — persistence. They never generate menu codes; that is
 /// <c>MenuCodeGenerator</c>'s job at read time, from documents these produce.

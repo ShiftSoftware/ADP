@@ -8,7 +8,9 @@ namespace ShiftSoftware.ADP.Menus.Data.Repositories;
 
 public class MenuVersionRepository : ShiftRepository<ShiftDbContext, MenuVersion, MenuVersionListDTO, MenuVersionDTO>
 {
-    public MenuVersionRepository(ShiftDbContext db) : base(db)
+    public MenuVersionRepository(ShiftDbContext db) : base(db, x => x.UseGeneratedMapper(map => map
+        // The grid's display column. Spliced into the list projection, exactly as the profile computed it.
+        .ForList(d => d.Text, e => e.Version.ToString() + " - " + e.VersionDateTime.ToString())))
     {
     }
 

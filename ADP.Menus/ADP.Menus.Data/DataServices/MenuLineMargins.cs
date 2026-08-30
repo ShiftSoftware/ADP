@@ -1,4 +1,4 @@
-using ShiftSoftware.ADP.Menus.Shared.DTOs.Menu;
+﻿using ShiftSoftware.ADP.Menus.Shared.DTOs.Menu;
 
 namespace ShiftSoftware.ADP.Menus.Data.DataServices;
 
@@ -27,7 +27,7 @@ namespace ShiftSoftware.ADP.Menus.Data.DataServices;
 /// implementer of <see cref="IMenuReportExporter"/> already imports it.
 ///
 /// ONE CAVEAT: extension members are invisible to serializers and to reflection-driven mapping (JSON,
-/// AutoMapper, reflection-based Excel writers). Nothing serializes <see cref="MenuLineDTO"/> — every
+/// reflection-based Excel writers). Nothing serializes <see cref="MenuLineDTO"/> — every
 /// export endpoint returns a byte array — but a consumer that starts doing so gets a payload without
 /// these figures, silently. Project them explicitly if that day comes.
 /// </summary>

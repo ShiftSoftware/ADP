@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Localization;
+﻿using Microsoft.AspNetCore.Localization;
 using Microsoft.Azure.Cosmos;
 using Microsoft.EntityFrameworkCore;
 using ShiftSoftware.ADP.Menus.API.Extensions;
@@ -50,7 +50,7 @@ builder.Services.AddShiftEntityPrint(x =>
 // ---------- Controllers (consumer owns this) ----------
 var mvcBuilder = builder.Services.AddControllers();
 
-// ---------- ShiftEntity Web (HashId, AzureStorage, AutoMapper, data assemblies) ----------
+// ---------- ShiftEntity Web (HashId, AzureStorage, data assemblies) ----------
 var azureStorageAccounts = new List<AzureStorageOption>();
 builder.Configuration.Bind("AzureStorageAccounts", azureStorageAccounts);
 
@@ -58,7 +58,6 @@ mvcBuilder.AddShiftEntityWeb(x =>
 {
     x.AddDataAssembly(typeof(ShiftSoftware.ADP.Menus.Sample.API.Data.DB).Assembly);
     x.WrapValidationErrorResponseWithShiftEntityResponse(true);
-    x.AddAutoMapper(typeof(ShiftSoftware.ADP.Menus.Sample.API.Data.DB).Assembly);
 
     x.HashId.RegisterHashId(builder.Configuration.GetValue<bool>("Settings:HashIdSettings:AcceptUnencodedIds"));
     x.HashId.RegisterIdentityHashId(
@@ -67,7 +66,6 @@ mvcBuilder.AddShiftEntityWeb(x =>
     );
 
     x.AddAzureStorage(azureStorageAccounts.ToArray());
-    x.AddShiftIdentityAutoMapper();
 
     // Registers ShiftSoftware.ShiftIdentity.Data as a data assembly. That assembly holds the 13
     // [ShiftEntitySecureEndpoint<>] identity entities (User, Company, Brand, City, Region,

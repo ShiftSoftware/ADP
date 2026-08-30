@@ -5,23 +5,222 @@ using ShiftSoftware.ADP.Menus.Shared.DTOs.VehicleModel;
 using ShiftSoftware.ShiftEntity.Core;
 using ShiftSoftware.ShiftEntity.EFCore;
 using ShiftSoftware.ShiftEntity.Model;
+using ShiftSoftware.ShiftEntity.Model.Dtos;
 using ShiftSoftware.ShiftEntity.Model.HashIds;
 using ShiftSoftware.ADP.Menus.Shared.DTOs.MenuVariant;
 using ShiftSoftware.ADP.Menus.Shared.DTOs.Menu;
 
 namespace ShiftSoftware.ADP.Menus.Data.Repositories;
 
+// Two generator diagnostics are suppressed here, both verified against the mapping profile this
+// replaced:
+//   SHENGEN004/007 — LabourDetailsDTO.Name has no source on VehicleModelLabourDetails. It was never
+//     populated by the profile either (it is filled client-side), so it stays null, deliberately.
+//   SHENGEN008 — ReplacementItems is reported as "never written back" because the check pairs members
+//     by name and this one is written to a differently named entity collection
+//     (ReplacementItemVehicleModels) from the AfterEntity hook, which the generator cannot see into.
+#pragma warning disable SHENGEN004, SHENGEN007, SHENGEN008
 public class VehicleModelRepository : ShiftRepository<ShiftDbContext, VehicleModel, VehicleModelListDTO, VehicleModelDTO>
 {
     private readonly IMenuCountryProvider countryProvider;
     private readonly IHashIdService hashIdService;
 
-    public VehicleModelRepository(ShiftDbContext db, IMenuCountryProvider countryProvider, IHashIdService hashIdService) : base(db,
-        x => x.IncludeRelatedEntitiesWithFindAsync(
+    public VehicleModelRepository(ShiftDbContext db, IMenuCountryProvider countryProvider, IHashIdService hashIdService) : base(db, x =>
+    {
+        x.IncludeRelatedEntitiesWithFindAsync(
             i => i.Include(s => s.ReplacementItemVehicleModels!).ThenInclude(r => r.ReplacementItem).ThenInclude(r => r.StandaloneReplacementItemGroup),
             i => i.Include(s => s.ReplacementItemVehicleModels!).ThenInclude(r => r.DefaultParts),
             i => i.Include(s => s.LabourDetails),
-            i => i.Include(s => s.LabourRates)))
+            i => i.Include(s => s.LabourRates));
+
+        x.UseGeneratedMapper(map => map
+
+            // ── VIEW ──────────────────────────────────────────────────────────────────────────────
+            // The form's replacement-item rows are a flattening of RIVM + its ReplacementItem + its
+            // default parts, with soft-deleted rows and parts excluded and the parts kept in SortOrder.
+            // Nothing about that is convention-derivable, so it is spelled out.
+            // Brand needs no configuration: VehicleModel has no Brand navigation, so the convention's
+            // selector carries Value only — exactly what the profile built by hand.
+            .ForView(d => d.ReplacementItems, e => e.ReplacementItemVehicleModels == null
+                ? new List<VehicleModelDTOReplacementItem>()
+                : e.ReplacementItemVehicleModels
+                    .Where(s => !s.IsDeleted)
+                    .Select(s => new VehicleModelDTOReplacementItem(s.ReplacementItemID.ToString())
+                    {
+                        Name = s.ReplacementItem != null ? s.ReplacementItem.Name : string.Empty,
+                        Type = s.ReplacementItem != null ? s.ReplacementItem.Type : default,
+                        AllowMultiplePartNumbers = s.ReplacementItem != null && s.ReplacementItem.AllowMultiplePartNumbers,
+                        StandaloneAllowedTime = s.StandaloneAllowedTime,
+                        DefaultPartPriceMarginPercentage = s.DefaultPartPriceMarginPercentage,
+                        HasPendingPropagation = s.HasPendingPropagation,
+                        PendingSince = s.PendingSince,
+                        DefaultParts = (s.DefaultParts ?? new List<ReplacementItemVehicleModelPart>())
+                            .Where(p => !p.IsDeleted)
+                            .OrderBy(p => p.SortOrder)
+                            .Select(p => new ReplacementItemDefaultPartDTO
+                            {
+                                ID = p.ID,
+                                PartNumber = p.PartNumber,
+                                DefaultPeriodicQuantity = p.DefaultPeriodicQuantity,
+                                DefaultStandaloneQuantity = p.DefaultStandaloneQuantity
+                            }).ToList(),
+                        StandaloneReplacementItemGroup = s.ReplacementItem != null && s.ReplacementItem.StandaloneReplacementItemGroup != null
+                            ? new ShiftEntitySelectDTO
+                            {
+                                Value = s.ReplacementItem.StandaloneReplacementItemGroup.ID.ToString(),
+                                Text = s.ReplacementItem.StandaloneReplacementItemGroup.Name
+                            }
+                            : null
+                    })
+                    .ToList())
+
+            // ── ENTITY ────────────────────────────────────────────────────────────────────────────
+            // Both child collections are tracked rows with required foreign keys, so the automatic
+            // replace-with-new deep write is wrong for them (SHENGEN010): it would build fresh entities
+            // for every incoming row and sever the existing ones. They are reconciled in the hook below
+            // instead, which also keeps the profile's asymmetry — labour details and rates are HARD
+            // removed, replacement items are soft-deleted.
+            .IgnoreEntity(e => e.LabourDetails)
+            .IgnoreEntity(e => e.LabourRates)
+
+            .AfterEntity((dto, entity, ctx) =>
+            {
+                // Handle ReplacementItemVehicleModels
+                entity.ReplacementItemVehicleModels ??= [];
+
+                // 1. Soft-delete items that are not in the source. Physically removing them
+                //    would sever a required non-nullable FK (ShiftEntity forces Restrict).
+                //    Soft-deleted RIVMs are filtered out of the forward map.
+                var itemsToRemove = entity.ReplacementItemVehicleModels
+                    .Where(existing => !existing.IsDeleted && !dto.ReplacementItems.Any(r => r.ReplacementItemID == existing.ReplacementItemID.ToString()))
+                    .ToList();
+                foreach (var item in itemsToRemove)
+                {
+                    item.IsDeleted = true;
+                    foreach (var part in item.DefaultParts?.Where(p => !p.IsDeleted) ?? [])
+                        part.IsDeleted = true;
+                }
+
+                // 2. Update existing items or add new items
+                foreach (var item in dto.ReplacementItems)
+                {
+                    var existingItem = entity.ReplacementItemVehicleModels
+                        .FirstOrDefault(r => !r.IsDeleted && r.ReplacementItemID.ToString() == item.ReplacementItemID);
+                    if (existingItem != null)
+                    {
+                        existingItem.StandaloneAllowedTime = item.StandaloneAllowedTime ?? existingItem.StandaloneAllowedTime;
+                        existingItem.DefaultPartPriceMarginPercentage = item.DefaultPartPriceMarginPercentage ?? existingItem.DefaultPartPriceMarginPercentage;
+                        existingItem.DefaultParts ??= [];
+
+                        var incomingPartIds = item.DefaultParts
+                            .Where(p => p.ID.HasValue)
+                            .Select(p => p.ID!.Value)
+                            .ToHashSet();
+
+                        // Soft-delete parts missing from the incoming list. Physically removing
+                        // them would sever a required non-nullable FK (ShiftEntity forces Restrict).
+                        foreach (var existingPart in existingItem.DefaultParts.Where(p => !p.IsDeleted && !incomingPartIds.Contains(p.ID)).ToList())
+                            existingPart.IsDeleted = true;
+
+                        for (int i = 0; i < item.DefaultParts.Count; i++)
+                        {
+                            var sourcePart = item.DefaultParts[i];
+                            var existingPart = sourcePart.ID.HasValue
+                                ? existingItem.DefaultParts.FirstOrDefault(p => !p.IsDeleted && p.ID == sourcePart.ID.Value)
+                                : null;
+
+                            if (existingPart != null)
+                            {
+                                existingPart.SortOrder = i;
+                                existingPart.PartNumber = sourcePart.PartNumber;
+                                existingPart.DefaultPeriodicQuantity = sourcePart.DefaultPeriodicQuantity;
+                                existingPart.DefaultStandaloneQuantity = sourcePart.DefaultStandaloneQuantity;
+                            }
+                            else
+                            {
+                                existingItem.DefaultParts.Add(new ReplacementItemVehicleModelPart
+                                {
+                                    SortOrder = i,
+                                    PartNumber = sourcePart.PartNumber,
+                                    DefaultPeriodicQuantity = sourcePart.DefaultPeriodicQuantity,
+                                    DefaultStandaloneQuantity = sourcePart.DefaultStandaloneQuantity
+                                });
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // The profile mapped this through a dedicated DTO→entity pair whose DefaultParts,
+                        // HasPendingPropagation and PendingSince were all ignored, then rebuilt the parts
+                        // in an AfterMap. Written out here so the pending flags stay repository-owned.
+                        entity.ReplacementItemVehicleModels.Add(new ReplacementItemVehicleModel
+                        {
+                            ReplacementItemID = item.ReplacementItemID.ToLong(),
+                            StandaloneAllowedTime = item.StandaloneAllowedTime.GetValueOrDefault(),
+                            DefaultPartPriceMarginPercentage = item.DefaultPartPriceMarginPercentage,
+                            DefaultParts = item.DefaultParts
+                                .Select((p, index) => new ReplacementItemVehicleModelPart
+                                {
+                                    SortOrder = index,
+                                    PartNumber = p.PartNumber,
+                                    DefaultPeriodicQuantity = p.DefaultPeriodicQuantity,
+                                    DefaultStandaloneQuantity = p.DefaultStandaloneQuantity
+                                }).ToList()
+                        });
+                    }
+                }
+
+                // Handle LabourDetails. These are hard-removed, not soft-deleted — unlike the RIVM rows
+                // above. Kept as-is: it is what the profile did.
+                entity.LabourDetails ??= [];
+
+                var laborDetailItemsToRemove = entity.LabourDetails
+                    .Where(existing => !dto.LabourDetails.Any(r => r.ServiceIntervalGroupID == existing.ServiceIntervalGroupID.ToString()))
+                    .ToList();
+                foreach (var item in laborDetailItemsToRemove)
+                    entity.LabourDetails.Remove(item);
+
+                foreach (var item in dto.LabourDetails)
+                {
+                    var existingItem = entity.LabourDetails
+                        .FirstOrDefault(r => r.ServiceIntervalGroupID.ToString() == item.ServiceIntervalGroupID);
+                    if (existingItem != null)
+                    {
+                        existingItem.AllowedTime = item.AllowedTime.GetValueOrDefault();
+                        existingItem.Consumable = item.Consumable.GetValueOrDefault();
+                    }
+                    else
+                        entity.LabourDetails.Add(new VehicleModelLabourDetails
+                        {
+                            ServiceIntervalGroupID = item.ServiceIntervalGroupID.ToLong(),
+                            AllowedTime = item.AllowedTime.GetValueOrDefault(),
+                            Consumable = item.Consumable.GetValueOrDefault()
+                        });
+                }
+
+                // Handle LabourRates
+                entity.LabourRates ??= [];
+                var labourRatesToRemove = entity.LabourRates
+                    .Where(existing => !dto.LabourRates.Any(r => r.CountryID == existing.CountryID))
+                    .ToList();
+                foreach (var item in labourRatesToRemove)
+                    entity.LabourRates.Remove(item);
+
+                foreach (var item in dto.LabourRates)
+                {
+                    var existingItem = entity.LabourRates
+                        .FirstOrDefault(r => r.CountryID == item.CountryID);
+                    if (existingItem is not null)
+                        existingItem.LabourRate = item.LabourRate.GetValueOrDefault();
+                    else
+                        entity.LabourRates.Add(new VehicleModelLabourRate
+                        {
+                            CountryID = item.CountryID.GetValueOrDefault(),
+                            LabourRate = item.LabourRate.GetValueOrDefault()
+                        });
+                }
+            }));
+    })
     {
         this.countryProvider = countryProvider;
         this.hashIdService = hashIdService;
@@ -39,7 +238,7 @@ public class VehicleModelRepository : ShiftRepository<ShiftDbContext, VehicleMod
         var countries = await countryProvider.GetSupportedCountriesAsync();
         ValidateLabourRates(dto, countries);
 
-        // When the user unticks a replacement item (RIVM) the AutoMapper profile marks
+        // When the user unticks a replacement item (RIVM) the mapper's AfterEntity hook marks
         // the RIVM IsDeleted. Cascade that soft-delete to the MenuItem rows that still
         // reference it (plus their parts and per-country prices) so the reports and
         // menu UIs don't keep surfacing an item that no longer belongs to the vehicle.
@@ -77,7 +276,7 @@ public class VehicleModelRepository : ShiftRepository<ShiftDbContext, VehicleMod
             }
         }
 
-        // Diff replacement-item defaults BEFORE base.UpsertAsync triggers the AutoMapper
+        // Diff replacement-item defaults BEFORE base.UpsertAsync triggers the mapper's
         // mutation. If any default values changed and at least one MenuItem still references
         // the RIVM, flag it pending so users see a propagation reminder on reopen.
         if (actionType == ActionTypes.Update && entity.ReplacementItemVehicleModels is not null && dto.ReplacementItems is not null)
@@ -123,7 +322,7 @@ public class VehicleModelRepository : ShiftRepository<ShiftDbContext, VehicleMod
 
     private static bool HasReplacementItemDefaultsChanged(ReplacementItemVehicleModel existing, VehicleModelDTOReplacementItem incoming)
     {
-        // Mirrors the AutoMapper AfterMap "incoming null = no change" semantics so we
+        // Mirrors the mapper's AfterEntity "incoming null = no change" semantics so we
         // only flag pending when the user actually altered a value.
         if (incoming.StandaloneAllowedTime.HasValue && incoming.StandaloneAllowedTime.Value != existing.StandaloneAllowedTime)
             return true;
@@ -496,3 +695,4 @@ public class VehicleModelRepository : ShiftRepository<ShiftDbContext, VehicleMod
             throw new ShiftEntityException(new Message("Conflict", "Vehicle model labour rates must include all required countries."));
     }
 }
+#pragma warning restore SHENGEN004, SHENGEN007, SHENGEN008

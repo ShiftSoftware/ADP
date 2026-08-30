@@ -24,6 +24,25 @@ public class MenuRepository : ShiftRepository<ShiftDbContext, MenuEntity, MenuLi
                 && x.ReadableTypeAuthValues.Contains(x.Entity.BrandID!.ToString()!))
                 || x.WildCardRead)
             .ValueProvider<BrandDTO>(ShiftIdentityActions.DataLevelAccess.Brands);
+
+            i.UseGeneratedMapper(map => map
+
+                // VehicleModel needs nothing: the convention builds the same selector through
+                // MappingHelpers.ToSelectDTO, and additionally fills Text from the included navigation.
+
+                // ── ENTITY ────────────────────────────────────────────────────────────────────────
+                // BrandID is REPOSITORY-owned: UpsertAsync derives it from the selected vehicle model
+                // just before calling base. The convention would happily write it from the request body
+                // instead (MenuDTO.BrandID is a string the client controls), overwriting that derivation
+                // and letting a caller pin a menu to a brand its vehicle model does not belong to. The
+                // profile ignored this member on the reverse map for the same reason.
+                .IgnoreEntity(e => e.BrandID)
+
+                // ── LIST ──────────────────────────────────────────────────────────────────────────
+                // Both reach through a navigation, so neither is convention-mappable. (The DTO member
+                // spelling is a long-standing typo kept as-is — renaming it would break clients.)
+                .ForList(d => d.VehilceModel, e => e.VehicleModel != null ? e.VehicleModel.Name : string.Empty)
+                .ForList(d => d.VariantsCount, e => e.Variants.Count(v => !v.IsDeleted)));
         })
     {
     }
