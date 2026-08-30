@@ -456,9 +456,12 @@ static string BuildExplanation(
     text.AppendLine();
     text.AppendLine("`free-service-menu-parity-details.csv` — one row per free service item: `MatchResult` ∈ `Matched` /");
     text.AppendLine("`MatchedWithDifferences` / `FreeItemWithoutMenuCode` / `FreeItemCodeUnmatched`; the `Differences`");
-    text.AppendLine("column spells out property disagreements; the menu-side columns (`MenuVariantId`…`MenuTotalPrice`,");
-    text.AppendLine("including `MenuVariantIsFree` for when the flag starts being authored) describe the line the item's");
-    text.AppendLine("code found.");
+    text.AppendLine("column spells out property disagreements. The columns are laid out for reading: each compared pair");
+    text.AppendLine("sits side by side, the item's value immediately left of the menu's —");
+    text.AppendLine("`ItemMenuCode | MenuLineCode`, `ItemMaximumMileage | MenuIntervalKm`,");
+    text.AppendLine("`ServiceItemName | MenuDescription`, `ItemCost | MenuTotalPrice` — followed by the item-only");
+    text.AppendLine("context (`ServiceItemId`…`ItemClaimDate`) and the menu-only context (`MenuVariantId`…, including");
+    text.AppendLine("`MenuVariantIsFree` for when the flag starts being authored).");
 
     return text.ToString();
 }

@@ -308,6 +308,12 @@ public class FreeServiceMenuParityAuditor(
 
     private static string? NormalizeVin(string? vin) => vin?.Trim()?.ToUpperInvariant();
 
+    /// <summary>
+    /// Column order is for HUMAN reading: after the row's identity and verdict, every comparable pair
+    /// sits side by side — the item's value immediately left of the menu's value it was compared to
+    /// (code | code, mileage | interval, name | description, cost | price) — so a scan across two
+    /// adjacent cells IS the comparison. The single-sided context columns follow, item's then menu's.
+    /// </summary>
     private sealed class FreeServiceParityRowModelCsvMap : ClassMap<FreeServiceParityRowModel>
     {
         public FreeServiceParityRowModelCsvMap()
@@ -318,29 +324,33 @@ public class FreeServiceMenuParityAuditor(
             Map(x => x.MatchResult).Index(3);
             Map(x => x.Differences).Index(4);
 
-            Map(x => x.ServiceItemId).Index(5);
-            Map(x => x.ServiceItemName).Index(6);
-            Map(x => x.ItemMenuCode).Index(7);
-            Map(x => x.ItemMaximumMileage).Index(8);
-            Map(x => x.ItemCost).Index(9);
-            Map(x => x.ItemStatus).Index(10);
-            Map(x => x.ItemStatusEnum).Index(11);
-            Map(x => x.ItemClaimable).Index(12);
-            Map(x => x.ItemActivatedAt).Index(13);
-            Map(x => x.ItemExpiresAt).Index(14);
-            Map(x => x.ItemClaimDate).Index(15);
+            // ---- the compared pairs, side by side: item | menu ----
+            Map(x => x.ItemMenuCode).Index(5);
+            Map(x => x.MenuLineCode).Index(6);
+            Map(x => x.ItemMaximumMileage).Index(7);
+            Map(x => x.MenuIntervalKm).Index(8);
+            Map(x => x.ServiceItemName).Index(9);
+            Map(x => x.MenuDescription).Index(10);
+            Map(x => x.ItemCost).Index(11);
+            Map(x => x.MenuTotalPrice).Index(12);
 
-            Map(x => x.MenuVariantId).Index(16);
-            Map(x => x.MenuVariantName).Index(17);
-            Map(x => x.MenuVariantIsFree).Index(18);
-            Map(x => x.MenuLineKey).Index(19);
-            Map(x => x.MenuLineCode).Index(20);
-            Map(x => x.MenuLabourCode).Index(21);
-            Map(x => x.MenuDescription).Index(22);
-            Map(x => x.MenuLineType).Index(23);
-            Map(x => x.MenuIsStandalone).Index(24);
-            Map(x => x.MenuIntervalKm).Index(25);
-            Map(x => x.MenuTotalPrice).Index(26);
+            // ---- item-only context ----
+            Map(x => x.ServiceItemId).Index(13);
+            Map(x => x.ItemStatus).Index(14);
+            Map(x => x.ItemStatusEnum).Index(15);
+            Map(x => x.ItemClaimable).Index(16);
+            Map(x => x.ItemActivatedAt).Index(17);
+            Map(x => x.ItemExpiresAt).Index(18);
+            Map(x => x.ItemClaimDate).Index(19);
+
+            // ---- menu-only context ----
+            Map(x => x.MenuVariantId).Index(20);
+            Map(x => x.MenuVariantName).Index(21);
+            Map(x => x.MenuVariantIsFree).Index(22);
+            Map(x => x.MenuLineKey).Index(23);
+            Map(x => x.MenuLabourCode).Index(24);
+            Map(x => x.MenuLineType).Index(25);
+            Map(x => x.MenuIsStandalone).Index(26);
         }
     }
 }

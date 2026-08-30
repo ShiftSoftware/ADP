@@ -1,6 +1,6 @@
 # Free Service Items Matched into the Menus
 
-Generated 2026-08-30 11:18 UTC in 193s. Regenerate any time with `dotnet run --project ADP.Menus/samples/ADP.Menus.Sample.FreeServiceParity -- --duckdb <store>`; the detail rows are in [free-service-menu-parity-details.csv](free-service-menu-parity-details.csv).
+Generated 2026-08-30 15:23 UTC in 209s. Regenerate any time with `dotnet run --project ADP.Menus/samples/ADP.Menus.Sample.FreeServiceParity -- --duckdb <store>`; the detail rows are in [free-service-menu-parity-details.csv](free-service-menu-parity-details.csv).
 
 ## The question
 
@@ -153,6 +153,9 @@ code — nothing the menu side could ever generate for them (top 20 models by VI
 
 `free-service-menu-parity-details.csv` — one row per free service item: `MatchResult` ∈ `Matched` /
 `MatchedWithDifferences` / `FreeItemWithoutMenuCode` / `FreeItemCodeUnmatched`; the `Differences`
-column spells out property disagreements; the menu-side columns (`MenuVariantId`…`MenuTotalPrice`,
-including `MenuVariantIsFree` for when the flag starts being authored) describe the line the item's
-code found.
+column spells out property disagreements. The columns are laid out for reading: each compared pair
+sits side by side, the item's value immediately left of the menu's —
+`ItemMenuCode | MenuLineCode`, `ItemMaximumMileage | MenuIntervalKm`,
+`ServiceItemName | MenuDescription`, `ItemCost | MenuTotalPrice` — followed by the item-only
+context (`ServiceItemId`…`ItemClaimDate`) and the menu-only context (`MenuVariantId`…, including
+`MenuVariantIsFree` for when the flag starts being authored).
