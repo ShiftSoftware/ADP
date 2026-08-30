@@ -5,63 +5,62 @@ using ShiftSoftware.ADP.Lookup.Services.Enums;
 namespace ShiftSoftware.ADP.Menus.Sample.FreeServiceParity;
 
 /// <summary>
-/// How one row of the parity report resolved.
+/// How one free service item resolved against its model's menu.
 ///
 /// <para>The service-items system was filled BY HAND from the exported menu, and the menu lookup exists
-/// to make that manual step unnecessary — so the identity that says "these are the same service" is the
-/// MENU CODE both sides carry: the service item's <c>PackageCode</c> was transcribed from the very
-/// <c>Code</c> the menu generator produces. Matching is therefore by menu code alone; the other
-/// properties are compared afterwards on matched pairs and reported, but they are secondary.</para>
+/// to make that manual step unnecessary — so the identity that says "this entitlement is that menu
+/// service" is the MENU CODE: the item's <c>PackageCode</c> was transcribed from the very <c>Code</c>
+/// the menu generator produces. The audit is ONE-WAY: each free service item looks for its match among
+/// ALL the menu's generated lines (every variant — the free-of-charge flag is not authored yet, so it
+/// selects nothing). Menu lines no free item points at are expected — the menu also prices paid work —
+/// and are never counted against parity.</para>
 /// </summary>
 public enum FreeServiceParityMatchResult
 {
-    /// <summary>Menu codes match and every compared property agrees.</summary>
+    /// <summary>The item's menu code found its menu line and every compared property agrees.</summary>
     Matched = 0,
 
-    /// <summary>Menu codes match — the identity holds — but some compared property differs (see the row's differences).</summary>
+    /// <summary>The item's menu code found its menu line — the identity holds — but some compared property differs (see the row's differences).</summary>
     MatchedWithDifferences = 1,
 
-    /// <summary>The free service item carries NO menu code at all, so it cannot be matched to anything.</summary>
+    /// <summary>The free service item carries NO menu code at all, so it cannot be looked up.</summary>
     FreeItemWithoutMenuCode = 2,
 
-    /// <summary>The free service item carries a menu code, but no free menu line generated that code.</summary>
+    /// <summary>The free service item carries a menu code, but the menu generated no line with that code.</summary>
     FreeItemCodeUnmatched = 3,
-
-    /// <summary>A free menu line whose code no free service item carries.</summary>
-    MenuLineUnmatched = 4,
 }
 
 /// <summary>One VIN's overall verdict.</summary>
 public enum FreeServiceParityVinOutcome
 {
-    /// <summary>Every free item and every free menu line matched by code, and every compared property agrees.</summary>
+    /// <summary>Every free item found its menu line by code, and every compared property agrees.</summary>
     Match = 0,
 
-    /// <summary>Fully matched by code — the identity the migration needs — with property differences to review.</summary>
+    /// <summary>Every free item found its menu line by code — the identity the migration needs — with property differences to review.</summary>
     MatchWithDifferences = 1,
 
-    /// <summary>At least one side has an entry no menu code could pair.</summary>
+    /// <summary>At least one free item has no menu code, or a code the menu did not generate.</summary>
     Mismatch = 2,
 
-    /// <summary>Menu found, but the VIN has no free items and the menu no free lines — nothing to compare.</summary>
-    NothingFree = 3,
+    /// <summary>The VIN carries no free service items — nothing to look up.</summary>
+    NoFreeItems = 3,
 
-    /// <summary>No menu is authored under the VIN's derived basic model code.</summary>
+    /// <summary>The VIN has free items but no menu is authored under its derived basic model code.</summary>
     MenuNotFound = 4,
 
-    /// <summary>The menu subsystem could not be consulted.</summary>
+    /// <summary>The VIN has free items but the menu subsystem could not be consulted.</summary>
     MenuUnavailable = 5,
 
     /// <summary>No menu lookup registered (should not appear in this audit).</summary>
     MenuNotRegistered = 6,
 
-    /// <summary>No Katashiki to derive a model code from — including VINs the store holds nothing about.</summary>
+    /// <summary>The VIN has free items but no Katashiki to derive a model code from.</summary>
     NoBasicModelCode = 7,
 }
 
 /// <summary>
-/// One detail row: a matched pair carries both sides and its property differences; an unmatched entry
-/// carries only its own side's columns.
+/// One detail row — one free service item's resolution. A matched row carries the menu line it found
+/// and its property differences; an unmatched row carries only the item's columns.
 /// </summary>
 public class FreeServiceParityRowModel
 {
@@ -86,9 +85,10 @@ public class FreeServiceParityRowModel
     public DateTime? ItemExpiresAt { get; set; }
     public DateTimeOffset? ItemClaimDate { get; set; }
 
-    // ---- free menu line side (vehicle lookup ServiceMenu, FreeFilter = FreeOnly) ----
+    // ---- the menu line the item's code found (vehicle lookup ServiceMenu, ALL variants) ----
     public long? MenuVariantId { get; set; }
     public string MenuVariantName { get; set; } = string.Empty;
+    public bool? MenuVariantIsFree { get; set; }
     public string MenuLineKey { get; set; } = string.Empty;
     public string MenuLineCode { get; set; } = string.Empty;
     public string MenuLabourCode { get; set; } = string.Empty;
@@ -107,12 +107,14 @@ public class FreeServiceParityVinSummaryModel
     public VehicleServiceMenuStatus? MenuStatus { get; set; }
     public FreeServiceParityVinOutcome Outcome { get; set; }
     public int FreeServiceItemCount { get; set; }
-    public int FreeMenuLineCount { get; set; }
+
+    /// <summary>How many lines the whole menu generated — context, never counted against parity.</summary>
+    public int MenuLineCount { get; set; }
+
     public int MatchedCount { get; set; }
     public int MatchedWithDifferencesCount { get; set; }
     public int ItemsWithoutMenuCodeCount { get; set; }
     public int ItemsCodeUnmatchedCount { get; set; }
-    public int MenuLinesUnmatchedCount { get; set; }
 }
 
 /// <summary>
@@ -125,12 +127,14 @@ public class FreeServiceParityReportModel
     public int VinCount { get; set; }
 
     public int TotalFreeServiceItems { get; set; }
-    public int TotalFreeMenuLines { get; set; }
+
+    /// <summary>Menu lines generated across all answered VINs — context, never counted against parity.</summary>
+    public int TotalMenuLines { get; set; }
+
     public int TotalMatched { get; set; }
     public int TotalMatchedWithDifferences { get; set; }
     public int TotalItemsWithoutMenuCode { get; set; }
     public int TotalItemsCodeUnmatched { get; set; }
-    public int TotalMenuLinesUnmatched { get; set; }
 
     public Dictionary<FreeServiceParityVinOutcome, int> OutcomeCounts { get; } = new();
 
