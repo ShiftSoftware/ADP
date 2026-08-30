@@ -194,7 +194,8 @@ public class ServiceItemTraceCollector
         VehicleEntryModel vehicle,
         VehicleOwnership ownership,
         IReadOnlyList<VehicleServiceItemPrerequisiteDTO> prerequisites = null,
-        IReadOnlyList<ServiceItemMilestoneNearMiss> milestoneNearMisses = null)
+        IReadOnlyList<ServiceItemMilestoneNearMiss> milestoneNearMisses = null,
+        DateTime? unlockedOn = null)
     {
         var accepted = stage == EligibilityRejectionStage.None;
         var decision = new ServiceItemEligibilityDecision
@@ -208,6 +209,7 @@ public class ServiceItemTraceCollector
             Reason = accepted ? null : ServiceItemEligibilityReasonFormatter.Format(item, stage, vehicle, ownership),
             Prerequisites = prerequisites?.ToList() ?? new List<VehicleServiceItemPrerequisiteDTO>(),
             MilestoneNearMisses = milestoneNearMisses?.ToList() ?? new List<ServiceItemMilestoneNearMiss>(),
+            UnlockedOn = unlockedOn,
         };
         trace.Eligibility.Decisions.Add(decision);
 
@@ -470,7 +472,7 @@ public class ServiceItemTraceCollector
         public override void RecordBaseScheduleCapDecision(ServiceItemModel item, bool included, BaseScheduleCapDecisionReason reason, EligibilityRejectionStage staticRejectionStage = EligibilityRejectionStage.None) { }
         public override void RecordBaseScheduleCap(long? maximumMileage) { }
         public override void RecordEligibilityInputCount(int count) { }
-        public override void RecordEligibilityDecision(ServiceItemModel item, EligibilityRejectionStage stage, VehicleEntryModel vehicle, VehicleOwnership ownership, IReadOnlyList<VehicleServiceItemPrerequisiteDTO> prerequisites = null, IReadOnlyList<ServiceItemMilestoneNearMiss> milestoneNearMisses = null) { }
+        public override void RecordEligibilityDecision(ServiceItemModel item, EligibilityRejectionStage stage, VehicleEntryModel vehicle, VehicleOwnership ownership, IReadOnlyList<VehicleServiceItemPrerequisiteDTO> prerequisites = null, IReadOnlyList<ServiceItemMilestoneNearMiss> milestoneNearMisses = null, DateTime? unlockedOn = null) { }
         public override void RecordMilestoneReader(IServiceMilestoneResolver resolver) { }
         public override void RecordFreeBuild(ServiceItemModel item, VehicleServiceItemDTO dto, ServiceItemCostModel matchedCost, string languageCode) { }
         public override void RecordPaidBuild(PaidServiceInvoiceModel invoice, PaidServiceInvoiceLineModel line, VehicleServiceItemDTO dto, string languageCode) { }

@@ -118,6 +118,16 @@ public class VehicleServiceItemDTO
     [TypeScriptIgnore]
     public ClaimableItemValidityMode ValidityModeEnum { get; set; }
 
+    /// <summary>
+    /// When this item's eligibility prerequisites were completed, or null when it has none or has
+    /// not met them. Carries the anchor its validity window is measured from — see the item
+    /// evaluator's unlock anchoring — and is not part of the payload.
+    /// </summary>
+    [DocIgnore]
+    [JsonIgnore]
+    [TypeScriptIgnore]
+    public DateTime? UnlockedOn { get; set; }
+
     /// <summary>The method used to claim this item (e.g., QR Code scan, Invoice + Job Number).</summary>
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public ClaimableItemClaimingMethod ClaimingMethodEnum { get; set; }

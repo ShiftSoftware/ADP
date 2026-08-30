@@ -150,6 +150,7 @@ public partial class VehicleServiceItemEvaluator
             var modelCost = GetModelCost(item.ModelCosts, vehicle?.Katashiki, vehicle?.VariantCode);
             var dto = BuildFreeServiceItemDto(item, vehicle, languageCode, modelCost);
             dto.Lock = outcome?.ToLockDTO();
+            dto.UnlockedOn = outcome?.UnlockedOn;
             Trace.RecordFreeBuild(item, dto, modelCost, languageCode);
             yield return dto;
         }
@@ -203,7 +204,7 @@ public partial class VehicleServiceItemEvaluator
             item.ActivatedAt = rollingDate;
             item.ExpiresAt = DurationCalculator.AddInterval(rollingDate, item.ActiveFor, item.ActiveForDurationType);
             rollingDate = item.ExpiresAt!.Value;
-            Trace.RecordWarrantyRollingItem(sequential: true, item);
+            Trace.RecordWarrantyRollingItem(sequential: true, item, note: ApplyUnlockAnchor(item));
         }
 
         var noSequentialAnchor = sequential.Count == 0 && nonSequential.Count > 0;
@@ -217,8 +218,40 @@ public partial class VehicleServiceItemEvaluator
             Trace.RecordWarrantyRollingItem(
                 sequential: false,
                 item,
-                note: noSequentialAnchor ? "Same-day expiry (issue #14 pinned)" : "Inherits bundle end date");
+                note: ApplyUnlockAnchor(item)
+                      ?? (noSequentialAnchor ? "Same-day expiry (issue #14 pinned)" : "Inherits bundle end date"));
         }
+    }
+
+    /// <summary>
+    /// Re-dates a reward from the moment it unlocked, once the sequence has already taken its slot
+    /// from it. Returns the trace note, or null when the item is not unlock-anchored.
+    /// <para>
+    /// "Active for four months" is four months from the service that completed the prerequisites, not
+    /// four months from a slot in a schedule the customer's own mileage left behind long ago. The
+    /// rolling anchor assumes a fixed distance per interval, so a customer driving faster or slower
+    /// than that drifts further from it with every item. The drift stays invisible on everything that
+    /// gets claimed, because a claim may land before its activation and expiry is the only date that
+    /// bites in <see cref="ClaimableItemValidityMode.RelativeToActivation"/> — a reward is the first
+    /// item in the sequence nobody walks into by default, and so the first place it shows.
+    /// </para>
+    /// <para>
+    /// The slot is consumed and left consumed, exactly as a locked item's is. Skipping it would move
+    /// every later item's dates depending on when this customer happened to have a service done,
+    /// which is the volatility keeping locked items in the sequence exists to avoid.
+    /// </para>
+    /// </summary>
+    private static string ApplyUnlockAnchor(VehicleServiceItemDTO item)
+    {
+        if (item.UnlockedOn is null)
+            return null;
+
+        var rollingExpiry = item.ExpiresAt;
+
+        item.ActivatedAt = item.UnlockedOn.Value;
+        item.ExpiresAt = DurationCalculator.AddInterval(item.ActivatedAt, item.ActiveFor, item.ActiveForDurationType);
+
+        return $"Anchored on unlock {item.UnlockedOn:yyyy-MM-dd}; rolling slot ran to {rollingExpiry:yyyy-MM-dd} and stays taken.";
     }
 
     private void ApplyVehicleInspectionExpansion(List<VehicleServiceItemDTO> result)
@@ -809,7 +842,7 @@ public partial class VehicleServiceItemEvaluator
         foreach (var item in serviceItems ?? Enumerable.Empty<ServiceItemModel>())
         {
             var (stage, outcome) = EvaluateItemEligibility(item, vehicle, ownership, freeServiceStartDate, baseScheduleMaximumMileage);
-            Trace.RecordEligibilityDecision(item, stage, vehicle, ownership, outcome?.Prerequisites, outcome?.MilestoneNearMisses);
+            Trace.RecordEligibilityDecision(item, stage, vehicle, ownership, outcome?.Prerequisites, outcome?.MilestoneNearMisses, outcome?.UnlockedOn);
 
             // Locked and missed items pass this point carrying their reason. Everything else that
             // failed is dropped, as it always was — an item excluded by brand, market or programme

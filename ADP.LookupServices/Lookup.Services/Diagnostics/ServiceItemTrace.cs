@@ -262,6 +262,14 @@ public class ServiceItemEligibilityDecision
     public List<VehicleServiceItemPrerequisiteDTO> Prerequisites { get; set; } = new();
 
     /// <summary>
+    /// The date the prerequisites were completed, when the rule found one. Null both when there are
+    /// no prerequisites and when one of them was met on a line carrying no date — the rendered row
+    /// tells those apart, and they are the two ways a reward keeps the rolling sequence's dates
+    /// instead of its own.
+    /// </summary>
+    public DateTime? UnlockedOn { get; set; }
+
+    /// <summary>
     /// Codes this item's milestone conditions passed over, with the reason. See
     /// <see cref="ServiceItemMilestoneNearMiss"/>.
     /// </summary>

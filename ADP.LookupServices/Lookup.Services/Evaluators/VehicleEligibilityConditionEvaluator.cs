@@ -98,12 +98,16 @@ internal sealed class VehicleEligibilityConditionEvaluator
 
         // An item that ended up eligible can still have passed over codes on the way, and those are
         // the same evidence — a rule that reached its answer through half its history is worth
-        // seeing before the half it ignored starts to matter. Nothing is allocated unless the
-        // request asked for a trace, so the untraced path keeps the shared instance.
+        // seeing before the half it ignored starts to matter. The shared instance is kept only
+        // when the rule read no prerequisites, passed over no codes, and produced no unlock date.
         if (state == EligibilityConditionState.Met)
-            return milestoneNearMisses is null
+        {
+            var unlockedOn = ResolveUnlockDate();
+
+            return prerequisites is null && milestoneNearMisses is null && unlockedOn is null
                 ? EligibilityConditionOutcome.Met
-                : new EligibilityConditionOutcome(EligibilityConditionState.Met, null, milestoneNearMisses);
+                : new EligibilityConditionOutcome(EligibilityConditionState.Met, prerequisites, milestoneNearMisses, unlockedOn);
+        }
 
         return new EligibilityConditionOutcome(state, prerequisites, milestoneNearMisses);
     }
@@ -202,6 +206,36 @@ internal sealed class VehicleEligibilityConditionEvaluator
             RecordPrerequisites(requiredMilestones, reached);
 
         return requiredMilestones.All(reached.ContainsKey);
+    }
+
+    /// <summary>
+    /// The moment the set of prerequisites was completed: the latest of the dates the locking clauses
+    /// recorded. Null unless there are prerequisites and every one of them is satisfied with a date —
+    /// a milestone reached on a line carrying no invoice date says the customer did the work but not
+    /// when, and a validity window measured from an unknown moment is worse than none.
+    /// <para>
+    /// The latest of the per-milestone firsts. Firsts, so a service repeated later does not move an
+    /// unlock that already happened; latest, so the date is the one that completed the set however the
+    /// milestones were ordered, rather than the highest mileage among them.
+    /// </para>
+    /// </summary>
+    private DateTime? ResolveUnlockDate()
+    {
+        if (prerequisites is null || prerequisites.Count == 0)
+            return null;
+
+        DateTime? completedOn = null;
+
+        foreach (var prerequisite in prerequisites)
+        {
+            if (!prerequisite.Satisfied || prerequisite.SatisfiedOn is null)
+                return null;
+
+            if (completedOn is null || prerequisite.SatisfiedOn > completedOn)
+                completedOn = prerequisite.SatisfiedOn;
+        }
+
+        return completedOn;
     }
 
     private void RecordPrerequisites(List<long> requiredMilestones, Dictionary<long, DateTime?> reached)

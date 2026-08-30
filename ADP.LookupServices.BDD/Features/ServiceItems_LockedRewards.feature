@@ -90,10 +90,155 @@ Scenario: A reward whose prerequisites are complete is offered normally
     | 1         | 10       | INV-2         | JOB-2               | 2026-03-01  | PGM MDL100 50K |
     | 1         | 10       | INV-3         | JOB-3               | 2026-04-01  | BRAKE PADS     |
   And the free service start date is "2026-01-15"
+  And the current UTC time is "2026-04-15 09:00:00"
   When evaluating service items for "1FDKF37GXVEB34368" with language "en"
   Then service item "SI-REWARD" is in the result
   And service item "SI-REWARD" is offered
   And service item "SI-REWARD" is claimable
+
+# A reward is active for its three months from the service that earned it, not from a slot in a
+# schedule the customer has already driven past. The rolling slot here runs to 2026-10-15; the
+# prerequisites were completed on 2026-03-01, and the three months run from that.
+Scenario: A reward is dated from the service that completed its prerequisites
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | BranchID | BrandID |
+    | 1FDKF37GXVEB34368 | 2026-01-15  | 1         | 10       | 1       |
+  And service items:
+    | ServiceItemID | Name              | BrandID | ActiveForMonths | MaximumMileage | ProgramRole |
+    | SI-BASE       | Base schedule end | 1       | 6               | 40000          |             |
+    | SI-REWARD     | Return reward     | 1       | 3               | 55000          | Reward      |
+  And service item "SI-REWARD" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch | Program | Qualifier | Selection | Values      | WhenUnmet |
+    | serviceHistory.laborLines.packageCode | ContainsAll | Milestone  | PGM     | None      | All       | 45000,50000 | Lock      |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode    |
+    | 1         | 10       | INV-1         | JOB-1               | 2026-02-01  | PGM MDL100 45K |
+    | 1         | 10       | INV-2         | JOB-2               | 2026-03-01  | PGM MDL100 50K |
+  And the free service start date is "2026-01-15"
+  When evaluating service items for "1FDKF37GXVEB34368" with language "en"
+  Then service item "SI-REWARD" is offered
+  And service item "SI-REWARD" has activation "2026-03-01"
+  And service item "SI-REWARD" has expiration "2026-06-01"
+  And service item "SI-BASE" has activation "2026-01-15"
+  And service item "SI-BASE" has expiration "2026-07-15"
+
+# The set is completed by whichever prerequisite lands last, which need not be the highest mileage.
+Scenario: The service that completes the set anchors it, whatever order they were done in
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | BranchID | BrandID |
+    | 1FDKF37GXVEB34368 | 2026-01-15  | 1         | 10       | 1       |
+  And service items:
+    | ServiceItemID | Name              | BrandID | ActiveForMonths | MaximumMileage | ProgramRole |
+    | SI-BASE       | Base schedule end | 1       | 6               | 40000          |             |
+    | SI-REWARD     | Return reward     | 1       | 3               | 55000          | Reward      |
+  And service item "SI-REWARD" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch | Program | Qualifier | Selection | Values      | WhenUnmet |
+    | serviceHistory.laborLines.packageCode | ContainsAll | Milestone  | PGM     | None      | All       | 45000,50000 | Lock      |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode    |
+    | 1         | 10       | INV-1         | JOB-1               | 2026-02-01  | PGM MDL100 50K |
+    | 1         | 10       | INV-2         | JOB-2               | 2026-04-01  | PGM MDL100 45K |
+  And the free service start date is "2026-01-15"
+  When evaluating service items for "1FDKF37GXVEB34368" with language "en"
+  Then service item "SI-REWARD" is offered
+  And service item "SI-REWARD" has activation "2026-04-01"
+  And service item "SI-REWARD" has expiration "2026-07-01"
+
+# The unlock happened when the prerequisite was first met. Repeating the service later does not
+# reopen a window that has been running since.
+Scenario: A prerequisite performed twice anchors on the first time
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | BranchID | BrandID |
+    | 1FDKF37GXVEB34368 | 2026-01-15  | 1         | 10       | 1       |
+  And service items:
+    | ServiceItemID | Name              | BrandID | ActiveForMonths | MaximumMileage | ProgramRole |
+    | SI-BASE       | Base schedule end | 1       | 6               | 40000          |             |
+    | SI-REWARD     | Return reward     | 1       | 3               | 55000          | Reward      |
+  And service item "SI-REWARD" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch | Program | Qualifier | Selection | Values      | WhenUnmet |
+    | serviceHistory.laborLines.packageCode | ContainsAll | Milestone  | PGM     | None      | All       | 45000,50000 | Lock      |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode    |
+    | 1         | 10       | INV-1         | JOB-1               | 2026-02-01  | PGM MDL100 45K |
+    | 1         | 10       | INV-2         | JOB-2               | 2026-03-01  | PGM MDL100 50K |
+    | 1         | 10       | INV-3         | JOB-3               | 2026-05-01  | PGM MDL100 50K |
+  And the free service start date is "2026-01-15"
+  When evaluating service items for "1FDKF37GXVEB34368" with language "en"
+  Then service item "SI-REWARD" has activation "2026-03-01"
+  And service item "SI-REWARD" has expiration "2026-06-01"
+
+# An anchored reward still takes its slot in the sequence, for the reason a locked one does: the
+# items after it must not move depending on when this customer happened to have a service done.
+Scenario: An anchored reward leaves the items after it where they were
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | BranchID | BrandID |
+    | 1FDKF37GXVEB34368 | 2026-01-15  | 1         | 10       | 1       |
+  And service items:
+    | ServiceItemID | Name              | BrandID | ActiveForMonths | MaximumMileage | ProgramRole |
+    | SI-BASE       | Base schedule end | 1       | 6               | 40000          |             |
+    | SI-REWARD     | Return reward     | 1       | 3               | 55000          | Reward      |
+    | SI-LATE       | Later item        | 1       | 3               | 60000          |             |
+  And service item "SI-REWARD" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch | Program | Qualifier | Selection | Values      | WhenUnmet |
+    | serviceHistory.laborLines.packageCode | ContainsAll | Milestone  | PGM     | None      | All       | 45000,50000 | Lock      |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode    |
+    | 1         | 10       | INV-1         | JOB-1               | 2026-02-01  | PGM MDL100 45K |
+    | 1         | 10       | INV-2         | JOB-2               | 2026-03-01  | PGM MDL100 50K |
+  And the free service start date is "2026-01-15"
+  When evaluating service items for "1FDKF37GXVEB34368" with language "en"
+  Then service item "SI-REWARD" has activation "2026-03-01"
+  And service item "SI-REWARD" has expiration "2026-06-01"
+  And service item "SI-LATE" has activation "2026-10-15"
+  And service item "SI-LATE" has expiration "2027-01-15"
+
+# Only an offered item is anchored. A missed one has every prerequisite behind it and a date that
+# could be read as an unlock, but it keeps the sequence's dates and its expiry is cleared as before.
+Scenario: A missed reward keeps the sequence's dates
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | BranchID | BrandID |
+    | 1FDKF37GXVEB34368 | 2026-01-15  | 1         | 10       | 1       |
+  And service items:
+    | ServiceItemID | Name              | BrandID | ActiveForMonths | MaximumMileage | ProgramRole |
+    | SI-BASE       | Base schedule end | 1       | 6               | 40000          |             |
+    | SI-REWARD     | Return reward     | 1       | 3               | 55000          | Reward      |
+  And service item "SI-REWARD" has eligibility conditions:
+    | Field                                      | Operator    | ValueMatch | Program | Qualifier | Selection | Values      | WhenUnmet |
+    | serviceHistory.laborLines.packageCode      | ContainsAll | Milestone  | PGM     | None      | All       | 45000,50000 | Lock      |
+    | serviceHistory.laborLines.maximumMilestone | Equals      |            | PGM     | None      |           | 50000       | Miss      |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode    |
+    | 1         | 10       | INV-1         | JOB-1               | 2026-02-01  | PGM MDL100 45K |
+    | 1         | 10       | INV-2         | JOB-2               | 2026-03-01  | PGM MDL100 50K |
+    | 1         | 10       | INV-3         | JOB-3               | 2026-04-01  | PGM MDL100 55K |
+  And the free service start date is "2026-01-15"
+  When evaluating service items for "1FDKF37GXVEB34368" with language "en"
+  Then service item "SI-REWARD" is "Missed"
+  And service item "SI-REWARD" has activation "2026-07-15"
+  And service item "SI-REWARD" has no expiry
+
+# A milestone reached on a line with no date says the work was done but not when. There is no moment
+# to measure three months from, so the sequence stands rather than an invented anchor.
+Scenario: A prerequisite met without a date leaves the reward on the sequence
+  Given vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | BranchID | BrandID |
+    | 1FDKF37GXVEB34368 | 2026-01-15  | 1         | 10       | 1       |
+  And service items:
+    | ServiceItemID | Name              | BrandID | ActiveForMonths | MaximumMileage | ProgramRole |
+    | SI-BASE       | Base schedule end | 1       | 6               | 40000          |             |
+    | SI-REWARD     | Return reward     | 1       | 3               | 55000          | Reward      |
+  And service item "SI-REWARD" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch | Program | Qualifier | Selection | Values      | WhenUnmet |
+    | serviceHistory.laborLines.packageCode | ContainsAll | Milestone  | PGM     | None      | All       | 45000,50000 | Lock      |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode    |
+    | 1         | 10       | INV-1         | JOB-1               | 2026-02-01  | PGM MDL100 45K |
+    | 1         | 10       | INV-2         | JOB-2               |             | PGM MDL100 50K |
+  And the free service start date is "2026-01-15"
+  When evaluating service items for "1FDKF37GXVEB34368" with language "en"
+  Then service item "SI-REWARD" is offered
+  And service item "SI-REWARD" has activation "2026-07-15"
+  And service item "SI-REWARD" has expiration "2026-10-15"
 
 # The prerequisites decompose into ticks, which is the whole reason the rule is two clauses rather
 # than one predicate: a windowed condition can only ever say yes or no.

@@ -485,12 +485,12 @@ public static class ServiceItemTraceRenderer
         sb.AppendLine();
         if (e.Decisions != null && e.Decisions.Count > 0)
         {
-            sb.AppendLine("| Verdict | Service item | Why skipped |");
-            sb.AppendLine("|---|---|---|");
+            sb.AppendLine("| Verdict | Service item | Why skipped | Prerequisites |");
+            sb.AppendLine("|---|---|---|---|");
             foreach (var d in e.Decisions)
             {
                 var verdict = d.Verdict == EligibilityVerdict.Accepted ? "✅ Eligible" : $"❌ {FriendlyRejection(d.RejectionStage)}";
-                sb.AppendLine($"| {verdict} | {IdNameMd(d.ServiceItemID, d.Name)} | {Esc(d.Reason)} |");
+                sb.AppendLine($"| {verdict} | {IdNameMd(d.ServiceItemID, d.Name)} | {Esc(d.Reason)} | {Esc(PrerequisitesText(d))} |");
             }
             sb.AppendLine();
         }
@@ -616,12 +616,12 @@ public static class ServiceItemTraceRenderer
         if (e?.Decisions == null || e.Decisions.Count == 0) return "<p><em>No decisions recorded.</em></p>";
         var sb = new StringBuilder();
         sb.AppendLine("<table>");
-        sb.AppendLine("<thead><tr><th>Verdict</th><th>Service item</th><th>Why skipped</th><th>Item targets</th></tr></thead><tbody>");
+        sb.AppendLine("<thead><tr><th>Verdict</th><th>Service item</th><th>Why skipped</th><th>Prerequisites</th><th>Item targets</th></tr></thead><tbody>");
         foreach (var d in e.Decisions)
         {
             var cls = d.Verdict == EligibilityVerdict.Accepted ? "accepted" : "rejected";
             var verdict = d.Verdict == EligibilityVerdict.Accepted ? "✅ Eligible" : $"❌ {FriendlyRejection(d.RejectionStage)}";
-            sb.AppendLine($"<tr class=\"{cls}\"><td>{verdict}</td><td>{IdNameHtml(d.ServiceItemID, d.Name)}</td><td>{HtmlEsc(d.Reason)}</td><td>{SnapshotHtml(d.Item, names)}</td></tr>");
+            sb.AppendLine($"<tr class=\"{cls}\"><td>{verdict}</td><td>{IdNameHtml(d.ServiceItemID, d.Name)}</td><td>{HtmlEsc(d.Reason)}</td><td>{HtmlEsc(PrerequisitesText(d))}</td><td>{SnapshotHtml(d.Item, names)}</td></tr>");
         }
         sb.AppendLine("</tbody></table>");
         return sb.ToString();
@@ -755,6 +755,31 @@ public static class ServiceItemTraceRenderer
     }
 
     // ---- Friendly label helpers ----
+
+    /// <summary>
+    /// What the locking milestone clauses read for one item, as ticks with the date each was met.
+    /// <para>
+    /// An em dash means the rule named no prerequisites at all — for a reward, that the catalog is
+    /// missing its locking clause rather than that the customer is missing a service. A satisfied
+    /// prerequisite showing "(no date)" was met on a labour line with no invoice date, which is the
+    /// other way an unlock date comes out null. Both leave the item on the rolling sequence, and
+    /// neither is visible anywhere else.
+    /// </para>
+    /// </summary>
+    static string PrerequisitesText(ServiceItemEligibilityDecision d)
+    {
+        if (d.Prerequisites is null || d.Prerequisites.Count == 0)
+            return "—";
+
+        var parts = d.Prerequisites.Select(p =>
+            !p.Satisfied ? $"✗ {p.Label}"
+            : p.SatisfiedOn is null ? $"✓ {p.Label} (no date)"
+            : $"✓ {p.Label} {p.SatisfiedOn:yyyy-MM-dd}");
+
+        var text = string.Join(", ", parts);
+
+        return d.UnlockedOn is null ? text : $"{text} → unlocked {d.UnlockedOn:yyyy-MM-dd}";
+    }
 
     static string FriendlyRejection(EligibilityRejectionStage s) => s switch
     {
