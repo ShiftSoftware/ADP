@@ -3,7 +3,7 @@
   "ConnectionStrings": {
     "SQLServer": "Server=localhost\\sqlexpress;Initial Catalog=MenuSample;Persist Security Info=True;Integrated Security=SSPI;TrustServerCertificate=True;",
     "Cosmos": "AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==",
-    "DuckDB": "DataSource=menus.duckdb"
+    "DuckDB": "DataSource=C:\\mounts\\adp-sync-agent-destination\\company-data-write.duckdb"
   },
   "Values": {
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",

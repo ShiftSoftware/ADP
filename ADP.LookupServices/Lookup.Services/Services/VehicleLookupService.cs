@@ -79,13 +79,21 @@ public class VehicleLookupService
 
         var result = new List<VehicleLookupDTO>();
 
+        // The service-menu section depends only on the derived basic model code and the (fixed) request
+        // options — never on the VIN — so within one bulk call it is evaluated once per distinct model
+        // and cloned per vehicle. Without this, N vehicles of the same model would run N identical menu
+        // generations, which is what makes menu-including bulk lookups affordable at fleet size.
+        var sharedMenuSectionCache = requestOptions.ServiceMenuOptions?.Include == true
+            ? new Dictionary<string, VehicleServiceMenuDTO>(StringComparer.Ordinal)
+            : null;
+
         foreach (var aggregate in aggregates ?? Enumerable.Empty<CompanyDataAggregateModel>())
         {
             var vinKey = NormalizeVin(aggregate?.VIN);
             if (string.IsNullOrWhiteSpace(vinKey) || aggregate is null)
                 continue;
 
-            result.Add(await LookupFromAggregateAsync(vinKey, aggregate, requestOptions, disableLogs: true));
+            result.Add(await LookupFromAggregateAsync(vinKey, aggregate, requestOptions, disableLogs: true, sharedMenuSectionCache));
         }
 
         return result;
@@ -121,7 +129,8 @@ public class VehicleLookupService
         string vin,
         CompanyDataAggregateModel companyDataAggregate,
         VehicleLookupRequestOptions requestOptions,
-        bool disableLogs)
+        bool disableLogs,
+        Dictionary<string, VehicleServiceMenuDTO> sharedMenuSectionCache = null)
     {
         if (requestOptions is null)
             requestOptions = new VehicleLookupRequestOptions();
@@ -228,9 +237,9 @@ public class VehicleLookupService
         // The model's service menu, joined on the basic model code the Katashiki reduces to. The evaluator
         // owns the opt-in and returns null when the request did not ask, so there is no gate to keep in step
         // here. It also contains every menu-side fault, so an unprovisioned or half-replicated menu catalog
-        // can only empty this section, never fail the vehicle lookup.
-        data.ServiceMenu = await new VehicleServiceMenuEvaluator(this.serviceMenuLookupService)
-            .EvaluateAsync(data.BasicModelCode, requestOptions);
+        // can only empty this section, never fail the vehicle lookup. A bulk call passes a per-call cache so
+        // vehicles sharing a model share one evaluation (each getting its own clone).
+        data.ServiceMenu = await ResolveServiceMenuSectionAsync(data.BasicModelCode, requestOptions, sharedMenuSectionCache);
 
         if (data.Warranty is not null)
         {
@@ -292,6 +301,97 @@ public class VehicleLookupService
 
         return data;
     }
+
+    /// <summary>
+    /// The service-menu section for one vehicle. A single lookup evaluates directly. A bulk lookup passes
+    /// its per-call cache: the section is a pure function of the basic model code and the request options
+    /// (which are fixed for the whole call), so the first vehicle of a model evaluates and every later one
+    /// receives a CLONE of the cached section — a clone, because response DTOs must stay independently
+    /// mutable per vehicle. Faulted sections (Unavailable, NotFound…) are cached too: within one call,
+    /// retrying a model that just faulted would only repeat the fault N times.
+    /// </summary>
+    private async Task<VehicleServiceMenuDTO> ResolveServiceMenuSectionAsync(
+        string basicModelCode,
+        VehicleLookupRequestOptions requestOptions,
+        Dictionary<string, VehicleServiceMenuDTO> sharedMenuSectionCache)
+    {
+        if (sharedMenuSectionCache is null)
+            return await new VehicleServiceMenuEvaluator(this.serviceMenuLookupService)
+                .EvaluateAsync(basicModelCode, requestOptions);
+
+        var cacheKey = basicModelCode?.Trim() ?? string.Empty;
+
+        if (!sharedMenuSectionCache.TryGetValue(cacheKey, out var section))
+        {
+            section = await new VehicleServiceMenuEvaluator(this.serviceMenuLookupService)
+                .EvaluateAsync(basicModelCode, requestOptions);
+
+            sharedMenuSectionCache[cacheKey] = section;
+        }
+
+        return CloneServiceMenuSection(section);
+    }
+
+    private static VehicleServiceMenuDTO CloneServiceMenuSection(VehicleServiceMenuDTO section)
+    {
+        if (section is null)
+            return null;
+
+        return new VehicleServiceMenuDTO
+        {
+            Status = section.Status,
+            BasicModelCode = section.BasicModelCode,
+            CountryID = section.CountryID,
+            Language = section.Language,
+            TransferRate = section.TransferRate,
+            Services = (section.Services ?? new List<VehicleServiceMenuLineDTO>())
+                .Select(CloneServiceMenuLine)
+                .ToList(),
+        };
+    }
+
+    private static VehicleServiceMenuLineDTO CloneServiceMenuLine(VehicleServiceMenuLineDTO line) =>
+        new VehicleServiceMenuLineDTO
+        {
+            VariantID = line.VariantID,
+            VariantName = line.VariantName,
+            IsFree = line.IsFree,
+
+            LineKey = line.LineKey,
+            Code = line.Code,
+            LabourCode = line.LabourCode,
+            Description = line.Description,
+            LineType = line.LineType,
+            IsStandalone = line.IsStandalone,
+
+            ServiceIntervalCode = line.ServiceIntervalCode,
+            ServiceIntervalValueInMeter = line.ServiceIntervalValueInMeter,
+
+            LabourRate = line.LabourRate,
+            AllowedTime = line.AllowedTime,
+            LabourPrice = line.LabourPrice,
+            Consumable = line.Consumable,
+            LabourTotalPrice = line.LabourTotalPrice,
+
+            Parts = (line.Parts ?? new List<VehicleServiceMenuPartDTO>())
+                .Select(part => new VehicleServiceMenuPartDTO
+                {
+                    PartNumber = part.PartNumber,
+                    SortOrder = part.SortOrder,
+                    Quantity = part.Quantity,
+                    UnitPrice = part.UnitPrice,
+                    TotalPrice = part.TotalPrice,
+                    HasCountryPrice = part.HasCountryPrice,
+                })
+                .ToList(),
+            PartsTotalPrice = line.PartsTotalPrice,
+
+            DiscountPercentage = line.DiscountPercentage,
+            DiscountAmount = line.DiscountAmount,
+            TotalPrice = line.TotalPrice,
+
+            HasUnpricedParts = line.HasUnpricedParts,
+        };
 
     private static string NormalizeVin(string vin)
     {

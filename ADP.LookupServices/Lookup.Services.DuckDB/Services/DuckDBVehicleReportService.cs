@@ -1119,7 +1119,13 @@ public class DuckDBVehicleReportService(
         };
     }
 
-    private static Dictionary<string, VehicleServiceItemDTO> BuildBestItemsByServiceId(IEnumerable<VehicleServiceItemDTO> items)
+    /// <summary>
+    /// The service-items report's deduplication, public so audits and host tooling reuse the exact
+    /// semantics instead of re-deciding them: one row per <c>ServiceItemID</c>, keeping the row with
+    /// the latest claim, then activation, then expiry. Items with no id are dropped here — a caller
+    /// that must not lose them collects them separately.
+    /// </summary>
+    public static Dictionary<string, VehicleServiceItemDTO> BuildBestItemsByServiceId(IEnumerable<VehicleServiceItemDTO> items)
     {
         return (items ?? Enumerable.Empty<VehicleServiceItemDTO>())
             .Where(x => !string.IsNullOrWhiteSpace(x.ServiceItemID))
@@ -1131,7 +1137,11 @@ public class DuckDBVehicleReportService(
                 .First(), StringComparer.Ordinal);
     }
 
-    private static readonly IComparer<string> ServiceItemIdComparer = Comparer<string>.Create((left, right) =>
+    /// <summary>
+    /// The report's service-item ordering: numeric when both ids parse, ordinal otherwise. Public for
+    /// the same reason as <see cref="BuildBestItemsByServiceId"/>.
+    /// </summary>
+    public static readonly IComparer<string> ServiceItemIdComparer = Comparer<string>.Create((left, right) =>
     {
         if (long.TryParse(left, NumberStyles.Integer, CultureInfo.InvariantCulture, out var leftValue)
             && long.TryParse(right, NumberStyles.Integer, CultureInfo.InvariantCulture, out var rightValue))
