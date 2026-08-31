@@ -129,7 +129,16 @@ Every item below names a real file and a real member. Work them in order.
 ### A. Bump this group's package references
 
 This group owns its bump — there is no solution-wide version-bump step. Do this **first**, in its own
-commit, and get back to green before a single mapper is touched.
+commit, so a bisect can separate "the version moved" from "the mappers changed".
+
+> **That commit does not compile, and it cannot.** `2026.8.30.1` takes AutoMapper **out of the
+> reference graph** — `ShiftSoftware.ShiftEntity`'s nuspec declares `AutoMapper 14.0.0` at
+> `2026.7.31.1` and declares no AutoMapper dependency at `2026.8.30.1` (verified in the local NuGet
+> cache), and `ADP.Surveys.Data` carries **no direct `AutoMapper` `PackageReference`** of its own.
+> So the moment `.Data:35` moves, `AutoMapperProfiles/GeneralMappingProfile.cs:22` (`: Profile`,
+> nine `CreateMap`s) loses `Profile`, `CreateMap` and `IMapper` as hard `CS0246`/`CS0103` **errors,
+> not warnings**. Items B–E end it green. **Green is a *step* boundary, not a per-commit one**:
+> keep these intermediate commits on the step branch and do not merge or hand off mid-step.
 
 | csproj | Line | Package |
 |---|---|---|
@@ -148,9 +157,15 @@ on the old version means the post-upgrade capture is not a capture of the upgrad
 - [ ] Bump all seven lines.
 - [ ] `TypeAuth` stays at `1.6.28` (`TypeAuth.AspNetCore` in `.API:34`, `TypeAuth.Core` in
       `.Shared:33`) — separate version line, no bump.
-- [ ] Build all six projects (the Verification block below). **Green before the rewrite starts.**
-      Expect `ADP.Surveys.Data` to start emitting the 3 baseline `SHENGEN004`s recorded below — they
-      are warnings, not errors, and items C–E resolve them.
+- [ ] `dotnet build` and capture the error list. It must move **inside `ADP.Surveys/` only** and it
+      must be the AutoMapper break above and nothing else; anything outside this group is a surprise
+      — record it in `STATUS.md` before continuing. (The 3 baseline `SHENGEN004`s recorded below are
+      warnings; they reappear once the group compiles again, and items C–E resolve them.)
+- [ ] `.Shared:32` (`ShiftEntity.Model`) and `.Data:35` (`ShiftEntity.EFCore`) move in this same
+      commit, so this group's ShiftEntity family is never split across two versions.
+- [ ] **Commit csproj files only.** Four `AfterTargets="Build"` self-runners rewrite 247 tracked
+      files on any `dotnet build ADP.sln` (`README.md` §7), so before committing this bump run
+      `git checkout -- ADP.WebComponents/adp-web-components/src/global/types/generated ADP.Docs/Docs/docs/generated ADP.TestData/environments`.
 - [ ] Nothing outside `ADP.Surveys/` changes in this commit. The shared floor (`ADP.Models`,
       `ADP.Cases`, `ADP.LookupServices`) moves last, in Step 06, and this group references none of it
       — no downgrade window, nothing to coordinate. The Shift nuspecs declare **minimum-version**
@@ -366,7 +381,8 @@ dotnet build ADP.Surveys/ADP.Surveys.Web
 dotnet build ADP.Surveys/samples/ADP.Surveys.Sample.API
 dotnet build ADP.Surveys/samples/ADP.Surveys.Sample.Web
 
-dotnet build                                          # whole solution — green after item A, and again at the end
+dotnet build                                          # whole solution — green at the END of the step (item A's
+                                                      # bump commit is red; items B-E close it)
 
 dotnet test ADP.Surveys/ADP.Surveys.Shared.Tests      # baseline 182 / 182
 ```
@@ -409,9 +425,10 @@ dotnet test ADP.Surveys/ADP.Surveys.Shared.Tests      # baseline 182 / 182
 - [ ] `AutoMapperProfiles/` is gone from `ADP.Surveys.Data`; `grep -rn "AutoMapper" ADP.Surveys`
       returns **zero** hits in `.cs`, `.csproj` and `.md`.
 - [ ] All six projects build clean.
-- [ ] **The solution builds green** — `dotnet build` at the repo root succeeds, both after item A's
-      bump commit and after the rewrite. This step ends green; it hands no red tree to any later
-      step.
+- [ ] **The solution builds green** — `dotnet build` at the repo root succeeds **at the end of the
+      step**. Item A's bump commit is red by construction (the AutoMapper break); the step is not
+      finished until the rewrite has closed it. This step ends green; it hands no red tree to any
+      later step.
 - [ ] **Zero** `SHENGEN` warnings in `ADP.Surveys.Data` — including the 3 baseline `SHENGEN004`s,
       which must now be resolved rather than suppressed.
 - [ ] No `#pragma warning disable SHENGEN…` was added. (If one is genuinely needed, it carries a
@@ -445,8 +462,8 @@ versions**, without affecting any other group or the shared floor (Step 06).
 
 Commit shape: the item A bump alone; then the profile deletion and the repository rewrites in **one
 commit** so the revert is single-shot; then the prose sweep and the `NU1504` fix separately.
-Reverting only the rewrite commit leaves the group green on the new packages — that intermediate
-state is legal, and is where the group sits between items A and B.
+Revert **from the top**: reverting only the rewrite commit leaves the group **red** on the new
+packages, because the bump alone does not compile. This step's commits are reverted as a set.
 
 ---
 

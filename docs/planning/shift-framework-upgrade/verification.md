@@ -243,6 +243,16 @@ XML* with the core-properties part stripped. If that is still unstable, record c
 band only and **mark the case `PARTIAL` in the report**. Do not let it silently pass as covered.
 (SPIKE-10.)
 
+**Which endpoints this actually reaches, verified against the repo.** The only `.xlsx` producers are
+`ADP.Menus/ADP.Menus.API/Controllers/MenuController.cs:114,248,437` — Step 01, not Surveys. The only
+other binaries are **PDF**: `ADP.WarrantyClaims/.../DistributorFinancialController.cs:108,110` and
+`WarrantyClaimController.cs:148`. A PDF has no sheet XML to extract and sort and carries
+`/CreationDate` and an `/ID` pair, so the recipe above does not apply — record content-type and size
+band, and expect `PARTIAL`. The `text/csv` exports (Surveys `SurveyResponsesController.cs:206`,
+WarrantyClaims `ManufacturerSettlmentSheetController.cs:69` and `WarrantyClaimController.cs:287`,
+Darlastic `CaseBrowserController.cs:363`) are deterministic text: diff them as text, **covered**, not
+`PARTIAL`.
+
 ---
 
 ## 5. Coverage: inherited routes and write-path round-trips
@@ -571,8 +581,11 @@ CI (`azure-pipeline.yml`, after the BDD step, gated on a SQL service being avail
    full-access token. **That is wrong, and believing it would make you discount the strongest signal
    the harness produces for the highest-risk item in the plan.** The dealer view is *not* a
    privilege-filtered projection of the distributor view: `DealerFinancialController.cs:21-22` is a
-   separate controller on its own route with its own DTO; its only gate (`Get` override, lines 35-42)
-   is a `CanRead` that a full-access principal **passes**; and `DealerFinancialRepository` is bare
+   separate controller on its own route with its own DTO; its only gate (`Get` override, lines 34-42)
+   is the three-way conjunct at `:36-38` — action-tree auth enabled **and** the action non-null
+   **and** `!CanRead(...)` — which a full-access principal **passes**, and which does not run at all
+   when action-tree auth is off or the action is null (the controller doc comment at `:14-19` records
+   that the host leaves `DealerFinancialAction` null); and `DealerFinancialRepository` is bare
    `base(db)` with no `FilterByTypeAuthValues`, so there is no row scoping either. `GET
    /DealerFinancial` under the full-access token returns the five members `null` in the baseline and
    **populated** post-upgrade — a plain value diff on the ordinary pass, provided the seed has a

@@ -55,14 +55,15 @@ Three failure modes are invisible until now:
    `Condition="Exists('..\..\ADP.Models\Models\Models.csproj')"` (and its negation), repeated in
    **18 reference pairs across 14 csproj**. The sibling csproj always exists in a checkout —
    including in a scratch clone — so local dev is *always* `ProjectReference` and `$(ADPVersion)` is
-   a pack-output value only. **Setting the property to `false` changes nothing and exercises nothing.** Item D
+   a pack-output value only. **Setting the property to `false` changes nothing and exercises nothing.** Item E
    forces package mode by making `Exists()` false instead.
 2. **Generated mappers carry an ABI to the framework.** A generated mapper is code frozen at its own
    build day; `ShiftEntityMapperRegistry.VerifyBindings()` JIT-prepares each one at startup and fails
    if a member it was compiled against is gone. **Every `ADP.*.Data` package that emits mappers must
    be rebuilt and republished whenever ShiftEntity moves.** You can no longer leave a group's package
    at an older `ADPVersion` and let hosts float the framework forward.
-3. **A mixed *published* set — the one hazard the shared-last ordering leaves standing.** Inside this
+3. **A mixed *published* set — the publish-time hazard the shared-last ordering leaves standing.**
+   Inside this
    repo a mixed floor is harmless and that is deliberate: the Shift nuspecs declare **minimum-version**
    dependencies (`version="2026.7.31.1"`), not exact pins, so an upgraded group sitting on a
    not-yet-upgraded shared project builds green — which is exactly what lets Steps 02–05 run before
@@ -273,7 +274,8 @@ green run imply more than it proves:
 
 - `ADP.ClaimableItems` and `ADP.WarrantyClaims` were verified through a **mounted host**, not a real
   deployment: consumer middleware order, localization, CORS, fallback routing and JSON overrides are
-  unverified for those two groups (unless a real sample host was written at Step 05).
+  unverified for those two groups (unless a real sample host was written — that fallback is open to
+  **both** groups, at Step 04 or Step 05; see `verification.md` §6).
 - The **six Cosmos replication delegates have no automated coverage at all.**
 - **Binary export endpoints are `PARTIAL`.**
 - **Darlastic's result is smoke, not parity.**
@@ -351,6 +353,10 @@ state that bricks hosts (`README.md` §3). A post-release problem is fixed by **
 release forward**, not by reverting one group.
 
 State that in the release notes.
+
+Step 08's harness removal is not part of this rollback surface: it is a separate commit touching only
+`ADP.EndpointParity/`, `tools/parity.*` and the `ADP.sln` entries — no product code, no package —
+so it reverts independently and after the release.
 
 ---
 

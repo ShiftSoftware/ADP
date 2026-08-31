@@ -36,7 +36,7 @@ Step 06.
 **No NU1605 is reachable from this group's bump.** `Darlastic.Engine.csproj:38-39` is the only
 `ADP.Models` edge in Darlastic, and that project carries no direct `ShiftSoftware.Shift*` pin of its
 own. The group's four pins all sit in projects that do not reference `ADP.Models`. The three projects
-that *can* downgrade under a staged bump — `ADP.Cases.Shared:32`, `ADP.ClaimableItems.Shared:34`,
+that *can* downgrade under a **shared-first** order — `ADP.Cases.Shared:32`, `ADP.ClaimableItems.Shared:34`,
 `ADP.WarrantyClaims.Shared:33` — are all elsewhere.
 
 ---
@@ -117,6 +117,10 @@ Four lines, `2026.7.31.1` → `2026.8.30.1`. **This is the step's first commit.*
 | `ADP.Darlastic/ADP.Darlastic.Web/ADP.Darlastic.Web.csproj` | 33 | `ShiftBlazor` |
 
 All four move together, so this group's ShiftEntity family is never split across two versions.
+
+- [ ] **Commit csproj files only.** Four `AfterTargets="Build"` self-runners rewrite 247 tracked
+      files on any `dotnet build ADP.sln` (`README.md` §7), so before committing this bump run
+      `git checkout -- ADP.WebComponents/adp-web-components/src/global/types/generated ADP.Docs/Docs/docs/generated ADP.TestData/environments`.
 
 `ShiftSoftware.TypeAuth.*` stays at `1.6.28` — separate version line, no bump required (here:
 `Darlastic.API.csproj:47`, `Darlastic.Shared.csproj:34`).

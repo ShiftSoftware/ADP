@@ -315,8 +315,10 @@ target only.
 - [ ] The §G baseline numbers are recorded in `STATUS.md`'s **`## Recorded baselines`** section,
       including **both** `ADP.sln` project counts — the post-harness figure Step 07 compares against,
       and the pre-harness figure Step 08 returns to after deleting the parity projects.
-- [ ] `git add docs/planning/` has happened — the plan directory is untracked until it does, which
-      makes `STATUS.md` rule 7 impossible to obey.
+- [ ] The plan directory is **fully committed** — the twelve original files are tracked as of
+      `4c4b3142`, but `08-harness-removal.md` and the 2026-09-01 reorder edits to `README.md`,
+      `STATUS.md`, `04`, `06` and `07` are not. Commit them before this step's first status change,
+      or `STATUS.md` rule 7 cannot be obeyed.
 
 ---
 

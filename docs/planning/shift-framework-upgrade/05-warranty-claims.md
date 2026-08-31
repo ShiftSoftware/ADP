@@ -60,7 +60,7 @@ mapper pattern and the replication-delegate approach.
 public class DealerFinancialListDTO : DistributorFinancialListDTO { }   // literally empty
 ```
 
-`ADP.WarrantyClaims/ADP.WarrantyClaims.Data/AutoMapperProfiles/Financial.cs:34–49`:
+`ADP.WarrantyClaims/ADP.WarrantyClaims.Data/AutoMapperProfiles/Financial.cs:34–48`:
 
 ```csharp
 // The Dealer map keeps its Ignore list EXACTLY as before (dealers never see the
@@ -111,9 +111,13 @@ controller, on its own route, with its own DTO:
 - `ADP.WarrantyClaims.API/Controllers/DealerFinancialController.cs:21-22` —
   `[Route("[controller]")]`, `ShiftEntitySecureControllerAsync<DealerFinancialRepository,
   WarrantyClaim, DealerFinancialListDTO, WarrantyClaimDTO>`.
-- Its only gate (`Get` override, lines 35-42) is
-  `!typeAuthService.CanRead(options.Value.WarrantyClaimFinancialAction) → Unauthorized()`. **A
-  full-access principal passes that check.**
+- Its only gate is inside the `Get` override (lines 34-42), and it is **weaker than a bare
+  `CanRead`**: `DealerFinancialController.cs:36-38` is a three-way conjunct —
+  `EnableWarrantyClaimsActionTreeAuthorization && WarrantyClaimFinancialAction is not null &&
+  !CanRead(...) → Unauthorized()`. **A full-access principal passes it**, and with action-tree
+  authorization off or the action left null there is no check at all. The controller's own doc
+  comment (`:14-19`) records that the host deliberately leaves `DealerFinancialAction` null, so
+  controller-level auth here is authentication-only.
 - `DealerFinancialRepository` is bare `base(db)` — no `FilterByTypeAuthValues`, so no row scoping
   either.
 
@@ -123,8 +127,18 @@ with those five entity columns non-null — which Step 00 item D already require
 
 **The restricted pass stays mandatory**, but for what it is actually good at: an independent control
 on the dealer/distributor split, and coverage of surfaces that *are* genuinely row-scoped (the
-pattern to compare against is `MenuRepository.cs:23-26`'s `FilterByTypeAuthValues`). Treat it as the
-second of four controls, not the only one.
+pattern to compare against is `MenuRepository.cs:23-26`'s `FilterByTypeAuthValues`). It is the
+second of four controls, not the only one. **The four, in this order:**
+
+1. the **full-access `GET /DealerFinancial` value diff** — the five members `null` in the baseline,
+   populated post-upgrade;
+2. the **restricted-grant pass**, as the independent control on the dealer/distributor split;
+3. the **emitted-code proof that `IgnoreList` baked** — read from the generated `.g.cs`, never from
+   the build log (SPIKE-7);
+4. a **standalone regression test** pinning the five members null on the dealer map.
+
+Item B's ordering — the fix lands before the rest of the rewrite — is a sequencing rule, not one of
+the four. All four are exit criteria.
 
 The fix exists: `ShiftMapperBuilder` exposes `IgnoreList` alongside `IgnoreEntity`. It has to be
 *found* and *proven to bake* — hence SPIKE-7.
@@ -169,7 +183,7 @@ Generated_Pair_WarrantyClaimPartLine_WarrantyClaimPartLineDTO_7551e8fe      does
 | 1 — soft-delete filtering | **0 found** in the profiles | verify against emitted code regardless |
 | 2 — link-row PK leak | **suspected** | three line-item pairs with `.ReverseMap()` — see item F |
 | 3-write — reverse-map `Ignore()` | **0** | verified |
-| **3-read — forward-map `Ignore()`** | **5** | **the hazard.** `Financial.cs:45–49` |
+| **3-read — forward-map `Ignore()`** | **5** | **the hazard.** `Financial.cs:44–48` |
 
 ---
 
@@ -199,6 +213,11 @@ Seven lines, `2026.7.31.1` → `2026.8.30.1`. This is the step's first commit an
       moved" from "the mappers changed". **This intermediate commit does not compile** — the two
       `Default*AfterMap` call sites at `WarrantyClaim.cs:51,53` are absent at `2026.8.30.1`
       (SPIKE-11). That is an intra-step state, not the step's outcome; items B–J end it green.
+- [ ] `.Shared:33` (`ShiftEntity.Model`) and `.Data:48` (`ShiftEntity.EFCore`) move in this same
+      commit, so this group's ShiftEntity family is never split across two versions.
+- [ ] **Commit csproj files only.** Four `AfterTargets="Build"` self-runners rewrite 247 tracked
+      files on any `dotnet build ADP.sln` (`README.md` §7), so before committing this bump run
+      `git checkout -- ADP.WebComponents/adp-web-components/src/global/types/generated ADP.Docs/Docs/docs/generated ADP.TestData/environments`.
 - [ ] `dotnet build` from the repo root once the step's code work is done — not just this group's
       four projects. The other groups and the still-unbumped shared floor must keep building around
       this change.
@@ -391,8 +410,21 @@ is where the assertion is tested.
   Read that diff first. The restricted pass is the independent second control and covers the
   genuinely row-scoped surfaces; run both, explain both.
 - **Needs SQL.** Cosmos unconfigured.
-- The `.xlsx` export on the distributor financial controller is `PARTIAL` (SPIKE-10). Do not count it
-  as covered.
+- The **PDF** export on the distributor financial controller
+  (`DistributorFinancialController.cs:108,110`; also `WarrantyClaimController.cs:148`) is `PARTIAL`
+  (SPIKE-10). A PDF carries `/CreationDate` and an `/ID` pair and, unlike an `.xlsx`, has no sheet
+  XML to extract and sort, so `verification.md` Rule 7's recipe does not apply to it — record
+  content-type and size band only. Do not count it as covered. The group's two `text/csv` exports
+  (`ManufacturerSettlmentSheetController.cs:69`, `WarrantyClaimController.cs:287`) are deterministic
+  text and **are** covered.
+- **The distributor route is not a privilege-filtered twin of the dealer route either**, which is
+  further evidence the two are separate projections: `DistributorFinancialController.cs:50-51` adds
+  `if (!capabilityProvider.IsDistributor) return Unauthorized();`, a gate the dealer route does not
+  have. And `:57-61` wraps `[HttpGet("Export")] [AllowAnonymous]` in `#if DEBUG`, with `:65-77`
+  setting `skipAuthentication` / `disableDefaultDataLevelAccess` / `disableGlobalFilters` for the GET
+  path — so **a harness built in Debug reaches an anonymous, filter-disabled export of the
+  distributor financial list.** Capture both grants against the same configuration, and do not read
+  that route's Debug behaviour as the deployed one.
 - The replication delegate has no coverage at all.
 
 ---
@@ -455,7 +487,7 @@ it, and the `WarrantyClaimModel` replication delegate, are the bulk.
 | Risk | Mitigation |
 |---|---|
 | This group's `ShiftEntity.Model` pin sits above `ADP.Models`' floor until Step 06 | It is an **upgrade**, not a downgrade — the Shift nuspecs declare minimum-version dependencies, not exact pins, and the repo already ships this arrangement today: `ADP.Menus.Shared` is at `2026.8.30.1` over an `ADP.Models` still at `2026.7.31.1` (`ADP.Models/Models/Models.csproj:48`), and it builds |
-| **The five-field exposure ships.** 200, correct shape, no diagnostic, invisible under a full-access token | Item B first; emitted-code proof; a standalone regression test; mandatory restricted-grant pass. Four independent controls, because no single one is reliable. |
+| **The five-field exposure ships.** 200, correct shape, no diagnostic — and **visible as a plain value diff on the full-access pass, which is easy to skim past** (§"How it is detected") | The four controls named in §"How it is detected": the full-access value diff, the restricted-grant pass, the emitted-code proof that `IgnoreList` baked, and a standalone regression test. Item B lands the fix first. No single control is reliable. |
 | `IgnoreList` does not bake as expected | SPIKE-7 is blocking. If it fails, the step is `BLOCKED` — the group must not ship with the exposure. |
 | **A green run is mistaken for proof without reading the dealer list body** | Four independent controls, and the full-access `GET /DealerFinancial` case is named explicitly in the exit criteria so it gets read rather than skimmed |
 | **The operator is told the full-access pass proves nothing and stops looking at it** | Corrected in §"How it is detected". The earlier claim was false; discounting the full-access diff would have discarded the clearest evidence available for this hazard. |
