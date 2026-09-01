@@ -123,7 +123,14 @@ public sealed class ParitySummary
         // absent - which is the whole point of the pass. Requiring all of them would make the
         // restricted baseline uncapturable. At least one must still be visible, so a restricted
         // run against an empty database is still caught rather than passing vacuously.
-        (IsRestricted ? HostileRowsPresent > 0 : MissingHostileRows.Count == 0) &&
+        //
+        // ...UNLESS the group has no hostile rows to begin with. A group with 0 triples has no
+        // adversarial seed by construction (there is nothing mapper-shaped to trap), and
+        // "0 > 0" would fail it forever for a reason that has nothing to do with its behaviour.
+        // Found on Darlastic, which is exactly that group.
+        (IsRestricted
+            ? (HostileRowsExpected == 0 || HostileRowsPresent > 0)
+            : MissingHostileRows.Count == 0) &&
         CatalogueCovered == CatalogueRoutes &&
         // The 100%-write gates apply to the FULL-ACCESS pass only. Under a read-only grant a
         // refused CREATE is the correct answer, and demanding 2xx there would make the gate

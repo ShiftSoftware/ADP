@@ -105,3 +105,16 @@ Console.WriteLine("  auth: DEV BYPASS — every caller is authenticated as " + D
 
 app.Run();
 return 0;
+
+// ------------------------------------------------------------------------------------------
+// Makes the implicit top-level-statements Program class visible to the endpoint-parity harness
+// so WebApplicationFactory<Program> can boot this host in-process. Adds no members, changes no
+// behaviour, inert at run time.
+//
+// This host is the plan's ONLY framework-only control: 0 repository triples and 0 AutoMapper
+// profiles, so a harness diff here is unambiguously caused by the framework rather than by a
+// mapper rewrite. That is why booting it is worth this edit (SPIKE-5).
+//
+// TEMPORARY - removed in Step 08 with the rest of the harness.
+// ------------------------------------------------------------------------------------------
+public partial class Program { }

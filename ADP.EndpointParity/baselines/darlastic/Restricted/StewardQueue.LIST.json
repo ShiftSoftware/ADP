@@ -1,0 +1,20 @@
+{
+  "case": "StewardQueue.LIST",
+  "grant": "Restricted",
+  "kind": "LIST",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Darlastic/StewardQueue?$orderby=ID&$top=5&$count=true"
+  },
+  "response": {
+    "body": {
+      "Cases": [],
+      "Skip": 0,
+      "Total": 0
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {},
+    "status": 200
+  }
+}

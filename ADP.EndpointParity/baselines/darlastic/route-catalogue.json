@@ -1,0 +1,284 @@
+{
+  "routes": [
+    {
+      "action": "HTTP: GET /",
+      "controller": "",
+      "method": "GET",
+      "parameters": "",
+      "template": "/"
+    },
+    {
+      "action": "GenerateFileUploadSAS",
+      "controller": "AzureStorage",
+      "method": "POST",
+      "parameters": "List`1 files",
+      "template": "/api/AzureStorage/generate-file-upload-sas"
+    },
+    {
+      "action": "Audit",
+      "controller": "CaseBrowser",
+      "method": "POST",
+      "parameters": "LabelAuditInputDTO input, CancellationToken ct",
+      "template": "/api/Darlastic/CaseBrowser/Audit"
+    },
+    {
+      "action": "Audits",
+      "controller": "CaseBrowser",
+      "method": "GET",
+      "parameters": "String pairKey, CancellationToken ct",
+      "template": "/api/Darlastic/CaseBrowser/Audits"
+    },
+    {
+      "action": "Case",
+      "controller": "CaseBrowser",
+      "method": "GET",
+      "parameters": "String pairKey, CancellationToken ct",
+      "template": "/api/Darlastic/CaseBrowser/Case"
+    },
+    {
+      "action": "Cases",
+      "controller": "CaseBrowser",
+      "method": "GET",
+      "parameters": "String category, String source, Nullable`1 minScore, Nullable`1 maxScore, Int32 skip, Int32 take, CancellationToken ct",
+      "template": "/api/Darlastic/CaseBrowser/Cases"
+    },
+    {
+      "action": "Export",
+      "controller": "CaseBrowser",
+      "method": "GET",
+      "parameters": "String category, Int32 take, CancellationToken ct",
+      "template": "/api/Darlastic/CaseBrowser/Export"
+    },
+    {
+      "action": "Unflag",
+      "controller": "CaseBrowser",
+      "method": "DELETE",
+      "parameters": "String target, CancellationToken ct",
+      "template": "/api/Darlastic/CaseBrowser/Flag"
+    },
+    {
+      "action": "Flag",
+      "controller": "CaseBrowser",
+      "method": "POST",
+      "parameters": "ReviewFlagInputDTO input, CancellationToken ct",
+      "template": "/api/Darlastic/CaseBrowser/Flag"
+    },
+    {
+      "action": "RespondToFlag",
+      "controller": "CaseBrowser",
+      "method": "POST",
+      "parameters": "ReviewFlagResponseInputDTO input, CancellationToken ct",
+      "template": "/api/Darlastic/CaseBrowser/Flag/Respond"
+    },
+    {
+      "action": "Flags",
+      "controller": "CaseBrowser",
+      "method": "GET",
+      "parameters": "Boolean includeAnswered, CancellationToken ct",
+      "template": "/api/Darlastic/CaseBrowser/Flags"
+    },
+    {
+      "action": "Identities",
+      "controller": "CaseBrowser",
+      "method": "GET",
+      "parameters": "String category, Int32 minMembers, Int32 skip, Int32 take, CancellationToken ct",
+      "template": "/api/Darlastic/CaseBrowser/Identities"
+    },
+    {
+      "action": "Identity",
+      "controller": "CaseBrowser",
+      "method": "GET",
+      "parameters": "Int64 identityId, CancellationToken ct",
+      "template": "/api/Darlastic/CaseBrowser/Identity/{identityId:long}"
+    },
+    {
+      "action": "Search",
+      "controller": "CaseBrowser",
+      "method": "GET",
+      "parameters": "String q, Int32 take, CancellationToken ct",
+      "template": "/api/Darlastic/CaseBrowser/Search"
+    },
+    {
+      "action": "Summary",
+      "controller": "CaseBrowser",
+      "method": "GET",
+      "parameters": "CancellationToken ct",
+      "template": "/api/Darlastic/CaseBrowser/Summary"
+    },
+    {
+      "action": "Audit",
+      "controller": "CaseBrowserCompat",
+      "method": "POST",
+      "parameters": "AuditBody body, CancellationToken ct",
+      "template": "/api/Darlastic/CaseBrowserCompat/audit"
+    },
+    {
+      "action": "Case",
+      "controller": "CaseBrowserCompat",
+      "method": "GET",
+      "parameters": "Int32 a, Int32 b, CancellationToken ct",
+      "template": "/api/Darlastic/CaseBrowserCompat/case"
+    },
+    {
+      "action": "Cases",
+      "controller": "CaseBrowserCompat",
+      "method": "GET",
+      "parameters": "String cat, String flag, String dealer, String dob, String q, Nullable`1 minScore, Nullable`1 maxScore, String sort, Int32 page, Int32 size, CancellationToken ct",
+      "template": "/api/Darlastic/CaseBrowserCompat/cases"
+    },
+    {
+      "action": "Cluster",
+      "controller": "CaseBrowserCompat",
+      "method": "GET",
+      "parameters": "Int64 root, CancellationToken ct",
+      "template": "/api/Darlastic/CaseBrowserCompat/cluster/{root:long}"
+    },
+    {
+      "action": "Clusters",
+      "controller": "CaseBrowserCompat",
+      "method": "GET",
+      "parameters": "String cat, String q, Int32 page, Int32 size, CancellationToken ct",
+      "template": "/api/Darlastic/CaseBrowserCompat/clusters"
+    },
+    {
+      "action": "Flag",
+      "controller": "CaseBrowserCompat",
+      "method": "POST",
+      "parameters": "FlagBody body, CancellationToken ct",
+      "template": "/api/Darlastic/CaseBrowserCompat/flag"
+    },
+    {
+      "action": "Flags",
+      "controller": "CaseBrowserCompat",
+      "method": "GET",
+      "parameters": "CancellationToken ct",
+      "template": "/api/Darlastic/CaseBrowserCompat/flags"
+    },
+    {
+      "action": "Record",
+      "controller": "CaseBrowserCompat",
+      "method": "GET",
+      "parameters": "Int32 idx, CancellationToken ct",
+      "template": "/api/Darlastic/CaseBrowserCompat/record/{idx:int}"
+    },
+    {
+      "action": "Search",
+      "controller": "CaseBrowserCompat",
+      "method": "GET",
+      "parameters": "String q, CancellationToken ct",
+      "template": "/api/Darlastic/CaseBrowserCompat/search"
+    },
+    {
+      "action": "Summary",
+      "controller": "CaseBrowserCompat",
+      "method": "GET",
+      "parameters": "CancellationToken ct",
+      "template": "/api/Darlastic/CaseBrowserCompat/summary"
+    },
+    {
+      "action": "Unflag",
+      "controller": "CaseBrowserCompat",
+      "method": "POST",
+      "parameters": "UnflagBody body, CancellationToken ct",
+      "template": "/api/Darlastic/CaseBrowserCompat/unflag"
+    },
+    {
+      "action": "Index",
+      "controller": "CaseBrowserUi",
+      "method": "GET",
+      "parameters": "",
+      "template": "/api/Darlastic/CaseBrowserUi"
+    },
+    {
+      "action": "Token",
+      "controller": "CaseBrowserUi",
+      "method": "GET",
+      "parameters": "",
+      "template": "/api/Darlastic/CaseBrowserUi/token"
+    },
+    {
+      "action": "Get",
+      "controller": "GoldenCustomer",
+      "method": "GET",
+      "parameters": "ODataQueryOptions`1 oDataQueryOptions",
+      "template": "/api/Darlastic/GoldenCustomer"
+    },
+    {
+      "action": "Detail",
+      "controller": "GoldenCustomer",
+      "method": "GET",
+      "parameters": "Int64 id",
+      "template": "/api/Darlastic/GoldenCustomer/{id:long}"
+    },
+    {
+      "action": "Sources",
+      "controller": "GoldenCustomer",
+      "method": "GET",
+      "parameters": "Int64 id",
+      "template": "/api/Darlastic/GoldenCustomer/{id:long}/sources"
+    },
+    {
+      "action": "Get",
+      "controller": "StewardQueue",
+      "method": "GET",
+      "parameters": "Int32 skip, Int32 top",
+      "template": "/api/Darlastic/StewardQueue"
+    },
+    {
+      "action": "Verdict",
+      "controller": "StewardQueue",
+      "method": "POST",
+      "parameters": "StewardVerdictDTO input",
+      "template": "/api/Darlastic/StewardQueue/verdict"
+    },
+    {
+      "action": "UnzipFiles",
+      "controller": "FileExplorer",
+      "method": "POST",
+      "parameters": "ZipOptionsDTO zipOptions",
+      "template": "/api/FileExplorer/UnzipFiles"
+    },
+    {
+      "action": "ZipFiles",
+      "controller": "FileExplorer",
+      "method": "POST",
+      "parameters": "ZipOptionsDTO zipOptions",
+      "template": "/api/FileExplorer/ZipFiles"
+    },
+    {
+      "action": "Create",
+      "controller": "FileExplorer",
+      "method": "POST",
+      "parameters": "FileExplorerCreateDTO data",
+      "template": "/api/FileExplorer/create"
+    },
+    {
+      "action": "Delete",
+      "controller": "FileExplorer",
+      "method": "POST",
+      "parameters": "FileExplorerDeleteDTO data",
+      "template": "/api/FileExplorer/delete"
+    },
+    {
+      "action": "Detail",
+      "controller": "FileExplorer",
+      "method": "GET",
+      "parameters": "FileExplorerDetailDTO data",
+      "template": "/api/FileExplorer/detail"
+    },
+    {
+      "action": "List",
+      "controller": "FileExplorer",
+      "method": "GET",
+      "parameters": "FileExplorerReadDTO data",
+      "template": "/api/FileExplorer/list"
+    },
+    {
+      "action": "Restore",
+      "controller": "FileExplorer",
+      "method": "POST",
+      "parameters": "FileExplorerRestoreDTO data",
+      "template": "/api/FileExplorer/restore"
+    }
+  ]
+}

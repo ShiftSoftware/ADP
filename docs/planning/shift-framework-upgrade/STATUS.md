@@ -3,7 +3,7 @@
 **This file is the ledger.** It answers "which step is done and which is pending". If it disagrees
 with anything else in this directory, this file wins.
 
-Last updated: 2026-09-02 (Step 01 VERIFIED — harness calibrated against the known-answer Menus migration: 17 diffs, all one expected convention change, 0 harness bugs, 0 regressions. SPIKE-9 resolved. Earlier: Step 00 IN PROGRESS — SPIKE-1 and SPIKE-2 resolved, item H probe green, §G baselines recorded, harness skeleton building and group-isolated; seeds/stability-gate/baselines still outstanding. Earlier same day: plan reordered — shared floor moved to the end, the atomic version-bump
+Last updated: 2026-09-02 (Step 02 CLOSED - Darlastic bumped, 4 lines, zero source changes, NU1903 down to 38 lines / 19 projects; SPIKE-5 RESOLVED POSITIVE so the framework-only control is recovered. Earlier: Step 01 VERIFIED — harness calibrated against the known-answer Menus migration: 17 diffs, all one expected convention change, 0 harness bugs, 0 regressions. SPIKE-9 resolved. Earlier: Step 00 IN PROGRESS — SPIKE-1 and SPIKE-2 resolved, item H probe green, §G baselines recorded, harness skeleton building and group-isolated; seeds/stability-gate/baselines still outstanding. Earlier same day: plan reordered — shared floor moved to the end, the atomic version-bump
 step deleted, a harness-removal step added; then a consistency pass over the whole directory —
 corrected the per-commit green claims in Step 03, gave Step 04's SPIKE-8 a real item 0, restored
 Step 06 to SPIKE-8's `Blocks`, and re-based SPIKE-10 on the repo's actual export formats. No work
@@ -78,7 +78,7 @@ its terminal status*, never `VERIFIED` unconditionally.
 |---|---|---|---|---|---|---|---|---|
 | 00 | Baseline & parity harness | `ADP.EndpointParity.Harness` + 5 per-group test projects (new), `tools/parity.ps1` (new) | — | `CLOSED` | `IN PROGRESS` | — | 2026-09-01 | **ALL FOUR mapper groups captured — Menus, Surveys, ClaimableItems, WarrantyClaims — each under both grants and each stability-gated to a byte-identical second run. Darlastic skipped by decision. Remaining before `CLOSED`: commit the goldens in their own commit, and re-run the §G solution numbers now that the harness projects are in `ADP.sln`.** Done: items **A** (SPIKE-1 resolved), **H** (`ADP.Models` probe green), **B** (SPIKE-2 resolved both halves — sample host + mounted host both boot; seeding suppression verified), **G** (all baseline numbers recorded below), and the structural half of **C** — six projects build and are in `ADP.sln` (59), capture layer (`Normalizer`/`Transcript`/`TranscriptDiffer`/`ParityRunner`/`ParitySummary`/`Canonical`) and wiring layer (`RouteCatalog`/`RequestFactory`/`ParityAuth`/`ParityDb`/`SampleHostFactory`/`MountedHostFactory`) written, `tools/parity.{ps1,psd1}` written, group-isolation rehearsal passes. **Not yet done: the seeds, the case list that binds the catalogue to cases, the stability gate, and every baseline.** No group is captured, so no later step may rely on this yet. Must run on the pre-bump tree. Two identical capture runs must diff to zero before anything else is trusted. Terminal `CLOSED`: it builds the instrument, it has no endpoints of its own. Also carries the **15-minute throwaway `ADP.Models` compile probe** that de-risks shared-last (see the residual-risk note under the spike table). |
 | 01 | Retro-verify `ADP.Menus` | `ADP.Menus.*` (**11 projects**, 8 of them already on 2026.8.30.1) | 00 | `VERIFIED` | **`VERIFIED`** | `parity.ps1 verify -Group Menus` (both grants) against a retroactive baseline captured at `14caf7c9^` — **15 diffs under FullAccess + 2 under Restricted, ALL of one shape, all accepted with a recorded reason; 0 harness bugs, 0 regressions** | 2026-09-02 | Code migration already `DONE` at `14caf7c9` — see the Menus row below. This step only proves it. Retroactive baseline from `14caf7c9^` via `git worktree`. Also resolves SPIKE-9. No package lines: Menus is already at `2026.8.30.1`. |
-| 02 | `ADP.Darlastic` | `ADP.Darlastic.{API,Data,Shared,Web}` | 00, 01 | `CLOSED` | `NOT STARTED` | — | — | Bumps its own **4** package lines as its first commit and ends green. 0 profiles, 0 triples. Smoke pass only — nothing mapper-shaped to prove, so terminal `CLOSED`. **But it is the plan's only framework-only control** (see SPIKE-5). Do not record as full parity. |
+| 02 | `ADP.Darlastic` | `ADP.Darlastic.{API,Data,Shared,Web}` | 00, 01 | `CLOSED` | **`CLOSED`** | **SMOKE, NOT VALUE PARITY** - `parity.ps1 verify -Group Darlastic`, both grants, 31/31 catalogue routes, 0 5xx, stability-gated. 0 triples and 0 profiles, so there is no mapping behaviour here to prove. | 2026-09-02 | Bumps its own **4** package lines as its first commit and ends green. 0 profiles, 0 triples. Smoke pass only — nothing mapper-shaped to prove, so terminal `CLOSED`. **But it is the plan's only framework-only control** (see SPIKE-5). Do not record as full parity. |
 | 03 | `ADP.Surveys` | `ADP.Surveys.{API,Data,Shared,Web}` + 2 samples | 00, 01 | `VERIFIED` | `NOT STARTED` | — | — | Bumps its own **7** package lines. 4 triples, 1 profile (151 lines). **Free-floating** — every `ProjectReference` is intra-group and it consumes no `ShiftSoftware.ADP.*` package, so it is legal anywhere after 01. Ordered here by risk/simplicity, not by the graph. Has a sample host → full HTTP parity available. Carries SPIKE-3 and SPIKE-4. |
 | 04 | `ADP.ClaimableItems` | `ADP.ClaimableItems.{API,Data,Shared,Web}` | 00, 01 | `VERIFIED` | `NOT STARTED` | — | — | Bumps its own **7** package lines. 5 triples, 4 profiles, 5 Cosmos delegates, 1 `IMapper` site. No host → mounted host (SPIKE-2). First group to generate a `Certificate` mapper, so it now **owns SPIKE-8** (the shared floor no longer runs ahead of it). |
 | 05 | `ADP.WarrantyClaims` | `ADP.WarrantyClaims.{API,Data,Shared,Web}` | 00, 01, 04 | `VERIFIED` | `NOT STARTED` | — | — | Bumps its own **7** package lines. **Highest risk.** 7 triples; dealer/distributor forward-map `Ignore()` exposure. Ordered last of the groups by risk, overriding simplicity (it has fewer profiles than 04). Depends on 04 for the shared `Certificate` mapper precedent (SPIKE-8) — a **knowledge** dependency, not a build one. |
@@ -127,7 +127,7 @@ the spike, then record the finding here.**
 | SPIKE-2 | Can a synthetic "mounted host" boot `ADP.ClaimableItems` / `ADP.WarrantyClaims` through their own `Add<Group>ApiServices` entry point? No sample host exists for either, and no sample API declares `public partial class Program`, so `WebApplicationFactory<Program>` will not compile against any of them today. | 00, 04, 05 | **RESOLVED — BOTH HALVES POSITIVE. Steps 04 and 05 are not blocked and no fallback sample API is needed.** (1) *Sample host*: `public partial class Program { }` appended to `ADP.Surveys.Sample.API/Program.cs` (behaviour-free; the implicit top-level-statements class is internal) makes `WebApplicationFactory<Program>` compile and boot. (2) *Mounted host*: `MountedHostFactory` boots `ADP.ClaimableItems` through `AddClaimableItemsApiServices<ParityDb>(mvcBuilder, configure)` against real SQL with `EnsureCreated` and no migrations, exposing **63 catalogue routes** across all its triples. `ParityDb : ShiftDbContext` owns no entities; the group's `IModelBuildingContributor` supplies the tables, exactly as a tenant host gets them. Modelled on the repo's own minimal consumer, `ADP.Darlastic.Sample.API`. (3) *Seeding suppression*: a `Parity:SuppressSampleSeeding` config branch wraps the sample's `SeedDBAsync`/`SetFullAccessAsync`/`SeedSampleSurveysAsync` block — verified to take, list body goes from the demo seed's `Count:8` to `Count:0` on a fresh per-run database. **Explicit-id path still OPEN — see the note below the baselines table.** |
 | SPIKE-3 | `BankQuestionListDTO.Type` and `ScreenTemplateListDTO.QuestionCount` are mapped in the current profile via **static method calls** over a JSON column. `ForList` requires an EF-translatable expression. How do these list projections work today, and what replaces them? | 03 | OPEN |
 | SPIKE-4 | AutoMapper's `.Condition(...)` (used on `BankQuestion.BankEntryID`) has no documented equivalent on `ShiftMapperBuilder`. Is the existing-aware `ForEntity((dto, entity, ctx) => …)` overload the correct replacement? | 03 | OPEN |
-| SPIKE-5 | The Darlastic sample host `return 1`s before `app.Run()` on missing config and needs a populated registry DB the repo does not seed. Can it be booted headlessly at all? | 02, and the attribution of 03/04/05 diffs | **CLOSED BY DECISION (2026-09-01), not investigated.** Owner's call: Darlastic has 0 triples and 0 profiles, so there is no mapper risk to prove — take the framework upgrade and any refactoring it forces, and **skip parity capture for this group**. `ADP.EndpointParity.Darlastic` stays in the solution (it builds, and removing it would churn `ADP.sln`) but is never captured. **Accepted cost, recorded so it is not rediscovered as a surprise:** Darlastic was the only framework-only control, so diffs in Steps 03/04/05 now confound framework change with mapper rewrite and must be attributed by reading code rather than by comparison. See the Darlastic section under `## Recorded baselines`. |
+| SPIKE-5 | Can the Darlastic sample host be booted headlessly at all? | 02, and the attribution of 03/04/05 diffs | **RESOLVED - POSITIVE. It boots, and the plan KEEPS its framework-only control.** This supersedes the 2026-09-01 "closed by decision" entry: the call then was to skip Darlastic's capture, but once the group was open for its version bump the host turned out to be bootable cheaply, so the control was taken rather than forfeited. Both recorded blockers were real and both were solved. **(1)** Program.cs reads ConnectionStrings:Registry and Sample:AllowDevAuth at the TOP of the file, BEFORE builder.Build() and therefore before WebApplicationFactory's ConfigureAppConfiguration runs - an in-memory override arrives too late, and the first attempt still connected to the appsettings database, failing with "Cannot open database ... login failed". **Environment variables** (ConnectionStrings__Registry, Sample__AllowDevAuth) are read into Configuration from the start and outrank appsettings, so they are what actually redirect this host. **(2)** the registry database: SampleDB deliberately never calls EnsureCreated (a second schema authority against a real registry is the failure the engine's DARLASTIC_SCHEMA_MANAGED switch exists to prevent), so the harness creates a DISPOSABLE schema itself - **from the HOST's service provider**, because the Darlastic tables reach the model through the IModelBuildingContributor that AddDarlasticApiServices registers, and a DbContext built outside DI has an EMPTY model whose EnsureCreated silently creates nothing. Plus DarlasticViews.CreateGoldenCustomerSql(), because GoldenCustomer is mapped ToView and EnsureCreated does not create views. |
 | SPIKE-6 | `ADP.Models/Models.Tests` discovers **zero tests** (no test framework referenced; all sources `<Compile Remove>`d) yet exits 0. The most-shared project in the solution is unguarded. Fix, or accept and record? | 06 | OPEN |
 | SPIKE-7 | Do `IgnoreList` / `IgnoreView` bake correctly for the two Financial triples, and do both triples over the same entity generate distinct list projections? Must be proven from emitted `.g.cs`, not from the build log. | 05 | OPEN |
 | SPIKE-8 | Two triples across two different groups map the `ADP.Cases` `Certificate` entity (`ItemClaimCertificateRepository`, `WarrantyCertificateRepository`). Which assembly does each generated mapper land in, and can both coexist in one host? **The old shared-floor probe is gone** — after the reorder the floor runs *last* (Step 06), behind both consumers — so Step 04 answers it from its own emitted `.g.cs` as the first group to generate a `Certificate` mapper, and Step 05 applies the finding to the second triple, and Step 06 confirms the `ADP.Cases` side of it (its item C). | 04 (owns it), 05, 06 (confirms the `ADP.Cases` side) | OPEN |
@@ -617,7 +617,78 @@ harness had not caused it deliberately.
 **What this licenses.** From Step 03 onward, a diff the harness reports is evidence about the code,
 not about the instrument. That is the entire reason this step ran second.
 
-### Darlastic — decision taken 2026-09-01, not a spike outcome
+### ✅ Step 02 — `ADP.Darlastic` bumped, and the framework-only control was RECOVERED
+
+**`CLOSED`. Read the caveat before the numbers: this is a SMOKE result, not value parity.**
+0 repository triples and 0 AutoMapper profiles means there is no mapping behaviour here to regress.
+A green run proves the routes still exist and still respond. It proves **nothing** about mapper risk,
+and must never be cited as if it did.
+
+**The bump — item A, four lines, zero source changes.**
+
+| csproj | package | 7.31.1 → 8.30.1 |
+|---|---|---|
+| `Darlastic.API:46` | `ShiftEntity.Web` | ✔ |
+| `Darlastic.Data:53` | `ShiftEntity.EFCore` | ✔ |
+| `Darlastic.Shared:33` | `ShiftEntity.Model` | ✔ |
+| `Darlastic.Web:33` | `ShiftBlazor` | ✔ |
+
+`TypeAuth` untouched at `1.6.28`. All **seven** projects in item B — `CaseBrowser` included — build
+clean with **no source change at all**, which is the cleanest possible reading of "the framework API
+surface did not break this group".
+
+**The headline invariant holds.** `dotnet build ADP.sln` → **exit 0, 0 errors, NU1605 = 0**, with the
+shared floor still at `2026.7.31.1`. The mixed arrangement the plan predicted works as predicted.
+
+**The scoreboard moved.** `NU1903` (the AutoMapper CVE) fell from **42 lines across 21 projects** to
+**38 across 19** — Darlastic dropped off, because at `8.30.1` the transitive AutoMapper dependency is
+gone. First measurable reduction of the thing this upgrade exists to remove.
+
+**Tests unchanged:** `Darlastic.Shared.Tests` **5/5**, `Darlastic.Engine.Tests` **49/49**, identical
+before and after the bump.
+
+**Items C and D came back empty**, as predicted: no `AutoMapperProfiles`, no `: Profile`, no
+`ShiftRepository<`, no `IMapper`, no `AddAutoMapper`, no `Replicate<` / `UpdateReference<`, and no
+direct `TagProjection` / `TaggableProjectionExtensions` / `AddShiftTagging` reference.
+
+**What the capture actually covers, precisely.** 31 catalogue routes, **31/31 accounted for**, of
+which **30 are excluded with a written reason** and 2 run live:
+
+- `GoldenCustomer.LIST` — an OData envelope over a `ToView` entity
+- `StewardQueue.LIST` — a hand-written action returning framework-shaped JSON
+- plus the **route catalogue itself** (40 endpoints) as its own golden
+
+The 28 excluded hand-written actions take query parameters, ids and POST bodies over registry state
+the parity database does not hold. **Nothing mapper-shaped is lost** — a mapper upgrade cannot
+silently change a hand-written action, because there is no mapper in the path. What this group does
+cover is the thing only it can: a framework change to serialization, the OData envelope or
+ProblemDetails shape surfaces here, unconfounded by any mapper rewrite.
+
+**One harness bug found and fixed.** The restricted-grant gate required "at least one hostile row
+visible", which a group with **no seed at all** can never satisfy — `0 > 0` failed Darlastic forever
+for a reason unrelated to its behaviour. Now exempted when `HostileRowsExpected == 0`.
+
+**⚠️ Item E — a product decision is OUTSTANDING, not made.** ShiftBlazor `8.30.1` adds a Find box and
+an automatic ID filter to every list grid **by default**, opt-out via new `DisableFind` /
+`DisableIdFilter`. This group has exactly **one** affected page —
+`ADP.Darlastic.Web/Pages/GoldenCustomerList.razor` — and it currently takes the new defaults, because
+nothing opts out. **That is an accepted default, not a reviewed decision.** It needs eyes on the
+rendered page; no build or harness can settle it. (Also noted: a ShiftBlazor regression crashing
+every page that renders a `ShiftList` was introduced *and fixed* inside the 7.31.1 → 8.30.1 window,
+so do not land on an intermediate ShiftBlazor version.)
+
+*Housekeeping, deliberately NOT fixed inside an upgrade commit — the plan says so explicitly:* the
+sample's `appsettings.Development.json:10` hard-codes a registry database name carrying a
+region-style suffix. Against this repo's client-agnostic rule that is worth a separate look.
+
+### Darlastic — the 2026-09-01 decision, now SUPERSEDED by SPIKE-5
+
+> The decision below stood until Step 02 actually tried to boot the host and found it
+> cheap. The control was recovered, so the recorded consequence — that framework and
+> mapper causes become inseparable — **no longer applies.** Kept for the record.
+
+#### Original note
+
 
 **SPIKE-5 is closed by decision, not by investigation.** Darlastic has 0 triples and 0 profiles, so
 there is no mapper-shaped risk in it; the owner's call is to **skip its parity capture entirely and
@@ -641,7 +712,7 @@ commit is in **and the solution builds green**.
 
 | Step | Group | csproj | Lines | Packages moved to `2026.8.30.1` | Bumped |
 |---|---|---|---|---|---|
-| 02 | `ADP.Darlastic` | 4 | 4 | `ShiftEntity.Web`, `ShiftEntity.EFCore`, `ShiftEntity.Model`, `ShiftBlazor` | [ ] |
+| 02 | `ADP.Darlastic` | 4 | 4 | `ShiftEntity.Web`, `ShiftEntity.EFCore`, `ShiftEntity.Model`, `ShiftBlazor` | **[x] 2026-09-02** |
 | 03 | `ADP.Surveys` | 6 | 7 | the same four, plus `ShiftIdentity.Core`, `ShiftIdentity.Dashboard.AspNetCore`, `ShiftIdentity.Dashboard.Blazor` (the two Dashboard lines are in the samples) | [ ] |
 | 04 | `ADP.ClaimableItems` | 4 | 7 | `ShiftEntity.Web`, `ShiftEntity.EFCore`, `ShiftEntity.CosmosDbReplication`, `ShiftEntity.Print`, `ShiftIdentity.Core`, `ShiftEntity.Model`, `ShiftBlazor` | [ ] |
 | 05 | `ADP.WarrantyClaims` | 4 | 7 | same seven as 04 | [ ] |
