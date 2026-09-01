@@ -16,7 +16,7 @@
         "AttachmentFieldBehavior": 1,
         "Campaign": {
           "Nested": null,
-          "Text": null,
+          "Text": "PARITY-CAMPAIGN parity campaign",
           "Value": "7000001"
         },
         "ClaimingMethod": 1,

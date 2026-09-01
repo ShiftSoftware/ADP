@@ -13,7 +13,7 @@
 		<AssemblyName>ShiftSoftware.ADP.ClaimableItems.Data</AssemblyName>
 		<PackageId>ShiftSoftware.ADP.ClaimableItems.Data</PackageId>
 		<Title>ShiftSoftware ADP.ClaimableItems — Data</Title>
-		<Description>Entities, repositories, AutoMapper profiles and replication wiring for the ShiftSoftware ADP.ClaimableItems package — the claimable-items / service-campaign authoring module.</Description>
+		<Description>Entities, repositories, source-generated mappers and replication wiring for the ShiftSoftware ADP.ClaimableItems package — the claimable-items / service-campaign authoring module.</Description>
 		<Copyright>Copyright (c) Shift Software 2026</Copyright>
 		<PackageProjectUrl>https://github.com/ShiftSoftware/ADP</PackageProjectUrl>
 		<PackageIcon>icon.png</PackageIcon>
@@ -45,12 +45,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="ShiftSoftware.ShiftEntity.EFCore" Version="2026.7.31.1" />
-		<PackageReference Include="ShiftSoftware.ShiftEntity.CosmosDbReplication" Version="2026.7.31.1" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.EFCore" Version="2026.8.30.1" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.CosmosDbReplication" Version="2026.8.30.1" />
 		<!-- FastReport printing (item-claim voucher + certificate/invoice) moved in from the
 		     original host (Phase 3 Slice 3.2). -->
-		<PackageReference Include="ShiftSoftware.ShiftEntity.Print" Version="2026.7.31.1" />
-		<PackageReference Include="ShiftSoftware.ShiftIdentity.Core" Version="2026.7.31.1" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.Print" Version="2026.8.30.1" />
+		<PackageReference Include="ShiftSoftware.ShiftIdentity.Core" Version="2026.8.30.1" />
 		<!-- ADP-internal convention: source project in-repo, published package when packed standalone.
 		     A project reference satisfies + wins over the transitive ADP.Models package a consumer gets
 		     from other ADP packages, so there is no source/package conflict (same pattern as ADP.LookupServices). -->

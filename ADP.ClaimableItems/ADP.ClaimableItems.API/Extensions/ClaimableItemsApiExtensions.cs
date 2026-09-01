@@ -44,11 +44,15 @@ public static class ClaimableItemsApiExtensions
         // Register the module's assemblies so the consumer doesn't have to. Both Data AND Shared
         // are added as data assemblies because the FluentValidation validators live colocated with
         // the DTOs in the Shared project (dual-assembly scan).
+        //
+        // No mapper registration accompanies these. The generated mappers register themselves
+        // through a [ModuleInitializer] the source generator emits next to each one, so they are in
+        // ShiftEntityMapperRegistry before any of this runs - there is nothing left for a
+        // registration call to do.
         services.Configure<ShiftEntityOptions>(o =>
         {
             o.AddDataAssembly(typeof(DataMarker).Assembly);
             o.AddDataAssembly(typeof(SharedMarker).Assembly);
-            o.AddAutoMapper(typeof(DataMarker).Assembly);
         });
 
         if (options.RegisterModuleActionTree)

@@ -30,16 +30,38 @@ public class ItemClaimCertificateRepository : ShiftRepository<ShiftDbContext, Ce
     public bool IsInvoiceMode = false;
 
     private readonly CampaignRepository campaignRepository;
-    private readonly AutoMapper.IMapper mapper;
+
+    /// <summary>
+    /// Used for ONE thing: projecting the certificate's claim lines through the <c>ItemClaim</c>
+    /// triple's own generated list mapper in <see cref="ViewAsync"/>. Injected the same way
+    /// <see cref="campaignRepository"/> already is.
+    /// </summary>
+    private readonly ItemClaimRepository itemClaimRepository;
 
     public ItemClaimCertificateRepository(
         ShiftDbContext db,
         CampaignRepository campaignRepository,
-        AutoMapper.IMapper mapper
-    ) : base(db)
+        ItemClaimRepository itemClaimRepository
+    ) : base(db, i => i.UseGeneratedMapper(map => map
+
+        // SHENGEN004 names exactly two members on this triple, and BOTH are legitimate. Neither is
+        // silenced blindly - each is named here with why it cannot be mapped.
+        //
+        // ReimbursementItemClaims: deliberately left unmapped by the mapper because the REPOSITORY
+        // fills it. The shared ADP.Cases Certificate carries no claim collection - there is no
+        // navigation to compose from - so ViewAsync below loads the lines by foreign key and
+        // projects them through the ItemClaim triple. Adding a ForView here would either duplicate
+        // that work or quietly disagree with it. The diagnostic is correct and the design is
+        // deliberate, so the member is ignored rather than mapped.
+        //
+        // Notes: the DTO declares it; the Certificate ENTITY has no Notes column at all. There is
+        // nothing to read, which is why it was null before the migration too - the pre-migration
+        // baseline records "Notes": null on the detail response. An ignore reproduces that exactly.
+        .IgnoreView(d => d.ReimbursementItemClaims)
+        .IgnoreView(d => d.Notes)))
     {
         this.campaignRepository = campaignRepository;
-        this.mapper = mapper;
+        this.itemClaimRepository = itemClaimRepository;
     }
 
     // Localized-text JSON ({"en":"...","ru":"..."}) → one language. Same helper the original host
@@ -71,7 +93,24 @@ public class ItemClaimCertificateRepository : ShiftRepository<ShiftDbContext, Ce
             .Where(x => x.ReimbursementCertificateID == entity.ID)
             .ToListAsync();
 
-        dto.ReimbursementItemClaims = mapper.Map<List<Shared.DTOs.ItemClaim.ItemClaimListDTO>>(claims);
+        // Routed through the ItemClaim TRIPLE's list mapper, deliberately - not through a
+        // standalone object mapper.
+        //
+        // This replaces `mapper.Map<List<ItemClaimListDTO>>(claims)`. The tempting alternative is a
+        // small [ShiftEntityMapper] IShiftObjectMapper<ItemClaim, ItemClaimListDTO>, and it would be
+        // WRONG: a standalone mapper gets the plain convention and would silently lose every rule
+        // configured on the triple - the "[]"-aware HasAttachment, the CampaignName /
+        // ClaimableItemName flattenings, the certificate dates. These lines would then disagree with
+        // the very same rows served by the ItemClaim list endpoint, which is worse than either
+        // answer alone. Going through the triple keeps exactly one definition of what an
+        // ItemClaimListDTO is.
+        //
+        // AsQueryable() over the already-materialized list runs the projection in memory
+        // (EnumerableQuery compiles the expression) rather than issuing SQL, so the Include above
+        // still supplies the navigations the flattenings read.
+        dto.ReimbursementItemClaims = this.itemClaimRepository
+            .MapToList(claims.AsQueryable())
+            .ToList();
 
         return dto;
     }

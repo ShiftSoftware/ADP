@@ -27,7 +27,7 @@
         "ClaimStatus": "PendingProcess",
         "ClaimableItem": {
           "Nested": null,
-          "Text": null,
+          "Text": "PARITY-CLAIMABLEITEM parity claimable item",
           "Value": "7010001"
         },
         "Company": {
@@ -52,11 +52,7 @@
         "QRCode": null,
         "ReSubmitForDistributorReview": false,
         "VIN": "PARITYCLAIMVIN0001",
-        "VehicleInspectionResult": {
-          "Nested": null,
-          "Text": null,
-          "Value": ""
-        }
+        "VehicleInspectionResult": null
       },
       "Message": null
     },

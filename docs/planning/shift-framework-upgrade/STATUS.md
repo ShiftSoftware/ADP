@@ -80,7 +80,7 @@ its terminal status*, never `VERIFIED` unconditionally.
 | 01 | Retro-verify `ADP.Menus` | `ADP.Menus.*` (**11 projects**, 8 of them already on 2026.8.30.1) | 00 | `VERIFIED` | **`VERIFIED`** | `parity.ps1 verify -Group Menus` (both grants) against a retroactive baseline captured at `14caf7c9^` — **15 diffs under FullAccess + 2 under Restricted, ALL of one shape, all accepted with a recorded reason; 0 harness bugs, 0 regressions** | 2026-09-02 | Code migration already `DONE` at `14caf7c9` — see the Menus row below. This step only proves it. Retroactive baseline from `14caf7c9^` via `git worktree`. Also resolves SPIKE-9. No package lines: Menus is already at `2026.8.30.1`. |
 | 02 | `ADP.Darlastic` | `ADP.Darlastic.{API,Data,Shared,Web}` | 00, 01 | `CLOSED` | **`CLOSED`** | **SMOKE, NOT VALUE PARITY** - `parity.ps1 verify -Group Darlastic`, both grants, 31/31 catalogue routes, 0 5xx, stability-gated. 0 triples and 0 profiles, so there is no mapping behaviour here to prove. | 2026-09-02 | Bumps its own **4** package lines as its first commit and ends green. 0 profiles, 0 triples. Smoke pass only — nothing mapper-shaped to prove, so terminal `CLOSED`. **But it is the plan's only framework-only control** (see SPIKE-5). Do not record as full parity. |
 | 03 | `ADP.Surveys` | `ADP.Surveys.{API,Data,Shared,Web}` + 2 samples | 00, 01 | `VERIFIED` | **`VERIFIED`** | `parity.ps1 verify -Group Surveys` **clean under both grants** — 49 cases, 52/52 catalogue routes, 0 5xx. Six `$top` cases accepted with recorded reasons (harness fix, not product); on FullAccess the re-captured golden differs by **exactly one line, the request URL**, response byte-identical. A wholesale Restricted re-capture left **27 of 30 goldens byte-identical**. Plus 2 SPIKE-4 round-trips and the `SurveyInstance` write golden. | 2026-09-02 | Bumps its own **7** package lines. 4 triples, 1 profile (151 lines). **Free-floating** — every `ProjectReference` is intra-group and it consumes no `ShiftSoftware.ADP.*` package, so it is legal anywhere after 01. Ordered here by risk/simplicity, not by the graph. Has a sample host → full HTTP parity available. Carries SPIKE-3 and SPIKE-4. |
-| 04 | `ADP.ClaimableItems` | `ADP.ClaimableItems.{API,Data,Shared,Web}` | 00, 01 | `VERIFIED` | `NOT STARTED` | — | — | Bumps its own **7** package lines. 5 triples, 4 profiles, 5 Cosmos delegates, 1 `IMapper` site. No host → mounted host (SPIKE-2). First group to generate a `Certificate` mapper, so it now **owns SPIKE-8** (the shared floor no longer runs ahead of it). |
+| 04 | `ADP.ClaimableItems` | `ADP.ClaimableItems.{API,Data,Shared,Web}` | 00, 01 | `VERIFIED` | **`VERIFIED`** | `parity.ps1 verify -Group ClaimableItems` **clean under both grants** after 8 accepted SPIKE-11 convention diffs (4 cases x 2 grants); a wholesale re-capture left **26 of 30 goldens byte-identical per grant**. Solution builds green, **0 SHENGEN warnings** (all 5 baseline 004s resolved). **MOUNTED-HOST CAVEAT: this is module-level parity, not full endpoint parity** - no sample host exists, so consumer middleware order, request localization, CORS, fallback routing and JSON option overrides are NOT exercised. The 5 Cosmos delegates have **zero** harness coverage and were verified by an 8-agent adversarial line-by-line review instead, which found 3 real defects. | 2026-09-02 | Bumps its own **7** package lines. 5 triples, 4 profiles, 5 Cosmos delegates, 1 `IMapper` site. No host → mounted host (SPIKE-2). First group to generate a `Certificate` mapper, so it now **owns SPIKE-8** (the shared floor no longer runs ahead of it). |
 | 05 | `ADP.WarrantyClaims` | `ADP.WarrantyClaims.{API,Data,Shared,Web}` | 00, 01, 04 | `VERIFIED` | `NOT STARTED` | — | — | Bumps its own **7** package lines. **Highest risk.** 7 triples; dealer/distributor forward-map `Ignore()` exposure. Ordered last of the groups by risk, overriding simplicity (it has fewer profiles than 04). Depends on 04 for the shared `Certificate` mapper precedent (SPIKE-8) — a **knowledge** dependency, not a build one. |
 | 06 | Shared floor | `ADP.Models/Models`, `ADP.Cases.Data`, `ADP.Cases.Shared`, `Lookup.Services.DuckDB` | 02, 03, 04, 05 all at terminal | `CLOSED` | `NOT STARTED` | — | — | Bumps the last **4** package lines — `ADP.Models` and `Cases.Shared` in the **same commit**, which is what keeps NU1605 from ever appearing. 0 profiles, 0 triples; expected to compile unchanged. Libraries only — no endpoints, so terminal `CLOSED` with the reason in `Verified by`. Carries SPIKE-6. Pulls in `ADP.Menus.Generation` (see the ledger note below). Step 00's compile probe is its early warning. |
 | 07 | Release readiness | solution-wide + `GlobalSettings.props` | 00–06 all at terminal (00, 02, 06 `CLOSED`; 01, 03, 04, 05 `VERIFIED`) | `VERIFIED` | `NOT STARTED` | — | — | Package-mode restore smoke check, full baseline comparison, single `ADPVersion` bump. **No package lines left** — all 29 landed in Steps 02–06. |
@@ -130,10 +130,10 @@ the spike, then record the finding here.**
 | SPIKE-5 | Can the Darlastic sample host be booted headlessly at all? | 02, and the attribution of 03/04/05 diffs | **RESOLVED - POSITIVE. It boots, and the plan KEEPS its framework-only control.** This supersedes the 2026-09-01 "closed by decision" entry: the call then was to skip Darlastic's capture, but once the group was open for its version bump the host turned out to be bootable cheaply, so the control was taken rather than forfeited. Both recorded blockers were real and both were solved. **(1)** Program.cs reads ConnectionStrings:Registry and Sample:AllowDevAuth at the TOP of the file, BEFORE builder.Build() and therefore before WebApplicationFactory's ConfigureAppConfiguration runs - an in-memory override arrives too late, and the first attempt still connected to the appsettings database, failing with "Cannot open database ... login failed". **Environment variables** (ConnectionStrings__Registry, Sample__AllowDevAuth) are read into Configuration from the start and outrank appsettings, so they are what actually redirect this host. **(2)** the registry database: SampleDB deliberately never calls EnsureCreated (a second schema authority against a real registry is the failure the engine's DARLASTIC_SCHEMA_MANAGED switch exists to prevent), so the harness creates a DISPOSABLE schema itself - **from the HOST's service provider**, because the Darlastic tables reach the model through the IModelBuildingContributor that AddDarlasticApiServices registers, and a DbContext built outside DI has an EMPTY model whose EnsureCreated silently creates nothing. Plus DarlasticViews.CreateGoldenCustomerSql(), because GoldenCustomer is mapped ToView and EnsureCreated does not create views. |
 | SPIKE-6 | `ADP.Models/Models.Tests` discovers **zero tests** (no test framework referenced; all sources `<Compile Remove>`d) yet exits 0. The most-shared project in the solution is unguarded. Fix, or accept and record? | 06 | OPEN |
 | SPIKE-7 | Do `IgnoreList` / `IgnoreView` bake correctly for the two Financial triples, and do both triples over the same entity generate distinct list projections? Must be proven from emitted `.g.cs`, not from the build log. | 05 | OPEN |
-| SPIKE-8 | Two triples across two different groups map the `ADP.Cases` `Certificate` entity (`ItemClaimCertificateRepository`, `WarrantyCertificateRepository`). Which assembly does each generated mapper land in, and can both coexist in one host? **The old shared-floor probe is gone** — after the reorder the floor runs *last* (Step 06), behind both consumers — so Step 04 answers it from its own emitted `.g.cs` as the first group to generate a `Certificate` mapper, and Step 05 applies the finding to the second triple, and Step 06 confirms the `ADP.Cases` side of it (its item C). | 04 (owns it), 05, 06 (confirms the `ADP.Cases` side) | OPEN |
+| SPIKE-8 | Two triples across two different groups map the `ADP.Cases` `Certificate` entity (`ItemClaimCertificateRepository`, `WarrantyCertificateRepository`). Which assembly does each generated mapper land in, and can both coexist in one host? **The old shared-floor probe is gone** — after the reorder the floor runs *last* (Step 06), behind both consumers — so Step 04 answers it from its own emitted `.g.cs` as the first group to generate a `Certificate` mapper, and Step 05 applies the finding to the second triple, and Step 06 confirms the `ADP.Cases` side of it (its item C). | 04 (owns it), 05, 06 (confirms the `ADP.Cases` side) | **PARTLY RESOLVED at Step 04's baseline (Q1-Q3); Q4 deferred to item J by construction.** Probed by `dotnet build ADP.ClaimableItems.Data -p:EmitCompilerGeneratedFiles=true --no-incremental` on the pre-bump tree. **Q1 - which assembly?** The **consumer's**. `Generated_Certificate_CertificateListDTO_ItemClaimCertificateDTO_16cfdeb0.g.cs` is emitted into `ADP.ClaimableItems.Data`; `ADP.Cases` emits **no mapper at all**. The generator follows the `ShiftRepository<>` subclass that declares the triple, not the entity's owning assembly. **Q2 - can both coexist?** **Yes**, and the emitted registration is the proof: `ShiftEntityMapperRegistry.Register(typeof(Cases.Data.Entities.Certificate), typeof(Cases.Shared.DTOs.Certificate.CertificateListDTO), typeof(ClaimableItems.Shared.DTOs.ItemClaimCertificate.ItemClaimCertificateDTO), ...)` keys on the **3-tuple**. Step 05's triple is `Certificate, CertificateListDTO, CertificateDTO` (`WarrantyCertificateRepository.cs:32`) - same entity, same list DTO, **different view DTO** - so it takes a distinct key, a distinct generated type name, and a distinct assembly with its own `[ModuleInitializer]`. No collision. **Q3 - must `ADP.Cases.Data` be a registered data assembly?** **No.** `ClaimableItemsApiExtensions.cs:49-50` registers only `DataMarker` and `SharedMarker`; the mapper lives in `DataMarker`'s assembly, so it resolves without `ADP.Cases.Data` being added. **Q4 - is the generator content with an entity whose owning assembly is still on `2026.7.31.1`?** **Not answerable at baseline** - the analyzer running there IS `7.31.1`, so the floor is uniform, not mixed. It becomes answerable only after item A puts the consumer on `8.30.1` while `ADP.Cases` stays behind. Confirmed in item J. |
 | SPIKE-9 | Exact delegate signature required by `Replicate<T>` / `UpdateReference<T>` at `2026.8.30.1`. | resolved by 01; blocks 04, 05 | **RESOLVED — signatures below, read by reflection over `ShiftSoftware.ShiftEntity.CosmosDbReplication 2026.8.30.1` and cross-checked against the ~19 live call sites.** <br><br> **The reference implementation is in `ADP.Menus/ADP.Menus.Sync/`, NOT `ADP.Menus.Data`** — do not hunt for it in the wrong assembly at Step 04. <br><br> **⚠️ THERE ARE TWO API FAMILIES AND THEY DIFFER IN THE DELEGATE'S FIRST ARGUMENT.** This is the trap: copying a call from the wrong family compiles against the wrong lambda parameter and fails in a way that reads like a mapper error. <br><br> **(1) TRIGGER path — `ShiftEntityCosmosDbOptions`, what ADP.Menus.Sync actually uses.** Delegates receive an `EntityWrapper<Entity>`; reach the row with `wrapper.Entity`. <br> `SetUpReplication<DB, Entity>(CosmosClient client, string cosmosDataBaseId, Func<EntityWrapper<Entity>, ValueTask<Entity>> mapper = null)` → `CosmosDbTriggerReplicateOperation<Entity>` <br> `.Replicate<CosmosDbItem>(string cosmosContainerId, Expression<Func<CosmosDbItem, object>> partitionKeyLevel1Expression, [level2], [level3], Func<EntityWrapper<Entity>, CosmosDbItem> mapping)` → `CosmosDbTriggerReferenceOperations<Entity>` <br> `.UpdateReference<CosmosDbItem>(string cosmosContainerId, Func<IQueryable<CosmosDbItem>, EntityWrapper<Entity>, IQueryable<CosmosDbItem>> finder, Func<EntityWrapper<Entity>, CosmosDbItem, CosmosDbItem> mapping)` → chainable <br><br> **(2) DIRECT path — `CosmosDbReplicationOperation<DB, Entity>`.** Delegates receive the **bare `Entity`**, not a wrapper. <br> `.Replicate<CosmosDBItem>(string containerId, Func<Entity, CosmosDBItem> mapping)` <br> `.UpdateReference<CosmosDBItem>(string containerId, Func<IQueryable<CosmosDBItem>, Entity, IQueryable<CosmosDBItem>> finder, Func<Entity, CosmosDBItem, CosmosDBItem> mapping)` <br><br> **Three further facts the call sites make explicit and the signatures alone do not:** (a) **partition-key expressions are over the COSMOS MODEL (`CosmosDbItem`), not the entity** — `document => document.BasicModelCode`, and there are 1/2/3-level overloads; (b) `partitionKeyLevel*Expression` and `mapping` are passed as **NAMED** arguments throughout `MenuReplicationExtensions.cs`, which is what keeps the 2- and 3-level overloads unambiguous at a glance; (c) **register each entity type EXACTLY ONCE** — the framework silently keeps only the last registration per type, which is why a master entity's own document and all its fan-outs chain off a single `SetUpReplication` (`MenuReplicationExtensions.cs:36-38`), and **`UpdateReference` fires on `ChangeType.Modified` ONLY** (`:40-44`), so an inserted master row fans out to nothing and a hard-deleted one leaves embedded copies behind. |
 | SPIKE-10 | Are the **binary/print export endpoints** byte-reproducible enough to diff, or must they be recorded `PARTIAL`? Verified against the repo: the only `.xlsx` producers are `ADP.Menus/ADP.Menus.API/Controllers/MenuController.cs:114,248,437` — **Step 01**, not Surveys. `ADP.WarrantyClaims` exports **PDF** (`DistributorFinancialController.cs:108,110`, `WarrantyClaimController.cs:148`), which has no sheet XML to extract and carries `/CreationDate` + `/ID`, so it is the likeliest `PARTIAL`. The `text/csv` exports (`Surveys/SurveyResponsesController.cs:206`, `WarrantyClaims/ManufacturerSettlmentSheetController.cs:69`, `WarrantyClaimController.cs:287`, `Darlastic/CaseBrowserController.cs:363`) are deterministic text and are **covered**, not `PARTIAL` — they are not a Rule-7 case at all. | 01 (`.xlsx`), 05 (PDF) | OPEN |
-| SPIKE-11 | **What did `DefaultEntityToDtoAfterMap()` / `DefaultDtoToEntityAfterMap()` do, and what reproduces it?** Both exist in `ShiftSoftware.ShiftEntity.dll` @ `2026.7.31.1` and are **absent** @ `2026.8.30.1` (verified by binary inspection); neither is documented in any XML doc file at either version. **6 call sites** across 2 groups. The calls vanish with the profiles — but so does whatever behaviour they applied. Resolve by reading the implementation at the `2026.7.31.1` tag in the public framework repo. | 04, 05 | OPEN |
+| SPIKE-11 | **What did `DefaultEntityToDtoAfterMap()` / `DefaultDtoToEntityAfterMap()` do, and what reproduces it?** Both exist in `ShiftSoftware.ShiftEntity.dll` @ `2026.7.31.1` and are **absent** @ `2026.8.30.1` (verified by binary inspection); neither is documented in any XML doc file at either version. **6 call sites** across 2 groups. The calls vanish with the profiles — but so does whatever behaviour they applied. Resolve by reading the implementation at the `2026.7.31.1` tag in the public framework repo. | 04, 05 | **RESOLVED - and it was NOT a no-op. The convention supersedes both, with two behavioural deltas that ride along with the upgrade.** Source read at the exact commit the package declares (`1e22f8de5534818f029a5073cf79cb32b457a11b`, from the nuspec's `<repository commit=...>`), file `ShiftEntity.Core/Extensions/AutoMapperExtensions.cs`. **What they did:** `DefaultEntityToDtoAfterMap` walked every DTO property of type *exactly* `ShiftEntitySelectDTO` (scalar - `List<ShiftEntitySelectDTO>` was skipped) and, when `Value` was blank **and** `Text` null, back-filled it from the entity's `{Name}ID` column. `DefaultDtoToEntityAfterMap` did **two** things: (a) wrote `entity.{Name}ID = long.Parse(selectDTO.Value)` when `Value` was non-blank, and (b) `ForAllMembers(x => x.Condition(...))` suppressing the write of **any** member whose value is a `ShiftEntityBase` - a map-wide navigation-overwrite guard. **Both maps here are affected:** `CampaignDTO.VehicleInspectionType` and `ClaimableItemDTO.Campaign` are both scalar `ShiftEntitySelectDTO?`. **Does the generator reproduce it?** Yes, by convention, and `SHENGEN004` proves it - neither member is reported unmapped. Emitted: `dto.Campaign = MappingHelpers.ToSelectDTO(entity.CampaignID, entity.Campaign != null ? entity.Campaign.Name : null)` and `existing.CampaignID = MappingHelpers.ToNullableForeignKey(dto.Campaign)`; the navigation is never assigned in `MapToEntityGenerated`, which is (b)'s effect. **So nothing must be re-added per triple** - but two deltas are inherited, and neither is caused by anything this step writes: **(1) READ:** `Text` is now populated from the navigation (the old helper always left it null), and a **null FK now yields a null member** where the old helper produced `{Value:""}`. **(2) WRITE:** a blank/null select DTO now **sets the FK to null**, where the old helper **left it unchanged**. That second one is data-loss-shaped and is the one to watch on the UPDATE cases. Also improved: `long.Parse` (→ 500 on bad input) became `TryParse` + a framework `ShiftEntityException` (→ 400). |
 | SPIKE-12 | **Does a per-group version bump keep the tree green?** | — (no longer blocks anything) | **RESOLVED — staged per-group bump adopted.** The Shift nuspecs declare **minimum-version** dependencies (`version="2026.7.31.1"`), not exact pins (`[2026.7.31.1]`) — verified in the local NuGet cache — so no lockstep is forced. The repo already runs the mixed arrangement green: `ADP.Menus.Shared` pins `ShiftEntity.Model 2026.8.30.1` while `ADP.Menus.Data` `ProjectReference`s `ADP.Models`, pinned at `2026.7.31.1` (`ADP.Models/Models/Models.csproj:48`) — an upgraded group sitting on a not-yet-upgraded shared project builds today. Ordering the floor **last** also disposes of the 3 NU1605 pins: `ClaimableItems.Shared:34` and `WarrantyClaims.Shared:33` are already at `8.30.1` before the floor moves, and `Cases.Shared:32` moves in the same commit as `ADP.Models`, so no downgrade window opens. **Consequence: the atomic-bump step is deleted and each group step owns its own package lines.** |
 
 **Residual risk carried by shared-last, and its mitigation.** If `ShiftEntity.Model 2026.8.30.1`
@@ -769,6 +769,119 @@ consequential member of the set.
 Confidence in the Restricted result is worth stating plainly: a **wholesale re-capture** left 27 of
 30 goldens byte-identical to their pre-migration recordings, which is an independent check on the
 three that changed.
+
+### ✅ Step 04 — `ADP.ClaimableItems`, where the plan's own item list was the least reliable part
+
+**Result: clean under both grants, solution green, 0 SHENGEN warnings.** 5 triples migrated, 4
+profiles deleted, 5 Cosmos delegates hand-written, 1 `IMapper` site ported. But the interesting part
+is that **three separate classes of silent regression were found that the step plan did not
+mention**, and each was caught by a different instrument.
+
+#### 1. The plan's item B would have broken item G
+
+Item B says "delete the four profiles, keep `GeneralMappingHelper.DeserializeDict`". It does not
+mention `ClaimableItemProfile.MappingHelpers.DeserializeModelCosts`, which is a **nested class inside
+one of the files being deleted** and is called by the surviving `ClaimableItem -> ServiceItemModel`
+Cosmos projection. Deleting the profiles as instructed takes it with them. Both helpers now live in
+`ADP.ClaimableItems.Data/Mapping/CosmosProjectionHelpers.cs`.
+
+#### 2. Eleven list members that no diagnostic reports — found by diffing the baseline
+
+`SHENGEN004` reports unmapped members on the **view** mapper only, never on the list projection. The
+old repositories never called `UseGeneratedMapper`, so they ran on the **AutoMapper-backed** mapper,
+and AutoMapper **flattens** `Campaign.Name` onto `CampaignName` by name convention with no
+configuration at all — which is exactly why the deleted profiles contain no `ForMember` for any of
+them and why nothing looked missing. The generated projection does not flatten.
+
+Found by diffing every pre-migration baseline LIST body against the emitted `__shiftListProjection`:
+
+| Triple | Members that would have silently gone null |
+|---|---|
+| `ClaimableItem` | `CampaignName`, `CampaignStartDate`, `CampaignExpireDate`, `CampaignActivationTrigger`, `CampaignActivationType` |
+| `ItemClaim` | `CampaignName`, `ClaimableItemName`, `ReimbursementCertificate{CertificateDate,InvoiceDate}`, `ContributionCertificate{CertificateDate,InvoiceDate}` |
+| `CampaignVinEntry` | `CampaignName`, `CampaignUniqueReference` — the only two the plan caught (item F) |
+
+The baseline is the proof they were live: it carries
+`"ClaimableItemName": "PARITY-CLAIMABLEITEM parity claimable item"` on a row the generated projection
+would have returned as null. `Validity`, `ValidityModeText`, `ActivationTriggerText`,
+`ActivationTypeText` and `InvoiceID` were checked and need nothing — they are computed getters over
+members that ARE projected.
+
+#### 3. `AllowNullCollections` — the same trap as Step 03, missed again, caught by an adversarial pass
+
+The 5 replication delegates have **zero** harness coverage (replication is off during parity runs and
+failures are swallowed), so the plan's only stated control is line-by-line review. Run as an 8-agent
+workflow — one reviewer per map, then independent refutation attempts per finding — it confirmed
+**3 real defects in the first draft of the delegates**, all one root cause:
+
+> AutoMapper's `AllowNullCollections` defaults to **false** and nothing in ShiftEntity or this repo
+> overrides it. A resolver returning null for a dictionary- or collection-typed member therefore
+> reached Cosmos as an **empty** one. Transcribing the profile's `== null ? null : ...` branch
+> *literally* does not reproduce the old document — it writes `null` where production has `{}`.
+
+- `ModelCosts` — the helper returns null for **every Fixed-costing item by design**, so this was the
+  common case, not an edge case: `[]` -> `null`.
+- `PrintoutTitle`, `PrintoutDescription` — nullable columns: `{}` -> `null`.
+
+The verifiers reproduced it empirically against AutoMapper 14.0.0 rather than arguing from the
+source. **This is the identical trap recorded for `ADP.Surveys.Tags` in Step 03** — knowing about it
+was not enough to avoid repeating it, which is the case for keeping the adversarial pass.
+
+Crucially it bites **only** the two `ForMember`-based maps. `ConvertUsing` bypasses the member mapper
+entirely, so the other three maps' nulls really were nulls and are correct as transcribed. The same
+distinction governs which maps needed AutoMapper's **convention** members restored: `ForMember` maps
+auto-map same-named properties on top of the profile's list (8 extra on `ServiceItemModel`, 5 on
+`ServiceCampaignModel`), `ConvertUsing` maps do not.
+
+#### SPIKE-8 — RESOLVED, all four questions
+
+Q1 the mapper lands in the **consumer's** assembly (`ADP.Cases` emits none); Q2 both `Certificate`
+triples coexist because the registry keys on the **3-tuple** and Step 05's view DTO differs; Q3
+`ADP.Cases.Data` does **not** need registering; **Q4 the generator is content with a mixed floor** —
+`ADP.Cases` is still on `2026.7.31.1` and the `8.30.1` generator emitted a working `Certificate`
+mapper with zero errors. **No plan change needed**; Step 06's lines stay where they are.
+
+#### SPIKE-11 — RESOLVED, and its blast radius was 5 triples, not 2
+
+The plan lists 4 call sites in 2 profiles. But `DefaultAutoMapperProfile.CreateEntityMaps` applied
+**both helpers to EVERY triple automatically**
+(`CreateMap(entity, viewDto).DefaultEntityToDtoAfterMap().ReverseMap().DefaultDtoToEntityAfterMap()`),
+so triples with no user profile at all were equally affected. The convention supersedes both, and the
+two predicted read deltas showed up in the parity run **exactly as predicted from the framework
+source before the run was made**: `Text` now populated from the navigation, and a null FK now
+yielding a null member instead of `{"Value":""}`. All 8 accepted with that reasoning.
+
+Two write deltas ride along and are **not** exercised by any parity case here: a blank select DTO now
+**nulls** a nullable FK (`ToNullableForeignKey`) where the old helper left it unchanged, and
+**throws 400** for a required one (`ToForeignKey`). The first is data-loss-shaped.
+
+#### Smaller findings
+
+- **A framework case-sensitivity asymmetry.** `ItemClaimDTO.CampaignVINEntry` (capital VIN) vs
+  entity `CampaignVinEntryID`: the generator's **write** convention matches case-insensitively
+  (`ToNullableForeignKey(dto.CampaignVINEntry)` binds) but its **read** convention does not, which is
+  why `SHENGEN004` named that member and none of the other select members on the same DTO. Fixed with
+  an explicit `ForView`; without it the member would simply have started returning null.
+- **A null-reference bug in this step's own item-H port, caught by the baseline.** `ViewAsync`
+  includes `ClaimableItem` but not `Campaign`, and the baseline records `"CampaignName": null` inside
+  the nested claim list for exactly that reason. Routing those rows through the triple's list
+  projection in memory would have dereferenced a null navigation. Both flattenings are now guarded,
+  which also reproduces the old null rather than "fixing" it.
+- **Item H's first suggested option is the wrong one.** A standalone
+  `IShiftObjectMapper<ItemClaim, ItemClaimListDTO>` gets the plain convention and would silently lose
+  every rule configured on the triple. Routed through the triple's list mapper instead.
+- **Trap 1 and trap 2 both have no vehicle here**, confirmed from emitted code rather than assumed:
+  no auto-composed collections exist in any of the 5 mappers, and **no pair mappers were generated at
+  all**.
+- **`CertificateNo` / `DisplayDistributorCertificateNo` are client-writable** — both are declared on
+  `ItemClaimCertificateDTO` and written by the entity map. **Pre-existing**: the framework's
+  auto-created reverse map carried no `Ignore()` either, so AutoMapper wrote them too. Flagged, not
+  changed, because changing it is not upgrade work.
+- **A harness reporting weakness worth knowing before Step 05:** value differences produce
+  `reports/<group>/diff.md` but do **not** fail the run's exit code — only hard failures (a missing
+  baseline, an uncovered route) do. A green `dotnet test` is therefore NOT sufficient evidence of
+  parity; the report must be read. `diff.md` is also per-GROUP, not per-grant, so a second grant's run
+  overwrites the first's report. Both bit this step before being noticed.
 
 ### Darlastic — the 2026-09-01 decision, now SUPERSEDED by SPIKE-5
 
