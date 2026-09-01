@@ -1,0 +1,11 @@
+{
+  "_why": [
+    "Code / FullName required; ServiceIntervalGroup is a ShiftEntitySelectDTO whose Value must be",
+    "a REAL hash id - resolved from the seeded group at run time via the @@Entity[n]@@ token."
+  ],
+  "code": "PARITY-CREATE-SI",
+  "fullName": "PARITY-CREATE-SI parity created interval",
+  "valueInMeter": 20000,
+  "description": "Parity created interval",
+  "serviceIntervalGroup": { "value": "@@ServiceIntervalGroup[0]@@", "text": "PARITY-SIG" }
+}

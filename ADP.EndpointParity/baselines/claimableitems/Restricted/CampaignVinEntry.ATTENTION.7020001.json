@@ -1,0 +1,16 @@
+{
+  "case": "CampaignVinEntry.ATTENTION.7020001",
+  "grant": "Restricted",
+  "kind": "ATTENTION",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/ClaimableItems/CampaignVinEntry/7020001/attention"
+  },
+  "response": {
+    "body": [],
+    "contentType": "application/json; charset=utf-8",
+    "headers": {},
+    "status": 200
+  }
+}

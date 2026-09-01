@@ -1,0 +1,34 @@
+{
+  "case": "MenuVariant.LIST",
+  "grant": "FullAccess",
+  "kind": "LIST",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Menu/MenuVariant?$orderby=ID&$top=25&$count=true"
+  },
+  "response": {
+    "body": {
+      "Count": 1,
+      "Value": [
+        {
+          "HasStandaloneItems": true,
+          "ID": "OyD3rVZljXvWpLoE6v2MXn5Bgmx9PMq0eKR",
+          "IsDeleted": false,
+          "LabourRate": 15.00,
+          "MenuID": "aElMpb",
+          "MenuPostfix": "PAR-POST",
+          "MenuPrefix": "PAR-PRE",
+          "Name": "PARITY-VARIANT parity variant",
+          "StandaloneMenuPostfix": null,
+          "StandaloneMenuPrefix": null
+        }
+      ]
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {
+      "Content-Language": "en-US"
+    },
+    "status": 200
+  }
+}

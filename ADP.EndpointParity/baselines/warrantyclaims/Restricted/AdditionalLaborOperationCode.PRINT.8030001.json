@@ -1,0 +1,16 @@
+{
+  "case": "AdditionalLaborOperationCode.PRINT.8030001",
+  "grant": "Restricted",
+  "kind": "PRINT",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/WarrantyClaims/AdditionalLaborOperationCode/print/8030001"
+  },
+  "response": {
+    "body": "",
+    "contentType": null,
+    "headers": {},
+    "status": 403
+  }
+}

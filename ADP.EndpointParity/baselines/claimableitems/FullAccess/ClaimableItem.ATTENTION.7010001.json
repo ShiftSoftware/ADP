@@ -1,0 +1,16 @@
+{
+  "case": "ClaimableItem.ATTENTION.7010001",
+  "grant": "FullAccess",
+  "kind": "ATTENTION",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/ClaimableItems/ClaimableItem/7010001/attention"
+  },
+  "response": {
+    "body": [],
+    "contentType": "application/json; charset=utf-8",
+    "headers": {},
+    "status": 200
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "case": "BankQuestion.ATTENTION.kDeznD",
+  "grant": "FullAccess",
+  "kind": "ATTENTION",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Surveys/BankQuestion/kDeznD/attention"
+  },
+  "response": {
+    "body": [],
+    "contentType": "application/json; charset=utf-8",
+    "headers": {},
+    "status": 200
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "case": "ScreenTemplate.UPDATE",
+  "grant": "FullAccess",
+  "kind": "UPDATE",
+  "request": {
+    "body": {
+      "CreateDate": "<ts>",
+      "CreatedByUserID": "QOa4j",
+      "ID": "a6bDGM",
+      "IsDeleted": false,
+      "Key": "PARITY-CREATE-TEMPLATE",
+      "LastSaveDate": "<ts>",
+      "LastSavedByUserID": "QOa4j",
+      "Tags": [],
+      "Template": {
+        "id": "tpl-parity-create",
+        "questions": [
+          {
+            "bankRef": "PARITY-BANKQ-LOCKED"
+          }
+        ],
+        "title": {
+          "en": "Parity create template"
+        }
+      }
+    },
+    "method": "PUT",
+    "url": "/api/Surveys/ScreenTemplate/a6bDGM"
+  },
+  "response": {
+    "body": {
+      "Additional": null,
+      "Entity": {
+        "CreateDate": "<ts>",
+        "CreatedByUserID": "QOa4j",
+        "ID": "a6bDGM",
+        "IsDeleted": false,
+        "Key": "PARITY-CREATE-TEMPLATE",
+        "LastSaveDate": "<ts>",
+        "LastSavedByUserID": "QOa4j",
+        "Tags": [],
+        "Template": {
+          "description": null,
+          "id": "tpl-parity-create",
+          "questions": [
+            {
+              "bankRef": "PARITY-BANKQ-LOCKED",
+              "overrides": null
+            }
+          ],
+          "tags": null,
+          "title": {
+            "en": "Parity create template"
+          }
+        }
+      },
+      "Message": null
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {},
+    "status": 200
+  }
+}

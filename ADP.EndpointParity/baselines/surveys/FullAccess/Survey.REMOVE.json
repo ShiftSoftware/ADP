@@ -1,0 +1,31 @@
+{
+  "case": "Survey.REMOVE",
+  "grant": "FullAccess",
+  "kind": "REMOVE",
+  "request": {
+    "body": null,
+    "method": "DELETE",
+    "url": "/api/Surveys/Survey/DXKYG2"
+  },
+  "response": {
+    "body": {
+      "Additional": null,
+      "Entity": {
+        "CreateDate": "<ts>",
+        "CreatedByUserID": "QOa4j",
+        "Draft": null,
+        "ID": "DXKYG2",
+        "IntegrationId": "parity-create-survey",
+        "IsDeleted": true,
+        "LastSaveDate": "<ts>",
+        "LastSavedByUserID": "QOa4j",
+        "Name": "PARITY-CREATE-SURVEY",
+        "PublishedVersionNumber": null
+      },
+      "Message": null
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {},
+    "status": 200
+  }
+}

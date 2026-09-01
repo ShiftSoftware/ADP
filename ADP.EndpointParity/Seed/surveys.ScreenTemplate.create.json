@@ -1,0 +1,17 @@
+{
+  "_why": [
+    "MINIMAL VALID create body for ScreenTemplate.",
+    "ScreenTemplateDtoValidator requires Id NotEmpty, Title a non-empty LocalizedString, and",
+    "Questions NotEmpty ('Screen templates must contain at least one question reference').",
+    "Each QuestionRefDto requires a non-empty bankRef.",
+    "",
+    "bankRef points at a SEEDED BankQuestion key, so the reference resolves against real data",
+    "rather than dangling - a dangling ref is how this body would 4xx and silently cover nothing."
+  ],
+  "key": "PARITY-CREATE-TEMPLATE",
+  "template": {
+    "id": "tpl-parity-create",
+    "title": { "en": "Parity create template" },
+    "questions": [ { "bankRef": "PARITY-BANKQ-LOCKED" } ]
+  }
+}

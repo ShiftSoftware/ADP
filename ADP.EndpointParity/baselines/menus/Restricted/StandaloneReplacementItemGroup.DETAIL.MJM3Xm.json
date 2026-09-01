@@ -1,0 +1,32 @@
+{
+  "case": "StandaloneReplacementItemGroup.DETAIL.MJM3Xm",
+  "grant": "Restricted",
+  "kind": "DETAIL",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Menu/StandaloneReplacementItemGroup/MJM3Xm"
+  },
+  "response": {
+    "body": {
+      "Additional": null,
+      "Entity": {
+        "CreateDate": "<ts>",
+        "CreatedByUserID": null,
+        "ID": "MJM3Xm",
+        "IsDeleted": false,
+        "LabourCode": "PAR-SLC-1",
+        "LastSaveDate": "<ts>",
+        "LastSavedByUserID": null,
+        "MenuCode": "PAR-MC-1",
+        "Name": "PARITY-SRIG parity standalone group"
+      },
+      "Message": null
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {
+      "Content-Language": "en-US"
+    },
+    "status": 200
+  }
+}

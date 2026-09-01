@@ -1,0 +1,31 @@
+{
+  "case": "MenuVersion.DETAIL.6130001",
+  "grant": "FullAccess",
+  "kind": "DETAIL",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Menu/MenuVersion/6130001"
+  },
+  "response": {
+    "body": {
+      "Additional": null,
+      "Entity": {
+        "CreateDate": "<ts>",
+        "CreatedByUserID": null,
+        "ID": "6130001",
+        "IsDeleted": false,
+        "LastSaveDate": "<ts>",
+        "LastSavedByUserID": null,
+        "Version": 1,
+        "VersionDateTime": "2020-01-01T00:00:00+00:00"
+      },
+      "Message": null
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {
+      "Content-Language": "en-US"
+    },
+    "status": 200
+  }
+}

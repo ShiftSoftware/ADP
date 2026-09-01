@@ -1,0 +1,49 @@
+{
+  "case": "ServiceInterval.CREATE",
+  "grant": "FullAccess",
+  "kind": "CREATE",
+  "request": {
+    "body": {
+      "_why": [
+        "Code / FullName required; ServiceIntervalGroup is a ShiftEntitySelectDTO whose Value must be",
+        "a REAL hash id - resolved from the seeded group at run time via the @@Entity[n]@@ token."
+      ],
+      "code": "PARITY-CREATE-SI",
+      "description": "Parity created interval",
+      "fullName": "PARITY-CREATE-SI parity created interval",
+      "serviceIntervalGroup": {
+        "text": "PARITY-SIG",
+        "value": "7YEYbY"
+      },
+      "valueInMeter": 20000
+    },
+    "method": "POST",
+    "url": "/api/Menu/ServiceInterval"
+  },
+  "response": {
+    "body": {
+      "Additional": null,
+      "Entity": {
+        "Code": "PARITY-CREATE-SI",
+        "CreateDate": "<ts>",
+        "CreatedByUserID": "V2PQY",
+        "Description": "Parity created interval",
+        "FullName": "PARITY-CREATE-SI parity created interval",
+        "ID": "N6og3a",
+        "IsDeleted": false,
+        "LastSaveDate": "<ts>",
+        "LastSavedByUserID": "V2PQY",
+        "ServiceIntervalGroup": {
+          "Value": "7YEYbY"
+        },
+        "ValueInMeter": 20000
+      },
+      "Message": null
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {
+      "Content-Language": "en-US"
+    },
+    "status": 201
+  }
+}

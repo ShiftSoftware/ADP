@@ -1,0 +1,16 @@
+{
+  "case": "ScreenTemplate.ATTENTION.rz5DdR",
+  "grant": "Restricted",
+  "kind": "ATTENTION",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Surveys/ScreenTemplate/rz5DdR/attention"
+  },
+  "response": {
+    "body": [],
+    "contentType": "application/json; charset=utf-8",
+    "headers": {},
+    "status": 200
+  }
+}

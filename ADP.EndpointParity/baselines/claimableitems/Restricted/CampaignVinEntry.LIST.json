@@ -1,0 +1,32 @@
+{
+  "case": "CampaignVinEntry.LIST",
+  "grant": "Restricted",
+  "kind": "LIST",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/ClaimableItems/CampaignVinEntry?$orderby=ID&$top=5&$count=true"
+  },
+  "response": {
+    "body": {
+      "Count": 1,
+      "Value": [
+        {
+          "CampaignID": "7000001",
+          "CampaignName": "PARITY-CAMPAIGN parity campaign",
+          "CampaignUniqueReference": "parity-campaign-1",
+          "CompanyBranchID": "Z5",
+          "CompanyID": "LA",
+          "CountryID": "6z",
+          "ID": "7020001",
+          "IsDeleted": false,
+          "RecordedDate": "2020-02-01T00:00:00",
+          "VIN": "PARITYVIN00000001"
+        }
+      ]
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {},
+    "status": 200
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "case": "BrandMapping.PRINTTOKEN.xXGj99",
+  "grant": "FullAccess",
+  "kind": "PRINTTOKEN",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Menu/BrandMapping/print-token/xXGj99"
+  },
+  "response": {
+    "body": "expires=<expires>&token=<token>",
+    "contentType": "text/plain; charset=utf-8",
+    "headers": {
+      "Content-Language": "en-US"
+    },
+    "status": 200
+  }
+}

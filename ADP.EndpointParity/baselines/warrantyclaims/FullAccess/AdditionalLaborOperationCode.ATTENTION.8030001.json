@@ -1,0 +1,16 @@
+{
+  "case": "AdditionalLaborOperationCode.ATTENTION.8030001",
+  "grant": "FullAccess",
+  "kind": "ATTENTION",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/WarrantyClaims/AdditionalLaborOperationCode/8030001/attention"
+  },
+  "response": {
+    "body": [],
+    "contentType": "application/json; charset=utf-8",
+    "headers": {},
+    "status": 200
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "case": "Survey.PRINTTOKEN.KJzYkW",
+  "grant": "FullAccess",
+  "kind": "PRINTTOKEN",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Surveys/Survey/print-token/KJzYkW"
+  },
+  "response": {
+    "body": "expires=<expires>&token=<token>",
+    "contentType": "text/plain; charset=utf-8",
+    "headers": {},
+    "status": 200
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "case": "AdditionalLaborOperationCode.LIST",
+  "grant": "FullAccess",
+  "kind": "LIST",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/WarrantyClaims/AdditionalLaborOperationCode?$orderby=ID&$top=5&$count=true"
+  },
+  "response": {
+    "body": {
+      "Count": 1,
+      "Value": [
+        {
+          "Code": "PARITY-ALOC",
+          "Description": null,
+          "ID": "8030001",
+          "IsDeleted": false,
+          "Time": 2.25
+        }
+      ]
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {},
+    "status": 200
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "case": "ServiceCampaign.LIST",
+  "grant": "FullAccess",
+  "kind": "LIST",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/ClaimableItems/ServiceCampaign?$orderby=ID&$top=5&$count=true"
+  },
+  "response": {
+    "body": {
+      "Count": 1,
+      "Value": [
+        {
+          "ActivationTrigger": "WarrantyActivation",
+          "ActivationTriggerText": "On Warranty Activation",
+          "ActivationType": "FirstTriggerOnly",
+          "ActivationTypeText": "Activate on First Trigger Only (One-time activation)",
+          "ExpireDate": "2099-12-31T00:00:00",
+          "ID": "7000001",
+          "IsDeleted": false,
+          "Name": "PARITY-CAMPAIGN parity campaign",
+          "StartDate": "2020-01-01T00:00:00",
+          "UniqueReference": "parity-campaign-1"
+        }
+      ]
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {},
+    "status": 200
+  }
+}

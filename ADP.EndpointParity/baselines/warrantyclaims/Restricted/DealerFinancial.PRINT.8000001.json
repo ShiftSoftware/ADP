@@ -1,0 +1,16 @@
+{
+  "case": "DealerFinancial.PRINT.8000001",
+  "grant": "Restricted",
+  "kind": "PRINT",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/WarrantyClaims/DealerFinancial/print/8000001"
+  },
+  "response": {
+    "body": "",
+    "contentType": null,
+    "headers": {},
+    "status": 403
+  }
+}

@@ -1,0 +1,247 @@
+{
+  "group": "Surveys",
+  "_readme": [
+    "ADVERSARIAL SEED for the Surveys group. TEMPORARY - deleted in Step 08.",
+    "",
+    "Explicit long primary keys throughout (Rule 1). Applied with SET IDENTITY_INSERT, which needs",
+    "no production source change. Same salt + same long => same hash id, so a seeded id compares",
+    "LITERALLY and a wrong id is a diff rather than noise. Never let the database pick these.",
+    "",
+    "ID BLOCKS, chosen so that no row's PK ever equals a foreign id it carries. That is deliberate:",
+    "trap 2 is a link row's own PK leaking into a child's ID, and it is INVISIBLE if the two numbers",
+    "happen to coincide.",
+    "  Survey          5_000_00x",
+    "  SurveyVersion   5_100_00x",
+    "  SurveyInstance  5_200_00x",
+    "  SurveyResponse  5_300_00x",
+    "  SurveyAnswer    5_400_00x   <- link row; PK deliberately far from SurveyResponseID",
+    "  BankQuestion    5_500_00x",
+    "  ScreenTemplate  5_600_00x",
+    "",
+    "WHICH TRAPS THIS GROUP ACTUALLY HAS - verified against the code, then adversarially re-checked.",
+    "Two of the four do not exist here, and are NOT faked:",
+    "  trap3write  PRESENT, confirmed. Survey.PublishedVersionNumber is dropped on the DTO->entity",
+    "              map (GeneralMappingProfile.cs:41-42) because the publish flow derives it. Seeded",
+    "              as 7 on survey 5000001: a create/update body sends a different value, so if the",
+    "              generated mapper starts writing it by convention the readback shows the client's",
+    "              number instead of the derived one.",
+    "  trap3write  PRESENT, narrower than first claimed. BankQuestion.Locked (GeneralMappingProfile",
+    "              .cs:75) is ignored on the reverse map; seeded true on 5500001 so a body sending",
+    "              false must NOT flip it.",
+    "  trap1       ABSENT in its literal form. There is no .ForViewChildren/.ForView child predicate",
+    "              anywhere in this group and no child-entity array on any DTO. Soft-deleted rows are",
+    "              still seeded below, because the framework's global IsDeleted filter is a different",
+    "              mechanism worth watching and costs nothing to cover.",
+    "  trap2       ABSENT today. SurveyAnswer IS link-shaped (own PK + SurveyResponseID + BankEntryID)",
+    "              but nothing projects its PK into a child's ID. It is seeded with deliberately",
+    "              divergent numbers anyway - the point of a trap-shaped row is to catch the trap",
+    "              being INTRODUCED by the upgrade, not only to reproduce one that exists now.",
+    "  trap3read   ABSENT. Every .Ignore() in this group is on the DTO->entity direction.",
+    "",
+    "Rows carrying _marker are the ones the summary gate checks for literally in list bodies. That",
+    "gate replaces '> 0 rows', which a sample host's own demo seed satisfies on its own and which",
+    "therefore cannot distinguish 'the adversarial seed was applied' from 'only demo data is here'.",
+    "",
+    "Keys beginning with _ are harness metadata and are never written to SQL.",
+    "",
+    "TABLE ORDER IS LOAD-BEARING: rows are inserted in the order listed, so a table must appear",
+    "after every table it has a foreign key into. BankQuestion precedes SurveyAnswer because",
+    "SurveyAnswer.BankEntryID has an FK to BankQuestion.BankEntryID.",
+    "",
+    "JSON-COLUMN VALUES MUST BE REAL DTOs, not {}. QuestionJson deserializes into the",
+    "polymorphic QuestionDto (discriminator property 'type'), and TemplateJson into",
+    "ScreenTemplateDto. A bare {} yields null and GET {id} then throws 500 inside the",
+    "mapper - which is a seed defect masquerading as an endpoint failure."
+  ],
+  "tables": [
+    {
+      "schema": "Surveys",
+      "table": "Survey",
+      "rows": [
+        {
+          "_marker": "PARITY-SURVEY-TRAP3WRITE",
+          "_hostile": [
+            "trap3write"
+          ],
+          "_why": "PublishedVersionNumber = 7 is a REPOSITORY-DERIVED value the reverse map ignores. A write body sending a different number must not change it.",
+          "ID": 5000001,
+          "Name": "PARITY-SURVEY-TRAP3WRITE derived-published-version",
+          "IntegrationId": "parity-survey-trap3write",
+          "DraftJson": "",
+          "PublishedVersionNumber": 7,
+          "IsDeleted": false,
+          "CreateDate": "2020-01-01T00:00:00.0000000+00:00",
+          "LastSaveDate": "2020-01-01T00:00:00.0000000+00:00"
+        },
+        {
+          "_marker": "PARITY-SURVEY-PLAIN",
+          "_why": "An ordinary row, so a diff on the hostile row can be told apart from a diff affecting every row.",
+          "ID": 5000002,
+          "Name": "PARITY-SURVEY-PLAIN control row",
+          "IntegrationId": "parity-survey-plain",
+          "DraftJson": "",
+          "PublishedVersionNumber": null,
+          "IsDeleted": false,
+          "CreateDate": "2020-01-01T00:00:00.0000000+00:00",
+          "LastSaveDate": "2020-01-01T00:00:00.0000000+00:00"
+        },
+        {
+          "_why": "Soft-deleted. Must NEVER appear in a list body. If it does, the global IsDeleted query filter regressed. Deliberately has no _marker - its absence is the assertion.",
+          "ID": 5000003,
+          "Name": "PARITY-SURVEY-SOFTDELETED must-not-appear",
+          "IntegrationId": "parity-survey-softdeleted",
+          "DraftJson": "",
+          "PublishedVersionNumber": null,
+          "IsDeleted": true,
+          "CreateDate": "2020-01-01T00:00:00.0000000+00:00",
+          "LastSaveDate": "2020-01-01T00:00:00.0000000+00:00"
+        }
+      ]
+    },
+    {
+      "schema": "Surveys",
+      "table": "SurveyVersion",
+      "rows": [
+        {
+          "_why": "The published snapshot survey 5000001's PublishedVersionNumber=7 refers to. PK 5100001 differs from SurveyID 5000001 on purpose.",
+          "ID": 5100001,
+          "SurveyID": 5000001,
+          "Version": 7,
+          "PublishedAt": "2020-02-01T00:00:00.0000000+00:00",
+          "ResolvedJson": "{}",
+          "Hash": "parity-version-hash-7",
+          "IsDeleted": false,
+          "CreateDate": "2020-02-01T00:00:00.0000000+00:00",
+          "LastSaveDate": "2020-02-01T00:00:00.0000000+00:00"
+        }
+      ]
+    },
+    {
+      "schema": "Surveys",
+      "table": "SurveyInstance",
+      "rows": [
+        {
+          "_marker": "PARITY-INSTANCE-AGGREGATE",
+          "_hostile": [
+            "trap1-variant"
+          ],
+          "_why": "Owns two responses, one of them soft-deleted. Any response-derived aggregate on this instance must count ONE, not two. This is the aggregate form of trap 1 - the literal child-array form does not exist in this group.",
+          "ID": 5200001,
+          "PublicID": "a0000000-0000-4000-8000-000000000001",
+          "SurveyID": 5000001,
+          "SurveyVersionID": 5100001,
+          "TriggeredAt": "2020-03-01T00:00:00.0000000+00:00",
+          "TriggeredBy": "PARITY-INSTANCE-AGGREGATE",
+          "Status": 1,
+          "CustomerRef": "parity-customer-1",
+          "RemindersRemaining": 0,
+          "IsDeleted": false,
+          "CreateDate": "2020-03-01T00:00:00.0000000+00:00",
+          "LastSaveDate": "2020-03-01T00:00:00.0000000+00:00"
+        }
+      ]
+    },
+    {
+      "schema": "Surveys",
+      "table": "SurveyResponse",
+      "rows": [
+        {
+          "_why": "Live response on instance 5200001. PK 5300001 differs from SurveyInstanceID 5200001 on purpose.",
+          "ID": 5300001,
+          "SurveyInstanceID": 5200001,
+          "StartedAt": "2020-03-02T00:00:00.0000000+00:00",
+          "CompletedAt": "2020-03-02T01:00:00.0000000+00:00",
+          "AgentId": "parity-agent",
+          "Status": 1,
+          "IsDeleted": false,
+          "CreateDate": "2020-03-02T00:00:00.0000000+00:00",
+          "LastSaveDate": "2020-03-02T00:00:00.0000000+00:00"
+        },
+        {
+          "_why": "SOFT-DELETED sibling on the same instance. This is the row that makes the aggregate trap fire: a count that includes it has lost the IsDeleted predicate.",
+          "ID": 5300002,
+          "SurveyInstanceID": 5200001,
+          "StartedAt": "2020-03-03T00:00:00.0000000+00:00",
+          "CompletedAt": "2020-03-03T01:00:00.0000000+00:00",
+          "AgentId": "parity-agent-deleted",
+          "Status": 1,
+          "IsDeleted": true,
+          "CreateDate": "2020-03-03T00:00:00.0000000+00:00",
+          "LastSaveDate": "2020-03-03T00:00:00.0000000+00:00"
+        }
+      ]
+    },
+    {
+      "schema": "Surveys",
+      "table": "BankQuestion",
+      "rows": [
+        {
+          "_marker": "PARITY-BANKQ-LOCKED",
+          "_hostile": [
+            "trap3write"
+          ],
+          "_why": "Locked = true is ignored on the DTO->entity map (GeneralMappingProfile.cs:75). A write body sending locked=false must NOT flip it. Locked also arms the repository's own immutability guards, so a regression here changes behaviour, not just a displayed flag. QuestionJson carries a REAL polymorphic QuestionDto with its 'type' discriminator: a bare {} deserializes to null and makes GET {id} throw AutoMapperMappingException 500, which the first capture caught.",
+          "ID": 5500001,
+          "BankEntryID": "b0000000-0000-4000-8000-000000000001",
+          "Key": "PARITY-BANKQ-LOCKED",
+          "QuestionJson": "{\"type\":\"text\",\"id\":\"q-parity-locked\",\"title\":{\"en\":\"Parity locked question\"},\"required\":false}",
+          "Locked": true,
+          "Retired": false,
+          "IsDeleted": false,
+          "CreateDate": "2020-01-05T00:00:00.0000000+00:00",
+          "LastSaveDate": "2020-01-05T00:00:00.0000000+00:00"
+        },
+        {
+          "_marker": "PARITY-BANKQ-UNLOCKED",
+          "_why": "Control: same shape, Locked false, so a diff on the locked row is attributable.",
+          "ID": 5500002,
+          "BankEntryID": "b0000000-0000-4000-8000-000000000002",
+          "Key": "PARITY-BANKQ-UNLOCKED",
+          "QuestionJson": "{\"type\":\"nps\",\"id\":\"q-parity-unlocked\",\"title\":{\"en\":\"Parity NPS question\"},\"required\":false}",
+          "Locked": false,
+          "Retired": false,
+          "IsDeleted": false,
+          "CreateDate": "2020-01-05T00:00:00.0000000+00:00",
+          "LastSaveDate": "2020-01-05T00:00:00.0000000+00:00"
+        }
+      ]
+    },
+    {
+      "schema": "Surveys",
+      "table": "SurveyAnswer",
+      "rows": [
+        {
+          "_hostile": [
+            "trap2-shaped"
+          ],
+          "_why": "LINK ROW. Its own PK (5400001) is deliberately far from both foreign ids it carries (SurveyResponseID 5300001, BankEntryID a fixed Guid). No mapping leaks it today, so this row is a GUARD: if the upgrade introduces a projection that emits the link PK where a child id belongs, the wrong number shows up here and nowhere else.",
+          "ID": 5400001,
+          "SurveyResponseID": 5300001,
+          "BankEntryID": "b0000000-0000-4000-8000-000000000001",
+          "KeyAtSubmission": "q-nps",
+          "ValueJson": "9",
+          "Order": 1,
+          "IsDeleted": false,
+          "CreateDate": "2020-03-02T00:30:00.0000000+00:00",
+          "LastSaveDate": "2020-03-02T00:30:00.0000000+00:00"
+        }
+      ]
+    },
+    {
+      "schema": "Surveys",
+      "table": "ScreenTemplate",
+      "rows": [
+        {
+          "_marker": "PARITY-SCREENTEMPLATE",
+          "_why": "Plain row so the ScreenTemplate triple's list and detail bodies are non-empty. An empty list body is a case that cannot fail.",
+          "ID": 5600001,
+          "Key": "PARITY-SCREENTEMPLATE",
+          "TemplateJson": "{\"id\":\"tpl-parity-seed\",\"title\":{\"en\":\"Parity seeded template\"},\"questions\":[{\"bankRef\":\"PARITY-BANKQ-LOCKED\"}]}",
+          "IsDeleted": false,
+          "CreateDate": "2020-01-06T00:00:00.0000000+00:00",
+          "LastSaveDate": "2020-01-06T00:00:00.0000000+00:00"
+        }
+      ]
+    }
+  ]
+}

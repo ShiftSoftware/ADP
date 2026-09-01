@@ -1,0 +1,27 @@
+{
+  "case": "LabourRateMapping.DETAIL.AKbdbW",
+  "grant": "Restricted",
+  "kind": "DETAIL",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Menu/LabourRateMapping/AKbdbW"
+  },
+  "response": {
+    "body": {
+      "Additional": null,
+      "Entity": null,
+      "Message": {
+        "Body": "Can't find entity with ID 'AKbdbW'",
+        "For": null,
+        "SubMessages": null,
+        "Title": "Not Found"
+      }
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {
+      "Content-Language": "en-US"
+    },
+    "status": 404
+  }
+}

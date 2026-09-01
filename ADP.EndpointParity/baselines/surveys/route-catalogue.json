@@ -1,0 +1,613 @@
+{
+  "routes": [
+    {
+      "action": "HTTP: GET Auth/AuthCode",
+      "controller": "",
+      "method": "GET",
+      "parameters": "",
+      "template": "/Auth/AuthCode"
+    },
+    {
+      "action": "HTTP: POST api/Auth/AuthCode",
+      "controller": "",
+      "method": "POST",
+      "parameters": "",
+      "template": "/api/Auth/AuthCode"
+    },
+    {
+      "action": "HTTP: POST api/Auth/Login",
+      "controller": "",
+      "method": "POST",
+      "parameters": "",
+      "template": "/api/Auth/Login"
+    },
+    {
+      "action": "HTTP: POST api/Auth/Login/mfa",
+      "controller": "",
+      "method": "POST",
+      "parameters": "",
+      "template": "/api/Auth/Login/mfa"
+    },
+    {
+      "action": "HTTP: POST api/Auth/Refresh",
+      "controller": "",
+      "method": "POST",
+      "parameters": "",
+      "template": "/api/Auth/Refresh"
+    },
+    {
+      "action": "HTTP: POST api/Auth/TokenWithAppIdOnly",
+      "controller": "",
+      "method": "POST",
+      "parameters": "",
+      "template": "/api/Auth/TokenWithAppIdOnly"
+    },
+    {
+      "action": "GenerateFileUploadSAS",
+      "controller": "AzureStorage",
+      "method": "POST",
+      "parameters": "List`1 files",
+      "template": "/api/AzureStorage/generate-file-upload-sas"
+    },
+    {
+      "action": "UnzipFiles",
+      "controller": "FileExplorer",
+      "method": "POST",
+      "parameters": "ZipOptionsDTO zipOptions",
+      "template": "/api/FileExplorer/UnzipFiles"
+    },
+    {
+      "action": "ZipFiles",
+      "controller": "FileExplorer",
+      "method": "POST",
+      "parameters": "ZipOptionsDTO zipOptions",
+      "template": "/api/FileExplorer/ZipFiles"
+    },
+    {
+      "action": "Create",
+      "controller": "FileExplorer",
+      "method": "POST",
+      "parameters": "FileExplorerCreateDTO data",
+      "template": "/api/FileExplorer/create"
+    },
+    {
+      "action": "Delete",
+      "controller": "FileExplorer",
+      "method": "POST",
+      "parameters": "FileExplorerDeleteDTO data",
+      "template": "/api/FileExplorer/delete"
+    },
+    {
+      "action": "Detail",
+      "controller": "FileExplorer",
+      "method": "GET",
+      "parameters": "FileExplorerDetailDTO data",
+      "template": "/api/FileExplorer/detail"
+    },
+    {
+      "action": "List",
+      "controller": "FileExplorer",
+      "method": "GET",
+      "parameters": "FileExplorerReadDTO data",
+      "template": "/api/FileExplorer/list"
+    },
+    {
+      "action": "Restore",
+      "controller": "FileExplorer",
+      "method": "POST",
+      "parameters": "FileExplorerRestoreDTO data",
+      "template": "/api/FileExplorer/restore"
+    },
+    {
+      "action": "HTTP: POST api/IdentityCompanyCalendar/GetCalendarEvents",
+      "controller": "",
+      "method": "POST",
+      "parameters": "",
+      "template": "/api/IdentityCompanyCalendar/GetCalendarEvents"
+    },
+    {
+      "action": "HTTP: GET api/IdentityPublicUser",
+      "controller": "",
+      "method": "GET",
+      "parameters": "",
+      "template": "/api/IdentityPublicUser"
+    },
+    {
+      "action": "HTTP: GET api/IdentitySync/pull-live-db-data",
+      "controller": "",
+      "method": "GET",
+      "parameters": "",
+      "template": "/api/IdentitySync/pull-live-db-data"
+    },
+    {
+      "action": "HTTP: POST api/IdentityUser/AssignRandomPasswords",
+      "controller": "",
+      "method": "POST",
+      "parameters": "",
+      "template": "/api/IdentityUser/AssignRandomPasswords"
+    },
+    {
+      "action": "HTTP: POST api/IdentityUser/ImportUsers",
+      "controller": "",
+      "method": "POST",
+      "parameters": "",
+      "template": "/api/IdentityUser/ImportUsers"
+    },
+    {
+      "action": "HTTP: POST api/IdentityUser/ResetTotp",
+      "controller": "",
+      "method": "POST",
+      "parameters": "",
+      "template": "/api/IdentityUser/ResetTotp"
+    },
+    {
+      "action": "HTTP: POST api/IdentityUser/VerifyEmails",
+      "controller": "",
+      "method": "POST",
+      "parameters": "",
+      "template": "/api/IdentityUser/VerifyEmails"
+    },
+    {
+      "action": "HTTP: POST api/IdentityUser/VerifyPhones",
+      "controller": "",
+      "method": "POST",
+      "parameters": "",
+      "template": "/api/IdentityUser/VerifyPhones"
+    },
+    {
+      "action": "HTTP: GET api/IdentityUser/{key}/EffectivePermissions",
+      "controller": "",
+      "method": "GET",
+      "parameters": "key",
+      "template": "/api/IdentityUser/{key}/EffectivePermissions"
+    },
+    {
+      "action": "HTTP: GET api/ReverseTypeAuthLookup",
+      "controller": "",
+      "method": "GET",
+      "parameters": "",
+      "template": "/api/ReverseTypeAuthLookup"
+    },
+    {
+      "action": "Get",
+      "controller": "BankQuestion",
+      "method": "GET",
+      "parameters": "ODataQueryOptions`1 oDataQueryOptions",
+      "template": "/api/Surveys/BankQuestion"
+    },
+    {
+      "action": "Post",
+      "controller": "BankQuestion",
+      "method": "POST",
+      "parameters": "BankQuestionAdminDTO dto",
+      "template": "/api/Surveys/BankQuestion"
+    },
+    {
+      "action": "PrintToken",
+      "controller": "BankQuestion",
+      "method": "GET",
+      "parameters": "String key",
+      "template": "/api/Surveys/BankQuestion/print-token/{key}"
+    },
+    {
+      "action": "Print",
+      "controller": "BankQuestion",
+      "method": "GET",
+      "parameters": "String key, String expires, String token",
+      "template": "/api/Surveys/BankQuestion/print/{key}"
+    },
+    {
+      "action": "Delete",
+      "controller": "BankQuestion",
+      "method": "DELETE",
+      "parameters": "String key",
+      "template": "/api/Surveys/BankQuestion/{key}"
+    },
+    {
+      "action": "GetSingle",
+      "controller": "BankQuestion",
+      "method": "GET",
+      "parameters": "String key, Nullable`1 asOf",
+      "template": "/api/Surveys/BankQuestion/{key}"
+    },
+    {
+      "action": "Put",
+      "controller": "BankQuestion",
+      "method": "PUT",
+      "parameters": "String key, BankQuestionAdminDTO dto",
+      "template": "/api/Surveys/BankQuestion/{key}"
+    },
+    {
+      "action": "GetAttentionSignals",
+      "controller": "BankQuestion",
+      "method": "GET",
+      "parameters": "String key",
+      "template": "/api/Surveys/BankQuestion/{key}/attention"
+    },
+    {
+      "action": "ClearAttentionSignals",
+      "controller": "BankQuestion",
+      "method": "POST",
+      "parameters": "String key, AttentionClearFilter filter",
+      "template": "/api/Surveys/BankQuestion/{key}/attention/clear"
+    },
+    {
+      "action": "GetRevisions",
+      "controller": "BankQuestion",
+      "method": "GET",
+      "parameters": "String key, ODataQueryOptions`1 oDataQueryOptions",
+      "template": "/api/Surveys/BankQuestion/{key}/revisions"
+    },
+    {
+      "action": "Resolve",
+      "controller": "Preview",
+      "method": "POST",
+      "parameters": "",
+      "template": "/api/Surveys/Preview"
+    },
+    {
+      "action": "Publish",
+      "controller": "Publish",
+      "method": "POST",
+      "parameters": "String id",
+      "template": "/api/Surveys/Publish/{id}"
+    },
+    {
+      "action": "Get",
+      "controller": "ScreenTemplate",
+      "method": "GET",
+      "parameters": "ODataQueryOptions`1 oDataQueryOptions",
+      "template": "/api/Surveys/ScreenTemplate"
+    },
+    {
+      "action": "Post",
+      "controller": "ScreenTemplate",
+      "method": "POST",
+      "parameters": "ScreenTemplateAdminDTO dto",
+      "template": "/api/Surveys/ScreenTemplate"
+    },
+    {
+      "action": "PrintToken",
+      "controller": "ScreenTemplate",
+      "method": "GET",
+      "parameters": "String key",
+      "template": "/api/Surveys/ScreenTemplate/print-token/{key}"
+    },
+    {
+      "action": "Print",
+      "controller": "ScreenTemplate",
+      "method": "GET",
+      "parameters": "String key, String expires, String token",
+      "template": "/api/Surveys/ScreenTemplate/print/{key}"
+    },
+    {
+      "action": "Delete",
+      "controller": "ScreenTemplate",
+      "method": "DELETE",
+      "parameters": "String key",
+      "template": "/api/Surveys/ScreenTemplate/{key}"
+    },
+    {
+      "action": "GetSingle",
+      "controller": "ScreenTemplate",
+      "method": "GET",
+      "parameters": "String key, Nullable`1 asOf",
+      "template": "/api/Surveys/ScreenTemplate/{key}"
+    },
+    {
+      "action": "Put",
+      "controller": "ScreenTemplate",
+      "method": "PUT",
+      "parameters": "String key, ScreenTemplateAdminDTO dto",
+      "template": "/api/Surveys/ScreenTemplate/{key}"
+    },
+    {
+      "action": "GetAttentionSignals",
+      "controller": "ScreenTemplate",
+      "method": "GET",
+      "parameters": "String key",
+      "template": "/api/Surveys/ScreenTemplate/{key}/attention"
+    },
+    {
+      "action": "ClearAttentionSignals",
+      "controller": "ScreenTemplate",
+      "method": "POST",
+      "parameters": "String key, AttentionClearFilter filter",
+      "template": "/api/Surveys/ScreenTemplate/{key}/attention/clear"
+    },
+    {
+      "action": "GetRevisions",
+      "controller": "ScreenTemplate",
+      "method": "GET",
+      "parameters": "String key, ODataQueryOptions`1 oDataQueryOptions",
+      "template": "/api/Surveys/ScreenTemplate/{key}/revisions"
+    },
+    {
+      "action": "Get",
+      "controller": "Survey",
+      "method": "GET",
+      "parameters": "ODataQueryOptions`1 oDataQueryOptions",
+      "template": "/api/Surveys/Survey"
+    },
+    {
+      "action": "Post",
+      "controller": "Survey",
+      "method": "POST",
+      "parameters": "SurveyAdminDTO dto",
+      "template": "/api/Surveys/Survey"
+    },
+    {
+      "action": "PrintToken",
+      "controller": "Survey",
+      "method": "GET",
+      "parameters": "String key",
+      "template": "/api/Surveys/Survey/print-token/{key}"
+    },
+    {
+      "action": "Print",
+      "controller": "Survey",
+      "method": "GET",
+      "parameters": "String key, String expires, String token",
+      "template": "/api/Surveys/Survey/print/{key}"
+    },
+    {
+      "action": "Delete",
+      "controller": "Survey",
+      "method": "DELETE",
+      "parameters": "String key",
+      "template": "/api/Surveys/Survey/{key}"
+    },
+    {
+      "action": "GetSingle",
+      "controller": "Survey",
+      "method": "GET",
+      "parameters": "String key, Nullable`1 asOf",
+      "template": "/api/Surveys/Survey/{key}"
+    },
+    {
+      "action": "Put",
+      "controller": "Survey",
+      "method": "PUT",
+      "parameters": "String key, SurveyAdminDTO dto",
+      "template": "/api/Surveys/Survey/{key}"
+    },
+    {
+      "action": "GetAttentionSignals",
+      "controller": "Survey",
+      "method": "GET",
+      "parameters": "String key",
+      "template": "/api/Surveys/Survey/{key}/attention"
+    },
+    {
+      "action": "ClearAttentionSignals",
+      "controller": "Survey",
+      "method": "POST",
+      "parameters": "String key, AttentionClearFilter filter",
+      "template": "/api/Surveys/Survey/{key}/attention/clear"
+    },
+    {
+      "action": "GetRevisions",
+      "controller": "Survey",
+      "method": "GET",
+      "parameters": "String key, ODataQueryOptions`1 oDataQueryOptions",
+      "template": "/api/Surveys/Survey/{key}/revisions"
+    },
+    {
+      "action": "Get",
+      "controller": "SurveyInstance",
+      "method": "GET",
+      "parameters": "ODataQueryOptions`1 oDataQueryOptions",
+      "template": "/api/Surveys/SurveyInstance"
+    },
+    {
+      "action": "Post",
+      "controller": "SurveyInstance",
+      "method": "POST",
+      "parameters": "SurveyInstanceAdminDTO dto",
+      "template": "/api/Surveys/SurveyInstance"
+    },
+    {
+      "action": "PrintToken",
+      "controller": "SurveyInstance",
+      "method": "GET",
+      "parameters": "String key",
+      "template": "/api/Surveys/SurveyInstance/print-token/{key}"
+    },
+    {
+      "action": "Print",
+      "controller": "SurveyInstance",
+      "method": "GET",
+      "parameters": "String key, String expires, String token",
+      "template": "/api/Surveys/SurveyInstance/print/{key}"
+    },
+    {
+      "action": "Delete",
+      "controller": "SurveyInstance",
+      "method": "DELETE",
+      "parameters": "String key",
+      "template": "/api/Surveys/SurveyInstance/{key}"
+    },
+    {
+      "action": "GetSingle",
+      "controller": "SurveyInstance",
+      "method": "GET",
+      "parameters": "String key, Nullable`1 asOf",
+      "template": "/api/Surveys/SurveyInstance/{key}"
+    },
+    {
+      "action": "Put",
+      "controller": "SurveyInstance",
+      "method": "PUT",
+      "parameters": "String key, SurveyInstanceAdminDTO dto",
+      "template": "/api/Surveys/SurveyInstance/{key}"
+    },
+    {
+      "action": "GetAttentionSignals",
+      "controller": "SurveyInstance",
+      "method": "GET",
+      "parameters": "String key",
+      "template": "/api/Surveys/SurveyInstance/{key}/attention"
+    },
+    {
+      "action": "ClearAttentionSignals",
+      "controller": "SurveyInstance",
+      "method": "POST",
+      "parameters": "String key, AttentionClearFilter filter",
+      "template": "/api/Surveys/SurveyInstance/{key}/attention/clear"
+    },
+    {
+      "action": "GetRevisions",
+      "controller": "SurveyInstance",
+      "method": "GET",
+      "parameters": "String key, ODataQueryOptions`1 oDataQueryOptions",
+      "template": "/api/Surveys/SurveyInstance/{key}/revisions"
+    },
+    {
+      "action": "SubmitResponse",
+      "controller": "PublicSurvey",
+      "method": "POST",
+      "parameters": "Guid publicId, SurveyResponseSubmissionDto body",
+      "template": "/api/Surveys/SurveyInstances/{publicId:guid}/responses"
+    },
+    {
+      "action": "GetSchema",
+      "controller": "PublicSurvey",
+      "method": "GET",
+      "parameters": "Guid publicId",
+      "template": "/api/Surveys/SurveyInstances/{publicId:guid}/schema"
+    },
+    {
+      "action": "GetStatus",
+      "controller": "PublicSurvey",
+      "method": "GET",
+      "parameters": "Guid publicId",
+      "template": "/api/Surveys/SurveyInstances/{publicId:guid}/status"
+    },
+    {
+      "action": "GetInstanceDetail",
+      "controller": "SurveyResponses",
+      "method": "GET",
+      "parameters": "Guid publicId",
+      "template": "/api/Surveys/SurveyResponses/instance/{publicId:guid}"
+    },
+    {
+      "action": "GetPublicUrlTemplate",
+      "controller": "SurveyResponses",
+      "method": "GET",
+      "parameters": "",
+      "template": "/api/Surveys/SurveyResponses/public-url-template"
+    },
+    {
+      "action": "Export",
+      "controller": "SurveyResponses",
+      "method": "GET",
+      "parameters": "String surveyId, Boolean includeTests, CancellationToken ct",
+      "template": "/api/Surveys/SurveyResponses/{surveyId}/export"
+    },
+    {
+      "action": "CreateTestInstance",
+      "controller": "SurveyResponses",
+      "method": "POST",
+      "parameters": "String surveyId",
+      "template": "/api/Surveys/SurveyResponses/{surveyId}/test-instances"
+    },
+    {
+      "action": "List",
+      "controller": "TriggerChannels",
+      "method": "GET",
+      "parameters": "",
+      "template": "/api/Surveys/Triggers/channels"
+    },
+    {
+      "action": "Ingest",
+      "controller": "TriggerIngest",
+      "method": "POST",
+      "parameters": "TriggerIngestRequest request, CancellationToken ct",
+      "template": "/api/Surveys/Triggers/ingest"
+    },
+    {
+      "action": "Tick",
+      "controller": "TriggerScheduler",
+      "method": "POST",
+      "parameters": "Int32 batchSize, CancellationToken ct",
+      "template": "/api/Surveys/Triggers/scheduler/tick"
+    },
+    {
+      "action": "HTTP: PUT api/UserManager/ChangePassword",
+      "controller": "",
+      "method": "PUT",
+      "parameters": "",
+      "template": "/api/UserManager/ChangePassword"
+    },
+    {
+      "action": "HTTP: POST api/UserManager/ConfirmTotpEnrollment",
+      "controller": "",
+      "method": "POST",
+      "parameters": "",
+      "template": "/api/UserManager/ConfirmTotpEnrollment"
+    },
+    {
+      "action": "HTTP: POST api/UserManager/ResetPassword/{userId}",
+      "controller": "",
+      "method": "POST",
+      "parameters": "userId",
+      "template": "/api/UserManager/ResetPassword/{userId}"
+    },
+    {
+      "action": "HTTP: GET api/UserManager/SendEmailVerificationLink",
+      "controller": "",
+      "method": "GET",
+      "parameters": "",
+      "template": "/api/UserManager/SendEmailVerificationLink"
+    },
+    {
+      "action": "HTTP: GET api/UserManager/SendPasswordResetLink",
+      "controller": "",
+      "method": "GET",
+      "parameters": "",
+      "template": "/api/UserManager/SendPasswordResetLink"
+    },
+    {
+      "action": "HTTP: GET api/UserManager/StartTotpEnrollment",
+      "controller": "",
+      "method": "GET",
+      "parameters": "",
+      "template": "/api/UserManager/StartTotpEnrollment"
+    },
+    {
+      "action": "HTTP: GET api/UserManager/UserData",
+      "controller": "",
+      "method": "GET",
+      "parameters": "",
+      "template": "/api/UserManager/UserData"
+    },
+    {
+      "action": "HTTP: PUT api/UserManager/UserData",
+      "controller": "",
+      "method": "PUT",
+      "parameters": "",
+      "template": "/api/UserManager/UserData"
+    },
+    {
+      "action": "HTTP: GET api/UserManager/VerifyEmail/{userId}",
+      "controller": "",
+      "method": "GET",
+      "parameters": "userId",
+      "template": "/api/UserManager/VerifyEmail/{userId}"
+    },
+    {
+      "action": "Fallback {*path:nonfile}",
+      "controller": "",
+      "method": "GET",
+      "parameters": "path",
+      "template": "/{*path:nonfile}"
+    },
+    {
+      "action": "Fallback {*path:nonfile}",
+      "controller": "",
+      "method": "HEAD",
+      "parameters": "path",
+      "template": "/{*path:nonfile}"
+    }
+  ]
+}

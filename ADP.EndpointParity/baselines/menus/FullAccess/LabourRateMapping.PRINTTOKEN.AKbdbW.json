@@ -1,0 +1,18 @@
+{
+  "case": "LabourRateMapping.PRINTTOKEN.AKbdbW",
+  "grant": "FullAccess",
+  "kind": "PRINTTOKEN",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Menu/LabourRateMapping/print-token/AKbdbW"
+  },
+  "response": {
+    "body": "expires=<expires>&token=<token>",
+    "contentType": "text/plain; charset=utf-8",
+    "headers": {
+      "Content-Language": "en-US"
+    },
+    "status": 200
+  }
+}

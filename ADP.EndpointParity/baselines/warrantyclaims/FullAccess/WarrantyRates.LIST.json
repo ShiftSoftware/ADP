@@ -1,0 +1,19 @@
+{
+  "case": "WarrantyRates.LIST",
+  "grant": "FullAccess",
+  "kind": "LIST",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/WarrantyClaims/WarrantyRates?$orderby=ID&$top=5&$count=true"
+  },
+  "response": {
+    "body": {
+      "Count": 0,
+      "Value": []
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {},
+    "status": 200
+  }
+}

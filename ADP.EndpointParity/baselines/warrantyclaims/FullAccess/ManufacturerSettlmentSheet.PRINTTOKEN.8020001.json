@@ -1,0 +1,16 @@
+{
+  "case": "ManufacturerSettlmentSheet.PRINTTOKEN.8020001",
+  "grant": "FullAccess",
+  "kind": "PRINTTOKEN",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/WarrantyClaims/ManufacturerSettlmentSheet/print-token/8020001"
+  },
+  "response": {
+    "body": "expires=<expires>&token=<token>",
+    "contentType": "text/plain; charset=utf-8",
+    "headers": {},
+    "status": 200
+  }
+}

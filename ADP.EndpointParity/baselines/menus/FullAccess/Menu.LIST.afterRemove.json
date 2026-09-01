@@ -1,0 +1,30 @@
+{
+  "case": "Menu.LIST.afterRemove",
+  "grant": "FullAccess",
+  "kind": "LIST",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Menu/Menu?$orderby=ID&$count=true"
+  },
+  "response": {
+    "body": {
+      "Count": 1,
+      "Value": [
+        {
+          "BasicModelCode": "PARITY-MENU",
+          "BrandID": "XOoJY",
+          "ID": "aElMpb",
+          "IsDeleted": false,
+          "VariantsCount": 1,
+          "VehilceModel": "PARITY-VM parity vehicle model"
+        }
+      ]
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {
+      "Content-Language": "en-US"
+    },
+    "status": 200
+  }
+}

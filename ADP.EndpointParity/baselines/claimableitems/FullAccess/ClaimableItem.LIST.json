@@ -1,0 +1,46 @@
+{
+  "case": "ClaimableItem.LIST",
+  "grant": "FullAccess",
+  "kind": "LIST",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/ClaimableItems/ClaimableItem?$orderby=ID&$top=5&$count=true"
+  },
+  "response": {
+    "body": {
+      "Count": 1,
+      "Value": [
+        {
+          "ActivationTriggerText": "On Warranty Activation",
+          "ActivationTypeText": "Activate on First Trigger Only (One-time activation)",
+          "ActiveFor": 12,
+          "ActiveForDurationType": "Seconds",
+          "CampaignActivationTrigger": "WarrantyActivation",
+          "CampaignActivationType": "FirstTriggerOnly",
+          "CampaignExpireDate": "2099-12-31T00:00:00",
+          "CampaignID": "7000001",
+          "CampaignName": "PARITY-CAMPAIGN parity campaign",
+          "CampaignStartDate": "2020-01-01T00:00:00",
+          "ID": "7010001",
+          "IsDeleted": false,
+          "MaximumMileage": 100000,
+          "Name": "PARITY-CLAIMABLEITEM parity claimable item",
+          "PackageCode": "PAR-PKG",
+          "PrintoutDescription": "Parity printout description",
+          "PrintoutTitle": "Parity printout title",
+          "ProgramRole": "Reward",
+          "UniqueReference": "parity-claimable-1",
+          "ValidFrom": null,
+          "ValidTo": null,
+          "Validity": "12 Seconds",
+          "ValidityMode": "RelativeToActivation",
+          "ValidityModeText": "Relative to activation date (e.g., valid for X days after activation)"
+        }
+      ]
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {},
+    "status": 200
+  }
+}

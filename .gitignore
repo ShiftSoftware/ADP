@@ -418,3 +418,9 @@ ADP.Docs/Docs/site/
 ## === macOS ===
 .DS_Store
 /ADP.Menus/samples/ADP.Menus.Sample.FreeServiceParity/reports/free-service-menu-parity-details.csv
+
+# Endpoint-parity harness (TEMPORARY - removed in Step 08 of the ShiftEntity framework upgrade).
+# baselines/ is deliberately NOT ignored: the goldens are committed and reviewed like source, and
+# a changed golden in a PR is a claimed behaviour change that must be explained. reports/ is the
+# verify-mode diff output and is regenerated on every run.
+ADP.EndpointParity/reports/

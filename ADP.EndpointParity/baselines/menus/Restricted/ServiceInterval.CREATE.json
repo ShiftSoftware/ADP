@@ -1,0 +1,31 @@
+{
+  "case": "ServiceInterval.CREATE",
+  "grant": "Restricted",
+  "kind": "CREATE",
+  "request": {
+    "body": {
+      "_why": [
+        "Code / FullName required; ServiceIntervalGroup is a ShiftEntitySelectDTO whose Value must be",
+        "a REAL hash id - resolved from the seeded group at run time via the @@Entity[n]@@ token."
+      ],
+      "code": "PARITY-CREATE-SI",
+      "description": "Parity created interval",
+      "fullName": "PARITY-CREATE-SI parity created interval",
+      "serviceIntervalGroup": {
+        "text": "PARITY-SIG",
+        "value": "7YEYbY"
+      },
+      "valueInMeter": 20000
+    },
+    "method": "POST",
+    "url": "/api/Menu/ServiceInterval"
+  },
+  "response": {
+    "body": "",
+    "contentType": null,
+    "headers": {
+      "Content-Language": "en-US"
+    },
+    "status": 403
+  }
+}

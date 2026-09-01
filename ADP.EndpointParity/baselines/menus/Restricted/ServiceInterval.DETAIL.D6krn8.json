@@ -1,0 +1,36 @@
+{
+  "case": "ServiceInterval.DETAIL.D6krn8",
+  "grant": "Restricted",
+  "kind": "DETAIL",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Menu/ServiceInterval/D6krn8"
+  },
+  "response": {
+    "body": {
+      "Additional": null,
+      "Entity": {
+        "Code": "PARITY-SI",
+        "CreateDate": "<ts>",
+        "CreatedByUserID": null,
+        "Description": "Parity interval",
+        "FullName": "PARITY-SI parity service interval",
+        "ID": "D6krn8",
+        "IsDeleted": false,
+        "LastSaveDate": "<ts>",
+        "LastSavedByUserID": null,
+        "ServiceIntervalGroup": {
+          "Value": "7YEYbY"
+        },
+        "ValueInMeter": 10000
+      },
+      "Message": null
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {
+      "Content-Language": "en-US"
+    },
+    "status": 200
+  }
+}

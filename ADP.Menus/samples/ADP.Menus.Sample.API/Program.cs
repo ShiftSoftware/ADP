@@ -373,3 +373,17 @@ app.MapRazorPages();
 app.MapFallbackToFile("index.html");
 
 app.Run();
+
+// ------------------------------------------------------------------------------------------
+// Makes the implicit top-level-statements Program class visible to the endpoint-parity harness
+// so WebApplicationFactory<Program> can boot this host in-process. Adds no members, changes no
+// behaviour, inert at run time.
+//
+// Note this sample needs NO seeding-suppression branch, unlike the Surveys one: it seeds only
+// identity rows (SuperUser + org hierarchy), and the comment at ~line 246 records that demo menu
+// seeding was deliberately removed. Nothing it writes lands in the [Menu] schema tables the
+// parity cases list, so the adversarial seed is the only source of rows there.
+//
+// TEMPORARY - removed in Step 08 with the rest of the harness.
+// ------------------------------------------------------------------------------------------
+public partial class Program { }

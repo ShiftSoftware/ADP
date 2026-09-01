@@ -1,0 +1,18 @@
+{
+  "case": "MenuVersion.PRINTTOKEN.6130001",
+  "grant": "FullAccess",
+  "kind": "PRINTTOKEN",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Menu/MenuVersion/print-token/6130001"
+  },
+  "response": {
+    "body": "expires=<expires>&token=<token>",
+    "contentType": "text/plain; charset=utf-8",
+    "headers": {
+      "Content-Language": "en-US"
+    },
+    "status": 200
+  }
+}

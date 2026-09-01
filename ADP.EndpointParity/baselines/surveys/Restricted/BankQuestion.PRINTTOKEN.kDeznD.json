@@ -1,0 +1,16 @@
+{
+  "case": "BankQuestion.PRINTTOKEN.kDeznD",
+  "grant": "Restricted",
+  "kind": "PRINTTOKEN",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Surveys/BankQuestion/print-token/kDeznD"
+  },
+  "response": {
+    "body": "expires=<expires>&token=<token>",
+    "contentType": "text/plain; charset=utf-8",
+    "headers": {},
+    "status": 200
+  }
+}

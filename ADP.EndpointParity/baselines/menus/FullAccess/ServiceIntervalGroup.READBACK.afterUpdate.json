@@ -1,0 +1,32 @@
+{
+  "case": "ServiceIntervalGroup.READBACK.afterUpdate",
+  "grant": "FullAccess",
+  "kind": "READBACK",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Menu/ServiceIntervalGroup/ev8v59"
+  },
+  "response": {
+    "body": {
+      "Additional": null,
+      "Entity": {
+        "CreateDate": "<ts>",
+        "CreatedByUserID": "V2PQY",
+        "ID": "ev8v59",
+        "IsDeleted": false,
+        "LabourCode": "PAR-C-LC",
+        "LabourDescription": "Parity created interval group",
+        "LastSaveDate": "<ts>",
+        "LastSavedByUserID": "V2PQY",
+        "Name": "PARITY-CREATE-SIG"
+      },
+      "Message": null
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {
+      "Content-Language": "en-US"
+    },
+    "status": 200
+  }
+}

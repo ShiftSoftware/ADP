@@ -1,0 +1,16 @@
+{
+  "case": "ItemClaimInvoice.PRINTTOKEN.7030001",
+  "grant": "Restricted",
+  "kind": "PRINTTOKEN",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/ClaimableItems/ItemClaimInvoice/print-token/7030001"
+  },
+  "response": {
+    "body": "expires=<expires>&token=<token>",
+    "contentType": "text/plain; charset=utf-8",
+    "headers": {},
+    "status": 200
+  }
+}

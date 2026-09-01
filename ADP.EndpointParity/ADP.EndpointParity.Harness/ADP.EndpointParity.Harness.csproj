@@ -1,0 +1,64 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<!--
+	  TEMPORARY. Built by Step 00 of the ShiftEntity framework upgrade and deleted by Step 08.
+	  Not packable, not wired into CI beyond the migration window. See
+	  docs/planning/shift-framework-upgrade/verification.md §9.
+
+	  Layering rule (verification.md §2, §3), enforced by review and by the grep in Step 00's
+	  exit criteria:
+	    Harness/   = the CAPTURE LAYER. HttpClient, System.Text.Json and string ONLY.
+	                 No ShiftEntityResponse<T>, no DTO types, no IMapper, no repositories.
+	                 This is what makes the observation code version-independent even though
+	                 it is compiled twice, once against each framework version.
+	    Bootstrap/ = the WIRING LAYER. The rule does NOT apply here and cannot: RequestFactory
+	                 must reflect over DTO types and recognise JsonHashIdConverterAttribute,
+	                 and the host factories must boot a real host. Reviewed by reading its diff.
+
+	  This project holds NO reference to any ADP group. Group-specific wiring is injected by
+	  the per-group test project through delegates (see Bootstrap/MountedHostFactory.cs).
+	-->
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<IsPackable>false</IsPackable>
+		<AssemblyName>ADP.EndpointParity.Harness</AssemblyName>
+		<RootNamespace>ShiftSoftware.ADP.EndpointParity.Harness</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- Bootstrap/ only. Host booting, route enumeration, JWT minting, DTO reflection. -->
+		<PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.10" />
+		<PackageReference Include="Microsoft.AspNetCore.TestHost" Version="10.0.10" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.10" />
+		<!-- 8.19.2, not lower: EFCore.SqlServer pulls Microsoft.Data.SqlClient -> OpenIdConnect 8.19.2,
+		     and anything below it is an NU1605 downgrade. The solution baseline records NU1605 = 0
+		     and the harness must not be the thing that introduces one. -->
+		<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.19.2" />
+
+		<!--
+		  Bootstrap/RequestFactory.cs must recognise JsonHashIdConverterAttribute to know which
+		  members need a real hash id rather than a PARITY:: string sentinel (verification.md §5).
+		  Pinned at the PRE-upgrade version deliberately: the harness is built on the pre-bump
+		  tree and each group step bumps its own lines. NuGet unifies this up when a group project
+		  that has already bumped references the harness.
+		-->
+		<PackageReference Include="ShiftSoftware.ShiftEntity.Model" Version="2026.7.31.1" />
+
+		<!--
+		  Bootstrap/ParityDb.cs (ShiftDbContext) and Bootstrap/MountedHostFactory.cs
+		  (AddShiftEntityWeb, AddTypeAuth) only. Same pre-upgrade pin and the same reasoning:
+		  the harness is built on the pre-bump tree, and NuGet unifies these up when a group
+		  project that has already taken its own bump references the harness.
+		-->
+		<PackageReference Include="ShiftSoftware.ShiftEntity.EFCore" Version="2026.7.31.1" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.Web" Version="2026.7.31.1" />
+		<PackageReference Include="ShiftSoftware.TypeAuth.AspNetCore" Version="1.6.28" />
+	</ItemGroup>
+
+</Project>

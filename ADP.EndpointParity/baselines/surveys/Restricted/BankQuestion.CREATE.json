@@ -1,0 +1,43 @@
+{
+  "case": "BankQuestion.CREATE",
+  "grant": "Restricted",
+  "kind": "CREATE",
+  "request": {
+    "body": {
+      "_why": [
+        "MINIMAL VALID create body for BankQuestion.",
+        "BankQuestionRepository.UpsertAsync hard-rejects a null Question, so a real QuestionDto is",
+        "required. QuestionDto is JSON-polymorphic on a 'type' discriminator (QuestionDto.cs:12-26);",
+        "'text' is the simplest concrete type. Title is a LocalizedString - a locale-keyed map that",
+        "must contain at least one non-empty locale (LocalizedStringValidator).",
+        "",
+        "TRAP3-WRITE PROBE: locked is documented 'Read-only from client - server flips to true on",
+        "first publish reference' and is ignored on the reverse map (GeneralMappingProfile.cs:75).",
+        "Sending true on create must NOT stick: the readback should show locked=false. If it shows",
+        "true, client input has overwritten a server-controlled column.",
+        "",
+        "bankEntryID is deliberately omitted - it is server-assigned on create, and the conditional",
+        "map guards it so an absent field cannot clobber the entity's Guid.NewGuid() default."
+      ],
+      "key": "PARITY-CREATE-BANKQ",
+      "locked": true,
+      "question": {
+        "id": "q-parity-create",
+        "required": false,
+        "title": {
+          "en": "Parity create probe"
+        },
+        "type": "text"
+      },
+      "retired": false
+    },
+    "method": "POST",
+    "url": "/api/Surveys/BankQuestion"
+  },
+  "response": {
+    "body": "",
+    "contentType": null,
+    "headers": {},
+    "status": 403
+  }
+}

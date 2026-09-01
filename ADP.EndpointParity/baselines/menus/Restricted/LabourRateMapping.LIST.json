@@ -1,0 +1,21 @@
+{
+  "case": "LabourRateMapping.LIST",
+  "grant": "Restricted",
+  "kind": "LIST",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Menu/LabourRateMapping?$orderby=ID&$top=5&$count=true"
+  },
+  "response": {
+    "body": {
+      "Count": 0,
+      "Value": []
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {
+      "Content-Language": "en-US"
+    },
+    "status": 200
+  }
+}

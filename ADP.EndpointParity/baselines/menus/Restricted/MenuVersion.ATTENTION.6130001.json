@@ -1,0 +1,18 @@
+{
+  "case": "MenuVersion.ATTENTION.6130001",
+  "grant": "Restricted",
+  "kind": "ATTENTION",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Menu/MenuVersion/6130001/attention"
+  },
+  "response": {
+    "body": [],
+    "contentType": "application/json; charset=utf-8",
+    "headers": {
+      "Content-Language": "en-US"
+    },
+    "status": 200
+  }
+}

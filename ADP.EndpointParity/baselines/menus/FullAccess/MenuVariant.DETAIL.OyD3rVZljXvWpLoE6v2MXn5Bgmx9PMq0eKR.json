@@ -1,0 +1,88 @@
+{
+  "case": "MenuVariant.DETAIL.OyD3rVZljXvWpLoE6v2MXn5Bgmx9PMq0eKR",
+  "grant": "FullAccess",
+  "kind": "DETAIL",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Menu/MenuVariant/OyD3rVZljXvWpLoE6v2MXn5Bgmx9PMq0eKR"
+  },
+  "response": {
+    "body": {
+      "Additional": null,
+      "Entity": {
+        "CreateDate": "<ts>",
+        "CreatedByUserID": null,
+        "DiscountPercentage": 10.00,
+        "HasStandaloneItems": true,
+        "ID": "OyD3rVZljXvWpLoE6v2MXn5Bgmx9PMq0eKR",
+        "IsDeleted": false,
+        "IsFree": false,
+        "Items": [
+          {
+            "BackingItemHasPendingPropagation": false,
+            "NotStoredInMenuItemsTable": false,
+            "Parts": [
+              {
+                "CountryPrices": [],
+                "ID": 6040001,
+                "PartFinalPrice": null,
+                "PartNumber": "PARITY-MIP-A",
+                "PartPrice": null,
+                "PartPriceMarginPercentage": null,
+                "PeriodicQuantity": 1.000,
+                "StandaloneQuantity": 1.000
+              },
+              {
+                "CountryPrices": [],
+                "ID": 6040002,
+                "PartFinalPrice": null,
+                "PartNumber": "PARITY-MIP-B",
+                "PartPrice": null,
+                "PartPriceMarginPercentage": null,
+                "PeriodicQuantity": 2.000,
+                "StandaloneQuantity": 2.000
+              }
+            ],
+            "ReplacementItem": {
+              "AllowMultiplePartNumbers": false,
+              "DefaultPartPriceMarginPercentage": null,
+              "ID": "wGlzYD",
+              "Name": "PARITY-RI parity replacement item",
+              "StandaloneAllowedTime": 1.50,
+              "StandaloneReplacementItemGroup": {
+                "Text": "PARITY-SRIG parity standalone group",
+                "Value": "MJM3Xm"
+              },
+              "Type": 1
+            },
+            "ReplacementItemVehicleModelID": 6090001,
+            "StandaloneAllowedTime": 1.25
+          }
+        ],
+        "LabourDetails": [],
+        "LabourRate": 15.00,
+        "LabourRates": [],
+        "LastSaveDate": "<ts>",
+        "LastSavedByUserID": null,
+        "MenuID": "aElMpb",
+        "MenuPostfix": "PAR-POST",
+        "MenuPrefix": "PAR-PRE",
+        "Name": "PARITY-VARIANT parity variant",
+        "PeriodicAvailabilities": [
+          {
+            "ID": "D6krn8"
+          }
+        ],
+        "StandaloneMenuPostfix": null,
+        "StandaloneMenuPrefix": null
+      },
+      "Message": null
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {
+      "Content-Language": "en-US"
+    },
+    "status": 200
+  }
+}

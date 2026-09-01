@@ -1,0 +1,29 @@
+{
+  "case": "StandaloneReplacementItemGroup.LIST.afterRemove",
+  "grant": "FullAccess",
+  "kind": "LIST",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Menu/StandaloneReplacementItemGroup?$orderby=ID&$count=true"
+  },
+  "response": {
+    "body": {
+      "Count": 1,
+      "Value": [
+        {
+          "ID": "MJM3Xm",
+          "IsDeleted": false,
+          "LabourCode": "PAR-SLC-1",
+          "MenuCode": "PAR-MC-1",
+          "Name": "PARITY-SRIG parity standalone group"
+        }
+      ]
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {
+      "Content-Language": "en-US"
+    },
+    "status": 200
+  }
+}

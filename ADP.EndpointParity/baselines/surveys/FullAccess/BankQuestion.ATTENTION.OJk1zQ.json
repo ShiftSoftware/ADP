@@ -1,0 +1,16 @@
+{
+  "case": "BankQuestion.ATTENTION.OJk1zQ",
+  "grant": "FullAccess",
+  "kind": "ATTENTION",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Surveys/BankQuestion/OJk1zQ/attention"
+  },
+  "response": {
+    "body": [],
+    "contentType": "application/json; charset=utf-8",
+    "headers": {},
+    "status": 200
+  }
+}

@@ -1,0 +1,497 @@
+{
+  "group": "Menus",
+  "_readme": [
+    "ADVERSARIAL SEED for the Menus group. TEMPORARY - deleted in Step 08.",
+    "",
+    "This is the RICHEST group in the plan: all three regression shapes are present and were",
+    "confirmed against the actual repository code, then adversarially re-checked. Menus is also",
+    "already MIGRATED (commit 14caf7c9), so its trap sites live in the repositories' .ForView /",
+    ".ForViewChildren / .IgnoreEntity calls rather than in AutoMapper profiles.",
+    "",
+    "ID BLOCKS. Chosen so no row's PK ever equals a foreign id it carries - trap 2 is a link row's",
+    "own PK leaking into a child's ID, and it is INVISIBLE if the two numbers coincide.",
+    "  VehicleModel                     6_000_00x",
+    "  Menu                             6_010_00x",
+    "  MenuVariant                      6_020_00x",
+    "  MenuItem                         6_030_00x",
+    "  MenuItemPart                     6_040_00x",
+    "  ServiceIntervalGroup             6_050_00x",
+    "  ServiceInterval                  6_060_00x",
+    "  MenuPeriodicAvailability         6_070_00x   <- link row (variant x interval)",
+    "  ReplacementItem                  6_080_00x",
+    "  ReplacementItemVehicleModel      6_090_00x   <- link row (item x model)",
+    "  ReplacementItemVehicleModelPart  6_100_00x",
+    "  ReplacementItemServiceIntervalGroup 6_110_00x <- link row (item x group)",
+    "  StandaloneReplacementItemGroup   6_120_00x",
+    "  MenuVersion                      6_130_00x",
+    "  BrandMapping / LabourRateMapping 6_140_00x / 6_150_00x",
+    "",
+    "TRAP COVERAGE - every one of these was confirmed at a cited line, then re-verified by an",
+    "adversarial pass that tried to refute it:",
+    "",
+    "  trap1  MenuVariantRepository.cs:72-74  .ForViewChildren(d => d.Items, ...Where(!IsDeleted))",
+    "         Seeded: variant 6020001 owns MenuItem 6030001 (live) AND 6030002 (SOFT-DELETED).",
+    "         GET MenuVariant/{6020001} must return ONE item. Two means the predicate was dropped.",
+    "",
+    "  trap1  MenuVariantRepository.cs:109  nested .ForChildren(d => d.Parts, ...Where(!IsDeleted)",
+    "         .OrderBy(SortOrder)). Seeded: item 6030001 owns parts 6040001 (SortOrder 1, live),",
+    "         6040002 (SortOrder 2, live) and 6040003 (SOFT-DELETED). Carries TWO guarantees - the",
+    "         filter AND the ordering - so this row set catches either being lost.",
+    "",
+    "  trap1  VehicleModelRepository.cs:47 and :57-59  same double guarantee one level deeper, over",
+    "         ReplacementItemVehicleModel and its Parts. Seeded: model 6000001 has RIVM 6090001",
+    "         (live) and 6090002 (SOFT-DELETED); RIVM 6090001 owns parts 6100001/2 (live) and",
+    "         6100003 (SOFT-DELETED).",
+    "",
+    "  trap2  MenuVariantRepository.cs:63-65  the ANCHOR trap2. MenuPeriodicAvailability is a LINK",
+    "         row with its own PK plus MenuVariantID and ServiceIntervalID. The DTO member must",
+    "         carry the SERVICE INTERVAL's id, not the link row's. Seeded so all three numbers",
+    "         differ: link 6070001, variant 6020001, interval 6060001. If the wrong one is emitted",
+    "         it is a well-formed hash id of a REAL row - only a literal comparison catches it.",
+    "",
+    "  trap2  VehicleModelRepository.cs:48 and ReplacementItemRepository.cs:29  same shape over",
+    "         ReplacementItemVehicleModel and ReplacementItemServiceIntervalGroup respectively.",
+    "",
+    "  trap2  MenuVariantRepository.cs:82  the two-hop case: MenuItem -> RIVM -> ReplacementItem.",
+    "         The DTO member is the REPLACEMENT ITEM's id, and there are three wrong answers",
+    "         available (the item's PK, the RIVM link PK, the vehicle model's). All four numbers",
+    "         are distinct in this seed.",
+    "",
+    "  trap3write  MenuRepository.cs:39  .IgnoreEntity(e => e.BrandID). BrandID is DERIVED in",
+    "         UpsertAsync from the vehicle model, never taken from the body. Seeded as 4242 on menu",
+    "         6010001 - a value no derivation could produce - so a readback showing a client-sent",
+    "         number proves the convention mapper started writing it.",
+    "",
+    "Rows carrying _marker are checked LITERALLY in list bodies by the summary gate. That gate",
+    "replaces '> 0 rows', which any demo seed satisfies on its own.",
+    "",
+    "TABLE ORDER IS LOAD-BEARING - a table must follow every table it has a foreign key into.",
+    "Keys beginning with _ are harness metadata and are never written to SQL.",
+    "",
+    "UNIQUE INDEXES apply to soft-deleted rows too. A soft-deleted 'duplicate' of a live link",
+    "row is rejected by the index, so trap1 link rows must differ in one of the indexed",
+    "columns rather than being an exact copy flagged IsDeleted.",
+    "",
+    "A _marker needs a STRING COLUMN to live in. MenuVersion has none (Version + VersionDateTime",
+    "only), so it carries no marker - the gate would look for text the row cannot hold."
+  ],
+  "tables": [
+    {
+      "schema": "Menu",
+      "table": "ServiceIntervalGroup",
+      "rows": [
+        {
+          "_marker": "PARITY-SIG",
+          "ID": 6050001,
+          "Name": "PARITY-SIG parity interval group",
+          "LabourCode": "PAR-LC-1",
+          "LabourDescription": "Parity labour description",
+          "IsDeleted": false,
+          "CreateDate": "2020-01-01T00:00:00.0000000+00:00",
+          "LastSaveDate": "2020-01-01T00:00:00.0000000+00:00"
+        },
+        {
+          "_marker": "PARITY-SIG-2",
+          "_why": "Second group: the link table carries a UNIQUE INDEX on (ReplacementItemID, ServiceIntervalGroupID), which a soft-deleted duplicate still violates. The soft-deleted trap1 link row therefore points here rather than at 6050001.",
+          "ID": 6050002,
+          "Name": "PARITY-SIG-2 parity interval group two",
+          "LabourCode": "PAR-LC-2",
+          "LabourDescription": "Parity labour description two",
+          "IsDeleted": false,
+          "CreateDate": "2020-01-01T00:00:00.0000000+00:00",
+          "LastSaveDate": "2020-01-01T00:00:00.0000000+00:00"
+        }
+      ]
+    },
+    {
+      "schema": "Menu",
+      "table": "ServiceInterval",
+      "rows": [
+        {
+          "_marker": "PARITY-SI",
+          "_why": "Target of the anchor trap2. Its id - NOT the link row's - must appear on the variant's periodic availability member.",
+          "ID": 6060001,
+          "Code": "PARITY-SI",
+          "FullName": "PARITY-SI parity service interval",
+          "ValueInMeter": 10000,
+          "Description": "Parity interval",
+          "ServiceIntervalGroupID": 6050001,
+          "IsDeleted": false,
+          "CreateDate": "2020-01-01T00:00:00.0000000+00:00",
+          "LastSaveDate": "2020-01-01T00:00:00.0000000+00:00"
+        }
+      ]
+    },
+    {
+      "schema": "Menu",
+      "table": "StandaloneReplacementItemGroup",
+      "rows": [
+        {
+          "_marker": "PARITY-SRIG",
+          "ID": 6120001,
+          "Name": "PARITY-SRIG parity standalone group",
+          "MenuCode": "PAR-MC-1",
+          "LabourCode": "PAR-SLC-1",
+          "IsDeleted": false,
+          "CreateDate": "2020-01-01T00:00:00.0000000+00:00",
+          "LastSaveDate": "2020-01-01T00:00:00.0000000+00:00"
+        }
+      ]
+    },
+    {
+      "schema": "Menu",
+      "table": "VehicleModel",
+      "rows": [
+        {
+          "_marker": "PARITY-VM",
+          "_hostile": [
+            "trap1",
+            "trap2"
+          ],
+          "_why": "Owns a live and a soft-deleted ReplacementItemVehicleModel link row. GET VehicleModel/{id} must show ONE replacement item, and its ID must be the REPLACEMENT ITEM's, not the link row's.",
+          "ID": 6000001,
+          "Name": "PARITY-VM parity vehicle model",
+          "BrandID": null,
+          "LabourRate": 12.5,
+          "IsDeleted": false,
+          "CreateDate": "2020-01-01T00:00:00.0000000+00:00",
+          "LastSaveDate": "2020-01-01T00:00:00.0000000+00:00"
+        }
+      ]
+    },
+    {
+      "schema": "Menu",
+      "table": "ReplacementItem",
+      "rows": [
+        {
+          "_marker": "PARITY-RI",
+          "_hostile": [
+            "trap1",
+            "trap2"
+          ],
+          "_why": "Owns a live and a soft-deleted ReplacementItemServiceIntervalGroup link row (ReplacementItemRepository.cs:27-30 carries trap1 AND trap2 in one .ForView).",
+          "ID": 6080001,
+          "Name": "PARITY-RI parity replacement item",
+          "FriendlyName": "PARITY-RI friendly",
+          "Type": 1,
+          "AllowMultiplePartNumbers": false,
+          "StandaloneOperationCode": "PAR-OP-1",
+          "StandaloneLabourCode": "PAR-LB-1",
+          "StandaloneReplacementItemGroupID": 6120001,
+          "IsDeleted": false,
+          "CreateDate": "2020-01-01T00:00:00.0000000+00:00",
+          "LastSaveDate": "2020-01-01T00:00:00.0000000+00:00"
+        },
+        {
+          "_marker": "PARITY-RI-2",
+          "_why": "Second item so the two-hop trap2 has a distinct wrong answer available.",
+          "ID": 6080002,
+          "Name": "PARITY-RI-2 parity replacement item two",
+          "FriendlyName": "PARITY-RI-2 friendly",
+          "Type": 1,
+          "AllowMultiplePartNumbers": false,
+          "StandaloneOperationCode": "PAR-OP-2",
+          "StandaloneLabourCode": "PAR-LB-2",
+          "StandaloneReplacementItemGroupID": 6120001,
+          "IsDeleted": false,
+          "CreateDate": "2020-01-01T00:00:00.0000000+00:00",
+          "LastSaveDate": "2020-01-01T00:00:00.0000000+00:00"
+        }
+      ]
+    },
+    {
+      "schema": "Menu",
+      "table": "ReplacementItemServiceIntervalGroup",
+      "rows": [
+        {
+          "_hostile": [
+            "trap2"
+          ],
+          "_why": "LINK ROW. PK 6110001 differs from BOTH foreign ids (6080001, 6050001). The DTO must carry the SERVICE INTERVAL GROUP's id.",
+          "ID": 6110001,
+          "ReplacementItemID": 6080001,
+          "ServiceIntervalGroupID": 6050001,
+          "IsDeleted": false,
+          "CreateDate": "2020-01-01T00:00:00.0000000+00:00",
+          "LastSaveDate": "2020-01-01T00:00:00.0000000+00:00"
+        },
+        {
+          "_hostile": [
+            "trap1"
+          ],
+          "_why": "SOFT-DELETED sibling, pointing at group 6050002 because a unique index on (ReplacementItemID, ServiceIntervalGroupID) rejects a soft-deleted duplicate of the live pair. Must not appear in the ReplacementItem detail body.",
+          "ID": 6110002,
+          "ReplacementItemID": 6080001,
+          "ServiceIntervalGroupID": 6050002,
+          "IsDeleted": true,
+          "CreateDate": "2020-01-01T00:00:00.0000000+00:00",
+          "LastSaveDate": "2020-01-01T00:00:00.0000000+00:00"
+        }
+      ]
+    },
+    {
+      "schema": "Menu",
+      "table": "ReplacementItemVehicleModel",
+      "rows": [
+        {
+          "_hostile": [
+            "trap2"
+          ],
+          "_why": "LINK ROW, live. PK 6090001 differs from ReplacementItemID 6080001 and VehicleModelID 6000001. The vehicle-model detail body must carry the REPLACEMENT ITEM's id here.",
+          "ID": 6090001,
+          "ReplacementItemID": 6080001,
+          "VehicleModelID": 6000001,
+          "StandaloneAllowedTime": 1.5,
+          "HasPendingPropagation": false,
+          "IsDeleted": false,
+          "CreateDate": "2020-01-01T00:00:00.0000000+00:00",
+          "LastSaveDate": "2020-01-01T00:00:00.0000000+00:00"
+        },
+        {
+          "_hostile": [
+            "trap1"
+          ],
+          "_why": "SOFT-DELETED link row - these are soft-deleted by the write path deliberately (VehicleModelRepository.cs:99). Must NOT appear on the vehicle model detail body.",
+          "ID": 6090002,
+          "ReplacementItemID": 6080002,
+          "VehicleModelID": 6000001,
+          "StandaloneAllowedTime": 2.5,
+          "HasPendingPropagation": false,
+          "IsDeleted": true,
+          "CreateDate": "2020-01-01T00:00:00.0000000+00:00",
+          "LastSaveDate": "2020-01-01T00:00:00.0000000+00:00"
+        }
+      ]
+    },
+    {
+      "schema": "Menu",
+      "table": "ReplacementItemVehicleModelPart",
+      "rows": [
+        {
+          "_why": "Live part, SortOrder 1. The nested projection guarantees BOTH the IsDeleted filter and this ordering.",
+          "ID": 6100001,
+          "ReplacementItemVehicleModelID": 6090001,
+          "SortOrder": 1,
+          "PartNumber": "PARITY-PART-A",
+          "DefaultPeriodicQuantity": 1.0,
+          "DefaultStandaloneQuantity": 1.0,
+          "IsDeleted": false,
+          "CreateDate": "2020-01-01T00:00:00.0000000+00:00",
+          "LastSaveDate": "2020-01-01T00:00:00.0000000+00:00"
+        },
+        {
+          "_why": "Live part, SortOrder 2. Seeded AFTER SortOrder 1 in insertion order but must always render second - if ordering is lost this is where it shows.",
+          "ID": 6100002,
+          "ReplacementItemVehicleModelID": 6090001,
+          "SortOrder": 2,
+          "PartNumber": "PARITY-PART-B",
+          "DefaultPeriodicQuantity": 2.0,
+          "DefaultStandaloneQuantity": 2.0,
+          "IsDeleted": false,
+          "CreateDate": "2020-01-01T00:00:00.0000000+00:00",
+          "LastSaveDate": "2020-01-01T00:00:00.0000000+00:00"
+        },
+        {
+          "_hostile": [
+            "trap1"
+          ],
+          "_why": "SOFT-DELETED part. Must never appear.",
+          "ID": 6100003,
+          "ReplacementItemVehicleModelID": 6090001,
+          "SortOrder": 3,
+          "PartNumber": "PARITY-PART-DELETED",
+          "IsDeleted": true,
+          "CreateDate": "2020-01-01T00:00:00.0000000+00:00",
+          "LastSaveDate": "2020-01-01T00:00:00.0000000+00:00"
+        }
+      ]
+    },
+    {
+      "schema": "Menu",
+      "table": "Menu",
+      "rows": [
+        {
+          "_marker": "PARITY-MENU",
+          "_hostile": [
+            "trap3write"
+          ],
+          "_why": "BrandID = 4242 is a REPOSITORY-DERIVED column (.IgnoreEntity at MenuRepository.cs:39; UpsertAsync derives it from the vehicle model). 4242 is a value no derivation could produce, so a readback carrying a client-sent number proves the trap fired.",
+          "ID": 6010001,
+          "BasicModelCode": "PARITY-MENU",
+          "BrandID": 4242,
+          "VehicleModelID": 6000001,
+          "IsDeleted": false,
+          "CreateDate": "2020-01-01T00:00:00.0000000+00:00",
+          "LastSaveDate": "2020-01-01T00:00:00.0000000+00:00"
+        }
+      ]
+    },
+    {
+      "schema": "Menu",
+      "table": "MenuVariant",
+      "rows": [
+        {
+          "_marker": "PARITY-VARIANT",
+          "_hostile": [
+            "trap1",
+            "trap2"
+          ],
+          "_why": "The highest-value row in the group. Owns a live and a soft-deleted MenuItem (trap1), a link row for periodic availability (trap2 anchor), and reaches ReplacementItem two hops out (trap2 two-hop).",
+          "ID": 6020001,
+          "MenuID": 6010001,
+          "Name": "PARITY-VARIANT parity variant",
+          "MenuPrefix": "PAR-PRE",
+          "MenuPostfix": "PAR-POST",
+          "LabourRate": 15.0,
+          "DiscountPercentage": 10.0,
+          "IsFree": false,
+          "HasStandaloneItems": true,
+          "IsDeleted": false,
+          "CreateDate": "2020-01-01T00:00:00.0000000+00:00",
+          "LastSaveDate": "2020-01-01T00:00:00.0000000+00:00"
+        }
+      ]
+    },
+    {
+      "schema": "Menu",
+      "table": "MenuPeriodicAvailability",
+      "rows": [
+        {
+          "_hostile": [
+            "trap2"
+          ],
+          "_why": "THE ANCHOR TRAP2 LINK ROW. All three numbers differ: own PK 6070001, MenuVariantID 6020001, ServiceIntervalID 6060001. The variant's detail body must carry the SERVICE INTERVAL's id. Emitting the link PK yields a well-formed hash id of a real row, which only a literal comparison distinguishes from correct.",
+          "ID": 6070001,
+          "MenuVariantID": 6020001,
+          "ServiceIntervalID": 6060001,
+          "IsDeleted": false,
+          "CreateDate": "2020-01-01T00:00:00.0000000+00:00",
+          "LastSaveDate": "2020-01-01T00:00:00.0000000+00:00"
+        }
+      ]
+    },
+    {
+      "schema": "Menu",
+      "table": "MenuItem",
+      "rows": [
+        {
+          "_hostile": [
+            "trap1",
+            "trap2"
+          ],
+          "_why": "Live item on variant 6020001. Its ReplacementItemVehicleModelID reaches ReplacementItem two hops out - the DTO member must carry the REPLACEMENT ITEM's id (6080001), not the item's own PK, not the RIVM link PK (6090001), not the vehicle model's (6000001). All four are distinct.",
+          "ID": 6030001,
+          "MenuVariantID": 6020001,
+          "ReplacementItemVehicleModelID": 6090001,
+          "StandaloneAllowedTime": 1.25,
+          "IsDeleted": false,
+          "CreateDate": "2020-01-01T00:00:00.0000000+00:00",
+          "LastSaveDate": "2020-01-01T00:00:00.0000000+00:00"
+        },
+        {
+          "_hostile": [
+            "trap1"
+          ],
+          "_why": "SOFT-DELETED sibling on the SAME variant. This is the row that makes trap1 fire: GET MenuVariant/6020001 must return ONE item. Two means .ForViewChildren's !IsDeleted predicate was lost.",
+          "ID": 6030002,
+          "MenuVariantID": 6020001,
+          "ReplacementItemVehicleModelID": null,
+          "StandaloneAllowedTime": 9.99,
+          "IsDeleted": true,
+          "CreateDate": "2020-01-01T00:00:00.0000000+00:00",
+          "LastSaveDate": "2020-01-01T00:00:00.0000000+00:00"
+        }
+      ]
+    },
+    {
+      "schema": "Menu",
+      "table": "MenuItemPart",
+      "rows": [
+        {
+          "_why": "Live part, SortOrder 1.",
+          "ID": 6040001,
+          "MenuItemID": 6030001,
+          "SortOrder": 1,
+          "PartNumber": "PARITY-MIP-A",
+          "PeriodicQuantity": 1.0,
+          "StandaloneQuantity": 1.0,
+          "IsDeleted": false,
+          "CreateDate": "2020-01-01T00:00:00.0000000+00:00",
+          "LastSaveDate": "2020-01-01T00:00:00.0000000+00:00"
+        },
+        {
+          "_why": "Live part, SortOrder 2 - the ordering guarantee of the nested projection.",
+          "ID": 6040002,
+          "MenuItemID": 6030001,
+          "SortOrder": 2,
+          "PartNumber": "PARITY-MIP-B",
+          "PeriodicQuantity": 2.0,
+          "StandaloneQuantity": 2.0,
+          "IsDeleted": false,
+          "CreateDate": "2020-01-01T00:00:00.0000000+00:00",
+          "LastSaveDate": "2020-01-01T00:00:00.0000000+00:00"
+        },
+        {
+          "_hostile": [
+            "trap1"
+          ],
+          "_why": "SOFT-DELETED nested part (MenuVariantRepository.cs:109). Must never appear inside the variant detail body.",
+          "ID": 6040003,
+          "MenuItemID": 6030001,
+          "SortOrder": 3,
+          "PartNumber": "PARITY-MIP-DELETED",
+          "IsDeleted": true,
+          "CreateDate": "2020-01-01T00:00:00.0000000+00:00",
+          "LastSaveDate": "2020-01-01T00:00:00.0000000+00:00"
+        }
+      ]
+    },
+    {
+      "schema": "Menu",
+      "table": "MenuVersion",
+      "rows": [
+        {
+          "_why": "Plain row so the MenuVersion list body is non-empty. Carries NO _marker: the entity has only Version and VersionDateTime, i.e. no string column a marker could live in, so a marker here could never be matched literally in a list body.",
+          "ID": 6130001,
+          "Version": 1,
+          "VersionDateTime": "2020-01-01T00:00:00.0000000+00:00",
+          "IsDeleted": false,
+          "CreateDate": "2020-01-01T00:00:00.0000000+00:00",
+          "LastSaveDate": "2020-01-01T00:00:00.0000000+00:00"
+        }
+      ]
+    },
+    {
+      "schema": "Menu",
+      "table": "BrandMapping",
+      "rows": [
+        {
+          "_marker": "PARITY-BRANDMAP",
+          "ID": 6140001,
+          "Code": "PARITY-BRANDMAP",
+          "BrandAbbreviation": "PBM",
+          "BrandID": null,
+          "IsDeleted": false,
+          "CreateDate": "2020-01-01T00:00:00.0000000+00:00",
+          "LastSaveDate": "2020-01-01T00:00:00.0000000+00:00"
+        }
+      ]
+    },
+    {
+      "schema": "Menu",
+      "table": "LabourRateMapping",
+      "rows": [
+        {
+          "_marker": "PARITY-LABOURMAP",
+          "ID": 6150001,
+          "Code": "PARITY-LABOURMAP",
+          "LabourRate": 20.5,
+          "BrandID": null,
+          "IsDeleted": false,
+          "CreateDate": "2020-01-01T00:00:00.0000000+00:00",
+          "LastSaveDate": "2020-01-01T00:00:00.0000000+00:00"
+        }
+      ]
+    }
+  ]
+}

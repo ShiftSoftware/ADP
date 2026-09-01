@@ -1,0 +1,31 @@
+{
+  "case": "ManufacturerSettlmentSheet.DETAIL.8020001",
+  "grant": "FullAccess",
+  "kind": "DETAIL",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/WarrantyClaims/ManufacturerSettlmentSheet/8020001"
+  },
+  "response": {
+    "body": {
+      "Additional": null,
+      "Entity": {
+        "Attachments": [],
+        "CreateDate": "<ts>",
+        "CreatedByUserID": null,
+        "ExchangeRate": 1450.00,
+        "ID": "8020001",
+        "InvoiceNumbers": null,
+        "IsDeleted": false,
+        "LastSaveDate": "<ts>",
+        "LastSavedByUserID": null,
+        "PreventSubmittingUnrecognizedClaimNumbers": false
+      },
+      "Message": null
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {},
+    "status": 200
+  }
+}

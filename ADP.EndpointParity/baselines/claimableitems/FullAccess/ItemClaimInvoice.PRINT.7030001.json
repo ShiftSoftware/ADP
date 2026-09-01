@@ -1,0 +1,16 @@
+{
+  "case": "ItemClaimInvoice.PRINT.7030001",
+  "grant": "FullAccess",
+  "kind": "PRINT",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/ClaimableItems/ItemClaimInvoice/print/7030001"
+  },
+  "response": {
+    "body": "",
+    "contentType": null,
+    "headers": {},
+    "status": 403
+  }
+}

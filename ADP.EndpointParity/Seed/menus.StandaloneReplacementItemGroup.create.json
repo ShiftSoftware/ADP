@@ -1,0 +1,6 @@
+{
+  "_why": "Flat DTO: Name / MenuCode / LabourCode.",
+  "name": "PARITY-CREATE-SRIG",
+  "menuCode": "PAR-C-MC",
+  "labourCode": "PAR-C-SLC"
+}

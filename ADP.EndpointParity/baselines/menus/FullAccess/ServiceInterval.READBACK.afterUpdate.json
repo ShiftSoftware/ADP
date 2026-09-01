@@ -1,0 +1,36 @@
+{
+  "case": "ServiceInterval.READBACK.afterUpdate",
+  "grant": "FullAccess",
+  "kind": "READBACK",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Menu/ServiceInterval/N6og3a"
+  },
+  "response": {
+    "body": {
+      "Additional": null,
+      "Entity": {
+        "Code": "PARITY-CREATE-SI",
+        "CreateDate": "<ts>",
+        "CreatedByUserID": "V2PQY",
+        "Description": "Parity created interval",
+        "FullName": "PARITY-CREATE-SI parity created interval",
+        "ID": "N6og3a",
+        "IsDeleted": false,
+        "LastSaveDate": "<ts>",
+        "LastSavedByUserID": "V2PQY",
+        "ServiceIntervalGroup": {
+          "Value": "7YEYbY"
+        },
+        "ValueInMeter": 20000
+      },
+      "Message": null
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {
+      "Content-Language": "en-US"
+    },
+    "status": 200
+  }
+}

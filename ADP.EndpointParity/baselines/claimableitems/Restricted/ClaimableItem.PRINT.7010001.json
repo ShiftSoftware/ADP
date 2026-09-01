@@ -1,0 +1,16 @@
+{
+  "case": "ClaimableItem.PRINT.7010001",
+  "grant": "Restricted",
+  "kind": "PRINT",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/ClaimableItems/ClaimableItem/print/7010001"
+  },
+  "response": {
+    "body": "",
+    "contentType": null,
+    "headers": {},
+    "status": 403
+  }
+}

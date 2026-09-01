@@ -1,0 +1,50 @@
+{
+  "case": "ReplacementItem.LIST",
+  "grant": "FullAccess",
+  "kind": "LIST",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Menu/ReplacementItem?$orderby=ID&$top=25&$count=true"
+  },
+  "response": {
+    "body": {
+      "Count": 2,
+      "Value": [
+        {
+          "AllowMultiplePartNumbers": false,
+          "DefaultPartPriceMarginPercentage": null,
+          "ID": "wGlzYD",
+          "IsDeleted": false,
+          "Name": "PARITY-RI parity replacement item",
+          "StandaloneLabourCode": "PAR-LB-1",
+          "StandaloneOperationCode": "PAR-OP-1",
+          "StandaloneReplacementItemGroup": {
+            "Text": "PARITY-SRIG parity standalone group",
+            "Value": "MJM3Xm"
+          },
+          "Type": 1
+        },
+        {
+          "AllowMultiplePartNumbers": false,
+          "DefaultPartPriceMarginPercentage": null,
+          "ID": "eZO2Yy",
+          "IsDeleted": false,
+          "Name": "PARITY-RI-2 parity replacement item two",
+          "StandaloneLabourCode": "PAR-LB-2",
+          "StandaloneOperationCode": "PAR-OP-2",
+          "StandaloneReplacementItemGroup": {
+            "Text": "PARITY-SRIG parity standalone group",
+            "Value": "MJM3Xm"
+          },
+          "Type": 1
+        }
+      ]
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {
+      "Content-Language": "en-US"
+    },
+    "status": 200
+  }
+}

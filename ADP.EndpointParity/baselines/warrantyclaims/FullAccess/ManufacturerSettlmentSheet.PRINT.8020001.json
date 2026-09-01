@@ -1,0 +1,16 @@
+{
+  "case": "ManufacturerSettlmentSheet.PRINT.8020001",
+  "grant": "FullAccess",
+  "kind": "PRINT",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/WarrantyClaims/ManufacturerSettlmentSheet/print/8020001"
+  },
+  "response": {
+    "body": "",
+    "contentType": null,
+    "headers": {},
+    "status": 403
+  }
+}

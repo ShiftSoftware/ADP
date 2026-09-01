@@ -1,0 +1,34 @@
+{
+  "case": "Survey.LIST.afterRemove",
+  "grant": "FullAccess",
+  "kind": "LIST",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Surveys/Survey?$orderby=ID&$count=true"
+  },
+  "response": {
+    "body": {
+      "Count": 2,
+      "Value": [
+        {
+          "ID": "KJzYkW",
+          "IntegrationId": "parity-survey-trap3write",
+          "IsDeleted": false,
+          "Name": "PARITY-SURVEY-TRAP3WRITE derived-published-version",
+          "PublishedVersionNumber": 7
+        },
+        {
+          "ID": "wZ6pwz",
+          "IntegrationId": "parity-survey-plain",
+          "IsDeleted": false,
+          "Name": "PARITY-SURVEY-PLAIN control row",
+          "PublishedVersionNumber": null
+        }
+      ]
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {},
+    "status": 200
+  }
+}

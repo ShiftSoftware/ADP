@@ -1,0 +1,18 @@
+{
+  "case": "ServiceInterval.PRINT.D6krn8",
+  "grant": "Restricted",
+  "kind": "PRINT",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Menu/ServiceInterval/print/D6krn8"
+  },
+  "response": {
+    "body": "",
+    "contentType": null,
+    "headers": {
+      "Content-Language": "en-US"
+    },
+    "status": 403
+  }
+}

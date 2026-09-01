@@ -1,0 +1,16 @@
+{
+  "case": "ScreenTemplate.PRINTTOKEN.rz5DdR",
+  "grant": "FullAccess",
+  "kind": "PRINTTOKEN",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Surveys/ScreenTemplate/print-token/rz5DdR"
+  },
+  "response": {
+    "body": "expires=<expires>&token=<token>",
+    "contentType": "text/plain; charset=utf-8",
+    "headers": {},
+    "status": 200
+  }
+}

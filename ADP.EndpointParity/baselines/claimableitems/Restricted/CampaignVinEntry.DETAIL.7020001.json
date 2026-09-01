@@ -1,0 +1,43 @@
+{
+  "case": "CampaignVinEntry.DETAIL.7020001",
+  "grant": "Restricted",
+  "kind": "DETAIL",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/ClaimableItems/CampaignVinEntry/7020001"
+  },
+  "response": {
+    "body": {
+      "Additional": null,
+      "Entity": {
+        "Campaign": {
+          "Nested": null,
+          "Text": null,
+          "Value": "7000001"
+        },
+        "Company": {
+          "Value": "LA"
+        },
+        "CompanyBranch": {
+          "Value": "Z5"
+        },
+        "Country": {
+          "Value": "6z"
+        },
+        "CreateDate": "<ts>",
+        "CreatedByUserID": null,
+        "ID": "7020001",
+        "IsDeleted": false,
+        "LastSaveDate": "<ts>",
+        "LastSavedByUserID": null,
+        "RecordedDate": "2020-02-01T00:00:00",
+        "VIN": "PARITYVIN00000001"
+      },
+      "Message": null
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {},
+    "status": 200
+  }
+}

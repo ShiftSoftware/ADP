@@ -1,0 +1,5 @@
+{
+  "_why": "Flat DTO: Version / VersionDateTime.",
+  "version": 99,
+  "versionDateTime": "2099-12-31T23:59:59.0000000+00:00"
+}

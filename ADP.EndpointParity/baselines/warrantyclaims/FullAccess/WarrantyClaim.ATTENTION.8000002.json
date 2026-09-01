@@ -1,0 +1,16 @@
+{
+  "case": "WarrantyClaim.ATTENTION.8000002",
+  "grant": "FullAccess",
+  "kind": "ATTENTION",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/WarrantyClaims/WarrantyClaim/8000002/attention"
+  },
+  "response": {
+    "body": [],
+    "contentType": "application/json; charset=utf-8",
+    "headers": {},
+    "status": 200
+  }
+}

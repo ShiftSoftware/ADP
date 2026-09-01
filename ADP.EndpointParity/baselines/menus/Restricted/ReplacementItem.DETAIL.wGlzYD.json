@@ -1,0 +1,45 @@
+{
+  "case": "ReplacementItem.DETAIL.wGlzYD",
+  "grant": "Restricted",
+  "kind": "DETAIL",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Menu/ReplacementItem/wGlzYD"
+  },
+  "response": {
+    "body": {
+      "Additional": null,
+      "Entity": {
+        "AllowMultiplePartNumbers": false,
+        "CreateDate": "<ts>",
+        "CreatedByUserID": null,
+        "DefaultPartPriceMarginPercentage": null,
+        "FriendlyName": "PARITY-RI friendly",
+        "ID": "wGlzYD",
+        "IsDeleted": false,
+        "LastSaveDate": "<ts>",
+        "LastSavedByUserID": null,
+        "Name": "PARITY-RI parity replacement item",
+        "ServiceIntervalGroups": [
+          {
+            "ID": "7YEYbY"
+          }
+        ],
+        "StandaloneLabourCode": "PAR-LB-1",
+        "StandaloneOperationCode": "PAR-OP-1",
+        "StandaloneReplacementItemGroup": {
+          "Text": "PARITY-SRIG parity standalone group",
+          "Value": "MJM3Xm"
+        },
+        "Type": 1
+      },
+      "Message": null
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {
+      "Content-Language": "en-US"
+    },
+    "status": 200
+  }
+}

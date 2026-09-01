@@ -1,0 +1,31 @@
+{
+  "case": "ServiceInterval.LIST",
+  "grant": "FullAccess",
+  "kind": "LIST",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Menu/ServiceInterval?$orderby=ID&$top=25&$count=true"
+  },
+  "response": {
+    "body": {
+      "Count": 1,
+      "Value": [
+        {
+          "Code": "PARITY-SI",
+          "Description": "Parity interval",
+          "FullName": "PARITY-SI parity service interval",
+          "ID": "D6krn8",
+          "IsDeleted": false,
+          "ServiceIntervalGroupName": "PARITY-SIG parity interval group",
+          "ValueInMeter": 10000
+        }
+      ]
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {
+      "Content-Language": "en-US"
+    },
+    "status": 200
+  }
+}

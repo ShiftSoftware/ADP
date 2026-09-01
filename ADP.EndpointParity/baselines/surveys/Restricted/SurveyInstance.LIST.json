@@ -1,0 +1,16 @@
+{
+  "case": "SurveyInstance.LIST",
+  "grant": "Restricted",
+  "kind": "LIST",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Surveys/SurveyInstance?$orderby=ID&$top=5&$count=true"
+  },
+  "response": {
+    "body": "",
+    "contentType": null,
+    "headers": {},
+    "status": 403
+  }
+}

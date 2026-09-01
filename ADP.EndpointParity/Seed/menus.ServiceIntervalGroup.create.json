@@ -1,0 +1,6 @@
+{
+  "_why": "Flat DTO: Name / LabourCode / LabourDescription, all required.",
+  "name": "PARITY-CREATE-SIG",
+  "labourCode": "PAR-C-LC",
+  "labourDescription": "Parity created interval group"
+}

@@ -1,0 +1,16 @@
+{
+  "case": "ScreenTemplate.PRINT.rz5DdR",
+  "grant": "FullAccess",
+  "kind": "PRINT",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Surveys/ScreenTemplate/print/rz5DdR"
+  },
+  "response": {
+    "body": "",
+    "contentType": null,
+    "headers": {},
+    "status": 403
+  }
+}

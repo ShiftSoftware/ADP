@@ -1,0 +1,24 @@
+{
+  "case": "ScreenTemplate.LIST.afterRemove",
+  "grant": "Restricted",
+  "kind": "LIST",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Surveys/ScreenTemplate?$orderby=ID&$count=true"
+  },
+  "response": {
+    "body": {
+      "AdditionalData": null,
+      "Message": {
+        "Body": "Please specify a page size using the $top query parameter. You do not have permission to load unrestricted data sets.",
+        "For": null,
+        "SubMessages": null,
+        "Title": "Unrestricted Data Access Not Allowed"
+      }
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {},
+    "status": 400
+  }
+}

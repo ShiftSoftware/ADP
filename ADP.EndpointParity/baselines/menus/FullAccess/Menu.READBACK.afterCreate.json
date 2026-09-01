@@ -1,0 +1,35 @@
+{
+  "case": "Menu.READBACK.afterCreate",
+  "grant": "FullAccess",
+  "kind": "READBACK",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Menu/Menu/3EAXvp"
+  },
+  "response": {
+    "body": {
+      "Additional": null,
+      "Entity": {
+        "BasicModelCode": "PARITY-CREATE-MENU",
+        "BrandID": null,
+        "CreateDate": "<ts>",
+        "CreatedByUserID": "V2PQY",
+        "ID": "3EAXvp",
+        "IsDeleted": false,
+        "LastSaveDate": "<ts>",
+        "LastSavedByUserID": "V2PQY",
+        "VehicleModel": {
+          "Text": "PARITY-VM parity vehicle model",
+          "Value": "9Yg0yq"
+        }
+      },
+      "Message": null
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {
+      "Content-Language": "en-US"
+    },
+    "status": 200
+  }
+}

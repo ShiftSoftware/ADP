@@ -1,0 +1,32 @@
+{
+  "case": "BrandMapping.DETAIL.xXGj99",
+  "grant": "FullAccess",
+  "kind": "DETAIL",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Menu/BrandMapping/xXGj99"
+  },
+  "response": {
+    "body": {
+      "Additional": null,
+      "Entity": {
+        "Brand": null,
+        "BrandAbbreviation": "PBM",
+        "Code": "PARITY-BRANDMAP",
+        "CreateDate": "<ts>",
+        "CreatedByUserID": null,
+        "ID": "xXGj99",
+        "IsDeleted": false,
+        "LastSaveDate": "<ts>",
+        "LastSavedByUserID": null
+      },
+      "Message": null
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {
+      "Content-Language": "en-US"
+    },
+    "status": 200
+  }
+}

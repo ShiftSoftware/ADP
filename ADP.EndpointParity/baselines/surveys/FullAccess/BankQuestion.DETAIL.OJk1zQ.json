@@ -1,0 +1,47 @@
+{
+  "case": "BankQuestion.DETAIL.OJk1zQ",
+  "grant": "FullAccess",
+  "kind": "DETAIL",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Surveys/BankQuestion/OJk1zQ"
+  },
+  "response": {
+    "body": {
+      "Additional": null,
+      "Entity": {
+        "BankEntryID": "b0000000-0000-4000-8000-000000000002",
+        "BiColumn": null,
+        "CreateDate": "<ts>",
+        "CreatedByUserID": null,
+        "ID": "OJk1zQ",
+        "IsDeleted": false,
+        "Key": "PARITY-BANKQ-UNLOCKED",
+        "LastSaveDate": "<ts>",
+        "LastSavedByUserID": null,
+        "Locked": false,
+        "Question": {
+          "biColumn": null,
+          "help": null,
+          "highLabel": null,
+          "id": "q-parity-unlocked",
+          "lowLabel": null,
+          "max": 10,
+          "min": 0,
+          "required": false,
+          "title": {
+            "en": "Parity NPS question"
+          },
+          "type": "nps"
+        },
+        "Retired": false,
+        "Tags": []
+      },
+      "Message": null
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {},
+    "status": 200
+  }
+}

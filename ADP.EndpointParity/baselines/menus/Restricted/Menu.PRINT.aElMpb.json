@@ -1,0 +1,18 @@
+{
+  "case": "Menu.PRINT.aElMpb",
+  "grant": "Restricted",
+  "kind": "PRINT",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Menu/Menu/print/aElMpb"
+  },
+  "response": {
+    "body": "",
+    "contentType": null,
+    "headers": {
+      "Content-Language": "en-US"
+    },
+    "status": 403
+  }
+}

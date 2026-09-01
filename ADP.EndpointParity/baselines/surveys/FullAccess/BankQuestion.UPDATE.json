@@ -1,0 +1,68 @@
+{
+  "case": "BankQuestion.UPDATE",
+  "grant": "FullAccess",
+  "kind": "UPDATE",
+  "request": {
+    "body": {
+      "BankEntryID": "<server-guid>",
+      "BiColumn": null,
+      "CreateDate": "<ts>",
+      "CreatedByUserID": "QOa4j",
+      "ID": "2BaX73",
+      "IsDeleted": false,
+      "Key": "PARITY-CREATE-BANKQ",
+      "LastSaveDate": "<ts>",
+      "LastSavedByUserID": "QOa4j",
+      "Locked": true,
+      "Question": {
+        "id": "q-parity-create",
+        "required": false,
+        "title": {
+          "en": "Parity create probe"
+        },
+        "type": "text"
+      },
+      "Retired": false,
+      "Tags": []
+    },
+    "method": "PUT",
+    "url": "/api/Surveys/BankQuestion/2BaX73"
+  },
+  "response": {
+    "body": {
+      "Additional": null,
+      "Entity": {
+        "BankEntryID": "<server-guid>",
+        "BiColumn": null,
+        "CreateDate": "<ts>",
+        "CreatedByUserID": "QOa4j",
+        "ID": "2BaX73",
+        "IsDeleted": false,
+        "Key": "PARITY-CREATE-BANKQ",
+        "LastSaveDate": "<ts>",
+        "LastSavedByUserID": "QOa4j",
+        "Locked": false,
+        "Question": {
+          "biColumn": null,
+          "help": null,
+          "id": "q-parity-create",
+          "maxLength": null,
+          "minLength": null,
+          "pattern": null,
+          "placeholder": null,
+          "required": false,
+          "title": {
+            "en": "Parity create probe"
+          },
+          "type": "text"
+        },
+        "Retired": false,
+        "Tags": []
+      },
+      "Message": null
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {},
+    "status": 200
+  }
+}

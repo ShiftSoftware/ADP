@@ -1,0 +1,16 @@
+{
+  "case": "BankQuestion.PRINT.kDeznD",
+  "grant": "Restricted",
+  "kind": "PRINT",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Surveys/BankQuestion/print/kDeznD"
+  },
+  "response": {
+    "body": "",
+    "contentType": null,
+    "headers": {},
+    "status": 403
+  }
+}

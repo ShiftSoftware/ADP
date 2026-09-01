@@ -1,0 +1,16 @@
+{
+  "case": "Survey.ATTENTION.wZ6pwz",
+  "grant": "FullAccess",
+  "kind": "ATTENTION",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Surveys/Survey/wZ6pwz/attention"
+  },
+  "response": {
+    "body": [],
+    "contentType": "application/json; charset=utf-8",
+    "headers": {},
+    "status": 200
+  }
+}

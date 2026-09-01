@@ -3,7 +3,7 @@
 **This file is the ledger.** It answers "which step is done and which is pending". If it disagrees
 with anything else in this directory, this file wins.
 
-Last updated: 2026-09-01 (plan reordered — shared floor moved to the end, the atomic version-bump
+Last updated: 2026-09-01 (Step 00 IN PROGRESS — SPIKE-1 and SPIKE-2 resolved, item H probe green, §G baselines recorded, harness skeleton building and group-isolated; seeds/stability-gate/baselines still outstanding. Earlier same day: plan reordered — shared floor moved to the end, the atomic version-bump
 step deleted, a harness-removal step added; then a consistency pass over the whole directory —
 corrected the per-commit green claims in Step 03, gave Step 04's SPIKE-8 a real item 0, restored
 Step 06 to SPIKE-8's `Blocks`, and re-based SPIKE-10 on the repo's actual export formats. No work
@@ -76,7 +76,7 @@ its terminal status*, never `VERIFIED` unconditionally.
 
 | Step | Group | Projects | Depends on | Terminal status | Status | Verified by | Date | Notes |
 |---|---|---|---|---|---|---|---|---|
-| 00 | Baseline & parity harness | `ADP.EndpointParity.Harness` + 5 per-group test projects (new), `tools/parity.ps1` (new) | — | `CLOSED` | `NOT STARTED` | — | — | Must run on the pre-bump tree. Two identical capture runs must diff to zero before anything else is trusted. Terminal `CLOSED`: it builds the instrument, it has no endpoints of its own. Also carries the **15-minute throwaway `ADP.Models` compile probe** that de-risks shared-last (see the residual-risk note under the spike table). |
+| 00 | Baseline & parity harness | `ADP.EndpointParity.Harness` + 5 per-group test projects (new), `tools/parity.ps1` (new) | — | `CLOSED` | `IN PROGRESS` | — | 2026-09-01 | **ALL FOUR mapper groups captured — Menus, Surveys, ClaimableItems, WarrantyClaims — each under both grants and each stability-gated to a byte-identical second run. Darlastic skipped by decision. Remaining before `CLOSED`: commit the goldens in their own commit, and re-run the §G solution numbers now that the harness projects are in `ADP.sln`.** Done: items **A** (SPIKE-1 resolved), **H** (`ADP.Models` probe green), **B** (SPIKE-2 resolved both halves — sample host + mounted host both boot; seeding suppression verified), **G** (all baseline numbers recorded below), and the structural half of **C** — six projects build and are in `ADP.sln` (59), capture layer (`Normalizer`/`Transcript`/`TranscriptDiffer`/`ParityRunner`/`ParitySummary`/`Canonical`) and wiring layer (`RouteCatalog`/`RequestFactory`/`ParityAuth`/`ParityDb`/`SampleHostFactory`/`MountedHostFactory`) written, `tools/parity.{ps1,psd1}` written, group-isolation rehearsal passes. **Not yet done: the seeds, the case list that binds the catalogue to cases, the stability gate, and every baseline.** No group is captured, so no later step may rely on this yet. Must run on the pre-bump tree. Two identical capture runs must diff to zero before anything else is trusted. Terminal `CLOSED`: it builds the instrument, it has no endpoints of its own. Also carries the **15-minute throwaway `ADP.Models` compile probe** that de-risks shared-last (see the residual-risk note under the spike table). |
 | 01 | Retro-verify `ADP.Menus` | `ADP.Menus.*` (**11 projects**, 8 of them already on 2026.8.30.1) | 00 | `VERIFIED` | `NOT STARTED` | — | — | Code migration already `DONE` at `14caf7c9` — see the Menus row below. This step only proves it. Retroactive baseline from `14caf7c9^` via `git worktree`. Also resolves SPIKE-9. No package lines: Menus is already at `2026.8.30.1`. |
 | 02 | `ADP.Darlastic` | `ADP.Darlastic.{API,Data,Shared,Web}` | 00, 01 | `CLOSED` | `NOT STARTED` | — | — | Bumps its own **4** package lines as its first commit and ends green. 0 profiles, 0 triples. Smoke pass only — nothing mapper-shaped to prove, so terminal `CLOSED`. **But it is the plan's only framework-only control** (see SPIKE-5). Do not record as full parity. |
 | 03 | `ADP.Surveys` | `ADP.Surveys.{API,Data,Shared,Web}` + 2 samples | 00, 01 | `VERIFIED` | `NOT STARTED` | — | — | Bumps its own **7** package lines. 4 triples, 1 profile (151 lines). **Free-floating** — every `ProjectReference` is intra-group and it consumes no `ShiftSoftware.ADP.*` package, so it is legal anywhere after 01. Ordered here by risk/simplicity, not by the graph. Has a sample host → full HTTP parity available. Carries SPIKE-3 and SPIKE-4. |
@@ -123,11 +123,11 @@ the spike, then record the finding here.**
 
 | ID | Question | Blocks | Status |
 |---|---|---|---|
-| SPIKE-1 | Does `ShiftSoftware.ShiftFrameworkTestingTools` (published only to `2026.7.28.1`) bind when NuGet unifies its ShiftEntity dependency up to `2026.8.30.1`? | 00 (design choice only — fallback exists) | OPEN |
-| SPIKE-2 | Can a synthetic "mounted host" boot `ADP.ClaimableItems` / `ADP.WarrantyClaims` through their own `Add<Group>ApiServices` entry point? No sample host exists for either, and no sample API declares `public partial class Program`, so `WebApplicationFactory<Program>` will not compile against any of them today. | 00, 04, 05 | OPEN |
+| SPIKE-1 | Does `ShiftSoftware.ShiftFrameworkTestingTools` (published only to `2026.7.28.1`) bind when NuGet unifies its ShiftEntity dependency up to `2026.8.30.1`? | 00 (design choice only — fallback exists) | **RESOLVED — IT BINDS.** Scratch project referencing TestingTools `2026.7.28.1` alongside ShiftEntity.{Model,EFCore,Web} `2026.8.30.1`: restores and builds clean (0 warnings, 0 errors, no NU1605/MSB3277) — its nuspec declares **minimum-version** deps, not exact pins, so NuGet unifies up. Runtime binding proven beyond restore: every public type loads without `ReflectionTypeLoadException`, and **all 17 method bodies of the two generic types that matter — `BasicTest<DTO,ListDTO>` and `ShiftCustomWebApplicationFactory<TStartup,DB>` — JIT-prepare clean** when closed over concrete types (`RuntimeHelpers.PrepareMethod`). **Design decision taken anyway: the harness does NOT consume the package.** `BasicTest` parses responses into typed DTOs, which the capture-layer purity rule forbids, and `ShiftCustomWebApplicationBearerAuthSettings` carries ONE `TypeAuthActions` list per factory instance, so two principals would mean two factories and two databases. Its value is as the **specification** the plan predicted: its method set (`Get`/`PostOrPut`/`Delete`/`OdataList`/`RevisionList`) is the inherited-route checklist, and its `GenerateToken` confirmed the RS256 + `ShiftSoftware/TypeAuth/Claims/AccessTree` shape `ParityAuth` mints. |
+| SPIKE-2 | Can a synthetic "mounted host" boot `ADP.ClaimableItems` / `ADP.WarrantyClaims` through their own `Add<Group>ApiServices` entry point? No sample host exists for either, and no sample API declares `public partial class Program`, so `WebApplicationFactory<Program>` will not compile against any of them today. | 00, 04, 05 | **RESOLVED — BOTH HALVES POSITIVE. Steps 04 and 05 are not blocked and no fallback sample API is needed.** (1) *Sample host*: `public partial class Program { }` appended to `ADP.Surveys.Sample.API/Program.cs` (behaviour-free; the implicit top-level-statements class is internal) makes `WebApplicationFactory<Program>` compile and boot. (2) *Mounted host*: `MountedHostFactory` boots `ADP.ClaimableItems` through `AddClaimableItemsApiServices<ParityDb>(mvcBuilder, configure)` against real SQL with `EnsureCreated` and no migrations, exposing **63 catalogue routes** across all its triples. `ParityDb : ShiftDbContext` owns no entities; the group's `IModelBuildingContributor` supplies the tables, exactly as a tenant host gets them. Modelled on the repo's own minimal consumer, `ADP.Darlastic.Sample.API`. (3) *Seeding suppression*: a `Parity:SuppressSampleSeeding` config branch wraps the sample's `SeedDBAsync`/`SetFullAccessAsync`/`SeedSampleSurveysAsync` block — verified to take, list body goes from the demo seed's `Count:8` to `Count:0` on a fresh per-run database. **Explicit-id path still OPEN — see the note below the baselines table.** |
 | SPIKE-3 | `BankQuestionListDTO.Type` and `ScreenTemplateListDTO.QuestionCount` are mapped in the current profile via **static method calls** over a JSON column. `ForList` requires an EF-translatable expression. How do these list projections work today, and what replaces them? | 03 | OPEN |
 | SPIKE-4 | AutoMapper's `.Condition(...)` (used on `BankQuestion.BankEntryID`) has no documented equivalent on `ShiftMapperBuilder`. Is the existing-aware `ForEntity((dto, entity, ctx) => …)` overload the correct replacement? | 03 | OPEN |
-| SPIKE-5 | The Darlastic sample host `return 1`s before `app.Run()` on missing config and needs a populated registry DB the repo does not seed. Can it be booted headlessly at all? **High priority, not cost-benefit-optional:** with 0 triples and 0 profiles Darlastic is the plan's *only* group where a harness diff is unambiguously framework-caused, so it is the control against which every mapper group's diff is attributed. | 02, and the attribution of 03/04/05 diffs | OPEN |
+| SPIKE-5 | The Darlastic sample host `return 1`s before `app.Run()` on missing config and needs a populated registry DB the repo does not seed. Can it be booted headlessly at all? | 02, and the attribution of 03/04/05 diffs | **CLOSED BY DECISION (2026-09-01), not investigated.** Owner's call: Darlastic has 0 triples and 0 profiles, so there is no mapper risk to prove — take the framework upgrade and any refactoring it forces, and **skip parity capture for this group**. `ADP.EndpointParity.Darlastic` stays in the solution (it builds, and removing it would churn `ADP.sln`) but is never captured. **Accepted cost, recorded so it is not rediscovered as a surprise:** Darlastic was the only framework-only control, so diffs in Steps 03/04/05 now confound framework change with mapper rewrite and must be attributed by reading code rather than by comparison. See the Darlastic section under `## Recorded baselines`. |
 | SPIKE-6 | `ADP.Models/Models.Tests` discovers **zero tests** (no test framework referenced; all sources `<Compile Remove>`d) yet exits 0. The most-shared project in the solution is unguarded. Fix, or accept and record? | 06 | OPEN |
 | SPIKE-7 | Do `IgnoreList` / `IgnoreView` bake correctly for the two Financial triples, and do both triples over the same entity generate distinct list projections? Must be proven from emitted `.g.cs`, not from the build log. | 05 | OPEN |
 | SPIKE-8 | Two triples across two different groups map the `ADP.Cases` `Certificate` entity (`ItemClaimCertificateRepository`, `WarrantyCertificateRepository`). Which assembly does each generated mapper land in, and can both coexist in one host? **The old shared-floor probe is gone** — after the reorder the floor runs *last* (Step 06), behind both consumers — so Step 04 answers it from its own emitted `.g.cs` as the first group to generate a `Certificate` mapper, and Step 05 applies the finding to the second triple, and Step 06 confirms the `ADP.Cases` side of it (its item C). | 04 (owns it), 05, 06 (confirms the `ADP.Cases` side) | OPEN |
@@ -145,7 +145,7 @@ early throwaway compile probe — bump `ADP.Models/Models/Models.csproj:48` on a
 
 | Probe | Result | Recorded on |
 |---|---|---|
-| `ADP.Models` @ `ShiftEntity.Model 2026.8.30.1`, throwaway build (Step 00) | *(record: green / errors, verbatim)* | |
+| `ADP.Models` @ `ShiftEntity.Model 2026.8.30.1`, throwaway build (Step 00) | **GREEN.** `dotnet build ADP.Models/Models` on branch `scratch/models-probe` with only `Models.csproj:48` bumped `2026.7.31.1` → `2026.8.30.1`: **0 errors, 9 warnings**. The 9 are pre-existing `CS8632` (nullable annotation outside a `#nullable` context) and the count is **identical before and after the bump**, so the bump is a pure no-op for `ADP.Models`. **Consequence: Step 06 remains the four-line version edit it is written as**, and shared-last carries no late surprise. Branch deleted; `git status` shows no change to `Models.csproj`. | 2026-09-01 |
 
 ---
 
@@ -215,17 +215,337 @@ Keep it accurate or it is worse than nothing. When you finish a piece of work:
 Filled in by Step 00 item G, on the pre-bump tree. **Step 07** compares against these. **Record the
 machine state alongside them** — several numbers are emulator- and local-SQL-sensitive.
 
+**Machine state for these numbers:** Windows 11, .NET SDK `10.0.400`, SQL Express reachable at
+`localhost\sqlexpress` with integrated security, Cosmos emulator **not** running, Azurite **not**
+running. Several figures below are emulator- and local-SQL-sensitive; compare on the same state.
+
 | Measure | Baseline | Recorded on |
 |---|---|---|
-| `dotnet build ADP.sln` | *(exit code, errors, projects built — pin the project count **after** Step 00 has added its own projects to `ADP.sln`; it is 53 today, and Step 08 takes those projects back out)* | |
-| compiler warnings | | |
-| `SHENGEN004` | | |
-| `SHENGEN007` / `008` / `010` | | |
-| `NU1605` / `NU1701` / `NU1603` / `MSB3277` | | |
-| `NU1903` (AutoMapper CVE) | | |
-| .NET tests | | |
-| web component tests | | |
-| generated trees clean (`src/global/types/generated`, `ADP.Docs/Docs/docs/generated`, `ADP.TestData/environments`) | | |
+| `dotnet build ADP.sln` | **exit 0, 0 errors.** Project count: **53 pre-harness** (the figure Step 08 returns to after deleting the six parity projects) and **59 post-harness** (the figure **Step 07** compares against — 53 + `Harness` + 5 group projects, exactly as this step predicted). 54 assemblies emitted on a cold build. | 2026-09-01 |
+| compiler warnings | **580 cold** (`--no-incremental`), **519 warm**, **482 unique warning lines**. ⚠️ **The plan's expected 535 was not reproduced, and the metric is not "stable warm and cold" as `00`'s §G asserts** — an incremental build skips up-to-date projects and therefore their warnings, so the number is build-state-dependent by construction. **Use 580 cold as the comparison figure at Steps 06/07 and always compare cold-to-cold.** Top codes: CS8632 ×222, CS8618 ×130, NU1903 ×84, CS8602 ×76 (raw line counts, which MSBuild double-reports). | 2026-09-01 |
+| `SHENGEN004` | **10** — `ClaimableItems.Data` **5**, `Surveys.Data` **3**, `WarrantyClaims.Data` **2**. **Zero in Menus.** Exactly as the plan predicted. | 2026-09-01 |
+| `SHENGEN007` / `008` / `010` | **0 anywhere.** | 2026-09-01 |
+| `NU1605` / `NU1701` / `NU1603` / `MSB3277` | **0 anywhere.** (The harness itself briefly introduced an NU1605 by pinning `System.IdentityModel.Tokens.Jwt` **8.14.0** under `EFCore.SqlServer`'s transitive **8.19.2**; pinned up to 8.19.2 so the harness does not perturb this baseline.) | 2026-09-01 |
+| `NU1903` (AutoMapper CVE) | **42 unique lines across 21 projects** — exactly as the plan predicted. This is the upgrade's scoreboard and should fall. | 2026-09-01 |
+| .NET tests | **1544 total: 1533 passed, 2 failed, 9 skipped** — exactly as the plan predicted. Per assembly: Hawta 502 (493+9 skipped), Menus 264 (**262 + the 2 known `SampleDataSeedingTests` failures**), LookupServices.BDD **452/452**, Surveys.Shared 182, Darlastic.Engine 49, Lookup.Services 47, Cases.Shared 43, Darlastic.Shared 5. | 2026-09-01 |
+| web component tests | **114 passed, 4 suites** — exactly as the plan predicted. | 2026-09-01 |
+| generated trees clean (`src/global/types/generated`, `ADP.Docs/Docs/docs/generated`, `ADP.TestData/environments`) | **CLEAN** — `git diff --exit-code` over all three returns 0 after a full cold `dotnet build ADP.sln`. ⚠️ **But a FOURTH generated tree the §G check does not name is NOT clean: see the note below.** | 2026-09-01 |
+
+### ⚠️ A fourth generated tree, not covered by §G — `ADP.LookupServices.BDD/Features/*.feature.cs`
+
+A full `dotnet build ADP.sln` rewrites **32 tracked Reqnroll-generated `.feature.cs` files**
+(2531 insertions / 2531 deletions). The churn is **semantically empty**: Reqnroll renumbers its
+generated local table variables (`table1` → `table31`, …) because the counter depends on
+compilation order, not on the feature files. Nothing about the tests changes.
+
+**Why it matters anyway, in two places:**
+
+1. **Step 00's own exit criterion** — *"Nothing outside `ADP.EndpointParity/`, `tools/`, `ADP.sln`,
+   `.gitignore` is modified"* — is violated by **merely building the solution**, before anyone
+   edits anything. The criterion is satisfiable only if these files are reverted after each build,
+   which is what was done here.
+2. **Steps 06 and 07** use the generated-tree diff as evidence that the upgrade did not change
+   generated output. This tree will produce a large phantom diff every time and, being 32 files of
+   real-looking C#, is exactly the kind of noise that gets waved through — or worse, hides a real
+   change inside it.
+
+**Recommendation for Steps 06/07:** either add these files to the generated-tree check with the
+explicit expectation that they churn (and diff them with whitespace/identifier-renaming ignored),
+or `git checkout -- ADP.LookupServices.BDD/Features/` immediately after every full build, as this
+step did. Do not silently ignore the path.
+
+### ✅ RESOLVED — the explicit-id insertion path (item B, point 3)
+
+**Decision: `SET IDENTITY_INSERT` around raw-SQL inserts. Proven working, and it needs ZERO
+production source change** — which is the deciding factor, since `ValueGeneratedNever()` would mean
+editing a module's own `IModelBuildingContributor` for a throwaway harness.
+
+Verified end to end on `[Surveys].[Survey]`: an explicit `ID = 5000001` inserted under
+`SET IDENTITY_INSERT … ON/OFF` comes back through the **real HTTP pipeline** as
+`{"ID":"KJzYkW", …}` — the hash of that long under the pinned salt. That is the whole of Rule 1's
+determinism chain demonstrated on a live endpoint.
+
+Two practical notes for the seeder:
+- Tables live under the **module's own SQL schema, not `dbo`** — `[Surveys].[Survey]`, singular,
+  because `SurveyModelBuilderExtensions` calls `entityType.SetSchema("Surveys")`. `dbo.Surveys`
+  does not exist.
+- The identity column is `ID` on every ShiftEntity table.
+
+### 🐞 PRE-EXISTING BUG FOUND — `revisions` and `asOf` are 500 in the Surveys sample
+
+Not caused by this work, and not caused by the upgrade. Recorded here because the harness has to
+decide what to do about it, and because it is worth fixing on its own merits.
+
+`GET /api/Surveys/Survey/{id}/revisions` and `GET …/{id}?asOf=…` both return **500**:
+
+> `Temporal FOR SYSTEM_TIME clause can only be used with system-versioned tables.
+> 'Surveys.Survey' is not a system-versioned table.`
+
+**Why.** `Survey` (and 40 other entities repo-wide) carry `[TemporalShiftEntity]`, and
+`SurveyModelBuilderExtensions.cs:137-148` dutifully calls `entityType.SetHistoryTableSchema("Surveys")`
+for them — **but nothing ever calls `.IsTemporal(true)`**. EF's own model confirms it: every Surveys
+entity reports `IsTemporal=False`. So the tables are created without system-versioning while the
+inherited repository code still emits `FOR SYSTEM_TIME` SQL against them.
+
+**This is schema-creation-independent** — reproduced identically under `EnsureCreated` **and** under
+`Database.Migrate()`. It is not an artifact of the harness's disposable database.
+
+**Consequence for the harness.** Two of the plan's case kinds (`REVISIONS`, `ASOF`) cannot be
+exercised for Surveys, and capturing them would violate the "0 5xx" gate. They go into
+`parity.psd1`'s `excludedRoutes` with this reason. **The temporal mapper path is therefore
+UNVERIFIED for this group** — state that plainly rather than letting a green run imply otherwise.
+
+**Also discovered in passing:** the Surveys sample's migrations have drifted from its model —
+`Database.Migrate()` throws `PendingModelChangesWarning`. The harness uses `EnsureCreated` anyway
+(the plan's original choice), which sidesteps it.
+
+### ✅ Surveys — captured, stability-gated, and PROVEN to detect a regression
+
+**The first group is complete.** `ADP.EndpointParity/baselines/surveys/` holds **76 goldens**
+across both grants, plus the route catalogue.
+
+| Gate | FullAccess | Restricted |
+|---|---|---|
+| cases | 45 | 30 |
+| 5xx | **0** | **0** |
+| `CREATE 2xx` | **3/3** | 0/3 — a refused CREATE is the correct answer for a read-only principal |
+| `UPDATE 2xx` | **3/3** | n/a |
+| catalogue routes covered | **52/52**, 23 excluded with written reasons | **52/52** |
+| hostile rows in list bodies | **6/6** | 5/6 — `SurveyInstance` is invisible to this principal, which is the point of the pass |
+| **stability gate** | **byte-identical over two consecutive captures** | **byte-identical** |
+
+**The instrument was validated, not just run.** Injecting a single changed value into the seed
+(`PublishedVersionNumber` 7 → 4242, the exact shape of trap 3-write) produced a diff on three cases
+with precise JSON paths — `$.response.body.Entity.PublishedVersionNumber: 7 -> 4242`. Reverting it
+returned `verify` to clean. A harness that has never been shown to fail is not evidence of anything.
+
+**What the stability gate caught before it could poison a baseline** — all three fixed by making
+values deterministic or by a narrow, named normalization, never by widening a rule:
+
+1. **`BankEntryID`** — minted with `Guid.NewGuid()` inside `BankQuestionRepository` on create, with
+   no seam to pin. Sanctioned Rule 1 fallback, scoped as tightly as possible: guids the **seed**
+   wrote still compare literally, so a wrong `BankEntryID` on a seeded row is still a diff; only the
+   freshly-minted one on the created row is tokenised.
+2. **Print-token bodies** — `expires=<stamp>&token=<signature over that stamp>`. Volatile by
+   construction. The two fields are tokenised; the body's **shape** is still compared.
+3. **`CreateDate` inside the UPDATE request body** — the request side was being stored raw. Request
+   bodies are now normalized into the golden with the same Rule 2 name allowlist as responses. The
+   bytes actually **sent** are untouched.
+
+**Five real bugs in the harness that a less strict gate would have hidden.** Each was surfaced by a
+gate refusing to pass, and each would have produced a confidently green run over nothing:
+
+- Every `UPDATE` returned **409** — the framework enforces optimistic concurrency on `LastSaveDate`,
+  and a PUT body omitting it sends `DateTime.MinValue`. The whole update path covered nothing while
+  `CREATE` looked perfectly healthy. Fixed by merging the hand-authored body over the row as the
+  server last rendered it.
+- `DELETE` ran **before** `PUT`, because cases were issued in catalogue order and the catalogue
+  sorts methods alphabetically — so the created row was deleted before UPDATE could touch it. Cases
+  now run in round-trip lifecycle order.
+- Canonical JSON **sorts keys**, which moved a polymorphic DTO's `type` discriminator out of first
+  position and 500'd the request. Sorting is a presentation rule for goldens and must never touch a
+  body being sent.
+- `LIST.afterRemove` was issuing a literal `"LIST"` HTTP verb → 405.
+- Stale goldens from a previous case list **survived** a re-capture, where a later `verify` would
+  have compared against cases the harness no longer issues.
+
+**A seed defect caught as a 500, not tolerated as one:** `QuestionJson: "{}"` deserializes to null
+for a polymorphic `QuestionDto` and made `GET {id}` throw inside the mapper. The seed now carries
+real DTO payloads.
+
+**Recorded limits for this group — a green Surveys run does NOT cover:**
+- `revisions` and `asOf` (pre-existing 500s; see the bug note above). The temporal mapper path is
+  **unverified** here.
+- `SurveyInstance` writes — every verb is 405; it needs a mapper-level write golden instead.
+- The hand-written controllers (`Preview`, `Publish`, `PublicSurvey`, `SurveyResponses`, `Triggers`)
+  — plain `ControllerBase`, no ShiftEntity triple, so a *mapper* upgrade cannot silently change
+  them. **If this migration ever touches serialization or routing rather than mapping, they must be
+  covered before any parity claim is made.**
+- Trap 1 (literal), trap 2 and trap 3-read **do not exist in this group** — verified, then
+  adversarially re-checked, and deliberately not faked. Trap-shaped rows are seeded anyway so the
+  traps would be caught if the upgrade *introduces* them.
+
+### ✅ Menus — captured, stability-gated, richest trap coverage in the plan
+
+`ADP.EndpointParity/baselines/menus/` — both grants, byte-identical over two consecutive captures.
+
+| Gate | FullAccess | Restricted |
+|---|---|---|
+| cases | 89 | 64 |
+| 5xx | **0** | **0** |
+| `CREATE 2xx` | **5/5** | 0/5 (refused — correct) |
+| `UPDATE 2xx` | **5/5** | n/a |
+| catalogue covered | **112/112**, 47 excluded with reasons | **112/112** |
+| hostile rows | **11/11** | 6/11 (5 invisible to a read-only principal) |
+| stability gate | **byte-identical** | **byte-identical** |
+
+This is the group the whole exercise is aimed at: **trap 1 ×6, trap 2 ×4, trap 3-write ×3**, every
+one confirmed at a cited line and adversarially re-verified. The seed carries soft-deleted children
+at two nesting depths, three link rows whose PK differs from every foreign id they carry (including
+a two-hop `MenuItem → RIVM → ReplacementItem` case with three wrong answers available), and a
+repository-derived `BrandID` set to a value no derivation could produce.
+
+**Findings from the Menus capture:**
+- **The temporal bug is REPO-WIDE, not a Surveys quirk.** 24 of the first Menus capture's cases were
+  500s — every `revisions` and `asOf` case — with the same "not a system-versioned table" error.
+  Same root cause: `[TemporalShiftEntity]` without `.IsTemporal(true)`.
+- **`MenuVersionRepository.UpsertAsync` throws `NotImplementedException`.** MenuVersion has no
+  working write path at all; it is now in `writeUnreachable`.
+- **Unique indexes apply to soft-deleted rows.** A soft-deleted "duplicate" of a live link row is
+  rejected by the index, so a trap-1 link row must differ in an indexed column rather than being a
+  copy flagged `IsDeleted`.
+- **A `_marker` needs a string column to live in.** MenuVersion has none, so it carries none — the
+  gate would otherwise hunt for text the row cannot hold.
+
+**Declared gaps, written down rather than glossed:** write-path parity is not captured for
+`VehicleModel`, `BrandMapping`, `LabourRateMapping` (their bodies need a ShiftIdentity `Brand` row
+the sample never seeds) or `MenuVariant` (its body needs a country-scoped labour rate). All four
+keep **full read-path coverage**, which is where their trap 1 and trap 2 sites live.
+
+### ✅ ClaimableItems and WarrantyClaims — captured, stability-gated
+
+Both run on the MOUNTED host (neither group ships a sample API). Both grants captured, both
+byte-identical over two consecutive runs.
+
+| Gate | ClaimableItems Full / Restricted | WarrantyClaims Full / Restricted |
+|---|---|---|
+| cases | 30 / 30 | 28 / 28 |
+| 5xx | **0 / 0** | **0 / 0** |
+| catalogue covered | **63/63**, 33 excluded | **94/94**, 70 excluded |
+| hostile rows | **5/5 / 5/5** | **4/4 / 4/4** |
+| stability gate | **byte-identical** | **byte-identical** |
+
+**🎯 The highest-risk baseline in the migration now exists.** `GET /DealerFinancial` returns claim
+8000001 with all five distributor-side members — `DistComment1`, `HourTotalDistributor`,
+`LaborTotalAmountDistributor`, `SubletTotalAmountDistributor`, `PartsTotalAmountDistributor` —
+as **null**, while the same five columns are **non-null in the database**. That is the trap 3-read
+captured exactly as `verification.md` §8.7 requires. If the generated convention mapper starts
+matching them by name, the diff reads `null -> 11.11` and cannot be missed.
+
+Captured under a **dealer** principal deliberately: `IWarrantyClaimsCapabilityProvider.IsDistributor`
+drives the "DTO distributor-field stripping in ViewAsync" its own doc comment describes, and `false`
+is the configuration in which those five members must be blank. `GET /DistributorFinancial` correctly
+answers **401** to that principal — a live demonstration that the dealer/distributor split works.
+
+#### The blocker that held both groups, and what it actually was
+
+Every entity implementing `IEntityHasCompany` / `IEntityHasCompanyBranch` listed as
+`{"Count":0,"Value":[]}` **with a 200** — a healthy-looking baseline proving nothing. Ruled out one
+at a time: matching the rows' `CompanyID`/`CompanyBranchID` to the principal's claims; setting them
+NULL; registering `RegisterIdentityHashId`. An in-request probe then showed the claims resolve
+correctly (`GetCompanyID() = 1`), which eliminated the claim side entirely.
+
+**Cause: the framework's default data-level access is a PERMISSION check, not a column match.**
+`DefaultDataLevelAccess.HasDefaultDataLevelAccess` denies unless the principal actually holds
+data-level access, and that grant lives on the **identity** action tree — which neither mounted host
+was registering or granting. Adding `ShiftIdentityActions` to both the registered trees and the
+access-tree claim unblocked both groups at once.
+
+The tell was there the whole time: `ServiceCampaign` and `AdditionalLaborOperationCode` — the only
+two entities with **no** `CompanyID` column — were the only two that ever listed.
+
+#### Consumer wiring the mounted host had to supply
+
+Each found by a capture failing, each a genuine difference from a sample host, and together the
+clearest evidence for why the plan rates this mode "one notch below":
+
+- an **authentication scheme** — `[Authorize]` controllers 500 with "No authenticationScheme was
+  specified" without one (`ParityAuthenticationHandler`, modelled on the repo's own
+  `DevAuthenticationHandler`);
+- `AddShiftEntityPrint` — the inherited print-token route needs `ShiftEntityPrintOptions`;
+- `AddHttpClient`;
+- `SharedClaimService`, `WarrantyClaimService`, `DeliveryDateService` — repository constructor
+  dependencies the module does not register for itself;
+- `IWarrantyClaimsCapabilityProvider` — no default implementation ships outside `.Web`.
+
+#### Seed lessons that generalise
+
+- **`CertificateType` discriminates the shared `ADP.Cases` Certificate** (SPIKE-8 territory):
+  `0 = WarrantyClaim`, `1 = ClaimableItemClaim`. Seeding the wrong value yields an empty list with a
+  200 — the same silent shape as a scoping mismatch. `WarrantyInvoice` additionally filters
+  `InvoiceDate.HasValue`.
+- **A non-nullable navigation dereference in a list projection 500s the whole list.**
+  `ClaimableItemListDTO` maps `CampaignName` from `src.Campaign!.Name`, so a `ClaimableItem` with no
+  campaign produced "Nullable object must have a value". Seed relationships, never leave them dangling.
+- **A `_marker` needs a string column the LIST DTO actually exposes.** `ManufacturerSettlmentSheet`
+  exposes only ID / InvoiceNumbers / IsDeleted, so it carries none — same as `MenuVersion`.
+
+#### Declared gaps
+
+**Write-path parity is not captured for either group.** The writes are reachable; what is missing is
+a hand-authored minimal-valid body per entity, and those are substantial (`ItemClaim` and
+`Certificate` each need several resolvable FKs plus validator-satisfying fields). A body that 4xxs
+would cover nothing while every gate stayed green — the exact failure the 100% CREATE gate exists to
+prevent — so the gap is recorded rather than papered over.
+
+**What that costs, precisely:** ClaimableItems' three trap3-write sites
+(`Certificate.CertificateNo`, `Certificate.DisplayDistributorCertificateNo`,
+`ItemClaim.ClaimNumber`) are not covered. Their **read-path** traps are: ClaimableItems' trap 2 (the
+`ItemClaim` link row, seeded with deliberately divergent ids) and WarrantyClaims' trap 3-read (the
+five distributor members) are both fully captured.
+
+### ⚠️ TWO LIMITS ON WHAT THESE BASELINES PROVE — found by an adversarial review, not by the runs
+
+Both were surfaced by a five-angle investigation into the data-level blocker, which decompiled
+`ShiftEntity.Web` and executed the real TypeAuth API. Both were then confirmed here directly. They
+do not invalidate the baselines; they bound what a green run may be claimed to mean.
+
+**1. The restricted pass is a real control for only two of the four groups.**
+
+Comparing FullAccess against Restricted response-for-response, on cases both passes run:
+
+| Group | shared cases | responses that DIFFER |
+|---|---|---|
+| Menus | 64 | **25** — a genuine control |
+| Surveys | 30 | **7** — a genuine control |
+| ClaimableItems | 30 | **0** — a duplicate |
+| WarrantyClaims | 28 | **0** — a duplicate |
+
+The two sample-host groups behave as intended: a read-only principal is refused writes (403), and
+Menus additionally hides rows (404 on DETAIL for entities it cannot read). **The two mounted groups
+produce byte-identical responses under both grants**, because neither module's own gate is armed —
+`EnableClaimableItemsActionTreeAuthorization = false`, and WarrantyClaims takes consumer-supplied
+actions that are all null. Their restricted baselines are therefore a second identical run, not a
+privilege control.
+
+*They are still worth keeping* — they cost nothing, and they will start differing the moment a step
+arms either gate. But **do not cite them as evidence that privilege scoping survived the upgrade.**
+
+**2. NO pass on ANY group exercises row-level data scoping.**
+
+The default filter is `WhereIn(GetAccessibleCompanies(), x => x.CompanyID)`
+(`DefaultDataLevelAccess.ApplyDefaultDataLevelFilters`). A grant of `[1]` or `[1,2,3,4]` on
+`ShiftIdentityActions` resolves to **WildCard**, `ConvertIds` returns **null**, and `WhereIn` then
+leaves the query untouched. So no transcript in any baseline contains a `CompanyID IN (...)`
+predicate — the filter is present in the code path and inert in the data.
+
+The middle case a real tenant hits — a principal scoped to specific company ids — is **uncovered on
+every group**, sample-host and mounted alike. A regression in the default-filter path would be
+invisible to all 348 goldens.
+
+Exercising it needs a nested per-id access tree
+(`{"ShiftIdentityActions":{"DataLevelAccess":{"Companies":{"1":[1]}}}}`), which
+`ParityAuth.BuildAccessTree`'s `Dictionary<string,int[]>` signature cannot express. That is a
+deliberate deferral, not an oversight — recorded here so Steps 03-05 do not assume coverage the
+baselines do not have.
+
+**Why this is written down rather than fixed:** both are pre-existing properties of the estate, not
+regressions, and closing either means either arming module gates that ship disarmed or widening the
+access-tree model. Either would make the baseline LESS representative of how these modules actually
+run today.
+
+### Darlastic — decision taken 2026-09-01, not a spike outcome
+
+**SPIKE-5 is closed by decision, not by investigation.** Darlastic has 0 triples and 0 profiles, so
+there is no mapper-shaped risk in it; the owner's call is to **skip its parity capture entirely and
+simply take the framework upgrade plus whatever refactoring that requires** (Step 02 proceeds as an
+ordinary upgrade).
+
+**The cost, recorded so it is not rediscovered later:** Darlastic was the plan's *only* group where
+a harness diff would be unambiguously framework-caused. Without it, every Surveys / ClaimableItems /
+WarrantyClaims diff **confounds two causes** — the framework change and the mapper rewrite — and
+there is no control to separate them. Steps 03-05 must attribute their diffs by reading the code,
+not by comparison against a control.
 
 ---
 

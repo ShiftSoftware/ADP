@@ -1,0 +1,27 @@
+{
+  "case": "BrandMapping.DETAIL.xXGj99",
+  "grant": "Restricted",
+  "kind": "DETAIL",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Menu/BrandMapping/xXGj99"
+  },
+  "response": {
+    "body": {
+      "Additional": null,
+      "Entity": null,
+      "Message": {
+        "Body": "Can't find entity with ID 'xXGj99'",
+        "For": null,
+        "SubMessages": null,
+        "Title": "Not Found"
+      }
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {
+      "Content-Language": "en-US"
+    },
+    "status": 404
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "case": "CampaignVinEntry.PRINT.7020001",
+  "grant": "Restricted",
+  "kind": "PRINT",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/ClaimableItems/CampaignVinEntry/print/7020001"
+  },
+  "response": {
+    "body": "",
+    "contentType": null,
+    "headers": {},
+    "status": 403
+  }
+}

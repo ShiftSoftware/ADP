@@ -1,0 +1,27 @@
+{
+  "case": "VehicleModel.DETAIL.9Yg0yq",
+  "grant": "Restricted",
+  "kind": "DETAIL",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Menu/VehicleModel/9Yg0yq"
+  },
+  "response": {
+    "body": {
+      "Additional": null,
+      "Entity": null,
+      "Message": {
+        "Body": "Can't find entity with ID '9Yg0yq'",
+        "For": null,
+        "SubMessages": null,
+        "Title": "Not Found"
+      }
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {
+      "Content-Language": "en-US"
+    },
+    "status": 404
+  }
+}

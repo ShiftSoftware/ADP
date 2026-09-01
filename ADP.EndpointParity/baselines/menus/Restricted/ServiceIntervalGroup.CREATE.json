@@ -1,0 +1,23 @@
+{
+  "case": "ServiceIntervalGroup.CREATE",
+  "grant": "Restricted",
+  "kind": "CREATE",
+  "request": {
+    "body": {
+      "_why": "Flat DTO: Name / LabourCode / LabourDescription, all required.",
+      "labourCode": "PAR-C-LC",
+      "labourDescription": "Parity created interval group",
+      "name": "PARITY-CREATE-SIG"
+    },
+    "method": "POST",
+    "url": "/api/Menu/ServiceIntervalGroup"
+  },
+  "response": {
+    "body": "",
+    "contentType": null,
+    "headers": {
+      "Content-Language": "en-US"
+    },
+    "status": 403
+  }
+}

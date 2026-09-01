@@ -1,0 +1,16 @@
+{
+  "case": "DistributorFinancial.LIST",
+  "grant": "FullAccess",
+  "kind": "LIST",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/WarrantyClaims/DistributorFinancial?$orderby=ID&$top=5&$count=true"
+  },
+  "response": {
+    "body": "",
+    "contentType": null,
+    "headers": {},
+    "status": 401
+  }
+}

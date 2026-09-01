@@ -1,0 +1,26 @@
+{
+  "case": "ScreenTemplate.LIST.afterRemove",
+  "grant": "FullAccess",
+  "kind": "LIST",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Surveys/ScreenTemplate?$orderby=ID&$count=true"
+  },
+  "response": {
+    "body": {
+      "Count": 1,
+      "Value": [
+        {
+          "ID": "rz5DdR",
+          "IsDeleted": false,
+          "Key": "PARITY-SCREENTEMPLATE",
+          "QuestionCount": 1
+        }
+      ]
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {},
+    "status": 200
+  }
+}

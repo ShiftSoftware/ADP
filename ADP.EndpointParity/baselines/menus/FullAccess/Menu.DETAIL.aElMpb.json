@@ -1,0 +1,35 @@
+{
+  "case": "Menu.DETAIL.aElMpb",
+  "grant": "FullAccess",
+  "kind": "DETAIL",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Menu/Menu/aElMpb"
+  },
+  "response": {
+    "body": {
+      "Additional": null,
+      "Entity": {
+        "BasicModelCode": "PARITY-MENU",
+        "BrandID": "XOoJY",
+        "CreateDate": "<ts>",
+        "CreatedByUserID": null,
+        "ID": "aElMpb",
+        "IsDeleted": false,
+        "LastSaveDate": "<ts>",
+        "LastSavedByUserID": null,
+        "VehicleModel": {
+          "Text": "PARITY-VM parity vehicle model",
+          "Value": "9Yg0yq"
+        }
+      },
+      "Message": null
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {
+      "Content-Language": "en-US"
+    },
+    "status": 200
+  }
+}

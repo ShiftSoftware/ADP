@@ -1,0 +1,30 @@
+{
+  "case": "AdditionalLaborOperationCode.DETAIL.8030001",
+  "grant": "FullAccess",
+  "kind": "DETAIL",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/WarrantyClaims/AdditionalLaborOperationCode/8030001"
+  },
+  "response": {
+    "body": {
+      "Additional": null,
+      "Entity": {
+        "Code": "PARITY-ALOC",
+        "CreateDate": "<ts>",
+        "CreatedByUserID": null,
+        "Description": null,
+        "ID": "8030001",
+        "IsDeleted": false,
+        "LastSaveDate": "<ts>",
+        "LastSavedByUserID": null,
+        "Time": 2.25
+      },
+      "Message": null
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {},
+    "status": 200
+  }
+}

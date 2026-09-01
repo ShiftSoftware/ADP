@@ -1,0 +1,29 @@
+{
+  "case": "MenuVersion.LIST",
+  "grant": "FullAccess",
+  "kind": "LIST",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Menu/MenuVersion?$orderby=ID&$top=25&$count=true"
+  },
+  "response": {
+    "body": {
+      "Count": 1,
+      "Value": [
+        {
+          "ID": "6130001",
+          "IsDeleted": false,
+          "Text": "1 - 2020-01-01 00:00:00.0000000 +00:00",
+          "Version": 1,
+          "VersionDateTime": "2020-01-01T00:00:00+00:00"
+        }
+      ]
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {
+      "Content-Language": "en-US"
+    },
+    "status": 200
+  }
+}

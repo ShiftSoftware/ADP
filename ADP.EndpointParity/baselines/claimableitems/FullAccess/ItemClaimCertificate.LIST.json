@@ -1,0 +1,33 @@
+{
+  "case": "ItemClaimCertificate.LIST",
+  "grant": "FullAccess",
+  "kind": "LIST",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/ClaimableItems/ItemClaimCertificate?$orderby=ID&$top=5&$count=true"
+  },
+  "response": {
+    "body": {
+      "Count": 1,
+      "Value": [
+        {
+          "CampaignID": "7000001",
+          "CertificateDate": "2020-03-01T00:00:00",
+          "CertificateNo": 999001,
+          "CompanyID": "LA",
+          "DisplayDistributorCertificateNo": "PARITY-CERT-TRAP3WRITE",
+          "ID": "7030001",
+          "InvoiceDate": "2020-03-15T00:00:00",
+          "InvoiceID": "7030001",
+          "IsDeleted": false,
+          "PeriodEndDate": "2020-12-31T00:00:00",
+          "PeriodStartDate": "2020-01-01T00:00:00"
+        }
+      ]
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {},
+    "status": 200
+  }
+}
