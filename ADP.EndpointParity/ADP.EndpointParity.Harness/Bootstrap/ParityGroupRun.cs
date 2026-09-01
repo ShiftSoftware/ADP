@@ -166,13 +166,27 @@ public static class ParityGroupRun
             hardFailures,
             builder.OutOfScope);
 
-        if (mode == ParityMode.Verify && runner.Differences.Count > 0)
+        if (mode == ParityMode.Verify)
         {
             var reportDir = Path.Combine(parityRoot, "reports", config.Group.ToLowerInvariant());
             Directory.CreateDirectory(reportDir);
-            File.WriteAllText(Path.Combine(reportDir, "diff.md"),
-                TranscriptDiffer.Report(config.Group, grant.ToString(),
-                    runner.Differences.ToDictionary(kv => kv.Key, kv => kv.Value)));
+            var reportPath = Path.Combine(reportDir, "diff.md");
+
+            if (runner.Differences.Count > 0)
+            {
+                File.WriteAllText(reportPath,
+                    TranscriptDiffer.Report(config.Group, grant.ToString(),
+                        runner.Differences.ToDictionary(kv => kv.Key, kv => kv.Value)));
+            }
+            else if (File.Exists(reportPath))
+            {
+                // A CLEAN verify must REMOVE the previous report, not leave it lying there.
+                // Observed at Step 01: a clean run left the prior run's diff.md on disk, so the
+                // directory listing still advertised differences that no longer existed. Same
+                // failure shape as a stale golden - an artifact outliving the run that produced
+                // it, and read as if it described the current one.
+                File.Delete(reportPath);
+            }
         }
 
         return summary;

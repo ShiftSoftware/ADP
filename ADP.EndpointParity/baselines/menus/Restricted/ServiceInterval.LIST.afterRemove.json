@@ -5,22 +5,27 @@
   "request": {
     "body": null,
     "method": "GET",
-    "url": "/api/Menu/ServiceInterval?$orderby=ID&$count=true"
+    "url": "/api/Menu/ServiceInterval?$orderby=ID&$top=5&$count=true"
   },
   "response": {
     "body": {
-      "AdditionalData": null,
-      "Message": {
-        "Body": "Please specify a page size using the $top query parameter. You do not have permission to load unrestricted data sets.",
-        "For": null,
-        "SubMessages": null,
-        "Title": "Unrestricted Data Access Not Allowed"
-      }
+      "Count": 1,
+      "Value": [
+        {
+          "Code": "PARITY-SI",
+          "Description": "Parity interval",
+          "FullName": "PARITY-SI parity service interval",
+          "ID": "D6krn8",
+          "IsDeleted": false,
+          "ServiceIntervalGroupName": "PARITY-SIG parity interval group",
+          "ValueInMeter": 10000
+        }
+      ]
     },
     "contentType": "application/json; charset=utf-8",
     "headers": {
       "Content-Language": "en-US"
     },
-    "status": 400
+    "status": 200
   }
 }

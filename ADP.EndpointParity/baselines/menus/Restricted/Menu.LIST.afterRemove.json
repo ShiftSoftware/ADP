@@ -5,22 +5,17 @@
   "request": {
     "body": null,
     "method": "GET",
-    "url": "/api/Menu/Menu?$orderby=ID&$count=true"
+    "url": "/api/Menu/Menu?$orderby=ID&$top=5&$count=true"
   },
   "response": {
     "body": {
-      "AdditionalData": null,
-      "Message": {
-        "Body": "Please specify a page size using the $top query parameter. You do not have permission to load unrestricted data sets.",
-        "For": null,
-        "SubMessages": null,
-        "Title": "Unrestricted Data Access Not Allowed"
-      }
+      "Count": 0,
+      "Value": []
     },
     "contentType": "application/json; charset=utf-8",
     "headers": {
       "Content-Language": "en-US"
     },
-    "status": 400
+    "status": 200
   }
 }

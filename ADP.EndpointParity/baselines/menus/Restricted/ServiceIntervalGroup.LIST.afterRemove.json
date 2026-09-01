@@ -5,22 +5,32 @@
   "request": {
     "body": null,
     "method": "GET",
-    "url": "/api/Menu/ServiceIntervalGroup?$orderby=ID&$count=true"
+    "url": "/api/Menu/ServiceIntervalGroup?$orderby=ID&$top=5&$count=true"
   },
   "response": {
     "body": {
-      "AdditionalData": null,
-      "Message": {
-        "Body": "Please specify a page size using the $top query parameter. You do not have permission to load unrestricted data sets.",
-        "For": null,
-        "SubMessages": null,
-        "Title": "Unrestricted Data Access Not Allowed"
-      }
+      "Count": 2,
+      "Value": [
+        {
+          "ID": "7YEYbY",
+          "IsDeleted": false,
+          "LabourCode": "PAR-LC-1",
+          "LabourDescription": "Parity labour description",
+          "Name": "PARITY-SIG parity interval group"
+        },
+        {
+          "ID": "X4j4LM",
+          "IsDeleted": false,
+          "LabourCode": "PAR-LC-2",
+          "LabourDescription": "Parity labour description two",
+          "Name": "PARITY-SIG-2 parity interval group two"
+        }
+      ]
     },
     "contentType": "application/json; charset=utf-8",
     "headers": {
       "Content-Language": "en-US"
     },
-    "status": 400
+    "status": 200
   }
 }

@@ -5,7 +5,7 @@
   "request": {
     "body": null,
     "method": "GET",
-    "url": "/api/Menu/ServiceInterval?$orderby=ID&$count=true"
+    "url": "/api/Menu/ServiceInterval?$orderby=ID&$top=25&$count=true"
   },
   "response": {
     "body": {

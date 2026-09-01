@@ -3,7 +3,7 @@
 **This file is the ledger.** It answers "which step is done and which is pending". If it disagrees
 with anything else in this directory, this file wins.
 
-Last updated: 2026-09-01 (Step 00 IN PROGRESS — SPIKE-1 and SPIKE-2 resolved, item H probe green, §G baselines recorded, harness skeleton building and group-isolated; seeds/stability-gate/baselines still outstanding. Earlier same day: plan reordered — shared floor moved to the end, the atomic version-bump
+Last updated: 2026-09-02 (Step 01 VERIFIED — harness calibrated against the known-answer Menus migration: 17 diffs, all one expected convention change, 0 harness bugs, 0 regressions. SPIKE-9 resolved. Earlier: Step 00 IN PROGRESS — SPIKE-1 and SPIKE-2 resolved, item H probe green, §G baselines recorded, harness skeleton building and group-isolated; seeds/stability-gate/baselines still outstanding. Earlier same day: plan reordered — shared floor moved to the end, the atomic version-bump
 step deleted, a harness-removal step added; then a consistency pass over the whole directory —
 corrected the per-commit green claims in Step 03, gave Step 04's SPIKE-8 a real item 0, restored
 Step 06 to SPIKE-8's `Blocks`, and re-based SPIKE-10 on the repo's actual export formats. No work
@@ -77,7 +77,7 @@ its terminal status*, never `VERIFIED` unconditionally.
 | Step | Group | Projects | Depends on | Terminal status | Status | Verified by | Date | Notes |
 |---|---|---|---|---|---|---|---|---|
 | 00 | Baseline & parity harness | `ADP.EndpointParity.Harness` + 5 per-group test projects (new), `tools/parity.ps1` (new) | — | `CLOSED` | `IN PROGRESS` | — | 2026-09-01 | **ALL FOUR mapper groups captured — Menus, Surveys, ClaimableItems, WarrantyClaims — each under both grants and each stability-gated to a byte-identical second run. Darlastic skipped by decision. Remaining before `CLOSED`: commit the goldens in their own commit, and re-run the §G solution numbers now that the harness projects are in `ADP.sln`.** Done: items **A** (SPIKE-1 resolved), **H** (`ADP.Models` probe green), **B** (SPIKE-2 resolved both halves — sample host + mounted host both boot; seeding suppression verified), **G** (all baseline numbers recorded below), and the structural half of **C** — six projects build and are in `ADP.sln` (59), capture layer (`Normalizer`/`Transcript`/`TranscriptDiffer`/`ParityRunner`/`ParitySummary`/`Canonical`) and wiring layer (`RouteCatalog`/`RequestFactory`/`ParityAuth`/`ParityDb`/`SampleHostFactory`/`MountedHostFactory`) written, `tools/parity.{ps1,psd1}` written, group-isolation rehearsal passes. **Not yet done: the seeds, the case list that binds the catalogue to cases, the stability gate, and every baseline.** No group is captured, so no later step may rely on this yet. Must run on the pre-bump tree. Two identical capture runs must diff to zero before anything else is trusted. Terminal `CLOSED`: it builds the instrument, it has no endpoints of its own. Also carries the **15-minute throwaway `ADP.Models` compile probe** that de-risks shared-last (see the residual-risk note under the spike table). |
-| 01 | Retro-verify `ADP.Menus` | `ADP.Menus.*` (**11 projects**, 8 of them already on 2026.8.30.1) | 00 | `VERIFIED` | `NOT STARTED` | — | — | Code migration already `DONE` at `14caf7c9` — see the Menus row below. This step only proves it. Retroactive baseline from `14caf7c9^` via `git worktree`. Also resolves SPIKE-9. No package lines: Menus is already at `2026.8.30.1`. |
+| 01 | Retro-verify `ADP.Menus` | `ADP.Menus.*` (**11 projects**, 8 of them already on 2026.8.30.1) | 00 | `VERIFIED` | **`VERIFIED`** | `parity.ps1 verify -Group Menus` (both grants) against a retroactive baseline captured at `14caf7c9^` — **15 diffs under FullAccess + 2 under Restricted, ALL of one shape, all accepted with a recorded reason; 0 harness bugs, 0 regressions** | 2026-09-02 | Code migration already `DONE` at `14caf7c9` — see the Menus row below. This step only proves it. Retroactive baseline from `14caf7c9^` via `git worktree`. Also resolves SPIKE-9. No package lines: Menus is already at `2026.8.30.1`. |
 | 02 | `ADP.Darlastic` | `ADP.Darlastic.{API,Data,Shared,Web}` | 00, 01 | `CLOSED` | `NOT STARTED` | — | — | Bumps its own **4** package lines as its first commit and ends green. 0 profiles, 0 triples. Smoke pass only — nothing mapper-shaped to prove, so terminal `CLOSED`. **But it is the plan's only framework-only control** (see SPIKE-5). Do not record as full parity. |
 | 03 | `ADP.Surveys` | `ADP.Surveys.{API,Data,Shared,Web}` + 2 samples | 00, 01 | `VERIFIED` | `NOT STARTED` | — | — | Bumps its own **7** package lines. 4 triples, 1 profile (151 lines). **Free-floating** — every `ProjectReference` is intra-group and it consumes no `ShiftSoftware.ADP.*` package, so it is legal anywhere after 01. Ordered here by risk/simplicity, not by the graph. Has a sample host → full HTTP parity available. Carries SPIKE-3 and SPIKE-4. |
 | 04 | `ADP.ClaimableItems` | `ADP.ClaimableItems.{API,Data,Shared,Web}` | 00, 01 | `VERIFIED` | `NOT STARTED` | — | — | Bumps its own **7** package lines. 5 triples, 4 profiles, 5 Cosmos delegates, 1 `IMapper` site. No host → mounted host (SPIKE-2). First group to generate a `Certificate` mapper, so it now **owns SPIKE-8** (the shared floor no longer runs ahead of it). |
@@ -112,7 +112,7 @@ wrong in an earlier draft, and one moved with the 2026-09-01 reorder:
 
 | Item | Group | Projects | Status | Verified by | Date | Notes |
 |---|---|---|---|---|---|---|
-| Mapper migration | `ADP.Menus` | 11 projects (8 carry a `2026.8.30.1` reference) | **`DONE`** | — | 2026-08-31 | Commit `14caf7c9`. Already on `2026.8.30.1`, AutoMapper profiles deleted, mappers rewritten. Builds green; `ADP.Menus.Tests` at its known baseline. **Endpoint parity was never proven** — no harness existed. Step 01 closes this. Until then Menus is `DONE`, not `VERIFIED`. |
+| Mapper migration | `ADP.Menus` | 11 projects (8 carry a `2026.8.30.1` reference) | **`VERIFIED`** | Step 01, 2026-09-02 — full HTTP parity, both grants | 2026-08-31 (migrated) / 2026-09-02 (verified) | Commit `14caf7c9`. Already on `2026.8.30.1`, AutoMapper profiles deleted, mappers rewritten. Builds green; `ADP.Menus.Tests` at its known baseline. **Endpoint parity was never proven** — no harness existed. Step 01 closes this. Until then Menus is `DONE`, not `VERIFIED`. |
 
 ---
 
@@ -131,7 +131,7 @@ the spike, then record the finding here.**
 | SPIKE-6 | `ADP.Models/Models.Tests` discovers **zero tests** (no test framework referenced; all sources `<Compile Remove>`d) yet exits 0. The most-shared project in the solution is unguarded. Fix, or accept and record? | 06 | OPEN |
 | SPIKE-7 | Do `IgnoreList` / `IgnoreView` bake correctly for the two Financial triples, and do both triples over the same entity generate distinct list projections? Must be proven from emitted `.g.cs`, not from the build log. | 05 | OPEN |
 | SPIKE-8 | Two triples across two different groups map the `ADP.Cases` `Certificate` entity (`ItemClaimCertificateRepository`, `WarrantyCertificateRepository`). Which assembly does each generated mapper land in, and can both coexist in one host? **The old shared-floor probe is gone** — after the reorder the floor runs *last* (Step 06), behind both consumers — so Step 04 answers it from its own emitted `.g.cs` as the first group to generate a `Certificate` mapper, and Step 05 applies the finding to the second triple, and Step 06 confirms the `ADP.Cases` side of it (its item C). | 04 (owns it), 05, 06 (confirms the `ADP.Cases` side) | OPEN |
-| SPIKE-9 | Exact delegate signature required by `Replicate<T>` / `UpdateReference<T>` at `2026.8.30.1`. The Menus reference implementation lives in `ADP.Menus/ADP.Menus.Sync/`, **not** in `ADP.Menus.Data` as the recipe implies. **Owned by Step 01** — it is answerable today, from the pre-bump tree, against the ~19 already-migrated call sites in `ADP.Menus/ADP.Menus.Sync/Extensions/MenuReplicationExtensions.cs` and `Replication/MenuCatchUpReplicationExtensions.cs`. Step 01 already has the Menus group open; budget ~20 minutes. | resolved by 01; blocks 04, 05 | OPEN |
+| SPIKE-9 | Exact delegate signature required by `Replicate<T>` / `UpdateReference<T>` at `2026.8.30.1`. | resolved by 01; blocks 04, 05 | **RESOLVED — signatures below, read by reflection over `ShiftSoftware.ShiftEntity.CosmosDbReplication 2026.8.30.1` and cross-checked against the ~19 live call sites.** <br><br> **The reference implementation is in `ADP.Menus/ADP.Menus.Sync/`, NOT `ADP.Menus.Data`** — do not hunt for it in the wrong assembly at Step 04. <br><br> **⚠️ THERE ARE TWO API FAMILIES AND THEY DIFFER IN THE DELEGATE'S FIRST ARGUMENT.** This is the trap: copying a call from the wrong family compiles against the wrong lambda parameter and fails in a way that reads like a mapper error. <br><br> **(1) TRIGGER path — `ShiftEntityCosmosDbOptions`, what ADP.Menus.Sync actually uses.** Delegates receive an `EntityWrapper<Entity>`; reach the row with `wrapper.Entity`. <br> `SetUpReplication<DB, Entity>(CosmosClient client, string cosmosDataBaseId, Func<EntityWrapper<Entity>, ValueTask<Entity>> mapper = null)` → `CosmosDbTriggerReplicateOperation<Entity>` <br> `.Replicate<CosmosDbItem>(string cosmosContainerId, Expression<Func<CosmosDbItem, object>> partitionKeyLevel1Expression, [level2], [level3], Func<EntityWrapper<Entity>, CosmosDbItem> mapping)` → `CosmosDbTriggerReferenceOperations<Entity>` <br> `.UpdateReference<CosmosDbItem>(string cosmosContainerId, Func<IQueryable<CosmosDbItem>, EntityWrapper<Entity>, IQueryable<CosmosDbItem>> finder, Func<EntityWrapper<Entity>, CosmosDbItem, CosmosDbItem> mapping)` → chainable <br><br> **(2) DIRECT path — `CosmosDbReplicationOperation<DB, Entity>`.** Delegates receive the **bare `Entity`**, not a wrapper. <br> `.Replicate<CosmosDBItem>(string containerId, Func<Entity, CosmosDBItem> mapping)` <br> `.UpdateReference<CosmosDBItem>(string containerId, Func<IQueryable<CosmosDBItem>, Entity, IQueryable<CosmosDBItem>> finder, Func<Entity, CosmosDBItem, CosmosDBItem> mapping)` <br><br> **Three further facts the call sites make explicit and the signatures alone do not:** (a) **partition-key expressions are over the COSMOS MODEL (`CosmosDbItem`), not the entity** — `document => document.BasicModelCode`, and there are 1/2/3-level overloads; (b) `partitionKeyLevel*Expression` and `mapping` are passed as **NAMED** arguments throughout `MenuReplicationExtensions.cs`, which is what keeps the 2- and 3-level overloads unambiguous at a glance; (c) **register each entity type EXACTLY ONCE** — the framework silently keeps only the last registration per type, which is why a master entity's own document and all its fan-outs chain off a single `SetUpReplication` (`MenuReplicationExtensions.cs:36-38`), and **`UpdateReference` fires on `ChangeType.Modified` ONLY** (`:40-44`), so an inserted master row fans out to nothing and a hard-deleted one leaves embedded copies behind. |
 | SPIKE-10 | Are the **binary/print export endpoints** byte-reproducible enough to diff, or must they be recorded `PARTIAL`? Verified against the repo: the only `.xlsx` producers are `ADP.Menus/ADP.Menus.API/Controllers/MenuController.cs:114,248,437` — **Step 01**, not Surveys. `ADP.WarrantyClaims` exports **PDF** (`DistributorFinancialController.cs:108,110`, `WarrantyClaimController.cs:148`), which has no sheet XML to extract and carries `/CreationDate` + `/ID`, so it is the likeliest `PARTIAL`. The `text/csv` exports (`Surveys/SurveyResponsesController.cs:206`, `WarrantyClaims/ManufacturerSettlmentSheetController.cs:69`, `WarrantyClaimController.cs:287`, `Darlastic/CaseBrowserController.cs:363`) are deterministic text and are **covered**, not `PARTIAL` — they are not a Rule-7 case at all. | 01 (`.xlsx`), 05 (PDF) | OPEN |
 | SPIKE-11 | **What did `DefaultEntityToDtoAfterMap()` / `DefaultDtoToEntityAfterMap()` do, and what reproduces it?** Both exist in `ShiftSoftware.ShiftEntity.dll` @ `2026.7.31.1` and are **absent** @ `2026.8.30.1` (verified by binary inspection); neither is documented in any XML doc file at either version. **6 call sites** across 2 groups. The calls vanish with the profiles — but so does whatever behaviour they applied. Resolve by reading the implementation at the `2026.7.31.1` tag in the public framework repo. | 04, 05 | OPEN |
 | SPIKE-12 | **Does a per-group version bump keep the tree green?** | — (no longer blocks anything) | **RESOLVED — staged per-group bump adopted.** The Shift nuspecs declare **minimum-version** dependencies (`version="2026.7.31.1"`), not exact pins (`[2026.7.31.1]`) — verified in the local NuGet cache — so no lockstep is forced. The repo already runs the mixed arrangement green: `ADP.Menus.Shared` pins `ShiftEntity.Model 2026.8.30.1` while `ADP.Menus.Data` `ProjectReference`s `ADP.Models`, pinned at `2026.7.31.1` (`ADP.Models/Models/Models.csproj:48`) — an upgraded group sitting on a not-yet-upgraded shared project builds today. Ordering the floor **last** also disposes of the 3 NU1605 pins: `ClaimableItems.Shared:34` and `WarrantyClaims.Shared:33` are already at `8.30.1` before the floor moves, and `Cases.Shared:32` moves in the same commit as `ADP.Models`, so no downgrade window opens. **Consequence: the atomic-bump step is deleted and each group step owns its own package lines.** |
@@ -533,6 +533,89 @@ baselines do not have.
 regressions, and closing either means either arming module gates that ship disarmed or widening the
 access-tree model. Either would make the baseline LESS representative of how these modules actually
 run today.
+
+### ✅ Step 01 — the harness graded itself against a known-answer migration, and passed
+
+**This is the calibration result the whole plan depends on.** `ADP.Menus` was migrated at `14caf7c9`
+with a reviewed diff, so the set of behaviour changes it *should* produce was knowable in advance.
+The harness was run across it blind and found exactly that set — nothing more, nothing less.
+
+**Method.** `git worktree` at `14caf7c9^` (= `9b927a8d`), the **same harness source** copied in
+verbatim, captured under both grants, then replayed against migrated `master`.
+
+**The harness compiled in the worktree with ZERO changes**, against `ShiftEntity 2026.7.31.1` with
+AutoMapper still referenced. That is Step 00's capture-layer purity rule (HTTP + JSON + string only)
+proving itself: the plan said a compile failure there would be the proof the rule had been violated,
+and there was none.
+
+Both sides passed every gate identically — 89 cases, **0 5xx**, `CREATE 5/5`, `UPDATE 5/5`,
+catalogue **112/112**, hostile rows **11/11**.
+
+**Every diff, classified (item C).** 15 under FullAccess, 2 under Restricted, and **all 17 are a
+single shape**:
+
+```
+$.response.body.Entity.VehicleModel.Text                  ABSENT in baseline, present now   (×7)
+$.response.body.Entity.StandaloneReplacementItemGroup.Text ABSENT in baseline, present now  (×8 + 2)
+```
+
+| Bucket | Count |
+|---|---|
+| Expected — framework convention improvement | **17** |
+| Expected — known migration change | 0 |
+| **Harness bug** | **0** |
+| **Real regression in shipped `master`** | **0** |
+
+`conventions.md:110,116-118` predicted this exact diff before it was observed:
+*"the selector now carries `Text` where the old profile left it null. That will show up as a diff in
+the harness. It is expected — record it as an accepted change, do not suppress it."*
+`MappingHelpers.ToSelectDTO(entity.SomeID)` fills `Text`; the old profile built
+`ShiftEntitySelectDTO { Value = … }` and left it null. **Additive only — no value changed and no
+member disappeared.** Recorded via `parity.ps1 accept` in `baselines/menus/accepted.md`.
+
+**The three known-decision audits from item C came back clean.** No child collection grew (the two
+deliberately-unfiltered-for-soft-deletes collections did not move), no list column came back empty
+(which is what a swallowed `SHENGEN007` would look like), and the `MenuVariant.Items` round-trip
+produced no unexpected removal.
+
+**Item D — the fallback assertion was DEMONSTRATED, not asserted.** `GET /api/Menu/<deleted route>`
+returns **200 `text/html`** from the sample's `MapFallbackToFile`, and the harness converts that into
+a hard failure. Guarded permanently by `FallbackAssertionTest`, which fails if the rule is ever
+removed. Without it, an endpoint disappearing in the upgrade would read as an ordinary success.
+
+**Item E — the route catalogues are byte-identical** pre and post migration. The Menus work was a
+mapper change, not a routing change, and the catalogue confirms it.
+
+**One harness defect found and fixed here** (Step 00 scope, per this step's rollback note): a CLEAN
+`verify` left the PREVIOUS run's `diff.md` on disk, so the reports directory still advertised
+differences that no longer existed — the same failure shape as a stale golden. `ParityGroupRun` now
+deletes the report when a verify produces none.
+
+**Verification figures, pinned for Step 06** — which bumps `Lookup.Services.DuckDB`, referenced by
+`ADP.Menus.Tests:58`, and runs LAST, so this number must survive the gap in writing:
+
+| Measure | Figure |
+|---|---|
+| `ADP.Menus.Tests` | **262 passed / 2 failed / 0 skipped (264 total)** — exactly the plan's expected value. The 2 are the known `SampleDataSeedingTests` duplicate-key failures on the drifted local sample DB. |
+| `ADP.Menus.Sample.Functions` | builds, **and starts**: "Worker process started and initialized", all 6 functions registered, so `AddShiftEntityCosmosDbReplication<MenuReplicationDB>()` ran without throwing — the `conventions.md` §6b compile-break concern is clear for this group. |
+| `ADP.Menus.Sample.FreeServiceParity` | builds clean. |
+| `ADP.Menus.Generation` | **no fix was needed**, so the `LookupServices.BDD` figure is unmoved at **452/452** and Step 06 has nothing extra to re-check from this step. |
+
+**Ten Menus goldens changed in this step, and none of them is a behaviour change.** They are
+`LIST.afterRemove` cases picking up a harness fix made during Step 00's mounted-group work: that
+case was being issued with no `$top`, which the framework refuses for a page-size-capped principal.
+
+- 5 **FullAccess** goldens: the request URL gained `$top=25`. Response bodies **byte-identical**.
+- 5 **Restricted** goldens: went from **400 "Please specify a page size using the $top query
+  parameter"** to **200 with a real body**. Five cases that were banking an error are now live
+  coverage.
+
+This is a coverage improvement, not a value change, and it is the reason the goldens must be read
+rather than waved through: the same diff shape (a 400 becoming a 200) would be alarming if the
+harness had not caused it deliberately.
+
+**What this licenses.** From Step 03 onward, a diff the harness reports is evidence about the code,
+not about the instrument. That is the entire reason this step ran second.
 
 ### Darlastic — decision taken 2026-09-01, not a spike outcome
 
