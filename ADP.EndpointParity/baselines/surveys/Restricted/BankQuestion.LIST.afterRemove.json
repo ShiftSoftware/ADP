@@ -5,20 +5,34 @@
   "request": {
     "body": null,
     "method": "GET",
-    "url": "/api/Surveys/BankQuestion?$orderby=ID&$count=true"
+    "url": "/api/Surveys/BankQuestion?$orderby=ID&$top=5&$count=true"
   },
   "response": {
     "body": {
-      "AdditionalData": null,
-      "Message": {
-        "Body": "Please specify a page size using the $top query parameter. You do not have permission to load unrestricted data sets.",
-        "For": null,
-        "SubMessages": null,
-        "Title": "Unrestricted Data Access Not Allowed"
-      }
+      "Count": 2,
+      "Value": [
+        {
+          "BankEntryID": "b0000000-0000-4000-8000-000000000001",
+          "ID": "kDeznD",
+          "IsDeleted": false,
+          "Key": "PARITY-BANKQ-LOCKED",
+          "Locked": true,
+          "Retired": false,
+          "Type": "text"
+        },
+        {
+          "BankEntryID": "b0000000-0000-4000-8000-000000000002",
+          "ID": "OJk1zQ",
+          "IsDeleted": false,
+          "Key": "PARITY-BANKQ-UNLOCKED",
+          "Locked": false,
+          "Retired": false,
+          "Type": "nps"
+        }
+      ]
     },
     "contentType": "application/json; charset=utf-8",
     "headers": {},
-    "status": 400
+    "status": 200
   }
 }

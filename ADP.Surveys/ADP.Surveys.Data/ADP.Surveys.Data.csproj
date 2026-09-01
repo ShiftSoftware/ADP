@@ -13,7 +13,7 @@
 		<AssemblyName>ShiftSoftware.ADP.Surveys.Data</AssemblyName>
 		<PackageId>ShiftSoftware.ADP.Surveys.Data</PackageId>
 		<Title>ShiftSoftware ADP.Surveys — Data</Title>
-		<Description>EF Core entities, repositories, AutoMapper profiles and response storage for the ShiftSoftware ADP.Surveys package — a dynamic survey platform module.</Description>
+		<Description>EF Core entities, repositories, source-generated entity/DTO mappers and response storage for the ShiftSoftware ADP.Surveys package — a dynamic survey platform module.</Description>
 		<Copyright>Copyright (c) Shift Software 2026</Copyright>
 		<PackageProjectUrl>https://github.com/ShiftSoftware/ADP</PackageProjectUrl>
 		<PackageIcon>icon.png</PackageIcon>
@@ -32,7 +32,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="ShiftSoftware.ShiftEntity.EFCore" Version="2026.7.31.1" />
-		<PackageReference Include="ShiftSoftware.ShiftIdentity.Core" Version="2026.7.31.1" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.EFCore" Version="2026.8.30.1" />
+		<PackageReference Include="ShiftSoftware.ShiftIdentity.Core" Version="2026.8.30.1" />
 	</ItemGroup>
 </Project>

@@ -5,7 +5,7 @@ A **dynamic survey** module for the ADP platform. Models surveys, screens, quest
 | Package | Purpose |
 |---|---|
 | [`ShiftSoftware.ADP.Surveys.Shared`](ADP.Surveys.Shared) | DTOs, validators, schema types, Question Bank + Screen Template contracts |
-| [`ShiftSoftware.ADP.Surveys.Data`](ADP.Surveys.Data) | EF Core entities, AutoMapper profiles, response storage |
+| [`ShiftSoftware.ADP.Surveys.Data`](ADP.Surveys.Data) | EF Core entities, source-generated entity/DTO mappers, response storage |
 | [`ShiftSoftware.ADP.Surveys.API`](ADP.Surveys.API) | ASP.NET Core controllers + `AddSurveysApiServices` registration |
 | [`ShiftSoftware.ADP.Surveys.Web`](ADP.Surveys.Web) | Blazor WebAssembly pages + `AddSurveysBlazorServices` registration |
 

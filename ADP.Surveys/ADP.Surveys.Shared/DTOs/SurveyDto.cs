@@ -59,7 +59,7 @@ public class SurveyDtoValidator : AbstractValidator<SurveyDto>
     public SurveyDtoValidator()
     {
         // SurveyId is server-owned — stamped from the entity ID on load (see
-        // GeneralMappingProfile.MapSurvey). Not validated at author-time.
+        // SurveyRepository.DeserializeDraft). Not validated at author-time.
         RuleFor(x => x.Version).GreaterThanOrEqualTo(0);
 
         // Title / Description / Locales / DefaultLocale are allowed to be empty on

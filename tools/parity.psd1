@@ -105,7 +105,7 @@
             # that write mapper NOT AT ALL. It therefore needs a mapper-level write golden.
             writeUnreachable = @(
                 @{ entity = 'SurveyInstance'
-                   reason = 'Controller overrides all write verbs to 405; the triple is driven from the public submit and trigger-ingest paths instead. Mapper-level write golden required.' }
+                   reason = 'Controller overrides all write verbs to 405; the triple is driven from the public submit and trigger-ingest paths instead. Substitute in place: ADP.Surveys/ADP.Surveys.Data.Tests/SurveyInstanceWriteMapperGoldenTests.cs, which diffs every scalar property across MapToEntity and asserts the written set is exactly the five audit members - no domain member. It lives outside ADP.EndpointParity deliberately, so it survives the harness deletion; the 405s are permanent, so the substitute has to be too.' }
             )
 
             excludedRoutes  = @()

@@ -30,20 +30,18 @@ builder.Services.AddShiftEntityPrint(x =>
 // ---------- Controllers (consumer owns this, then threads MvcBuilder through) ----------
 var mvcBuilder = builder.Services.AddControllers();
 
-// ---------- ShiftEntity Web (HashId, AutoMapper, data assemblies) ----------
+// ---------- ShiftEntity Web (HashId, data assemblies) ----------
+// Mappers are source-generated and self-registering; nothing to hand over here.
 mvcBuilder.AddShiftEntityWeb(x =>
 {
     x.AddDataAssembly(typeof(DB).Assembly);
     x.WrapValidationErrorResponseWithShiftEntityResponse(true);
-    x.AddAutoMapper(typeof(DB).Assembly);
 
     x.HashId.RegisterHashId(builder.Configuration.GetValue<bool>("Settings:HashIdSettings:AcceptUnencodedIds"));
     x.HashId.RegisterIdentityHashId(
         builder.Configuration.GetValue<string>("Settings:IdentityHashIdSettings:Salt") ?? "",
         builder.Configuration.GetValue<int>("Settings:IdentityHashIdSettings:MinHashLength")
     );
-
-    x.AddShiftIdentityAutoMapper();
 });
 
 // ---------- ShiftIdentity token validation ----------

@@ -10,7 +10,7 @@ namespace ShiftSoftware.ADP.Surveys.Web.Components;
 /// both <c>ScreenList.AddScreen</c> (user adds a screen before visiting General) and
 /// <c>GeneralTab</c> (user edits locale/title first) so either entry point produces
 /// a Draft that passes <c>SurveyDtoValidator</c>. <c>SurveyId</c> is server-stamped on
-/// load (see <c>GeneralMappingProfile.MapSurvey</c>), so it stays empty here.
+/// load (see <c>SurveyRepository.DeserializeDraft</c>), so it stays empty here.
 /// </summary>
 internal static class SurveyDraftFactory
 {

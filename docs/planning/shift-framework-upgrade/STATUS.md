@@ -79,7 +79,7 @@ its terminal status*, never `VERIFIED` unconditionally.
 | 00 | Baseline & parity harness | `ADP.EndpointParity.Harness` + 5 per-group test projects (new), `tools/parity.ps1` (new) | — | `CLOSED` | `IN PROGRESS` | — | 2026-09-01 | **ALL FOUR mapper groups captured — Menus, Surveys, ClaimableItems, WarrantyClaims — each under both grants and each stability-gated to a byte-identical second run. Darlastic skipped by decision. Remaining before `CLOSED`: commit the goldens in their own commit, and re-run the §G solution numbers now that the harness projects are in `ADP.sln`.** Done: items **A** (SPIKE-1 resolved), **H** (`ADP.Models` probe green), **B** (SPIKE-2 resolved both halves — sample host + mounted host both boot; seeding suppression verified), **G** (all baseline numbers recorded below), and the structural half of **C** — six projects build and are in `ADP.sln` (59), capture layer (`Normalizer`/`Transcript`/`TranscriptDiffer`/`ParityRunner`/`ParitySummary`/`Canonical`) and wiring layer (`RouteCatalog`/`RequestFactory`/`ParityAuth`/`ParityDb`/`SampleHostFactory`/`MountedHostFactory`) written, `tools/parity.{ps1,psd1}` written, group-isolation rehearsal passes. **Not yet done: the seeds, the case list that binds the catalogue to cases, the stability gate, and every baseline.** No group is captured, so no later step may rely on this yet. Must run on the pre-bump tree. Two identical capture runs must diff to zero before anything else is trusted. Terminal `CLOSED`: it builds the instrument, it has no endpoints of its own. Also carries the **15-minute throwaway `ADP.Models` compile probe** that de-risks shared-last (see the residual-risk note under the spike table). |
 | 01 | Retro-verify `ADP.Menus` | `ADP.Menus.*` (**11 projects**, 8 of them already on 2026.8.30.1) | 00 | `VERIFIED` | **`VERIFIED`** | `parity.ps1 verify -Group Menus` (both grants) against a retroactive baseline captured at `14caf7c9^` — **15 diffs under FullAccess + 2 under Restricted, ALL of one shape, all accepted with a recorded reason; 0 harness bugs, 0 regressions** | 2026-09-02 | Code migration already `DONE` at `14caf7c9` — see the Menus row below. This step only proves it. Retroactive baseline from `14caf7c9^` via `git worktree`. Also resolves SPIKE-9. No package lines: Menus is already at `2026.8.30.1`. |
 | 02 | `ADP.Darlastic` | `ADP.Darlastic.{API,Data,Shared,Web}` | 00, 01 | `CLOSED` | **`CLOSED`** | **SMOKE, NOT VALUE PARITY** - `parity.ps1 verify -Group Darlastic`, both grants, 31/31 catalogue routes, 0 5xx, stability-gated. 0 triples and 0 profiles, so there is no mapping behaviour here to prove. | 2026-09-02 | Bumps its own **4** package lines as its first commit and ends green. 0 profiles, 0 triples. Smoke pass only — nothing mapper-shaped to prove, so terminal `CLOSED`. **But it is the plan's only framework-only control** (see SPIKE-5). Do not record as full parity. |
-| 03 | `ADP.Surveys` | `ADP.Surveys.{API,Data,Shared,Web}` + 2 samples | 00, 01 | `VERIFIED` | `NOT STARTED` | — | — | Bumps its own **7** package lines. 4 triples, 1 profile (151 lines). **Free-floating** — every `ProjectReference` is intra-group and it consumes no `ShiftSoftware.ADP.*` package, so it is legal anywhere after 01. Ordered here by risk/simplicity, not by the graph. Has a sample host → full HTTP parity available. Carries SPIKE-3 and SPIKE-4. |
+| 03 | `ADP.Surveys` | `ADP.Surveys.{API,Data,Shared,Web}` + 2 samples | 00, 01 | `VERIFIED` | **`VERIFIED`** | `parity.ps1 verify -Group Surveys` **clean under both grants** — 49 cases, 52/52 catalogue routes, 0 5xx. Six `$top` cases accepted with recorded reasons (harness fix, not product); on FullAccess the re-captured golden differs by **exactly one line, the request URL**, response byte-identical. A wholesale Restricted re-capture left **27 of 30 goldens byte-identical**. Plus 2 SPIKE-4 round-trips and the `SurveyInstance` write golden. | 2026-09-02 | Bumps its own **7** package lines. 4 triples, 1 profile (151 lines). **Free-floating** — every `ProjectReference` is intra-group and it consumes no `ShiftSoftware.ADP.*` package, so it is legal anywhere after 01. Ordered here by risk/simplicity, not by the graph. Has a sample host → full HTTP parity available. Carries SPIKE-3 and SPIKE-4. |
 | 04 | `ADP.ClaimableItems` | `ADP.ClaimableItems.{API,Data,Shared,Web}` | 00, 01 | `VERIFIED` | `NOT STARTED` | — | — | Bumps its own **7** package lines. 5 triples, 4 profiles, 5 Cosmos delegates, 1 `IMapper` site. No host → mounted host (SPIKE-2). First group to generate a `Certificate` mapper, so it now **owns SPIKE-8** (the shared floor no longer runs ahead of it). |
 | 05 | `ADP.WarrantyClaims` | `ADP.WarrantyClaims.{API,Data,Shared,Web}` | 00, 01, 04 | `VERIFIED` | `NOT STARTED` | — | — | Bumps its own **7** package lines. **Highest risk.** 7 triples; dealer/distributor forward-map `Ignore()` exposure. Ordered last of the groups by risk, overriding simplicity (it has fewer profiles than 04). Depends on 04 for the shared `Certificate` mapper precedent (SPIKE-8) — a **knowledge** dependency, not a build one. |
 | 06 | Shared floor | `ADP.Models/Models`, `ADP.Cases.Data`, `ADP.Cases.Shared`, `Lookup.Services.DuckDB` | 02, 03, 04, 05 all at terminal | `CLOSED` | `NOT STARTED` | — | — | Bumps the last **4** package lines — `ADP.Models` and `Cases.Shared` in the **same commit**, which is what keeps NU1605 from ever appearing. 0 profiles, 0 triples; expected to compile unchanged. Libraries only — no endpoints, so terminal `CLOSED` with the reason in `Verified by`. Carries SPIKE-6. Pulls in `ADP.Menus.Generation` (see the ledger note below). Step 00's compile probe is its early warning. |
@@ -125,8 +125,8 @@ the spike, then record the finding here.**
 |---|---|---|---|
 | SPIKE-1 | Does `ShiftSoftware.ShiftFrameworkTestingTools` (published only to `2026.7.28.1`) bind when NuGet unifies its ShiftEntity dependency up to `2026.8.30.1`? | 00 (design choice only — fallback exists) | **RESOLVED — IT BINDS.** Scratch project referencing TestingTools `2026.7.28.1` alongside ShiftEntity.{Model,EFCore,Web} `2026.8.30.1`: restores and builds clean (0 warnings, 0 errors, no NU1605/MSB3277) — its nuspec declares **minimum-version** deps, not exact pins, so NuGet unifies up. Runtime binding proven beyond restore: every public type loads without `ReflectionTypeLoadException`, and **all 17 method bodies of the two generic types that matter — `BasicTest<DTO,ListDTO>` and `ShiftCustomWebApplicationFactory<TStartup,DB>` — JIT-prepare clean** when closed over concrete types (`RuntimeHelpers.PrepareMethod`). **Design decision taken anyway: the harness does NOT consume the package.** `BasicTest` parses responses into typed DTOs, which the capture-layer purity rule forbids, and `ShiftCustomWebApplicationBearerAuthSettings` carries ONE `TypeAuthActions` list per factory instance, so two principals would mean two factories and two databases. Its value is as the **specification** the plan predicted: its method set (`Get`/`PostOrPut`/`Delete`/`OdataList`/`RevisionList`) is the inherited-route checklist, and its `GenerateToken` confirmed the RS256 + `ShiftSoftware/TypeAuth/Claims/AccessTree` shape `ParityAuth` mints. |
 | SPIKE-2 | Can a synthetic "mounted host" boot `ADP.ClaimableItems` / `ADP.WarrantyClaims` through their own `Add<Group>ApiServices` entry point? No sample host exists for either, and no sample API declares `public partial class Program`, so `WebApplicationFactory<Program>` will not compile against any of them today. | 00, 04, 05 | **RESOLVED — BOTH HALVES POSITIVE. Steps 04 and 05 are not blocked and no fallback sample API is needed.** (1) *Sample host*: `public partial class Program { }` appended to `ADP.Surveys.Sample.API/Program.cs` (behaviour-free; the implicit top-level-statements class is internal) makes `WebApplicationFactory<Program>` compile and boot. (2) *Mounted host*: `MountedHostFactory` boots `ADP.ClaimableItems` through `AddClaimableItemsApiServices<ParityDb>(mvcBuilder, configure)` against real SQL with `EnsureCreated` and no migrations, exposing **63 catalogue routes** across all its triples. `ParityDb : ShiftDbContext` owns no entities; the group's `IModelBuildingContributor` supplies the tables, exactly as a tenant host gets them. Modelled on the repo's own minimal consumer, `ADP.Darlastic.Sample.API`. (3) *Seeding suppression*: a `Parity:SuppressSampleSeeding` config branch wraps the sample's `SeedDBAsync`/`SetFullAccessAsync`/`SeedSampleSurveysAsync` block — verified to take, list body goes from the demo seed's `Count:8` to `Count:0` on a fresh per-run database. **Explicit-id path still OPEN — see the note below the baselines table.** |
-| SPIKE-3 | `BankQuestionListDTO.Type` and `ScreenTemplateListDTO.QuestionCount` are mapped in the current profile via **static method calls** over a JSON column. `ForList` requires an EF-translatable expression. How do these list projections work today, and what replaces them? | 03 | OPEN |
-| SPIKE-4 | AutoMapper's `.Condition(...)` (used on `BankQuestion.BankEntryID`) has no documented equivalent on `ShiftMapperBuilder`. Is the existing-aware `ForEntity((dto, entity, ctx) => …)` overload the correct replacement? | 03 | OPEN |
+| SPIKE-3 | `BankQuestionListDTO.Type` and `ScreenTemplateListDTO.QuestionCount` are mapped via static JSON-parsing method calls. `ForList` is spliced into the SQL projection. How do these work today and what replaces them? | 03 | **RESOLVED BY EXPERIMENT - carry the method call over into `ForList` verbatim. No fallback needed.** The question was settled by asking the running pre-migration host three things: a plain list returns `Type` correctly ("text"/"nps"); `$filter=Type eq` fails in the OData layer; and **`$orderby=Type` fails with "The LINQ expression `.OrderBy(b => GeneralMappingProfile.ExtractQuestionType(b.QuestionJson))` could not be translated."** That third result is the whole answer: the method call **is** in the expression tree today, and it works only because **EF Core permits client evaluation in the FINAL `Select` projection but not in query operators** like `OrderBy`/`Where`. The generated `MapToListGenerated` ends in `Queryable.Select(queryable, projection)` - also a final projection - so a method call there is client-evaluated exactly as it is today, with identical behaviour and identical limits. **Confirmed by signature:** `ForList(Expression<Func<TEntity,TProp>>)` takes an Expression (SQL projection) while `ForView`/`ForEntity` take a plain `Func` (in-memory) - so the JSON deserializations in items C/D/E are unconditionally safe, and only the two list members were ever in question. **Bonus finding, pre-existing and NOT caused by this upgrade:** `$orderby=Type` and `$orderby=QuestionCount` return **500** on the current tree. Any client that sorts a bank-question or screen-template list by those columns is already broken. Worth a separate fix; out of scope here. |
+| SPIKE-4 | AutoMapper's `.Condition(...)` (on `BankQuestion.BankEntryID`) has no documented builder equivalent. Is the existing-aware `ForEntity((dto, entity, ctx) => ...)` overload the correct replacement? | 03 | **RESOLVED - YES. The overload exists with exactly that shape**, confirmed by reflection over `ShiftSoftware.ShiftEntity.Core.ShiftMapperBuilder<TEntity,TListDTO,TViewDTO>` at `2026.8.30.1`: `ForEntity(Expression<Func<TEntity,TProp>> member, Func<TViewDTO,TEntity,MappingContext,TProp> value)`. It sits alongside two simpler overloads (`Func<TViewDTO,TProp>` and `Func<TViewDTO,MappingContext,TProp>`), neither of which can see the EXISTING entity and so neither of which can reproduce a conditional write. The replacement is `.ForEntity(e => e.BankEntryID, (dto, entity, ctx) => dto.BankEntryID != Guid.Empty ? dto.BankEntryID : entity.BankEntryID)` - registered unconditionally with the condition INSIDE the value delegate, which is the shape that avoids `SHENGEN005`. Note `AfterEntity(Action<TViewDTO,TEntity,MappingContext>)` also exists as a fallback seam if a future case needs post-assignment fix-up rather than a per-member conditional. |
 | SPIKE-5 | Can the Darlastic sample host be booted headlessly at all? | 02, and the attribution of 03/04/05 diffs | **RESOLVED - POSITIVE. It boots, and the plan KEEPS its framework-only control.** This supersedes the 2026-09-01 "closed by decision" entry: the call then was to skip Darlastic's capture, but once the group was open for its version bump the host turned out to be bootable cheaply, so the control was taken rather than forfeited. Both recorded blockers were real and both were solved. **(1)** Program.cs reads ConnectionStrings:Registry and Sample:AllowDevAuth at the TOP of the file, BEFORE builder.Build() and therefore before WebApplicationFactory's ConfigureAppConfiguration runs - an in-memory override arrives too late, and the first attempt still connected to the appsettings database, failing with "Cannot open database ... login failed". **Environment variables** (ConnectionStrings__Registry, Sample__AllowDevAuth) are read into Configuration from the start and outrank appsettings, so they are what actually redirect this host. **(2)** the registry database: SampleDB deliberately never calls EnsureCreated (a second schema authority against a real registry is the failure the engine's DARLASTIC_SCHEMA_MANAGED switch exists to prevent), so the harness creates a DISPOSABLE schema itself - **from the HOST's service provider**, because the Darlastic tables reach the model through the IModelBuildingContributor that AddDarlasticApiServices registers, and a DbContext built outside DI has an EMPTY model whose EnsureCreated silently creates nothing. Plus DarlasticViews.CreateGoldenCustomerSql(), because GoldenCustomer is mapped ToView and EnsureCreated does not create views. |
 | SPIKE-6 | `ADP.Models/Models.Tests` discovers **zero tests** (no test framework referenced; all sources `<Compile Remove>`d) yet exits 0. The most-shared project in the solution is unguarded. Fix, or accept and record? | 06 | OPEN |
 | SPIKE-7 | Do `IgnoreList` / `IgnoreView` bake correctly for the two Financial triples, and do both triples over the same entity generate distinct list projections? Must be proven from emitted `.g.cs`, not from the build log. | 05 | OPEN |
@@ -680,6 +680,95 @@ so do not land on an intermediate ShiftBlazor version.)
 *Housekeeping, deliberately NOT fixed inside an upgrade commit — the plan says so explicitly:* the
 sample's `appsettings.Development.json:10` hard-codes a registry database name carrying a
 region-style suffix. Against this repo's client-agnostic rule that is worth a separate look.
+
+### ✅ Step 03 — `ADP.Surveys` migrated, and the harness earned its keep twice
+
+**Result: clean under both grants.** 49 cases, 52/52 catalogue routes covered (exclusions cut 23 → 19),
+0 5xx, gates pass. `ADP.Surveys.Shared.Tests` 182/182, `ADP.Surveys.Data.Tests` 2/2. Four triples
+rewritten, the 151-line profile deleted, three registration calls removed.
+
+#### The finding that justifies diffing bodies rather than reading profiles
+
+`Tags` on `BankQuestionListDTO` and `ScreenTemplateAdminDTO` went from `[]` to **absent** on 15 cases.
+
+The plan said, correctly quoting the profile source, that `SplitTags` *"yields null, not an empty
+list"* — and the old profile called that same helper. Following the instruction faithfully would have
+been a **wire-contract change**, because **AutoMapper's `AllowNullCollections` defaults to `false`**
+and was silently coercing that null into `[]` on the way out. Every response this endpoint has ever
+served carried `"Tags": []`; no reader of the profile could have known.
+
+Preserved deliberately with `?? new List<string>()` and commented at both sites as behaviour we now
+own rather than a framework default acting behind us. **This is the case the whole harness exists
+for:** it is invisible in the source, invisible in a shape assertion, and visible only in a value
+diff against a real recorded body. Rule 5 keeping `null`, `[]` and *absent* distinct is what surfaced
+it.
+
+#### SPIKE-3 — confirmed in the emitted code, not just by experiment
+
+`__shiftListProjection` for `SurveyInstance` emits `Status = (int)e.Status` by convention, so the old
+profile's `ForMember(Status)` was **deleted rather than restated** — a redundant `ForList` is
+indistinguishable, to the next reader, from one doing real work. The two JSON-parsing members
+(`BankQuestion.Type`, `ScreenTemplate.QuestionCount`) carried over verbatim into `ForList` and behave
+identically, client-evaluated in the final `Select`. The inherited limit is unchanged and
+**pre-existing**: `$orderby=Type` / `$orderby=QuestionCount` still 500.
+
+#### SPIKE-4 — the premise was wrong, and the correction is the better test
+
+Both mandated round-trips pass, but the second one asserts the **opposite** of what the plan
+anticipated. `BankQuestion.BankEntryID` is **part of a key** (`SurveyAnswer.BankEntryID` carries an FK
+to it), so EF refuses to modify it on a tracked entity: *"The property 'BankQuestion.BankEntryID' is
+part of a key and so cannot be modified."* That is a **schema** constraint that applied equally to the
+AutoMapper profile — so the profile's comment about *"still allow updates from authenticated admin
+flows"* was aspirational; the database has never permitted it.
+
+What survives is a sharper probe, because the failure is the discriminator:
+
+| Implementation | A different GUID on update |
+|---|---|
+| `IgnoreEntity` | write never attempted → request **succeeds**, value silently unchanged |
+| `ForEntity` (conditional) | write **is** attempted → EF rejects it → request **fails** |
+
+So `A_different_guid_on_update_is_ATTEMPTED_not_silently_ignored` asserts a *failure* as its pass
+condition. Paired with the `Guid.Empty` test proving the skip branch, both directions of the old
+`.Condition(...)` are pinned — which a success-asserting test could not have done.
+
+#### `SurveyInstance` — the write mapper no HTTP request can reach
+
+Recorded `writeUnreachable` in `parity.psd1`, with the substitute in place:
+`ADP.Surveys/ADP.Surveys.Data.Tests/SurveyInstanceWriteMapperGoldenTests.cs`. It diffs **every scalar
+property** across `MapToEntity` and asserts the written set is exactly the five audit members
+(`CreateDate`, `LastSaveDate`, `CreatedByUserID`, `LastSavedByUserID`, `IsDeleted`) and **none of the
+sixteen domain members** — matching the old bare `.ReverseMap()` over a DTO whose only own member is
+`ID`. Writing any domain member would blank live scheduler state with a default.
+
+Two deliberate choices: it **diffs reflectively** rather than listing names, so a member added later
+is covered the moment it is declared; and it lives in a **new `ADP.Surveys.Data.Tests` project rather
+than under `ADP.EndpointParity`**, because Step 08 deletes the harness and the 405s are permanent, so
+the substitute has to outlive it. A companion test asserts the diff really watches all sixteen domain
+members — which immediately caught a real bug in the golden itself, where `SurveyInstanceStatus`
+being declared in the entities namespace made the navigation filter silently drop `Status`, the most
+consequential member of the set.
+
+#### Two harness corrections, both found here
+
+1. **The `$top` omission.** The CRUD template omitted `$top` on the `afterRemove` LIST variant, which
+   the framework requires. Six cases accepted with recorded reasons. On FullAccess the change is
+   provably inert — `git diff` of each re-captured golden is **exactly one line, the request URL**,
+   with status and body byte-identical to the pre-migration recording. Under the read-only grant the
+   old golden recorded a 400 *"please specify a page size"* envelope and therefore asserted **nothing**
+   about the list projection; it now returns 200 with rows. **Stated limit:** those three response
+   halves have no pre-migration counterpart and are not a pre/post control — they become one from
+   this baseline forward. The projection under that grant is already controlled by the plain `LIST`
+   case, which carried `$top` all along and verifies unchanged.
+2. **A misleading report header.** `diff.md` rendered *"Cases compared: 3"* on a run that compared
+   **34**, because the count was derived from the differences dictionary, which only holds cases that
+   differ — making "compared" and "with differences" identical every time. The honest reading of that
+   line is that 31 cases had silently stopped being checked. `TranscriptDiffer.Report` now takes an
+   explicit `comparedCount`.
+
+Confidence in the Restricted result is worth stating plainly: a **wholesale re-capture** left 27 of
+30 goldens byte-identical to their pre-migration recordings, which is an independent check on the
+three that changed.
 
 ### Darlastic — the 2026-09-01 decision, now SUPERSEDED by SPIKE-5
 

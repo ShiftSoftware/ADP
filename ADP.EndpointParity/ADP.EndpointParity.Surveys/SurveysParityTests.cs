@@ -107,6 +107,56 @@ public class SurveysParityTests
         // place for a convention mapper to start writing it.
         var updateBodies = new Dictionary<string, string>(createBodies, StringComparer.Ordinal);
 
+        // ---- hand-written cases the CRUD template cannot reach ---------------------------
+        // The plan names these explicitly and forbids excluding them: PublicSurveyController is the
+        // ENTIRE anonymous renderer surface in the one group with full HTTP parity, and it plus
+        // TriggerIngestController are the only HTTP drivers of SurveyInstanceRepository's write
+        // mapper - the triple whose CRUD verbs all 405.
+        //
+        // PublicID a0000000-...-0001 is instance 5200001 from the adversarial seed.
+        const string publicId = "a0000000-0000-4000-8000-000000000001";
+        var additionalCases = new[]
+        {
+            new ParityCase
+            {
+                Name = "PublicSurvey.SCHEMA",
+                Kind = "DETAIL",
+                Method = "GET",
+                Url = $"/api/Surveys/SurveyInstances/{publicId}/schema",
+                RouteKey = "GET /api/Surveys/SurveyInstances/{publicId:guid}/schema",
+            },
+            new ParityCase
+            {
+                Name = "PublicSurvey.STATUS",
+                Kind = "DETAIL",
+                Method = "GET",
+                Url = $"/api/Surveys/SurveyInstances/{publicId}/status",
+                RouteKey = "GET /api/Surveys/SurveyInstances/{publicId:guid}/status",
+            },
+            new ParityCase
+            {
+                // The submit path. Deliberately LAST of the public cases and deliberately a
+                // minimal body: it drives SurveyInstanceRepository's write mapper, which no CRUD
+                // verb can reach. Whatever it answers - 200, 400 or 409 - the answer is pinned, and
+                // a change to it after an upgrade is a change to the renderer's contract.
+                Name = "PublicSurvey.SUBMIT",
+                Kind = "DETAIL",
+                Method = "POST",
+                Url = $"/api/Surveys/SurveyInstances/{publicId}/responses",
+                Body = """{"answers":[]}""",
+                RouteKey = "POST /api/Surveys/SurveyInstances/{publicId:guid}/responses",
+            },
+            new ParityCase
+            {
+                Name = "TriggerIngest.INGEST",
+                Kind = "DETAIL",
+                Method = "POST",
+                Url = "/api/Surveys/Triggers/ingest",
+                Body = """{"events":[]}""",
+                RouteKey = "POST /api/Surveys/Triggers/ingest",
+            },
+        };
+
         var groupConfig = new ParityGroupConfig
         {
             Group = Group,
@@ -118,6 +168,7 @@ public class SurveysParityTests
             SeededHashIds = seededHashIds,
             HostileMarkers = seeder.HostileMarkers,
             CreateBodies = createBodies,
+            AdditionalCases = additionalCases,
             UpdateBodies = updateBodies,
 
             // The Surveys tables are NOT system-versioned - entities carry [TemporalShiftEntity]
@@ -166,15 +217,11 @@ public class SurveysParityTests
                 // mapping, they must be covered before that claim is made.
                 "POST /api/Surveys/Preview",
                 "POST /api/Surveys/Publish/{id}",
-                "POST /api/Surveys/SurveyInstances/{publicId:guid}/responses",
-                "GET /api/Surveys/SurveyInstances/{publicId:guid}/schema",
-                "GET /api/Surveys/SurveyInstances/{publicId:guid}/status",
                 "GET /api/Surveys/SurveyResponses/instance/{publicId:guid}",
                 "GET /api/Surveys/SurveyResponses/public-url-template",
                 "GET /api/Surveys/SurveyResponses/{surveyId}/export",
                 "POST /api/Surveys/SurveyResponses/{surveyId}/test-instances",
                 "GET /api/Surveys/Triggers/channels",
-                "POST /api/Surveys/Triggers/ingest",
                 "POST /api/Surveys/Triggers/scheduler/tick",
             },
 

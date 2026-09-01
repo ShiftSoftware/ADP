@@ -82,13 +82,19 @@ public sealed class CaseListBuilder
         IReadOnlyList<CatalogueRoute> routes,
         IReadOnlyDictionary<string, IReadOnlyList<string>> seededHashIdsByEntity,
         IReadOnlyDictionary<string, string> createBodies,
-        IReadOnlyDictionary<string, string> updateBodies)
+        IReadOnlyDictionary<string, string> updateBodies,
+        IReadOnlyCollection<string>? routesCoveredByHandWrittenCases = null)
     {
+        var handWritten = routesCoveredByHandWrittenCases ?? Array.Empty<string>();
         var cases = new List<ParityCase>();
 
         foreach (var route in routes)
         {
             if (excludedRoutes.Contains(route.Key)) continue;
+
+            // A hand-written case already covers this route, so the template need not - and it must
+            // NOT be reported uncovered.
+            if (handWritten.Contains(route.Key)) continue;
 
             var entity = EntityOf(route.Template);
             if (entity is null) { OutOfScope.Add(route.Key); continue; }

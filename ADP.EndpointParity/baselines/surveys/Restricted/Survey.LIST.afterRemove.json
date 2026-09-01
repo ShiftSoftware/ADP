@@ -5,20 +5,30 @@
   "request": {
     "body": null,
     "method": "GET",
-    "url": "/api/Surveys/Survey?$orderby=ID&$count=true"
+    "url": "/api/Surveys/Survey?$orderby=ID&$top=5&$count=true"
   },
   "response": {
     "body": {
-      "AdditionalData": null,
-      "Message": {
-        "Body": "Please specify a page size using the $top query parameter. You do not have permission to load unrestricted data sets.",
-        "For": null,
-        "SubMessages": null,
-        "Title": "Unrestricted Data Access Not Allowed"
-      }
+      "Count": 2,
+      "Value": [
+        {
+          "ID": "KJzYkW",
+          "IntegrationId": "parity-survey-trap3write",
+          "IsDeleted": false,
+          "Name": "PARITY-SURVEY-TRAP3WRITE derived-published-version",
+          "PublishedVersionNumber": 7
+        },
+        {
+          "ID": "wZ6pwz",
+          "IntegrationId": "parity-survey-plain",
+          "IsDeleted": false,
+          "Name": "PARITY-SURVEY-PLAIN control row",
+          "PublishedVersionNumber": null
+        }
+      ]
     },
     "contentType": "application/json; charset=utf-8",
     "headers": {},
-    "status": 400
+    "status": 200
   }
 }

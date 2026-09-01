@@ -1,0 +1,30 @@
+{
+  "case": "PublicSurvey.SUBMIT",
+  "grant": "Restricted",
+  "kind": "DETAIL",
+  "request": {
+    "body": {
+      "answers": []
+    },
+    "method": "POST",
+    "url": "/api/Surveys/SurveyInstances/a0000000-0000-4000-8000-000000000001/responses"
+  },
+  "response": {
+    "body": {
+      "Additional": {
+        "$.answers": [
+          "The JSON value could not be converted to System.Collections.Generic.Dictionary`2[System.String,System.Text.Json.JsonElement]. Path: $.answers | LineNumber: 0 | BytePositionInLine: 12."
+        ],
+        "body": [
+          "The body field is required."
+        ],
+        "publicId": []
+      },
+      "Entity": null,
+      "Message": null
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {},
+    "status": 400
+  }
+}

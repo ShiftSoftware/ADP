@@ -152,15 +152,27 @@ public static class TranscriptDiffer
 
     private static string Render(JsonNode? n) => n is null ? "<absent>" : Canonical.Write(n).Trim();
 
-    /// <summary>Renders a whole run's diffs as the markdown report the operator reads.</summary>
-    public static string Report(string group, string grant, IReadOnlyDictionary<string, IReadOnlyList<TranscriptDifference>> byCase)
+    /// <summary>
+    /// Renders a whole run's diffs as the markdown report the operator reads.
+    ///
+    /// <para>
+    /// <paramref name="comparedCount"/> is the number of cases the run actually compared, and it
+    /// MUST be supplied by the caller rather than inferred from <paramref name="byCase"/>. The
+    /// caller only records cases that differ, so a header derived from the dictionary would report
+    /// "cases compared" equal to "cases with differences" every time - which reads as a collapse in
+    /// coverage. Observed for real: a Surveys run comparing thirty cases with three differing
+    /// rendered as "Cases compared: 3", and the honest reading of that line is that twenty-seven
+    /// cases had silently stopped being checked.
+    /// </para>
+    /// </summary>
+    public static string Report(string group, string grant, IReadOnlyDictionary<string, IReadOnlyList<TranscriptDifference>> byCase, int comparedCount)
     {
         var sb = new StringBuilder();
         sb.Append("# Endpoint parity diff - ").Append(group).Append(" (").Append(grant).Append(")\n\n");
 
         var changed = byCase.Where(kv => kv.Value.Count > 0).OrderBy(kv => kv.Key, StringComparer.Ordinal).ToList();
 
-        sb.Append("Cases compared: ").Append(byCase.Count)
+        sb.Append("Cases compared: ").Append(comparedCount)
           .Append(" | cases with differences: ").Append(changed.Count).Append("\n\n");
 
         if (changed.Count == 0)

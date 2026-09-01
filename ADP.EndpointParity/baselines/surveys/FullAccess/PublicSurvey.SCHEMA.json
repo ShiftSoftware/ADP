@@ -1,0 +1,29 @@
+{
+  "case": "PublicSurvey.SCHEMA",
+  "grant": "FullAccess",
+  "kind": "DETAIL",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "url": "/api/Surveys/SurveyInstances/a0000000-0000-4000-8000-000000000001/schema"
+  },
+  "response": {
+    "body": {
+      "branding": {
+        "logoUrl": "http://localhost:5134/toyota-logo.png",
+        "primaryColor": "#EB0A1E"
+      },
+      "defaultLocale": "en",
+      "locales": [],
+      "logic": [],
+      "screens": [],
+      "surveyId": "",
+      "title": {},
+      "triggers": [],
+      "version": 0
+    },
+    "contentType": "application/json",
+    "headers": {},
+    "status": 200
+  }
+}

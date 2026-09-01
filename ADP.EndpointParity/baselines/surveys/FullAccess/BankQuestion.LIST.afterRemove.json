@@ -5,7 +5,7 @@
   "request": {
     "body": null,
     "method": "GET",
-    "url": "/api/Surveys/BankQuestion?$orderby=ID&$count=true"
+    "url": "/api/Surveys/BankQuestion?$orderby=ID&$top=25&$count=true"
   },
   "response": {
     "body": {

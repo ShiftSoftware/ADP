@@ -1,0 +1,20 @@
+{
+  "case": "TriggerIngest.INGEST",
+  "grant": "FullAccess",
+  "kind": "DETAIL",
+  "request": {
+    "body": {
+      "events": []
+    },
+    "method": "POST",
+    "url": "/api/Surveys/Triggers/ingest"
+  },
+  "response": {
+    "body": {
+      "Message": "eventKind is required."
+    },
+    "contentType": "application/json; charset=utf-8",
+    "headers": {},
+    "status": 400
+  }
+}

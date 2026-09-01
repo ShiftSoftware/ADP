@@ -42,10 +42,13 @@ public static class SurveyApiExtensions
         {
             // Register both assemblies so FluentValidation auto-discovery finds validators
             // living alongside schema DTOs in Shared AND alongside admin DTOs wherever
-            // they live (Shared today). AutoMapper profiles live in Data.
+            // they live (Shared today).
+            //
+            // Entity/DTO mappers are SOURCE-GENERATED and self-registering - there is no mapper
+            // assembly to hand over. RegisterShiftRepositories validates every triple at startup,
+            // so a triple missing a mapper fails the host rather than failing silently at runtime.
             o.AddDataAssembly(typeof(Data.Marker).Assembly);
             o.AddDataAssembly(typeof(Shared.Marker).Assembly);
-            o.AddAutoMapper(typeof(Data.Marker).Assembly);
         });
 
         // Skippable so a host gating entirely on its own actions (see SurveyActionOverrides)

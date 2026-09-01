@@ -38,6 +38,14 @@ public sealed class ParityGroupConfig
     public IReadOnlyDictionary<string, IReadOnlyList<string>> SeededHashIds { get; init; } =
         new Dictionary<string, IReadOnlyList<string>>();
 
+    /// <summary>
+    /// Hand-written cases the CRUD template cannot produce. The templated case list reaches only the
+    /// inherited ShiftEntity surface; a group's bespoke [Http*] actions have to be written out. Their
+    /// RouteKey counts toward the coverage gate exactly like a templated case, so covering a route
+    /// here is what stops it needing an excludedRoutes entry.
+    /// </summary>
+    public IReadOnlyList<ParityCase> AdditionalCases { get; init; } = Array.Empty<ParityCase>();
+
     /// <summary>Markers of hostile rows; the gate checks each appears literally in a list body.</summary>
     public IReadOnlyCollection<string> HostileMarkers { get; init; } = Array.Empty<string>();
 
@@ -115,14 +123,21 @@ public static class ParityGroupRun
                 Directory.CreateDirectory(reportDir);
                 File.WriteAllText(Path.Combine(reportDir, "route-catalogue.diff.md"),
                     TranscriptDiffer.Report(config.Group, grant.ToString(),
-                        new Dictionary<string, IReadOnlyList<TranscriptDifference>> { ["route-catalogue"] = diffs }));
+                        new Dictionary<string, IReadOnlyList<TranscriptDifference>> { ["route-catalogue"] = diffs },
+                        comparedCount: 1));
             }
         }
 
         // ---- case list, driven FROM the catalogue --------------------------------------
         var builder = new CaseListBuilder(config.RoutePrefix, config.ExcludedRoutes, config.EmitAsOfCases,
             listTop: grant == ParityGrant.Restricted ? config.RestrictedListTop : config.FullAccessListTop);
-        var cases = builder.Build(routes, config.SeededHashIds, config.CreateBodies, config.UpdateBodies);
+        var handWrittenRoutes = config.AdditionalCases
+            .Where(c => c.RouteKey is not null).Select(c => c.RouteKey!).ToHashSet(StringComparer.Ordinal);
+
+        var cases = builder.Build(routes, config.SeededHashIds, config.CreateBodies, config.UpdateBodies,
+                                  handWrittenRoutes)
+            .Concat(config.AdditionalCases)
+            .ToList();
 
         // ---- run ------------------------------------------------------------------------
         var baselineDir = Path.Combine(catalogueDir, grant.ToString());
@@ -176,7 +191,8 @@ public static class ParityGroupRun
             {
                 File.WriteAllText(reportPath,
                     TranscriptDiffer.Report(config.Group, grant.ToString(),
-                        runner.Differences.ToDictionary(kv => kv.Key, kv => kv.Value)));
+                        runner.Differences.ToDictionary(kv => kv.Key, kv => kv.Value),
+                        comparedCount: runner.Transcripts.Count));
             }
             else if (File.Exists(reportPath))
             {
