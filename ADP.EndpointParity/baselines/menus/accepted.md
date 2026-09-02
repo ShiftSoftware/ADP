@@ -1,2 +1,0 @@
-- [2026-09-02 00:06:57] Menus / FullAccess / SelectDTO.Text.populated
-  reason: Framework convention improvement, predicted by conventions.md:110,116-118. MappingHelpers.ToSelectDTO(entity.SomeID) fills Text, where the old AutoMapper profile built ShiftEntitySelectDTO with Value only and left Text null. 15 cases under FullAccess (VehicleModel x7, StandaloneReplacementItemGroup x8) and 2 under Restricted. Additive only: no value changed, no member disappeared.

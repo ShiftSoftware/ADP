@@ -384,6 +384,11 @@ app.Run();
 // seeding was deliberately removed. Nothing it writes lands in the [Menu] schema tables the
 // parity cases list, so the adversarial seed is the only source of rows there.
 //
-// TEMPORARY - removed in Step 08 with the rest of the harness.
+// KEPT DELIBERATELY at Step 08, which removed the endpoint-parity harness that originally
+// needed it. Top-level statements generate an INTERNAL Program class, which
+// WebApplicationFactory<T> in another assembly cannot name; this declaration only widens
+// that visibility. It adds no members, changes no behaviour and is inert at run time, and it
+// is the conventional shape for a sample host anyone may later want an integration test
+// against - the next person writing one would simply have to add it back.
 // ------------------------------------------------------------------------------------------
 public partial class Program { }

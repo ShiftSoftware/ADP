@@ -165,30 +165,6 @@ using (var scope = app.Services.CreateScope())
     await db.Database.EnsureCreatedAsync();
 }
 
-// ------------------------------------------------------------------------------------------
-// PARITY BRANCH - TEMPORARY. One of exactly two edits the endpoint-parity harness is permitted
-// to make outside ADP.EndpointParity/ (docs/planning/shift-framework-upgrade/
-// 00-baseline-and-harness.md item B). Removed in Step 08 with the rest of the harness.
-//
-// The block below seeds a SuperUser, a full-access tree and a set of demo surveys, with
-// IDENTITY-GENERATED primary keys, unconditionally at startup - before the harness gets a say.
-// Two things break if it runs during a parity capture:
-//
-//   1. Those rows land in the same tables the parity cases list, so a naive "> 0 rows" gate is
-//      satisfied by the demo seed ALONE and cannot distinguish "the adversarial parity seed was
-//      applied" from "only the sample demo data is present". That is the exact silent failure
-//      verification.md section 8.1 exists to prevent.
-//   2. Rule 1 ("same longs both runs, so hash ids compare literally") holds only if these
-//      seeders insert in byte-identical order into a fresh DB every time, which nobody has
-//      verified - and identity PKs make it unlikely.
-//
-// The harness sets Parity:SuppressSampleSeeding=true and applies its own explicit-long-PK seed
-// instead. Nothing else about the host changes, so the pipeline under test stays the real one.
-// ------------------------------------------------------------------------------------------
-var suppressSeeding = builder.Configuration.GetValue<bool>("Parity:SuppressSampleSeeding");
-
-if (!suppressSeeding)
-{
 
 // Creates a SuperUser + minimal org hierarchy the first time the DB is empty.
 // Idempotent — safe to call every startup.
@@ -217,7 +193,6 @@ await app.SetFullAccessAsync("t1", "t3");
 // branching navigation, cross-screen logic, multi-locale + branding, and triggers.
 // Idempotent — each sample is keyed by IntegrationId.
 await app.SeedSampleSurveysAsync();
-}
 
 app.UseCors(x => x.WithOrigins("*").AllowAnyMethod().AllowAnyHeader());
 
@@ -237,8 +212,11 @@ app.Run();
 // another assembly cannot name. This declaration only widens that visibility: it adds no
 // members, changes no behaviour, and is inert at run time.
 //
-// TEMPORARY - one of exactly two edits the parity harness is permitted to make outside
-// ADP.EndpointParity/ (docs/planning/shift-framework-upgrade/00-baseline-and-harness.md item B).
-// Removed in Step 08 with the rest of the harness.
+// KEPT DELIBERATELY at Step 08, which removed the endpoint-parity harness that originally
+// needed it. Top-level statements generate an INTERNAL Program class, which
+// WebApplicationFactory<T> in another assembly cannot name; this declaration only widens
+// that visibility. It adds no members, changes no behaviour and is inert at run time, and it
+// is the conventional shape for a sample host anyone may later want an integration test
+// against - the next person writing one would simply have to add it back.
 // ------------------------------------------------------------------------------------------
 public partial class Program { }

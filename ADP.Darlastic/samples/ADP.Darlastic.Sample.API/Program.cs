@@ -115,6 +115,11 @@ return 0;
 // profiles, so a harness diff here is unambiguously caused by the framework rather than by a
 // mapper rewrite. That is why booting it is worth this edit (SPIKE-5).
 //
-// TEMPORARY - removed in Step 08 with the rest of the harness.
+// KEPT DELIBERATELY at Step 08, which removed the endpoint-parity harness that originally
+// needed it. Top-level statements generate an INTERNAL Program class, which
+// WebApplicationFactory<T> in another assembly cannot name; this declaration only widens
+// that visibility. It adds no members, changes no behaviour and is inert at run time, and it
+// is the conventional shape for a sample host anyone may later want an integration test
+// against - the next person writing one would simply have to add it back.
 // ------------------------------------------------------------------------------------------
 public partial class Program { }

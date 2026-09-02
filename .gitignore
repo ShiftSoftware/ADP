@@ -423,4 +423,3 @@ ADP.Docs/Docs/site/
 # baselines/ is deliberately NOT ignored: the goldens are committed and reviewed like source, and
 # a changed golden in a PR is a claimed behaviour change that must be explained. reports/ is the
 # verify-mode diff output and is regenerated on every run.
-ADP.EndpointParity/reports/

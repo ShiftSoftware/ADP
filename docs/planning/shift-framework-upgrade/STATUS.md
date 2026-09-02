@@ -76,7 +76,7 @@ its terminal status*, never `VERIFIED` unconditionally.
 
 | Step | Group | Projects | Depends on | Terminal status | Status | Verified by | Date | Notes |
 |---|---|---|---|---|---|---|---|---|
-| 00 | Baseline & parity harness | `ADP.EndpointParity.Harness` + 5 per-group test projects (new), `tools/parity.ps1` (new) | — | `CLOSED` | `IN PROGRESS` | — | 2026-09-01 | **ALL FOUR mapper groups captured — Menus, Surveys, ClaimableItems, WarrantyClaims — each under both grants and each stability-gated to a byte-identical second run. Darlastic skipped by decision. Remaining before `CLOSED`: commit the goldens in their own commit, and re-run the §G solution numbers now that the harness projects are in `ADP.sln`.** Done: items **A** (SPIKE-1 resolved), **H** (`ADP.Models` probe green), **B** (SPIKE-2 resolved both halves — sample host + mounted host both boot; seeding suppression verified), **G** (all baseline numbers recorded below), and the structural half of **C** — six projects build and are in `ADP.sln` (59), capture layer (`Normalizer`/`Transcript`/`TranscriptDiffer`/`ParityRunner`/`ParitySummary`/`Canonical`) and wiring layer (`RouteCatalog`/`RequestFactory`/`ParityAuth`/`ParityDb`/`SampleHostFactory`/`MountedHostFactory`) written, `tools/parity.{ps1,psd1}` written, group-isolation rehearsal passes. **Not yet done: the seeds, the case list that binds the catalogue to cases, the stability gate, and every baseline.** No group is captured, so no later step may rely on this yet. Must run on the pre-bump tree. Two identical capture runs must diff to zero before anything else is trusted. Terminal `CLOSED`: it builds the instrument, it has no endpoints of its own. Also carries the **15-minute throwaway `ADP.Models` compile probe** that de-risks shared-last (see the residual-risk note under the spike table). |
+| 00 | Baseline & parity harness | `ADP.EndpointParity.Harness` + 5 per-group test projects (new), `tools/parity.ps1` (new) | — | `CLOSED` | **`CLOSED`** | Instrument built and used end-to-end across Steps 01-07; **closed at Step 08**, when its two outstanding items became moot - the goldens were committed with the migration and have now been deleted with the harness, and the SS G solution numbers were re-measured at Step 07 (0 errors / 543 warnings cold / 61 csproj) and again at Step 08 (0 errors / 539 warnings / 55 csproj) | 2026-09-02 | **ALL FOUR mapper groups captured — Menus, Surveys, ClaimableItems, WarrantyClaims — each under both grants and each stability-gated to a byte-identical second run. Darlastic skipped by decision. Remaining before `CLOSED`: commit the goldens in their own commit, and re-run the §G solution numbers now that the harness projects are in `ADP.sln`.** Done: items **A** (SPIKE-1 resolved), **H** (`ADP.Models` probe green), **B** (SPIKE-2 resolved both halves — sample host + mounted host both boot; seeding suppression verified), **G** (all baseline numbers recorded below), and the structural half of **C** — six projects build and are in `ADP.sln` (59), capture layer (`Normalizer`/`Transcript`/`TranscriptDiffer`/`ParityRunner`/`ParitySummary`/`Canonical`) and wiring layer (`RouteCatalog`/`RequestFactory`/`ParityAuth`/`ParityDb`/`SampleHostFactory`/`MountedHostFactory`) written, `tools/parity.{ps1,psd1}` written, group-isolation rehearsal passes. **Not yet done: the seeds, the case list that binds the catalogue to cases, the stability gate, and every baseline.** No group is captured, so no later step may rely on this yet. Must run on the pre-bump tree. Two identical capture runs must diff to zero before anything else is trusted. Terminal `CLOSED`: it builds the instrument, it has no endpoints of its own. Also carries the **15-minute throwaway `ADP.Models` compile probe** that de-risks shared-last (see the residual-risk note under the spike table). |
 | 01 | Retro-verify `ADP.Menus` | `ADP.Menus.*` (**11 projects**, 8 of them already on 2026.8.30.1) | 00 | `VERIFIED` | **`VERIFIED`** | `parity.ps1 verify -Group Menus` (both grants) against a retroactive baseline captured at `14caf7c9^` — **15 diffs under FullAccess + 2 under Restricted, ALL of one shape, all accepted with a recorded reason; 0 harness bugs, 0 regressions** | 2026-09-02 | Code migration already `DONE` at `14caf7c9` — see the Menus row below. This step only proves it. Retroactive baseline from `14caf7c9^` via `git worktree`. Also resolves SPIKE-9. No package lines: Menus is already at `2026.8.30.1`. |
 | 02 | `ADP.Darlastic` | `ADP.Darlastic.{API,Data,Shared,Web}` | 00, 01 | `CLOSED` | **`CLOSED`** | **SMOKE, NOT VALUE PARITY** - `parity.ps1 verify -Group Darlastic`, both grants, 31/31 catalogue routes, 0 5xx, stability-gated. 0 triples and 0 profiles, so there is no mapping behaviour here to prove. | 2026-09-02 | Bumps its own **4** package lines as its first commit and ends green. 0 profiles, 0 triples. Smoke pass only — nothing mapper-shaped to prove, so terminal `CLOSED`. **But it is the plan's only framework-only control** (see SPIKE-5). Do not record as full parity. |
 | 03 | `ADP.Surveys` | `ADP.Surveys.{API,Data,Shared,Web}` + 2 samples | 00, 01 | `VERIFIED` | **`VERIFIED`** | `parity.ps1 verify -Group Surveys` **clean under both grants** — 49 cases, 52/52 catalogue routes, 0 5xx. Six `$top` cases accepted with recorded reasons (harness fix, not product); on FullAccess the re-captured golden differs by **exactly one line, the request URL**, response byte-identical. A wholesale Restricted re-capture left **27 of 30 goldens byte-identical**. Plus 2 SPIKE-4 round-trips and the `SurveyInstance` write golden. | 2026-09-02 | Bumps its own **7** package lines. 4 triples, 1 profile (151 lines). **Free-floating** — every `ProjectReference` is intra-group and it consumes no `ShiftSoftware.ADP.*` package, so it is legal anywhere after 01. Ordered here by risk/simplicity, not by the graph. Has a sample host → full HTTP parity available. Carries SPIKE-3 and SPIKE-4. |
@@ -84,7 +84,7 @@ its terminal status*, never `VERIFIED` unconditionally.
 | 05 | `ADP.WarrantyClaims` | `ADP.WarrantyClaims.{API,Data,Shared,Web}` | 00, 01, 04 | `VERIFIED` | **`VERIFIED`** | **`parity.ps1 verify -Group WarrantyClaims` clean under BOTH grants** (14 accepted SPIKE-11 diffs, 7 cases x 2 grants; a wholesale re-capture left **21 of 28 goldens byte-identical per grant**). **THE EXPOSURE IS CLOSED AND PROVEN FOUR WAYS**: the full-access `DealerFinancial.LIST` case shows all five members null against a seed that populates all five; the restricted pass agrees; `IgnoreList` proven baked from emitted `.g.cs`; and `DealerFinancialExposureTests` (3/3) guards it permanently. **MOUNTED HOST, not a sample host** - module-level parity only. 0 SHENGEN warnings, solution green, no NU1605. | 2026-09-02 | Bumps its own **7** package lines. **Highest risk.** 7 triples; dealer/distributor forward-map `Ignore()` exposure. Ordered last of the groups by risk, overriding simplicity (it has fewer profiles than 04). Depends on 04 for the shared `Certificate` mapper precedent (SPIKE-8) — a **knowledge** dependency, not a build one. |
 | 06 | Shared floor | `ADP.Models/Models`, `ADP.Cases.Data`, `ADP.Cases.Shared`, `Lookup.Services.DuckDB` | 02, 03, 04, 05 all at terminal | `CLOSED` | **`CLOSED`** | N/A — no endpoints; covered by the unit suites, by the green solution build, by the generated-tree diff, and by Steps 04/05, which exercised the shared `Certificate` entity through real endpoints before this floor moved. All 8 parity runs (4 groups x 2 grants) re-verified CLEAN after the bump | 2026-09-02 | Bumps the last **4** package lines — `ADP.Models` and `Cases.Shared` in the **same commit**, which is what keeps NU1605 from ever appearing. 0 profiles, 0 triples; expected to compile unchanged. Libraries only — no endpoints, so terminal `CLOSED` with the reason in `Verified by`. Carries SPIKE-6. Pulls in `ADP.Menus.Generation` (see the ledger note below). Step 00's compile probe is its early warning. |
 | 07 | Release readiness | solution-wide + `GlobalSettings.props` | 00–06 all at terminal (00, 02, 06 `CLOSED`; 01, 03, 04, 05 `VERIFIED`) | `VERIFIED` | **`VERIFIED` (verification complete — RELEASE NOT YET CUT)** | Full sweep on the final tree: solution 0 errors / 543 warnings cold (baseline 580 cold), **0 SHENGEN004/007/008/010**, 0 NU1605/1701/1603/MSB3277, NU1903 20 lines / 5 projects (baseline 42/21); every test suite at baseline with the 2 known SampleDataSeedingTests the only red; web components 114/114; **all 10 parity runs clean** (5 groups x 2 grants); generated trees clean; **package-mode host boot PASSED against the locally-packed 1.16.0 feed — 12 triples, 0 conflicts, VerifyBindings 0 errors** | 2026-09-02 | Package-mode restore smoke check, full baseline comparison, single `ADPVersion` bump. **No package lines left** — all 29 landed in Steps 02–06. |
-| 08 | Harness removal & cleanup | `ADP.EndpointParity.Harness` + the 5 per-group test projects, `tools/parity.ps1`, `ADP.sln` | 07 | `CLOSED` | `NOT STARTED` | — | — | **New step, added 2026-09-01.** Deletes the instrument Step 00 built and removes its projects from `ADP.sln`. Decision recorded above: the framework's release cadence does not justify maintaining a permanent regression harness. Terminal `CLOSED` — it removes an instrument; it has no endpoints. Solution must build green and the project count return to its pre-Step-00 figure (53 today). |
+| 08 | Harness removal & cleanup | `ADP.EndpointParity.Harness` + the 5 per-group test projects, `tools/parity.ps1`, `ADP.sln` | 07 | `CLOSED` | **`CLOSED`** | Harness deleted; `dotnet build ADP.sln --no-incremental` **0 errors / 539 warnings**; **55 csproj in `ADP.sln`** (the plan's 53 + the 2 durable test projects Steps 03/05 added) and **56 on disk** (the extra is the stray `web/` csproj, out of this step's scope); `git grep` for `EndpointParity|parity.ps1|parity.psd1` outside `docs/planning/` returns **nothing**; reverted sample booted and observed to seed | 2026-09-02 | **New step, added 2026-09-01.** Deletes the instrument Step 00 built and removes its projects from `ADP.sln`. Decision recorded above: the framework's release cadence does not justify maintaining a permanent regression harness. Terminal `CLOSED` — it removes an instrument; it has no endpoints. Solution must build green and the project count return to its pre-Step-00 figure (53 today). |
 
 **Ledger notes on the dependency column** — these are the edges the graph actually has. Two were
 wrong in an earlier draft, and one moved with the 2026-09-01 reorder:
@@ -1171,6 +1171,104 @@ migration comments and in the temporary harness csprojs). Zero `2026.7.31.1` in 
   unify ShiftEntity by max-wins, so a partial revert reproduces the mixed-package state that bricks
   hosts. A post-release problem is fixed by rolling the whole release **forward**.
 
+### ✅ Step 08 — the harness is gone; the record is what survives
+
+**Result: solution green at 0 errors, no harness reference anywhere outside `docs/planning/`.**
+
+#### ⚠️ One precondition was NOT met, deliberately and on instruction
+
+The plan's first precondition is **"Step 07 at `VERIFIED`, and the release out."** **The release was
+not out** when this step ran — Step 07's verification is complete and `$(ADPVersion)` is bumped, but
+no tag has been pushed and nothing published. This step was run anyway, on instruction.
+
+The exposure and why it is small, stated plainly so nobody has to reconstruct it:
+
+- Step 07 item C's full sweep — 5 groups × 2 grants, all clean — **was recorded in `STATUS.md`
+  before the deletion**, which is the durable evidence the plan actually depends on.
+- No product code changes between here and the release; only a tag is outstanding.
+- The harness is recoverable from the `parity-harness-final` tag (item A).
+
+**The residual risk, unmitigated:** if cutting the release surfaces something that needs
+re-verification, the instrument is no longer in the tree and must be restored from the tag first —
+and a restored harness needs its baselines re-captured before it says anything, because they were
+recorded against the pre-upgrade tree.
+
+#### A. Recovery point
+
+`parity-harness-final` created on **`81c40c60`**, the last commit containing the harness, with the
+recovery command and the "a recovered harness is not a working harness" caveat in the tag message.
+**Not pushed** — pushing is outward-facing and was left to the owner. Until it is pushed, the tag is
+local only and the harness's durable anchor is the Step 07 release tag, once that exists.
+
+#### B/C. What was deleted
+
+`ADP.EndpointParity/` (harness library, 5 group test projects, `Seed/`, `baselines/`, `reports/`),
+`tools/parity.ps1`, `tools/parity.psd1`, the 6 `ADP.sln` entries, and the
+`ADP.EndpointParity/reports/` line from `.gitignore`. `tools/` held nothing else and was removed as
+an empty directory. No orphan solution folder or `NestedProjects` line survived — `ADP.sln` greps
+clean.
+
+Worth noting for anyone repeating this: `git rm -r` removed the tracked files but left `reports/`
+(gitignored) and the six projects' `bin`/`obj` **on disk**. The directory had to be deleted from the
+filesystem separately, exactly as the plan's Verification caveat warns.
+
+#### D. The two Step 00 edits — the item that justified the step
+
+- **D2 (mandatory revert) — done.** The `Parity:SuppressSampleSeeding` branch is removed from
+  `ADP.Surveys/samples/ADP.Surveys.Sample.API/Program.cs`; `SeedDBAsync`, `SetFullAccessAsync` and
+  `SeedSampleSurveysAsync` run unconditionally again. **It was in Surveys only** — the Menus sample
+  never carried a suppression branch, and its deliberate no-seeding comment was left untouched.
+  **Booted once and observed to seed** (the identity seed runs: Countries → Regions → Cities …),
+  which is the step's only runtime check.
+- **The explicit-id path: nothing to revert.** `SET IDENTITY_INSERT` lived in the harness's own
+  `ParitySeeder`. The other hits in the tree are **pre-existing and unrelated** —
+  `DarlasticModelBuilderExtensions.cs`'s `ValueGeneratedNever()` ("minted by the engine,
+  deterministically", last touched by `7c0e295c`) and `ADP.Menus.Tests/SampleSeeding/SampleSeedData.cs`
+  (`546ac478`). Checked against git history rather than assumed.
+- **D1 (`public partial class Program`) — DECISION: LEFT IN PLACE**, per the plan's recommendation.
+  It is behaviour-free, and it is what the next person writing an integration test against these
+  samples would have to add back. It carries in **three** files:
+  - `ADP.Surveys/samples/ADP.Surveys.Sample.API/Program.cs`
+  - `ADP.Menus/samples/ADP.Menus.Sample.API/Program.cs`
+  - `ADP.Darlastic/samples/ADP.Darlastic.Sample.API/Program.cs`
+
+  **All three comments were rewritten.** They previously read *"TEMPORARY — removed in Step 08 with
+  the rest of the harness"*, which this decision would have turned into a false statement sitting in
+  three sample hosts. They now record that the declaration was kept deliberately, and why. This is
+  the only Step 00 edit that survives.
+
+#### E/F. CI and residue
+
+No pipeline file referenced the harness — no temporary job was ever wired, so there was nothing to
+remove. `git worktree list` shows only the main tree (no `ADP-pre-menus`); no `scratch/*` branch
+survives. **20 leftover `ADP_Parity_*` databases were dropped** — the per-run drop had left probe and
+spike databases behind (`_probe`, `_schema`, `_spike3`, `_spike4`, `_temporal`, …). Step 07's own
+residue (the packed `localfeed`, the relocated group copy, the package-mode host project) was
+deleted; none of it was ever inside the repo.
+
+#### The project-count arithmetic, since it does not match the plan's 53
+
+| | |
+|---|---|
+| plan's expected post-deletion count | 53 |
+| **`ADP.sln` now** | **55** — 53 + `ADP.Surveys.Data.Tests` and `ADP.WarrantyClaims.Data.Tests`, the two **durable** test projects added by Steps 03 and 05 (the `SurveyInstance` write golden and the dealer-exposure guard). Both were deliberately placed outside `ADP.EndpointParity/` so they would survive this step. |
+| **on disk (excluding `obj`/`bin`)** | **56** — the extra is `web/ShiftSoftware.ShiftEntity.Web.csproj` |
+| unfiltered `find` | 59 — the 3 phantom `obj/` artefacts the plan names |
+
+**The stray `web/` directory surfaced for the third time** (it distorted Step 06's TypeAuth check and
+now this count). It is 41 decompiled framework files committed at `416dc551`, is in no solution, and
+builds nothing. **Not deleted here** — Step 08's scope is explicitly "nothing else" — but it should
+go in its own commit.
+
+#### What this costs, stated plainly
+
+**There is now no automated proof that endpoint behaviour has not changed.** The next framework
+upgrade either rebuilds the harness from `verification.md`'s design or proceeds without one. That was
+priced in when the decision was made; it is repeated here so the next reader knows it was a choice.
+
+The plan documents survive unedited and still reference `ADP.EndpointParity/` in the present tense —
+that is correct, they describe what was built and run at the time.
+
 ### Darlastic — the 2026-09-01 decision, now SUPERSEDED by SPIKE-5
 
 > The decision below stood until Step 02 actually tried to boot the host and found it
@@ -1203,10 +1301,10 @@ commit is in **and the solution builds green**.
 | Step | Group | csproj | Lines | Packages moved to `2026.8.30.1` | Bumped |
 |---|---|---|---|---|---|
 | 02 | `ADP.Darlastic` | 4 | 4 | `ShiftEntity.Web`, `ShiftEntity.EFCore`, `ShiftEntity.Model`, `ShiftBlazor` | **[x] 2026-09-02** |
-| 03 | `ADP.Surveys` | 6 | 7 | the same four, plus `ShiftIdentity.Core`, `ShiftIdentity.Dashboard.AspNetCore`, `ShiftIdentity.Dashboard.Blazor` (the two Dashboard lines are in the samples) | [ ] |
-| 04 | `ADP.ClaimableItems` | 4 | 7 | `ShiftEntity.Web`, `ShiftEntity.EFCore`, `ShiftEntity.CosmosDbReplication`, `ShiftEntity.Print`, `ShiftIdentity.Core`, `ShiftEntity.Model`, `ShiftBlazor` | [ ] |
-| 05 | `ADP.WarrantyClaims` | 4 | 7 | same seven as 04 | [ ] |
-| 06 | Shared floor | 4 | 4 | `ShiftEntity.Model` (`ADP.Models`, `Cases.Shared` — **same commit**), `ShiftEntity.EFCore` (`Cases.Data`), `ShiftEntity` (`Lookup.Services.DuckDB`) | [ ] |
+| 03 | `ADP.Surveys` | 6 | 7 | the same four, plus `ShiftIdentity.Core`, `ShiftIdentity.Dashboard.AspNetCore`, `ShiftIdentity.Dashboard.Blazor` (the two Dashboard lines are in the samples) | **[x] 2026-09-02** |
+| 04 | `ADP.ClaimableItems` | 4 | 7 | `ShiftEntity.Web`, `ShiftEntity.EFCore`, `ShiftEntity.CosmosDbReplication`, `ShiftEntity.Print`, `ShiftIdentity.Core`, `ShiftEntity.Model`, `ShiftBlazor` | **[x] 2026-09-02** |
+| 05 | `ADP.WarrantyClaims` | 4 | 7 | same seven as 04 | **[x] 2026-09-02** |
+| 06 | Shared floor | 4 | 4 | `ShiftEntity.Model` (`ADP.Models`, `Cases.Shared` — **same commit**), `ShiftEntity.EFCore` (`Cases.Data`), `ShiftEntity` (`Lookup.Services.DuckDB`) | **[x] 2026-09-02** |
 | | **Total** | **22** | **29** | | |
 
 `TypeAuth` stays at `1.6.28` — it is on a separate version line and needs no bump. **9 references**;
