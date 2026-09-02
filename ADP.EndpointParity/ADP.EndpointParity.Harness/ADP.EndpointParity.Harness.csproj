@@ -48,7 +48,7 @@
 		  tree and each group step bumps its own lines. NuGet unifies this up when a group project
 		  that has already bumped references the harness.
 		-->
-		<PackageReference Include="ShiftSoftware.ShiftEntity.Model" Version="2026.7.31.1" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.Model" Version="2026.8.30.1" />
 
 		<!--
 		  Bootstrap/ParityDb.cs (ShiftDbContext) and Bootstrap/MountedHostFactory.cs
@@ -56,8 +56,8 @@
 		  the harness is built on the pre-bump tree, and NuGet unifies these up when a group
 		  project that has already taken its own bump references the harness.
 		-->
-		<PackageReference Include="ShiftSoftware.ShiftEntity.EFCore" Version="2026.7.31.1" />
-		<PackageReference Include="ShiftSoftware.ShiftEntity.Web" Version="2026.7.31.1" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.EFCore" Version="2026.8.30.1" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.Web" Version="2026.8.30.1" />
 		<PackageReference Include="ShiftSoftware.TypeAuth.AspNetCore" Version="1.6.28" />
 	</ItemGroup>
 

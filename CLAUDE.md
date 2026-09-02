@@ -19,7 +19,13 @@ ADP (Automotive Dealer Platform) by ShiftSoftware. A multi-project .NET solution
 dotnet build                                    # Build all projects
 dotnet build --configuration Release            # Release build
 dotnet test ADP.LookupServices.BDD              # Run BDD tests (Reqnroll/xUnit)
-dotnet test ADP.Models/Models.Tests             # Run model unit tests
+# NOTE: ADP.Models/Models.Tests currently executes NOTHING. It has no test-framework
+# reference and <Compile Remove>s all three of its own files, so `dotnet test` on it
+# reports "No test is available" and EXITS 0 - green in any scripted loop. The two
+# [Fact]s it contains are dead: they target ShiftSoftware.ADP.Models.DealerData, a
+# namespace deleted in the Phase 1-3 refactors, and CacheableCSVEngine has since moved
+# to ADP.SyncAgent. ADP.Models is covered by the compiler and by its consumers' suites.
+dotnet test ADP.Models/Models.Tests             # NO-OP today - see the note above
 dotnet test ADP.LookupServices/Lookup.Services.Tests  # Run lookup service unit tests
 dotnet pack ADP.Models/Models --configuration Release  # Pack Models NuGet
 ```
