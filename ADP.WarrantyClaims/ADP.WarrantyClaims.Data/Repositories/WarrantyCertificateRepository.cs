@@ -35,18 +35,34 @@ public class WarrantyCertificateRepository : ShiftRepository<ShiftDbContext, Cer
     private readonly IWarrantyClaimsCapabilityProvider capabilityProvider;
     public bool IsInvoiceMode = false;
 
-    private readonly AutoMapper.IMapper mapper;
+    /// <summary>
+    /// The hand-declared pair mapper for the certificate's claim lines. See
+    /// <see cref="Mapping.WarrantyCertificateLineMapper"/> for why this pair is not auto-generated.
+    /// </summary>
+    private static readonly Mapping.WarrantyCertificateLineMapper lineMapper = new();
 
     // NOTE (Phase 2 Slice 4): Certificate moved to ADP.Cases.Data and no longer carries a
     // WarrantyClaims collection — the old IncludeRelatedEntitiesWithFindAsync is gone; every use
     // of the collection below is a dependent-side query on WarrantyClaim.CertificateID instead.
-    public WarrantyCertificateRepository(ShiftDbContext db, IWarrantyClaimsCapabilityProvider capabilityProvider, AutoMapper.IMapper mapper) : base(db)
+    public WarrantyCertificateRepository(ShiftDbContext db, IWarrantyClaimsCapabilityProvider capabilityProvider) : base(db, i => i.UseGeneratedMapper(map => map
+
+        // SHENGEN004 names two members on this triple and BOTH are legitimate, so each is ignored
+        // deliberately rather than left to warn.
+        //
+        // WarrantyClaims: the REPOSITORY fills it. The shared ADP.Cases Certificate carries no claims
+        // collection - there is no navigation for the generator to compose from, which is precisely
+        // what the diagnostic reports - so ViewAsync below queries the claims by foreign key and
+        // projects them through the hand-declared pair mapper. A ForView here would duplicate that
+        // work or quietly disagree with it.
+        //
+        // Notes: determined separately, and the answer is the same shape - the DTO declares it, the
+        // Certificate entity has no Notes column at all, so there has never been anything to read.
+        .IgnoreView(d => d.WarrantyClaims)
+        .IgnoreView(d => d.Notes)))
     {
         this.capabilityProvider = capabilityProvider;
 
         this.isDistributor = this.capabilityProvider.IsDistributor;
-
-        this.mapper = mapper;
     }
 
     public override async ValueTask<CertificateDTO> ViewAsync(Certificate entity)
@@ -58,7 +74,10 @@ public class WarrantyCertificateRepository : ShiftRepository<ShiftDbContext, Cer
             .Where(x => x.CertificateID == entity.ID)
             .ToListAsync();
 
-        dto.WarrantyClaims = mapper.Map<List<WarrantyCertificateLineDTO>>(claims);
+        // Replaces mapper.Map<List<WarrantyCertificateLineDTO>>(claims). The pair mapper is the
+        // single definition of what a certificate claim line looks like, so these rows cannot drift
+        // from the DTO's convention-mapped members.
+        dto.WarrantyClaims = claims.Select(x => lineMapper.Map(x)).ToList();
 
         return dto;
     }

@@ -81,7 +81,7 @@ its terminal status*, never `VERIFIED` unconditionally.
 | 02 | `ADP.Darlastic` | `ADP.Darlastic.{API,Data,Shared,Web}` | 00, 01 | `CLOSED` | **`CLOSED`** | **SMOKE, NOT VALUE PARITY** - `parity.ps1 verify -Group Darlastic`, both grants, 31/31 catalogue routes, 0 5xx, stability-gated. 0 triples and 0 profiles, so there is no mapping behaviour here to prove. | 2026-09-02 | Bumps its own **4** package lines as its first commit and ends green. 0 profiles, 0 triples. Smoke pass only — nothing mapper-shaped to prove, so terminal `CLOSED`. **But it is the plan's only framework-only control** (see SPIKE-5). Do not record as full parity. |
 | 03 | `ADP.Surveys` | `ADP.Surveys.{API,Data,Shared,Web}` + 2 samples | 00, 01 | `VERIFIED` | **`VERIFIED`** | `parity.ps1 verify -Group Surveys` **clean under both grants** — 49 cases, 52/52 catalogue routes, 0 5xx. Six `$top` cases accepted with recorded reasons (harness fix, not product); on FullAccess the re-captured golden differs by **exactly one line, the request URL**, response byte-identical. A wholesale Restricted re-capture left **27 of 30 goldens byte-identical**. Plus 2 SPIKE-4 round-trips and the `SurveyInstance` write golden. | 2026-09-02 | Bumps its own **7** package lines. 4 triples, 1 profile (151 lines). **Free-floating** — every `ProjectReference` is intra-group and it consumes no `ShiftSoftware.ADP.*` package, so it is legal anywhere after 01. Ordered here by risk/simplicity, not by the graph. Has a sample host → full HTTP parity available. Carries SPIKE-3 and SPIKE-4. |
 | 04 | `ADP.ClaimableItems` | `ADP.ClaimableItems.{API,Data,Shared,Web}` | 00, 01 | `VERIFIED` | **`VERIFIED`** | `parity.ps1 verify -Group ClaimableItems` **clean under both grants** after 8 accepted SPIKE-11 convention diffs (4 cases x 2 grants); a wholesale re-capture left **26 of 30 goldens byte-identical per grant**. Solution builds green, **0 SHENGEN warnings** (all 5 baseline 004s resolved). **MOUNTED-HOST CAVEAT: this is module-level parity, not full endpoint parity** - no sample host exists, so consumer middleware order, request localization, CORS, fallback routing and JSON option overrides are NOT exercised. The 5 Cosmos delegates have **zero** harness coverage and were verified by an 8-agent adversarial line-by-line review instead, which found 3 real defects. | 2026-09-02 | Bumps its own **7** package lines. 5 triples, 4 profiles, 5 Cosmos delegates, 1 `IMapper` site. No host → mounted host (SPIKE-2). First group to generate a `Certificate` mapper, so it now **owns SPIKE-8** (the shared floor no longer runs ahead of it). |
-| 05 | `ADP.WarrantyClaims` | `ADP.WarrantyClaims.{API,Data,Shared,Web}` | 00, 01, 04 | `VERIFIED` | `NOT STARTED` | — | — | Bumps its own **7** package lines. **Highest risk.** 7 triples; dealer/distributor forward-map `Ignore()` exposure. Ordered last of the groups by risk, overriding simplicity (it has fewer profiles than 04). Depends on 04 for the shared `Certificate` mapper precedent (SPIKE-8) — a **knowledge** dependency, not a build one. |
+| 05 | `ADP.WarrantyClaims` | `ADP.WarrantyClaims.{API,Data,Shared,Web}` | 00, 01, 04 | `VERIFIED` | **`VERIFIED`** | **`parity.ps1 verify -Group WarrantyClaims` clean under BOTH grants** (14 accepted SPIKE-11 diffs, 7 cases x 2 grants; a wholesale re-capture left **21 of 28 goldens byte-identical per grant**). **THE EXPOSURE IS CLOSED AND PROVEN FOUR WAYS**: the full-access `DealerFinancial.LIST` case shows all five members null against a seed that populates all five; the restricted pass agrees; `IgnoreList` proven baked from emitted `.g.cs`; and `DealerFinancialExposureTests` (3/3) guards it permanently. **MOUNTED HOST, not a sample host** - module-level parity only. 0 SHENGEN warnings, solution green, no NU1605. | 2026-09-02 | Bumps its own **7** package lines. **Highest risk.** 7 triples; dealer/distributor forward-map `Ignore()` exposure. Ordered last of the groups by risk, overriding simplicity (it has fewer profiles than 04). Depends on 04 for the shared `Certificate` mapper precedent (SPIKE-8) — a **knowledge** dependency, not a build one. |
 | 06 | Shared floor | `ADP.Models/Models`, `ADP.Cases.Data`, `ADP.Cases.Shared`, `Lookup.Services.DuckDB` | 02, 03, 04, 05 all at terminal | `CLOSED` | `NOT STARTED` | — | — | Bumps the last **4** package lines — `ADP.Models` and `Cases.Shared` in the **same commit**, which is what keeps NU1605 from ever appearing. 0 profiles, 0 triples; expected to compile unchanged. Libraries only — no endpoints, so terminal `CLOSED` with the reason in `Verified by`. Carries SPIKE-6. Pulls in `ADP.Menus.Generation` (see the ledger note below). Step 00's compile probe is its early warning. |
 | 07 | Release readiness | solution-wide + `GlobalSettings.props` | 00–06 all at terminal (00, 02, 06 `CLOSED`; 01, 03, 04, 05 `VERIFIED`) | `VERIFIED` | `NOT STARTED` | — | — | Package-mode restore smoke check, full baseline comparison, single `ADPVersion` bump. **No package lines left** — all 29 landed in Steps 02–06. |
 | 08 | Harness removal & cleanup | `ADP.EndpointParity.Harness` + the 5 per-group test projects, `tools/parity.ps1`, `ADP.sln` | 07 | `CLOSED` | `NOT STARTED` | — | — | **New step, added 2026-09-01.** Deletes the instrument Step 00 built and removes its projects from `ADP.sln`. Decision recorded above: the framework's release cadence does not justify maintaining a permanent regression harness. Terminal `CLOSED` — it removes an instrument; it has no endpoints. Solution must build green and the project count return to its pre-Step-00 figure (53 today). |
@@ -882,6 +882,99 @@ Two write deltas ride along and are **not** exercised by any parity case here: a
   baseline, an uncovered route) do. A green `dotnet test` is therefore NOT sufficient evidence of
   parity; the report must be read. `diff.md` is also per-GROUP, not per-grant, so a second grant's run
   overwrites the first's report. Both bit this step before being noticed.
+
+### ✅ Step 05 — `ADP.WarrantyClaims`: the exposure is closed, and the plan's own remedy for SHENGEN010 was wrong
+
+**Result: clean under both grants, solution green, 0 SHENGEN warnings, 3/3 regression tests.** 7 triples
+migrated, 2 profiles deleted, the Cosmos delegate rewritten, all 3 `IMapper` sites resolved.
+
+#### SPIKE-7 — RESOLVED. `IgnoreList` bakes.
+
+Proven from the emitted `.g.cs`, never from the build log, and proven **before** any other mapper work:
+
+- `__shiftBakedIgnored = { "DistComment1", "HourTotalDistributor", "LaborTotalAmountDistributor", "PartsTotalAmountDistributor", "SubletTotalAmountDistributor" }`
+- **zero** occurrences of any of the five in `__shiftListProjection`
+
+Useful incidental: the generator emits even when compilation fails, so the proof was available while
+the deleted-profile call sites were still red.
+
+#### The hazard — all four controls exercised, and the seed made control #1 real
+
+| # | Control | Result |
+|---|---|---|
+| 1 | full-access `GET /DealerFinancial` value diff | **PASS** — all five null, and the seed carries `DistComment1: "PARITY-DIST-COMMENT-MUST-NOT-LEAK"`, `11.11`, `2222.22`, `3333.33`, `4444.44`, so null is a real observation and not an empty row |
+| 2 | restricted-grant pass | **PASS**, but see the caveat below |
+| 3 | emitted-code proof `IgnoreList` baked | **PASS** (SPIKE-7) |
+| 4 | standalone regression test | **PASS** — `DealerFinancialExposureTests`, 3 tests |
+
+`DealerFinancial.LIST` shows **zero** differences across the whole migration, and its baseline
+re-captured byte-identically. The exit criterion "dealer-vs-distributor differs by exactly the five"
+is confirmed twice over: from `__shiftBakedIgnored` (dealer ignores the 5 + the 3 line collections;
+distributor ignores only the 3), and by a test that projects one entity through **both** mappers and
+diffs every property.
+
+**A limit on control #2 worth recording:** `DistributorFinancial.LIST` returns **401** in the
+baseline under both grants — `DistributorFinancialController` gates on
+`capabilityProvider.IsDistributor`, which is false in the harness. So the restricted pass is an
+independent control on the *dealer* surface, but there is **no value coverage of the distributor
+financial list at all**. The dealer/distributor comparison is therefore carried by the emitted-code
+diff and the regression test, not by two live response bodies.
+
+#### SHENGEN010 — the plan's prescribed fix would have been a regression
+
+The plan requires it "resolved with `IgnoreEntity` + `AfterEntity` reconciliation **by business
+key** — not by suppression". The first half is right; **the business-key half is wrong for this
+aggregate**, and following it literally would have broken saving:
+
+- `WarrantyClaimRepository.UpsertAsync` **`RemoveRange`s all three line collections before**
+  delegating to the base upsert. Delete-then-insert is this aggregate's established pattern.
+- `WarrantyClaimService.WarrantyLinesValidationAndTransformation` snapshots the existing rows **by
+  ID** and depends on that ordering.
+- The line entities have **no natural business key** to reconcile on.
+- The emitted code was `existing.X = dto.X.Select(d => pair.MapBack(d, new Child(), ctx)).ToList()`
+  — replace-with-new, which is *exactly* what the AutoMapper reverse map did. The diagnostic
+  describes a hazard this repository had already neutralised, invisibly to the generator.
+
+Resolved by taking the write over **explicitly** — `IgnoreEntity` on the three collections plus one
+`AfterEntity` calling a shared `WarrantyClaimLineWriter` that reproduces the generated code
+byte-for-byte. That satisfies the criterion's mechanism (no suppression, no automatic deep write, the
+diagnostic is genuinely gone) while preserving behaviour. **The deviation is the reconciliation
+strategy: replace, not business key**, and the reason is documented at the writer.
+
+#### Two more list flattenings AutoMapper supplied silently
+
+Same class of bug as Step 04's eleven, caught here by `SHENGEN007` rather than by baseline diffing:
+`CertificateCertificateNo` and `CertificateInvoiceDate` on **both** Financial triples, flattened by
+AutoMapper from the `Certificate` navigation and absent from the generated projection.
+
+The baseline pinned a detail that a plain flattening would have got wrong: for a claim with **no**
+certificate the old response carried `"CertificateCertificateNo": ""` — an **empty string, not
+null** — because AutoMapper renders a null source as `""` when converting to string. Reproduced
+literally.
+
+#### Item H — three sites, three different right answers
+
+- `WarrantyCertificateRepository` — needed a **hand-declared** `[ShiftEntityMapper]`
+  `IShiftObjectMapper<WarrantyClaim, WarrantyCertificateLineDTO>`. Pair mappers are auto-generated
+  only for pairs the generator can *discover* inside a view DTO, and `Certificate` has no claims
+  navigation to discover this one through — which is exactly what its `SHENGEN004` was reporting.
+  (Note this is the opposite of Step 04's answer, where a triple already existed and a standalone
+  object mapper would have been wrong.)
+- `WarrantyRatesRepository` — routed through its **own triple's** `MapToView`. **A null guard was
+  required**: the method is documented to return null when no rates row exists, `AutoMapper`'s
+  `Map<T>(null)` returned null quietly, and `MapToView` would have thrown on the first call against
+  a fresh database.
+- `WarrantyClaimService` — dead field, parameter and assignment deleted as the plan says.
+
+#### A generator asymmetry worth knowing for later steps
+
+Only the **ignores** are baked into the generated mapper type; the `ForList`/`ForView`
+customizations come from the repository's `UseGeneratedMapper` config and are **not** present on a
+directly-constructed mapper instance. A first draft of the regression test asserted projected values
+against a bare mapper and failed with a local-timezone offset (`+03:00`) instead of the pinned
+`TimeSpan.Zero`, because the convention conversion — not the configured one — was running. The
+mapper is fine; the test vehicle was wrong. Anything asserting configured list behaviour must go
+through the repository, or assert against `__shiftBakedCustom` as this test now does.
 
 ### Darlastic — the 2026-09-01 decision, now SUPERSEDED by SPIKE-5
 

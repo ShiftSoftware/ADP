@@ -1,4 +1,3 @@
-using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using ShiftSoftware.ADP.WarrantyClaims.Data.Entities;
 using ShiftSoftware.ADP.WarrantyClaims.Shared.DTOs;
@@ -14,11 +13,8 @@ namespace ShiftSoftware.ADP.WarrantyClaims.Data.Repositories;
 /// </summary>
 public class WarrantyRatesRepository : ShiftRepository<ShiftDbContext, WarrantyRates, WarrantyRatesListDTO, WarrantyRatesDTO>
 {
-    private readonly IMapper mapper;
-
-    public WarrantyRatesRepository(ShiftDbContext db, IMapper mapper) : base(db)
+    public WarrantyRatesRepository(ShiftDbContext db) : base(db)
     {
-        this.mapper = mapper;
     }
 
     /// <summary>The latest non-deleted rates row by LastSaveDate (null when none exists yet).</summary>
@@ -29,6 +25,13 @@ public class WarrantyRatesRepository : ShiftRepository<ShiftDbContext, WarrantyR
             .OrderByDescending(x => x.LastSaveDate)
             .FirstOrDefaultAsync();
 
-        return this.mapper.Map<WarrantyRatesDTO>(rates);
+        // Routed through this repository's OWN triple rather than a separate mapper - the
+        // WarrantyRates -> WarrantyRatesDTO direction it needs is exactly this triple's view map.
+        //
+        // THE NULL GUARD IS REQUIRED, not defensive. The query is FirstOrDefaultAsync and the method
+        // is documented to return null when no rates row exists yet; AutoMapper's Map<T>(null)
+        // quietly returned null, whereas MapToView would dereference it. Without this the very first
+        // call on a fresh database throws instead of returning null.
+        return rates is null ? null : this.MapToView(rates);
     }
 }

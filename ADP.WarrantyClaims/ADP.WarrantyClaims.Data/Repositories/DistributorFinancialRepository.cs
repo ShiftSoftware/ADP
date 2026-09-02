@@ -20,7 +20,48 @@ namespace ShiftSoftware.ADP.WarrantyClaims.Data.Repositories;
 /// </remarks>
 public class DistributorFinancialRepository : ShiftRepository<ShiftDbContext, WarrantyClaim, DistributorFinancialListDTO, WarrantyClaimDTO>
 {
-    public DistributorFinancialRepository(ShiftDbContext db) : base(db)
+    public DistributorFinancialRepository(ShiftDbContext db) : base(db, i => i.UseGeneratedMapper(map => map
+
+        // SHENGEN010 - resolved by taking the child write over explicitly rather than letting the
+        // generator compose it. See WarrantyClaimLineWriter for why REPLACE (not business-key
+        // reconciliation) is the correct answer for this aggregate: UpsertAsync deletes the existing
+        // line rows before anything maps, so a fresh set is inserted rather than orphaned.
+        .IgnoreEntity(e => e.WarrantyClaimLaborLines)
+        .IgnoreEntity(e => e.WarrantyClaimSubletLines)
+        .IgnoreEntity(e => e.WarrantyClaimPartLines)
+        .AfterEntity((dto, entity, context) => Mapping.WarrantyClaimLineWriter.Write(dto, entity, context))
+
+        // TWO MORE FLATTENINGS THE OLD PROFILE NEVER MENTIONED - AutoMapper derived them by name
+        // convention (Certificate.CertificateNo -> CertificateCertificateNo), the generated
+        // projection does not, and SHENGEN007 is what caught them.
+        //
+        // The pre-migration baseline pins the shape for a claim with NO certificate, which is what
+        // the parity seed has: "CertificateCertificateNo": "" and "CertificateInvoiceDate": null -
+        // an EMPTY STRING, not null, because AutoMapper's conversion to string renders a null source
+        // as "". Reproduced literally; a plain `e.Certificate.CertificateNo` would return null there
+        // and diff on every row.
+        .ForList(d => d.CertificateCertificateNo, e => e.Certificate != null && e.Certificate.CertificateNo != null
+            ? e.Certificate.CertificateNo.ToString()
+            : "")
+        .ForList(d => d.CertificateInvoiceDate, e => e.Certificate != null ? e.Certificate.InvoiceDate : null)
+
+        // The distributor map is the dealer map WITHOUT the five IgnoreList calls - that difference,
+        // and nothing else, is what separates the two audiences. See DealerFinancialRepository for
+        // why those five matter; if you change one of these three, change it there too.
+        //
+        // TimeSpan.Zero is transcribed from the profile and is load-bearing: verification.md Rule 2
+        // compares business dates literally, so a different offset, kind or precision shifts every
+        // timestamp on this list.
+        .ForList(d => d.ProcessDate, e => e.ProcessDate.HasValue
+            ? new DateTimeOffset(e.ProcessDate.Value, TimeSpan.Zero)
+            : (DateTimeOffset?)null)
+        .ForList(d => d.DistributorProcessDate, e => e.DistributorProcessDate.HasValue
+            ? new DateTimeOffset(e.DistributorProcessDate.Value, TimeSpan.Zero)
+            : (DateTimeOffset?)null)
+
+        // Pinned flattening - the member no longer decomposes to a valid navigation + property path
+        // by convention after the generic rename. Omit it and the column comes back empty.
+        .ForList(d => d.ReferenceWarrantyClaimNumber, e => e.ReferenceWarrantyClaim!.ClaimNumber)))
     {
     }
 

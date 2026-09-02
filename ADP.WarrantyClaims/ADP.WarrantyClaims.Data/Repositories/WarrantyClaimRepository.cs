@@ -12,6 +12,7 @@ using ShiftSoftware.ADP.WarrantyClaims.Data.Services;
 using ShiftSoftware.ADP.WarrantyClaims.Shared;
 using ShiftSoftware.ADP.WarrantyClaims.Shared.DTOs;
 using ShiftSoftware.ADP.WarrantyClaims.Shared.DTOs.WarrantyClaim;
+using ShiftSoftware.ADP.WarrantyClaims.Shared.Enums;
 using ShiftSoftware.ShiftEntity.Core;
 using ShiftSoftware.ShiftEntity.EFCore;
 using ShiftSoftware.ShiftEntity.Model;
@@ -71,6 +72,40 @@ public class WarrantyClaimRepository :
             x => x.Include(y => y.WarrantyClaimPartLines)
             //,x => x.Include(y => y.WarrantyClaimCSVEntries) //Required for deleting existing CSV entries before adding new ones
         );
+
+        r.UseGeneratedMapper(map => map
+
+            // SHENGEN010 - resolved by taking the child write over explicitly rather than letting the
+            // generator compose it. See WarrantyClaimLineWriter for why REPLACE (not business-key
+            // reconciliation) is the correct answer for this aggregate: UpsertAsync deletes the existing
+            // line rows before anything maps, so a fresh set is inserted rather than orphaned.
+            .IgnoreEntity(e => e.WarrantyClaimLaborLines)
+            .IgnoreEntity(e => e.WarrantyClaimSubletLines)
+            .IgnoreEntity(e => e.WarrantyClaimPartLines)
+            .AfterEntity((dto, entity, context) => Mapping.WarrantyClaimLineWriter.Write(dto, entity, context))
+
+            // The same TimeSpan.Zero conversion the two Financial repositories carry. All three
+            // maps had it; all three keep it, and it has to stay identical across them or the same
+            // claim reports a different timestamp depending on which list you asked for.
+            .ForList(d => d.ProcessDate, e => e.ProcessDate.HasValue
+                ? new DateTimeOffset(e.ProcessDate.Value, TimeSpan.Zero)
+                : (DateTimeOffset?)null)
+            .ForList(d => d.DistributorProcessDate, e => e.DistributorProcessDate.HasValue
+                ? new DateTimeOffset(e.DistributorProcessDate.Value, TimeSpan.Zero)
+                : (DateTimeOffset?)null)
+
+            // THE "[]" LITERAL IS THE POINT: an empty JSON array counts as NO attachment. Drop the
+            // comparison and every row whose Attachments column holds "[]" flips from No to Yes,
+            // with no error to notice it. Note this deliberately does NOT read the entity's own
+            // HasAttachment column, which exists - the old profile derived the list value from
+            // Attachments, and switching sources would be a behaviour change wherever the two
+            // disagree.
+            .ForList(d => d.HasAttachment, e => e.Attachments == null || e.Attachments == "[]"
+                ? YesNoOptions.No
+                : YesNoOptions.Yes)
+
+            // Pinned flattening, same as both Financial maps.
+            .ForList(d => d.ReferenceWarrantyClaimNumber, e => e.ReferenceWarrantyClaim!.ClaimNumber));
     })
     {
         this.warrantyClaimService = warrantyClaimService;

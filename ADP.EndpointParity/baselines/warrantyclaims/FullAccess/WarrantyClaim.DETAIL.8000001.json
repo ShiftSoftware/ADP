@@ -82,11 +82,7 @@
         "PreDelivery": false,
         "ProcessDate": null,
         "ProcessFlg": "ResubmissionFromDealerForThatOnceReturned",
-        "ReferenceWarrantyClaim": {
-          "Nested": null,
-          "Text": null,
-          "Value": ""
-        },
+        "ReferenceWarrantyClaim": null,
         "Remedy": "Parity remedy",
         "RepairCompletionDate": null,
         "RepairDate": null,

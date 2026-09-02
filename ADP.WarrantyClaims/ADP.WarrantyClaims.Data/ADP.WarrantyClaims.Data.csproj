@@ -13,7 +13,7 @@
 		<AssemblyName>ShiftSoftware.ADP.WarrantyClaims.Data</AssemblyName>
 		<PackageId>ShiftSoftware.ADP.WarrantyClaims.Data</PackageId>
 		<Title>ShiftSoftware ADP.WarrantyClaims — Data</Title>
-		<Description>Entities, repositories, services, AutoMapper profiles and replication wiring for the ShiftSoftware ADP.WarrantyClaims package — the warranty claim module.</Description>
+		<Description>Entities, repositories, services, source-generated mappers and replication wiring for the ShiftSoftware ADP.WarrantyClaims package — the warranty claim module.</Description>
 		<Copyright>Copyright (c) Shift Software 2026</Copyright>
 		<PackageProjectUrl>https://github.com/ShiftSoftware/ADP</PackageProjectUrl>
 		<PackageIcon>icon.png</PackageIcon>
@@ -45,12 +45,12 @@
 	<ItemGroup>
 		<!-- IHttpClientFactory for the settlement-sheet attachment download. -->
 		<PackageReference Include="Microsoft.Extensions.Http" Version="10.0.10" />
-		<PackageReference Include="ShiftSoftware.ShiftEntity.EFCore" Version="2026.7.31.1" />
-		<PackageReference Include="ShiftSoftware.ShiftEntity.CosmosDbReplication" Version="2026.7.31.1" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.EFCore" Version="2026.8.30.1" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.CosmosDbReplication" Version="2026.8.30.1" />
 		<!-- FastReport printing (warranty claim / certificate / invoice + manufacturer invoice)
 		     moved in from the original host (Phase 3 Slice 3.2). -->
-		<PackageReference Include="ShiftSoftware.ShiftEntity.Print" Version="2026.7.31.1" />
-		<PackageReference Include="ShiftSoftware.ShiftIdentity.Core" Version="2026.7.31.1" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.Print" Version="2026.8.30.1" />
+		<PackageReference Include="ShiftSoftware.ShiftIdentity.Core" Version="2026.8.30.1" />
 	</ItemGroup>
 
 	<ItemGroup>

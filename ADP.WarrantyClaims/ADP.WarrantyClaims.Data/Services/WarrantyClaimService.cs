@@ -1,4 +1,3 @@
-using AutoMapper;
 using Microsoft.Azure.Cosmos;
 using Microsoft.EntityFrameworkCore;
 using ShiftSoftware.ADP.Models;
@@ -20,13 +19,11 @@ namespace ShiftSoftware.ADP.WarrantyClaims.Data.Services;
 public class WarrantyClaimService
 {
     private readonly IUserClaimService? userClaimService;
-    private readonly IMapper? mapper;
     private readonly CosmosClient? cosmosClient;
 
-    public WarrantyClaimService(IUserClaimService? userClaimService = null, IMapper? mapper = null, CosmosClient? cosmosClient = null)
+    public WarrantyClaimService(IUserClaimService? userClaimService = null, CosmosClient? cosmosClient = null)
     {
         this.userClaimService = userClaimService;
-        this.mapper = mapper;
         this.cosmosClient = cosmosClient;
     }
 
