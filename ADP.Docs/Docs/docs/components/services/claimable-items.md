@@ -296,14 +296,22 @@ If a vehicle skips a milestone — say, the customer goes straight to the 10,000
 
 ## Per-VIN Overrides
 
-For day-to-day operational corrections, the distributor can apply two per-VIN overrides without touching the catalog:
+For day-to-day operational corrections, the distributor can apply three per-VIN overrides without touching the catalog:
 
 | Override | Purpose |
 |----------|---------|
 | **Date Shift** | Re-anchor a specific vehicle's free-service start date. Used to correct miskeyed warranty activation dates or to manually re-anchor a vehicle whose history needs adjustment. |
 | **VIN Exclusion** | Strip warranty-activated free items from a specific VIN. Used to revoke standard services for vehicles that should not receive them (e.g. internal fleet, demo cars, edge cases). |
+| **Validity Override** | Move one item's dates on one vehicle. Used when the schedule is right about the fleet and wrong about a vehicle — most often a customer already told they hold an item, under dates the rule has since recomputed. |
 
 Paid items and inspection / manual-entry items are not affected by exclusions — those follow their own data trail.
+
+A **validity override** names a VIN and one service item, and carries two optional dates:
+
+- `UnlockedOn` — the moment to treat the item as earned. The item activates there and expires its own `ActiveFor` later, which is the same arithmetic applied to a reward's real unlock date, so an operator records the fact ("this customer earned it on the 1st") rather than back-computing a window from it. An item on a fixed calendar range has no duration to add, so it takes the activation date and keeps its expiry.
+- `ExpiresAt` — the expiry outright, over both the schedule's answer and anything `UnlockedOn` computes. Set it alone to extend an item where it stands.
+
+It is the last word on a free item's two dates, applied after rolling expiry and after every trigger expansion, so it lands on what the customer is actually shown. It moves dates and grants nothing: an item this vehicle is not offered, or one **Locked** or **Missed** because its conditions are unmet, is left where it is — handing out an unearned item is what a **manual VIN entry** campaign is for. Deleting the override returns the item to the dates the schedule computes for it, and the lookup [diagnostic trace](../../generated/Features/ServiceItems_Trace.md) names every override it applied, skipped, or could not match, along with the reason recorded on it.
 
 ### Ineligible-but-claimed items
 
@@ -373,6 +381,6 @@ The distributor's setup and operational dashboard typically exposes:
 - Catalog — [`ServiceItemModel`](../../generated/Models/Vehicle/ServiceItemModel.md), [`ServiceItemCostModel`](../../generated/Models/Vehicle/ServiceItemCostModel.md).
 - Program role — [`ServiceItemProgramRole`](../../generated/Models/Vehicle/ServiceItemProgramRole.md).
 - Claim — [`ItemClaimModel`](../../generated/Models/Vehicle/ItemClaimModel.md).
-- Per-VIN overrides — [`FreeServiceItemDateShiftModel`](../../generated/Models/Vehicle/FreeServiceItemDateShiftModel.md), [`FreeServiceItemExcludedVINModel`](../../generated/Models/Vehicle/FreeServiceItemExcludedVINModel.md).
+- Per-VIN overrides — [`FreeServiceItemDateShiftModel`](../../generated/Models/Vehicle/FreeServiceItemDateShiftModel.md), [`FreeServiceItemExcludedVINModel`](../../generated/Models/Vehicle/FreeServiceItemExcludedVINModel.md), [`FreeServiceItemValidityOverrideModel`](../../generated/Models/Vehicle/FreeServiceItemValidityOverrideModel.md) ([behaviour specs](../../generated/Features/ServiceItems_ValidityOverrides.md)).
 - Paid — [`PaidServiceInvoiceModel`](../../generated/Models/Vehicle/PaidServiceInvoiceModel.md), [`PaidServiceInvoiceLineModel`](../../generated/Models/Vehicle/PaidServiceInvoiceLineModel.md).
 - Enums — [Validity Mode](../../generated/Models/Enums/ClaimableItemValidityMode.md), [Activation Triggers](../../generated/Models/Enums/ClaimableItemCampaignActivationTriggers.md), [Activation Types](../../generated/Models/Enums/ClaimableItemCampaignActivationTypes.md), [Claiming Method](../../generated/Models/Enums/ClaimableItemClaimingMethod.md), [Attachment Behavior](../../generated/Models/Enums/ClaimableItemAttachmentFieldBehavior.md), [Statuses](../../generated/LookupServices/Enums/VehcileServiceItemStatuses.md), [Types](../../generated/LookupServices/Enums/VehcileServiceItemTypes.md).

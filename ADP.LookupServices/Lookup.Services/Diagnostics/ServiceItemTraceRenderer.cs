@@ -1,4 +1,4 @@
-using ShiftSoftware.ADP.Lookup.Services.Enums;
+﻿using ShiftSoftware.ADP.Lookup.Services.Enums;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -472,7 +472,7 @@ public static class ServiceItemTraceRenderer
             sb.AppendLine($"- De facto service start date (earliest claim): {Date(i.DeFactoServiceStartDate)}{(matches ? " — matches the effective free service start date" : "")}");
         }
         var c = i.AggregateCounts ?? new ServiceItemTraceAggregateCounts();
-        sb.AppendLine($"- Data loaded: {c.CosmosServiceItems} catalog items · {c.PaidServiceInvoices} paid invoices ({c.PaidServiceInvoiceLines} lines) · {c.ItemClaims} previous claims · {c.VehicleInspections} inspections · {c.CampaignVinEntries} manual VIN entries");
+        sb.AppendLine($"- Data loaded: {c.CosmosServiceItems} catalog items · {c.PaidServiceInvoices} paid invoices ({c.PaidServiceInvoiceLines} lines) · {c.ItemClaims} previous claims · {c.VehicleInspections} inspections · {c.CampaignVinEntries} manual VIN entries · {c.FreeServiceItemValidityOverrides} validity overrides");
         sb.AppendLine();
     }
 

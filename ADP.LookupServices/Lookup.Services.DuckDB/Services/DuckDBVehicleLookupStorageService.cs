@@ -116,6 +116,9 @@ public class DuckDBVehicleLookupStorageService(global::DuckDB.NET.Data.DuckDBCon
             if (ShouldInclude(requestedItemTypes, ModelTypes.FreeServiceItemExcludedVIN))
                 AssignItemsByVin(await GetFreeServiceItemExcludedVINsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.FreeServiceItemExcludedVINs = items);
 
+            if (ShouldInclude(requestedItemTypes, ModelTypes.FreeServiceItemValidityOverride))
+                AssignItemsByVin(await GetFreeServiceItemValidityOverridesByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.FreeServiceItemValidityOverrides = items);
+
             if (ShouldInclude(requestedItemTypes, ModelTypes.WarrantyDateShift))
                 AssignItemsByVin(await GetWarrantyDateShiftsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.WarrantyDateShifts = items);
 
@@ -193,6 +196,7 @@ public class DuckDBVehicleLookupStorageService(global::DuckDB.NET.Data.DuckDBCon
         AssignItemsByVin(await GetVehicleServiceActivationsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.VehicleServiceActivations = items);
         AssignItemsByVin(await GetFreeServiceItemDateShiftsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.FreeServiceItemDateShifts = items);
         AssignItemsByVin(await GetFreeServiceItemExcludedVINsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.FreeServiceItemExcludedVINs = items);
+        AssignItemsByVin(await GetFreeServiceItemValidityOverridesByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.FreeServiceItemValidityOverrides = items);
         AssignItemsByVin(await GetWarrantyDateShiftsByVinsAsync(inClause), aggregateMap, x => x.VIN, (a, items) => a.WarrantyDateShifts = items);
 
         timer.Stop();
@@ -439,6 +443,16 @@ public class DuckDBVehicleLookupStorageService(global::DuckDB.NET.Data.DuckDBCon
     {
         return await ExecuteQueryAsync<FreeServiceItemExcludedVINModel>(
             $"SELECT * FROM VehicleFreeServiceItemExcludedVIN WHERE VIN IN ({vinInClause}) AND IsDeleted = false");
+    }
+
+    #endregion
+
+    #region Free Service Item Validity Override
+
+    private async Task<List<FreeServiceItemValidityOverrideModel>> GetFreeServiceItemValidityOverridesByVinsAsync(string vinInClause)
+    {
+        return await ExecuteQueryAsync<FreeServiceItemValidityOverrideModel>(
+            $"SELECT * FROM VehicleFreeServiceItemValidityOverride WHERE VIN IN ({vinInClause}) AND IsDeleted = false");
     }
 
     #endregion

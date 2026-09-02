@@ -1,4 +1,4 @@
-using ShiftSoftware.ADP.Lookup.Services.Aggregate;
+﻿using ShiftSoftware.ADP.Lookup.Services.Aggregate;
 using ShiftSoftware.ADP.Lookup.Services.Diagnostics;
 using ShiftSoftware.ADP.Lookup.Services.Milestones;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
@@ -86,6 +86,7 @@ public partial class VehicleServiceItemEvaluator
         using (Trace.Stage("WarrantyRollingExpiry"))  ApplyWarrantyRollingExpiry(result, freeServiceStartDate);
         using (Trace.Stage("InspectionExpansion"))    ApplyVehicleInspectionExpansion(result);
         using (Trace.Stage("ManualVinExpansion"))     ApplyManualVinEntryExpansion(result);
+        using (Trace.Stage("ValidityOverrides"))      ApplyValidityOverrides(result);
 
         bool activationRequired;
         using (Trace.Stage("StatusAndClaimability"))  activationRequired = await CalculateServiceItemStatusAndClaimability(result, showingInactivatedItems, languageCode);
@@ -310,6 +311,99 @@ public partial class VehicleServiceItemEvaluator
         result.RemoveAll(x => x.TypeEnum == VehcileServiceItemTypes.Free && x.CampaignActivationTrigger == ClaimableItemCampaignActivationTrigger.ManualVinEntry);
         result.AddRange(newItems);
     }
+
+    /// <summary>
+    /// Applies the per-VIN validity overrides — the last word on a free item's two dates before a
+    /// status is read off them.
+    /// <para>
+    /// Runs after the trigger expansions rather than beside the rolling pass, so an override lands on
+    /// what the customer is actually shown: an inspection- or VIN-entry-triggered item is replaced by
+    /// one clone per activation with dates re-derived on each, and an override applied earlier would
+    /// be discarded along with the item it was written against. Every clone of the named item moves —
+    /// the override names an item on a vehicle, and the vehicle is the unit the promise was made about.
+    /// </para>
+    /// <para>
+    /// Dates only, and only on an item this vehicle is already offered. A locked or missed one is left
+    /// alone and said so in the trace: <see cref="ResolveUnclaimableItems"/> would clear the expiry
+    /// again a step later anyway, and an override that could quietly hand out an unearned item is an
+    /// override that becomes the way eligibility gets bypassed. Granting one outright is what
+    /// <see cref="ClaimableItemCampaignActivationTrigger.ManualVinEntry"/> is for.
+    /// </para>
+    /// </summary>
+    private void ApplyValidityOverrides(List<VehicleServiceItemDTO> result)
+    {
+        var overrides = (companyDataAggregate.FreeServiceItemValidityOverrides ?? Enumerable.Empty<FreeServiceItemValidityOverrideModel>())
+            .Where(x => x is not null && !x.IsDeleted && !string.IsNullOrWhiteSpace(x.ServiceItemID))
+            .ToList();
+
+        if (overrides.Count == 0) return;
+
+        foreach (var group in overrides.GroupBy(x => x.ServiceItemID, StringComparer.Ordinal))
+        {
+            var targets = result
+                .Where(x => x.TypeEnum == VehcileServiceItemTypes.Free
+                         && string.Equals(x.ServiceItemID, group.Key, StringComparison.Ordinal))
+                .ToList();
+
+            if (targets.Count == 0)
+            {
+                Trace.Note($"A validity override names service item {group.Key}, which this vehicle is not offered — nothing to move.");
+                continue;
+            }
+
+            var declared = group.ToList();
+            var chosen = declared[0];
+
+            if (declared.Count > 1)
+                Trace.Note($"{declared.Count} validity overrides name service item {group.Key}; the first is applied and the rest ignored. Delete the ones that no longer hold rather than layering them.");
+
+            if (chosen.UnlockedOn is null && chosen.ExpiresAt is null)
+            {
+                Trace.Note($"The validity override on service item {group.Key} carries neither a date to run from nor an expiry — nothing to move.");
+                continue;
+            }
+
+            foreach (var item in targets)
+                ApplyValidityOverride(item, chosen);
+        }
+    }
+
+    /// <summary>
+    /// Moves one item's dates to what the override states: activation to <c>UnlockedOn</c> with the
+    /// item's own <c>ActiveFor</c> running from it — the same arithmetic
+    /// <see cref="ApplyUnlockAnchor"/> applies to a real unlock date, so an operator records the fact
+    /// rather than a window computed from it — and then <c>ExpiresAt</c> over whatever that produced.
+    /// An item with no duration keeps the expiry it has, since a fixed-date window has nothing to add
+    /// an interval to and a same-day expiry would be worse than the date it already carries.
+    /// </summary>
+    private void ApplyValidityOverride(VehicleServiceItemDTO item, FreeServiceItemValidityOverrideModel @override)
+    {
+        if (item.Lock is not null)
+        {
+            Trace.Note($"Item {item.ServiceItemID} carries a validity override but reads as {item.Lock.State}; an override moves dates and does not grant eligibility, so it is left where it is.");
+            return;
+        }
+
+        var wasActivatedAt = item.ActivatedAt;
+        var wasExpiresAt = item.ExpiresAt;
+
+        if (@override.UnlockedOn is DateTime unlockedOn)
+        {
+            item.ActivatedAt = unlockedOn;
+
+            if (item.ActiveForDurationType is not null)
+                item.ExpiresAt = DurationCalculator.AddInterval(unlockedOn, item.ActiveFor, item.ActiveForDurationType);
+        }
+
+        if (@override.ExpiresAt is DateTime expiresAt)
+            item.ExpiresAt = expiresAt;
+
+        var reason = string.IsNullOrWhiteSpace(@override.Reason) ? "none recorded" : @override.Reason.Trim();
+
+        Trace.Note($"Item {item.ServiceItemID} is moved by a per-VIN validity override: activation {TraceDate(wasActivatedAt)} → {TraceDate(item.ActivatedAt)}, expiry {TraceDate(wasExpiresAt)} → {TraceDate(item.ExpiresAt)}. Reason: {reason}.");
+    }
+
+    private static string TraceDate(DateTime? date) => date?.ToString("yyyy-MM-dd") ?? "none";
 
     /// <summary>
     /// Settles what an unclaimable item shows, once statuses are known.

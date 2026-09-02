@@ -46,6 +46,7 @@
     <None Include="$(MSBuildThisFileDirectory)docs\generated\Features\ServiceItems_Activation.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\generated\Features\ServiceItems_ClaimWarnings.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\generated\Features\ServiceItems_DateShifts.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\generated\Features\ServiceItems_ValidityOverrides.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\generated\Features\ServiceItems_DeFactoStart.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\generated\Features\ServiceItems_Eligibility.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\generated\Features\ServiceItems_Expiration.md" />
@@ -166,6 +167,7 @@
     <None Include="$(MSBuildThisFileDirectory)docs\generated\Models\Vehicle\ExtendedWarrantyModel.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\generated\Models\Vehicle\FreeServiceItemDateShiftModel.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\generated\Models\Vehicle\FreeServiceItemExcludedVINModel.md" />
+    <None Include="$(MSBuildThisFileDirectory)docs\generated\Models\Vehicle\FreeServiceItemValidityOverrideModel.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\generated\Models\Vehicle\InitialOfficialVINModel.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\generated\Models\Vehicle\ItemClaimModel.md" />
     <None Include="$(MSBuildThisFileDirectory)docs\generated\Models\Vehicle\PaidServiceInvoiceLineModel.md" />

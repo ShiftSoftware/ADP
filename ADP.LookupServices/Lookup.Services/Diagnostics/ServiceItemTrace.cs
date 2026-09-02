@@ -1,4 +1,4 @@
-using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
+﻿using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using ShiftSoftware.ADP.Lookup.Services.Enums;
 using ShiftSoftware.ADP.Lookup.Services.Milestones;
 using ShiftSoftware.ADP.Models.Enums;
@@ -97,6 +97,7 @@ public class ServiceItemTraceAggregateCounts
     public int CampaignVinEntries { get; set; }
     public int FreeServiceItemExcludedVINs { get; set; }
     public int FreeServiceItemDateShifts { get; set; }
+    public int FreeServiceItemValidityOverrides { get; set; }
     public int VehicleServiceActivations { get; set; }
 }
 

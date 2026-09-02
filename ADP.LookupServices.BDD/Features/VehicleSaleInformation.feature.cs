@@ -155,20 +155,20 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table564 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table635 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID",
                             "BranchID",
                             "InvoiceNumber"});
-                table564.AddRow(new string[] {
+                table635.AddRow(new string[] {
                             "1FDKF37GXVEB34368",
                             "2024-01-15",
                             "1",
                             "10",
                             "INV-001"});
 #line 6
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table564, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table635, "Given ");
 #line hidden
 #line 9
   await testRunner.AndAsync("company 1 is named \"Distributor A\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -213,20 +213,20 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table565 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table636 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID",
                             "BranchID",
                             "CountryID"});
-                table565.AddRow(new string[] {
+                table636.AddRow(new string[] {
                             "1FDKF37GXVEB34368",
                             "2024-01-15",
                             "1",
                             "10",
                             "42"});
 #line 17
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table565, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table636, "Given ");
 #line hidden
 #line 20
   await testRunner.AndAsync("country 42 is named \"Country 42\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -262,31 +262,31 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table566 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table637 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID",
                             "BranchID",
                             "BrandID"});
-                table566.AddRow(new string[] {
+                table637.AddRow(new string[] {
                             "1FDKF37GXVEB34368",
                             "2024-01-15",
                             "1",
                             "10",
                             "1"});
 #line 25
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table566, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table637, "Given ");
 #line hidden
-                global::Reqnroll.Table table567 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table638 = new global::Reqnroll.Table(new string[] {
                             "BrokerID",
                             "BrokerName",
                             "IsAtStock"});
-                table567.AddRow(new string[] {
+                table638.AddRow(new string[] {
                             "100",
                             "ABC Motors",
                             "true"});
 #line 28
-  await testRunner.AndAsync("broker stock for brand 1:", ((string)(null)), table567, "And ");
+  await testRunner.AndAsync("broker stock for brand 1:", ((string)(null)), table638, "And ");
 #line hidden
 #line 31
   await testRunner.AndAsync("LookupOptions has broker stock lookup enabled", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -325,35 +325,35 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table568 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table639 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID",
                             "BranchID",
                             "BrandID"});
-                table568.AddRow(new string[] {
+                table639.AddRow(new string[] {
                             "1FDKF37GXVEB34368",
                             "2024-01-15",
                             "1",
                             "10",
                             "1"});
 #line 37
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table568, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table639, "Given ");
 #line hidden
-                global::Reqnroll.Table table569 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table640 = new global::Reqnroll.Table(new string[] {
                             "BrokerID",
                             "BrokerName",
                             "IsAtStock",
                             "InvoiceDate",
                             "InvoiceNumber"});
-                table569.AddRow(new string[] {
+                table640.AddRow(new string[] {
                             "100",
                             "ABC Motors",
                             "false",
                             "2024-02-01",
                             "5001"});
 #line 40
-  await testRunner.AndAsync("broker stock for brand 1:", ((string)(null)), table569, "And ");
+  await testRunner.AndAsync("broker stock for brand 1:", ((string)(null)), table640, "And ");
 #line hidden
 #line 43
   await testRunner.AndAsync("LookupOptions has broker stock lookup enabled", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -392,20 +392,20 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table570 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table641 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID",
                             "BranchID",
                             "CustomerID"});
-                table570.AddRow(new string[] {
+                table641.AddRow(new string[] {
                             "1FDKF37GXVEB34368",
                             "2024-01-15",
                             "1",
                             "10",
                             "CUST-001"});
 #line 49
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table570, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table641, "Given ");
 #line hidden
 #line 52
   await testRunner.AndAsync("customer \"CUST-001\" at company 1 has name \"John Doe\" and phone \"+964770000001\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -445,22 +445,22 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table571 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table642 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID",
                             "BranchID",
                             "BrandID"});
-                table571.AddRow(new string[] {
+                table642.AddRow(new string[] {
                             "1FDKF37GXVEB34368",
                             "2024-01-15",
                             "1",
                             "10",
                             "1"});
 #line 58
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table571, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table642, "Given ");
 #line hidden
-                global::Reqnroll.Table table572 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table643 = new global::Reqnroll.Table(new string[] {
                             "BrokerID",
                             "BrokerName",
                             "IsAtStock",
@@ -469,7 +469,7 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "IsCompleted",
                             "CustomerName",
                             "CustomerPhone"});
-                table572.AddRow(new string[] {
+                table643.AddRow(new string[] {
                             "100",
                             "ABC Motors",
                             "false",
@@ -479,7 +479,7 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
                             "Jane Smith",
                             "+964770000002"});
 #line 61
-  await testRunner.AndAsync("broker stock for brand 1:", ((string)(null)), table572, "And ");
+  await testRunner.AndAsync("broker stock for brand 1:", ((string)(null)), table643, "And ");
 #line hidden
 #line 64
   await testRunner.AndAsync("LookupOptions has broker stock lookup enabled", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");

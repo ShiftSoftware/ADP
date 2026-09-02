@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 using LookupServices.BDD.Support;
 using Reqnroll;
@@ -268,6 +268,22 @@ public class SharedStepDefinitions
             {
                 VIN = GetOptionalString(row, "VIN"),
                 NewDate = DateTime.Parse(row["NewDate"]),
+            }));
+    }
+
+    [Given("free service item validity overrides:")]
+    public void GivenFreeServiceItemValidityOverrides(DataTable dataTable)
+    {
+        _context.Aggregate.FreeServiceItemValidityOverrides.AddRange(
+            dataTable.Rows.Select(row => new FreeServiceItemValidityOverrideModel
+            {
+                VIN = GetOptionalString(row, "VIN"),
+                ServiceItemID = GetOptionalString(row, "ServiceItemID"),
+                UnlockedOn = GetOptionalDate(row, "UnlockedOn"),
+                ExpiresAt = GetOptionalDate(row, "ExpiresAt"),
+                Reason = GetOptionalString(row, "Reason"),
+                IsDeleted = row.ContainsKey("IsDeleted") && !string.IsNullOrWhiteSpace(row["IsDeleted"])
+                    && bool.Parse(row["IsDeleted"]),
             }));
     }
 

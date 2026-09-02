@@ -125,6 +125,7 @@ nav:
           - Item Claim: generated/Models/Vehicle/ItemClaimModel.md
           - Free Service Item Date Shift: generated/Models/Vehicle/FreeServiceItemDateShiftModel.md
           - Free Service Item Excluded VIN: generated/Models/Vehicle/FreeServiceItemExcludedVINModel.md
+          - Free Service Item Validity Override: generated/Models/Vehicle/FreeServiceItemValidityOverrideModel.md
           - Paid Service Invoice: generated/Models/Vehicle/PaidServiceInvoiceModel.md
           - Paid Service Invoice Line: generated/Models/Vehicle/PaidServiceInvoiceLineModel.md
       - Safety Recalls:
@@ -278,6 +279,7 @@ nav:
                   - Vehicle-Inspection Activated: generated/Features/ServiceItems_InspectionActivated.md
                   - Manual-VIN-Entry Activated: generated/Features/ServiceItems_ManualVinEntry.md
               - Date Shifts: generated/Features/ServiceItems_DateShifts.md
+              - Validity Overrides: generated/Features/ServiceItems_ValidityOverrides.md
               - Paid Service Items: generated/Features/ServiceItems_Paid.md
               - Signature: generated/Features/ServiceItems_Signature.md
               - Resolvers (Company Name & Print URL): generated/Features/ServiceItems_Resolvers.md

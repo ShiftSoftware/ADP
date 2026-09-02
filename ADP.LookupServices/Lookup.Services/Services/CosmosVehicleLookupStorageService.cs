@@ -174,6 +174,10 @@ public class CosmosVehicleLookupStorageService : IVehicleLookupStorageService
             .Select(x => ((JObject)x).ToObject<FreeServiceItemDateShiftModel>())
             .Where(x => !(x?.IsDeleted ?? false)).ToList();
 
+        companyData.FreeServiceItemValidityOverrides = items.Where(x => x.ItemType.ToString() == ModelTypes.FreeServiceItemValidityOverride)
+            .Select(x => ((JObject)x).ToObject<FreeServiceItemValidityOverrideModel>())
+            .Where(x => !(x?.IsDeleted ?? false)).ToList();
+
         companyData.PaintThicknessInspections = items.Where(x => x.ItemType.ToString() == ModelTypes.PaintThicknessInspection)
             .Select(x => ((JObject)x).ToObject<PaintThicknessInspectionModel>());
 

@@ -46,6 +46,8 @@ public class CompanyDataAggregateModel
     public List<FreeServiceItemExcludedVINModel> FreeServiceItemExcludedVINs { get; set; }  = new();
     /// <summary>Free service item date shift overrides for this VIN.</summary>
     public List<FreeServiceItemDateShiftModel> FreeServiceItemDateShifts { get; set; }  = new();
+    /// <summary>Per-item validity overrides for this VIN — see <see cref="FreeServiceItemValidityOverrideModel"/>.</summary>
+    public List<FreeServiceItemValidityOverrideModel> FreeServiceItemValidityOverrides { get; set; }  = new();
     /// <summary>Warranty date shift overrides for this VIN.</summary>
     public List<WarrantyDateShiftModel> WarrantyDateShifts { get; set; }  = new();
     /// <summary>Paint thickness inspection records for this VIN.</summary>

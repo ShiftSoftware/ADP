@@ -23,6 +23,7 @@ The aggregate root model containing all company-related data for a vehicle (iden
 | ItemClaims <div><strong>``List<ItemClaimModel>``</strong></div> | Service item claims made for this VIN. |
 | FreeServiceItemExcludedVINs <div><strong>``List<FreeServiceItemExcludedVINModel>``</strong></div> | VINs excluded from free service item campaigns. |
 | FreeServiceItemDateShifts <div><strong>``List<FreeServiceItemDateShiftModel>``</strong></div> | Free service item date shift overrides for this VIN. |
+| FreeServiceItemValidityOverrides <div><strong>``List<FreeServiceItemValidityOverrideModel>``</strong></div> | Per-item validity overrides for this VIN — see [FreeServiceItemValidityOverrideModel](/generated/Models/Vehicle/FreeServiceItemValidityOverrideModel.html). |
 | WarrantyDateShifts <div><strong>``List<WarrantyDateShiftModel>``</strong></div> | Warranty date shift overrides for this VIN. |
 | PaintThicknessInspections <div><strong>``IEnumerable<PaintThicknessInspectionModel>``</strong></div> | Paint thickness inspection records for this VIN. |
 | Accessories <div><strong>``List<VehicleAccessoryModel>``</strong></div> | Accessories installed on this vehicle. |

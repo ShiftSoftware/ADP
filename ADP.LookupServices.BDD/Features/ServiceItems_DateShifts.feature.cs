@@ -157,44 +157,44 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table79 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table88 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID",
                             "BranchID",
                             "BrandID"});
-                table79.AddRow(new string[] {
+                table88.AddRow(new string[] {
                             "1FDKF37GXVEB34368",
                             "2026-01-15",
                             "1",
                             "10",
                             "1"});
 #line 8
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table79, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table88, "Given ");
 #line hidden
-                global::Reqnroll.Table table80 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table89 = new global::Reqnroll.Table(new string[] {
                             "ServiceItemID",
                             "Name",
                             "BrandID",
                             "ActiveForMonths",
                             "MaximumMileage"});
-                table80.AddRow(new string[] {
+                table89.AddRow(new string[] {
                             "SI-001",
                             "Oil Change",
                             "1",
                             "24",
                             "10000"});
 #line 11
-  await testRunner.AndAsync("service items:", ((string)(null)), table80, "And ");
+  await testRunner.AndAsync("service items:", ((string)(null)), table89, "And ");
 #line hidden
-                global::Reqnroll.Table table81 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table90 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "NewDate"});
-                table81.AddRow(new string[] {
+                table90.AddRow(new string[] {
                             "1FDKF37GXVEB34368",
                             "2026-03-01"});
 #line 14
-  await testRunner.AndAsync("free service item date shifts:", ((string)(null)), table81, "And ");
+  await testRunner.AndAsync("free service item date shifts:", ((string)(null)), table90, "And ");
 #line hidden
 #line 17
   await testRunner.AndAsync("the free service start date is \"2026-01-15\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -236,44 +236,44 @@ this.ScenarioInitialize(scenarioInfo, ruleInfo);
             else
             {
                 await this.ScenarioStartAsync();
-                global::Reqnroll.Table table82 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table91 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "InvoiceDate",
                             "CompanyID",
                             "BranchID",
                             "BrandID"});
-                table82.AddRow(new string[] {
+                table91.AddRow(new string[] {
                             "1FDKF37GXVEB34368",
                             "2026-01-15",
                             "1",
                             "10",
                             "1"});
 #line 23
-  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table82, "Given ");
+  await testRunner.GivenAsync("vehicles in dealer stock:", ((string)(null)), table91, "Given ");
 #line hidden
-                global::Reqnroll.Table table83 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table92 = new global::Reqnroll.Table(new string[] {
                             "ServiceItemID",
                             "Name",
                             "BrandID",
                             "ActiveForMonths",
                             "MaximumMileage"});
-                table83.AddRow(new string[] {
+                table92.AddRow(new string[] {
                             "SI-001",
                             "Oil Change",
                             "1",
                             "24",
                             "10000"});
 #line 26
-  await testRunner.AndAsync("service items:", ((string)(null)), table83, "And ");
+  await testRunner.AndAsync("service items:", ((string)(null)), table92, "And ");
 #line hidden
-                global::Reqnroll.Table table84 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table93 = new global::Reqnroll.Table(new string[] {
                             "VIN",
                             "NewDate"});
-                table84.AddRow(new string[] {
+                table93.AddRow(new string[] {
                             "OTHER_VIN_NO_HIT",
                             "2026-03-01"});
 #line 29
-  await testRunner.AndAsync("free service item date shifts:", ((string)(null)), table84, "And ");
+  await testRunner.AndAsync("free service item date shifts:", ((string)(null)), table93, "And ");
 #line hidden
 #line 32
   await testRunner.AndAsync("the free service start date is \"2026-01-15\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
