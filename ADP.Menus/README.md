@@ -5,7 +5,7 @@ An **automotive service menu** (parts & labour) module for the ADP platform. Mod
 | Package | Purpose |
 |---|---|
 | [`ShiftSoftware.ADP.Menus.Shared`](ADP.Menus.Shared) | DTOs, validators, action tree, country/language contracts |
-| [`ShiftSoftware.ADP.Menus.Data`](ADP.Menus.Data) | EF Core entities, AutoMapper profiles, export services |
+| [`ShiftSoftware.ADP.Menus.Data`](ADP.Menus.Data) | EF Core entities, source-generated mappers, export services |
 | [`ShiftSoftware.ADP.Menus.API`](ADP.Menus.API) | ASP.NET Core controllers + `AddMenuApiServices` registration |
 | [`ShiftSoftware.ADP.Menus.Web`](ADP.Menus.Web) | Blazor WebAssembly pages + `AddMenuBlazorServices` registration |
 

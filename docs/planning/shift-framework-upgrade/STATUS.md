@@ -83,7 +83,7 @@ its terminal status*, never `VERIFIED` unconditionally.
 | 04 | `ADP.ClaimableItems` | `ADP.ClaimableItems.{API,Data,Shared,Web}` | 00, 01 | `VERIFIED` | **`VERIFIED`** | `parity.ps1 verify -Group ClaimableItems` **clean under both grants** after 8 accepted SPIKE-11 convention diffs (4 cases x 2 grants); a wholesale re-capture left **26 of 30 goldens byte-identical per grant**. Solution builds green, **0 SHENGEN warnings** (all 5 baseline 004s resolved). **MOUNTED-HOST CAVEAT: this is module-level parity, not full endpoint parity** - no sample host exists, so consumer middleware order, request localization, CORS, fallback routing and JSON option overrides are NOT exercised. The 5 Cosmos delegates have **zero** harness coverage and were verified by an 8-agent adversarial line-by-line review instead, which found 3 real defects. | 2026-09-02 | Bumps its own **7** package lines. 5 triples, 4 profiles, 5 Cosmos delegates, 1 `IMapper` site. No host → mounted host (SPIKE-2). First group to generate a `Certificate` mapper, so it now **owns SPIKE-8** (the shared floor no longer runs ahead of it). |
 | 05 | `ADP.WarrantyClaims` | `ADP.WarrantyClaims.{API,Data,Shared,Web}` | 00, 01, 04 | `VERIFIED` | **`VERIFIED`** | **`parity.ps1 verify -Group WarrantyClaims` clean under BOTH grants** (14 accepted SPIKE-11 diffs, 7 cases x 2 grants; a wholesale re-capture left **21 of 28 goldens byte-identical per grant**). **THE EXPOSURE IS CLOSED AND PROVEN FOUR WAYS**: the full-access `DealerFinancial.LIST` case shows all five members null against a seed that populates all five; the restricted pass agrees; `IgnoreList` proven baked from emitted `.g.cs`; and `DealerFinancialExposureTests` (3/3) guards it permanently. **MOUNTED HOST, not a sample host** - module-level parity only. 0 SHENGEN warnings, solution green, no NU1605. | 2026-09-02 | Bumps its own **7** package lines. **Highest risk.** 7 triples; dealer/distributor forward-map `Ignore()` exposure. Ordered last of the groups by risk, overriding simplicity (it has fewer profiles than 04). Depends on 04 for the shared `Certificate` mapper precedent (SPIKE-8) — a **knowledge** dependency, not a build one. |
 | 06 | Shared floor | `ADP.Models/Models`, `ADP.Cases.Data`, `ADP.Cases.Shared`, `Lookup.Services.DuckDB` | 02, 03, 04, 05 all at terminal | `CLOSED` | **`CLOSED`** | N/A — no endpoints; covered by the unit suites, by the green solution build, by the generated-tree diff, and by Steps 04/05, which exercised the shared `Certificate` entity through real endpoints before this floor moved. All 8 parity runs (4 groups x 2 grants) re-verified CLEAN after the bump | 2026-09-02 | Bumps the last **4** package lines — `ADP.Models` and `Cases.Shared` in the **same commit**, which is what keeps NU1605 from ever appearing. 0 profiles, 0 triples; expected to compile unchanged. Libraries only — no endpoints, so terminal `CLOSED` with the reason in `Verified by`. Carries SPIKE-6. Pulls in `ADP.Menus.Generation` (see the ledger note below). Step 00's compile probe is its early warning. |
-| 07 | Release readiness | solution-wide + `GlobalSettings.props` | 00–06 all at terminal (00, 02, 06 `CLOSED`; 01, 03, 04, 05 `VERIFIED`) | `VERIFIED` | `NOT STARTED` | — | — | Package-mode restore smoke check, full baseline comparison, single `ADPVersion` bump. **No package lines left** — all 29 landed in Steps 02–06. |
+| 07 | Release readiness | solution-wide + `GlobalSettings.props` | 00–06 all at terminal (00, 02, 06 `CLOSED`; 01, 03, 04, 05 `VERIFIED`) | `VERIFIED` | **`VERIFIED` (verification complete — RELEASE NOT YET CUT)** | Full sweep on the final tree: solution 0 errors / 543 warnings cold (baseline 580 cold), **0 SHENGEN004/007/008/010**, 0 NU1605/1701/1603/MSB3277, NU1903 20 lines / 5 projects (baseline 42/21); every test suite at baseline with the 2 known SampleDataSeedingTests the only red; web components 114/114; **all 10 parity runs clean** (5 groups x 2 grants); generated trees clean; **package-mode host boot PASSED against the locally-packed 1.16.0 feed — 12 triples, 0 conflicts, VerifyBindings 0 errors** | 2026-09-02 | Package-mode restore smoke check, full baseline comparison, single `ADPVersion` bump. **No package lines left** — all 29 landed in Steps 02–06. |
 | 08 | Harness removal & cleanup | `ADP.EndpointParity.Harness` + the 5 per-group test projects, `tools/parity.ps1`, `ADP.sln` | 07 | `CLOSED` | `NOT STARTED` | — | — | **New step, added 2026-09-01.** Deletes the instrument Step 00 built and removes its projects from `ADP.sln`. Decision recorded above: the framework's release cadence does not justify maintaining a permanent regression harness. Terminal `CLOSED` — it removes an instrument; it has no endpoints. Solution must build green and the project count return to its pre-Step-00 figure (53 today). |
 
 **Ledger notes on the dependency column** — these are the edges the graph actually has. Two were
@@ -1047,6 +1047,129 @@ The exit-criteria check "all 9 `TypeAuth` lines still `1.6.28`" came back as **t
 package references at all. All 9 real `TypeAuth` `PackageReference`s are at `1.6.28` and untouched.
 This is the same class of hazard the plan flags for `**/obj/**`, and it is the second time this
 directory has cost time. **It should be deleted in its own commit.**
+
+### ✅ Step 07 — release readiness verified; **the release itself is NOT cut**
+
+Everything this step verifies is done and green. `$(ADPVersion)` is bumped. **No tag has been pushed
+and nothing has been published** — that is an outward-facing, irreversible act and is left to the
+owner. Items A–G below are complete.
+
+#### A. Full-solution build (`--no-incremental`)
+
+| Measure | Baseline | Now |
+|---|---|---|
+| errors | 0 | **0** |
+| csproj in `ADP.sln` | 59 | **61** — +2 durable test projects added by Steps 03 and 05 (`ADP.Surveys.Data.Tests`, `ADP.WarrantyClaims.Data.Tests`) |
+| compiler warnings | **580 cold** (the plan's "535" was already recorded at Step 00 as not reproducible) | **543 cold — DOWN 37** |
+| `SHENGEN004` | 10 | **0** |
+| `SHENGEN007` / `008` / `010` | 0 | **0** |
+| `NU1605` / `NU1701` / `NU1603` / `MSB3277` | 0 | **0** |
+| `NU1903` | 42 lines / 21 projects | **20 lines / 5 projects** |
+| `NU1504` | 1 project | **1 project** — still only `ADP.Surveys.Sample.API`'s duplicate `EFCore.Design` (4 log lines, 1 project; unchanged, not fixed) |
+
+#### B. Test sweep — every suite at baseline
+
+`Cases.Shared` 43/43 · `Surveys.Shared` 182/182 · `Surveys.Data.Tests` 2/2 · `Darlastic.Shared` 5/5 ·
+`Darlastic.Engine` 49/49 · `Hawta` 493/502 (9 skipped) · `Lookup.Services` 47/47 · **`BDD` 466/466**
+(the corrected figure — see Step 06) · `Menus` 262/264 · `WarrantyClaims.Data.Tests` 3/3 ·
+`Models.Tests` no-op (SPIKE-6, accepted).
+
+**The only red is the sanctioned pair**, confirmed by message:
+`SampleDataSeedingTests.SeedsEveryDemoRowTheSampleDatabaseIsMissing` and
+`.SeedingTwiceInsertsNothingTheSecondTime`, both
+`Cannot insert duplicate key row in object 'Menu.ReplacementItem' with unique index
+'IX_ReplacementItem_Name'`.
+
+Web components **114 passed / 4 suites** — baseline. Generated trees `git diff --exit-code` **clean**.
+
+#### C. Full parity sweep on the final tree — ALL CLEAN
+
+Recorded here because **Step 08 deletes the only thing that can reproduce it**:
+
+| Group | FullAccess | Restricted |
+|---|---|---|
+| `Menus` | clean | clean |
+| `Surveys` | clean | clean |
+| `ClaimableItems` | clean | clean |
+| `WarrantyClaims` | clean | clean |
+| `Darlastic` | clean (smoke, not value parity) | clean |
+
+#### D. `$(ADPVersion)` — `1.15.5` → **`1.16.0`**, one bump
+
+A **judgement call, easily changed before release.** The file's convention is patch increments with
+occasional minor bumps (`1.14.25` → `1.15.0`); a MINOR bump is the more honest signal here because the
+upgrade carries observable wire changes (the SPIKE-11 deltas) and must be released all-or-nothing.
+Note the plan's stated starting point (`1.15.4`) was already stale — the file read `1.15.5`.
+
+#### E. Package-mode check — PASSED, but the plan's recipe had to be replaced
+
+**The plan's relocation recipe does not work for `ADP.ClaimableItems`.** It assumes the group's
+cross-project references are all conditional `Exists()` pairs. `ADP.Models` and `Lookup.Services` are —
+but `ADP.Cases.Shared` and `ADP.Cases.Data` are referenced by **unconditional `ProjectReference`**
+(`ADP.ClaimableItems.Data.csproj:43-44`), so relocating the folder leaves them dangling and the build
+fails with `CS0234: ShiftSoftware.ADP.Cases` plus a cascading `SHENGEN009` (the mapper builder's type
+arguments stop being closed generics once the referenced types fail to resolve). **That is a defect in
+the test recipe, not in the package** — the packed nuspec correctly declares
+`ShiftSoftware.ADP.Cases.Data 1.16.0` and `ShiftSoftware.ADP.Cases.Shared 1.16.0`, because NuGet
+converts a `ProjectReference` to a package dependency at pack time.
+
+Replaced with a **stronger and more faithful test**: a scratch console host **outside the repo** whose
+only inputs are `PackageReference`s to `ShiftSoftware.ADP.ClaimableItems.Data` and
+`ShiftSoftware.ADP.WarrantyClaims.Data` at `1.16.0`, restored from a local feed with the package
+sources `<clear/>`ed. That is literally what a downstream host does, and it exercises the
+floor-vs-group unification for real (`ADP.Models` and `ADP.Cases` arrive transitively):
+
+```
+ClaimableItems.Data : ShiftSoftware.ADP.ClaimableItems.Data 1.16.0.0
+WarrantyClaims.Data : ShiftSoftware.ADP.WarrantyClaims.Data 1.16.0.0
+registered triples  : 12
+registry conflicts  : 0
+Certificate triples : 2
+   Certificate / CertificateListDTO / CertificateDTO          -> Generated_..._df5083c3
+   Certificate / CertificateListDTO / ItemClaimCertificateDTO -> Generated_..._16cfdeb0
+VerifyBindings errs : 0
+RESULT: PASS
+```
+
+Three things this proves that no in-repo build can:
+
+1. **The package-consumption path resolves and builds** from packages alone.
+2. **`VerifyBindings()` returns zero errors** — every generated mapper inside the *packaged*
+   assemblies binds against ShiftEntity `2026.8.30.1`. That is the generated-mapper ABI hazard closed
+   with the framework's own check.
+3. **SPIKE-8 Q2 confirmed at package level**: both `Certificate` triples register side by side from
+   **two different packages**, 0 conflicts. Previously proven only from emitted code.
+
+**Packed-nuspec audit (the mixed-published-package check):** all **32** packages at `1.16.0`, and all
+**34** `ShiftSoftware.Shift*` dependency references across every nuspec read `2026.8.30.1`. **Zero**
+`2026.7.31.1` escaped. This is the check the entire shared-last ordering rests on, and it passes.
+
+#### F / G. Sweeps and CI
+
+Zero functional `AutoMapper` references outside `ADP.SyncAgent` (the only remaining hits are prose in
+migration comments and in the temporary harness csprojs). Zero `2026.7.31.1` in any csproj. All
+`TypeAuth` references at `1.6.28`. Fixed the last doc leftovers —
+`ADP.Docs/Docs/docs/menus/integration.md:10,84,86` and `ADP.Menus/README.md:8`.
+**No standing parity job was added**, and **no pipeline file references `ADP.EndpointParity/` or
+`tools/parity.*`**, so Step 08's deletion cannot break a build.
+
+#### Caveats that must go into the release notes
+
+- `ADP.ClaimableItems` and `ADP.WarrantyClaims` were verified through a **mounted host**, not a real
+  deployment: consumer middleware order, localization, CORS, fallback routing and JSON overrides are
+  unverified for those two groups. No sample host was written for either.
+- **`DistributorFinancial.LIST` returns 401 in the harness** (the controller gates on `IsDistributor`),
+  so there is **no value coverage of the distributor financial list at all**.
+- The **six Cosmos replication delegates have no automated coverage.** ClaimableItems' five were
+  reviewed by an 8-agent adversarial pass (3 real defects found and fixed); WarrantyClaims' one was
+  reviewed line-by-line.
+- **Binary export endpoints are `PARTIAL`** (PDF: content-type and size band only).
+- **Darlastic's result is smoke, not value parity.**
+- **`ADP.Cases` has no endpoints** — not covered by endpoint parity in any sense.
+- **`ADP.Models` has no executing tests** (SPIKE-6 accepted; its two `[Fact]`s are dead code).
+- **After the release tag, per-group rollback is not available.** Packages release together and hosts
+  unify ShiftEntity by max-wins, so a partial revert reproduces the mixed-package state that bricks
+  hosts. A post-release problem is fixed by rolling the whole release **forward**.
 
 ### Darlastic — the 2026-09-01 decision, now SUPERSEDED by SPIKE-5
 

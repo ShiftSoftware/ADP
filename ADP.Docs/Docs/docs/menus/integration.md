@@ -7,7 +7,7 @@ How to plug the ADP.Menus package into a Shift-based ASP.NET Core API and Blazor
 | Package | Purpose |
 |---|---|
 | `ShiftSoftware.ADP.Menus.Shared` | DTOs, validators, action tree, country/language contracts |
-| `ShiftSoftware.ADP.Menus.Data` | EF Core entities, AutoMapper profiles, export services |
+| `ShiftSoftware.ADP.Menus.Data` | EF Core entities, source-generated mappers, export services |
 | `ShiftSoftware.ADP.Menus.API` | ASP.NET Core controllers + `AddMenuApiServices` registration |
 | `ShiftSoftware.ADP.Menus.Web` | Blazor WebAssembly pages + `AddMenuBlazorServices` registration |
 
@@ -81,9 +81,9 @@ builder.Services.AddMenuApiServices<DB>(mvc, options =>
 
 **One call does it all.** `AddMenuApiServices<TDbContext>` internally registers:
 
-- Controllers, AutoMapper profiles, validators, and export services
+- Controllers, source-generated mappers, validators, and export services
 - `MenuActionTree` with TypeAuth (`services.Configure<TypeAuthAspNetCoreOptions>`)
-- Data and AutoMapper assemblies with ShiftEntity (`services.Configure<ShiftEntityOptions>`)
+- Data assemblies with ShiftEntity (`services.Configure<ShiftEntityOptions>`); mappers register themselves via a generated `[ModuleInitializer]`
 - EF Core entity configuration via `IModelBuildingContributor` — no `modelBuilder.ConfigureMenuEntities()` needed in your DbContext
 
 Your DbContext stays clean:
