@@ -232,4 +232,110 @@ Scenario: An override naming an item the vehicle is not offered changes nothing
   When evaluating service items for "1FDKF37GXVEB34368" with language "en"
   Then there are 1 service items
   And service item "SI-001" has expiration "2026-07-15"
+
+# The same record, declared in the host's own configuration rather than stored per vehicle. A
+# deployment correcting a handful of VINs gets the lever without a replicated store behind it.
+Scenario: A configured override re-dates a reward the same way a stored one does
+  Given the current UTC time is "2026-09-01 09:00:00"
+  And vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | BranchID | BrandID |
+    | 1FDKF37GXVEB34368 | 2026-01-15  | 1         | 10       | 1       |
+  And service items:
+    | ServiceItemID | Name              | BrandID | ActiveForMonths | MaximumMileage | ProgramRole |
+    | SI-BASE       | Base schedule end | 1       | 6               | 40000          |             |
+    | SI-REWARD     | Return reward     | 1       | 3               | 55000          | Reward      |
+  And service item "SI-REWARD" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch | Program | Qualifier | Selection | Values      | WhenUnmet |
+    | serviceHistory.laborLines.packageCode | ContainsAll | Milestone  | PGM     | None      | All       | 45000,50000 | Lock      |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode    |
+    | 1         | 10       | INV-1         | JOB-1               | 2026-02-01  | PGM MDL100 45K |
+    | 1         | 10       | INV-2         | JOB-2               | 2026-03-01  | PGM MDL100 50K |
+  And LookupOptions has free service item validity overrides:
+    | VIN               | ServiceItemID | UnlockedOn | Reason                              |
+    | 1FDKF37GXVEB34368 | SI-REWARD     | 2026-08-15 | Reward already promised to customer |
+  And the free service start date is "2026-01-15"
+  When evaluating service items for "1FDKF37GXVEB34368" with language "en"
+  Then service item "SI-REWARD" has activation "2026-08-15"
+  And service item "SI-REWARD" has expiration "2026-11-15"
+  And service item "SI-REWARD" is claimable
+
+# The configured list is one flat list for the whole deployment, so it is matched on VIN. A vehicle
+# not named in it is dated as it always was.
+Scenario: A configured override for another VIN leaves this vehicle alone
+  Given the current UTC time is "2026-09-01 09:00:00"
+  And vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | BranchID | BrandID |
+    | 1FDKF37GXVEB34368 | 2026-01-15  | 1         | 10       | 1       |
+  And service items:
+    | ServiceItemID | Name       | BrandID | ActiveForMonths | MaximumMileage |
+    | SI-001        | Oil change | 1       | 6               | 10000          |
+  And LookupOptions has free service item validity overrides:
+    | VIN               | ServiceItemID | ExpiresAt  |
+    | JTDBR42E20J023689 | SI-001        | 2027-06-30 |
+  And the free service start date is "2026-01-15"
+  When evaluating service items for "1FDKF37GXVEB34368" with language "en"
+  Then service item "SI-001" has expiration "2026-07-15"
+
+# Configured entries are hand-entered rather than synced, so the VIN is matched case-insensitively
+# and after trimming. A lower-cased VIN quietly matching nothing is the wrong failure here.
+Scenario: A configured override matches its VIN regardless of case or surrounding spaces
+  Given the current UTC time is "2026-09-01 09:00:00"
+  And vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | BranchID | BrandID |
+    | 1FDKF37GXVEB34368 | 2026-01-15  | 1         | 10       | 1       |
+  And service items:
+    | ServiceItemID | Name       | BrandID | ActiveForMonths | MaximumMileage |
+    | SI-001        | Oil change | 1       | 6               | 10000          |
+  And LookupOptions has free service item validity overrides:
+    | VIN                  | ServiceItemID | ExpiresAt  |
+    |  1fdkf37gxveb34368   | SI-001        | 2027-06-30 |
+  And the free service start date is "2026-01-15"
+  When evaluating service items for "1FDKF37GXVEB34368" with language "en"
+  Then service item "SI-001" has expiration "2027-06-30"
+
+# Where both name the same item, the stored record wins: deleting it must not fall back to a
+# configured entry nobody remembers deploying.
+Scenario: A stored override outranks a configured one for the same item
+  Given the current UTC time is "2026-09-01 09:00:00"
+  And vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | BranchID | BrandID |
+    | 1FDKF37GXVEB34368 | 2026-01-15  | 1         | 10       | 1       |
+  And service items:
+    | ServiceItemID | Name       | BrandID | ActiveForMonths | MaximumMileage |
+    | SI-001        | Oil change | 1       | 6               | 10000          |
+  And free service item validity overrides:
+    | VIN               | ServiceItemID | ExpiresAt  |
+    | 1FDKF37GXVEB34368 | SI-001        | 2027-01-31 |
+  And LookupOptions has free service item validity overrides:
+    | VIN               | ServiceItemID | ExpiresAt  |
+    | 1FDKF37GXVEB34368 | SI-001        | 2027-06-30 |
+  And the free service start date is "2026-01-15"
+  When evaluating service items for "1FDKF37GXVEB34368" with language "en"
+  Then service item "SI-001" has expiration "2027-01-31"
+
+# A configured entry is not a way past eligibility either — the boundary belongs to the mechanism,
+# not to where the record happened to come from.
+Scenario: A configured override does not unlock an item whose prerequisites are outstanding
+  Given the current UTC time is "2026-09-01 09:00:00"
+  And vehicles in dealer stock:
+    | VIN               | InvoiceDate | CompanyID | BranchID | BrandID |
+    | 1FDKF37GXVEB34368 | 2026-01-15  | 1         | 10       | 1       |
+  And service items:
+    | ServiceItemID | Name              | BrandID | ActiveForMonths | MaximumMileage | ProgramRole |
+    | SI-BASE       | Base schedule end | 1       | 6               | 40000          |             |
+    | SI-REWARD     | Return reward     | 1       | 3               | 55000          | Reward      |
+  And service item "SI-REWARD" has eligibility conditions:
+    | Field                                 | Operator    | ValueMatch | Program | Qualifier | Selection | Values      | WhenUnmet |
+    | serviceHistory.laborLines.packageCode | ContainsAll | Milestone  | PGM     | None      | All       | 45000,50000 | Lock      |
+  And labor lines:
+    | CompanyID | BranchID | InvoiceNumber | OrderDocumentNumber | InvoiceDate | PackageCode    |
+    | 1         | 10       | INV-1         | JOB-1               | 2026-02-01  | PGM MDL100 45K |
+  And LookupOptions has free service item validity overrides:
+    | VIN               | ServiceItemID | UnlockedOn | ExpiresAt  |
+    | 1FDKF37GXVEB34368 | SI-REWARD     | 2026-08-15 | 2026-12-31 |
+  And the free service start date is "2026-01-15"
+  When evaluating service items for "1FDKF37GXVEB34368" with language "en"
+  Then service item "SI-REWARD" is "Locked"
+  And service item "SI-REWARD" has no expiry
 ```

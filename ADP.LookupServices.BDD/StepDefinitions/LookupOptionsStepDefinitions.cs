@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using LookupServices.BDD.Support;
 using Reqnroll;
 using ShiftSoftware.ADP.Lookup.Services;
@@ -192,6 +192,22 @@ public class LookupOptionsStepDefinitions
         };
     }
 
+    [Given("LookupOptions has free service item validity overrides:")]
+    public void GivenConfiguredFreeServiceItemValidityOverrides(DataTable dataTable)
+    {
+        _context.Options.FreeServiceItemValidityOverrides = dataTable.Rows.Select(row =>
+            new ShiftSoftware.ADP.Models.Vehicle.FreeServiceItemValidityOverrideModel
+            {
+                VIN = GetOptionalString(row, "VIN"),
+                ServiceItemID = GetOptionalString(row, "ServiceItemID"),
+                UnlockedOn = GetOptionalDate(row, "UnlockedOn"),
+                ExpiresAt = GetOptionalDate(row, "ExpiresAt"),
+                Reason = GetOptionalString(row, "Reason"),
+                IsDeleted = row.ContainsKey("IsDeleted") && !string.IsNullOrWhiteSpace(row["IsDeleted"])
+                    && bool.Parse(row["IsDeleted"]),
+            }).ToList();
+    }
+
     [Given("standard item claim warnings:")]
     public void GivenStandardItemClaimWarnings(DataTable dataTable)
     {
@@ -244,6 +260,12 @@ public class LookupOptionsStepDefinitions
             return null;
         var value = row[column];
         return string.IsNullOrWhiteSpace(value) ? null : value;
+    }
+
+    private static DateTime? GetOptionalDate(DataTableRow row, string column)
+    {
+        var value = GetOptionalString(row, column);
+        return value is null ? null : DateTime.Parse(value, CultureInfo.InvariantCulture);
     }
 
     [Given("LookupOptions distributor stock threshold is {int}")]

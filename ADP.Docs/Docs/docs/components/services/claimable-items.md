@@ -1,4 +1,4 @@
-# Claimable Items
+﻿# Claimable Items
 
 A unified framework for any benefit, service, or offer associated with a vehicle that can be claimed by its owner.
 
@@ -312,6 +312,8 @@ A **validity override** names a VIN and one service item, and carries two option
 - `ExpiresAt` — the expiry outright, over both the schedule's answer and anything `UnlockedOn` computes. Set it alone to extend an item where it stands.
 
 It is the last word on a free item's two dates, applied after rolling expiry and after every trigger expansion, so it lands on what the customer is actually shown. It moves dates and grants nothing: an item this vehicle is not offered, or one **Locked** or **Missed** because its conditions are unmet, is left where it is — handing out an unearned item is what a **manual VIN entry** campaign is for. Deleting the override returns the item to the dates the schedule computes for it, and the lookup [diagnostic trace](../../generated/Features/ServiceItems_Trace.md) names every override it applied, skipped, or could not match, along with the reason recorded on it.
+
+Overrides reach the evaluator two ways. Stored per vehicle, they are replicated like any other per-VIN record. A deployment that needs the lever for a handful of vehicles and does not want a store standing behind it can instead declare them in configuration, on `LookupOptions.FreeServiceItemValidityOverrides` — the same record, one flat list for the deployment, matched on VIN case-insensitively because it is hand-entered rather than synced. The two are merged; where both name the same VIN and item the stored record wins, so revoking it never falls back to a configured entry nobody remembers deploying. Hosts that serve lookups from more than one process must declare the same list in each, or the same vehicle answers differently depending on which one was asked.
 
 ### Ineligible-but-claimed items
 

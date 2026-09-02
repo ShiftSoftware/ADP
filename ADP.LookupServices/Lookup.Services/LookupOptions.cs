@@ -28,6 +28,21 @@ public class LookupOptions
     /// Empty by default, preserving existing host behaviour until explicitly configured.
     /// </summary>
     public List<ExtendedWarrantyDefinitionModel> ExtendedWarrantyDefinitions { get; set; } = new();
+    /// <summary>
+    /// Per-VIN validity overrides supplied by the host's own configuration instead of a stored,
+    /// replicated record — the same <see cref="FreeServiceItemValidityOverrideModel"/> the storage
+    /// layer serves, for a deployment that needs the lever for a handful of vehicles and does not want
+    /// a per-VIN store standing behind it.
+    /// <para>
+    /// Merged with whatever the storage layer loaded for the vehicle. Matched on VIN case-insensitively
+    /// after trimming, because these are hand-entered rather than synced, and a lower-cased VIN silently
+    /// doing nothing is the wrong failure for a lever reached for in a hurry. A stored record for the
+    /// same VIN and item outranks a configured one, so revoking the stored record never falls back to a
+    /// configured entry nobody remembers deploying.
+    /// </para>
+    /// Empty by default, preserving existing host behaviour until explicitly configured.
+    /// </summary>
+    public List<FreeServiceItemValidityOverrideModel> FreeServiceItemValidityOverrides { get; set; } = new();
     /// <summary>Resolver delegate that converts a paint thickness image path to a full URL.</summary>
     public Func<LookupOptionResolverModel<string>,ValueTask<string?>>? PaintThickneesImageUrlResolver { get; set; }
     /// <summary>

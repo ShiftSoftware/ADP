@@ -86,7 +86,7 @@ public partial class VehicleServiceItemEvaluator
         using (Trace.Stage("WarrantyRollingExpiry"))  ApplyWarrantyRollingExpiry(result, freeServiceStartDate);
         using (Trace.Stage("InspectionExpansion"))    ApplyVehicleInspectionExpansion(result);
         using (Trace.Stage("ManualVinExpansion"))     ApplyManualVinEntryExpansion(result);
-        using (Trace.Stage("ValidityOverrides"))      ApplyValidityOverrides(result);
+        using (Trace.Stage("ValidityOverrides"))      ApplyValidityOverrides(result, vehicle);
 
         bool activationRequired;
         using (Trace.Stage("StatusAndClaimability"))  activationRequired = await CalculateServiceItemStatusAndClaimability(result, showingInactivatedItems, languageCode);
@@ -330,16 +330,20 @@ public partial class VehicleServiceItemEvaluator
     /// <see cref="ClaimableItemCampaignActivationTrigger.ManualVinEntry"/> is for.
     /// </para>
     /// </summary>
-    private void ApplyValidityOverrides(List<VehicleServiceItemDTO> result)
+    private void ApplyValidityOverrides(List<VehicleServiceItemDTO> result, VehicleEntryModel vehicle)
     {
-        var overrides = (companyDataAggregate.FreeServiceItemValidityOverrides ?? Enumerable.Empty<FreeServiceItemValidityOverrideModel>())
-            .Where(x => x is not null && !x.IsDeleted && !string.IsNullOrWhiteSpace(x.ServiceItemID))
-            .ToList();
+        var overrides = CollectValidityOverrides(vehicle);
 
         if (overrides.Count == 0) return;
 
-        foreach (var group in overrides.GroupBy(x => x.ServiceItemID, StringComparer.Ordinal))
+        foreach (var group in overrides.GroupBy(x => x.Override.ServiceItemID, StringComparer.Ordinal))
         {
+            var declared = group.ToList();
+            var (chosen, source) = declared[0];
+
+            if (declared.Count > 1)
+                Trace.Note($"{declared.Count} validity overrides name service item {group.Key} ({string.Join(", ", declared.Select(x => x.Source))}); the {source} one is applied and the rest ignored. Delete the ones that no longer hold rather than layering them.");
+
             var targets = result
                 .Where(x => x.TypeEnum == VehcileServiceItemTypes.Free
                          && string.Equals(x.ServiceItemID, group.Key, StringComparison.Ordinal))
@@ -347,26 +351,62 @@ public partial class VehicleServiceItemEvaluator
 
             if (targets.Count == 0)
             {
-                Trace.Note($"A validity override names service item {group.Key}, which this vehicle is not offered — nothing to move.");
+                Trace.Note($"A {source} validity override names service item {group.Key}, which this vehicle is not offered — nothing to move.");
                 continue;
             }
 
-            var declared = group.ToList();
-            var chosen = declared[0];
-
-            if (declared.Count > 1)
-                Trace.Note($"{declared.Count} validity overrides name service item {group.Key}; the first is applied and the rest ignored. Delete the ones that no longer hold rather than layering them.");
-
             if (chosen.UnlockedOn is null && chosen.ExpiresAt is null)
             {
-                Trace.Note($"The validity override on service item {group.Key} carries neither a date to run from nor an expiry — nothing to move.");
+                Trace.Note($"The {source} validity override on service item {group.Key} carries neither a date to run from nor an expiry — nothing to move.");
                 continue;
             }
 
             foreach (var item in targets)
-                ApplyValidityOverride(item, chosen);
+                ApplyValidityOverride(item, chosen, source);
         }
     }
+
+    /// <summary>
+    /// The overrides in force for this vehicle: those the storage layer already loaded for the VIN,
+    /// then those the host declared in <see cref="LookupOptions.FreeServiceItemValidityOverrides"/> for
+    /// it. Stored first, so a stored record outranks a configured one where both name the same item and
+    /// revoking the stored record never falls back to a configured entry nobody remembers deploying.
+    /// <para>
+    /// The aggregate's own list needs no VIN test — the storage layer loads it per VIN — while the
+    /// configured list is one flat list for the whole deployment and is matched here. Case-insensitively
+    /// and after trimming, because these are hand-entered rather than synced, and a lower-cased VIN
+    /// quietly matching nothing is the wrong failure for a lever reached for in a hurry.
+    /// </para>
+    /// </summary>
+    private List<(FreeServiceItemValidityOverrideModel Override, string Source)> CollectValidityOverrides(VehicleEntryModel vehicle)
+    {
+        var collected = (companyDataAggregate.FreeServiceItemValidityOverrides ?? Enumerable.Empty<FreeServiceItemValidityOverrideModel>())
+            .Where(IsUsableValidityOverride)
+            .Select(x => (Override: x, Source: "stored"))
+            .ToList();
+
+        var vin = NormalizeVin(vehicle?.VIN);
+
+        if (vin is null)
+            return collected;
+
+        collected.AddRange((options.FreeServiceItemValidityOverrides ?? Enumerable.Empty<FreeServiceItemValidityOverrideModel>())
+            .Where(x => IsUsableValidityOverride(x) && NormalizeVin(x.VIN) == vin)
+            .Select(x => (Override: x, Source: "configured")));
+
+        return collected;
+    }
+
+    /// <summary>
+    /// An override worth reading at all: present, not revoked, and naming an item. The deleted test is
+    /// deliberate rather than trusting the storage layer's own filter — a configured list has no
+    /// storage layer in front of it, and one code path for both is one fewer thing to remember.
+    /// </summary>
+    private static bool IsUsableValidityOverride(FreeServiceItemValidityOverrideModel candidate) =>
+        candidate is not null && !candidate.IsDeleted && !string.IsNullOrWhiteSpace(candidate.ServiceItemID);
+
+    private static string NormalizeVin(string vin) =>
+        string.IsNullOrWhiteSpace(vin) ? null : vin.Trim().ToUpperInvariant();
 
     /// <summary>
     /// Moves one item's dates to what the override states: activation to <c>UnlockedOn</c> with the
@@ -376,11 +416,11 @@ public partial class VehicleServiceItemEvaluator
     /// An item with no duration keeps the expiry it has, since a fixed-date window has nothing to add
     /// an interval to and a same-day expiry would be worse than the date it already carries.
     /// </summary>
-    private void ApplyValidityOverride(VehicleServiceItemDTO item, FreeServiceItemValidityOverrideModel @override)
+    private void ApplyValidityOverride(VehicleServiceItemDTO item, FreeServiceItemValidityOverrideModel @override, string source)
     {
         if (item.Lock is not null)
         {
-            Trace.Note($"Item {item.ServiceItemID} carries a validity override but reads as {item.Lock.State}; an override moves dates and does not grant eligibility, so it is left where it is.");
+            Trace.Note($"Item {item.ServiceItemID} carries a {source} validity override but reads as {item.Lock.State}; an override moves dates and does not grant eligibility, so it is left where it is.");
             return;
         }
 
@@ -400,7 +440,7 @@ public partial class VehicleServiceItemEvaluator
 
         var reason = string.IsNullOrWhiteSpace(@override.Reason) ? "none recorded" : @override.Reason.Trim();
 
-        Trace.Note($"Item {item.ServiceItemID} is moved by a per-VIN validity override: activation {TraceDate(wasActivatedAt)} → {TraceDate(item.ActivatedAt)}, expiry {TraceDate(wasExpiresAt)} → {TraceDate(item.ExpiresAt)}. Reason: {reason}.");
+        Trace.Note($"Item {item.ServiceItemID} is moved by a {source} per-VIN validity override: activation {TraceDate(wasActivatedAt)} → {TraceDate(item.ActivatedAt)}, expiry {TraceDate(wasExpiresAt)} → {TraceDate(item.ExpiresAt)}. Reason: {reason}.");
     }
 
     private static string TraceDate(DateTime? date) => date?.ToString("yyyy-MM-dd") ?? "none";
