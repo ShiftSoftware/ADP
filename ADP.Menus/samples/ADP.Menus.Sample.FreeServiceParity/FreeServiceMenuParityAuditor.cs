@@ -14,6 +14,14 @@ namespace ShiftSoftware.ADP.Menus.Sample.FreeServiceParity;
 /// table — and the free service items and the menu being compared come out of the same
 /// <c>VehicleLookupDTO</c>, produced by the same pipeline the deployment serves.
 ///
+/// <para><b>Scope: what is still on the table.</b> A VIN enters the comparison only when at least one
+/// of its FREE service items is <c>Pending</c>. A vehicle whose free entitlements have all been
+/// processed, expired or cancelled — and one carrying no free items at all — is skipped whole: no
+/// detail rows, no share of any total. Those are history, transcribed against older menu exports and
+/// often without a menu code, and nothing the menu side has to reproduce. On a VIN that IS in scope,
+/// EVERY free item is compared whatever its own status — its pending siblings say the record is
+/// current, so its spent ones are still evidence about the same transcription.</para>
+///
 /// <para><b>One direction, one key.</b> Each FREE service item looks for its match among the model's
 /// generated menu lines by MENU CODE — the item's <c>PackageCode</c> is a hand transcription of the
 /// generated <c>Code</c>, and that equality is the parity being audited. The free-of-charge flag is
@@ -30,7 +38,8 @@ public class FreeServiceMenuParityAuditor(
     /// <summary>
     /// Runs the audit over <paramref name="vins"/> (or every distinct VIN in the store when null,
     /// capped by <paramref name="distinctVinCount"/>), streaming detail rows to
-    /// <paramref name="csvPath"/> and returning the totals and per-VIN summaries.
+    /// <paramref name="csvPath"/> and returning the totals and per-VIN summaries — for the VINs in
+    /// scope only; the ones with nothing pending survive as the report's skipped counts.
     /// </summary>
     public async Task<FreeServiceParityReportModel> ExportToCsvAsync(
         string csvPath,
@@ -113,6 +122,25 @@ public class FreeServiceMenuParityAuditor(
 
             var freeItems = CollectFreeItems(lookup.ServiceItems);
 
+            // The scope gate. Nothing pending — every free item processed, expired or cancelled, or
+            // no free item at all — means the vehicle's entitlements are spent history, and the
+            // migration is not asked to reproduce them. Skip it before a single row is written, so
+            // the CSV and every number in the report describe the same live population.
+            var pendingFreeItemCount = freeItems.Count(x => x.StatusEnum == VehcileServiceItemStatuses.Pending);
+
+            if (pendingFreeItemCount == 0)
+            {
+                report.SkippedVinCount++;
+                report.SkippedFreeServiceItems += freeItems.Count;
+
+                if (freeItems.Count == 0)
+                    report.SkippedVinsWithoutFreeItems++;
+                else
+                    report.SkippedVinsWithoutPendingFreeItems++;
+
+                continue;
+            }
+
             var menuStatus = lookup.ServiceMenu?.Status;
 
             var menuLines = menuStatus == VehicleServiceMenuStatus.Found
@@ -127,6 +155,7 @@ public class FreeServiceMenuParityAuditor(
                 BasicModelCode = basicModelCode,
                 MenuStatus = menuStatus,
                 FreeServiceItemCount = freeItems.Count,
+                PendingFreeServiceItemCount = pendingFreeItemCount,
                 MenuLineCount = menuLines.Count,
             };
 
@@ -170,6 +199,7 @@ public class FreeServiceMenuParityAuditor(
 
             report.VinCount++;
             report.TotalFreeServiceItems += summary.FreeServiceItemCount;
+            report.TotalPendingFreeServiceItems += summary.PendingFreeServiceItemCount;
             report.TotalMenuLines += summary.MenuLineCount;
             report.TotalMatched += summary.MatchedCount;
             report.TotalMatchedWithDifferences += summary.MatchedWithDifferencesCount;
@@ -238,10 +268,8 @@ public class FreeServiceMenuParityAuditor(
         VehicleServiceMenuStatus? menuStatus,
         FreeServiceParityVinSummaryModel summary)
     {
-        // The audit is one-way — no free items means nothing to look up, whatever the menu holds.
-        if (summary.FreeServiceItemCount == 0)
-            return FreeServiceParityVinOutcome.NoFreeItems;
-
+        // Every VIN reaching here carries at least one pending free item — the scope gate dropped the
+        // rest — so there is always something to look up.
         switch (menuStatus)
         {
             case VehicleServiceMenuStatus.NoBasicModelCode:

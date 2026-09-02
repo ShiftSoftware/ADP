@@ -14,6 +14,12 @@
 // Menu lines no free item points at are EXPECTED (the menu also prices paid work) and are never
 // counted against parity.
 //
+// Only VINs with at least one PENDING free item are compared. A vehicle whose free entitlements are
+// all processed, expired or cancelled - or that carries none at all - is skipped whole, out of both
+// reports: those were transcribed against older menu exports, often with no code at all, and the
+// menu side is not being asked to reproduce them. On a VIN that IS in scope every free item is
+// compared, whatever its own status.
+//
 // Usage:
 //   dotnet run --project ADP.Menus/samples/ADP.Menus.Sample.FreeServiceParity -- --duckdb <path-or-connection-string>
 //     [--vins-file <path>] [--limit <N>] [--batch-size <N=1000>] [--language <code=en>]
@@ -202,11 +208,15 @@ File.WriteAllText(reportPath, BuildExplanation(report, startedAt, elapsed, conne
 // ---- console summary --------------------------------------------------------------------------
 
 Console.WriteLine();
-Console.WriteLine($"VINs answered: {report.VinCount:N0} of {report.RequestedVinCount:N0} requested ({elapsed.TotalSeconds:N0}s)");
+Console.WriteLine($"VINs compared: {report.VinCount:N0} of {report.RequestedVinCount:N0} requested ({elapsed.TotalSeconds:N0}s)");
+Console.WriteLine($"Skipped, nothing pending: {report.SkippedVinCount:N0} " +
+    $"({report.SkippedVinsWithoutFreeItems:N0} with no free items, {report.SkippedVinsWithoutPendingFreeItems:N0} with none pending) " +
+    $"— {report.SkippedFreeServiceItems:N0} free items excluded with them");
+Console.WriteLine();
 foreach (var (outcome, count) in report.OutcomeCounts.OrderBy(x => x.Key))
     Console.WriteLine($"  {outcome,-22} {count:N0}");
 Console.WriteLine();
-Console.WriteLine($"Free items: {report.TotalFreeServiceItems:N0} | matched {report.TotalMatched:N0} " +
+Console.WriteLine($"Free items: {report.TotalFreeServiceItems:N0} ({report.TotalPendingFreeServiceItems:N0} pending) | matched {report.TotalMatched:N0} " +
     $"(+{report.TotalMatchedWithDifferences:N0} with differences) | no code {report.TotalItemsWithoutMenuCode:N0} " +
     $"| code unmatched {report.TotalItemsCodeUnmatched:N0}");
 Console.WriteLine();
@@ -267,9 +277,11 @@ static string BuildExplanation(
 {
     var text = new StringBuilder();
     var answered = Math.Max(report.VinCount, 1);
+    var requested = Math.Max(report.RequestedVinCount, 1);
     var totalItems = Math.Max(report.TotalFreeServiceItems, 1);
 
     string VinPercent(int count) => ((double)count / answered).ToString("P1", CultureInfo.InvariantCulture);
+    string RequestedPercent(int count) => ((double)count / requested).ToString("P1", CultureInfo.InvariantCulture);
     string ItemPercent(int count) => ((double)count / totalItems).ToString("P1", CultureInfo.InvariantCulture);
 
     text.AppendLine("# Free Service Items Matched into the Menus");
@@ -290,6 +302,11 @@ static string BuildExplanation(
     text.AppendLine("not consulted). The audit is **one-way**: menu lines no free item points at are expected — the");
     text.AppendLine("menu also prices paid work — and are never counted against parity.");
     text.AppendLine();
+    text.AppendLine("It is asked of **live vehicles only**. A VIN is compared only when at least one of its free service");
+    text.AppendLine("items is still **pending**; one whose entitlements are all spent — processed, expired, cancelled —");
+    text.AppendLine("or that carries none at all is skipped whole. Those were transcribed against older menu exports,");
+    text.AppendLine("many of them without a code, and the menu side is not being asked to reproduce them.");
+    text.AppendLine();
 
     text.AppendLine("## How it was measured");
     text.AppendLine();
@@ -297,8 +314,12 @@ static string BuildExplanation(
     text.AppendLine("  store, the whole service menu attached (`FreeFilter = All`); both sides come out of the same");
     text.AppendLine("  `VehicleLookupDTO`.");
     text.AppendLine("- Free service items are deduplicated exactly as the service-items report does (best row per");
-    text.AppendLine("  `ServiceItemID`; items with no id still count); **all statuses count** — an expired or claimed");
-    text.AppendLine("  free item is still an entitlement the menu should generate.");
+    text.AppendLine("  `ServiceItemID`; items with no id still count).");
+    text.AppendLine("- **Scope gate — at least one PENDING free item.** A VIN whose free items are all processed,");
+    text.AppendLine("  expired or cancelled, and a VIN with no free items at all, is skipped whole: no CSV rows, no");
+    text.AppendLine("  share of any number below. Inside a VIN that IS in scope, **every** free item is compared");
+    text.AppendLine("  whatever its own status — the pending one says the record is current, so its spent siblings are");
+    text.AppendLine("  still evidence about the same transcription.");
     text.AppendLine("- **Match**: the item's menu code equals a generated line's `Code` (trimmed, case-insensitive).");
     text.AppendLine("  Lines are not consumed — a catalog line can answer any number of entitlements.");
     text.AppendLine("- **Then compare** (reported, never match-breaking): mileage (`MaximumMileage` vs the line's");
@@ -316,14 +337,34 @@ static string BuildExplanation(
 
     text.AppendLine("## Verdict");
     text.AppendLine();
-    text.AppendLine($"**{report.VinCount:N0}** VINs answered, of {report.RequestedVinCount:N0} requested. Of their " +
-        $"**{report.TotalFreeServiceItems:N0}** free service items: **{report.TotalMatched:N0}** ({ItemPercent(report.TotalMatched)}) " +
+    text.AppendLine($"**{report.VinCount:N0}** VINs compared, of {report.RequestedVinCount:N0} requested — " +
+        $"{report.SkippedVinCount:N0} ({RequestedPercent(report.SkippedVinCount)}) skipped for carrying nothing pending, " +
+        $"taking {report.SkippedFreeServiceItems:N0} spent free items out of the picture with them. Of the compared VINs' " +
+        $"**{report.TotalFreeServiceItems:N0}** free service items ({report.TotalPendingFreeServiceItems:N0} of them still pending): " +
+        $"**{report.TotalMatched:N0}** ({ItemPercent(report.TotalMatched)}) " +
         $"matched a menu line with every property agreeing, **{report.TotalMatchedWithDifferences:N0}** ({ItemPercent(report.TotalMatchedWithDifferences)}) " +
         $"matched with property differences, **{report.TotalItemsWithoutMenuCode:N0}** ({ItemPercent(report.TotalItemsWithoutMenuCode)}) " +
         $"carry no menu code, and **{report.TotalItemsCodeUnmatched:N0}** ({ItemPercent(report.TotalItemsCodeUnmatched)}) " +
         "carry a code the menu did not generate.");
     text.AppendLine();
 
+    text.AppendLine("| Scope | VINs | Share of requested |");
+    text.AppendLine("|---|---:|---:|");
+    text.AppendLine($"| Requested | {report.RequestedVinCount:N0} | |");
+    text.AppendLine($"| Skipped — no free service items at all | {report.SkippedVinsWithoutFreeItems:N0} | {RequestedPercent(report.SkippedVinsWithoutFreeItems)} |");
+    text.AppendLine($"| Skipped — free items, none pending | {report.SkippedVinsWithoutPendingFreeItems:N0} | {RequestedPercent(report.SkippedVinsWithoutPendingFreeItems)} |");
+
+    // Requested VINs the lookup never answered are neither compared nor skipped — say so, rather than
+    // printing a table that quietly fails to add up.
+    var unanswered = report.RequestedVinCount - report.VinCount - report.SkippedVinCount;
+    if (unanswered > 0)
+        text.AppendLine($"| Not answered by the lookup | {unanswered:N0} | {RequestedPercent(unanswered)} |");
+
+    text.AppendLine($"| **Compared** (≥ 1 pending free item) | **{report.VinCount:N0}** | {RequestedPercent(report.VinCount)} |");
+    text.AppendLine();
+
+    text.AppendLine("The compared VINs' verdicts — shares are of that compared population:");
+    text.AppendLine();
     text.AppendLine("| Outcome | VINs | Share | Meaning |");
     text.AppendLine("|---|---:|---:|---|");
 
@@ -334,7 +375,6 @@ static string BuildExplanation(
             FreeServiceParityVinOutcome.Match => "every free item found its menu line by code; all properties agree",
             FreeServiceParityVinOutcome.MatchWithDifferences => "every free item found its menu line by code — with property differences to review in the CSV",
             FreeServiceParityVinOutcome.Mismatch => "at least one free item has no code, or a code the menu did not generate — see the CSV",
-            FreeServiceParityVinOutcome.NoFreeItems => "the VIN carries no free service items — nothing to look up",
             FreeServiceParityVinOutcome.MenuNotFound => "the VIN has free items but no menu is authored under its derived basic model code",
             FreeServiceParityVinOutcome.MenuUnavailable => "the VIN has free items but the menu store could not be consulted",
             FreeServiceParityVinOutcome.MenuNotRegistered => "no menu lookup registered (should not appear here)",
@@ -345,14 +385,16 @@ static string BuildExplanation(
     }
 
     text.AppendLine();
-    text.AppendLine("| Totals | |");
+    text.AppendLine("| Totals (compared VINs only) | |");
     text.AppendLine("|---|---:|");
     text.AppendLine($"| Free service items | {report.TotalFreeServiceItems:N0} |");
+    text.AppendLine($"| …of them still pending | {report.TotalPendingFreeServiceItems:N0} |");
     text.AppendLine($"| Matched, all properties agree | {report.TotalMatched:N0} |");
     text.AppendLine($"| Matched, with property differences | {report.TotalMatchedWithDifferences:N0} |");
     text.AppendLine($"| Items with NO menu code | {report.TotalItemsWithoutMenuCode:N0} |");
     text.AppendLine($"| Items whose code the menu did not generate | {report.TotalItemsCodeUnmatched:N0} |");
     text.AppendLine($"| Menu lines generated (context — most serve paid work) | {report.TotalMenuLines:N0} |");
+    text.AppendLine($"| Free items excluded with the skipped VINs | {report.SkippedFreeServiceItems:N0} |");
     text.AppendLine();
 
     var unmatchedModels = report.VinSummaries
@@ -440,6 +482,8 @@ static string BuildExplanation(
 
     text.AppendLine("## Reading the numbers honestly");
     text.AppendLine();
+    text.AppendLine("- **These are live-vehicle numbers, not fleet-wide ones.** VINs with nothing pending never entered");
+    text.AppendLine("  the comparison; the scope table above says how many, and how many free items went with them.");
     text.AppendLine("- **Menu codes are language-dependent.** This run generated codes under " + $"`{language}`; a");
     text.AppendLine("  `PackageCode` transcribed from another language's export will not match — rerun with that");
     text.AppendLine("  `--language` before reading such misses as real.");
@@ -454,7 +498,8 @@ static string BuildExplanation(
 
     text.AppendLine("## The detail file");
     text.AppendLine();
-    text.AppendLine("`free-service-menu-parity-details.csv` — one row per free service item: `MatchResult` ∈ `Matched` /");
+    text.AppendLine("`free-service-menu-parity-details.csv` — one row per free service item **on a compared VIN**");
+    text.AppendLine("(skipped VINs appear nowhere in it): `MatchResult` ∈ `Matched` /");
     text.AppendLine("`MatchedWithDifferences` / `FreeItemWithoutMenuCode` / `FreeItemCodeUnmatched`; the `Differences`");
     text.AppendLine("column spells out property disagreements. The columns are laid out for reading: each compared pair");
     text.AppendLine("sits side by side, the item's value immediately left of the menu's —");

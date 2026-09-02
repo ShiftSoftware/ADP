@@ -1,6 +1,6 @@
 # Free Service Items Matched into the Menus
 
-Generated 2026-08-30 15:23 UTC in 209s. Regenerate any time with `dotnet run --project ADP.Menus/samples/ADP.Menus.Sample.FreeServiceParity -- --duckdb <store>`; the detail rows are in [free-service-menu-parity-details.csv](free-service-menu-parity-details.csv).
+Generated 2026-09-02 14:44 UTC in 209s. Regenerate any time with `dotnet run --project ADP.Menus/samples/ADP.Menus.Sample.FreeServiceParity -- --duckdb <store>`; the detail rows are in [free-service-menu-parity-details.csv](free-service-menu-parity-details.csv).
 
 ## The question
 
@@ -13,14 +13,23 @@ model's generated menu lines (every variant; the free-of-charge flag is not auth
 not consulted). The audit is **one-way**: menu lines no free item points at are expected — the
 menu also prices paid work — and are never counted against parity.
 
+It is asked of **live vehicles only**. A VIN is compared only when at least one of its free service
+items is still **pending**; one whose entitlements are all spent — processed, expired, cancelled —
+or that carries none at all is skipped whole. Those were transcribed against older menu exports,
+many of them without a code, and the menu side is not being asked to reproduce them.
+
 ## How it was measured
 
 - One **bulk vehicle lookup** per batch — the real `VehicleLookupService` pipeline over the DuckDB
   store, the whole service menu attached (`FreeFilter = All`); both sides come out of the same
   `VehicleLookupDTO`.
 - Free service items are deduplicated exactly as the service-items report does (best row per
-  `ServiceItemID`; items with no id still count); **all statuses count** — an expired or claimed
-  free item is still an entitlement the menu should generate.
+  `ServiceItemID`; items with no id still count).
+- **Scope gate — at least one PENDING free item.** A VIN whose free items are all processed,
+  expired or cancelled, and a VIN with no free items at all, is skipped whole: no CSV rows, no
+  share of any number below. Inside a VIN that IS in scope, **every** free item is compared
+  whatever its own status — the pending one says the record is current, so its spent siblings are
+  still evidence about the same transcription.
 - **Match**: the item's menu code equals a generated line's `Code` (trimmed, case-insensitive).
   Lines are not consumed — a catalog line can answer any number of entitlements.
 - **Then compare** (reported, never match-breaking): mileage (`MaximumMileage` vs the line's
@@ -33,23 +42,33 @@ Run parameters: database `DataSource=C:\mounts\adp-sync-agent-destination\compan
 
 ## Verdict
 
-**230,177** VINs answered, of 230,177 requested. Of their **1,097,405** free service items: **0** (0.0 %) matched a menu line with every property agreeing, **773,630** (70.5 %) matched with property differences, **194,533** (17.7 %) carry no menu code, and **129,242** (11.8 %) carry a code the menu did not generate.
+**67,731** VINs compared, of 230,177 requested — 162,446 (70.6 %) skipped for carrying nothing pending, taking 460,757 spent free items out of the picture with them. Of the compared VINs' **636,648** free service items (328,997 of them still pending): **0** (0.0 %) matched a menu line with every property agreeing, **548,601** (86.2 %) matched with property differences, **6,242** (1.0 %) carry no menu code, and **81,805** (12.8 %) carry a code the menu did not generate.
+
+| Scope | VINs | Share of requested |
+|---|---:|---:|
+| Requested | 230,177 | |
+| Skipped — no free service items at all | 52,030 | 22.6 % |
+| Skipped — free items, none pending | 110,416 | 48.0 % |
+| **Compared** (≥ 1 pending free item) | **67,731** | 29.4 % |
+
+The compared VINs' verdicts — shares are of that compared population:
 
 | Outcome | VINs | Share | Meaning |
 |---|---:|---:|---|
-| MatchWithDifferences | 34,674 | 15.1 % | every free item found its menu line by code — with property differences to review in the CSV |
-| Mismatch | 135,512 | 58.9 % | at least one free item has no code, or a code the menu did not generate — see the CSV |
-| NoFreeItems | 52,030 | 22.6 % | the VIN carries no free service items — nothing to look up |
-| MenuNotFound | 7,961 | 3.5 % | the VIN has free items but no menu is authored under its derived basic model code |
+| MatchWithDifferences | 28,095 | 41.5 % | every free item found its menu line by code — with property differences to review in the CSV |
+| Mismatch | 35,480 | 52.4 % | at least one free item has no code, or a code the menu did not generate — see the CSV |
+| MenuNotFound | 4,156 | 6.1 % | the VIN has free items but no menu is authored under its derived basic model code |
 
-| Totals | |
+| Totals (compared VINs only) | |
 |---|---:|
-| Free service items | 1,097,405 |
+| Free service items | 636,648 |
+| …of them still pending | 328,997 |
 | Matched, all properties agree | 0 |
-| Matched, with property differences | 773,630 |
-| Items with NO menu code | 194,533 |
-| Items whose code the menu did not generate | 129,242 |
-| Menu lines generated (context — most serve paid work) | 30,632,484 |
+| Matched, with property differences | 548,601 |
+| Items with NO menu code | 6,242 |
+| Items whose code the menu did not generate | 81,805 |
+| Menu lines generated (context — most serve paid work) | 9,626,539 |
+| Free items excluded with the skipped VINs | 460,757 |
 
 ## Where the unmatched items are
 
@@ -59,26 +78,26 @@ service-item data entry.
 
 | Basic model code | Mismatching VINs | Items w/o menu code | Item codes unmatched |
 |---|---:|---:|---:|
-| TGN121 | 32,537 | 33,699 | 33,226 |
-| ZRE211 | 21,043 | 40,319 | 6,993 |
-| TGN126 | 18,153 | 27,164 | 14,413 |
-| GRJ300 | 14,556 | 20,514 | 5,386 |
-| VJA300 | 6,395 | 9,304 | 1,948 |
-| GRJ150 | 6,128 | 11,557 | 329 |
-| GGN125 | 6,039 | 9,519 | 3,762 |
-| ZVG10 | 5,228 | 5,628 | 2,619 |
-| GRJ79 | 4,485 | 8,439 | 230 |
-| AXAA54 | 3,193 | 4,579 | 1,003 |
-| GRJ200 | 2,714 | 5,385 | 0 |
-| AXAH54 | 2,238 | 1,896 | 1,315 |
-| AXVA70 | 1,820 | 3,223 | 190 |
-| VJA310 | 1,723 | 1,445 | 6,096 |
-| GRH322 | 1,338 | 1,617 | 792 |
-| AZSH30 | 1,256 | 911 | 1,103 |
-| TJA250 | 1,242 | 2 | 1,450 |
-| AXVA80 | 1,093 | 0 | 1,465 |
-| VJH310 | 575 | 0 | 1,943 |
-| AXVH71 | 575 | 922 | 109 |
+| TGN121 | 11,983 | 1,166 | 15,322 |
+| GRJ300 | 3,637 | 348 | 4,404 |
+| TGN126 | 3,436 | 440 | 4,411 |
+| ZRE211 | 2,776 | 715 | 2,475 |
+| ZVG10 | 1,693 | 205 | 1,705 |
+| VJA310 | 1,602 | 1,214 | 5,699 |
+| VJA300 | 1,294 | 180 | 1,364 |
+| GGN125 | 1,039 | 195 | 1,072 |
+| TJA250 | 1,033 | 0 | 1,225 |
+| AXVA80 | 924 | 0 | 1,248 |
+| AZSH30 | 923 | 479 | 894 |
+| AXAH54 | 821 | 110 | 804 |
+| AXAA54 | 642 | 95 | 642 |
+| VJH310 | 574 | 0 | 1,935 |
+| TZSH35 | 421 | 175 | 388 |
+| GRH322 | 386 | 24 | 521 |
+| AXVH80 | 340 | 0 | 437 |
+| FG212X5 | 304 | 5 | 358 |
+| GRJ79 | 248 | 98 | 189 |
+| GRJ150 | 229 | 203 | 86 |
 
 ## Matches whose properties differ
 
@@ -87,26 +106,26 @@ disagrees. Filter the CSV to `MatchedWithDifferences` and read the `Differences`
 
 | Basic model code | VINs affected | Differing matches |
 |---|---:|---:|
-| TGN121 | 26,190 | 186,758 |
-| GRJ300 | 11,025 | 109,231 |
-| ZRE211 | 12,294 | 92,330 |
-| TGN126 | 8,560 | 60,825 |
-| VJA300 | 4,408 | 38,767 |
-| ZVG10 | 4,803 | 35,661 |
-| GGN125 | 4,403 | 33,115 |
-| TJA250 | 2,603 | 30,318 |
-| VJA310 | 1,723 | 24,864 |
-| AXAH54 | 2,670 | 19,943 |
-| AZSH30 | 1,619 | 17,734 |
-| AXVA80 | 2,048 | 15,491 |
-| AXAA54 | 1,927 | 14,358 |
-| GRJ79 | 1,391 | 10,785 |
-| GRJ150 | 1,334 | 9,741 |
-| TZSH35 | 760 | 8,597 |
-| VJH310 | 575 | 8,407 |
-| GRH322 | 1,050 | 7,553 |
+| TGN121 | 17,820 | 129,130 |
+| GRJ300 | 8,390 | 89,991 |
+| ZRE211 | 6,385 | 49,091 |
+| TGN126 | 5,270 | 38,411 |
+| TJA250 | 2,211 | 27,408 |
+| VJA300 | 2,762 | 26,575 |
+| VJA310 | 1,602 | 23,137 |
+| ZVG10 | 3,014 | 22,627 |
+| GGN125 | 2,639 | 20,360 |
+| AZSH30 | 1,406 | 15,482 |
+| AXVA80 | 1,769 | 13,476 |
+| AXAH54 | 1,675 | 12,660 |
+| GRJ79 | 1,194 | 9,385 |
+| AXAA54 | 1,199 | 9,054 |
+| VJH310 | 574 | 8,397 |
+| TZSH35 | 713 | 8,072 |
 | VJH300 | 512 | 7,433 |
-| AXVH80 | 778 | 5,880 |
+| AXVH80 | 677 | 5,153 |
+| FG212X5 | 631 | 4,796 |
+| GRH322 | 593 | 4,381 |
 
 ## Free items whose model has no menu at all
 
@@ -115,29 +134,27 @@ code — nothing the menu side could ever generate for them (top 20 models by VI
 
 | Basic model code | VINs | Free items on them |
 |---|---:|---:|
-| AXUH78 | 3,062 | 21,682 |
-| URJ202 | 1,010 | 1,996 |
-| GRH320 | 601 | 4,511 |
+| AXUH78 | 1,800 | 14,521 |
 | FG242XN | 543 | 4,594 |
-| ZRE210 | 388 | 821 |
-| ASV70 | 337 | 667 |
-| F800LE | 260 | 509 |
-| FG211X5 | 242 | 1,919 |
+| GRH320 | 502 | 4,029 |
 | AXAL64 | 221 | 2,028 |
-| GRH303 | 198 | 1,241 |
-| FG241XN | 175 | 1,508 |
+| FG211X5 | 209 | 1,675 |
+| FG241XN | 174 | 1,500 |
 | MXAA64 | 144 | 1,354 |
 | AALH15 | 143 | 2,205 |
-| GRJ76 | 137 | 1,168 |
-| XZU710 | 132 | 256 |
+| GRJ76 | 131 | 1,120 |
 | GRJ78 | 125 | 1,002 |
-| VDJ200 | 85 | 170 |
-| FG8JJ7A | 31 | 59 |
-| N/A | 22 | 44 |
-| VXFA50 | 21 | 345 |
+| GRH303 | 121 | 990 |
+| VXFA50 | 15 | 247 |
+| AXAL62 | 12 | 116 |
+| GRJ71 | 10 | 80 |
+| ZN8 | 5 | 40 |
+| GXPA16 | 1 | 8 |
 
 ## Reading the numbers honestly
 
+- **These are live-vehicle numbers, not fleet-wide ones.** VINs with nothing pending never entered
+  the comparison; the scope table above says how many, and how many free items went with them.
 - **Menu codes are language-dependent.** This run generated codes under `en`; a
   `PackageCode` transcribed from another language's export will not match — rerun with that
   `--language` before reading such misses as real.
@@ -151,7 +168,8 @@ code — nothing the menu side could ever generate for them (top 20 models by VI
 
 ## The detail file
 
-`free-service-menu-parity-details.csv` — one row per free service item: `MatchResult` ∈ `Matched` /
+`free-service-menu-parity-details.csv` — one row per free service item **on a compared VIN**
+(skipped VINs appear nowhere in it): `MatchResult` ∈ `Matched` /
 `MatchedWithDifferences` / `FreeItemWithoutMenuCode` / `FreeItemCodeUnmatched`; the `Differences`
 column spells out property disagreements. The columns are laid out for reading: each compared pair
 sits side by side, the item's value immediately left of the menu's —

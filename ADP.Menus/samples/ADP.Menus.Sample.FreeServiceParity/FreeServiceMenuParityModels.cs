@@ -42,8 +42,9 @@ public enum FreeServiceParityVinOutcome
     /// <summary>At least one free item has no menu code, or a code the menu did not generate.</summary>
     Mismatch = 2,
 
-    /// <summary>The VIN carries no free service items — nothing to look up.</summary>
-    NoFreeItems = 3,
+    // 3 was NoFreeItems. A VIN with nothing pending never reaches an outcome now — carrying no free
+    // items at all included — because the scope gate drops it before anything is compared; it is
+    // counted only among the report's skipped VINs.
 
     /// <summary>The VIN has free items but no menu is authored under its derived basic model code.</summary>
     MenuNotFound = 4,
@@ -108,6 +109,9 @@ public class FreeServiceParityVinSummaryModel
     public FreeServiceParityVinOutcome Outcome { get; set; }
     public int FreeServiceItemCount { get; set; }
 
+    /// <summary>How many of them are still <c>Pending</c> — at least one, or the VIN would have been skipped.</summary>
+    public int PendingFreeServiceItemCount { get; set; }
+
     /// <summary>How many lines the whole menu generated — context, never counted against parity.</summary>
     public int MenuLineCount { get; set; }
 
@@ -118,15 +122,34 @@ public class FreeServiceParityVinSummaryModel
 }
 
 /// <summary>
-/// The whole run: per-VIN summaries plus fleet totals. The CSV export streams the detail rows to the
-/// file and leaves <see cref="Rows"/> empty so a full-population run stays memory-bounded.
+/// The whole run: per-VIN summaries plus fleet totals, over the VINs IN SCOPE (at least one pending
+/// free item); the skipped counts are the only trace the rest leave. The CSV export streams the
+/// detail rows to the file and leaves <see cref="Rows"/> empty so a full-population run stays
+/// memory-bounded.
 /// </summary>
 public class FreeServiceParityReportModel
 {
     public int RequestedVinCount { get; set; }
+
+    /// <summary>VINs actually compared — the ones carrying at least one PENDING free service item.</summary>
     public int VinCount { get; set; }
 
+    /// <summary>VINs skipped whole because nothing free is still pending on them (split by the two counts below).</summary>
+    public int SkippedVinCount { get; set; }
+
+    /// <summary>Of the skipped: VINs carrying no free service item at all.</summary>
+    public int SkippedVinsWithoutFreeItems { get; set; }
+
+    /// <summary>Of the skipped: VINs whose free items are all processed, expired or cancelled.</summary>
+    public int SkippedVinsWithoutPendingFreeItems { get; set; }
+
+    /// <summary>Free service items sitting on skipped VINs — never compared, never counted below.</summary>
+    public int SkippedFreeServiceItems { get; set; }
+
     public int TotalFreeServiceItems { get; set; }
+
+    /// <summary>Of the compared items, how many are the still-pending ones that put their VIN in scope.</summary>
+    public int TotalPendingFreeServiceItems { get; set; }
 
     /// <summary>Menu lines generated across all answered VINs — context, never counted against parity.</summary>
     public int TotalMenuLines { get; set; }
