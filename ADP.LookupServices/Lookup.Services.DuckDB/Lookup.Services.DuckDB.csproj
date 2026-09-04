@@ -20,6 +20,10 @@
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.10" />
 		<PackageReference Include="ShiftSoftware.ShiftEntity" Version="2026.8.30.1" />
 		<PackageReference Include="ShiftSoftware.ADP.Lookup.Services" Version="$(ADPVersion)" Condition="!Exists('..\Lookup.Services\Lookup.Services.csproj')" />
+		<!-- Hawta (bulk-lookup.md D9): the bulk engine reads a Hawta store or a published set through
+		     its manifest and bookkeeping contract. Source when the sibling project is on disk, the
+		     package of the same ADP version otherwise — the toggle every ADP project uses. -->
+		<PackageReference Include="ShiftSoftware.ADP.Hawta" Version="$(ADPVersion)" Condition="!Exists('..\..\ADP.Hawta\Hawta\Hawta.csproj')" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -28,5 +32,6 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Lookup.Services\Lookup.Services.csproj" Condition="Exists('..\Lookup.Services\Lookup.Services.csproj')" />
+		<ProjectReference Include="..\..\ADP.Hawta\Hawta\Hawta.csproj" Condition="Exists('..\..\ADP.Hawta\Hawta\Hawta.csproj')" />
 	</ItemGroup>
 </Project>

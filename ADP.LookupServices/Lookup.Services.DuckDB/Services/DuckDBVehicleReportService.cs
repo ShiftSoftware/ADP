@@ -1,15 +1,11 @@
 using CsvHelper;
 using CsvHelper.Configuration;
-using Parquet;
-using Parquet.Schema;
-using Parquet.Serialization;
 using ShiftSoftware.ADP.Lookup.Services.DTOsAndModels.VehicleLookup;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -605,83 +601,17 @@ public class DuckDBVehicleReportService(
         Func<List<string>, IEnumerable<VehicleLookupDTO>, List<TModel>> transform,
         VehicleLookupRequestOptions requestOptions = null)
     {
-        EnsureDirectoryExists(fileFullPath);
-
-        var (schema, propertyMappings) = BuildParquetSchema<TModel>();
-
-        int totalRows = 0;
-        bool firstChunk = true;
+        var file = new ParquetReportFile<TModel>(fileFullPath);
 
         foreach (var vinChunk in Chunk(allVins, batchSize))
         {
             var lookups = requestOptions is null
                 ? await vehicleLookupService.LookupAsync(vinChunk)
                 : await vehicleLookupService.LookupAsync(vinChunk, requestOptions);
-            var rows = transform(vinChunk, lookups);
-
-            if (rows.Count > 0)
-            {
-                var records = ConvertToParquetRecords(rows, propertyMappings);
-                using var fileStream = firstChunk
-                    ? File.Create(fileFullPath)
-                    : new FileStream(fileFullPath, FileMode.Open, FileAccess.ReadWrite);
-                await ParquetSerializer.SerializeUntypedAsync(
-                    records,
-                    schema,
-                    fileStream,
-                    new ParquetOptions { Append = !firstChunk });
-                firstChunk = false;
-            }
-
-            totalRows += rows.Count;
+            await file.AppendAsync(transform(vinChunk, lookups));
         }
 
-        return totalRows;
-    }
-
-    private static (ParquetSchema Schema, List<ParquetPropertyMapping> Mappings) BuildParquetSchema<TModel>()
-    {
-        var propertyMappings = new List<ParquetPropertyMapping>();
-
-        foreach (var property in typeof(TModel).GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(p => p.CanRead))
-        {
-            if (!TryGetParquetType(property.PropertyType, out var parquetType, out var isNullable, out var isEnum, out var isDateTimeOffset))
-                continue;
-
-            var fieldType = typeof(DataField<>).MakeGenericType(parquetType);
-            var field = (Field)Activator.CreateInstance(fieldType, property.Name, (bool?)isNullable);
-            propertyMappings.Add(new ParquetPropertyMapping(property, field, parquetType, isEnum, isDateTimeOffset));
-        }
-
-        var schema = new ParquetSchema(propertyMappings.Select(x => x.Field).ToArray());
-        return (schema, propertyMappings);
-    }
-
-    private static List<IDictionary<string, object>> ConvertToParquetRecords<TModel>(
-        List<TModel> rows,
-        List<ParquetPropertyMapping> propertyMappings)
-    {
-        var records = new List<IDictionary<string, object>>(rows.Count);
-
-        foreach (var row in rows)
-        {
-            var record = new Dictionary<string, object>(propertyMappings.Count, StringComparer.Ordinal);
-
-            foreach (var mapping in propertyMappings)
-            {
-                var value = mapping.Property.GetValue(row);
-                if (value is not null && mapping.IsEnum)
-                    value = Convert.ChangeType(value, mapping.ParquetType, CultureInfo.InvariantCulture);
-                else if (value is not null && mapping.IsDateTimeOffset)
-                    value = ((DateTimeOffset)value).UtcDateTime;
-
-                record[mapping.Property.Name] = value;
-            }
-
-            records.Add(record);
-        }
-
-        return records;
+        return (int)file.RowCount;
     }
 
     #endregion
@@ -690,29 +620,26 @@ public class DuckDBVehicleReportService(
 
     private static List<VehicleServiceItemReportModel> TransformServiceItemLookups(List<string> vinChunk, IEnumerable<VehicleLookupDTO> lookups)
     {
-        var bestItemsByServiceIdByVin = new Dictionary<string, Dictionary<string, VehicleServiceItemDTO>>(StringComparer.Ordinal);
-        var freeServiceItemStartDateByVin = new Dictionary<string, DateTime?>(StringComparer.Ordinal);
+        var lookupByVin = FirstLookupByVin(lookups);
+        var rows = new List<VehicleServiceItemReportModel>();
+        foreach (var vin in vinChunk)
+            if (lookupByVin.TryGetValue(vin, out var lookup))
+                rows.AddRange(VehicleReportRows.ServiceItems(vin, lookup));
+        return rows;
+    }
 
-        foreach (var lookup in lookups)
+    /// <summary>The first lookup returned for each VIN; a VIN the lookup did not answer is absent.</summary>
+    private static Dictionary<string, VehicleLookupDTO> FirstLookupByVin(IEnumerable<VehicleLookupDTO> lookups)
+    {
+        var lookupByVin = new Dictionary<string, VehicleLookupDTO>(StringComparer.Ordinal);
+        foreach (var lookup in lookups ?? Enumerable.Empty<VehicleLookupDTO>())
         {
             if (string.IsNullOrWhiteSpace(lookup?.VIN)) continue;
             var vinKey = NormalizeVin(lookup.VIN);
-            if (!bestItemsByServiceIdByVin.ContainsKey(vinKey))
-                bestItemsByServiceIdByVin[vinKey] = BuildBestItemsByServiceId(lookup.ServiceItems);
-            if (!freeServiceItemStartDateByVin.ContainsKey(vinKey))
-                freeServiceItemStartDateByVin[vinKey] = lookup.Warranty?.FreeServiceStartDate;
+            if (!lookupByVin.ContainsKey(vinKey))
+                lookupByVin[vinKey] = lookup;
         }
-
-        var rows = new List<VehicleServiceItemReportModel>();
-        foreach (var vin in vinChunk)
-        {
-            bestItemsByServiceIdByVin.TryGetValue(vin, out var bestItemsByServiceId);
-            bestItemsByServiceId ??= new Dictionary<string, VehicleServiceItemDTO>(StringComparer.Ordinal);
-            freeServiceItemStartDateByVin.TryGetValue(vin, out var freeServiceItemStartDate);
-            foreach (var item in bestItemsByServiceId.Values.OrderBy(x => x.ServiceItemID, ServiceItemIdComparer))
-                rows.Add(CreateRow(vin, item, freeServiceItemStartDate));
-        }
-        return rows;
+        return lookupByVin;
     }
 
     private static List<VehicleSscReportModel> TransformSscLookups(List<string> vinChunk, IEnumerable<VehicleLookupDTO> lookups)
@@ -784,373 +711,33 @@ public class DuckDBVehicleReportService(
 
     private static async Task WriteParquetAsync<TModel>(string fileFullPath, IEnumerable<TModel> rows)
     {
-        var outputDirectory = Path.GetDirectoryName(fileFullPath);
-        if (!string.IsNullOrWhiteSpace(outputDirectory))
-            Directory.CreateDirectory(outputDirectory);
-
-        var rowList = rows?.ToList() ?? new List<TModel>();
-        var propertyMappings = new List<ParquetPropertyMapping>();
-        foreach (var property in typeof(TModel).GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(p => p.CanRead))
-        {
-            if (!TryGetParquetType(property.PropertyType, out var parquetType, out var isNullable, out var isEnum, out var isDateTimeOffset))
-                continue;
-
-            var fieldType = typeof(DataField<>).MakeGenericType(parquetType);
-            var field = (Field)Activator.CreateInstance(fieldType, property.Name, (bool?)isNullable);
-            propertyMappings.Add(new ParquetPropertyMapping(property, field, parquetType, isEnum, isDateTimeOffset));
-        }
-
-        var schema = new ParquetSchema(propertyMappings.Select(x => x.Field).ToArray());
-        var records = new List<IDictionary<string, object>>(rowList.Count);
-
-        foreach (var row in rowList)
-        {
-            var record = new Dictionary<string, object>(propertyMappings.Count, StringComparer.Ordinal);
-
-            foreach (var mapping in propertyMappings)
-            {
-                var value = mapping.Property.GetValue(row);
-                if (value is not null && mapping.IsEnum)
-                    value = Convert.ChangeType(value, mapping.ParquetType, CultureInfo.InvariantCulture);
-                else if (value is not null && mapping.IsDateTimeOffset)
-                    value = ((DateTimeOffset)value).UtcDateTime;
-
-                record[mapping.Property.Name] = value;
-            }
-
-            records.Add(record);
-        }
-
-        using var stream = File.Create(fileFullPath);
-        await ParquetSerializer.SerializeUntypedAsync(records, schema, stream, new ParquetOptions());
+        var file = new ParquetReportFile<TModel>(fileFullPath);
+        await file.AppendAsync(rows?.ToList() ?? new List<TModel>());
+        await file.CompleteAsync();
     }
 
-    private static bool TryGetParquetType(Type propertyType, out Type parquetType, out bool isNullable, out bool isEnum, out bool isDateTimeOffset)
-    {
-        parquetType = propertyType;
-        isNullable = false;
-        isEnum = false;
-        isDateTimeOffset = false;
+    private static VehicleServiceItemReportModel CreateRow(string vin, VehicleServiceItemDTO item, DateTime? freeServiceItemStartDate) =>
+        VehicleReportRows.ServiceItem(vin, item, freeServiceItemStartDate);
 
-        var underlying = Nullable.GetUnderlyingType(propertyType);
-        if (underlying is not null)
-        {
-            propertyType = underlying;
-            isNullable = true;
-        }
-        else if (!propertyType.IsValueType)
-        {
-            isNullable = true;
-        }
+    private static string NormalizeVin(string vin) => VehicleReportRows.NormalizeVin(vin);
 
-        if (propertyType.IsEnum)
-        {
-            parquetType = Enum.GetUnderlyingType(propertyType);
-            isEnum = true;
-            return true;
-        }
+    private static VehicleSscReportModel CreateSscRow(string vin, SscDTO ssc) => VehicleReportRows.Ssc(vin, ssc);
 
-        if (propertyType == typeof(DateTimeOffset))
-        {
-            parquetType = typeof(DateTime);
-            isDateTimeOffset = true;
-            return true;
-        }
+    private static VehicleServiceHistoryLaborReportModel CreateServiceHistoryLaborRow(string vin, VehicleServiceHistoryDTO serviceHistoryEntry, VehicleLaborDTO labor) =>
+        VehicleReportRows.ServiceHistoryLabor(vin, serviceHistoryEntry, labor);
 
-        if (propertyType == typeof(string) ||
-            propertyType == typeof(bool) ||
-            propertyType == typeof(byte) ||
-            propertyType == typeof(sbyte) ||
-            propertyType == typeof(short) ||
-            propertyType == typeof(ushort) ||
-            propertyType == typeof(int) ||
-            propertyType == typeof(uint) ||
-            propertyType == typeof(long) ||
-            propertyType == typeof(ulong) ||
-            propertyType == typeof(float) ||
-            propertyType == typeof(double) ||
-            propertyType == typeof(decimal) ||
-            propertyType == typeof(DateTime) ||
-            propertyType == typeof(DateTimeOffset) ||
-            propertyType == typeof(Guid) ||
-            propertyType == typeof(byte[]))
-        {
-            parquetType = propertyType;
-            return true;
-        }
+    private static VehicleServiceHistoryPartReportModel CreateServiceHistoryPartRow(string vin, VehicleServiceHistoryDTO serviceHistoryEntry, VehiclePartDTO part) =>
+        VehicleReportRows.ServiceHistoryPart(vin, serviceHistoryEntry, part);
 
-        return false;
-    }
+    private static VehicleLookupTopLevelReportModel CreateVehicleLookupTopLevelRow(string vin, VehicleLookupDTO lookup) =>
+        VehicleReportRows.TopLevel(vin, lookup);
 
-    private sealed class ParquetPropertyMapping
-    {
-        public ParquetPropertyMapping(PropertyInfo property, Field field, Type parquetType, bool isEnum, bool isDateTimeOffset)
-        {
-            Property = property;
-            Field = field;
-            ParquetType = parquetType;
-            IsEnum = isEnum;
-            IsDateTimeOffset = isDateTimeOffset;
-        }
+    /// <summary>The service-items report's deduplication; lives in <see cref="VehicleReportRows"/>, kept here for callers that found it here.</summary>
+    public static Dictionary<string, VehicleServiceItemDTO> BuildBestItemsByServiceId(IEnumerable<VehicleServiceItemDTO> items) =>
+        VehicleReportRows.BuildBestItemsByServiceId(items);
 
-        public PropertyInfo Property { get; }
-        public Field Field { get; }
-        public Type ParquetType { get; }
-        public bool IsEnum { get; }
-        public bool IsDateTimeOffset { get; }
-    }
-
-    private static VehicleServiceItemReportModel CreateRow(string vin, VehicleServiceItemDTO item, DateTime? freeServiceItemStartDate)
-    {
-        return new VehicleServiceItemReportModel
-        {
-            VIN = vin ?? string.Empty,
-            FreeServiceItemStartDate = freeServiceItemStartDate,
-            ServiceItemId = item?.ServiceItemID?.Trim() ?? string.Empty,
-            ServiceItemName = item?.Name ?? string.Empty,
-            GroupName = item?.Group?.Name ?? string.Empty,
-            GroupTabOrder = item?.Group?.TabOrder,
-            GroupIsDefault = item?.Group?.IsDefault,
-            GroupIsSequential = item?.Group?.IsSequential,
-            Status = item?.Status ?? string.Empty,
-            StatusEnum = item?.StatusEnum,
-            Type = item?.Type ?? string.Empty,
-            TypeEnum = item?.TypeEnum,
-            Price = item?.Cost,
-            MenuCode = item?.PackageCode ?? string.Empty,
-            ActivatedAt = item?.ActivatedAt == default ? null : item.ActivatedAt,
-            ExpiresAt = item?.ExpiresAt,
-            ClaimDate = item?.ClaimDate,
-            CampaignId = item?.CampaignID,
-            CampaignUniqueReference = item?.CampaignUniqueReference ?? string.Empty,
-            ModelCostId = item?.ModelCostID,
-            PaidServiceInvoiceLineId = item?.PaidServiceInvoiceLineID ?? string.Empty,
-            CompanyName = item?.CompanyName ?? string.Empty,
-            InvoiceNumber = item?.InvoiceNumber ?? string.Empty,
-            JobNumber = item?.JobNumber ?? string.Empty,
-            MaximumMileage = item?.MaximumMileage,
-            Claimable = item?.Claimable,
-            ClaimingMethod = item?.ClaimingMethodEnum,
-            VehicleInspectionId = item?.VehicleInspectionID ?? string.Empty,
-            VehicleInspectionTypeId = item?.VehicleInspectionTypeID ?? string.Empty
-        };
-    }
-
-    private static string NormalizeVin(string vin)
-    {
-        return vin?.Trim()?.ToUpperInvariant();
-    }
-
-    private static VehicleSscReportModel CreateSscRow(string vin, SscDTO ssc)
-    {
-        // The flat CSV/Parquet SSC report still caps at 3 labors/parts (columns LaborCode1..3 / PartNumber1..3).
-        // SscDTO.Labors/Parts are now unbounded, so campaigns with >3 are truncated here. Widening the report
-        // schema (or pivoting to one row per part) is a deferred decision — see .shift/repos/adp/ssc-multi-part-labor/.
-        var labors = (ssc?.Labors ?? Enumerable.Empty<SSCLaborDTO>()).Take(3).ToList();
-        var parts = (ssc?.Parts ?? Enumerable.Empty<SSCPartDTO>()).Take(3).ToList();
-
-        var labor1 = labors.Count > 0 ? labors[0] : null;
-        var labor2 = labors.Count > 1 ? labors[1] : null;
-        var labor3 = labors.Count > 2 ? labors[2] : null;
-
-        var part1 = parts.Count > 0 ? parts[0] : null;
-        var part2 = parts.Count > 1 ? parts[1] : null;
-        var part3 = parts.Count > 2 ? parts[2] : null;
-
-        return new VehicleSscReportModel
-        {
-            VIN = vin ?? string.Empty,
-            SSCCode = ssc?.SSCCode ?? string.Empty,
-            Description = ssc?.Description ?? string.Empty,
-            Repaired = ssc?.Repaired ?? false,
-            RepairDate = ssc?.RepairDate,
-
-            LaborCode1 = labor1?.LaborCode ?? string.Empty,
-            LaborDescription1 = labor1?.LaborDescription ?? string.Empty,
-            LaborAllowedTime1 = labor1?.AllowedTime,
-
-            LaborCode2 = labor2?.LaborCode ?? string.Empty,
-            LaborDescription2 = labor2?.LaborDescription ?? string.Empty,
-            LaborAllowedTime2 = labor2?.AllowedTime,
-
-            LaborCode3 = labor3?.LaborCode ?? string.Empty,
-            LaborDescription3 = labor3?.LaborDescription ?? string.Empty,
-            LaborAllowedTime3 = labor3?.AllowedTime,
-
-            PartNumber1 = part1?.PartNumber ?? string.Empty,
-            PartDescription1 = part1?.PartDescription ?? string.Empty,
-            PartIsAvailable1 = part1?.IsAvailable,
-
-            PartNumber2 = part2?.PartNumber ?? string.Empty,
-            PartDescription2 = part2?.PartDescription ?? string.Empty,
-            PartIsAvailable2 = part2?.IsAvailable,
-
-            PartNumber3 = part3?.PartNumber ?? string.Empty,
-            PartDescription3 = part3?.PartDescription ?? string.Empty,
-            PartIsAvailable3 = part3?.IsAvailable,
-        };
-    }
-
-    private static VehicleServiceHistoryLaborReportModel CreateServiceHistoryLaborRow(string vin, VehicleServiceHistoryDTO serviceHistoryEntry, VehicleLaborDTO labor)
-    {
-        return new VehicleServiceHistoryLaborReportModel
-        {
-            VIN = vin ?? string.Empty,
-            ServiceType = serviceHistoryEntry?.ServiceType ?? string.Empty,
-            ServiceDate = serviceHistoryEntry?.ServiceDate,
-            Mileage = serviceHistoryEntry?.Mileage,
-            CompanyName = serviceHistoryEntry?.CompanyName ?? string.Empty,
-            BranchName = serviceHistoryEntry?.BranchName ?? string.Empty,
-            AccountNumber = serviceHistoryEntry?.AccountNumber ?? string.Empty,
-            InvoiceNumber = serviceHistoryEntry?.InvoiceNumber ?? string.Empty,
-            ParentInvoiceNumber = serviceHistoryEntry?.ParentInvoiceNumber ?? string.Empty,
-            JobNumber = serviceHistoryEntry?.JobNumber ?? string.Empty,
-
-            LaborCode = labor?.LaborCode ?? string.Empty,
-            LaborPackageCode = labor?.PackageCode ?? string.Empty,
-            LaborServiceCode = labor?.ServiceCode ?? string.Empty,
-            LaborServiceDescription = labor?.ServiceDescription ?? string.Empty,
-        };
-    }
-
-    private static VehicleServiceHistoryPartReportModel CreateServiceHistoryPartRow(string vin, VehicleServiceHistoryDTO serviceHistoryEntry, VehiclePartDTO part)
-    {
-        return new VehicleServiceHistoryPartReportModel
-        {
-            VIN = vin ?? string.Empty,
-            ServiceType = serviceHistoryEntry?.ServiceType ?? string.Empty,
-            ServiceDate = serviceHistoryEntry?.ServiceDate,
-            Mileage = serviceHistoryEntry?.Mileage,
-            CompanyName = serviceHistoryEntry?.CompanyName ?? string.Empty,
-            BranchName = serviceHistoryEntry?.BranchName ?? string.Empty,
-            AccountNumber = serviceHistoryEntry?.AccountNumber ?? string.Empty,
-            InvoiceNumber = serviceHistoryEntry?.InvoiceNumber ?? string.Empty,
-            ParentInvoiceNumber = serviceHistoryEntry?.ParentInvoiceNumber ?? string.Empty,
-            JobNumber = serviceHistoryEntry?.JobNumber ?? string.Empty,
-
-            PartNumber = part?.PartNumber ?? string.Empty,
-            PartQty = part?.QTY,
-            PartPackageCode = part?.PackageCode ?? string.Empty,
-            PartDescription = part?.PartDescription ?? string.Empty,
-        };
-    }
-
-    private static VehicleLookupTopLevelReportModel CreateVehicleLookupTopLevelRow(string vin, VehicleLookupDTO lookup)
-    {
-        var identifiers = lookup?.Identifiers;
-        var sale = lookup?.SaleInformation;
-        var broker = sale?.Broker;
-        var endCustomer = sale?.EndCustomer;
-        var warranty = lookup?.Warranty;
-        var variantInfo = lookup?.VehicleVariantInfo;
-        var vehicleSpecification = lookup?.VehicleSpecification;
-
-        return new VehicleLookupTopLevelReportModel
-        {
-            VIN = vin ?? string.Empty,
-            IsAuthorized = lookup?.IsAuthorized ?? false,
-            NextServiceDate = lookup?.NextServiceDate,
-            SSCLogId = lookup?.SSCLogId,
-            BasicModelCode = lookup?.BasicModelCode ?? string.Empty,
-
-            IdentifiersVin = identifiers?.VIN ?? string.Empty,
-            IdentifiersVariant = identifiers?.Variant ?? string.Empty,
-            IdentifiersKatashiki = identifiers?.Katashiki ?? string.Empty,
-            IdentifiersColor = identifiers?.Color ?? string.Empty,
-            IdentifiersTrim = identifiers?.Trim ?? string.Empty,
-            IdentifiersBrandId = identifiers?.BrandID ?? string.Empty,
-
-            SaleCountryId = sale?.CountryID ?? string.Empty,
-            SaleCountryName = sale?.CountryName ?? string.Empty,
-            SaleCompanyId = sale?.CompanyID ?? string.Empty,
-            SaleCompanyName = sale?.CompanyName ?? string.Empty,
-            SaleBranchId = sale?.BranchID ?? string.Empty,
-            SaleBranchName = sale?.BranchName ?? string.Empty,
-            SaleCustomerAccountNumber = sale?.CustomerAccountNumber ?? string.Empty,
-            SaleCustomerId = sale?.CustomerID ?? string.Empty,
-            SaleInvoiceDate = sale?.InvoiceDate,
-            SaleWarrantyActivationDate = sale?.WarrantyActivationDate,
-            SaleInvoiceNumber = sale?.InvoiceNumber ?? string.Empty,
-            SaleRegionId = sale?.RegionID ?? string.Empty,
-
-            SaleBrokerId = broker?.BrokerID,
-            SaleBrokerName = broker?.BrokerName ?? string.Empty,
-            SaleBrokerInvoiceNumber = broker?.InvoiceNumber,
-            SaleBrokerInvoiceDate = broker?.InvoiceDate,
-
-            SaleEndCustomerId = endCustomer?.ID ?? string.Empty,
-            SaleEndCustomerName = endCustomer?.Name ?? string.Empty,
-            SaleEndCustomerPhone = endCustomer?.Phone ?? string.Empty,
-            SaleEndCustomerIdNumber = endCustomer?.IDNumber ?? string.Empty,
-
-            WarrantyHasActiveWarranty = warranty?.HasActiveWarranty ?? false,
-            WarrantyStartDate = warranty?.WarrantyStartDate,
-            WarrantyEndDate = warranty?.WarrantyEndDate,
-            WarrantyActivationIsRequired = warranty?.ActivationIsRequired ?? false,
-            WarrantyHasExtendedWarranty = warranty?.HasExtendedWarranty ?? false,
-            WarrantyExtendedStartDate = warranty?.ExtendedWarrantyStartDate,
-            WarrantyExtendedEndDate = warranty?.ExtendedWarrantyEndDate,
-            WarrantyFreeServiceStartDate = warranty?.FreeServiceStartDate,
-
-            VariantInfoModelCode = variantInfo?.ModelCode ?? string.Empty,
-            VariantInfoSfx = variantInfo?.SFX ?? string.Empty,
-            VariantInfoModelYear = variantInfo?.ModelYear,
-
-            VehicleSpecModelCode = vehicleSpecification?.ModelCode ?? string.Empty,
-            VehicleSpecModelYear = vehicleSpecification?.ModelYear,
-            VehicleSpecProductionDate = vehicleSpecification?.ProductionDate,
-            VehicleSpecModelDescription = vehicleSpecification?.ModelDescription ?? string.Empty,
-            VehicleSpecVariantDescription = vehicleSpecification?.VariantDescription ?? string.Empty,
-            VehicleSpecClass = vehicleSpecification?.Class ?? string.Empty,
-            VehicleSpecBodyType = vehicleSpecification?.BodyType ?? string.Empty,
-            VehicleSpecEngine = vehicleSpecification?.Engine ?? string.Empty,
-            VehicleSpecCylinders = vehicleSpecification?.Cylinders ?? string.Empty,
-            VehicleSpecLightHeavyType = vehicleSpecification?.LightHeavyType ?? string.Empty,
-            VehicleSpecDoors = vehicleSpecification?.Doors ?? string.Empty,
-            VehicleSpecFuel = vehicleSpecification?.Fuel ?? string.Empty,
-            VehicleSpecTransmission = vehicleSpecification?.Transmission ?? string.Empty,
-            VehicleSpecSide = vehicleSpecification?.Side ?? string.Empty,
-            VehicleSpecEngineType = vehicleSpecification?.EngineType ?? string.Empty,
-            VehicleSpecTankCap = vehicleSpecification?.TankCap ?? string.Empty,
-            VehicleSpecStyle = vehicleSpecification?.Style ?? string.Empty,
-            VehicleSpecFuelLiter = vehicleSpecification?.FuelLiter,
-            VehicleSpecExteriorColor = vehicleSpecification?.ExteriorColor ?? string.Empty,
-            VehicleSpecInteriorColor = vehicleSpecification?.InteriorColor ?? string.Empty,
-        };
-    }
-
-    /// <summary>
-    /// The service-items report's deduplication, public so audits and host tooling reuse the exact
-    /// semantics instead of re-deciding them: one row per <c>ServiceItemID</c>, keeping the row with
-    /// the latest claim, then activation, then expiry. Items with no id are dropped here — a caller
-    /// that must not lose them collects them separately.
-    /// </summary>
-    public static Dictionary<string, VehicleServiceItemDTO> BuildBestItemsByServiceId(IEnumerable<VehicleServiceItemDTO> items)
-    {
-        return (items ?? Enumerable.Empty<VehicleServiceItemDTO>())
-            .Where(x => !string.IsNullOrWhiteSpace(x.ServiceItemID))
-            .GroupBy(x => x.ServiceItemID.Trim(), StringComparer.Ordinal)
-            .ToDictionary(g => g.Key, g => g
-                .OrderByDescending(x => x.ClaimDate ?? DateTimeOffset.MinValue)
-                .ThenByDescending(x => x.ActivatedAt)
-                .ThenByDescending(x => x.ExpiresAt ?? DateTime.MinValue)
-                .First(), StringComparer.Ordinal);
-    }
-
-    /// <summary>
-    /// The report's service-item ordering: numeric when both ids parse, ordinal otherwise. Public for
-    /// the same reason as <see cref="BuildBestItemsByServiceId"/>.
-    /// </summary>
-    public static readonly IComparer<string> ServiceItemIdComparer = Comparer<string>.Create((left, right) =>
-    {
-        if (long.TryParse(left, NumberStyles.Integer, CultureInfo.InvariantCulture, out var leftValue)
-            && long.TryParse(right, NumberStyles.Integer, CultureInfo.InvariantCulture, out var rightValue))
-        {
-            return leftValue.CompareTo(rightValue);
-        }
-
-        return string.Compare(left, right, StringComparison.Ordinal);
-    });
+    /// <summary>The report's service-item ordering; lives in <see cref="VehicleReportRows"/>, kept here for callers that found it here.</summary>
+    public static readonly IComparer<string> ServiceItemIdComparer = VehicleReportRows.ServiceItemIdComparer;
 
     private sealed class VehicleServiceItemReportModelCsvMap : ClassMap<VehicleServiceItemReportModel>
     {

@@ -30,6 +30,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Lookup.Services\Lookup.Services.csproj" />
+		<ProjectReference Include="..\Lookup.Services.DuckDB\Lookup.Services.DuckDB.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

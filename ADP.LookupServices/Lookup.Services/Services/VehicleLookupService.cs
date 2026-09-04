@@ -393,6 +393,27 @@ public class VehicleLookupService
             HasUnpricedParts = line.HasUnpricedParts,
         };
 
+    /// <summary>
+    /// Evaluates one vehicle from an aggregate the caller already holds. This is the bulk engine's
+    /// entry (bulk-lookup.md D8): it streams aggregates in VIN order and never asks the storage for
+    /// them, so the storage it is given only has to answer reference lookups. Same evaluators, same
+    /// order, same options as a bulk <see cref="LookupAsync(IEnumerable{string}, VehicleLookupRequestOptions)"/>;
+    /// logs are never written from here. <paramref name="sharedMenuSectionCache"/> is the per-run
+    /// cache a bulk caller passes so vehicles of one model share one menu evaluation.
+    /// </summary>
+    public Task<VehicleLookupDTO> LookupAsync(
+        CompanyDataAggregateModel aggregate,
+        VehicleLookupRequestOptions requestOptions = null,
+        Dictionary<string, VehicleServiceMenuDTO> sharedMenuSectionCache = null)
+    {
+        if (aggregate is null)
+            throw new ArgumentNullException(nameof(aggregate));
+        var vin = NormalizeVin(aggregate.VIN);
+        if (string.IsNullOrWhiteSpace(vin))
+            throw new ArgumentException("The aggregate carries no VIN.", nameof(aggregate));
+        return LookupFromAggregateAsync(vin, aggregate, requestOptions ?? new VehicleLookupRequestOptions(), disableLogs: true, sharedMenuSectionCache);
+    }
+
     private static string NormalizeVin(string vin)
     {
         return vin?.Trim()?.ToUpperInvariant();

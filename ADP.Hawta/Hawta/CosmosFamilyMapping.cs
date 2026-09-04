@@ -85,6 +85,49 @@ public sealed class CosmosFamilyMapping
     /// runs the typed reducer once per group.
     /// </summary>
     public CosmosGroupProjection? Grouping { get; init; }
+
+    /// <summary>
+    /// The mapping for a SERVING table — one typed from the canonical model itself. There is
+    /// nothing left to map: a stored row materializes as the model, and the model is the
+    /// document body. The host supplies only the two things a table cannot know — the document
+    /// id and the partition key — and optionally which rows are documents at all.
+    ///
+    /// <para>This is the whole point of a serving table: the projection SQL that filled it is
+    /// the family's single mapping, and the pump, recon and every lookup consumer read the same
+    /// rows. A per-family C# delegate would be a second interpreter of the same source.</para>
+    /// </summary>
+    public static CosmosFamilyMapping ForModel<TModel>(
+        SnapshotTableDefinition<TModel> table,
+        string family,
+        string database,
+        string container,
+        Func<TModel, string> id,
+        Func<TModel, IReadOnlyList<object?>> partitionKey,
+        Func<TModel, bool>? predicate = null)
+        where TModel : new()
+    {
+        ArgumentNullException.ThrowIfNull(table);
+        ArgumentException.ThrowIfNullOrWhiteSpace(family);
+        ArgumentNullException.ThrowIfNull(id);
+        ArgumentNullException.ThrowIfNull(partitionKey);
+
+        return new CosmosFamilyMapping
+        {
+            Family = family,
+            Database = database,
+            Container = container,
+            Predicate = predicate is null ? null : row => predicate(table.Read(row)),
+            Map = row =>
+            {
+                var model = table.Read(row);
+                var documentId = id(model);
+                if (string.IsNullOrWhiteSpace(documentId))
+                    throw new InvalidDataException(
+                        $"Serving row '{row.PrimaryKey}' of {table.Name} maps to family {family} with a blank document id.");
+                return CosmosDocument.FromModel(documentId, partitionKey(model), model);
+            },
+        };
+    }
 }
 
 /// <summary>

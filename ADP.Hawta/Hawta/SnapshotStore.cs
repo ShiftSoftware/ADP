@@ -39,6 +39,7 @@ public sealed class SnapshotStore : IDisposable
             ApplyExtensionDirectories(connection, options.ExtensionDirectories);
             ProvisionAzureExtension(connection, options.AzureConnectionString, options.ExtensionDirectories);
             ApplyAzureCredential(connection, options.AzureConnectionString);
+            options.ConfigureConnection?.Invoke(connection);
             var store = new SnapshotStore(connection);
             store.Bootstrap(options.SchemaVersion);
             return store;
@@ -343,6 +344,20 @@ public sealed class SnapshotStore : IDisposable
                 "Container" VARCHAR NOT NULL,
                 "ContinuationToken" VARCHAR NOT NULL,
                 "IngestVersion" VARCHAR,
+                "StampedAtUtc" TIMESTAMP NOT NULL
+            )
+            """);
+
+        // What each PROJECTION source saw the last time it merged successfully: the highest change
+        // sequence across its inputs, under which configuration. Additive on the same terms as the
+        // two stamp tables above — an existing write DB gains it empty on the next open, and every
+        // projection simply re-runs once and re-stamps.
+        Execute(
+            """
+            CREATE TABLE IF NOT EXISTS meta.ProjectionStamps (
+                "SourceKey" VARCHAR NOT NULL PRIMARY KEY,
+                "InputWatermark" BIGINT NOT NULL,
+                "ConfigFingerprint" VARCHAR NOT NULL,
                 "StampedAtUtc" TIMESTAMP NOT NULL
             )
             """);
@@ -687,6 +702,73 @@ public sealed class SnapshotStore : IDisposable
     // the real nullable scope. Scope matching is case-sensitive SQL equality, deliberately in
     // agreement with the merge's IS NOT DISTINCT FROM; any caller comparing the returned KEY in
     // C# must use ordinal comparison for the same reason.
+
+    // ---- Projection inputs --------------------------------------------------------------------
+    // A projection reads other snapshot tables. Two facts about an input decide how: where its
+    // rows currently live (Resident in this database, or Deferred to the published copy), and how
+    // far its change sequence has moved. Both are answered here so the ingestor never has to know
+    // residency exists.
+
+    /// <summary>
+    /// The relation a projection reads for one input: that table's LIVE rows — tombstones
+    /// excluded, bookkeeping columns included — from the write database when it is Resident and
+    /// from its published parquet copy when it is Deferred. A Deferred input is never hydrated by
+    /// a projection; the copy is complete by definition, and reading it in place is what keeps a
+    /// large quiet catalog off the write database while something small derives from it.
+    /// </summary>
+    public string LiveRowsRelation(SnapshotTableDefinition table)
+    {
+        var source = ReadDeferredTableRecord(table.Name) is { } deferred
+            ? deferred.ReadParquetSql()
+            : table.QualifiedName;
+        return $"(SELECT * FROM {source} WHERE \"{BookkeepingColumns.Deleted}\" = false)";
+    }
+
+    /// <summary>
+    /// The highest durable change sequence any row of the table carries, tombstones included —
+    /// zero for an empty table. Moves only when a merge accepted a new row version, which is
+    /// exactly the question "could a projection over this table produce something different".
+    /// </summary>
+    public long ReadChangeSequenceWatermark(SnapshotTableDefinition table)
+    {
+        var source = ReadDeferredTableRecord(table.Name) is { } deferred
+            ? deferred.ReadParquetSql()
+            : table.QualifiedName;
+        var value = ExecuteScalar($"SELECT max(\"{BookkeepingColumns.ChangeSequence}\") FROM {source}");
+        return value is null or DBNull ? 0 : Convert.ToInt64(value);
+    }
+
+    public ProjectionStamp? ReadProjectionStamp(string sourceKey)
+    {
+        using var command = Connection.CreateCommand();
+        command.CommandText =
+            """
+            SELECT "SourceKey", "InputWatermark", "ConfigFingerprint", "StampedAtUtc"
+            FROM meta.ProjectionStamps WHERE "SourceKey" = ?
+            """;
+        AddParameters(command, [sourceKey]);
+
+        using var reader = command.ExecuteReader();
+        if (!reader.Read())
+            return null;
+
+        return new ProjectionStamp(
+            reader.GetString(0),
+            reader.GetInt64(1),
+            reader.GetString(2),
+            AsUtc(reader.GetDateTime(3)));
+    }
+
+    public void WriteProjectionStamp(ProjectionStamp stamp)
+    {
+        Execute("DELETE FROM meta.ProjectionStamps WHERE \"SourceKey\" = ?", stamp.SourceKey);
+        Execute(
+            "INSERT INTO meta.ProjectionStamps VALUES (?, ?, ?, ?)",
+            stamp.SourceKey, stamp.InputWatermark, stamp.ConfigFingerprint, stamp.StampedAtUtc);
+    }
+
+    public void ClearProjectionStamp(string sourceKey) =>
+        Execute("DELETE FROM meta.ProjectionStamps WHERE \"SourceKey\" = ?", sourceKey);
 
     /// <summary>
     /// The source key owning one (table, scope), or null when no merge or rebuild has ever

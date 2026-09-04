@@ -31,6 +31,13 @@ public sealed class SnapshotAgentOptions
     /// </summary>
     public string? AzureConnectionString { get; init; }
 
+    /// <summary>
+    /// Runs against every write-DB connection the loop opens, before the schema bootstrap — where a
+    /// host registers the DuckDB scalar functions its projection sources call. See
+    /// <see cref="SnapshotStoreOptions.ConfigureConnection"/>.
+    /// </summary>
+    public Action<DuckDB.NET.Data.DuckDBConnection>? ConfigureStoreConnection { get; init; }
+
     /// <summary>The read tier's location (local folder in dev, the blob container in prod).</summary>
     public required string PublishDirectory { get; init; }
 
@@ -573,6 +580,15 @@ public sealed class SnapshotAgentLoop : IDisposable
     }
 
     /// <summary>Opens (or rebuilds) the write DB. Returns true when this was a cold start that restored from the published set.</summary>
+    private SnapshotStoreOptions StoreOptions() => new()
+    {
+        DatabasePath = options.WriteDatabasePath,
+        ExtensionDirectory = options.ExtensionDirectory,
+        ExtensionDirectories = options.ExtensionDirectories,
+        AzureConnectionString = options.AzureConnectionString,
+        ConfigureConnection = options.ConfigureStoreConnection,
+    };
+
     private bool EnsureStore()
     {
         if (store is not null)
@@ -581,13 +597,7 @@ public sealed class SnapshotAgentLoop : IDisposable
         var existed = File.Exists(options.WriteDatabasePath);
         try
         {
-            store = SnapshotStore.Open(new SnapshotStoreOptions
-            {
-                DatabasePath = options.WriteDatabasePath,
-                ExtensionDirectory = options.ExtensionDirectory,
-                ExtensionDirectories = options.ExtensionDirectories,
-                AzureConnectionString = options.AzureConnectionString,
-            });
+            store = SnapshotStore.Open(StoreOptions());
         }
         catch (SnapshotSchemaMismatchException exception)
         {
@@ -595,13 +605,7 @@ public sealed class SnapshotAgentLoop : IDisposable
                 $"Write DB schema v{exception.Actual} != v{exception.Expected} — rebuilding from the published set.",
                 exception: exception);
             DeleteWriteDatabase();
-            store = SnapshotStore.Open(new SnapshotStoreOptions
-            {
-                DatabasePath = options.WriteDatabasePath,
-                ExtensionDirectory = options.ExtensionDirectory,
-                ExtensionDirectories = options.ExtensionDirectories,
-                AzureConnectionString = options.AzureConnectionString,
-            });
+            store = SnapshotStore.Open(StoreOptions());
             existed = false;
         }
         catch (DuckDB.NET.Data.DuckDBException exception) when (existed)
@@ -615,13 +619,7 @@ public sealed class SnapshotAgentLoop : IDisposable
                 "Write DB failed to open — presuming corruption; deleting and rebuilding from the published set.",
                 exception: exception);
             DeleteWriteDatabase();
-            store = SnapshotStore.Open(new SnapshotStoreOptions
-            {
-                DatabasePath = options.WriteDatabasePath,
-                ExtensionDirectory = options.ExtensionDirectory,
-                ExtensionDirectories = options.ExtensionDirectories,
-                AzureConnectionString = options.AzureConnectionString,
-            });
+            store = SnapshotStore.Open(StoreOptions());
             existed = false;
         }
 

@@ -912,8 +912,11 @@ public class DuckDBVehicleLookupStorageService(global::DuckDB.NET.Data.DuckDBCon
         {
             var val = reader.GetValue(ordinal);
             if (val is DateTimeOffset dto) return dto;
-            if (val is DateTime dt) return new DateTimeOffset(dt);
-            return DateTimeOffset.Parse(val.ToString());
+            // A TIMESTAMPTZ cell comes back as its UTC wall-clock with no kind; read it as UTC so the
+            // instant does not move with the host's time zone (it never did in production, which runs
+            // in UTC; it did on every developer machine).
+            if (val is DateTime dt) return new DateTimeOffset(DateTime.SpecifyKind(dt, DateTimeKind.Utc));
+            return DateTimeOffset.Parse(val.ToString(), System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AssumeUniversal);
         }
 
         if (underlyingType == typeof(Guid))

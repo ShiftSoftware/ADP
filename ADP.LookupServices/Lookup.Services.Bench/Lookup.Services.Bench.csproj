@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<Import Project="..\..\GlobalSettings.props" />
+
+	<!-- The bulk-lookup measurement harness (bulk-lookup.md D10): evaluator CPU per VIN and the
+	     streamed data plane's throughput, against the per-VIN path, over a local source. Deliberately
+	     NOT in ADP.sln and never packed: it needs a source on the developer's machine and a client
+	     profile. A client's rules, roster and report set are an IBenchProfile in the client's own
+	     repository, never here; point BenchProfileDir (or the LOOKUP_BENCH_PROFILES environment
+	     variable) at that directory and the profile is compiled in:
+	       dotnet run -c Release -.-project Lookup.Services.Bench -p:BenchProfileDir=<dir> -.- -.-profile=<name> -.-snapshot=<read snapshot> [-.-vins=N] [-.-degree=N]
+	     (read the dashes as dashes). The source is -.-snapshot=<read snapshot>, -.-store=<Hawta write DB>
+	     or -.-publish=<Hawta publish directory>. With -.-report=<dir> it runs the host stage (the report
+	     files) over the source instead of the timed passes, and with -.-compare=<dir> diffs them against
+	     the copies a host published. The identity hash-id salt comes from -.-hash-salt= or the
+	     ADP_LOOKUP_HASH_SALT environment variable, never from this source. -->
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net10.0</TargetFramework>
+		<LangVersion>latest</LangVersion>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<IsPackable>false</IsPackable>
+		<ServerGarbageCollection>true</ServerGarbageCollection>
+		<ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+		<TieredPGO>true</TieredPGO>
+		<RootNamespace>ShiftSoftware.ADP.Lookup.Services.Bench</RootNamespace>
+		<AssemblyName>Lookup.Services.Bench</AssemblyName>
+		<BenchProfileDir Condition="'$(BenchProfileDir)' == ''">$(LOOKUP_BENCH_PROFILES)</BenchProfileDir>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.10" />
+		<ProjectReference Include="..\Lookup.Services.DuckDB\Lookup.Services.DuckDB.csproj" />
+	</ItemGroup>
+
+	<!-- The client's profile source, compiled in from outside this repository. -->
+	<ItemGroup Condition="'$(BenchProfileDir)' != ''">
+		<Compile Include="$(BenchProfileDir)\**\*.cs" Link="Profiles\%(RecursiveDir)%(Filename)%(Extension)" />
+	</ItemGroup>
+</Project>

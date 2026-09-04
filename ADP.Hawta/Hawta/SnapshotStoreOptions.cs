@@ -88,6 +88,14 @@ public sealed class SnapshotStoreOptions
     /// <para><b>Never log it.</b> It carries the account key or SAS.</para>
     /// </summary>
     public string? AzureConnectionString { get; init; }
+
+    /// <summary>
+    /// Runs against the open connection before the schema bootstrap — the place a host registers
+    /// the DuckDB scalar functions its projection SQL calls (hash-id encoders, say). A function is
+    /// connection-scoped in DuckDB, so this runs on every open rather than once per process; keep
+    /// it idempotent and cheap.
+    /// </summary>
+    public Action<DuckDB.NET.Data.DuckDBConnection>? ConfigureConnection { get; init; }
 }
 
 /// <summary>Thrown when the write database's schema sentinel doesn't match the package's expectation.</summary>
