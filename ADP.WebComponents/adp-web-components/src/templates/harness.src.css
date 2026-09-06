@@ -37,6 +37,7 @@
    compiled harness.css back into itself would be circular. */
 @source "./**/*.html";
 @source "./harness.js";
+@source "./site-header.js";
 @source "../index.html";
 
 @plugin "daisyui" {
@@ -102,6 +103,10 @@
    * rather than a rule so the utility on the element still wins, which keeps
    * R11 (no !important) intact.
    */
+  /* Lets a height transition animate to and from the keyword auto, which is what
+     makes a <details> row able to open smoothly. Ignored where unsupported. */
+  interpolate-size: allow-keywords;
+
   --leading-display: 1.05;
   --leading-heading: 1.2;
 
@@ -220,7 +225,7 @@ html[lang='ku'] {
 
   --radius-selector: 999px;
   --radius-field: 6px;
-  --radius-box: 16px;
+  --radius-box: 12px;
 
   --size-selector: 0.25rem;
   --size-field: 0.25rem;
@@ -266,7 +271,7 @@ html[lang='ku'] {
 
   --radius-selector: 999px;
   --radius-field: 6px;
-  --radius-box: 16px;
+  --radius-box: 12px;
 
   --size-selector: 0.25rem;
   --size-field: 0.25rem;
@@ -299,6 +304,17 @@ html[lang='ku'] {
    * every section band — the page alternates base-100 and base-200 behind it.
    */
   .code {
+    /*
+     * Padding, border and radius live HERE rather than on each use site. They were
+     * utilities on the landing page and absent everywhere else, so every snippet
+     * outside that one page rendered flush against its own edge.
+     *
+     * A figure that draws its own frame around the block overrides the radius and
+     * border with utilities; the padding is what it wants either way.
+     */
+    padding: 0.875rem 1.125rem;
+    border: 1px solid color-mix(in srgb, var(--code-fg) 12%, transparent);
+    border-radius: var(--radius-box);
     background: var(--code-bg);
     color: var(--code-fg);
     font-family: var(--font-mono);

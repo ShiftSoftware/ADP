@@ -18,6 +18,7 @@ import {
   handleFormSubmit,
   formStructureRenderedHandler,
   getMarketingValues,
+  resolveIsMobileForm,
 } from '~features/form-hook';
 import { GeneralFormLocal, LanguageKeys, MultiLingual, sharedFormLocalesSchema } from '~features/multi-lingual';
 import getLanguageFromUrl from '~lib/get-language-from-url';
@@ -121,8 +122,7 @@ export class VehicleQuotationForm implements FormHookInterface<VehicleQuotation>
       };
 
       let requestEndpoint = '';
-      // @ts-ignore
-      const isMobileForm = Object.hasOwn(this.structure?.data, 'isMobileForm') ? !!this.structure?.data?.isMobileForm : this.isMobileForm;
+      const isMobileForm = resolveIsMobileForm(this.structure, this.isMobileForm);
 
       if (isMobileForm) {
         const token = await this.getMobileToken();

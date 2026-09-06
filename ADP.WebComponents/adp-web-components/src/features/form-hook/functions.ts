@@ -7,6 +7,21 @@ import { AnyObjectSchema } from 'yup';
 import { Grecaptcha } from '~lib/recaptcha';
 import { formatISO, parse } from 'date-fns';
 
+/**
+ * `data` is optional on the structure type, and `Object.hasOwn(undefined, ...)`
+ * throws. That throw landed in `formDidLoadHandler` before `formContext.form`
+ * was ever assigned, so a form given a malformed structure -- or none at all --
+ * never mounted `form-structure` and sat on its loader forever. The
+ * "wrong form structure" panel was unreachable, because it only renders inside
+ * the component that never mounted.
+ *
+ * A present-but-false `isMobileForm` still has to beat the prop, so this is a
+ * key check rather than a truthiness check.
+ */
+export const resolveIsMobileForm = (structure: { data?: Record<string, any> } | undefined, fallback: boolean) =>
+  // @ts-ignore -- Object.hasOwn is ES2022; tsconfig targets es2021
+  Object.hasOwn(structure?.data ?? {}, 'isMobileForm') ? !!structure.data.isMobileForm : fallback;
+
 export type FormLanguageChange = {
   form: FormHook<any>;
   locale: Record<string, any>;
@@ -107,8 +122,7 @@ export const formDidLoadHandler = async <T, B>(formContext: FormDidLoadHandler<B
 
   await formContext.changeLanguage(formContext.language);
 
-  // @ts-ignore
-  const isMobileForm = Object.hasOwn(formContext.structure?.data, 'isMobileForm') ? !!formContext.structure?.data?.isMobileForm : formContext.isMobileForm;
+  const isMobileForm = resolveIsMobileForm(formContext.structure, formContext.isMobileForm);
 
   if (!isMobileForm) {
     try {
@@ -198,8 +212,6 @@ export const onFormSubmit = async <T>({ context, formValues, middleware, afterSu
 
     if (context.structure?.data?.extraPayload) payload = { ...payload, ...context.structure?.data?.extraPayload };
 
-    if (hasAdditionalData) payload.additionalData = { ...additionalData };
-
     if (context?.extraPayload) payload = { ...payload, ...context?.extraPayload };
 
     if (hasAdditionalData) {
@@ -218,13 +230,25 @@ export const onFormSubmit = async <T>({ context, formValues, middleware, afterSu
             payload[tempKey] = parse(payload[tempKey], truncateValue, new Date());
           } else if (oldKey.startsWith('format date: ')) {
             const tempKey = oldKey.replaceAll('format date: ', '');
-            payload[tempKey] = formatISO(payload[tempKey]);
+            const parsed = payload[tempKey];
+
+            // A truncatedFields chain can name a field that is not in the form —
+            // omitted by the host, or on a step that was never reached. parse() then
+            // yields an Invalid Date and formatISO throws a RangeError, which the
+            // submit path surfaces to the visitor as if the server had said it.
+            if (parsed instanceof Date && !Number.isNaN(parsed.getTime())) payload[tempKey] = formatISO(parsed);
+            else delete payload[tempKey];
           } else {
             additionalData[truncateValue] = payload[oldKey];
             delete payload[oldKey];
           }
         }
       });
+
+      // Snapshotted before the loop ran, this used to send an object that was
+      // always empty -- while the loop filled a copy nobody read and the
+      // `delete` below dropped the original. Every renamed field was lost.
+      payload.additionalData = additionalData;
     }
 
     let header: Record<string, any> = {
@@ -238,8 +262,7 @@ export const onFormSubmit = async <T>({ context, formValues, middleware, afterSu
     if (context.structure?.data?.extraHeader) header = { ...header, ...context.structure?.data?.extraHeader };
 
     let requestEndpoint = '';
-    // @ts-ignore
-    const isMobileForm = Object.hasOwn(context.structure?.data, 'isMobileForm') ? !!context.structure?.data?.isMobileForm : context.isMobileForm;
+    const isMobileForm = resolveIsMobileForm(context.structure, context.isMobileForm);
 
     if (isMobileForm) {
       const token = await context.getMobileToken();

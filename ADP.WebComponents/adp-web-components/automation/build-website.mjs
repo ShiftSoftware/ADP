@@ -177,11 +177,17 @@ await run(process.execPath, [path.join(root, 'automation', 'build-templates.mjs'
 await rm(outDir, { recursive: true, force: true });
 await mkdir(outDir, { recursive: true });
 
+// A `*.local.*` file is a developer's private override — gitignored, so it never
+// reaches CI, but it DOES sit in the working tree of the machine that runs this.
+// Copying one would publish whatever it holds, which is the opposite of why it is
+// kept out of the repo. Excluded here, and asserted absent from the output below.
+const isLocalOverride = source => /.local.[^.]+$/.test(path.basename(source));
+
 // harness.src.css is the Tailwind input, not an asset; harness.css is its output.
 await cp(path.join(root, 'src', 'templates'), path.join(outDir, 'templates'), {
   recursive: true,
   // The READMEs beside the assets document the source tree, not the site.
-  filter: source => path.basename(source) !== 'harness.src.css' && path.extname(source) !== '.md',
+  filter: source => path.basename(source) !== 'harness.src.css' && path.extname(source) !== '.md' && !isLocalOverride(source),
 });
 
 await cp(path.join(root, 'src', 'index.html'), path.join(outDir, 'index.html'));
@@ -277,6 +283,41 @@ for (const style of entries.filter(entry => entry.isFile() && entry.name.endsWit
  * pre-render off. Better a failed build than a site that quietly goes blank to
  * every crawler again.
  */
+// A filter is a promise; this is the check. If a private override ever reaches the
+// output — through a new copy step, a renamed pattern, a stale directory — the build
+// stops rather than publishing it.
+const leaked = (await readdir(outDir, { recursive: true, withFileTypes: true }))
+  .filter(entry => entry.isFile() && /.local.[^.]+$/.test(entry.name))
+  .map(entry => path.relative(outDir, path.join(entry.parentPath ?? entry.path, entry.name)));
+
+if (leaked.length) fatal(`private override files reached the site: ${leaked.join(', ')}`);
+
+/*
+ * Parse every inline module. A page is mostly markup, which the build already
+ * validates by rewriting it — but an inline <script type="module"> is the one
+ * part that can be syntactically broken and still copy, repoint and serve
+ * cleanly. When that happens the page renders its skip link and nothing else,
+ * and the only symptom is a console error nobody sees until a browser opens.
+ */
+for (const file of pages) {
+  const html = await readFile(file, 'utf8');
+  // Both tags must start their own line. A naive match also finds the literal
+  // `<script type="module">` inside the landing page's own sample-code strings,
+  // which is markup being displayed, not markup being run.
+  for (const [, body] of html.matchAll(/^[ 	]*<script type="module">$([\s\S]*?)^[ 	]*<\/script>$/gm)) {
+    try {
+      // Three things a module may legitimately do that `new Function` cannot parse:
+      // static imports, import.meta, and top-level await. Strip the first, stub the
+      // second, and wrap in an async arrow so the third is allowed.
+      const stripped = body.replace(/^\s*import[^;]+;/gm, '').replace(/\bimport\.meta\b/g, '({ url: "" })');
+
+      new Function('return (async () => {' + stripped + '\n})');
+    } catch (error) {
+      fatal(`inline module in ${path.relative(outDir, file)} does not parse: ${error.message}`);
+    }
+  }
+}
+
 if (prerendered < 30) fatal(`pre-render resolved only ${prerendered} strings — the x-text pattern has drifted`);
 
 const landingUrls = pages.filter(page => path.relative(outDir, page).split(path.sep).join('/') === 'index.html').map(() => '');

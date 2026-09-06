@@ -51,10 +51,10 @@ export class FormInput implements FormElement {
     if (newStaticValue) {
       const formatted = this.formatter ? this.formatter(newStaticValue) : newStaticValue;
       this.defaultValue = formatted;
-      this.inputRef.value = formatted;
+      if (this.inputRef) this.inputRef.value = formatted;
     } else if (notInitialLoad) {
       this.defaultValue = '';
-      this.inputRef.value = '';
+      if (this.inputRef) this.inputRef.value = '';
     }
   }
 

@@ -59,10 +59,10 @@ export class FormPickerInput implements FormElement {
   async onStaticValueChange(newStaticValue?: string, notInitialLoad = true) {
     if (newStaticValue) {
       this.defaultValue = newStaticValue;
-      this.inputRef.value = newStaticValue;
+      if (this.inputRef) this.inputRef.value = newStaticValue;
     } else if (notInitialLoad) {
       this.defaultValue = '';
-      this.inputRef.value = '';
+      if (this.inputRef) this.inputRef.value = '';
     }
 
     this.updateDisplayValue();

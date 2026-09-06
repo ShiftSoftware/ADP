@@ -1,0 +1,445 @@
+/* Droid Arabic Kufi, the Arabic/Kurdish face, loaded by the theme itself: the
+   font is not vendored in this repo and there is no @font-face for it in the
+   harness stylesheet, and a theme file is the unit a host copies — so it has to
+   carry its own dependency. An @import at the very top of a linked stylesheet
+   is valid CSS and is the only way a plain stylesheet can do that. If a host
+   blocks Google Fonts, the stack below falls through to Roboto then Arial and
+   nothing else changes. */
+@import url('https://fonts.googleapis.com/css2?family=Droid+Arabic+Kufi:wght@400;700&display=swap');
+
+/*
+ * Dark — the theme that proves the portal rule.
+ *
+ * A dark form is the case where the escaped overlays matter most. The dialog and
+ * the dropdown panels are NOT inside the form's shadow tree — `shift-portal`
+ * appends them to <body> — so a theme that only styles the form leaves a white
+ * dropdown hanging off a dark field. Every `.docs-form::part(...)` rule below
+ * the divider exists to fix that.
+ *
+ * One thing this theme cannot do: change the font inside those panels. Their own
+ * stylesheets end with `font-family: ... !important` plus a `*, :host *` reset,
+ * and an important declaration in an inner shadow tree beats an important one
+ * from the outer page. The form body is themeable; the panels' typeface is not.
+ *
+ * The structural rules from bordered.css apply here too: `padding-block` only on
+ * text inputs, the error message back in the flow, the column rhythm on the
+ * structure's root node rather than on `shift-form`, and two columns keyed off
+ * the form's own width with a container query rather than off the viewport.
+ */
+
+.docs-form::part(shift-form) {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 620px;
+  margin-inline: auto;
+  padding: 28px;
+  border-radius: 14px;
+  background: #0f172a;
+  container: adpForm / inline-size;
+  font-family: 'Nunito', system-ui, sans-serif !important;
+}
+
+/* Arabic and Kurdish take the production Arabic face. The hook is the `language`
+   attribute on the host element — the host has no `lang` and no `dir`, and the
+   `dir="rtl"` the component writes lives on a <form> inside the shadow tree
+   where an outer selector cannot see it. `!important` and the `shift-form`
+   target are both forced by `:host { all: initial !important }`. The portaled
+   dialog and dropdown panels keep Noto Kufi Arabic whatever this says; see
+   bordered.css for why. */
+.docs-form[language='ar']::part(shift-form),
+.docs-form[language='ku']::part(shift-form) {
+  font-family: 'Droid Arabic Kufi', Roboto, Arial, sans-serif !important;
+}
+
+/* One column, always. Its children are the stepper rail, the section headings,
+   the plain submit and any top-level textarea — the things that must have the
+   full width of the panel. Only the wrappers below ever split in two. */
+.docs-form::part(container) {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.docs-form::part(inputs_wrapper),
+.docs-form::part(slot_wrapper),
+.docs-form::part(vehicle_wrapper),
+.docs-form::part(preference_wrapper),
+.docs-form::part(step-one),
+.docs-form::part(step-two),
+.docs-form::part(step-three) {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.docs-form::part(step-two-actions),
+.docs-form::part(step-three-actions) {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* The query is on `shift-form`'s content box, so the 28px panel padding is
+   already subtracted — 520px here means 520px of usable field width, the same
+   as in the other two themes. A wrapper div can be told to span because a `tag`
+   node gets a part from its id; a field cannot, because the grid item is its
+   part-less custom element host. */
+@container adpForm (min-width: 520px) {
+  .docs-form::part(inputs_wrapper),
+  .docs-form::part(slot_wrapper),
+  .docs-form::part(vehicle_wrapper),
+  .docs-form::part(preference_wrapper),
+  .docs-form::part(step-one),
+  .docs-form::part(step-two),
+  .docs-form::part(step-three) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 14px 20px;
+  }
+
+  /* The nodes that must never be halved. Every one of these is a `tag` node in
+     the structure, which is exactly why it can be placed: it carries a part of
+     its own, so it IS the grid item. A field is not — see the note above. */
+  .docs-form::part(section-title),
+  .docs-form::part(stepper-note),
+  .docs-form::part(message_wrapper),
+  .docs-form::part(step-two-actions),
+  .docs-form::part(step-three-actions) {
+    grid-column: 1 / -1;
+  }
+}
+
+/* No margin nudge on `stepper-submit-button`, deliberately. An earlier version of
+   this file gave it a label's worth of `margin-top` so that a step's submit would
+   line up with the inputs when the grid drops it into a cell beside the last one.
+   That part is on the button wherever it appears — including inside
+   `step-*-actions`, where Back and Continue are meant to share a line. There the
+   margin made the submit's host 68px against Back's 44px and pushed the button to
+   the bottom of it, so `align-items: center` split the difference and the two
+   buttons sat 12px apart. Measured, it was the margin and not the reserved error
+   line: `form-stepper-submit` renders no error container at all.
+
+   A part cannot tell where it is, so the rule could not be scoped to the one case
+   it was for. Cosmetics on one layout are not worth a broken control row on
+   another, so it is gone: a submit in a grid cell now aligns to the top of its
+   row like every other item, and Back and Continue share a baseline. */
+
+.docs-form::part(section-title) {
+  font-size: 20px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.docs-form::part(stepper-note) {
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.docs-form::part(form-input),
+.docs-form::part(form-input-select),
+.docs-form::part(form-input-textarea) {
+  border: 1px solid #334155;
+  border-radius: 8px;
+  background: #1e293b;
+  color: #e2e8f0;
+  padding-block: 10px;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.docs-form::part(form-input-select) {
+  padding-inline-end: 36px;
+}
+
+/* ── The country selector inside a multi-country phone field ────────────────
+   When a phone node's `countryCode` is a list rather than a single string, the
+   field renders a country <shift-select> in front of the number, wrapped in a
+   div that carries the generic `form-input` part. So every field rule above
+   paints THAT wrapper as if it were a field in its own right: a second box
+   drawn around the select it already contains.
+
+   This rule is the exact inverse of what this file's own `form-input` rule put
+   there, and nothing more. It sets no width, height, margin, gap or inline
+   padding: the component's geometry for this field is correct and is the one
+   thing a theme must not touch, because the dial-code offset is an inline
+   `padding-left` that an outer `::part()` padding rule would silently clobber.
+
+   `padding-block: 0` is the one spacing declaration, and it is unavoidable: the
+   `padding-block: 10px` above lands on a wrapper that is not a field, making
+   it 20px taller than the input beside it (measured 64px vs 44px) and, because
+   the `+964` prefix is centred on `height: 100%` of that same box, dragging the
+   prefix 10px below the input's own text. Zeroing exactly the property this file
+   set restores the component's 44px and re-centres the prefix. Nothing narrower
+   would do: `border-color: transparent` leaves the height wrong, and there is no
+   way to exclude one element from a `::part()` rule.
+
+   With the box off, the two inputs form the control on their own — the component
+   already drops the selector input's inline-end border and flattens the radii on
+   both sides of the seam, so the number input's single 1px inline-start border
+   IS the divider, and it takes its colour from the field border above.
+
+   The field is deliberately `dir="ltr"` in the component and the prefix is
+   pinned with `left: 0 !important`, so the selector sits on the number's left in
+   Arabic and Kurdish too. That edge is the component's decision, not a theme's. */
+.docs-form::part(form-input-country-selection) {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding-block: 0;
+}
+
+/* The prefix is a sibling of the input, not part of it, so a dark field needs
+   it recoloured or `+964` stays near-black on near-black. Colour only: its
+   width is measured in JavaScript at mount and turned into the input's inline
+   padding, so changing its font or padding here would desynchronise the two. */
+.docs-form::part(form-input-prefix) {
+  color: #94a3b8;
+}
+
+/* ── Focus ──────────────────────────────────────────────────────────────────
+   One ring, and it is the component's own: `form-inputs.css` draws
+   `0 0 0 0.2rem rgba(71,85,105,.25)` on `enabled:focus`, and that soft ring is
+   the house treatment. A theme that adds an `outline` on top of it gets two
+   rings in two different design languages, so this rule adds none — it only
+   moves the border colour, which is what tells the two states apart.
+
+   Leaving `box-shadow` alone is also what keeps the ERROR ring red.
+   `.form-input-error-style` carries its own red focus shadow, and that is a
+   normal declaration in the inner tree — so any `box-shadow` set from out here,
+   for any reason, would outrank it and repaint the error ring in the theme's
+   colour. There is no way to put it back: no part identifies an errored input
+   (the error token lands on the message, not the field), and `::part()` cannot
+   be combined with a class or a sibling. So the rule is simply: a theme must
+   not set `box-shadow` on a focused field. On the dark panel the default ring is
+   faint on its own — measured 1.13:1 against #0f172a — so the indicator that
+   carries focus here is the border going #334155 -> #94a3b8: 4.04:1 between the
+   two states and 6.12:1 against the field, both above the 3:1 a focus indicator
+   needs. Recolouring the ring would read better in isolation and would cost the
+   red error ring, which is the worse trade. */
+.docs-form::part(form-input):focus,
+.docs-form::part(form-input-select):focus,
+.docs-form::part(form-input-textarea):focus {
+  background: #16233b;
+  border-color: #94a3b8;
+}
+
+.docs-form::part(form-input-label) {
+  font-size: 13px;
+  font-weight: 600;
+  color: #cbd5e1;
+  margin-bottom: 6px;
+}
+
+.docs-form::part(form-input-label-required-star) {
+  color: #f87171;
+}
+
+.docs-form::part(form-error-message-container) {
+  position: static;
+  transform: none;
+  min-height: 16px;
+}
+
+.docs-form::part(form-error-message) {
+  font-size: 12px;
+  line-height: 16px;
+  margin-top: 0;
+  color: #f87171;
+}
+
+/* ── The stepper rail ───────────────────────────────────────────────────────
+   Part names here carry a state suffix, so active and done cells are separately
+   addressable. `form-stepper-linecontainer` really has no hyphen — that is the
+   name the component emits, not a typo here.
+
+   `form-stepper-container` is the wrapper the shell uses in place of
+   `form-structure-form-container` once a structure declares steps, and it clips
+   its overflow so the step transition stays inside the panel. The active step's
+   indicator draws a scaled `::before` halo that reaches 8px above the button, so
+   without a little padding-top the halo is sliced off along that edge. */
+.docs-form::part(form-stepper-container) {
+  padding-top: 12px;
+}
+
+/* Same halo, other axis. The rail lays its steps out with `justify-between`, so
+   the first and last step cells sit flush against its 4px `px-1`. When a step
+   title is narrower than the 32px badge — "Topic" is — the cell IS the badge,
+   and the halo's outer 8px falls outside the rail and gets sliced by the same
+   `overflow: hidden`. Measured at -4px of clearance before this rule, +8 after.
+   Padding the rail rather than `form-stepper-container` keeps the inset on the
+   stepper alone, so the step's fields still use the full width of the form. The
+   dashed connector re-measures itself from the button centres on resize, so it
+   follows. */
+.docs-form::part(form-stepper-linecontainer) {
+  padding-inline: 12px;
+}
+
+/* Three states, told apart by FORM as well as colour: upcoming is a hollow ring,
+   done is a filled slate disc, active is a filled light disc wearing the halo.
+   The component ships one treatment for all three and varies only the halo's
+   scale, and its 15%-black halo is invisible on a dark panel — so out of the box
+   the rail says nothing about where you are.
+
+   The number lives in a CHILD of the button (`-indicator-text`) carrying the
+   component's own `text-white`, so setting `color` on the button does not reach
+   it. That is what made the active badge measure 1.23:1 — a white number on a
+   #e2e8f0 disc. Each state recolours the text part explicitly.
+
+   Base first, states after: all of these selectors have equal specificity and
+   the active button carries the base part too, so source order decides. */
+.docs-form::part(form-stepper-line-step-indicator) {
+  border-radius: 999px;
+  background: transparent;
+  border: 1px solid #475569;
+}
+
+.docs-form::part(form-stepper-line-step-indicator-text) {
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.docs-form::part(form-stepper-line-step-indicator-done) {
+  background: #334155;
+  border-color: #334155;
+}
+
+.docs-form::part(form-stepper-line-step-indicator-text-done) {
+  color: #cbd5e1;
+}
+
+.docs-form::part(form-stepper-line-step-indicator-active) {
+  background: #e2e8f0;
+  border-color: #e2e8f0;
+}
+
+.docs-form::part(form-stepper-line-step-indicator-text-active) {
+  color: #0f172a;
+}
+
+/* The halo is the indicator's own `::before`, reachable because a pseudo-element
+   may follow `::part()`. It scales up only on the active step, so it is painted
+   only there — an upcoming badge is hollow now, and a tint behind it would show
+   through — and it is tinted with the active badge's own colour rather than the
+   component's 15% black, which does not exist on a dark panel. */
+.docs-form::part(form-stepper-line-step-indicator)::before {
+  border-radius: 999px;
+  background: transparent;
+}
+
+.docs-form::part(form-stepper-line-step-indicator-active)::before {
+  background: rgb(226 232 240 / 0.22);
+}
+
+/* The connector is an inline `repeating-linear-gradient` in black — invisible on
+   this panel. An outer `::part()` rule outranks an inline style in the shadow
+   tree, so it can simply be restated. */
+.docs-form::part(form-stepper-line-line) {
+  background: repeating-linear-gradient(to right, #334155 0px, #334155 12px, transparent 6px, transparent 24px);
+}
+
+.docs-form::part(form-stepper-line-step-title) {
+  color: #64748b;
+}
+
+.docs-form::part(form-stepper-line-step-title-active) {
+  color: #e2e8f0;
+  font-weight: 700;
+}
+
+.docs-form::part(submit-button) {
+  background: #e2e8f0;
+  color: #0f172a;
+  height: 44px;
+  border-radius: 8px;
+  padding-inline: 24px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.docs-form::part(stepper-control) {
+  background: transparent;
+  color: #cbd5e1;
+  height: 44px;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding-inline: 18px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Below here: the elements that left the shadow tree. Without these the form is
+   dark and everything it opens is white.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* The scrim must be addressed through the OPENED variant. `dialog-drop-container`
+   is a fixed, full-viewport box that is present from the moment the form mounts;
+   it is only invisible because it has no background until the dialog opens. Give
+   the base part a background and the whole page sits under a permanent grey wash.
+   Every part with a state suffix — `-opened`, `-active`, `-selected`, `-error` —
+   is the same story: the base name is the element, not the state. */
+.docs-form::part(dialog-drop-container-opened) {
+  background: rgb(0 0 0 / 0.65);
+}
+
+.docs-form::part(dialog-wrapper) {
+  border-radius: 14px;
+  padding: 24px;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+.docs-form::part(dialog-close-button) {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.docs-form::part(dialog-close-button-error) {
+  background: #f87171;
+  color: #0f172a;
+}
+
+/* The dropdown panels are a different case from the scrim above, and the
+   difference decides where the rule goes. `shift-select-container` and the two
+   branch panels are parked at 0,0 while closed but the component holds them at
+   `opacity: 0`, so painting the base part cannot leak — and painting the base
+   part is what keeps the background through the 300ms fade-out. The dialog
+   backdrop has no opacity of its own; the ONLY thing hiding it is that nothing
+   has painted it, which is why that one has to be gated on `-opened`.
+   Before painting any portaled part, check which of the two it is. */
+.docs-form::part(shift-select-container) {
+  border-radius: 10px;
+  border: 1px solid #334155;
+  background: #1e293b;
+  max-height: 320px;
+}
+
+.docs-form::part(shift-select-option) {
+  padding: 10px 14px;
+  color: #e2e8f0;
+}
+
+.docs-form::part(shift-select-option-selected) {
+  background: #334155;
+}
+
+/* The branch pickers portal their panels the same way. */
+.docs-form::part(branch-slot-container),
+.docs-form::part(branch-date-container) {
+  border-radius: 10px;
+  border: 1px solid #334155;
+  background: #1e293b;
+  color: #e2e8f0;
+}
+
+.docs-form::part(branch-slot-day-selected),
+.docs-form::part(branch-slot-time-selected) {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.docs-form::part(branch-date-cell-blocked) {
+  opacity: 0.35;
+}

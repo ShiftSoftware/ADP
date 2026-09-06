@@ -1,0 +1,1490 @@
+<!doctype html>
+<!--
+  Ticket forms — the integration page for the form components.
+
+  Audience: an external supplier embedding a ticket form in their own site. They
+  have already decided to use it; what they need is the shape of the two files
+  they author — a structure JSON and a theme CSS — and an honest account of what
+  those files can and cannot do.
+
+  Navigation is a left sidebar, not tabs. There are seven destinations and four of
+  them are sibling form types; a tab strip flattens that hierarchy and runs out of
+  room. The sidebar shows where you are and what else exists at the same time.
+
+  Panels are toggled with x-show, never x-if. The live form is mounted DOM holding
+  state that cannot be rebuilt from markup, and x-if would destroy it on every
+  navigation.
+
+  The reference content is data, not markup — it lives in docs-content/*.js, each
+  file verified against the source that produced it. This file only renders it,
+  and deliberately renders it FOLDED: every worked example sits in a <details> so
+  a reference table reads as a table rather than a wall of code.
+
+  Page copy is English. The landing page keeps every string in site-locales.js
+  because it is marketing surface with a four-language audience; an API reference
+  is developer surface, and a machine-translated one is worse than none. The live
+  form preview does carry a language switcher, because the components localise
+  themselves and seeing that happen is the point.
+-->
+<html lang="en" dir="ltr" class="scroll-smooth">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+    <title>Ticket forms — adp-web-components</title>
+    <meta
+      name="description"
+      content="Embed ADP ticket forms on any page: one module tag, a structure JSON and a theme CSS. Live examples, the parameter reference and the theming surface."
+    />
+
+    <meta name="adp-publish" content="true" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="ADP ticket forms" />
+    <meta property="og:description" content="Embed ADP ticket forms on any page: one module tag, a structure JSON and a theme CSS." />
+    <meta property="og:image" content="/templates/assets/favicon.svg" />
+    <meta name="twitter:card" content="summary" />
+
+    <link rel="icon" href="/templates/assets/favicon.svg" type="image/svg+xml" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0c1016" media="(prefers-color-scheme: dark)" />
+
+    <link rel="stylesheet" href="/templates/harness.css" />
+
+    <!-- Blocking on purpose: theme is decided before first paint or the page jumps. -->
+    <script src="/templates/harness-theme.js"></script>
+    <script src="/templates/site-locales.js"></script>
+
+    <!--
+      Module, and therefore deferred — so it must sit BEFORE the Alpine tag. Deferred
+      and module scripts share one queue in document order; with this block at the end
+      of <body>, Alpine walks the DOM first and every binding fails with
+      "ticketForms is not defined", because Alpine evaluates x-data at walk time.
+    -->
+    <script type="module">
+      import { highlight } from '../highlight.js';
+      import { mountSiteHeader } from '../site-header.js';
+
+      // Replaces the [data-site-header] placeholder outright. Its own Alpine scope,
+      // so it shares no state with this page.
+      mountSiteHeader();
+
+      /*
+       * Mocked submit, installed the moment this module runs — before the component
+       * bundle can capture a reference to fetch, and before anything is mounted.
+       *
+       * Only the network is faked. The disabled button, the spinner, the success and
+       * error dialogs, the message inside them and the form reset are all the
+       * component's own behaviour, so what a visitor sees is what they will ship.
+       * Faking the outcome instead of the transport would demo our mock, not the
+       * product.
+       *
+       * The delay is deliberate: the loading state is real but too brief to see
+       * without it, and it is the state people most want to look at.
+       */
+      const submitMock = { mode: 'success', calls: 0, lastBody: null, lastHeaders: null };
+
+      // Exposed so a test can assert the mock was actually reached, rather than
+      // inferring it from a dialog that also appears by default.
+      window.__adpSubmitMock = submitMock;
+
+      (function installSubmitMock() {
+        const real = window.fetch.bind(window);
+
+        window.fetch = async (input, init) => {
+          const url = String(input?.url ?? input ?? '');
+          if (submitMock.mode === 'off' || !url.includes('example.invalid')) return real(input, init);
+
+          submitMock.calls += 1;
+          submitMock.lastBody = init?.body ? JSON.parse(init.body) : null;
+          submitMock.lastHeaders = init?.headers || null;
+          await new Promise(done => setTimeout(done, 900));
+
+          if (submitMock.mode === 'failure') {
+            return new Response(JSON.stringify({ message: { body: 'The ticket service rejected this request. (Mocked failure.)' } }), {
+              status: 500,
+              headers: { 'Content-Type': 'application/json' },
+            });
+          }
+
+          return new Response(JSON.stringify({ id: 'MOCK-000123', status: 'received' }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        };
+
+        /*
+         * vehicle-quotation-form calls grecaptcha.execute() unconditionally, where the
+         * other five guard on a key being configured. No preset carries a key — a
+         * placeholder one fails at submit — so without this stub that form could never
+         * reach the network and would only ever demo its error path.
+         */
+        if (!window.grecaptcha) {
+          window.grecaptcha = { ready: callback => callback(), execute: async () => 'mocked-recaptcha-token' };
+        }
+      })();
+
+      const HERE = new URL('./', import.meta.url);
+      const readJson = async name => (await fetch(new URL(name, HERE))).json();
+
+      // Fields whose required/optional state is not honestly toggleable. A dead
+      // control is worse than a sentence saying why there is no control.
+      const LOCKED = {
+        phone: 'Always required — it validates itself, outside requiredContext.',
+        bookingSlot: 'Always starred, never enforced, never sent — the form cannot read this field.',
+        bookingDate: 'Always starred, never enforced, never sent — the form cannot read this field.',
+        file: 'Set by a `required` property on the node, not by requiredContext.',
+
+        // Named through `type`, so they are not in the base schema: requiredContext
+        // cannot reach them, and the star comes from a lookup that throws. Offering
+        // a toggle here would be the dead control this whole mechanism exists to avoid.
+        orderReference: 'Always starred, never enforced — a field named through `type` is not in the validation schema.',
+        plateNumber: 'Always starred, never enforced — a field named through `type` is not in the validation schema.',
+        licenceNumber: 'Always starred, never enforced — a field named through `type` is not in the validation schema.',
+      };
+
+      // vehicle-quotation-form does not share the others' validation set. In its own
+      // schema these four are unconditionally .required() with no $<field>Required
+      // branch, so requiredContext cannot relax them and a toggle here would lie.
+      const LOCKED_BY_COMPONENT = {
+        'vehicle-quotation-form': {
+          vehicle: 'Always required by this component. requiredContext does not reach it.',
+          dealer: 'Always required by this component. requiredContext does not reach it.',
+          city: 'Always required by this component. requiredContext does not reach it.',
+          name: 'Always required by this component. requiredContext does not reach it.',
+        },
+      };
+
+      // Nodes that are chrome, not fields — nothing to toggle.
+      const CHROME = new Set(['submit', 'formStepper', 'stepperSubmit', 'back', 'vehicleImage']);
+
+      const GROUPS = [
+        { id: 'general-inquiry', label: 'General inquiry' },
+        { id: 'service-booking', label: 'Service booking' },
+        { id: 'test-drive', label: 'Test drive' },
+        { id: 'vehicle-quotation', label: 'Vehicle quotation' },
+      ];
+
+      window.ticketForms = function ticketForms() {
+        return {
+          groups: GROUPS,
+          languages: ['en', 'ar', 'ku', 'ru'],
+
+          section: 'setup',
+          group: 'general-inquiry',
+          settings: false,
+          expanded: { forms: true, reference: true },
+          language: 'en',
+          notice: '',
+          mockMode: 'success',
+
+          setMockMode(mode) {
+            this.mockMode = mode;
+            submitMock.mode = mode;
+            this.mount();
+          },
+          copied: false,
+          query: '',
+
+          presets: [],
+          themes: [],
+          presetId: '',
+          themeId: '',
+          fields: [],
+
+          structure: {},
+          params: {},
+
+          artifactTitle: '',
+          artifactBody: '',
+          artifactLang: 'json',
+
+          snippets: {},
+
+          hl(code, lang) {
+            return code ? highlight(String(code), lang || 'json') : '';
+          },
+
+          // Reference summaries run to a median of 245 characters and a maximum of 878.
+          // Printed whole they turn every table into prose, so the table shows the first
+          // sentence — which is written to stand alone — and folds the rest.
+          // The reference modules write inline code as `markdown`. x-text printed the
+          // backticks raw, so this escapes the string and turns those spans into <code>.
+          // Escaping first is what makes it safe to hand the result to x-html.
+          md(text) {
+            return String(text ?? '')
+              .replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/`([^`]+)`/g, '<code>$1</code>');
+          },
+
+          // Params examples are a mix of HTML and JavaScript; a markup snippet
+          // highlighted as JavaScript comes out almost entirely uncoloured.
+          guessLang(code) {
+            return /^\s*</.test(String(code ?? '')) ? 'html' : 'javascript';
+          },
+
+          lead(text) {
+            return String(text || '').match(/^[\s\S]*?[.!?](?=\s|$)/)?.[0] || text || '';
+          },
+          rest(text) {
+            return String(text || '')
+              .slice(this.lead(text).length)
+              .trim();
+          },
+
+          async boot() {
+            this.buildSnippets();
+
+            const examples = await readJson('examples.json').catch(() => ({ presets: [], themes: [] }));
+            this.presets = examples.presets || [];
+            this.themes = examples.themes || [];
+
+            // A developer machine may point presets at live URLs. Absent in production,
+            // and absent is the normal case — never treat a miss as an error.
+            if (['localhost', '127.0.0.1'].includes(location.hostname)) {
+              const local = await readJson('examples.local.json').catch(() => null);
+
+              // Overrides retune a shipped preset; additions are examples of their own.
+              // An override that names an id we no longer ship is reported rather than
+              // ignored — that silence is how the live examples went missing once.
+              for (const o of local?.overrides || []) {
+                const target = this.presets.find(p => p.id === o.id);
+                if (target) Object.assign(target, o, { live: true });
+                else console.warn('[ticket-forms] examples.local.json overrides an id that no longer exists:', o.id);
+              }
+
+              for (const addition of local?.additions || []) {
+                this.presets.push({ submitMode: 'live', ...addition, live: true });
+              }
+            }
+
+            const [structure, params] = await Promise.all([import('./docs-content/structure.js').catch(() => ({})), import('./docs-content/params.js').catch(() => ({}))]);
+            this.structure = structure;
+            this.params = params;
+
+            this.readHash();
+            if (this.section === 'forms') this.selectGroup(this.group, true);
+            else this.stamp();
+
+            // The hash was read once, at boot — so editing the address bar, or a
+            // back/forward, left the URL and the view disagreeing.
+            window.addEventListener('hashchange', () => {
+              const before = this.section + '/' + this.presetId;
+              this.readHash();
+              if (this.section === 'forms' && before !== this.section + '/' + this.presetId) this.pick(this.presetId);
+            });
+          },
+
+          // ── navigation ───────────────────────────────────────────────────
+          // Two levels, so the sidebar can collapse a whole branch. Headings were
+          // labels before; now they are the controls that own their children.
+          get nav() {
+            return [
+              { kind: 'item', id: 'setup', label: 'Setup' },
+              { kind: 'section', id: 'forms', label: 'Forms', children: this.groups.map(g => ({ kind: 'group', id: g.id, label: g.label })) },
+              {
+                kind: 'section',
+                id: 'reference',
+                label: 'Reference',
+                children: [
+                  { kind: 'item', id: 'params', label: 'Parameters & callbacks' },
+                  { kind: 'item', id: 'theming', label: 'Theming' },
+                  { kind: 'item', id: 'structure', label: 'Structure JSON' },
+                ],
+              },
+            ];
+          },
+
+          get flatNav() {
+            return this.nav.flatMap(e => (e.kind === 'section' ? e.children : [e]));
+          },
+
+          sectionOpen(entry) {
+            return this.expanded[entry.id] ?? true;
+          },
+
+          // Collapsing the branch you are standing in is allowed — but then the only
+          // "you are here" marker is inside the clipped list, so the parent has to
+          // carry it. The header's dropdown already does this; the sidebar did not.
+          holdsCurrent(entry) {
+            return entry.kind === 'section' && (entry.children || []).some(child => this.isCurrent(child));
+          },
+          toggleSection(entry) {
+            this.expanded[entry.id] = !this.sectionOpen(entry);
+          },
+
+          isCurrent(entry) {
+            return entry.kind === 'group' ? this.section === 'forms' && this.group === entry.id : this.section === entry.id;
+          },
+
+          go(entry) {
+            if (!entry) return;
+            if (entry.kind === 'group') this.selectGroup(entry.id);
+            else {
+              this.section = entry.id;
+              this.stamp();
+            }
+          },
+
+          selectGroup(id, keepPreset = false) {
+            this.group = id;
+            this.section = 'forms';
+            const inGroup = this.presets.filter(p => p.group === id);
+            const keep = keepPreset && inGroup.some(p => p.id === this.presetId);
+            this.pick(keep ? this.presetId : inGroup[0]?.id);
+          },
+
+          get groupPresets() {
+            return this.presets.filter(p => p.group === this.group);
+          },
+          get preset() {
+            return this.presets.find(p => p.id === this.presetId);
+          },
+          // What an integrator would actually paste to get the form below it. Built
+          // from the preset so it can never drift from what is rendered.
+          get usageSnippet() {
+            const preset = this.preset;
+            if (!preset) return '';
+
+            const attrs = ['language="' + this.language + '"'];
+            if (preset.structureUrl) attrs.push('structure-url="' + preset.structureUrl + '"');
+            else attrs.push('structure-url="https://example.invalid/forms/' + preset.id + '.json"');
+
+            const css = this.themes.find(t => t.id === this.themeId)?.css;
+            const link = css ? '\n\n<link rel="stylesheet" href="https://example.invalid/forms/' + this.themeId + '.css" />' : '';
+
+            return '<' + preset.component + '\n  ' + attrs.join('\n  ') + '\n></' + preset.component + '>' + link;
+          },
+
+          get themeCss() {
+            return this.themes.find(t => t.id === this.themeId)?.css;
+          },
+
+          pick(id) {
+            if (!id) return;
+            this.presetId = id;
+            // A preset ships with the theme it was designed against. Carrying the
+            // previous theme across is how a demo ends up looking broken.
+            this.themeId = this.preset?.defaultTheme || this.themes[0]?.id || 'plain';
+            this.applyTheme();
+            this.readFields();
+            this.mount();
+            this.stamp();
+          },
+
+          stamp() {
+            history.replaceState(null, '', '#' + (this.section === 'forms' ? `forms/${this.presetId}` : this.section));
+          },
+
+          readHash() {
+            const [head, id] = location.hash.replace('#', '').split('/');
+            if (head === 'forms') {
+              const found = this.presets.find(p => p.id === id);
+              if (found) {
+                this.group = found.group;
+                this.presetId = found.id;
+              }
+              this.section = 'forms';
+            } else if (['setup', 'params', 'theming', 'structure'].includes(head)) {
+              this.section = head;
+            }
+          },
+
+          // ── the live form ────────────────────────────────────────────────
+          readFields() {
+            const structure = this.preset?.structure;
+            if (!structure) return (this.fields = []);
+
+            const required = structure.requiredContext || {};
+            const perComponent = LOCKED_BY_COMPONENT[this.preset?.component] || {};
+            const found = [];
+            const walk = node => {
+              if (!node || typeof node !== 'object') return;
+              if (Array.isArray(node)) return node.forEach(walk);
+              const name = typeof node === 'string' ? node : node.name;
+              if (name && !CHROME.has(name) && !found.some(f => f.name === name)) {
+                const reason = perComponent[name] || LOCKED[name];
+                found.push({
+                  name,
+                  state: required[name] === true ? 'required' : 'optional',
+                  locked: !!reason,
+                  lockedReason: reason || '',
+                });
+              }
+              if (node.children) walk(node.children);
+            };
+            walk(structure.children);
+            this.fields = found;
+          },
+
+          setAll(state) {
+            this.fields.forEach(f => {
+              if (!f.locked) f.state = state;
+            });
+            this.mount();
+          },
+
+          // Applies the three field states to a copy. `omitted` really removes the
+          // node: a field absent from the tree is dropped from the schema before
+          // validation, so it can never block submission.
+          effectiveStructure() {
+            const structure = this.preset?.structure;
+            if (!structure) return null;
+
+            // Not structuredClone — Alpine hands back a reactive Proxy it refuses to
+            // clone. A structure is JSON by definition, so a round-trip does both jobs.
+            const copy = JSON.parse(JSON.stringify(structure));
+            const omitted = new Set(this.fields.filter(f => f.state === 'omitted').map(f => f.name));
+
+            copy.requiredContext = copy.requiredContext || {};
+            for (const f of this.fields) {
+              if (f.locked || f.state === 'omitted') continue;
+              copy.requiredContext[f.name] = f.state === 'required';
+            }
+
+            const prune = node => {
+              if (node?.children && Array.isArray(node.children)) {
+                node.children = node.children.filter(c => !omitted.has(typeof c === 'string' ? c : c?.name)).map(prune);
+              }
+              return node;
+            };
+            return prune(copy);
+          },
+
+          applyTheme() {
+            const id = 'preset-theme-css';
+            const existing = document.getElementById(id);
+
+            // A live example ships its own stylesheet and is not built against our
+            // part names, so applying a demo theme on top would only fight it.
+            const css = this.preset?.themeCssUrl || (this.preset?.live ? null : this.themeCss);
+
+            if (!css) return existing?.remove();
+
+            // Reuse the element rather than removing and re-adding it. Removing first
+            // leaves one frame with no theme at all, in which the form renders at the
+            // full stage width and then snaps back once the new sheet lands.
+            const link = existing || Object.assign(document.createElement('link'), { id, rel: 'stylesheet' });
+            link.href = /^https?:/.test(css) ? css : new URL(css, HERE).href;
+            if (!existing) document.head.appendChild(link);
+          },
+
+          // language is a @Watch'd prop, so it updates in place. Remounting on a
+          // language change would throw away everything the visitor had typed.
+          setLanguage(next) {
+            this.language = next;
+            this.$refs.stage?.firstElementChild?.setAttribute('language', next);
+          },
+
+          // structure has no watcher, so a structure change means destroy and recreate.
+          mount() {
+            const stage = this.$refs.stage;
+            if (!stage) return;
+
+            this.notice = '';
+            stage.replaceChildren();
+
+            const preset = this.preset;
+            if (!preset) return;
+
+            const el = document.createElement(preset.component);
+            // docs-form is our own hook for the demo themes. A live example also needs
+            // whatever class ITS stylesheet was written against — the deleted pages
+            // carried these by hand, and dropping them silently unstyled those forms.
+            el.className = ['docs-form', preset.themeClass].filter(Boolean).join(' ');
+            el.setAttribute('language', this.language);
+            el.setAttribute('disable-scroll-to-top', 'true');
+
+            if (preset.structureUrl) el.setAttribute('structure-url', preset.structureUrl);
+            else el.structure = this.effectiveStructure();
+
+            if (this.mockMode === 'off') {
+              // Returning undefined suppresses the built-in dialog, so the page can say
+              // what happened instead of showing a network error against example.invalid.
+              const say = async () => {
+                this.notice = 'Validation passed. Submitting is off, so no request was made.';
+              };
+              el.successCallback = say;
+              el.errorCallback = say;
+            } else {
+              // Return true and the component shows its own dialog, which is the point.
+              el.successCallback = async data => {
+                this.notice = 'Submitted. The service replied ' + JSON.stringify(data) + '.';
+                return true;
+              };
+              el.errorCallback = async (_error, message) => {
+                this.notice = 'The submit failed: ' + (message || 'no message returned') + '.';
+                return true;
+              };
+            }
+
+            stage.appendChild(el);
+          },
+
+          // ── artifacts ────────────────────────────────────────────────────
+          showArtifact(kind) {
+            this.copied = false;
+            if (kind === 'structure') {
+              this.artifactTitle = 'Structure JSON — ' + (this.preset?.label || '');
+              this.artifactLang = 'json';
+              this.artifactBody = JSON.stringify(this.effectiveStructure(), null, 2);
+            } else {
+              this.artifactTitle = 'Theme CSS — ' + (this.themes.find(t => t.id === this.themeId)?.label || '');
+              this.artifactLang = 'css';
+              this.artifactBody = 'Loading…';
+              fetch(this.preset?.themeCssUrl || new URL(this.themeCss, HERE))
+                .then(r => r.text())
+                .then(t => (this.artifactBody = t))
+                .catch(() => (this.artifactBody = 'Could not load the stylesheet. It may have moved — check the network tab.'));
+            }
+            this.$refs.artifact.showModal();
+          },
+
+          async copyArtifact() {
+            try {
+              await navigator.clipboard.writeText(this.artifactBody);
+              this.copied = true;
+            } catch {
+              this.copied = false;
+              this.notice = 'The browser refused clipboard access — select the text and copy it manually.';
+            }
+            setTimeout(() => (this.copied = false), 1600);
+          },
+
+          // ── reference helpers ────────────────────────────────────────────
+          // The five ticket forms are the same component with one field's difference,
+          // so the reference shows ONE of them. Five identical tables was the single
+          // biggest source of noise on this page.
+          get coreComponent() {
+            return (this.params.components || []).find(c => c.tag === 'general-form');
+          },
+          get quotationComponent() {
+            return (this.params.components || []).find(c => c.tag === 'vehicle-quotation-form');
+          },
+
+          rows(group) {
+            const all = this.coreComponent?.[group] || [];
+            const q = this.query.trim().toLowerCase();
+            return q ? all.filter(r => (r.name + ' ' + (r.summary || '')).toLowerCase().includes(q)) : all;
+          },
+
+          structureTables() {
+            const s = this.structure;
+            return [
+              { id: 'top', title: 'Top level', blurb: 'What sits at the root of the file.', rows: s.topLevel || [] },
+              { id: 'data', title: 'data', blurb: 'Where the ticket goes, and how it is labelled.', rows: s.dataKeys || [] },
+              {
+                id: 'node',
+                title: 'Node properties',
+                blurb: 'What one node accepts. Anything not listed is forwarded to the component as a prop.',
+                rows: (s.nodeProps || []).map(n => ({ ...n, key: n.prop, type: n.appliesTo })),
+              },
+            ].filter(t => t.rows.length);
+          },
+
+          async copySnippet(code, event) {
+            // Read the button BEFORE awaiting: currentTarget is nulled the moment
+            // dispatch finishes, so reading it afterwards throws and the label never
+            // flips. copyArtifact() gets this right; this used to not.
+            const button = event.currentTarget;
+            const original = button.textContent;
+
+            try {
+              await navigator.clipboard.writeText(code);
+              button.textContent = 'Copied';
+            } catch {
+              // Denied when the document is not focused, or by permission. Silence
+              // here reads as "the button is broken".
+              button.textContent = 'Press Ctrl+C';
+            }
+
+            setTimeout(() => (button.textContent = original), 1400);
+          },
+
+          // The theming lesson. Kept as data so the three steps stay in one order and
+          // the snippets cannot drift apart from the prose describing them.
+          themingSteps: [
+            {
+              title: 'Put a class on the form',
+              note: 'This is your handle. It is also copied onto the dialog and dropdown panels, which is how you reach those — see rule 3.',
+              file: 'page.html',
+              lang: 'html',
+              code: '<general-form\n  class="my-form"\n  language="en"\n  structure-url="https://example.invalid/forms/contact.json"\n></general-form>\n\n<link rel="stylesheet" href="https://example.invalid/forms/my-form.css" />',
+            },
+            {
+              title: 'Name a hook in the structure',
+              note: 'An <code>id</code> or <code>class</code> on a layout node becomes a part name. Field nodes need nothing — they are already addressable by their <code>name</code>.',
+              file: 'contact.json',
+              lang: 'json',
+              code: '{\n  "data": { "requestUrl": "https://example.invalid/api/tickets" },\n  "tag": "div",\n  "children": [\n    {\n      "tag": "div",\n      "id": "inputs_wrapper",\n      "children": [\n        { "name": "name" },\n        { "name": "email" }\n      ]\n    },\n    { "name": "submit" }\n  ]\n}',
+            },
+            {
+              title: 'Write the rules',
+              note: 'Your class, then the part name. Nothing else is needed — no build step, no import, no naming convention of ours.',
+              file: 'my-form.css',
+              lang: 'css',
+              code: '/* the wrapper you named in step 2 */\n.my-form::part(inputs_wrapper) {\n  display: grid;\n  grid-template-columns: 1fr 1fr;\n  gap: 16px;\n}\n\n/* one field, by its name */\n.my-form::part(email-input) {\n  border: 1px solid #cbd5e1;\n  border-radius: 8px;\n}\n\n/* every text field; selects and textareas carry their own alias */\n.my-form::part(form-input),\n.my-form::part(form-input-select),\n.my-form::part(form-input-textarea) {\n  background: #fff;\n}\n\n/* the success dialog, which lives outside the form */\n.my-form::part(dialog-wrapper) {\n  border-radius: 12px;\n}',
+            },
+          ],
+
+          themingTargets: [
+            { what: 'A group of fields', from: 'the <code>id</code> or <code>class</code> you wrote on a layout node', selector: '::part(inputs_wrapper)' },
+            { what: 'One field', from: 'that field\u2019s <code>name</code>, plus a suffix', selector: '::part(email-input)' },
+            {
+              what: 'Every field of one kind',
+              from: 'a fixed alias per control type: <code>form-input</code> (text), <code>form-input-select</code>, <code>form-input-textarea</code>',
+              selector: '.my-form::part(form-input)',
+            },
+            { what: 'A dialog or dropdown', from: 'the class on your form tag, which travels with them', selector: '.my-form::part(dialog-wrapper)' },
+          ],
+
+          themingRules: [
+            {
+              title: 'There is nothing to configure',
+              detail: 'No CSS variables, no theme object, no options. <code>::part()</code> is the entire surface — if you cannot reach it that way, it is not reachable.',
+              code: '',
+            },
+            {
+              title: 'You cannot select inside a part',
+              detail:
+                '<code>::part(x) input</code> is not legal CSS. An element without a part of its own cannot be styled, so target the part the component gives you rather than trying to descend into it.',
+              code: '/* does nothing */\n.my-form::part(email) input { color: red; }\n\n/* works */\n.my-form::part(email-input) { color: red; }',
+            },
+            {
+              title: 'Dialogs and dropdowns are not inside the form',
+              detail:
+                'The form renders them at the end of <code>&lt;body&gt;</code>, outside your form tag, from the moment it loads — so a selector anchored on the tag misses them. Your class is copied onto them, which is why step 1 matters. One thing stays out of reach: their typeface is fixed inside those components and no rule of yours can change it.',
+              code: '/* misses \u2014 the dialog is no longer inside the tag */\ngeneral-form::part(dialog-wrapper) { … }\n\n/* hits \u2014 your class travelled with it */\n.my-form::part(dialog-wrapper) { … }',
+            },
+          ],
+
+          buildSnippets() {
+            const stamped = '{{ADP_WEB_COMPONENTS_VERSION}}';
+            const v = stamped.startsWith('{{') ? 'latest' : stamped;
+            this.snippets = {
+              load: `<script type="module"\n  src="https://cdn.jsdelivr.net/npm/adp-web-components@${v}/dist/shift-components/shift-components.esm.js"><\/script>`,
+              place: `<general-form\n  class="my-form"\n  language="en"\n  structure-url="https://example.invalid/forms/contact.json"\n></general-form>\n\n<link rel="stylesheet" href="https://example.invalid/forms/my-form.css" />`,
+              minimal: `{\n  "data": { "requestUrl": "https://example.invalid/api/tickets" },\n  "requiredContext": { "name": true, "email": true },\n  "tag": "div",\n  "children": [\n    { "name": "name",  "localization": { "en": { "label": "Full name" } } },\n    { "name": "email", "localization": { "en": { "label": "Email" } } },\n    { "name": "submit" }\n  ]\n}`,
+            };
+          },
+        };
+      };
+    </script>
+
+    <!-- After our module on purpose: the submit mock must own window.fetch before
+         this bundle can capture a reference to it. -->
+    <script type="module" src="/build/shift-components.esm.js"></script>
+
+    <script defer src="/templates/vendor/alpine.js"></script>
+
+    <style>
+      /*
+       * BLOCK, not flex. The form host carries `all: initial !important` on :host,
+       * and for :host an important declaration in the shadow tree beats an important
+       * one from this page — so width on the host is simply not settable from here
+       * (measured: width:100% !important changed nothing). As a flex item with an
+       * unsettable width it shrink-wrapped to 212px inside a 583px stage. As a block
+       * child it fills the container on its own, and centring becomes the theme's
+       * job via margin-inline on ::part(shift-form).
+       */
+      .stage {
+        display: block;
+        width: 100%;
+      }
+
+      /* Three-state field control. Mutually exclusive, so radios — a row of buttons
+         would need script to say what a radio says for free. */
+      .seg input:checked + span {
+        background: var(--color-primary);
+        color: var(--color-primary-content);
+        border-color: transparent;
+      }
+      .seg input:focus-visible + span {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 1px;
+      }
+
+      /* Folded examples. A reference table with thirty open code blocks is
+         unreadable; the marker keeps them one click away rather than gone. */
+
+      /* Reference rows. The marker is the only affordance, so it has to be visible. */
+      details.entry > summary {
+        list-style: none;
+      }
+      details.entry > summary::-webkit-details-marker {
+        display: none;
+      }
+
+      /*
+       * Open/close animation for the reference rows.
+       *
+       * A <details> cannot be transitioned the usual way: while closed the browser
+       * does not render its content at all, so there is no height to animate FROM.
+       * ::details-content is the element wrapping that content, and paired with
+       * interpolate-size it can animate to and from the keyword auto. A browser
+       * without it matches nothing and the row opens instantly, which is the
+       * behaviour we already had.
+       */
+      details.entry::details-content {
+        block-size: 0;
+        overflow: hidden;
+        transition:
+          block-size 0.2s ease,
+          content-visibility 0.2s allow-discrete;
+      }
+      details.entry[open]::details-content {
+        block-size: auto;
+      }
+      details.entry > summary::after {
+        display: inline-block;
+        transition: transform 0.2s ease;
+      }
+      details.entry[open] > summary::after {
+        transform: rotate(180deg);
+      }
+      @media (prefers-reduced-motion: reduce) {
+        details.entry::details-content,
+        details.entry > summary::after {
+          transition: none;
+        }
+      }
+      details.entry > summary::after {
+        content: '+';
+        margin-inline-start: 0.5rem;
+        color: var(--color-neutral);
+        font-family: monospace;
+      }
+      details.entry[open] > summary::after {
+        content: '−';
+      }
+
+      html {
+        scrollbar-gutter: stable;
+      }
+
+      /*
+       * The settings panel is one element wearing two layouts.
+       *
+       * Below xl there is no room for a third column, so it is a fixed drawer parked
+       * off the inline edge. Logical properties do the RTL work: inset-inline-end
+       * flips, but a transform does not, so the open/closed transform is written per
+       * direction.
+       */
+      .settings-panel {
+        position: fixed;
+        inset-block: 0;
+        inset-inline-end: 0;
+        z-index: 40;
+        width: min(360px, 88vw);
+        padding: 0.75rem;
+        transition: transform 0.2s ease;
+      }
+      [dir='ltr'] .settings-panel {
+        transform: translateX(100%);
+      }
+      [dir='rtl'] .settings-panel {
+        transform: translateX(-100%);
+      }
+      [dir] .settings-panel.is-open {
+        transform: none;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .settings-panel {
+          transition: none;
+        }
+      }
+
+      /* The blurb is re-created on every preset change (keyed x-for), so this runs
+         each time. Reserved height above it keeps the page from jumping. */
+      .blurb {
+        animation: blurb-in 0.18s ease both;
+      }
+      @keyframes blurb-in {
+        from {
+          opacity: 0;
+          transform: translateY(3px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .blurb {
+          animation: none;
+        }
+      }
+
+      .nav-collapse {
+        display: grid;
+        grid-template-rows: 0fr;
+        transition: grid-template-rows 0.18s ease;
+      }
+      .nav-collapse[data-open='true'] {
+        grid-template-rows: 1fr;
+      }
+      .nav-collapse > ul {
+        overflow: hidden;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .nav-collapse {
+          transition: none;
+        }
+      }
+
+      dialog::backdrop {
+        background: rgb(0 0 0 / 0.55);
+      }
+      dialog[open] {
+        display: flex;
+      }
+    </style>
+  </head>
+
+  <body class="bg-base-200 text-base-content min-h-screen">
+    <div x-data="ticketForms()" x-init="boot()" @keydown.escape.window="settings = false">
+      <a href="#main" class="btn btn-primary sr-only focus:not-sr-only focus:absolute focus:start-3 focus:top-3 focus:z-50">Skip to content</a>
+
+      <div data-site-header></div>
+
+      <div class="mx-auto flex max-w-[1600px] gap-8 px-5 sm:px-8">
+        <!--
+          One raised card, so the navigation reads as a distinct surface rather than
+          text floating on the page background. Each parent owns its children through
+          a real disclosure: aria-expanded on the button, aria-controls to the list.
+        -->
+        <nav class="sticky top-[57px] hidden h-fit w-64 shrink-0 py-8 lg:block" aria-label="Sections">
+          <div class="bg-base-100 border-base-300 rounded-box border p-2 shadow-sm">
+            <ul class="flex flex-col gap-0.5">
+              <template x-for="entry in nav" :key="entry.id">
+                <li>
+                  <!-- a leaf at the top level -->
+                  <template x-if="entry.kind !== 'section'">
+                    <button
+                      type="button"
+                      class="relative flex w-full items-center rounded-lg px-3 py-2 text-start text-sm transition-colors"
+                      :class="isCurrent(entry) ? 'bg-primary/12 text-base-content font-semibold' : 'text-base-content/70 hover:bg-base-200'"
+                      :aria-current="isCurrent(entry) ? 'page' : null"
+                      @click="go(entry)"
+                    >
+                      <span class="bg-primary absolute inset-y-1.5 start-0 w-[3px] rounded-full" x-show="isCurrent(entry)"></span>
+                      <span x-text="entry.label"></span>
+                    </button>
+                  </template>
+
+                  <!-- a collapsible parent -->
+                  <template x-if="entry.kind === 'section'">
+                    <div class="mt-1">
+                      <button
+                        type="button"
+                        class="text-base-content hover:bg-base-200 border-base-300 mb-1 flex w-full items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-bold tracking-[0.06em] uppercase transition-colors"
+                        :class="holdsCurrent(entry) && !sectionOpen(entry) ? 'bg-primary/12 border-primary/30' : 'bg-base-200/70'"
+                        :aria-expanded="sectionOpen(entry)"
+                        :aria-controls="'nav-' + entry.id"
+                        @click="toggleSection(entry)"
+                      >
+                        <span x-text="entry.label"></span>
+                        <svg
+                          class="ms-auto h-3 w-3 transition-transform"
+                          :class="sectionOpen(entry) ? 'rotate-180' : ''"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2.5"
+                          stroke-linecap="round"
+                          aria-hidden="true"
+                        >
+                          <path d="m6 9 6 6 6-6" />
+                        </svg>
+                      </button>
+
+                      <div class="nav-collapse mt-0.5" :data-open="sectionOpen(entry)">
+                        <ul :id="'nav-' + entry.id" class="border-base-300 ms-3 flex flex-col gap-0.5 border-s ps-1.5" :inert="!sectionOpen(entry)">
+                          <template x-for="child in entry.children" :key="child.id">
+                            <li>
+                              <button
+                                type="button"
+                                class="relative flex w-full items-center rounded-lg px-3 py-2 text-start text-sm transition-colors"
+                                :class="isCurrent(child) ? 'bg-primary/12 text-base-content font-semibold' : 'text-base-content/70 hover:bg-base-200'"
+                                :aria-current="isCurrent(child) ? 'page' : null"
+                                @click="go(child)"
+                              >
+                                <span class="bg-primary absolute inset-y-1.5 start-0 w-[3px] rounded-full" x-show="isCurrent(child)"></span>
+                                <span x-text="child.label"></span>
+                              </button>
+                            </li>
+                          </template>
+                        </ul>
+                      </div>
+                    </div>
+                  </template>
+                </li>
+              </template>
+            </ul>
+          </div>
+        </nav>
+
+        <!-- Mobile: the same destinations, as one select. -->
+        <div class="bg-base-100 border-base-300 fixed inset-x-0 bottom-0 z-20 border-t p-3 lg:hidden">
+          <label class="sr-only" for="mobile-nav">Section</label>
+          <select id="mobile-nav" class="select select-bordered w-full" @change="go(flatNav.find(n => n.id === $event.target.value))">
+            <template x-for="entry in flatNav" :key="entry.id">
+              <option :value="entry.id" :selected="isCurrent(entry)" x-text="entry.label"></option>
+            </template>
+          </select>
+        </div>
+
+        <!--
+          dir is pinned because this page's own copy is English only. The header's
+          language picker sets dir on <html> for its own chrome; without this, English
+          prose right-aligns and bidi moves each sentence's full stop to the left.
+        -->
+        <main id="main" dir="ltr" class="min-w-0 flex-1 py-8 pb-24 lg:pb-8">
+          <div class="bg-base-100 border-base-300 rounded-box border p-6 shadow-sm sm:p-8">
+            <!--
+            Three steps on a numbered rail. The previous version was three code
+            blocks separated by headings, which read as a reference rather than a
+            sequence — the rail is what says "do these in order, then you are done".
+          -->
+            <section x-show="section === 'setup'" class="flex flex-col gap-8">
+              <header>
+                <h1 class="text-3xl font-bold tracking-tight">Setup</h1>
+                <p class="lede text-base-content/70 mt-2 max-w-[70ch]">One module tag, one form tag, and two files you write. No build step, no framework, nothing to compile.</p>
+              </header>
+
+              <ol class="flex flex-col">
+                <template
+                  x-for="(step, i) in [
+                  { title: 'Load the library', note: 'One module tag registers every component. Put it in your &amp;lt;head&amp;gt;.', code: snippets.load, lang: 'html' },
+                  { title: 'Place a form', note: 'Point it at the two files you write: a structure JSON and a stylesheet. <code>general-form</code> is the generic tag — the Forms pages show the others.', code: snippets.place, lang: 'html' },
+                  { title: 'Write the structure', note: 'It decides which fields exist, which are required, and where the ticket is sent.', code: snippets.minimal, lang: 'json' },
+                ]"
+                  :key="step.title"
+                >
+                  <li class="relative flex gap-4 pb-8 last:pb-0">
+                    <!-- The rail. Drawn behind the badge and stopped on the last row. -->
+                    <span class="bg-base-300 absolute top-9 bottom-0 start-[15px] w-px" x-show="i < 2"></span>
+
+                    <span class="bg-primary text-primary-content relative z-10 grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm font-bold" x-text="i + 1"></span>
+
+                    <div class="min-w-0 flex-1">
+                      <h2 class="text-base font-semibold" x-text="step.title"></h2>
+                      <p class="text-base-content/70 mt-0.5 text-sm" x-html="step.note"></p>
+                      <!-- Chrome bar, so a snippet reads as a file you take away rather
+                         than as decoration, and so Copy has somewhere to live. -->
+                      <figure class="border-base-300 mt-3 overflow-hidden rounded-lg border">
+                        <figcaption class="bg-base-200/70 border-base-300 flex items-center gap-2 border-b px-3 py-1.5">
+                          <span class="text-base-content/55 font-mono text-[11px] uppercase" x-text="step.lang"></span>
+                          <button type="button" class="btn btn-xs btn-ghost ms-auto h-6 min-h-0" @click="copySnippet(step.code, $event)">Copy</button>
+                        </figcaption>
+                        <pre class="code m-0 rounded-none border-0 overflow-x-auto"><code x-html="hl(step.code, step.lang)"></code></pre>
+                      </figure>
+                    </div>
+                  </li>
+                </template>
+              </ol>
+
+              <div class="border-base-300 rounded-box border p-5 sm:p-6">
+                <h2 class="text-lg font-semibold">Language <span class="text-base-content/50 text-sm font-normal">— optional</span></h2>
+                <p class="text-base-content/70 mt-1 text-sm">
+                  Leave it alone and the form reads the language off the page URL, so a site that already routes by language gets it for free. The form localises itself and sets
+                  its own text direction.
+                </p>
+
+                <ol class="mt-4 flex flex-col gap-2.5">
+                  <template
+                    x-for="(rule, i) in [
+                    'The &lt;code&gt;language&lt;/code&gt; attribute, if you set one — the two-letter code only, not the aliases below. Set it when the page is not routed by language.',
+                    'A query parameter: &lt;code&gt;?lang=&lt;/code&gt;, &lt;code&gt;?lng=&lt;/code&gt; or &lt;code&gt;?language=&lt;/code&gt;.',
+                    'A path segment: &lt;code&gt;/en/contact&lt;/code&gt;, &lt;code&gt;/ku/contact&lt;/code&gt;.',
+                    'Otherwise English.',
+                  ]"
+                    :key="rule"
+                  >
+                    <li class="flex items-baseline gap-2.5 text-sm">
+                      <span class="bg-base-200 text-base-content/60 grid h-5 w-5 shrink-0 place-items-center rounded text-[11px] font-semibold" x-text="i + 1"></span>
+                      <span x-html="rule"></span>
+                    </li>
+                  </template>
+                </ol>
+
+                <div class="mt-4 overflow-x-auto">
+                  <table class="table-sm table w-auto">
+                    <thead>
+                      <tr>
+                        <th>Renders as</th>
+                        <th>Written in the URL as</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <template
+                        x-for="l in [
+                        { code: 'en', aliases: 'en, english' },
+                        { code: 'ar', aliases: 'ar, arabic' },
+                        { code: 'ku', aliases: 'ku, ckb, kurdish, sorani' },
+                        { code: 'ru', aliases: 'ru, russian' },
+                      ]"
+                        :key="l.code"
+                      >
+                        <tr>
+                          <td class="font-mono text-xs" x-text="l.code"></td>
+                          <td class="font-mono text-xs" x-text="l.aliases"></td>
+                        </tr>
+                      </template>
+                    </tbody>
+                  </table>
+                </div>
+
+                <p class="text-base-content/60 mt-4 text-xs">
+                  The path check is a substring match, so a path that merely contains one of those words picks it up — <code>/parts/archive</code> contains <code>/ar</code> and
+                  renders Arabic. If your URLs can look like that, set the attribute.
+                </p>
+              </div>
+
+              <p class="text-base-content/70 text-sm">
+                That is the whole integration. Labels and error text come from the structure, the marketing parameters on the page URL — <code>utm_*</code>, <code>gclid</code>,
+                <code>fbclid</code> — are attached to the ticket automatically, and everything visual is <code>::part()</code>.
+              </p>
+            </section>
+
+            <section x-show="section === 'forms'" class="flex flex-col gap-5">
+              <header>
+                <h1 class="text-3xl font-bold tracking-tight" x-text="groups.find(g => g.id === group)?.label"></h1>
+              </header>
+
+              <div class="flex flex-wrap items-center gap-2">
+                <template x-for="p in groupPresets" :key="p.id">
+                  <button type="button" class="btn btn-sm" :class="presetId === p.id ? 'btn-primary' : 'btn-ghost border-base-300 border'" @click="pick(p.id)">
+                    <span x-text="p.label"></span>
+                    <span class="badge badge-xs badge-outline ms-1.5" x-show="p.live">live</span>
+                  </button>
+                </template>
+
+                <!-- Below xl the rail cannot fit, so the same panel opens as a drawer. -->
+                <button type="button" class="btn btn-sm btn-ghost border-base-300 ms-auto border" @click="settings = true" :aria-expanded="settings">Settings</button>
+              </div>
+
+              <!--
+                Below the chips, not above them. The blurbs run one to three lines, so any
+                reserved height was either wrong for most presets or far too tall; sitting
+                under the controls, a change in height cannot move the button that was just
+                clicked. The key makes the node new, which is what the fade animates.
+              -->
+              <div>
+                <template x-for="line in [preset?.blurb || '']" :key="line">
+                  <p class="text-base-content/70 blurb max-w-[78ch] text-sm" x-text="line"></p>
+                </template>
+              </div>
+
+              <p class="text-base-content/60 text-sm" x-show="!groupPresets.length">
+                No examples for this form type yet. Pick another form type in the sidebar, or see Structure JSON to write one.
+              </p>
+
+              <div x-show="groupPresets.length" class="flex flex-col gap-4">
+                <!-- The markup that produces what is below it. Outside the preview, because
+                     it is the thing you copy, not part of the thing you are looking at. -->
+                <figure class="border-base-300 overflow-hidden rounded-lg border">
+                  <figcaption class="bg-base-200/70 border-base-300 flex items-center gap-2 border-b px-3 py-1.5">
+                    <span class="text-base-content/55 font-mono text-[11px] uppercase">HTML</span>
+                    <button type="button" class="btn btn-xs btn-ghost ms-auto h-6 min-h-0" @click="copySnippet(usageSnippet, $event)">Copy</button>
+                  </figcaption>
+                  <pre class="code m-0 overflow-x-auto rounded-none border-0"><code x-html="hl(usageSnippet, 'html')"></code></pre>
+                </figure>
+
+                <!-- The preview sits on the page ground rather than the content card, so a
+                     light theme still reads as a form instead of dissolving into it. -->
+                <div class="bg-base-200 border-base-300 rounded-box border p-5 sm:p-8">
+                  <div class="text-base-content/50 mb-5 flex flex-wrap items-center gap-3 text-xs">
+                    <span x-text="'Preview · ' + language"></span>
+                    <span
+                      class="badge badge-sm ms-auto"
+                      :class="mockMode === 'failure' ? 'badge-error' : mockMode === 'success' ? 'badge-success' : 'badge-ghost'"
+                      x-text="mockMode === 'off' ? 'Submitting off' : mockMode === 'failure' ? 'Mocked · fails' : 'Mocked · succeeds'"
+                    ></span>
+                  </div>
+
+                  <div class="stage" x-ref="stage"></div>
+
+                  <p class="text-base-content/60 mt-5 text-xs" x-show="notice" x-text="notice"></p>
+                </div>
+              </div>
+            </section>
+
+            <!--
+            No table. A parameter reference is a list of things you look ONE of up,
+            so each row is a disclosure showing only what you scan by — name, type,
+            required — and opening to a sentence and an example.
+          -->
+            <section x-show="section === 'params'" class="flex flex-col gap-5">
+              <header class="max-w-[70ch]">
+                <h1 class="text-3xl font-bold tracking-tight">Parameters &amp; callbacks</h1>
+                <p class="lede text-base-content/70 mt-2">
+                  The five ticket forms take the same parameters, so this is one list rather than five.
+                  <span x-show="quotationComponent">Vehicle quotation differs; that is noted at the end.</span>
+                </p>
+              </header>
+
+              <input type="search" class="input input-bordered input-sm max-w-xs" placeholder="Filter by name…" x-model="query" aria-label="Filter parameters" />
+
+              <template x-for="grp in [{ id: 'props', label: 'Properties' }, { id: 'callbacks', label: 'Callbacks' }, { id: 'methods', label: 'Methods' }]" :key="grp.id">
+                <section x-show="rows(grp.id).length">
+                  <h2 class="text-lg font-semibold" x-text="grp.label"></h2>
+                  <ul class="border-base-300 divide-base-300 mt-2 divide-y overflow-hidden rounded-lg border">
+                    <template x-for="r in rows(grp.id)" :key="r.name">
+                      <li>
+                        <details class="entry">
+                          <summary class="hover:bg-base-200/60 flex cursor-pointer flex-wrap items-baseline gap-x-3 gap-y-1 px-4 py-2.5">
+                            <code class="text-sm font-semibold" x-text="r.name"></code>
+                            <span class="text-base-content/55 font-mono text-[11px]" x-text="r.type || r.signature"></span>
+                            <span class="ms-auto flex items-center gap-2">
+                              <span class="badge badge-xs badge-outline" x-show="r.required">required</span>
+                              <span class="text-base-content/45 text-[11px]" x-text="r.signature ? 'method' : r.attribute ? 'attribute' : 'property'"></span>
+                            </span>
+                          </summary>
+                          <div class="bg-base-200/40 border-base-300 border-t px-4 py-3">
+                            <p class="text-sm" x-html="md(lead(r.summary))"></p>
+                            <p class="text-base-content/75 mt-2 text-sm whitespace-pre-line" x-show="rest(r.summary)" x-html="md(rest(r.summary))"></p>
+                            <p class="text-warning mt-1 text-xs" x-show="r.warning" x-html="md(r.warning)"></p>
+                            <pre class="code mt-2 overflow-x-auto" x-show="r.example"><code x-html="hl(r.example, r.lang || guessLang(r.example))"></code></pre>
+                          </div>
+                        </details>
+                      </li>
+                    </template>
+                  </ul>
+                </section>
+              </template>
+
+              <section x-show="(params.gotchas || []).length">
+                <h2 class="text-lg font-semibold">Worth knowing</h2>
+                <ul class="border-base-300 divide-base-300 mt-2 divide-y overflow-hidden rounded-lg border">
+                  <template x-for="g in params.gotchas || []" :key="g.id">
+                    <li>
+                      <details class="entry">
+                        <summary class="hover:bg-base-200/60 cursor-pointer px-4 py-2.5 text-sm font-medium" x-text="g.title"></summary>
+                        <div class="bg-base-200/40 border-base-300 border-t px-4 py-3">
+                          <p class="text-sm" x-html="md(lead(g.detail))"></p>
+                          <p class="text-base-content/75 mt-2 text-sm whitespace-pre-line" x-show="rest(g.detail)" x-html="md(rest(g.detail))"></p>
+                          <pre class="code mt-2 overflow-x-auto" x-show="g.example"><code x-html="hl(g.example, g.lang || guessLang(g.example))"></code></pre>
+                        </div>
+                      </details>
+                    </li>
+                  </template>
+                </ul>
+              </section>
+
+              <div class="border-base-300 rounded-lg border p-4" x-show="quotationComponent">
+                <p class="text-sm font-semibold"><code x-text="quotationComponent?.tag"></code></p>
+                <p class="text-base-content/75 mt-1 text-sm" x-text="lead(quotationComponent?.differsBy || quotationComponent?.summary)"></p>
+              </div>
+            </section>
+
+            <!--
+            The package ships NO themes. This section teaches the one mechanism and
+            stops — an exhaustive part inventory would be a catalogue of our internals,
+            which is neither our job to publish nor stable enough to promise.
+          <!--
+            A lesson, not a reference. The previous version jumped straight to a
+            `.my-form::part(...)` rule without ever saying where `.my-form` came
+            from, which is the one thing a reader cannot guess. Three numbered steps
+            now carry the whole loop: put a class on the tag, name a hook in the
+            structure, write the rule.
+          -->
+            <section x-show="section === 'theming'" class="flex flex-col gap-8">
+              <header class="max-w-[70ch]">
+                <h1 class="text-3xl font-bold tracking-tight">Theming</h1>
+                <p class="lede text-base-content/70 mt-2">
+                  The package ships no themes and there is nothing to configure. Fields arrive with a plain default look — a label above, a bordered box, a red error message — and
+                  everything past that is one stylesheet you write, targeting the form with <code>::part()</code>.
+                </p>
+              </header>
+
+              <ol class="flex flex-col">
+                <template x-for="(step, i) in themingSteps" :key="step.title">
+                  <li class="relative flex gap-4 pb-8 last:pb-0">
+                    <span class="bg-base-300 absolute top-9 bottom-0 start-[15px] w-px" x-show="i < 2"></span>
+                    <span class="bg-primary text-primary-content relative z-10 grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm font-bold" x-text="i + 1"></span>
+
+                    <div class="min-w-0 flex-1">
+                      <h2 class="text-base font-semibold" x-text="step.title"></h2>
+                      <p class="text-base-content/70 mt-0.5 max-w-[70ch] text-sm" x-html="step.note"></p>
+
+                      <figure class="border-base-300 mt-3 overflow-hidden rounded-lg border">
+                        <figcaption class="bg-base-200/70 border-base-300 flex items-center gap-2 border-b px-3 py-1.5">
+                          <span class="text-base-content/55 font-mono text-[11px]" x-text="step.file"></span>
+                          <button type="button" class="btn btn-xs btn-ghost ms-auto h-6 min-h-0" @click="copySnippet(step.code, $event)">Copy</button>
+                        </figcaption>
+                        <pre class="code m-0 overflow-x-auto rounded-none border-0"><code x-html="hl(step.code, step.lang)"></code></pre>
+                      </figure>
+                    </div>
+                  </li>
+                </template>
+              </ol>
+
+              <div class="border-base-300 rounded-box border p-5 sm:p-6">
+                <h2 class="text-base font-semibold">What you can target</h2>
+                <p class="text-base-content/70 mt-0.5 text-sm">Four kinds of hook. The first two you invent; the last two are always there.</p>
+
+                <div class="mt-4 overflow-x-auto">
+                  <table class="table-sm table w-full">
+                    <thead>
+                      <tr>
+                        <th class="w-[30%]">To style…</th>
+                        <th class="w-[30%]">It comes from…</th>
+                        <th>Selector</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <template x-for="row in themingTargets" :key="row.what">
+                        <tr class="align-top">
+                          <td class="text-sm" x-text="row.what"></td>
+                          <td class="text-base-content/70 text-sm" x-html="row.from"></td>
+                          <td><code class="text-xs" x-text="row.selector"></code></td>
+                        </tr>
+                      </template>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="border-warning/40 bg-warning/5 rounded-box border p-5 sm:p-6">
+                <h2 class="text-base font-semibold">Three rules that will bite you</h2>
+                <ol class="mt-3 flex flex-col gap-4">
+                  <template x-for="(rule, i) in themingRules" :key="rule.title">
+                    <li>
+                      <p class="text-sm font-semibold"><span class="text-base-content/45 me-1.5" x-text="i + 1 + '.'"></span><span x-text="rule.title"></span></p>
+                      <p class="text-base-content/80 mt-0.5 max-w-[70ch] text-sm" x-html="rule.detail"></p>
+                      <pre class="code mt-2 overflow-x-auto" x-show="rule.code"><code x-html="hl(rule.code, 'css')"></code></pre>
+                    </li>
+                  </template>
+                </ol>
+              </div>
+
+              <div class="border-base-300 rounded-box border p-5">
+                <p class="text-sm font-semibold">A complete stylesheet to start from</p>
+                <p class="text-base-content/75 mt-1 max-w-[70ch] text-sm">
+                  Every form on this site is styled by one, written against exactly the rules above. Open any form, then
+                  <strong>Settings → Files → Theme CSS</strong>.
+                </p>
+                <button type="button" class="btn btn-sm btn-primary mt-3" @click="selectGroup('general-inquiry')">Open a form</button>
+              </div>
+            </section>
+
+            <!-- Same treatment as the parameter reference: scan by key, open for detail. -->
+            <section x-show="section === 'structure'" class="flex flex-col gap-5">
+              <header class="max-w-[70ch]">
+                <h1 class="text-3xl font-bold tracking-tight">Structure JSON</h1>
+                <p class="lede text-base-content/70 mt-2">
+                  One file decides which fields exist, which are required, and where the ticket goes. The root <em>is</em> a node — <code>data</code> sits beside
+                  <code>tag</code> and <code>children</code>, not above them.
+                </p>
+              </header>
+
+              <div class="border-warning/40 bg-warning/5 rounded-lg border p-4">
+                <p class="text-sm font-semibold">Always write a <code>data</code> object, with a <code>requestUrl</code> in it</p>
+                <p class="text-base-content/80 mt-1 text-sm">
+                  In the currently published build a structure with no <code>data</code> throws on load and the form never appears. That is fixed in the next release, after which
+                  it renders normally and instead fails at submit with “Request endpoint is not configured” when <code>requestUrl</code> is missing. Write both and neither version
+                  can bite you.
+                </p>
+              </div>
+
+              <template x-for="table in structureTables()" :key="table.id">
+                <section>
+                  <h2 class="text-lg font-semibold" x-text="table.title"></h2>
+                  <p class="text-base-content/70 mt-0.5 text-sm" x-text="table.blurb"></p>
+                  <ul class="border-base-300 divide-base-300 mt-2 divide-y overflow-hidden rounded-lg border">
+                    <template x-for="row in table.rows" :key="row.key">
+                      <li>
+                        <details class="entry">
+                          <summary class="hover:bg-base-200/60 flex cursor-pointer flex-wrap items-baseline gap-x-3 gap-y-1 px-4 py-2.5">
+                            <code class="text-sm font-semibold" x-text="row.key"></code>
+                            <span class="text-base-content/55 font-mono text-[11px]" x-text="row.type"></span>
+                            <span class="badge badge-xs badge-outline ms-auto" x-show="row.required">required</span>
+                          </summary>
+                          <div class="bg-base-200/40 border-base-300 border-t px-4 py-3">
+                            <p class="text-sm" x-html="md(lead(row.summary))"></p>
+                            <p class="text-base-content/75 mt-2 text-sm whitespace-pre-line" x-show="rest(row.summary)" x-html="md(rest(row.summary))"></p>
+                            <p class="text-warning mt-1 text-xs" x-show="row.warning" x-html="md(row.warning)"></p>
+                            <p class="text-base-content/60 mt-1 text-xs" x-show="row.absent" x-text="'Omitted: ' + row.absent"></p>
+                            <pre class="code mt-2 overflow-x-auto" x-show="row.example"><code x-html="hl(row.example, 'json')"></code></pre>
+                          </div>
+                        </details>
+                      </li>
+                    </template>
+                  </ul>
+                </section>
+              </template>
+
+              <section x-show="(structure.mappers || []).length">
+                <h2 class="text-lg font-semibold">Field names</h2>
+                <p class="text-base-content/70 mt-0.5 text-sm">A fixed allow-list — a name that is not here renders nothing, silently.</p>
+                <ul class="border-base-300 divide-base-300 mt-2 divide-y overflow-hidden rounded-lg border">
+                  <template x-for="m in structure.mappers || []" :key="m.name">
+                    <li>
+                      <details class="entry">
+                        <summary class="hover:bg-base-200/60 flex cursor-pointer flex-wrap items-baseline gap-x-3 gap-y-1 px-4 py-2.5">
+                          <code class="text-sm font-semibold" x-text="m.name"></code>
+                          <span class="text-base-content/55 font-mono text-[11px]" x-text="m.renders"></span>
+                          <span class="text-base-content/45 ms-auto text-[11px]" x-show="m.needs?.length" x-text="'needs ' + m.needs.join(', ')"></span>
+                        </summary>
+                        <div class="bg-base-200/40 border-base-300 border-t px-4 py-3">
+                          <p class="text-sm" x-show="m.notes" x-html="md(lead(m.notes))"></p>
+                          <p class="text-base-content/75 mt-2 text-sm whitespace-pre-line" x-show="rest(m.notes)" x-html="md(rest(m.notes))"></p>
+                          <pre class="code mt-2 overflow-x-auto"><code x-html="hl(m.minimalNode, 'json')"></code></pre>
+                        </div>
+                      </details>
+                    </li>
+                  </template>
+                </ul>
+              </section>
+
+              <section x-show="structure.requiredMechanics">
+                <h2 class="text-lg font-semibold">Required, optional, omitted</h2>
+                <p class="text-base-content/70 mt-0.5 text-sm">Several independent knobs decide enforcement, and a few fields ignore all of them.</p>
+                <ul class="border-base-300 divide-base-300 mt-2 divide-y overflow-hidden rounded-lg border">
+                  <template x-for="k in structure.requiredMechanics?.knobs || []" :key="k.id">
+                    <li>
+                      <details class="entry">
+                        <summary class="hover:bg-base-200/60 cursor-pointer px-4 py-2.5 text-sm font-medium" x-text="k.title"></summary>
+                        <div class="bg-base-200/40 border-base-300 border-t px-4 py-3">
+                          <p class="text-sm" x-html="md(lead(k.detail))"></p>
+                          <p class="text-base-content/75 mt-2 text-sm whitespace-pre-line" x-show="rest(k.detail)" x-html="md(rest(k.detail))"></p>
+                          <pre class="code mt-2 overflow-x-auto" x-show="k.example"><code x-html="hl(k.example, 'json')"></code></pre>
+                        </div>
+                      </details>
+                    </li>
+                  </template>
+                </ul>
+
+                <div class="border-warning/40 bg-warning/5 mt-3 rounded-lg border p-4" x-show="(structure.requiredMechanics?.exceptions || []).length">
+                  <p class="text-sm font-semibold">Fields that ignore the knobs</p>
+                  <ul class="mt-1.5 flex flex-col gap-1.5">
+                    <template x-for="e in structure.requiredMechanics?.exceptions || []" :key="e.field">
+                      <li class="text-xs">
+                        <code class="font-semibold" x-text="e.field"></code>
+                        <span class="text-base-content/75" x-text="'— ' + lead(e.behaviour)"></span>
+                      </li>
+                    </template>
+                  </ul>
+                </div>
+              </section>
+            </section>
+          </div>
+        </main>
+
+        <!--
+          A drawer at every width, sliding in from the inline end. It was a sticky
+          third column above xl for a while; one behaviour everywhere turned out to be
+          less surprising, and it gives the form the full content width.
+        -->
+        <aside class="settings-panel" :class="settings ? 'is-open' : ''" :inert="!settings" role="complementary" aria-label="Form settings" x-show="section === 'forms'">
+          <div class="bg-base-100 border-base-300 rounded-box flex h-full flex-col border shadow-sm">
+            <header class="border-base-300 flex items-center gap-2 border-b px-4 py-2.5">
+              <h2 class="text-sm font-semibold">Settings</h2>
+              <button type="button" class="btn btn-xs btn-ghost ms-auto" @click="settings = false" aria-label="Close settings">&#10005;</button>
+            </header>
+
+            <div class="flex-1 overflow-y-auto p-4">
+              <section>
+                <h3 class="text-base-content/55 text-[11px] font-semibold tracking-[0.06em] uppercase">Language</h3>
+                <div class="mt-2 flex flex-wrap gap-1.5">
+                  <template x-for="l in languages" :key="l">
+                    <button
+                      type="button"
+                      class="btn btn-xs"
+                      :class="language === l ? 'btn-primary' : 'btn-ghost border-base-300 border'"
+                      @click="setLanguage(l)"
+                      x-text="l"
+                    ></button>
+                  </template>
+                </div>
+                <p class="text-base-content/55 mt-1.5 text-[11px]">Changes language without rebuilding the form, so anything typed is kept.</p>
+              </section>
+
+              <section class="border-base-300 mt-5 border-t pt-4">
+                <h3 class="text-base-content/55 text-[11px] font-semibold tracking-[0.06em] uppercase">Theme</h3>
+                <p class="text-base-content/55 mt-1.5 text-[11px]" x-show="preset?.live">This example ships its own stylesheet, so the demo themes do not apply to it.</p>
+                <label class="sr-only" for="theme-pick">Theme</label>
+                <select id="theme-pick" class="select select-bordered select-sm mt-2 w-full" x-model="themeId" :disabled="preset?.live" @change="applyTheme()">
+                  <template x-for="t in themes" :key="t.id">
+                    <option :value="t.id" x-text="t.label"></option>
+                  </template>
+                </select>
+              </section>
+
+              <section class="border-base-300 mt-5 border-t pt-4">
+                <div class="flex flex-wrap items-center gap-2">
+                  <h3 class="text-base-content/55 text-[11px] font-semibold tracking-[0.06em] uppercase">Fields</h3>
+                  <button type="button" class="btn btn-xs ms-auto" @click="setAll('required')">All required</button>
+                  <button type="button" class="btn btn-xs" @click="setAll('optional')">All optional</button>
+                </div>
+                <p class="text-base-content/55 mt-1.5 text-[11px]">Changing a field rebuilds the form: the structure is read once, at load.</p>
+
+                <ul class="mt-3 flex flex-col gap-2.5">
+                  <template x-for="fld in fields" :key="fld.name">
+                    <li>
+                      <code class="text-xs font-medium" x-text="fld.name"></code>
+                      <div class="seg mt-1 flex gap-1" x-show="!fld.locked">
+                        <template x-for="state in ['required', 'optional', 'omitted']" :key="state">
+                          <label class="flex-1 cursor-pointer">
+                            <input type="radio" class="sr-only" :name="'s-' + fld.name" :value="state" x-model="fld.state" @change="mount()" />
+                            <span class="border-base-300 bg-base-200 block rounded border py-1 text-center text-[11px] capitalize" x-text="state"></span>
+                          </label>
+                        </template>
+                      </div>
+                      <p class="text-base-content/60 mt-0.5 text-[11px]" x-show="fld.locked" x-text="fld.lockedReason"></p>
+                    </li>
+                  </template>
+                </ul>
+                <p class="text-base-content/60 text-xs" x-show="!fields.length">This example has no fields you can toggle. Open Files to see its structure.</p>
+              </section>
+
+              <section class="border-base-300 mt-5 border-t pt-4">
+                <h3 class="text-base-content/55 text-[11px] font-semibold tracking-[0.06em] uppercase">Submitting</h3>
+                <p class="text-base-content/55 mt-1.5 text-[11px]">
+                  Nothing leaves the page. The request is intercepted and answered after a short delay, so the loading, success and error states are the component's real ones.
+                </p>
+                <div class="seg mt-2 flex gap-1">
+                  <template x-for="mode in [{ id: 'success', label: 'Succeeds' }, { id: 'failure', label: 'Fails' }, { id: 'off', label: 'Off' }]" :key="mode.id">
+                    <label class="flex-1 cursor-pointer">
+                      <input type="radio" class="sr-only" name="mock-mode" :value="mode.id" x-model="mockMode" @change="setMockMode($event.target.value)" />
+                      <span class="border-base-300 bg-base-200 block rounded border py-1 text-center text-[11px]" x-text="mode.label"></span>
+                    </label>
+                  </template>
+                </div>
+              </section>
+
+              <section class="border-base-300 mt-5 border-t pt-4">
+                <h3 class="text-base-content/55 text-[11px] font-semibold tracking-[0.06em] uppercase">Files</h3>
+                <p class="text-base-content/55 mt-1.5 text-[11px]">The two files this example is made of, with your current settings applied.</p>
+                <div class="mt-2 flex flex-col gap-2">
+                  <button type="button" class="btn btn-sm justify-start" @click="showArtifact('structure')">View structure JSON</button>
+                  <button type="button" class="btn btn-sm justify-start" @click="showArtifact('css')" :disabled="!themeCss">View theme CSS</button>
+                </div>
+              </section>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Drawer scrim. -->
+        <div class="fixed inset-0 z-30 bg-black/40" x-show="settings && section === 'forms'" x-cloak @click="settings = false"></div>
+      </div>
+      <!-- ══════════════════════ artifact modal ══════════════════════ -->
+      <dialog x-ref="artifact" class="bg-base-100 text-base-content m-auto max-h-[85vh] w-[min(900px,92vw)] flex-col rounded-xl p-0 shadow-2xl">
+        <header class="border-base-300 flex items-center gap-3 border-b px-5 py-3">
+          <h2 class="font-semibold" x-text="artifactTitle"></h2>
+          <button type="button" class="btn btn-sm btn-ghost ms-auto" @click="$refs.artifact.close()" aria-label="Close">✕</button>
+        </header>
+        <div class="min-h-0 flex-1 overflow-auto p-5">
+          <pre class="code overflow-x-auto"><code x-html="hl(artifactBody, artifactLang)"></code></pre>
+        </div>
+        <footer class="border-base-300 flex gap-2 border-t px-5 py-3">
+          <button type="button" class="btn btn-sm" @click="copyArtifact()" x-text="copied ? 'Copied' : 'Copy'"></button>
+        </footer>
+      </dialog>
+    </div>
+  </body>
+</html>

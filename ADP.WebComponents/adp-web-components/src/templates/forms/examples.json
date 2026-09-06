@@ -1,0 +1,1547 @@
+{
+  "$note": [
+    "Presets for the ticket-forms documentation page.",
+    "",
+    "Exactly TWO per form type: a plain one and a stepped one. Everything else a",
+    "supplier needs to see — extra fields, a custom field name, a multi-country",
+    "phone — is folded into those two rather than spun off into more examples.",
+    "",
+    "Every preset is SELF-CONTAINED: the structure is inline, so it renders with no",
+    "network call and no deployment behind it. 'render-only' means the submit button",
+    "validates and then stops at a notice instead of POSTing, which is why every",
+    "requestUrl points at example.invalid.",
+    "",
+    "The themes here are the page's own demonstration stylesheets, not something the",
+    "package ships. A host writes its own; these exist so the page has something",
+    "real to show.",
+    "",
+    "Never add a recaptchaKey. A placeholder key looks healthy until someone presses",
+    "Submit, then fails with 'Invalid site key'. Omitting it is the documented default."
+  ],
+  "themes": [
+    {
+      "id": "compact",
+      "label": "Compact",
+      "css": "themes/compact.css"
+    },
+    {
+      "id": "bordered",
+      "label": "Bordered",
+      "css": "themes/bordered.css"
+    },
+    {
+      "id": "dark",
+      "label": "Dark",
+      "css": "themes/dark.css"
+    }
+  ],
+  "presets": [
+    {
+      "id": "general-inquiry-basic",
+      "group": "general-inquiry",
+      "component": "general-inquiry-form",
+      "label": "Plain",
+      "blurb": "One step. The topic is a select whose options come from the structure, and the phone field is limited to a set of countries. orderReference is not on the field-name allow-list: type points at a name that is, so it renders as a text field.",
+      "submitMode": "render-only",
+      "defaultTheme": "bordered",
+      "structure": {
+        "data": {
+          "requestUrl": "https://example.invalid/api/tickets",
+          "requestMethod": "POST",
+          "theme": "docs-preset",
+          "localization": {
+            "en": {
+              "submit": "Send",
+              "Form submitted successfully.": "Thanks — we will be in touch."
+            },
+            "ar": {
+              "submit": "إرسال",
+              "Form submitted successfully.": "تم الإرسال بنجاح."
+            }
+          },
+          "truncatedFields": {
+            "orderReference": "OrderReference"
+          },
+          "brandId": "<your-brand-id>"
+        },
+        "requiredContext": {
+          "name": true,
+          "email": true,
+          "message": true,
+          "generalTicketType": true
+        },
+        "tag": "div",
+        "id": "container",
+        "children": [
+          {
+            "tag": "h2",
+            "class": "section-title",
+            "children": {
+              "en": "How can we help?",
+              "ar": "كيف يمكننا المساعدة؟"
+            }
+          },
+          {
+            "name": "generalTicketType",
+            "options": [
+              {
+                "value": "GeneralInquiry",
+                "en": "General inquiry",
+                "ar": "استفسار عام"
+              },
+              {
+                "value": "Complaint",
+                "en": "Complaint",
+                "ar": "شكوى"
+              },
+              {
+                "value": "PartInquiry",
+                "en": "Parts",
+                "ar": "قطع غيار"
+              },
+              {
+                "value": "ServicePriceInquiry",
+                "en": "Service pricing",
+                "ar": "أسعار الصيانة"
+              }
+            ],
+            "localization": {
+              "en": {
+                "label": "What is this about?",
+                "placeholder": "Choose a topic",
+                "require": "Please choose a topic."
+              }
+            }
+          },
+          {
+            "tag": "div",
+            "id": "inputs_wrapper",
+            "children": [
+              {
+                "name": "name",
+                "localization": {
+                  "en": {
+                    "label": "Full name",
+                    "placeholder": "Full name",
+                    "require": "Full name is required."
+                  }
+                }
+              },
+              {
+                "name": "email",
+                "localization": {
+                  "en": {
+                    "label": "Email",
+                    "placeholder": "you@example.invalid",
+                    "require": "Email is required."
+                  }
+                }
+              },
+              {
+                "name": "phone",
+                "countryCode": ["IQ", "AE", "SA", "JO", "TR", "GB"],
+                "localization": {
+                  "en": {
+                    "label": "Phone",
+                    "placeholder": "Phone number",
+                    "require": "Phone number is required."
+                  }
+                }
+              },
+              {
+                "name": "orderReference",
+                "type": "name",
+                "localization": {
+                  "en": {
+                    "label": "Order reference",
+                    "placeholder": "ORD-00000"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tag": "div",
+            "id": "message_wrapper",
+            "children": [
+              {
+                "name": "message",
+                "localization": {
+                  "en": {
+                    "label": "Details",
+                    "placeholder": "Tell us what you need",
+                    "require": "A message is required."
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "submit",
+            "localization": {
+              "en": {
+                "label": "Send"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "general-inquiry-stepped",
+      "group": "general-inquiry",
+      "component": "general-inquiry-form",
+      "label": "Stepped",
+      "blurb": "The same fields over three steps. Each step validates on its own, and every top-level node carries a step — a node without one renders above the steps and again inside each of them.",
+      "submitMode": "render-only",
+      "defaultTheme": "bordered",
+      "structure": {
+        "data": {
+          "requestUrl": "https://example.invalid/api/tickets",
+          "theme": "docs-preset",
+          "localization": {
+            "en": {
+              "Form submitted successfully.": "Thanks — we will be in touch."
+            }
+          },
+          "truncatedFields": {
+            "orderReference": "OrderReference"
+          },
+          "brandId": "<your-brand-id>"
+        },
+        "requiredContext": {
+          "name": true,
+          "email": true,
+          "message": true,
+          "generalTicketType": true
+        },
+        "steps": [
+          {
+            "en": {
+              "title": "Topic",
+              "stepCell": "1",
+              "stepTitle": "Topic",
+              "submitButton": "Continue"
+            },
+            "ar": {
+              "title": "الموضوع",
+              "stepCell": "١",
+              "stepTitle": "الموضوع",
+              "submitButton": "متابعة"
+            }
+          },
+          {
+            "en": {
+              "title": "Contact",
+              "stepCell": "2",
+              "stepTitle": "Contact",
+              "submitButton": "Continue",
+              "back": "Back"
+            },
+            "ar": {
+              "title": "التواصل",
+              "stepCell": "٢",
+              "stepTitle": "التواصل",
+              "submitButton": "متابعة",
+              "back": "رجوع"
+            }
+          },
+          {
+            "en": {
+              "title": "Message",
+              "stepCell": "3",
+              "stepTitle": "Message",
+              "submitButton": "Send",
+              "back": "Back"
+            },
+            "ar": {
+              "title": "الرسالة",
+              "stepCell": "٣",
+              "stepTitle": "الرسالة",
+              "submitButton": "إرسال",
+              "back": "رجوع"
+            }
+          }
+        ],
+        "tag": "div",
+        "id": "container",
+        "children": [
+          {
+            "name": "formStepper",
+            "step": -1
+          },
+          {
+            "tag": "div",
+            "id": "step-one",
+            "step": 1,
+            "children": [
+              {
+                "name": "generalTicketType",
+                "options": [
+                  {
+                    "value": "GeneralInquiry",
+                    "en": "General inquiry",
+                    "ar": "استفسار عام"
+                  },
+                  {
+                    "value": "Complaint",
+                    "en": "Complaint",
+                    "ar": "شكوى"
+                  },
+                  {
+                    "value": "PartInquiry",
+                    "en": "Parts",
+                    "ar": "قطع غيار"
+                  }
+                ],
+                "localization": {
+                  "en": {
+                    "label": "What is this about?",
+                    "placeholder": "Choose a topic",
+                    "require": "Please choose a topic."
+                  }
+                }
+              },
+              {
+                "name": "orderReference",
+                "type": "name",
+                "localization": {
+                  "en": {
+                    "label": "Order reference",
+                    "placeholder": "ORD-00000"
+                  }
+                }
+              },
+              {
+                "name": "stepperSubmit",
+                "step": 1
+              }
+            ]
+          },
+          {
+            "tag": "div",
+            "id": "step-two",
+            "step": 2,
+            "children": [
+              {
+                "name": "name",
+                "localization": {
+                  "en": {
+                    "label": "Full name",
+                    "placeholder": "Full name",
+                    "require": "Full name is required."
+                  }
+                }
+              },
+              {
+                "name": "email",
+                "localization": {
+                  "en": {
+                    "label": "Email",
+                    "placeholder": "you@example.invalid",
+                    "require": "Email is required."
+                  }
+                }
+              },
+              {
+                "name": "phone",
+                "countryCode": ["IQ", "AE", "SA", "JO", "TR", "GB"],
+                "localization": {
+                  "en": {
+                    "label": "Phone",
+                    "placeholder": "Phone number",
+                    "require": "Phone number is required."
+                  }
+                }
+              },
+              {
+                "tag": "div",
+                "id": "step-two-actions",
+                "children": [
+                  {
+                    "name": "back",
+                    "step": 2
+                  },
+                  {
+                    "name": "stepperSubmit",
+                    "step": 2
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "tag": "div",
+            "id": "step-three",
+            "step": 3,
+            "children": [
+              {
+                "tag": "div",
+                "id": "message_wrapper",
+                "children": [
+                  {
+                    "name": "message",
+                    "localization": {
+                      "en": {
+                        "label": "Details",
+                        "placeholder": "Tell us what you need",
+                        "require": "A message is required."
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "tag": "div",
+                "id": "step-three-actions",
+                "children": [
+                  {
+                    "name": "back",
+                    "step": 3
+                  },
+                  {
+                    "name": "stepperSubmit",
+                    "step": 3
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "service-booking-basic",
+      "group": "service-booking",
+      "component": "service-booking-form",
+      "label": "Plain",
+      "blurb": "One step, with the fields a workshop needs: a VIN validated by its check digit, a year select built from min and max, and a time select generated every 30 minutes between 09:00 and 17:00. The branch is pinned with staticValue — that is how a select which normally calls an endpoint renders without one.",
+      "submitMode": "render-only",
+      "defaultTheme": "bordered",
+      "structure": {
+        "data": {
+          "requestUrl": "https://example.invalid/api/tickets",
+          "theme": "docs-preset",
+          "truncatedFields": {
+            "bookingDate": ["date", " ", "time"],
+            "parse date: bookingDate": "yyyy-MM-dd HH:mm",
+            "format date: bookingDate": "iso",
+            "plateNumber": "PlateNumber",
+            "time": "PreferredTime",
+            "modelYear": ["year"]
+          },
+          "localization": {
+            "en": {
+              "submit": "Request booking",
+              "Form submitted successfully.": "Booking request received."
+            }
+          },
+          "brandId": "<your-brand-id>"
+        },
+        "requiredContext": {
+          "name": true,
+          "vin": true,
+          "date": true,
+          "time": true
+        },
+        "tag": "div",
+        "id": "container",
+        "children": [
+          {
+            "tag": "h2",
+            "class": "section-title",
+            "children": {
+              "en": "Book a service",
+              "ar": "احجز صيانة"
+            }
+          },
+          {
+            "tag": "div",
+            "id": "vehicle_wrapper",
+            "children": [
+              {
+                "name": "vin",
+                "localization": {
+                  "en": {
+                    "label": "VIN",
+                    "placeholder": "17 characters",
+                    "require": "VIN is required.",
+                    "format": "That VIN fails its checksum."
+                  }
+                }
+              },
+              {
+                "name": "year",
+                "min": 2005,
+                "max": 2026,
+                "localization": {
+                  "en": {
+                    "label": "Model year",
+                    "placeholder": "Select a year"
+                  }
+                }
+              },
+              {
+                "name": "plateNumber",
+                "type": "name",
+                "localization": {
+                  "en": {
+                    "label": "Plate number",
+                    "placeholder": "Plate number"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tag": "div",
+            "id": "slot_wrapper",
+            "children": [
+              {
+                "name": "date",
+                "min": [0, 0, 1],
+                "max": [0, 1, 0],
+                "localization": {
+                  "en": {
+                    "label": "Date",
+                    "placeholder": "Pick a date",
+                    "require": "Date is required.",
+                    "minMessage": "Earliest available is $minDate$",
+                    "maxMessage": "Latest available is $maxDate$"
+                  }
+                }
+              },
+              {
+                "name": "time",
+                "min": [0, 0, 0, 9, 0],
+                "max": [0, 0, 0, 17, 0],
+                "span": [0, 0, 0, 0, 30],
+                "format": "HH:mm",
+                "localization": {
+                  "en": {
+                    "label": "Time",
+                    "placeholder": "Pick a time",
+                    "require": "Time is required."
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tag": "div",
+            "id": "inputs_wrapper",
+            "children": [
+              {
+                "name": "companyBranchId",
+                "staticValue": {
+                  "value": "branch-1",
+                  "label": "Central service centre"
+                },
+                "localization": {
+                  "en": {
+                    "label": "Branch",
+                    "placeholder": "Select",
+                    "require": "Branch is required."
+                  }
+                }
+              },
+              {
+                "name": "name",
+                "localization": {
+                  "en": {
+                    "label": "Full name",
+                    "placeholder": "Full name",
+                    "require": "Full name is required."
+                  }
+                }
+              },
+              {
+                "name": "phone",
+                "countryCode": ["IQ", "AE", "SA", "JO", "TR", "GB"],
+                "localization": {
+                  "en": {
+                    "label": "Phone",
+                    "placeholder": "Phone number",
+                    "require": "Phone number is required."
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tag": "div",
+            "id": "message_wrapper",
+            "children": [
+              {
+                "name": "message",
+                "localization": {
+                  "en": {
+                    "label": "Anything we should know?",
+                    "placeholder": "Optional notes"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "submit",
+            "localization": {
+              "en": {
+                "label": "Request booking"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "service-booking-stepped",
+      "group": "service-booking",
+      "component": "service-booking-form",
+      "label": "Stepped",
+      "blurb": "Vehicle, then slot, then contact. truncatedFields combines the date and time fields into one ISO timestamp, bookingDate, and adds it to the payload.",
+      "submitMode": "render-only",
+      "defaultTheme": "bordered",
+      "structure": {
+        "data": {
+          "requestUrl": "https://example.invalid/api/tickets",
+          "theme": "docs-preset",
+          "truncatedFields": {
+            "bookingDate": ["date", " ", "time"],
+            "parse date: bookingDate": "yyyy-MM-dd HH:mm",
+            "format date: bookingDate": "iso",
+            "plateNumber": "PlateNumber",
+            "time": "PreferredTime",
+            "modelYear": ["year"]
+          },
+          "localization": {
+            "en": {
+              "Form submitted successfully.": "Booking request received."
+            }
+          },
+          "brandId": "<your-brand-id>"
+        },
+        "requiredContext": {
+          "name": true,
+          "vin": true,
+          "date": true,
+          "time": true
+        },
+        "steps": [
+          {
+            "en": {
+              "title": "Vehicle",
+              "stepCell": "1",
+              "stepTitle": "Your vehicle",
+              "submitButton": "Continue"
+            },
+            "ar": {
+              "title": "المركبة",
+              "stepCell": "١",
+              "stepTitle": "مركبتك",
+              "submitButton": "متابعة"
+            }
+          },
+          {
+            "en": {
+              "title": "Slot",
+              "stepCell": "2",
+              "stepTitle": "Date and time",
+              "submitButton": "Continue",
+              "back": "Back"
+            },
+            "ar": {
+              "title": "الموعد",
+              "stepCell": "٢",
+              "stepTitle": "التاريخ والوقت",
+              "submitButton": "متابعة",
+              "back": "رجوع"
+            }
+          },
+          {
+            "en": {
+              "title": "Contact",
+              "stepCell": "3",
+              "stepTitle": "Contact",
+              "submitButton": "Request booking",
+              "back": "Back"
+            },
+            "ar": {
+              "title": "التواصل",
+              "stepCell": "٣",
+              "stepTitle": "التواصل",
+              "submitButton": "احجز",
+              "back": "رجوع"
+            }
+          }
+        ],
+        "tag": "div",
+        "id": "container",
+        "children": [
+          {
+            "name": "formStepper",
+            "step": -1
+          },
+          {
+            "tag": "div",
+            "id": "step-one",
+            "step": 1,
+            "children": [
+              {
+                "name": "vin",
+                "localization": {
+                  "en": {
+                    "label": "VIN",
+                    "placeholder": "17 characters",
+                    "require": "VIN is required.",
+                    "format": "That VIN fails its checksum."
+                  }
+                }
+              },
+              {
+                "name": "year",
+                "min": 2005,
+                "max": 2026,
+                "localization": {
+                  "en": {
+                    "label": "Model year",
+                    "placeholder": "Select a year"
+                  }
+                }
+              },
+              {
+                "name": "plateNumber",
+                "type": "name",
+                "localization": {
+                  "en": {
+                    "label": "Plate number",
+                    "placeholder": "Plate number"
+                  }
+                }
+              },
+              {
+                "name": "stepperSubmit",
+                "step": 1
+              }
+            ]
+          },
+          {
+            "tag": "div",
+            "id": "step-two",
+            "step": 2,
+            "children": [
+              {
+                "name": "date",
+                "min": [0, 0, 1],
+                "max": [0, 1, 0],
+                "localization": {
+                  "en": {
+                    "label": "Date",
+                    "placeholder": "Pick a date",
+                    "require": "Date is required."
+                  }
+                }
+              },
+              {
+                "name": "time",
+                "min": [0, 0, 0, 9, 0],
+                "max": [0, 0, 0, 17, 0],
+                "span": [0, 0, 0, 0, 30],
+                "format": "HH:mm",
+                "localization": {
+                  "en": {
+                    "label": "Time",
+                    "placeholder": "Pick a time",
+                    "require": "Time is required."
+                  }
+                }
+              },
+              {
+                "tag": "div",
+                "id": "step-two-actions",
+                "children": [
+                  {
+                    "name": "back",
+                    "step": 2
+                  },
+                  {
+                    "name": "stepperSubmit",
+                    "step": 2
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "tag": "div",
+            "id": "step-three",
+            "step": 3,
+            "children": [
+              {
+                "name": "companyBranchId",
+                "staticValue": {
+                  "value": "branch-1",
+                  "label": "Central service centre"
+                },
+                "localization": {
+                  "en": {
+                    "label": "Branch",
+                    "placeholder": "Select",
+                    "require": "Branch is required."
+                  }
+                }
+              },
+              {
+                "name": "name",
+                "localization": {
+                  "en": {
+                    "label": "Full name",
+                    "placeholder": "Full name",
+                    "require": "Full name is required."
+                  }
+                }
+              },
+              {
+                "name": "phone",
+                "countryCode": ["IQ", "AE", "SA", "JO", "TR", "GB"],
+                "localization": {
+                  "en": {
+                    "label": "Phone",
+                    "placeholder": "Phone number",
+                    "require": "Phone number is required."
+                  }
+                }
+              },
+              {
+                "tag": "div",
+                "id": "message_wrapper",
+                "children": [
+                  {
+                    "name": "message",
+                    "localization": {
+                      "en": {
+                        "label": "Anything we should know?",
+                        "placeholder": "Optional notes"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "tag": "div",
+                "id": "step-three-actions",
+                "children": [
+                  {
+                    "name": "back",
+                    "step": 3
+                  },
+                  {
+                    "name": "stepperSubmit",
+                    "step": 3
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "test-drive-basic",
+      "group": "test-drive",
+      "component": "test-drive-form",
+      "label": "Plain",
+      "blurb": "One step. ownVehicle is a built-in yes/no select whose two labels come from the structure, and the vehicle select is pinned with staticValue — that is how a select which normally calls an endpoint renders without one.",
+      "submitMode": "render-only",
+      "defaultTheme": "bordered",
+      "structure": {
+        "data": {
+          "requestUrl": "https://example.invalid/api/tickets",
+          "theme": "docs-preset",
+          "localization": {
+            "en": {
+              "submit": "Book a test drive",
+              "Form submitted successfully.": "Thanks — we will confirm shortly."
+            }
+          },
+          "truncatedFields": {
+            "testDriveDate": ["date"],
+            "parse date: testDriveDate": "yyyy-MM-dd",
+            "format date: testDriveDate": "iso",
+            "licenceNumber": "LicenceNumber",
+            "ownVehicle": "OwnsAVehicle"
+          },
+          "brandId": "<your-brand-id>"
+        },
+        "requiredContext": {
+          "name": true,
+          "email": true,
+          "ownVehicle": true,
+          "date": true
+        },
+        "tag": "div",
+        "id": "container",
+        "children": [
+          {
+            "tag": "h2",
+            "class": "section-title",
+            "children": {
+              "en": "Book a test drive",
+              "ar": "احجز تجربة قيادة"
+            }
+          },
+          {
+            "tag": "div",
+            "id": "inputs_wrapper",
+            "children": [
+              {
+                "name": "name",
+                "localization": {
+                  "en": {
+                    "label": "Full name",
+                    "placeholder": "Full name",
+                    "require": "Full name is required."
+                  }
+                }
+              },
+              {
+                "name": "email",
+                "localization": {
+                  "en": {
+                    "label": "Email",
+                    "placeholder": "you@example.invalid",
+                    "require": "Email is required."
+                  }
+                }
+              },
+              {
+                "name": "phone",
+                "countryCode": ["IQ", "AE", "SA", "JO", "TR", "GB"],
+                "localization": {
+                  "en": {
+                    "label": "Phone",
+                    "placeholder": "Phone number",
+                    "require": "Phone number is required."
+                  }
+                }
+              },
+              {
+                "name": "licenceNumber",
+                "type": "name",
+                "localization": {
+                  "en": {
+                    "label": "Licence number",
+                    "placeholder": "Licence number"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tag": "div",
+            "id": "preference_wrapper",
+            "children": [
+              {
+                "name": "vehicle",
+                "staticValue": {
+                  "value": "demo-grade-1",
+                  "label": "Demo model · mid grade"
+                },
+                "localization": {
+                  "en": {
+                    "label": "Model",
+                    "placeholder": "Select",
+                    "require": "Model is required."
+                  }
+                }
+              },
+              {
+                "name": "ownVehicle",
+                "localization": {
+                  "en": {
+                    "label": "Do you own a vehicle?",
+                    "placeholder": "Select",
+                    "yes": "Yes",
+                    "no": "No",
+                    "require": "Please answer."
+                  }
+                }
+              },
+              {
+                "name": "date",
+                "min": [0, 0, 1],
+                "max": [0, 1, 0],
+                "localization": {
+                  "en": {
+                    "label": "Preferred date",
+                    "placeholder": "Pick a date",
+                    "require": "Date is required."
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tag": "div",
+            "id": "message_wrapper",
+            "children": [
+              {
+                "name": "message",
+                "localization": {
+                  "en": {
+                    "label": "Anything we should know?",
+                    "placeholder": "Optional notes"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "submit",
+            "localization": {
+              "en": {
+                "label": "Book a test drive"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "test-drive-two-step",
+      "group": "test-drive",
+      "component": "test-drive-form",
+      "label": "Stepped",
+      "blurb": "Contact first, then the drive itself. The stepper is a node with step set to -1, so it renders once above the steps instead of inside each one.",
+      "submitMode": "render-only",
+      "defaultTheme": "bordered",
+      "structure": {
+        "data": {
+          "requestUrl": "https://example.invalid/api/tickets",
+          "theme": "docs-preset",
+          "localization": {
+            "en": {
+              "Form submitted successfully.": "Thanks — we will confirm shortly."
+            }
+          },
+          "truncatedFields": {
+            "testDriveDate": ["date"],
+            "parse date: testDriveDate": "yyyy-MM-dd",
+            "format date: testDriveDate": "iso",
+            "licenceNumber": "LicenceNumber",
+            "ownVehicle": "OwnsAVehicle"
+          },
+          "brandId": "<your-brand-id>"
+        },
+        "requiredContext": {
+          "name": true,
+          "email": true,
+          "ownVehicle": true,
+          "date": true
+        },
+        "steps": [
+          {
+            "en": {
+              "title": "Details",
+              "stepCell": "1",
+              "stepTitle": "Your details",
+              "submitButton": "Continue"
+            },
+            "ar": {
+              "title": "البيانات",
+              "stepCell": "١",
+              "stepTitle": "بياناتك",
+              "submitButton": "متابعة"
+            }
+          },
+          {
+            "en": {
+              "title": "Drive",
+              "stepCell": "2",
+              "stepTitle": "The drive",
+              "submitButton": "Book",
+              "back": "Back"
+            },
+            "ar": {
+              "title": "التجربة",
+              "stepCell": "٢",
+              "stepTitle": "التجربة",
+              "submitButton": "احجز",
+              "back": "رجوع"
+            }
+          }
+        ],
+        "tag": "div",
+        "id": "container",
+        "children": [
+          {
+            "name": "formStepper",
+            "step": -1
+          },
+          {
+            "tag": "div",
+            "id": "step-one",
+            "step": 1,
+            "children": [
+              {
+                "name": "name",
+                "localization": {
+                  "en": {
+                    "label": "Full name",
+                    "placeholder": "Full name",
+                    "require": "Full name is required."
+                  }
+                }
+              },
+              {
+                "name": "email",
+                "localization": {
+                  "en": {
+                    "label": "Email",
+                    "placeholder": "you@example.invalid",
+                    "require": "Email is required."
+                  }
+                }
+              },
+              {
+                "name": "phone",
+                "countryCode": ["IQ", "AE", "SA", "JO", "TR", "GB"],
+                "localization": {
+                  "en": {
+                    "label": "Phone",
+                    "placeholder": "Phone number",
+                    "require": "Phone number is required."
+                  }
+                }
+              },
+              {
+                "name": "licenceNumber",
+                "type": "name",
+                "localization": {
+                  "en": {
+                    "label": "Licence number",
+                    "placeholder": "Licence number"
+                  }
+                }
+              },
+              {
+                "name": "stepperSubmit",
+                "step": 1
+              }
+            ]
+          },
+          {
+            "tag": "div",
+            "id": "step-two",
+            "step": 2,
+            "children": [
+              {
+                "name": "vehicle",
+                "staticValue": {
+                  "value": "demo-grade-1",
+                  "label": "Demo model · mid grade"
+                },
+                "localization": {
+                  "en": {
+                    "label": "Model",
+                    "placeholder": "Select",
+                    "require": "Model is required."
+                  }
+                }
+              },
+              {
+                "name": "ownVehicle",
+                "localization": {
+                  "en": {
+                    "label": "Do you own a vehicle?",
+                    "placeholder": "Select",
+                    "yes": "Yes",
+                    "no": "No",
+                    "require": "Please answer."
+                  }
+                }
+              },
+              {
+                "name": "date",
+                "min": [0, 0, 1],
+                "max": [0, 1, 0],
+                "localization": {
+                  "en": {
+                    "label": "Preferred date",
+                    "placeholder": "Pick a date",
+                    "require": "Date is required."
+                  }
+                }
+              },
+              {
+                "tag": "div",
+                "id": "message_wrapper",
+                "children": [
+                  {
+                    "name": "message",
+                    "localization": {
+                      "en": {
+                        "label": "Anything we should know?",
+                        "placeholder": "Optional notes"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "tag": "div",
+                "id": "step-two-actions",
+                "children": [
+                  {
+                    "name": "back",
+                    "step": 2
+                  },
+                  {
+                    "name": "stepperSubmit",
+                    "step": 2
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "vehicle-quotation-basic",
+      "group": "vehicle-quotation",
+      "component": "vehicle-quotation-form",
+      "label": "Plain",
+      "blurb": "A different component: its own field list and its own submit path. paymentType and contactTime are built in and take their option labels from data.localization rather than from the node; vehicle, dealer and city are pinned with staticValue, so all three render without their endpoints.",
+      "submitMode": "render-only",
+      "defaultTheme": "bordered",
+      "structure": {
+        "data": {
+          "requestUrl": "https://example.invalid/api/tickets",
+          "theme": "docs-preset",
+          "brandId": "demo-brand",
+          "quotationType": "NewVehiclePurchase",
+          "localization": {
+            "en": {
+              "submit": "Get my quotation",
+              "Form submitted successfully.": "Thanks — a quotation is on its way.",
+              "Cash": "Cash",
+              "Installments": "Instalments",
+              "Flexible": "Either is fine",
+              "Morning": "Morning",
+              "Noon": "Midday",
+              "Afternoon": "Afternoon",
+              "Yes": "Yes",
+              "No": "No",
+              "Other": "Other"
+            }
+          }
+        },
+        "requiredContext": {
+          "paymentType": true,
+          "contactTime": true
+        },
+        "tag": "div",
+        "id": "container",
+        "children": [
+          {
+            "tag": "h2",
+            "class": "section-title",
+            "children": {
+              "en": "Request a quotation",
+              "ar": "اطلب عرض سعر"
+            }
+          },
+          {
+            "name": "vehicle",
+            "staticValue": {
+              "value": "demo-grade-1",
+              "label": "Demo model · mid grade"
+            },
+            "localization": {
+              "en": {
+                "label": "Model",
+                "placeholder": "Choose a model",
+                "require": "Please choose a model."
+              }
+            }
+          },
+          {
+            "tag": "div",
+            "id": "preference_wrapper",
+            "children": [
+              {
+                "name": "paymentType",
+                "localization": {
+                  "en": {
+                    "label": "How would you like to pay?",
+                    "placeholder": "Choose a method",
+                    "require": "Please choose a method."
+                  }
+                }
+              },
+              {
+                "name": "contactTime",
+                "localization": {
+                  "en": {
+                    "label": "Best time to call",
+                    "placeholder": "Choose a time",
+                    "require": "Please choose a time."
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tag": "div",
+            "id": "inputs_wrapper",
+            "children": [
+              {
+                "name": "dealer",
+                "staticValue": {
+                  "value": "dealer-1",
+                  "label": "Central dealership"
+                },
+                "localization": {
+                  "en": {
+                    "label": "Dealer",
+                    "placeholder": "Select",
+                    "require": "Dealer is required."
+                  }
+                }
+              },
+              {
+                "name": "city",
+                "staticValue": {
+                  "value": "city-1",
+                  "label": "Central district"
+                },
+                "localization": {
+                  "en": {
+                    "label": "City",
+                    "placeholder": "Select",
+                    "require": "City is required."
+                  }
+                }
+              },
+              {
+                "name": "name",
+                "localization": {
+                  "en": {
+                    "label": "Full name",
+                    "placeholder": "Full name",
+                    "require": "Full name is required."
+                  }
+                }
+              },
+              {
+                "name": "phone",
+                "countryCode": ["IQ", "AE", "SA", "JO", "TR", "GB"],
+                "localization": {
+                  "en": {
+                    "label": "Phone",
+                    "placeholder": "Phone number",
+                    "require": "Phone number is required."
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "submit",
+            "localization": {
+              "en": {
+                "label": "Get my quotation"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "vehicle-quotation-stepped",
+      "group": "vehicle-quotation",
+      "component": "vehicle-quotation-form",
+      "label": "Stepped",
+      "blurb": "Stepped with no progress indicator: this component's field list has no formStepper, back or stepperSubmit, so each step advances with an ordinary submit node carrying its own label.",
+      "submitMode": "render-only",
+      "defaultTheme": "bordered",
+      "structure": {
+        "data": {
+          "requestUrl": "https://example.invalid/api/tickets",
+          "theme": "docs-preset",
+          "brandId": "demo-brand",
+          "quotationType": "NewVehiclePurchase",
+          "localization": {
+            "en": {
+              "submit": "Continue",
+              "Form submitted successfully.": "Thanks — a quotation is on its way.",
+              "Cash": "Cash",
+              "Installments": "Instalments",
+              "Flexible": "Either is fine",
+              "Morning": "Morning",
+              "Noon": "Midday",
+              "Afternoon": "Afternoon",
+              "Yes": "Yes",
+              "No": "No",
+              "Other": "Other"
+            }
+          }
+        },
+        "requiredContext": {
+          "paymentType": true,
+          "contactTime": true
+        },
+        "steps": [
+          {
+            "en": {
+              "title": "Vehicle",
+              "stepCell": "1",
+              "stepTitle": "Vehicle",
+              "submitButton": "Continue"
+            },
+            "ar": {
+              "title": "المركبة",
+              "stepCell": "١",
+              "stepTitle": "المركبة",
+              "submitButton": "متابعة"
+            }
+          },
+          {
+            "en": {
+              "title": "Contact",
+              "stepCell": "2",
+              "stepTitle": "Contact",
+              "submitButton": "Get my quotation"
+            },
+            "ar": {
+              "title": "التواصل",
+              "stepCell": "٢",
+              "stepTitle": "التواصل",
+              "submitButton": "اطلب عرض السعر"
+            }
+          }
+        ],
+        "tag": "div",
+        "id": "container",
+        "children": [
+          {
+            "tag": "div",
+            "id": "step-one",
+            "step": 1,
+            "children": [
+              {
+                "tag": "p",
+                "class": "stepper-note",
+                "children": {
+                  "en": "Step 1 of 2 · Vehicle",
+                  "ar": "الخطوة ١ من ٢ · المركبة"
+                }
+              },
+              {
+                "name": "vehicle",
+                "staticValue": {
+                  "value": "demo-grade-1",
+                  "label": "Demo model · mid grade"
+                },
+                "localization": {
+                  "en": {
+                    "label": "Model",
+                    "placeholder": "Choose a model",
+                    "require": "Please choose a model."
+                  }
+                }
+              },
+              {
+                "name": "paymentType",
+                "localization": {
+                  "en": {
+                    "label": "How would you like to pay?",
+                    "placeholder": "Choose a method",
+                    "require": "Please choose a method."
+                  }
+                }
+              },
+              {
+                "name": "submit",
+                "localization": {
+                  "en": {
+                    "label": "Continue"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "tag": "div",
+            "id": "step-two",
+            "step": 2,
+            "children": [
+              {
+                "name": "dealer",
+                "staticValue": {
+                  "value": "dealer-1",
+                  "label": "Central dealership"
+                },
+                "localization": {
+                  "en": {
+                    "label": "Dealer",
+                    "placeholder": "Select",
+                    "require": "Dealer is required."
+                  }
+                }
+              },
+              {
+                "tag": "p",
+                "class": "stepper-note",
+                "children": {
+                  "en": "Step 2 of 2 · Contact",
+                  "ar": "الخطوة ٢ من ٢ · التواصل"
+                }
+              },
+              {
+                "name": "name",
+                "localization": {
+                  "en": {
+                    "label": "Full name",
+                    "placeholder": "Full name",
+                    "require": "Full name is required."
+                  }
+                }
+              },
+              {
+                "name": "phone",
+                "countryCode": ["IQ", "AE", "SA", "JO", "TR", "GB"],
+                "localization": {
+                  "en": {
+                    "label": "Phone",
+                    "placeholder": "Phone number",
+                    "require": "Phone number is required."
+                  }
+                }
+              },
+              {
+                "name": "contactTime",
+                "localization": {
+                  "en": {
+                    "label": "Best time to call",
+                    "placeholder": "Choose a time",
+                    "require": "Please choose a time."
+                  }
+                }
+              },
+              {
+                "name": "submit",
+                "localization": {
+                  "en": {
+                    "label": "Get my quotation"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
