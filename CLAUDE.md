@@ -167,62 +167,66 @@ The `WebComponentModelGenerator` (C# console app) uses Roslyn to scan C# models 
 
 
 ### Cloudflare deploy
-The site is an **assets-only Worker** — `wrangler.jsonc` has no `main`, so Cloudflare
-serves `website/` straight from the edge without invoking JavaScript. `not_found_handling`
-is `404-page`, which is what makes `src/404.html` answer unmatched paths with a real 404.
+The site is an **assets-only Worker** — `wrangler.jsonc` has no `main`, so Cloudflare serves
+`website/` straight from the edge without invoking JavaScript. `not_found_handling` is
+`404-page`, which is what makes `src/404.html` answer unmatched paths with a real 404.
 
-Workers Builds settings (the Worker name **must** match `name` in `wrangler.jsonc`):
+**It deploys on every push to `master`.** Nothing in Azure is involved. Workers Builds cannot
+see tags, and there is no setting to stop the production branch building on push, so pushing is
+the trigger.
+
+Workers Builds settings — the Worker name **must** match `name` in `wrangler.jsonc`:
 
 | Field | Value |
 |---|---|
 | Root directory | `ADP.WebComponents/adp-web-components` |
-| Build command | `npm run release` |
+| Build command | `yarn run release` |
 | Deploy command | `npx wrangler deploy` (default) |
 | Production branch | `master` |
 | Builds for non-production branches | unchecked |
 
-Workers Builds triggers on **branches** and cannot see tags, and there is no setting to
-stop the production branch building on push. So the site deploys twice over a release:
-once when the version-bump commit lands on master (pinning whatever is published at that
-moment), and again when the release pipeline fires a **deploy hook** as its last step —
-after `npm publish` and the propagation wait. Only the second one can pin the version just
-published, which is why the hook exists.
+#### The package manager has to be pinned
+The repo commits a **Yarn 1** lockfile. Cloudflare’s build image ships Yarn 4, which migrates a
+v1 lockfile on sight — and then its own immutable-install rule rejects the file it just
+rewrote (`YN0028: The lockfile would have been modified by this install, which is explicitly
+forbidden`). The build fails before it reaches the build command.
 
-The hook fires on `release-web-components-*` only — the tag that publishes the package, which
-is the only thing that changes what the site says. The hook URL is the credential (no auth
-header), so it lives as a **secret** `CLOUDFLARE_DEPLOY_HOOK`
-in the `Deployment` variable group and is passed through `env:`, never inlined.
+`"packageManager": "yarn@1.22.22"` in `package.json` pins it. If the build image ever ignores
+that field, set a build variable `YARN_VERSION=1.22.22` in the dashboard, which is documented
+and authoritative.
+
+#### One consequence worth knowing
+`build-website.mjs` resolves the version from the **npm registry**, and the version-bump commit
+reaches `master` before `release-web-components-*` publishes the package. So the build
+triggered by that push pins the *previous* version, and the site catches up on the next push.
+
+The snippets stay correct either way — they default to `@latest` — so what lags is the version
+badge and the pinned-version option, not anything an integrator would copy. If that ever
+matters, add a Workers Builds deploy hook and POST to it from the release pipeline after the
+npm publish step.
 
 #### Where each piece of the addressing lives
 
-Azure never pushes anything and holds no account id, token or project name. It POSTs one
-opaque URL; everything else is resolved on the Cloudflare side.
-
 | Question | Answered by | Where it lives |
 |---|---|---|
-| Which account and which Worker? | the deploy-hook id in the URL | secret in Azure `Deployment` group |
-| Which branch to build? | fixed when the hook is created | Cloudflare → Settings → Builds → Deploy Hooks |
-| Which repo, which sub-directory? | the Git connection | Cloudflare → Settings → Build |
-| What command builds it? | build command | Cloudflare → Settings → Build (`npm run release`) |
+| Which repo, which sub-directory? | the Git connection + root directory | Cloudflare → Settings → Build |
+| What command builds it? | build command | Cloudflare → Settings → Build |
+| Which branch deploys? | production branch | Cloudflare → Settings → Build → Branch control |
 | Which Worker does it deploy to? | `name` in `wrangler.jsonc` | this repo |
 | Which files get uploaded? | `assets.directory` | this repo (`./website`) |
 | Which domain serves it? | custom domain | Cloudflare → Settings → Domains & Routes |
 
-The one place the two sides must agree is the Worker name: the name in the dashboard has to
-match `name` in `wrangler.jsonc` or the build fails. Nothing else is duplicated.
+The one place the two sides must agree is the Worker name: the dashboard name has to match
+`name` in `wrangler.jsonc` or the build fails. Nothing else is duplicated.
 
-Non-production branches deploy with `npx wrangler versions upload` instead, giving a
-preview version without promoting it.
+Non-production branches deploy with `npx wrangler versions upload` instead, giving a preview
+version without promoting it.
 
-`website/_headers` and `robots.txt` are **written by the build**, not committed — the
-output directory is wiped on every run. `_headers` deliberately sets no `Cache-Control`
-(assets are not content-hashed) and no CSP (inline scripts plus an unknown operator
-origin would make it either useless or breaking); see the note in `automation/prerender.mjs`.
+`website/_headers` and `robots.txt` are **written by the build**, not committed — the output
+directory is wiped on every run. `_headers` deliberately sets no `Cache-Control` (assets are
+not content-hashed) and no CSP (inline scripts plus an unknown operator origin would make it
+either useless or breaking); see the note in `automation/prerender.mjs`.
 
-**A git push is not the only thing that should rebuild this site.** `build-website.mjs`
-resolves the version from the npm registry, so publishing a new package version changes
-what the site should say without changing the repo. Add a Workers Builds deploy hook and
-POST to it from the release pipeline after the npm publish step.
 ## Stencil.js Conventions
 - Component tags use dash-case with one component per directory matching the tag name
 - Shadow DOM enabled by default (`shadow: true`)

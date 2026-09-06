@@ -31,11 +31,13 @@
  *   Production branch master                       (the default)
  *   Non-prod builds   unchecked
  *
- * Workers Builds triggers on branches and cannot see tags, and there is no way
- * to stop the production branch building on push. So a push to master deploys
- * the site, and a release tag ALSO deploys it via a deploy hook fired from the
- * release pipeline after the npm publish. The second one is what matters: it is
- * the only build that can pin the version just published.
+ * It deploys on every push to master. Workers Builds cannot see tags and offers no
+ * way to stop the production branch building on push, so pushing IS the trigger.
+ *
+ * The build image ships Yarn 4 and this repo commits a Yarn 1 lockfile, which Yarn 4
+ * migrates and then rejects under its own immutable-install rule. package.json pins
+ * packageManager to yarn@1.22.22 to stop that; a YARN_VERSION build variable is the
+ * fallback if the field is ever ignored.
  *
  * The Worker name in the dashboard MUST match `name` below or the build fails.
  * Non-production branches deploy with `npx wrangler versions upload` instead,
