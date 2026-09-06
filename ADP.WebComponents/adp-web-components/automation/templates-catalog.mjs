@@ -12,7 +12,7 @@ import path from 'node:path';
 export const CATALOG_FILE = 'catalog.json';
 
 const AREA_LABELS = {
-  'forms': 'Forms',
+  'forms': 'Ticket forms',
   'part-lookup': 'Part lookup',
   'vehicle-lookup': 'Vehicle lookup',
   'production-host': 'Host integration',
@@ -101,6 +101,7 @@ function describe(relative, source) {
     title: title(source, segments.at(-1)),
     area,
     kind: kind(relative, source),
+    publish: publish(source),
     tags: tags(source),
     harness: source.includes('/templates/harness.css'),
     legacy: legacy(source),
@@ -114,6 +115,18 @@ function title(source, filename) {
   // Strip the "— adp-web-components" suffix the convention adds; the home page
   // already says which package this is.
   return match[1].split('—')[0].trim();
+}
+
+/**
+ * Whether the page ships in the public site `npm run release` builds. Declared
+ * per page rather than listed here, for the same reason the catalog itself is
+ * scanned: a list is a second place to forget something.
+ *
+ * An allow-list, so a page that says nothing is not published — a half-finished
+ * demo has to be opted in, it cannot leak out by being forgotten.
+ */
+function publish(source) {
+  return /<meta[^>]+name=["']adp-publish["'][^>]+content=["']true["']/i.test(source);
 }
 
 function kind(relative, source) {

@@ -64,7 +64,13 @@ export const config: Config = {
     {
       type: 'www',
       serviceWorker: null,
-      copy: [{ src: 'index.html' }, { src: 'templates' }, { src: 'locales', dest: 'locales' }, { src: 'features/mocks/data', dest: 'mocks' }],
+      copy: [
+        { src: 'index.html' },
+        { src: '404.html', dest: '404.html' },
+        { src: 'templates' },
+        { src: 'locales', dest: 'locales' },
+        { src: 'features/mocks/data', dest: 'mocks' },
+      ],
     },
   ],
   devServer: {

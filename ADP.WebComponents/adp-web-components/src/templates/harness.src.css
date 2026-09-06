@@ -43,6 +43,138 @@
   themes: false;
 }
 
+/*
+ * Speda Bold for the two Arabic-script languages.
+ *
+ * The Latin stack renders Arabic and Kurdish through whatever the OS happens to
+ * substitute, which is a different typeface per platform and usually a poor one
+ * — the shaping is fine, the fit with the rest of the page is not. Speda is the
+ * house face for both scripts, so ar/ku get it and nothing else changes.
+ *
+ * local() comes first so an installed copy is used without a request. The file
+ * itself is NOT in the repo — drop speda-bold.woff2 into
+ * src/templates/assets/fonts/ to self-host it (see the README there). Until
+ * then the url() 404s once and the stack falls through to Noto Kufi Arabic,
+ * which is what the components already use for Arabic.
+ */
+@font-face {
+  font-family: 'Speda';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src:
+    local('Speda Bold'),
+    local('Speda-Bold'),
+    url('./assets/fonts/speda-bold.woff2') format('woff2');
+}
+
+/*
+ * Syntax-highlighting tokens. These cannot be daisyUI slots — the theme has no
+ * "string literal" colour — and they cannot be utilities either, because the
+ * highlighter emits them from JavaScript. So they are custom properties,
+ * declared per theme in exactly the three states harness-theme.js can produce:
+ * no data-theme under a dark system, data-theme=harness, data-theme=harness-dark.
+ *
+ * Every value is measured against --code-bg for its own theme; the lowest is
+ * 5.1:1 (light comment) and 5.8:1 (dark comment). Comments are the floor
+ * because they are the one token it is tempting to make too quiet.
+ */
+:root {
+  /*
+   * Gold-wash strength, and the wordmark watermark. Two values because gold at
+   * one alpha moves the dark ground about five times further than the light
+   * one: 10% is 1.04:1 over #eef1f5 and 1.21:1 over #0c1016. A single alpha is
+   * either invisible on light or olive on dark — and there is no way to write
+   * that difference in markup, because Tailwind`s dark: variant keys off
+   * prefers-color-scheme while these themes key off data-theme.
+   */
+  --wash-strength: 24%;
+  --watermark-strength: 14%;
+
+  /*
+   * Heading leading, per script.
+   *
+   * 1.05 is a good display leading for Latin and a broken one for Arabic and
+   * Kurdish: the script carries tall ascenders, and Sorani stacks diacritics
+   * (ێ ۆ ڕ) above them, so consecutive lines physically collide. It is a
+   * property of the SCRIPT, not of the page, so it belongs beside the font
+   * stack rather than in a per-heading override — and it is a custom property
+   * rather than a rule so the utility on the element still wins, which keeps
+   * R11 (no !important) intact.
+   */
+  --leading-display: 1.05;
+  --leading-heading: 1.2;
+
+  --code-bg: #f6f8fa;
+  --code-fg: #121922;
+  --code-muted: #4d5763;
+  --code-key: #8f2d56;
+  --code-str: #0e6245;
+  --code-attr: #1f5d99;
+}
+
+/*
+ * Unlayered, and matching the attribute rather than going through :where().
+ *
+ * Both details are load-bearing. The :root block above is unlayered, and an
+ * unlayered declaration beats everything in @layer base however specific it is
+ * — so the first version of this sat in the base layer beside the font stack
+ * and silently never applied. :where() would then have lost a second time on
+ * specificity: it scores zero, and :root scores (0,1,0).
+ *
+ * The font stack further down CAN live in @layer base, because the variables it
+ * overrides come from Tailwind`s theme layer, which base outranks.
+ */
+html[lang='ar'],
+html[lang='ku'] {
+  --leading-display: 1.5;
+  --leading-heading: 1.25;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='harness']) {
+    --wash-strength: 6%;
+    --watermark-strength: 5%;
+
+    --code-bg: #0d1218;
+    --code-fg: #e6edf3;
+    --code-muted: #8b98a5;
+    --code-key: #ff7b9c;
+    --code-str: #7ee2b8;
+    --code-attr: #7cc4fa;
+  }
+}
+
+:root[data-theme='harness-dark'] {
+  --wash-strength: 6%;
+  --watermark-strength: 5%;
+
+  --code-bg: #0d1218;
+  --code-fg: #e6edf3;
+  --code-muted: #8b98a5;
+  --code-key: #ff7b9c;
+  --code-str: #7ee2b8;
+  --code-attr: #7cc4fa;
+}
+
+/*
+ * Hero entrance. Kept as keyframes rather than a transition because there is no
+ * state change to transition FROM — the elements are simply arriving. 220ms is
+ * inside R10, and `both` fill means the reduced-motion reset (which collapses
+ * the duration to 0.01ms) lands on the final frame rather than hiding the hero.
+ */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* ---------- light: the complete set ---------- */
 @plugin "daisyui/theme" {
   name: 'harness';
@@ -70,7 +202,10 @@
   --color-accent: #7a5d08;
   --color-accent-content: #ffffff;
 
-  --color-neutral: #7b8794; /* ink-3 */
+  /* Darkened from #7b8794, which measured 3.66:1 on white and 3.23:1 on the
+     ground — .eyebrow is 12px, so it is not large text and needs 4.5:1. This
+     also fixes menu-active, which paints white on neutral. */
+  --color-neutral: #5b6672; /* ink-3 */
   --color-neutral-content: #ffffff;
 
   /* fixture state only — chrome never uses these */
@@ -117,7 +252,7 @@
   --color-accent: #f9cb4b;
   --color-accent-content: #2a2000;
 
-  --color-neutral: #76838f;
+  --color-neutral: #8d99a6;
   --color-neutral-content: #0c1016;
 
   --color-info: #6aa9d8;
@@ -155,6 +290,110 @@
     transition: width 0.25s ease;
   }
 
+  /*
+   * A code block an integrator is expected to copy from. The three things
+   * utilities cannot express: the token colours the highlighter emits, a
+   * tab-size, and a scrollbar that does not sit on top of the last line.
+   *
+   * Its own background rather than base-200, so a snippet reads as a snippet in
+   * every section band — the page alternates base-100 and base-200 behind it.
+   */
+  .code {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    line-height: 1.7;
+    tab-size: 2;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    /* Snippets are code: they read left-to-right even when the page does not. */
+    direction: ltr;
+    text-align: start;
+    scrollbar-width: thin;
+
+    /*
+     * A scroll shadow at the inline end. Overlay scrollbars are invisible until
+     * hover, so a CDN URL running past the edge reads as TRUNCATED rather than
+     * scrollable — and that URL is the thing the reader came to copy. The
+     * local/scroll pair is the standard trick: the cover scrolls with the
+     * content and hides the shadow once the end is reached.
+     */
+    background-repeat: no-repeat;
+    background-position:
+      right center,
+      right center;
+    background-size:
+      2rem 100%,
+      1.25rem 100%;
+    background-attachment: local, scroll;
+    background-image:
+      linear-gradient(to left, var(--code-bg), transparent 2rem), linear-gradient(to left, color-mix(in srgb, var(--code-fg) 22%, transparent), transparent 1.25rem);
+  }
+
+  .code .tok-comment {
+    color: var(--code-muted);
+  }
+
+  .code .tok-key {
+    color: var(--code-key);
+  }
+
+  .code .tok-str {
+    color: var(--code-str);
+  }
+
+  .code .tok-attr {
+    color: var(--code-attr);
+  }
+
+  .code .tok-punct {
+    color: var(--code-muted);
+  }
+
+  /* Hero entrance, staggered. Four steps is as far as a stagger stays a rhythm
+     rather than a queue. */
+  .rise {
+    animation: rise 220ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  }
+
+  .rise-2 {
+    animation-delay: 60ms;
+  }
+
+  .rise-3 {
+    animation-delay: 120ms;
+  }
+
+  .rise-4 {
+    animation-delay: 180ms;
+  }
+
+  /*
+   * A gold wash off one edge of a section. Vertical only: a horizontal gradient
+   * does not mirror under RTL, and half the supported languages are RTL. The
+   * strength is a theme token because gold behaves completely differently over
+   * the two grounds — see the note beside --wash-strength.
+   */
+  .wash {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .wash::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    background-image: linear-gradient(to bottom, color-mix(in srgb, var(--color-primary) var(--wash-strength), transparent) 0%, transparent var(--wash-reach, 70%));
+    pointer-events: none;
+  }
+
+  /* The same wash entering from the bottom edge. */
+  .wash-up::before {
+    background-image: linear-gradient(to top, color-mix(in srgb, var(--color-primary) var(--wash-strength), transparent) 0%, transparent var(--wash-reach, 55%));
+  }
+
   .eyebrow {
     font-family: var(--font-mono);
     font-size: 0.75rem;
@@ -185,12 +424,26 @@
     display: block;
     aspect-ratio: 2256 / 932;
     background-color: currentColor;
-    -webkit-mask: url('/templates/assets/adp-wordmark.svg') no-repeat center / contain;
-    mask: url('/templates/assets/adp-wordmark.svg') no-repeat center / contain;
+    /* Relative to THIS stylesheet, not the server root: harness.css is linked
+       from pages three directories deep and the built site can be mounted at a
+       subpath, and a url() in CSS resolves against the stylesheet either way. */
+    -webkit-mask: url('./assets/adp-wordmark.svg') no-repeat center / contain;
+    mask: url('./assets/adp-wordmark.svg') no-repeat center / contain;
   }
 }
 
 @layer base {
+  /*
+   * Arabic and Kurdish only. --default-font-family is what Tailwind puts on
+   * <html>; --font-sans is what the font-sans utility reads — set both, or the
+   * two disagree on the same page. Mono is untouched: R8 says mono is for logs,
+   * keys and endpoints, none of which are prose in any language.
+   */
+  :where(html[lang='ar'], html[lang='ku']) {
+    --default-font-family: 'Speda', 'Noto Kufi Arabic', 'Segoe UI', Tahoma, sans-serif;
+    --font-sans: 'Speda', 'Noto Kufi Arabic', 'Segoe UI', Tahoma, sans-serif;
+  }
+
   /* accent, not primary: a gold ring is 1.5:1 on a white page and would not read
      as a focus indicator at all. */
   :focus-visible {
@@ -213,9 +466,26 @@
     *::before,
     *::after {
       animation-duration: 0.01ms !important;
+      /* Without this the hero stagger still waits 60/120/180ms before its `both`
+         fill lands, so a reduced-motion reader gets a blank hero and then a snap
+         — precisely the flash this block exists to prevent. */
+      animation-delay: 0ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
     }
   }
+}
+
+/*
+ * Unlayered on purpose, so it beats daisyUI`s own layer.
+ *
+ * `.btn { outline-color: var(--btn-color) }` overrides the accent focus ring in
+ * the base layer, which on .btn-primary means a gold ring measuring 1.36:1 on
+ * the ground and 1.54:1 on white — no focus indicator at all. This is the same
+ * trap the brand-colour note at the top of this file describes, arriving from
+ * inside the component library.
+ */
+.btn-primary:focus-visible {
+  outline-color: var(--color-accent);
 }

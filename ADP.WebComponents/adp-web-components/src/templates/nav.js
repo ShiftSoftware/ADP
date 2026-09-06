@@ -19,6 +19,19 @@
  * See .shift/repos/adp/web-components/templates-design-language.md §8.
  */
 
+/*
+ * Paths come out of the catalog root-absolute (`/templates/…`), which only
+ * resolves when the site is the server root. This element ships on the frozen
+ * prototypes, which sit one directory down, and the built site can be mounted
+ * anywhere — so every path is re-resolved against the directory this module was
+ * loaded from instead. `harness.js` carries the same two lines for the same
+ * reason; they cannot be shared without giving the prototypes a second module.
+ */
+const SITE_ROOT = new URL('../', import.meta.url);
+
+/** A catalog path as a URL path valid from wherever this page sits. */
+const site = value => new URL(String(value).replace(/^\//, ''), SITE_ROOT).pathname;
+
 const STYLES = /* css */ `
   :host {
     /* The harness tokens, hardcoded: this file cannot import the stylesheet that
@@ -262,7 +275,7 @@ class HarnessNav extends HTMLElement {
     let catalog;
 
     try {
-      const response = await fetch('/templates/catalog.json');
+      const response = await fetch(new URL('catalog.json', import.meta.url));
 
       if (!response.ok) throw new Error(String(response.status));
 
@@ -277,9 +290,11 @@ class HarnessNav extends HTMLElement {
 
     const groups = catalog.areas.map(area => {
       const pages = catalog.pages.filter(page => page.area === area.id);
-      const current = pages.some(page => page.path === here);
+      const current = pages.some(page => site(page.path) === here);
 
-      const items = pages.map(page => `<a class="page" href="${escape(page.path)}"${page.path === here ? ' aria-current="page"' : ''}>${escape(page.title)}</a>`).join('');
+      const items = pages
+        .map(page => `<a class="page" href="${escape(site(page.path))}"${site(page.path) === here ? ' aria-current="page"' : ''}>${escape(page.title)}</a>`)
+        .join('');
 
       return `
         <details${current ? ' open' : ''}>
@@ -289,7 +304,7 @@ class HarnessNav extends HTMLElement {
       `;
     });
 
-    this.panel.innerHTML = `<a class="home" href="/">← Showcase home</a>${groups.join('')}`;
+    this.panel.innerHTML = `<a class="home" href="${escape(site('/'))}">← Showcase home</a>${groups.join('')}`;
   }
 }
 

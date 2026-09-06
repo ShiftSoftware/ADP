@@ -1,0 +1,74 @@
+/**
+ * Cloudflare Worker for the integration site.
+ *
+ * ── Why there is no `main` ────────────────────────────────────────────────────
+ * This is an assets-only Worker. `npm run release` produces a fully static site,
+ * so there is nothing for a script to do on the request path — and with no
+ * `main`, Cloudflare serves the files straight from its edge without ever
+ * invoking JavaScript. That is faster and cheaper than a Worker that exists only
+ * to call `env.ASSETS.fetch()`.
+ *
+ * It is still a Worker. The moment the site needs real logic — an auth gate, a
+ * redirect table, a per-supplier base URL — add `"main": "./worker.js"` plus
+ * `"assets": { "binding": "ASSETS" }` and handle the request there. Note that
+ * `_headers` rules do NOT apply to responses your own code generates, only to
+ * static asset responses.
+ *
+ * ── Why `not_found_handling` matters here ─────────────────────────────────────
+ * The site ships only pages carrying `<meta name="adp-publish" content="true">`,
+ * so a link to a demo that exists in the repo but is not released resolves to
+ * nothing. `404-page` makes Cloudflare serve `/404.html` with a real 404 status
+ * for those, which is exactly what that page was written for — and what
+ * `npm run preview` already reproduces locally.
+ *
+ * ── Deploying ─────────────────────────────────────────────────────────────────
+ * Cloudflare Workers Builds runs this from the repository. Dashboard settings:
+ *
+ *   Repository        ShiftSoftware/ADP
+ *   Root directory    ADP.WebComponents/adp-web-components
+ *   Build command     npm run release
+ *   Deploy command    npx wrangler deploy          (the default)
+ *   Production branch master                       (the default)
+ *   Non-prod builds   unchecked
+ *
+ * Workers Builds triggers on branches and cannot see tags, and there is no way
+ * to stop the production branch building on push. So a push to master deploys
+ * the site, and a release tag ALSO deploys it via a deploy hook fired from the
+ * release pipeline after the npm publish. The second one is what matters: it is
+ * the only build that can pin the version just published.
+ *
+ * The Worker name in the dashboard MUST match `name` below or the build fails.
+ * Non-production branches deploy with `npx wrangler versions upload` instead,
+ * giving a preview version without promoting it.
+ *
+ * ── One operational caveat ────────────────────────────────────────────────────
+ * `automation/build-website.mjs` resolves the version from the npm registry, not
+ * from package.json — so the site pins whatever is PUBLISHED at build time. A git
+ * push is therefore not the only event that should rebuild it: publishing a new
+ * package version changes what this site should say, without changing the repo.
+ * Fire a Workers Builds deploy hook from the release pipeline after the npm
+ * publish step to keep the two in step.
+ */
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "adp-web-components",
+  "compatibility_date": "2026-09-06",
+
+  "assets": {
+    // Produced by `npm run release`, and gitignored — Workers Builds creates it
+    // in CI. Never commit it.
+    "directory": "./website",
+
+    // Serve /404.html with a 404 status for anything unmatched.
+    "not_found_handling": "404-page",
+
+    // `/foo` and `/foo/` both resolve to foo.html, and the canonical form is
+    // chosen for you. The landing page is the only HTML at the root today, but
+    // demo pages sit at /templates/<area>/<page>.html once they are published.
+    "html_handling": "auto-trailing-slash"
+  },
+
+  "observability": {
+    "enabled": true
+  }
+}

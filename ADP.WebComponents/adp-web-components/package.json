@@ -61,6 +61,10 @@
     "prettier": "prettier --check \"src/**/*.{ts,tsx,js,jsx,css,scss,html}\"",
     "generate:integration-manifest": "node ./automation/generate-integration-manifest.mjs",
     "verify:integration-artifact": "node ./automation/verify-integration-artifact.mjs",
+    "release": "node ./automation/build-website.mjs",
+    "preview": "node ./automation/preview-website.mjs",
+    "deploy": "wrangler deploy",
+    "deploy:preview": "wrangler versions upload",
     "build:templates": "node ./automation/build-templates.mjs",
     "watch:templates": "node ./automation/build-templates.mjs --watch",
     "start:stencil": "stencil build --dev --watch --serve"

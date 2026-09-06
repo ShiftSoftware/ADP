@@ -1,104 +1,415 @@
 <!doctype html>
 <!--
-  Showcase home.
+  Landing page for adp-web-components.
 
-  The page list is not written here — it is read from /templates/catalog.json,
-  which `npm run build:templates` regenerates by scanning src/templates. A new
-  demo page appears here by existing, and the version comes from package.json.
-  Only the per-area icon and blurb are presentation, and those live in this file.
+  Section order: what is this (hero) → what does it do and what do I do
+  (overview) → where does it sit → show me a working embed → how do I install it
+  → what will bite me → what else do I get → what exists → where next.
 
-  Unlike a harness page, this one has no component under test, so the "keep the
-  chrome quiet" rule does not apply: this is the surface itself.
+  Two things here are generated and must stay that way:
+
+    templates/catalog.json   which demo pages exist, per component group
+    build-info.json          which PUBLISHED version the site was built against
+
+  package.json is the version being prepared, which is routinely ahead of what
+  anyone can install, so every snippet uses the build stamp and only falls back to
+  the catalog in dev, where no stamp exists.
+
+  Copy is in templates/site-locales.js, in four languages. Nothing user-visible is
+  written in this file — a literal string here is a string that cannot be
+  translated. Icon geometry, illustrations, syntax highlighting and snippet shapes
+  do live here, because none of them are words.
+
+  Unlike a harness page, this one has no component under test, so R1 does not
+  apply: this is the surface itself, and it is allowed to be expressive.
 -->
-<html lang="en" dir="ltr">
+<html lang="en" dir="ltr" class="scroll-smooth">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>ADP web components</title>
+
+    <title>ADP web components — embed platform lookups and forms</title>
+    <meta
+      name="description"
+      content="Ready-to-embed custom elements that render Automotive Dealer Platform vehicle, part and service data on any page. One module tag, no framework, no build step."
+    />
+
+    <!--
+      Static, in English, on purpose. The page body is rendered by Alpine, and a
+      link-preview scraper does not execute JavaScript — so these tags are the
+      only thing a paste into a chat client ever sees.
+    -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="ADP web components" />
+    <meta property="og:description" content="Ready-to-embed custom elements that render Automotive Dealer Platform vehicle, part and service data on any page." />
+    <meta property="og:image" content="templates/assets/favicon.svg" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="ADP web components" />
+    <meta name="twitter:description" content="Ready-to-embed custom elements that render Automotive Dealer Platform vehicle, part and service data on any page." />
+
+    <link rel="icon" href="/templates/assets/favicon.svg" type="image/svg+xml" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0c1016" media="(prefers-color-scheme: dark)" />
 
     <link rel="stylesheet" href="/templates/harness.css" />
 
-    <!-- Blocking on purpose: a deferred module would let the page paint light first. -->
+    <!-- Both blocking on purpose: theme and text direction are decided before the
+         first paint, or the page visibly jumps on every load. -->
     <script src="/templates/harness-theme.js"></script>
+    <script src="/templates/site-locales.js"></script>
 
     <script defer src="/templates/vendor/alpine.js"></script>
   </head>
 
   <body class="bg-base-200 text-base-content min-h-screen">
-    <div x-data="showcase()" x-cloak>
-      <!-- both bars stack, so the wrapper owns the stickiness -->
-      <div class="sticky top-0 z-20">
-        <div class="bg-base-100/90 border-base-300 border-b backdrop-blur">
-          <div class="mx-auto flex max-w-[1240px] flex-wrap items-center gap-x-4 gap-y-3 px-5 py-3 sm:px-8">
-            <a href="#" @click.prevent="goHome()" class="group flex items-center gap-3" aria-label="Showcase home">
-              <span class="adp-logo text-accent h-7 w-[68px] transition-opacity group-hover:opacity-70" aria-hidden="true"></span>
-              <span class="bg-base-300 h-6 w-px" aria-hidden="true"></span>
-              <span class="text-base font-semibold tracking-tight">
-                <span class="text-accent">SHFT</span>
-                <span class="text-base-content/70 group-hover:text-base-content font-normal transition-colors">your day</span>
-              </span>
-            </a>
+    <!--
+      No x-cloak on this wrapper. [x-cloak] is display:none !important, so putting
+      it here meant the entire page rendered zero pixels and zero characters until
+      Alpine booted — a blank screen for anyone whose script is blocked, proxied
+      away or simply slow, and for every crawler that does not run JS. It belongs
+      only on the things that would genuinely flash: the popups and the sheet.
+    -->
+    <div x-data="landing()" @keydown.escape.window="open = null; mobile = false">
+      <a href="#main" class="btn btn-primary sr-only focus:not-sr-only focus:absolute focus:start-3 focus:top-3 focus:z-50" x-text="t('skip')"></a>
 
-            <span class="badge badge-sm badge-ghost font-mono" x-show="catalog.package" x-text="'v' + catalog.package?.version"></span>
+      <!-- ═══════════════════════════ top bar ═══════════════════════════ -->
+      <header class="bg-base-100/90 border-base-300 sticky top-0 z-30 border-b backdrop-blur">
+        <div class="mx-auto flex max-w-[1240px] items-center gap-3 px-5 py-2.5 sm:px-8">
+          <!--
+            The wordmark sits on a gold TILE rather than being painted gold.
+            #F9CB4B measures 1.54:1 against white, so gold text is not a brand
+            colour on a light page, it is invisible text — which is why the
+            stylesheet splits the brand into `primary` (fills) and `accent`
+            (anything that must read as a colour). A fill carrying ink is the one
+            place the real gold appears at full strength: 10.48:1, and it matches
+            the favicon and the docs site.
+          -->
+          <a :href="site('/')" class="group flex shrink-0 items-center gap-3" :aria-label="t('nav.home')">
+            <span class="bg-primary flex items-center justify-center rounded-lg px-2.5 py-2 transition-opacity group-hover:opacity-85">
+              <span class="adp-logo text-primary-content h-4 w-[42px]" aria-hidden="true"></span>
+            </span>
+            <span class="hidden text-base font-semibold tracking-tight sm:inline">
+              <span>SHFT</span>
+              <span class="text-base-content/60 group-hover:text-base-content font-normal transition-colors">your day</span>
+            </span>
+          </a>
 
-            <div class="ms-auto flex flex-wrap items-center gap-x-4 gap-y-2">
-              <div class="flex gap-1.5" role="group" aria-label="View">
-                <template x-for="option in views" :key="option.value">
-                  <button
-                    type="button"
-                    class="btn btn-sm"
-                    :class="view === option.value ? 'btn-primary' : 'btn-ghost'"
-                    :aria-pressed="view === option.value"
-                    @click="setView(option.value)"
-                    x-text="option.label"
-                  ></button>
-                </template>
-              </div>
+          <span class="badge badge-sm badge-ghost font-mono" x-show="version" x-text="'v' + version"></span>
 
-              <span class="bg-base-300 hidden h-6 w-px sm:block" aria-hidden="true"></span>
+          <!-- ── wide: inline controls ── -->
+          <div class="ms-auto hidden items-center gap-1 lg:flex" @click.outside="open = null">
+            <div class="relative">
+              <button type="button" class="btn btn-sm btn-ghost gap-1.5" :aria-expanded="open === 'groups'" aria-controls="menu-groups" @click="toggle('groups')">
+                <span x-text="t('nav.components')"></span>
+                <svg
+                  class="h-3 w-3 opacity-60 transition-transform"
+                  :class="open === 'groups' && 'rotate-180'"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </button>
 
-              <div class="flex gap-1.5" role="group" aria-label="Theme">
-                <template x-for="option in ['system', 'light', 'dark']" :key="option">
-                  <button
-                    type="button"
-                    class="btn btn-sm capitalize"
-                    :class="theme === option ? 'btn-primary' : 'btn-ghost'"
-                    :aria-pressed="theme === option"
-                    @click="setTheme(option)"
-                    x-text="option"
-                  ></button>
+              <div
+                id="menu-groups"
+                class="bg-base-100 border-base-300 rounded-box absolute end-0 top-full z-50 mt-1 max-h-[70vh] w-[min(24rem,calc(100vw-2rem))] overflow-y-auto border p-2 shadow-xl"
+                x-show="open === 'groups'"
+                x-cloak
+                x-transition:enter="transition ease-out duration-150"
+                x-transition:enter-start="opacity-0 -translate-y-1"
+                x-transition:leave="transition ease-in duration-100"
+                x-transition:leave-end="opacity-0"
+              >
+                <label class="input input-sm mb-2 w-full" x-show="pageCount > 7">
+                  <svg class="h-4 w-4 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <circle cx="11" cy="11" r="7" />
+                    <path d="m20 20-3.5-3.5" stroke-linecap="round" />
+                  </svg>
+                  <input x-model="filter" type="search" :placeholder="t('nav.filter')" :aria-label="t('nav.filter')" />
+                </label>
+
+                <template x-for="group in groups" :key="group.id">
+                  <div>
+                    <!--
+                      Three shapes, because a group's page count changes what the
+                      row IS. None: a label, not a control — there is nothing to
+                      open. One: a link, because a disclosure revealing a single
+                      item is a click for nothing. More: a closed disclosure.
+                    -->
+                    <template x-if="!group.pages.length">
+                      <p class="flex items-center justify-between gap-2 px-3 py-2">
+                        <span class="text-base-content/70 text-sm" x-text="group.label"></span>
+                        <span class="badge badge-xs badge-outline shrink-0" x-text="t('components.soon')"></span>
+                      </p>
+                    </template>
+
+                    <template x-if="group.pages.length === 1">
+                      <a :href="site(group.pages[0].path)" class="hover:bg-base-200 flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm transition-colors">
+                        <span x-text="group.label"></span>
+                        <span class="text-base-content/65 truncate text-xs" x-text="group.pages[0].title"></span>
+                      </a>
+                    </template>
+
+                    <template x-if="group.pages.length > 1">
+                      <div>
+                        <button
+                          type="button"
+                          class="hover:bg-base-200 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-start text-sm transition-colors"
+                          :aria-expanded="expanded === group.id"
+                          @click="expand(group.id)"
+                        >
+                          <svg
+                            class="h-3 w-3 shrink-0 opacity-50 transition-transform rtl:-scale-x-100"
+                            :class="expanded === group.id && 'rotate-90'"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2.5"
+                            stroke-linecap="round"
+                            aria-hidden="true"
+                          >
+                            <path d="m9 6 6 6-6 6" />
+                          </svg>
+                          <span x-text="group.label"></span>
+                          <span class="badge badge-xs badge-ghost ms-auto tabular-nums" x-text="group.pages.length"></span>
+                        </button>
+
+                        <ul
+                          class="menu menu-sm w-full p-0 ps-4"
+                          x-show="expanded === group.id"
+                          x-transition:enter="transition ease-out duration-150"
+                          x-transition:enter-start="opacity-0 -translate-y-1"
+                          x-transition:leave="transition ease-in duration-100"
+                          x-transition:leave-end="opacity-0"
+                        >
+                          <template x-for="page in group.pages" :key="page.path">
+                            <li><a :href="site(page.path)" class="truncate" x-text="page.title"></a></li>
+                          </template>
+                        </ul>
+                      </div>
+                    </template>
+                  </div>
                 </template>
               </div>
             </div>
+
+            <a class="btn btn-sm btn-ghost" href="https://adp.shift.software/" target="_blank" rel="noreferrer" x-text="t('nav.docs')"></a>
+
+            <span class="bg-base-300 mx-1 h-6 w-px" aria-hidden="true"></span>
+
+            <div class="relative">
+              <!-- The accessible name carries the CURRENT value, not just the
+                   category: a bare aria-label="Language" overrides the visible
+                   "English", so voice control cannot reach it by what it says. -->
+              <button
+                type="button"
+                class="btn btn-sm btn-ghost gap-1.5"
+                :aria-expanded="open === 'language'"
+                aria-controls="menu-language"
+                :aria-label="t('nav.language') + ': ' + languageLabel"
+                @click="toggle('language')"
+              >
+                <svg class="h-4 w-4 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M3.5 9h17M3.5 15h17M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18" />
+                </svg>
+                <span :lang="language" x-text="languageLabel"></span>
+              </button>
+
+              <ul
+                id="menu-language"
+                class="menu menu-sm bg-base-100 border-base-300 rounded-box absolute end-0 top-full z-50 mt-1 w-44 border p-1 shadow-xl"
+                x-show="open === 'language'"
+                x-cloak
+                x-transition:enter="transition ease-out duration-150"
+                x-transition:enter-start="opacity-0 -translate-y-1"
+                x-transition:leave="transition ease-in duration-100"
+                x-transition:leave-end="opacity-0"
+              >
+                <template x-for="option in languages" :key="option.code">
+                  <li>
+                    <button
+                      type="button"
+                      :class="language === option.code && 'menu-active'"
+                      :aria-current="language === option.code ? 'true' : null"
+                      @click="setLanguage(option.code)"
+                    >
+                      <span :lang="option.code" x-text="option.label"></span>
+                      <span class="badge badge-xs badge-ghost ms-auto font-mono uppercase" x-text="option.code"></span>
+                    </button>
+                  </li>
+                </template>
+              </ul>
+            </div>
+
+            <div class="relative">
+              <button
+                type="button"
+                class="btn btn-sm btn-ghost gap-1.5"
+                :aria-expanded="open === 'theme'"
+                aria-controls="menu-theme"
+                :aria-label="t('nav.theme') + ': ' + t('theme.' + theme)"
+                @click="toggle('theme')"
+              >
+                <svg class="h-4 w-4 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="4.5" />
+                  <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.2 5.2l1.4 1.4M17.4 17.4l1.4 1.4M18.8 5.2l-1.4 1.4M6.6 17.4l-1.4 1.4" />
+                </svg>
+                <span x-text="t('theme.' + theme)"></span>
+              </button>
+
+              <ul
+                id="menu-theme"
+                class="menu menu-sm bg-base-100 border-base-300 rounded-box absolute end-0 top-full z-50 mt-1 w-36 border p-1 shadow-xl"
+                x-show="open === 'theme'"
+                x-cloak
+                x-transition:enter="transition ease-out duration-150"
+                x-transition:enter-start="opacity-0 -translate-y-1"
+                x-transition:leave="transition ease-in duration-100"
+                x-transition:leave-end="opacity-0"
+              >
+                <template x-for="option in ['system', 'light', 'dark']" :key="option">
+                  <li>
+                    <button
+                      type="button"
+                      :class="theme === option && 'menu-active'"
+                      :aria-current="theme === option ? 'true' : null"
+                      @click="setTheme(option)"
+                      x-text="t('theme.' + option)"
+                    ></button>
+                  </li>
+                </template>
+              </ul>
+            </div>
           </div>
+
+          <button
+            type="button"
+            class="btn btn-sm btn-ghost ms-auto lg:hidden"
+            :aria-expanded="mobile"
+            aria-controls="mobile-sheet"
+            :aria-label="t('nav.menu')"
+            @click="mobile = true"
+          >
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+              <path d="M4 7h16M4 12h16M4 17h16" />
+            </svg>
+          </button>
         </div>
+      </header>
 
-        <div class="bg-base-200/85 border-base-300 border-b backdrop-blur" x-show="view === 'flat'">
-          <div class="mx-auto flex max-w-[1240px] flex-wrap items-center gap-3 px-5 py-3 sm:px-8">
-            <button type="button" class="btn btn-sm btn-ghost gap-1.5" @click="goHome()">
-              <span aria-hidden="true">←</span>
-              All areas
-            </button>
+      <!-- ═══════════════════════════ mobile sheet ═══════════════════════════ -->
+      <div class="fixed inset-0 z-50 lg:hidden" x-show="mobile" x-cloak role="dialog" aria-modal="true" :aria-label="t('nav.menu')" id="mobile-sheet">
+        <div class="bg-base-content/40 absolute inset-0 backdrop-blur-sm" x-show="mobile" x-transition.opacity @click="mobile = false"></div>
 
-            <label class="input input-md min-w-[240px] flex-1">
-              <svg class="h-5 w-5 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <circle cx="11" cy="11" r="7" />
-                <path d="m20 20-3.5-3.5" stroke-linecap="round" />
+        <div
+          class="bg-base-100 absolute inset-y-0 end-0 flex w-full flex-col shadow-2xl sm:w-[22rem]"
+          x-show="mobile"
+          x-transition:enter="transition ease-out duration-200"
+          x-transition:enter-start="translate-x-full rtl:-translate-x-full"
+          x-transition:leave="transition ease-in duration-150"
+          x-transition:leave-end="translate-x-full rtl:-translate-x-full"
+        >
+          <div class="border-base-300 flex items-center justify-between border-b px-4 py-3">
+            <span class="bg-primary flex items-center justify-center rounded-lg px-2.5 py-2">
+              <span class="adp-logo text-primary-content h-4 w-[42px]" aria-hidden="true"></span>
+            </span>
+            <button type="button" class="btn btn-sm btn-ghost" :aria-label="t('nav.close')" @click="mobile = false">
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+                <path d="M6 6l12 12M18 6L6 18" />
               </svg>
-              <input x-ref="search" x-model="query" type="search" placeholder="Search pages and components…" aria-label="Search demo pages" />
-              <kbd class="kbd kbd-sm" x-show="!query">/</kbd>
-            </label>
+            </button>
+          </div>
 
-            <div class="flex flex-wrap gap-1.5" role="group" aria-label="Area">
-              <button type="button" class="btn btn-sm" :class="area === 'all' ? 'btn-primary' : 'btn-ghost'" :aria-pressed="area === 'all'" @click="area = 'all'">All</button>
-              <template x-for="entry in catalog.areas" :key="entry.id">
+          <div class="flex-1 overflow-y-auto overscroll-contain px-4 py-4">
+            <p class="eyebrow text-base-content/65 mb-2" x-text="t('nav.components')"></p>
+
+            <template x-for="group in groups" :key="group.id">
+              <div class="mb-1">
+                <template x-if="!group.pages.length">
+                  <p class="flex items-center justify-between gap-2 py-2">
+                    <span class="text-base-content/70 text-sm" x-text="group.label"></span>
+                    <span class="badge badge-xs badge-outline shrink-0" x-text="t('components.soon')"></span>
+                  </p>
+                </template>
+
+                <template x-if="group.pages.length === 1">
+                  <a :href="site(group.pages[0].path)" class="hover:bg-base-200 -mx-2 block rounded-lg px-2 py-2 text-sm" x-text="group.label"></a>
+                </template>
+
+                <template x-if="group.pages.length > 1">
+                  <div>
+                    <button
+                      type="button"
+                      class="hover:bg-base-200 -mx-2 flex w-full items-center gap-2 rounded-lg px-2 py-2 text-start text-sm"
+                      :aria-expanded="expanded === group.id"
+                      @click="expand(group.id)"
+                    >
+                      <svg
+                        class="h-3 w-3 shrink-0 opacity-50 transition-transform rtl:-scale-x-100"
+                        :class="expanded === group.id && 'rotate-90'"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                        aria-hidden="true"
+                      >
+                        <path d="m9 6 6 6-6 6" />
+                      </svg>
+                      <span x-text="group.label"></span>
+                      <span class="badge badge-xs badge-ghost ms-auto tabular-nums" x-text="group.pages.length"></span>
+                    </button>
+
+                    <ul
+                      class="menu menu-sm w-full p-0 ps-4"
+                      x-show="expanded === group.id"
+                      x-transition:enter="transition ease-out duration-150"
+                      x-transition:enter-start="opacity-0 -translate-y-1"
+                    >
+                      <template x-for="page in group.pages" :key="page.path">
+                        <li><a :href="site(page.path)" class="truncate" x-text="page.title"></a></li>
+                      </template>
+                    </ul>
+                  </div>
+                </template>
+              </div>
+            </template>
+
+            <div class="border-base-300 mt-4 border-t pt-4">
+              <a class="btn btn-sm btn-ghost w-full justify-start" href="https://adp.shift.software/" target="_blank" rel="noreferrer" x-text="t('nav.docs')"></a>
+            </div>
+
+            <p class="eyebrow text-base-content/65 mt-6 mb-2" x-text="t('nav.language')"></p>
+            <div class="grid grid-cols-2 gap-1.5">
+              <template x-for="option in languages" :key="option.code">
+                <button
+                  type="button"
+                  class="btn btn-sm justify-start"
+                  :class="language === option.code ? 'btn-primary' : 'btn-outline'"
+                  :aria-pressed="language === option.code"
+                  @click="setLanguage(option.code)"
+                >
+                  <span :lang="option.code" x-text="option.label"></span>
+                </button>
+              </template>
+            </div>
+
+            <p class="eyebrow text-base-content/65 mt-6 mb-2" x-text="t('nav.theme')"></p>
+            <div class="grid grid-cols-3 gap-1.5">
+              <template x-for="option in ['system', 'light', 'dark']" :key="option">
                 <button
                   type="button"
                   class="btn btn-sm"
-                  :class="area === entry.id ? 'btn-primary' : 'btn-ghost'"
-                  :aria-pressed="area === entry.id"
-                  @click="area = entry.id"
-                  x-text="entry.label"
+                  :class="theme === option ? 'btn-primary' : 'btn-outline'"
+                  :aria-pressed="theme === option"
+                  @click="setTheme(option)"
+                  x-text="t('theme.' + option)"
                 ></button>
               </template>
             </div>
@@ -106,270 +417,885 @@
         </div>
       </div>
 
-      <!-- hero -->
-      <header class="border-base-300 relative overflow-hidden border-b" x-show="view === 'folders'">
-        <div class="from-primary/10 pointer-events-none absolute inset-0 bg-gradient-to-br via-transparent to-transparent"></div>
+      <main id="main" tabindex="-1" :inert="mobile">
+        <!-- ═══════════════════════════ 1 · hero ═══════════════════════════ -->
+        <section class="wash border-base-300 relative overflow-hidden border-b [--wash-reach:100%]">
+          <!--
+            The wordmark as a letterhead. The alpha is a theme token because gold
+            at one value behaves completely differently over the two grounds: 15%
+            measured 1.07:1 on light (a whisper, as intended) and 1.40:1 on dark —
+            a solid olive object reading as a failed image load.
+          -->
+          <span
+            class="adp-logo pointer-events-none absolute -top-10 end-[-6rem] w-[560px] text-[color-mix(in_srgb,var(--color-primary)_var(--watermark-strength),transparent)] sm:w-[720px]"
+            aria-hidden="true"
+          ></span>
 
-        <div class="relative mx-auto max-w-[1240px] px-5 pt-12 pb-10 sm:px-8">
-          <p class="eyebrow text-accent font-bold">adp-web-components</p>
-          <h1 class="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">Every demo, in one place</h1>
-          <p class="lede text-base-content/70 mt-3 text-lg">Pick an area to browse it, or press <kbd class="kbd kbd-sm">/</kbd> to search everything at once.</p>
-        </div>
-      </header>
+          <div
+            class="relative mx-auto grid w-full max-w-[1240px] gap-12 px-5 py-16 sm:px-8 sm:py-24 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:items-center lg:gap-16 lg:py-28"
+          >
+            <div>
+              <p class="eyebrow text-accent rise font-bold" x-text="t('hero.eyebrow')"></p>
+              <h1 class="rise rise-2 mt-5 text-[2.6rem] leading-[var(--leading-display)] font-bold tracking-tight sm:text-6xl" x-text="t('hero.title')"></h1>
+              <p class="lede text-base-content/70 rise rise-3 mt-6 text-lg leading-relaxed sm:text-xl" x-text="t('hero.lede')"></p>
 
-      <main class="mx-auto max-w-[1240px] px-5 py-9 sm:px-8">
-        <template x-if="!catalog.pages.length">
-          <p class="text-base-content/60 py-20 text-center">No catalog found. Run <code>npm start</code> to generate <code>/templates/catalog.json</code>.</p>
-        </template>
+              <div class="rise rise-4 mt-9 flex flex-wrap items-center gap-3">
+                <a href="#quickstart" class="btn btn-primary btn-lg" x-text="t('hero.primary')"></a>
+                <a href="#install" class="btn btn-outline btn-lg" x-text="t('hero.secondary')"></a>
+              </div>
 
-        <!-- folders -->
-        <div x-show="view === 'folders'">
-          <div class="grid gap-5 md:grid-cols-2">
-            <template x-for="entry in catalog.areas" :key="entry.id">
-              <button
-                type="button"
-                class="card bg-base-100 border-base-300 hover:border-accent group flex flex-col items-start gap-3 border p-6 text-start transition-all hover:shadow-lg"
-                @click="openArea(entry.id)"
-              >
-                <div class="flex w-full items-center gap-4">
-                  <span
-                    class="bg-primary/10 text-accent group-hover:bg-primary group-hover:text-primary-content flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl transition-colors"
+              <dl class="border-base-300 rise rise-4 mt-10 flex flex-wrap items-center gap-x-8 gap-y-3 border-t pt-6">
+                <div class="flex items-baseline gap-2">
+                  <dt class="text-base-content/70 text-sm" x-text="t('hero.package')"></dt>
+                  <dd class="font-mono text-sm font-semibold" x-text="packageName"></dd>
+                </div>
+                <div class="flex items-baseline gap-2">
+                  <dt class="text-base-content/70 text-sm" x-text="t('hero.version')"></dt>
+                  <dd class="font-mono text-sm font-semibold" x-text="version ? 'v' + version : '—'"></dd>
+                </div>
+                <a
+                  class="link link-hover text-accent inline-flex min-h-6 items-center gap-1.5 text-sm font-medium"
+                  :href="'https://www.npmjs.com/package/' + packageName + '?activeTab=versions'"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <span x-text="t('hero.registry')"></span>
+                  <span class="rtl:-scale-x-100" aria-hidden="true">→</span>
+                </a>
+              </dl>
+            </div>
+
+            <!-- Your page, one element, what it renders. Every colour is a theme
+                 token through currentColor, so it inverts with the theme. -->
+            <svg viewBox="0 0 480 320" fill="none" class="rise rise-4 h-auto w-full max-w-[560px] justify-self-center" aria-hidden="true">
+              <rect x="1" y="1" width="478" height="318" rx="20" class="text-base-300" stroke="currentColor" stroke-width="2" />
+              <path d="M1 45h478" class="text-base-300" stroke="currentColor" stroke-width="2" />
+              <circle cx="30" cy="23" r="5" class="text-base-300" fill="currentColor" />
+              <circle cx="50" cy="23" r="5" class="text-base-300" fill="currentColor" />
+              <circle cx="70" cy="23" r="5" class="text-base-300" fill="currentColor" />
+              <rect x="96" y="15" width="150" height="16" rx="8" class="text-base-300" fill="currentColor" />
+              <g class="text-base-content/20" fill="currentColor">
+                <rect x="32" y="76" width="120" height="10" rx="5" />
+                <rect x="32" y="98" width="88" height="10" rx="5" />
+                <rect x="32" y="252" width="140" height="10" rx="5" />
+                <rect x="32" y="274" width="104" height="10" rx="5" />
+              </g>
+              <path
+                d="M64 150l-16 16 16 16M104 150l16 16-16 16M92 144l-16 44"
+                class="text-accent"
+                stroke="currentColor"
+                stroke-width="7"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <g class="rtl:-scale-x-100" style="transform-origin: 163px 166px">
+                <path d="M140 166h44" class="text-accent" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="3 9" />
+                <path d="M186 158l12 8-12 8z" class="text-accent" fill="currentColor" />
+              </g>
+              <rect x="216" y="112" width="232" height="140" rx="14" class="text-base-300" stroke="currentColor" stroke-width="2" />
+              <path d="M216 126a14 14 0 0 1 14-14h204a14 14 0 0 1 14 14v20H216z" class="text-primary" fill="currentColor" />
+              <path d="M216 146h232" class="text-base-300" stroke="currentColor" stroke-width="2" />
+              <rect x="232" y="122" width="96" height="14" rx="7" class="text-primary-content" fill="currentColor" opacity=".8" />
+              <g class="text-base-content/35" fill="currentColor">
+                <rect x="232" y="164" width="60" height="9" rx="4.5" />
+                <rect x="232" y="192" width="60" height="9" rx="4.5" />
+                <rect x="232" y="220" width="60" height="9" rx="4.5" />
+              </g>
+              <g class="text-base-content/55" fill="currentColor">
+                <rect x="320" y="164" width="112" height="9" rx="4.5" />
+                <rect x="320" y="192" width="84" height="9" rx="4.5" />
+                <rect x="320" y="220" width="100" height="9" rx="4.5" />
+              </g>
+            </svg>
+          </div>
+        </section>
+
+        <!-- ═══════════════════════════ 2 · what it does, what you do ═══════════════════════════ -->
+        <section class="bg-base-100 border-base-300 border-b">
+          <div class="mx-auto max-w-[1240px] px-5 py-20 sm:px-8 sm:py-24">
+            <h2 class="text-[1.75rem] leading-[var(--leading-heading)] font-bold tracking-tight sm:text-3xl" x-text="t('overview.title')"></h2>
+            <p class="lede text-base-content/70 mt-4 text-lg" x-text="t('overview.lede')"></p>
+
+            <div class="mt-12 grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-center lg:gap-16">
+              <!-- The division of labour, drawn: a dense stack the element owns,
+                   three plain inputs you own, one boundary between them. -->
+              <svg viewBox="0 0 440 300" fill="none" class="h-auto w-full max-w-[520px]" aria-hidden="true">
+                <rect x="16" y="24" width="196" height="252" rx="16" class="text-accent" stroke="currentColor" stroke-width="2.5" />
+                <rect x="16" y="24" width="196" height="44" rx="16" class="text-primary" fill="currentColor" opacity=".18" />
+                <rect x="36" y="40" width="104" height="12" rx="6" class="text-accent" fill="currentColor" />
+                <g class="text-base-content/30" fill="currentColor">
+                  <rect x="36" y="90" width="156" height="10" rx="5" />
+                  <rect x="36" y="118" width="132" height="10" rx="5" />
+                  <rect x="36" y="146" width="150" height="10" rx="5" />
+                  <rect x="36" y="174" width="120" height="10" rx="5" />
+                  <rect x="36" y="202" width="144" height="10" rx="5" />
+                </g>
+                <circle cx="184" cy="232" r="14" class="text-primary" fill="currentColor" />
+                <path d="M178 232l4 4 8-9" class="text-primary-content" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" />
+
+                <g class="text-base-300" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="2 8">
+                  <path d="M244 150V44M244 150v106" />
+                </g>
+
+                <g class="rtl:-scale-x-100" style="transform-origin: 240px 150px">
+                  <path d="M212 74h44M212 150h44M212 226h44" class="text-base-300" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="3 8" />
+                </g>
+
+                <g class="text-base-300" stroke="currentColor" stroke-width="2.5">
+                  <rect x="264" y="56" width="160" height="36" rx="10" />
+                  <rect x="264" y="132" width="160" height="36" rx="10" />
+                  <rect x="264" y="208" width="160" height="36" rx="10" />
+                </g>
+                <g class="text-base-content/45" fill="currentColor">
+                  <rect x="284" y="69" width="88" height="10" rx="5" />
+                  <rect x="284" y="145" width="66" height="10" rx="5" />
+                  <rect x="284" y="221" width="102" height="10" rx="5" />
+                </g>
+              </svg>
+
+              <div class="grid gap-8 sm:grid-cols-2 lg:gap-10">
+                <div>
+                  <p class="eyebrow text-accent font-bold" x-text="t('overview.elementTitle')"></p>
+                  <ul class="mt-4 flex flex-col gap-3">
+                    <template x-for="item in list('overview.elementItems')" :key="item">
+                      <li class="text-base-content/80 flex gap-2.5 text-[15px] leading-relaxed">
+                        <svg
+                          class="text-accent mt-1 h-4 w-4 shrink-0"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2.4"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          aria-hidden="true"
+                        >
+                          <path d="m5 12.5 4.5 4.5L19 7.5" />
+                        </svg>
+                        <span x-text="item"></span>
+                      </li>
+                    </template>
+                  </ul>
+                </div>
+
+                <div>
+                  <p class="eyebrow text-base-content/65 font-bold" x-text="t('overview.youTitle')"></p>
+                  <ul class="mt-4 flex flex-col gap-3">
+                    <template x-for="item in list('overview.youItems')" :key="item">
+                      <li class="text-base-content/80 flex gap-2.5 text-[15px] leading-relaxed">
+                        <span class="bg-base-300 mt-2 h-1.5 w-1.5 shrink-0 rounded-full" aria-hidden="true"></span>
+                        <span x-text="item"></span>
+                      </li>
+                    </template>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <p class="text-base-content/70 mt-12 max-w-[70ch] text-[15px] leading-relaxed" x-text="t('overview.body3')"></p>
+          </div>
+        </section>
+
+        <!-- ═══════════════════════════ 3 · where it sits ═══════════════════════════ -->
+        <section class="bg-base-200 border-base-300 border-b">
+          <div class="mx-auto max-w-[1240px] px-5 py-20 sm:px-8">
+            <h2 class="text-2xl leading-[var(--leading-heading)] font-bold tracking-tight" x-text="t('stack.title')"></h2>
+            <p class="lede text-base-content/70 mt-3" x-text="t('stack.lede')"></p>
+
+            <div class="mt-12 grid gap-12 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:items-center">
+              <ol class="border-accent/50 ms-4 flex flex-col border-s-2">
+                <template x-for="(item, index) in list('stack.items')" :key="item.name">
+                  <li class="relative ps-8 pb-8 last:pb-0">
+                    <!-- -ms-3.5 is half of w-7, as a LOGICAL offset. translateX(-50%)
+                         is physical: it shifts left in both directions, so under RTL
+                         it covered a letter of every step heading. -->
+                    <span
+                      class="bg-primary text-primary-content absolute start-0 top-0 -ms-3.5 flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold tabular-nums"
+                      x-text="index + 1"
+                    ></span>
+                    <p class="text-base font-semibold" x-text="item.name"></p>
+                    <p class="text-base-content/70 mt-1 max-w-[62ch] text-[15px] leading-relaxed" x-text="item.body"></p>
+                  </li>
+                </template>
+              </ol>
+
+              <svg viewBox="0 0 280 250" fill="none" class="hidden h-auto w-full max-w-[340px] justify-self-center lg:block" aria-hidden="true">
+                <g class="text-base-300" stroke="currentColor" stroke-width="2">
+                  <rect x="20" y="12" width="240" height="46" rx="10" />
+                  <rect x="32" y="76" width="216" height="46" rx="10" />
+                  <rect x="68" y="204" width="144" height="38" rx="10" />
+                </g>
+                <rect x="44" y="140" width="192" height="46" rx="10" class="text-primary" fill="currentColor" opacity=".14" />
+                <rect x="44" y="140" width="192" height="46" rx="10" class="text-accent" stroke="currentColor" stroke-width="2.5" />
+                <g class="text-base-content/35" fill="currentColor">
+                  <rect x="38" y="30" width="96" height="10" rx="5" />
+                  <rect x="50" y="94" width="76" height="10" rx="5" />
+                  <rect x="86" y="218" width="58" height="10" rx="5" />
+                </g>
+                <rect x="62" y="158" width="112" height="10" rx="5" class="text-accent" fill="currentColor" />
+                <g class="text-base-300" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="2 7">
+                  <path d="M140 58v18M140 122v18M140 186v18" />
+                </g>
+              </svg>
+            </div>
+          </div>
+        </section>
+
+        <!-- ═══════════════════════════ 4 · quickstart ═══════════════════════════ -->
+        <section id="quickstart" class="bg-base-100 border-base-300 scroll-mt-20 border-b">
+          <div class="mx-auto max-w-[1240px] px-5 py-20 sm:px-8 sm:py-24">
+            <h2 class="text-[1.75rem] leading-[var(--leading-heading)] font-bold tracking-tight sm:text-3xl" x-text="t('quickstart.title')"></h2>
+            <p class="lede text-base-content/70 mt-4 text-lg" x-text="t('quickstart.lede')"></p>
+
+            <ol class="mt-12 flex flex-col gap-8">
+              <template x-for="(step, index) in list('quickstart.steps')" :key="step.name">
+                <li class="grid gap-4 lg:grid-cols-[minmax(0,19rem)_minmax(0,1fr)] lg:gap-10">
+                  <div>
+                    <p class="eyebrow text-accent font-bold" x-text="'0' + (index + 1)"></p>
+                    <p class="mt-1 font-semibold" x-text="step.name"></p>
+                    <p class="text-base-content/70 mt-1 text-sm leading-relaxed" x-text="step.body"></p>
+                  </div>
+
+                  <figure class="rounded-field border-base-300 m-0 overflow-hidden border">
+                    <figcaption class="bg-base-200 border-base-300 flex items-center justify-between gap-3 border-b py-1.5 ps-4 pe-2">
+                      <span class="eyebrow text-base-content/65" x-text="quickstart[index].lang"></span>
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-ghost btn-square"
+                        :aria-label="copied === 'step' + index ? t('install.copied') : t('install.copyLabel')"
+                        @click="copy('step' + index, quickstart[index].code)"
+                      >
+                        <template x-if="copied !== 'step' + index">
+                          <svg
+                            class="h-4 w-4"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <rect x="9" y="9" width="11" height="11" rx="2.5" />
+                            <path d="M5.5 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v.5" />
+                          </svg>
+                        </template>
+                        <template x-if="copied === 'step' + index">
+                          <svg
+                            class="text-success h-4 w-4"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2.2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path d="m5 12.5 4.5 4.5L19 7.5" />
+                          </svg>
+                        </template>
+                      </button>
+                    </figcaption>
+                    <pre class="code m-0 p-4"><code x-html="highlight(quickstart[index].code, quickstart[index].lang)"></code></pre>
+                  </figure>
+                </li>
+              </template>
+            </ol>
+
+            <div class="mt-10 grid gap-4 lg:grid-cols-2">
+              <p class="border-accent/50 text-base-content/70 border-s-2 ps-4 text-sm leading-relaxed" x-text="t('quickstart.note')"></p>
+              <p class="border-accent/50 text-base-content/70 border-s-2 ps-4 text-sm leading-relaxed" x-text="t('quickstart.network')"></p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ═══════════════════════════ 5 · install ═══════════════════════════ -->
+        <section id="install" class="bg-base-200 border-base-300 scroll-mt-20 border-b">
+          <div class="mx-auto max-w-[1240px] px-5 py-20 sm:px-8 sm:py-24">
+            <h2 class="text-[1.75rem] leading-[var(--leading-heading)] font-bold tracking-tight sm:text-3xl" x-text="t('install.title')"></h2>
+            <p class="lede text-base-content/70 mt-4 text-lg" x-text="t('install.lede')"></p>
+
+            <div class="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
+              <div class="flex flex-wrap gap-1.5" role="group" :aria-label="t('install.title')">
+                <template x-for="tab in installTabs" :key="tab">
+                  <button
+                    type="button"
+                    class="btn btn-sm gap-2"
+                    :class="installTab === tab ? 'btn-primary' : 'btn-outline'"
+                    :aria-pressed="installTab === tab"
+                    @click="installTab = tab"
                   >
+                    <span x-text="t('install.' + tab)"></span>
+                    <span class="badge badge-xs badge-ghost" x-show="tab === 'library'" x-text="t('install.recommended')"></span>
+                  </button>
+                </template>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <span class="eyebrow text-base-content/65" x-text="t('install.version')"></span>
+                <div class="flex gap-1.5" role="group" :aria-label="t('install.version')">
+                  <template x-for="mode in ['latest', 'pinned']" :key="mode">
+                    <button type="button" class="btn btn-xs gap-1.5" :class="pin === mode ? 'btn-primary' : 'btn-outline'" :aria-pressed="pin === mode" @click="pin = mode">
+                      <span x-text="mode === 'pinned' ? t('install.pinned') + (version ? ' v' + version : '') : t('install.latest')"></span>
+                      <span class="badge badge-xs badge-ghost" x-show="mode === 'latest'" x-text="t('install.recommended')"></span>
+                    </button>
+                  </template>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4 max-w-[72rem]">
+              <figure class="rounded-field border-base-300 m-0 overflow-hidden border">
+                <figcaption class="bg-base-100 border-base-300 flex items-center justify-between gap-3 border-b py-1.5 ps-4 pe-2">
+                  <span class="eyebrow text-base-content/65" x-text="snippet.lang"></span>
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-ghost btn-square"
+                    :aria-label="copied === 'install' ? t('install.copied') : t('install.copyLabel')"
+                    @click="copy('install', snippet.code)"
+                  >
+                    <template x-if="copied !== 'install'">
+                      <svg
+                        class="h-4 w-4"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <rect x="9" y="9" width="11" height="11" rx="2.5" />
+                        <path d="M5.5 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v.5" />
+                      </svg>
+                    </template>
+                    <template x-if="copied === 'install'">
+                      <svg
+                        class="text-success h-4 w-4"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="m5 12.5 4.5 4.5L19 7.5" />
+                      </svg>
+                    </template>
+                  </button>
+                </figcaption>
+                <pre class="code m-0 p-4"><code x-html="highlight(snippet.code, snippet.lang)"></code></pre>
+              </figure>
+
+              <p class="text-base-content/70 mt-3 text-sm" x-text="t('install.' + installTab + 'Note')"></p>
+              <p class="text-base-content/70 mt-1 text-sm" x-text="t('install.' + pin + 'Note')"></p>
+              <p class="text-base-content/65 mt-4 text-sm" x-text="t('install.bundler')"></p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ═══════════════════════════ 6 · versions ═══════════════════════════ -->
+        <section class="bg-base-100 border-base-300 border-b">
+          <div class="mx-auto max-w-[1240px] px-5 py-20 sm:px-8">
+            <h2 class="text-2xl leading-[var(--leading-heading)] font-bold tracking-tight" x-text="t('versions.title')"></h2>
+            <p class="lede text-base-content/70 mt-3" x-text="t('versions.lede')"></p>
+
+            <ol class="mt-10 grid gap-5 lg:grid-cols-3">
+              <template x-for="(item, index) in list('versions.items')" :key="item.name">
+                <li class="card bg-base-200 border-base-300 flex flex-col gap-2 border p-6">
+                  <span class="bg-primary text-primary-content flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold tabular-nums" x-text="index + 1"></span>
+                  <p class="mt-1 font-semibold" x-text="item.name"></p>
+                  <p class="text-base-content/70 text-sm leading-relaxed" x-text="item.body"></p>
+                </li>
+              </template>
+            </ol>
+
+            <p class="text-base-content/70 mt-6 text-sm" x-text="t('versions.note')"></p>
+          </div>
+        </section>
+
+        <!-- ═══════════════════════════ 7 · what you get ═══════════════════════════ -->
+        <section id="features" class="bg-base-200 border-base-300 scroll-mt-20 border-b">
+          <div class="mx-auto max-w-[1240px] px-5 py-20 sm:px-8">
+            <h2 class="text-2xl leading-[var(--leading-heading)] font-bold tracking-tight" x-text="t('features.title')"></h2>
+            <p class="lede text-base-content/70 mt-3" x-text="t('features.lede')"></p>
+
+            <ul class="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              <template x-for="(item, index) in list('features.items')" :key="item.name">
+                <li class="card bg-base-100 border-base-300 flex flex-col gap-3 border p-6">
+                  <span class="bg-primary/15 text-accent flex h-10 w-10 items-center justify-center rounded-xl" aria-hidden="true">
                     <svg
-                      class="h-7 w-7"
+                      class="h-5 w-5"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
-                      stroke-width="1.6"
+                      stroke-width="1.9"
                       stroke-linecap="round"
                       stroke-linejoin="round"
-                      x-html="icon(entry.id)"
-                      aria-hidden="true"
+                      x-html="featureIcon(index)"
                     ></svg>
                   </span>
-
-                  <div class="min-w-0 flex-1">
-                    <h2 class="group-hover:text-accent text-xl font-bold tracking-tight transition-colors" x-text="entry.label"></h2>
-                    <p class="text-base-content/50 text-sm tabular-nums" x-text="entry.count + (entry.count === 1 ? ' page' : ' pages')"></p>
-                  </div>
-
-                  <span class="text-base-content/25 group-hover:text-accent text-xl transition-colors" aria-hidden="true">→</span>
-                </div>
-
-                <p class="text-base-content/70" x-text="blurb(entry.id)"></p>
-              </button>
-            </template>
-          </div>
-
-          <!-- install -->
-          <section class="border-base-300 mt-12 border-t pt-10">
-            <h2 class="text-xl font-bold tracking-tight">Install</h2>
-            <p class="text-base-content/70 mt-2">Plain custom elements — the host page needs no framework.</p>
-
-            <div class="mt-5 grid gap-4 md:grid-cols-2">
-              <template x-for="snippet in install" :key="snippet.label">
-                <div class="card bg-base-100 border-base-300 border p-4">
-                  <div class="mb-2 flex items-center justify-between gap-3">
-                    <span class="eyebrow text-neutral" x-text="snippet.label"></span>
-                    <button type="button" class="btn btn-xs btn-ghost" @click="copy(snippet)" x-text="copied === snippet.label ? 'Copied' : 'Copy'"></button>
-                  </div>
-                  <pre class="log bg-base-200 border-base-300 m-0 rounded-md border p-3"><code x-text="snippet.code"></code></pre>
-                </div>
+                  <p class="font-semibold" x-text="item.name"></p>
+                  <p class="text-base-content/70 text-sm leading-relaxed" x-text="item.body"></p>
+                </li>
               </template>
-            </div>
-
-            <p class="text-base-content/50 mt-4 text-sm"><code>@latest</code> always resolves to the newest release — pin a version only to freeze behaviour.</p>
-          </section>
-        </div>
-
-        <!-- all pages -->
-        <div x-show="view === 'flat'">
-          <template x-if="catalog.pages.length && !results.length">
-            <div class="py-20 text-center">
-              <p class="text-lg font-semibold">Nothing matches “<span x-text="query"></span>”</p>
-              <button type="button" class="btn btn-sm btn-outline mt-4" @click="reset()">Clear filters</button>
-            </div>
-          </template>
-
-          <div class="flex flex-col gap-10">
-            <template x-for="group in grouped" :key="group.id">
-              <section>
-                <div class="mb-4 flex items-center gap-3">
-                  <svg
-                    class="text-accent h-5 w-5"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.6"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    x-html="icon(group.id)"
-                    aria-hidden="true"
-                  ></svg>
-                  <h2 class="text-base font-bold tracking-tight" x-text="group.label"></h2>
-                  <span class="bg-base-300 h-px flex-1" aria-hidden="true"></span>
-                  <span class="eyebrow text-neutral tabular-nums" x-text="group.pages.length"></span>
-                </div>
-
-                <ul class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  <template x-for="page in group.pages" :key="page.path">
-                    <li>
-                      <a :href="page.path" class="card bg-base-100 border-base-300 hover:border-accent group flex h-full flex-col gap-2 border p-5 transition-all hover:shadow-lg">
-                        <div class="flex items-start justify-between gap-2">
-                          <span class="group-hover:text-accent text-base leading-snug font-semibold transition-colors" x-text="page.title"></span>
-                          <span class="text-base-content/25 group-hover:text-accent shrink-0 transition-colors" aria-hidden="true">→</span>
-                        </div>
-
-                        <p class="text-base-content/55 font-mono text-sm break-all" x-text="page.tags.length ? page.tags.join(' · ') : page.path.replace('/templates/', '')"></p>
-
-                        <span class="badge badge-sm badge-ghost mt-auto self-start" x-show="page.kind !== 'demo'" x-text="page.kind"></span>
-                      </a>
-                    </li>
-                  </template>
-                </ul>
-              </section>
-            </template>
+            </ul>
           </div>
-        </div>
+        </section>
+
+        <!-- ═══════════════════════════ 8 · components ═══════════════════════════ -->
+        <section id="components" class="bg-base-100 border-base-300 scroll-mt-20 border-b">
+          <div class="mx-auto max-w-[1240px] px-5 py-20 sm:px-8 sm:py-24">
+            <h2 class="text-[1.75rem] leading-[var(--leading-heading)] font-bold tracking-tight sm:text-3xl" x-text="t('components.title')"></h2>
+            <p class="lede text-base-content/70 mt-4 text-lg" x-text="t('components.lede')"></p>
+
+            <ul class="mt-12 grid gap-5 md:grid-cols-3">
+              <template x-for="group in groups" :key="group.id">
+                <li class="card bg-base-200 border-base-300 flex flex-col border p-6">
+                  <svg viewBox="0 0 260 96" fill="none" class="mb-5 h-auto w-full" aria-hidden="true" x-html="groupIllustration(group.id)"></svg>
+
+                  <div class="flex items-start justify-between gap-3">
+                    <p class="text-lg font-semibold" x-text="group.label"></p>
+                    <span
+                      class="badge badge-sm shrink-0"
+                      :class="group.pages.length ? 'badge-ghost tabular-nums' : 'badge-outline'"
+                      x-text="group.pages.length ? group.pages.length + ' ' + t(group.pages.length === 1 ? 'components.page' : 'components.pages') : t('components.soon')"
+                    ></span>
+                  </div>
+
+                  <p class="text-base-content/70 mt-2 text-sm leading-relaxed" x-text="group.blurb"></p>
+
+                  <ul class="mt-3 flex flex-col gap-1" x-show="group.pages.length">
+                    <template x-for="page in group.pages" :key="page.path">
+                      <li><a :href="site(page.path)" class="link link-hover text-accent inline-flex min-h-6 items-center text-sm" x-text="page.title"></a></li>
+                    </template>
+                  </ul>
+                </li>
+              </template>
+            </ul>
+          </div>
+        </section>
+
+        <!-- ═══════════════════════════ 9 · next steps ═══════════════════════════ -->
+        <section class="bg-base-200">
+          <div class="mx-auto max-w-[1240px] px-5 py-20 sm:px-8">
+            <h2 class="text-2xl leading-[var(--leading-heading)] font-bold tracking-tight" x-text="t('support.title')"></h2>
+
+            <ul class="mt-8 grid gap-5 md:grid-cols-3">
+              <template x-for="(item, index) in list('support.items')" :key="item.name">
+                <li class="card bg-base-100 border-base-300 flex flex-col gap-2 border p-6">
+                  <p class="font-semibold" x-text="item.name"></p>
+                  <p class="text-base-content/70 text-sm leading-relaxed" x-text="item.body"></p>
+
+                  <template x-if="supportLink(index)">
+                    <a
+                      class="link link-hover text-accent mt-1 inline-flex min-h-6 items-center gap-1.5 text-sm font-medium"
+                      :href="supportLink(index)"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <span x-text="supportLabel(index)"></span>
+                      <span class="rtl:-scale-x-100" aria-hidden="true">→</span>
+                    </a>
+                  </template>
+                </li>
+              </template>
+            </ul>
+
+            <!-- The rest of the estate. Product names are frozen terms, so the
+                 labels are presentation, not copy — only the heading translates. -->
+            <p class="eyebrow text-base-content/65 mt-12" x-text="t('support.ecosystem')"></p>
+            <ul class="border-base-300 mt-4 flex flex-wrap gap-x-6 gap-y-3 border-t pt-5">
+              <template x-for="link in ECOSYSTEM" :key="link.href">
+                <li>
+                  <a class="link link-hover text-accent inline-flex min-h-6 items-center gap-1.5 text-sm font-medium" :href="link.href" target="_blank" rel="noreferrer">
+                    <span x-text="link.name"></span>
+                    <span class="rtl:-scale-x-100 opacity-60" aria-hidden="true">→</span>
+                  </a>
+                </li>
+              </template>
+            </ul>
+          </div>
+        </section>
       </main>
+
+      <footer class="bg-base-200 wash wash-up border-base-300 border-t [--wash-reach:100%]" :inert="mobile">
+        <div class="mx-auto flex max-w-[1240px] flex-wrap items-center gap-x-4 gap-y-3 px-5 py-10 sm:px-8">
+          <span class="bg-primary flex items-center justify-center rounded-lg px-2 py-1.5">
+            <span class="adp-logo text-primary-content h-3.5 w-[36px]" aria-hidden="true"></span>
+          </span>
+          <p class="text-base-content/70 text-sm" x-text="t('footer.tagline')"></p>
+          <!--
+            The package spec is wrapped in <bdi dir="ltr"> because it renders
+            REVERSED otherwise: in an Arabic or Kurdish paragraph the @ sits
+            between a Latin run and a numeric run, takes the paragraph direction,
+            and splits the token into "1.2.3@adp-web-components".
+          -->
+          <p class="text-base-content/65 ms-auto font-mono text-xs" x-show="version">
+            <span x-text="t('footer.built')"></span>
+            <bdi dir="ltr" x-text="packageName + '@' + version"></bdi>
+          </p>
+        </div>
+      </footer>
+
+      <!-- Copy is a state change with no visual anchor for a screen reader, so it
+           gets announced rather than only shown. -->
+      <p class="sr-only" aria-live="polite" x-text="copied ? t('install.copied') : ''"></p>
     </div>
 
     <script>
-      // Presentation only — the catalog knows what exists, this knows how to draw it.
-      const AREA_ICONS = {
-        'vehicle-lookup':
-          '<path d="M5 17h14M6.5 17V19a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-2M20.5 17V19a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-2"/><path d="M3 17v-4.2a2 2 0 0 1 .3-1L5.6 8A2 2 0 0 1 7.3 7h9.4a2 2 0 0 1 1.7 1l2.3 3.8a2 2 0 0 1 .3 1V17z"/><path d="M6.5 13.5h.01M17.5 13.5h.01"/>',
-        'part-lookup':
-          '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
-        'forms': '<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M8 11h8M8 15h5"/>',
-        'production-host': '<rect x="2" y="4" width="20" height="7" rx="2"/><rect x="2" y="13" width="20" height="7" rx="2"/><path d="M6 7.5h.01M6 16.5h.01"/>',
-        'root': '<path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M3 12h18"/>',
-        'prototypes': '<path d="m14.5 2.5 7 7L9 22H2v-7z"/><path d="M12 5 19 12"/><path d="M2 15h7v7"/>',
+      /*
+       * Presentation only. Words live in site-locales.js; what pages exist lives
+       * in catalog.json. What is left here is icon geometry, illustrations, the
+       * shape of a snippet, and a syntax highlighter — none of which are
+       * translatable and none of which are data.
+       */
+      const FEATURE_ICONS = [
+        '<path d="M4 7h16M4 12h16M4 17h10"/><circle cx="18.5" cy="17" r="2.5"/>',
+        '<path d="M12 3 4 6.5v5.2c0 4.5 3.2 8.6 8 9.8 4.8-1.2 8-5.3 8-9.8V6.5z"/><path d="m9.2 12.2 2 2 3.6-3.9"/>',
+        '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18"/>',
+        '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 9v11"/>',
+        '<path d="M8 5.5 3.5 12 8 18.5M16 5.5 20.5 12 16 18.5"/><path d="m13.5 4-3 16"/>',
+      ];
+
+      /*
+       * One panel per component group. Each says what the group DOES rather than
+       * naming it twice: a VIN read off a car, a part matched across three
+       * sources, a form that becomes a ticket. Every colour is a theme token
+       * through currentColor, so they invert with the theme.
+       */
+      const GROUP_ILLUSTRATIONS = {
+        'vehicle-lookup': [
+          '<path d="M16 66h228" class="text-base-300" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+          '<path d="M38 66V47a8 8 0 0 1 1.4-4.5l10.2-15A8 8 0 0 1 56.2 24h43.6a8 8 0 0 1 6.6 3.5l10.2 15A8 8 0 0 1 118 47v19z" class="text-accent" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>',
+          '<path d="M50 46h56" class="text-accent" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+          '<circle cx="53" cy="57" r="3.5" class="text-accent" fill="currentColor"/><circle cx="103" cy="57" r="3.5" class="text-accent" fill="currentColor"/>',
+          '<g class="text-base-content/35" fill="currentColor"><rect x="148" y="26" width="4" height="32" rx="2"/><rect x="156" y="26" width="2" height="32" rx="1"/><rect x="162" y="26" width="5" height="32" rx="2"/><rect x="171" y="26" width="2" height="32" rx="1"/><rect x="177" y="26" width="3" height="32" rx="1.5"/><rect x="184" y="26" width="5" height="32" rx="2"/><rect x="193" y="26" width="2" height="32" rx="1"/><rect x="199" y="26" width="4" height="32" rx="2"/><rect x="207" y="26" width="2" height="32" rx="1"/><rect x="213" y="26" width="5" height="32" rx="2"/><rect x="222" y="26" width="3" height="32" rx="1.5"/><rect x="229" y="26" width="2" height="32" rx="1"/></g>',
+          '<rect x="148" y="74" width="83" height="9" rx="4.5" class="text-primary" fill="currentColor"/>',
+        ].join(''),
+
+        'part-lookup': [
+          '<g transform="translate(20 10) scale(3.1)" class="text-accent" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></g>',
+          '<g class="text-base-300" stroke="currentColor" stroke-width="2"><rect x="130" y="22" width="112" height="18" rx="9"/><rect x="130" y="48" width="88" height="18" rx="9"/></g>',
+          '<rect x="130" y="74" width="64" height="14" rx="7" class="text-primary" fill="currentColor"/>',
+          '<path d="M112 31h14M112 57h14M112 81h14" class="text-base-300" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="2 6"/>',
+        ].join(''),
+
+        'forms': [
+          '<rect x="26" y="14" width="104" height="72" rx="10" class="text-accent" stroke="currentColor" stroke-width="2.5"/>',
+          '<rect x="57" y="8" width="42" height="16" rx="6" class="text-base-100" fill="currentColor"/>',
+          '<rect x="57" y="8" width="42" height="16" rx="6" class="text-accent" stroke="currentColor" stroke-width="2.5"/>',
+          '<g class="text-base-content/35" fill="currentColor"><rect x="42" y="42" width="72" height="8" rx="4"/><rect x="42" y="60" width="50" height="8" rx="4"/></g>',
+          '<g class="rtl:-scale-x-100" style="transform-origin: 176px 50px"><path d="M146 50h50" class="text-base-300" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="3 8"/><path d="M192 40l14 10-14 10z" class="text-accent" fill="currentColor"/></g>',
+          '<rect x="216" y="30" width="34" height="40" rx="8" class="text-primary" fill="currentColor"/>',
+          '<path d="M225 50l6 6 11-12" class="text-primary-content" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>',
+        ].join(''),
       };
 
-      const AREA_BLURBS = {
-        'vehicle-lookup': 'VIN-driven lookups — specification, warranty, service history, paint thickness and claimable items.',
-        'part-lookup': 'Part number lookups across distributor, dead stock and manufacturer sources.',
-        'forms': 'Structure-driven forms — vehicle quotation, service booking, test drive and general inquiry.',
-        'production-host': 'Integration templates showing how a host application loads a component from the CDN.',
-        'root': 'Standalone utilities that do not belong to one lookup area.',
-        'prototypes': 'Frozen hand-built mock-ups. They record what a design looked like when a decision was taken — read, do not restyle.',
+      /*
+       * The three product areas, in presentation order. Declared here rather than
+       * read from the catalog on purpose: a group with nothing published has no
+       * catalog entry at all, and disappearing from the menu is a different
+       * message from "the demo is pending".
+       */
+      const COMPONENT_GROUPS = ['vehicle-lookup', 'part-lookup', 'forms'];
+
+      /* Index-aligned with support.items; null means the card is prose only. */
+      const SUPPORT_LINKS = ['https://adp.shift.software/', 'https://www.npmjs.com/package/adp-web-components?activeTab=versions', null];
+
+      /* Product names are frozen terms — presentation, not translatable copy. */
+      const ECOSYSTEM = [
+        { name: 'ADP documentation', href: 'https://adp.shift.software/' },
+        { name: 'Shift Framework docs', href: 'https://docs.shift.software/' },
+        { name: 'adp-web-components on npm', href: 'https://www.npmjs.com/package/adp-web-components' },
+        { name: 'ShiftSoftware on npm', href: 'https://www.npmjs.com/search?q=shiftsoftware' },
+      ];
+
+      const FALLBACK_VERSION = 'latest';
+
+      /*
+       * A syntax highlighter, in about thirty lines, because the alternative is a
+       * CDN script tag and §3 of the design language exists to keep those off
+       * these pages.
+       *
+       * One pass per snippet: a single alternation walks the string, so a token
+       * already emitted is never re-scanned. Sequential .replace() calls would
+       * match `class="tok-key"` inside their own output. Every pattern uses
+       * non-capturing groups only — the group index IS the rule index.
+       */
+      const GRAMMARS = {
+        HTML: [
+          { token: 'comment', pattern: '<!--[\\s\\S]*?-->' },
+          { token: 'str', pattern: '"[^"]*"' },
+          { token: 'key', pattern: '</?[a-zA-Z][\\w-]*' },
+          { token: 'attr', pattern: '[a-zA-Z-]+(?==)' },
+          { token: 'punct', pattern: '/?>' },
+        ],
+        JavaScript: [
+          { token: 'comment', pattern: '//[^\\n]*' },
+          { token: 'str', pattern: "'[^']*'" },
+          { token: 'key', pattern: '\\b(?:import|from|await|const|let|new|return|try|catch|document)\\b' },
+          { token: 'attr', pattern: '\\b[a-zA-Z_$][\\w$]*(?=\\s*:)' },
+          { token: 'punct', pattern: '[{}();,]' },
+        ],
+        Shell: [
+          { token: 'comment', pattern: '#[^\\n]*' },
+          { token: 'key', pattern: '^\\S+' },
+        ],
       };
 
-      const FALLBACK_ICON = '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/>';
+      function escapeHtml(text) {
+        return String(text).replace(/[&<>]/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[character]);
+      }
 
-      function showcase() {
+      function landing() {
         return {
           catalog: { areas: [], pages: [] },
-          query: '',
-          area: 'all',
-          view: 'folders',
-          copied: null,
+          build: null,
+          language: window.siteLocales.current(),
+          languages: window.siteLocales.languages,
           theme: window.harnessTheme.current(),
-          views: [
-            { value: 'folders', label: 'Folders' },
-            { value: 'flat', label: 'All pages' },
-          ],
+          open: null,
+          mobile: false,
+          expanded: null,
+          filter: '',
+          installTab: 'library',
+          installTabs: ['library', 'single'],
+          /* @latest is the recommended default: a fix reaches a host page without
+             a redeploy, and the rule that actually matters — one version per
+             document — is unaffected by which of the two you pick. */
+          pin: 'latest',
+          copied: null,
+          ECOSYSTEM,
 
           async init() {
-            try {
-              const response = await fetch('/templates/catalog.json');
-              if (response.ok) this.catalog = await response.json();
-            } catch {
-              // Leaves the "no catalog" empty state showing, which says how to fix it.
-            }
+            /*
+             * Both files are optional and either one failing has to leave a
+             * readable page: the build stamp exists only in a released site, and
+             * the catalog only once `npm start` or `npm run release` has run.
+             */
+            const [catalog, build] = await Promise.all([read('templates/catalog.json'), read('build-info.json')]);
 
-            window.addEventListener('keydown', event => {
-              const typing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(event.target.tagName);
-
-              // `/` jumps to search from anywhere — including the folder view, which
-              // has no search field of its own, so it switches views first.
-              if (event.key === '/' && !typing) {
-                event.preventDefault();
-                this.setView('flat');
-                this.$nextTick(() => this.$refs.search?.focus());
-              }
-
-              if (event.key === 'Escape' && typing) {
-                this.query = '';
-                event.target.blur();
-              }
-            });
+            if (catalog) this.catalog = catalog;
+            if (build) this.build = build;
           },
 
-          /* `@latest` on purpose — a pinned version inside a copy-paste snippet is
-             stale the day after it is written. */
-          get install() {
-            const name = this.catalog.package?.name ?? 'adp-web-components';
+          /* ---------- copy ---------- */
 
+          t(key) {
+            return window.siteLocales.t(this.language, key);
+          },
+
+          /** Lists are arrays, not strings, so they bypass `t`'s string fallback. */
+          list(key) {
+            const value = window.siteLocales.t(this.language, key);
+
+            return Array.isArray(value) ? value : [];
+          },
+
+          get languageLabel() {
+            return this.languages.find(option => option.code === this.language)?.label ?? this.language;
+          },
+
+          /* ---------- package identity ---------- */
+
+          get packageName() {
+            return this.catalog.package?.name ?? 'adp-web-components';
+          },
+
+          /*
+           * The build stamp first. It records the version the site was BUILT
+           * against, which is a published one; catalog.json carries package.json's
+           * version, which is whatever is being prepared next and is routinely not
+           * installable yet.
+           */
+          get version() {
+            return this.build?.componentVersion ?? this.catalog.package?.version ?? '';
+          },
+
+          /* ---------- component groups ---------- */
+
+          get pageCount() {
+            return this.catalog.pages.length;
+          },
+
+          get groups() {
+            const needle = this.filter.trim().toLowerCase();
+
+            return COMPONENT_GROUPS.map(id => ({
+              id,
+              label: this.t('groups.' + id),
+              blurb: this.t('blurb.' + id),
+              pages: this.catalog.pages.filter(page => page.area === id && (!needle || (page.title + ' ' + page.path).toLowerCase().includes(needle))),
+            }));
+          },
+
+          groupIllustration(id) {
+            return GROUP_ILLUSTRATIONS[id] ?? '';
+          },
+
+          featureIcon(index) {
+            return FEATURE_ICONS[index] ?? '';
+          },
+
+          supportLink(index) {
+            return SUPPORT_LINKS[index] ?? null;
+          },
+
+          supportLabel(index) {
+            return this.list('support.links')[index] ?? this.list('support.items')[index]?.name ?? '';
+          },
+
+          /* ---------- snippets ---------- */
+
+          get cdn() {
+            return 'https://cdn.jsdelivr.net/npm/' + this.packageName + '@' + (this.pin === 'latest' ? 'latest' : this.version || FALLBACK_VERSION);
+          },
+
+          get snippet() {
+            // The closing tag is escaped: an unescaped one inside this string
+            // would end the surrounding <script> block and break the page.
+            if (this.installTab === 'library') {
+              return {
+                lang: 'HTML',
+                code: '<script type="module"\n  src="' + this.cdn + '/dist/shift-components/shift-components.esm.js"><\/script>',
+              };
+            }
+
+            return {
+              lang: 'JavaScript',
+              code: [
+                "import { loadComponent } from '" + this.cdn + "/dist/host-loader.js';",
+                '',
+                'await loadComponent({',
+                "  moduleUrl: '" + this.cdn + "/dist/components/vehicle-service-history.js',",
+                "  tag: 'vehicle-service-history',",
+                "  packageVersion: '" + (this.pin === 'latest' ? 'latest' : this.version || FALLBACK_VERSION) + "',",
+                '});',
+              ].join('\n'),
+            };
+          },
+
+          /*
+           * The quickstart is `production-host/vehicle-service-history.html`,
+           * split into its three moves. Keep it in step with that file — it is the
+           * copy-paste original; this is the narrated version.
+           */
+          get quickstart() {
             return [
-              { label: 'npm', code: 'npm i ' + name },
-              // The closing tag is escaped: an unescaped one inside this string
-              // would end the surrounding <script> block and break the page.
-              { label: 'CDN', code: '<script type="module"\n  src="https://cdn.jsdelivr.net/npm/' + name + '@latest/dist/shift-components/shift-components.esm.js"><\/script>' },
+              {
+                lang: 'HTML',
+                code: '<script type="module"\n  src="' + this.cdn + '/dist/shift-components/shift-components.esm.js"><\/script>',
+              },
+              {
+                lang: 'HTML',
+                code: [
+                  '<vehicle-service-history',
+                  '  id="service-history"',
+                  '  language="en"',
+                  '  base-url="https://<your-adp-host>/api/vehicle-lookup/"',
+                  '></vehicle-service-history>',
+                ].join('\n'),
+              },
+              {
+                /*
+                 * HTML, not JavaScript, and deliberately so: this uses top-level
+                 * await, which is legal only inside a module. Presented as bare JS
+                 * — which is how it read — pasting it where the page says to put it
+                 * is an outright SyntaxError. The catch is here because the first
+                 * run always throws: the VIN is a placeholder and the base URL is
+                 * not yours yet.
+                 */
+                lang: 'HTML',
+                code: [
+                  '<script type="module">',
+                  "  const element = document.getElementById('service-history');",
+                  '',
+                  '  try {',
+                  "    await element.fetchVin('<a real 17-character VIN>');",
+                  '  } catch (error) {',
+                  '    console.error(error);',
+                  '  }',
+                  '<\/script>',
+                ].join('\n'),
+              },
             ];
           },
 
-          async copy(snippet) {
+          highlight(code, lang) {
+            const rules = GRAMMARS[lang];
+
+            if (!rules) return escapeHtml(code);
+
+            const scanner = new RegExp(rules.map(rule => '(' + rule.pattern + ')').join('|'), 'gm');
+
+            let output = '';
+            let index = 0;
+            let match;
+
+            while ((match = scanner.exec(code)) !== null) {
+              // A zero-length match would loop forever; nothing here can produce
+              // one, but the guard costs a line and the failure is a hung tab.
+              if (match[0] === '') break;
+
+              const rule = rules[match.slice(1).findIndex(group => group !== undefined)];
+
+              output += escapeHtml(code.slice(index, match.index));
+              output += '<span class="tok-' + rule.token + '">' + escapeHtml(match[0]) + '</span>';
+              index = match.index + match[0].length;
+            }
+
+            return output + escapeHtml(code.slice(index));
+          },
+
+          async copy(id, text) {
             try {
-              await navigator.clipboard.writeText(snippet.code);
-              this.copied = snippet.label;
-              setTimeout(() => (this.copied = null), 1500);
+              await navigator.clipboard.writeText(text);
+              this.copied = id;
+              setTimeout(() => (this.copied = null), 1600);
             } catch {
               // Clipboard is blocked outside a secure context; the text is selectable.
             }
           },
 
-          setView(view) {
-            this.view = view;
+          /* ---------- controls ---------- */
+
+          toggle(id) {
+            this.open = this.open === id ? null : id;
           },
 
-          openArea(id) {
-            this.area = id;
-            this.query = '';
-            this.view = 'flat';
-            window.scrollTo({ top: 0 });
+          expand(id) {
+            this.expanded = this.expanded === id ? null : id;
           },
 
-          goHome() {
-            this.reset();
-            this.view = 'folders';
-            window.scrollTo({ top: 0 });
+          setLanguage(code) {
+            this.language = window.siteLocales.apply(code);
+            this.open = null;
           },
 
           setTheme(theme) {
             this.theme = theme;
             window.harnessTheme.apply(theme);
+            this.open = null;
           },
 
-          icon(id) {
-            return AREA_ICONS[id] ?? FALLBACK_ICON;
-          },
+          /** This page is always the site root, so a catalog path only loses its leading slash. */
+          site(value) {
+            const relative = String(value).replace(/^\//, '');
 
-          blurb(id) {
-            return AREA_BLURBS[id] ?? '';
-          },
-
-          get results() {
-            const needle = this.query.trim().toLowerCase();
-
-            return this.catalog.pages.filter(page => {
-              if (this.area !== 'all' && page.area !== this.area) return false;
-              if (!needle) return true;
-
-              return [page.title, page.path, ...page.tags].join(' ').toLowerCase().includes(needle);
-            });
-          },
-
-          get grouped() {
-            return this.catalog.areas.map(entry => ({ ...entry, pages: this.results.filter(page => page.area === entry.id) })).filter(group => group.pages.length);
-          },
-
-          reset() {
-            this.query = '';
-            this.area = 'all';
+            return relative || './';
           },
         };
+      }
+
+      async function read(path) {
+        try {
+          const response = await fetch(path);
+
+          return response.ok ? await response.json() : null;
+        } catch {
+          return null;
+        }
       }
     </script>
   </body>

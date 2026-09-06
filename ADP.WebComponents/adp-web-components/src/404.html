@@ -1,0 +1,102 @@
+<!doctype html>
+<!--
+  Not-found page for the built site.
+
+  Most requests that land here are not typos: the site ships only the pages that
+  carry `<meta name="adp-publish" content="true" />`, so a link to a demo that is
+  written but not yet released resolves to nothing. That is a "not published
+  yet", not an error, and the copy says so.
+
+  Cloudflare Pages serves /404.html for any unmatched path with a 404 status,
+  and `npm run preview` does the same, so this is exercised locally.
+
+  Same chrome as the landing page and the same four languages — a not-found page
+  that suddenly loses the site's design reads as a broken host rather than a
+  missing page.
+-->
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Not published — ADP web components</title>
+    <meta name="robots" content="noindex" />
+
+    <link rel="stylesheet" href="/templates/harness.css" />
+
+    <script src="/templates/harness-theme.js"></script>
+    <script src="/templates/site-locales.js"></script>
+
+    <script defer src="/templates/vendor/alpine.js"></script>
+  </head>
+
+  <body class="bg-base-200 text-base-content min-h-screen">
+    <div class="flex min-h-screen flex-col" x-data="notFound()" x-cloak>
+      <header class="bg-base-100/90 border-base-300 border-b">
+        <div class="mx-auto flex max-w-[1240px] items-center gap-3 px-5 py-3 sm:px-8">
+          <a href="/" class="group flex items-center gap-3" :aria-label="t('nav.home')">
+            <span class="adp-logo text-accent h-7 w-[68px] transition-opacity group-hover:opacity-70" aria-hidden="true"></span>
+            <span class="bg-base-300 h-6 w-px" aria-hidden="true"></span>
+            <span class="text-base font-semibold tracking-tight">
+              <span class="text-accent">SHFT</span>
+              <span class="text-base-content/70 font-normal">your day</span>
+            </span>
+          </a>
+        </div>
+      </header>
+
+      <main class="mx-auto flex w-full max-w-[1240px] flex-1 items-center px-5 py-20 sm:px-8">
+        <div class="max-w-[46rem]">
+          <p class="eyebrow text-accent font-bold">404</p>
+          <h1 class="mt-4 text-3xl font-bold tracking-tight sm:text-4xl" x-text="t('notFound.title')"></h1>
+          <p class="lede text-base-content/70 mt-4 text-lg leading-relaxed" x-text="t('notFound.body')"></p>
+
+          <p class="text-base-content/45 mt-6 font-mono text-sm break-all" x-text="path"></p>
+
+          <div class="mt-8 flex flex-wrap items-center gap-3">
+            <a href="/" class="btn btn-primary" x-text="t('notFound.home')"></a>
+            <a class="btn btn-outline" href="https://adp.shift.software/" target="_blank" rel="noreferrer" x-text="t('nav.docs')"></a>
+          </div>
+
+          <div class="mt-10 flex flex-wrap gap-1.5" role="group" :aria-label="t('nav.language')">
+            <template x-for="option in languages" :key="option.code">
+              <button
+                type="button"
+                class="btn btn-sm"
+                :class="language === option.code ? 'btn-primary' : 'btn-ghost'"
+                :aria-pressed="language === option.code"
+                @click="setLanguage(option.code)"
+                x-text="option.label"
+              ></button>
+            </template>
+          </div>
+        </div>
+      </main>
+
+      <footer class="bg-base-100 border-base-300 border-t">
+        <div class="mx-auto flex max-w-[1240px] items-center px-5 py-8 sm:px-8">
+          <p class="text-base-content/55 text-sm" x-text="t('footer.tagline')"></p>
+        </div>
+      </footer>
+    </div>
+
+    <script>
+      function notFound() {
+        return {
+          language: window.siteLocales.current(),
+          languages: window.siteLocales.languages,
+
+          /* The requested path, so a report of a broken link carries the URL. */
+          path: window.location.pathname,
+
+          t(key) {
+            return window.siteLocales.t(this.language, key);
+          },
+
+          setLanguage(code) {
+            this.language = window.siteLocales.apply(code);
+          },
+        };
+      }
+    </script>
+  </body>
+</html>

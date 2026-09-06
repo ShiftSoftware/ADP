@@ -10,6 +10,9 @@ export default [
       'loader/**',
       'www/**',
       'build/**',
+      // The static site `npm run release` assembles: copied templates and vendored
+      // Alpine, all of it derived from sources that are linted where they live.
+      'website/**',
       '.stencil/**',
       '*.config.*',
       'src/components.d.ts',

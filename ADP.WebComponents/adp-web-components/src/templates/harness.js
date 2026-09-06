@@ -46,6 +46,22 @@
  * .shift/repos/adp/web-components/templates-design-language.md.
  */
 
+/*
+ * Every path this file emits or compares is resolved against the directory this
+ * module was loaded from, never against the server root. Root-absolute paths
+ * only work when the site IS the server root, which is true for the Stencil dev
+ * server and false for VS Code Live Server, a subpath mount, or a preview
+ * deployment — all of which then serve the page but lose the whole navigation.
+ *
+ * harness.js is one shared file loaded from pages three directories deep, so a
+ * build-time depth-relative rewrite cannot fix this the way it fixes the asset
+ * tags; the fix has to be here, where `import.meta.url` knows the real depth.
+ */
+const SITE_ROOT = new URL('../', import.meta.url);
+
+/** A catalog path (`/templates/…`) as a URL path valid from wherever this page sits. */
+const site = value => new URL(String(value).replace(/^\//, ''), SITE_ROOT).pathname;
+
 /** Mirrors a component's loading flag onto the harness, so page controls can disable. */
 function track(isLoading) {
   this.loading = isLoading;
@@ -444,9 +460,13 @@ window.harnessNav = function harnessNav() {
     open: null,
     path: window.location.pathname,
 
+    // Exposed because the NAV markup below binds `:href="site(page.path)"`, and
+    // Alpine resolves that name on this object rather than in module scope.
+    site,
+
     async init() {
       try {
-        const response = await fetch('/templates/catalog.json');
+        const response = await fetch(new URL('catalog.json', import.meta.url));
 
         if (!response.ok) return;
 
@@ -460,11 +480,11 @@ window.harnessNav = function harnessNav() {
 
     /** Which area the page being viewed belongs to, so the bar says where you are. */
     get area() {
-      return this.areas.find(group => group.pages.some(page => page.path === this.path))?.id ?? null;
+      return this.areas.find(group => group.pages.some(page => site(page.path) === this.path))?.id ?? null;
     },
 
     isCurrent(page) {
-      return page.path === this.path;
+      return site(page.path) === this.path;
     },
 
     toggle(id) {
@@ -483,7 +503,7 @@ const CHEVRON = /* html */ `
 const NAV = /* html */ `
   <div class="bg-base-100/90 border-base-300 sticky top-0 z-30 border-b border-dashed backdrop-blur">
     <div class="mx-auto flex max-w-[1400px] items-center gap-2 px-4 py-2 sm:px-8" @click.outside="open = null" @keydown.escape.window="open = null">
-      <a href="/" class="btn btn-sm btn-ghost px-2" aria-label="Showcase home">
+      <a :href="site('/')" class="btn btn-sm btn-ghost px-2" aria-label="Showcase home">
         <span class="adp-logo text-accent h-4 w-[40px]" aria-hidden="true"></span>
       </a>
 
@@ -515,7 +535,7 @@ const NAV = /* html */ `
             >
               <template x-for="page in group.pages" :key="page.path">
                 <li>
-                  <a :href="page.path" :class="isCurrent(page) && 'menu-active'" :aria-current="isCurrent(page) ? 'page' : null">
+                  <a :href="site(page.path)" :class="isCurrent(page) && 'menu-active'" :aria-current="isCurrent(page) ? 'page' : null">
                     <span class="truncate" x-text="page.title"></span>
                     <span class="badge badge-xs badge-ghost ms-auto shrink-0" x-show="page.kind !== 'demo'" x-text="page.kind"></span>
                   </a>
@@ -551,7 +571,7 @@ const NAV = /* html */ `
                 <ul>
                   <template x-for="page in group.pages" :key="page.path">
                     <li>
-                      <a :href="page.path" :class="isCurrent(page) && 'menu-active'" :aria-current="isCurrent(page) ? 'page' : null" x-text="page.title"></a>
+                      <a :href="site(page.path)" :class="isCurrent(page) && 'menu-active'" :aria-current="isCurrent(page) ? 'page' : null" x-text="page.title"></a>
                     </li>
                   </template>
                 </ul>

@@ -45,6 +45,9 @@ npm run lint                 # ESLint (flat config in eslint.config.mjs)
 npm run lint:fix             # ESLint with --fix
 npm run format               # Prettier format all source files
 npm run prettier             # Check formatting without writing
+npm run release              # Build the public integration site into ./website
+npm run preview              # Serve that built site on :3335 (--mount= to test a subpath)
+npm run deploy               # wrangler deploy (CI does this; local needs `wrangler login`)
 ```
 
 `npm start` runs `automation/dev.mjs`, which builds the showcase assets, then runs the
@@ -108,6 +111,41 @@ Conventions when touching these pages:
 - Do not infer the brand colour from existing component CSS — the most common hexes there
   are Bootstrap 3 defaults, not branding.
 
+### Public site build (`npm run release`)
+`automation/build-website.mjs` turns the showcase into a static site under `website/`
+(gitignored). It resolves the **published** npm version (not `package.json`, which is
+the version being prepared), repoints `/build/…` at the CDN, drops the dead `nomodule`
+tag, and rewrites `/templates/…` asset paths depth-relative so the site works at any
+mount. Links and the catalog fetch are not rewritten — `harness.js` and `nav.js` resolve
+those against `import.meta.url`, so dev and the built site share one code path.
+
+Only pages that opt in ship. Each template declares it:
+
+```html
+<meta name="adp-publish" content="true" />
+```
+
+It is an allow-list: a page that says nothing stays off the public site. A directory
+under `templates/` whose pages are all unpublished is pruned entirely, so its mock data,
+fixtures and form structures do not ship either. `--all` builds everything for preview;
+`--version=`, `--local`, `--out=`, `--base-url=` and `--mount=` are also available.
+
+`src/404.html` ships alongside the landing page — a static host serves it for any
+unmatched path, which here is usually a demo that exists but is not published yet. It is
+the one page that gets **mount-absolute** asset paths rather than depth-relative ones,
+because it is served at every URL rather than at its own; that is what `--mount=` is for.
+
+### Landing page copy and languages
+All landing-page and 404 text lives in `src/templates/site-locales.js` — `en`, `ar`, `ku`,
+`ru`, matching the components’ own locale set. A user-visible literal string in the HTML
+is a string that cannot be translated, so there are none. The file is a blocking script,
+like `harness-theme.js`, because text direction is layout and correcting it after first
+paint is a visible jump. The non-English copy is machine-written and wants a native pass.
+
+Arabic and Kurdish render in **Speda Bold**. The font file is not in the repo — the
+`@font-face` tries `local()` first and then `assets/fonts/speda-bold.woff2`, falling back
+to Noto Kufi Arabic. See `src/templates/assets/fonts/README.md`.
+
 Full design language, rules and migration plan:
 `.shift/repos/adp/web-components/templates-design-language.md`
 
@@ -127,6 +165,64 @@ The `WebComponentModelGenerator` (C# console app) uses Roslyn to scan C# models 
 - **Web components pipeline** (`ADP.WebComponents/adp-web-components/azure-pipelines.yml`): Triggered by `release-web-components-*` tags. Publishes to NPM, then waits for registry propagation and runs `npm run purge` to flush the `@latest` jsDelivr URLs. The purge step is `continueOnError` — the publish is already irreversible by then, so a CDN hiccup warns instead of failing the release.
 - **Docs pipeline** (`.github/workflows/docs-gh-pages.yml`): Triggered by `release-docs-*` tags. Deploys mkdocs to GitHub Pages.
 
+
+### Cloudflare deploy
+The site is an **assets-only Worker** — `wrangler.jsonc` has no `main`, so Cloudflare
+serves `website/` straight from the edge without invoking JavaScript. `not_found_handling`
+is `404-page`, which is what makes `src/404.html` answer unmatched paths with a real 404.
+
+Workers Builds settings (the Worker name **must** match `name` in `wrangler.jsonc`):
+
+| Field | Value |
+|---|---|
+| Root directory | `ADP.WebComponents/adp-web-components` |
+| Build command | `npm run release` |
+| Deploy command | `npx wrangler deploy` (default) |
+| Production branch | `master` |
+| Builds for non-production branches | unchecked |
+
+Workers Builds triggers on **branches** and cannot see tags, and there is no setting to
+stop the production branch building on push. So the site deploys twice over a release:
+once when the version-bump commit lands on master (pinning whatever is published at that
+moment), and again when the release pipeline fires a **deploy hook** as its last step —
+after `npm publish` and the propagation wait. Only the second one can pin the version just
+published, which is why the hook exists.
+
+The hook fires on `release-web-components-*` only — the tag that publishes the package, which
+is the only thing that changes what the site says. The hook URL is the credential (no auth
+header), so it lives as a **secret** `CLOUDFLARE_DEPLOY_HOOK`
+in the `Deployment` variable group and is passed through `env:`, never inlined.
+
+#### Where each piece of the addressing lives
+
+Azure never pushes anything and holds no account id, token or project name. It POSTs one
+opaque URL; everything else is resolved on the Cloudflare side.
+
+| Question | Answered by | Where it lives |
+|---|---|---|
+| Which account and which Worker? | the deploy-hook id in the URL | secret in Azure `Deployment` group |
+| Which branch to build? | fixed when the hook is created | Cloudflare → Settings → Builds → Deploy Hooks |
+| Which repo, which sub-directory? | the Git connection | Cloudflare → Settings → Build |
+| What command builds it? | build command | Cloudflare → Settings → Build (`npm run release`) |
+| Which Worker does it deploy to? | `name` in `wrangler.jsonc` | this repo |
+| Which files get uploaded? | `assets.directory` | this repo (`./website`) |
+| Which domain serves it? | custom domain | Cloudflare → Settings → Domains & Routes |
+
+The one place the two sides must agree is the Worker name: the name in the dashboard has to
+match `name` in `wrangler.jsonc` or the build fails. Nothing else is duplicated.
+
+Non-production branches deploy with `npx wrangler versions upload` instead, giving a
+preview version without promoting it.
+
+`website/_headers` and `robots.txt` are **written by the build**, not committed — the
+output directory is wiped on every run. `_headers` deliberately sets no `Cache-Control`
+(assets are not content-hashed) and no CSP (inline scripts plus an unknown operator
+origin would make it either useless or breaking); see the note in `automation/prerender.mjs`.
+
+**A git push is not the only thing that should rebuild this site.** `build-website.mjs`
+resolves the version from the npm registry, so publishing a new package version changes
+what the site should say without changing the repo. Add a Workers Builds deploy hook and
+POST to it from the release pipeline after the npm publish step.
 ## Stencil.js Conventions
 - Component tags use dash-case with one component per directory matching the tag name
 - Shadow DOM enabled by default (`shadow: true`)

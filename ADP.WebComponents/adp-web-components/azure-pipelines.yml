@@ -48,3 +48,11 @@ steps:
       command: 'custom'
       customCommand: 'run purge'
       workingDir: 'ADP.WebComponents/adp-web-components'
+
+  - script: curl --fail --silent --show-error --request POST "$CLOUDFLARE_DEPLOY_HOOK"
+    displayName: 'Deploy the integration site (Cloudflare deploy hook)'
+    condition: and(succeeded(), contains(variables['Build.SourceBranch'], 'refs/tags/release-web-components'))
+    continueOnError: true
+    retryCountOnTaskFailure: 2
+    env:
+      CLOUDFLARE_DEPLOY_HOOK: $(CLOUDFLARE_DEPLOY_HOOK)
