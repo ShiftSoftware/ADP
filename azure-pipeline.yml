@@ -164,6 +164,15 @@ steps:
  - script: dotnet test ADP.Cases/ADP.Cases.Shared.Tests
    displayName: 'ADP.Cases engine tests'
 
+ - script: dotnet test ADP.Surveys/ADP.Surveys.Shared.Tests --configuration Release
+   displayName: 'ADP.Surveys schema tests'
+
+ - script: dotnet test ADP.Surveys/ADP.Surveys.Data.Tests --configuration Release
+   displayName: 'ADP.Surveys mapping on the minimum framework'
+
+ - script: dotnet test ADP.Surveys/ADP.Surveys.Data.Tests --configuration Release -p:SurveyHostFrameworkVersion=2026.8.30.1
+   displayName: 'ADP.Surveys mapping on a newer framework host'
+
  - script: dotnet test ADP.Menus/ADP.Menus.Tests
    displayName: 'ADP.Menus menu-code generation golden tests'
 

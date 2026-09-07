@@ -32,7 +32,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="ShiftSoftware.ShiftEntity.EFCore" Version="2026.8.30.1" />
-		<PackageReference Include="ShiftSoftware.ShiftIdentity.Core" Version="2026.8.30.1" />
+		<!-- This baseline supports generated mappers and hosts that still use AutoMapper.
+		     Build against it so the assemblies can also load in those hosts. -->
+		<PackageReference Include="ShiftSoftware.ShiftEntity.EFCore" Version="2026.8.24.1" />
+		<PackageReference Include="ShiftSoftware.ShiftIdentity.Core" Version="2026.8.24.1" />
 	</ItemGroup>
 </Project>

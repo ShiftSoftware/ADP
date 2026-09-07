@@ -12,6 +12,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
+		<PackageReference Include="Moq" Version="4.20.72" />
 		<PackageReference Include="xunit.v3" Version="3.2.2" />
 		<PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
 			<PrivateAssets>all</PrivateAssets>
@@ -25,6 +26,16 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\ADP.Surveys.Data\ADP.Surveys.Data.csproj" />
+		<ProjectReference Include="..\ADP.Surveys.API\ADP.Surveys.API.csproj" />
+	</ItemGroup>
+
+	<!-- Run with -p:SurveyHostFrameworkVersion=2026.8.30.1 to check a newer host.
+	     Only this test host is upgraded. The Data project still compiles against its
+	     minimum framework, so the tests exercise forward binary compatibility. -->
+	<ItemGroup Condition="'$(SurveyHostFrameworkVersion)' != ''">
+		<PackageReference Include="ShiftSoftware.ShiftEntity.EFCore" Version="$(SurveyHostFrameworkVersion)" />
+		<PackageReference Include="ShiftSoftware.ShiftEntity.Web" Version="$(SurveyHostFrameworkVersion)" />
+		<PackageReference Include="ShiftSoftware.ShiftIdentity.Core" Version="$(SurveyHostFrameworkVersion)" />
 	</ItemGroup>
 
 </Project>
