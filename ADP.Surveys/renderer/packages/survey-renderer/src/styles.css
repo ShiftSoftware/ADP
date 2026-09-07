@@ -18,14 +18,65 @@
 }
 
 /* Brand logo header — start-aligned, mirrors naturally in RTL. */
+/* Header strip: logo on the leading edge, language picker on the trailing one.
+   Both are optional, and `justify-content: space-between` keeps the picker on the
+   trailing edge even when there is no logo beside it. Logical properties
+   throughout so the whole strip mirrors under dir="rtl". */
+.survey-chrome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
 .survey-brand {
   display: flex;
-  margin-bottom: 20px;
 }
 
 .survey-brand__logo {
   height: 28px;
   width: auto;
+}
+
+/* The picker is chrome, not a question — quiet until touched, so it never
+   competes with the first thing the survey actually asks. */
+.survey-locale {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-inline-start: auto;
+  color: #6b7280;
+}
+
+.survey-locale__icon {
+  display: inline-flex;
+  flex: none;
+}
+
+.survey-locale__select {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.85rem;
+  line-height: 1.2;
+  /* Comfortable tap target on a phone without looking like a form control. */
+  padding: 6px 4px;
+  cursor: pointer;
+  max-width: 10rem;
+}
+
+.survey-locale__select:hover {
+  border-color: #d1d5db;
+}
+
+.survey-locale__select:focus-visible {
+  outline: 2px solid var(--survey-primary, #2563eb);
+  outline-offset: 1px;
 }
 
 .survey-screen {

@@ -1,0 +1,352 @@
+@namespace ShiftSoftware.ADP.Surveys.Web.Components
+@using ShiftSoftware.ADP.Surveys.Shared.DTOs
+@using ShiftSoftware.ADP.Surveys.Shared.Personalization
+@using LocalizedString = ShiftSoftware.ADP.Surveys.Shared.DTOs.LocalizedString
+
+@*
+    Declares the survey's personalization variables. Each row's value does two jobs
+    at once — the example a test run and the live preview render with, and the
+    fallback a real instance uses when the event payload is missing that field. One
+    value for both is deliberate: an author who writes a believable example has, by
+    construction, also written a safe fallback.
+
+    The "found in your copy" row is the discoverability path. Tokens typed into a
+    screen or question show up there undeclared, one click away from getting an
+    example — which is how an author learns the feature exists without reading a
+    cheat-sheet first.
+*@
+
+<div class="vars">
+    <div class="vars__intro">
+        Text anywhere in this survey can carry <code>@("{{variable}}")</code> placeholders —
+        screen titles and descriptions, question titles and help, option labels. They are
+        filled in when the survey is served, from the event that triggered it. Each variable
+        below declares two stand-ins for when it isn't: an <strong>example</strong> that only
+        test runs and the preview use, and a <strong>fallback</strong> that a real recipient
+        may actually read.
+    </div>
+
+    <MudExpansionPanels Elevation="0" Dense="true" Class="vars__cheatsheet">
+        <MudExpansionPanel Text="Variable grammar cheat-sheet">
+            <ul class="vars__cheatsheet-list">
+                <li><code>recipient.address</code> — phone / email / etc. resolved upstream.</li>
+                <li><code>recipient.locale</code> — recipient's locale.</li>
+                <li><code>recipient.customerRef</code> — caller-supplied stable recipient ID.</li>
+                <li><code>candidate.&lt;field&gt;</code> — top-level property on the event payload (e.g. <code>candidate.customerName</code>, <code>candidate.vehicleModel</code>). Nested paths not yet supported.</li>
+                <li>
+                    <code>@("{{candidate.customerName|our valued customer}}")</code> — the text after
+                    the pipe is used for that one sentence when the field is missing. It beats the
+                    variable's fallback, so use it where a single screen needs different wording.
+                </li>
+            </ul>
+            <div class="vars__cheatsheet-note">
+                <div>
+                    Same names the trigger filters and dedup recipe use. Order of resolution, first
+                    match wins: <strong>example</strong> (test runs and preview only) →
+                    the real value from the event → the inline <code>|text</code> →
+                    the variable's <strong>fallback</strong>.
+                </div>
+                <div class="mt-1">
+                    A token none of those can fill is left on screen as
+                    <code>@("{{like.this}}")</code> — so a typo shows itself instead of silently
+                    blanking the sentence. Leaving an example blank is fine and sometimes useful:
+                    the test run then shows exactly what a recipient with a missing field would get.
+                </div>
+            </div>
+        </MudExpansionPanel>
+    </MudExpansionPanels>
+
+    @if (Undeclared.Count > 0)
+    {
+        <div class="vars__found">
+            <MudIcon Icon="@Icons.Material.Filled.Search" Size="Size.Small" />
+            <span class="vars__found-label">Used in this survey, not declared yet:</span>
+            @foreach (var name in Undeclared)
+            {
+                var token = name;
+                <MudChip T="string"
+                         Size="Size.Small"
+                         Variant="Variant.Outlined"
+                         Color="Color.Warning"
+                         Disabled="@ReadOnly"
+                         OnClick="@(() => AddVariable(token))">@token</MudChip>
+            }
+        </div>
+    }
+
+    @if (Variables.Count == 0)
+    {
+        <div class="vars__empty">
+            <em>No variables declared. Tokens still resolve from the event — declaring one adds
+            an example for test runs and a fallback so a real recipient never sees raw braces.</em>
+        </div>
+    }
+    else
+    {
+        @foreach (var (variable, index) in Variables.Select((v, i) => (v, i)))
+        {
+            var idx = index;
+            var row = variable;
+            <MudPaper Class="vars__row" Elevation="0" Outlined="true">
+                <div class="vars__row-head">
+                    <MudTextField T="string"
+                                  Label="Variable"
+                                  Value="@row.Name"
+                                  ValueChanged="@((string v) => OnNameChanged(idx, v))"
+                                  ReadOnly="@ReadOnly"
+                                  Margin="Margin.Dense"
+                                  Error="@(!string.IsNullOrWhiteSpace(row.Name) && !PersonalizationTokens.IsValidTokenName(row.Name))"
+                                  ErrorText="Use a token path such as candidate.customerName."
+                                  HelperText="@NameHelper(row.Name)"
+                                  Class="vars__name" />
+                    <MudTextField T="string"
+                                  Label="Note (optional)"
+                                  Value="@(row.Description ?? "")"
+                                  ValueChanged="@((string v) => OnDescriptionChanged(idx, v))"
+                                  ReadOnly="@ReadOnly"
+                                  Margin="Margin.Dense"
+                                  HelperText="Where the real value comes from. Never shown to a respondent."
+                                  Class="vars__note" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                   Size="Size.Small"
+                                   Color="Color.Error"
+                                   Disabled="@ReadOnly"
+                                   Title="Remove this variable"
+                                   OnClick="@(() => RemoveVariable(idx))" />
+                </div>
+
+                @* Tokens inside a variable's own values are never substituted, so the
+                   insert menu is suppressed on both rather than offering an author
+                   something that would silently do nothing. *@
+                <div class="vars__value">
+                    <div class="vars__value-label">
+                        Example <span class="vars__value-hint">— test runs and the preview only. Never sent to a customer, so real-looking test data is fine.</span>
+                    </div>
+                    <LocalizedStringField Value="@row.Example"
+                                          ValueChanged="@((LocalizedString? v) => OnExampleChanged(idx, v))"
+                                          Label="Example"
+                                          Locales="@Locales"
+                                          ReadOnly="@ReadOnly"
+                                          AllowTokens="false" />
+                </div>
+
+                <div class="vars__value">
+                    <div class="vars__value-label">
+                        Fallback <span class="vars__value-hint">— shown to a real recipient when the event is missing this field. Write it as copy a stranger could read.</span>
+                    </div>
+                    <LocalizedStringField Value="@row.Fallback"
+                                          ValueChanged="@((LocalizedString? v) => OnFallbackChanged(idx, v))"
+                                          Label="Fallback"
+                                          Locales="@Locales"
+                                          ReadOnly="@ReadOnly"
+                                          AllowTokens="false" />
+                    @if (row.Fallback is not { Count: > 0 } && !string.IsNullOrWhiteSpace(row.Name))
+                    {
+                        <div class="vars__caution">
+                            <MudIcon Icon="@Icons.Material.Filled.WarningAmber" Size="Size.Small" />
+                            <span>
+                                No fallback — a real recipient sees <code>@($"{{{{{row.Name.Trim()}}}}}")</code>
+                                if the event doesn't carry this field. Leave it empty only if the event always does.
+                            </span>
+                        </div>
+                    }
+                </div>
+            </MudPaper>
+        }
+    }
+
+    @if (!ReadOnly)
+    {
+        <MudButton StartIcon="@Icons.Material.Filled.Add"
+                   Variant="Variant.Text"
+                   Color="Color.Primary"
+                   Size="Size.Small"
+                   OnClick="@(() => AddVariable(null))">
+            Add variable
+        </MudButton>
+    }
+</div>
+
+<style>
+    .vars__intro {
+        font-size: 0.85rem;
+        color: #555;
+        margin-bottom: 8px;
+    }
+    .vars__intro code,
+    .vars__cheatsheet-list code,
+    .vars__cheatsheet-note code {
+        background: #f1f3f5;
+        border-radius: 3px;
+        padding: 1px 4px;
+        font-size: 0.8rem;
+    }
+    .vars__cheatsheet {
+        margin-bottom: 10px;
+        background: #fafafa;
+        border: 1px solid #e6e6e6;
+        border-radius: 4px;
+    }
+    .vars__cheatsheet-list {
+        margin: 0;
+        padding-inline-start: 20px;
+        font-size: 0.82rem;
+        line-height: 1.7;
+    }
+    .vars__cheatsheet-note {
+        margin-top: 8px;
+        font-size: 0.78rem;
+        color: #666;
+    }
+    .vars__found {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 10px;
+    }
+    .vars__found-label {
+        font-size: 0.82rem;
+        color: #555;
+    }
+    .vars__empty {
+        font-size: 0.85rem;
+        color: #777;
+        margin-bottom: 8px;
+    }
+    .vars__row {
+        padding: 10px 12px;
+        margin-bottom: 10px;
+    }
+    .vars__row-head {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+    .vars__name { flex: 1 1 240px; min-width: 200px; }
+    .vars__note { flex: 2 1 280px; min-width: 200px; }
+
+    /* The two values are the thing most easily confused with each other, so each
+       gets a caption saying who reads it rather than relying on the field label. */
+    .vars__value {
+        margin-top: 10px;
+    }
+    .vars__value-label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #444;
+        margin-bottom: 2px;
+    }
+    .vars__value-hint {
+        font-weight: 400;
+        color: #777;
+    }
+    .vars__caution {
+        display: flex;
+        align-items: flex-start;
+        gap: 6px;
+        font-size: 0.78rem;
+        color: #b45309;
+        margin-top: -4px;
+    }
+    .vars__caution code {
+        background: #fdf3e7;
+        border-radius: 3px;
+        padding: 0 3px;
+    }
+</style>
+
+@code {
+    [Parameter, EditorRequired]
+    public SurveyDto? Draft { get; set; }
+
+    [Parameter]
+    public EventCallback<SurveyDto?> DraftChanged { get; set; }
+
+    [Parameter]
+    public List<string>? Locales { get; set; }
+
+    [Parameter]
+    public bool ReadOnly { get; set; }
+
+    /// <summary>
+    /// Bumped by the parent on every draft mutation so this panel re-reads the copy
+    /// when a token is typed on another tab.
+    /// </summary>
+    [Parameter]
+    public int SchemaVersion { get; set; }
+
+    List<SurveyVariableDto> Variables => Draft?.Variables ?? new();
+
+    /// <summary>
+    /// Tokens written somewhere in the survey's copy that no row declares yet. The
+    /// standing <c>recipient.*</c> fields are excluded: they always resolve from the
+    /// instance, so nagging for an example would be noise.
+    /// </summary>
+    List<string> Undeclared
+    {
+        get
+        {
+            if (Draft is null) return new();
+            var declared = Variables
+                .Where(v => !string.IsNullOrWhiteSpace(v.Name))
+                .Select(v => v.Name.Trim())
+                .ToHashSet(StringComparer.Ordinal);
+
+            return PersonalizationTokens.CollectTokenNames(Draft)
+                .Where(name => !declared.Contains(name))
+                .Where(name => !PersonalizationScope.RecipientTokens.Contains(name, StringComparer.Ordinal))
+                .OrderBy(name => name, StringComparer.Ordinal)
+                .ToList();
+        }
+    }
+
+    string? NameHelper(string? name) =>
+        string.IsNullOrWhiteSpace(name)
+            ? "e.g. candidate.customerName"
+            : null;
+
+    async Task AddVariable(string? name)
+    {
+        if (Draft is null || ReadOnly) return;
+        Draft.Variables.Add(new SurveyVariableDto { Name = name ?? "" });
+        await DraftChanged.InvokeAsync(Draft);
+    }
+
+    async Task RemoveVariable(int index)
+    {
+        if (Draft is null || ReadOnly) return;
+        if (index < 0 || index >= Draft.Variables.Count) return;
+        Draft.Variables.RemoveAt(index);
+        await DraftChanged.InvokeAsync(Draft);
+    }
+
+    async Task OnNameChanged(int index, string value)
+    {
+        if (Draft is null || index < 0 || index >= Draft.Variables.Count) return;
+        Draft.Variables[index].Name = value ?? "";
+        await DraftChanged.InvokeAsync(Draft);
+    }
+
+    async Task OnDescriptionChanged(int index, string value)
+    {
+        if (Draft is null || index < 0 || index >= Draft.Variables.Count) return;
+        Draft.Variables[index].Description = string.IsNullOrWhiteSpace(value) ? null : value;
+        await DraftChanged.InvokeAsync(Draft);
+    }
+
+    async Task OnExampleChanged(int index, LocalizedString? value)
+    {
+        if (Draft is null || index < 0 || index >= Draft.Variables.Count) return;
+        Draft.Variables[index].Example = value ?? new LocalizedString();
+        await DraftChanged.InvokeAsync(Draft);
+    }
+
+    async Task OnFallbackChanged(int index, LocalizedString? value)
+    {
+        if (Draft is null || index < 0 || index >= Draft.Variables.Count) return;
+        Draft.Variables[index].Fallback = value ?? new LocalizedString();
+        await DraftChanged.InvokeAsync(Draft);
+    }
+}

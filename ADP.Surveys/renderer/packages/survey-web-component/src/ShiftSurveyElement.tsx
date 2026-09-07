@@ -43,7 +43,7 @@ import {
  */
 export class ShiftSurveyElement extends HTMLElement {
   static get observedAttributes(): string[] {
-    return ['instance-id', 'api-base', 'locale', 'mode', 'active-screen-id'];
+    return ['instance-id', 'api-base', 'locale', 'mode', 'active-screen-id', 'locale-picker'];
   }
 
   /** Schema-mode setter. Assigning this swaps the element into schema mode and
@@ -184,6 +184,14 @@ export class ShiftSurveyElement extends HTMLElement {
     const instanceId = this.getAttribute('instance-id');
     const locale = this.getAttribute('locale') ?? undefined;
     const agentMode = this.getAttribute('mode') === 'agent';
+    // `locale-picker` is an override, not a switch: absent means "let the renderer
+    // decide" (shown when the survey declares more than one locale), so an existing
+    // host that sets nothing gets the picker without changing its markup.
+    const localePickerAttr = this.getAttribute('locale-picker');
+    const showLocalePicker =
+      localePickerAttr === null
+        ? undefined
+        : localePickerAttr !== 'false' && localePickerAttr !== 'off';
 
     // Prefer the explicit schema property (schema mode) over a fetched one.
     const schema = this.#schema ?? this.#apiSchema;
@@ -226,6 +234,13 @@ export class ShiftSurveyElement extends HTMLElement {
         schema,
         onSubmit,
         ...(locale ? { locale } : {}),
+        ...(showLocalePicker === undefined ? {} : { showLocalePicker }),
+        // Mirror the respondent's pick back onto the element so a host can read it
+        // (and so the attribute stays an accurate description of what is showing).
+        onLocaleChange: (next: string) => {
+          if (this.getAttribute('locale') !== next) this.setAttribute('locale', next);
+          this.#dispatch('survey:locale-changed', { locale: next });
+        },
         ...(activeScreenId
           ? { activeScreenId, activeScreenJumpToken: this.#activeScreenJumpToken }
           : {}),

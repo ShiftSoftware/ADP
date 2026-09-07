@@ -17,7 +17,13 @@ import {
 import { brandingToCssVars } from './branding.js';
 import { SurveyContextProvider } from './SurveyContext.js';
 import { localize } from './locale.js';
-import { resolveLocaleConfig, formatUi, type LocaleConfig, type UiStrings } from './i18n.js';
+import {
+  resolveLocaleConfig,
+  formatUi,
+  localeDisplayName,
+  type LocaleConfig,
+  type UiStrings,
+} from './i18n.js';
 import { createHostBridge, type HostBridge } from './postMessage.js';
 import {
   clearResumeState,
@@ -95,8 +101,18 @@ export interface SurveyRendererProps {
   onSubmit(submission: SurveySubmission): Promise<void> | void;
   /** Seed answers — used by the resume flow (localStorage) and by builder preview. */
   initialAnswers?: AnswerMap;
-  /** Override the schema's `defaultLocale` — typically from a route param or UI control. */
+  /** Override the schema's `defaultLocale` — typically from a route param or UI control.
+   *  Treated as the STARTING locale, not a lock: when the schema declares more than one
+   *  locale the respondent can switch, and a later change to this prop re-seeds their
+   *  choice. Pass `showLocalePicker={false}` to keep the locale fixed. */
   locale?: string;
+  /** Called when the respondent picks a different language. Lets a host persist the
+   *  choice or mirror it into its own chrome; the renderer switches either way. */
+  onLocaleChange?: (locale: string) => void;
+  /** Force the language picker on or off. Default: shown whenever the schema declares
+   *  more than one locale, since a multi-lingual survey with no way to switch strands
+   *  every respondent whose language isn't the default. */
+  showLocalePicker?: boolean;
   /** Called whenever the active screen changes. Used later as the
    *  `postMessage('survey:screen-changed')` source for iframe embeds. */
   onScreenChange?: (screenId: string | null) => void;
@@ -154,6 +170,8 @@ export function SurveyRenderer({
   onSubmit,
   initialAnswers,
   locale,
+  onLocaleChange,
+  showLocalePicker,
   onScreenChange,
   onCompleted,
   registry,
@@ -167,11 +185,44 @@ export function SurveyRenderer({
   activeScreenId,
   activeScreenJumpToken,
 }: SurveyRendererProps) {
-  const effectiveLocale = locale ?? schema.defaultLocale ?? 'en';
+  // The respondent's own choice, once they make one. Null means "follow the host":
+  // the `locale` prop, else the schema's default. Keeping it null until they pick
+  // is what lets a host re-seed the locale (builder preview pushing a new one, a
+  // route param changing) without fighting a choice nobody made.
+  const [pickedLocale, setPickedLocale] = useState<string | null>(null);
+  const hostLocale = locale ?? schema.defaultLocale ?? 'en';
+
+  // A picked locale the schema no longer declares (schema swapped underneath us in
+  // the builder preview) must not strand the respondent on a language with no copy.
+  const pickedIsValid =
+    pickedLocale !== null &&
+    (schema.locales?.includes(pickedLocale) ?? false);
+  const effectiveLocale = pickedIsValid ? pickedLocale! : hostLocale;
+
+  // Re-seed on a genuine host change, so `locale` still behaves like a control the
+  // host owns until the respondent overrides it.
+  const lastHostLocaleRef = useRef(hostLocale);
+  useEffect(() => {
+    if (lastHostLocaleRef.current === hostLocale) return;
+    lastHostLocaleRef.current = hostLocale;
+    setPickedLocale(null);
+  }, [hostLocale]);
+
   const effectiveRegistry = registry ?? defaultRegistry;
   const localeConfig = useMemo(
     () => resolveLocaleConfig(effectiveLocale, schema.defaultLocale, uiLocales),
     [effectiveLocale, schema.defaultLocale, uiLocales],
+  );
+
+  const offeredLocales = schema.locales ?? [];
+  const localePickerVisible = showLocalePicker ?? offeredLocales.length > 1;
+
+  const handleLocaleChange = useCallback(
+    (next: string) => {
+      setPickedLocale(next);
+      onLocaleChange?.(next);
+    },
+    [onLocaleChange],
   );
 
   // Resume state is resolved once on mount — it seeds both `answers` and
@@ -470,6 +521,47 @@ export function SurveyRenderer({
     </div>
   ) : null;
 
+  // A native <select> rather than a custom dropdown: this is a mobile surface, and
+  // the OS picker is the one control every respondent already knows, gets right at
+  // any font size, and reads correctly to a screen reader without us reimplementing
+  // it. Options list the schema's locales by endonym — a respondent finds their
+  // language by recognising it, never by decoding a code.
+  const localeOptions = offeredLocales.includes(effectiveLocale)
+    ? offeredLocales
+    : [effectiveLocale, ...offeredLocales];
+  const localePicker = localePickerVisible ? (
+    <div className="survey-locale">
+      <span className="survey-locale__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M3 12h18M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18" />
+        </svg>
+      </span>
+      <select
+        className="survey-locale__select"
+        aria-label={localeConfig.strings.language}
+        value={effectiveLocale}
+        onChange={(e) => handleLocaleChange(e.target.value)}
+      >
+        {localeOptions.map((code) => (
+          <option key={code} value={code}>
+            {localeDisplayName(code)}
+          </option>
+        ))}
+      </select>
+    </div>
+  ) : null;
+
+  // One header for every branch below, so the picker can't go missing on the
+  // thank-you or empty-schema screens.
+  const chrome =
+    brandLogo || localePicker ? (
+      <div className="survey-chrome">
+        {brandLogo}
+        {localePicker}
+      </div>
+    ) : null;
+
   if (done) {
     return (
       <div
@@ -479,7 +571,7 @@ export function SurveyRenderer({
         lang={effectiveLocale}
         style={brandStyle}
       >
-        {brandLogo}
+        {chrome}
         <div className="survey-screen">
           <h2 className="survey-screen__title">
             {currentScreen?.title
@@ -499,6 +591,7 @@ export function SurveyRenderer({
   if (!currentScreen) {
     return (
       <div ref={rootRef} className="survey-root" dir={localeConfig.direction} lang={effectiveLocale} style={brandStyle}>
+        {chrome}
         <div className="survey-screen"><em>{localeConfig.strings.noScreens}</em></div>
       </div>
     );
@@ -531,7 +624,7 @@ export function SurveyRenderer({
   return (
     <SurveyContextProvider value={contextValue}>
       <div ref={rootRef} className="survey-root" dir={localeConfig.direction} lang={effectiveLocale} style={brandStyle}>
-        {brandLogo}
+        {chrome}
         <div className="survey-screen">
           {currentScreen.title && (
             <h2 className="survey-screen__title">

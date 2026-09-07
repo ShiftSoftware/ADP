@@ -3,6 +3,8 @@
 @using System.Text.Json
 @using ShiftSoftware.ShiftBlazor.Services
 @using LocalizedString = ShiftSoftware.ADP.Surveys.Shared.DTOs.LocalizedString
+@implements IAsyncDisposable
+@inject IJSRuntime JS
 
 @* Adapter around ShiftBlazor's LocalizedTextField. The ShiftBlazor component
    binds to a JSON-encoded `string` ({"en":"...","ar":"..."}); our schema uses
@@ -11,7 +13,11 @@
    directly. Languages are derived from the declared Survey.Locales list.
 
    ReadOnly falls back to a parallel-per-locale MudTextField grid so values
-   remain visible but uneditable — LocalizedTextField has no ReadOnly of its own. *@
+   remain visible but uneditable — LocalizedTextField has no ReadOnly of its own.
+
+   Personalization: when a PersonalizationScope cascades in, an "insert variable"
+   menu sits above the field. Insertion happens at the caret via token-insert.js
+   rather than by rewriting Value — see that file for why. *@
 
 @if (ReadOnly)
 {
@@ -31,13 +37,46 @@
 }
 else
 {
-    <LocalizedTextField Value="@JsonValue"
-                        ValueChanged="OnTextChanged"
-                        Label="@Label"
-                        Languages="languageInfos"
-                        Lines="Lines"
-                        MaxLines="MaxLines"
-                        AutoGrow="AutoGrow" />
+    <div class="lsf" @ref="fieldRoot">
+        @if (ShowTokenMenu)
+        {
+            @* `title` is not a MudMenu parameter — it splats through as the plain HTML
+               attribute so the icon-only button gets a hover tooltip. Note stays out
+               here: a Razor comment placed INSIDE an attribute list is parsed as an
+               attribute name and throws at runtime, not at build. *@
+            <div class="lsf__token-bar">
+                <MudMenu Dense="true"
+                         Icon="@Icons.Material.Filled.DataObject"
+                         Size="Size.Small"
+                         Color="Color.Default"
+                         AriaLabel="Insert a personalization variable"
+                         title="Insert a personalization variable"
+                         AnchorOrigin="Origin.BottomRight"
+                         TransformOrigin="Origin.TopRight">
+                    @foreach (var token in Scope!.Names)
+                    {
+                        var name = token;
+                        <MudMenuItem OnClick="@(() => InsertToken(name))">
+                            <span class="lsf__token-name">@($"{{{{{name}}}}}")</span>
+                            @if (Scope.WithoutFallback.Contains(name))
+                            {
+                                <span class="lsf__token-note"
+                                      title="No fallback declared — a real recipient sees the raw braces if the event omits this field. Add one under General → Personalization.">no fallback</span>
+                            }
+                        </MudMenuItem>
+                    }
+                </MudMenu>
+            </div>
+        }
+
+        <LocalizedTextField Value="@JsonValue"
+                            ValueChanged="OnTextChanged"
+                            Label="@Label"
+                            Languages="languageInfos"
+                            Lines="Lines"
+                            MaxLines="MaxLines"
+                            AutoGrow="AutoGrow" />
+    </div>
 }
 
 <style>
@@ -46,6 +85,32 @@ else
         grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
         gap: 8px;
         margin: 4px 0 10px;
+    }
+
+    /* The menu button rides in normal flow above the field group, pulled down by a
+       negative margin so it eats the group's own top gap instead of adding a row —
+       these fields stack densely in the inspectors. Deliberately NOT absolutely
+       positioned over the field: LocalizedTextField lays its locales out in a
+       MudGrid whose floating labels sit exactly where an overlay would land, and
+       the collision would depend on locale count and column width. */
+    .lsf {
+        position: relative;
+    }
+    .lsf__token-bar {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: -10px;
+        position: relative;
+        z-index: 2;
+    }
+    .lsf__token-name {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.8rem;
+    }
+    .lsf__token-note {
+        margin-inline-start: 8px;
+        font-size: 0.7rem;
+        color: #b45309;
     }
 </style>
 
@@ -78,10 +143,71 @@ else
     [Parameter]
     public bool ReadOnly { get; set; }
 
+    /// <summary>
+    /// Personalization vocabulary for this survey, supplied by the form. Absent on
+    /// forms that have no notion of an instance to personalize from (the screen-template
+    /// editor, the question bank), where the menu simply doesn't render.
+    /// </summary>
+    [CascadingParameter]
+    public PersonalizationScope? Scope { get; set; }
+
+    /// <summary>
+    /// Opt out for fields where a token would be meaningless — an option's stored
+    /// value, a unit suffix. Titles, descriptions, help and labels all keep it.
+    /// </summary>
+    [Parameter]
+    public bool AllowTokens { get; set; } = true;
+
+    bool ShowTokenMenu => AllowTokens && !ReadOnly && Scope is { IsEmpty: false };
+
     string JsonValue { get; set; } = "";
     List<LanguageInfo> languageInfos = new();
     List<string> effectiveLocales = new();
     List<string> currentLocales = new();
+
+    ElementReference fieldRoot;
+    IJSObjectReference? tokenModule;
+    bool tokenTrackingInstalled;
+
+    static readonly string TokenInsertPath =
+        $"./_content/ShiftSoftware.ADP.Surveys.Web/js/shift-survey/token-insert.js?v={typeof(LocalizedStringField).Assembly.GetName().Version}";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!ShowTokenMenu || tokenTrackingInstalled) return;
+        try
+        {
+            tokenModule ??= await JS.InvokeAsync<IJSObjectReference>("import", TokenInsertPath);
+            await tokenModule.InvokeVoidAsync("trackTokenTargets", fieldRoot);
+            tokenTrackingInstalled = true;
+        }
+        catch (JSDisconnectedException) { /* navigated away mid-import */ }
+        catch (JSException)
+        {
+            // No caret tracking available — InsertToken still appends to the first
+            // box, so the menu keeps working, just less precisely.
+        }
+    }
+
+    async Task InsertToken(string name)
+    {
+        if (tokenModule is null) return;
+        try
+        {
+            await tokenModule.InvokeAsync<bool>("insertToken", fieldRoot, $"{{{{{name}}}}}");
+        }
+        catch (JSDisconnectedException) { }
+        catch (JSException) { }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (tokenModule is null) return;
+        try { await tokenModule.DisposeAsync(); }
+        catch (JSDisconnectedException) { }
+        catch (ObjectDisposedException) { }
+        tokenModule = null;
+    }
 
     protected override void OnParametersSet()
     {

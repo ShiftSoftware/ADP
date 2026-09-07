@@ -2,7 +2,7 @@
   "name": "@shiftsoftware/adp-surveys-renderer",
   "version": "0.1.0",
   "private": true,
-  "description": "ADP Dynamic Surveys renderer workspace — SDK, React renderer, and web-component wrapper. See ../../README.md in this folder for package layout.",
+  "description": "ADP Dynamic Surveys renderer workspace \u2014 SDK, React renderer, and web-component wrapper. See ../../README.md in this folder for package layout.",
   "workspaces": [
     "packages/*",
     "apps/*",
@@ -11,6 +11,7 @@
   "scripts": {
     "build": "npm run build --workspaces --if-present",
     "test": "npm test --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "sync:blazor": "npm run build -w @shiftsoftware/survey-web-component && node scripts/sync-blazor-bundle.mjs"
   }
 }

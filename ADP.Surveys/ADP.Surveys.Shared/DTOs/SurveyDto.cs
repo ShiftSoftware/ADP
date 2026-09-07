@@ -37,6 +37,15 @@ public class SurveyDto
     [JsonPropertyName("branding")]
     public BrandingDto? Branding { get; set; }
 
+    /// <summary>
+    /// Personalization variables this survey uses. Each entry's value is both the
+    /// example a test instance / builder preview renders with and the fallback a
+    /// real instance uses when the event payload is missing that field — see
+    /// <see cref="SurveyVariableDto"/>.
+    /// </summary>
+    [JsonPropertyName("variables")]
+    public List<SurveyVariableDto> Variables { get; set; } = new();
+
     [JsonPropertyName("screens")]
     public List<ScreenDto> Screens { get; set; } = new();
 
@@ -74,6 +83,18 @@ public class SurveyDtoValidator : AbstractValidator<SurveyDto>
 
         When(x => x.Branding is not null, () =>
             RuleFor(x => x.Branding!).SetValidator(new BrandingDtoValidator()));
+
+        RuleForEach(x => x.Variables).SetValidator(new SurveyVariableDtoValidator());
+
+        // A duplicate name is not a draft-blocking error (the author is mid-rename),
+        // but the later row silently winning is worth surfacing before publish.
+        RuleFor(x => x.Variables)
+            .Must(v => v.Where(e => !string.IsNullOrWhiteSpace(e.Name))
+                        .Select(e => e.Name.Trim())
+                        .Distinct(StringComparer.Ordinal).Count()
+                    == v.Count(e => !string.IsNullOrWhiteSpace(e.Name)))
+            .When(x => x.Variables.Count > 0)
+            .WithMessage("Variable names must be unique within a survey.");
 
         RuleForEach(x => x.Screens).SetInheritanceValidator(v =>
         {

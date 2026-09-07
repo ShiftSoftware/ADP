@@ -11,6 +11,18 @@
     and submits through the PUBLIC responses endpoint — the exact pipeline a real
     recipient goes through, including answer validation and the status flip.
 
+    NOT test-only, despite the name. Consuming dashboards show this same dialog to
+    let an agent key in a phoned-in answer on a real customer's behalf (TCA Tickets
+    does it from its follow-up form). Two consequences: the name is kept as-is
+    because renaming it would break those callers, and nothing in here may assume a
+    dashboard-test instance — a real instance opened this way personalizes from its
+    own event payload exactly as the customer's own link would.
+
+    Language: the renderer shows its own picker whenever the survey declares more
+    than one locale, so an agent can switch mid-call. Pass `Locale` to choose which
+    one it OPENS in — the respondent's known language — rather than making the agent
+    switch on every call.
+
     Presentation: a BARE phone floating over the page — no dialog paper, title,
     or action bar (per user direction; MudDialog still hosts it for the modal
     overlay, focus trap, ESC/backdrop dismissal, and the result contract, but
@@ -24,9 +36,12 @@
         <div class="trd__device">
             <div class="trd__device-notch"></div>
             <div class="trd__device-screen">
+                @* A null Locale renders no attribute at all, which is what leaves the
+                   renderer on the survey's own defaultLocale. *@
                 <shift-survey @ref="surveyElement"
                               instance-id="@PublicId.ToString()"
-                              api-base="@ApiBase"></shift-survey>
+                              api-base="@ApiBase"
+                              locale="@Locale"></shift-survey>
             </div>
 
             <button type="button" class="trd__close" title="Close" @onclick="Close">
@@ -167,6 +182,24 @@
 
     /// <summary>Instance to answer, by its public GUID.</summary>
     [Parameter] public Guid PublicId { get; set; }
+
+    /// <summary>
+    /// Locale the runner opens in — pass the respondent's known language (a customer's
+    /// preferred-language field, the instance's <c>RecipientLocale</c>) so an agent
+    /// keying in a phoned-in answer starts in the right one instead of switching on
+    /// every call.
+    /// </summary>
+    /// <remarks>
+    /// A starting point, not a lock: the renderer still shows its language picker when
+    /// the survey declares more than one locale, and the agent's pick wins from then on.
+    /// Null (the default) opens on the survey's own <c>defaultLocale</c>.
+    ///
+    /// Must be one of the survey's declared locale codes to have any effect — an
+    /// unknown code leaves the renderer resolving content per its usual fallback, so
+    /// map host-specific language enums to the codes the survey was authored in
+    /// (e.g. Russian → "ru") rather than passing a display name.
+    /// </remarks>
+    [Parameter] public string? Locale { get; set; }
 
     // Same cache-busted module the live preview uses.
     private static readonly string InteropPath =

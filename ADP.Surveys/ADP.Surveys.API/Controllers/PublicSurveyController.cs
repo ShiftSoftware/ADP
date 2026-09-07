@@ -75,18 +75,30 @@ public class PublicSurveyController : ControllerBase
         //   - Deployment branding: a rebrand reaches in-flight instances
         //     immediately; the survey's own branding wins field-by-field.
         //   - Personalization tokens: {{recipient.*}} / {{candidate.*}} in
-        //     LocalizedString values filled from this instance's snapshot;
-        //     unknown tokens stay verbatim.
+        //     LocalizedString values filled from this instance's snapshot,
+        //     then the token's own |fallback, then the survey's declared
+        //     variables; a token none of those can fill stays verbatim.
         var resolved = JsonSerializer.Deserialize<SurveyDto>(rawJson, SurveySchemaSerializer.Options)!;
         if (applyBranding)
             resolved.Branding = BrandingDto.Merge(options.DefaultBranding, resolved.Branding);
         if (applyTokens)
         {
-            var context = PersonalizationTokens.BuildContext(
+            // A dashboard test instance has no ingested event to personalize from, so
+            // it renders with the survey's declared example values instead — that is
+            // what makes "Test run" show the sentence a recipient will actually read
+            // rather than a screenful of braces. Any snapshot fields a test instance
+            // does happen to carry still win over the examples.
+            var isTestInstance = instance.TriggeredBy == Shared.SurveysConstants.DashboardTestTriggerSource;
+            var snapshot = PersonalizationTokens.BuildContext(
                 instance.CustomerRef,
                 instance.RecipientAddress,
                 instance.RecipientLocale,
                 instance.MetaDataJson);
+
+            var context = isTestInstance
+                ? PersonalizationContext.ForSample(resolved, snapshot)
+                : PersonalizationContext.ForInstance(snapshot, resolved);
+
             PersonalizationTokens.Substitute(resolved, context);
         }
         return Content(JsonSerializer.Serialize(resolved, SurveySchemaSerializer.Options), "application/json");

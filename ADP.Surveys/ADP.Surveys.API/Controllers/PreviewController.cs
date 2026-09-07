@@ -5,6 +5,7 @@ using ShiftSoftware.ADP.Surveys.API.Extensions;
 using ShiftSoftware.ADP.Surveys.Data.Bank;
 using ShiftSoftware.ADP.Surveys.Shared.DTOs;
 using ShiftSoftware.ADP.Surveys.Shared.Json;
+using ShiftSoftware.ADP.Surveys.Shared.Personalization;
 using ShiftSoftware.ADP.Surveys.Shared.Resolver;
 
 namespace ShiftSoftware.ADP.Surveys.API.Controllers;
@@ -76,6 +77,16 @@ public class PreviewController : ControllerBase
         // Deployment branding overlay — same cascade GetSchema applies, so the
         // builder preview is WYSIWYG against production.
         result.Survey!.Branding = BrandingDto.Merge(options.DefaultBranding, result.Survey.Branding);
+
+        // Personalization, in the same sample mode a dashboard test instance uses:
+        // there is no ingested event behind a draft, so the author's declared
+        // variables stand in. Before variables existed the preview deliberately left
+        // tokens raw — there was nothing to put in their place, and a blanked-out
+        // sentence taught the author less than the braces did. Now that the survey
+        // carries its own examples, showing them is what makes the preview WYSIWYG;
+        // a token with no example and no inline fallback still renders verbatim, so
+        // an unfilled variable stays visible rather than silently vanishing.
+        PersonalizationTokens.Substitute(result.Survey, PersonalizationContext.ForSample(result.Survey));
 
         // Hand-serialize so the canonical settings apply both ways — no PascalCase
         // leak, no duplicate `QuestionType` fields, polymorphism preserved.

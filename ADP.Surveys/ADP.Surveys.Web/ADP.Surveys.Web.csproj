@@ -37,4 +37,36 @@
 	<ItemGroup>
 		<ProjectReference Include="..\ADP.Surveys.Shared\ADP.Surveys.Shared.csproj" />
 	</ItemGroup>
+
+	<!--
+		wwwroot/js/shift-survey/shift-survey.js is a CHECKED-IN copy of the
+		@shiftsoftware/survey-web-component build, so hosts consuming this NuGet
+		package get <shift-survey> without a node toolchain. Nothing in the .NET
+		build produces it, so it can fall behind the renderer source silently —
+		and did, by six weeks, which is how a shipped renderer feature failed to
+		appear in the dashboard while every test still passed.
+
+		This warns (never errors) when any renderer source is newer than the copy.
+		A warning because the renderer sources are absent in a NuGet-only consumer
+		checkout and CI must not fail on that; the Condition keeps it quiet there.
+
+		Fix when it fires:  cd ADP.Surveys/renderer && npm run sync:blazor
+	-->
+	<ItemGroup>
+		<!-- Globs yield nothing in a NuGet-only consumer checkout, which is why the
+		     target below is also gated on the directory existing. -->
+		<ShiftSurveyRendererSource Include="$(MSBuildThisFileDirectory)..\renderer\packages\survey-web-component\src\**\*" />
+		<ShiftSurveyRendererSource Include="$(MSBuildThisFileDirectory)..\renderer\packages\survey-renderer\src\**\*" />
+		<ShiftSurveyRendererSource Include="$(MSBuildThisFileDirectory)..\renderer\packages\survey-sdk\src\**\*" />
+	</ItemGroup>
+
+	<!-- Inputs/Outputs rather than a hand-rolled timestamp comparison: MSBuild skips
+	     the target entirely when the bundle is newer than every source, so the body
+	     runs only when the copy is actually behind. -->
+	<Target Name="WarnIfShiftSurveyBundleIsStale" BeforeTargets="Build"
+	        Condition="Exists('$(MSBuildThisFileDirectory)..\renderer\packages\survey-renderer\src')"
+	        Inputs="@(ShiftSurveyRendererSource)"
+	        Outputs="$(MSBuildThisFileDirectory)wwwroot\js\shift-survey\shift-survey.js">
+		<Warning Text="shift-survey.js is older than the renderer source. The dashboard serves this checked-in copy, so renderer changes will not appear in it until you run: cd ADP.Surveys/renderer &amp;&amp; npm run sync:blazor" />
+	</Target>
 </Project>

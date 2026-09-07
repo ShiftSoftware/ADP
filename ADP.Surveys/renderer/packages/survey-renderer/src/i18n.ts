@@ -62,6 +62,10 @@ export interface UiStrings {
    * `{name}` is substituted by `formatUi`.
    */
   fileRecordedName: string;
+  /** Accessible name for the language picker shown when a survey declares more
+   *  than one locale. Rendered per-locale so the control reads correctly in the
+   *  language the respondent is currently in. */
+  language: string;
 }
 
 export interface LocaleConfig {
@@ -99,6 +103,7 @@ const en: LocaleConfig = {
     yes: 'Yes',
     no: 'No',
     fileRecordedName: 'Recorded file details: {name}',
+    language: 'Language',
   },
 };
 
@@ -131,14 +136,124 @@ const ar: LocaleConfig = {
     yes: 'نعم',
     no: 'لا',
     fileRecordedName: 'تم تسجيل تفاصيل الملف: {name}',
+    language: 'اللغة',
+  },
+};
+
+// Sorani Kurdish, in Arabic script — RTL, like `ar`.
+// NOTE: machine-written copy pending a native pass, same discipline as the
+// web-components landing page. The strings are short and mechanical (button
+// labels, validation messages); the direction and the language name are the
+// parts that must be right, and those are.
+const ku: LocaleConfig = {
+  direction: 'rtl',
+  strings: {
+    next: 'دواتر',
+    submit: 'ناردن',
+    submitting: 'دەنێردرێت…',
+    loading: 'ڕاپرسی باردەکرێت…',
+    thankYou: 'سوپاس.',
+    selectPlaceholder: 'هەڵبژێرە…',
+    clearSignature: 'سڕینەوە',
+    noScreens: 'هیچ پەڕەیەک لەم ڕاپرسییەدا نییە.',
+    unsupportedQuestion: 'جۆری پرسیاری پشتگیری نەکراو:',
+    couldNotSubmit: 'ناردن سەرکەوتوو نەبوو:',
+    requiredError: 'ئەم پرسیارە پێویستە.',
+    minLengthError: 'دەبێت لانیکەم {n} پیت بێت.',
+    maxLengthError: 'دەبێت زۆرترین {n} پیت بێت.',
+    patternError: 'لەگەڵ فۆرماتی داواکراودا یەک ناگرێتەوە.',
+    minError: 'دەبێت لانیکەم {n} بێت.',
+    maxError: 'دەبێت زۆرترین {n} بێت.',
+    rangeError: 'دەبێت لە نێوان {min} و {max} بێت.',
+    minSelectedError: 'لانیکەم {n} هەڵبژاردە هەڵبژێرە.',
+    maxSelectedError: 'زۆرترین {n} هەڵبژاردە هەڵبژێرە.',
+    invalidAnswerError: 'تکایە ئەم وەڵامە بپشکنە.',
+    loadingOptions: 'هەڵبژاردەکان باردەکرێن…',
+    optionsLoadError: 'نەتوانرا هەڵبژاردەکان باربکرێن.',
+    retry: 'دووبارە هەوڵبدەوە',
+    yes: 'بەڵێ',
+    no: 'نەخێر',
+    fileRecordedName: 'زانیاری فایل تۆمارکرا: {name}',
+    language: 'زمان',
+  },
+};
+
+// Same native-pass caveat as `ku`.
+const ru: LocaleConfig = {
+  direction: 'ltr',
+  strings: {
+    next: 'Далее',
+    submit: 'Отправить',
+    submitting: 'Отправка…',
+    loading: 'Загрузка опроса…',
+    thankYou: 'Спасибо.',
+    selectPlaceholder: 'Выберите…',
+    clearSignature: 'Очистить',
+    noScreens: 'В этом опросе нет экранов.',
+    unsupportedQuestion: 'Неподдерживаемый тип вопроса:',
+    couldNotSubmit: 'Не удалось отправить:',
+    requiredError: 'Этот вопрос обязателен.',
+    minLengthError: 'Не менее {n} символов.',
+    maxLengthError: 'Не более {n} символов.',
+    patternError: 'Не соответствует требуемому формату.',
+    minError: 'Не менее {n}.',
+    maxError: 'Не более {n}.',
+    rangeError: 'Должно быть от {min} до {max}.',
+    minSelectedError: 'Выберите не менее {n} вариантов.',
+    maxSelectedError: 'Выберите не более {n} вариантов.',
+    invalidAnswerError: 'Пожалуйста, проверьте этот ответ.',
+    loadingOptions: 'Загрузка вариантов…',
+    optionsLoadError: 'Не удалось загрузить варианты.',
+    retry: 'Повторить',
+    yes: 'Да',
+    no: 'Нет',
+    fileRecordedName: 'Записаны сведения о файле: {name}',
+    language: 'Язык',
   },
 };
 
 /** Built-in locales. Consumers extend or override by passing `uiLocales` to
  *  `<SurveyRenderer>` — the merge is shallow at the locale level, so
  *  overriding `ar` with a partial object would require supplying a full
- *  `LocaleConfig`. If this becomes limiting, deep-merge here. */
-export const builtInLocales: Record<string, LocaleConfig> = { en, ar };
+ *  `LocaleConfig`. If this becomes limiting, deep-merge here.
+ *
+ *  The set matches the builder's default locale catalog (en/ar/ku) plus `ru`
+ *  for the markets that author in it. A survey may still declare a locale that
+ *  isn't here: its own content renders fine (that comes from the schema), the
+ *  renderer's own chrome falls back per `resolveLocaleConfig`. */
+export const builtInLocales: Record<string, LocaleConfig> = { en, ar, ku, ru };
+
+/** Endonyms for the locales a deployment is likely to declare — a respondent
+ *  picks their language by seeing it written in that language, never by a code.
+ *  `Intl.DisplayNames` covers most of these but is inconsistent for `ku` across
+ *  engines, so the known set is spelled out and Intl is only the fallback. */
+const localeEndonyms: Record<string, string> = {
+  en: 'English',
+  ar: 'العربية',
+  ku: 'کوردی',
+  ru: 'Русский',
+  tr: 'Türkçe',
+  fa: 'فارسی',
+};
+
+/**
+ * Human label for a locale code, in that locale's own language. Falls back to
+ * `Intl.DisplayNames`, then to the raw code — a picker entry always renders
+ * something selectable even for a locale nobody anticipated.
+ */
+export function localeDisplayName(code: string): string {
+  const known = localeEndonyms[code];
+  if (known) return known;
+
+  try {
+    const intl = new Intl.DisplayNames([code], { type: 'language' });
+    const name = intl.of(code);
+    if (name && name !== code) return name;
+  } catch {
+    // Old engine, or a code Intl rejects — the raw code is still a valid label.
+  }
+  return code;
+}
 
 /** Substitute `{name}` placeholders in a UI string template. Kept deliberately
  *  tiny — no plurals, no nesting; consumers needing more override `uiLocales`. */

@@ -143,6 +143,13 @@
                     </MudAlert>
                 }
 
+                @*
+                    Personalization vocabulary for every LocalizedStringField below —
+                    cascaded rather than threaded through a dozen editors. See
+                    PersonalizationScope for why.
+                *@
+                <CascadingValue Value="@CurrentPersonalizationScope()" IsFixed="false">
+
                 @if (currentView == "general")
                 {
                     <GeneralTab Item="TheItem"
@@ -206,6 +213,8 @@
                         }
                     </div>
                 }
+
+                </CascadingValue>
             </ChildContent>
         </ShiftEntityForm>
     </div>
@@ -465,6 +474,27 @@
     // from TheItem.Draft on each mutation — never clobbered mid-edit because
     // the mutation source IS TheItem.Draft.
     bool draftJsonSeeded;
+
+    // Cached personalization vocabulary. Rebuilding it means a reflection walk over
+    // the whole draft to collect the tokens already written in the copy — cheap, but
+    // not cheap enough to redo on every render of a form this size. Keyed on the
+    // mutation counter AND the draft reference so a freshly-loaded survey doesn't
+    // keep the empty scope built before its data arrived.
+    PersonalizationScope? scopeCache;
+    SurveyDto? scopeDraft;
+    int scopeVersion = -1;
+
+    PersonalizationScope CurrentPersonalizationScope()
+    {
+        var draft = TheItem?.Draft;
+        if (scopeCache is null || scopeVersion != schemaVersion || !ReferenceEquals(scopeDraft, draft))
+        {
+            scopeCache = PersonalizationScope.FromDraft(draft);
+            scopeDraft = draft;
+            scopeVersion = schemaVersion;
+        }
+        return scopeCache;
+    }
 
     protected override void OnInitialized()
     {

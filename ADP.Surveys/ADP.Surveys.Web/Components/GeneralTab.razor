@@ -70,6 +70,15 @@
                                   ReadOnly="@ReadOnly" />
         </div>
     </MudPaper>
+
+    <MudPaper Class="pa-4 mb-3" Elevation="0" Outlined="true">
+        <div class="general-tab__section-title">Personalization</div>
+        <VariablesEditor Draft="@Item.Draft"
+                         DraftChanged="@DraftChanged"
+                         Locales="@selectedLocales.ToList()"
+                         ReadOnly="@ReadOnly"
+                         SchemaVersion="@SchemaVersion" />
+    </MudPaper>
 </div>
 
 <style>
