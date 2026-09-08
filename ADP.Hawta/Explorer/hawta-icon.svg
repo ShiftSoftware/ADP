@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Hawta Sync icon</title>
+  <desc id="desc">Two yellow source segments flow through white aligned tracks on a near-black field.</desc>
+  <rect width="512" height="512" fill="#34373D"/>
+  <path fill="#F2C230" d="M0 132h108v48H0zm0 200h108v48H0z"/>
+  <path fill="#fff" d="M108 132h38l92 64h274v48H218l-92-64h-18zm0 200h18l92-64h294v48H238l-92 64h-38z"/>
+</svg>

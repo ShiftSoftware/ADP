@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Explore ADP.Hawta ingestion, safeguards and delivery through illustrative scenarios and source evidence.">
+  <title>ADP.Hawta — Engineering Explorer</title>
+  <link rel="icon" href="hawta-icon.svg" type="image/svg+xml">
+  <script>
+    try {
+      const savedTheme = localStorage.getItem('hawta-demo-theme');
+      if (savedTheme === 'dark' || savedTheme === 'light') document.documentElement.dataset.theme = savedTheme;
+    } catch { /* Theme switching still works when browser storage is unavailable. */ }
+  </script>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="explorer.css">
+  <script src="animation.js" defer></script>
+  <script src="mechanisms.js" defer></script>
+  <script src="explorer.js" defer></script>
+</head>
+<body data-playing="false" data-view="overview">
+  <!-- Illustrative architecture. Sources, mappings, ownership and output delivery
+       are configured by the host. Evidence in Explore references public Hawta code. -->
+  <main>
+    <header class="masthead">
+      <div class="brand"><img src="hawta-icon.svg" alt="" width="42" height="42"><span>ADP.<strong>Hawta</strong></span></div>
+      <div class="header-actions">
+        <div class="context">Engineering <span>/</span> Explorer</div>
+        <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Switch to dark theme"><span aria-hidden="true">◐</span><span id="theme-label">Dark theme</span></button>
+      </div>
+    </header>
+
+    <div id="overview">
+    <div class="overview-toolbar">
+      <h1 id="page-title">Many sources. One shared snapshot.</h1>
+      <button type="button" id="toggle" class="motion-toggle" aria-label="Pause motion"><span id="toggle-symbol" aria-hidden="true">Ⅱ</span><span id="toggle-text">Pause motion</span></button>
+    </div>
+    <div class="overview-workspace">
+    <div class="overview-canvas">
+    <div class="overview-caption"><span>Select a stage to inspect it.</span><span>Illustrative flow</span></div>
+    <section class="diagram" aria-label="Hawta ingestion flow">
+      <svg class="connections" aria-hidden="true"><g class="routes"></g><g class="packets"></g></svg>
+
+      <div class="column sources">
+        <p class="column-label"><span>01</span> SOURCES</p>
+        <div class="source-card" id="dms">
+          <span class="source-icon" aria-hidden="true">↳</span>
+          <div><h2>Dealer DMS</h2><p>Orders, stock, sales &amp; customers</p></div>
+        </div>
+        <div class="source-card" id="feeds">
+          <span class="source-icon" aria-hidden="true">≋</span>
+          <div><h2>File feeds</h2><p>Parts, stock &amp; campaigns</p><span class="micro">CSV or Parquet input</span><span class="overview-file-check"><i aria-hidden="true"></i>Example: metadata match → skip full read</span></div>
+        </div>
+        <div class="source-card" id="apps">
+          <span class="source-icon" aria-hidden="true">▤</span>
+          <div><h2>App databases</h2><p>Vehicles · Services · Identity</p></div>
+        </div>
+        <div class="source-card" id="logs">
+          <span class="source-icon" aria-hidden="true">⋯</span>
+          <div><h2>Document sources</h2><p>Example: activity records</p></div>
+        </div>
+      </div>
+
+      <div class="column engine-column">
+        <p class="column-label"><span>02</span> SHARED SNAPSHOT</p>
+        <div class="engine" id="engine">
+          <div class="engine-title"><span class="status-dot"></span><span>ADP.Hawta</span><span class="engine-tag">DuckDB</span></div>
+          <div class="engine-step selectable" id="collect">
+            <button type="button" class="stage-select" data-stage="collect" aria-label="Explain Collect and stage" aria-controls="explanation" aria-pressed="true"></button>
+            <div class="step-topline"><span class="step-icon" aria-hidden="true">↓</span><h2>Collect &amp; stage</h2></div>
+            <p>Scheduled reads, with bounded parallel fetching.</p>
+            <div class="fetch-bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+          </div>
+          <div class="inside-arrow" aria-hidden="true">↓<i class="flow-dot"></i></div>
+          <div class="engine-step selectable" id="snapshot">
+            <button type="button" class="stage-select" data-stage="snapshot" aria-label="Explain Reconcile the snapshot" aria-controls="explanation" aria-pressed="false"></button>
+            <div class="step-topline"><span class="step-icon" aria-hidden="true">≡</span><h2>Reconcile the snapshot</h2></div>
+            <p>Compare records. Merge changes.<br>Keep what each source said.</p>
+            <div class="record-strip" aria-hidden="true"><i class="record same"></i><i class="record change"></i><i class="record same"></i><i class="record add"></i><i class="record same"></i><i class="record remove"></i><i class="record same"></i><i class="record change"></i></div>
+            <span class="engine-detail">Set-based diff &amp; merge</span>
+          </div>
+          <div class="inside-arrow" aria-hidden="true">↓<i class="flow-dot"></i></div>
+          <div class="engine-step selectable" id="serving">
+            <button type="button" class="stage-select" data-stage="serving" aria-label="Explain Shape for consumers" aria-controls="explanation" aria-pressed="false"></button>
+            <div class="step-topline"><span class="step-icon" aria-hidden="true">⇢</span><h2>Shape for consumers</h2></div>
+            <p>Serving projections turn source tables into ADP models.</p>
+            <div class="model-tags"><span>Vehicles</span><span>Parts</span><span>Services</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="column destinations">
+        <p class="column-label"><span>03</span> CONSUMERS</p>
+        <div class="output-card selectable" id="cosmos">
+          <button type="button" class="stage-select" data-stage="cosmos" aria-label="Explain Cosmos DB delivery" aria-controls="explanation" aria-pressed="false"></button>
+          <p class="output-kind"><span aria-hidden="true">↗</span> SERVE</p>
+          <h2>Cosmos DB</h2>
+          <p>Replicate changes for Hawta-owned data families.</p>
+          <div class="destination-end"><span class="small-dot"></span>Application lookups</div>
+        </div>
+        <div class="output-card selectable" id="publish">
+          <button type="button" class="stage-select" data-stage="publish" aria-label="Explain Versioned Parquet delivery" aria-controls="explanation" aria-pressed="false"></button>
+          <p class="output-kind"><span aria-hidden="true">↗</span> PUBLISH</p>
+          <h2>Versioned Parquet</h2>
+          <p>Publish a consistent set of source<br class="desktop-break"> and serving tables for readers.</p>
+          <div class="destination-end"><span class="small-dot"></span>Reports · Analytics · Checks</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="existing-path" aria-label="Existing app replication remains separate"><span class="dashed-line" aria-hidden="true"></span><p><strong>App-owned records</strong><span class="path-arrow"> → </span>existing app replication<span class="path-arrow"> → </span><strong>Cosmos DB</strong></p><span class="path-note">One writer per data family</span></div>
+
+    </div>
+    <aside id="overview-inspector" class="overview-inspector" aria-label="Overview inspector" data-open="false">
+      <div class="overview-inspector-bar"><span class="overview-inspector-heading">STAGE INSPECTOR</span><button type="button" id="overview-inspector-toggle" aria-controls="overview-inspector-body" aria-expanded="false"><span id="overview-drawer-label">Collect &amp; stage</span><span>Details ↗</span></button><button type="button" id="overview-inspector-close" aria-label="Close overview inspector">×</button></div>
+      <div id="overview-inspector-body" class="overview-inspector-body">
+      <section class="explanation" id="explanation" aria-label="Selected stage explanation" aria-live="polite" aria-atomic="true">
+      <span class="explanation-icon" id="explanation-icon" aria-hidden="true">↓</span>
+      <div><p class="selected-label" id="selected-label">COLLECT &amp; STAGE</p><h2 id="explanation-title">Collect from the systems that know.</h2><p id="explanation-copy">This example brings dealer views, file feeds, app tables and document sources into one ingestion flow. Hawta schedules each source and limits parallel fetching to keep the work bounded.</p><button type="button" id="explore-inside" class="explore-button">Explore inside <span aria-hidden="true">↗</span></button></div>
+      </section>
+      <details class="overview-notes"><summary>Architecture context</summary><p>This example shows sources feeding lookups, reports and analytics. Source tables preserve what each system said; host-defined serving projections shape data for consumers.</p><p>Snapshot reconciliation uses a set-based diff and merge. File feeds can skip repeated reads when their metadata matches the last successful stamp.</p><p>Cosmos and versioned Parquet are two outputs from the same snapshot, each with its own schedule. The publisher commits files in its output directory; the host configures delivery to other storage and readers.</p><p>App-owned records retain their existing Cosmos replication. Each data family has one writer.</p><p>The source families, ownership boundary and consumer labels shown here are illustrative. Source activation, mappings and cadences depend on host configuration. Explore inside provides public code evidence and detailed mechanisms.</p></details>
+      <p class="overview-disclaimer">Architecture overview · illustrative motion, not live telemetry. Engineering Explorer.</p>
+      </div>
+    </aside>
+    </div>
+    </div>
+    <section id="engineering" hidden aria-label="Hawta engineering explorer">
+      <div class="explorer-bar">
+        <nav class="breadcrumbs" aria-label="Breadcrumb"><a href="#">← Overview</a></nav>
+        <label class="control-field">Mechanism<select id="mechanism-picker" aria-label="Explore a mechanism"></select></label>
+        <label class="control-field scenario-field">Scenario<select id="scenario-picker"></select></label>
+        <button type="button" id="detail-motion" class="motion-toggle">Pause motion</button>
+      </div>
+      <div class="engineering-workspace">
+        <section class="visual-workspace" aria-label="Mechanism diagram">
+          <div class="canvas-caption"><h1 id="mechanism-title"></h1><span>Illustrative scenario</span></div>
+          <div id="scene" class="scene" aria-label="Animated mechanism"></div>
+          <div class="diagram-footer"><span>Select a node or row to inspect it.</span><span id="scenario-status"></span></div>
+        </section>
+        <aside id="inspector" class="inspector" aria-label="Mechanism inspector" data-open="false">
+          <nav class="layer-tabs" aria-label="Inspection layers">
+            <button type="button" data-layer="behavior" aria-pressed="true">Behavior</button><button type="button" data-layer="evidence" aria-pressed="false">Evidence</button><button type="button" data-layer="choices" aria-pressed="false">Choices</button><button type="button" data-layer="direction" aria-pressed="false">Change brief</button><button type="button" id="close-inspector" aria-label="Close inspector">×</button>
+          </nav>
+          <div class="inspector-body">
+            <section id="layer-behavior" class="inspection-layer">
+              <div id="selection-explanation" aria-live="polite" aria-atomic="true"><p class="inspector-kicker">SELECTED IN DIAGRAM</p><h2 id="selection-title"></h2><p id="selection-detail"></p><div id="selection-result" class="selection-result"></div></div>
+              <details class="scenario-context"><summary>Scenario context &amp; assumptions</summary><p id="scenario-assumptions"></p><div id="scenario-context"></div></details>
+              <p class="scene-disclaimer">Motion traces the selected scenario continuously. It does not count new runs or represent measured timing.</p>
+            </section>
+            <section id="layer-evidence" class="inspection-layer" hidden><div class="layer-intro"><h2>Source evidence</h2><p>Captured code with current local-file checks. Listed tests were inspected; pipeline tests were not run for this demo.</p></div><div id="evidence-status" role="status"></div><div id="evidence-list"></div><details class="event-foundation"><summary>Future recorded runs</summary><p>Stable mechanism, scenario and event identities remain available for a future adapter. Authored scenario events and visual signal paths are separate from the selected explanation. A future adapter must preserve unknown states; existing SourceRunSummary, SnapshotAgentCycle, SnapshotFetchProgress and replication metrics do not expose every internal check.</p><p>No production instrumentation, log import, or live connection is implemented.</p></details></section>
+            <section id="layer-choices" class="inspection-layer" hidden></section>
+            <section id="layer-direction" class="inspection-layer" hidden>
+              <div class="layer-intro"><h2>Reviewable change brief</h2><p>Edit a local proposal. Preparing it changes no files or settings and sends no instruction.</p></div>
+              <label class="brief-field">Proposed change<textarea id="brief-proposal" rows="3"></textarea></label>
+              <label class="brief-field">Reason and expected behavior<textarea id="brief-reason" rows="4"></textarea></label>
+              <label class="brief-field">Validation criteria<textarea id="brief-validation" rows="4"></textarea></label>
+              <button type="button" id="prepare-brief" class="explore-button">Prepare review draft</button>
+              <div id="brief-result" hidden><p class="draft-label">UNSAVED PROPOSAL · NOT SENT</p><label class="brief-field">Review draft<textarea id="brief-output" rows="15" readonly></textarea></label><button type="button" id="copy-brief">Copy draft</button><span id="copy-status" role="status"></span></div>
+            </section>
+            <details class="reference-notes"><summary>Other important mechanisms</summary><div id="reference-list"></div></details>
+          </div>
+        </aside>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

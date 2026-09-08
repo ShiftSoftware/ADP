@@ -154,6 +154,30 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ADP.Menus.Sample.Functions", "ADP.Menus\samples\ADP.Menus.Sample.Functions\ADP.Menus.Sample.Functions.csproj", "{83C6DF48-38D7-4E87-AE6D-38B0D933E7A1}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ADP.Hawta", "ADP.Hawta", "{31634764-8845-D97A-C5D5-A36E1C55062B}"
+	ProjectSection(SolutionItems) = preProject
+		ADP.Hawta\README.md = ADP.Hawta\README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Explorer", "Explorer", "{BD543789-4225-4A78-B8F4-2FCDCD4FE03E}"
+	ProjectSection(SolutionItems) = preProject
+		ADP.Hawta\Explorer\.gitignore = ADP.Hawta\Explorer\.gitignore
+		ADP.Hawta\Explorer\README.md = ADP.Hawta\Explorer\README.md
+		ADP.Hawta\Explorer\animation.js = ADP.Hawta\Explorer\animation.js
+		ADP.Hawta\Explorer\capture-evidence.mjs = ADP.Hawta\Explorer\capture-evidence.mjs
+		ADP.Hawta\Explorer\evidence-sources.mjs = ADP.Hawta\Explorer\evidence-sources.mjs
+		ADP.Hawta\Explorer\evidence.json = ADP.Hawta\Explorer\evidence.json
+		ADP.Hawta\Explorer\evidence.mjs = ADP.Hawta\Explorer\evidence.mjs
+		ADP.Hawta\Explorer\explorer.css = ADP.Hawta\Explorer\explorer.css
+		ADP.Hawta\Explorer\explorer.js = ADP.Hawta\Explorer\explorer.js
+		ADP.Hawta\Explorer\hawta-icon.svg = ADP.Hawta\Explorer\hawta-icon.svg
+		ADP.Hawta\Explorer\index.html = ADP.Hawta\Explorer\index.html
+		ADP.Hawta\Explorer\mechanisms.js = ADP.Hawta\Explorer\mechanisms.js
+		ADP.Hawta\Explorer\portability.test.mjs = ADP.Hawta\Explorer\portability.test.mjs
+		ADP.Hawta\Explorer\server.mjs = ADP.Hawta\Explorer\server.mjs
+		ADP.Hawta\Explorer\start.ps1 = ADP.Hawta\Explorer\start.ps1
+		ADP.Hawta\Explorer\style.css = ADP.Hawta\Explorer\style.css
+		ADP.Hawta\Explorer\verify.mjs = ADP.Hawta\Explorer\verify.mjs
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hawta", "ADP.Hawta\Hawta\Hawta.csproj", "{439FC8CB-EE4A-4A74-8146-46E35B23F46C}"
 EndProject
@@ -842,6 +866,7 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
+		{BD543789-4225-4A78-B8F4-2FCDCD4FE03E} = {31634764-8845-D97A-C5D5-A36E1C55062B}
 		{87D30CDD-7E33-477A-A8B5-ED4C271F410F} = {3E72BBF7-55F3-4C3D-82D1-8D5DD0024D68}
 		{96576108-05EF-4E0B-888F-EE122D4241E8} = {3E72BBF7-55F3-4C3D-82D1-8D5DD0024D68}
 		{CEA69284-48E7-41FE-A233-C36674AF1B25} = {89ABB351-4D81-4724-864A-F6B5D9311565}
