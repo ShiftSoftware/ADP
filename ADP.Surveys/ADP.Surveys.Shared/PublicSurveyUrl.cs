@@ -34,8 +34,8 @@ public static class PublicSurveyUrl
     }
 
     /// <summary>
-    /// True when the template resolves to the local machine — the dev default, or any other
-    /// loopback address someone pointed it at.
+    /// True when an HTTP or HTTPS template points at a loopback host.
+    /// Relative routes have no host of their own and are not treated as loopback.
     /// </summary>
     public static bool PointsAtLoopback(string? template)
     {
@@ -46,7 +46,10 @@ public static class PublicSurveyUrl
         if (!Uri.TryCreate(template.Replace(Placeholder, "placeholder", StringComparison.Ordinal), UriKind.Absolute, out var uri))
             return false;
 
-        return uri.IsLoopback;
+        // On Unix, an absolute filesystem path is also accepted as a file URI and marked
+        // as loopback. A root-relative survey route must not be rejected for that reason.
+        return (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)
+            && uri.IsLoopback;
     }
 
     /// <summary>

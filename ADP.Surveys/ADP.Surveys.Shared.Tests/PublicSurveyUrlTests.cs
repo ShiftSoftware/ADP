@@ -21,6 +21,8 @@ public class PublicSurveyUrlTests
     [InlineData("https://localhost/s/{publicId}")]
     [InlineData("http://127.0.0.1:8080/s/{publicId}")]
     [InlineData("http://[::1]/s/{publicId}")]
+    [InlineData("https://[::1]/s/{publicId}")]
+    [InlineData("HTTPS://LOCALHOST/s/{publicId}")]
     public void LoopbackHosts_AreNotDeployable(string template)
     {
         Assert.True(PublicSurveyUrl.PointsAtLoopback(template));
@@ -72,13 +74,28 @@ public class PublicSurveyUrlTests
         Assert.Equal("PublicSurveyUrlTemplate is valid.", PublicSurveyUrl.DescribeProblem(template));
     }
 
-    [Fact]
-    public void NonAbsoluteTemplate_IsNotTreatedAsLoopback()
+    [Theory]
+    [InlineData("/s/{publicId}")]
+    [InlineData("s/{publicId}")]
+    [InlineData("../s/{publicId}")]
+    public void NonAbsoluteTemplate_IsNotTreatedAsLoopback(string template)
     {
-        // A relative template can't be parsed as a URI. It's not loopback — it's just
-        // unusable for a different reason, and Compose still round-trips it so a host
-        // serving the app under its own origin isn't blocked by this check.
-        const string template = "/s/{publicId}";
+        // Hosts may serve the survey under their own origin. On Unix, Uri can parse a
+        // root-relative route as a file URI; that must not make it a loopback web URL.
+        var id = Guid.Parse("11111111-2222-3333-4444-555555555555");
+        Assert.False(PublicSurveyUrl.PointsAtLoopback(template));
+        Assert.True(PublicSurveyUrl.IsDeployable(template));
+        Assert.Equal("PublicSurveyUrlTemplate is valid.", PublicSurveyUrl.DescribeProblem(template));
+        Assert.Equal(template.Replace("{publicId}", id.ToString()), PublicSurveyUrl.Compose(template, id));
+    }
+
+    [Theory]
+    [InlineData("file:///s/{publicId}")]
+    [InlineData("file://localhost/s/{publicId}")]
+    [InlineData("ftp://localhost/s/{publicId}")]
+    public void NonHttpUri_IsNotTreatedAsLoopbackWebUrl(string template)
+    {
+        // This helper checks web hosts, not whether every possible URI scheme is deployable.
         Assert.False(PublicSurveyUrl.PointsAtLoopback(template));
     }
 }

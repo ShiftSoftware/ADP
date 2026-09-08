@@ -675,6 +675,109 @@ public sealed class SnapshotIngestConcurrencySafetyTests : IDisposable
         Assert.Equal("the dealer box refused", outcomes.Single().Failure!.Message);
     }
 
+    [Theory]
+    [InlineData("success")]
+    [InlineData("fetch-failure")]
+    [InlineData("cancellation")]
+    [InlineData("drain-failure")]
+    [InlineData("narrator-failure")]
+    public async Task RunCompletion_WaitsForNarration_OnEveryExitPath(string exitPath)
+    {
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        var fetchReleased = NewGate();
+        var narratorEntered = NewGate();
+        var narratorReleased = NewGate();
+        var narratorFinished = NewGate();
+        var drainReached = NewGate();
+        var progress = new ConcurrentQueue<SnapshotFetchProgress>();
+        var outcomes = new List<SnapshotIngestOutcome>();
+        var source = Fetching("source", rows: 3, gate: fetchReleased.Task,
+            fetchThrows: exitPath == "fetch-failure" ? new InvalidOperationException("fetch failed") : null);
+
+        var run = SnapshotIngestDispatcher.RunAsync(
+            new SnapshotIngestDispatcherOptions
+            {
+                Store = snapshot.Store,
+                Sources = [source],
+                Degree = 2,
+                OnFetched = item =>
+                {
+                    narratorEntered.TrySetResult();
+                    try
+                    {
+                        narratorReleased.Task.WaitAsync(TimeSpan.FromSeconds(10)).GetAwaiter().GetResult();
+                        progress.Enqueue(item);
+                        if (exitPath == "narrator-failure")
+                            throw new InvalidOperationException("narrator failed");
+                    }
+                    finally
+                    {
+                        narratorFinished.TrySetResult();
+                    }
+                },
+            },
+            outcome =>
+            {
+                outcomes.Add(outcome);
+                drainReached.TrySetResult();
+                if (exitPath == "drain-failure")
+                    throw new InvalidOperationException("drain failed");
+            },
+            cancellation.Token);
+
+        try
+        {
+            if (exitPath == "cancellation")
+                await cancellation.CancelAsync();
+            fetchReleased.TrySetResult();
+
+            await narratorEntered.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+            if (exitPath != "cancellation")
+                await drainReached.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+
+            // The fetch result is ready and the drain can finish, but its worker is still
+            // inside the callback. Give an incorrect early return time to become observable.
+            var first = await Task.WhenAny(run, Task.Delay(200, TestContext.Current.CancellationToken));
+            Assert.NotSame(run, first);
+            Assert.Empty(progress);
+        }
+        finally
+        {
+            fetchReleased.TrySetResult();
+            narratorReleased.TrySetResult();
+            await narratorFinished.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+            try
+            {
+                await run.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+            }
+            catch (InvalidOperationException exception) when (exitPath == "drain-failure" && exception.Message == "drain failed")
+            {
+                // Observe the expected failure during cleanup, then assert it below.
+            }
+        }
+
+        var narrated = Assert.Single(progress);
+        if (exitPath == "cancellation")
+        {
+            Assert.IsAssignableFrom<OperationCanceledException>(narrated.Failure);
+            Assert.Empty(outcomes);
+            Assert.True((await run).StoppedEarly);
+        }
+        else
+        {
+            Assert.Same(Assert.Single(outcomes).Failure, narrated.Failure);
+            if (exitPath == "fetch-failure")
+                Assert.Equal("fetch failed", narrated.Failure!.Message);
+            else
+                Assert.Null(narrated.Failure);
+
+            if (exitPath == "drain-failure")
+                Assert.Equal("drain failed", (await Assert.ThrowsAsync<InvalidOperationException>(() => run)).Message);
+            else
+                Assert.Equal(1, (await run).SourcesDrained);
+        }
+    }
+
     /// <summary>
     /// Narration must never decide the fate of a cycle — the DELIBERATE opposite of the drain's
     /// callback, where a throw is the caller's assertion failing and has to end the run. A console

@@ -80,6 +80,7 @@ public sealed class SnapshotIngestDispatcherOptions
     ///
     /// <para><b>Called on the WORKER thread, concurrently with other workers</b> — unlike
     /// <c>onDrained</c>. A handler that writes anywhere shared must do its own locking.</para>
+    /// <para>The run waits for all fetch callbacks to finish before it completes.</para>
     ///
     /// <para><b>Exceptions are swallowed</b>, and this is the deliberate opposite of
     /// <c>onDrained</c>, where a throw is a caller's assertion failing and must end the run.
@@ -330,7 +331,7 @@ public static class SnapshotIngestDispatcher
         private readonly LinkedList<int> pending = new();
 
         private readonly Dictionary<string, int> groupsInFlight = new(StringComparer.OrdinalIgnoreCase);
-        private readonly List<TaskCompletionSource<FetchSlot>> admitted = [];
+        private readonly List<Task> workers = [];
 
         private int fetchesInFlight;
         private long bufferedRows;
@@ -463,15 +464,14 @@ public static class SnapshotIngestDispatcher
 
             var source = options.Sources[index];
             var completion = Slots[index]!;
-            admitted.Add(completion);
 
             try
             {
-                _ = Task.Factory.StartNew(
+                workers.Add(Task.Factory.StartNew(
                     () => Fetch(source, completion, group),
                     CancellationToken.None,
                     TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach,
-                    TaskScheduler.Default);
+                    TaskScheduler.Default));
             }
             catch (Exception exception)
             {
@@ -584,21 +584,22 @@ public static class SnapshotIngestDispatcher
         }
 
         /// <summary>
-        /// Stops admission and observes every worker already admitted, so no fetch outlives the
-        /// cycle — and therefore the write-gate lease — that started it. The wait is bounded by the
-        /// slowest single fetch, which is the same bound the serial loop has always had.
+        /// Stops admission and waits for every worker, including its progress callback, so no
+        /// worker outlives the cycle and write-gate lease that started it. Fetch-result slots are
+        /// ready before worker cleanup and narration finish, so waiting on those is not enough.
         /// </summary>
         public async Task StopAndObserveAsync()
         {
-            TaskCompletionSource<FetchSlot>[] outstanding;
+            Task[] outstanding;
             lock (admission)
             {
                 stopped = true;
-                outstanding = admitted.ToArray();
+                outstanding = workers.ToArray();
             }
 
-            foreach (var slot in outstanding)
-                await slot.Task.ConfigureAwait(false);   // Never faults: the worker always sets a result.
+            // Start and this snapshot use the same lock; no worker can be missed or admitted
+            // after the snapshot. WhenAll also waits for the others if any worker faults.
+            await Task.WhenAll(outstanding).ConfigureAwait(false);
         }
     }
 }
