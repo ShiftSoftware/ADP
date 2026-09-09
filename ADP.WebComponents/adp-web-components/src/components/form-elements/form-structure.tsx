@@ -82,13 +82,12 @@ export class FormStructure {
       <Host translate="no">
         {/* @ts-ignore */}
         <form id={this.formId} class="relative" dir={this?.locale?.sharedLocales?.direction} {...formController}>
-          <div class="fixed top-10 left-10 size-20 overflow-hidden translate-x-5 translate-y-7">
-            {
-              // @ts-ignore
-              false && <form-dialog />
-            }
-            <shift-portal tag="form-dialog" inheritedClasses={this.dialogClasses} componentProps={dialogParams} />
-          </div>
+          {
+            // this is a way to import form-dialog component without using it, so that it is included in the build and can be used in the portal
+            // @ts-ignore
+            false && <form-dialog />
+          }
+          <shift-portal tag="form-dialog" inheritedClasses={this.dialogClasses} componentProps={dialogParams} />
           <div part="form-structure-form-container">
             {!this?.structure?.steps && renderStructure(this.structure, this.formElementMapper, generalProps, this.fields, -2)}
 

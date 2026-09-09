@@ -1,0 +1,9 @@
+/*
+  The portaled element is created on `document.body`, so this host never renders
+  anything in place - `render()` returns false. Taking it out of layout keeps it
+  from becoming a flex/grid item, adding a line box, or - worse - being given a
+  size by a wrapper and silently swallowing clicks on the host page.
+*/
+shift-portal {
+  display: none !important;
+}
