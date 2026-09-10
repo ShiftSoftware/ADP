@@ -355,7 +355,7 @@ export class VehicleSsc implements MultiLingual, VehicleInfoLayoutInterface, Veh
   private recaptchaPortalEl?: HTMLDivElement;
   private recaptchaPlaceholderRef: HTMLDivElement;
   private recaptchaReady?: Promise<void>;
-  private positionRAF: number;
+  private positionRAF?: number;
 
   /**
    * Development never shows Google's widget. The stand-in is the default whenever `isDev` is on, and
@@ -493,7 +493,7 @@ export class VehicleSsc implements MultiLingual, VehicleInfoLayoutInterface, Veh
   }
 
   private hideRealRecaptcha() {
-    cancelAnimationFrame(this.positionRAF);
+    this.stopFollowingPlaceholder();
     clearTimeout(this.recaptchaHideTimer);
     if (this.recaptchaPortalEl) this.recaptchaPortalEl.style.display = 'none';
   }
@@ -509,7 +509,7 @@ export class VehicleSsc implements MultiLingual, VehicleInfoLayoutInterface, Veh
     if (this.showRecaptcha && !this.recaptchaRes && !this.useMockRecaptchaWidget) {
       clearTimeout(this.recaptchaHideTimer);
       this.recaptchaPortalEl.style.display = 'block';
-      this.syncRecaptchaPosition();
+      this.followPlaceholder();
       return;
     }
 
@@ -576,7 +576,7 @@ export class VehicleSsc implements MultiLingual, VehicleInfoLayoutInterface, Veh
   disconnectedCallback() {
     this.heightAnnouncer?.dispose();
     this.stopFollowingDrawer();
-    cancelAnimationFrame(this.positionRAF);
+    this.stopFollowingPlaceholder();
     clearInterval(this.recaptchaIntervalRef);
     clearTimeout(this.recaptchaHideTimer);
     clearTimeout(this.retainTimer);
@@ -589,16 +589,44 @@ export class VehicleSsc implements MultiLingual, VehicleInfoLayoutInterface, Veh
     }
   }
 
+  /**
+   * Keeps the widget over its placeholder for as long as it is shown: one frame at a time, one loop
+   * at a time. The placeholder is not always on the page while the widget is. A lookup made after
+   * an answered check prepares the next check while the body is shut over nothing — the last
+   * check's block left with the body once the manufacturer had answered — and the placeholder only
+   * returns with the render that lands the vehicle. So the loop must not end when the placeholder
+   * is missing: it keeps the widget out of sight and out of reach until the placeholder is back,
+   * then takes its place. A loop that ended there left the portal shown but stranded, at the
+   * opacity the body had when it faded out: an invisible widget under a prompt to complete it.
+   */
+  private followPlaceholder() {
+    if (this.positionRAF !== undefined) return;
+    this.syncRecaptchaPosition();
+  }
+
+  private stopFollowingPlaceholder() {
+    if (this.positionRAF !== undefined) cancelAnimationFrame(this.positionRAF);
+    this.positionRAF = undefined;
+  }
+
   private syncRecaptchaPosition = () => {
-    if (!this.recaptchaPlaceholderRef || !this.recaptchaPortalEl || this.recaptchaPortalEl.style.display === 'none') return;
+    this.positionRAF = undefined;
 
-    const rect = this.recaptchaPlaceholderRef.getBoundingClientRect();
-    this.recaptchaPortalEl.style.top = `${rect.top}px`;
-    this.recaptchaPortalEl.style.left = `${rect.left}px`;
+    const portal = this.recaptchaPortalEl;
+    if (!portal || portal.style.display === 'none') return;
 
-    const opacity = this.getAncestorOpacity();
-    this.recaptchaPortalEl.style.opacity = String(opacity);
-    this.recaptchaPortalEl.style.pointerEvents = opacity < 0.1 ? 'none' : 'auto';
+    const placeholder = this.recaptchaPlaceholderRef;
+    let opacity = 0;
+
+    if (placeholder && placeholder.isConnected !== false) {
+      const rect = placeholder.getBoundingClientRect();
+      portal.style.top = `${rect.top}px`;
+      portal.style.left = `${rect.left}px`;
+      opacity = this.getAncestorOpacity();
+    }
+
+    portal.style.opacity = String(opacity);
+    portal.style.pointerEvents = opacity < 0.1 ? 'none' : 'auto';
 
     this.positionRAF = requestAnimationFrame(this.syncRecaptchaPosition);
   };

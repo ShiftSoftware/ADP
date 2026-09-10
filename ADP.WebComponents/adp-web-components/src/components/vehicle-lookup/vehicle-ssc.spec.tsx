@@ -300,3 +300,116 @@ describe('vehicle-ssc', () => {
     }
   });
 });
+
+/**
+ * Google's widget — never shown in development — is rendered once into a portal on the body and
+ * moved over its placeholder in the panel frame by frame, at the body's opacity, so it fades with
+ * the body. The placeholder is not always there while the widget is: a lookup made after an
+ * answered check prepares the next check while the body is shut over nothing, and the placeholder
+ * only returns with the render that lands the vehicle. The widget must take its place then; the
+ * bug this pins had it stranded, invisible, under the prompt to complete it.
+ *
+ * The spec platform renders only when asked (`waitForChanges`), so the waits here flush renders as
+ * they go, the way a browser paints them.
+ */
+describe('vehicle-ssc with Google’s widget', () => {
+  const LOOKUP_URL = 'https://lookup.test/';
+  const CHECK_URL = 'https://check.test/';
+  const WIDGET_ID = 7;
+
+  let grecaptcha: Record<'ready' | 'render' | 'reset' | 'getResponse', jest.Mock>;
+  let localeFetch: (url: string) => Promise<unknown>;
+  let computedStyle: jest.SpyInstance;
+
+  beforeEach(() => {
+    grecaptcha = {
+      // Google's script takes a moment the first time; the panel keeps the widget after that.
+      ready: jest.fn((callback: () => void) => setTimeout(callback, 100)),
+      render: jest.fn(() => WIDGET_ID),
+      reset: jest.fn(),
+      getResponse: jest.fn(() => ''),
+    };
+    (global as any).grecaptcha = grecaptcha;
+
+    localeFetch = (global as any).fetch;
+    (global as any).fetch = (url: string) => {
+      if (url.startsWith(LOOKUP_URL)) return Promise.resolve({ ok: true, json: () => Promise.resolve((vehicleLookupMocks as any)[UNKNOWN_VIN]) });
+      if (url.startsWith(CHECK_URL)) return Promise.resolve({ ok: true, json: () => Promise.resolve({ sscLookupStatus: 0 }) });
+      return localeFetch(url);
+    };
+
+    // The test DOM has no stylesheet: stand in for the body fading out as it shuts (lookup-motion.css).
+    const computed = (global as any).getComputedStyle;
+    computedStyle = jest.spyOn(global as any, 'getComputedStyle').mockImplementation((el: Element) => {
+      const style = computed(el);
+      const faded = el.classList?.contains('ssc-body') && el.getAttribute('data-open') === 'false';
+      return new Proxy(style, { get: (target, key) => (key === 'opacity' ? (faded ? '0' : '1') : Reflect.get(target, key)) });
+    });
+  });
+
+  afterEach(() => {
+    computedStyle.mockRestore();
+    (global as any).fetch = localeFetch;
+    delete (global as any).grecaptcha;
+  });
+
+  const newProductionPage = () =>
+    newSpecPage({
+      components: [VehicleSsc],
+      html: `<vehicle-ssc recaptcha-key="site-key" base-url="${LOOKUP_URL}" unauthorized-ssc-lookup-base-url="${CHECK_URL}" disable-vin-validation="true"></vehicle-ssc>`,
+    });
+
+  /** The element the widget was rendered into. */
+  const portalOf = () => grecaptcha.render.mock.calls[0]?.[0] as HTMLElement | undefined;
+  const placeholderOf = (page: SpecPage) => shadow(page).querySelector('.ssc-check .recaptcha-container > div');
+
+  /** Lets timers and frames run for `ms`, rendering as they go, and stops early once `done`. */
+  const settle = async (page: SpecPage, ms: number, done: () => boolean = () => false) => {
+    const until = Date.now() + ms;
+    while (Date.now() < until && !done()) {
+      await wait(20);
+      await page.waitForChanges();
+    }
+  };
+
+  it('keeps the widget over its placeholder through an answered check and the lookup after it', async () => {
+    const page = await newProductionPage();
+
+    await lookup(page, UNKNOWN_VIN);
+    await settle(page, 250);
+
+    // One widget, rendered into the body, over the panel's prompt to complete it.
+    expect(grecaptcha.render).toHaveBeenCalledTimes(1);
+    expect(grecaptcha.render.mock.calls[0][1]).toEqual({ sitekey: 'site-key' });
+    expect(portalOf().parentNode).toBe(page.doc.body);
+    expect(noticeText(page)).toBe(sscLocale.unauthorizedCheck);
+    expect(placeholderOf(page)).not.toBeNull();
+    expect(portalOf().style.display).toBe('block');
+    expect(portalOf().style.opacity).toBe('1');
+    expect(portalOf().style.pointerEvents).toBe('auto');
+
+    // Passed: the answer replaces the prompt, the body shuts, and the widget fades with it before it is taken down.
+    grecaptcha.getResponse.mockReturnValue('a-token');
+    await settle(page, 1500, () => noticeText(page) === sscLocale.noRecall);
+    expect(noticeText(page)).toBe(sscLocale.noRecall);
+    expect(bodyOpen(page)).toBe(false);
+
+    await settle(page, 600);
+    expect(portalOf().style.display).toBe('none');
+    expect(portalOf().style.opacity).toBe('0');
+
+    // The same vehicle again: its check is prepared while the body is shut and empty, and the widget
+    // must be back over its placeholder once the body opens — not left where the body faded out.
+    await lookup(page, UNKNOWN_VIN);
+    await settle(page, 100);
+
+    expect(noticeText(page)).toBe(sscLocale.unauthorizedCheck);
+    expect(bodyOpen(page)).toBe(true);
+    expect(placeholderOf(page)).not.toBeNull();
+    expect(grecaptcha.render).toHaveBeenCalledTimes(1);
+    expect(grecaptcha.reset).toHaveBeenCalledWith(WIDGET_ID);
+    expect(portalOf().style.display).toBe('block');
+    expect(portalOf().style.opacity).toBe('1');
+    expect(portalOf().style.pointerEvents).toBe('auto');
+  }, 15000);
+});
